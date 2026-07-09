@@ -1,0 +1,21 @@
+# Backend (Laravel)
+apps/backend/vendor
+apps/backend/.env
+apps/backend/storage/*.key
+apps/backend/bootstrap/cache/*.php
+apps/backend/.phpunit.cache
+apps/backend/storage/logs/*.log
+apps/backend/storage/framework/cache/*
+apps/backend/storage/framework/sessions/*
+apps/backend/storage/framework/views/*
+
+# Frontend (React/Vite)
+apps/frontend/node_modules
+apps/frontend/dist
+apps/frontend/.env
+
+# Editor/OS
+.DS_Store
+.vscode
+.idea
+apps/backend/cookies.txt
