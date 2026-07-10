@@ -4,14 +4,11 @@ import { useAuth } from "@/features/auth/contexts/AuthContext";
 export default function DashboardPage() {
   const navigate = useNavigate();
 
-  // Ambil fungsi logout dan data user dari Context yang kita bikin tadi
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
-    // 1. Clear auth context
     logout();
 
-    // 2. Redirect ke halaman login
     navigate("/login");
   };
 

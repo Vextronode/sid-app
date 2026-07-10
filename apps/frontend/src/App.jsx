@@ -1,7 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/features/auth/contexts/AuthContext";
+
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
+import { BerandaPage } from "@/pages/BerandaPage";
+
+import { MainLayout } from "@/components/layout/MainLayout";
 
 const GuestRoute = ({ children }) => {
   const { user } = useAuth();
@@ -25,6 +29,15 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route
+            path="/"
+            element={
+              <MainLayout>
+                <BerandaPage />
+              </MainLayout>
+            }
+          />
+
+          <Route
             path="/login"
             element={
               <GuestRoute>
@@ -37,12 +50,12 @@ export default function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <DashboardPage />
+                <MainLayout>
+                  <DashboardPage />
+                </MainLayout>
               </ProtectedRoute>
             }
           />
-
-          <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
