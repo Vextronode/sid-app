@@ -6,6 +6,8 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Village;
 use App\Models\Hamlet;
+use App\Models\Rw;
+use App\Models\Rt;
 
 class WilayahSeeder extends Seeder
 {
@@ -28,19 +30,28 @@ class WilayahSeeder extends Seeder
         ];
 
         foreach ($hamlets as $hamletName) {
-            $hamlet = $village->hamlets()->create([
+            $hamlet = Hamlet::create([
+                'village_id' => $village->id,
                 'name' => $hamletName,
+                'code' => strtoupper($hamletName),
+                'is_active' => true,
             ]);
 
             // tiap dusun memiliki 2 RW, dan tiap RW memiliki 2 RT
             for($rwNum=1; $rwNum <= 2; $rwNum++){
-                $rw = $hamlet->rws()->create([
-                    'number' => str_pad($rwNum, 2, '0', STR_PAD_LEFT), // "01", "02"
+                $rwModel = Rw::create([
+                    'hamlet_id' => $hamlet->id,
+                    'number' => str_pad($rwNum, 3, '0', STR_PAD_LEFT),
+                    'full_label' => 'RW '.str_pad($rwNum,3,'0',STR_PAD_LEFT),
+                    'is_active' => true,
                 ]);
 
                 for($rtNum=1; $rtNum <= 2; $rtNum++){
-                    $rw->rts()->create([
-                        'number' => str_pad($rtNum, 2, '0', STR_PAD_LEFT), // "01", "02"
+                    Rt::create([
+                        'rw_id' => $rwModel->id,
+                        'number' => str_pad($rtNum,3,'0',STR_PAD_LEFT),
+                        'full_label' => 'RT '.str_pad($rtNum,3,'0',STR_PAD_LEFT).'/RW '.str_pad($rwNum,3,'0',STR_PAD_LEFT),
+                        'is_active' => true,
                     ]);
                 }
             }
