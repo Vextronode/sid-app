@@ -13,13 +13,11 @@ return new class extends Migration
     {
         Schema::create('villages', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('head_name');
+            $table->string('name', 100);
+            $table->string('code', 20)->unique();
+            $table->string('head_name', 100)->nullable();
             $table->string('address')->nullable();
-            $table->string('history')->nullable();
-            $table->string('vision')->nullable();
-            $table->string('mission')->nullable();
-            $table->string('wa_contact')->nullable();
+            $table->string('phone', 20)->nullable();
             $table->timestamps();
         });
     }

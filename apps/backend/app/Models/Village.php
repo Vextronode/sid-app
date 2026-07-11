@@ -8,35 +8,33 @@ class Village extends Model
 {
     protected $fillable = [
         'name',
+        'code',
         'head_name',
         'address',
-        'history',
-        'vision',
-        'mission',
-        'wa_contact',
+        'phone',
     ];
 
-    public function hamlets()
+    public function hamlets(): HasMany
     {
         return $this->hasMany(Hamlet::class);
     }
-    public function users()
+    public function users(): HasMany
     {
         return $this->hasMany(User::class);
     }
-    public function citizen()
+    public function citizen(): HasMany
     {
         return $this->hasMany(Citizen::class);
     }
-    public function news()
+    public function news(): HasMany
     {
         return $this->hasMany(News::class);
     }
-    public function letters()
+    public function letters(): HasMany
     {
         return $this->hasMany(Letter::class);
     }
-    public function VillageRegulations()
+    public function VillageRegulations(): HasMany
     {
         return $this->hasMany(VillageRegulation::class);
     }
