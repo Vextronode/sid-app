@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('hamlet_id')->constrained('hamlets')->onDelete('cascade');
             $table->string('number');
+            $table->string('full_label');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
