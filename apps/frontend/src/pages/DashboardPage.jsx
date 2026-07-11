@@ -3,12 +3,10 @@ import { useAuth } from "@/features/auth/contexts/AuthContext";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
     logout();
-
     navigate("/login");
   };
 
