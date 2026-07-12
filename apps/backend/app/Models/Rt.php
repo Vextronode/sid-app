@@ -9,9 +9,15 @@ class Rt extends Model
     protected $fillable = [
         'number',
         'rw_id',
+        'full_label',
+        'is_active',
     ];
 
-    public function rw()
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function rw(): belongsTo
     {
         return $this->belongsTo(Rw::class);
     }
