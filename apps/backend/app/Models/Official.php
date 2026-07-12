@@ -7,36 +7,55 @@ use Illuminate\Database\Eloquent\Model;
 class Official extends Model
 {
     protected $fillable = [
+        'citizen_id',
         'user_id',
         'position',
-        'hamlet_id',
-        'rw_id',
+        'village_id',
         'rt_id',
-        'start_date',
-        'end_date',
+        'rw_id',
+        'hamlet_id',
+        'signature_img',
+        'stamp_img',
+        'photo_img',
+        'phone_wa',
+        'started_at',
+        'ended_at',
+        'is_active',
+        'notes',
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+        'started_at' => 'date',
+        'ended_at' => 'date',
+        'is_active' => 'boolean',
     ];
 
-    public function user()
+    public function citizen(): BelongsTo
+    {
+        return $this->belongsTo(Citizen::class);
+    }
+
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function hamlet()
+    public function village(): BelongsTo
+    {
+        return $this->belongsTo(Village::class);
+    }
+
+    public function hamlet(): BelongsTo
     {
         return $this->belongsTo(Hamlet::class);
     }
 
-    public function rw()
+    public function rw(): BelongsTo
     {
         return $this->belongsTo(Rw::class);
     }
 
-    public function rt()
+    public function rt(): BelongsTo
     {
         return $this->belongsTo(Rt::class);
     }

@@ -13,13 +13,37 @@ return new class extends Migration
     {
         Schema::create('officials', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->enum('position', ['rt', 'rw', 'kadus', 'kasi_pelayanan', 'kaur_tu_umum']);
+            $table->foreignId('citizen_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->enum('position', [
+                'kepala_desa',
+                'rt',
+                'rw',
+                'kadus',
+                'kasi_pelayanan',
+                'kaur_tu_umum',
+                'petugas_desa',
+                'kepala_desa',
+                'sekdes',
+                'kasi_kesejahteraan',
+                'kasi_pemerintahan',
+                'kaur_perencanaan',
+                'kaur_keuangan',
+                'staf_sipades',
+                'staf_siskeudes',
+            ]);
+            $table->foreignId('village_id')->constrained()->nullOnDelete();
+            $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
+            $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
             $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('rw_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('rt_id')->nullable()->constrained()->nullOnDelete();
-            $table->date('start_date');
-            $table->date('end_date')->nullable();
+            $table->string('signature_img')->nullable();
+            $table->string('stamp_img')->nullable();
+            $table->string('photo_img')->nullable();
+            $table->string('phone_wa')->nullable();
+            $table->date('started_at');
+            $table->date('ended_at')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }
