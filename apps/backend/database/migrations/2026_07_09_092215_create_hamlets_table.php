@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('hamlets', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->foreignId('village_id')->constrained()->cascadeOnDelete();
+            $table->string('code')->unique();
+            $table->boolean('is_active')->default(true);
+            $table->foreignId('village_id')->constrained('villages')->onDelete('cascade');
             $table->timestamps();
         });
     }
