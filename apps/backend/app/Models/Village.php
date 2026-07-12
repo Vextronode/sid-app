@@ -8,12 +8,10 @@ class Village extends Model
 {
     protected $fillable = [
         'name',
+        'code',
         'head_name',
         'address',
-        'history',
-        'vision',
-        'mission',
-        'wa_contact',
+        'phone',
     ];
 
     public function hamlets()

@@ -13,8 +13,10 @@ return new class extends Migration
     {
         Schema::create('rts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('rw_id')->constrained('rws')->onDelete('cascade');
+            $table->foreignId('rw_id')->constrained()->cascadeOnDelete();
             $table->string('number');
+            $table->string('full_label');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

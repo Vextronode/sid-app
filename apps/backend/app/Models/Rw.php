@@ -9,9 +9,15 @@ class Rw extends Model
     protected $fillable = [
         'number',
         'hamlet_id',
+        'full_label',
+        'is_active',
     ];
 
-    public function hamlet()
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function hamlet(): belongsTo
     {
         return $this->belongsTo(Hamlet::class);
     }

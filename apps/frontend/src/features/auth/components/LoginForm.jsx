@@ -1,14 +1,24 @@
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { useLoginForm } from "@/features/auth/hooks/useLoginForm";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 export function LoginForm() {
-  // call state dan logic dari custom hook
   const { formData, errors, handleChange, handleSubmit } = useLoginForm();
 
+  // navigasi dan logic dari context
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
   const handleLoginSuccess = (data) => {
-    console.log("Validasi FE Sukses! Data siap kirim ke API:", data);
-    // integrasi api ticket code SID-27 tar disini
+    console.log("Login sukses dengan data:", data);
+
+    // set dummy user ke state context
+    login({ name: "Warga Cibenda", nik: data.nik });
+
+    // redirect ke dashboard dan hapus history '/login' dari browser
+    navigate("/dashboard", { replace: true });
   };
 
   return (
@@ -26,7 +36,6 @@ export function LoginForm() {
         onChange={handleChange}
         error={errors.nik}
       />
-
       <Input
         label="Password"
         name="password"
@@ -36,7 +45,6 @@ export function LoginForm() {
         onChange={handleChange}
         error={errors.password}
       />
-
       <Button type="submit">Masuk</Button>
     </form>
   );
