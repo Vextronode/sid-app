@@ -7,6 +7,7 @@ import { BerandaPage } from "@/pages/BerandaPage";
 import { DetailBeritaPage } from "@/pages/DetailBeritaPage";
 import { BeritaPage } from "@/pages/BeritaPage";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { ProfilDesaPage } from "@/pages/ProfilDesaPage";
 
 const GuestRoute = ({ children }) => {
   const { user } = useAuth();
@@ -53,6 +54,15 @@ export default function App() {
             element={
               <MainLayout>
                 <DetailBeritaPage />
+              </MainLayout>
+            }
+          />
+
+          <Route
+            path="/profil-desa"
+            element={
+              <MainLayout>
+                <ProfilDesaPage />
               </MainLayout>
             }
           />

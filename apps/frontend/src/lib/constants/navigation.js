@@ -2,7 +2,7 @@ import { Home, Info, Newspaper, FileText, Bell, User } from "lucide-react";
 
 export const NAV_LINKS = [
   { name: "Beranda", href: "/", icon: Home },
-  { name: "Profil Desa", href: "/profil", icon: Info },
+  { name: "Profil Desa", href: "/profil-desa", icon: Info },
   { name: "Berita", href: "/berita", icon: Newspaper },
   { name: "Info Surat", href: "/info-surat", icon: FileText },
 ];
