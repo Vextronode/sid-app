@@ -10,34 +10,57 @@ use App\Enums\DomicileStatus;
 class Citizen extends Model
 {
     protected $fillable = [
+        'village_id',
+        'nik',
+        'nik_hash',
+        'name',
+        'date_of_birth',
+        'place_of_birth',
+        'gender',
+        'address',
         'rt_id',
         'hamlet_id',
-        'nik',
-        'name',
+        'no_kk',
+        'marital_status',
+        'occupation',
         'religion',
         'last_education',
         'domicile_status',
+        'current_domicile',
+        'is_active',
     ];
 
     protected $casts = [
+        'date_of_birth' => 'date',
+        'is_active' => 'boolean',
         'religion' => Religion::class,
         'last_education' => LastEducation::class,
         'domicile_status' => DomicileStatus::class,
     ];
 
-    public function hamlet()
+   public function village(): BelongsTo
     {
-        return $this->belongsTo(Hamlet::class);
+        return $this->belongsTo(Village::class);
     }
 
-    public function rt()
+    public function rt(): BelongsTo
     {
         return $this->belongsTo(Rt::class);
     }
 
-    public function user()
+    public function hamlet(): BelongsTo
+    {
+        return $this->belongsTo(Hamlet::class);
+    }
+
+    public function user(): HasOne
     {
         return $this->hasOne(User::class);
+    }
+
+    public function officials(): HasMany
+    {
+        return $this->hasMany(Official::class);
     }
     
 }

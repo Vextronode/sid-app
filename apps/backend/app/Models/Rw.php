@@ -22,7 +22,7 @@ class Rw extends Model
         return $this->belongsTo(Hamlet::class);
     }
 
-    public function rts()
+    public function rts(): HasMany
     {
         return $this->hasMany(Rt::class);
     }

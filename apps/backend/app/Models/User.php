@@ -34,8 +34,10 @@ class User extends Authenticatable
         'village_id',
         'citizen_id',
         'name',
+        'role',
         'email',
         'password',
+        'is_active',
     ];
 
     public function village()

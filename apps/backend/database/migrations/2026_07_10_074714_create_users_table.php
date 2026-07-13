@@ -16,9 +16,11 @@ return new class extends Migration
             $table->foreignId('village_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('citizen_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
+            $table->enum('role', ['warga', 'rt', 'rw', 'kadus', 'kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa', 'kepala_desa', 'sekretaris_desa'])->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->boolean('is_active');
             $table->rememberToken();
             $table->timestamps();
         });

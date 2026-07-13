@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Models;
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 
 class Village extends Model
@@ -14,27 +14,27 @@ class Village extends Model
         'phone',
     ];
 
-    public function hamlets()
+    public function hamlets(): HasMany
     {
         return $this->hasMany(Hamlet::class);
     }
-    public function users()
+    public function users(): HasMany
     {
         return $this->hasMany(User::class);
     }
-    public function citizen()
+    public function citizens(): HasMany
     {
         return $this->hasMany(Citizen::class);
     }
-    public function news()
+    public function news(): HasMany
     {
         return $this->hasMany(News::class);
     }
-    public function letters()
+    public function letters(): HasMany
     {
         return $this->hasMany(Letter::class);
     }
-    public function VillageRegulations()
+    public function VillageRegulations(): HasMany
     {
         return $this->hasMany(VillageRegulation::class);
     }
