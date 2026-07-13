@@ -4,7 +4,8 @@ import { AuthProvider, useAuth } from "@/features/auth/contexts/AuthContext";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
 import { BerandaPage } from "@/pages/BerandaPage";
-
+import { DetailBeritaPage } from "@/pages/DetailBeritaPage";
+import { BeritaPage } from "@/pages/BeritaPage";
 import { MainLayout } from "@/components/layout/MainLayout";
 
 const GuestRoute = ({ children }) => {
@@ -28,6 +29,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Route Beranda */}
           <Route
             path="/"
             element={
@@ -38,6 +40,25 @@ export default function App() {
           />
 
           <Route
+            path="/berita"
+            element={
+              <MainLayout>
+                <BeritaPage />
+              </MainLayout>
+            }
+          />
+
+          <Route
+            path="/berita/:id"
+            element={
+              <MainLayout>
+                <DetailBeritaPage />
+              </MainLayout>
+            }
+          />
+
+          {/* Route Login */}
+          <Route
             path="/login"
             element={
               <GuestRoute>
@@ -46,6 +67,7 @@ export default function App() {
             }
           />
 
+          {/* Route Dashboard */}
           <Route
             path="/dashboard"
             element={
