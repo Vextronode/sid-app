@@ -50,4 +50,19 @@ class User extends Authenticatable
         return $this->belongsTo(Citizen::class);
     }
 
+    public function letters()
+    {
+        return $this->hasMany(Letter::class, 'submitted_by');
+    }
+
+    public function official()
+    {
+        return $this->hasOne(Official::class);
+    }
+
+    public function news()
+    {
+        return $this->hasMany(News::class);
+    }
+
 }
