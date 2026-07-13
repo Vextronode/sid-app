@@ -2,10 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Village;
-use App\Models\Hamlet;
 
 class WilayahSeeder extends Seeder
 {
@@ -16,6 +14,7 @@ class WilayahSeeder extends Seeder
     {
         $village = Village::create([
             'name' => 'Desa Cibenda',
+            'code' => '321001',
             'head_name' => 'John Doe',
         ]);
 
@@ -24,7 +23,7 @@ class WilayahSeeder extends Seeder
             'Cibenda',
             'Cibenda Timur',
             'Cibenda Barat',
-            'Cibenda Selatan'
+            'Cibenda Selatan',
         ];
 
         foreach ($hamlets as $hamletName) {
@@ -32,15 +31,15 @@ class WilayahSeeder extends Seeder
                 'name' => $hamletName,
             ]);
 
-            // tiap dusun memiliki 2 RW, dan tiap RW memiliki 2 RT
-            for($rwNum=1; $rwNum <= 2; $rwNum++){
+            
+            for ($rwNum = 1; $rwNum <= 2; $rwNum++) {
                 $rw = $hamlet->rws()->create([
-                    'number' => str_pad($rwNum, 2, '0', STR_PAD_LEFT), // "01", "02"
+                    'number' => str_pad($rwNum, 2, '0', STR_PAD_LEFT),
                 ]);
 
-                for($rtNum=1; $rtNum <= 2; $rtNum++){
+                for ($rtNum = 1; $rtNum <= 2; $rtNum++) {
                     $rw->rts()->create([
-                        'number' => str_pad($rtNum, 2, '0', STR_PAD_LEFT), // "01", "02"
+                        'number' => str_pad($rtNum, 2, '0', STR_PAD_LEFT),
                     ]);
                 }
             }
