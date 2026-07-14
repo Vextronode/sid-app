@@ -6,6 +6,7 @@ use App\Enums\LetterStatus;
 use App\Models\LetterApproval;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
+use App\Enums\LetterStatus;
 
 class Letter extends Model
 {
@@ -72,6 +73,11 @@ class Letter extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function statusLogs()
+    {
+        return $this->hasMany(LetterStatusLog::class)->latest('created_at');
     }
 
 
