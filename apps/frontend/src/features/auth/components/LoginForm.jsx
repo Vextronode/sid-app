@@ -17,6 +17,8 @@ export function LoginForm() {
       id: 1,
       name: "Agus Ganteng",
       nik: data.nik,
+      alamat: "Jl. Raya Cibenda No. 123, RT 03/RW 05",
+      rtrw: "003/005",
       role: "warga",
     });
 

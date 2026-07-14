@@ -8,6 +8,7 @@ import { BeritaPage } from "@/pages/BeritaPage";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ProfilDesaPage } from "@/pages/ProfilDesaPage";
 import { InfoSuratPage } from "@/pages/InfoSuratPage";
+import { PengajuanSuratPage } from "@/pages/PengajuanSuratPage";
 
 const GuestRoute = ({ children }) => {
   const { user } = useAuth();
@@ -72,6 +73,17 @@ export default function App() {
               <MainLayout>
                 <InfoSuratPage />
               </MainLayout>
+            }
+          />
+
+          <Route
+            path="/pengajuan-surat/:kode"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <PengajuanSuratPage />
+                </MainLayout>
+              </ProtectedRoute>
             }
           />
 
