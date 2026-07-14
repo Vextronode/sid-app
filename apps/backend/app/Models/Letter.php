@@ -6,7 +6,6 @@ use App\Enums\LetterStatus;
 use App\Models\LetterApproval;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
-use App\Enums\LetterStatus;
 
 class Letter extends Model
 {
