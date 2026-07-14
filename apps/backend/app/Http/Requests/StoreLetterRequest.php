@@ -34,6 +34,12 @@ class StoreLetterRequest extends FormRequest
                 'nullable',
                 'array',
             ],
+
+            'attachments.*' => [
+                'file',
+                'mimes:pdf,jpg,jpeg,png',
+                'max:2048',
+            ],
         ];
     }
 }

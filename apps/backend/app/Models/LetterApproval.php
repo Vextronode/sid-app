@@ -13,12 +13,17 @@ class LetterApproval extends Model
         'approval_level',
         'deadline_at',
         'reminded_at',
+        'official_id',
+        'status',
+        'notes',
+        'approved_at',
     ];
 
     protected $casts = [
         'approval_level' => ApprovalLevel::class,
         'deadline_at' => 'datetime',
         'reminded_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
     public function letter()
@@ -29,5 +34,9 @@ class LetterApproval extends Model
     public function approvedBy()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+    public function official()
+    {
+        return $this->belongsTo(Official::class);
     }
 }
