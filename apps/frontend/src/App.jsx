@@ -2,17 +2,17 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/features/auth/contexts/AuthContext";
 
 import LoginPage from "@/pages/LoginPage";
-import DashboardPage from "@/pages/DashboardPage";
 import { BerandaPage } from "@/pages/BerandaPage";
 import { DetailBeritaPage } from "@/pages/DetailBeritaPage";
 import { BeritaPage } from "@/pages/BeritaPage";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ProfilDesaPage } from "@/pages/ProfilDesaPage";
+import { InfoSuratPage } from "@/pages/InfoSuratPage";
 
 const GuestRoute = ({ children }) => {
   const { user } = useAuth();
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
   return children;
 };
@@ -71,21 +71,46 @@ export default function App() {
           <Route
             path="/login"
             element={
-              <GuestRoute>
-                <LoginPage />
-              </GuestRoute>
+              <MainLayout>
+                <BeritaPage />
+              </MainLayout>
+            }
+          />
+
+          <Route
+            path="/berita/:id"
+            element={
+              <MainLayout>
+                <DetailBeritaPage />
+              </MainLayout>
+            }
+          />
+
+          <Route
+            path="/profil-desa"
+            element={
+              <MainLayout>
+                <ProfilDesaPage />
+              </MainLayout>
+            }
+          />
+
+          <Route
+            path="/info-surat"
+            element={
+              <MainLayout>
+                <InfoSuratPage />
+              </MainLayout>
             }
           />
 
           {/* Route Dashboard */}
           <Route
-            path="/dashboard"
+            path="/login"
             element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <DashboardPage />
-                </MainLayout>
-              </ProtectedRoute>
+              <GuestRoute>
+                <LoginPage />
+              </GuestRoute>
             }
           />
         </Routes>
