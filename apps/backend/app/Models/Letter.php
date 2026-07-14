@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\LetterStatus;
+use App\Models\LetterApproval;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 
 class Letter extends Model
@@ -30,9 +33,11 @@ class Letter extends Model
     ];
 
     protected $casts = [
-        'applicant_nik_hash' => 'encrypted',
+        'applicant_nik' => 'encrypted',
         'applicant_address' => 'encrypted',
+
         'status' => LetterStatus::class,
+
         'is_overdue' => 'boolean',
         'expires_at' => 'datetime',
         'submitted_at' => 'datetime',
@@ -52,6 +57,11 @@ class Letter extends Model
     public function village()
     {
         return $this->belongsTo(Village::class);
+    }
+
+    public function approvals()
+    {
+        return $this->hasMany(LetterApproval::class);
     }
 
     public function letterType()
