@@ -2,17 +2,17 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/features/auth/contexts/AuthContext";
 
 import LoginPage from "@/pages/LoginPage";
-import DashboardPage from "@/pages/DashboardPage";
 import { BerandaPage } from "@/pages/BerandaPage";
 import { DetailBeritaPage } from "@/pages/DetailBeritaPage";
 import { BeritaPage } from "@/pages/BeritaPage";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ProfilDesaPage } from "@/pages/ProfilDesaPage";
+import { InfoSuratPage } from "@/pages/InfoSuratPage";
 
 const GuestRoute = ({ children }) => {
   const { user } = useAuth();
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
   return children;
 };
@@ -30,7 +30,6 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Route Beranda */}
           <Route
             path="/"
             element={
@@ -67,25 +66,21 @@ export default function App() {
             }
           />
 
-          {/* Route Login */}
+          <Route
+            path="/info-surat"
+            element={
+              <MainLayout>
+                <InfoSuratPage />
+              </MainLayout>
+            }
+          />
+
           <Route
             path="/login"
             element={
               <GuestRoute>
                 <LoginPage />
               </GuestRoute>
-            }
-          />
-
-          {/* Route Dashboard */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <DashboardPage />
-                </MainLayout>
-              </ProtectedRoute>
             }
           />
         </Routes>

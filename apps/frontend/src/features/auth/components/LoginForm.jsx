@@ -12,13 +12,15 @@ export function LoginForm() {
   const { login } = useAuth();
 
   const handleLoginSuccess = (data) => {
-    console.log("Login sukses dengan data:", data);
+    // buat bikin dummy user
+    login({
+      id: 1,
+      name: "Agus Ganteng",
+      nik: data.nik,
+      role: "warga",
+    });
 
-    // set dummy user ke state context
-    login({ name: "Warga Cibenda", nik: data.nik });
-
-    // redirect ke dashboard dan hapus history '/login' dari browser
-    navigate("/dashboard", { replace: true });
+    navigate("/", { replace: true });
   };
 
   return (
