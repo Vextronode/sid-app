@@ -30,6 +30,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Route Beranda */}
           <Route
             path="/"
             element={
@@ -66,6 +67,34 @@ export default function App() {
             }
           />
 
+          {/* Route Login */}
+          <Route
+            path="/login"
+            element={
+              <MainLayout>
+                <BeritaPage />
+              </MainLayout>
+            }
+          />
+
+          <Route
+            path="/berita/:id"
+            element={
+              <MainLayout>
+                <DetailBeritaPage />
+              </MainLayout>
+            }
+          />
+
+          <Route
+            path="/profil-desa"
+            element={
+              <MainLayout>
+                <ProfilDesaPage />
+              </MainLayout>
+            }
+          />
+
           <Route
             path="/info-surat"
             element={
@@ -75,6 +104,7 @@ export default function App() {
             }
           />
 
+          {/* Route Dashboard */}
           <Route
             path="/login"
             element={
