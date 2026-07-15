@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Model;
 use App\Enums\Religion;
 use App\Enums\LastEducation;
 use App\Enums\DomicileStatus;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Citizen extends Model
 {

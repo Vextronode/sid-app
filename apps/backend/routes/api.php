@@ -8,10 +8,25 @@ use App\Http\Controllers\Api\RwApprovalController;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\LetterApprovalController;
+use App\Http\Controllers\Api\RtApprovalController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
-    Route::post('/login-test', function (LoginRequest $request) {
 
-        $request->authenticate();
+
+Route::post('/login', function (LoginRequest $request) {
+
+    $request->authenticate();
+
+    return response()->json([
+        'message' => 'Login berhasil',
+        'user' => Auth::user(),
+        'token' => $request->user()->createToken('auth_token')->plainTextToken,
+    ]);
+});
+
+Route::post('/logout', [AuthenticatedSessionController::class, 'logout'])->middleware('auth:sanctum');
+
+Route::middleware('auth:sanctum')->group(function () {
 
         $token = Auth::user()->createToken('postman')->plainTextToken;
 
@@ -23,7 +38,6 @@ use App\Http\Controllers\Api\LetterApprovalController;
     });
 
     Route::middleware('auth:sanctum')
-    ->prefix('rw')
     ->group(function () {
 
         Route::get('/user', function (Request $request) {
@@ -60,3 +74,21 @@ use App\Http\Controllers\Api\LetterApprovalController;
             [RwApprovalController::class, 'approve']
         );
     });
+
+    Route::middleware('auth:sanctum')
+    ->prefix('rt')
+    ->group(function () {
+    
+    Route::get(
+        '/letters',
+        [RtApprovalController::class, 'index']
+    );
+
+    Route::patch(
+        '/letters/{letter}/decision',
+        [RtApprovalController::class, 'decision']
+    );
+    });
+    
+
+
