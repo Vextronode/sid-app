@@ -13,8 +13,10 @@ class RtApprovalService
         $official = $user->official;
 
         return Letter::query()
-            ->where('rt_id', $official->rt_id)
             ->where('status', 'pending')
+            ->whereHas('citizen', function ($query) use ($official) {
+                $query->where('rt_id', $official->rt_id);
+            })
             ->with([
                 'citizen',
                 'letterType',
@@ -31,47 +33,51 @@ class RtApprovalService
 
         $official = $user->official;
 
-        if ($official->rt_id != $letter->rt_id) {
-            abort(403, 'Anda tidak berwenang.');
+        if (! $official) {
+            abort(403, 'Data petugas tidak ditemukan.');
+        }
+
+        if ($letter->citizen->rt_id != $official->rt_id) {
+            abort(403, 'Anda tidak berwenang memproses surat ini.');
         }
 
         DB::transaction(function () use (
             $letter,
-            $official,
+            $user,
             $data
         ) {
 
-            if ($data['status'] == 'approved') {
+            $oldStatus = $letter->status->value;
 
-                $letter->update([
-                    'status' => 'rt_approved',
-                ]);
+            $newStatus = $data['status'] === 'approved'
+                ? 'rt_approved'
+                : 'rt_rejected';
 
-            } else {
-
-                $letter->update([
-                    'status' => 'rt_rejected',
-                ]);
-
-            }
-
-            $letter->approvals()->create([
-                'level' => 'rt',
-                'official_id' => $official->id,
-                'status' => $data['status'],
+            // update letter
+            $letter->update([
+                'status' => $newStatus,
                 'notes' => $data['notes'] ?? null,
+                'processed_at' => now(),
+            ]);
+
+            // insert letter_approvals
+            $letter->approvals()->create([
+                'approved_by' => $user->id,
+                'approval_level' => 'rt',
                 'deadline_at' => now()->addDays(2),
             ]);
 
+            // insert letter_status_logs
             $letter->statusLogs()->create([
-                'status' => $letter->status,
-                'notes' => $data['notes'] ?? null,
-                'changed_by' => $user->id,
+                'actor_id' => $user->id,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'reason' => $data['notes'] ?? null,
             ]);
 
-            if ($data['status'] == 'rejected') {
+            // reject -> kirim notifikasi
+            if ($data['status'] === 'rejected') {
 
-                // dispatch notification ke warga
             }
 
         });
