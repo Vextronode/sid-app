@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RwApprovalRequest extends FormRequest
 {
@@ -14,8 +15,21 @@ class RwApprovalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'decision' => 'required|in:approved,rejected',
-            'notes' => 'nullable|string|max:500',
+            'status' => [
+                'required',
+                Rule::in([
+                    'approved',
+                    'rejected',
+                ]),
+            ],
+
+            'notes' => [
+                Rule::requiredIf(
+                    $this->status === 'rejected'
+                ),
+                'nullable',
+                'string',
+            ],
         ];
     }
 }

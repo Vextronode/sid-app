@@ -3,49 +3,43 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Models\Letter;
 use App\Services\RwApprovalService;
 use App\Http\Requests\RwApprovalRequest;
 
 class RwApprovalController extends Controller
 {
-    public function index()
+    public function __construct(
+        protected RwApprovalService $service
+    ) {}
+
+    public function index(Request $request)
     {
-        $user = auth()->user();
-
-        $official = $user->official;
-
-        $letters = Letter::query()
-            ->with([
-                'citizen',
-                'letterType',
-            ])
-            ->where('status', 'rt_approved')
-            ->where('village_id', $official->village_id)
-            ->latest()
-            ->get();
+        $letters = $this->service->getPendingLetters(
+            $request->user()
+        );
 
         return response()->json([
-            'message' => 'Daftar surat berhasil diambil.',
+            'message' => 'Daftar surat RW berhasil diambil.',
             'data' => $letters,
         ]);
     }
 
-    protected RwApprovalService $rwApprovalService;
-
-    public function __construct(
-        RwApprovalService $rwApprovalService
-    ){
-        $this->rwApprovalService = $rwApprovalService;
-    }
 
     public function approve(
         RwApprovalRequest $request,
         Letter $letter
-    ){
-        return $this->rwApprovalService
-            ->approve($letter, $request->validated());
-    }
+    )
+    {
+        $this->service->approve(
+            $letter,
+            $request->user(),
+            $request->validated()
+        );
 
-    
+        return response()->json([
+            'message' => 'Surat berhasil diproses.',
+        ]);
+    }
 }
