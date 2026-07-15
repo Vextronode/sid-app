@@ -5,9 +5,14 @@ namespace App\Services;
 use App\Models\Letter;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use App\Notifications\LetterStatusNotification;
 
 class RtApprovalService
 {
+    public function __construct(
+        protected OfficialService $officialService
+    ) {}
+
     public function getPendingLetters(User $user)
     {
         $official = $user->official;
@@ -53,33 +58,91 @@ class RtApprovalService
                 ? 'rt_approved'
                 : 'rt_rejected';
 
-            // update letter
+            // Update letter
             $letter->update([
                 'status' => $newStatus,
                 'notes' => $data['notes'] ?? null,
                 'processed_at' => now(),
             ]);
 
-            // insert letter_approvals
+            // Approval RT
             $letter->approvals()->create([
                 'approved_by' => $user->id,
                 'approval_level' => 'rt',
                 'deadline_at' => now()->addDays(2),
             ]);
 
-            // insert letter_status_logs
+            $currentOfficial = $this->officialService
+                ->getCurrentRt($user);
+
+            if ($data['status'] === 'approved') {
+
+                // Approval RW
+                $letter->approvals()->create([
+                    'approved_by' => null,
+                    'approval_level' => 'rw',
+                    'deadline_at' => now()->addDays(2),
+                ]);
+
+                // Cari RW
+                $nextOfficial = $this->officialService
+                    ->resolveNextOfficial($currentOfficial);
+
+                // Notifikasi RW
+                if ($nextOfficial?->user) {
+
+                    $nextOfficial->user->notify(
+                        new LetterStatusNotification(
+                            $letter,
+                            'Surat Baru',
+                            'Ada surat yang menunggu persetujuan RW.',
+                            'rt_approved'
+                        )
+                    );
+                }
+
+                // Notifikasi Warga
+                $citizenUser = $this->officialService
+                    ->resolveCitizenUser($letter);
+
+                if ($citizenUser) {
+
+                    $citizenUser->notify(
+                        new LetterStatusNotification(
+                            $letter,
+                            'Permohonan Diproses',
+                            'Permohonan surat Anda telah disetujui oleh RT dan sedang diproses oleh RW.',
+                            'rt_approved'
+                        )
+                    );
+                }
+
+            } else {
+
+                // Notifikasi Warga
+                $citizenUser = $this->officialService
+                    ->resolveCitizenUser($letter);
+
+                if ($citizenUser) {
+
+                    $citizenUser->notify(
+                        new LetterStatusNotification(
+                            $letter,
+                            'Permohonan Ditolak',
+                            'Permohonan surat Anda ditolak oleh RT.',
+                            'rt_rejected'
+                        )
+                    );
+                }
+            }
+
+            // Status Log
             $letter->statusLogs()->create([
                 'actor_id' => $user->id,
                 'old_status' => $oldStatus,
                 'new_status' => $newStatus,
                 'reason' => $data['notes'] ?? null,
             ]);
-
-            // reject -> kirim notifikasi
-            if ($data['status'] === 'rejected') {
-
-            }
-
         });
     }
 }
