@@ -4,21 +4,29 @@ namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\Citizen;
 
 class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_new_users_can_register(): void
+   public function test_new_users_can_register(): void
     {
+
         $response = $this->post('/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+
+            'village_id' => $village->i,
+            'citizen_id' => $citizen->id,
+            'role' => 'warga',
+            'is_active' => true,
         ]);
 
         $this->assertAuthenticated();
+
         $response->assertNoContent();
     }
 }
