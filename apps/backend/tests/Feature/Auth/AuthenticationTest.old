@@ -1,0 +1,78 @@
+<?php
+
+namespace Tests\Feature\Auth;
+
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+use App\Models\Citizen;
+
+class AuthenticationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_users_can_authenticate_using_the_login_screen(): void
+    {
+        $citizen = Citizen::create([
+            'village_id' => 1,
+            'nik' => '3273000000000001',
+            'nik_hash' => hash('sha256', '3273000000000001'),
+            'name' => 'Test Citizen',
+            'date_of_birth' => now(),
+            'place_of_birth' => 'Bandung',
+            'gender' => 'L',
+            'address' => 'Jl. Testing',
+            'rt_id' => null,
+            'hamlet_id' => null,
+            'no_kk' => '3273000000000000',
+            'marital_status' => 'belum_kawin',
+            'occupation' => 'mahasiswa',
+            'religion' => 'islam',
+            'last_education' => 'sma',
+            'domicile_status' => 'menetap',
+            'current_domicile' => 'Bandung',
+            'is_active' => true,
+        ]);
+
+        $user = \App\Models\User::factory()->create([
+            'citizen_id' => $citizen->id,
+            'email' => 'test@test.com',
+            'password' => bcrypt('Password123'),
+        ]);
+
+        $response = $this->post('/login', [
+            'nik' => $citizen->nik,
+            'password' => 'Password123',
+        ]);
+
+        $this->assertAuthenticated();
+
+        $response->assertNoContent();
+    }
+
+    public function test_users_can_not_authenticate_with_invalid_password(): void
+    {
+
+        $user = User::factory()->create([
+            'citizen_id' => $citizen->id,
+            'password' => bcrypt('Password123'),
+        ]);
+
+        $this->post('/login', [
+            'nik' => $citizen->nik,
+            'password' => 'Password321',
+        ]);
+
+        $this->assertGuest();
+    }
+
+    public function test_users_can_logout(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post('/logout');
+
+        $this->assertGuest();
+        $response->assertNoContent();
+    }
+}

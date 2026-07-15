@@ -9,9 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use App\Enums\Religion;
 use App\Enums\LastEducation;
 use App\Enums\DomicileStatus;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Citizen extends Model
 {
@@ -43,6 +40,20 @@ class Citizen extends Model
         'last_education' => LastEducation::class,
         'domicile_status' => DomicileStatus::class,
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Citizen $citizen) {
+
+            if ($citizen->isDirty('nik')) {
+                $citizen->nik_hash = hash(
+                    'sha256',
+                    $citizen->nik
+                );
+            }
+
+        });
+    }
 
    public function village(): BelongsTo
     {
