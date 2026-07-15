@@ -59,4 +59,15 @@ Route::middleware('auth:sanctum')->group(function () {
         [RtApprovalController::class, 'decision']
     );
 
+    Route::get(
+        '/kadus/letters',
+        [KadusApprovalController::class, 'index']
+    );
+
+    Route::patch(
+        '/kadus/letters/{letter}/decision',
+        [KadusApprovalController::class, 'decision']
+    );
+
+
 });
