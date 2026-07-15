@@ -9,6 +9,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { ProfilDesaPage } from "@/pages/ProfilDesaPage";
 import { InfoSuratPage } from "@/pages/InfoSuratPage";
 import { PengajuanSuratPage } from "@/pages/PengajuanSuratPage";
+import { DaftarSurat } from "@/pages/DaftarSurat";
 
 const GuestRoute = ({ children }) => {
   const { user } = useAuth();
@@ -18,11 +19,17 @@ const GuestRoute = ({ children }) => {
   return children;
 };
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 };
 
@@ -77,9 +84,20 @@ export default function App() {
           />
 
           <Route
+            path="/daftar-surat"
+            element={
+              <ProtectedRoute allowedRoles={["warga"]}>
+                <MainLayout>
+                  <DaftarSurat />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/pengajuan-surat/:kode"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["warga"]}>
                 <MainLayout>
                   <PengajuanSuratPage />
                 </MainLayout>
