@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterTypeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\LetterApprovalController;
+use App\Http\Controllers\Api\RtApprovalController;
 
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -29,5 +31,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get(
         '/letters/{id}',
         [LetterController::class, 'show']
-    );    
+    );
+    
+    Route::get(
+        '/rt/letters',
+        [RtApprovalController::class, 'index']
+    );
+
+    Route::patch(
+        '/rt/letters/{letter}/decision',
+        [RtApprovalController::class, 'decision']
+    );
+
 });
