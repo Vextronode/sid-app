@@ -1,19 +1,51 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { SURAT_CONFIG } from "@/lib/constants/suratConfig";
 import { DynamicSuratForm } from "@/features/surat/components/DynamicSuratForm";
 
 export function PengajuanSuratPage() {
   const { kode } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const currentConfig = SURAT_CONFIG[kode?.toUpperCase()] || SURAT_CONFIG.SKD;
 
   const handleCancel = () => navigate("/info-surat");
 
   const handleSubmit = (data) => {
-    console.log("Form Disubmit! Payload data:", data);
-    alert(`Sukses mengirim pengajuan ${currentConfig.title}!`);
-    navigate("/info-surat");
+    const bulan = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Ags",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
+    ];
+    const tgl = new Date();
+    const formatTanggal = `${tgl.getDate()} ${bulan[tgl.getMonth()]} ${tgl.getFullYear()}`;
+
+    // format data yang dibutuhin tabel DaftarSurat
+    const suratBaru = {
+      id: Date.now(),
+      noSurat: "-",
+      pemohon: user?.name || "Warga Desa",
+      jenis: currentConfig.code || "SKD",
+      tanggal: formatTanggal,
+      status: "pending",
+
+      nik: data.nik || null,
+      alamat: data.alamat || null,
+      keperluan: data.keperluan || null,
+    };
+
+    // Redirect ke halaman Daftar Surat sambil bawa surat yg tadi di input pas sebleum klik submit
+    navigate("/daftar-surat", { state: { newSurat: suratBaru } });
   };
 
   return (
