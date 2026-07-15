@@ -1,17 +1,24 @@
 <?php
 
-use App\Http\Controllers\Api\LetterController;
-use App\Http\Controllers\Api\LetterTypeController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\RwApprovalController;
-use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\Api\LetterApprovalController;
-use App\Http\Controllers\Api\RtApprovalController;
+use Illuminate\Support\Facades\Route;
+
+use App\Http\Requests\Auth\LoginRequest;
+
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
+use App\Http\Controllers\Api\LetterController;
+use App\Http\Controllers\Api\LetterTypeController;
+use App\Http\Controllers\Api\LetterApprovalController;
+use App\Http\Controllers\Api\RtApprovalController;
+use App\Http\Controllers\Api\RwApprovalController;
 
+/*
+|--------------------------------------------------------------------------
+| Public Routes
+|--------------------------------------------------------------------------
+*/
 
 Route::post('/login', function (LoginRequest $request) {
 
@@ -19,76 +26,69 @@ Route::post('/login', function (LoginRequest $request) {
 
     return response()->json([
         'message' => 'Login berhasil',
-        'user' => Auth::user(),
-        'token' => $request->user()->createToken('auth_token')->plainTextToken,
+        'user'    => Auth::user(),
+        'token'   => $request->user()->createToken('auth_token')->plainTextToken,
     ]);
 });
 
-Route::post('/logout', [AuthenticatedSessionController::class, 'logout'])->middleware('auth:sanctum');
+Route::post(
+    '/logout',
+    [AuthenticatedSessionController::class, 'logout']
+)->middleware('auth:sanctum');
+
+/*
+|--------------------------------------------------------------------------
+| Protected Routes
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware('auth:sanctum')->group(function () {
 
-        $token = Auth::user()->createToken('postman')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Login berhasil',
-            'token' => $token,
-            'user' => Auth::user(),
-        ]);
+    Route::get('/user', function (Request $request) {
+        return $request->user();
     });
 
-    Route::middleware('auth:sanctum')
-    ->group(function () {
 
-        Route::get('/user', function (Request $request) {
-            return $request->user();
-        });
+    Route::get('/letter-types', [LetterTypeController::class, 'index']);
 
-        Route::get('/letter-types', [LetterTypeController::class, 'index']);
-        
-        Route::post('/letters', [LetterController::class, 'store']);
+    Route::post('/letters', [LetterController::class, 'store']);
 
-        Route::post(
-            '/letters/{letter}/approve',
-            [LetterApprovalController::class,'approve']
-        );
+    Route::get('/letters', [LetterController::class, 'index']);
+
+    Route::get('/letters/{id}', [LetterController::class, 'show']);
+
+    Route::post(
+        '/letters/{letter}/approve',
+        [LetterApprovalController::class, 'approve']
+    );
+
+
+
+    Route::prefix('rt')->group(function () {
 
         Route::get(
             '/letters',
-            [LetterController::class, 'index']
+            [RtApprovalController::class, 'index']
         );
 
-        Route::get(
-            '/letters/{id}',
-            [LetterController::class, 'show']
-        );    
+        Route::patch(
+            '/letters/{letter}/decision',
+            [RtApprovalController::class, 'decision']
+        );
 
-        
     });
 
-    Route::middleware('auth:sanctum')
-    ->prefix('rw')
-    ->group(function () {
-    Route::patch(
+    Route::prefix('rw')->group(function () {
+
+        Route::patch(
             '/approvals/{letter}/approve',
             [RwApprovalController::class, 'approve']
         );
+        Route::get(
+            '/letters',
+            [RwApprovalController::class, 'index']
+        );
+
     });
 
-    Route::middleware('auth:sanctum')
-    ->prefix('rt')
-    ->group(function () {
-    
-    Route::get(
-        '/letters',
-        [RtApprovalController::class, 'index']
-    );
-
-    Route::patch(
-        '/letters/{letter}/decision',
-        [RtApprovalController::class, 'decision']
-    );
-    });
-    
-
-
+});
