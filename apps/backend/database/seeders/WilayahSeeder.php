@@ -15,7 +15,6 @@ class WilayahSeeder extends Seeder
         $village = Village::create([
             'code' => '1234567890',
             'name' => 'Desa Cibenda',
-            'code' => '321001',
             'head_name' => 'John Doe',
             'address' => 'Jl. Raya Cibenda No. 1',
             'phone' => '081234567890',

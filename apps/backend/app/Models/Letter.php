@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\LetterStatus;
 use App\Models\LetterApproval;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 
@@ -79,5 +80,9 @@ class Letter extends Model
         return $this->hasMany(LetterStatusLog::class)->latest('created_at');
     }
 
+    public function citizen(): BelongsTo
+    {
+        return $this->belongsTo(Citizen::class);
+    }
 
 }
