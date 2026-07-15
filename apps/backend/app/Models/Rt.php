@@ -18,7 +18,7 @@ class Rt extends Model
         'is_active' => 'boolean',
     ];
 
-    public function rw(): belongsTo
+    public function rw()
     {
         return $this->belongsTo(Rw::class);
     }
