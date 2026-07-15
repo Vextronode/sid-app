@@ -1,0 +1,43 @@
+// ==========================================
+// SuratInfoGrid.jsx
+// Grid 2 kolom berisi detail permohonan surat (Nama, NIK, Alamat, Jenis Surat,
+// Keperluan, tanggal diajukan/diproses, IP aktor) di halaman detail.
+// ==========================================
+
+export default function SuratInfoGrid({ surat }) {
+  // Pasangan label-value kolom kiri & kanan, disusun di sini supaya
+  // urutan tampilan gampang diubah tanpa menyentuh markup di bawah
+  const kolomKiri = [
+    { label: 'Nama Pemohon', value: surat.pemohon },
+    { label: 'NIK', value: surat.nik },
+    { label: 'Alamat', value: surat.alamat },
+    { label: 'Jenis Surat', value: surat.jenis_label },
+  ];
+  const kolomKanan = [
+    { label: 'Keperluan', value: surat.keperluan },
+    { label: 'Diajukan', value: surat.diajukan_at },
+    { label: 'Terakhir diproses', value: surat.terakhir_diproses_at },
+    { label: 'IP aktor', value: surat.ip_aktor },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-x-12 gap-y-3 mb-8">
+      <div className="flex flex-col gap-3">
+        {kolomKiri.map((item) => (
+          <div key={item.label} className="grid grid-cols-2 text-sm">
+            <span className="text-gray-500">{item.label}</span>
+            <span className="text-gray-800">{item.value}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-col gap-3">
+        {kolomKanan.map((item) => (
+          <div key={item.label} className="grid grid-cols-2 text-sm">
+            <span className="text-gray-500">{item.label}</span>
+            <span className="text-gray-800">{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
