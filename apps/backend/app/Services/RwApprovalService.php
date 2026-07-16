@@ -2,39 +2,26 @@
 
 namespace App\Services;
 
+use App\Enums\LetterStatus;
 use App\Models\Letter;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use App\Notifications\LetterStatusNotification;
+use Illuminate\Support\Facades\DB;
 
-class RtApprovalService
+class RwApprovalService
 {
     public function __construct(
         protected OfficialService $officialService
     ) {}
 
-    public function getPendingLetters(User $user)
-    {
-        $official = $user->official;
-
-        return Letter::query()
-            ->where('status', 'pending')
-            ->whereHas('citizen', function ($query) use ($official) {
-                $query->where('rt_id', $official->rt_id);
-            })
-            ->with([
-                'citizen',
-                'letterType',
-            ])
-            ->latest()
-            ->get();
-    }
-
-    public function decision(
+    private function validateGate(
         Letter $letter,
-        User $user,
-        array $data
+        User $user
     ): void {
+
+        if ($letter->status !== LetterStatus::RtApproved) {
+            abort(403, 'Surat belum dapat diproses oleh RW.');
+        }
 
         $official = $user->official;
 
@@ -42,9 +29,18 @@ class RtApprovalService
             abort(403, 'Data petugas tidak ditemukan.');
         }
 
-        if ($letter->citizen->rt_id != $official->rt_id) {
+        if ($letter->citizen->rt->rw_id != $official->rw_id) {
             abort(403, 'Anda tidak berwenang memproses surat ini.');
         }
+    }
+
+    public function approve(
+        Letter $letter,
+        User $user,
+        array $data
+    ): void {
+
+        $this->validateGate($letter, $user);
 
         DB::transaction(function () use (
             $letter,
@@ -55,53 +51,63 @@ class RtApprovalService
             $oldStatus = $letter->status->value;
 
             $newStatus = $data['status'] === 'approved'
-                ? 'rt_approved'
-                : 'rt_rejected';
+                ? LetterStatus::RwApproved->value
+                : LetterStatus::RwRejected->value;
 
-            // Update letter
+            
+
+            $letter->approvals()
+                ->where('approval_level', 'rw')
+                ->update([
+                    'approved_by' => $user->id,
+                ]);
+
+            
+
             $letter->update([
                 'status' => $newStatus,
                 'notes' => $data['notes'] ?? null,
                 'processed_at' => now(),
             ]);
 
-            // Approval RT
-            $letter->approvals()->create([
-                'approved_by' => $user->id,
-                'approval_level' => 'rt',
-                'deadline_at' => now()->addDays(2),
+            
+
+            $letter->statusLogs()->create([
+                'actor_id' => $user->id,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'reason' => $data['notes'] ?? null,
             ]);
 
-            $currentOfficial = $this->officialService
-                ->getCurrentRt($user);
+            
 
             if ($data['status'] === 'approved') {
 
-                // Approval RW
+               
                 $letter->approvals()->create([
                     'approved_by' => null,
-                    'approval_level' => 'rw',
+                    'approval_level' => 'kadus',
                     'deadline_at' => now()->addDays(2),
                 ]);
 
-                // Cari RW
+                $currentOfficial = $this->officialService
+                    ->getCurrentRw($user);
+
                 $nextOfficial = $this->officialService
                     ->resolveNextOfficial($currentOfficial);
 
-                // Notifikasi RW
                 if ($nextOfficial?->user) {
 
                     $nextOfficial->user->notify(
                         new LetterStatusNotification(
                             $letter,
                             'Surat Baru',
-                            'Ada surat yang menunggu persetujuan RW.',
-                            'rt_approved'
+                            'Ada surat yang menunggu persetujuan Kadus.',
+                            'rw_approved'
                         )
                     );
                 }
 
-                // Notifikasi Warga
                 $citizenUser = $this->officialService
                     ->resolveCitizenUser($letter);
 
@@ -111,15 +117,14 @@ class RtApprovalService
                         new LetterStatusNotification(
                             $letter,
                             'Permohonan Diproses',
-                            'Permohonan surat Anda telah disetujui oleh RT dan sedang diproses oleh RW.',
-                            'rt_approved'
+                            'Permohonan surat Anda telah disetujui oleh RW dan sedang diproses oleh Kadus.',
+                            'rw_approved'
                         )
                     );
                 }
 
             } else {
 
-                // Notifikasi Warga
                 $citizenUser = $this->officialService
                     ->resolveCitizenUser($letter);
 
@@ -129,20 +134,32 @@ class RtApprovalService
                         new LetterStatusNotification(
                             $letter,
                             'Permohonan Ditolak',
-                            'Permohonan surat Anda ditolak oleh RT.',
-                            'rt_rejected'
+                            'Permohonan surat Anda ditolak oleh RW.',
+                            'rw_rejected'
                         )
                     );
                 }
             }
-
-            // Status Log
-            $letter->statusLogs()->create([
-                'actor_id' => $user->id,
-                'old_status' => $oldStatus,
-                'new_status' => $newStatus,
-                'reason' => $data['notes'] ?? null,
-            ]);
         });
+    }
+
+    public function getPendingLetters(User $user)
+    {
+        $official = $user->official()
+            ->where('position', 'rw')
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        return Letter::query()
+            ->where('status', LetterStatus::RtApproved)
+            ->whereHas('citizen.rt', function ($query) use ($official) {
+                $query->where('rw_id', $official->rw_id);
+            })
+            ->with([
+                'citizen',
+                'letterType',
+            ])
+            ->latest()
+            ->get();
     }
 }

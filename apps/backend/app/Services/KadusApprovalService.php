@@ -3,11 +3,12 @@
 namespace App\Services;
 
 use App\Models\Letter;
+use App\Models\Official;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use App\Notifications\LetterStatusNotification;
+use Illuminate\Support\Facades\DB;
 
-class RtApprovalService
+class KadusApprovalService
 {
     public function __construct(
         protected OfficialService $officialService
@@ -18,9 +19,14 @@ class RtApprovalService
         $official = $user->official;
 
         return Letter::query()
-            ->where('status', 'pending')
+            ->where('status', 'rw_approved')
             ->whereHas('citizen', function ($query) use ($official) {
-                $query->where('rt_id', $official->rt_id);
+
+                $query->where(
+                    'hamlet_id',
+                    $official->hamlet_id
+                );
+
             })
             ->with([
                 'citizen',
@@ -38,11 +44,10 @@ class RtApprovalService
 
         $official = $user->official;
 
-        if (! $official) {
-            abort(403, 'Data petugas tidak ditemukan.');
-        }
-
-        if ($letter->citizen->rt_id != $official->rt_id) {
+        if (
+            $letter->citizen->hamlet_id !=
+            $official->hamlet_id
+        ) {
             abort(403, 'Anda tidak berwenang memproses surat ini.');
         }
 
@@ -55,48 +60,55 @@ class RtApprovalService
             $oldStatus = $letter->status->value;
 
             $newStatus = $data['status'] === 'approved'
-                ? 'rt_approved'
-                : 'rt_rejected';
+                ? 'kadus_approved'
+                : 'kadus_rejected';
 
-            // Update letter
             $letter->update([
                 'status' => $newStatus,
                 'notes' => $data['notes'] ?? null,
                 'processed_at' => now(),
             ]);
 
-            // Approval RT
             $letter->approvals()->create([
                 'approved_by' => $user->id,
-                'approval_level' => 'rt',
+                'approval_level' => 'kadus',
                 'deadline_at' => now()->addDays(2),
             ]);
 
-            $currentOfficial = $this->officialService
-                ->getCurrentRt($user);
+            $letter->statusLogs()->create([
+                'actor_id' => $user->id,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'reason' => $data['notes'] ?? null,
+            ]);
 
             if ($data['status'] === 'approved') {
 
-                // Approval RW
-                $letter->approvals()->create([
-                    'approved_by' => null,
-                    'approval_level' => 'rw',
-                    'deadline_at' => now()->addDays(2),
-                ]);
+                $nextOfficial = Official::query()
+                    ->where(
+                        'position',
+                        $letter->letterType->assigned_role
+                    )
+                    ->where(
+                        'village_id',
+                        $letter->village_id
+                    )
+                    ->where(
+                        'is_active',
+                        true
+                    )
+                    ->first();
 
-                // Cari RW
-                $nextOfficial = $this->officialService
-                    ->resolveNextOfficial($currentOfficial);
-
-                // Notifikasi RW
+                // Notifikasi Kasi/Kaur
                 if ($nextOfficial?->user) {
 
                     $nextOfficial->user->notify(
                         new LetterStatusNotification(
                             $letter,
                             'Surat Baru',
-                            'Ada surat yang menunggu persetujuan RW.',
-                            'rt_approved'
+                            'Ada surat yang menunggu persetujuan '
+                                . strtoupper($letter->letterType->assigned_role) . '.',
+                            'kadus_approved'
                         )
                     );
                 }
@@ -111,15 +123,15 @@ class RtApprovalService
                         new LetterStatusNotification(
                             $letter,
                             'Permohonan Diproses',
-                            'Permohonan surat Anda telah disetujui oleh RT dan sedang diproses oleh RW.',
-                            'rt_approved'
+                            'Permohonan surat Anda telah disetujui oleh Kepala Dusun dan sedang diproses oleh '
+                                . strtoupper($letter->letterType->assigned_role) . '.',
+                            'kadus_approved'
                         )
                     );
                 }
 
             } else {
 
-                // Notifikasi Warga
                 $citizenUser = $this->officialService
                     ->resolveCitizenUser($letter);
 
@@ -129,20 +141,15 @@ class RtApprovalService
                         new LetterStatusNotification(
                             $letter,
                             'Permohonan Ditolak',
-                            'Permohonan surat Anda ditolak oleh RT.',
-                            'rt_rejected'
+                            'Permohonan surat Anda ditolak oleh Kepala Dusun.',
+                            'kadus_rejected'
                         )
                     );
                 }
+
             }
 
-            // Status Log
-            $letter->statusLogs()->create([
-                'actor_id' => $user->id,
-                'old_status' => $oldStatus,
-                'new_status' => $newStatus,
-                'reason' => $data['notes'] ?? null,
-            ]);
         });
+
     }
 }
