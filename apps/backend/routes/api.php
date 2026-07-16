@@ -104,4 +104,29 @@ Route::middleware('auth:sanctum')->group(function () {
             );
     });
 
+        Route::get(
+            '/letters',
+            [RtApprovalController::class, 'index']
+        );
+
+        Route::patch(
+            '/letters/{letter}/decision',
+            [RtApprovalController::class, 'decision']
+        );
+
+    });
+
+    Route::prefix('rw')->group(function () {
+
+        Route::patch(
+            '/approvals/{letter}/approve',
+            [RwApprovalController::class, 'approve']
+        );
+        Route::get(
+            '/letters',
+            [RwApprovalController::class, 'index']
+        );
+
+    });
+
 });
