@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\LetterApprovalController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RwApprovalController;
+use App\Http\Controllers\Api\KadusApprovalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -65,6 +66,43 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     Route::prefix('rt')->group(function () {
+        Route::get(
+            '/letters',
+            [RtApprovalController::class, 'index']
+        );
+
+        Route::patch(
+            '/letters/{letter}/decision',
+            [RtApprovalController::class, 'decision']
+        );
+
+    });
+
+    Route::prefix('rw')->group(function () {
+
+        Route::patch(
+            '/approvals/{letter}/approve',
+            [RwApprovalController::class, 'approve']
+        );
+        Route::get(
+            '/letters',
+            [RwApprovalController::class, 'index']
+        );
+
+    });
+
+    Route::prefix('kadus')->group(function (){
+        
+        Route::get(
+                '/letters',
+                [KadusApprovalController::class, 'index']
+            );
+
+            Route::patch(
+                '/letters/{letter}/decision',
+                [KadusApprovalController::class, 'decision']
+            );
+    });
 
         Route::get(
             '/letters',
