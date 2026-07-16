@@ -8,6 +8,8 @@ use App\Models\LetterStatusLog;
 use Illuminate\Support\Facades\DB;
 use App\Services\OfficialService;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 
 class LetterService
 {
@@ -143,5 +145,176 @@ class LetterService
             'approval_level' => 'rt',
             'deadline_at' => now()->addDays(3),
         ]);
+    }
+
+    public function getScopedLetters(
+        User $user,
+        array $filters = []
+    ): Collection
+    {
+        $query = Letter::query()
+            ->with([
+                'citizen',
+                'letterType',
+                'approvals',
+            ]);
+
+        switch ($user->role) {
+
+            case 'warga':
+
+                $query->where(
+                    'submitted_by',
+                    $user->id
+                );
+
+                break;
+
+            case 'rt':
+
+                $official = $user->official;
+
+                $query->whereHas(
+                    'citizen',
+                    fn ($q) => $q->where(
+                        'rt_id',
+                        $official->rt_id
+                    )
+                );
+
+                break;
+
+            case 'rw':
+
+                $official = $user->official;
+
+                $query->whereHas(
+                    'citizen.rt',
+                    fn ($q) => $q->where(
+                        'rw_id',
+                        $official->rw_id
+                    )
+                );
+
+                break;
+
+            case 'kadus':
+
+                $official = $user->official;
+
+                $query->whereHas(
+                    'citizen.rt.rw',
+                    fn ($q) => $q->where(
+                        'hamlet_id',
+                        $official->hamlet_id
+                    )
+                );
+
+                break;
+
+            case 'kasi_pelayanan':
+
+            case 'kaur_tu_umum':
+
+                $query->whereHas(
+                    'letterType',
+                    fn ($q) => $q->where(
+                        'assigned_role',
+                        $user->role
+                    )
+                );
+
+                break;
+
+            case 'petugas_desa':
+
+            case 'sekretaris_desa':
+
+            case 'kepala_desa':
+
+                // melihat semua surat
+                break;
+
+            default:
+
+                abort(403);
+
+        }
+
+        // ===========================
+        // FILTER
+        // ===========================
+
+        if (! empty($filters['status'])) {
+
+            $query->where(
+                'status',
+                $filters['status']
+            );
+
+        }
+
+        if (! empty($filters['letter_type_id'])) {
+
+            $query->where(
+                'letter_type_id',
+                $filters['letter_type_id']
+            );
+
+        }
+
+        if (! empty($filters['from'])) {
+
+            $query->whereDate(
+                'submitted_at',
+                '>=',
+                $filters['from']
+            );
+
+        }
+
+        if (! empty($filters['to'])) {
+
+            $query->whereDate(
+                'submitted_at',
+                '<=',
+                $filters['to']
+            );
+
+        }
+
+        if (! empty($filters['applicant_name'])) {
+
+            $query->where(
+                'applicant_name',
+                'like',
+                '%' . $filters['applicant_name'] . '%'
+            );
+
+        }
+
+        $letters = $query
+            ->latest()
+            ->get();
+
+        // ===========================
+        // FLAG IS_OVERDUE
+        // ===========================
+
+        $letters->each(function ($letter) {
+
+            $approval = $letter->approvals
+                ->whereNull('approved_by')
+                ->sortBy('deadline_at')
+                ->first();
+
+            $letter->is_overdue =
+                $approval &&
+                $approval->deadline_at &&
+                now()->greaterThan($approval->deadline_at);
+
+        });
+
+        return $letters;
     }
 }

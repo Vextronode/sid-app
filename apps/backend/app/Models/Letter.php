@@ -45,7 +45,6 @@ class Letter extends Model
         'processed_at' => 'datetime',
     ];
 
-
     protected static function booted(): void
     {
         static::saving(function (Letter $letter) {
@@ -53,6 +52,24 @@ class Letter extends Model
                 $letter->applicant_nik_hash = hash('sha256', $letter->applicant_nik);
             }
         });
+    }
+
+    protected $appends = [
+        'is_overdue',
+    ];
+
+    public function getIsOverdueAttribute(): bool
+    {
+        $approval = $this->approvals
+            ->whereNull('approved_at')
+            ->sortBy('deadline_at')
+            ->first();
+
+        if (! $approval || ! $approval->deadline_at) {
+            return false;
+        }
+
+        return now()->gt($approval->deadline_at);
     }
 
     public function village()
