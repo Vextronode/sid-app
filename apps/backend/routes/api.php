@@ -91,6 +91,21 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
 
+    Route::prefix('kasi')->group(function () {
+
+        Route::get(
+            '/letters',
+            [KasiApprovalController::class, 'index']
+        );
+
+        Route::patch(
+            '/approvals/{letter}/approve',
+            [KasiApprovalController::class, 'approve']
+        );
+
+    });
+
+    
     Route::prefix('kadus')->group(function (){
         
         Route::get(

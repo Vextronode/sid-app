@@ -79,4 +79,11 @@ class OfficialService
             $letter->citizen_id
         )->first();
     }
+
+    public function resolveVillageHead(): ?Official
+    {
+        return Official::where('position', 'kades')
+            ->where('is_active', true)
+            ->first();
+    }
 }
