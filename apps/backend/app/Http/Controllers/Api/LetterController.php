@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LetterIndexRequest;
 use App\Http\Requests\StoreLetterRequest;
-use App\Services\LetterService;
 use App\Models\Letter;
-use App\Models\LetterType;
+use App\Services\LetterService;
 
 class LetterController extends Controller
 {
@@ -19,26 +19,22 @@ class LetterController extends Controller
         $letter = $this->letterService
             ->createLetter($request->validated());
 
-
         return response()->json([
             'message' => 'Permohonan berhasil dibuat.',
-            'data' => $letter
+            'data' => $letter,
         ], 201);
     }
-    public function index()
-    {
-        $user = auth()->user();
 
-        $letters = Letter::with([
-            'letterType:id,name',
-        ])
-        ->where('submitted_by', $user->id)
-        ->latest()
-        ->get();
+    public function index(LetterIndexRequest $request)
+    {
+        $letters = $this->letterService->getScopedLetters(
+            auth()->user(),
+            $request->validated()
+        );
 
         return response()->json([
-            'message' => 'Daftar permohonan surat berhasil diambil.',
-            'data' => $letters
+            'message' => 'Daftar surat berhasil diambil.',
+            'data' => $letters,
         ]);
     }
 
@@ -46,18 +42,16 @@ class LetterController extends Controller
     {
         $user = auth()->user();
 
-
         $letter = Letter::with([
             'letterType:id,name',
             'approvals.approvedBy:id,name',
         ])
-        ->where('submitted_by', $user->id)
-        ->findOrFail($id);
-
+            ->where('submitted_by', $user->id)
+            ->findOrFail($id);
 
         return response()->json([
             'message' => 'Detail permohonan berhasil diambil.',
-            'data' => $letter
+            'data' => $letter,
         ]);
     }
 }
