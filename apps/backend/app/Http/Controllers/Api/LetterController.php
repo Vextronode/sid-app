@@ -44,14 +44,48 @@ class LetterController extends Controller
 
         $letter = Letter::with([
             'letterType:id,name',
+
+            'approvals' => function ($query) {
+                $query->orderByRaw("
+                    FIELD(
+                        approval_level,
+                        'rt',
+                        'rw',
+                        'kadus',
+                        'kasi'
+                    )
+                ");
+            },
+
             'approvals.approvedBy:id,name',
+
+            'statusLogs.actor:id,name',
         ])
-            ->where('submitted_by', $user->id)
-            ->findOrFail($id);
+        ->where('submitted_by', $user->id)
+        ->findOrFail($id);
+
+        $currentStage = match ($letter->status->value) {
+
+            'pending' => 'RT',
+
+            'rt_approved' => 'RW',
+
+            'rw_approved' => 'Kadus',
+
+            'kadus_approved' => 'Kasi',
+
+            'kasi_approved' => 'Selesai',
+
+            default => 'Ditolak',
+        };
 
         return response()->json([
             'message' => 'Detail permohonan berhasil diambil.',
-            'data' => $letter,
+            'data' => [
+                'letter' => $letter,
+                'current_stage' => $currentStage,
+                'is_overdue' => $letter->is_overdue,
+            ],
         ]);
     }
 }
