@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\LetterApprovalController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RwApprovalController;
 use App\Http\Controllers\Api\KadusApprovalController;
+use App\Http\Controllers\Api\KasiApprovalController;
+use App\Http\Controllers\Api\LetterDownloadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,7 +65,10 @@ Route::middleware('auth:sanctum')->group(function () {
         [LetterApprovalController::class, 'approve']
     );
 
-
+    Route::get(
+        '/letters/{letter}/download',
+        [LetterDownloadController::class, 'download']
+    );
 
     Route::prefix('rt')->group(function () {
         Route::get(
@@ -129,8 +134,6 @@ Route::middleware('auth:sanctum')->group(function () {
             [RtApprovalController::class, 'decision']
         );
 
-    });
-
     Route::prefix('rw')->group(function () {
 
         Route::patch(
@@ -143,5 +146,5 @@ Route::middleware('auth:sanctum')->group(function () {
         );
 
     });
-
+        
 });
