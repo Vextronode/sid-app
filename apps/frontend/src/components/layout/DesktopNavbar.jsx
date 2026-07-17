@@ -1,12 +1,29 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation,useNavigate } from "react-router-dom";
 import { NAV_LINKS } from "@/lib/constants/navigation";
 import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { Bell, User, LogOut } from "lucide-react";
 
 export function DesktopNavbar() {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { user, logout, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <nav className="hidden md:flex h-20 bg-white border-b" />
+    );
+  }
+  const handleLogout = async () => {
+    try {
+      await logout();
 
+      navigate("/login", {
+        replace: true,
+      });
+    } catch (error) {
+      console.error("Logout gagal", error);
+    }
+  };
   return (
     <nav className="hidden md:flex w-full bg-white shadow-md border-b-[3px] border-gray-100 py-4 px-8 items-center justify-between sticky top-0 z-50">
       <div className="font-bold text-2xl text-black">LOGO</div>
@@ -53,7 +70,7 @@ export function DesktopNavbar() {
             </div>
 
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className="flex items-center gap-1.5 text-red-500 hover:text-red-600 text-xs font-semibold border border-red-100 hover:bg-red-50 px-3 py-1.5 rounded-xl transition"
             >
               <LogOut className="w-3.5 h-3.5" />

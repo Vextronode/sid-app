@@ -1,59 +1,138 @@
 export const SURAT_CONFIG = {
-  SKD: {
-    code: "SKD",
+
+  A04: {
+    code: "A04",
     title: "Surat Keterangan Domisili",
-    type: "Document",
+    type: "Manual",
+
     fields: [
       {
         name: "keperluan",
         label: "Keperluan",
         type: "textarea",
         required: true,
-        placeholder: "Jelaskan keperluan pengajuan surat....",
+        placeholder:
+          "Jelaskan keperluan pengajuan surat....",
       },
+
       {
         name: "dokumen",
-        label: "Uplod Dokumen Pendukung",
+        label: "Upload Dokumen Pendukung",
         type: "file",
         required: true,
-        accept: ".pdf,.doc,.docx,.jpg,.jpeg,.png",
+        accept:
+          ".pdf,.jpg,.jpeg,.png",
       },
+
       {
         name: "catatan",
         label: "Catatan Tambahan",
         type: "textarea",
         required: false,
-        placeholder: "Opsional",
+        placeholder:
+          "Opsional",
       },
     ],
   },
-  SKU: {
-    code: "SKU",
+
+
+  A01: {
+    code: "A01",
     title: "Surat Keterangan Usaha",
     type: "Manual",
+
     fields: [
       {
-        name: "namaUsaha",
-        label: "Nama Usaha",
+        name: "jenis_usaha",
+        label: "Jenis Usaha",
         type: "text",
         required: true,
-        placeholder: "Masukkan nama usaha Anda",
+        placeholder:
+          "Masukkan jenis usaha",
       },
+
+      {
+        name: "lokasi_usaha",
+        label: "Lokasi Usaha",
+        type: "text",
+        required: true,
+        placeholder:
+          "Masukkan lokasi usaha",
+      },
+
       {
         name: "keperluan",
         label: "Keperluan",
         type: "textarea",
         required: true,
-        placeholder: "Jelaskan keperluan pengajuan surat....",
+        placeholder:
+          "Jelaskan keperluan surat",
       },
+
       {
         name: "dokumen",
-        label: "Uplod Dokumen Pendukung",
+        label: "Upload Dokumen Pendukung",
         type: "file",
         required: true,
-        accept: ".pdf,.doc,.docx,.jpg,.jpeg,.png",
+        accept:
+          ".pdf,.jpg,.jpeg,.png",
       },
     ],
   },
-  // nanti tambahin surat lain disini ya, tapi khusus form yg diisi aja. buat yg disabled ato otomatis keisi gaperlu di taro disini
+
+
+  A05: {
+    code: "A05",
+    title: "Surat Keterangan Tidak Mampu",
+    type: "Manual",
+
+    fields:[
+      {
+        name:"keperluan_persyaratan",
+        label:"Keperluan",
+        type:"textarea",
+        required:true,
+        placeholder:
+          "Jelaskan keperluan SKTM"
+      },
+
+      {
+        name:"dokumen",
+        label:"Upload Dokumen Pendukung",
+        type:"file",
+        required:true,
+        accept:
+          ".pdf,.jpg,.jpeg,.png"
+      }
+    ]
+  },
+
+
+  A09:{
+    code:"A09",
+    title:"Surat Keterangan Belum Menikah",
+    type:"Manual",
+
+    fields:[
+      {
+        name:"keperluan",
+        label:"Keperluan",
+        type:"textarea",
+        required:true,
+        placeholder:
+          "Jelaskan keperluan surat"
+      },
+
+      {
+        name:"dokumen",
+        label:"Upload Dokumen Pendukung",
+        type:"file",
+        required:true,
+        accept:
+          ".pdf,.jpg,.jpeg,.png"
+      }
+    ]
+  },
+
+
 };

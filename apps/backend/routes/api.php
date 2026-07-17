@@ -14,28 +14,19 @@ use App\Http\Controllers\Api\LetterApprovalController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RwApprovalController;
 use App\Http\Controllers\Api\KadusApprovalController;
-
+use App\Http\Controllers\Api\KasiApprovalController;
 /*
 |--------------------------------------------------------------------------
 | Public Routes
 |--------------------------------------------------------------------------
 */
 
-Route::post('/login', function (LoginRequest $request) {
+    Route::post(
+        '/login',
+        [AuthenticatedSessionController::class, 'store']
+    );
 
-    $request->authenticate();
 
-    return response()->json([
-        'message' => 'Login berhasil',
-        'user'    => Auth::user(),
-        'token'   => $request->user()->createToken('auth_token')->plainTextToken,
-    ]);
-});
-
-Route::post(
-    '/logout',
-    [AuthenticatedSessionController::class, 'logout']
-)->middleware('auth:sanctum');
 
 /*
 |--------------------------------------------------------------------------
@@ -45,8 +36,22 @@ Route::post(
 
 Route::middleware('auth:sanctum')->group(function () {
 
+    Route::post(
+        '/logout',
+        [AuthenticatedSessionController::class, 'logout']
+    )->middleware('auth:sanctum');
+
     Route::get('/user', function (Request $request) {
-        return $request->user();
+
+        return $request
+            ->user()
+            ->load([
+                'citizen.village',
+                'citizen.hamlet',
+                'citizen.rt',
+                'citizen.rw',
+            ]);
+
     });
 
 
@@ -119,29 +124,6 @@ Route::middleware('auth:sanctum')->group(function () {
             );
     });
 
-        Route::get(
-            '/letters',
-            [RtApprovalController::class, 'index']
-        );
 
-        Route::patch(
-            '/letters/{letter}/decision',
-            [RtApprovalController::class, 'decision']
-        );
-
-    });
-
-    Route::prefix('rw')->group(function () {
-
-        Route::patch(
-            '/approvals/{letter}/approve',
-            [RwApprovalController::class, 'approve']
-        );
-        Route::get(
-            '/letters',
-            [RwApprovalController::class, 'index']
-        );
-
-    });
 
 });

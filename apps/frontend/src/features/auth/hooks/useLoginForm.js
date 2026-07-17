@@ -1,30 +1,36 @@
 import { useState } from "react";
 import { loginSchema } from "../schemas/loginSchema";
+import api from "@/lib/api";
 
 export function useLoginForm() {
-  const [formData, setFormData] = useState({ nik: "", password: "" });
+  const [formData, setFormData] = useState({
+    nik: "",
+    password: "",
+  });
+
   const [errors, setErrors] = useState({});
 
   const validateForm = () => {
-    // prsing data dari zod
     const result = loginSchema.safeParse(formData);
 
     if (!result.success) {
       const formattedErrors = {};
 
-      // map error dari Zod ke state error
       result.error.issues.forEach((issue) => {
         const fieldName = issue.path[0];
+
         if (!formattedErrors[fieldName]) {
           formattedErrors[fieldName] = issue.message;
         }
       });
 
       setErrors(formattedErrors);
+
       return false;
     }
 
     setErrors({});
+
     return true;
   };
 
@@ -35,14 +41,39 @@ export function useLoginForm() {
       return;
     }
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: null,
+      }));
+    }
   };
 
-  const handleSubmit = (e, onSuccess) => {
+  const handleSubmit = async (e, onSuccess) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSuccess(formData);
+
+    if (!validateForm()) return;
+
+    try {
+      // Ambil CSRF Cookie
+      await api.get("/sanctum/csrf-cookie");
+
+      // Login
+      await api.post("/api/login", formData);
+
+      // Login berhasil
+      onSuccess();
+    } catch (err) {
+      if (err.response?.status === 422) {
+        setErrors(err.response.data.errors ?? {});
+      } else {
+        throw err;
+      }
     }
   };
 

@@ -8,8 +8,8 @@ export function PengajuanSuratPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const currentConfig = SURAT_CONFIG[kode?.toUpperCase()] || SURAT_CONFIG.SKD;
-
+  const currentConfig =
+      SURAT_CONFIG[kode?.toUpperCase()] || SURAT_CONFIG.A04;
   const handleCancel = () => navigate("/info-surat");
 
   const handleSubmit = (data) => {
@@ -45,7 +45,7 @@ export function PengajuanSuratPage() {
     };
 
     // Redirect ke halaman Daftar Surat sambil bawa surat yg tadi di input pas sebleum klik submit
-    navigate("/daftar-surat", { state: { newSurat: suratBaru } });
+    navigate("/daftar-surat");
   };
 
   return (

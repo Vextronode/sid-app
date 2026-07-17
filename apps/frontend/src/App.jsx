@@ -12,15 +12,25 @@ import { PengajuanSuratPage } from "@/pages/PengajuanSuratPage";
 import { DaftarSurat } from "@/pages/DaftarSurat";
 
 const GuestRoute = ({ children }) => {
-  const { user } = useAuth();
-  if (user) {
-    return <Navigate to="/" replace />;
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+      return <div>Loading...</div>;
   }
+
+  if (user) {
+      return <Navigate to="/" replace />;
+  }
+
   return children;
 };
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />;

@@ -22,6 +22,7 @@ class Citizen extends Model
         'gender',
         'address',
         'rt_id',
+        'rw_id',
         'hamlet_id',
         'no_kk',
         'marital_status',
@@ -64,7 +65,10 @@ class Citizen extends Model
     {
         return $this->belongsTo(Rt::class);
     }
-
+    public function rw(): BelongsTo
+    {
+        return $this->belongsTo(Rw::class);
+    }
     public function hamlet(): BelongsTo
     {
         return $this->belongsTo(Hamlet::class);
