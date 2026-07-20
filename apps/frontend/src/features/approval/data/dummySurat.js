@@ -1,18 +1,20 @@
-// ==========================================
-// dummySurat.js
-// Dataset dummy permohonan surat, dipakai sementara oleh hooks sampai
-// backend endpoint aslinya siap. Ganti sumber ini dengan hasil fetch API nanti.
-// ==========================================
+// Rotasi status supaya tiap tahap ada contoh datanya waktu testing UI
+const STATUS_ROTATION = [
+  'pending',
+  'rt_approved',
+  'rt_rejected',
+  'rw_approved',
+  'rw_rejected',
+  'kadus_approved',
+  'kadus_rejected',
+  'petugas_approved',
+];
 
-import { STATUS } from '../constants/statusConfig';
-
-// Rotasi 4 status berbeda supaya tiap tab (pending/approved/rejected/semua) ada isinya
-const STATUS_ROTATION = [STATUS.PENDING, STATUS.RT_APPROVED, STATUS.RT_REJECTED, STATUS.RW_REVIEW];
-
-export const dummySurat = Array.from({ length: 12 }).map((_, i) => ({
+export const dummySurat = Array.from({ length: 16 }).map((_, i) => ({
   id: i + 1,
-  no_surat: null, // baru terisi otomatis setelah disetujui final (tahap Kasi/Kaur)
+  no_surat: null, // baru terisi kalau status === 'petugas_approved'
   pemohon: 'Budi Santoso',
+  pemohon_user_id: 1, // dipakai Warga buat filter "surat saya sendiri"
   nik: '****-****-0042',
   alamat: 'Kp. Cibenda RT 001/RW 001',
   jenis: 'SKD',
@@ -24,8 +26,13 @@ export const dummySurat = Array.from({ length: 12 }).map((_, i) => ({
   ip_aktor: '192.168.1.12',
   status: STATUS_ROTATION[i % STATUS_ROTATION.length],
   wilayah: 'RT 001, RW001 - Desa Cibenda',
-  // Riwayat keputusan tiap tahap, dipakai di halaman detail
-  riwayat: [
-    { tahap: 'RT', status: 'approved', catatan: null, waktu: '19 Mei 2026, 10:23' },
-  ],
+  // Riwayat keputusan tiap tahap, ditambah otomatis waktu ada aksi approve/reject
+  riwayat: [],
 }));
+
+// Helper: surat terbit otomatis dapat no_surat waktu status jadi petugas_approved
+dummySurat.forEach((s) => {
+  if (s.status === 'petugas_approved') {
+    s.no_surat = `02${s.id}/SKD/V/2026`;
+  }
+});
