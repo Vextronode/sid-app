@@ -83,4 +83,5 @@ export const LIST_SURAT_GLOBAL = [
     desc: "Dokumen persetujuan warga",
     type: "Document",
   },
+  
 ];

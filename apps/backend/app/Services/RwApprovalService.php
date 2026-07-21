@@ -34,6 +34,23 @@ class RwApprovalService
         }
     }
 
+    /**
+     * ============================================================
+     * Detail surat RW
+     * ============================================================
+     */
+    public function getLetterDetail(
+        Letter $letter,
+        User $user
+    )
+    {
+        return $letter->load([
+            'citizen',
+            'letterType',
+            'approvals.approver',
+        ]);
+    }
+    
     public function approve(
         Letter $letter,
         User $user,
@@ -58,8 +75,12 @@ class RwApprovalService
 
             $letter->approvals()
                 ->where('approval_level', 'rw')
-                ->update([
+                ->whereNull('approved_by')
+                ->latest()
+                ->first()
+                ?->update([
                     'approved_by' => $user->id,
+                    'status' => $data['status'],
                 ]);
 
             
@@ -150,16 +171,41 @@ class RwApprovalService
             ->where('is_active', true)
             ->firstOrFail();
 
+
         return Letter::query()
-            ->where('status', LetterStatus::RtApproved)
-            ->whereHas('citizen.rt', function ($query) use ($official) {
-                $query->where('rw_id', $official->rw_id);
-            })
-            ->with([
-                'citizen',
-                'letterType',
+
+            ->whereIn('status', [
+
+                LetterStatus::RtApproved,
+
+                LetterStatus::RwApproved,
+
+                LetterStatus::RwRejected,
+
             ])
+
+            ->whereHas('citizen.rt', function ($query) use ($official) {
+
+                $query->where('rw_id', $official->rw_id);
+
+            })
+
+
+            ->with([
+
+                'citizen',
+
+                'letterType',
+
+                'approvals.approvedBy:id,name'
+
+            ])
+
+
             ->latest()
+
             ->get();
     }
+
+
 }

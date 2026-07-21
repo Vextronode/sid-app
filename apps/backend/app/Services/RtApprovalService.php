@@ -17,14 +17,30 @@ class RtApprovalService
     {
         $official = $user->official;
 
+
+        if (!$official) {
+            abort(403, 'Data official tidak ditemukan.');
+        }
+
+
         return Letter::query()
-            ->where('status', 'pending')
+            ->whereIn('status', [
+                'pending',
+                'rt_approved',
+                'rt_rejected'
+            ])
             ->whereHas('citizen', function ($query) use ($official) {
-                $query->where('rt_id', $official->rt_id);
+
+                $query->where(
+                    'rt_id',
+                    $official->rt_id
+                );
+
             })
             ->with([
                 'citizen',
                 'letterType',
+                'approvals.approvedBy:id,name'
             ])
             ->latest()
             ->get();
@@ -66,15 +82,16 @@ class RtApprovalService
             ]);
 
             // Approval RT
-            $letter->approvals()->create([
-                'approved_by' => $user->id,
-                'approval_level' => 'rt',
-                'deadline_at' => now()->addDays(2),
-            ]);
+            $letter->approvals()
+                ->where('approval_level', 'rt')
+                ->update([
+                    'approved_by' => $user->id,
+                ]);
 
             $currentOfficial = $this->officialService
                 ->getCurrentRt($user);
-
+            $nextOfficial = $this->officialService
+                ->resolveNextOfficial($currentOfficial);
             if ($data['status'] === 'approved') {
 
                 // Approval RW

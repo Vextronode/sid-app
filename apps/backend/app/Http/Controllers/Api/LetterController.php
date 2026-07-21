@@ -42,12 +42,11 @@ class LetterController extends Controller
     {
         $user = auth()->user();
 
-        $letter = Letter::with([
-            'letterType:id,name',
-            'approvals.approvedBy:id,name',
-        ])
-            ->where('submitted_by', $user->id)
-            ->findOrFail($id);
+       $letter = Letter::with([
+        'letterType:id,name',
+        'approvals.approvedBy:id,name',
+    ])
+    ->findOrFail($id);
 
         return response()->json([
             'message' => 'Detail permohonan berhasil diambil.',

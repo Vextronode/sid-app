@@ -41,4 +41,19 @@ class RtApprovalController extends Controller
         ]);
     }
 
+    public function show(Letter $letter)
+    {
+        $letter->load([
+            'citizen',
+            'letterType',
+            'approvals.approvedBy:id,name'
+        ]);
+
+
+        return response()->json([
+            'message'=>'Detail surat berhasil diambil',
+            'data'=>$letter
+        ]);
+    }
+
 }

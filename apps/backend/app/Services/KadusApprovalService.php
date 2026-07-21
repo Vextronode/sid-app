@@ -7,6 +7,7 @@ use App\Models\Official;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use Illuminate\Support\Facades\DB;
+use App\Enums\LetterStatus;
 
 class KadusApprovalService
 {
@@ -15,26 +16,54 @@ class KadusApprovalService
     ) {}
 
     public function getPendingLetters(User $user)
-    {
-        $official = $user->official;
+        {
 
-        return Letter::query()
-            ->where('status', 'rw_approved')
-            ->whereHas('citizen', function ($query) use ($official) {
+            $official = $user->official;
 
-                $query->where(
-                    'hamlet_id',
-                    $official->hamlet_id
-                );
 
-            })
-            ->with([
-                'citizen',
-                'letterType',
-            ])
-            ->latest()
-            ->get();
-    }
+            if(!$official){
+                abort(403,'Data official tidak ditemukan.');
+            }
+
+
+            return Letter::query()
+
+                ->whereIn('status',[
+
+                    LetterStatus::RwApproved,
+
+                    LetterStatus::KadusApproved,
+
+                    LetterStatus::KadusRejected
+
+                ])
+
+
+                ->whereHas('citizen',function($query) use($official){
+
+                    $query->where(
+                        'hamlet_id',
+                        $official->hamlet_id
+                    );
+
+                })
+
+
+                ->with([
+
+                    'citizen',
+
+                    'letterType',
+
+                    'approvals.approvedBy:id,name'
+
+                ])
+
+                ->latest()
+
+                ->get();
+
+        }
 
     public function decision(
         Letter $letter,
@@ -69,11 +98,12 @@ class KadusApprovalService
                 'processed_at' => now(),
             ]);
 
-            $letter->approvals()->create([
-                'approved_by' => $user->id,
-                'approval_level' => 'kadus',
-                'deadline_at' => now()->addDays(2),
-            ]);
+            $letter->approvals()
+                ->where('approval_level','kadus')
+                ->whereNull('approved_by')
+                ->update([
+                    'approved_by'=>$user->id,
+                ]);
 
             $letter->statusLogs()->create([
                 'actor_id' => $user->id,

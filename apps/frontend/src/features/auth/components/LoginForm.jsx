@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { useLoginForm } from "@/features/auth/hooks/useLoginForm";
@@ -10,8 +9,6 @@ import { Button } from "@/components/ui/Button";
 export function LoginForm() {
   const { formData, errors, handleChange, handleSubmit } = useLoginForm();
 
-  const navigate = useNavigate();
-
   const { login } = useAuth();
 
   const [serverError, setServerError] = useState("");
@@ -20,12 +17,50 @@ export function LoginForm() {
     try {
       setServerError("");
 
-      // Ambil user dari session Laravel
-      await login();
+      // Mengambil data user yang berhasil login
+      // agar dapat menentukan halaman tujuan sesuai role.
+      const user = await login();
 
-      navigate("/", {
-        replace: true,
-      });
+      // Redirect otomatis berdasarkan role user.
+      switch (user.role) {
+        case "rt":
+          navigate("/admin/dashboard-surat-rt", { replace: true });
+          break;
+
+        case "rw":
+          navigate("/admin/dashboard-surat-rw", { replace: true });
+          break;
+
+        case "kadus":
+          navigate("/admin/dashboard-surat-kadus", { replace: true });
+          break;
+
+        case "petugas_desa":
+          navigate("/admin/dashboard-surat-petugas-desa", {
+            replace: true,
+          });
+          break;
+
+        case "kepala_desa":
+          navigate("/admin/dashboard-surat-kades", {
+            replace: true,
+          });
+          break;
+                case "kasi":
+          navigate("/admin/dashboard-surat-kasi", {
+            replace: true,
+          });
+          break;
+
+        // Role admin lainnya sementara diarahkan ke beranda
+        // sampai dashboard masing-masing tersedia.
+        case "sekretaris_desa":
+        case "kasi_pelayanan":
+        case "kaur_tu_umum":
+        case "warga":
+        default:
+          navigate("/", { replace: true });
+      }
     } catch (error) {
       console.error(error);
 

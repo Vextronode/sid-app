@@ -7,6 +7,7 @@ use App\Http\Requests\KadusDecisionRequest;
 use App\Models\Letter;
 use App\Services\KadusApprovalService;
 use Illuminate\Http\Request;
+use App\Models\User;
 
 class KadusApprovalController extends Controller
 {
@@ -38,5 +39,21 @@ class KadusApprovalController extends Controller
             'message' => 'Surat berhasil diproses.',
         ]);
 
+    }
+
+
+    public function show(Letter $letter)
+    {
+        $letter->load([
+            'citizen',
+            'letterType',
+            'approvals.approvedBy:id,name'
+        ]);
+
+
+        return response()->json([
+            'message'=>'Detail surat berhasil diambil',
+            'data'=>$letter
+        ]);
     }
 }

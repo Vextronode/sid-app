@@ -42,17 +42,18 @@ export function DaftarSurat() {
   const totalPermohonan = dataRiwayat.length;
 
 
-  const sedangDiproses = dataRiwayat.filter(
-    (s) =>
-      s.status?.includes("pending") ||
-      (s.status?.includes("approved") &&
-        !s.status?.includes("kades_approved")),
-  ).length;
+const sedangDiproses = dataRiwayat.filter((s) =>
+  [
+    "pending",
+    "rt_approved",
+    "rw_approved",
+    "kadus_approved",
+  ].includes(s.status)
+).length;
 
-
-  const disetujuiFinal = dataRiwayat.filter(
-    (s) => s.status === "kades_approved",
-  ).length;
+const disetujuiFinal = dataRiwayat.filter(
+  (s) => s.status === "kasi_approved"
+).length;
 
 
   return (

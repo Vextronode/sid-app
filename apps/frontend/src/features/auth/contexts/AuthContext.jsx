@@ -33,10 +33,16 @@ const [isLoading, setIsLoading] = useState(true);
     }
   };
 
+  // Mengambil data user yang sedang login dari session Laravel
+  // kemudian menyimpannya ke AuthContext.
+  // Data user juga dikembalikan agar bisa digunakan
+  // untuk redirect berdasarkan role setelah login.
   const login = async () => {
-      const { data } = await api.get("/api/user");
+    const { data } = await api.get("/api/user");
 
-      setUser(data);
+    setUser(data);
+
+    return data;
   };
 
   const logout = async () => {

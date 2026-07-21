@@ -151,181 +151,61 @@ export function DynamicSuratForm({
 
 
 
-  const handleSubmit = async(e)=>{
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
+  if (!Array.isArray(letterTypes) || letterTypes.length === 0) {
+    alert("Jenis surat masih dimuat.");
+    return;
+  }
 
-    e.preventDefault();
+  const selectedLetterType = letterTypes.find(
+    (item) => item.code === config.code
+  );
 
+  if (!selectedLetterType) {
+    alert("Jenis surat tidak ditemukan.");
+    return;
+  }
 
+  const payload = new FormData();
 
-    /*
-      Cari surat berdasarkan code
-      contoh:
-      A04 -> database letter_types
-    */
+  payload.append("letter_type_id", selectedLetterType.id);
 
-    const selectedLetterType =
-      letterTypes.find(
-        item =>
-          item.code === config.code
-      );
+  // purpose
+  if (formData.keperluan) {
+    payload.append("purpose", formData.keperluan);
+  }
 
+  // notes
+  if (formData.catatan) {
+    payload.append("notes", formData.catatan);
+  }
 
+  // attachments
+  if (Array.isArray(formData.dokumen)) {
+    formData.dokumen.forEach((file) => {
+      payload.append("attachments[]", file);
+    });
+  }
 
-    if(!selectedLetterType){
+  try {
+    const response = await submitSurat(payload);
 
-      alert(
-        "Jenis surat belum tersedia di database"
-      );
+    console.log(response);
 
-      console.error(
-        "Letter type tidak ditemukan:",
-        config.code
-      );
+    onSubmit?.(response);
+  } catch (error) {
+    console.error(error);
 
-      return;
+    console.log(error.response?.data);
 
-    }
-
-
-
-    const payload = new FormData();
-
-
-
-    /*
-      WAJIB:
-      Laravel membutuhkan ID
-      bukan code
-    */
-
-    payload.append(
-      "letter_type_id",
-      selectedLetterType.id
+    alert(
+      error.response?.data?.message ??
+      "Gagal mengirim surat."
     );
-
-
-
-
-    Object.entries(formData)
-      .forEach(([key,value])=>{
-
-
-        if(value === null || value === undefined)
-          return;
-
-
-
-
-        /*
-          Mapping frontend
-          ke backend
-        */
-
-
-        if(key==="keperluan"){
-
-          payload.append(
-            "purpose",
-            value
-          );
-
-          return;
-
-        }
-
-
-
-
-        if(key==="catatan"){
-
-          payload.append(
-            "notes",
-            value
-          );
-
-          return;
-
-        }
-
-
-
-
-
-        if(
-          key==="dokumen" &&
-          Array.isArray(value)
-        ){
-
-          value.forEach(file=>{
-
-            payload.append(
-              "attachments[]",
-              file
-            );
-
-          });
-
-
-          return;
-
-        }
-
-
-
-
-        /*
-          Field tambahan
-          nama_usaha,
-          jenis_usaha,
-          dll
-        */
-
-        payload.append(
-          key,
-          value
-        );
-
-
-      });
-
-
-
-
-
-    try{
-
-
-      const response =
-        await submitSurat(payload);
-
-
-
-      console.log(
-        "Submit surat berhasil:",
-        response
-      );
-
-
-
-      onSubmit?.(response);
-
-
-
-    }
-    catch(error){
-
-
-      console.error(
-        "Submit surat gagal:",
-        error
-      );
-
-
-    }
-
-
-  };
+  }
+};
 
 
 

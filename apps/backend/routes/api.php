@@ -50,6 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
                 'citizen.hamlet',
                 'citizen.rt',
                 'citizen.rw',
+                'official'
             ]);
 
     });
@@ -71,14 +72,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     Route::prefix('rt')->group(function () {
+
         Route::get(
             '/letters',
-            [RtApprovalController::class, 'index']
+            [RtApprovalController::class,'index']
         );
+
+
+        Route::get(
+            '/letters/{letter}',
+            [RtApprovalController::class,'show']
+        );
+
 
         Route::patch(
             '/letters/{letter}/decision',
-            [RtApprovalController::class, 'decision']
+            [RtApprovalController::class,'decision']
         );
 
     });
@@ -93,6 +102,10 @@ Route::middleware('auth:sanctum')->group(function () {
             '/letters',
             [RwApprovalController::class, 'index']
         );
+        Route::get(
+            '/letters/{letter}',
+            [RwApprovalController::class, 'show']
+);
 
     });
 
@@ -107,6 +120,10 @@ Route::middleware('auth:sanctum')->group(function () {
             '/approvals/{letter}/approve',
             [KasiApprovalController::class, 'approve']
         );
+                Route::get(
+                '/letters/{letter}',
+                [KasiApprovalController::class,'show']
+            );    
 
     });
 
@@ -121,6 +138,10 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::patch(
                 '/letters/{letter}/decision',
                 [KadusApprovalController::class, 'decision']
+            );
+            Route::get(
+                '/letters/{letter}',
+                [KadusApprovalController::class,'show']
             );
     });
 
