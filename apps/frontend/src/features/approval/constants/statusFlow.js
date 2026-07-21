@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 export const APPROVAL_FLOW = ['pending', 'rt', 'rw', 'kadus', 'petugas'];
 
 // Label & warna badge untuk tiap status yang mungkin muncul
@@ -9,12 +10,14 @@ export const STATUS_BADGE = {
   rw_rejected: { label: 'rw_rejected', className: 'bg-red-100 text-red-700' },
   kadus_approved: { label: 'kadus_approved', className: 'bg-green-100 text-green-700' },
   kadus_rejected: { label: 'kadus_rejected', className: 'bg-red-100 text-red-700' },
-  petugas_approved: { label: 'petugas_approved', className: 'bg-emerald-100 text-emerald-700' },
-  petugas_rejected: { label: 'petugas_rejected', className: 'bg-red-100 text-red-700' },
+  kaur_approved: { label: 'kaur_approved', className: 'bg-emerald-100 text-emerald-700' },
+  kaur_rejected: { label: 'kaur_rejected', className: 'bg-red-100 text-red-700' },
+  kasi_approved: { label: 'kasi_approved', className: 'bg-emerald-100 text-emerald-700' },
+  kasi_rejected: { label: 'kasi_rejected', className: 'bg-red-100 text-red-700' },
 };
 
 // Progress stepper (dipakai di halaman detail semua role)
-export const STEP_LABELS = ['Submit', 'RT', 'RW', 'Kadus', 'Petugas Desa', 'Selesai'];
+export const STEP_LABELS = ['Submit', 'RT', 'RW', 'Kadus', 'Kasi/Kaur', 'Selesai'];
 
 // Hitung currentStep untuk ApprovalStepper berdasarkan status surat saat ini
 export function getStepIndex(status) {
@@ -26,8 +29,10 @@ export function getStepIndex(status) {
     rw_rejected: 3,
     kadus_approved: 4,
     kadus_rejected: 4,
-    petugas_approved: 5,
-    petugas_rejected: 5,
+    kaur_approved: 5, 
+    kaur_rejected: 5,
+    kasi_approved: 5, 
+    kasi_rejected: 5,
   };
   return map[status] ?? 0;
 }
@@ -53,17 +58,17 @@ export function getStepStatuses(surat) {
   const kadusRejected = status === 'kadus_rejected';
   const kadusEntry = findRiwayat('Kadus');
 
-  const petugasStarted = ['kadus_approved', 'petugas_approved', 'petugas_rejected'].includes(status);
-  const petugasDone = status === 'petugas_approved';
-  const petugasRejected = status === 'petugas_rejected';
-  const petugasEntry = findRiwayat('Petugas Desa');
+  const finalStarted = ['kadus_approved', 'kaur_approved', 'kaur_rejected', 'kasi_approved', 'kasi_rejected'].includes(status);
+  const finalDone = status === 'kaur_approved' || status === 'kasi_approved';
+  const finalRejected = status === 'kaur_rejected' || status === 'kasi_rejected';
+  const finalEntry = findRiwayat('Kaur TU Umum') ?? findRiwayat('Kasi Pelayanan');
 
   return [
     { label: 'Submit', state: 'done', timestamp: diajukan_at },
     { label: 'RT', state: rtRejected ? 'rejected' : rtDone ? 'done' : 'current', timestamp: rtEntry?.waktu ?? (rtDone ? terakhir_diproses_at : null) },
     { label: 'RW', state: rwRejected ? 'rejected' : rwDone ? 'done' : rwStarted ? 'current' : 'waiting', timestamp: rwEntry?.waktu ?? null },
     { label: 'Kadus', state: kadusRejected ? 'rejected' : kadusDone ? 'done' : kadusStarted ? 'current' : 'waiting', timestamp: kadusEntry?.waktu ?? null },
-    { label: 'Petugas Desa', state: petugasRejected ? 'rejected' : petugasDone ? 'done' : petugasStarted ? 'current' : 'waiting', timestamp: petugasEntry?.waktu ?? null },
-    { label: 'Selesai', state: petugasDone ? 'done' : 'waiting', timestamp: null },
+    { label: 'Kasi/Kaur', state: finalRejected ? 'rejected' : finalDone ? 'done' : finalStarted ? 'current' : 'waiting', timestamp: finalEntry?.waktu ?? null },
+    { label: 'Selesai', state: finalDone ? 'done' : 'waiting', timestamp: null },
   ];
 }

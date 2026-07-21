@@ -29,6 +29,12 @@ import KelolaBeritaPage from "@/pages/admin/KelolaBeritaPage";
 import KelolaProfilDesaPage from "@/pages/admin/KelolaProfilDesaPage";
 import KadesDashboardPage from "@/pages/admin/KadesDashboardPage";
 import KadesListPage from "@/pages/admin/KadesListPage";
+import AjukanSuratPage from "@/pages/AjukanSuratPage";
+import RiwayatSuratPage from "@/pages/RiwayatSuratPage";
+import KaurDashboardPage from "@/pages/admin/KaurDashboardPage";
+import KaurListPage from "@/pages/admin/KaurListPage";
+import KasiDashboardPage from "@/pages/admin/KasiDashboardPage";
+import KasiListPage from "@/pages/admin/KasiListPage";
 
 const GuestRoute = ({ children }) => {
   const { user } = useAuth();
@@ -247,17 +253,18 @@ export default function App() {
             </ProtectedRoute>} />
 
             <Route
-  path="/admin/dashboard-surat-kades"
-  element={
-    <ProtectedRoute>
-      <AdminLayout>
-        <KadesDashboardPage />
-      </AdminLayout>
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/admin/list-kades"
+              path="/admin/dashboard-surat-kades"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                   <KadesDashboardPage />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+
+          <Route
+          path="/admin/list-kades"
   element={
     <ProtectedRoute>
       <AdminLayout>
@@ -266,6 +273,42 @@ export default function App() {
     </ProtectedRoute>
   }
 />
+
+<Route
+  path="/ajukan-surat"
+  element={
+    <ProtectedRoute>
+      <MainLayout>
+        <AjukanSuratPage />
+      </MainLayout>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/riwayat-surat"
+  element={
+    <ProtectedRoute>
+      <MainLayout>
+        <RiwayatSuratPage />
+      </MainLayout>
+    </ProtectedRoute>
+  }
+/>
+
+            <Route 
+path="/admin/dashboard-surat-kaur" 
+element={
+<ProtectedRoute>
+  <AdminLayout>
+    <KaurDashboardPage />
+    </AdminLayout>
+    </ProtectedRoute>
+  }
+   />
+<Route path="/admin/list-kaur" element={<ProtectedRoute><AdminLayout><KaurListPage /></AdminLayout></ProtectedRoute>} />
+<Route path="/admin/dashboard-surat-kasi" element={<ProtectedRoute><AdminLayout><KasiDashboardPage /></AdminLayout></ProtectedRoute>} />
+<Route path="/admin/list-kasi" element={<ProtectedRoute><AdminLayout><KasiListPage /></AdminLayout></ProtectedRoute>} />
 
           <Route
             path="/login"
