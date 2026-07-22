@@ -23,7 +23,6 @@ return new class extends Migration
                 'kasi_pelayanan',
                 'kaur_tu_umum',
                 'petugas_desa',
-                'kepala_desa',
                 'sekdes',
                 'kasi_kesejahteraan',
                 'kasi_pemerintahan',
@@ -32,7 +31,7 @@ return new class extends Migration
                 'staf_sipades',
                 'staf_siskeudes',
             ]);
-            $table->foreignId('village_id')->constrained()->nullOnDelete();
+            $table->foreignId('village_id')->constrained('villages')->cascadeOnDelete();
             $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
             $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
             $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();

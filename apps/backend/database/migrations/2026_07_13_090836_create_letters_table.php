@@ -34,7 +34,7 @@ return new class extends Migration
             ])->default('pending');
             $table->boolean('is_overdue')->default(false);
             $table->timestamp('expires_at')->nullable();
-            $table->timestamp('submitted_at');
+            $table->timestamp('submitted_at')->useCurrent();
             $table->timestamp('processed_at')->nullable();
             $table->timestamps();
         });
