@@ -23,13 +23,14 @@ class LetterApprovalService
         );
 
 
-        $approval = LetterApproval::create([
-            'letter_id' => $letter->id,
-            'official_id' => $official->id,
-            'status' => $status,
-            'notes' => $notes,
-            'approved_at' => now(),
-        ]);
+        $letter->approvals()
+            ->where('approval_level', 'rw')
+            ->whereNull('approved_by')
+            ->latest()
+            ->first()
+            ?->update([
+                'approved_by' => $user->id,
+            ]);
 
 
         $letter->update([

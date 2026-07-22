@@ -128,7 +128,7 @@ export default function KadusDetailPage() {
         />
 
 {surat.status === "rw_approved" ? (
-  <ApprovalActionBarKasi
+  <ApprovalActionBarKadus
     onApprove={handleApprove}
     onReject={() =>
       setRejectModalOpen(true)

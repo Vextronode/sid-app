@@ -11,6 +11,7 @@ import ApprovalStepperKadus from "./ApprovalStepperKadus";
 import SuratInfoGridKadus from "./SuratInfoGridKadus";
 import ApprovalActionBarKadus from "./ApprovalActionBarKadus";
 import RejectReasonModalKadus from "./RejectReasonModalKadus";
+import ApprovalHistoryKadus from "./ApprovalHistoryKadus";
 
 export default function SuratDetailModalKadus({
   suratId,
