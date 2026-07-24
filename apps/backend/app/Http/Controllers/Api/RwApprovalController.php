@@ -42,4 +42,25 @@ class RwApprovalController extends Controller
             'message' => 'Surat berhasil diproses.',
         ]);
     }
+
+        /**
+     * ============================================================
+     * Detail surat yang sedang diproses RW
+     * ============================================================
+     */
+    public function show(
+        Request $request,
+        Letter $letter
+    )
+    {
+        $detail = $this->service->getLetterDetail(
+            $letter,
+            $request->user()
+        );
+
+        return response()->json([
+            'message' => 'Detail surat berhasil diambil.',
+            'data' => $detail,
+        ]);
+    }
 }

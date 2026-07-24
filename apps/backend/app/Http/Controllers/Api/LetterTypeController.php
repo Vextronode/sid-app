@@ -15,6 +15,9 @@ class LetterTypeController extends Controller
             ->orderBy('name')
             ->get();
 
-        return response()->json($letterTypes);
+        return response()->json([
+            'message' => 'Daftar jenis surat berhasil diambil.',
+            'data' => $letterTypes,
+        ]);
     }
 }

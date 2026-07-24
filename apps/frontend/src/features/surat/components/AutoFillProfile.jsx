@@ -19,7 +19,7 @@ export function AutoFillProfile({ user }) {
         <input
           type="text"
           disabled
-          value={user?.nik || "****-****-0042"}
+          value={user?.citizen?.nik || "****-****-0042"}
           className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed outline-none"
         />
       </div>
@@ -30,7 +30,7 @@ export function AutoFillProfile({ user }) {
         <input
           type="text"
           disabled
-          value={user?.alamat || "Alamat belum diatur"}
+          value={user?.citizen?.address || "Alamat belum diatur"}
           className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed outline-none"
         />
       </div>
@@ -41,7 +41,7 @@ export function AutoFillProfile({ user }) {
         <input
           type="text"
           disabled
-          value={user?.rtrw || "000/000"}
+          value={`${user?.citizen?.rt?.number ?? ""}/${user?.citizen?.rw?.number ?? ""}`|| "000/000"}
           className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed outline-none"
         />
       </div>

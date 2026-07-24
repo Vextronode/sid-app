@@ -17,13 +17,31 @@ class KasiApprovalService
     public function getPendingLetters(User $user)
     {
         return Letter::query()
-            ->where('status', LetterStatus::KadusApproved)
+            ->whereIn('status', [
+
+                LetterStatus::KadusApproved,
+
+                LetterStatus::KasiApproved,
+
+                LetterStatus::KasiRejected,
+
+            ])
             ->whereHas('letterType', function ($query) use ($user) {
-                $query->where('assigned_role', $user->role);
+
+                $query->where(
+                    'assigned_role',
+                    $user->role
+                );
+
             })
             ->with([
+
                 'citizen',
+
                 'letterType',
+
+                'approvals.approvedBy:id,name',
+
             ])
             ->latest()
             ->get();
@@ -75,7 +93,7 @@ class KasiApprovalService
             if ($data['status'] === 'approved') {
 
                 $letter->approvals()
-                    ->where('approval_level', 'kadus')
+                    ->where('approval_level', 'kasi')
                     ->update([
                         'approved_by' => $user->id,
                     ]);
@@ -109,8 +127,7 @@ class KasiApprovalService
                 'reason' => $data['notes'] ?? null,
             ]);
 
-            $citizenUser = $this->officialService
-                ->resolveCitizenUser($letter);
+            $citizenUser = $letter->citizen->user;
 
             if ($data['status'] === 'approved') {
 

@@ -13,10 +13,6 @@ class LetterApproval extends Model
         'approval_level',
         'deadline_at',
         'reminded_at',
-        'official_id',
-        'status',
-        'notes',
-        'approved_at',
     ];
 
     protected $casts = [

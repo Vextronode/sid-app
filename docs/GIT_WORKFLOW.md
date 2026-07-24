@@ -213,11 +213,7 @@ git pull org dev --rebase
 Git akan menandai file seperti berikut:
 
 ```text
-<<<<<<< HEAD
 Perubahan branch saat ini
-=======
-Perubahan dari dev
->>>>>>> commit-hash
 ```
 
 ---
@@ -229,9 +225,6 @@ Perubahan dari dev
 - Hapus seluruh marker:
 
 ```text
-<<<<<<<
-=======
->>>>>>>
 ```
 
 ---
