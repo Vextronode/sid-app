@@ -1,29 +1,268 @@
-import { useState, useMemo } from 'react';
-import { dummySurat } from '@/features/approval/data/dummySurat';
-import { RELEVANT_STATUSES } from '../constants/roleConfigkadus';
+import {
+  useEffect,
+  useMemo,
+  useState
+} from "react";
 
-export function useSuratList({ initialStatus = '' } = {}) {
-  const [search, setSearch] = useState('');
-  const [filterJenis, setFilterJenis] = useState('');
-  const [filterStatus, setFilterStatus] = useState(initialStatus);
-  const [version, setVersion] = useState(0);
 
-  const data = useMemo(() => {
-    let result = dummySurat.filter((s) => RELEVANT_STATUSES.includes(s.status));
+import {
+  getSuratList
+} from "@/features/approval/api";
 
-    if (filterJenis) result = result.filter((s) => s.jenis === filterJenis);
-    if (filterStatus) result = result.filter((s) => s.status === filterStatus);
-    if (search) result = result.filter((s) => s.pemohon.toLowerCase().includes(search.toLowerCase()));
 
-    return result;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, filterJenis, filterStatus, version]);
+import {
+  RELEVANT_STATUSES
+} from "../constants/roleConfigKadus";
 
-  const deleteSurat = (id) => {
-    const index = dummySurat.findIndex((s) => s.id === id);
-    if (index !== -1) dummySurat.splice(index, 1);
-    setVersion((v) => v + 1);
+
+
+export function useSuratListKadus({
+  initialStatus = ""
+} = {}) {
+
+
+
+  const [letters, setLetters] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+
+
+
+  const [search, setSearch] = useState("");
+
+  const [filterJenis, setFilterJenis] = useState("");
+
+  const [filterStatus, setFilterStatus] =
+    useState(initialStatus);
+
+
+
+
+
+
+
+  // ==========================================
+  // Ambil surat Kadus
+  // ==========================================
+
+  const fetchLetters = async()=>{
+
+
+    try{
+
+
+      setLoading(true);
+
+
+
+      const response =
+        await getSuratList("kadus");
+
+
+
+      setLetters(
+        response.data.data ?? []
+      );
+
+
+
+    }catch(error){
+
+
+      console.error(
+        "GET KADUS LETTER ERROR",
+        error.response?.data ?? error
+      );
+
+
+
+      setLetters([]);
+
+
+
+    }finally{
+
+
+      setLoading(false);
+
+
+    }
+
+
   };
 
-  return { data, search, setSearch, filterStatus, setFilterStatus, setFilterJenis, deleteSurat };
+
+
+
+
+
+
+  useEffect(()=>{
+
+
+    fetchLetters();
+
+
+  },[]);
+
+
+
+
+
+
+
+
+  // ==========================================
+  // Filter data
+  // ==========================================
+
+  const data = useMemo(()=>{
+
+
+    let result = [
+      ...letters
+    ];
+
+
+
+
+
+    // status yang boleh tampil Kadus
+
+    result =
+      result.filter(letter =>
+        RELEVANT_STATUSES.includes(
+          letter.status
+        )
+      );
+
+
+
+
+
+
+
+    // filter jenis surat
+
+    if(filterJenis){
+
+
+      result =
+        result.filter(letter =>
+          letter.letter_type?.name
+          === filterJenis
+        );
+
+
+    }
+
+
+
+
+
+
+
+
+    // filter status
+
+    if(filterStatus){
+
+
+      result =
+        result.filter(letter =>
+          letter.status
+          === filterStatus
+        );
+
+
+    }
+
+
+
+
+
+
+
+
+    // pencarian nama pemohon
+
+    if(search){
+
+
+      result =
+        result.filter(letter =>
+
+
+          letter.citizen?.name
+          ?.toLowerCase()
+          .includes(
+            search.toLowerCase()
+          )
+
+
+        );
+
+
+    }
+
+
+
+
+
+
+    return result;
+
+
+
+  },[
+
+    letters,
+
+    filterJenis,
+
+    filterStatus,
+
+    search
+
+  ]);
+
+
+
+
+
+
+
+  return {
+
+
+
+    data,
+
+
+
+    loading,
+
+
+
+    search,
+    setSearch,
+
+
+
+    filterJenis,
+    setFilterJenis,
+
+
+
+    filterStatus,
+    setFilterStatus,
+
+
+
+    refresh:
+      fetchLetters
+
+
+  };
+
 }

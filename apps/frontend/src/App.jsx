@@ -9,6 +9,10 @@ import { BeritaPage } from "@/pages/BeritaPage";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ProfilDesaPage } from "@/pages/ProfilDesaPage";
 import { InfoSuratPage } from "@/pages/InfoSuratPage";
+import { PengajuanSuratPage } from "@/pages/PengajuanSuratPage";
+import { DaftarSurat } from "@/pages/DaftarSurat";
+
+
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import RTDashboardPage from "@/pages/admin/RTDashboardPage";
 import RTListPage from "@/pages/admin/RTListPage";
@@ -19,6 +23,9 @@ import RWDetailPage from "@/pages/admin/RWDetailPage";
 import KadusDashboardPage from "@/pages/admin/KadusDashboardPage";
 import KadusListPage from "@/pages/admin/KadusListPage";
 import KadusDetailPage from "@/pages/admin/KadusDetailPage";
+import KasiDashboardPage from "@/pages/admin/KasiDashboardPage";
+import KasiListPage from "@/pages/admin/KasiListPage";
+import KasiDetailPage from "@/pages/admin/KasiDetailPage";
 import PetugasDesaDashboardPage from "@/pages/admin/PetugasDesaDashboardPage";
 import PetugasDesaListPage from "@/pages/admin/PetugasDesaListPage";
 import PetugasDesaDetailPage from "@/pages/admin/PetugasDesaDetailPage";
@@ -29,26 +36,67 @@ import KelolaBeritaPage from "@/pages/admin/KelolaBeritaPage";
 import KelolaProfilDesaPage from "@/pages/admin/KelolaProfilDesaPage";
 import KadesDashboardPage from "@/pages/admin/KadesDashboardPage";
 import KadesListPage from "@/pages/admin/KadesListPage";
-import AjukanSuratPage from "@/pages/AjukanSuratPage";
-import RiwayatSuratPage from "@/pages/RiwayatSuratPage";
-import KaurDashboardPage from "@/pages/admin/KaurDashboardPage";
-import KaurListPage from "@/pages/admin/KaurListPage";
-import KasiDashboardPage from "@/pages/admin/KasiDashboardPage";
-import KasiListPage from "@/pages/admin/KasiListPage";
 
+// Route khusus untuk user yang belum login.
+// Jika user sudah login, arahkan ke halaman sesuai role.
 const GuestRoute = ({ children }) => {
-  const { user } = useAuth();
-  if (user) {
-    return <Navigate to="/" replace />;
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
   }
+
+  if (user) {
+    switch (user.role) {
+      case "rt":
+        return <Navigate to="/admin/dashboard-surat-rt" replace />;
+
+      case "rw":
+        return <Navigate to="/admin/dashboard-surat-rw" replace />;
+
+      case "kadus":
+        return <Navigate to="/admin/dashboard-surat-kadus" replace />;
+        
+      case "kasi":
+        return <Navigate to="/admin/dashboard-surat-kasi" replace />;
+
+      case "petugas_desa":
+        return <Navigate to="/admin/dashboard-surat-petugas-desa" replace />;
+
+      case "kepala_desa":
+        return <Navigate to="/admin/dashboard-surat-kades" replace />;
+
+      default:
+        return <Navigate to="/" replace />;
+    }
+  }
+
   return children;
 };
 
-const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
+// Route yang hanya bisa diakses oleh user yang sudah login.
+// Jika diberikan allowedRoles, maka hanya role tersebut
+// yang dapat mengakses halaman.
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  // Belum login
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  // Jika halaman memiliki pembatasan role
+  if (
+    allowedRoles.length > 0 &&
+    !allowedRoles.includes(user.role)
+  ) {
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 };
 
@@ -102,10 +150,31 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/daftar-surat"
+            element={
+              <ProtectedRoute allowedRoles={["warga"]}>
+                <MainLayout>
+                  <DaftarSurat />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/pengajuan-surat/:kode"
+            element={
+              <ProtectedRoute allowedRoles={["warga"]}>
+                <MainLayout>
+                  <PengajuanSuratPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
           <Route 
             path="admin/dashboard-surat-rt" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["rt"]}>
                   <AdminLayout>
                   <RTDashboardPage />
                   </AdminLayout>  
@@ -114,9 +183,9 @@ export default function App() {
             />
 
           <Route 
-            path="admin/list-rt" 
+            path="/admin/dashboard-surat-rt/list" 
             element= {
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["rt"]}>
                 
                   <AdminLayout>
                   <RTListPage /> 
@@ -127,7 +196,7 @@ export default function App() {
           <Route 
             path="admin/dashboard-surat-rt/detail-permohonan/:id" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["rt"]}>
                  <AdminLayout>
                  <RTDetailPage />
                 </AdminLayout>
@@ -137,16 +206,16 @@ export default function App() {
           <Route 
             path="admin/dashboard-surat-rw" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["rw"]}>
                 <AdminLayout>
                  <RWDashboardPage />
                 </AdminLayout>
               </ProtectedRoute>} />
 
           <Route 
-            path="admin/list-rw" 
+            path="/admin/dashboard-surat-rw/list" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["rw"]}>
                 <AdminLayout>
                   <RWListPage />
                 </AdminLayout>
@@ -155,7 +224,7 @@ export default function App() {
           <Route 
             path="admin/dashboard-surat-rw/detail-permohonan/:id" 
             element={
-                <ProtectedRoute> 
+                <ProtectedRoute allowedRoles={["rw"]}> 
                   <AdminLayout>
                     <RWDetailPage />
                     </AdminLayout>
@@ -165,16 +234,16 @@ export default function App() {
           <Route 
           path="admin/dashboard-surat-kadus" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["kadus"]}>
               <AdminLayout>
                 <KadusDashboardPage />
               </AdminLayout>
             </ProtectedRoute>} />
 
           <Route 
-          path="admin/list-kadus" 
+          path="/admin/dashboard-surat-kadus/list" 
           element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["kadus"]}>
             <AdminLayout>
               <KadusListPage />
             </AdminLayout>
@@ -183,16 +252,43 @@ export default function App() {
           <Route 
           path="admin/dashboard-surat-kadus/detail-permohonan/:id" 
           element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["kadus"]}>
              <AdminLayout>
               <KadusDetailPage />
+            </AdminLayout>
+          </ProtectedRoute>} />
+            
+            <Route 
+          path="admin/dashboard-surat-kasi" 
+          element={
+            <ProtectedRoute allowedRoles={["kasi_pelayanan"]}>
+              <AdminLayout>
+                <KasiDashboardPage />
+              </AdminLayout>
+            </ProtectedRoute>} />
+
+          <Route 
+          path="/admin/dashboard-surat-kasi/list" 
+          element={
+          <ProtectedRoute allowedRoles={["kasi_pelayanan"]}>
+            <AdminLayout>
+              <KasiListPage />
+            </AdminLayout>
+              </ProtectedRoute>} />
+
+          <Route 
+          path="admin/dashboard-surat-kasi/detail-permohonan/:id" 
+          element={
+          <ProtectedRoute allowedRoles={["kasi_pelayanan"]}>
+             <AdminLayout>
+              <KasiDetailPage />
             </AdminLayout>
           </ProtectedRoute>} />
 
           <Route 
           path="admin/dashboard-surat-petugas-desa" 
           element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["petugas_desa"]}>
             <AdminLayout menuItems={PETUGAS_DESA_MENU}>
               <PetugasDesaDashboardPage />
             </AdminLayout>
@@ -201,7 +297,7 @@ export default function App() {
           <Route 
           path="admin/list-petugas-desa" 
           element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["petugas_desa"]}>
             <AdminLayout menuItems={PETUGAS_DESA_MENU}>
               <PetugasDesaListPage />
             </AdminLayout>
@@ -210,7 +306,7 @@ export default function App() {
           <Route 
           path="admin/dashboard-surat-petugas-desa/detail-permohonan/:id" 
           element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["petugas_desa"]}>
             <AdminLayout menuItems={PETUGAS_DESA_MENU}>
               <PetugasDesaDetailPage />
             </AdminLayout>
@@ -219,7 +315,7 @@ export default function App() {
           <Route 
             path="/admin/data-warga" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["petugas_desa"]}>
                 <AdminLayout menuItems={PETUGAS_DESA_MENU}>
                   <DataWargaPage />
                 </AdminLayout>
@@ -228,7 +324,7 @@ export default function App() {
           <Route
             path="/admin/manajemen-user" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["petugas_desa"]}>
                 <AdminLayout menuItems={PETUGAS_DESA_MENU}>
                   <ManajemenUserPage />
                 </AdminLayout>
@@ -237,7 +333,7 @@ export default function App() {
           <Route 
             path="/admin/kelola-berita" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["petugas_desa"]}>
                 <AdminLayout menuItems={PETUGAS_DESA_MENU}>
                   <KelolaBeritaPage />
                 </AdminLayout>
@@ -246,69 +342,32 @@ export default function App() {
           <Route 
           path="/admin/kelola-profil-desa" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["petugas_desa"]}>
               <AdminLayout menuItems={PETUGAS_DESA_MENU}>
                 <KelolaProfilDesaPage />
               </AdminLayout>
             </ProtectedRoute>} />
 
             <Route
-              path="/admin/dashboard-surat-kades"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                   <KadesDashboardPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-
-          <Route
-          path="/admin/list-kades"
+  path="/admin/dashboard-surat-kades"
   element={
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={["kepala_desa"]}>
+      <AdminLayout>
+        <KadesDashboardPage />
+      </AdminLayout>
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/list-kades"
+  element={
+    <ProtectedRoute allowedRoles={["kepala_desa"]}>
       <AdminLayout>
         <KadesListPage />
       </AdminLayout>
     </ProtectedRoute>
   }
 />
-
-<Route
-  path="/ajukan-surat"
-  element={
-    <ProtectedRoute>
-      <MainLayout>
-        <AjukanSuratPage />
-      </MainLayout>
-    </ProtectedRoute>
-  }
-/>
-
-<Route
-  path="/riwayat-surat"
-  element={
-    <ProtectedRoute>
-      <MainLayout>
-        <RiwayatSuratPage />
-      </MainLayout>
-    </ProtectedRoute>
-  }
-/>
-
-            <Route 
-path="/admin/dashboard-surat-kaur" 
-element={
-<ProtectedRoute>
-  <AdminLayout>
-    <KaurDashboardPage />
-    </AdminLayout>
-    </ProtectedRoute>
-  }
-   />
-<Route path="/admin/list-kaur" element={<ProtectedRoute><AdminLayout><KaurListPage /></AdminLayout></ProtectedRoute>} />
-<Route path="/admin/dashboard-surat-kasi" element={<ProtectedRoute><AdminLayout><KasiDashboardPage /></AdminLayout></ProtectedRoute>} />
-<Route path="/admin/list-kasi" element={<ProtectedRoute><AdminLayout><KasiListPage /></AdminLayout></ProtectedRoute>} />
 
           <Route
             path="/login"

@@ -1,100 +1,187 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-// ==========================================
-// KadusListPage.jsx
-// Halaman list surat Kadus. Sama polanya dengan RT/RW: tanpa tab bar,
-// filter via dropdown status, detail lewat modal, pagination berfungsi.
-// ==========================================
+/* eslint-disable no-unused-vars */
 
-import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useSuratList } from '@/features/approval-kadus/hooks/useSuratListkadus';
-import { useApprovalAction } from '@/features/approval-kadus/hooks/useApprovalActionkadus';
-import SuratTablekadus from '@/features/approval-kadus/components/SuratTablekadus';
-import SearchFilterBarkadus from '@/features/approval-kadus/components/SearchFilterBarkadus';
-import Paginationkadus from '@/features/approval-kadus/components/Paginationkadus';
-import SuratDetailModalkadus from '@/features/approval-kadus/components/SuratDetailModalkadus';
-import { BASE_PATH } from '@/features/approval-kadus/constants/roleConfigkadus';
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-const ITEMS_PER_PAGE = 4;
+import { useSuratListKadus } from "@/features/approval-kadus/hooks/useSuratListKadus";
+import { useApprovalActionKadus } from "@/features/approval-kadus/hooks/useApprovalActionKadus";
+
+import SuratTableKadus from "@/features/approval-kadus/components/SuratTableKadus";
+import SearchFilterBarKadus from "@/features/approval-kadus/components/SearchFilterBarKadus";
+import PaginationKadus from "@/features/approval-kadus/components/PaginationKadus";
+import SuratDetailModalKadus from "@/features/approval-kadus/components/SuratDetailModalKadus";
+
+import { BASE_PATH } from "@/features/approval-kadus/constants/roleConfigKadus";
 
 export default function KadusListPage() {
+
   const navigate = useNavigate();
+
   const [searchParams] = useSearchParams();
-  const initialStatus = searchParams.get('status') ?? '';
-  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data, search, setSearch, setFilterJenis, filterStatus, setFilterStatus, deleteSurat } = useSuratList({ initialStatus });
-  const { approve, reject } = useApprovalAction();
+  const initialStatus =
+    searchParams.get("status") ?? "";
+
+  const [
+    currentPage,
+    setCurrentPage,
+  ] = useState(1);
+
+  const [
+    selectedId,
+    setSelectedId,
+  ] = useState(null);
+
+  const [
+    isReadOnly,
+    setIsReadOnly,
+  ] = useState(false);
+
+  const {
+    data,
+    refresh,
+    setSearch,
+    setFilterJenis,
+    filterStatus,
+    setFilterStatus,
+  } = useSuratListKadus({
+    initialStatus,
+  });
+
+  const suratTypes = [
+
+    ...new Map(
+
+      data
+        .filter((item) => item.letter_type)
+        .map((item) => [
+          item.letter_type.id,
+          item.letter_type,
+        ])
+
+    ).values(),
+
+  ];
+
+  const {
+    approve,
+    reject,
+  } = useApprovalActionKadus();
 
   useEffect(() => {
+
     setFilterStatus(initialStatus);
-    setCurrentPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialStatus]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, filterStatus]);
+  }, [
+    initialStatus,
+    setFilterStatus,
+  ]);
 
-  const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE));
+  const handleDelete = () => {
 
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return data.slice(start, start + ITEMS_PER_PAGE);
-  }, [data, currentPage]);
+    alert("Fitur hapus belum tersedia.");
 
-  const [selectedId, setSelectedId] = useState(null);
-  const [isReadOnly, setIsReadOnly] = useState(false);
-
-  const handleDelete = (id) => {
-    if (confirm('Yakin mau hapus surat ini?')) deleteSurat(id);
   };
 
-  const handleApprove = () => {
-    approve(selectedId);
+  const handleApprove = async () => {
+
+    await approve(selectedId);
+
+    await refresh();
+
     setSelectedId(null);
+
   };
 
-  const handleReject = (alasan) => {
-    reject(selectedId, alasan);
+  const handleReject = async (notes) => {
+
+    await reject(
+      selectedId,
+      notes
+    );
+
+    await refresh();
+
     setSelectedId(null);
+
   };
 
   return (
+
     <div className="max-w-5xl mx-auto p-6">
+
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-medium text-gray-800">Semua permohonan surat</h2>
-        <button className="border border-green-500 text-green-600 rounded-full px-4 py-1.5 text-sm">Tambah Surat</button>
+
+        <h2 className="font-medium text-gray-800">
+          Semua permohonan surat
+        </h2>
+
+        <button className="border border-green-500 text-green-600 rounded-full px-4 py-1.5 text-sm">
+          Tambah Surat
+        </button>
+
       </div>
 
-      <SearchFilterBarkadus
+      <SearchFilterBarKadus
         onSearch={setSearch}
         onFilterJenis={setFilterJenis}
         onFilterStatus={setFilterStatus}
         selectedStatus={filterStatus}
+        suratTypes={suratTypes}
       />
 
-      <SuratTablekadus
-        data={paginatedData}
-        onView={(id) => { setSelectedId(id); setIsReadOnly(true); }}
-        onEdit={(id) => { setSelectedId(id); setIsReadOnly(false); }}
+      <SuratTableKadus
+        data={data}
+        onView={(id) => {
+
+          navigate(
+            `/admin/dashboard-surat-kadus/detail-permohonan/${id}`
+          );
+
+        }}
+        onEdit={(id) => {
+
+          setSelectedId(id);
+
+          setIsReadOnly(false);
+
+        }}
         onDelete={handleDelete}
       />
 
       <div className="flex items-center justify-between mt-4">
-        <button onClick={() => navigate(BASE_PATH)} className="border border-green-500 text-green-600 rounded-full px-4 py-1.5 text-sm">
+
+        <button
+          onClick={() => navigate(BASE_PATH)}
+          className="border border-green-500 text-green-600 rounded-full px-4 py-1.5 text-sm"
+        >
           Kembali
         </button>
-        <Paginationkadus currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+
+        <PaginationKadus
+          currentPage={currentPage}
+          totalPages={3}
+          onPageChange={setCurrentPage}
+        />
+
       </div>
 
-      <SuratDetailModalkadus
+      <SuratDetailModalKadus
         suratId={selectedId}
-        onClose={() => { setSelectedId(null); setIsReadOnly(false); }}
+        readOnly={isReadOnly}
+        onClose={() => {
+
+          setSelectedId(null);
+
+          setIsReadOnly(false);
+
+        }}
         onApprove={handleApprove}
         onReject={handleReject}
-        readOnly={isReadOnly}
       />
+
     </div>
+
   );
+
 }

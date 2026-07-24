@@ -31,7 +31,7 @@ return new class extends Migration
                 'staf_sipades',
                 'staf_siskeudes',
             ]);
-            $table->foreignId('village_id')->constrained('villages')->cascadeOnDelete();
+            $table->foreignId('village_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
             $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
             $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();

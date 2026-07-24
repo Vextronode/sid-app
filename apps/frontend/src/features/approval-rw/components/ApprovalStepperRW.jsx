@@ -2,6 +2,11 @@ import { Check, Clock, X } from 'lucide-react';
 import { getStepStatuses } from '@/features/approval/constants/statusFlow';
 
 export default function ApprovalStepperRW({ surat }) {
+  
+  if(!surat){
+    return null;
+  }
+  
   const steps = getStepStatuses(surat);
 
   return (
@@ -14,7 +19,9 @@ export default function ApprovalStepperRW({ surat }) {
         if (step.state === 'done') {
           circleClass = 'bg-green-500 text-white';
           icon = <Check size={16} />;
-          statusText = step.timestamp ?? 'Selesai';
+          statusText = step.timestamp
+            ? new Date(step.timestamp).toLocaleDateString("id-ID")
+            : "Selesai";
         } else if (step.state === 'rejected') {
           circleClass = 'bg-red-500 text-white';
           icon = <X size={16} />;

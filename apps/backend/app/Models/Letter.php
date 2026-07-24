@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\LetterStatus;
+use App\Models\LetterApproval;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 
 class Letter extends Model
@@ -30,15 +34,16 @@ class Letter extends Model
     ];
 
     protected $casts = [
-        'applicant_nik_hash' => 'encrypted',
+        'applicant_nik' => 'encrypted',
         'applicant_address' => 'encrypted',
+
         'status' => LetterStatus::class,
+
         'is_overdue' => 'boolean',
         'expires_at' => 'datetime',
         'submitted_at' => 'datetime',
         'processed_at' => 'datetime',
     ];
-
 
     protected static function booted(): void
     {
@@ -49,9 +54,32 @@ class Letter extends Model
         });
     }
 
+    protected $appends = [
+        'is_overdue',
+    ];
+
+    public function getIsOverdueAttribute(): bool
+    {
+        $approval = $this->approvals
+            ->whereNull('approved_at')
+            ->sortBy('deadline_at')
+            ->first();
+
+        if (! $approval || ! $approval->deadline_at) {
+            return false;
+        }
+
+        return now()->gt($approval->deadline_at);
+    }
+
     public function village()
     {
         return $this->belongsTo(Village::class);
+    }
+
+    public function approvals()
+    {
+        return $this->hasMany(LetterApproval::class);
     }
 
     public function letterType()
@@ -64,5 +92,14 @@ class Letter extends Model
         return $this->belongsTo(User::class, 'submitted_by');
     }
 
+    public function statusLogs()
+    {
+        return $this->hasMany(LetterStatusLog::class)->latest('created_at');
+    }
+
+    public function citizen(): BelongsTo
+    {
+        return $this->belongsTo(Citizen::class);
+    }
 
 }

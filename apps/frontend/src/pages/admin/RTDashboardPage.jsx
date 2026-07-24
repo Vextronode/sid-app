@@ -11,9 +11,9 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, ClipboardList, Bell, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { dummySurat } from '@/features/approval/data/dummySurat';
 import StatCardRT from '@/features/approval-rt/components/StatCardRT';
 import { BASE_PATH } from '@/features/approval-rt/constants/roleConfig';
+import { useSuratList } from "@/features/approval-rt/hooks/useSuratList";
 
 // key harus persis sama dengan value status di data surat.
 // key kosong ('') artinya "tampilkan semua status" (dropdown "Semua Status").
@@ -27,16 +27,17 @@ const QUICK_NAV = [
 export default function RTDashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { data } = useSuratList();
 
-  const stats = useMemo(() => {
-    const total = dummySurat.length;
-    const ditolak = dummySurat.filter((s) => s.status.endsWith('_rejected')).length;
-    const disetujuiFinal = dummySurat.filter((s) => s.status === 'petugas_approved').length;
-    const sedangDiproses = dummySurat.filter(
-      (s) => !s.status.endsWith('_rejected') && s.status !== 'petugas_approved' && s.status !== 'pending'
-    ).length;
-    return { total, ditolak, disetujuiFinal, sedangDiproses };
-  }, []);
+  const stats = useMemo(() => ({
+      total: data.length,
+
+      pending: data.filter(s => s.status === "pending").length,
+
+      approved: data.filter(s => s.status === "rt_approved").length,
+
+      rejected: data.filter(s => s.status === "rt_rejected").length,
+  }), [data]);
 
   return (
     <div className="max-w-5xl mx-auto py-6">
@@ -49,7 +50,7 @@ export default function RTDashboardPage() {
           return (
             <button
               key={item.label}
-              onClick={() => navigate(`/admin/list-rt?status=${item.key}`)}
+              onClick={() => navigate( `${BASE_PATH}/list?status=${item.key}`)}
               className="flex flex-col items-center justify-center gap-2 border rounded-xl px-6 py-3 hover:bg-gray-50 flex-1"
             >
               <Icon size={16} className="text-gray-400" />
@@ -70,10 +71,29 @@ export default function RTDashboardPage() {
       <p className="text-sm text-gray-500 mb-6">Wilayah: {user?.wilayah_label ?? 'RT 001, RW001 - Desa Cibenda'}</p>
 
       <div className="grid grid-cols-2 gap-6 max-w-2xl">
-        <StatCardRT icon={<ClipboardList size={18} />} value={stats.ditolak} label="Total ditolak" />
-        <StatCardRT icon={<Bell size={18} />} value={stats.sedangDiproses} label="Sedang diproses" />
-        <StatCardRT icon={<X size={18} />} value={stats.total} label="Total Permohonan" />
-        <StatCardRT icon={<CheckCircle2 size={18} />} value={stats.disetujuiFinal} label="Disetujui final" />
+        <StatCardRT
+            icon={<ClipboardList size={18} />}
+            value={stats.pending}
+            label="Menunggu"
+        />
+
+        <StatCardRT
+            icon={<CheckCircle2 size={18} />}
+            value={stats.approved}
+            label="Disetujui"
+        />
+
+        <StatCardRT
+            icon={<X size={18} />}
+            value={stats.rejected}
+            label="Ditolak"
+        />
+
+        <StatCardRT
+            icon={<Bell size={18} />}
+            value={stats.total}
+            label="Total Surat"
+        />
       </div>
     </div>
   );

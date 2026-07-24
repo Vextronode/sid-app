@@ -1,57 +1,66 @@
-/* eslint-disable no-undef */
-/* eslint-disable no-unused-vars */
 import { createContext, useContext, useState, useEffect } from "react";
+import api from "@/lib/api";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
- 
-  const [user, setUser] = useState({ role: 'rt', wilayah_kode: '001', wilayah_label: 'RT 001, RW001 - Desa Cibenda' });
+const [user, setUser] = useState(null);
+const [isLoading, setIsLoading] = useState(true);
 
-  // State loading buat nungguin response dari server
-  // Default false dulu soale API belum ada kaciw
-  const [isLoading, setIsLoading] = useState(false);
-
-  // TODO: Nanti kalau API dari be Laravel udah beres, uncomment ini terus sesuain bae
-  
   useEffect(() => {
-    const checkSession = async () => {
-      setIsLoading(true);
-      try {
-        const response = await axios.get('/api/user'); 
-        setUser(response.data);
-      } catch (error) {
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      const checkSession = async () => {
+          try {
+              const { data } = await api.get("/api/user");
+              setUser(data);
+          } catch {
+              setUser(null);
+          } finally {
+              setIsLoading(false);
+          }
+      };
 
-    checkSession();
+      checkSession();
   }, []);
-  
 
-  const login = (userData) => {
-    setUser(userData);
-  };
-
-   const logout = async () => {
+  const checkSession = async () => {
     try {
-      // Beri tahu backend juga supaya cookie session-nya benar-benar
-      // dihapus di server (bukan cuma dilupakan di frontend).
-      await api.post("/logout");
-    } catch (error) {
-      // Tetap lanjut hapus state lokal walau request logout ke server gagal
-      // (misal karena koneksi putus) — supaya UI tidak "nyangkut" di kondisi
-      // login padahal user sudah klik logout.
-      console.error("Logout ke server gagal:", error);
-    } finally {
+      const { data } = await api.get("/api/user");
+      setUser(data);
+    } catch {
       setUser(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // Mengambil data user yang sedang login dari session Laravel
+  // kemudian menyimpannya ke AuthContext.
+  // Data user juga dikembalikan agar bisa digunakan
+  // untuk redirect berdasarkan role setelah login.
+  const login = async () => {
+    const { data } = await api.get("/api/user");
+
+    setUser(data);
+
+    return data;
+  };
+
+  const logout = async () => {
+    await api.post("/api/logout");
+
+    setUser(null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        logout,
+        checkSession,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

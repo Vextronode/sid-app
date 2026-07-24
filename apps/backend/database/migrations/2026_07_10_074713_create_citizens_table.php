@@ -22,6 +22,7 @@ return new class extends Migration
             $table->enum('gender', ['L', 'P']);
             $table->text('address');
             $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
+            $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
             $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();
             $table->text('no_kk', 16)->nullable();
             $table->enum('marital_status', ['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati'])->nullable();

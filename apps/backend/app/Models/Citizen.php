@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\Religion;
 use App\Enums\LastEducation;
@@ -19,6 +22,7 @@ class Citizen extends Model
         'gender',
         'address',
         'rt_id',
+        'rw_id',
         'hamlet_id',
         'no_kk',
         'marital_status',
@@ -38,6 +42,20 @@ class Citizen extends Model
         'domicile_status' => DomicileStatus::class,
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (Citizen $citizen) {
+
+            if ($citizen->isDirty('nik')) {
+                $citizen->nik_hash = hash(
+                    'sha256',
+                    $citizen->nik
+                );
+            }
+
+        });
+    }
+
    public function village(): BelongsTo
     {
         return $this->belongsTo(Village::class);
@@ -47,7 +65,10 @@ class Citizen extends Model
     {
         return $this->belongsTo(Rt::class);
     }
-
+    public function rw(): BelongsTo
+    {
+        return $this->belongsTo(Rw::class);
+    }
     public function hamlet(): BelongsTo
     {
         return $this->belongsTo(Hamlet::class);
