@@ -1,78 +1,233 @@
-// ==========================================
-// useUserList.js
-// CRUD user: list (search+filter+pagination), tambah, edit, toggle
-// aktif/nonaktif. Data masih dummy sampai backend siap.
-// ==========================================
+import {
+    useEffect,
+    useMemo,
+    useState
+} from "react";
 
-import { useState, useMemo } from 'react';
-import { dummyUser } from '../data/dummyUser';
+import {
+    getUsers,
+    toggleUserStatus
+} from "../api";
 
-const ITEMS_PER_PAGE = 3;
 
-export function useUserList() {
-  const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [version, setVersion] = useState(0);
+const ITEMS_PER_PAGE = 10;
 
-  const filtered = useMemo(() => {
-    let result = dummyUser;
-    if (filterStatus) result = result.filter((u) => u.status === filterStatus);
-    if (search) {
-      const keyword = search.toLowerCase();
-      result = result.filter((u) => u.nama.toLowerCase().includes(keyword) || u.email.toLowerCase().includes(keyword));
+
+export function useUserList(){
+
+    const [users,setUsers] = useState([]);
+    const [loading,setLoading] = useState(true);
+
+
+    const [search,setSearch] = useState("");
+    const [filterStatus,setFilterStatus] = useState("");
+    const [currentPage,setCurrentPage] = useState(1);
+
+
+
+    useEffect(()=>{
+
+        loadUsers();
+
+    },[]);
+
+
+
+    async function loadUsers(){
+
+        try{
+
+            setLoading(true);
+
+
+            const res = await getUsers();
+
+
+            console.log(
+                "USERS RESPONSE",
+                res.data
+            );
+
+
+            // aman untuk berbagai bentuk response
+            const userData =
+                res.data?.data ??
+                res.data?.users ??
+                res.data ??
+                [];
+
+
+            setUsers(
+                Array.isArray(userData)
+                ? userData
+                : []
+            );
+
+
+        }catch(error){
+
+            console.error(
+                "GET USERS ERROR",
+                error.response?.data ?? error
+            );
+
+
+            setUsers([]);
+
+        }finally{
+
+            setLoading(false);
+
+        }
+
     }
-    return result;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, filterStatus, version]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
-  }, [filtered, currentPage]);
 
-  const toggleStatus = (id) => {
-    const user = dummyUser.find((u) => u.id === id);
-    if (user) user.status = user.status === 'aktif' ? 'nonaktif' : 'aktif';
-    setVersion((v) => v + 1);
-  };
 
-  const addUser = (formData) => {
-    dummyUser.push({
-      id: dummyUser.length + 1,
-      nama: formData.name,
-      email: formData.email,
-      role: formData.role,
-      wilayah: formData.wilayah || '-',
-      status: formData.is_active ? 'aktif' : 'nonaktif',
-    });
-    setVersion((v) => v + 1);
-  };
 
-  const updateUser = (id, formData) => {
-    const user = dummyUser.find((u) => u.id === id);
-    if (user) {
-      user.nama = formData.name;
-      user.email = formData.email;
-      user.role = formData.role;
-      user.wilayah = formData.wilayah || '-';
-      user.status = formData.is_active ? 'aktif' : 'nonaktif';
+
+    const filtered = useMemo(()=>{
+
+
+        let result=[...users];
+
+
+
+        if(search){
+
+            const keyword =
+                search.toLowerCase();
+
+
+            result =
+            result.filter(user =>
+
+                user.name
+                ?.toLowerCase()
+                .includes(keyword)
+
+                ||
+
+                user.email
+                ?.toLowerCase()
+                .includes(keyword)
+
+            );
+
+        }
+
+
+
+
+
+        if(filterStatus){
+
+
+            result =
+            result.filter(user =>
+
+                filterStatus === "aktif"
+                ?
+                user.is_active
+                :
+                !user.is_active
+
+            );
+
+
+        }
+
+
+
+        return result;
+
+
+
+    },[
+        users,
+        search,
+        filterStatus
+    ]);
+
+
+
+
+
+
+    const totalPages = Math.max(
+        1,
+        Math.ceil(
+            filtered.length / ITEMS_PER_PAGE
+        )
+    );
+
+
+
+
+
+    const data = useMemo(()=>{
+
+
+        const start =
+        (currentPage-1)
+        *
+        ITEMS_PER_PAGE;
+
+
+
+        return filtered.slice(
+            start,
+            start + ITEMS_PER_PAGE
+        );
+
+
+    },[
+        filtered,
+        currentPage
+    ]);
+
+
+
+
+
+    async function toggleStatus(id){
+
+        await toggleUserStatus(id);
+
+        loadUsers();
+
     }
-    setVersion((v) => v + 1);
-  };
 
-  return {
-    data: paginatedData,
-    search,
-    setSearch: (val) => { setSearch(val); setCurrentPage(1); },
-    filterStatus,
-    setFilterStatus: (val) => { setFilterStatus(val); setCurrentPage(1); },
-    currentPage,
-    setCurrentPage,
-    totalPages,
-    toggleStatus,
-    addUser,
-    updateUser,
-  };
+
+
+
+    return {
+
+        data,
+
+        loading,
+
+
+        setSearch,
+
+
+        filterStatus,
+        setFilterStatus,
+
+
+        currentPage,
+        setCurrentPage,
+
+
+        totalPages,
+
+
+        toggleStatus,
+
+
+        addUser:()=>{},
+        updateUser:()=>{}
+
+    };
+
 }
