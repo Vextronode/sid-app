@@ -27,6 +27,7 @@ class RtApprovalService
             ->whereIn('status', [
                 'pending',
                 'rt_approved',
+                'rw_approved',
                 'rt_rejected'
             ])
             ->whereHas('citizen', function ($query) use ($official) {

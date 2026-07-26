@@ -32,6 +32,8 @@ class LetterController extends Controller
             $request->validated()
         );
 
+        dd($letters);
+
         return response()->json([
             'message' => 'Daftar surat berhasil diambil.',
             'data' => $letters,

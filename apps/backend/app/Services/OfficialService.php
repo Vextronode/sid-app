@@ -82,7 +82,7 @@ class OfficialService
 
     public function resolveVillageHead(): ?Official
     {
-        return Official::where('position', 'kades')
+        return Official::where('position', 'kepala_desa')
             ->where('is_active', true)
             ->first();
     }

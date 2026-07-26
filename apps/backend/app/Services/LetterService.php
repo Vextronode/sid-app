@@ -157,6 +157,7 @@ class LetterService
                 'citizen',
                 'letterType',
                 'approvals',
+                'user',
             ]);
 
         switch ($user->role) {
@@ -200,31 +201,12 @@ class LetterService
 
             case 'kadus':
 
-                $official = $user->official;
-
-                $query->whereHas(
-                    'citizen.rt.rw',
-                    fn ($q) => $q->where(
-                        'hamlet_id',
-                        $official->hamlet_id
-                    )
-                );
-
                 break;
 
             case 'kasi_pelayanan':
 
             case 'kaur_tu_umum':
 
-                $query->whereHas(
-                    'letterType',
-                    fn ($q) => $q->where(
-                        'assigned_role',
-                        $user->role
-                    )
-                );
-
-                break;
 
             case 'petugas_desa':
 
