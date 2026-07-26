@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
+use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\LetterApprovalController;
@@ -16,6 +17,8 @@ use App\Http\Controllers\Api\RwApprovalController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
 use App\Http\Controllers\Api\LetterDownloadController;
+use App\Http\Controllers\VillageController;
+use App\Http\Controllers\Api\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,7 +45,14 @@ Route::middleware('auth:sanctum')->group(function () {
         '/logout',
         [AuthenticatedSessionController::class, 'logout']
     )->middleware('auth:sanctum');
+        Route::get('/users',
+        [UserController::class,'index']
+    );
 
+
+    Route::patch('/users/{user}/toggle-status',
+        [UserController::class,'updateStatus']
+    );
     Route::get('/user', function (Request $request) {
 
         return $request
@@ -56,6 +66,10 @@ Route::middleware('auth:sanctum')->group(function () {
             ]);
 
     });
+    Route::get(
+        '/dashboard/gender-stats',
+        [VillageController::class, 'genderStats']
+    );
 
 
     Route::get('/letter-types', [LetterTypeController::class, 'index']);
@@ -76,11 +90,25 @@ Route::middleware('auth:sanctum')->group(function () {
         [LetterDownloadController::class, 'download']
     );
     Route::get('/letters/{letter}/preview', function (\App\Models\Letter $letter, \App\Services\PdfService $service) {
-    return $service->preview($letter, auth()->user(), request('template', 'wet'));
-})->middleware('auth')->name('letters.preview');
+        return $service->preview($letter, auth()->user(), request('template', 'wet'));
+    })->middleware('auth')->name('letters.preview');    
 
+    Route::prefix('citizens')->group(function () {
+
+        Route::get('/', [CitizenController::class, 'index']);
+
+        Route::delete(
+            '/{citizen}',
+            [CitizenController::class, 'destroy']
+        );
+        Route::get(
+            '/wilayah',
+            [CitizenController::class, 'wilayah']
+        );
+
+    });
     Route::prefix('rt')->group(function () {
-
+        
         Route::get(
             '/letters',
             [RtApprovalController::class,'index']
