@@ -19,7 +19,8 @@ class LetterDownloadController extends Controller
     ) {
         return $this->pdfService->download(
             $letter,
-            $request->user()
+            $request->user(),
+            $request->query('template', 'wet')
         );
     }
 }

@@ -75,6 +75,9 @@ Route::middleware('auth:sanctum')->group(function () {
         '/letters/{letter}/download',
         [LetterDownloadController::class, 'download']
     );
+    Route::get('/letters/{letter}/preview', function (\App\Models\Letter $letter, \App\Services\PdfService $service) {
+    return $service->preview($letter, auth()->user(), request('template', 'wet'));
+})->middleware('auth')->name('letters.preview');
 
     Route::prefix('rt')->group(function () {
 
@@ -144,29 +147,11 @@ Route::middleware('auth:sanctum')->group(function () {
                 '/letters/{letter}/decision',
                 [KadusApprovalController::class, 'decision']
             );
+            Route::get(
+                '/letters/{letter}',
+                [KadusApprovalController::class,'show']
+            );
     });
 
-        Route::get(
-            '/letters',
-            [RtApprovalController::class, 'index']
-        );
-
-        Route::patch(
-            '/letters/{letter}/decision',
-            [RtApprovalController::class, 'decision']
-        );
-
-    Route::prefix('rw')->group(function () {
-
-        Route::patch(
-            '/approvals/{letter}/approve',
-            [RwApprovalController::class, 'approve']
-        );
-        Route::get(
-            '/letters',
-            [RwApprovalController::class, 'index']
-        );
-
-    });
 
 });
