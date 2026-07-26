@@ -1,5 +1,8 @@
 import api from "@/lib/api";
 
+export function getGenderStats(){
+    return api.get("/api/dashboard/gender-stats");
+}
 /**
  * Mengambil daftar surat sesuai role.
  *
