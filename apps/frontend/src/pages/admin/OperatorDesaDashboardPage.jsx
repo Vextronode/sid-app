@@ -1,0 +1,110 @@
+// ==========================================
+// OperatorDesaDashboardPage.jsx
+// Halaman Ringkasan untuk Operator Desa (Petugas Desa/Kasi/Kaur — 1 role
+// gabungan, tampilan sama untuk ketiganya, cuma web/desktop).
+// Surat cuma bisa di-print kalau status rw_approved, selain itu aksi
+// print di-disable (logic ada di RiwayatVerifikasiTable.jsx).
+// ==========================================
+
+import { useEffect, useMemo, useState } from 'react';
+import { getSuratList } from '@/features/approval/api';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { ClipboardList, ListChecks, CheckCircle2 } from 'lucide-react';
+import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
+import GenderStatCard from '@/features/operator-desa/components/GenderStatCard';
+import RiwayatVerifikasiTable from '@/features/operator-desa/components/RiwayatVerifikasiTable';
+import { FooterDesa } from '@/components/layout/FooterDesa';
+
+export default function OperatorDesaDashboardPage() {
+  const { user } = useAuth();
+  const [letters, setLetters] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Role yang dikirim ke API disesuaikan dari role user yang login
+    // (kasi_pelayanan / kaur_tu_umum / petugas_desa), tapi tampilan sama.
+    const roleKey = user?.role ?? 'petugas_desa';
+    getSuratList(roleKey)
+      .then((res) => setLetters(res.data.data ?? []))
+      .catch((err) => console.error('GET OPERATOR DESA LIST ERROR', err.response?.data ?? err))
+      .finally(() => setLoading(false));
+  }, [user]);
+
+  const stats = useMemo(() => {
+    const permohonan = letters.filter((s) => s.status === 'pending').length;
+    const verifikasi = letters.filter((s) => s.status === 'rt_approved').length;
+    const selesai = letters.filter((s) => s.status === 'rw_approved').length;
+    return { permohonan, verifikasi, selesai };
+  }, [letters]);
+
+  const chartData = useMemo(() => {
+    const grouped = {};
+    letters.forEach((s) => {
+      const key = s.letter_type?.name ?? 'Lainnya';
+      grouped[key] = (grouped[key] ?? 0) + 1;
+    });
+    return Object.entries(grouped).map(([kategori, jumlah]) => ({ kategori, jumlah }));
+  }, [letters]);
+
+  const riwayatTerbaru = useMemo(() => letters.slice(0, 5), [letters]);
+
+  const hariIni = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  return (
+    <div>
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Selamat Pagi, {user?.name ?? 'Bapak/Ibu'}</h1>
+            <p className="text-sm text-gray-500">Berikut adalah ringkasan administrasi desa Cibenda hari ini.</p>
+          </div>
+          <span className="text-sm text-gray-500 capitalize">{hariIni}</span>
+        </div>
+
+        {/* 3 kartu statistik */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase mb-1">Permohonan</p>
+              <p className="text-3xl font-bold text-green-600">{loading ? '-' : stats.permohonan}</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+              <ClipboardList size={20} />
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase mb-1">Verifikasi</p>
+              <p className="text-3xl font-bold text-blue-600">{loading ? '-' : stats.verifikasi}</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+              <ListChecks size={20} />
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase mb-1">Selesai</p>
+              <p className="text-3xl font-bold text-green-600">{loading ? '-' : stats.selesai}</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+              <CheckCircle2 size={20} />
+            </div>
+          </div>
+        </div>
+
+        {/* Chart + Gender */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="col-span-2">
+            <SuratStatChart data={chartData} />
+          </div>
+          <GenderStatCard total={1450} laki={841} perempuan={609} />
+        </div>
+
+        {/* Riwayat Verifikasi */}
+        <RiwayatVerifikasiTable data={riwayatTerbaru} />
+      </div>
+
+      <FooterDesa />
+    </div>
+  );
+}

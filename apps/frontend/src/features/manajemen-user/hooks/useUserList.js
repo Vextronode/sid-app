@@ -1,7 +1,7 @@
-/* eslint-disable no-unused-vars */
 // ==========================================
 // useUserList.js
-// Filter user: search (nama/email) + filter status, plus pagination.
+// CRUD user: list (search+filter+pagination), tambah, edit, toggle
+// aktif/nonaktif. Data masih dummy sampai backend siap.
 // ==========================================
 
 import { useState, useMemo } from 'react';
@@ -32,25 +32,35 @@ export function useUserList() {
     return filtered.slice(start, start + ITEMS_PER_PAGE);
   }, [filtered, currentPage]);
 
-  // Toggle status aktif/nonaktif langsung di data dummy
   const toggleStatus = (id) => {
     const user = dummyUser.find((u) => u.id === id);
     if (user) user.status = user.status === 'aktif' ? 'nonaktif' : 'aktif';
     setVersion((v) => v + 1);
   };
 
-  // Tambah user baru ke dummy data (nanti diganti call API POST waktu backend siap)
-    const addUser = (formData) => {
-        dummyUser.push({
-            id: dummyUser.length + 1,
-            nama: formData.nama,
-            email: formData.email,
-            role: formData.role,
-            wilayah: formData.wilayah || '-',
-            status: formData.status,
-        });
-        setVersion((v) => v + 1);
-     };
+  const addUser = (formData) => {
+    dummyUser.push({
+      id: dummyUser.length + 1,
+      nama: formData.name,
+      email: formData.email,
+      role: formData.role,
+      wilayah: formData.wilayah || '-',
+      status: formData.is_active ? 'aktif' : 'nonaktif',
+    });
+    setVersion((v) => v + 1);
+  };
+
+  const updateUser = (id, formData) => {
+    const user = dummyUser.find((u) => u.id === id);
+    if (user) {
+      user.nama = formData.name;
+      user.email = formData.email;
+      user.role = formData.role;
+      user.wilayah = formData.wilayah || '-';
+      user.status = formData.is_active ? 'aktif' : 'nonaktif';
+    }
+    setVersion((v) => v + 1);
+  };
 
   return {
     data: paginatedData,
@@ -62,5 +72,7 @@ export function useUserList() {
     setCurrentPage,
     totalPages,
     toggleStatus,
+    addUser,
+    updateUser,
   };
 }

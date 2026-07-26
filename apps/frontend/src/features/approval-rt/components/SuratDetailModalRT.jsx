@@ -1,81 +1,167 @@
 // ==========================================
 // SuratDetailModalRT.jsx
-// Popup detail permohonan surat. Mode "Lihat" (readOnly=true) cuma
-// nampilin info, tanpa tombol Setuju/Tolak. Mode "Edit" (readOnly=false)
-// nampilin tombol aksi seperti biasa.
+// Popup detail surat. Field API belum final (LetterResource backend
+// belum dibuat ulang), jadi semua nama field dikumpulkan di FIELD_MAP
+// di bawah — begitu backend siap, cukup edit FIELD_MAP ini saja,
+// tidak perlu ubah JSX di bawahnya.
 // ==========================================
 
 import { useState } from 'react';
+import { Eye } from 'lucide-react';
 import { useSuratDetail } from '../hooks/useSuratDetail';
 import ApprovalStepperRT from './ApprovalStepperRT';
-import SuratInfoGridRT from './SuratInfoGridRT';
-import ApprovalActionBarRT from './ApprovalActionBarRT';
-import RejectReasonModalRT from './RejectReasonModalRT';
+import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF';
+
+// ⚠️ SESUAIKAN DI SINI kalau nama field dari backend beda.
+// Pola sekarang mengikuti field yang sudah kelihatan di SuratTableRT.jsx
+// (applicant_name, letter_type?.name, submitted_at).
+const FIELD_MAP = {
+  noSurat: (s) => s.letter_number ?? '-',
+  namaPemohon: (s) => s.applicant_name ?? '-',
+  nik: (s) => s.applicant_nik ?? '-',
+  alamat: (s) => s.applicant_address ?? '-',
+  jenisSurat: (s) => s.letter_type?.name ?? '-',
+  keperluan: (s) => s.purpose ?? '-',
+  diajukan: (s) => (s.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
+  terakhirDiproses: (s) => (s.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
+  ipAktor: (s) => s.ip_address ?? '-',
+  // Riwayat keputusan tiap tahap (RT/RW). Sesuaikan kalau nama relasinya beda,
+  // misal "decisions", "histories", "approvals", dll.
+  riwayat: (s) => s.decisions ?? [],
+};
 
 export default function SuratDetailModalRT({ suratId, onClose, onApprove, onReject, readOnly = false }) {
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const { surat, isLoading, notFound } = useSuratDetail(suratId); 
-  
+  const { surat, notFound } = useSuratDetail(suratId);
+  const [showRejectBox, setShowRejectBox] = useState(false);
+  const [alasan, setAlasan] = useState('');
+
   if (suratId === null) return null;
 
+  const keputusanRT = surat ? FIELD_MAP.riwayat(surat).find((r) => r.stage === 'rt' || r.tahap === 'RT') : null;
 
-    if (isLoading) {
-    return (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
-        <div className="bg-white rounded-xl p-8">
-          Memuat surat...
-        </div>
-      </div>
-    );
-  }
+  const infoFields = surat
+    ? [
+        { label: 'Nama Pemohon', value: FIELD_MAP.namaPemohon(surat) },
+        { label: 'NIK', value: FIELD_MAP.nik(surat) },
+        { label: 'Alamat', value: FIELD_MAP.alamat(surat) },
+        { label: 'Jenis Surat', value: FIELD_MAP.jenisSurat(surat) },
+        { label: 'Keperluan', value: FIELD_MAP.keperluan(surat) },
+        { label: 'Diajukan', value: FIELD_MAP.diajukan(surat) },
+        { label: 'Terakhir diproses', value: FIELD_MAP.terakhirDiproses(surat) },
+        { label: 'IP aktor', value: FIELD_MAP.ipAktor(surat) },
+      ]
+    : [];
+
+  const handleSubmitReject = () => {
+    if (!alasan.trim()) return;
+    onReject(alasan);
+    setAlasan('');
+    setShowRejectBox(false);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">
-          ✕
-        </button>
+      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">✕</button>
 
         {notFound ? (
           <p className="text-center text-gray-500 py-10">Surat tidak ditemukan.</p>
+        ) : !surat ? (
+          <p className="text-center text-gray-400 py-10">Memuat...</p>
         ) : (
           <>
-            <h2 className="font-medium text-gray-800">
-              Detail Permohonan Surat {readOnly && <span className="text-xs font-normal text-gray-400">(mode lihat)</span>}
-            </h2>
-            <p className="text-xs text-gray-400 mb-6">#{surat.no_surat ?? `024/${surat.jenis}/V/2026`} · Surat saya</p>
+            <h2 className="font-bold text-gray-800 text-lg">Detail Permohonan Surat</h2>
+            <p className="text-xs text-gray-400 mb-5">#{FIELD_MAP.noSurat(surat)} · Surat saya</p>
 
             <ApprovalStepperRT surat={surat} />
-            <SuratInfoGridRT surat={surat} />
 
-            {/* Mode "Lihat" cuma nampilin tombol Tutup, nggak ada Setuju/Tolak */}
-            {readOnly ? (
-              <button
-                onClick={onClose}
-                className="border border-green-500 text-green-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-green-50"
-              >
-                Tutup
-              </button>
-            ) : (
-              <ApprovalActionBarRT
-                onApprove={onApprove}
-                onReject={() => setRejectModalOpen(true)}
-                onBack={onClose}
-              />
+            <div className="flex flex-col gap-4 mb-5">
+              {infoFields.map((f) => (
+                <div key={f.label}>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">{f.label}</p>
+                  <p className="text-sm font-semibold text-gray-800">{f.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {keputusanRT && (
+              <div className={`rounded-xl p-4 mb-5 ${keputusanRT.status === 'rejected' ? 'bg-red-50' : 'bg-green-50'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-semibold text-gray-800 text-sm">Keputusan RT</p>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    keputusanRT.status === 'rejected' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+                  }`}>
+                    {keputusanRT.status === 'rejected' ? 'RT_REJECTED' : 'RT_APPROVED'}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 mb-1">
+                  diputuskan oleh <span className="font-medium text-gray-700">{keputusanRT.actor_name ?? keputusanRT.decided_by ?? '-'}</span>
+                </div>
+                <div className="text-xs text-gray-500 mb-2">IP <span className="font-medium text-gray-700">{keputusanRT.ip_address ?? '-'}</span></div>
+
+                {keputusanRT.status === 'rejected' && keputusanRT.notes && (
+                  <>
+                    <p className="text-[10px] font-semibold text-red-600 uppercase mt-3 mb-1">Komentar Penolakan</p>
+                    <div className="bg-red-100 text-red-700 text-xs rounded-lg p-3">{keputusanRT.notes}</div>
+                  </>
+                )}
+                {keputusanRT.status === 'approved' && keputusanRT.notes && (
+                  <div className="bg-green-100 text-green-700 text-xs rounded-lg p-3 mt-2">{keputusanRT.notes}</div>
+                )}
+              </div>
             )}
+
+            {!readOnly && showRejectBox && (
+              <div className="mb-4">
+                <p className="text-xs text-gray-600 mb-1">Tulis alasan penolakan</p>
+                <textarea
+                  value={alasan}
+                  onChange={(e) => setAlasan(e.target.value)}
+                  rows={3}
+                  placeholder="Contoh: Data NIK tidak sesuai dengan database desa."
+                  className="w-full border rounded-lg p-3 text-sm outline-none focus:border-red-400"
+                />
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => { setShowRejectBox(false); setAlasan(''); }} className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-2 text-sm">
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleSubmitReject}
+                    disabled={!alasan.trim()}
+                    className="flex-1 bg-red-500 text-white rounded-lg py-2 text-sm disabled:opacity-40"
+                  >
+                    Konfirmasi Tolak
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!readOnly && (
+              <button
+                onClick={() => previewSuratPDF(surat)}
+                className="w-full flex items-center justify-center gap-2 border border-gray-300 text-gray-600 rounded-lg py-2.5 text-sm mb-3 hover:bg-gray-50"
+              >
+                <Eye size={16} /> Lihat Dokumen (Preview)
+              </button>
+            )}
+
+            {readOnly ? (
+              <button onClick={onClose} className="w-full border border-green-500 text-green-600 rounded-lg py-2.5 text-sm font-medium hover:bg-green-50">
+                ✓ Kembali
+              </button>
+            ) : !showRejectBox ? (
+              <div className="flex gap-3">
+                <button onClick={onApprove} className="flex-1 bg-green-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-green-700">
+                  Setuju
+                </button>
+                <button onClick={() => setShowRejectBox(true)} className="flex-1 bg-red-500 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-red-600">
+                  Tolak
+                </button>
+              </div>
+            ) : null}
           </>
         )}
       </div>
-
-      {!readOnly && (
-        <RejectReasonModalRT
-          open={rejectModalOpen}
-          onClose={() => setRejectModalOpen(false)}
-          onSubmit={(alasan) => {
-            onReject(alasan);
-            setRejectModalOpen(false);
-          }}
-        />
-      )}
     </div>
   );
 }

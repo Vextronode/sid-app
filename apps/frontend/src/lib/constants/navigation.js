@@ -13,3 +13,9 @@ export const MOBILE_ONLY_LINKS = [
   { name: "Notifikasi", href: "/notifikasi", icon: Bell },
   { name: "Profile", href: "/profile", icon: User },
 ];
+
+// Bottom nav khusus admin (RT/RW/dll), cuma 2 menu sesuai desain
+ export const ADMIN_MOBILE_LINKS = (dashboardPath, listPath) => [
+   { name: "Beranda", href: dashboardPath, icon: Home },
+   { name: "Surat", href: listPath, icon: FileText },
+ ];

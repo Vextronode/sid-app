@@ -1,16 +1,9 @@
 // ==========================================
-// roleConfig.js (LOKAL — khusus Kadus)
-// Kadus hanya bisa proses surat yang statusnya "rw_approved" (sudah lolos RW).
+// roleConfigkadus.js
+// Kadus sekarang MONITORING SAJA, bukan approver. Bisa lihat semua
+// status surat dari awal sampai akhir.
 // ==========================================
 
 export const ROLE_LABEL = 'Kadus';
-export const PENDING_STATUS = 'rw_approved';
-export const ACTION_RESULT = { approve: 'kadus_approved', reject: 'kadus_rejected' };
-export const RELEVANT_STATUSES = ['rw_approved', 'kadus_approved', 'kadus_rejected'];
-export const LIST_TITLE = {
-  semua: 'Semua permohonan surat',
-  pending: 'Surat Pending Kadus',
-  approved: 'Surat Approved',
-  rejected: 'Surat Rejected Kadus',
-};
+export const RELEVANT_STATUSES = ['pending', 'rt_approved', 'rt_rejected', 'rw_approved', 'rw_rejected'];
 export const BASE_PATH = '/admin/dashboard-surat-kadus';

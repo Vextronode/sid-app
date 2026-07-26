@@ -1,47 +1,66 @@
-import { Check, Clock, X } from 'lucide-react';
-import { getStepStatuses } from '@/features/approval/constants/statusFlow';
+/* eslint-disable no-unused-vars */
+// ==========================================
+// ApprovalStepperRW.jsx
+// Stepper 4 tahap (Submit -> RT -> RW -> Selesai), dari surat.status.
+// ⚠️ Sesuaikan getStepState kalau nilai status dari backend beda.
+// ==========================================
+
+import { Check, X, Loader2 } from 'lucide-react';
+
+const STEPS = ['Submit', 'RT', 'RW', 'Selesai'];
+
+function getStepState(status) {
+  const map = {
+    pending: { step: 1, state: 'current' },
+    rt_approved: { step: 2, state: 'current_rw' },
+    rt_rejected: { step: 1, state: 'rejected_rt' },
+    rw_approved: { step: 3, state: 'done_rw' },
+    rw_rejected: { step: 2, state: 'rejected_rw' },
+  };
+  return map[status] ?? { step: 0, state: 'waiting' };
+}
 
 export default function ApprovalStepperRW({ surat }) {
-  
-  if(!surat){
-    return null;
-  }
-  
-  const steps = getStepStatuses(surat);
+  const { step, state } = getStepState(surat?.status);
 
   return (
-    <div className="flex items-center justify-center gap-1 mb-8 flex-wrap">
-      {steps.map((step, index) => {
-        let circleClass = 'bg-gray-200 text-gray-500';
-        let icon = index + 1;
+    <div className="flex items-center justify-center gap-1 mb-6 flex-wrap">
+      {STEPS.map((label, index) => {
+        let circle;
         let statusText = 'Menunggu';
+        let labelColor = 'text-gray-400';
 
-        if (step.state === 'done') {
-          circleClass = 'bg-green-500 text-white';
-          icon = <Check size={16} />;
-          statusText = step.timestamp
-            ? new Date(step.timestamp).toLocaleDateString("id-ID")
-            : "Selesai";
-        } else if (step.state === 'rejected') {
-          circleClass = 'bg-red-500 text-white';
-          icon = <X size={16} />;
-          statusText = step.timestamp ? `Ditolak · ${step.timestamp}` : 'Ditolak';
-        } else if (step.state === 'current') {
-          circleClass = 'bg-yellow-100 text-yellow-600';
-          icon = <Clock size={16} />;
-          statusText = 'Sedang diproses';
+        const isRejectedHere = (index === 1 && state === 'rejected_rt') || (index === 2 && state === 'rejected_rw');
+        const isDoneRT = index === 1 && (state === 'current_rw' || state === 'done_rw');
+        const isDoneRW = index === 2 && state === 'done_rw';
+        const isCurrentSubmit = index === 0;
+        const isCurrentRW = index === 2 && state === 'current_rw';
+        const isCurrentPending = index === step && state === 'current';
+
+        if (isRejectedHere) {
+          circle = <div className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center"><X size={18} /></div>;
+          statusText = 'Ditolak';
+          labelColor = 'text-red-500';
+        } else if (isDoneRT || isDoneRW || (index === 0)) {
+          circle = <div className="w-9 h-9 rounded-full bg-green-500 text-white flex items-center justify-center"><Check size={18} /></div>;
+          statusText = 'Disetujui';
+          labelColor = 'text-green-600';
+        } else if (isCurrentRW || isCurrentPending) {
+          circle = <div className="w-9 h-9 rounded-full border-2 border-green-500 text-green-500 flex items-center justify-center"><Loader2 size={16} className="animate-spin" /></div>;
+          statusText = 'Menunggu';
+          labelColor = 'text-green-500';
+        } else {
+          circle = <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">{index + 1}</div>;
         }
 
         return (
-          <div key={step.label} className="flex items-center">
+          <div key={label} className="flex items-center">
             <div className="flex flex-col items-center gap-1">
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium ${circleClass}`}>
-                {icon}
-              </div>
-              <span className="text-xs text-gray-600 text-center w-20">{step.label}</span>
-              <span className="text-[10px] text-gray-400 text-center w-20">{statusText}</span>
+              {circle}
+              <span className={`text-xs font-semibold uppercase ${labelColor}`}>{label}</span>
+              <span className="text-[10px] text-gray-400">{statusText}</span>
             </div>
-            {index < steps.length - 1 && <div className="w-10 h-px bg-gray-300 mx-1" />}
+            {index < STEPS.length - 1 && <div className="w-8 h-px bg-gray-300 mx-1 mt-[-16px]" />}
           </div>
         );
       })}

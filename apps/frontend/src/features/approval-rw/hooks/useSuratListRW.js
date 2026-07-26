@@ -1,176 +1,64 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from "react";
-
 import { getSuratList } from "@/features/approval/api";
 import { RELEVANT_STATUSES } from "../constants/roleConfigRW";
 
-
 export function useSuratList({ initialStatus = "" } = {}) {
-
-
   const [letters, setLetters] = useState([]);
-
   const [loading, setLoading] = useState(false);
 
-
   const [search, setSearch] = useState("");
-
   const [filterJenis, setFilterJenis] = useState("");
+  const [filterStatus, setFilterStatus] = useState(initialStatus);
 
-  const [filterStatus, setFilterStatus] =
-    useState(initialStatus);
-
-
-
-
-  const fetchLetters = async()=>{
-
-    try{
-
+  const fetchLetters = async () => {
+    try {
       setLoading(true);
-
-
-      const response =
-        await getSuratList("rw");
-
-
-      setLetters(
-        response.data.data ?? []
-      );
-
-
-    }catch(error){
-
-
-      console.error(
-        "GET RW LETTER ERROR",
-        error.response?.data ?? error
-      );
-
-
+      const response = await getSuratList("rw");
+      setLetters(response.data.data ?? []);
+    } catch (error) {
+      console.error("GET RW LETTER ERROR", error.response?.data ?? error);
       setLetters([]);
-
-
-    }finally{
-
+    } finally {
       setLoading(false);
-
     }
-
   };
 
-
-
-
-  useEffect(()=>{
-
+  useEffect(() => {
     fetchLetters();
+  }, []);
 
-  },[]);
-
-
-
-
-
-  const data = useMemo(()=>{
-
-
+  const data = useMemo(() => {
     let result = [...letters];
 
+    result = result.filter((letter) => RELEVANT_STATUSES.includes(letter.status));
 
+    if (filterJenis) {
+      result = result.filter((letter) => letter.letter_type?.name === filterJenis);
+    }
 
-    // status yang boleh tampil di RW
-    result =
-      result.filter(letter =>
-        RELEVANT_STATUSES.includes(
-          letter.status
-        )
+    if (filterStatus) {
+      result = result.filter((letter) => letter.status === filterStatus);
+    }
+
+    if (search) {
+      result = result.filter((letter) =>
+        letter.applicant_name?.toLowerCase().includes(search.toLowerCase())
       );
-
-
-
-
-    if(filterJenis){
-
-      result =
-        result.filter(letter =>
-          letter.letter_type?.name === filterJenis
-        );
-
     }
-
-
-
-
-    if(filterStatus){
-
-      result =
-        result.filter(letter =>
-          letter.status === filterStatus
-        );
-
-    }
-
-
-
-
-
-    if(search){
-
-
-      result =
-        result.filter(letter =>
-          letter.citizen?.name
-          ?.toLowerCase()
-          .includes(
-            search.toLowerCase()
-          )
-        );
-
-
-    }
-
-
 
     return result;
-
-
-
-  },[
-    letters,
-    filterJenis,
-    filterStatus,
-    search
-  ]);
-
-
-
-
+  }, [letters, filterJenis, filterStatus, search]);
 
   return {
-
-
     data,
-
-
     loading,
-
-
     search,
     setSearch,
-
-
     filterJenis,
     setFilterJenis,
-
-
     filterStatus,
     setFilterStatus,
-
-
-    refresh:fetchLetters
-
-
+    refresh: fetchLetters,
   };
-
-
 }

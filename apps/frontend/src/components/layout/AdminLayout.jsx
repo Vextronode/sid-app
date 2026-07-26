@@ -1,11 +1,15 @@
+/* eslint-disable no-unused-vars */
+import { useState } from 'react';
 import { Bell, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import NotificationPopover from '@/features/notifikasi/components/NotificationPopover';
 
 export function AdminLayout({ children, menuItems }) {
   const location = useLocation();
+  const [notifOpen, setNotifOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative">
       <nav className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <Link to="/" className="font-bold text-lg text-gray-800">
           LOGO
@@ -33,8 +37,7 @@ export function AdminLayout({ children, menuItems }) {
         )}
 
         <div className="flex items-center gap-4">
-          <button className="text-green-600 hover:text-green-700">
-            <Bell size={20} />
+          <button onClick={() => setNotifOpen((v) => !v)} className="text-green-600 hover:text-green-700">
           </button>
           <div className="w-9 h-9 rounded-full border-2 border-green-500 flex items-center justify-center text-green-600">
             <User size={18} />
@@ -42,6 +45,8 @@ export function AdminLayout({ children, menuItems }) {
         </div>
       </nav>
 
+        <NotificationPopover open={notifOpen} onClose={() => setNotifOpen(false)} />
+          
       <main>{children}</main>
     </div>
   );

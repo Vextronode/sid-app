@@ -1,24 +1,10 @@
 // ==========================================
 // roleConfigkades.js
-// Config lokal khusus Kepala Desa (Kades). Kades bisa monitoring SEMUA
-// surat dari awal (pending) sampai akhir (petugas_approved/rejected),
-// supaya bisa pantau surat itu lagi nyangkut di tahap mana.
-// Tetap READ-ONLY — tidak ada approve/reject/hapus.
+// Kades = monitoring only. Bisa lihat semua status dari awal (pending)
+// sampai akhir (rw_approved/rejected), tapi tidak approve/reject.
 // ==========================================
 
 export const ROLE_LABEL = 'Kepala Desa';
-
-// Semua status, supaya Kades bisa lihat surat sedang di tahap apa
-export const RELEVANT_STATUSES = [
-  'pending',
-  'rt_approved',
-  'rt_rejected',
-  'rw_approved',
-  'rw_rejected',
-  'kadus_approved',
-  'kadus_rejected',
-  'petugas_approved',
-  'petugas_rejected',
-];
-
+export const ROLE_KEY = 'kepala_desa'; // sesuai value role asli di backend
+export const RELEVANT_STATUSES = ['pending', 'rt_approved', 'rt_rejected', 'rw_approved', 'rw_rejected'];
 export const BASE_PATH = '/admin/dashboard-surat-kades';

@@ -1,177 +1,169 @@
 /* eslint-disable no-unused-vars */
 // ==========================================
 // KadusDashboardPage.jsx
-// Dashboard Kadus.
+// Desain identik RTDashboardPage (quick-nav, banner, statcard, chart,
+// riwayat verifikasi, footer, bottom nav). Bedanya: quick-nav di sini
+// cuma navigasi filter (bukan aksi approve), dan Kadus tidak approve apapun.
 // ==========================================
 
-import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  X,
-  ClipboardList,
-  Bell,
-  CheckCircle2,
-  AlertTriangle,
-} from "lucide-react";
-
-import { useAuth } from "@/features/auth/contexts/AuthContext";
-
-import { useSuratListKadus } from "@/features/approval-kadus/hooks/useSuratListKadus";
-
-import StatCardKadus from "@/features/approval-kadus/components/StatCardKadus";
-
-import { BASE_PATH } from "@/features/approval-kadus/constants/roleConfigKadus";
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { X, ClipboardList, Bell, CheckCircle2, Eye, Mail, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { getSuratList } from '@/features/approval/api';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
+import { FooterDesa } from '@/components/layout/FooterDesa';
+import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
+import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
+import RiwayatVerifikasiList from '@/features/dashboard-mobile/components/RiwayatVerifikasiList';
 
 const QUICK_NAV = [
-  {
-    key: "rw_approved",
-    label: "Pending",
-    icon: X,
-  },
-  {
-    key: "kadus_approved",
-    label: "Approved",
-    icon: X,
-  },
-  {
-    key: "kadus_rejected",
-    label: "Rejected",
-    icon: X,
-  },
-  {
-    key: "",
-    label: "Review",
-    icon: X,
-  },
+  { key: 'pending', label: 'pending', icon: X },
+  { key: 'rt_approved', label: 'diproses RW', icon: X },
+  { key: 'rw_rejected', label: 'ditolak', icon: X },
+  { key: '', label: 'Semua', icon: X },
 ];
 
 export default function KadusDashboardPage() {
-
   const { user } = useAuth();
-
   const navigate = useNavigate();
+  const [letters, setLetters] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data } = useSuratListKadus();
+  useEffect(() => {
+    getSuratList('kadus')
+      .then((res) => setLetters(res.data.data ?? []))
+      .catch((err) => console.error('GET KADUS LIST ERROR', err.response?.data ?? err))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const stats = useMemo(() => ({
+  const stats = useMemo(() => {
+    const total = letters.length;
+    const ditolak = letters.filter((s) => s.status?.endsWith('_rejected')).length;
+    const disetujuiFinal = letters.filter((s) => s.status === 'rw_approved').length;
+    const sedangDiproses = letters.filter((s) => !s.status?.endsWith('_rejected') && s.status !== 'rw_approved').length;
+    return { total, ditolak, disetujuiFinal, sedangDiproses };
+  }, [letters]);
 
-    total: data.length,
+  const chartData = useMemo(() => {
+    const grouped = {};
+    letters.forEach((s) => {
+      const key = s.letter_type?.name ?? 'Lainnya';
+      grouped[key] = (grouped[key] ?? 0) + 1;
+    });
+    return Object.entries(grouped).map(([kategori, jumlah]) => ({ kategori, jumlah }));
+  }, [letters]);
 
-    pending: data.filter(
-      (s) => s.status === "rw_approved"
-    ).length,
-
-    approved: data.filter(
-      (s) => s.status === "kadus_approved"
-    ).length,
-
-    rejected: data.filter(
-      (s) => s.status === "kadus_rejected"
-    ).length,
-
-  }), [data]);
+  const riwayatVerifikasi = useMemo(() => {
+    return letters.slice(0, 5).map((s) => ({
+      id: s.id,
+      nama: s.applicant_name,
+      nik: s.applicant_nik,
+      jenisSurat: s.letter_type?.name ?? '-',
+      tanggal: s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID') : '-',
+    }));
+  }, [letters]);
 
   return (
+    <>
+      {/* ===== DESKTOP ===== */}
+      <div className="hidden md:block max-w-5xl mx-auto py-6">
+        <h1 className="text-lg font-medium text-gray-700 mb-4">Surat Kadus</h1>
 
-    <div className="max-w-5xl mx-auto py-6">
+        <div className="bg-white rounded-2xl shadow-sm p-4 flex gap-4 mb-6">
+          {QUICK_NAV.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.label}
+                onClick={() => navigate(`/admin/list-kadus?status=${item.key}`)}
+                className="flex flex-col items-center justify-center gap-2 border rounded-xl px-6 py-3 hover:bg-gray-50 flex-1"
+              >
+                <Icon size={16} className="text-gray-400" />
+                <span className="text-sm text-gray-600">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-      <h1 className="text-lg font-medium text-gray-700 mb-4">
-        Surat Kadus
-      </h1>
+        <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded-lg px-4 py-3 mb-6 flex items-center gap-2">
+          <Eye size={16} />
+          <span>Halaman ini bersifat pemantauan saja. Kadus tidak melakukan approve/reject surat.</span>
+        </div>
 
-      {/* Quick Navigation */}
+        <h2 className="text-base font-medium text-gray-800">Dashboard Kadus</h2>
+        <p className="text-sm text-gray-500 mb-6">Wilayah: {user?.wilayah_label ?? 'Desa Cibenda'}</p>
 
-      <div className="bg-white rounded-2xl shadow-sm p-4 flex gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-6 max-w-2xl">
+          <div className="bg-white rounded-2xl shadow-sm px-6 py-5 flex flex-col gap-1 relative">
+            <div className="absolute top-4 right-4 text-gray-400"><ClipboardList size={18} /></div>
+            <span className="text-2xl font-semibold text-gray-800">{stats.ditolak}</span>
+            <span className="text-sm text-gray-500">Total ditolak</span>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm px-6 py-5 flex flex-col gap-1 relative">
+            <div className="absolute top-4 right-4 text-gray-400"><Bell size={18} /></div>
+            <span className="text-2xl font-semibold text-gray-800">{stats.sedangDiproses}</span>
+            <span className="text-sm text-gray-500">Sedang diproses</span>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm px-6 py-5 flex flex-col gap-1 relative">
+            <div className="absolute top-4 right-4 text-gray-400"><X size={18} /></div>
+            <span className="text-2xl font-semibold text-gray-800">{stats.total}</span>
+            <span className="text-sm text-gray-500">Total Permohonan</span>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm px-6 py-5 flex flex-col gap-1 relative">
+            <div className="absolute top-4 right-4 text-gray-400"><CheckCircle2 size={18} /></div>
+            <span className="text-2xl font-semibold text-gray-800">{stats.disetujuiFinal}</span>
+            <span className="text-sm text-gray-500">Disetujui final</span>
+          </div>
+        </div>
+      </div>
 
-        {QUICK_NAV.map((item) => {
+      {/* ===== MOBILE ===== */}
+      <div className="md:hidden bg-gray-50 min-h-screen pb-20">
+        <div className="px-4 pt-4">
+          <p className="text-green-700 font-semibold">Digital Amanah</p>
+          <p className="text-xs text-gray-400 mb-4">Dashboard Kepala Dusun</p>
 
-          const Icon = item.icon;
+          <h1 className="text-xl font-bold text-gray-800 mb-1">Selamat Pagi, {user?.name ?? 'Bapak/Ibu'}</h1>
+          <p className="text-sm text-gray-500 mb-4">Pantau administrasi warga {user?.wilayah_label ?? 'dusun'} secara digital.</p>
 
-          return (
-
-            <button
-              key={item.label}
-              onClick={() =>
-                navigate(`${BASE_PATH}/list?status=${item.key}`)
-              }
-              className="flex flex-col items-center justify-center gap-2 border rounded-xl px-6 py-3 hover:bg-gray-50 flex-1"
-            >
-
-              <Icon
-                size={16}
-                className="text-gray-400"
-              />
-
-              <span className="text-sm text-gray-600">
-                {item.label}
-              </span>
-
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <button onClick={() => navigate(`/admin/list-kadus?status=pending`)} className="bg-white rounded-2xl shadow-sm p-4 text-left relative">
+              <div className="flex justify-between items-start mb-2">
+                <Mail size={18} className="text-green-600" />
+              </div>
+              <p className="text-[10px] text-gray-400 uppercase">Permohonan</p>
+              <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
             </button>
+            <button onClick={() => navigate(`/admin/list-kadus`)} className="bg-white rounded-2xl shadow-sm p-4 text-left relative">
+              <div className="flex justify-between items-start mb-2">
+                <ShieldCheck size={18} className="text-green-600" />
+              </div>
+              <p className="text-[10px] text-gray-400 uppercase">Sedang diproses</p>
+              <p className="text-2xl font-bold text-gray-800">{stats.sedangDiproses.toString().padStart(2, '0')}</p>
+            </button>
+          </div>
 
-          );
+          <button onClick={() => navigate(`/admin/list-kadus?status=rw_approved`)} className="w-full bg-white rounded-2xl shadow-sm p-4 text-left mb-4">
+            <div className="flex justify-between items-center mb-1">
+              <CheckCircle2 size={18} className="text-green-600" />
+            </div>
+            <p className="text-[10px] text-gray-400 uppercase">Selesai</p>
+            <p className="text-2xl font-bold text-gray-800">{stats.disetujuiFinal}</p>
+          </button>
 
-        })}
+          <div className="mb-4">
+            <SuratStatChart data={chartData} />
+          </div>
 
+          <div className="mb-4">
+            <RiwayatVerifikasiList data={riwayatVerifikasi} />
+          </div>
+        </div>
+
+        <FooterDesa />
+        <MobileBottomNav links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-kadus', '/admin/list-kadus')} />
       </div>
-
-      {/* Informasi */}
-
-      <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm rounded-lg px-4 py-3 mb-6 flex items-center gap-2">
-
-        <AlertTriangle size={16} />
-
-        <span>
-          Surat hanya bisa diproses Kepala Dusun apabila
-          sudah disetujui RW (status rw_approved).
-        </span>
-
-      </div>
-
-      <h2 className="text-base font-medium text-gray-800">
-        Dashboard Kadus
-      </h2>
-
-      <p className="text-sm text-gray-500 mb-6">
-
-        Wilayah:{" "}
-
-        {user?.wilayah_label ??
-          "Dusun"}
-
-      </p>
-
-      {/* Statistik */}
-
-      <div className="grid grid-cols-2 gap-6 max-w-2xl">
-
-        <StatCardKadus
-          icon={<ClipboardList size={18} />}
-          value={stats.pending}
-          label="Menunggu"
-        />
-
-        <StatCardKadus
-          icon={<CheckCircle2 size={18} />}
-          value={stats.approved}
-          label="Disetujui"
-        />
-
-        <StatCardKadus
-          icon={<X size={18} />}
-          value={stats.rejected}
-          label="Ditolak"
-        />
-
-        <StatCardKadus
-          icon={<Bell size={18} />}
-          value={stats.total}
-          label="Total Surat"
-        />
-
-      </div>
-
-    </div>
-
+    </>
   );
-
 }

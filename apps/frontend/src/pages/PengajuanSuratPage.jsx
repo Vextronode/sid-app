@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { SURAT_CONFIG } from "@/lib/constants/suratConfig";

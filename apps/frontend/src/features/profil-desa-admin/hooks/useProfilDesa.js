@@ -10,13 +10,9 @@ import { profilDesa } from '../data/dummyProfilDesa';
 export function useProfilDesa() {
   const [version, setVersion] = useState(0);
 
-  const updateInformasiUmum = (data) => {
-    Object.assign(profilDesa.informasiUmum, data);
-    setVersion((v) => v + 1);
-  };
-
-  const updatePerangkatDesa = (data) => {
-    Object.assign(profilDesa.perangkatDesa, data);
+  const updateHeroAndStats = (data) => {
+    Object.assign(profilDesa.hero, data.hero);
+    Object.assign(profilDesa.stats, data.stats);
     setVersion((v) => v + 1);
   };
 
@@ -25,5 +21,11 @@ export function useProfilDesa() {
     setVersion((v) => v + 1);
   };
 
-  return { data: profilDesa, updateInformasiUmum, updatePerangkatDesa, updateVisiMisi, version };
+  const updatePerangkat = (perangkatUtama, kadusList) => {
+    Object.assign(profilDesa.perangkatUtama, perangkatUtama);
+    profilDesa.kadusList = kadusList;
+    setVersion((v) => v + 1);
+  };
+
+  return { data: profilDesa, updateHeroAndStats, updateVisiMisi, updatePerangkat, version };
 }

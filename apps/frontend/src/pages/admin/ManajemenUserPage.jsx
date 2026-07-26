@@ -1,131 +1,176 @@
-/* eslint-disable no-unused-vars */
 // ==========================================
 // ManajemenUserPage.jsx
-// Halaman kelola user & role admin: search, filter status, tabel,
-// pagination, aksi reset (kirim ulang undangan) & nonaktifkan user.
+// Halaman kelola user & role sesuai desain: card putih besar, search
+// bulat, filter status, tombol "Tambah user" hijau, tabel dengan badge
+// role & status, kolom Aksi (edit + toggle aktif/nonaktif), pagination
+// bulat bergaya "1 2 3 >".
 // ==========================================
 
 import { useState } from 'react';
-import { Search, Send, Ban, Plus } from 'lucide-react';
+import { Search, SquarePen, Eye, EyeOff, UserPlus, ChevronRight } from 'lucide-react';
 import { useUserList } from '@/features/manajemen-user/hooks/useUserList';
-import TambahUserModal from '@/features/manajemen-user/components/TambahUserModal';
+import UserFormModal from '@/features/manajemen-user/components/UserFormModal';
+import { FooterDesa } from '@/components/layout/FooterDesa';
 
 export default function ManajemenUserPage() {
-  const { data, setSearch, filterStatus, setFilterStatus, currentPage, setCurrentPage, totalPages, toggleStatus, addUser } = useUserList();
+  const { data, setSearch, filterStatus, setFilterStatus, currentPage, setCurrentPage, totalPages, toggleStatus, addUser, updateUser } = useUserList();
   const [keyword, setKeyword] = useState('');
-    const [modalOpen, setModalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null); // null = mode tambah
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     setSearch(keyword);
   };
 
-  const handleAddUser = (formData) => {
-     addUser(formData);
-     setModalOpen(false);
-   };
+  const handleOpenAdd = () => {
+    setEditingUser(null);
+    setModalOpen(true);
+  };
 
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const handleOpenEdit = (user) => {
+    setEditingUser({
+      id: user.id,
+      name: user.nama,
+      email: user.email,
+      role: user.role,
+      wilayah: user.wilayah,
+      is_active: user.status === 'aktif',
+    });
+    setModalOpen(true);
+  };
+
+  const handleSubmitForm = (formData) => {
+    if (editingUser) {
+      updateUser(editingUser.id, formData);
+    } else {
+      addUser(formData);
+    }
+    setModalOpen(false);
+  };
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <h2 className="font-medium text-gray-800 text-lg mb-4">Manajemen user & role</h2>
+    <div>
+      <div className="p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-8">
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">Manajemen Pengguna</h1>
+          <p className="text-sm text-gray-500 mb-6">Kelola data administrator dan hak akses wilayah Cibenda.</p>
 
-      <form onSubmit={handleSearchSubmit} className="flex gap-3 mb-4">
-        <input
-          type="text"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="Cari nama atau email..."
-          className="flex-1 border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
-        />
-        <button type="submit" className="bg-green-600 text-white px-4 rounded-md flex items-center justify-center">
-          <Search size={16} />
-        </button>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="border border-green-500 text-green-600 rounded-md px-3 text-sm"
-        >
-          <option value="">Semua Status</option>
-          <option value="aktif">Aktif</option>
-          <option value="nonaktif">Nonaktif</option>
-        </select>
-        <button
-           type="button"
-           onClick={() => setModalOpen(true)}
-           className="border border-green-500 text-green-600 rounded-md px-4 text-sm flex items-center gap-1"
-         >
-          <Plus size={14} /> Tambah user
-        </button>
-      </form>
-
-      <table className="w-full text-sm bg-white rounded-lg overflow-hidden">
-        <thead>
-          <tr className="border-b text-left text-gray-500">
-            <th className="py-3 px-4 font-medium">Nama</th>
-            <th className="py-3 px-4 font-medium">Email</th>
-            <th className="py-3 px-4 font-medium">Role</th>
-            <th className="py-3 px-4 font-medium">Wilayah</th>
-            <th className="py-3 px-4 font-medium">Status</th>
-            <th className="py-3 px-4 font-medium">Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="text-center text-gray-400 py-8">Belum ada user.</td>
-            </tr>
-          ) : (
-            data.map((user) => (
-              <tr key={user.id} className="border-b hover:bg-gray-50">
-                <td className="py-3 px-4">{user.nama}</td>
-                <td className="py-3 px-4">{user.email}</td>
-                <td className="py-3 px-4">
-                  <span className="border rounded-md px-3 py-1 text-xs text-gray-600">{user.role}</span>
-                </td>
-                <td className="py-3 px-4">{user.wilayah}</td>
-                <td className="py-3 px-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {user.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
-                  </span>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex gap-2">
-                    <button className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100 text-gray-600" title="Kirim ulang undangan">
-                      <Send size={16} />
-                    </button>
-                    <button
-                      onClick={() => toggleStatus(user.id)}
-                      className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100 text-gray-600"
-                      title={user.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan'}
-                    >
-                      <Ban size={16} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-
-      <div className="flex justify-end mt-4">
-        <div className="flex gap-2">
-          {pages.map((page) => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`w-9 h-9 rounded-md border text-sm font-medium ${
-                page === currentPage ? 'bg-green-600 border-green-600 text-white' : 'border-green-500 text-green-600 hover:bg-green-50'
-              }`}
+          <form onSubmit={handleSearchSubmit} className="flex gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="Cari nama atau email..."
+                className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
+              />
+            </div>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="border rounded-full px-4 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
             >
-              {page}
+              <option value="">Semua Status</option>
+              <option value="aktif">Aktif</option>
+              <option value="nonaktif">Nonaktif</option>
+            </select>
+            <button
+              type="button"
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2 bg-green-600 text-white rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-700 shrink-0"
+            >
+              <UserPlus size={16} /> Tambah user
             </button>
-          ))}
+          </form>
+
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-gray-400 text-xs">
+                <th className="py-3 font-medium">Nama</th>
+                <th className="py-3 font-medium">Email</th>
+                <th className="py-3 font-medium">Role</th>
+                <th className="py-3 font-medium">Wilayah</th>
+                <th className="py-3 font-medium">Status</th>
+                <th className="py-3 font-medium text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.length === 0 ? (
+                <tr><td colSpan={6} className="text-center text-gray-400 py-8">Belum ada user.</td></tr>
+              ) : (
+                data.map((user) => (
+                  <tr key={user.id} className="border-b last:border-0">
+                    <td className="py-4 font-semibold text-gray-800">{user.nama}</td>
+                    <td className="py-4 text-gray-600">{user.email}</td>
+                    <td className="py-4">
+                      <span className="border rounded-full px-3 py-1 text-xs text-gray-600 uppercase">{user.role}</span>
+                    </td>
+                    <td className="py-4 text-gray-600">{user.wilayah}</td>
+                    <td className="py-4">
+                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
+                        user.status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                        {user.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </td>
+                    <td className="py-4">
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => handleOpenEdit(user)}
+                          className="w-9 h-9 rounded-lg border flex items-center justify-center hover:bg-gray-100 text-gray-600"
+                          title="Edit"
+                        >
+                          <SquarePen size={16} />
+                        </button>
+                        <button
+                          onClick={() => toggleStatus(user.id)}
+                          className="w-9 h-9 rounded-lg border flex items-center justify-center hover:bg-gray-100 text-gray-600"
+                          title={user.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan'}
+                        >
+                          {user.status === 'aktif' ? <Eye size={16} /> : <EyeOff size={16} />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+
+          <div className="flex justify-center gap-2 mt-8">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-9 h-9 rounded-full text-sm font-medium border ${
+                  page === currentPage ? 'bg-green-700 text-white border-green-700' : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            {totalPages > 1 && (
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="w-9 h-9 rounded-full text-sm border text-gray-600 flex items-center justify-center hover:bg-gray-50"
+              >
+                <ChevronRight size={16} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
-      <TambahUserModal open={modalOpen} onClose={() => setModalOpen(false)} onSubmit={handleAddUser} />
+
+      <FooterDesa />
+
+      <UserFormModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleSubmitForm}
+        initialData={editingUser}
+      />
     </div>
   );
 }

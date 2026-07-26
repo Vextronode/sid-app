@@ -1,13 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { MOBILE_ONLY_LINKS } from "@/lib/constants/navigation";
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ links = MOBILE_ONLY_LINKS }) {
   const location = useLocation();
 
   return (
     <nav className="flex md:hidden fixed bottom-0 w-full bg-[#4CAF4F] text-white shadow-[0_-4px_10px_rgba(0,0,0,0.1)] z-50">
       <div className="flex justify-around items-center w-full h-16">
-        {MOBILE_ONLY_LINKS.map((item) => {
+        {links.map((item) => {
           const isActive =
             item.href === "/"
               ? location.pathname === "/"

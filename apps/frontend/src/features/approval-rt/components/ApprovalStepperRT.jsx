@@ -1,153 +1,68 @@
-import { Check, Clock, X } from 'lucide-react';
-import { getStepStatuses } from '@/features/approval/constants/statusFlow';
+// ==========================================
+// ApprovalStepperRT.jsx
+// Stepper 4 tahap (Submit -> RT -> RW -> Selesai), dihitung langsung
+// dari surat.status (string dari API), bukan dari dummy statusFlow.
+// ⚠️ Sesuaikan STATUS_STEP_MAP kalau nilai status dari backend beda
+// (misal backend pakai 'pending_rt' bukan 'pending').
+// ==========================================
 
+import { Check, X, Loader2 } from 'lucide-react';
+
+const STEPS = ['Submit', 'RT', 'RW', 'Selesai'];
+
+// index 0 = Submit selalu done. Sesuaikan mapping status -> step index & state.
+function getStepState(status) {
+  const map = {
+    pending: { step: 1, state: 'current' },
+    rt_approved: { step: 2, state: 'done_rt' },
+    rt_rejected: { step: 1, state: 'rejected_rt' },
+    rw_approved: { step: 3, state: 'done_rw' },
+    rw_rejected: { step: 2, state: 'rejected_rw' },
+  };
+  return map[status] ?? { step: 0, state: 'waiting' };
+}
 
 export default function ApprovalStepperRT({ surat }) {
-
-
-  if(!surat){
-    return null;
-  }
-
-
-  const steps = getStepStatuses(surat);
-
-
+  const { step, state } = getStepState(surat?.status);
 
   return (
+    <div className="flex items-center justify-center gap-1 mb-6 flex-wrap">
+      {STEPS.map((label, index) => {
+        let circle;
+        let statusText = 'Menunggu';
+        let labelColor = 'text-gray-400';
 
-    <div className="flex items-center justify-center gap-1 mb-8 flex-wrap">
+        const isRejectedHere = (index === 1 && state === 'rejected_rt') || (index === 2 && state === 'rejected_rw');
+        const isDone = index < step || (index === step && (state === 'done_rt' || state === 'done_rw'));
+        const isCurrent = index === step && state === 'current';
 
-
-      {steps.map((step,index)=>{
-
-
-        let circleClass =
-          'bg-gray-200 text-gray-500';
-
-
-        let icon=index+1;
-
-
-        let statusText='Menunggu';
-
-
-
-        if(step.state==='done'){
-
-          circleClass=
-            'bg-green-500 text-white';
-
-          icon=<Check size={16}/>;
-
-          statusText =
-            step.timestamp ?? 'Selesai';
-
+        if (isRejectedHere) {
+          circle = <div className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center"><X size={18} /></div>;
+          statusText = 'Ditolak';
+          labelColor = 'text-red-500';
+        } else if (isDone) {
+          circle = <div className="w-9 h-9 rounded-full bg-green-500 text-white flex items-center justify-center"><Check size={18} /></div>;
+          statusText = 'Disetujui';
+          labelColor = 'text-green-600';
+        } else if (isCurrent) {
+          circle = <div className="w-9 h-9 rounded-full border-2 border-green-500 text-green-500 flex items-center justify-center"><Loader2 size={16} className="animate-spin" /></div>;
+          statusText = 'Menunggu';
+          labelColor = 'text-green-500';
+        } else {
+          circle = <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">{index + 1}</div>;
         }
-
-
-
-        else if(step.state==='rejected'){
-
-          circleClass =
-            'bg-red-500 text-white';
-
-
-          icon=<X size={16}/>;
-
-
-          statusText =
-            step.timestamp
-            ? `Ditolak · ${step.timestamp}`
-            : 'Ditolak';
-
-        }
-
-
-
-        else if(step.state==='current'){
-
-
-          circleClass =
-            'bg-yellow-100 text-yellow-600';
-
-
-          icon=<Clock size={16}/>;
-
-
-          statusText='Sedang diproses';
-
-        }
-
-
-
 
         return (
-
-          <div
-            key={step.label}
-            className="flex items-center"
-          >
-
-
+          <div key={label} className="flex items-center">
             <div className="flex flex-col items-center gap-1">
-
-
-              <div
-                className={`
-                w-9 h-9 rounded-full
-                flex items-center justify-center
-                text-sm font-medium
-                ${circleClass}
-                `}
-              >
-
-                {icon}
-
-              </div>
-
-
-
-              <span className="text-xs text-gray-600 text-center w-20">
-
-                {step.label}
-
-              </span>
-
-
-
-              <span className="text-[10px] text-gray-400 text-center w-20">
-
-                {statusText}
-
-              </span>
-
-
+              {circle}
+              <span className={`text-xs font-semibold uppercase ${labelColor}`}>{label}</span>
+              <span className="text-[10px] text-gray-400">{statusText}</span>
             </div>
-
-
-
-            {
-              index < steps.length-1 &&
-              (
-                <div className="w-10 h-px bg-gray-300 mx-1"/>
-              )
-            }
-
-
-
+            {index < STEPS.length - 1 && <div className="w-8 h-px bg-gray-300 mx-1 mt-[-16px]" />}
           </div>
-
         );
-
-
       })}
-
-
-
     </div>
-
   );
-
-
 }
