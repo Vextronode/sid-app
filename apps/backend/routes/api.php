@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RwApprovalController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
+use App\Http\Controllers\Api\LetterDownloadController;
+
 /*
 |--------------------------------------------------------------------------
 | Public Routes
@@ -69,7 +71,13 @@ Route::middleware('auth:sanctum')->group(function () {
         [LetterApprovalController::class, 'approve']
     );
 
-
+    Route::get(
+        '/letters/{letter}/download',
+        [LetterDownloadController::class, 'download']
+    );
+    Route::get('/letters/{letter}/preview', function (\App\Models\Letter $letter, \App\Services\PdfService $service) {
+    return $service->preview($letter, auth()->user(), request('template', 'wet'));
+})->middleware('auth')->name('letters.preview');
 
     Route::prefix('rt')->group(function () {
 
@@ -144,7 +152,6 @@ Route::middleware('auth:sanctum')->group(function () {
                 [KadusApprovalController::class,'show']
             );
     });
-
 
 
 });

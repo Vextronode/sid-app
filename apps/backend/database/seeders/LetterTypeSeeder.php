@@ -38,34 +38,48 @@ class LetterTypeSeeder extends Seeder
     private function baseTemplate(string $title, string $body): string
     {
         return <<<HTML
-<div style="text-align:center; margin-bottom:12px;">
-    <h3 style="margin:0;">PEMERINTAH DESA {{ village_name }}</h3>
-    <p style="margin:0;">{{ village_address }} &middot; Telp. {{ village_phone }}</p>
-    <hr>
-</div>
+        <div style="text-align:center; margin-bottom:12px;">
+            <h3 style="margin:0;">PEMERINTAH DESA {{ village_name }}</h3>
+            <p style="margin:0;">{{ village_address }}</p>
+            <hr>
+        </div>
 
-<h4 style="text-align:center; text-decoration:underline; margin-bottom:2px;">{$title}</h4>
-<p style="text-align:center; margin-top:0;">Nomor: {{ letter_number }}</p>
+        <h4 style="text-align:center;text-decoration:underline;">
+            {$title}
+        </h4>
 
-<p>Yang bertanda tangan di bawah ini, Kepala Desa {{ village_name }}, dengan ini menerangkan bahwa:</p>
+        <p style="text-align:center;">
+            Nomor : {{ letter_number }}
+        </p>
 
-<table style="width:100%; margin-left:20px;">
-    <tr><td style="width:160px;">Nama</td><td>: {{ applicant_name }}</td></tr>
-    <tr><td>NIK</td><td>: {{ applicant_nik }}</td></tr>
-    <tr><td>Alamat</td><td>: {{ applicant_address }}</td></tr>
-</table>
+        <p>
+        Yang bertanda tangan di bawah ini Kepala Desa
+        <b>{{ village_name }}</b>,
+        menerangkan bahwa :
+        </p>
 
-<p>{$body}</p>
+        <table width="100%">
+        <tr>
+            <td width="170">Nama</td>
+            <td>: {{ applicant_name }}</td>
+        </tr>
+        <tr>
+            <td>NIK</td>
+            <td>: {{ applicant_nik }}</td>
+        </tr>
+        <tr>
+            <td>Alamat</td>
+            <td>: {{ applicant_address }}</td>
+        </tr>
+        </table>
 
-<p>Demikian surat ini dibuat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.</p>
+        <p>{$body}</p>
 
-<div style="text-align:right; margin-top:24px;">
-    <p style="margin:0;">{{ village_name }}, {{ submitted_at }}</p>
-    <p style="margin:0;">Kepala Desa,</p>
-    <br><br><br>
-    <p style="margin:0; text-decoration:underline;">{{ village_head_name }}</p>
-</div>
-HTML;
+        <p>
+        Demikian surat ini dibuat agar dapat dipergunakan sebagaimana mestinya.
+        </p>
+
+        HTML;
     }
 
     /**
