@@ -11,7 +11,23 @@ import { useWargaList } from '@/features/data-warga/hooks/useWargaList';
 import { FooterDesa } from '@/components/layout/FooterDesa';
 
 export default function DataWargaPage() {
-  const { data, setSearch, filterWilayah, setFilterWilayah, currentPage, setCurrentPage, totalPages, deleteWarga } = useWargaList();
+  const {
+    data,
+    loading,
+
+    setSearch,
+
+    filterWilayah,
+    setFilterWilayah,
+    wilayahOptions,
+
+    currentPage,
+    setCurrentPage,
+
+    totalPages,
+
+    deleteWarga,
+  } = useWargaList();  
   const [keyword, setKeyword] = useState('');
 
   const handleSearchSubmit = (e) => {
@@ -45,8 +61,16 @@ export default function DataWargaPage() {
               onChange={(e) => setFilterWilayah(e.target.value)}
               className="border rounded-full px-4 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
             >
-              <option value="">Semua RT/RW</option>
-              <option value="001/001">001/001</option>
+             <option value="">Semua RT/RW</option>
+
+{wilayahOptions.map((item) => (
+  <option
+    key={`${item.rt_id}-${item.rw_id}`}
+    value={`${item.rt_id}-${item.rw_id}`}
+  >
+    RT {item.rt?.number} / RW {item.rw?.number}
+  </option>
+))}
             </select>
             <button
               type="button"
@@ -67,20 +91,26 @@ export default function DataWargaPage() {
               </tr>
             </thead>
             <tbody>
-              {data.length === 0 ? (
+              {loading ? (
+  <tr>
+    <td colSpan={5} className="text-center py-8">
+      Memuat data...
+    </td>
+  </tr>
+) : data.length === 0 ? (
                 <tr><td colSpan={5} className="text-center text-gray-400 py-8">Belum ada data warga.</td></tr>
               ) : (
                 data.map((warga) => (
                   <tr key={warga.id} className="border-b last:border-0">
-                    <td className="py-4 font-semibold text-gray-800">{warga.nama}</td>
+                    <td className="py-4 font-semibold text-gray-800">{warga.name}</td>
                     <td className="py-4 text-gray-600">{warga.nik}</td>
-                    <td className="py-4 text-gray-600">{warga.rt}/{warga.rw}</td>
+                    <td className="py-4 text-gray-600">RT {warga.rt?.number} / RW {warga.rw?.number}</td>
                     <td className="py-4">
                       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
-                        warga.status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        warga.is_active ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                       }`}>
                         <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                        {warga.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
+                        {warga.is_active ? 'Aktif' : 'Nonaktif'}
                       </span>
                     </td>
                     <td className="py-4">
