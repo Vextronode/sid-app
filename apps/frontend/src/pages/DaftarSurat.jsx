@@ -52,7 +52,7 @@ const sedangDiproses = dataRiwayat.filter((s) =>
 ).length;
 
 const disetujuiFinal = dataRiwayat.filter(
-  (s) => s.status === "kasi_approved"
+  (s) => s.status === "rw_approved"
 ).length;
 
 

@@ -15,11 +15,50 @@ import OperatorSuratActionModal from '@/features/operator-desa/components/Operat
 import { FooterDesa } from '@/components/layout/FooterDesa';
 
 const STATUS_LABEL = {
-  pending: { label: 'Pending', className: 'bg-gray-100 text-gray-500' },
-  rt_approved: { label: 'Proses', className: 'bg-blue-50 text-blue-600' },
-  rt_rejected: { label: 'Ditolak', className: 'bg-red-50 text-red-600' },
-  rw_approved: { label: 'Verified', className: 'bg-green-50 text-green-700' },
-  rw_rejected: { label: 'Ditolak', className: 'bg-red-50 text-red-600' },
+  pending: {
+    label: "Pending",
+    className: "bg-gray-100 text-gray-500",
+  },
+
+  rt_approved: {
+    label: "RT Approved",
+    className: "bg-blue-50 text-blue-600",
+  },
+
+  rw_approved: {
+    label: "RW Approved",
+    className: "bg-cyan-50 text-cyan-700",
+  },
+
+  kadus_approved: {
+    label: "Kadus Approved",
+    className: "bg-indigo-50 text-indigo-700",
+  },
+
+  kasi_approved: {
+    label: "Verified",
+    className: "bg-green-50 text-green-700",
+  },
+
+  rt_rejected: {
+    label: "Ditolak RT",
+    className: "bg-red-50 text-red-600",
+  },
+
+  rw_rejected: {
+    label: "Ditolak RW",
+    className: "bg-red-50 text-red-600",
+  },
+
+  kadus_rejected: {
+    label: "Ditolak Kadus",
+    className: "bg-red-50 text-red-600",
+  },
+
+  kasi_rejected: {
+    label: "Ditolak Kasi",
+    className: "bg-red-50 text-red-600",
+  },
 };
 
 const ITEMS_PER_PAGE = 3;
@@ -35,14 +74,34 @@ export default function OperatorSuratListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSurat, setSelectedSurat] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
+  console.log(letters);
+const ROLE_ENDPOINT = {
+  rt: "rt",
+  rw: "rw",
+  kadus: "kadus",
 
-  useEffect(() => {
-    const roleKey = user?.role ?? 'petugas_desa';
-    getSuratList(roleKey)
-      .then((res) => setLetters(res.data.data ?? []))
-      .catch((err) => console.error('GET OPERATOR SURAT LIST ERROR', err.response?.data ?? err))
-      .finally(() => setLoading(false));
-  }, [user]);
+  kasi_pelayanan: "kasi",
+  kaur_tu_umum: "kasi",
+  petugas_desa: "kasi",
+};
+
+const roleKey = ROLE_ENDPOINT[user?.role] ?? user?.role;
+
+useEffect(() => {
+  if (!roleKey) return;
+
+  setLoading(true);
+
+  getSuratList(roleKey)
+    .then((res) => {
+      setLetters(res.data);
+    })
+    .catch((err) => {
+      console.error(err.response?.data ?? err);
+    })
+    .finally(() => setLoading(false));
+
+}, [roleKey]);
 
   const filtered = useMemo(() => {
     let result = [...letters];
@@ -103,31 +162,32 @@ export default function OperatorSuratListPage() {
             </div>
             <div>
               <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Jenis Surat</p>
-              <select
-                value={filterJenis}
-                onChange={(e) => { setFilterJenis(e.target.value); setCurrentPage(1); }}
-                className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
-              >
-                <option value="">Semua Jenis</option>
-                {jenisOptions.map((j) => (
-                  <option key={j} value={j}>{j}</option>
-                ))}
-              </select>
+              <select value={filterJenis} onChange={(e) => { setFilterJenis(e.target.value); setCurrentPage(1); }} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500" > <option value="">Semua Jenis</option> {jenisOptions.map((j) => ( <option key={j} value={j}>{j}</option> ))} </select>
             </div>
             <div>
               <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Status</p>
-              <select
-                value={filterStatus}
-                onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-                className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
-              >
-                <option value="">Semua Status</option>
-                <option value="pending">Pending</option>
-                <option value="rt_approved">Proses</option>
-                <option value="rw_approved">Verified</option>
-                <option value="rt_rejected">Ditolak (RT)</option>
-                <option value="rw_rejected">Ditolak (RW)</option>
-              </select>
+            <select
+              value={filterStatus}
+              onChange={(e) => {
+                setFilterStatus(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
+            >
+              <option value="">Semua Status</option>
+
+              <option value="pending">Pending</option>
+
+              <option value="rt_approved">RT Approved</option>
+              <option value="rw_approved">RW Approved</option>
+              <option value="kadus_approved">Kadus Approved</option>
+              <option value="kasi_approved">Verified / Selesai</option>
+
+              <option value="rt_rejected">Ditolak RT</option>
+              <option value="rw_rejected">Ditolak RW</option>
+              <option value="kadus_rejected">Ditolak Kadus</option>
+              <option value="kasi_rejected">Ditolak Kasi</option>
+            </select>
             </div>
           </div>
         </div>
