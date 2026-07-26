@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import {
   useEffect,
   useMemo,
@@ -12,11 +13,11 @@ import {
 
 import {
   RELEVANT_STATUSES
-} from "../constants/roleConfigKadus";
+} from "../constants/roleConfigkadus";
 
 
 
-export function useSuratListKadus({
+export function useSuratList({
   initialStatus = ""
 } = {}) {
 

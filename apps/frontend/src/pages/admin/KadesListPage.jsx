@@ -2,8 +2,8 @@
 /* eslint-disable no-unused-vars */
 // ==========================================
 // KadesListPage.jsx
-// Desain identik RTListPage. Kolom Aksi cuma tombol Lihat (tidak ada
-// Edit/Hapus), dan modal yang terbuka selalu read-only.
+// Desktop gaya baru, tapi read-only — cuma tombol Lihat, tanpa Setuju/Tolak.
+// Kepala Desa monitoring semua tahap surat dari pending sampai selesai.
 // ==========================================
 
 import { useState, useMemo, useEffect } from 'react';
@@ -17,7 +17,7 @@ import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { FooterDesa } from '@/components/layout/FooterDesa';
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
 
-const ITEMS_PER_PAGE = 4;
+const ITEMS_PER_PAGE = 5;
 
 export default function KadesListPage() {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ export default function KadesListPage() {
   const initialStatus = searchParams.get('status') ?? '';
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data, loading, search, setSearch, filterJenis, setFilterJenis, filterStatus, setFilterStatus } = useSuratList({ initialStatus });
+  const { data, loading, search, setSearch, filterStatus, setFilterStatus } = useSuratList({ initialStatus });
 
   useEffect(() => setCurrentPage(1), [search, filterStatus]);
 
@@ -40,83 +40,98 @@ export default function KadesListPage() {
   return (
     <>
       {/* ===== DESKTOP ===== */}
-      <div className="hidden md:block max-w-5xl mx-auto p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-medium text-gray-800">Semua permohonan surat (monitoring)</h2>
+      <div className="hidden md:block p-6">
+        <p className="text-xs text-gray-400 mb-1">Admin / <span className="text-gray-600">Daftar Permohonan Surat (Monitoring)</span></p>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Daftar Permohonan Surat</h1>
+
+        <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Pencarian Cepat</p>
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  defaultValue={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Nomor surat atau nama pemohon..."
+                  className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
+                />
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Status</p>
+              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500">
+                <option value="">Semua Status</option>
+                <option value="pending">Pending</option>
+                <option value="rt_approved">RT Approved</option>
+                <option value="rt_rejected">RT Rejected</option>
+                <option value="rw_approved">RW Approved</option>
+                <option value="rw_rejected">RW Rejected</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={(e) => e.preventDefault()} className="flex gap-3 mb-4">
-          <input
-            defaultValue={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari nama pemohon..."
-            className="flex-1 border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
-          />
-          <button type="submit" className="bg-green-600 text-white px-4 rounded-md flex items-center justify-center"><Search size={16} /></button>
-          <select onChange={(e) => setFilterJenis(e.target.value)} className="border border-green-500 text-green-600 rounded-md px-3 text-sm">
-            <option value="">Semua Jenis</option>
-          </select>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="border border-green-500 text-green-600 rounded-md px-3 text-sm">
-            <option value="">Semua Status</option>
-            <option value="pending">pending</option>
-            <option value="rt_approved">rt_approved</option>
-            <option value="rt_rejected">rt_rejected</option>
-            <option value="rw_approved">rw_approved</option>
-            <option value="rw_rejected">rw_rejected</option>
-          </select>
-        </form>
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
+                <th className="py-3 px-5 font-semibold">No. Surat</th>
+                <th className="py-3 px-5 font-semibold">Pemohon</th>
+                <th className="py-3 px-5 font-semibold">Jenis</th>
+                <th className="py-3 px-5 font-semibold">Tanggal</th>
+                <th className="py-3 px-5 font-semibold">Status</th>
+                <th className="py-3 px-5 font-semibold text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={6} className="text-center text-gray-400 py-10">Memuat data surat...</td></tr>
+              ) : paginatedData.length === 0 ? (
+                <tr><td colSpan={6} className="text-center text-gray-400 py-10">Belum ada surat.</td></tr>
+              ) : (
+                paginatedData.map((s) => (
+                  <tr key={s.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <td className="py-4 px-5 font-semibold text-gray-800">#{s.letter_number ?? '-'}</td>
+                    <td className="py-4 px-5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold shrink-0">
+                          {(s.applicant_name ?? '?').split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                        </div>
+                        <span className="font-medium text-gray-800">{s.applicant_name}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-5 text-gray-600">{s.letter_type?.name ?? '-'}</td>
+                    <td className="py-4 px-5 text-gray-500">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
+                    <td className="py-4 px-5"><StatusBadgeRT status={s.status} /></td>
+                    <td className="py-4 px-5 text-right">
+                      <button onClick={() => setSelectedId(s.id)} className="w-9 h-9 rounded-lg border flex items-center justify-center hover:bg-gray-100 text-gray-600 ml-auto">
+                        <Eye size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
 
-        <table className="w-full text-sm bg-white rounded-lg overflow-hidden">
-          <thead>
-            <tr className="border-b text-left text-gray-500">
-              <th className="py-3 px-4 font-medium">No.Surat</th>
-              <th className="py-3 px-4 font-medium">Pemohon</th>
-              <th className="py-3 px-4 font-medium">Jenis</th>
-              <th className="py-3 px-4 font-medium">Tanggal</th>
-              <th className="py-3 px-4 font-medium">Status</th>
-              <th className="py-3 px-4 font-medium">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6} className="text-center text-gray-400 py-8">Memuat data surat...</td></tr>
-            ) : paginatedData.length === 0 ? (
-              <tr><td colSpan={6} className="text-center text-gray-400 py-8">Belum ada surat.</td></tr>
-            ) : (
-              paginatedData.map((s) => (
-                <tr key={s.id} className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-4">{s.letter_number ?? '-'}</td>
-                  <td className="py-3 px-4">{s.applicant_name}</td>
-                  <td className="py-3 px-4">{s.letter_type?.name ?? '-'}</td>
-                  <td className="py-3 px-4">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID') : '-'}</td>
-                  <td className="py-3 px-4"><StatusBadgeRT status={s.status} /></td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => setSelectedId(s.id)}
-                      className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100 text-gray-600"
-                      title="Lihat Detail"
-                    >
-                      <Eye size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-
-        <div className="flex items-center justify-between mt-4">
-          <button onClick={() => navigate(BASE_PATH)} className="border border-green-500 text-green-600 rounded-full px-4 py-1.5 text-sm">Kembali</button>
-          <div className="flex gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-9 h-9 rounded-md border text-sm font-medium ${page === currentPage ? 'bg-green-600 border-green-600 text-white' : 'border-green-500 text-green-600 hover:bg-green-50'}`}
-              >
-                {page}
+          <div className="flex items-center justify-between px-5 py-4 border-t">
+            <p className="text-xs text-gray-500">
+              Menampilkan {paginatedData.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-{(currentPage - 1) * ITEMS_PER_PAGE + paginatedData.length} dari {data.length} data
+            </p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="border rounded-lg px-4 py-2 text-xs text-gray-600 disabled:opacity-40">
+                Sebelumnya
               </button>
-            ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-lg text-xs font-medium ${page === currentPage ? 'bg-green-600 text-white' : 'border text-gray-600'}`}>
+                  {page}
+                </button>
+              ))}
+              <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="border rounded-lg px-4 py-2 text-xs text-gray-600 disabled:opacity-40">
+                Selanjutnya
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -135,24 +150,19 @@ export default function KadesListPage() {
             <input
               defaultValue={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari Jenis Surat..."
+              placeholder="Cari nama pemohon..."
               className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500 bg-white"
             />
           </div>
 
-          <div className="flex gap-2 mb-4">
-            <select onChange={(e) => setFilterJenis(e.target.value)} className="flex-1 border rounded-full px-3 py-2 text-xs text-gray-600 bg-white">
-              <option value="">Semua Jenis</option>
-            </select>
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="flex-1 border rounded-full px-3 py-2 text-xs text-gray-600 bg-white">
-              <option value="">Semua Status</option>
-              <option value="pending">pending</option>
-              <option value="rt_approved">rt_approved</option>
-              <option value="rt_rejected">rt_rejected</option>
-              <option value="rw_approved">rw_approved</option>
-              <option value="rw_rejected">rw_rejected</option>
-            </select>
-          </div>
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-full px-3 py-2 text-xs text-gray-600 bg-white mb-4">
+            <option value="">Semua Status</option>
+            <option value="pending">pending</option>
+            <option value="rt_approved">rt_approved</option>
+            <option value="rt_rejected">rt_rejected</option>
+            <option value="rw_approved">rw_approved</option>
+            <option value="rw_rejected">rw_rejected</option>
+          </select>
 
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
             <div className="grid grid-cols-4 text-[10px] font-semibold text-gray-400 uppercase px-4 py-3 border-b">
@@ -164,11 +174,7 @@ export default function KadesListPage() {
               <p className="text-center text-gray-400 text-sm py-8">Belum ada surat.</p>
             ) : (
               paginatedData.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => setSelectedId(s.id)}
-                  className="w-full grid grid-cols-4 items-center text-left px-4 py-3 border-b last:border-0 text-xs"
-                >
+                <button key={s.id} onClick={() => setSelectedId(s.id)} className="w-full grid grid-cols-4 items-center text-left px-4 py-3 border-b last:border-0 text-xs">
                   <span className="text-gray-500">{s.letter_number ?? '-'}</span>
                   <span className="font-semibold text-gray-800">{s.applicant_name}</span>
                   <span className="text-gray-600">{s.letter_type?.name ?? '-'}</span>
@@ -180,11 +186,7 @@ export default function KadesListPage() {
 
           <div className="flex justify-center gap-2 mb-4">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 rounded-full text-xs font-medium ${page === currentPage ? 'bg-green-600 text-white' : 'bg-white border text-green-600'}`}
-              >
+              <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-full text-xs font-medium ${page === currentPage ? 'bg-green-600 text-white' : 'bg-white border text-green-600'}`}>
                 {page}
               </button>
             ))}
