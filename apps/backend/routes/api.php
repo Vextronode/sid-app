@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RwApprovalController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
+use App\Http\Controllers\Api\LetterDownloadController;
+
 /*
 |--------------------------------------------------------------------------
 | Public Routes
@@ -69,7 +71,10 @@ Route::middleware('auth:sanctum')->group(function () {
         [LetterApprovalController::class, 'approve']
     );
 
-
+    Route::get(
+        '/letters/{letter}/download',
+        [LetterDownloadController::class, 'download']
+    );
 
     Route::prefix('rt')->group(function () {
 
@@ -139,12 +144,29 @@ Route::middleware('auth:sanctum')->group(function () {
                 '/letters/{letter}/decision',
                 [KadusApprovalController::class, 'decision']
             );
-            Route::get(
-                '/letters/{letter}',
-                [KadusApprovalController::class,'show']
-            );
     });
 
+        Route::get(
+            '/letters',
+            [RtApprovalController::class, 'index']
+        );
 
+        Route::patch(
+            '/letters/{letter}/decision',
+            [RtApprovalController::class, 'decision']
+        );
+
+    Route::prefix('rw')->group(function () {
+
+        Route::patch(
+            '/approvals/{letter}/approve',
+            [RwApprovalController::class, 'approve']
+        );
+        Route::get(
+            '/letters',
+            [RwApprovalController::class, 'index']
+        );
+
+    });
 
 });
