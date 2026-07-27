@@ -30,11 +30,37 @@ export default function LoginPage() {
     try {
       await api.get('/sanctum/csrf-cookie');
       const response = await api.post('/api/login', { nik, password, remember: rememberMe });
-      if (login) {
-        login(response.data.user ?? response.data);
+      const loggedUser = response.data.user ?? response.data;
+
+      login(loggedUser);
+
+      switch (loggedUser.role) {
+        case "rt":
+          navigate("/admin/dashboard-surat-rt", { replace: true });
+          break;
+
+        case "rw":
+          navigate("/admin/dashboard-surat-rw", { replace: true });
+          break;
+
+        case "kadus":
+          navigate("/admin/dashboard-surat-kadus", { replace: true });
+          break;
+
+        case "kepala_desa":
+          navigate("/admin/dashboard-surat-kades", { replace: true });
+          break;
+
+        case "kasi_pelayanan":
+        case "kaur_tu_umum":
+        case "petugas_desa":
+          navigate("/admin/operator-desa", { replace: true });
+          break;
+
+        default:
+          navigate("/daftar-surat", { replace: true });
       }
-      // Redirect ke halaman utama, biarkan GuestRoute/App.jsx yang atur redirect per-role
-      navigate('/');
+
     } catch (err) {
       const message = err.response?.data?.errors?.nik?.[0] ?? err.response?.data?.message ?? 'NIK atau password salah.';
       setError(message);

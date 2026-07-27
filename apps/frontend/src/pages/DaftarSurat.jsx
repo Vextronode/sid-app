@@ -4,6 +4,7 @@ import { FooterDesa } from "@/components/layout/FooterDesa";
 import { TableSurat } from "@/features/surat/components/TableSurat";
 import { FileText, Clock, CheckCircle2, Plus } from "lucide-react";
 import { useLetters } from "@/features/surat/hooks/useLetters";
+import { WargaLayout } from '@/components/layout/WargaLayout';
 
 export function DaftarSurat() {
   const { user } = useAuth();
@@ -57,6 +58,7 @@ const disetujuiFinal = dataRiwayat.filter(
 
 
   return (
+        <WargaLayout>
     <div className="min-h-screen bg-[#F9FAFB] flex flex-col justify-between">
       <main className="max-w-7xl mx-auto w-full px-4 md:px-8 py-10 grow space-y-10">
 
@@ -164,7 +166,7 @@ const disetujuiFinal = dataRiwayat.filter(
           <div className="pt-4">
 
             <Link
-              to="/info-surat"
+              to="/jenis-surat"
               className="inline-flex items-center gap-2 bg-[#4CAF4F] hover:bg-[#439E46] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm"
             >
 
@@ -183,8 +185,9 @@ const disetujuiFinal = dataRiwayat.filter(
       </main>
 
 
-      <FooterDesa />
+
 
     </div>
+    </WargaLayout>
   );
 }

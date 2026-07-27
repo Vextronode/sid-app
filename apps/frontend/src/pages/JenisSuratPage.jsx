@@ -18,12 +18,12 @@ import { WargaLayout } from '@/components/layout/WargaLayout';
 const JENIS_SURAT_DISPLAY = [
   { code: 'A04', shortLabel: 'SKD', label: 'Domisili', icon: MapPin, color: 'text-green-600 bg-green-50' },
   { code: 'A01', shortLabel: 'SKU', label: 'Usaha', icon: Store, color: 'text-yellow-600 bg-yellow-50' },
-  { code: 'SKTMR', shortLabel: 'SKTMR', label: 'Tidak Punya Rumah', icon: Building2, color: 'text-blue-600 bg-blue-50' },
-  { code: 'SKP', shortLabel: 'SKP', label: 'Penghasilan', icon: CreditCard, color: 'text-yellow-600 bg-yellow-50' },
+  { code: 'A02', shortLabel: 'SKTMR', label: 'Tidak Punya Rumah', icon: Building2, color: 'text-blue-600 bg-blue-50' },
+  { code: 'A03', shortLabel: 'SKP', label: 'Penghasilan', icon: CreditCard, color: 'text-yellow-600 bg-yellow-50' },
   { code: 'A05', shortLabel: 'SKTM', label: 'Tidak Mampu', icon: HeartHandshake, color: 'text-green-600 bg-green-50' },
-  { code: 'SKBN', shortLabel: 'SKBN', label: 'Beda Nama', icon: Users, color: 'text-blue-600 bg-blue-50' },
-  { code: 'SKPG', shortLabel: 'SKP', label: 'Penguburan', icon: Church, color: 'text-green-600 bg-green-50' },
-  { code: 'SKTK', shortLabel: 'SKTK', label: 'Kelahiran', icon: Baby, color: 'text-green-600 bg-green-50' },
+  { code: 'A06', shortLabel: 'SKBN', label: 'Beda Nama', icon: Users, color: 'text-blue-600 bg-blue-50' },
+  { code: 'A07', shortLabel: 'SKP', label: 'Penguburan', icon: Church, color: 'text-green-600 bg-green-50' },
+  { code: 'A08', shortLabel: 'SKTK', label: 'Kelahiran', icon: Baby, color: 'text-green-600 bg-green-50' },
   { code: 'A09', shortLabel: 'SkiBM', label: 'Belum Menikah', icon: Heart, color: 'text-blue-600 bg-blue-50' },
 ];
 

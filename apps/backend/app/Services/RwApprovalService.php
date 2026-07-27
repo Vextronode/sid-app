@@ -71,8 +71,6 @@ class RwApprovalService
                 ? LetterStatus::RwApproved->value
                 : LetterStatus::RwRejected->value;
 
-            
-
             $letter->approvals()
                 ->where('approval_level', 'rw')
                 ->whereNull('approved_by')
@@ -83,73 +81,57 @@ class RwApprovalService
                     'status' => $data['status'],
                 ]);
 
-            
-
-            $letter->update([
-                'status' => $newStatus,
-                'notes' => $data['notes'] ?? null,
-                'processed_at' => now(),
-            ]);
-
-            
-
-            $letter->statusLogs()->create([
-                'actor_id' => $user->id,
-                'old_status' => $oldStatus,
-                'new_status' => $newStatus,
-                'reason' => $data['notes'] ?? null,
-            ]);
-
-            
+            $letterNumber = null;
+            $expiresAt = null;
 
             if ($data['status'] === 'approved') {
 
-               
-                $letter->approvals()->create([
-                    'approved_by' => null,
-                    'approval_level' => 'kadus',
-                    'deadline_at' => now()->addDays(2),
-                ]);
+                $letterNumber = sprintf(
+                    '%03d/%s/%d',
+                    $letter->id,
+                    strtoupper($letter->letterType->code),
+                    now()->year
+                );
 
-                $currentOfficial = $this->officialService
-                    ->getCurrentRw($user);
-
-                $nextOfficial = $this->officialService
-                    ->resolveNextOfficial($currentOfficial);
-
-                if ($nextOfficial?->user) {
-
-                    $nextOfficial->user->notify(
-                        new LetterStatusNotification(
-                            $letter,
-                            'Surat Baru',
-                            'Ada surat yang menunggu persetujuan Kadus.',
-                            'rw_approved'
-                        )
+                if ($letter->letterType->validity_days) {
+                    $expiresAt = now()->addDays(
+                        $letter->letterType->validity_days
                     );
                 }
+            }
 
-                $citizenUser = $this->officialService
-                    ->resolveCitizenUser($letter);
+            $letter->update([
+                'status'        => $newStatus,
+                'letter_number' => $letterNumber,
+                'expires_at'    => $expiresAt,
+                'notes'         => $data['notes'] ?? null,
+                'processed_at'  => now(),
+            ]);
 
-                if ($citizenUser) {
+            $letter->statusLogs()->create([
+                'actor_id'   => $user->id,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'reason'     => $data['notes'] ?? null,
+            ]);
+
+            $citizenUser = $this->officialService
+                ->resolveCitizenUser($letter);
+
+            if ($citizenUser) {
+
+                if ($data['status'] === 'approved') {
 
                     $citizenUser->notify(
                         new LetterStatusNotification(
                             $letter,
-                            'Permohonan Diproses',
-                            'Permohonan surat Anda telah disetujui oleh RW dan sedang diproses oleh Kadus.',
+                            'Permohonan Disetujui',
+                            'Permohonan surat Anda telah selesai diproses oleh RW.',
                             'rw_approved'
                         )
                     );
-                }
 
-            } else {
-
-                $citizenUser = $this->officialService
-                    ->resolveCitizenUser($letter);
-
-                if ($citizenUser) {
+                } else {
 
                     $citizenUser->notify(
                         new LetterStatusNotification(
@@ -159,8 +141,10 @@ class RwApprovalService
                             'rw_rejected'
                         )
                     );
+
                 }
             }
+
         });
     }
 
