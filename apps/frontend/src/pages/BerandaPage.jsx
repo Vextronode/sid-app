@@ -1,100 +1,108 @@
-import { Link } from "react-router-dom";
-import { NewsCard } from "@/components/ui/NewsCard";
-import { DUMMY_NEWS } from "@/lib/constants/dummyNews";
-import { FileText, Search, ChevronDown, LayoutGrid, Send } from "lucide-react";
+// ==========================================
+// BerandaPage.jsx
+// Section "Apa yang Bisa Anda Lakukan" (3 kartu ikon) DIHAPUS, diganti
+// galeri foto pemandangan Desa Cibenda (beberapa slot foto).
+// ⚠️ PLACEHOLDER: ganti semua src di GALLERY_PHOTOS dengan foto asli,
+// taruh file-nya di public/assets/, contoh: public/assets/sawah-1.jpg
+// lalu ganti src jadi "/assets/sawah-1.jpg"
+// ==========================================
+
+import { Link } from 'react-router-dom';
+import { Phone, MapPin, Image as ImageIcon } from 'lucide-react';
+
+// Daftar foto galeri. src kosong = tampilkan placeholder abu-abu.
+// Ganti src dengan path foto asli begitu sudah tersedia.
+const GALLERY_PHOTOS = [
+  { src: '', caption: 'Pemandangan Sawah Cibenda' },
+  { src: '', caption: 'Balai Desa Cibenda' },
+  { src: '', caption: 'Kegiatan Warga Desa' },
+];
 
 export function BerandaPage() {
   return (
-    <div className="w-full min-h-screen bg-[#D9D9D9] pb-24 md:pb-0">
-      {/* desktop hero */}
-      <div className="hidden md:flex flex-col items-center justify-center text-center py-20 px-4 bg-[#F5F7FA]">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">
-          Selamat Datang di Desa
-          <br />
-          Cibenda
+    <div className="bg-white">
+      {/* Hero */}
+      <section className="bg-green-700 text-white text-center px-6 py-16">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-snug">
+          Selamat Datang di<br />Desa Cibenda
         </h1>
-        <p className="text-gray-500 text-sm mb-8">
-          Layanan administrasi desa secara digital - cepat, muda dan terpercaya
+        <p className="text-lg md:text-xl text-green-50 max-w-xl mx-auto mb-8">
+          Layanan administrasi desa kini lebih mudah. Semua urusan surat bisa diajukan dari rumah.
         </p>
-        <div className="flex gap-4">
-          <Link
-            to="/ajukan-surat"
-            className="bg-[#4CAF4F] hover:bg-[#3d8c40] text-white px-6 py-2 rounded-md font-medium flex items-center gap-2 transition"
-          >
-            <FileText className="w-5 h-5" />
-            Ajukan Surat
-          </Link>
-          <Link
-            to="/info-layanan"
-            className="border border-[#4CAF4F] text-[#4CAF4F] hover:bg-[#4CAF4F]/10 px-6 py-2 rounded-md font-medium transition"
-          >
-            Info Layanan
-          </Link>
-        </div>
-      </div>
+        <Link
+          to="/login"
+          className="inline-block bg-white text-green-700 text-lg font-bold px-8 py-4 rounded-xl shadow-md hover:bg-green-50"
+        >
+          Masuk & Ajukan Surat
+        </Link>
+      </section>
 
-      {/* mobile hero */}
-      <div className="sticky top-0 z-50 bg-[#4CAF4F] px-4 pt-6 pb-6 shadow-md block md:hidden">
-        <div className="flex gap-2">
-          <div className="flex grow bg-white rounded-md overflow-hidden">
-            <input
-              type="text"
-              placeholder="Cari Berita..."
-              className="w-full px-3 py-2 text-sm outline-none text-gray-700"
-            />
-            <button className="px-3 bg-white border-l border-gray-200">
-              <Search className="w-5 h-5 text-[#4CAF4F]" />
-            </button>
-          </div>
-          <button className="bg-white px-3 py-2 rounded-md shrink-0">
-            <ChevronDown className="w-5 h-5 text-[#4CAF4F]" />
-          </button>
-        </div>
-      </div>
+      {/* Galeri foto pemandangan desa — ganti src di GALLERY_PHOTOS */}
+      <section className="max-w-5xl mx-auto px-6 py-14">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-2">
+          Keindahan Desa Cibenda
+        </h2>
+        <p className="text-base text-gray-500 text-center mb-10">
+          Sekilas pemandangan dan kegiatan di desa kami
+        </p>
 
-      {/* mobile menu */}
-      <div className="px-4 mt-4 mb-6 block md:hidden">
-        <div className="bg-white rounded-4xl shadow-sm w-full py-6 px-4 flex justify-center gap-10 items-center">
-          <Link
-            to="/dashboard"
-            className="flex flex-col items-center gap-3 hover:opacity-80 transition"
-          >
-            <div className="bg-white shadow-[0_2px_12px_rgba(0,0,0,0.08)] rounded-2xl p-4 border border-gray-50">
-              <LayoutGrid className="w-6 h-6 text-gray-600" strokeWidth={1.5} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {GALLERY_PHOTOS.map((photo, i) => (
+            <div key={i} className="rounded-2xl overflow-hidden shadow-sm">
+              <div className="h-56 bg-gradient-to-br from-green-200 to-green-500 flex items-center justify-center relative">
+                {photo.src ? (
+                  <img src={photo.src} alt={photo.caption} className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon size={32} className="text-white/60" />
+                )}
+              </div>
+              <div className="bg-gray-50 px-4 py-3">
+                <p className="text-sm font-medium text-gray-700">{photo.caption}</p>
+              </div>
             </div>
-            <span className="text-[11px] font-medium text-gray-800">
-              Dashboard
-            </span>
-          </Link>
-
-          <Link
-            to="/ajukan-surat"
-            className="flex flex-col items-center gap-3 hover:opacity-80 transition"
-          >
-            <div className="bg-white shadow-[0_2px_12px_rgba(0,0,0,0.08)] rounded-2xl p-4 border border-gray-50">
-              <Send className="w-6 h-6 text-gray-600" strokeWidth={1.5} />
-            </div>
-            <span className="text-[11px] font-medium text-gray-800">
-              ajukan Surat
-            </span>
-          </Link>
+          ))}
         </div>
-      </div>
+      </section>
 
-      {/* berita */}
-      <div className="w-full md:bg-white md:py-16">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="hidden md:block text-lg font-bold text-gray-800 mb-6">
-            Berita Terbaru
+      {/* Cara pakai */}
+      <section className="bg-gray-50 py-14">
+        <div className="max-w-3xl mx-auto px-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-10">
+            Cara Mengajukan Surat
           </h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
-            {DUMMY_NEWS.map((news) => (
-              <NewsCard key={news.id} data={news} />
+          <div className="flex flex-col gap-6">
+            {[
+              { num: '1', text: 'Masuk menggunakan NIK dan kata sandi Anda. Belum punya akun? Daftar dulu.' },
+              { num: '2', text: 'Pilih jenis surat yang Anda butuhkan.' },
+              { num: '3', text: 'Isi data yang diminta, lalu kirim permohonan.' },
+              { num: '4', text: 'Tunggu persetujuan dari RT dan RW. Anda bisa memantau statusnya kapan saja.' },
+            ].map((step) => (
+              <div key={step.num} className="flex items-start gap-4 bg-white rounded-xl p-5 shadow-sm">
+                <div className="w-10 h-10 rounded-full bg-green-600 text-white text-lg font-bold flex items-center justify-center shrink-0">
+                  {step.num}
+                </div>
+                <p className="text-base md:text-lg text-gray-700 pt-1">{step.text}</p>
+              </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Kontak */}
+      <section className="max-w-3xl mx-auto px-6 py-14 text-center">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Butuh Bantuan?</h2>
+        <p className="text-lg text-gray-500 mb-8">Hubungi kantor desa kami, kami siap membantu.</p>
+        <div className="flex flex-col md:flex-row gap-4 justify-center">
+          <div className="flex items-center justify-center gap-3 bg-green-50 rounded-xl px-6 py-4">
+            <Phone size={22} className="text-green-600" />
+            <span className="text-lg font-semibold text-gray-700">+62 812-3456-7890</span>
+          </div>
+          <div className="flex items-center justify-center gap-3 bg-green-50 rounded-xl px-6 py-4">
+            <MapPin size={22} className="text-green-600" />
+            <span className="text-lg font-semibold text-gray-700">Kantor Desa Cibenda</span>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
