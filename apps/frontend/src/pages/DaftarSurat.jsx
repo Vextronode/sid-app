@@ -1,190 +1,105 @@
+/* eslint-disable no-unused-vars */
+// ==========================================
+// DaftarSurat.jsx (Beranda Warga)
+// Redesign sesuai Image 1: card statistik hijau + 2 kartu kecil,
+// tabel daftar permohonan (read-only, status berubah otomatis sesuai
+// data asli dari backend), tombol "Buat Baru".
+// ==========================================
+
 import { Link } from "react-router-dom";
 import { useAuth } from "@/features/auth/contexts/AuthContext";
-import { FooterDesa } from "@/components/layout/FooterDesa";
-import { TableSurat } from "@/features/surat/components/TableSurat";
-import { FileText, Clock, CheckCircle2, Plus } from "lucide-react";
+import { WargaLayout } from "@/components/layout/WargaLayout";
+import { FolderOpen, Clock, CheckCircle2 } from "lucide-react";
 import { useLetters } from "@/features/surat/hooks/useLetters";
+
+const STATUS_LABEL = {
+  pending: { label: 'MENUNGGU', className: 'bg-gray-100 text-gray-500' },
+  rt_approved: { label: 'DISETUJUI RT', className: 'bg-green-100 text-green-700' },
+  rt_rejected: { label: 'DITOLAK RT', className: 'bg-red-100 text-red-600' },
+  rw_approved: { label: 'DISETUJUI FINAL', className: 'bg-green-100 text-green-700' },
+  rw_rejected: { label: 'DITOLAK RW', className: 'bg-red-100 text-red-600' },
+};
 
 export function DaftarSurat() {
   const { user } = useAuth();
   const namaPemohon = user?.name || "Warga Desa";
-
   const { letters, loading } = useLetters();
 
-
-  // Mapping data dari database ke format TableSurat
-  const dataRiwayat = letters.map((item) => ({
-    id: item.id,
-
-    noSurat: item.letter_number ?? "-",
-
-    pemohon: namaPemohon,
-
-    jenis: item.letter_type?.code ?? "-",
-
-    tanggal: item.created_at
-      ? new Date(item.created_at).toLocaleDateString("id-ID")
-      : "-",
-
-
-    status: item.status ?? "pending",
-
-
-    nik: item.applicant_nik ?? null,
-
-    alamat: item.applicant_address ?? null,
-
-    keperluan: item.purpose ?? null,
-  }));
-
-
-  // Hitung total ringkasan
-  const totalPermohonan = dataRiwayat.length;
-
-
-const sedangDiproses = dataRiwayat.filter((s) =>
-  [
-    "pending",
-    "rt_approved",
-    "rw_approved",
-    "kadus_approved",
-  ].includes(s.status)
-).length;
-
-const disetujuiFinal = dataRiwayat.filter(
-  (s) => s.status === "kasi_approved"
-).length;
-
+  const total = letters.length;
+  const sedangDiproses = letters.filter((s) => ['pending', 'rt_approved'].includes(s.status)).length;
+  const disetujuiFinal = letters.filter((s) => s.status === 'rw_approved').length;
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex flex-col justify-between">
-      <main className="max-w-7xl mx-auto w-full px-4 md:px-8 py-10 grow space-y-10">
+    <WargaLayout>
+      <div className="px-4 py-5 max-w-3xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-800 mb-1">Selamat Datang,</h1>
+        <p className="text-sm text-gray-500 mb-5">Selesaikan urusan administratif Anda dengan aman dan cepat.</p>
 
-        {/* Header Section */}
-        <div className="space-y-6">
-          <div className="space-y-1">
-            <h1 className="text-xl font-semibold text-gray-800">
-              Dashboard Saya
-            </h1>
+        <div className="bg-green-600 rounded-2xl p-5 text-white mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wide opacity-90">Total Permohonan</span>
+            <FolderOpen size={18} />
+          </div>
+          <p className="text-4xl font-bold">{String(total).padStart(2, '0')}</p>
+        </div>
 
-            <p className="text-sm text-gray-400">
-              Selamat Datang, {namaPemohon}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase mb-2">Sedang Diproses</p>
+            <p className="text-2xl font-bold text-blue-600 flex items-center gap-1">
+              {String(sedangDiproses).padStart(2, '0')} <Clock size={14} className="text-blue-500" />
             </p>
           </div>
-
-
-          {/* Stat Card */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-            {/* Total Permohonan */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-start">
-              <div className="space-y-3">
-
-                <p className="text-3xl font-medium text-gray-800">
-                  {totalPermohonan}
-                </p>
-
-                <p className="text-[11px] text-gray-400 uppercase tracking-wider">
-                  Total Permohonan
-                </p>
-
-              </div>
-
-              <FileText className="w-5 h-5 text-gray-300" />
-
-            </div>
-
-
-
-            {/* Sedang diproses */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-start">
-              <div className="space-y-3">
-
-                <p className="text-3xl font-medium text-gray-800">
-                  {sedangDiproses}
-                </p>
-
-                <p className="text-[11px] text-gray-400 uppercase tracking-wider">
-                  Sedang diproses
-                </p>
-
-              </div>
-
-              <Clock className="w-5 h-5 text-gray-300" />
-
-            </div>
-
-
-
-            {/* Disetujui final */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-start">
-
-              <div className="space-y-3">
-
-                <p className="text-3xl font-medium text-gray-800">
-                  {disetujuiFinal}
-                </p>
-
-                <p className="text-[11px] text-gray-400 uppercase tracking_wider">
-                  Disetujui final
-                </p>
-
-              </div>
-
-              <CheckCircle2 className="w-5 h-5 text-gray-300" />
-
-            </div>
-
+          <div className="bg-white rounded-2xl shadow-sm p-4">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase mb-2">Disetujui Final</p>
+            <p className="text-2xl font-bold text-green-600 flex items-center gap-1">
+              {String(disetujuiFinal).padStart(2, '0')} <CheckCircle2 size={14} className="text-green-500" />
+            </p>
           </div>
-
         </div>
 
-
-
-        {/* tabel */}
-        <div className="space-y-4">
-
-          <h2 className="text-md font-semibold text-gray-800">
-            Surat Terbaru Saya
-          </h2>
-
-
-          {
-            loading ? (
-              <p className="text-sm text-gray-400">
-                Memuat data surat...
-              </p>
-            ) : (
-              <TableSurat data={dataRiwayat} />
-            )
-          }
-
-
-
-          <div className="pt-4">
-
-            <Link
-              to="/info-surat"
-              className="inline-flex items-center gap-2 bg-[#4CAF4F] hover:bg-[#439E46] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm"
-            >
-
-              <Plus className="w-4 h-4" />
-
-              Ajukan Permohonan Baru
-
-            </Link>
-
-          </div>
-
-
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-gray-800">Daftar Permohonan</h2>
+          <Link to="/jenis-surat" className="text-sm text-green-600 font-medium hover:underline">Buat Baru</Link>
         </div>
 
-
-      </main>
-
-
-      <FooterDesa />
-
-    </div>
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          {loading ? (
+            <p className="text-center text-gray-400 text-sm py-8">Memuat data surat...</p>
+          ) : letters.length === 0 ? (
+            <p className="text-center text-gray-400 text-sm py-8">Belum ada permohonan surat.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
+                  <th className="py-3 px-4 font-semibold">Jenis Surat</th>
+                  <th className="py-3 px-4 font-semibold">Tanggal</th>
+                  <th className="py-3 px-4 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {letters.map((item) => {
+                  const badge = STATUS_LABEL[item.status] ?? { label: item.status, className: 'bg-gray-100 text-gray-500' };
+                  return (
+                    <tr key={item.id} className="border-b last:border-0">
+                      <td className="py-3 px-4">
+                        <p className="font-medium text-gray-800">{item.letter_type?.name ?? '-'}</p>
+                        <p className="text-[10px] text-gray-400">#{item.letter_number ?? `SKD-${item.id}`}</p>
+                      </td>
+                      <td className="py-3 px-4 text-gray-500">
+                        {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </WargaLayout>
   );
 }

@@ -9,10 +9,12 @@ import { DetailBeritaPage } from "@/pages/DetailBeritaPage";
 import { BeritaPage } from "@/pages/BeritaPage";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ProfilDesaPage } from "@/pages/ProfilDesaPage";
-import { InfoSuratPage } from "@/pages/InfoSuratPage";
 import { PengajuanSuratPage } from "@/pages/PengajuanSuratPage";
 import { DaftarSurat } from "@/pages/DaftarSurat";
-
+import RegisterPage from "@/pages/RegisterPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import JenisSuratPage from "@/pages/JenisSuratPage";
+import ProfilePage from "@/pages/ProfilePage";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { OperatorDesaLayout } from "@/components/layout/OperatorDesaLayout";
 
@@ -104,25 +106,42 @@ export default function App() {
           <Route path="/berita" element={<MainLayout><BeritaPage /></MainLayout>} />
           <Route path="/berita/:id" element={<MainLayout><DetailBeritaPage /></MainLayout>} />
           <Route path="/profil-desa" element={<MainLayout><ProfilDesaPage /></MainLayout>} />
-          <Route path="/info-surat" element={<MainLayout><InfoSuratPage /></MainLayout>} />
-
+        
           {/* ===== WARGA ===== */}
           <Route
             path="/daftar-surat"
             element={
               <ProtectedRoute allowedRoles={["warga"]}>
-                <MainLayout><DaftarSurat /></MainLayout>
+                <DaftarSurat />
               </ProtectedRoute>
             }
           />
+
           <Route
-            path="/pengajuan-surat/:kode?"
-            element={
-              <ProtectedRoute allowedRoles={["warga"]}>
-                <MainLayout><PengajuanSuratPage /></MainLayout>
-              </ProtectedRoute>
-            }
-          />
+  path="/jenis-surat"
+  element={
+    <ProtectedRoute allowedRoles={["warga"]}>
+      <JenisSuratPage />
+    </ProtectedRoute>
+  }
+/>
+
+          <Route
+  path="/pengajuan-surat"
+  element={
+    <ProtectedRoute allowedRoles={["warga"]}>
+      <PengajuanSuratPage />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/pengajuan-surat/:kode"
+  element={
+    <ProtectedRoute allowedRoles={["warga"]}>
+      <PengajuanSuratPage />
+    </ProtectedRoute>
+  }
+/>
 
           {/* ===== RT — approve tahap 1 ===== */}
           <Route
@@ -245,6 +264,18 @@ export default function App() {
   element={
     <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
       <OperatorDesaLayout><OperatorSuratListPage /></OperatorDesaLayout>
+    </ProtectedRoute>
+  }
+/>
+
+<Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+        <Route path="/lupa-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+
+        <Route
+  path="/profile"
+  element={
+    <ProtectedRoute allowedRoles={["warga"]}>
+      <ProfilePage />
     </ProtectedRoute>
   }
 />

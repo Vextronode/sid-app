@@ -1,29 +1,34 @@
-import { Link, useLocation,useNavigate } from "react-router-dom";
+// ==========================================
+// DesktopNavbar.jsx
+// Navbar publik (dipakai MainLayout untuk Beranda, Profil Desa, Berita).
+// Disederhanakan: cuma 3 menu + tombol "Masuk" satu-satunya (link Daftar
+// sudah ada di halaman Login). Tanpa notifikasi/bell, karena halaman
+// publik nggak butuh itu.
+// ==========================================
+
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { NAV_LINKS } from "@/lib/constants/navigation";
 import { useAuth } from "@/features/auth/contexts/AuthContext";
-import { Bell, User, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 
 export function DesktopNavbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, isLoading } = useAuth();
-  
+
   if (isLoading) {
-    return (
-      <nav className="hidden md:flex h-20 bg-white border-b" />
-    );
+    return <nav className="hidden md:flex h-20 bg-white border-b" />;
   }
+
   const handleLogout = async () => {
     try {
       await logout();
-
-      navigate("/login", {
-        replace: true,
-      });
+      navigate("/login", { replace: true });
     } catch (error) {
       console.error("Logout gagal", error);
     }
   };
+
   return (
     <nav className="hidden md:flex w-full bg-white shadow-md border-b-[3px] border-gray-100 py-4 px-8 items-center justify-between sticky top-0 z-50">
       <div className="font-bold text-2xl text-black">LOGO</div>
@@ -31,18 +36,14 @@ export function DesktopNavbar() {
       <div className="flex gap-8 text-sm font-medium text-[#4CAF4F]">
         {NAV_LINKS.map((link) => {
           const isActive =
-            link.href === "/"
-              ? location.pathname === "/"
-              : location.pathname.startsWith(link.href);
+            link.href === "/" ? location.pathname === "/" : location.pathname.startsWith(link.href);
 
           return (
             <Link
               key={link.name}
               to={link.href}
               className={`px-4 py-2 rounded-md transition ${
-                isActive
-                  ? "bg-[#4CAF4F]/50 text-white"
-                  : "hover:bg-[#4CAF4F]/10"
+                isActive ? "bg-[#4CAF4F]/50 text-white" : "hover:bg-[#4CAF4F]/10"
               }`}
             >
               {link.name}
@@ -53,20 +54,12 @@ export function DesktopNavbar() {
 
       <div className="flex gap-4 items-center">
         {user ? (
-          // after login
           <div className="flex items-center gap-5">
-            <button className="text-[#4CAF4F] hover:scale-105 transition">
-              <Bell className="w-5 h-5" />
-            </button>
-
-            {/* Avatar & Nama User */}
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-[#4CAF4F]/10 border border-[#4CAF4F] flex items-center justify-center text-[#4CAF4F]">
                 <User className="w-4 h-4" />
               </div>
-              <span className="text-sm font-semibold text-gray-700">
-                {user.name}
-              </span>
+              <span className="text-sm font-semibold text-gray-700">{user.name}</span>
             </div>
 
             <button
@@ -78,21 +71,12 @@ export function DesktopNavbar() {
             </button>
           </div>
         ) : (
-          // Guest atau puclic route
-          <>
-            <Link
-              to="/login"
-              className="text-[#4CAF4F] font-medium hover:text-[#3d8c40]"
-            >
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className="bg-[#4CAF4F] text-white px-5 py-2 rounded-full font-medium hover:bg-[#3d8c40] transition"
-            >
-              Sign Up
-            </Link>
-          </>
+          <Link
+            to="/login"
+            className="bg-[#4CAF4F] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#3d8c40] transition"
+          >
+            Masuk
+          </Link>
         )}
       </div>
     </nav>
