@@ -16,13 +16,16 @@ class KadusApprovalController extends Controller
     ) {}
 
     public function index(Request $request)
-    {
-        return response()->json([
-            'message' => 'Daftar surat berhasil diambil.',
-            'data' => $this->service
-                ->getPendingLetters($request->user()),
-        ]);
-    }
+        {
+
+            return response()->json([
+                'data' =>
+                    $this->service->getLetters(
+                        $request->user()
+                    )
+            ]);
+
+        }
 
     public function decision(
         KadusDecisionRequest $request,

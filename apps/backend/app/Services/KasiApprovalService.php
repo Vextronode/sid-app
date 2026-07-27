@@ -46,6 +46,17 @@ class KasiApprovalService
             ->latest()
             ->get();
     }
+    public function getDashboardLetters(User $user)
+    {
+        return Letter::query()
+            ->with([
+                'citizen',
+                'letterType',
+                'approvals.approvedBy:id,name',
+            ])
+            ->latest()
+            ->get();
+    }
 
     private function validateGate(
         Letter $letter,

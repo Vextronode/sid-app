@@ -17,7 +17,7 @@ class KasiApprovalController extends Controller
     public function index(Request $request)
     {
         return response()->json(
-            $this->service->getPendingLetters(
+            $this->service->getDashboardLetters(
                 $request->user()
             )
         );

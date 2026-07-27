@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { submitDecision } from "@/features/approval/api";
+import { approveSurat } from "@/features/approval/api";
 
 export function useApprovalAction() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -7,7 +7,7 @@ export function useApprovalAction() {
   const approve = async (id) => {
     try {
       setIsSubmitting(true);
-      await submitDecision("rw", id, "approved");
+      await approveSurat("rw", id, "approved");
       return true;
     } catch (error) {
       console.error("APPROVE ERROR", error.response?.data ?? error);
@@ -20,7 +20,7 @@ export function useApprovalAction() {
   const reject = async (id, notes) => {
     try {
       setIsSubmitting(true);
-      await submitDecision("rw", id, "rejected", notes);
+      await approveSurat("rw", id, "rejected", notes);
       return true;
     } catch (error) {
       console.error("REJECT ERROR", error.response?.data ?? error);

@@ -15,56 +15,36 @@ class KadusApprovalService
         protected OfficialService $officialService
     ) {}
 
-    public function getPendingLetters(User $user)
-        {
+public function getLetters(User $user)
+{
+    $official = $user->official;
 
-            $official = $user->official;
-
-
-            if(!$official){
-                abort(403,'Data official tidak ditemukan.');
-            }
+    if (!$official) {
+        abort(403,'Data official tidak ditemukan.');
+    }
 
 
-            return Letter::query()
+    return Letter::query()
 
-                ->whereIn('status',[
+        ->whereHas('citizen', function($query) use($official){
 
-                    LetterStatus::RwApproved,
+            $query->where(
+                'hamlet_id',
+                $official->hamlet_id
+            );
 
-                    LetterStatus::KadusApproved,
+        })
 
-                    LetterStatus::KadusRejected
+        ->with([
+            'citizen',
+            'letterType',
+            'approvals.approvedBy:id,name'
+        ])
 
-                ])
+        ->latest()
 
-
-                ->whereHas('citizen',function($query) use($official){
-
-                    $query->where(
-                        'hamlet_id',
-                        $official->hamlet_id
-                    );
-
-                })
-
-
-                ->with([
-
-                    'citizen',
-
-                    'letterType',
-
-                    'approvals.approvedBy:id,name'
-
-                ])
-
-                ->latest()
-
-                ->get();
-
-        }
-
+        ->get();
+}
     public function decision(
         Letter $letter,
         User $user,

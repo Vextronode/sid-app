@@ -7,7 +7,7 @@
 // ==========================================
 
 import { useEffect, useMemo, useState } from 'react';
-import { getSuratList } from '@/features/approval/api';
+import { getSuratList, getGenderStats } from "@/features/approval/api";
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { ClipboardList, ListChecks, CheckCircle2 } from 'lucide-react';
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
@@ -19,17 +19,58 @@ export default function OperatorDesaDashboardPage() {
   const { user } = useAuth();
   const [letters, setLetters] = useState([]);
   const [loading, setLoading] = useState(true);
+useEffect(() => {
+  console.table(
+    letters.map((s) => ({
+      id: s.id,
+      status: s.status,
+      nama: s.applicant_name,
+      tanggal: s.submitted_at,
+    }))
+  );
+}, [letters]);
+  const ROLE_ENDPOINT = {
+    rt: "rt",
+    rw: "rw",
+    kadus: "kadus",
 
-  useEffect(() => {
-    // Role yang dikirim ke API disesuaikan dari role user yang login
-    // (kasi_pelayanan / kaur_tu_umum / petugas_desa), tapi tampilan sama.
-    const roleKey = user?.role ?? 'petugas_desa';
-    getSuratList(roleKey)
-      .then((res) => setLetters(res.data.data ?? []))
-      .catch((err) => console.error('GET OPERATOR DESA LIST ERROR', err.response?.data ?? err))
-      .finally(() => setLoading(false));
-  }, [user]);
+    kasi_pelayanan: "kasi",
+    kaur_tu_umum: "kasi",
+    petugas_desa: "kasi",
+  };
 
+ const roleKey = ROLE_ENDPOINT[user?.role] ?? user?.role;
+
+useEffect(() => {
+  if (!roleKey) return;
+
+  setLoading(true);
+getGenderStats().then((res) => {
+    setGenderStats(res.data);
+});
+getSuratList(roleKey)
+  .then((res) => {
+    console.log("API RESPONSE", res.data);
+
+    setLetters(res.data);
+  })
+    .catch((err) => {
+      console.error(
+        "GET OPERATOR DESA LIST ERROR",
+        err.response?.data ?? err
+      );
+    })
+    .finally(() => {
+      setLoading(false);
+    });
+
+}, [roleKey]);
+
+  const [genderStats, setGenderStats] = useState({
+    total: 0,
+    laki: 0,
+    perempuan: 0,
+});
   const stats = useMemo(() => {
     const permohonan = letters.filter((s) => s.status === 'pending').length;
     const verifikasi = letters.filter((s) => s.status === 'rt_approved').length;
@@ -97,7 +138,11 @@ export default function OperatorDesaDashboardPage() {
           <div className="col-span-2">
             <SuratStatChart data={chartData} />
           </div>
-          <GenderStatCard total={1450} laki={841} perempuan={609} />
+          <GenderStatCard
+              total={genderStats.total}
+              laki={genderStats.laki}
+              perempuan={genderStats.perempuan}
+          />
         </div>
 
         {/* Riwayat Verifikasi */}

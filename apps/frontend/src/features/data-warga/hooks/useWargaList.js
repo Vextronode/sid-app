@@ -1,52 +1,100 @@
-// ==========================================
-// useWargaList.js
-// Filter data warga: search (nama/NIK) + filter RT/RW, plus pagination
-// dan hapus data (mutasi langsung ke dummy array).
-// ==========================================
+import { useEffect, useMemo, useState } from "react";
+import {
+  getCitizens,
+  getWilayah,
+  deleteCitizen,
+} from "../api";
 
-import { useState, useMemo } from 'react';
-import { dummyWarga } from '../data/dummyWarga';
-
-const ITEMS_PER_PAGE = 4;
+const ITEMS_PER_PAGE = 10;
 
 export function useWargaList() {
-  const [search, setSearch] = useState('');
-  const [filterWilayah, setFilterWilayah] = useState('');
+  const [citizens, setCitizens] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [search, setSearch] = useState("");
+  const [filterWilayah, setFilterWilayah] = useState("");
+  const [wilayahOptions, setWilayahOptions] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    try {
+      setLoading(true);
+
+      const [citizenRes, wilayahRes] = await Promise.all([
+        getCitizens(),
+        getWilayah(),
+      ]);
+
+      setCitizens(citizenRes.data);
+      setWilayahOptions(wilayahRes.data);
+    } catch (err) {
+      console.error("GET CITIZENS ERROR", err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const filtered = useMemo(() => {
-    let result = dummyWarga;
-    if (filterWilayah) result = result.filter((w) => `${w.rt}/${w.rw}` === filterWilayah);
+    let result = [...citizens];
+
     if (search) {
       const keyword = search.toLowerCase();
-      result = result.filter((w) => w.nama.toLowerCase().includes(keyword) || w.nik.includes(keyword));
-    }
-    return result;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, filterWilayah, version]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginatedData = useMemo(() => {
+      result = result.filter(
+        (w) =>
+          w.name?.toLowerCase().includes(keyword) ||
+          w.nik?.includes(keyword)
+      );
+    }
+
+    if (filterWilayah) {
+      result = result.filter(
+        (w) =>
+          `${w.rt_id}-${w.rw_id}` === filterWilayah
+      );
+    }
+
+    return result;
+  }, [citizens, search, filterWilayah]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  );
+
+  const data = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
+
     return filtered.slice(start, start + ITEMS_PER_PAGE);
   }, [filtered, currentPage]);
 
-  const deleteWarga = (id) => {
-    const index = dummyWarga.findIndex((w) => w.id === id);
-    if (index !== -1) dummyWarga.splice(index, 1);
-    setVersion((v) => v + 1);
-  };
+  async function removeCitizen(id) {
+    await deleteCitizen(id);
+
+    setCitizens((prev) =>
+      prev.filter((item) => item.id !== id)
+    );
+  }
 
   return {
-    data: paginatedData,
-    search,
-    setSearch: (val) => { setSearch(val); setCurrentPage(1); },
+    data,
+    loading,
+
+    setSearch,
+
     filterWilayah,
-    setFilterWilayah: (val) => { setFilterWilayah(val); setCurrentPage(1); },
+    setFilterWilayah,
+    wilayahOptions,
+
     currentPage,
     setCurrentPage,
+
     totalPages,
-    deleteWarga,
+
+    deleteWarga: removeCitizen,
   };
 }

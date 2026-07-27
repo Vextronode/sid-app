@@ -31,11 +31,11 @@ export default function ManajemenUserPage() {
   const handleOpenEdit = (user) => {
     setEditingUser({
       id: user.id,
-      name: user.nama,
+      name: user.name,
       email: user.email,
       role: user.role,
       wilayah: user.wilayah,
-      is_active: user.status === 'aktif',
+      is_active: user.is_active ,
     });
     setModalOpen(true);
   };
@@ -101,18 +101,20 @@ export default function ManajemenUserPage() {
               ) : (
                 data.map((user) => (
                   <tr key={user.id} className="border-b last:border-0">
-                    <td className="py-4 font-semibold text-gray-800">{user.nama}</td>
+                    <td className="py-4 font-semibold text-gray-800">{user.name}</td>
                     <td className="py-4 text-gray-600">{user.email}</td>
                     <td className="py-4">
                       <span className="border rounded-full px-3 py-1 text-xs text-gray-600 uppercase">{user.role}</span>
                     </td>
-                    <td className="py-4 text-gray-600">{user.wilayah}</td>
+                    <td className="py-4 text-gray-600">RT {user.citizen?.rt?.number ?? '-'}
+/
+RW {user.citizen?.rw?.number ?? '-'}</td>
                     <td className="py-4">
                       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
-                        user.status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        user.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                       }`}>
                         <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                        {user.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
+                        {user.is_active  ? 'Aktif' : 'Nonaktif'}
                       </span>
                     </td>
                     <td className="py-4">
@@ -127,9 +129,9 @@ export default function ManajemenUserPage() {
                         <button
                           onClick={() => toggleStatus(user.id)}
                           className="w-9 h-9 rounded-lg border flex items-center justify-center hover:bg-gray-100 text-gray-600"
-                          title={user.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan'}
+                          title={user.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                         >
-                          {user.status === 'aktif' ? <Eye size={16} /> : <EyeOff size={16} />}
+                          {user.is_active ? <Eye size={16} /> : <EyeOff size={16} />}
                         </button>
                       </div>
                     </td>

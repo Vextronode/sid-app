@@ -7,8 +7,8 @@ import {
 
 
 import {
-  getSuratList
-} from "@/features/approval/api";
+  getKadusLetters
+} from "../api";
 
 
 import {
@@ -57,7 +57,7 @@ export function useSuratList({
 
 
       const response =
-        await getSuratList("kadus");
+          await getKadusLetters();
 
 
 
@@ -128,14 +128,6 @@ export function useSuratList({
 
 
 
-    // status yang boleh tampil Kadus
-
-    result =
-      result.filter(letter =>
-        RELEVANT_STATUSES.includes(
-          letter.status
-        )
-      );
 
 
 
