@@ -1,6 +1,6 @@
 // ==========================================
 // RWDashboardPage.jsx
-// Navbar tetap AdminLayout, konten desktop pakai gaya baru.
+// RiwayatVerifikasiTable diganti QuickNavButtons.
 // ==========================================
 
 import { useEffect, useMemo, useState } from 'react';
@@ -12,7 +12,14 @@ import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { FooterDesa } from '@/components/layout/FooterDesa';
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
-import RiwayatVerifikasiTable from '@/features/operator-desa/components/RiwayatVerifikasiTable';
+import QuickNavButtons from '@/features/dashboard-mobile/components/QuickNavButtons';
+
+const QUICK_NAV_RW = [
+  { key: 'rt_approved', label: 'Menunggu' },
+  { key: 'rw_approved', label: 'Disetujui' },
+  { key: 'rw_rejected', label: 'Ditolak' },
+  { key: '', label: 'Semua' },
+];
 
 export default function RWDashboardPage() {
   const { user } = useAuth();
@@ -44,68 +51,70 @@ export default function RWDashboardPage() {
     return Object.entries(grouped).map(([kategori, jumlah]) => ({ kategori, jumlah }));
   }, [letters]);
 
-  const riwayatTerbaru = useMemo(() => letters.slice(0, 5), [letters]);
   const hariIni = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <>
       {/* ===== DESKTOP ===== */}
-      <div className="hidden md:block p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Selamat Pagi, {user?.name ?? 'Bapak/Ibu'}</h1>
-            <p className="text-sm text-gray-500">Kelola administrasi warga {user?.wilayah_label ?? 'RW'} dengan lebih cepat.</p>
-          </div>
-          <span className="text-sm text-gray-500 capitalize">{hariIni}</span>
-        </div>
-
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <button onClick={() => navigate('/admin/list-rw?status=rt_approved')} className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between text-left hover:shadow-md transition-shadow">
+      <div className="hidden md:block">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <p className="text-[10px] text-gray-400 uppercase mb-1">Permohonan Baru</p>
-              <p className="text-3xl font-bold text-green-600">{loading ? '-' : stats.permohonanBaru}</p>
+              <h1 className="text-2xl font-bold text-gray-800">Selamat Pagi, {user?.name ?? 'Bapak/Ibu'}</h1>
+              <p className="text-sm text-gray-500">Kelola administrasi warga {user?.wilayah_label ?? 'RW'} dengan lebih cepat.</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
-              <Mail size={20} />
-            </div>
-          </button>
-
-          <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-gray-400 uppercase mb-1">Sedang Diproses</p>
-              <p className="text-3xl font-bold text-blue-600">{loading ? '-' : stats.sedangDiproses}</p>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-              <ShieldCheck size={20} />
-            </div>
+            <span className="text-sm text-gray-500 capitalize">{hariIni}</span>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-gray-400 uppercase mb-1">Total Permohonan</p>
-              <p className="text-3xl font-bold text-gray-800">{loading ? '-' : stats.total}</p>
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <button onClick={() => navigate('/admin/list-rw?status=rt_approved')} className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between text-left hover:shadow-md transition-shadow">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase mb-1">Permohonan Baru</p>
+                <p className="text-3xl font-bold text-green-600">{loading ? '-' : stats.permohonanBaru}</p>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+                <Mail size={20} />
+              </div>
+            </button>
+
+            <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase mb-1">Sedang Diproses</p>
+                <p className="text-3xl font-bold text-blue-600">{loading ? '-' : stats.sedangDiproses}</p>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+                <ShieldCheck size={20} />
+              </div>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500">
-              <ClipboardList size={20} />
+
+            <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase mb-1">Total Permohonan</p>
+                <p className="text-3xl font-bold text-gray-800">{loading ? '-' : stats.total}</p>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500">
+                <ClipboardList size={20} />
+              </div>
             </div>
+
+            <button onClick={() => navigate('/admin/list-rw?status=rw_approved')} className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between text-left hover:shadow-md transition-shadow">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase mb-1">Disetujui Final</p>
+                <p className="text-3xl font-bold text-green-600">{loading ? '-' : stats.disetujuiFinal}</p>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+                <CheckCircle2 size={20} />
+              </div>
+            </button>
           </div>
 
-          <button onClick={() => navigate('/admin/list-rw?status=rw_approved')} className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between text-left hover:shadow-md transition-shadow">
-            <div>
-              <p className="text-[10px] text-gray-400 uppercase mb-1">Disetujui Final</p>
-              <p className="text-3xl font-bold text-green-600">{loading ? '-' : stats.disetujuiFinal}</p>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
-              <CheckCircle2 size={20} />
-            </div>
-          </button>
-        </div>
+          <div className="mb-6">
+            <SuratStatChart data={chartData} />
+          </div>
 
-        <div className="mb-6">
-          <SuratStatChart data={chartData} />
+          <QuickNavButtons items={QUICK_NAV_RW} basePath="/admin/list-rw" />
         </div>
-
-        <RiwayatVerifikasiTable data={riwayatTerbaru} />
+        <FooterDesa />
       </div>
 
       {/* ===== MOBILE ===== */}
@@ -137,7 +146,7 @@ export default function RWDashboardPage() {
           </button>
 
           <div className="mb-4"><SuratStatChart data={chartData} /></div>
-          <div className="mb-4"><RiwayatVerifikasiTable data={riwayatTerbaru} /></div>
+          <div className="mb-4"><QuickNavButtons items={QUICK_NAV_RW} basePath="/admin/list-rw" /></div>
         </div>
 
         <FooterDesa />
