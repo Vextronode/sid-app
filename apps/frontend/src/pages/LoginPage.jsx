@@ -76,7 +76,7 @@ export default function LoginPage() {
           <Landmark size={22} className="text-white" />
         </div>
         <p className="font-bold text-gray-800">Cibenda</p>
-        <h1 className="text-xl font-bold text-gray-800 mt-1">Masuk ke CID Cibenda</h1>
+        <h1 className="text-xl font-bold text-gray-800 mt-1">Masuk ke E-Cibenda</h1>
         <p className="text-sm text-gray-500 mb-6">Masukkan NIK dan Password Anda</p>
 
         {error && (
@@ -141,7 +141,7 @@ export default function LoginPage() {
           <p className="text-sm text-gray-500">
             Belum punya akun? <Link to="/register" className="text-green-600 font-medium hover:underline">Daftar sekarang</Link>
           </p>
-          <p className="text-[11px] text-gray-400 mt-3">© 2024 Digital Amanah. Sistem Informasi Desa Modern.</p>
+          <p className="text-[11px] text-gray-400 mt-3">Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026</p>
         </div>
       </div>
     </div>
