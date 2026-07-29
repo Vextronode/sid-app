@@ -26,14 +26,17 @@ export function OperatorDesaLayout({ children }) {
   const [notifOpen, setNotifOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
       {/* ===== SIDEBAR ===== */}
-      <aside className="w-56 bg-white border-r flex flex-col shrink-0">
-        <div className="px-5 py-6 border-b">
-          <h1 className="font-bold text-gray-800 leading-tight text-lg">
-            Admin Petugas Desa
+      <aside className="fixed left-0 top-0 h-screen w-56 bg-white  flex flex-col z-40">
+        <div className="h-20 px-5 bg-green-600 text-white border-b border-green-700 flex flex-col justify-center">
+          <h1 className="font-bold text-lg leading-tight">
+            SIDUtama
           </h1>
-          <p className="text-[11px] text-gray-400 mt-1">Cibenda Nature System</p>
+
+          <p className="text-xs text-green-100 mt-1">
+            Admin Petugas Desa
+          </p>
         </div>
 
         <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
@@ -55,7 +58,7 @@ export function OperatorDesaLayout({ children }) {
           })}
         </nav>
 
-        <div className="px-3 pb-5 flex flex-col gap-1 border-t pt-4">
+        <div className="px-3 pb-5 flex flex-col gap-1  pt-4">
           <Link to="/admin/operator-desa/surat" className="flex items-center gap-2 bg-green-600 text-white rounded-lg px-3 py-2.5 text-sm font-medium justify-center hover:bg-green-700">
             <Plus size={16} /> Permohonan Baru
           </Link>
@@ -69,32 +72,46 @@ export function OperatorDesaLayout({ children }) {
       </aside>
 
       {/* ===== MAIN ===== */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col ml-56">
         {/* Topbar */}
-        <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-b relative">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🏘️</span>
-            <span className="font-bold text-gray-800">Cibenda Admin</span>
+          <div className="fixed left-56 right-0 top-0 h-20 bg-green-600 px-6 flex items-center justify-between shadow-lg z-30">
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600"
+            />
+
+            <input
+              placeholder="Cari data warga..."
+              className="
+                w-64
+                rounded-full
+                pl-9 pr-4 py-2
+                text-sm
+                bg-white
+                text-green-700
+                placeholder:text-green-500
+                border border-white
+                outline-none
+                focus:ring-2
+                focus:ring-green-300
+                focus:border-white
+              "
+            />
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                placeholder="Cari data warga..."
-                className="border rounded-full pl-9 pr-4 py-2 text-sm w-64 outline-none focus:border-green-500 bg-white"
-              />
-            </div>
-            <button onClick={() => setNotifOpen((v) => !v)} className="text-gray-500 hover:text-gray-700">
+            
+            <button onClick={() => setNotifOpen((v) => !v)} className="text-white hover:text-green-200">
               <Bell size={18} />
             </button>
-            <button className="text-gray-500 hover:text-gray-700">
+            <button className="text-white hover:text-green-200">
               <Settings size={18} />
             </button>
             <div className="flex items-center gap-2">
               <div className="text-right">
-                <p className="text-xs font-semibold text-gray-800">{user?.name ?? 'Bapak/Ibu'}</p>
-                <p className="text-[10px] text-gray-400">{user?.role_label ?? 'Operator Desa'}</p>
+                <p className="text-white text-xs font-semibold text-gray-800">{user?.name ?? 'Bapak/Ibu'}</p>
+                <p className="text-white text-[10px] text-gray-400">{user?.role_label ?? 'Operator Desa'}</p>
               </div>
               <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-xs font-semibold">
                 {(user?.name ?? 'OP').slice(0, 2).toUpperCase()}
@@ -105,7 +122,9 @@ export function OperatorDesaLayout({ children }) {
           <NotificationPopover open={notifOpen} onClose={() => setNotifOpen(false)} />
         </div>
 
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 overflow-y-auto mt-20">
+            {children}
+        </main>
       </div>
     </div>
   );

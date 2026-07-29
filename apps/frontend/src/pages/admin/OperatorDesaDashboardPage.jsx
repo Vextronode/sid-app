@@ -13,7 +13,7 @@ import { ClipboardList, ListChecks, CheckCircle2 } from 'lucide-react';
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
 import GenderStatCard from '@/features/operator-desa/components/GenderStatCard';
 import RiwayatVerifikasiTable from '@/features/operator-desa/components/RiwayatVerifikasiTable';
-import { FooterDesa } from '@/components/layout/FooterDesa';
+import { FooterOperator } from '@/components/layout/FooterOperator';
 
 export default function OperatorDesaDashboardPage() {
   const { user } = useAuth();
@@ -97,13 +97,12 @@ getSuratList(roleKey)
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Selamat Pagi, {user?.name ?? 'Bapak/Ibu'}</h1>
-            <p className="text-sm text-gray-500">Berikut adalah ringkasan administrasi desa Cibenda hari ini.</p>
           </div>
           <span className="text-sm text-gray-500 capitalize">{hariIni}</span>
         </div>
 
-        {/* 3 kartu statistik */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        {/* 4 kartu statistik */}
+        <div className="grid grid-cols-4 gap-4  mb-6">
           <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-400 uppercase mb-1">Permohonan</p>
@@ -131,25 +130,26 @@ getSuratList(roleKey)
               <CheckCircle2 size={20} />
             </div>
           </div>
-        </div>
-
-        {/* Chart + Gender */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="col-span-2">
-            <SuratStatChart data={chartData} />
-          </div>
-          <GenderStatCard
+                    <GenderStatCard 
               total={genderStats.total}
               laki={genderStats.laki}
               perempuan={genderStats.perempuan}
           />
         </div>
 
-        {/* Riwayat Verifikasi */}
-        <RiwayatVerifikasiTable data={riwayatTerbaru} />
+        {/* Chart +  */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="col-span-3">
+            <SuratStatChart data={chartData} />
+          </div>
+
+        </div>
+
+
+
       </div>
 
-      <FooterDesa />
+<FooterOperator />
     </div>
   );
 }

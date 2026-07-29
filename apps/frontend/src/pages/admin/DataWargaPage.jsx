@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { Search, Pencil, Trash2, UserPlus } from 'lucide-react';
 import { useWargaList } from '@/features/data-warga/hooks/useWargaList';
 import { FooterDesa } from '@/components/layout/FooterDesa';
+import { FooterOperator } from '../../components/layout/FooterOperator';
 
 export default function DataWargaPage() {
   const {
@@ -152,7 +153,7 @@ export default function DataWargaPage() {
         </div>
       </div>
 
-      <FooterDesa />
+      <FooterOperator />
     </div>
   );
 }
