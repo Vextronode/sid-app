@@ -14,6 +14,7 @@ import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChar
 import GenderStatCard from '@/features/operator-desa/components/GenderStatCard';
 import RiwayatVerifikasiTable from '@/features/operator-desa/components/RiwayatVerifikasiTable';
 import { FooterOperator } from '@/components/layout/FooterOperator';
+import DashboardFlowCard from "@/features/operator-desa/components/DashboardFlowCard";
 
 export default function OperatorDesaDashboardPage() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ useEffect(() => {
   const ROLE_ENDPOINT = {
     rt: "rt",
     rw: "rw",
-    kadus: "kadus",
+
 
     kasi_pelayanan: "kasi",
     kaur_tu_umum: "kasi",
@@ -50,7 +51,6 @@ getGenderStats().then((res) => {
 });
 getSuratList(roleKey)
   .then((res) => {
-    console.log("API RESPONSE", res.data);
 
     setLetters(res.data);
   })
@@ -138,12 +138,18 @@ getSuratList(roleKey)
         </div>
 
         {/* Chart +  */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="col-span-3">
-            <SuratStatChart data={chartData} />
-          </div>
+<div className="grid grid-cols-4 gap-4 mb-6">
+  <div className="col-span-3">
+    <SuratStatChart data={chartData} />
+  </div>
 
-        </div>
+  <div className="col-span-1 flex">
+    <DashboardFlowCard
+      letters={letters}
+      loading={loading}
+    />
+  </div>
+</div>
 
 
 

@@ -43,11 +43,7 @@ export function useUserList(){
             const res = await getUsers();
 
 
-            console.log(
-                "USERS RESPONSE",
-                res.data
-            );
-
+           
 
             // aman untuk berbagai bentuk response
             const userData =

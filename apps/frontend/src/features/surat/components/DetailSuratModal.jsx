@@ -2,26 +2,30 @@ import { Check, Clock, ChevronLeft, X } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const ProgressTracker = ({ status, tanggal }) => {
+  
   const currentStatus = status.toLowerCase();
-
+  
   const isRtRejected = currentStatus === "rt_rejected";
-  const isRtDone =
-    currentStatus.includes("rt_approved") ||
-    currentStatus.includes("rw_") ||
-    currentStatus.includes("kadus_") ||
-    currentStatus.includes("kades_");
+  const isRtDone = [
+    "rt_approved",
+    "rw_approved",
+    "kasi_approved",
+  ].includes(currentStatus);
 
   const isRwRejected = currentStatus === "rw_rejected";
-  const isRwDone =
-    currentStatus.includes("rw_approved") ||
-    currentStatus.includes("kadus_") ||
-    currentStatus.includes("kades_");
+  const isRwDone = [
+    "rw_approved",
+    "kasi_approved",
+  ].includes(currentStatus);
 
-  const isSelesaiRejected =
-    currentStatus === "kadus_rejected" || currentStatus === "kades_rejected";
-  const isSelesaiDone = currentStatus === "kades_approved";
+const isSelesaiRejected =
+  currentStatus === "kasi_rejected";
+
+const isSelesaiDone =
+  currentStatus === "kasi_approved";
 
   return (
+    
     <div className="relative flex justify-between items-start w-full max-w-sm py-4">
       <div className="absolute top-8 left-[10%] right-[10%] h-0.5 bg-gray-200 z-0"></div>
 
@@ -147,7 +151,9 @@ const DetailInfo = ({ data }) => {
       <div className="text-gray-400">Diajukan</div>
       <div className="text-gray-800">{data.tanggal}</div>
       <div className="text-gray-400">Terakhir diproses</div>
-      <div className="text-gray-800">{data.tanggal}</div>
+      <div className="text-gray-800">{data.processed_at
+    ? new Date(data.processed_at).toLocaleDateString("id-ID")
+    : "-"}</div>
     </div>
   );
 };
@@ -155,7 +161,6 @@ const DetailInfo = ({ data }) => {
 // Main Component
 export function DetailSuratModal({ data, onClose }) {
   if (!data) return null;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">

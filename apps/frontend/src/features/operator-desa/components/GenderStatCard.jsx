@@ -6,7 +6,7 @@ import {
 } from "recharts";
 
 // Warna untuk Laki-laki dan Perempuan
-const COLOR_LAKI = "#22c55e"; // Hijau
+const COLOR_LAKI = "#2563eb"; // Hijau
 const COLOR_PEREMPUAN = "#f472b6"; // Pink
 
 export default function GenderStatCard({

@@ -3,7 +3,7 @@ const STATUS_LABELS = {
   rt_approved: "Approved by RT",
   rw_approved: "Approved by RW",
   kadus_approved: "Approved by Kadus",
-  kasi_approved: "Approved by Kasi",
+  kasi_approved: " Selesai",
   rejected: "Ditolak",
 };
 

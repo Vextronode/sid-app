@@ -6,7 +6,7 @@
 // Surat diurutkan berdasarkan tanggal submit PALING AWAL duluan (ascending).
 // Aksi (titik tiga) buka OperatorSuratActionModal (TTD Basah/Digital).
 // ==========================================
-
+import OperatorSuratPreviewModal from "@/features/operator-desa/components/OperatorSuratPreviewModal";
 import { useEffect, useMemo, useState } from 'react';
 import {
   Download,
@@ -37,10 +37,7 @@ const STATUS_LABEL = {
     className: "bg-cyan-50 text-cyan-700",
   },
 
-  kadus_approved: {
-    label: "Kadus Approved",
-    className: "bg-indigo-50 text-indigo-700",
-  },
+
 
   kasi_approved: {
     label: "Verified",
@@ -57,10 +54,7 @@ const STATUS_LABEL = {
     className: "bg-red-50 text-red-600",
   },
 
-  kadus_rejected: {
-    label: "Ditolak Kadus",
-    className: "bg-red-50 text-red-600",
-  },
+
 
   kasi_rejected: {
     label: "Ditolak Kasi",
@@ -80,11 +74,11 @@ export default function OperatorSuratListPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSurat, setSelectedSurat] = useState(null);
+  const [previewSurat, setPreviewSurat] = useState(null);
 
 const ROLE_ENDPOINT = {
   rt: "rt",
   rw: "rw",
-  kadus: "kadus",
 
   kasi_pelayanan: "kasi",
   kaur_tu_umum: "kasi",
@@ -103,8 +97,10 @@ useEffect(() => {
       setLetters(res.data);
     })
     .catch((err) => {
-      console.error(err.response?.data ?? err);
+
+  console.error(err.response?.data ?? err);
     })
+
     .finally(() => setLoading(false));
 
 }, [roleKey]);
@@ -186,12 +182,10 @@ useEffect(() => {
 
               <option value="rt_approved">RT Approved</option>
               <option value="rw_approved">RW Approved</option>
-              <option value="kadus_approved">Kadus Approved</option>
               <option value="kasi_approved">Verified / Selesai</option>
 
               <option value="rt_rejected">Ditolak RT</option>
               <option value="rw_rejected">Ditolak RW</option>
-              <option value="kadus_rejected">Ditolak Kadus</option>
               <option value="kasi_rejected">Ditolak Kasi</option>
             </select>
             </div>
@@ -243,7 +237,6 @@ useEffect(() => {
                             {[
                               "rt_approved",
                               "rw_approved",
-                              "kadus_approved",
                               "kasi_approved",
                             ].includes(s.status) ? (
                               <div className="w-5 h-5 rounded border-2 border-green-600 bg-green-600 flex items-center justify-center text-white text-xs">
@@ -266,7 +259,6 @@ useEffect(() => {
 
                             {[
                               "rw_approved",
-                              "kadus_approved",
                               "kasi_approved",
                             ].includes(s.status) ? (
                               <div className="w-5 h-5 rounded border-2 border-green-600 bg-green-600 flex items-center justify-center text-white text-xs">
@@ -288,25 +280,25 @@ useEffect(() => {
 
                           {/* Detail */}
                           <button
-                            onClick={() => setSelectedSurat(s)}
-                            className="w-9 h-9 rounded-lg border border-blue-200 bg-blue-50
-                                      text-blue-600 hover:bg-blue-100 transition"
+                            onClick={() => setPreviewSurat(s)}
+                            className="w-9 h-9 rounded-lg border  
+                                      text-white-600 hover:bg-blue-100 transition"
                             title="Detail Surat"
                           >
                             <Eye size={17} className="mx-auto" />
                           </button>
 
                           {/* Edit */}
-                          <button
-                            onClick={() => setSelectedSurat(s)}
-                            className="w-9 h-9 rounded-lg border border-amber-200 bg-amber-50
-                                      text-amber-600 hover:bg-amber-100 transition"
-                            title="Edit Surat"
-                          >
-                            <Pencil size={17} className="mx-auto" />
-                          </button>
-
-                          {/* Delete */}
+                          {s.status !== "kasi_approved" && (
+                            <button
+                              onClick={() => setSelectedSurat(s)}
+                              className="w-9 h-9 rounded-lg border border-amber-200 bg-amber-50
+                                        text-amber-600 hover:bg-amber-100 transition"
+                              title="Edit Surat"
+                            >
+                              <Pencil size={17} className="mx-auto" />
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               window.alert(
@@ -369,8 +361,18 @@ useEffect(() => {
         <FooterOperator />
 
 
+      {previewSurat && (
+          <OperatorSuratPreviewModal
+              surat={previewSurat}
+              onClose={() => setPreviewSurat(null)}
+          />
+      )}
+
       {selectedSurat && (
-        <OperatorSuratActionModal surat={selectedSurat} onClose={() => setSelectedSurat(null)} />
+          <OperatorSuratActionModal
+              surat={selectedSurat}
+              onClose={() => setSelectedSurat(null)}
+          />
       )}
     </div>
   );

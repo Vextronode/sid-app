@@ -42,33 +42,25 @@ export function generateSuratPDF(surat) {
 }
 
 // Preview PDF di tab baru dari backend
-export function previewSuratPDF(surat) {
+export async function previewSuratPDF(surat) {
   const url = `${API_URL}/api/letters/${surat.id}/preview`;
 
-  fetch(url, {
-    method: 'GET',
-    credentials: 'include', // Kirim cookies otomatis
+  const response = await fetch(url, {
+    method: "GET",
+    credentials: "include",
     headers: {
-      'Accept': 'application/pdf',
+      Accept: "application/pdf",
     },
-  })
-    .then((response) => {
-      if (!response.ok) {
-        return response.text().then(text => {
-          console.error(`HTTP ${response.status}:`, text);
-          throw new Error(`${response.status} ${response.statusText}: ${text}`);
-        });
-      }
-      return response.blob();
-    })
-    .then((blob) => {
-      const blobUrl = window.URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank');
-    })
-    .catch((error) => {
-      console.error('Error previewing PDF:', error);
-      alert('Gagal membuka preview surat:\n' + error.message);
-    });
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text);
+  }
+
+  const blob = await response.blob();
+
+  return window.URL.createObjectURL(blob);
 }
 
 // TTD Digital: untuk signature yang ditampilkan di backend

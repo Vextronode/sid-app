@@ -202,13 +202,11 @@ const handleSubmit = async (e) => {
   try {
     const response = await submitSurat(payload);
 
-    console.log(response);
 
     onSubmit?.(response);
   } catch (error) {
     console.error(error);
 
-    console.log(error.response?.data);
 
     alert(
       error.response?.data?.message ??
