@@ -98,28 +98,6 @@ export function TableSurat({ data }) {
                         Detail
                       </button>
 
-                      {/* Wet */}
-                      <button
-                        onClick={() =>
-                          handleDownload(item.id, "wet")
-                        }
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-600 text-white text-xs hover:bg-blue-700"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Wet
-                      </button>
-
-                      {/* Digital */}
-                      <button
-                        onClick={() =>
-                          handleDownload(item.id, "digital")
-                        }
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-green-600 text-white text-xs hover:bg-green-700"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Digital
-                      </button>
-
                     </div>
                   </td>
                 </tr>
