@@ -21,6 +21,7 @@ class Letter extends Model
         'applicant_nik',
         'applicant_address',
         'purpose',
+        'payload',
         'notes',
         'status',
         'is_overdue',
@@ -36,6 +37,7 @@ class Letter extends Model
     protected $casts = [
         'applicant_nik' => 'encrypted',
         'applicant_address' => 'encrypted',
+        'payload' => 'array',
 
         'status' => LetterStatus::class,
 

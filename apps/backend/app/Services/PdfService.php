@@ -63,13 +63,8 @@ class PdfService
         /**
          * Build letter body from LetterType template
          */
-        $replacements = $this->getReplacements($letter, $kades);
+        $templateHtml = $this->renderTemplate($letter, $kades);
 
-        $templateHtml = str_replace(
-            array_keys($replacements),
-            array_values($replacements),
-            $letter->letterType->template
-        );
         $view = match ($template) {
             'digital' => 'pdf.templates.digital',
             default   => 'pdf.templates.wet',
@@ -115,13 +110,8 @@ class PdfService
         /**
          * Build letter body from LetterType template
          */
-        $replacements = $this->getReplacements($letter, $kades);
+        $templateHtml = $this->renderTemplate($letter, $kades);
 
-        $templateHtml = str_replace(
-            array_keys($replacements),
-            array_values($replacements),
-            $letter->letterType->template
-        );
         $view = match ($template) {
             'digital' => 'pdf.templates.digital',
             default   => 'pdf.templates.wet',
@@ -134,6 +124,20 @@ class PdfService
         ]);
 
         return $pdf->stream("surat-{$letter->id}.pdf");
+    }
+
+    private function renderTemplate(Letter $letter, Official $kades): string
+    {
+        $replacements = $this->getReplacements($letter, $kades);
+
+        $templateHtml = str_replace(
+            array_keys($replacements),
+            array_values($replacements),
+            $letter->letterType->template
+        );
+
+        // Replace any unmapped {{ placeholder }} tags with fallback underline line
+        return preg_replace('/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/', '________________________', $templateHtml);
     }
 
     private function getReplacements(Letter $letter, Official $kades): array
@@ -166,7 +170,13 @@ class PdfService
             $signatureHtml .= '<img src="' . public_path('storage/' . $kades->stamp_img) . '" style="max-height: 45px; width: auto; margin-left: 10px;">';
         }
 
-        return [
+        $logoPath = public_path('images/logo-pangandaran.png');
+        $logoHtml = file_exists($logoPath)
+            ? '<img src="' . $logoPath . '" style="width: 75px; height: auto;">'
+            : '';
+
+        $replacements = [
+            '{{ logo_img }}'                   => $logoHtml,
             '{{ letter_number }}'              => $letter->letter_number ?? '470/      /Des/      /20',
             '{{ applicant_name }}'             => $letter->applicant_name ?? '________________________________________',
             '{{ applicant_nik }}'              => $letter->applicant_nik ?? '________________________________________',
@@ -181,5 +191,15 @@ class PdfService
             '{{ village_head_name }}'          => $kades->citizen->full_name ?? '________________________________________',
             '{{ signature_img }}'              => $signatureHtml,
         ];
+
+        if (!empty($letter->payload) && is_array($letter->payload)) {
+            foreach ($letter->payload as $key => $value) {
+                if (is_scalar($value) && $value !== null && $value !== '') {
+                    $replacements["{{ {$key} }}"] = (string) $value;
+                }
+            }
+        }
+
+        return $replacements;
     }
 }

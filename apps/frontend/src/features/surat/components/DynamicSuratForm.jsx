@@ -189,6 +189,16 @@ const handleSubmit = async (e) => {
     });
   }
 
+  // Send all extra dynamic fields into payload[...]
+  Object.keys(formData).forEach((key) => {
+    if (!["keperluan", "catatan", "dokumen"].includes(key)) {
+      const val = formData[key];
+      if (val !== undefined && val !== null && !(val instanceof File) && !Array.isArray(val)) {
+        payload.append(`payload[${key}]`, val);
+      }
+    }
+  });
+
   try {
     const response = await submitSurat(payload);
 

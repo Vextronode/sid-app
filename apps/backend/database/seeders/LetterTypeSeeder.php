@@ -41,15 +41,17 @@ class LetterTypeSeeder extends Seeder
         <div style="text-align: center; margin-bottom: 5px;">
             <table style="width: 100%; border-collapse: collapse;">
                 <tr>
-                    <td style="width: 15%; text-align: center; vertical-align: middle;"></td>
-                    <td style="width: 70%; text-align: center; vertical-align: middle;">
+                    <td style="width: 18%; text-align: center; vertical-align: middle;">
+                        {{ logo_img }}
+                    </td>
+                    <td style="width: 64%; text-align: center; vertical-align: middle;">
                         <div style="font-size: 12pt; font-weight: bold;">PEMERINTAH KABUPATEN PANGANDARAN</div>
                         <div style="font-size: 12pt; font-weight: bold;">KECAMATAN PARIGI</div>
                         <div style="font-size: 14pt; font-weight: bold;">DESA CIBENDA</div>
                         <div style="font-size: 9.5pt; margin-top: 2px;">Jl.Raya Cijulang Nomor.173.Tlp.0265.2640613</div>
                         <div style="font-size: 9.5pt; font-style: italic; color: #0000ff; text-decoration: underline;">email : kantordesacibenda@gmail.com</div>
                     </td>
-                    <td style="width: 15%; text-align: right; vertical-align: bottom; font-size: 9.5pt;">
+                    <td style="width: 18%; text-align: right; vertical-align: bottom; font-size: 9.5pt;">
                         Kode Pos 46393
                     </td>
                 </tr>
@@ -149,7 +151,7 @@ class LetterTypeSeeder extends Seeder
                 {$ttdPetugas}
                 {$pemohon}
                 <p style="text-align: justify; text-indent: 40px; margin: 12px 0; line-height: 1.5;">
-                    Orang tersebut diatas benar-benar warga kami dan perlu kami terangkan bahwa orang tersebut diatas benar-benar mempunyai kegiatan usaha &ldquo; ________________________ &rdquo; di wilayah Desa Cibenda Kecamatan Parigi Kabupaten Pangandaran Jawa Barat.
+                    Orang tersebut diatas benar-benar warga kami dan perlu kami terangkan bahwa orang tersebut diatas benar-benar mempunyai kegiatan usaha &ldquo; {{ jenis_usaha }} &rdquo; di wilayah {{ lokasi_usaha }} Desa Cibenda Kecamatan Parigi Kabupaten Pangandaran Jawa Barat.
                 </p>
                 <p style="text-align: justify; text-indent: 40px; margin: 12px 0; line-height: 1.5;">
                     Demikian surat keterangan ini kami buat dengan sebenarnya, mohon kepada yang bersangkutan agar menjadi maklum dan untuk menjadi bahan selanjutnya.
@@ -247,27 +249,27 @@ class LetterTypeSeeder extends Seeder
                     <tr>
                         <td style="width: 170px; vertical-align: top; padding: 2px 0;">Nama</td>
                         <td style="width: 15px; vertical-align: top; padding: 2px 0;">:</td>
-                        <td style="vertical-align: top; padding: 2px 0;">________________________________________</td>
+                        <td style="vertical-align: top; padding: 2px 0;">{{ child_name }}</td>
                     </tr>
                     <tr>
                         <td style="vertical-align: top; padding: 2px 0;">Tempat Tanggal Lahir</td>
                         <td style="width: 15px; vertical-align: top; padding: 2px 0;">:</td>
-                        <td style="vertical-align: top; padding: 2px 0;">________________________________________</td>
+                        <td style="vertical-align: top; padding: 2px 0;">{{ child_birth_place_date }}</td>
                     </tr>
                     <tr>
                         <td style="vertical-align: top; padding: 2px 0;">NIK</td>
                         <td style="width: 15px; vertical-align: top; padding: 2px 0;">:</td>
-                        <td style="vertical-align: top; padding: 2px 0;">________________________________________</td>
+                        <td style="vertical-align: top; padding: 2px 0;">{{ child_nik }}</td>
                     </tr>
                     <tr>
                         <td style="vertical-align: top; padding: 2px 0;">Jenis Kelamin</td>
                         <td style="width: 15px; vertical-align: top; padding: 2px 0;">:</td>
-                        <td style="vertical-align: top; padding: 2px 0;">________________________________________</td>
+                        <td style="vertical-align: top; padding: 2px 0;">{{ child_gender }}</td>
                     </tr>
                     <tr>
                         <td style="vertical-align: top; padding: 2px 0;">Alamat</td>
                         <td style="width: 15px; vertical-align: top; padding: 2px 0;">:</td>
-                        <td style="vertical-align: top; padding: 2px 0;">________________________________________</td>
+                        <td style="vertical-align: top; padding: 2px 0;">{{ child_address }}</td>
                     </tr>
                     <tr>
                         <td></td>

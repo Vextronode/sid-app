@@ -52,6 +52,8 @@ class LetterService
 
                 'purpose' => $data['purpose'],
 
+                'payload' => $data['payload'] ?? null,
+
                 'notes' => $data['notes'] ?? null,
 
 
