@@ -30,7 +30,7 @@ class KasiApprovalService
 
                 $query->where(
                     'assigned_role',
-                    $user->role
+                    'rw'
                 );
 
             })
@@ -68,8 +68,8 @@ class KasiApprovalService
         }
 
         if (
-            $user->role !==
-            $letter->letterType->assigned_role
+            $user->role !== 'rw' ||
+            $letter->letterType->assigned_role !== 'rw'
         ) {
             abort(403, 'Anda tidak berwenang memproses surat ini.');
         }

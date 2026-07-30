@@ -89,9 +89,10 @@ Route::middleware('auth:sanctum')->group(function () {
         '/letters/{letter}/download',
         [LetterDownloadController::class, 'download']
     );
+
     Route::get('/letters/{letter}/preview', function (\App\Models\Letter $letter, \App\Services\PdfService $service) {
         return $service->preview($letter, auth()->user(), request('template', 'wet'));
-    })->middleware('auth')->name('letters.preview');    
+    })->name('letters.preview');    
 
     Route::prefix('citizens')->group(function () {
 

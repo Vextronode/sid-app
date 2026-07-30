@@ -2,68 +2,26 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-
     <style>
-
-        body{
-            font-family: DejaVu Sans, sans-serif;
-            font-size:14px;
-            line-height:1.6;
+        @page {
+            margin: 10mm 15mm;
         }
-
-        .digital-box{
-            margin-top:50px;
-            text-align:right;
+        body {
+            font-family: 'Times New Roman', DejaVu Sans, serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #000;
+            margin: 0;
+            padding: 0;
         }
-
-        .digital-sign{
-            border:1px solid #666;
-            display:inline-block;
-            padding:15px;
-            margin-top:10px;
-            text-align:center;
-            width:220px;
+        img {
+            object-fit: contain;
         }
-
-        img{
-            object-fit:contain;
-        }
-
     </style>
-
 </head>
 <body>
 
 {!! $template !!}
-
-<div class="digital-box">
-
-    <p>
-        {{ $letter->village->name }},
-        {{ now()->translatedFormat('d F Y') }}
-    </p>
-
-    <p>Kepala Desa</p>
-
-    <div>
-
-        @if($kades->signature_img)
-
-            <img
-                src="{{ public_path('storage/'.$kades->signature_img) }}"
-                width="120">
-
-        @endif
-
-        <br>
-
-        <strong>
-            {{ $kades->citizen->full_name }}
-        </strong>
-
-    </div>
-
-</div>
 
 </body>
 </html>
