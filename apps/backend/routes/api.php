@@ -70,6 +70,10 @@ Route::middleware('auth:sanctum')->group(function () {
         '/dashboard/gender-stats',
         [VillageController::class, 'genderStats']
     );
+    Route::get(
+    '/dashboard/letter-stats',
+    [VillageController::class, 'letterStats']
+);
 
 
     Route::get('/letter-types', [LetterTypeController::class, 'index']);
