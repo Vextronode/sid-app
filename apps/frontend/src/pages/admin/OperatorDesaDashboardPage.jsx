@@ -133,7 +133,7 @@ getSuratList(roleKey)
         {/* Chart +  */}
 <div className="grid grid-cols-4 gap-4 mb-6">
   <div className="col-span-3">
-    <SuratStatChart  />
+    <SuratStatChart letters={letters} />
   </div>
 
   <div className="col-span-1 flex">

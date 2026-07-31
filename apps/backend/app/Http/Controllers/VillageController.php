@@ -32,17 +32,27 @@ public function genderStats(Request $request)
 }
 public function letterStats(Request $request)
 {
+
     $user = $request->user();
 
     $period = $request->get('period', 'day');
 
-    $baseQuery = Letter::where(
-        'village_id',
-        $user->village_id
-    );
+$baseQuery = Letter::where(
+    'village_id',
+    $user->village_id
+);
+
+$letterType = $request->get('letter_type');
+
+if ($letterType && $letterType !== 'all') {
+    $baseQuery->where('letter_type_id', $letterType);
+}
 
     $labels = [];
     $values = [];
+    $letterType = $request->get('letter_type');
+
+
 
     switch ($period) {
 
