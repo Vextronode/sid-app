@@ -58,6 +58,23 @@ if ($letterType && $letterType !== 'all') {
 
         case 'day':
 
+            $today = Carbon::now('Asia/Jakarta');
+
+            $labels = [
+                $today->translatedFormat('l')
+            ];
+
+            $values = [
+                (clone $baseQuery)
+                    ->whereDate('submitted_at', $today)
+                    ->count()
+            ];
+
+            break;
+
+
+        case 'week':
+
             $labels = [
                 'Sen',
                 'Sel',
@@ -75,50 +92,7 @@ if ($letterType && $letterType !== 'all') {
                     ->addDays($i);
 
                 $values[] = (clone $baseQuery)
-                    ->whereDate(
-                        'submitted_at',
-                        $date
-                    )
-                    ->count();
-            }
-
-            break;
-
-
-        case 'week':
-
-            $start = Carbon::now('Asia/Jakarta')
-                ->startOfMonth();
-
-            $totalWeek = ceil(
-                $start->daysInMonth / 7
-            );
-
-
-            for ($i = 0; $i < $totalWeek; $i++) {
-
-
-                $weekStart = $start
-                    ->copy()
-                    ->addDays($i * 7);
-
-
-                $weekEnd = $weekStart
-                    ->copy()
-                    ->addDays(6);
-
-
-                $labels[] = "Minggu ".($i + 1);
-
-
-                $values[] = (clone $baseQuery)
-                    ->whereBetween(
-                        'submitted_at',
-                        [
-                            $weekStart,
-                            $weekEnd
-                        ]
-                    )
+                    ->whereDate('submitted_at', $date)
                     ->count();
             }
 
@@ -126,6 +100,36 @@ if ($letterType && $letterType !== 'all') {
 
 
         case 'month':
+
+            $start = Carbon::now('Asia/Jakarta')->startOfMonth();
+
+            $totalWeek = ceil($start->daysInMonth / 7);
+
+            for ($i = 0; $i < $totalWeek; $i++) {
+
+                $weekStart = $start
+                    ->copy()
+                    ->addDays($i * 7);
+
+                $weekEnd = $weekStart
+                    ->copy()
+                    ->addDays(6);
+
+                $labels[] = "Minggu " . ($i + 1);
+
+                $values[] = (clone $baseQuery)
+                    ->whereBetween(
+                        'submitted_at',
+                        [$weekStart, $weekEnd]
+                    )
+                    ->count();
+            }
+
+            break;
+
+
+
+        case 'year':
 
             $labels = [
                 'Jan',
@@ -142,48 +146,12 @@ if ($letterType && $letterType !== 'all') {
                 'Des'
             ];
 
-
             for ($i = 1; $i <= 12; $i++) {
 
-
                 $values[] = (clone $baseQuery)
-                    ->whereYear(
-                        'submitted_at',
-                        now()->year
-                    )
-                    ->whereMonth(
-                        'submitted_at',
-                        $i
-                    )
+                    ->whereYear('submitted_at', now()->year)
+                    ->whereMonth('submitted_at', $i)
                     ->count();
-            }
-
-            break;
-
-
-
-        case 'year':
-
-            $currentYear = now()->year;
-
-
-            for (
-                $year = $currentYear - 4;
-                $year <= $currentYear;
-                $year++
-            ) {
-
-
-                $labels[] = $year;
-
-
-                $values[] = (clone $baseQuery)
-                    ->whereYear(
-                        'submitted_at',
-                        $year
-                    )
-                    ->count();
-
             }
 
             break;

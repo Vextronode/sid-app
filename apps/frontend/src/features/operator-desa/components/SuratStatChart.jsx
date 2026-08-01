@@ -13,14 +13,20 @@ import api from "@/lib/api";
 
 export default function SuratStatChart({ letters = [] }) {
 
-  const [period, setPeriod] = useState("day");
+
   const [chartData, setChartData] = useState([]);
   const [maxY, setMaxY] = useState(50);
   const [loading, setLoading] = useState(false);
+  const [letterTypes, setLetterTypes] = useState([]);
+  const now = new Date();
+  const [period, setPeriod] = useState("day");
+
+  const [selectedDay, setSelectedDay] = useState(1);
+  const [selectedWeek, setSelectedWeek] = useState(1);
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+
   const [letterType, setLetterType] = useState("all");
-const [letterTypes, setLetterTypes] = useState([]);
-
-
 
   useEffect(() => {
   const types = [
@@ -36,8 +42,15 @@ const [letterTypes, setLetterTypes] = useState([]);
 }, [letters]);
 
   useEffect(() => {
-  fetchChart();
-}, [period, letterType]);
+    fetchChart();
+  }, [
+    period,
+    selectedDay,
+    selectedWeek,
+    selectedMonth,
+    selectedYear,
+    letterType,
+  ]);
 
   const fetchChart = async () => {
 
@@ -48,6 +61,10 @@ const [letterTypes, setLetterTypes] = useState([]);
       const res = await api.get("/api/dashboard/letter-stats", {
         params: {
           period,
+          day: selectedDay,
+          week: selectedWeek,
+          month: selectedMonth,
+          year: selectedYear,
           letter_type: letterType,
         },
       });
@@ -100,15 +117,83 @@ return (
 
       <div className="flex gap-2">
 
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="border rounded-full px-3 py-1 text-xs"
-        >
-          <option value="day">Hari</option>
-          <option value="week">Minggu</option>
-          <option value="month">Bulan</option>
-        </select>
+<select
+    value={period}
+    onChange={(e) => setPeriod(e.target.value)}
+    className="border rounded-full px-3 py-1 text-xs"
+>
+    <option value="day">Hari</option>
+    <option value="week">Minggu</option>
+    <option value="month">Bulan</option>
+    <option value="year">Tahun</option>
+</select>
+{period === "day" && (
+    <select
+        value={selectedDay}
+        onChange={(e) => setSelectedDay(Number(e.target.value))}
+        className="border rounded-full px-3 py-1 text-xs"
+    >
+        <option value={1}>Senin</option>
+        <option value={2}>Selasa</option>
+        <option value={3}>Rabu</option>
+        <option value={4}>Kamis</option>
+        <option value={5}>Jumat</option>
+        <option value={6}>Sabtu</option>
+        <option value={7}>Minggu</option>
+    </select>
+)}
+{period === "week" && (
+    <select
+        value={selectedWeek}
+        onChange={(e) => setSelectedWeek(Number(e.target.value))}
+        className="border rounded-full px-3 py-1 text-xs"
+    >
+        <option value={1}>Minggu 1</option>
+        <option value={2}>Minggu 2</option>
+        <option value={3}>Minggu 3</option>
+        <option value={4}>Minggu 4</option>
+        <option value={5}>Minggu 5</option>
+    </select>
+)}
+{period === "month" && (
+    <select
+        value={selectedMonth}
+        onChange={(e) => setSelectedMonth(Number(e.target.value))}
+        className="border rounded-full px-3 py-1 text-xs"
+    >
+        <option value={1}>Januari</option>
+        <option value={2}>Februari</option>
+        <option value={3}>Maret</option>
+        <option value={4}>April</option>
+        <option value={5}>Mei</option>
+        <option value={6}>Juni</option>
+        <option value={7}>Juli</option>
+        <option value={8}>Agustus</option>
+        <option value={9}>September</option>
+        <option value={10}>Oktober</option>
+        <option value={11}>November</option>
+        <option value={12}>Desember</option>
+    </select>
+)}
+{period === "year" && (
+    <select
+        value={selectedYear}
+        onChange={(e) => setSelectedYear(Number(e.target.value))}
+        className="border rounded-full px-3 py-1 text-xs"
+    >
+        {Array.from({ length: 5 }, (_, i) => {
+            const year = now.getFullYear() - i;
+            return (
+                <option
+                    key={year}
+                    value={year}
+                >
+                    {year}
+                </option>
+            );
+        })}
+    </select>
+)}
 
         <select
           value={letterType}
