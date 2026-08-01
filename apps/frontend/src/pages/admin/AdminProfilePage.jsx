@@ -10,6 +10,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext';
 import EditProfilWargaModal from '@/features/profil-warga/components/EditProfilWargaModal';
 
 export default function AdminProfilePage() {
+  
   const { user, setUser } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -44,21 +45,21 @@ export default function AdminProfilePage() {
         <div>
           <p className="text-xs text-gray-400 mb-1">alamat</p>
           <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
-            <span className="text-sm text-gray-700">{user?.address ?? '-'}</span>
+            <span className="text-sm text-gray-700">{user?.citizen?.address ?? '-'}</span>
             <MapPin size={14} className="text-gray-400" />
           </div>
         </div>
         <div>
           <p className="text-xs text-gray-400 mb-1">Gender</p>
           <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
-            <span className="text-sm text-gray-700">{user?.gender === 'P' ? 'Perempuan' : user?.gender === 'L' ? 'Laki-laki' : '-'}</span>
+            <span className="text-sm text-gray-700">{user?.citizen?.gender === 'P' ? 'Perempuan' : user?.citizen?.gender === 'L' ? 'Laki-laki' : '-'}</span>
             <VenetianMask size={14} className="text-gray-400" />
           </div>
         </div>
         <div>
           <p className="text-xs text-gray-400 mb-1">nik</p>
           <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
-            <span className="text-sm text-gray-700">{user?.nik ?? '-'}</span>
+            <span className="text-sm text-gray-700">{user?.citizen?.nik ?? '-'}</span>
             <CreditCard size={14} className="text-gray-400" />
           </div>
         </div>

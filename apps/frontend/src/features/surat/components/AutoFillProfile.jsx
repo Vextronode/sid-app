@@ -1,4 +1,5 @@
 export function AutoFillProfile({ user }) {
+    console.log("USER:", user);
   return (
     <div className="grid grid-cols-1 gap-4">
       <div>

@@ -19,7 +19,7 @@ export function AdminLayout({ children, menuItems }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Dropdown Settings (Profil + Keluar) cuma muncul untuk RT & RW
-  const showSettingsMenu = ['rt', 'rw'].includes(user?.role);
+  const showSettingsMenu = ['rt', 'rw', 'kadus'].includes(user?.role);
 
   const handleLogout = () => {
     setSettingsOpen(false);
