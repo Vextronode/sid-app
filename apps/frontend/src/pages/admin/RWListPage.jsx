@@ -173,8 +173,8 @@ export default function RWListPage() {
           </select>
 
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
-            <div className="grid grid-cols-4 text-[10px] font-semibold text-gray-400 uppercase px-4 py-3 border-b">
-              <span>No.Surat</span><span>Pemohon</span><span>Jenis</span><span>Tanggal</span>
+            <div className="grid grid-cols-4 text-[10px] font-semibold text-gray-400 uppercase px-4 py-3 border-b ">
+              <span>No.Surat</span><span className="text-center">Pemohon</span><span className="text-center">Jenis</span><span className="text-center">Tanggal</span>
             </div>
             {loading ? (
               <p className="text-center text-gray-400 text-sm py-8">Memuat...</p>
@@ -184,13 +184,13 @@ export default function RWListPage() {
               paginatedData.map((s) => (
                 <button
                   key={s.id}
-                  onClick={() => { setSelectedId(s.id); setIsReadOnly(s.status !== 'rt_approved'); }}
+                  onClick={() => { setSelectedId(s.id); setIsReadOnly(s.status !== 'pending'); }}
                   className="w-full grid grid-cols-4 items-center text-left px-4 py-3 border-b last:border-0 text-xs"
                 >
                   <span className="text-gray-500">{s.letter_number ?? '-'}</span>
-                  <span className="font-semibold text-gray-800">{s.applicant_name}</span>
-                  <span className="text-gray-600">{s.letter_type?.name ?? '-'}</span>
-                  <span className="text-gray-500">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID') : '-'}</span>
+                  <span className="font-semibold text-gray-800 text-center">{s.applicant_name}</span>
+                  <span className="text-gray-600 text-center">{s.letter_type?.name ?? '-'}</span>
+                  <span className="text-gray-500 text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID') : '-'}</span>
                 </button>
               ))
             )}

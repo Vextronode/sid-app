@@ -43,7 +43,7 @@ export default function ProfilePage() {
           </div>
         </div>
         <div>
-          <p className="text-xs text-gray-400 mb-1">alamat</p>
+          <p className="text-xs text-gray-400 mb-1">Alamat</p>
           <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
             <span className="text-sm text-gray-700">{user?.citizen?.address ?? '-'}</span>
             <MapPin size={14} className="text-gray-400" />
@@ -57,7 +57,7 @@ export default function ProfilePage() {
           </div>
         </div>
         <div>
-          <p className="text-xs text-gray-400 mb-1">nik</p>
+          <p className="text-xs text-gray-400 mb-1">NIK</p>
           <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
             <span className="text-sm text-gray-700">{user?.citizen?.nik ?? '-'}</span>
             <CreditCard size={14} className="text-gray-400" />

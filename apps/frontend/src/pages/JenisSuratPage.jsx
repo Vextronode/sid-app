@@ -92,9 +92,9 @@ export default function JenisSuratPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                  <th className="py-3 px-4 font-semibold">Jenis Surat</th>
-                  <th className="py-3 px-4 font-semibold">Tanggal</th>
-                  <th className="py-3 px-4 font-semibold">Status</th>
+                  <th className="py-3 px-4 font-semibold text-">Jenis Surat</th>
+                  <th className="py-3 px-4 font-semibold text-center">Tanggal</th>
+                  <th className="py-3 px-4 font-semibold text-center">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,13 +103,13 @@ export default function JenisSuratPage() {
                   return (
                     <tr key={item.id} className="border-b last:border-0">
                       <td className="py-3 px-4">
-                        <p className="font-medium text-gray-800">{item.letter_type?.name ?? '-'}</p>
-                        <p className="text-[10px] text-gray-400">#{item.letter_number ?? `SKD-${item.id}`}</p>
+                        <p className="font-medium text-gray-800 text-">{item.letter_type?.name ?? '-'}</p>
+                        <p className="text-[10px] text-gray-400 text-">#{item.letter_number ?? `SKD-${item.id}`}</p>
                       </td>
-                      <td className="py-3 px-4 text-gray-500">
+                      <td className="py-3 px-4 text-gray-500 text-center">
                         {item.processed_at ? new Date(item.processed_at).toLocaleDateString('id-ID') : '-'}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 text-center">
                         <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
                       </td>
                     </tr>

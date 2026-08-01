@@ -146,7 +146,7 @@ export default function RTDashboardPage() {
             <p className="text-2xl font-bold text-gray-800">{stats.disetujuiFinal}</p>
           </button>
 
-          <div className="mb-4"><SuratStatChart data={chartData} /></div>
+          <div className="mb-4"><SuratStatChart letters={letters} /></div>
           <div className="mb-4"><QuickNavButtons items={QUICK_NAV_RT} basePath="/admin/list-rt" /></div>
         </div>
 
