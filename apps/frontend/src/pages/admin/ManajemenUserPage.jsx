@@ -88,12 +88,12 @@ export default function ManajemenUserPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-gray-400 text-xs">
-                <th className="py-3 font-medium">Nama</th>
-                <th className="py-3 font-medium">Email</th>
-                <th className="py-3 font-medium">Jabatan</th>
-                <th className="py-3 font-medium">Wilayah</th>
-                <th className="py-3 font-medium">Status</th>
-                <th className="py-3 font-medium text-right">Aksi</th>
+                <th className="py-3 font-medium text-center">Nama</th>
+                <th className="py-3 font-medium text-center">Email</th>
+                <th className="py-3 font-medium text-center">Jabatan</th>
+                <th className="py-3 font-medium text-center">Wilayah</th>
+                <th className="py-3 font-medium text-center">Status</th>
+                <th className="py-3 font-medium text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -102,15 +102,15 @@ export default function ManajemenUserPage() {
               ) : (
                 data.map((user) => (
                   <tr key={user.id} className="border-b last:border-0">
-                    <td className="py-4 font-semibold text-gray-800">{user.name}</td>
-                    <td className="py-4 text-gray-600">{user.email}</td>
-                    <td className="py-4">
+                    <td className="py-4 font-semibold text-gray-800 text-center">{user.name}</td>
+                    <td className="py-4 text-gray-600 text-center">{user.email}</td>
+                    <td className="py-4 text-center">
                       <span className="border rounded-full px-3 py-1 text-xs text-gray-600 uppercase">{user.role}</span>
                     </td>
-                    <td className="py-4 text-gray-600">RT {user.citizen?.rt?.number ?? '-'}
+                    <td className="py-4 text-gray-600 text-center">RT {user.citizen?.rt?.number ?? '-'}
 /
 RW {user.citizen?.rw?.number ?? '-'}</td>
-                    <td className="py-4">
+                    <td className="py-4 text-center">
                       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
                         user.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                       }`}>
@@ -119,7 +119,7 @@ RW {user.citizen?.rw?.number ?? '-'}</td>
                       </span>
                     </td>
                     <td className="py-4">
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => handleOpenEdit(user)}
                           className="w-9 h-9 rounded-lg border flex items-center justify-center hover:bg-gray-100 text-gray-600"

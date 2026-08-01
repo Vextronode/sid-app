@@ -14,8 +14,9 @@ const STATUS_LABEL = {
   pending: { label: 'MENUNGGU', className: 'bg-gray-100 text-gray-500' },
   rt_approved: { label: 'DIPROSES RW', className: 'bg-blue-100 text-blue-700' },
   rt_rejected: { label: 'DITOLAK RT', className: 'bg-red-100 text-red-600' },
-  rw_approved: { label: 'DISETUJUI', className: 'bg-green-100 text-green-700' },
+  rw_approved: { label: 'DIPROSES Operator', className: 'bg-green-100 text-green-700' },
   rw_rejected: { label: 'DITOLAK RW', className: 'bg-red-100 text-red-600' },
+  kasi_approved: { label: 'DISETUJUI', className: 'bg-green-100 text-green-700' },
 };
 
 const FILTERS = {
@@ -45,7 +46,7 @@ export default function JenisSuratPage() {
     { key: 'total', label: 'Total Pengajuan', value: stats.total, icon: FolderOpen, color: 'text-gray-600 bg-gray-100' },
     { key: 'disetujui', label: 'Permohonan Disetujui', value: stats.disetujui, icon: CheckCircle2, color: 'text-green-600 bg-green-100' },
     { key: 'ditolak', label: 'Permohonan Ditolak', value: stats.ditolak, icon: XCircle, color: 'text-red-600 bg-red-100' },
-    { key: 'status', label: 'Status Permohonan', value: '', icon: ListChecks, color: 'text-blue-600 bg-blue-100' },
+    { key: 'status', label: 'Status Permohonan', value: stats.total, icon: ListChecks, color: 'text-blue-600 bg-blue-100' },
   ];
 
   return (
@@ -106,7 +107,7 @@ export default function JenisSuratPage() {
                         <p className="text-[10px] text-gray-400">#{item.letter_number ?? `SKD-${item.id}`}</p>
                       </td>
                       <td className="py-3 px-4 text-gray-500">
-                        {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
+                        {item.processed_at ? new Date(item.processed_at).toLocaleDateString('id-ID') : '-'}
                       </td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>

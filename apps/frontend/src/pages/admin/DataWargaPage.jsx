@@ -84,11 +84,11 @@ export default function DataWargaPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-gray-400 text-xs">
-                <th className="py-3 font-medium">Nama</th>
-                <th className="py-3 font-medium">NIK</th>
-                <th className="py-3 font-medium">RT/RW</th>
-                <th className="py-3 font-medium">Status</th>
-                <th className="py-3 font-medium text-right">Aksi</th>
+                <th className="py-3 font-medium text-center">Nama</th>
+                <th className="py-3 font-medium text-center">NIK</th>
+                <th className="py-3 font-medium text-center">RT/RW</th>
+                <th className="py-3 font-medium text-center">Status</th>
+                <th className="py-3 font-medium text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -103,19 +103,19 @@ export default function DataWargaPage() {
               ) : (
                 data.map((warga) => (
                   <tr key={warga.id} className="border-b last:border-0">
-                    <td className="py-4 font-semibold text-gray-800">{warga.name}</td>
-                    <td className="py-4 text-gray-600">{warga.nik}</td>
-                    <td className="py-4 text-gray-600">RT {warga.rt?.number} / RW {warga.rw?.number}</td>
-                    <td className="py-4">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
+                    <td className="py-4 font-semibold text-gray-800 text-center">{warga.name}</td>
+                    <td className="py-4 text-gray-600 text-center">{warga.nik}</td>
+                    <td className="py-4 text-gray-600 text-center">RT {warga.rt?.number} / RW {warga.rw?.number}</td>
+                    <td className="py-4 text-center">
+                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium text-center${
                         warga.is_active ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                       }`}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-current " />
                         {warga.is_active ? 'Aktif' : 'Nonaktif'}
                       </span>
                     </td>
-                    <td className="py-4">
-                      <div className="flex gap-2 justify-end">
+                    <td className="py-4 ">
+                      <div className="flex justify-center items-center gap-2">
                         <button
                           className="w-9 h-9 rounded-lg border flex items-center justify-center hover:bg-gray-100 text-gray-600"
                           title="Edit"

@@ -117,21 +117,7 @@ const handleConfirmBasah = async () => {
               TTD Basah
             </button>
 
-            <button
-              onClick={() => bisaCetak && setTtdModalOpen(true)}
-              disabled={!bisaCetak}
-              className="flex-1 flex items-center justify-center gap-2
-                bg-green-600
-                text-white
-                rounded-lg
-                py-2.5
-                text-sm
-                hover:bg-green-700
-                disabled:opacity-40"
-            >
-              <FileSignature size={16}/>
-              TTD Digital
-            </button>
+
           </div>
         </div>
       </div>
