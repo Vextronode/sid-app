@@ -80,7 +80,7 @@ export default function RTListPage() {
                 className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
               >
                 <option value="">Semua Status</option>
-                <option value="pending">Pending</option>
+                <option value="pending">Menunggu</option>
                 <option value="rt_approved">Proses</option>
                 <option value="rt_rejected">Ditolak</option>
               </select>
@@ -158,8 +158,6 @@ export default function RTListPage() {
       {/* ===== MOBILE ===== */}
       <div className="md:hidden bg-gray-50 min-h-screen pb-20">
         <div className="px-4 pt-4">
-          <p className="text-green-700 font-semibold">Digital Amanah</p>
-          <p className="text-xs text-gray-400 mb-4">Dashboard Ketua RT</p>
 
           <h1 className="text-xl font-bold text-gray-800 mb-1">Semua Surat</h1>
           <p className="text-sm text-gray-500 mb-4">Kelola permohonan surat warga secara digital</p>
@@ -176,9 +174,9 @@ export default function RTListPage() {
 
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-full px-3 py-2 text-xs text-gray-600 bg-white mb-4">
             <option value="">Semua Status</option>
-            <option value="pending">pending</option>
-            <option value="rt_approved">rt_approved</option>
-            <option value="rt_rejected">rt_rejected</option>
+            <option value="pending">Menunggu</option>
+            <option value="rt_approved">RT Approved</option>
+            <option value="rt_rejected">RT Rejected</option>
           </select>
 
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">

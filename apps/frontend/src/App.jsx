@@ -17,12 +17,14 @@ import JenisSuratPage from "@/pages/JenisSuratPage";
 import ProfilePage from "@/pages/ProfilePage";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { OperatorDesaLayout } from "@/components/layout/OperatorDesaLayout";
+import RiwayatSuratPage from "@/pages/RiwayatSuratPage";
 
 // RT & RW — approver (RT tahap 1, RW tahap final)
 import RTDashboardPage from "@/pages/admin/RTDashboardPage";
 import RTListPage from "@/pages/admin/RTListPage";
 import RWDashboardPage from "@/pages/admin/RWDashboardPage";
 import RWListPage from "@/pages/admin/RWListPage";
+import AdminProfilePage from "@/pages/admin/AdminProfilePage";
 
 // Kadus — monitoring saja
 import KadusDashboardPage from "@/pages/admin/KadusDashboardPage";
@@ -143,6 +145,15 @@ export default function App() {
   }
 />
 
+<Route
+  path="/riwayat-surat"
+  element={
+    <ProtectedRoute allowedRoles={["warga"]}>
+      <RiwayatSuratPage />
+    </ProtectedRoute>
+  }
+/>
+
           {/* ===== RT — approve tahap 1 ===== */}
           <Route
             path="/admin/dashboard-surat-rt"
@@ -160,6 +171,17 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+  path="/admin/profile"
+  element={
+    <ProtectedRoute allowedRoles={["rt", "rw"]}>
+      <AdminLayout>
+        <AdminProfilePage />
+      </AdminLayout>
+    </ProtectedRoute>
+  }
+/>
 
           {/* ===== RW — approve tahap final ===== */}
           <Route

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // ==========================================
 // RTDashboardPage.jsx
 // RiwayatVerifikasiTable diganti QuickNavButtons (tombol Menunggu/
@@ -14,6 +15,7 @@ import { FooterDesa } from '@/components/layout/FooterDesa';
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
 import QuickNavButtons from '@/features/dashboard-mobile/components/QuickNavButtons';
+import { getGreeting } from '@/lib/utils/greeting';
 
 const QUICK_NAV_RT = [
   { key: 'pending', label: 'Menunggu' },
@@ -61,7 +63,7 @@ export default function RTDashboardPage() {
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Selamat Pagi, {user?.name ?? 'Bapak/Ibu'}</h1>
+              <h1 className="text-2xl font-bold text-gray-800">{getGreeting()}, {user?.name ?? 'Bapak/Ibu'}</h1>
               <p className="text-sm text-gray-500">Kelola administrasi warga {user?.wilayah_label ?? 'RT'} dengan lebih cepat.</p>
             </div>
             <span className="text-sm text-gray-500 capitalize">{hariIni}</span>
@@ -121,10 +123,8 @@ export default function RTDashboardPage() {
       {/* ===== MOBILE ===== */}
       <div className="md:hidden bg-gray-50 min-h-screen pb-20">
         <div className="px-4 pt-4">
-          <p className="text-green-700 font-semibold">Digital Amanah</p>
-          <p className="text-xs text-gray-400 mb-4">Dashboard Ketua RT</p>
 
-          <h1 className="text-xl font-bold text-gray-800 mb-1">Selamat Pagi, {user?.name ?? 'Bapak/Ibu'}</h1>
+          <h1 className="text-xl font-bold text-gray-800 mb-1">{getGreeting()}, {user?.name ?? 'Bapak/Ibu'}</h1>
           <p className="text-sm text-gray-500 mb-4">Kelola administrasi warga {user?.wilayah_label ?? 'RT'} dengan lebih cepat.</p>
 
           <div className="grid grid-cols-2 gap-3 mb-3">

@@ -1,102 +1,77 @@
-/* eslint-disable no-unused-vars */
 // ==========================================
 // DaftarSurat.jsx (Beranda Warga)
-// Redesign sesuai Image 1: card statistik hijau + 2 kartu kecil,
-// tabel daftar permohonan (read-only, status berubah otomatis sesuai
-// data asli dari backend), tombol "Buat Baru".
+// Sekarang jadi halaman Ajukan Surat langsung: dropdown pilih jenis
+// surat, begitu dipilih baru muncul form dinamis di bawahnya.
+// Sesuai desain: judul besar, subjudul abu-abu, card "LANGKAH 1"
+// dengan lingkaran hijau nomor 1, lalu card placeholder/form di bawah.
 // ==========================================
 
-import { Link } from "react-router-dom";
-import { useAuth } from "@/features/auth/contexts/AuthContext";
-import { WargaLayout } from "@/components/layout/WargaLayout";
-import { FolderOpen, Clock, CheckCircle2 } from "lucide-react";
-import { useLetters } from "@/features/surat/hooks/useLetters";
-
-const STATUS_LABEL = {
-  pending: { label: 'MENUNGGU', className: 'bg-gray-100 text-gray-500' },
-  rt_approved: { label: 'DISETUJUI RT', className: 'bg-green-100 text-green-700' },
-  rt_rejected: { label: 'DITOLAK RT', className: 'bg-red-100 text-red-600' },
-  rw_approved: { label: 'DISETUJUI FINAL', className: 'bg-green-100 text-green-700' },
-  rw_rejected: { label: 'DITOLAK RW', className: 'bg-red-100 text-red-600' },
-};
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { WargaLayout } from '@/components/layout/WargaLayout';
+import { SURAT_CONFIG } from '@/lib/constants/suratConfig';
+import { DynamicSuratForm } from '@/features/surat/components/DynamicSuratForm';
 
 export function DaftarSurat() {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const namaPemohon = user?.name || "Warga Desa";
-  const { letters, loading } = useLetters();
+  const [selectedCode, setSelectedCode] = useState('');
 
-  const total = letters.length;
-  const sedangDiproses = letters.filter((s) => ['pending', 'rt_approved'].includes(s.status)).length;
-  const disetujuiFinal = letters.filter((s) => s.status === 'rw_approved').length;
+  const currentConfig = useMemo(() => (selectedCode ? SURAT_CONFIG[selectedCode] : null), [selectedCode]);
+
+  const handleCancel = () => setSelectedCode('');
+
+  const handleSubmit = (data) => {
+    // TODO: sambungkan ke endpoint submit surat asli
+    console.log('Submit surat', { jenis: currentConfig?.code, data, pemohon: user?.name });
+    navigate('/jenis-surat');
+  };
 
   return (
     <WargaLayout>
-      <div className="px-4 py-5 max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">Selamat Datang,</h1>
-        <p className="text-sm text-gray-500 mb-5">Selesaikan urusan administratif Anda dengan aman dan cepat.</p>
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">Form Pengajuan Surat</h1>
+          <p className="text-sm text-gray-400 mb-6">
+            Lengkapi detail di bawah ini untuk mengajukan permohonan surat administrasi.
+          </p>
 
-        <div className="bg-green-600 rounded-2xl p-5 text-white mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wide opacity-90">Total Permohonan</span>
-            <FolderOpen size={18} />
+          {/* Card Langkah 1 - Pilih Jenis Surat */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                1
+              </span>
+              <h2 className="text-sm font-bold text-green-700 uppercase tracking-wide">
+                Langkah 1 – Pilih Jenis Surat
+              </h2>
+            </div>
+
+            <label className="text-sm text-gray-600 block mb-1">
+              Jenis surat <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={selectedCode}
+              onChange={(e) => setSelectedCode(e.target.value)}
+              className="w-full border rounded-lg px-4 py-3 text-base outline-none focus:border-green-500"
+            >
+              <option value="">Pilih jenis surat...</option>
+              {Object.values(SURAT_CONFIG).map((cfg) => (
+                <option key={cfg.code} value={cfg.code}>{cfg.title}</option>
+              ))}
+            </select>
           </div>
-          <p className="text-4xl font-bold">{String(total).padStart(2, '0')}</p>
-        </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-white rounded-2xl shadow-sm p-4">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase mb-2">Sedang Diproses</p>
-            <p className="text-2xl font-bold text-blue-600 flex items-center gap-1">
-              {String(sedangDiproses).padStart(2, '0')} <Clock size={14} className="text-blue-500" />
-            </p>
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm p-4">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase mb-2">Disetujui Final</p>
-            <p className="text-2xl font-bold text-green-600 flex items-center gap-1">
-              {String(disetujuiFinal).padStart(2, '0')} <CheckCircle2 size={14} className="text-green-500" />
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-gray-800">Daftar Permohonan</h2>
-          <Link to="/jenis-surat" className="text-sm text-green-600 font-medium hover:underline">Buat Baru</Link>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          {loading ? (
-            <p className="text-center text-gray-400 text-sm py-8">Memuat data surat...</p>
-          ) : letters.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm py-8">Belum ada permohonan surat.</p>
+          {/* Card Langkah 2 - Form / Placeholder */}
+          {currentConfig ? (
+            <DynamicSuratForm config={currentConfig} onCancel={handleCancel} onSubmit={handleSubmit} />
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                  <th className="py-3 px-4 font-semibold">Jenis Surat</th>
-                  <th className="py-3 px-4 font-semibold">Tanggal</th>
-                  <th className="py-3 px-4 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {letters.map((item) => {
-                  const badge = STATUS_LABEL[item.status] ?? { label: item.status, className: 'bg-gray-100 text-gray-500' };
-                  return (
-                    <tr key={item.id} className="border-b last:border-0">
-                      <td className="py-3 px-4">
-                        <p className="font-medium text-gray-800">{item.letter_type?.name ?? '-'}</p>
-                        <p className="text-[10px] text-gray-400">#{item.letter_number ?? `SKD-${item.id}`}</p>
-                      </td>
-                      <td className="py-3 px-4 text-gray-500">
-                        {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
+              <p className="text-gray-400 text-base">
+                Silakan pilih jenis surat di atas untuk melanjutkan.
+              </p>
+            </div>
           )}
         </div>
       </div>

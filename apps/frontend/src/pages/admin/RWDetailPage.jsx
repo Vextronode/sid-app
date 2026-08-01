@@ -108,7 +108,7 @@ export default function RWDetailPage(){
 
 
       alert(
-        "Gagal approve surat"
+        "Gagal Menyetujui surat"
       );
 
     }

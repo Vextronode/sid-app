@@ -1,3 +1,5 @@
+/* eslint-disable no-undef */
+/* eslint-disable no-unused-vars */
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -76,7 +78,7 @@ export default function RTDetailPage(){
 
     console.error(error);
 
-    alert("Gagal approve surat");
+    alert("Gagal Menyetujui Surat");
 
   }
 
@@ -94,7 +96,7 @@ export default function RTDetailPage(){
 
     } catch(error) {
       console.error(error);
-      alert("Gagal menolak surat");
+      alert("Gagal Menolak Surat");
     }
   };
 
