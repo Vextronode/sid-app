@@ -1,195 +1,80 @@
-import { Link } from "react-router-dom";
-import { useAuth } from "@/features/auth/contexts/AuthContext";
-import { FooterDesa } from "@/components/layout/FooterDesa";
-import { TableSurat } from "@/features/surat/components/TableSurat";
-import { FileText, Clock, CheckCircle2, Plus } from "lucide-react";
-import { useLetters } from "@/features/surat/hooks/useLetters";
+// ==========================================
+// DaftarSurat.jsx (Beranda Warga)
+// Sekarang jadi halaman Ajukan Surat langsung: dropdown pilih jenis
+// surat, begitu dipilih baru muncul form dinamis di bawahnya.
+// Sesuai desain: judul besar, subjudul abu-abu, card "LANGKAH 1"
+// dengan lingkaran hijau nomor 1, lalu card placeholder/form di bawah.
+// ==========================================
+
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { WargaLayout } from '@/components/layout/WargaLayout';
+import { SURAT_CONFIG } from '@/lib/constants/suratConfig';
+import { DynamicSuratForm } from '@/features/surat/components/DynamicSuratForm';
 
 export function DaftarSurat() {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const namaPemohon = user?.name || "Warga Desa";
+  const [selectedCode, setSelectedCode] = useState('');
 
-  const { letters, loading } = useLetters();
+  const currentConfig = useMemo(() => (selectedCode ? SURAT_CONFIG[selectedCode] : null), [selectedCode]);
 
+  const handleCancel = () => setSelectedCode('');
 
-  // Mapping data dari database ke format TableSurat
-  const dataRiwayat = letters.map((item) => ({
-    id: item.id,
-
-    noSurat: item.letter_number ?? "-",
-
-    pemohon: namaPemohon,
-
-    jenis: item.letter_type?.code ?? "-",
-
-    tanggal: item.created_at
-      ? new Date(item.created_at).toLocaleDateString("id-ID")
-      : "-",
-
-
-    status: item.status ?? "pending",
-
-
-    nik: item.applicant_nik ?? null,
-
-    alamat: item.applicant_address ?? null,
-
-    keperluan: item.purpose ?? null,
-    processed_at: item.processed_at,
-approvals: item.approvals,
-  }));
-
-
-  // Hitung total ringkasan
-  const totalPermohonan = dataRiwayat.length;
-
-
-const sedangDiproses = dataRiwayat.filter((s) =>
-  [
-    "pending",
-    "rt_approved",
-    "rw_approved",
-    "kadus_approved",
-  ].includes(s.status)
-).length;
-
-const disetujuiFinal = dataRiwayat.filter(
-  (s) => s.status === "rw_approved"
-).length;
-
+  const handleSubmit = (data) => {
+    // TODO: sambungkan ke endpoint submit surat asli
+    console.log('Submit surat', { jenis: currentConfig?.code, data, pemohon: user?.name });
+    navigate('/jenis-surat');
+  };
 
   return (
-        <WargaLayout>
-    <div className="min-h-screen bg-[#F9FAFB] flex flex-col justify-between">
-      <main className="max-w-7xl mx-auto w-full px-4 md:px-8 py-10 grow space-y-10">
+    <WargaLayout>
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">Form Pengajuan Surat</h1>
+          <p className="text-sm text-gray-400 mb-6">
+            Lengkapi detail di bawah ini untuk mengajukan permohonan surat administrasi.
+          </p>
 
-        {/* Header Section */}
-        <div className="space-y-6">
-          <div className="space-y-1">
-            <h1 className="text-xl font-semibold text-gray-800">
-              Dashboard Saya
-            </h1>
-
-            <p className="text-sm text-gray-400">
-              Selamat Datang, {namaPemohon}
-            </p>
-          </div>
-
-
-          {/* Stat Card */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-            {/* Total Permohonan */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-start">
-              <div className="space-y-3">
-
-                <p className="text-3xl font-medium text-gray-800">
-                  {totalPermohonan}
-                </p>
-
-                <p className="text-[11px] text-gray-400 uppercase tracking-wider">
-                  Total Permohonan
-                </p>
-
-              </div>
-
-              <FileText className="w-5 h-5 text-gray-300" />
-
+          {/* Card Langkah 1 - Pilih Jenis Surat */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                1
+              </span>
+              <h2 className="text-sm font-bold text-green-700 uppercase tracking-wide">
+                Langkah 1 – Pilih Jenis Surat
+              </h2>
             </div>
 
-
-
-            {/* Sedang diproses */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-start">
-              <div className="space-y-3">
-
-                <p className="text-3xl font-medium text-gray-800">
-                  {sedangDiproses}
-                </p>
-
-                <p className="text-[11px] text-gray-400 uppercase tracking-wider">
-                  Sedang diproses
-                </p>
-
-              </div>
-
-              <Clock className="w-5 h-5 text-gray-300" />
-
-            </div>
-
-
-
-            {/* Disetujui final */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-start">
-
-              <div className="space-y-3">
-
-                <p className="text-3xl font-medium text-gray-800">
-                  {disetujuiFinal}
-                </p>
-
-                <p className="text-[11px] text-gray-400 uppercase tracking_wider">
-                  Disetujui final
-                </p>
-
-              </div>
-
-              <CheckCircle2 className="w-5 h-5 text-gray-300" />
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-
-        {/* tabel */}
-        <div className="space-y-4">
-
-          <h2 className="text-md font-semibold text-gray-800">
-            Surat Terbaru Saya
-          </h2>
-
-
-          {
-            loading ? (
-              <p className="text-sm text-gray-400">
-                Memuat data surat...
-              </p>
-            ) : (
-              <TableSurat data={dataRiwayat} />
-            )
-          }
-
-
-
-          <div className="pt-4">
-
-            <Link
-              to="/jenis-surat"
-              className="inline-flex items-center gap-2 bg-[#4CAF4F] hover:bg-[#439E46] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm"
+            <label className="text-sm text-gray-600 block mb-1">
+              Jenis surat <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={selectedCode}
+              onChange={(e) => setSelectedCode(e.target.value)}
+              className="w-full border rounded-lg px-4 py-3 text-base outline-none focus:border-green-500"
             >
-
-              <Plus className="w-4 h-4" />
-
-              Ajukan Permohonan Baru
-
-            </Link>
-
+              <option value="">Pilih jenis surat...</option>
+              {Object.values(SURAT_CONFIG).map((cfg) => (
+                <option key={cfg.code} value={cfg.code}>{cfg.title}</option>
+              ))}
+            </select>
           </div>
 
-
+          {/* Card Langkah 2 - Form / Placeholder */}
+          {currentConfig ? (
+            <DynamicSuratForm config={currentConfig} onCancel={handleCancel} onSubmit={handleSubmit} />
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
+              <p className="text-gray-400 text-base">
+                Silakan pilih jenis surat di atas untuk melanjutkan.
+              </p>
+            </div>
+          )}
         </div>
-
-
-      </main>
-
-
-
-
-    </div>
+      </div>
     </WargaLayout>
   );
 }
