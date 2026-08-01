@@ -36,6 +36,8 @@ export function DaftarSurat() {
     alamat: item.applicant_address ?? null,
 
     keperluan: item.purpose ?? null,
+    processed_at: item.processed_at,
+approvals: item.approvals,
   }));
 
 

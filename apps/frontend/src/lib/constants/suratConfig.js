@@ -86,21 +86,21 @@ export const SURAT_CONFIG = {
     title: "Surat Keterangan Tidak Mampu",
     type: "Manual",
 
-    fields:[
+    fields: [
       {
-        name:"keperluan_persyaratan",
-        label:"Keperluan",
-        type:"textarea",
-        required:true,
+        name: "keperluan",
+        label: "Keperluan",
+        type: "textarea",
+        required: true,
         placeholder:
           "Jelaskan keperluan SKTM"
       },
 
       {
-        name:"dokumen",
-        label:"Upload Dokumen Pendukung",
-        type:"file",
-        required:true,
+        name: "dokumen",
+        label: "Upload Dokumen Pendukung",
+        type: "file",
+        required: true,
         accept:
           ".pdf,.jpg,.jpeg,.png"
       }
@@ -108,26 +108,26 @@ export const SURAT_CONFIG = {
   },
 
 
-  A09:{
-    code:"A09",
-    title:"Surat Keterangan Belum Menikah",
-    type:"Manual",
+  A09: {
+    code: "A09",
+    title: "Surat Keterangan Belum Menikah",
+    type: "Manual",
 
-    fields:[
+    fields: [
       {
-        name:"keperluan",
-        label:"Keperluan",
-        type:"textarea",
-        required:true,
+        name: "keperluan",
+        label: "Keperluan",
+        type: "textarea",
+        required: true,
         placeholder:
           "Jelaskan keperluan surat"
       },
 
       {
-        name:"dokumen",
-        label:"Upload Dokumen Pendukung",
-        type:"file",
-        required:true,
+        name: "dokumen",
+        label: "Upload Dokumen Pendukung",
+        type: "file",
+        required: true,
         accept:
           ".pdf,.jpg,.jpeg,.png"
       }

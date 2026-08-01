@@ -43,6 +43,7 @@ export function PengajuanSuratPage() {
       nik: data.nik || null,
       alamat: data.alamat || null,
       keperluan: data.keperluan || null,
+      processed_at: data.processed_at || null,
     };
 
     navigate("/daftar-surat");

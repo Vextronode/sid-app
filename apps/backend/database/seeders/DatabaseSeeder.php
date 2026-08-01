@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             WilayahSeeder::class,
-           // LetterTypeSeeder::class,
+            LetterTypeSeeder::class,
         ]);
     }
 }

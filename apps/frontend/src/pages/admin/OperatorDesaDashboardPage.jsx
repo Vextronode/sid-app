@@ -10,29 +10,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { getSuratList, getGenderStats } from "@/features/approval/api";
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { ClipboardList, ListChecks, CheckCircle2 } from 'lucide-react';
-import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
+import SuratStatChart from '@/features/operator-desa/components/SuratStatChart';
 import GenderStatCard from '@/features/operator-desa/components/GenderStatCard';
 import RiwayatVerifikasiTable from '@/features/operator-desa/components/RiwayatVerifikasiTable';
-import { FooterDesa } from '@/components/layout/FooterDesa';
+import { FooterOperator } from '@/components/layout/FooterOperator';
+import DashboardFlowCard from "@/features/operator-desa/components/DashboardFlowCard";
 
 export default function OperatorDesaDashboardPage() {
   const { user } = useAuth();
   const [letters, setLetters] = useState([]);
   const [loading, setLoading] = useState(true);
 useEffect(() => {
-  console.table(
-    letters.map((s) => ({
-      id: s.id,
-      status: s.status,
-      nama: s.applicant_name,
-      tanggal: s.submitted_at,
-    }))
-  );
+  
 }, [letters]);
   const ROLE_ENDPOINT = {
     rt: "rt",
     rw: "rw",
-    kadus: "kadus",
+
 
     kasi_pelayanan: "kasi",
     kaur_tu_umum: "kasi",
@@ -50,7 +44,6 @@ getGenderStats().then((res) => {
 });
 getSuratList(roleKey)
   .then((res) => {
-    console.log("API RESPONSE", res.data);
 
     setLetters(res.data);
   })
@@ -73,8 +66,8 @@ getSuratList(roleKey)
 });
   const stats = useMemo(() => {
     const permohonan = letters.filter((s) => s.status === 'pending').length;
-    const verifikasi = letters.filter((s) => s.status === 'rt_approved').length;
-    const selesai = letters.filter((s) => s.status === 'rw_approved').length;
+    const verifikasi = letters.filter((s) => s.status === 'rw_approved').length;
+    const selesai = letters.filter((s) => s.status === 'kasi_approved').length;
     return { permohonan, verifikasi, selesai };
   }, [letters]);
 
@@ -97,13 +90,12 @@ getSuratList(roleKey)
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Selamat Pagi, {user?.name ?? 'Bapak/Ibu'}</h1>
-            <p className="text-sm text-gray-500">Berikut adalah ringkasan administrasi desa Cibenda hari ini.</p>
           </div>
           <span className="text-sm text-gray-500 capitalize">{hariIni}</span>
         </div>
 
-        {/* 3 kartu statistik */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        {/* 4 kartu statistik */}
+        <div className="grid grid-cols-4 gap-4  mb-6">
           <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-400 uppercase mb-1">Permohonan</p>
@@ -131,25 +123,32 @@ getSuratList(roleKey)
               <CheckCircle2 size={20} />
             </div>
           </div>
-        </div>
-
-        {/* Chart + Gender */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="col-span-2">
-            <SuratStatChart data={chartData} />
-          </div>
-          <GenderStatCard
+                    <GenderStatCard 
               total={genderStats.total}
               laki={genderStats.laki}
               perempuan={genderStats.perempuan}
           />
         </div>
 
-        {/* Riwayat Verifikasi */}
-        <RiwayatVerifikasiTable data={riwayatTerbaru} />
+        {/* Chart +  */}
+<div className="grid grid-cols-4 gap-4 mb-6">
+  <div className="col-span-3">
+    <SuratStatChart letters={letters} />
+  </div>
+
+  <div className="col-span-1 flex">
+    <DashboardFlowCard
+      letters={letters}
+      loading={loading}
+    />
+  </div>
+</div>
+
+
+
       </div>
 
-      <FooterDesa />
+<FooterOperator />
     </div>
   );
 }

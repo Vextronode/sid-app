@@ -25,6 +25,11 @@ class StoreLetterRequest extends FormRequest
                 'max:500',
             ],
 
+            'payload' => [
+                'nullable',
+                'array',
+            ],
+
             'notes' => [
                 'nullable',
                 'string',

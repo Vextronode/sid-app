@@ -19,7 +19,7 @@ class KasiApprovalService
         return Letter::query()
             ->whereIn('status', [
 
-                LetterStatus::KadusApproved,
+                LetterStatus::RwApproved,
 
                 LetterStatus::KasiApproved,
 
@@ -30,7 +30,7 @@ class KasiApprovalService
 
                 $query->where(
                     'assigned_role',
-                    $user->role
+                    'rw'
                 );
 
             })
@@ -63,13 +63,16 @@ class KasiApprovalService
         User $user
     ): void {
 
-        if ($letter->status !== LetterStatus::KadusApproved) {
-            abort(403, 'Surat belum dapat diproses.');
+        if ($letter->status !== LetterStatus::RwApproved) {
+            abort(403, 'Surat belum mendapat persetujuan RW.');
         }
 
         if (
-            $user->role !==
-            $letter->letterType->assigned_role
+            !in_array($user->role, [
+                'petugas_desa',
+                'kasi_pelayanan',
+                'kaur_tu_umum',
+            ])
         ) {
             abort(403, 'Anda tidak berwenang memproses surat ini.');
         }

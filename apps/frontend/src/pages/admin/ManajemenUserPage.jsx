@@ -11,6 +11,7 @@ import { Search, SquarePen, Eye, EyeOff, UserPlus, ChevronRight } from 'lucide-r
 import { useUserList } from '@/features/manajemen-user/hooks/useUserList';
 import UserFormModal from '@/features/manajemen-user/components/UserFormModal';
 import { FooterDesa } from '@/components/layout/FooterDesa';
+import { FooterOperator } from '../../components/layout/FooterOperator';
 
 export default function ManajemenUserPage() {
   const { data, setSearch, filterStatus, setFilterStatus, currentPage, setCurrentPage, totalPages, toggleStatus, addUser, updateUser } = useUserList();
@@ -89,7 +90,7 @@ export default function ManajemenUserPage() {
               <tr className="border-b text-left text-gray-400 text-xs">
                 <th className="py-3 font-medium">Nama</th>
                 <th className="py-3 font-medium">Email</th>
-                <th className="py-3 font-medium">Role</th>
+                <th className="py-3 font-medium">Jabatan</th>
                 <th className="py-3 font-medium">Wilayah</th>
                 <th className="py-3 font-medium">Status</th>
                 <th className="py-3 font-medium text-right">Aksi</th>
@@ -165,7 +166,7 @@ RW {user.citizen?.rw?.number ?? '-'}</td>
         </div>
       </div>
 
-      <FooterDesa />
+      <FooterOperator />
 
       <UserFormModal
         open={modalOpen}

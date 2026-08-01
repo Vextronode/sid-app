@@ -9,7 +9,6 @@ export function useLetterTypes() {
       try {
         const res = await api.get("/api/letter-types");
 
-        console.log("LETTER TYPES RESPONSE", res.data);
 
         setData(res.data.data ?? res.data);
       } catch (err) {
@@ -19,6 +18,5 @@ export function useLetterTypes() {
 
     fetchTypes();
   }, []);
-  console.log("BASE URL:", api.defaults.baseURL);
   return { data };
 }

@@ -6,13 +6,20 @@
 // Surat diurutkan berdasarkan tanggal submit PALING AWAL duluan (ascending).
 // Aksi (titik tiga) buka OperatorSuratActionModal (TTD Basah/Digital).
 // ==========================================
-
+import OperatorSuratPreviewModal from "@/features/operator-desa/components/OperatorSuratPreviewModal";
 import { useEffect, useMemo, useState } from 'react';
-import { Download, Search, MoreVertical } from 'lucide-react';
+import {
+  Download,
+  Search,
+  Pencil,
+  Eye,
+  Trash2,
+} from "lucide-react";
 import { getSuratList } from '@/features/approval/api';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import OperatorSuratActionModal from '@/features/operator-desa/components/OperatorSuratActionModal';
 import { FooterDesa } from '@/components/layout/FooterDesa';
+import { FooterOperator } from '../../components/layout/FooterOperator';
 
 const STATUS_LABEL = {
   pending: {
@@ -30,10 +37,7 @@ const STATUS_LABEL = {
     className: "bg-cyan-50 text-cyan-700",
   },
 
-  kadus_approved: {
-    label: "Kadus Approved",
-    className: "bg-indigo-50 text-indigo-700",
-  },
+
 
   kasi_approved: {
     label: "Verified",
@@ -50,10 +54,7 @@ const STATUS_LABEL = {
     className: "bg-red-50 text-red-600",
   },
 
-  kadus_rejected: {
-    label: "Ditolak Kadus",
-    className: "bg-red-50 text-red-600",
-  },
+
 
   kasi_rejected: {
     label: "Ditolak Kasi",
@@ -73,12 +74,11 @@ export default function OperatorSuratListPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSurat, setSelectedSurat] = useState(null);
-  const [openMenuId, setOpenMenuId] = useState(null);
-  console.log(letters);
+  const [previewSurat, setPreviewSurat] = useState(null);
+
 const ROLE_ENDPOINT = {
   rt: "rt",
   rw: "rw",
-  kadus: "kadus",
 
   kasi_pelayanan: "kasi",
   kaur_tu_umum: "kasi",
@@ -97,8 +97,10 @@ useEffect(() => {
       setLetters(res.data);
     })
     .catch((err) => {
-      console.error(err.response?.data ?? err);
+
+  console.error(err.response?.data ?? err);
     })
+
     .finally(() => setLoading(false));
 
 }, [roleKey]);
@@ -180,12 +182,10 @@ useEffect(() => {
 
               <option value="rt_approved">RT Approved</option>
               <option value="rw_approved">RW Approved</option>
-              <option value="kadus_approved">Kadus Approved</option>
               <option value="kasi_approved">Verified / Selesai</option>
 
               <option value="rt_rejected">Ditolak RT</option>
               <option value="rw_rejected">Ditolak RW</option>
-              <option value="kadus_rejected">Ditolak Kadus</option>
               <option value="kasi_rejected">Ditolak Kasi</option>
             </select>
             </div>
@@ -197,12 +197,14 @@ useEffect(() => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                <th className="py-3 px-5 font-semibold">No. Surat</th>
-                <th className="py-3 px-5 font-semibold">Pemohon</th>
-                <th className="py-3 px-5 font-semibold">Jenis</th>
-                <th className="py-3 px-5 font-semibold">Tanggal</th>
-                <th className="py-3 px-5 font-semibold">Status</th>
-                <th className="py-3 px-5 font-semibold text-right">Aksi</th>
+                <th className="py-3 px-5 font-semibold text-center">No. Surat</th>
+                <th className="py-3 px-5 font-semibold  text-center">Pemohon</th>
+                <th className="py-3 px-5 font-semibold text-center">Jenis</th>
+                <th className="py-3 px-5 font-semibold text-center">Tanggal</th>
+                <th className="py-3 px-5 font-semibold text-center">
+                  RT / RW
+                </th>
+                <th className="py-3 px-5 font-semibold  text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -215,37 +217,102 @@ useEffect(() => {
                   const badge = STATUS_LABEL[s.status] ?? { label: s.status, className: 'bg-gray-50 text-gray-500' };
                   return (
                     <tr key={s.id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="py-4 px-5 font-semibold text-gray-800">#{s.letter_number ?? '-'}</td>
+                      <td className="py-4 px-5 font-semibold text-gray-800  text-center">#{s.letter_number ?? '-'}</td>
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-semibold shrink-0">
-                            {(s.applicant_name ?? '?').split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                          </div>
-                          <span className="font-medium text-gray-800">{s.applicant_name}</span>
+                          <span className="font-medium text-gray-800  text-center">{s.applicant_name}</span>
                         </div>
                       </td>
-                      <td className="py-4 px-5 text-gray-600">{s.letter_type?.name ?? '-'}</td>
-                      <td className="py-4 px-5 text-gray-500">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
+                      <td className="py-4 px-5 text-gray-600  text-center">{s.letter_type?.name ?? '-'}</td>
+                      <td className="py-4 px-5 text-gray-500  text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
                       <td className="py-4 px-5">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
+                        <div className="flex items-center justify-center gap-6">
+
+                          {/* RT */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-gray-600">
+                              RT
+                            </span>
+
+                            {[
+                              "rt_approved",
+                              "rw_approved",
+                              "kasi_approved",
+                            ].includes(s.status) ? (
+                              <div className="w-5 h-5 rounded border-2 border-green-600 bg-green-600 flex items-center justify-center text-white text-xs">
+                                ✓
+                              </div>
+                            ) : s.status === "rt_rejected" ? (
+                              <div className="w-5 h-5 rounded border-2 border-red-500 bg-red-500 flex items-center justify-center text-white text-xs">
+                                ✕
+                              </div>
+                            ) : (
+                              <div className="w-5 h-5 rounded border-2 border-gray-300 bg-white" />
+                            )}
+                          </div>
+
+                          {/* RW */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-gray-600">
+                              RW
+                            </span>
+
+                            {[
+                              "rw_approved",
+                              "kasi_approved",
+                            ].includes(s.status) ? (
+                              <div className="w-5 h-5 rounded border-2 border-green-600 bg-green-600 flex items-center justify-center text-white text-xs">
+                                ✓
+                              </div>
+                            ) : s.status === "rw_rejected" ? (
+                              <div className="w-5 h-5 rounded border-2 border-red-500 bg-red-500 flex items-center justify-center text-white text-xs">
+                                ✕
+                              </div>
+                            ) : (
+                              <div className="w-5 h-5 rounded border-2 border-gray-300 bg-white" />
+                            )}
+                          </div>
+
+                        </div>
                       </td>
-                      <td className="py-4 px-5 text-right relative">
-                        <button onClick={() => setOpenMenuId(openMenuId === s.id ? null : s.id)} className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100 text-gray-500 ml-auto">
-                          <MoreVertical size={16} />
-                        </button>
-                        {openMenuId === s.id && (
-                          <>
-                            <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
-                            <div className="absolute right-5 top-12 bg-white shadow-lg rounded-lg border z-20 w-32 py-1 text-left">
-                              <button
-                                onClick={() => { setSelectedSurat(s); setOpenMenuId(null); }}
-                                className="w-full text-left px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
-                              >
-                                Edit
-                              </button>
-                            </div>
-                          </>
-                        )}
+                      <td className="py-4 px-5">
+                        <div className="flex items-center justify-end gap-2">
+
+                          {/* Detail */}
+                          <button
+                            onClick={() => setPreviewSurat(s)}
+                            className="w-9 h-9 rounded-lg border  
+                                      text-white-600 hover:bg-blue-100 transition"
+                            title="Detail Surat"
+                          >
+                            <Eye size={17} className="mx-auto" />
+                          </button>
+
+                          {/* Edit */}
+                          {s.status !== "kasi_approved" && (
+                            <button
+                              onClick={() => setSelectedSurat(s)}
+                              className="w-9 h-9 rounded-lg border border-amber-200 bg-amber-50
+                                        text-amber-600 hover:bg-amber-100 transition"
+                              title="Edit Surat"
+                            >
+                              <Pencil size={17} className="mx-auto" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              window.alert(
+                                "Fitur hapus surat belum tersedia.\n\nSaat ini fitur tersebut masih dalam proses pengembangan."
+                              );
+                            }}
+                            className="w-9 h-9 rounded-lg border border-red-200 bg-red-50
+                                      text-red-600 hover:bg-red-100 transition"
+                            title="Hapus Surat"
+                          >
+                            <Trash2 size={17} className="mx-auto" />
+                          </button>
+
+                        </div>
                       </td>
                     </tr>
                   );
@@ -291,12 +358,21 @@ useEffect(() => {
       </div>
 
       {/* Footer versi ringkas sesuai desain (lebih pendek dari FooterDesa default) */}
-      <div className="[&>footer]:py-5 [&_h4]:text-[10px] [&_.text-xs]:text-[10px]">
-        <FooterDesa />
-      </div>
+        <FooterOperator />
+
+
+      {previewSurat && (
+          <OperatorSuratPreviewModal
+              surat={previewSurat}
+              onClose={() => setPreviewSurat(null)}
+          />
+      )}
 
       {selectedSurat && (
-        <OperatorSuratActionModal surat={selectedSurat} onClose={() => setSelectedSurat(null)} />
+          <OperatorSuratActionModal
+              surat={selectedSurat}
+              onClose={() => setSelectedSurat(null)}
+          />
       )}
     </div>
   );
