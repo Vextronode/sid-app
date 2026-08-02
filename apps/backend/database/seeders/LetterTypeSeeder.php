@@ -64,12 +64,12 @@ class LetterTypeSeeder extends Seeder
                 <tr>
                     <td style="width: 170px; vertical-align: top; padding: 2px 0;">Nama</td>
                     <td style="width: 15px; vertical-align: top; padding: 2px 0;">:</td>
-                    <td style="vertical-align: top; padding: 2px 0;">________________________________________</td>
+                    <td style="vertical-align: top; padding: 2px 0;">{{ village_head_name }}</td>
                 </tr>
                 <tr>
                     <td style="vertical-align: top; padding: 2px 0;">Jabatan</td>
                     <td style="vertical-align: top; padding: 2px 0;">:</td>
-                    <td style="vertical-align: top; padding: 2px 0;">________________________________________</td>
+                    <td style="vertical-align: top; padding: 2px 0;">Kepala Desa {{ village_name_short }}</td>
                 </tr>
             </table>
         </div>
@@ -113,8 +113,8 @@ class LetterTypeSeeder extends Seeder
             <tr>
                 <td style="width: 50%;"></td>
                 <td style="width: 50%; text-align: center;">
-                    <p style="margin: 0;">{{ village_name }}, {{ submitted_at }}</p>
-                    <p style="margin: 2px 0 0 0;">Kepala Desa {{ village_name }}</p>
+                    <p style="margin: 0;">Desa {{ village_name_short }}, {{ submitted_at }}</p>
+                    <p style="margin: 2px 0 0 0;">Kepala Desa {{ village_name_short }}</p>
                     <div style="height: 50px; margin: 4px 0; vertical-align: middle;">{{ signature_img }}</div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ village_head_name }}</p>
                 </td>

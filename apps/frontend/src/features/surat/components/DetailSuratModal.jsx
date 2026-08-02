@@ -1,5 +1,7 @@
-import { Check, Clock, ChevronLeft, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Clock, ChevronLeft, X, FileText } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { previewSuratPDF } from "@/features/cetak-surat/utils/generateSuratPDF";
 
 const ProgressTracker = ({ status, tanggal }) => {
   
@@ -122,6 +124,81 @@ const isSelesaiDone =
   );
 };
 
+// Preview PDF Surat (read-only, sama seperti Operator Desa)
+const SuratPreview = ({ suratId, status }) => {
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    if (!suratId || !showPreview) return;
+
+    let url;
+    setLoadError(false);
+
+    const template = status === 'kasi_approved' ? 'digital' : 'wet';
+
+    previewSuratPDF({ id: suratId }, template)
+      .then((blobUrl) => {
+        url = blobUrl;
+        setPreviewUrl(blobUrl);
+      })
+      .catch(() => {
+        setLoadError(true);
+      });
+
+    return () => {
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [suratId, showPreview, status]);
+
+  return (
+    <div className="space-y-3">
+      <button
+        onClick={() => setShowPreview((prev) => !prev)}
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 font-medium hover:bg-gray-100 transition w-full justify-center"
+      >
+        <FileText className="w-4 h-4" />
+        {showPreview ? "Sembunyikan Preview Surat" : "Lihat Preview Surat"}
+      </button>
+
+      {showPreview && (
+        <div className="relative border rounded-lg overflow-hidden h-[500px] bg-gray-100">
+          {loadError ? (
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
+              <FileText className="w-8 h-8" />
+              <p className="text-sm">Gagal memuat preview surat</p>
+            </div>
+          ) : previewUrl ? (
+            <>
+              <iframe
+                src={
+                  previewUrl +
+                  "#toolbar=0&navpanes=0&scrollbar=0"
+                }
+                title="Preview Surat"
+                className="w-full h-full pointer-events-none select-none"
+              />
+
+              {/* Overlay supaya benar-benar tidak bisa diklik */}
+              <div className="absolute inset-0 bg-transparent" />
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-gray-300 border-t-green-600 rounded-full animate-spin" />
+                <p className="text-sm">Memuat preview...</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Detail Informasi
 const DetailInfo = ({ data }) => {
   const namaPanjangSurat = {
@@ -184,8 +261,11 @@ export function DetailSuratModal({ data, onClose }) {
           {/* Progress Tracker */}
           <ProgressTracker status={data.status} tanggal={data.tanggal} />
 
-          {/* Detaul Data */}
+          {/* Detail Data */}
           <DetailInfo data={data} />
+
+          {/* Preview Surat PDF — sama seperti Operator Desa */}
+          <SuratPreview suratId={data.id} status={data.status} />
 
           {/* Back Button */}
           <div className="pt-4">

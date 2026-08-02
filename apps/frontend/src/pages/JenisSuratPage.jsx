@@ -9,6 +9,7 @@ import { useState, useMemo } from 'react';
 import { FolderOpen, CheckCircle2, XCircle, ListChecks } from 'lucide-react';
 import { WargaLayout } from '@/components/layout/WargaLayout';
 import { useLetters } from '@/features/surat/hooks/useLetters';
+import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal';
 
 const STATUS_LABEL = {
   pending: { label: 'MENUNGGU', className: 'bg-gray-100 text-gray-500' },
@@ -29,6 +30,7 @@ const FILTERS = {
 export default function JenisSuratPage() {
   const { letters, loading } = useLetters();
   const [activeFilter, setActiveFilter] = useState('total');
+  const [selectedSurat, setSelectedSurat] = useState(null);
 
   const stats = useMemo(() => {
     const total = letters.length;
@@ -101,10 +103,29 @@ export default function JenisSuratPage() {
                 {filteredLetters.map((item) => {
                   const badge = STATUS_LABEL[item.status] ?? { label: item.status, className: 'bg-gray-100 text-gray-500' };
                   return (
-                    <tr key={item.id} className="border-b last:border-0">
+                    <tr
+                      key={item.id}
+                      className="border-b last:border-0 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => setSelectedSurat({
+                        id: item.id,
+                        pemohon: item.applicant_name ?? item.user?.name ?? '-',
+                        nik: item.nik ?? '-',
+                        alamat: item.alamat ?? '-',
+                        jenis: item.letter_type?.code ?? '-',
+                        keperluan: item.purpose ?? '-',
+                        tanggal: item.submitted_at
+                          ? new Date(item.submitted_at).toLocaleDateString('id-ID')
+                          : item.created_at
+                            ? new Date(item.created_at).toLocaleDateString('id-ID')
+                            : '-',
+                        status: item.status,
+                        noSurat: item.letter_number ?? '-',
+                        processed_at: item.processed_at,
+                      })}
+                    >
                       <td className="py-3 px-4">
-                        <p className="font-medium text-gray-800 text-">{item.letter_type?.name ?? '-'}</p>
-                        <p className="text-[10px] text-gray-400 text-">#{item.letter_number ?? `SKD-${item.id}`}</p>
+                        <p className="font-medium text-gray-800">{item.letter_type?.name ?? '-'}</p>
+                        <p className="text-[10px] text-gray-400">#{item.letter_number ?? `SKD-${item.id}`}</p>
                       </td>
                       <td className="py-3 px-4 text-gray-500 text-center">
                         {item.processed_at ? new Date(item.processed_at).toLocaleDateString('id-ID') : '-'}
@@ -119,6 +140,11 @@ export default function JenisSuratPage() {
             </table>
           )}
         </div>
+
+        {/* Detail Modal + Preview PDF */}
+        {selectedSurat && (
+          <DetailSuratModal data={selectedSurat} onClose={() => setSelectedSurat(null)} />
+        )}
       </div>
     </WargaLayout>
   );

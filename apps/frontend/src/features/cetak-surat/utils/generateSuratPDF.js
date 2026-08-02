@@ -3,11 +3,13 @@
 // Generate PDF surat dari backend seeder template
 // ==========================================
 
+import api from '@/lib/api';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 // Download PDF dari backend
-export function generateSuratPDF(surat) {
-  const url = `${API_URL}/api/letters/${surat.id}/download`;
+export function generateSuratPDF(surat, template = 'wet') {
+  const url = `${API_URL}/api/letters/${surat.id}/download?template=${template}`;
 
   fetch(url, {
     method: 'GET',
@@ -42,8 +44,8 @@ export function generateSuratPDF(surat) {
 }
 
 // Preview PDF di tab baru dari backend
-export async function previewSuratPDF(surat) {
-  const url = `${API_URL}/api/letters/${surat.id}/preview`;
+export async function previewSuratPDF(surat, template = 'wet') {
+  const url = `${API_URL}/api/letters/${surat.id}/preview?template=${template}`;
 
   const response = await fetch(url, {
     method: "GET",
@@ -61,11 +63,4 @@ export async function previewSuratPDF(surat) {
   const blob = await response.blob();
 
   return window.URL.createObjectURL(blob);
-}
-
-// TTD Digital: untuk signature yang ditampilkan di backend
-export function generateSuratPDFWithSignature(surat, signatureDataUrl) {
-  // Untuk fitur signature, masih menggunakan download endpoint
-  // Signature handling akan dilakukan di backend
-  generateSuratPDF(surat);
 }

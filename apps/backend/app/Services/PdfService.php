@@ -48,6 +48,7 @@ class PdfService
          * Kepala Desa aktif
          */
         $kades = Official::query()
+            ->with('citizen')
             ->where('position', 'kepala_desa')
             ->where('is_active', true)
             ->whereNull('ended_at')
@@ -63,7 +64,7 @@ class PdfService
         /**
          * Build letter body from LetterType template
          */
-        $templateHtml = $this->renderTemplate($letter, $kades);
+        $templateHtml = $this->renderTemplate($letter, $kades, $template);
 
         $view = match ($template) {
             'digital' => 'pdf.templates.digital',
@@ -95,6 +96,7 @@ class PdfService
          * Kepala Desa aktif
          */
         $kades = Official::query()
+            ->with('citizen')
             ->where('position', 'kepala_desa')
             ->where('is_active', true)
             ->whereNull('ended_at')
@@ -110,7 +112,7 @@ class PdfService
         /**
          * Build letter body from LetterType template
          */
-        $templateHtml = $this->renderTemplate($letter, $kades);
+        $templateHtml = $this->renderTemplate($letter, $kades, $template);
 
         $view = match ($template) {
             'digital' => 'pdf.templates.digital',
@@ -126,9 +128,9 @@ class PdfService
         return $pdf->stream("surat-{$letter->id}.pdf");
     }
 
-    private function renderTemplate(Letter $letter, Official $kades): string
+    private function renderTemplate(Letter $letter, Official $kades, string $template): string
     {
-        $replacements = $this->getReplacements($letter, $kades);
+        $replacements = $this->getReplacements($letter, $kades, $template);
 
         $templateHtml = str_replace(
             array_keys($replacements),
@@ -140,7 +142,7 @@ class PdfService
         return preg_replace('/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/', '________________________', $templateHtml);
     }
 
-    private function getReplacements(Letter $letter, Official $kades): array
+    private function getReplacements(Letter $letter, Official $kades, string $template): array
     {
         $citizen = $letter->citizen;
         $gender = '-';
@@ -163,8 +165,8 @@ class PdfService
         $submittedAtFormatted = $submittedDate->translatedFormat('d F Y');
 
         $signatureHtml = '';
-        if ($kades->signature_img) {
-            $signatureHtml .= '<img src="' . public_path('storage/' . $kades->signature_img) . '" style="max-height: 45px; width: auto;">';
+        if ($template === 'digital' && $kades->signature_img) {
+            $signatureHtml .= '<img src="' . storage_path('app/public/' . $kades->signature_img) . '" style="max-height: 60px; width: auto;">';
         }
         if ($kades->stamp_img) {
             $signatureHtml .= '<img src="' . public_path('storage/' . $kades->stamp_img) . '" style="max-height: 45px; width: auto; margin-left: 10px;">';
@@ -186,9 +188,10 @@ class PdfService
             '{{ purpose }}'                    => $letter->purpose ?? '________________________________________',
             '{{ submitted_at }}'               => $submittedAtFormatted,
             '{{ village_name }}'               => $letter->village->name ?? 'Cibenda',
+            '{{ village_name_short }}'         => preg_replace('/^Desa\s+/i', '', $letter->village->name ?? 'Cibenda'),
             '{{ village_address }}'            => $letter->village->address ?? 'Jl.Raya Cijulang Nomor.173.Tlp.0265.2640613',
             '{{ village_phone }}'              => $letter->village->phone ?? '0265.2640613',
-            '{{ village_head_name }}'          => $kades->citizen->full_name ?? '________________________________________',
+            '{{ village_head_name }}'          => $kades->citizen->name ?? '________________________________________',
             '{{ signature_img }}'              => $signatureHtml,
         ];
 

@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\KasiApprovalController;
 use App\Http\Controllers\Api\LetterDownloadController;
 use App\Http\Controllers\VillageController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\OfficialController;
 
 /*
 |--------------------------------------------------------------------------
@@ -186,5 +187,9 @@ Route::middleware('auth:sanctum')->group(function () {
             );
     });
 
+    Route::prefix('official')->group(function () {
+        Route::post('/signature', [OfficialController::class, 'uploadSignature']);
+        Route::get('/signature', [OfficialController::class, 'getSignature']);
+    });
 
 });
