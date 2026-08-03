@@ -109,8 +109,8 @@ export default function JenisSuratPage() {
                       onClick={() => setSelectedSurat({
                         id: item.id,
                         pemohon: item.applicant_name ?? item.user?.name ?? '-',
-                        nik: item.nik ?? '-',
-                        alamat: item.alamat ?? '-',
+                        nik: item.applicant_nik ?? '-',
+                        alamat: item.applicant_address ?? '-',
                         jenis: item.letter_type?.code ?? '-',
                         keperluan: item.purpose ?? '-',
                         tanggal: item.submitted_at

@@ -156,7 +156,7 @@ export default function RegisterPage() {
           <p className="text-sm text-gray-500">
             Sudah punya akun? <Link to="/login" className="text-green-600 font-medium hover:underline">Masuk di sini</Link>
           </p>
-          <p className="text-[11px] text-gray-400 mt-3">© 2024 Digital Amanah. Sistem Informasi Desa Modern.</p>
+          <p className="text-[11px] text-gray-400 mt-3">© 2024 Sistem Informasi Desa Modern.</p>
         </div>
       </div>
     </div>

@@ -75,8 +75,8 @@ export default function LoginPage() {
         <div className="w-11 h-11 rounded-xl bg-green-600 flex items-center justify-center mb-3">
           <Landmark size={22} className="text-white" />
         </div>
-        <p className="font-bold text-gray-800">Cibenda</p>
-        <h1 className="text-xl font-bold text-gray-800 mt-1">Masuk ke E-Cibenda</h1>
+        <p className="font-bold text-gray-800">SIDUTama</p>
+        <h1 className="text-xl font-bold text-gray-800 mt-1">Masuk ke SIDUTama</h1>
         <p className="text-sm text-gray-500 mb-6">Masukkan NIK dan Password Anda</p>
 
         {error && (

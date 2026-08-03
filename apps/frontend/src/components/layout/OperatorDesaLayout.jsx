@@ -31,7 +31,7 @@ export function OperatorDesaLayout({ children }) {
       <aside className="fixed left-0 top-0 h-screen w-56 bg-white  flex flex-col z-40">
         <div className="h-20 px-5 bg-green-600 text-white border-b border-green-700 flex flex-col justify-center">
           <h1 className="font-bold text-lg leading-tight">
-            SIDUtama
+            SIDUTama
           </h1>
 
           <p className="text-xs text-green-100 mt-1">

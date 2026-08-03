@@ -129,7 +129,7 @@ const SuratPreview = ({ suratId, status }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [loadError, setLoadError] = useState(false);
-
+const canPreview = status === "kasi_approved";
   useEffect(() => {
     if (!suratId || !showPreview) return;
 
@@ -156,13 +156,39 @@ const SuratPreview = ({ suratId, status }) => {
 
   return (
     <div className="space-y-3">
-      <button
-        onClick={() => setShowPreview((prev) => !prev)}
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 font-medium hover:bg-gray-100 transition w-full justify-center"
-      >
-        <FileText className="w-4 h-4" />
-        {showPreview ? "Sembunyikan Preview Surat" : "Lihat Preview Surat"}
-      </button>
+<button
+  disabled={!canPreview}
+  onClick={() => {
+    if (canPreview) {
+      setShowPreview((prev) => !prev);
+    }
+  }}
+  className={`
+    inline-flex items-center gap-2
+    px-4 py-2.5
+    rounded-lg
+    border
+    text-sm
+    font-medium
+    w-full
+    justify-center
+    transition
+
+    ${
+      canPreview
+        ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+        : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+    }
+  `}
+>
+  <FileText className="w-4 h-4" />
+
+  {canPreview
+    ? showPreview
+      ? "Sembunyikan Preview Surat"
+      : "Lihat Preview Surat"
+    : "Preview tersedia setelah surat selesai"}
+</button>
 
       {showPreview && (
         <div className="relative border rounded-lg overflow-hidden h-[500px] bg-gray-100">
@@ -238,6 +264,7 @@ const DetailInfo = ({ data }) => {
 // Main Component
 export function DetailSuratModal({ data, onClose }) {
   if (!data) return null;
+  console.log("DETAIL DATA:", data);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">

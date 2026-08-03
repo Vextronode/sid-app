@@ -111,7 +111,7 @@ export default function KadesDashboardPage() {
       {/* ===== MOBILE ===== */}
       <div className="md:hidden bg-gray-50 min-h-screen pb-20">
         <div className="px-4 pt-4">
-          <p className="text-green-700 font-semibold">Digital Amanah</p>
+          <p className="text-green-700 font-semibold"></p>
           <p className="text-xs text-gray-400 mb-4">Dashboard Kepala Desa</p>
 
           <h1 className="text-xl font-bold text-gray-800 mb-1">Selamat Pagi, {user?.name ?? 'Bapak/Ibu'}</h1>

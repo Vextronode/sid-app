@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { getSuratList, getGenderStats } from "@/features/approval/api";
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { ClipboardList, ListChecks, CheckCircle2 } from 'lucide-react';
-import SuratStatChart from '@/features/operator-desa/components/SuratStatChart';
+import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
 import GenderStatCard from '@/features/operator-desa/components/GenderStatCard';
 import RiwayatVerifikasiTable from '@/features/operator-desa/components/RiwayatVerifikasiTable';
 import { FooterOperator } from '@/components/layout/FooterOperator';

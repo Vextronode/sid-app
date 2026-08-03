@@ -17,8 +17,7 @@ export default function SuratStatChart({ letters = [] }) {
 
   const now = new Date();
 
-  const [period, setPeriod] = useState("day");
-  const [selectedDay, setSelectedDay] = useState(1);
+  const [period, setPeriod] = useState("week");
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -35,88 +34,74 @@ const letterTypes = useMemo(() => {
   ];
 }, [letters]);
 
-  useEffect(() => {
-    const fetchChart = async () => {
-      try {
-        setLoading(true);
 
-        const res = await api.get("/api/dashboard/letter-stats", {
-          params: {
-            period,
-            day: selectedDay,
-            week: selectedWeek,
-            month: selectedMonth,
-            year: selectedYear,
-            letter_type: letterType,
-          },
-        });
+const fetchChart = async () => {
+  try {
+    setLoading(true);
 
-        const chart = res.data.chart;
+    const res = await api.get("/api/dashboard/letter-stats", {
+      params: {
+        period,
+        week: selectedWeek,
+        month: selectedMonth,
+        year: selectedYear,
+        letter_type: letterType,
+      },
+    });
 
-        setChartData(
-          chart.labels.map((label, index) => ({
-            kategori: label,
-            jumlah: chart.values[index],
-          }))
-        );
+    const chart = res.data.chart;
 
-        setMaxY(chart.maxY);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setChartData(
+      chart.labels.map((label, index) => ({
+        kategori: label,
+        jumlah: chart.values[index],
+      }))
+    );
 
-    fetchChart();
-  }, [
-    period,
-    selectedDay,
-    selectedWeek,
-    selectedMonth,
-    selectedYear,
-    letterType,
-  ]);
+    setMaxY(chart.maxY);
+  } catch (error) {
+  console.error(error.response?.data);
+} finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchChart();
+}, [
+  period,
+  selectedWeek,
+  selectedMonth,
+  selectedYear,
+  letterType,
+]);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-5">
       <div className="flex justify-between items-center mb-4">
         <div>
           <h3 className="font-semibold text-gray-800">
-            Statistik Pengiriman Surat
+            Statistik Pengajuan Surat
           </h3>
           <p className="text-xs text-gray-400">
             Distribusi jumlah surat
           </p>
         </div>
 
-        <div className="flex gap-2 flex-wrap">
+<div className="flex flex-col gap-2 w-[220px]">
+  {/* Baris 1 */}
+  <div className="grid grid-cols-2 gap-2">
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
             className="border rounded-full px-3 py-1 text-xs"
           >
-            <option value="day">Hari</option>
             <option value="week">Minggu</option>
             <option value="month">Bulan</option>
             <option value="year">Tahun</option>
           </select>
 
-          {period === "day" && (
-            <select
-              value={selectedDay}
-              onChange={(e) => setSelectedDay(Number(e.target.value))}
-              className="border rounded-full px-3 py-1 text-xs"
-            >
-              <option value={1}>Senin</option>
-              <option value={2}>Selasa</option>
-              <option value={3}>Rabu</option>
-              <option value={4}>Kamis</option>
-              <option value={5}>Jumat</option>
-              <option value={6}>Sabtu</option>
-              <option value={7}>Minggu</option>
-            </select>
-          )}
+
 
           {period === "week" && (
             <select
@@ -176,7 +161,7 @@ const letterTypes = useMemo(() => {
               })}
             </select>
           )}
-
+          </div>
           <select
             value={letterType}
             onChange={(e) => setLetterType(e.target.value)}

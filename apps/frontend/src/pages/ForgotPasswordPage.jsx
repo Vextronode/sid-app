@@ -172,7 +172,7 @@ export default function ForgotPasswordPage() {
           <Link to="/login" className="text-sm text-green-600 font-medium hover:underline flex items-center justify-center gap-1">
             <ArrowLeft size={14} /> Kembali ke Login
           </Link>
-          <p className="text-[11px] text-gray-400 mt-3">© 2024 Digital Amanah. Sistem Informasi Desa Modern.</p>
+          <p className="text-[11px] text-gray-400 mt-3">© 2024 Sistem Informasi Desa Modern.</p>
         </div>
       </div>
     </div>

@@ -88,7 +88,6 @@ export default function DataWargaPage() {
                 <th className="py-3 font-medium text-center">NIK</th>
                 <th className="py-3 font-medium text-center">RT/RW</th>
                 <th className="py-3 font-medium text-center">Status</th>
-                <th className="py-3 font-medium text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -107,30 +106,9 @@ export default function DataWargaPage() {
                     <td className="py-4 text-gray-600 text-center">{warga.nik}</td>
                     <td className="py-4 text-gray-600 text-center">RT {warga.rt?.number} / RW {warga.rw?.number}</td>
                     <td className="py-4 text-center">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium text-center${
-                        warga.is_active ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-current " />
-                        {warga.is_active ? 'Aktif' : 'Nonaktif'}
-                      </span>
+                      {warga.gender}
                     </td>
-                    <td className="py-4 ">
-                      <div className="flex justify-center items-center gap-2">
-                        <button
-                          className="w-9 h-9 rounded-lg border flex items-center justify-center hover:bg-gray-100 text-gray-600"
-                          title="Edit"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(warga.id)}
-                          className="w-9 h-9 rounded-lg bg-red-500 text-white flex items-center justify-center hover:bg-red-600"
-                          title="Hapus"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+
                   </tr>
                 ))
               )}

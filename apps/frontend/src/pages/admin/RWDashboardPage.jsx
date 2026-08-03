@@ -111,7 +111,7 @@ export default function RWDashboardPage() {
           </div>
 
           <div className="mb-6">
-            <SuratStatChart data={chartData} />
+            <SuratStatChart letters={letters} />
           </div>
 
           <QuickNavButtons items={QUICK_NAV_RW} basePath="/admin/list-rw" />
@@ -120,8 +120,8 @@ export default function RWDashboardPage() {
       </div>
 
       {/* ===== MOBILE ===== */}
-      <div className="md:hidden bg-gray-50 min-h-screen pb-20">
-        <div className="px-4 pt-4">
+      <div className="md:hidden flex flex-col min-h-screen bg-gray-50">
+        <div className="flex-1 px-4 pt-4">
          
 
           <h1 className="text-xl font-bold text-gray-800 mb-1">{getGreeting()}, {user?.name ?? 'Bapak/Ibu'}</h1>
@@ -150,7 +150,9 @@ export default function RWDashboardPage() {
           <div className="mb-4"><QuickNavButtons items={QUICK_NAV_RW} basePath="/admin/list-rw" /></div>
         </div>
 
-        <FooterDesa />
+        <div className="pb-16">
+          <FooterDesa />
+        </div>
         <MobileBottomNav links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rw', '/admin/list-rw')} />
       </div>
     </>

@@ -81,8 +81,8 @@ export default function RTListPage() {
               >
                 <option value="">Semua Status</option>
                 <option value="pending">Menunggu</option>
-                <option value="rt_approved">Proses</option>
-                <option value="rt_rejected">Ditolak</option>
+                <option value="rt_approved">Disetujui RT</option>
+                <option value="rt_rejected">Ditolak RT</option>
               </select>
             </div>
           </div>
@@ -93,11 +93,11 @@ export default function RTListPage() {
             <thead>
               <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
                 <th className="py-3 px-5 font-semibold">No. Surat</th>
-                <th className="py-3 px-5 font-semibold">Pemohon</th>
-                <th className="py-3 px-5 font-semibold">Jenis</th>
-                <th className="py-3 px-5 font-semibold">Tanggal</th>
-                <th className="py-3 px-5 font-semibold">Status</th>
-                <th className="py-3 px-5 font-semibold text-right">Aksi</th>
+                <th className="py-3 px-5 font-semibold text-center">Pemohon</th>
+                <th className="py-3 px-5 font-semibold text-center">Jenis</th>
+                <th className="py-3 px-5 font-semibold text-center">Tanggal</th>
+                <th className="py-3 px-5 font-semibold text-center">Status</th>
+                <th className="py-3 px-5 font-semibold text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -109,18 +109,13 @@ export default function RTListPage() {
                 paginatedData.map((s) => (
                   <tr key={s.id} className="border-b last:border-0 hover:bg-gray-50">
                     <td className="py-4 px-5 font-semibold text-gray-800">#{s.letter_number ?? '-'}</td>
-                    <td className="py-4 px-5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold shrink-0">
-                          {(s.applicant_name ?? '?').split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                        </div>
-                        <span className="font-medium text-gray-800">{s.applicant_name}</span>
-                      </div>
+                    <td className="py-4 px-5 text-center">{s.applicant_name}
+         
                     </td>
-                    <td className="py-4 px-5 text-gray-600">{s.letter_type?.name ?? '-'}</td>
-                    <td className="py-4 px-5 text-gray-500">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
-                    <td className="py-4 px-5"><StatusBadgeRT status={s.status} /></td>
-                    <td className="py-4 px-5 text-right">
+                    <td className="py-4 px-5 text-gray-600 text-center">{s.letter_type?.name ?? '-'}</td>
+                    <td className="py-4 px-5 text-gray-500 text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
+                    <td className="py-4 px-5 text-center"><StatusBadgeRT status={s.status} /></td>
+                    <td className="py-4 px-5 text-center">
                       <button
                         onClick={() => { setSelectedId(s.id); setIsReadOnly(s.status !== 'pending'); }}
                         className="border rounded-lg px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100"
@@ -156,8 +151,8 @@ export default function RTListPage() {
       </div>
 
       {/* ===== MOBILE ===== */}
-      <div className="md:hidden bg-gray-50 min-h-screen pb-20">
-        <div className="px-4 pt-4">
+      <div className="md:hidden flex flex-col min-h-screen bg-gray-50">
+        <div className="flex-1 px-4 pt-4">
 
           <h1 className="text-xl font-bold text-gray-800 mb-1">Semua Surat</h1>
           <p className="text-sm text-gray-500 mb-4">Kelola permohonan surat warga secara digital</p>
@@ -175,8 +170,8 @@ export default function RTListPage() {
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-full px-3 py-2 text-xs text-gray-600 bg-white mb-4">
             <option value="">Semua Status</option>
             <option value="pending">Menunggu</option>
-            <option value="rt_approved">RT Approved</option>
-            <option value="rt_rejected">RT Rejected</option>
+            <option value="rt_approved">Disetujui RT</option>
+            <option value="rt_rejected">Ditolak RT</option>
           </select>
 
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
@@ -212,7 +207,9 @@ export default function RTListPage() {
           </div>
         </div>
 
-        <FooterDesa />
+        <div className="pb-16">
+          <FooterDesa />
+        </div>
         <MobileBottomNav links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rt', '/admin/list-rt')} />
       </div>
 

@@ -3,7 +3,7 @@
 // Halaman "Daftar Permohonan Surat" untuk Operator Desa, sesuai desain:
 // breadcrumb, judul + tombol Ekspor Laporan, search+filter card,
 // tabel dengan avatar inisial & badge status, pagination "Sebelumnya/1/2/Selanjutnya".
-// Surat diurutkan berdasarkan tanggal submit PALING AWAL duluan (ascending).
+// Surat diurutkan selesai sampai di tolak
 // Aksi (titik tiga) buka OperatorSuratActionModal (TTD Basah/Digital).
 // ==========================================
 import OperatorSuratPreviewModal from "@/features/operator-desa/components/OperatorSuratPreviewModal";
@@ -117,8 +117,28 @@ useEffect(() => {
       );
     }
 
-    // Urutkan berdasarkan tanggal submit PALING AWAL duluan (ascending)
-    result.sort((a, b) => new Date(a.submitted_at) - new Date(b.submitted_at));
+    // Urutkan berdasarkan selesai sampai di tolak
+    const STATUS_ORDER = {
+  kasi_approved: 1, // Selesai
+  rw_approved: 2,
+  rt_approved: 3,
+  pending: 4,
+  rw_rejected: 5,
+  rt_rejected: 6,
+};
+
+result.sort((a, b) => {
+  const orderA = STATUS_ORDER[a.status] ?? 999;
+  const orderB = STATUS_ORDER[b.status] ?? 999;
+
+  // Prioritaskan status
+  if (orderA !== orderB) {
+    return orderA - orderB;
+  }
+
+  // Jika status sama, urutkan berdasarkan tanggal paling lama
+  return new Date(a.submitted_at) - new Date(b.submitted_at);
+});
 
     return result;
   }, [letters, filterJenis, filterStatus, search]);
@@ -177,16 +197,15 @@ useEffect(() => {
               className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
             >
               <option value="">Semua Status</option>
+              <option value="kasi_approved">Selesai</option>
 
-              <option value="pending">Pending</option>
+              <option value="pending">Menunggu</option>
 
-              <option value="rt_approved">RT Approved</option>
-              <option value="rw_approved">RW Approved</option>
-              <option value="kasi_approved">Verified / Selesai</option>
+              <option value="rt_approved">Disetujui RT</option>
+              <option value="rw_approved">Disetujui RW</option>
 
               <option value="rt_rejected">Ditolak RT</option>
               <option value="rw_rejected">Ditolak RW</option>
-              <option value="kasi_rejected">Ditolak Kasi</option>
             </select>
             </div>
           </div>
@@ -238,6 +257,7 @@ useEffect(() => {
                               "rt_approved",
                               "rw_approved",
                               "kasi_approved",
+                              "rw_rejected",
                             ].includes(s.status) ? (
                               <div className="w-5 h-5 rounded border-2 border-green-600 bg-green-600 flex items-center justify-center text-white text-xs">
                                 ✓

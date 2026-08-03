@@ -14,7 +14,7 @@ import { FooterDesa } from '@/components/layout/FooterDesa';
 import { FooterOperator } from '../../components/layout/FooterOperator';
 
 export default function ManajemenUserPage() {
-  const { data, setSearch, filterStatus, setFilterStatus, currentPage, setCurrentPage, totalPages, toggleStatus, addUser, updateUser } = useUserList();
+  const { data,loading, setSearch, filterStatus, setFilterStatus, currentPage, setCurrentPage, totalPages, toggleStatus, addUser, updateUser } = useUserList();
   const [keyword, setKeyword] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null); // null = mode tambah
@@ -96,9 +96,15 @@ export default function ManajemenUserPage() {
                 <th className="py-3 font-medium text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody>
-              {data.length === 0 ? (
-                <tr><td colSpan={6} className="text-center text-gray-400 py-8">Belum ada user.</td></tr>
+              <tbody>
+              {loading ? (
+  <tr>
+    <td colSpan={5} className="text-center py-8">
+      Memuat data...
+    </td>
+  </tr>
+) : data.length === 0 ? (
+                <tr><td colSpan={5} className="text-center text-gray-400 py-8">Belum ada data warga.</td></tr>
               ) : (
                 data.map((user) => (
                   <tr key={user.id} className="border-b last:border-0">

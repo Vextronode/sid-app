@@ -31,8 +31,16 @@ export default function ApprovalStepperRW({ surat }) {
         let labelColor = 'text-gray-400';
 
         const isRejectedHere = (index === 1 && state === 'rejected_rt') || (index === 2 && state === 'rejected_rw');
-        const isDoneRT = index === 1 && (state === 'current_rw' || state === 'done_rw');
-        const isDoneRW = index === 2 && state === 'done_rw';
+        const isDoneRT =
+          index === 1 &&
+          [
+            "current_rw",
+            "done_rw",
+            "rejected_rw",
+          ].includes(state);
+        const isDoneRW =
+          index === 2 &&
+          state === "done_rw";
         const isCurrentSubmit = index === 0;
         const isCurrentRW = index === 2 && state === 'current_rw';
         const isCurrentPending = index === step && state === 'current';

@@ -617,7 +617,7 @@ loading
 ?
 "Mengirim..."
 :
-"Submit Permohonan"
+"Kirim"
 }
 
 
