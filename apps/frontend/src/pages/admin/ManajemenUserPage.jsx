@@ -14,7 +14,7 @@ import { FooterDesa } from '@/components/layout/FooterDesa';
 import { FooterOperator } from '../../components/layout/FooterOperator';
 
 export default function ManajemenUserPage() {
-  const { data,loading, setSearch, filterStatus, setFilterStatus, currentPage, setCurrentPage, totalPages, toggleStatus, addUser, updateUser } = useUserList();
+  const { data, loading, setSearch, filterStatus, setFilterStatus, currentPage, setCurrentPage, totalPages, toggleStatus, addUser, updateUser } = useUserList();
   const [keyword, setKeyword] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null); // null = mode tambah
@@ -88,7 +88,7 @@ export default function ManajemenUserPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-gray-400 text-xs">
-                <th className="py-3 font-medium text-center">Nama</th>
+                <th className="py-3 font-medium text-">Nama</th>
                 <th className="py-3 font-medium text-center">Email</th>
                 <th className="py-3 font-medium text-center">Jabatan</th>
                 <th className="py-3 font-medium text-center">Wilayah</th>
@@ -108,7 +108,7 @@ export default function ManajemenUserPage() {
               ) : (
                 data.map((user) => (
                   <tr key={user.id} className="border-b last:border-0">
-                    <td className="py-4 font-semibold text-gray-800 text-center">{user.name}</td>
+                    <td className="py-4 font-semibold text-gray-800 text-">{user.name}</td>
                     <td className="py-4 text-gray-600 text-center">{user.email}</td>
                     <td className="py-4 text-center">
                       <span className="border rounded-full px-3 py-1 text-xs text-gray-600 uppercase">{user.role}</span>

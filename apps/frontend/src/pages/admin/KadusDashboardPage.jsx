@@ -102,15 +102,15 @@ export default function KadusDashboardPage() {
             </button>
           </div>
 
-          <div className="mb-6"><SuratStatChart data={chartData} /></div>
+          <div className="mb-6"><SuratStatChart letters={letters} /></div>
           <QuickNavButtons items={QUICK_NAV_KADUS} basePath="/admin/list-kadus" />
         </div>
         <FooterDesa />
       </div>
 
       {/* ===== MOBILE ===== */}
-      <div className="md:hidden bg-gray-50 min-h-screen pb-20">
-        <div className="px-4 pt-4">
+      <div className="md:hidden flex flex-col min-h-screen bg-gray-50">
+        <div className="flex-1 px-4 pt-4">
           <p className="text-green-700 font-semibold"> </p>
           <p className="text-xs text-gray-400 mb-4">Dashboard Kepala Dusun</p>
 
@@ -136,11 +136,13 @@ export default function KadusDashboardPage() {
             <p className="text-2xl font-bold text-gray-800">{stats.disetujuiFinal}</p>
           </button>
 
-          <div className="mb-4"><SuratStatChart data={chartData} /></div>
+          <div className="mb-4"><SuratStatChart letters={letters} /></div>
           <div className="mb-4"><QuickNavButtons items={QUICK_NAV_KADUS} basePath="/admin/list-kadus" /></div>
         </div>
 
-        <FooterDesa />
+<div className="pb-16">
+          <FooterDesa />
+        </div>
         <MobileBottomNav links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-kadus', '/admin/list-kadus')} />
       </div>
     </>

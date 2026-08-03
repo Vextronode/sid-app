@@ -216,7 +216,7 @@ result.sort((a, b) => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                <th className="py-3 px-5 font-semibold text-center">No. Surat</th>
+                <th className="py-3 px-5 font-semibold text-">No. Surat</th>
                 <th className="py-3 px-5 font-semibold  text-center">Pemohon</th>
                 <th className="py-3 px-5 font-semibold text-center">Jenis</th>
                 <th className="py-3 px-5 font-semibold text-center">Tanggal</th>
@@ -236,7 +236,7 @@ result.sort((a, b) => {
                   const badge = STATUS_LABEL[s.status] ?? { label: s.status, className: 'bg-gray-50 text-gray-500' };
                   return (
                     <tr key={s.id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="py-4 px-5 font-semibold text-gray-800  text-center">#{s.letter_number ?? '-'}</td>
+                      <td className="py-4 px-5 font-semibold text-gray-800  text-">#{s.letter_number ?? '-'}</td>
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-gray-800  text-center">{s.applicant_name}</span>

@@ -136,8 +136,8 @@ export default function KadusListPage() {
       </div>
 
       {/* ===== MOBILE ===== */}
-      <div className="md:hidden bg-gray-50 min-h-screen pb-20">
-        <div className="px-4 pt-4">
+      <div className="md:hidden flex flex-col min-h-screen bg-gray-50">
+        <div className="flex-1 px-4 pt-4">
           <p className="text-green-700 font-semibold"></p>
           <p className="text-xs text-gray-400 mb-4">Dashboard Kepala Dusun</p>
 
@@ -196,7 +196,9 @@ export default function KadusListPage() {
           </div>
         </div>
 
-        <FooterDesa />
+<div className="pb-16">
+          <FooterDesa />
+        </div>
         <MobileBottomNav links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-kadus', '/admin/list-kadus')} />
       </div>
 

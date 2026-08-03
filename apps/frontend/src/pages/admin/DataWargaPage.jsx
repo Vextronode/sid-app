@@ -84,10 +84,10 @@ export default function DataWargaPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-gray-400 text-xs">
-                <th className="py-3 font-medium text-center">Nama</th>
+                <th className="py-3 font-medium text-">Nama</th>
                 <th className="py-3 font-medium text-center">NIK</th>
                 <th className="py-3 font-medium text-center">RT/RW</th>
-                <th className="py-3 font-medium text-center">Status</th>
+                <th className="py-3 font-medium text-center">Jenis Kelamin</th>
               </tr>
             </thead>
             <tbody>
@@ -102,7 +102,7 @@ export default function DataWargaPage() {
               ) : (
                 data.map((warga) => (
                   <tr key={warga.id} className="border-b last:border-0">
-                    <td className="py-4 font-semibold text-gray-800 text-center">{warga.name}</td>
+                    <td className="py-4 font-semibold text-gray-800 text-">{warga.name}</td>
                     <td className="py-4 text-gray-600 text-center">{warga.nik}</td>
                     <td className="py-4 text-gray-600 text-center">RT {warga.rt?.number} / RW {warga.rw?.number}</td>
                     <td className="py-4 text-center">
