@@ -33,14 +33,15 @@ public function genderStats(Request $request)
 public function letterStats(Request $request)
 {
 
-    $user = $request->user();
+ $user = $request->user();
+ 
+$period = $request->get('period', 'week');
 
-    $period = $request->get('period', 'day');
+$week = (int) $request->get('week', 1);
+$month = (int) $request->get('month', now()->month);
+$year = (int) $request->get('year', now()->year);
 
-$baseQuery = Letter::where(
-    'village_id',
-    $user->village_id
-);
+$baseQuery = Letter::where('village_id', $user->village_id);
 
 $letterType = $request->get('letter_type');
 
@@ -48,113 +49,102 @@ if ($letterType && $letterType !== 'all') {
     $baseQuery->where('letter_type_id', $letterType);
 }
 
-    $labels = [];
-    $values = [];
-    $letterType = $request->get('letter_type');
+$labels = [];
+$values = [];
 
 
 
     switch ($period) {
 
-        case 'day':
 
-            $today = Carbon::now('Asia/Jakarta');
+case 'week':
 
-            $labels = [
-                $today->translatedFormat('l')
-            ];
+    $startOfMonth = Carbon::create($year, $month, 1);
 
-            $values = [
-                (clone $baseQuery)
-                    ->whereDate('submitted_at', $today)
-                    ->count()
-            ];
+    $weekStart = $startOfMonth
+        ->copy()
+        ->addDays(($week - 1) * 7);
 
-            break;
+    $days = [
+        'Sen',
+        'Sel',
+        'Rab',
+        'Kam',
+        'Jum',
+        'Sab',
+        'Min'
+    ];
 
+    foreach ($days as $i => $day) {
 
-        case 'week':
+        $date = $weekStart->copy()->addDays($i);
 
-            $labels = [
-                'Sen',
-                'Sel',
-                'Rab',
-                'Kam',
-                'Jum',
-                'Sab',
-                'Min'
-            ];
+        $labels[] = $day;
 
-            foreach ($labels as $i => $label) {
+        $values[] = (clone $baseQuery)
+            ->whereDate('submitted_at', $date)
+            ->count();
+    }
 
-                $date = Carbon::now('Asia/Jakarta')
-                    ->startOfWeek()
-                    ->addDays($i);
-
-                $values[] = (clone $baseQuery)
-                    ->whereDate('submitted_at', $date)
-                    ->count();
-            }
-
-            break;
+break;
 
 
-        case 'month':
+case 'month':
 
-            $start = Carbon::now('Asia/Jakarta')->startOfMonth();
+    $start = Carbon::create($year, $month, 1);
 
-            $totalWeek = ceil($start->daysInMonth / 7);
+    $weeks = ceil($start->daysInMonth / 7);
 
-            for ($i = 0; $i < $totalWeek; $i++) {
+    for ($i = 0; $i < $weeks; $i++) {
 
-                $weekStart = $start
-                    ->copy()
-                    ->addDays($i * 7);
+        $weekStart = $start
+            ->copy()
+            ->addDays($i * 7);
 
-                $weekEnd = $weekStart
-                    ->copy()
-                    ->addDays(6);
+        $weekEnd = $weekStart
+            ->copy()
+            ->endOfDay()
+            ->addDays(6);
 
-                $labels[] = "Minggu " . ($i + 1);
+        $labels[] = "Minggu " . ($i + 1);
 
-                $values[] = (clone $baseQuery)
-                    ->whereBetween(
-                        'submitted_at',
-                        [$weekStart, $weekEnd]
-                    )
-                    ->count();
-            }
+        $values[] = (clone $baseQuery)
+            ->whereBetween('submitted_at', [
+                $weekStart,
+                $weekEnd
+            ])
+            ->count();
+    }
 
-            break;
+break;
 
 
+case 'year':
 
-        case 'year':
+    $labels = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des'
+    ];
 
-            $labels = [
-                'Jan',
-                'Feb',
-                'Mar',
-                'Apr',
-                'Mei',
-                'Jun',
-                'Jul',
-                'Agu',
-                'Sep',
-                'Okt',
-                'Nov',
-                'Des'
-            ];
+    for ($i = 1; $i <= 12; $i++) {
 
-            for ($i = 1; $i <= 12; $i++) {
+        $values[] = (clone $baseQuery)
+            ->whereYear('submitted_at', $year)
+            ->whereMonth('submitted_at', $i)
+            ->count();
+    }
 
-                $values[] = (clone $baseQuery)
-                    ->whereYear('submitted_at', now()->year)
-                    ->whereMonth('submitted_at', $i)
-                    ->count();
-            }
-
-            break;
+break;
 
 
         default:
