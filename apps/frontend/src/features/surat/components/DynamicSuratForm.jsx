@@ -261,88 +261,43 @@ Langkah 1 - Pilih Jenis Surat
 <div className="relative">
 
 
-<label className="
-block
-text-xs
-font-semibold
-text-gray-500
-mb-1
-">
-
-Jenis surat
-
-<span className="text-red-500">
-*
-</span>
-
+<label className="block text-xs font-semibold text-gray-500 mb-2">
+  Jenis surat <span className="text-red-500">*</span>
 </label>
 
+<div className="relative">
+  <select
+    value={config.code}
+    onChange={(e) => navigate(`/pengajuan-surat/${e.target.value}`)}
+    className="
+      w-full
+      h-12
+      pl-4
+      pr-10
+      border
+      border-grren-700
+      rounded-xl
+      bg-white
+      text-sm
+      text-green-700
+      appearance-none
+      focus:outline-none
+      focus:border-[#4CAF4F]
+      focus:ring-2
+      focus:ring-green-100
+    "
+  >
+    {LIST_SURAT_GLOBAL.map((surat) => (
+      <option key={surat.code} value={surat.code}>
+        {surat.name}
+      </option>
+    ))}
+  </select>
 
-
-<select
-
-value={config.code}
-
-onChange={(e)=>
-navigate(
-`/pengajuan-surat/${e.target.value}`
-)
-}
-
-className="
-w-full
-px-4
-py-3
-bg-white
-border
-border-[#4CAF4F]
-text-[#4CAF4F]
-rounded-xl
-text-sm
-font-semibold
-appearance-none
-cursor-pointer
-"
-
->
-
-
-{
-LIST_SURAT_GLOBAL.map(surat=>(
-
-
-<option
-
-key={surat.code}
-
-value={surat.code}
-
->
-
-{surat.name}
-
-</option>
-
-
-))
-}
-
-
-</select>
-
-
-
-<div className="
-pointer-events-none
-absolute
-right-3
-top-3
-text-[#4CAF4F]
-">
-
-<ChevronDown/>
-
-
+  <ChevronDown
+    size={18}
+    className="absolute right-3 top-1/2 -translate-y-1/2 text-green-700 pointer-events-none"
+  />
 </div>
 
 

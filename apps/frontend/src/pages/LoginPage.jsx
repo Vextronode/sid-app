@@ -22,6 +22,8 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+const [showRegisterModal, setShowRegisterModal] = useState(false);
+const [showForgotModal, setShowForgotModal] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -71,13 +73,15 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-6">
-        <div className="w-11 h-11 rounded-xl bg-green-600 flex items-center justify-center mb-3">
-          <Landmark size={22} className="text-white" />
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-6 ">
+      <div className="flex justify-center mb-4">
+        <div className="w-12 h-12 rounded-xl bg-green-600 flex items-center justify-center">
+          <Landmark size={24} className="text-white" />
         </div>
-        <p className="font-bold text-gray-800">SIDUTama</p>
-        <h1 className="text-xl font-bold text-gray-800 mt-1">Masuk ke SIDUTama</h1>
-        <p className="text-sm text-gray-500 mb-6">Masukkan NIK dan Password Anda</p>
+      </div>
+        <p className="font-bold text-gray-800"></p>
+        <h1 className="text-xl font-bold text-gray-800 mt-1 text-center">Masuk ke SIDUTama</h1>
+        <p className="text-sm text-gray-500 mb-6 text-center">Masukkan NIK dan Password Anda</p>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2 mb-4">
@@ -105,7 +109,13 @@ export default function LoginPage() {
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1">
               <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Password</label>
-              <Link to="/lupa-password" className="text-xs text-green-600 hover:underline">Lupa Password?</Link>
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(true)}
+                className="text-xs text-green-600 hover:underline"
+              >
+                Lupa Password?
+              </button>
             </div>
             <div className="relative">
               <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -139,11 +149,83 @@ export default function LoginPage() {
 
         <div className="border-t mt-6 pt-4 text-center">
           <p className="text-sm text-gray-500">
-            Belum punya akun? <Link to="/register" className="text-green-600 font-medium hover:underline">Daftar sekarang</Link>
+            Belum punya akun? <button
+  type="button"
+  onClick={() => setShowRegisterModal(true)}
+  className="text-green-600 font-medium hover:underline"
+>
+  Daftar sekarang
+</button>
           </p>
           <p className="text-[11px] text-gray-400 mt-3">Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026</p>
         </div>
       </div>
+      {showForgotModal && (
+  <>
+    <div
+      className="fixed inset-0 bg-black/40 z-40"
+      onClick={() => setShowForgotModal(false)}
+    />
+
+    <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div className="w-14 h-14 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-4">
+          <Lock size={26} className="text-blue-600" />
+        </div>
+
+        <h2 className="text-lg font-bold text-gray-800">
+          Fitur Belum Tersedia
+        </h2>
+
+        <p className="text-sm text-gray-500 mt-2">
+          Reset password masih dalam tahap pengembangan.
+          <br />
+          Silakan hubungi perangkat desa apabila mengalami kendala saat masuk ke akun.
+        </p>
+
+        <button
+          onClick={() => setShowForgotModal(false)}
+          className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-3 font-medium"
+        >
+          Mengerti
+        </button>
+      </div>
+    </div>
+  </>
+)}
+      {showRegisterModal && (
+  <>
+    <div
+      className="fixed inset-0 bg-black/40 z-40"
+      onClick={() => setShowRegisterModal(false)}
+    />
+
+    <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div className="w-14 h-14 mx-auto rounded-full bg-yellow-100 flex items-center justify-center mb-4">
+          <Landmark size={26} className="text-yellow-600" />
+        </div>
+
+        <h2 className="text-lg font-bold text-gray-800">
+          Fitur Belum Tersedia
+        </h2>
+
+        <p className="text-sm text-gray-500 mt-2">
+          Pendaftaran akun mandiri masih dalam tahap pengembangan.
+          <br />
+          Silakan datang ke kantor desa untuk melakukan pendaftaran sementara.
+        </p>
+
+        <button
+          onClick={() => setShowRegisterModal(false)}
+          className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-3 font-medium"
+        >
+          Mengerti
+        </button>
+      </div>
+    </div>
+  </>
+)}
     </div>
   );
 }

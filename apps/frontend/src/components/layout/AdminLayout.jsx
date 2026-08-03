@@ -31,7 +31,7 @@ export function AdminLayout({ children, menuItems }) {
     <div className="min-h-screen bg-gray-50 relative">
       <nav className="bg-white shadow-sm px-6 h-16 flex items-center justify-between relative">
         <Link to="/" className="font-bold text-lg text-gray-800">
-          LOGO
+          SIDUTama
         </Link>
 
         {menuItems ? (

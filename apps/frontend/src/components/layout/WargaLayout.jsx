@@ -41,17 +41,17 @@ export function WargaLayout({ children }) {
           </div>
         </Link>
 
-        <div className="flex items-center absolute right-6 top-1/2 -translate-y-1/2">
-          <button onClick={() => setNotifOpen((v) => !v)} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-700" title="Notifikasi">
+        <div className="flex items-center absolute right-6 top-1/2 -translate-y-1/2 ">
+          <button onClick={() => setNotifOpen((v) => !v)} className="w-9 h-9 flex items-center justify-center text-green-600 hover:text-green-700" title="Notifikasi">
             <Bell size={20} />
           </button>
 
-          <button onClick={() => setHelpOpen(true)} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-700" title="Pusat Bantuan">
+          <button onClick={() => setHelpOpen(true)} className="w-9 h-9 flex items-center justify-center text-green-600 hover:text-green-700" title="Pusat Bantuan">
             <HelpCircle size={20} />
           </button>
 
           <div className="relative">
-            <button onClick={() => setSettingsOpen((v) => !v)} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-700" title="Pengaturan">
+            <button onClick={() => setSettingsOpen((v) => !v)} className="w-9 h-9 flex items-center justify-center text-green-600 hover:text-green-700" title="Pengaturan">
               <Settings size={20} />
             </button>
 

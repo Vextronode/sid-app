@@ -44,23 +44,42 @@ export function DaftarSurat() {
                 1
               </span>
               <h2 className="text-sm font-bold text-green-700 uppercase tracking-wide">
-                Langkah 1 – Pilih Jenis Surat
+                Pilih Jenis Surat
               </h2>
             </div>
 
-            <label className="text-sm text-gray-600 block mb-1">
-              Jenis surat <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={selectedCode}
-              onChange={(e) => setSelectedCode(e.target.value)}
-              className="w-full border rounded-lg px-4 py-3 text-base outline-none focus:border-green-500"
-            >
-              <option value="">Pilih jenis surat...</option>
-              {Object.values(SURAT_CONFIG).map((cfg) => (
-                <option key={cfg.code} value={cfg.code}>{cfg.title}</option>
-              ))}
-            </select>
+<label className="block mb-2 text-sm font-medium text-gray-700">
+  Jenis Surat <span className="text-red-500">*</span>
+</label>
+
+<select
+  value={selectedCode}
+  onChange={(e) => setSelectedCode(e.target.value)}
+  className="
+    w-full
+    h-11
+    rounded-xl
+    border border-green-700
+    bg-white
+    px-4
+    text-sm
+    text-green-700
+    shadow-sm
+    transition
+    focus:border-green-500
+    focus:ring-2
+    focus:ring-green-100
+    focus:outline-none
+  "
+>
+  <option value="">Pilih jenis surat...</option>
+
+  {Object.values(SURAT_CONFIG).map((cfg) => (
+    <option key={cfg.code} value={cfg.code}>
+      {cfg.title}
+    </option>
+  ))}
+</select>
           </div>
 
           {/* Card Langkah 2 - Form / Placeholder */}
