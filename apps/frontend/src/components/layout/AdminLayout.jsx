@@ -29,7 +29,7 @@ export function AdminLayout({ children, menuItems }) {
 
   return (
     <div className="min-h-screen bg-gray-50 relative">
-      <nav className="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
+      <nav className="bg-white shadow-sm px-6 h-16 flex items-center justify-between relative">
         <Link to="/" className="font-bold text-lg text-gray-800">
           LOGO
         </Link>
@@ -53,33 +53,47 @@ export function AdminLayout({ children, menuItems }) {
           <span />
         )}
 
-        <div className="flex items-center gap-4">
-          <button onClick={() => setNotifOpen((v) => !v)} className="text-green-600 hover:text-green-700">
+        <div className="flex items-center h-full">
+          <button
+            onClick={() => setNotifOpen((v) => !v)}
+            className="w-9 h-9 flex items-center justify-center text-green-600 hover:text-green-700"
+          >
             <Bell size={20} />
           </button>
 
           {showSettingsMenu ? (
-            <div className="relative">
-              <button onClick={() => setSettingsOpen((v) => !v)} className="text-green-600 hover:text-green-700" title="Pengaturan">
+            <div className="relative h-full flex items-center">
+              <button
+                onClick={() => setSettingsOpen((v) => !v)}
+                className="w-9 h-9 flex items-center justify-center text-green-600 hover:text-green-700"
+                title="Pengaturan"
+              >
                 <Settings size={20} />
               </button>
 
               {settingsOpen && (
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />
-                  <div className="absolute right-0 top-8 bg-white shadow-lg rounded-xl border z-50 w-44 py-1">
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setSettingsOpen(false)}
+                  />
+
+                  <div className="absolute right-0 top-11 bg-white shadow-lg rounded-xl border z-50 w-44 py-1">
                     <Link
                       to="/admin/profile"
                       onClick={() => setSettingsOpen(false)}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                     >
-                      <UserCircle size={16} /> Profil
+                      <UserCircle size={16} />
+                      Profil
                     </Link>
+
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
                     >
-                      <LogOut size={16} /> Keluar
+                      <LogOut size={16} />
+                      Keluar
                     </button>
                   </div>
                 </>

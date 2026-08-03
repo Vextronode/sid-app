@@ -30,7 +30,7 @@ export function DaftarSurat() {
 
   return (
     <WargaLayout>
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="min-h-screen bg-gray-50 px-4 py-6">
         <div className="max-w-2xl mx-auto">
           <h1 className="text-2xl font-bold text-gray-800 mb-1">Form Pengajuan Surat</h1>
           <p className="text-sm text-gray-400 mb-6">
