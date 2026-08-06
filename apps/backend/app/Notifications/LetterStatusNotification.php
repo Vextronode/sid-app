@@ -25,10 +25,42 @@ class LetterStatusNotification extends Notification
     public function toArray(object $notifiable): array
     {
         return [
+
             'title' => $this->title,
+
             'message' => $this->message,
+
             'letter_id' => $this->letter->id,
+
+            'letter_no' => $this->letter->letter_number,
+
             'status' => $this->status,
+
+            'applicant' => $this->letter->applicant_name,
+
+            'category' => 'pelayanan',
+
+            'icon' => match ($this->status) {
+
+                'kasi_approved' => 'signature',
+
+                default => 'document',
+            },
+
+            'color' => match ($this->status) {
+
+                'rt_approved',
+                'rw_approved' => 'blue',
+
+                'kasi_approved' => 'green',
+
+                'rt_rejected',
+                'rw_rejected',
+                'kasi_rejected' => 'red',
+
+                default => 'gray',
+            },
+
         ];
     }
 }

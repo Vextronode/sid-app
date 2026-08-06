@@ -64,12 +64,23 @@ getSuratList(roleKey)
     laki: 0,
     perempuan: 0,
 });
-  const stats = useMemo(() => {
-    const permohonan = letters.filter((s) => s.status === 'pending').length;
-    const verifikasi = letters.filter((s) => s.status === 'rw_approved').length;
-    const selesai = letters.filter((s) => s.status === 'kasi_approved').length;
-    return { permohonan, verifikasi, selesai };
-  }, [letters]);
+const stats = useMemo(() => {
+  const permohonan = letters.length;
+
+  const verifikasi = letters.filter((s) =>
+    ["rt_approved", "rw_approved"].includes(s.status)
+  ).length;
+
+  const selesai = letters.filter(
+    (s) => s.status === "kasi_approved"
+  ).length;
+
+  return {
+    permohonan,
+    verifikasi,
+    selesai,
+  };
+}, [letters]);
 
   const chartData = useMemo(() => {
     const grouped = {};
@@ -99,9 +110,9 @@ getSuratList(roleKey)
           <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-400 uppercase mb-1">Permohonan</p>
-              <p className="text-3xl font-bold text-green-600">{loading ? '-' : stats.permohonan}</p>
+              <p className="text-3xl font-bold text-yellow-600">{loading ? '-' : stats.permohonan}</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+            <div className="w-11 h-11 rounded-xl bg-yellow-100 flex items-center justify-center text-yellow-600">
               <ClipboardList size={20} />
             </div>
           </div>

@@ -4,11 +4,10 @@
 // Semua/Pelayanan/Informasi, tombol "Tandai Semua Dibaca", dan daftar
 // notifikasi dikelompokkan per hari.
 // ==========================================
-
+import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { useState } from 'react';
 import { FileText, PenLine } from 'lucide-react';
-import { dummyNotifikasi as initialData } from '../data/dummyNotifikasi';
-
+import useNotifications from "@/features/notifikasi/hooks/useNotifications";
 const TABS = [
   { value: 'semua', label: 'Semua' },
   { value: 'pelayanan', label: 'Pelayanan' },
@@ -17,23 +16,75 @@ const TABS = [
 
 const ICON_MAP = { document: FileText, signature: PenLine };
 const WARNA_MAP = {
-  green: 'bg-green-100 text-green-600',
-  blue: 'bg-blue-100 text-blue-600',
-  gray: 'bg-gray-100 text-gray-400',
+  green: "bg-green-100 text-green-600",
+  blue: "bg-blue-100 text-blue-600",
+  red: "bg-red-100 text-red-600",
+  gray: "bg-gray-100 text-gray-400",
 };
+function getDayLabel(dateString) {
+  const notifDate = new Date(dateString);
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const target = new Date(notifDate);
+  target.setHours(0, 0, 0, 0);
+
+  const diff =
+    Math.floor((today - target) / (1000 * 60 * 60 * 24));
+
+  if (diff === 0) return "Hari Ini";
+  if (diff === 1) return "Kemarin";
+  if (diff === 2) return "2 Hari yang Lalu";
+  if (diff === 3) return "3 Hari yang Lalu";
+
+  return target.toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
 export default function NotificationPopover({ open, onClose }) {
-  const [activeTab, setActiveTab] = useState('semua');
-  const [items, setItems] = useState(initialData);
+  const { user } = useAuth();
 
+  const [activeTab, setActiveTab] = useState('semua');
+const {
+
+    notifications,
+
+    loading,
+
+    markAsRead,
+
+    markAllAsRead,
+
+} = useNotifications();
   if (!open) return null;
 
-  const filtered = activeTab === 'semua' ? items : items.filter((n) => n.kategori === activeTab);
-  const hariIni = filtered.filter((n) => !n.hari);
-  const kemarin = filtered.filter((n) => n.hari === 'Kemarin');
+const filtered =
+    activeTab === "semua"
+        ? notifications
+        : notifications.filter(
+              (n) => n.category === activeTab
+          );  
+          const groupedNotifications = filtered.reduce((groups, notif) => {
+  const label = getDayLabel(notif.created_at);
 
-  const handleTandaiSemua = () => setItems((prev) => prev.map((n) => ({ ...n, dibaca: true })));
+  if (!groups[label]) {
+    groups[label] = [];
+  }
 
+  groups[label].push(notif);
+
+  return groups;
+}, {});
+
+const handleTandaiSemua = async () => {
+
+    await markAllAsRead();
+
+};
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
@@ -60,41 +111,85 @@ export default function NotificationPopover({ open, onClose }) {
           ))}
         </div>
 
-        <div className="px-5 pb-5 flex flex-col gap-3">
-          {hariIni.map((n) => (
-            <NotifItem key={n.id} data={n} />
-          ))}
-          {kemarin.length > 0 && (
-            <>
-              <p className="text-xs font-semibold text-gray-400 mt-2">KEMARIN</p>
-              {kemarin.map((n) => (
-                <NotifItem key={n.id} data={n} />
-              ))}
-            </>
-          )}
-          {filtered.length === 0 && (
-            <p className="text-sm text-gray-400 text-center py-6">Tidak ada notifikasi.</p>
-          )}
-        </div>
+<div className="px-5 pb-5">
+  {Object.entries(groupedNotifications).map(([label, items]) => (
+    <div key={label} className="mb-5">
+
+      <p className="text-[10px] font-semibold uppercase text-gray-400 mb-2">
+        {label}
+      </p>
+
+      <div className="flex flex-col gap-3">
+        {items.map((n) => (
+          <NotifItem
+            key={n.id}
+            data={n}
+            user={user}
+            onRead={() => markAsRead(n.id)}
+          />
+        ))}
+      </div>
+
+    </div>
+  ))}
+
+  {filtered.length === 0 && (
+    <p className="text-sm text-center text-gray-400 py-6">
+      Tidak ada notifikasi.
+    </p>
+  )}
+</div>
       </div>
     </>
   );
 }
 
-function NotifItem({ data }) {
+function NotifItem({ data, onRead,user }) {
   const Icon = ICON_MAP[data.icon] ?? FileText;
+
   return (
-    <div className={`rounded-xl p-3 flex gap-3 ${data.dibaca ? 'bg-white' : 'bg-gray-50'}`}>
-      <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${WARNA_MAP[data.warna]}`}>
+    <div
+      onClick={onRead}
+      className={`
+        rounded-xl
+        p-3
+        flex
+        gap-3
+        cursor-pointer
+        transition
+        hover:bg-green-50
+        ${data.read_at ? "bg-white" : "bg-gray-50"}
+      `}
+    >
+      <div
+        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+          WARNA_MAP[data.color] ?? WARNA_MAP.gray
+        }`}
+      >
         <Icon size={16} />
       </div>
+
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-green-700 font-medium truncate">Warga: {data.warga}</p>
-          <span className="text-[10px] text-gray-400 shrink-0">{data.waktu}</span>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-green-700 font-medium truncate">
+            {user?.name}: {data.applicant}
+          </p>
+
+          <span className="text-[10px] text-gray-400">
+            {new Date(data.created_at).toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
         </div>
-        <p className="text-sm text-gray-800 font-medium mt-0.5">{data.judul}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{data.deskripsi}</p>
+
+        <p className="text-sm font-semibold text-gray-800 mt-1">
+          {data.title}
+        </p>
+
+        <p className="text-xs text-gray-500 mt-1">
+          {data.message}
+        </p>
       </div>
     </div>
   );

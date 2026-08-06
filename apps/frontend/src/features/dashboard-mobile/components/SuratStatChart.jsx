@@ -1,3 +1,6 @@
+import { useState, useEffect, useMemo, useRef } from "react";
+import api from "@/lib/api";
+
 import {
   AreaChart,
   Area,
@@ -6,187 +9,166 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useMemo } from "react";
-import { useEffect, useState } from "react";
-import api from "@/lib/api";
+
+import { Calendar } from "lucide-react";
 
 export default function SuratStatChart({ letters = [] }) {
+  const dateInputRef = useRef(null);
+
   const [chartData, setChartData] = useState([]);
   const [maxY, setMaxY] = useState(50);
   const [loading, setLoading] = useState(false);
 
-  const now = new Date();
-
-  const [period, setPeriod] = useState("week");
-  const [selectedWeek, setSelectedWeek] = useState(1);
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
 
   const [letterType, setLetterType] = useState("all");
 
-const letterTypes = useMemo(() => {
-  return [
-    ...new Map(
-      letters
-        .filter((l) => l.letter_type)
-        .map((l) => [l.letter_type.id, l.letter_type])
-    ).values(),
-  ];
-}, [letters]);
+  /**
+   * Ambil daftar jenis surat unik
+   */
+  const letterTypes = useMemo(() => {
+    if (!letters.length) return [];
 
+    const map = new Map();
 
-const fetchChart = async () => {
-  try {
-    setLoading(true);
+    letters.forEach((item) => {
+      const type = item.letter_type;
 
-    const res = await api.get("/api/dashboard/letter-stats", {
-      params: {
-        period,
-        week: selectedWeek,
-        month: selectedMonth,
-        year: selectedYear,
-        letter_type: letterType,
-      },
+      if (!type) return;
+
+      map.set(type.id, {
+        id: type.id,
+        name: type.name,
+      });
     });
 
-    const chart = res.data.chart;
+    return [...map.values()];
+  }, [letters]);
 
-    setChartData(
-      chart.labels.map((label, index) => ({
-        kategori: label,
-        jumlah: chart.values[index],
-      }))
-    );
+  /**
+   * Fetch Chart
+   */
+  useEffect(() => {
+    const fetchChart = async () => {
+      try {
+        setLoading(true);
 
-    setMaxY(chart.maxY);
-  } catch (error) {
-  console.error(error.response?.data);
-} finally {
-    setLoading(false);
-  }
-};
+        const { data } = await api.get("/api/dashboard/letter-stats", {
+          params: {
+            date: selectedDate,
+            letter_type: letterType,
+          },
+        });
 
-useEffect(() => {
-  fetchChart();
-}, [
-  period,
-  selectedWeek,
-  selectedMonth,
-  selectedYear,
-  letterType,
-]);
+        const chart = data.chart;
+
+        setChartData(
+          chart.labels.map((label, i) => ({
+            kategori: label,
+            jumlah: chart.values[i],
+          }))
+        );
+
+        setMaxY(chart.maxY);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChart();
+  }, [selectedDate, letterType]);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-5">
-      <div className="flex justify-between items-center mb-4">
+
+      {/* Header */}
+      <div className="flex justify-between items-start mb-5">
+
         <div>
           <h3 className="font-semibold text-gray-800">
             Statistik Pengajuan Surat
           </h3>
+
           <p className="text-xs text-gray-400">
             Distribusi jumlah surat
           </p>
         </div>
 
-<div className="flex flex-col gap-2 w-[220px]">
-  {/* Baris 1 */}
-  <div className="grid grid-cols-2 gap-2">
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="border rounded-full px-3 py-1 text-xs"
+        <div className="w-56 space-y-2">
+
+          {/* Kalender */}
+          <button
+            onClick={() => dateInputRef.current?.showPicker()}
+            className="w-full flex items-center justify-between border rounded-full px-3 py-2 text-xs hover:border-green-600"
           >
-            <option value="week">Minggu</option>
-            <option value="month">Bulan</option>
-            <option value="year">Tahun</option>
-          </select>
-
-
-
-          {period === "week" && (
-            <select
-              value={selectedWeek}
-              onChange={(e) => setSelectedWeek(Number(e.target.value))}
-              className="border rounded-full px-3 py-1 text-xs"
-            >
-              <option value={1}>Minggu 1</option>
-              <option value={2}>Minggu 2</option>
-              <option value={3}>Minggu 3</option>
-              <option value={4}>Minggu 4</option>
-              <option value={5}>Minggu 5</option>
-            </select>
-          )}
-
-          {period === "month" && (
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="border rounded-full px-3 py-1 text-xs"
-            >
-              {[
-                "Januari",
-                "Februari",
-                "Maret",
-                "April",
-                "Mei",
-                "Juni",
-                "Juli",
-                "Agustus",
-                "September",
-                "Oktober",
-                "November",
-                "Desember",
-              ].map((bulan, index) => (
-                <option key={bulan} value={index + 1}>
-                  {bulan}
-                </option>
-              ))}
-            </select>
-          )}
-
-          {period === "year" && (
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="border rounded-full px-3 py-1 text-xs"
-            >
-              {Array.from({ length: 5 }, (_, i) => {
-                const year = now.getFullYear() - i;
-
-                return (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                );
+            <span>
+              {new Date(selectedDate).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
               })}
-            </select>
-          )}
-          </div>
+            </span>
+
+            <Calendar size={14} />
+          </button>
+
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="absolute opacity-0 pointer-events-none"
+          />
+
+          {/* Jenis Surat */}
           <select
             value={letterType}
             onChange={(e) => setLetterType(e.target.value)}
-            className="border rounded-full px-3 py-1 text-xs"
+            className="w-full border rounded-full px-3 py-2 text-xs"
           >
-            <option value="all">Semua Jenis</option>
+            <option value="all">
+              Semua Jenis Surat
+            </option>
 
-            {letterTypes.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.name}
+            {letterTypes.map((item) => (
+              <option
+                key={item.id}
+                value={item.id}
+              >
+                {item.name}
               </option>
             ))}
           </select>
+
         </div>
+
       </div>
 
-      <ResponsiveContainer width="100%" height={180}>
+      {/* Chart */}
+      <ResponsiveContainer
+        width="100%"
+        height={180}
+      >
         <AreaChart data={chartData}>
+
           <defs>
-            <linearGradient id="colorJumlah" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient
+              id="colorJumlah"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
               <stop
                 offset="5%"
                 stopColor="#16a34a"
                 stopOpacity={0.35}
               />
+
               <stop
                 offset="95%"
                 stopColor="#16a34a"
@@ -204,10 +186,6 @@ useEffect(() => {
 
           <YAxis
             domain={[0, maxY]}
-            ticks={Array.from(
-              { length: Math.floor(maxY / 5) + 1 },
-              (_, i) => i * 5
-            )}
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 10 }}
@@ -223,8 +201,10 @@ useEffect(() => {
             fill="url(#colorJumlah)"
             isAnimationActive={!loading}
           />
+
         </AreaChart>
       </ResponsiveContainer>
+
     </div>
   );
 }

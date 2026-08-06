@@ -10,6 +10,7 @@ import { Bell, User, Settings, LogOut, UserCircle } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
+import useNotifications from "@/features/notifikasi/hooks/useNotifications";
 
 export function AdminLayout({ children, menuItems }) {
   const location = useLocation();
@@ -17,7 +18,7 @@ export function AdminLayout({ children, menuItems }) {
   const { user, logout } = useAuth();
   const [notifOpen, setNotifOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-
+  const { unreadCount } = useNotifications();
   // Dropdown Settings (Profil + Keluar) cuma muncul untuk RT & RW
   const showSettingsMenu = ['rt', 'rw', 'kadus'].includes(user?.role);
 
@@ -54,12 +55,19 @@ export function AdminLayout({ children, menuItems }) {
         )}
 
         <div className="flex items-center h-full">
-          <button
-            onClick={() => setNotifOpen((v) => !v)}
-            className="w-9 h-9 flex items-center justify-center text-green-600 hover:text-green-700"
-          >
-            <Bell size={20} />
-          </button>
+        <button
+          onClick={() => setNotifOpen((prev) => !prev)}
+          className="relative w-8 h-8 rounded-full flex items-center justify-center text-green-700 hover:text-green-800 hover:bg-green-50 transition-colors"
+          title="Notifikasi"
+        >
+          <Bell size={18} />
+
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-white pointer-events-none">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </button>
 
           {showSettingsMenu ? (
             <div className="relative h-full flex items-center">

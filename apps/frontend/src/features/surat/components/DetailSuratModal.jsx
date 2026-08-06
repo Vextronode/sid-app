@@ -264,7 +264,6 @@ const DetailInfo = ({ data }) => {
 // Main Component
 export function DetailSuratModal({ data, onClose }) {
   if (!data) return null;
-  console.log("DETAIL DATA:", data);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">

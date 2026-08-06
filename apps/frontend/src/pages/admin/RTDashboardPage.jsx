@@ -128,7 +128,7 @@ export default function RTDashboardPage() {
           </div>
 
           <div className="mb-6">
-            <SuratStatChart data={chartData} />
+            <SuratStatChart letters={letters} />
           </div>
 
           <QuickNavButtons items={QUICK_NAV_RT} basePath="/admin/list-rt" />
@@ -162,7 +162,7 @@ export default function RTDashboardPage() {
             })}
           </div>
 
-          <div className="mb-4"><SuratStatChart data={chartData} /></div>
+          <div className="mb-4"><SuratStatChart letters={letters} /></div>
           <div className="mb-4"><QuickNavButtons items={QUICK_NAV_RT} basePath="/admin/list-rt" /></div>
         </div>
 

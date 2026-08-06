@@ -109,7 +109,28 @@ useEffect(() => {
     let result = [...letters];
 
     if (filterJenis) result = result.filter((s) => s.letter_type?.name === filterJenis);
-    if (filterStatus) result = result.filter((s) => s.status === filterStatus);
+    if (filterStatus) {
+  switch (filterStatus) {
+    case "verification":
+      result = result.filter((s) =>
+        [ "rt_approved", "rw_approved"].includes(s.status)
+      );
+      break;
+
+    case "completed":
+      result = result.filter((s) => s.status === "kasi_approved");
+      break;
+
+    case "rejected":
+      result = result.filter((s) =>
+        ["rt_rejected", "rw_rejected"].includes(s.status)
+      );
+      break;
+
+    default:
+      break;
+  }
+}
     if (search) {
       const kw = search.toLowerCase();
       result = result.filter(
@@ -118,26 +139,48 @@ useEffect(() => {
     }
 
     // Urutkan berdasarkan selesai sampai di tolak
-    const STATUS_ORDER = {
-  kasi_approved: 1, // Selesai
+const STATUS_ORDER = {
+  kasi_approved: 1,
   rw_approved: 2,
   rt_approved: 3,
   pending: 4,
   rw_rejected: 5,
   rt_rejected: 6,
+  kasi_rejected: 7,
 };
 
 result.sort((a, b) => {
+  // Ambil tanggal tanpa jam
+  const dateA = new Date(a.submitted_at ?? a.created_at);
+  const dateB = new Date(b.submitted_at ?? b.created_at);
+
+  const onlyDateA = new Date(
+    dateA.getFullYear(),
+    dateA.getMonth(),
+    dateA.getDate()
+  );
+
+  const onlyDateB = new Date(
+    dateB.getFullYear(),
+    dateB.getMonth(),
+    dateB.getDate()
+  );
+
+  // 1. Tanggal terbaru dulu
+  if (onlyDateA.getTime() !== onlyDateB.getTime()) {
+    return onlyDateB - onlyDateA;
+  }
+
+  // 2. Kalau tanggal sama → urut status
   const orderA = STATUS_ORDER[a.status] ?? 999;
   const orderB = STATUS_ORDER[b.status] ?? 999;
 
-  // Prioritaskan status
   if (orderA !== orderB) {
     return orderA - orderB;
   }
 
-  // Jika status sama, urutkan berdasarkan tanggal paling lama
-  return new Date(a.submitted_at) - new Date(b.submitted_at);
+  // 3. Kalau status sama → jam terbaru dulu
+  return dateB - dateA;
 });
 
     return result;
@@ -188,25 +231,19 @@ result.sort((a, b) => {
             </div>
             <div>
               <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Status</p>
-            <select
-              value={filterStatus}
-              onChange={(e) => {
-                setFilterStatus(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
-            >
-              <option value="">Semua Status</option>
-              <option value="kasi_approved">Selesai</option>
-
-              <option value="pending">Menunggu</option>
-
-              <option value="rt_approved">Disetujui RT</option>
-              <option value="rw_approved">Disetujui RW</option>
-
-              <option value="rt_rejected">Ditolak RT</option>
-              <option value="rw_rejected">Ditolak RW</option>
-            </select>
+              <select
+                value={filterStatus}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
+              >
+                <option value="">Semua Status</option>
+                <option value="verification">Verifikasi</option>
+                <option value="completed">Selesai</option>
+                <option value="rejected">Ditolak</option>
+              </select>
             </div>
           </div>
         </div>

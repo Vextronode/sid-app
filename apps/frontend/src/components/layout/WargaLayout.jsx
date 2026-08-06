@@ -1,6 +1,6 @@
-
 // ==========================================
 // WargaLayout.jsx
+// ==========================================
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -11,7 +11,7 @@ import { FooterDesa } from './FooterDesa';
 import { WARGA_MOBILE_LINKS } from '@/lib/constants/navigation';
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover';
 import HelpCenterModal from '@/features/warga-help/components/HelpCenterModal';
-
+import useNotifications from "@/features/notifikasi/hooks/useNotifications";
 
 export function WargaLayout({ children }) {
   const { user, logout } = useAuth();
@@ -19,7 +19,7 @@ export function WargaLayout({ children }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-
+const { unreadCount } = useNotifications(); 
   const handleLogout = () => {
     setSettingsOpen(false);
     logout?.();
@@ -28,47 +28,66 @@ export function WargaLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-50 relative pb-16 md:pb-0">
-      <nav className="bg-white shadow-sm py-4 px-6 flex items-center justify-between relative z-10">
-        <Link to="/daftar-surat" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-            <User size={16} className="text-gray-400" />
+      <nav className="sticky top-0 bg-white/95 backdrop-blur-sm shadow-sm py-3 px-6 flex items-center justify-between z-50">
+        <Link to="/daftar-surat" className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-green-50 flex items-center justify-center border border-green-200">
+            <User size={18} className="text-green-600" />
           </div>
           <div>
-            
+            <p className="text-xs text-gray-400 font-medium leading-none mb-0.5">Selamat datang,</p>
             <p className="text-sm font-bold text-green-700 leading-tight">{user?.name ?? 'Warga Desa'}</p>
           </div>
         </Link>
 
-        <div className="flex items-center gap-4">
-          <button onClick={() => setNotifOpen((v) => !v)} className="text-gray-500 hover:text-gray-700" title="Notifikasi">
-            <Bell size={20} />
+        {/* Icon rapat & berwarna hijau senada dengan nama */}
+        <div className="flex items-center gap-1">
+        <button
+          onClick={() => setNotifOpen((prev) => !prev)}
+          className="relative w-8 h-8 rounded-full flex items-center justify-center text-green-700 hover:text-green-800 hover:bg-green-50 transition-colors"
+          title="Notifikasi"
+        >
+          <Bell size={18} />
+
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-white pointer-events-none">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </button>
+
+          <button 
+            onClick={() => setHelpOpen(true)} 
+            className="w-8 h-8 rounded-full flex items-center justify-center text-green-700 hover:text-green-800 hover:bg-green-50 transition-colors" 
+            title="Pusat Bantuan"
+          >
+            <HelpCircle size={18} />
           </button>
 
-          <button onClick={() => setHelpOpen(true)} className="text-gray-500 hover:text-gray-700" title="Pusat Bantuan">
-            <HelpCircle size={20} />
-          </button>
-
-          <div className="relative">
-            <button onClick={() => setSettingsOpen((v) => !v)} className="text-gray-500 hover:text-gray-700" title="Pengaturan">
-              <Settings size={20} />
+          <div className="relative flex items-center justify-center">
+            <button 
+              onClick={() => setSettingsOpen((v) => !v)} 
+              className="w-8 h-8 rounded-full flex items-center justify-center text-green-700 hover:text-green-800 hover:bg-green-50 transition-colors" 
+              title="Pengaturan"
+            >
+              <Settings size={18} />
             </button>
 
             {settingsOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />
-                <div className="absolute right-0 top-8 bg-white shadow-lg rounded-xl border z-50 w-44 py-1">
+                <div className="absolute right-0 top-10 bg-white shadow-xl rounded-xl border border-gray-100 z-50 w-48 py-1.5 animate-in fade-in zoom-in-95 duration-100">
                   <Link
                     to="/profile"
                     onClick={() => setSettingsOpen(false)}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors"
                   >
-                    <UserCircle size={16} /> Profil
+                    <UserCircle size={18} className="text-gray-400" /> Profil
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                   >
-                    <LogOut size={16} /> Keluar
+                    <LogOut size={18} className="text-red-500" /> Keluar
                   </button>
                 </div>
               </>
@@ -79,7 +98,7 @@ export function WargaLayout({ children }) {
         <NotificationPopover open={notifOpen} onClose={() => setNotifOpen(false)} />
       </nav>
 
-      <main className="relative z-10">{children}</main>
+      <main className="relative">{children}</main>
 
       <FooterDesa />
       <MobileBottomNav links={WARGA_MOBILE_LINKS} />

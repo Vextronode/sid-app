@@ -117,7 +117,30 @@ class RwApprovalService
 
             $citizenUser = $this->officialService
                 ->resolveCitizenUser($letter);
+                $currentOfficial = $this->officialService->getCurrentRw($user);
 
+$nextOfficials = $this->officialService
+    ->resolveNextOfficials(
+        $user->official
+    );
+
+
+foreach ($nextOfficials as $official) {
+
+    if ($official->user) {
+
+        $official->user->notify(
+            new LetterStatusNotification(
+                $letter,
+                'Surat Baru',
+                'Ada surat yang menunggu verifikasi Operator Desa.',
+                'rw_approved'
+            )
+        );
+
+    }
+
+}
             if ($citizenUser) {
 
                 if ($data['status'] === 'approved') {

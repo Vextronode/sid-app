@@ -6,7 +6,7 @@ use App\Models\Letter;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Notifications\LetterStatusNotification;
-
+use App\Models\Official;
 class RtApprovalService
 {
     public function __construct(
@@ -66,7 +66,8 @@ class RtApprovalService
         DB::transaction(function () use (
             $letter,
             $user,
-            $data
+            $data,
+            $official
         ) {
 
             $oldStatus = $letter->status->value;
@@ -89,10 +90,7 @@ class RtApprovalService
                     'approved_by' => $user->id,
                 ]);
 
-            $currentOfficial = $this->officialService
-                ->getCurrentRt($user);
-            $nextOfficial = $this->officialService
-                ->resolveNextOfficial($currentOfficial);
+
             if ($data['status'] === 'approved') {
 
                 // Approval RW
@@ -101,15 +99,19 @@ class RtApprovalService
                     'approval_level' => 'rw',
                     'deadline_at' => now()->addDays(2),
                 ]);
-
+                
+         
                 // Cari RW
-                $nextOfficial = $this->officialService
-                    ->resolveNextOfficial($currentOfficial);
+$rwOfficial = Official::where('rw_id', $official->rw_id)
+    ->where('position', 'rw')
+    ->where('is_active', true)
+    ->first();
 
                 // Notifikasi RW
-                if ($nextOfficial?->user) {
+                if ($rwOfficial?->user) {
 
-                    $nextOfficial->user->notify(
+
+    $rwOfficial->user->notify(
                         new LetterStatusNotification(
                             $letter,
                             'Surat Baru',

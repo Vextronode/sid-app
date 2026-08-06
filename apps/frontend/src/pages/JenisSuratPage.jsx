@@ -17,7 +17,7 @@ export default function JenisSuratPage() {
   const { letters, loading } = useLetters();
 
   const total = letters.length;
-  const disetujui = letters.filter((s) => s.status === 'rw_approved').length;
+  const disetujui = letters.filter((s) => s.status === 'kasi_approved').length;
   const ditolak = letters.filter((s) => s.status?.endsWith('_rejected')).length;
   const menunggu = letters.filter((s) => !s.status?.endsWith('_rejected') && s.status !== 'rw_approved').length;
 
@@ -45,7 +45,7 @@ export default function JenisSuratPage() {
 
           <button
             type="button"
-            onClick={() => navigate('/daftar-surat-saya?status=rw_approved')}
+            onClick={() => navigate('/daftar-surat-saya?status=approved')}
             className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between text-left hover:shadow-md transition-shadow"
           >
             <div>

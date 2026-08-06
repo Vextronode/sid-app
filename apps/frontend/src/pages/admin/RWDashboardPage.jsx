@@ -59,10 +59,10 @@ export default function RWDashboardPage() {
   const STAT_CARDS = [
     {
       key: 'permohonan',
-      label: 'Permohonan',
+      label: 'Menunggu',
       value: stats.permohonanBaru,
       icon: Mail,
-      color: 'text-green-600 bg-green-100',
+      color: 'text-yellow-600 bg-yellow-100',
       onClick: () => navigate('/admin/list-rw?status=rt_approved'),
     },
     {
@@ -128,7 +128,7 @@ export default function RWDashboardPage() {
           </div>
 
           <div className="mb-6">
-            <SuratStatChart data={chartData} />
+            <SuratStatChart letters={letters} />
           </div>
 
           <QuickNavButtons items={QUICK_NAV_RW} basePath="/admin/list-rw" />
@@ -162,7 +162,7 @@ export default function RWDashboardPage() {
             })}
           </div>
 
-          <div className="mb-4"><SuratStatChart data={chartData} /></div>
+          <div className="mb-4"><SuratStatChart letters={letters} /></div>
           <div className="mb-4"><QuickNavButtons items={QUICK_NAV_RW} basePath="/admin/list-rw" /></div>
         </div>
 

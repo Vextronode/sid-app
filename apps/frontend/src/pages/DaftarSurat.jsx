@@ -1,81 +1,102 @@
-// ==========================================
-// DaftarSurat.jsx (Beranda Warga)
-// Sekarang jadi halaman Ajukan Surat langsung: dropdown pilih jenis
-// surat, begitu dipilih baru muncul form dinamis di bawahnya.
-// Sesuai desain: judul besar, subjudul abu-abu, card "LANGKAH 1"
-// dengan lingkaran hijau nomor 1, lalu card placeholder/form di bawah.
-// ==========================================
-
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/features/auth/contexts/AuthContext";
-import { WargaLayout } from "@/components/layout/WargaLayout";
-import { SURAT_CONFIG } from "@/lib/constants/suratConfig";
-import { DynamicSuratForm } from "@/features/surat/components/DynamicSuratForm";
-import { PageWatermark } from "@/components/layout/PageWatermark";
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { WargaLayout } from '@/components/layout/WargaLayout';
+import { SURAT_CONFIG } from '@/lib/constants/suratConfig';
+import { DynamicSuratForm } from '@/features/surat/components/DynamicSuratForm';
+import { FileText, ChevronDown } from "lucide-react";
 
 export function DaftarSurat() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [selectedCode, setSelectedCode] = useState("");
+  const [selectedCode, setSelectedCode] = useState('');
 
-  const currentConfig = useMemo(
-    () => (selectedCode ? SURAT_CONFIG[selectedCode] : null),
-    [selectedCode],
-  );
+  const currentConfig = useMemo(() => (selectedCode ? SURAT_CONFIG[selectedCode] : null), [selectedCode]);
 
-  const handleCancel = () => setSelectedCode("");
+  const handleCancel = () => setSelectedCode('');
 
   const handleSubmit = (data) => {
     // TODO: sambungkan ke endpoint submit surat asli
-    console.log("Submit surat", {
-      jenis: currentConfig?.code,
-      data,
-      pemohon: user?.name,
-    });
-    navigate("/jenis-surat");
+    navigate('/jenis-surat');
   };
 
   return (
     <WargaLayout>
-      <PageWatermark />
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+      {/* Penambahan 'relative z-0' di sini memastikan layer konten halaman tidak menimpa dropdown navbar */}
+      <div className="relative z-0 min-h-screen bg-gray-50 py-8 px-4">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-800 mb-1">
-            Form Pengajuan Surat
-          </h1>
-          <p className="text-sm text-gray-400 mb-6">
-            Lengkapi detail di bawah ini untuk mengajukan permohonan surat
-            administrasi.
-          </p>
 
-          {/* Card Langkah 1 - Pilih Jenis Surat */}
-          <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
-            <div className="flex items-center gap-2 mb-4">
-               
-              <h2 className="text-sm font-bold text-green-700 uppercase tracking-wide">
-                 Pilih Jenis Surat
-              </h2>
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-green-600" />
+              </div>
+
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Form Pengajuan Surat
+                </h1>
+                <p className="text-sm text-gray-500">
+                  Pilih jenis surat yang ingin diajukan.
+                </p>
+              </div>
             </div>
-
-            <label className="text-sm text-gray-600 block mb-1">
-              Jenis surat <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={selectedCode}
-              onChange={(e) => setSelectedCode(e.target.value)}
-              className="w-full border rounded-lg px-4 py-3 text-base outline-none focus:border-green-500"
-            >
-              <option value="">Pilih jenis surat...</option>
-              {Object.values(SURAT_CONFIG).map((cfg) => (
-                <option key={cfg.code} value={cfg.code}>
-                  {cfg.title}
-                </option>
-              ))}
-            </select>
           </div>
 
-          {/* Card Langkah 2 - Form / Placeholder */}
+          {/* Dropdown Pilih Surat */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-5">
+
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Jenis Surat
+            </label>
+
+            <div className="relative">
+              <select
+                value={selectedCode}
+                onChange={(e) => setSelectedCode(e.target.value)}
+                className="
+                  w-full
+                  h-12
+                  rounded-xl
+                  border
+                  border-green-600
+                  bg-white
+                  pl-4
+                  pr-10
+                  text-sm
+                  text-gray-700
+                  appearance-none
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-green-100
+                  focus:border-green-500
+                "
+              >
+                <option value="">Pilih jenis surat...</option>
+
+                {Object.values(SURAT_CONFIG).map((cfg) => (
+                  <option key={cfg.code} value={cfg.code}>
+                    {cfg.title}
+                  </option>
+                ))}
+              </select>
+
+              <ChevronDown
+                size={18}
+                className="
+                  absolute
+                  right-4
+                  top-1/2
+                  -translate-y-1/2
+                  text-green-600
+                  pointer-events-none
+                "
+              />
+            </div>
+
+          </div>
+
           {currentConfig ? (
             <DynamicSuratForm
               config={currentConfig}
@@ -83,12 +104,19 @@ export function DaftarSurat() {
               onSubmit={handleSubmit}
             />
           ) : (
-            <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
-              <p className="text-gray-400 text-base">
-                Silakan pilih jenis surat di atas untuk melanjutkan.
+            <div className="bg-white rounded-2xl shadow-sm border border-dashed border-gray-200 py-16 text-center">
+              <FileText className="mx-auto w-10 h-10 text-gray-300 mb-3" />
+
+              <p className="font-medium text-gray-600">
+                Belum ada jenis surat dipilih
+              </p>
+
+              <p className="text-sm text-gray-400 mt-1">
+                Pilih salah satu jenis surat di atas untuk mulai mengisi formulir.
               </p>
             </div>
           )}
+
         </div>
       </div>
     </WargaLayout>

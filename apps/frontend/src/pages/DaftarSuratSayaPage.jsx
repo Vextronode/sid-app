@@ -10,16 +10,50 @@ import { WargaLayout } from '@/components/layout/WargaLayout';
 import { useLetters } from '@/features/surat/hooks/useLetters';
 
 const STATUS_LABEL = {
-  pending: { label: 'MENUNGGU', className: 'bg-gray-100 text-gray-500' },
-  rt_approved: { label: 'DIPROSES RW', className: 'bg-blue-100 text-blue-700' },
-  rt_rejected: { label: 'DITOLAK RT', className: 'bg-red-100 text-red-600' },
-  rw_approved: { label: 'DISETUJUI', className: 'bg-green-100 text-green-700' },
-  rw_rejected: { label: 'DITOLAK RW', className: 'bg-red-100 text-red-600' },
+  pending: {
+    label: "MENUNGGU RT",
+    className: "bg-gray-100 text-gray-600",
+  },
+
+  rt_approved: {
+    label: "DIPROSES RW",
+    className: "bg-blue-100 text-blue-700",
+  },
+
+  rt_rejected: {
+    label: "DITOLAK RT",
+    className: "bg-red-100 text-red-600",
+  },
+
+  rw_approved: {
+    label: "DIPROSES KANTOR DESA",
+    className: "bg-amber-100 text-amber-700",
+  },
+
+  rw_rejected: {
+    label: "DITOLAK RW",
+    className: "bg-red-100 text-red-600",
+  },
+
+  kasi_approved: {
+    label: "DISETUJUI",
+    className: "bg-green-100 text-green-700",
+  },
+
+  kaur_tu_umum_approved: {
+    label: "DISETUJUI",
+    className: "bg-green-100 text-green-700",
+  },
+
+  petugas_desa_approved: {
+    label: "DISETUJUI",
+    className: "bg-green-100 text-green-700",
+  },
 };
 
 const PAGE_TITLE = {
-  '': 'Semua Permohonan',
-  rw_approved: 'Permohonan Disetujui',
+  '': 'Semua Pengajuan',
+  approved: 'Permohonan Disetujui',
   ditolak: 'Permohonan Ditolak',
 };
 
@@ -29,9 +63,23 @@ export default function DaftarSuratSayaPage() {
   const filterStatus = searchParams.get('status') ?? '';
   const { letters, loading } = useLetters();
 
+  const approvedStatuses = [
+    "kasi_approved",
+    "kaur_tu_umum_approved",
+    "petugas_desa_approved",
+  ];
+
   const filtered = letters.filter((item) => {
     if (!filterStatus) return true;
-    if (filterStatus === 'ditolak') return item.status?.endsWith('_rejected');
+
+    if (filterStatus === "ditolak") {
+      return item.status?.endsWith("_rejected");
+    }
+
+    if (filterStatus === "approved") {
+      return approvedStatuses.includes(item.status);
+    }
+
     return item.status === filterStatus;
   });
 

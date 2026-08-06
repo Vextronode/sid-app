@@ -10,6 +10,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Search, Bell, Settings, LayoutGrid, FileText, Users, UserCog, Building2, Newspaper, Plus, HelpCircle, LogOut } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover';
+import useNotifications from "@/features/notifikasi/hooks/useNotifications";
 
 const MENU_ITEMS = [
   { label: 'Ringkasan', path: '/admin/operator-desa', icon: LayoutGrid },
@@ -24,7 +25,7 @@ export function OperatorDesaLayout({ children }) {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [notifOpen, setNotifOpen] = useState(false);
-
+ const { unreadCount } = useNotifications();
   return (
     <div className="h-screen bg-gray-50 flex overflow-hidden">
       {/* ===== SIDEBAR ===== */}
@@ -102,9 +103,20 @@ export function OperatorDesaLayout({ children }) {
 
           <div className="flex items-center gap-4">
             
-            <button onClick={() => setNotifOpen((v) => !v)} className="text-white hover:text-green-200">
-              <Bell size={18} />
-            </button>
+<button
+    onClick={() => setNotifOpen((prev) => !prev)}
+    className="relative w-8 h-8 rounded-full flex items-center justify-center text-white hover:text-green-200 hover:bg-green-700/50 transition-colors"
+    title="Notifikasi"
+  >
+    <Bell size={18} />
+
+    {/* Badge Merah di Pojok Kanan Atas */}
+    {unreadCount > 0 && (
+      <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-green-600 pointer-events-none">
+        {unreadCount > 99 ? "99+" : unreadCount}
+      </span>
+    )}
+  </button>
             <button className="text-white hover:text-green-200">
               <Settings size={18} />
             </button>

@@ -150,7 +150,8 @@ class KasiApprovalService
                         new LetterStatusNotification(
                             $letter,
                             'Permohonan Disetujui',
-                            'Permohonan surat Anda telah selesai diproses.',
+                            'Permohonan surat Anda telah selesai diproses ole operator. 
+                            silahkan ambil ke kantor desa',
                             'kasi_approved'
                         )
                     );

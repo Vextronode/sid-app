@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Requests\Auth\LoginRequest;
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterTypeController;
@@ -41,7 +41,25 @@ use App\Http\Controllers\Api\UserController;
 */
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get(
+        '/notifications',
+        [NotificationController::class, 'index']
+    );
 
+    Route::post(
+        '/notifications/read-all',
+        [NotificationController::class, 'readAll']
+    );
+
+    Route::post(
+        '/notifications/{id}/read',
+        [NotificationController::class, 'read']
+    );
+
+    Route::get(
+        '/notifications/unread-count',
+        [NotificationController::class, 'unreadCount']
+    );
     Route::post(
         '/logout',
         [AuthenticatedSessionController::class, 'logout']

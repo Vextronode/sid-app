@@ -16,13 +16,20 @@ import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF';
 // Hitung tahap tracking dari status surat: 0=Submit, 1=RT, 2=RW, 3=Selesai
 function getStepState(status) {
   const map = {
-    pending: { step: 1, state: 'current' },
-    rt_approved: { step: 2, state: 'current_rw' },
-    rt_rejected: { step: 1, state: 'rejected_rt' },
-    rw_approved: { step: 3, state: 'done' },
-    rw_rejected: { step: 2, state: 'rejected_rw' },
+    pending: { step: 1, state: "current" },
+
+    rt_approved: { step: 2, state: "current_rw" },
+    rt_rejected: { step: 1, state: "rejected_rt" },
+
+    rw_approved: { step: 3, state: "current_office" },
+    rw_rejected: { step: 2, state: "rejected_rw" },
+
+    kasi_approved: { step: 4, state: "done" },
+    kaur_tu_umum_approved: { step: 4, state: "done" },
+    petugas_desa_approved: { step: 4, state: "done" },
   };
-  return map[status] ?? { step: 0, state: 'waiting' };
+
+  return map[status] ?? { step: 0, state: "waiting" };
 }
 
 const STEPS = ['Submit', 'RT', 'RW', 'Kantor Desa'];
@@ -37,8 +44,16 @@ function TrackingStepper({ status }) {
         let color = 'text-gray-400';
 
         const isRejectedHere = (index === 1 && state === 'rejected_rt') || (index === 2 && state === 'rejected_rw');
-        const isDone = index === 0 || (index === 1 && (state === 'current_rw' || state === 'done')) || (index === 2 && state === 'done');
-        const isCurrent = (index === 1 && state === 'current') || (index === 2 && state === 'current_rw');
+        const isDone =
+          (index === 0) ||
+          (index === 1 && step >= 2) ||
+          (index === 2 && step >= 3) ||
+          (index === 3 && step >= 4);
+
+        const isCurrent =
+          (index === 1 && state === "current") ||
+          (index === 2 && state === "current_rw") ||
+          (index === 3 && state === "current_office");
 
         if (isRejectedHere) {
           circle = <div className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center"><X size={16} /></div>;
@@ -66,13 +81,20 @@ function TrackingStepper({ status }) {
     </div>
   );
 }
+const canPreviewStatuses = [
+  "kasi_approved",
+  "kaur_tu_umum_approved",
+  "petugas_desa_approved",
+];
 
+const canPreviewSurat = (status) =>
+  canPreviewStatuses.includes(status);
 // Preview PDF Surat (read-only, sama seperti di DetailSuratModal)
 function SuratPreview({ suratId, status }) {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [loadError, setLoadError] = useState(false);
-
+  const canPreview = canPreviewSurat(status);
   // Reset state kalau suratId berubah (pindah slide)
   useEffect(() => {
     setShowPreview(false);
@@ -107,11 +129,29 @@ function SuratPreview({ suratId, status }) {
   return (
     <div className="space-y-3 mt-4">
       <button
-        onClick={() => setShowPreview((prev) => !prev)}
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 font-medium hover:bg-gray-100 transition w-full justify-center"
+        disabled={!canPreview}
+        onClick={() => {
+          if (canPreview) {
+            setShowPreview((prev) => !prev);
+          }
+        }}
+        className={`
+          inline-flex items-center gap-2 px-4 py-2.5 rounded-lg
+          border text-sm font-medium transition w-full justify-center
+          ${
+            canPreview
+              ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+              : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+          }
+        `}
       >
         <FileText className="w-4 h-4" />
-        {showPreview ? 'Sembunyikan Preview Surat' : 'Lihat Preview Surat'}
+
+        {canPreview
+          ? (showPreview
+              ? "Sembunyikan Preview Surat"
+              : "Lihat Preview Surat")
+          : "Preview tersedia setelah disetujui Kantor Desa"}
       </button>
 
       {showPreview && (

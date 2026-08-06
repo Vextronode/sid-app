@@ -40,35 +40,31 @@ class OfficialService
             ->firstOrFail();
     }
 
-    public function resolveNextOfficial(
-        Official $official
-    ): ?Official {
+public function resolveNextOfficials(
+    Official $official
+) {
 
-        return match ($official->position) {
+    return match ($official->position) {
 
-            'rt' => Official::where('rw_id', $official->rw_id)
-                ->where('position', 'rw')
-                ->where('is_active', true)
-                ->first(),
+        'rt' => Official::where('rw_id', $official->rw_id)
+            ->where('position', 'rw')
+            ->where('is_active', true)
+            ->get(),
 
-            'rw' => Official::where('hamlet_id', $official->hamlet_id)
-                ->where('position', 'kadus')
-                ->where('is_active', true)
-                ->first(),
 
-            'kadus' => Official::where('position', 'kasi_pelayanan')
-                ->where('village_id', $official->village_id)
-                ->where('is_active', true)
-                ->first(),
+        'rw' => Official::whereIn('position', [
+                'kasi_pelayanan',
+                'kaur_tu_umum',
+                'petugas_desa'
+            ])
+            ->where('village_id', $official->village_id)
+            ->where('is_active', true)
+            ->get(),
 
-            'kasi_pelayanan' => Official::where('position', 'kaur_tu_umum')
-                ->where('village_id', $official->village_id)
-                ->where('is_active', true)
-                ->first(),
 
-            default => null,
-        };
-    }
+        default => collect(),
+    };
+}
 
     public function resolveCitizenUser(
         Letter $letter

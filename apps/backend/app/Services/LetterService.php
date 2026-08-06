@@ -10,6 +10,7 @@ use App\Services\OfficialService;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use App\Notifications\LetterStatusNotification;
 
 class LetterService
 {
@@ -79,9 +80,12 @@ class LetterService
 
             ]);
 
-            $this->createFirstApproval($letter);
-            
-            return $letter;
+        $this->createFirstApproval($letter);
+        
+
+        $this->notifyRt($letter);
+
+        return $letter;
 
         });
     }
@@ -109,7 +113,6 @@ class LetterService
 
                 // menunggu verifikasi petugas
                 // status tetap pending
-
                 break;
 
 
@@ -148,6 +151,25 @@ class LetterService
             'deadline_at' => now()->addDays(3),
         ]);
     }
+
+    private function notifyRt(Letter $letter): void
+{
+    $official = $this->officialService
+        ->resolveRtForCitizen($letter->citizen);
+
+    if ($official?->user) {
+
+        $official->user->notify(
+            new LetterStatusNotification(
+                $letter,
+                'Permohonan Surat Baru',
+                'Ada permohonan surat baru yang menunggu verifikasi RT.',
+                'pending'
+            )
+        );
+
+    }
+}
 
     public function getScopedLetters(
         User $user,
