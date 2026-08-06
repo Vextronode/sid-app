@@ -1,9 +1,6 @@
+
 // ==========================================
 // WargaLayout.jsx
-// Navbar sekarang: Bell (notifikasi), Pusat Bantuan (popup info), dan
-// Settings (dropdown berisi Profil + Keluar). Tombol Keluar dipindah
-// ke dalam dropdown Settings, tidak lagi tampil langsung di navbar.
-// ==========================================
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,6 +11,7 @@ import { FooterDesa } from './FooterDesa';
 import { WARGA_MOBILE_LINKS } from '@/lib/constants/navigation';
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover';
 import HelpCenterModal from '@/features/warga-help/components/HelpCenterModal';
+
 
 export function WargaLayout({ children }) {
   const { user, logout } = useAuth();
@@ -30,7 +28,7 @@ export function WargaLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-50 relative pb-16 md:pb-0">
-      <nav className="bg-white shadow-sm py-4 px-6 flex items-center justify-between relative">
+      <nav className="bg-white shadow-sm py-4 px-6 flex items-center justify-between relative z-10">
         <Link to="/daftar-surat" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
             <User size={16} className="text-gray-400" />
@@ -81,7 +79,7 @@ export function WargaLayout({ children }) {
         <NotificationPopover open={notifOpen} onClose={() => setNotifOpen(false)} />
       </nav>
 
-      <main>{children}</main>
+      <main className="relative z-10">{children}</main>
 
       <FooterDesa />
       <MobileBottomNav links={WARGA_MOBILE_LINKS} />

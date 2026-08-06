@@ -1,0 +1,87 @@
+// ==========================================
+// DaftarSuratSayaPage.jsx
+// Tabel daftar surat, difilter sesuai query param status. Dibuka dari
+// tombol Total Pengajuan / Disetujui / Ditolak di halaman Surat.
+// ==========================================
+
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { WargaLayout } from '@/components/layout/WargaLayout';
+import { useLetters } from '@/features/surat/hooks/useLetters';
+
+const STATUS_LABEL = {
+  pending: { label: 'MENUNGGU', className: 'bg-gray-100 text-gray-500' },
+  rt_approved: { label: 'DIPROSES RW', className: 'bg-blue-100 text-blue-700' },
+  rt_rejected: { label: 'DITOLAK RT', className: 'bg-red-100 text-red-600' },
+  rw_approved: { label: 'DISETUJUI', className: 'bg-green-100 text-green-700' },
+  rw_rejected: { label: 'DITOLAK RW', className: 'bg-red-100 text-red-600' },
+};
+
+const PAGE_TITLE = {
+  '': 'Semua Permohonan',
+  rw_approved: 'Permohonan Disetujui',
+  ditolak: 'Permohonan Ditolak',
+};
+
+export default function DaftarSuratSayaPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const filterStatus = searchParams.get('status') ?? '';
+  const { letters, loading } = useLetters();
+
+  const filtered = letters.filter((item) => {
+    if (!filterStatus) return true;
+    if (filterStatus === 'ditolak') return item.status?.endsWith('_rejected');
+    return item.status === filterStatus;
+  });
+
+  return (
+    <WargaLayout>
+      <div className="px-4 py-5 max-w-3xl mx-auto">
+        <button onClick={() => navigate('/jenis-surat')} className="flex items-center gap-1 text-sm text-green-600 mb-4 hover:underline">
+          <ArrowLeft size={16} /> Kembali
+        </button>
+
+        <h1 className="text-2xl font-bold text-gray-800 mb-1">{PAGE_TITLE[filterStatus] ?? 'Daftar Permohonan'}</h1>
+        <p className="text-sm text-gray-500 mb-6">Daftar surat yang pernah Anda ajukan</p>
+
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          {loading ? (
+            <p className="text-center text-gray-400 text-sm py-8">Memuat data surat...</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-center text-gray-400 text-sm py-8">Belum ada surat pada kategori ini.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
+                  <th className="py-3 px-4 font-semibold">Jenis Surat</th>
+                  <th className="py-3 px-4 font-semibold">Tanggal</th>
+                  <th className="py-3 px-4 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((item) => {
+                  const badge = STATUS_LABEL[item.status] ?? { label: item.status, className: 'bg-gray-100 text-gray-500' };
+                  return (
+                    <tr key={item.id} className="border-b last:border-0">
+                      <td className="py-3 px-4">
+                        <p className="font-medium text-gray-800">{item.letter_type?.name ?? '-'}</p>
+                        <p className="text-[10px] text-gray-400">#{item.letter_number ?? `SKD-${item.id}`}</p>
+                      </td>
+                      <td className="py-3 px-4 text-gray-500">
+                        {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </WargaLayout>
+  );
+}

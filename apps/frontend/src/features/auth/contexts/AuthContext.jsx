@@ -23,7 +23,7 @@ const DUMMY_USER = {
   name: 'Budi Santoso',
   email: 'rt@example.com',
   nik: '3201010101010008',
-  role: 'warga',
+  role: 'rw',
   wilayah_kode: '001',
   wilayah_label: 'RT 001, RW001 - Desa Cibenda',
   address: 'Kp. Cibenda RT 001/RW 001',
