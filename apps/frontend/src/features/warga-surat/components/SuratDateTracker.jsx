@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable no-unused-vars */
 // ==========================================
 // SuratDateTracker.jsx
@@ -174,13 +175,9 @@ export default function SuratDateTracker({ letters, loading }) {
   const activeSurat = filteredLetters[slideIndex];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b flex items-center justify-between">
-        <h2 className="font-bold text-gray-800">Status Permohonan</h2>
-      </div>
-
-      {/* Bar pilih tanggal, ala sketsa */}
-      <div className="px-6 pt-4">
+    <div>
+       {/* Bar pilih tanggal, ala sketsa - tanpa card pembungkus */}
+       <div>
         <button
           onClick={openCalendar}
           className="w-full flex items-center justify-between border rounded-full px-4 py-2.5 text-sm text-gray-600 hover:border-green-400"
@@ -198,7 +195,7 @@ export default function SuratDateTracker({ letters, loading }) {
         />
       </div>
 
-      <div className="p-6">
+      <div className="pt-4">
         {loading ? (
           <p className="text-center text-gray-400 text-sm py-6">Memuat data surat...</p>
         ) : !selectedDate ? (

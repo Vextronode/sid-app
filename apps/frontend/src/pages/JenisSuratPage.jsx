@@ -1,150 +1,91 @@
 // ==========================================
 // JenisSuratPage.jsx
-// Sekarang jadi halaman ringkasan status surat: 4 tombol dalam grid
-// 2x2 (Total Pengajuan / Disetujui / Ditolak / Status Permohonan).
-// Klik salah satu tombol -> filter daftar surat di bawahnya sesuai kategori.
+// 4 kotak di atas: Total/Disetujui/Ditolak (bisa diklik, pindah halaman),
+// Status Permohonan (cuma tampilan, TIDAK bisa diklik). Di bawahnya,
+// LANGSUNG ada tracker (pilih tanggal + alur Submit-RT-RW-Kantor Desa)
+// di halaman yang SAMA, tidak pindah ke halaman lain.
 // ==========================================
 
-import { useState, useMemo } from 'react';
-import { FolderOpen, CheckCircle2, XCircle, ListChecks } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { FileText, CheckCircle2, XCircle, ListChecks } from 'lucide-react';
 import { WargaLayout } from '@/components/layout/WargaLayout';
 import { useLetters } from '@/features/surat/hooks/useLetters';
-import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal';
-
-const STATUS_LABEL = {
-  pending: { label: 'MENUNGGU', className: 'bg-gray-100 text-gray-500' },
-  rt_approved: { label: 'DIPROSES RW', className: 'bg-blue-100 text-blue-700' },
-  rt_rejected: { label: 'DITOLAK RT', className: 'bg-red-100 text-red-600' },
-  rw_approved: { label: 'DIPROSES Operator', className: 'bg-green-100 text-green-700' },
-  rw_rejected: { label: 'DITOLAK RW', className: 'bg-red-100 text-red-600' },
-  kasi_approved: { label: 'DISETUJUI', className: 'bg-green-100 text-green-700' },
-};
-
-const FILTERS = {
-  total: { label: 'Total Pengajuan', match: () => true },
-  disetujui: { label: 'Disetujui', match: (s) => s.status === 'rw_approved' },
-  ditolak: { label: 'Ditolak', match: (s) => s.status?.endsWith('_rejected') },
-  status: { label: 'Status Permohonan', match: () => true }, // semua, sekaligus tampilkan status masing-masing
-};
+import SuratDateTracker from '@/features/warga-surat/components/SuratDateTracker';
 
 export default function JenisSuratPage() {
+  const navigate = useNavigate();
   const { letters, loading } = useLetters();
-  const [activeFilter, setActiveFilter] = useState('total');
-  const [selectedSurat, setSelectedSurat] = useState(null);
 
-  const stats = useMemo(() => {
-    const total = letters.length;
-    const disetujui = letters.filter((s) => s.status === 'rw_approved').length;
-    const ditolak = letters.filter((s) => s.status?.endsWith('_rejected')).length;
-    return { total, disetujui, ditolak };
-  }, [letters]);
-
-  const filteredLetters = useMemo(() => {
-    const filterFn = FILTERS[activeFilter]?.match ?? (() => true);
-    return letters.filter(filterFn);
-  }, [letters, activeFilter]);
-
-  const buttons = [
-    { key: 'total', label: 'Total Pengajuan', value: stats.total, icon: FolderOpen, color: 'text-gray-600 bg-gray-100' },
-    { key: 'disetujui', label: 'Permohonan Disetujui', value: stats.disetujui, icon: CheckCircle2, color: 'text-green-600 bg-green-100' },
-    { key: 'ditolak', label: 'Permohonan Ditolak', value: stats.ditolak, icon: XCircle, color: 'text-red-600 bg-red-100' },
-    { key: 'status', label: 'Status Permohonan', value: stats.total, icon: ListChecks, color: 'text-blue-600 bg-blue-100' },
-  ];
+  const total = letters.length;
+  const disetujui = letters.filter((s) => s.status === 'rw_approved').length;
+  const ditolak = letters.filter((s) => s.status?.endsWith('_rejected')).length;
+  const menunggu = letters.filter((s) => !s.status?.endsWith('_rejected') && s.status !== 'rw_approved').length;
 
   return (
     <WargaLayout>
-      <div className="px-4 py-6 max-w-3xl mx-auto">
+      <div className="px-4 py-5 pb-8 max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-1">Surat Saya</h1>
         <p className="text-sm text-gray-500 mb-6">Pantau semua permohonan surat yang pernah Anda ajukan.</p>
 
-        {/* Grid 2x2 tombol */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          {buttons.map((btn) => {
-            const Icon = btn.icon;
-            const isActive = activeFilter === btn.key;
-            return (
-              <button
-                key={btn.key}
-                onClick={() => setActiveFilter(btn.key)}
-                className={`bg-white rounded-2xl shadow-sm p-5 text-left transition-all ${
-                  isActive ? 'ring-2 ring-green-500' : 'hover:shadow-md'
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${btn.color}`}>
-                  <Icon size={20} />
-                </div>
-                <p className="text-xs text-gray-400 mb-1">{btn.label}</p>
-                {btn.value !== '' && <p className="text-2xl font-bold text-gray-800">{btn.value}</p>}
-              </button>
-            );
-          })}
-        </div>
+          {/* Bisa diklik -> pindah halaman */}
+          <button
+            type="button"
+            onClick={() => navigate('/daftar-surat-saya')}
+            className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between text-left hover:shadow-md transition-shadow"
+          >
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase mb-1">Total Pengajuan</p>
+              <p className="text-3xl font-bold text-gray-800">{loading ? '-' : total}</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500">
+              <FileText size={20} />
+            </div>
+          </button>
 
-        {/* Daftar surat sesuai filter aktif */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b">
-            <p className="text-sm font-semibold text-gray-700">{FILTERS[activeFilter]?.label}</p>
+          <button
+            type="button"
+            onClick={() => navigate('/daftar-surat-saya?status=rw_approved')}
+            className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between text-left hover:shadow-md transition-shadow"
+          >
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase mb-1">Permohonan Disetujui</p>
+              <p className="text-3xl font-bold text-green-600">{loading ? '-' : disetujui}</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+              <CheckCircle2 size={20} />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/daftar-surat-saya?status=ditolak')}
+            className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between text-left hover:shadow-md transition-shadow"
+          >
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase mb-1">Permohonan Ditolak</p>
+              <p className="text-3xl font-bold text-red-500">{loading ? '-' : ditolak}</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-red-100 flex items-center justify-center text-red-500">
+              <XCircle size={20} />
+            </div>
+          </button>
+
+          {/* TIDAK bisa diklik, cuma tampilan biasa (div, bukan button) */}
+          <div className="bg-green-600 rounded-2xl shadow-sm p-5 flex items-center justify-between text-white">
+            <div>
+              <p className="text-[10px] uppercase mb-1 opacity-90">Sedang Diproses</p>
+              <p className="text-lg font-bold">Status Permohonan</p>
+              <p className="text-2xl font-bold mt-1">{loading ? '-' : menunggu}</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
+              <ListChecks size={20} />
+            </div>
           </div>
-
-          {loading ? (
-            <p className="text-center text-gray-400 text-sm py-8">Memuat data surat...</p>
-          ) : filteredLetters.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm py-8">Belum ada surat pada kategori ini.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                  <th className="py-3 px-4 font-semibold text-">Jenis Surat</th>
-                  <th className="py-3 px-4 font-semibold text-center">Tanggal</th>
-                  <th className="py-3 px-4 font-semibold text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredLetters.map((item) => {
-                  const badge = STATUS_LABEL[item.status] ?? { label: item.status, className: 'bg-gray-100 text-gray-500' };
-                  return (
-                    <tr
-                      key={item.id}
-                      className="border-b last:border-0 cursor-pointer hover:bg-gray-50 transition-colors"
-                      onClick={() => setSelectedSurat({
-                        id: item.id,
-                        pemohon: item.applicant_name ?? item.user?.name ?? '-',
-                        nik: item.applicant_nik ?? '-',
-                        alamat: item.applicant_address ?? '-',
-                        jenis: item.letter_type?.code ?? '-',
-                        keperluan: item.purpose ?? '-',
-                        tanggal: item.submitted_at
-                          ? new Date(item.submitted_at).toLocaleDateString('id-ID')
-                          : item.created_at
-                            ? new Date(item.created_at).toLocaleDateString('id-ID')
-                            : '-',
-                        status: item.status,
-                        noSurat: item.letter_number ?? '-',
-                        processed_at: item.processed_at,
-                      })}
-                    >
-                      <td className="py-3 px-4">
-                        <p className="font-medium text-gray-800">{item.letter_type?.name ?? '-'}</p>
-                        <p className="text-[10px] text-gray-400">#{item.letter_number ?? `SKD-${item.id}`}</p>
-                      </td>
-                      <td className="py-3 px-4 text-gray-500 text-center">
-                        {item.processed_at ? new Date(item.processed_at).toLocaleDateString('id-ID') : '-'}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
         </div>
 
-        {/* Detail Modal + Preview PDF */}
-        {selectedSurat && (
-          <DetailSuratModal data={selectedSurat} onClose={() => setSelectedSurat(null)} />
-        )}
+        {/* Tracker langsung di halaman yang sama, di bawah 4 kotak */}
+        <SuratDateTracker letters={letters} loading={loading} />
       </div>
     </WargaLayout>
   );

@@ -1,5 +1,5 @@
-/* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
+
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/features/auth/contexts/AuthContext";
 
@@ -17,7 +17,8 @@ import JenisSuratPage from "@/pages/JenisSuratPage";
 import ProfilePage from "@/pages/ProfilePage";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { OperatorDesaLayout } from "@/components/layout/OperatorDesaLayout";
-import RiwayatSuratPage from "@/pages/RiwayatSuratPage";
+import DaftarSuratSayaPage from "@/pages/DaftarSuratSayaPage";
+
 
 // RT & RW — approver (RT tahap 1, RW tahap final)
 import RTDashboardPage from "@/pages/admin/RTDashboardPage";
@@ -146,13 +147,14 @@ export default function App() {
 />
 
 <Route
-  path="/riwayat-surat"
-  element={
-    <ProtectedRoute allowedRoles={["warga"]}>
-      <RiwayatSuratPage />
-    </ProtectedRoute>
-  }
-/>
+   path="/daftar-surat-saya"
+   element={
+     <ProtectedRoute allowedRoles={["warga"]}>
+       <DaftarSuratSayaPage />
+     </ProtectedRoute>
+   }
+ />
+
 
           {/* ===== RT — approve tahap 1 ===== */}
           <Route

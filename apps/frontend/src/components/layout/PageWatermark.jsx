@@ -15,7 +15,7 @@ export function PageWatermark() {
       <img
         src="/assets/watermark-logo.jpg"
         alt=""
-        className="w-64 md:w-96 opacity-[0.06] object-contain"
+        className="w-64 md:w-96 opacity-100 object-contain border-4 border-red-500"
       />
     </div>
   );

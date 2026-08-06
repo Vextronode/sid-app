@@ -1,9 +1,6 @@
+
 // ==========================================
 // WargaLayout.jsx
-// Navbar sekarang: Bell (notifikasi), Pusat Bantuan (popup info), dan
-// Settings (dropdown berisi Profil + Keluar). Tombol Keluar dipindah
-// ke dalam dropdown Settings, tidak lagi tampil langsung di navbar.
-// ==========================================
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,6 +11,7 @@ import { FooterDesa } from './FooterDesa';
 import { WARGA_MOBILE_LINKS } from '@/lib/constants/navigation';
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover';
 import HelpCenterModal from '@/features/warga-help/components/HelpCenterModal';
+
 
 export function WargaLayout({ children }) {
   const { user, logout } = useAuth();
@@ -30,8 +28,8 @@ export function WargaLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-50 relative pb-16 md:pb-0">
-      <nav className="bg-white shadow-sm h-16 px-6 relative">
-        <Link to="/daftar-surat" className="flex items-center gap-3 h-full">
+      <nav className="bg-white shadow-sm py-4 px-6 flex items-center justify-between relative z-10">
+        <Link to="/daftar-surat" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
             <User size={16} className="text-gray-400" />
           </div>
@@ -41,17 +39,17 @@ export function WargaLayout({ children }) {
           </div>
         </Link>
 
-        <div className="flex items-center absolute right-6 top-1/2 -translate-y-1/2 ">
-          <button onClick={() => setNotifOpen((v) => !v)} className="w-9 h-9 flex items-center justify-center text-green-600 hover:text-green-700" title="Notifikasi">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setNotifOpen((v) => !v)} className="text-gray-500 hover:text-gray-700" title="Notifikasi">
             <Bell size={20} />
           </button>
 
-          <button onClick={() => setHelpOpen(true)} className="w-9 h-9 flex items-center justify-center text-green-600 hover:text-green-700" title="Pusat Bantuan">
+          <button onClick={() => setHelpOpen(true)} className="text-gray-500 hover:text-gray-700" title="Pusat Bantuan">
             <HelpCircle size={20} />
           </button>
 
           <div className="relative">
-            <button onClick={() => setSettingsOpen((v) => !v)} className="w-9 h-9 flex items-center justify-center text-green-600 hover:text-green-700" title="Pengaturan">
+            <button onClick={() => setSettingsOpen((v) => !v)} className="text-gray-500 hover:text-gray-700" title="Pengaturan">
               <Settings size={20} />
             </button>
 
@@ -81,7 +79,7 @@ export function WargaLayout({ children }) {
         <NotificationPopover open={notifOpen} onClose={() => setNotifOpen(false)} />
       </nav>
 
-      <main>{children}</main>
+      <main className="relative z-10">{children}</main>
 
       <FooterDesa />
       <MobileBottomNav links={WARGA_MOBILE_LINKS} />
