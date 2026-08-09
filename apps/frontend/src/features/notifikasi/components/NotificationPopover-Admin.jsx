@@ -184,7 +184,9 @@ function NotifItem({ data, onRead,user }) {
         </div>
 
 
-
+          <p className="text-xs text-green-700 font-medium truncate">
+            Dari: {data.applicant}
+          </p>
         <p className="text-xs text-gray-500 mt-1">
           {data.message}
         </p>

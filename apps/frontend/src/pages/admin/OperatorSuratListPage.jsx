@@ -87,22 +87,23 @@ const ROLE_ENDPOINT = {
 
 const roleKey = ROLE_ENDPOINT[user?.role] ?? user?.role;
 
-useEffect(() => {
+const loadLetters = async () => {
   if (!roleKey) return;
 
   setLoading(true);
 
-  getSuratList(roleKey)
-    .then((res) => {
-      setLetters(res.data);
-    })
-    .catch((err) => {
+  try {
+    const res = await getSuratList(roleKey);
+    setLetters(res.data);
+  } catch (err) {
+    console.error(err.response?.data ?? err);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  console.error(err.response?.data ?? err);
-    })
-
-    .finally(() => setLoading(false));
-
+useEffect(() => {
+  loadLetters();
 }, [roleKey]);
 
   const filtered = useMemo(() => {
@@ -214,30 +215,30 @@ result.sort((a, b) => {
         <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Pencarian Cepat</p>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Pencarian Cepat</p>
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
                   placeholder="Nomor surat atau nama pemohon..."
-                  className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
+                  className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
                 />
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Jenis Surat</p>
-              <select value={filterJenis} onChange={(e) => { setFilterJenis(e.target.value); setCurrentPage(1); }} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500" > <option value="">Semua Jenis</option> {jenisOptions.map((j) => ( <option key={j} value={j}>{j}</option> ))} </select>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Jenis Surat</p>
+              <select value={filterJenis} onChange={(e) => { setFilterJenis(e.target.value); setCurrentPage(1); }} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-green-500" > <option value="">Semua Jenis</option> {jenisOptions.map((j) => ( <option key={j} value={j}>{j}</option> ))} </select>
             </div>
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Status</p>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Status</p>
               <select
                 value={filterStatus}
                 onChange={(e) => {
                   setFilterStatus(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
+                className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-green-500"
               >
                 <option value="">Semua Status</option>
                 <option value="verification">Verifikasi</option>
@@ -249,18 +250,18 @@ result.sort((a, b) => {
         </div>
 
         {/* Tabel */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden text-gray-400">
+          <table className="w-full text-sm text-gray-400">
             <thead>
               <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                <th className="py-3 px-5 font-semibold text-">No. Surat</th>
-                <th className="py-3 px-5 font-semibold  text-center">Pemohon</th>
-                <th className="py-3 px-5 font-semibold text-center">Jenis</th>
-                <th className="py-3 px-5 font-semibold text-center">Tanggal</th>
-                <th className="py-3 px-5 font-semibold text-center">
+                <th className="py-3 px-5 font-semibold text- text-gray-500">No. Surat</th>
+                <th className="py-3 px-5 font-semibold  text-center text-gray-500">Pemohon</th>
+                <th className="py-3 px-5 font-semibold text-center text-gray-500">Jenis</th>
+                <th className="py-3 px-5 font-semibold text-center text-gray-500">Tanggal</th>
+                <th className="py-3 px-5 font-semibold text-center text-gray-500">
                   RT / RW
                 </th>
-                <th className="py-3 px-5 font-semibold  text-center">Aksi</th>
+                <th className="py-3 px-5 font-semibold  text-center text-gray-500">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -272,21 +273,21 @@ result.sort((a, b) => {
                 paginated.map((s) => {
                   const badge = STATUS_LABEL[s.status] ?? { label: s.status, className: 'bg-gray-50 text-gray-500' };
                   return (
-                    <tr key={s.id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="py-4 px-5 font-semibold text-gray-800  text-">#{s.letter_number ?? '-'}</td>
+                    <tr key={s.id} className="border-b last:border-0 hover:bg-gray-50 text-gray-400">
+                      <td className="py-4 px-5 font-semibold text-gray-400 ">#{s.letter_number ?? '-'}</td>
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-800  text-center">{s.applicant_name}</span>
+                          <span className="font-medium text-gray-400  text-center ">{s.applicant_name}</span>
                         </div>
                       </td>
-                      <td className="py-4 px-5 text-gray-600  text-center">{s.letter_type?.name ?? '-'}</td>
-                      <td className="py-4 px-5 text-gray-500  text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
+                      <td className="py-4 px-5 text-gray-400  text-center">{s.letter_type?.name ?? '-'}</td>
+                      <td className="py-4 px-5 text-gray-400  text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
                       <td className="py-4 px-5">
                         <div className="flex items-center justify-center gap-6">
 
                           {/* RT */}
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-600">
+                            <span className="text-xs font-medium text-gray-400">
                               RT
                             </span>
 
@@ -310,7 +311,7 @@ result.sort((a, b) => {
 
                           {/* RW */}
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-600">
+                            <span className="text-xs font-medium text-gray-400">
                               RW
                             </span>
 
@@ -339,7 +340,7 @@ result.sort((a, b) => {
                           <button
                             onClick={() => setPreviewSurat(s)}
                             className="w-9 h-9 rounded-lg border  
-                                      text-white-600 hover:bg-blue-100 transition"
+                                      text-gray-800 hover:bg-blue-100 transition"
                             title="Detail Surat"
                           >
                             <Eye size={17} className="mx-auto" />
@@ -426,10 +427,13 @@ result.sort((a, b) => {
       )}
 
       {selectedSurat && (
-          <OperatorSuratActionModal
-              surat={selectedSurat}
-              onClose={() => setSelectedSurat(null)}
-          />
+        <OperatorSuratActionModal
+          surat={selectedSurat}
+          onClose={() => {
+            setSelectedSurat(null);
+            loadLetters();
+          }}
+        />
       )}
     </div>
   );

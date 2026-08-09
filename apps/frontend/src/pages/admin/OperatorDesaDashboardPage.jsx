@@ -109,7 +109,7 @@ const stats = useMemo(() => {
         <div className="grid grid-cols-4 gap-4  mb-6">
           <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
             <div>
-              <p className="text-[10px] text-gray-400 uppercase mb-1">Permohonan</p>
+              <p className="text-[10px] text-gray-400 uppercase mb-1">Total Permohonan</p>
               <p className="text-3xl font-bold text-yellow-600">{loading ? '-' : stats.permohonan}</p>
             </div>
             <div className="w-11 h-11 rounded-xl bg-yellow-100 flex items-center justify-center text-yellow-600">

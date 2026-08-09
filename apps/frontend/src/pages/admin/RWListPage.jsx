@@ -24,7 +24,15 @@ export default function RWListPage() {
   const initialStatus = searchParams.get('status') ?? '';
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data, loading, search, setSearch, filterStatus, setFilterStatus } = useSuratList({ initialStatus });
+const {
+  data,
+  loading,
+  search,
+  setSearch,
+  filterStatus,
+  setFilterStatus,
+  refresh,
+} = useSuratList({ initialStatus });
   const { approve, reject } = useApprovalAction();
 
   useEffect(() => setCurrentPage(1), [search, filterStatus]);
@@ -38,15 +46,33 @@ export default function RWListPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
 
-  const handleApprove = async () => {
+const handleApprove = async () => {
+  try {
     await approve(selectedId);
-    setSelectedId(null);
-  };
 
-  const handleReject = async (alasan) => {
-    await reject(selectedId, alasan);
+    // Ambil data terbaru setelah approve
+    await refresh();
+
     setSelectedId(null);
-  };
+    setIsReadOnly(false);
+  } catch (error) {
+    console.error("Gagal approve surat:", error);
+  }
+};
+
+const handleReject = async (alasan) => {
+  try {
+    await reject(selectedId, alasan);
+
+    // Ambil data terbaru setelah reject
+    await refresh();
+
+    setSelectedId(null);
+    setIsReadOnly(false);
+  } catch (error) {
+    console.error("Gagal reject surat:", error);
+  }
+};
 
   return (
     <>
@@ -58,20 +84,20 @@ export default function RWListPage() {
         <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Pencarian Cepat</p>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Pencarian Cepat</p>
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   defaultValue={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Nomor surat atau nama pemohon..."
-                  className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
+                  className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
                 />
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Status</p>
-              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500">
+              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Status</p>
+              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-green-500">
                 <option value="">Semua Status</option>
                 <option value="rt_approved">Menunggu</option>
                 <option value="rw_approved">Disetujui</option>
@@ -81,16 +107,16 @@ export default function RWListPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden text-gray-400">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                <th className="py-3 px-5 font-semibold">No. Surat</th>
-                <th className="py-3 px-5 font-semibold text-center">Pemohon</th>
-                <th className="py-3 px-5 font-semibold text-center">Jenis</th>
-                <th className="py-3 px-5 font-semibold text-center">Tanggal</th>
-                <th className="py-3 px-5 font-semibold text-center">Status</th>
-                <th className="py-3 px-5 font-semibold text-center">Aksi</th>
+                <th className="py-3 px-5 font-semibold text-gray-500">No. Surat</th>
+                <th className="py-3 px-5 font-semibold text-center text-gray-500">Pemohon</th>
+                <th className="py-3 px-5 font-semibold text-center text-gray-500">Jenis</th>
+                <th className="py-3 px-5 font-semibold text-center text-gray-500">Tanggal</th>
+                <th className="py-3 px-5 font-semibold text-center text-gray-500">Status</th>
+                <th className="py-3 px-5 font-semibold text-center text-gray-500">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -100,14 +126,14 @@ export default function RWListPage() {
                 <tr><td colSpan={6} className="text-center text-gray-400 py-10">Belum ada surat.</td></tr>
               ) : (
                 paginatedData.map((s) => (
-                  <tr key={s.id} className="border-b last:border-0 hover:bg-gray-50">
-                    <td className="py-4 px-5 font-semibold text-gray-800">#{s.letter_number ?? '-'}</td>
-                    <td className="py-4 px-5 item-center text-center ">
+                  <tr key={s.id} className="border-b last:border-0 hover:bg-gray-50 text-gray-400">
+                    <td className="py-4 px-5 font-semibold text-gray-400">#{s.letter_number ?? '-'}</td>
+                    <td className="py-4 px-5 item-center text-center text-gray-400 ">
                       {s.applicant_name}
                       
                     </td>
-                    <td className="py-4 px-5 text-gray-600 text-center">{s.letter_type?.name ?? '-'}</td>
-                    <td className="py-4 px-5 text-gray-500 text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
+                    <td className="py-4 px-5 text-gray-400 text-center">{s.letter_type?.name ?? '-'}</td>
+                    <td className="py-4 px-5 text-gray-400 text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
                     <td className="py-4 px-5 text-center"><StatusBadgeRT status={s.status} /></td>
                     <td className="py-4 px-5 text-center">
                       <button
@@ -157,11 +183,11 @@ export default function RWListPage() {
               defaultValue={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama pemohon..."
-              className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500 bg-white"
+              className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500 bg-white"
             />
           </div>
 
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-full px-3 py-2 text-xs text-gray-600 bg-white mb-4">
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-full px-3 py-2 text-xs text-gray-400 bg-white mb-4  focus:border-green-500">
                 <option value="">Semua Status</option>
                 <option value="rt_approved">Menunggu</option>
                 <option value="rw_approved">Disetujui rw</option>
@@ -181,12 +207,12 @@ export default function RWListPage() {
                 <button
                   key={s.id}
                   onClick={() => { setSelectedId(s.id); setIsReadOnly(s.status !== 'rt_approved'); }}
-                  className="w-full grid grid-cols-4 items-center text-left px-4 py-3 border-b last:border-0 text-xs"
+                  className="w-full grid grid-cols-4 items-center text-left px-4 py-3 border-b last:border-0 text-xs text-gray-400"
                 >
-                  <span className="text-gray-500">{s.letter_number ?? '-'}</span>
-                  <span className="font-semibold text-gray-800 text-center">{s.applicant_name}</span>
-                  <span className="text-gray-600 text-center">{s.letter_type?.name ?? '-'}</span>
-                  <span className="text-gray-500 text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID') : '-'}</span>
+                  <span className="text-gray-400">{s.letter_number ?? '-'}</span>
+                  <span className="font-semibold text-gray-400 text-center">{s.applicant_name}</span>
+                  <span className="text-gray-400 text-center">{s.letter_type?.name ?? '-'}</span>
+                  <span className="text-gray-400 text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID') : '-'}</span>
                 </button>
               ))
             )}

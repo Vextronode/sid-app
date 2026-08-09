@@ -189,22 +189,35 @@ function SuratPreview({ suratId, status }) {
   );
 }
 
+
 export default function SuratDateTracker({ letters, loading }) {
   const [selectedDate, setSelectedDate] = useState('');
   const [slideIndex, setSlideIndex] = useState(0);
   const dateInputRef = useRef(null);
 
   const filteredLetters = useMemo(() => {
-    if (!selectedDate) return [];
+    // Tidak memilih tanggal = tampilkan SEMUA surat
+    if (!selectedDate) {
+      return letters;
+    }
+
+    // Memilih tanggal = filter surat berdasarkan tanggal pengajuan
     return letters.filter((item) => {
       const raw = item.submitted_at ?? item.created_at;
+
       if (!raw) return false;
+
       return new Date(raw).toISOString().slice(0, 10) === selectedDate;
     });
   }, [letters, selectedDate]);
 
   const handleDateChange = (e) => {
     setSelectedDate(e.target.value);
+    setSlideIndex(0);
+  };
+
+  const clearDateFilter = () => {
+    setSelectedDate('');
     setSlideIndex(0);
   };
 
@@ -215,17 +228,36 @@ export default function SuratDateTracker({ letters, loading }) {
   const activeSurat = filteredLetters[slideIndex];
 
   return (
-    <div>
-       {/* Bar pilih tanggal, ala sketsa - tanpa card pembungkus */}
-       <div>
+    <div className="pt-4">
+
+      {/* ==============================
+          FILTER KALENDER
+      ============================== */}
+      <div className="flex items-center gap-2 mb-4">
+
+        {/* Tombol kalender */}
         <button
+          type="button"
           onClick={openCalendar}
-          className="w-full flex items-center justify-between border rounded-full px-4 py-2.5 text-sm text-gray-600 hover:border-green-400"
+          className="flex-1 flex items-center justify-between
+            border rounded-full px-4 py-2.5
+            text-sm text-gray-600 bg-white
+            hover:border-green-400 transition"
         >
-          <span>{selectedDate ? new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Pilih tanggal pengajuan...'}</span>
+          <span>
+            {selectedDate
+              ? new Date(selectedDate).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })
+              : 'Semua tanggal'}
+          </span>
+
           <Calendar size={16} className="text-gray-400" />
         </button>
-        {/* input date asli disembunyikan visual, tapi tetap dipakai buat munculin kalender native */}
+
+        {/* Input date asli */}
         <input
           ref={dateInputRef}
           type="date"
@@ -233,60 +265,128 @@ export default function SuratDateTracker({ letters, loading }) {
           onChange={handleDateChange}
           className="absolute opacity-0 w-0 h-0 pointer-events-none"
         />
-      </div>
 
-      <div className="pt-4">
-        {loading ? (
-          <p className="text-center text-gray-400 text-sm py-6">Memuat data surat...</p>
-        ) : !selectedDate ? (
-          <p className="text-center text-gray-400 text-sm py-6">Pilih tanggal untuk melihat status pengajuan surat.</p>
-        ) : filteredLetters.length === 0 ? (
-          <p className="text-center text-gray-400 text-sm py-6">Belum ada surat pada tanggal ini.</p>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-2">
-              <button
-                onClick={() => setSlideIndex((i) => Math.max(0, i - 1))}
-                disabled={slideIndex === 0}
-                className="w-8 h-8 rounded-full border flex items-center justify-center text-gray-500 disabled:opacity-30"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <div className="text-center">
-                <p className="font-semibold text-gray-800 text-sm">{activeSurat?.letter_type?.name ?? '-'}</p>
-                <p className="text-[10px] text-gray-400">
-                  Surat {slideIndex + 1} dari {filteredLetters.length} · #{activeSurat?.letter_number ?? `SKD-${activeSurat?.id}`}
-                </p>
-              </div>
-              <button
-                onClick={() => setSlideIndex((i) => Math.min(filteredLetters.length - 1, i + 1))}
-                disabled={slideIndex === filteredLetters.length - 1}
-                className="w-8 h-8 rounded-full border flex items-center justify-center text-gray-500 disabled:opacity-30"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-
-            <TrackingStepper status={activeSurat?.status} />
-
-            {/* Titik indikator slide, kalau surat lebih dari 1 */}
-            {filteredLetters.length > 1 && (
-              <div className="flex justify-center gap-1.5 mt-2">
-                {filteredLetters.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSlideIndex(i)}
-                    className={`w-1.5 h-1.5 rounded-full ${i === slideIndex ? 'bg-green-600' : 'bg-gray-300'}`}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Preview PDF Surat */}
-            <SuratPreview suratId={activeSurat?.id} status={activeSurat?.status} />
-          </>
+        {/* Tombol reset */}
+        {selectedDate && (
+          <button
+            type="button"
+            onClick={clearDateFilter}
+            className="px-4 py-2.5
+              border rounded-full
+              text-xs font-medium
+              text-gray-500
+              bg-white
+              hover:bg-gray-50
+              whitespace-nowrap"
+          >
+            Semua
+          </button>
         )}
       </div>
+
+      {/* ==============================
+          DATA SURAT
+      ============================== */}
+      {loading ? (
+        <p className="text-center text-gray-400 text-sm py-6">
+          Memuat data surat...
+        </p>
+      ) : filteredLetters.length === 0 ? (
+        <p className="text-center text-gray-400 text-sm py-6">
+          {selectedDate
+            ? 'Belum ada surat pada tanggal ini.'
+            : 'Belum ada permohonan surat.'}
+        </p>
+      ) : (
+        <>
+          {/* ==============================
+              HEADER SURAT + SLIDER
+          ============================== */}
+          <div className="flex items-center justify-between mb-2">
+
+            <button
+              type="button"
+              onClick={() =>
+                setSlideIndex((i) => Math.max(0, i - 1))
+              }
+              disabled={slideIndex === 0}
+              className="w-8 h-8 rounded-full border
+                flex items-center justify-center
+                text-gray-500
+                disabled:opacity-30"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <div className="text-center">
+              <p className="font-semibold text-gray-800 text-sm">
+                {activeSurat?.letter_type?.name ?? '-'}
+              </p>
+
+              <p className="text-[10px] text-gray-400">
+                Surat {slideIndex + 1} dari {filteredLetters.length} · #
+                {activeSurat?.letter_number ??
+                  `SKD-${activeSurat?.id}`}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setSlideIndex((i) =>
+                  Math.min(
+                    filteredLetters.length - 1,
+                    i + 1
+                  )
+                )
+              }
+              disabled={
+                slideIndex === filteredLetters.length - 1
+              }
+              className="w-8 h-8 rounded-full border
+                flex items-center justify-center
+                text-gray-500
+                disabled:opacity-30"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* ==============================
+              TRACKING
+          ============================== */}
+          <TrackingStepper status={activeSurat?.status} />
+
+          {/* ==============================
+              DOT SLIDER
+          ============================== */}
+          {filteredLetters.length > 1 && (
+            <div className="flex justify-center gap-1.5 mt-2">
+              {filteredLetters.map((_, i) => (
+                <button
+                  type="button"
+                  key={i}
+                  onClick={() => setSlideIndex(i)}
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    i === slideIndex
+                      ? 'bg-green-600'
+                      : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* ==============================
+              PREVIEW PDF
+          ============================== */}
+          <SuratPreview
+            suratId={activeSurat?.id}
+            status={activeSurat?.status}
+          />
+        </>
+      )}
     </div>
   );
 }
+

@@ -64,13 +64,13 @@ export default function ManajemenUserPage() {
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="Cari nama atau email..."
-                className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
+                className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
               />
             </div>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="border rounded-full px-4 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
+              className="border rounded-full px-4 py-2.5 text-sm text-gray-400 outline-none focus:border-green-500"
             >
               <option value="">Semua Status</option>
               <option value="aktif">Aktif</option>
@@ -88,12 +88,12 @@ export default function ManajemenUserPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-gray-400 text-xs">
-                <th className="py-3 font-medium text-">Nama</th>
-                <th className="py-3 font-medium text-center">Email</th>
-                <th className="py-3 font-medium text-center">Jabatan</th>
-                <th className="py-3 font-medium text-center">Wilayah</th>
-                <th className="py-3 font-medium text-center">Status</th>
-                <th className="py-3 font-medium text-center">Aksi</th>
+                <th className="py-3 font-medium text- text-gray-500">Nama</th>
+                <th className="py-3 font-medium text-center text-gray-500">Email</th>
+                <th className="py-3 font-medium text-center text-gray-500">Jabatan</th>
+                <th className="py-3 font-medium text-center text-gray-500">Wilayah</th>
+                <th className="py-3 font-medium text-center text-gray-500">Status</th>
+                <th className="py-3 font-medium text-center text-gray-500">Aksi</th>
               </tr>
             </thead>
               <tbody>
@@ -107,13 +107,13 @@ export default function ManajemenUserPage() {
                 <tr><td colSpan={5} className="text-center text-gray-400 py-8">Belum ada data warga.</td></tr>
               ) : (
                 data.map((user) => (
-                  <tr key={user.id} className="border-b last:border-0">
-                    <td className="py-4 font-semibold text-gray-800 text-">{user.name}</td>
-                    <td className="py-4 text-gray-600 text-center">{user.email}</td>
+                  <tr key={user.id} className="border-b last:border-0 text-gray-400">
+                    <td className="py-4 font-semibold text-gray-400 text-">{user.name}</td>
+                    <td className="py-4 text-gray-400 text-center">{user.email}</td>
                     <td className="py-4 text-center">
-                      <span className="border rounded-full px-3 py-1 text-xs text-gray-600 uppercase">{user.role}</span>
+                      <span className="border rounded-full px-3 py-1 text-xs text-gray-400 uppercase">{user.role}</span>
                     </td>
-                    <td className="py-4 text-gray-600 text-center">RT {user.citizen?.rt?.number ?? '-'}
+                    <td className="py-4 text-gray-400 text-center">RT {user.citizen?.rt?.number ?? '-'}
 /
 RW {user.citizen?.rw?.number ?? '-'}</td>
                     <td className="py-4 text-center">
@@ -128,14 +128,14 @@ RW {user.citizen?.rw?.number ?? '-'}</td>
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => handleOpenEdit(user)}
-                          className="w-9 h-9 rounded-lg border flex items-center justify-center hover:bg-gray-100 text-gray-600"
+                          className="w-9 h-9 border border-amber-200 bg-amber-50 rounded-lg border flex items-center justify-center hover:bg-amber-100 text-amber-600"
                           title="Edit"
                         >
                           <SquarePen size={16} />
                         </button>
                         <button
                           onClick={() => toggleStatus(user.id)}
-                          className="w-9 h-9 rounded-lg border flex items-center justify-center hover:bg-gray-100 text-gray-600"
+                          className="w-9 h-9 rounded-lg border flex items-center justify-center hover:bg-blue-100 text-gray-600"
                           title={user.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                         >
                           {user.is_active ? <Eye size={16} /> : <EyeOff size={16} />}

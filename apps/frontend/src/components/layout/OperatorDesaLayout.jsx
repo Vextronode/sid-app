@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Search, Bell, Settings, LayoutGrid, FileText, Users, UserCog, Building2, Newspaper, Plus, HelpCircle, LogOut } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import NotificationPopover from '@/features/notifikasi/components/NotificationPopover';
+import NotificationPopover from '@/features/notifikasi/components/NotificationPopover-Admin';
 import useNotifications from "@/features/notifikasi/hooks/useNotifications";
 
 const MENU_ITEMS = [
@@ -79,7 +79,7 @@ export function OperatorDesaLayout({ children }) {
           <div className="relative">
             <Search
               size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
             />
 
             <input
@@ -90,18 +90,18 @@ export function OperatorDesaLayout({ children }) {
                 pl-9 pr-4 py-2
                 text-sm
                 bg-white
-                text-green-700
-                placeholder:text-green-500
+                text-green-600
+                placeholder:text-gray-400
                 border border-white
                 outline-none
                 focus:ring-2
                 focus:ring-green-300
-                focus:border-white
+                focus:border-green
               "
             />
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 ">
             
 <button
     onClick={() => setNotifOpen((prev) => !prev)}

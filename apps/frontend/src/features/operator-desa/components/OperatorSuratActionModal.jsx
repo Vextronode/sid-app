@@ -15,13 +15,14 @@ import { approveSurat } from "@/features/approval/api";
 export default function OperatorSuratActionModal({ surat, onClose }) {
   const [previewTemplate, setPreviewTemplate] = useState('wet');
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [confirmType, setConfirmType] = useState(null); // 'basah' | 'digital' | null
+  const [confirmType, setConfirmType] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  if (!surat) return null;
-
   useEffect(() => {
-    let url;
+    if (!surat) return;
+
+    let url = null;
+
     setPreviewUrl(null);
 
     previewSuratPDF(surat, previewTemplate)
@@ -29,7 +30,10 @@ export default function OperatorSuratActionModal({ surat, onClose }) {
         url = blobUrl;
         setPreviewUrl(blobUrl);
       })
-      .catch(console.error);
+      .catch((error) => {
+        console.error('Gagal preview PDF:', error);
+        setPreviewUrl(null);
+      });
 
     return () => {
       if (url) {
@@ -38,29 +42,47 @@ export default function OperatorSuratActionModal({ surat, onClose }) {
     };
   }, [surat, previewTemplate]);
 
+  if (!surat) return null;
+
   // Aksi cetak cuma boleh dilakukan kalau surat sudah lolos RT & RW
   const bisaCetak = surat.status === 'rw_approved';
 
-  const handleConfirmAction = async () => {
-    if (!confirmType) return;
-    setLoading(true);
-    try {
-      await approveSurat(
-        "kasi",
-        surat.id,
-        "approved"
-      );
+const handleConfirmAction = async () => {
+  if (!confirmType) return;
 
-      generateSuratPDF(surat, confirmType === 'digital' ? 'digital' : 'wet');
-      onClose();
-    } catch (err) {
-      console.error(err);
-      alert("Gagal menyelesaikan surat");
-    } finally {
-      setLoading(false);
-      setConfirmType(null);
-    }
-  };
+  setLoading(true);
+
+  try {
+    // 1. Approve surat
+    await approveSurat(
+      "kasi",
+      surat.id,
+      "approved"
+    );
+
+    // 2. Buka PDF
+    const template =
+      confirmType === 'digital'
+        ? 'digital'
+        : 'wet';
+
+    await generateSuratPDF(surat, template);
+
+    // 3. Tutup modal
+    onClose();
+
+  } catch (err) {
+    console.error("Gagal menyelesaikan surat:", err);
+
+    alert(
+      "Surat berhasil diproses, tetapi PDF gagal dibuka.\n\n" +
+      err.message
+    );
+  } finally {
+    setLoading(false);
+    setConfirmType(null);
+  }
+};
 
   return (
     <>
@@ -158,7 +180,7 @@ export default function OperatorSuratActionModal({ surat, onClose }) {
             </h3>
 
             <p className="text-sm text-gray-500 mb-6">
-              Surat ini akan disetujui, diarsipkan dengan status <b>Selesai (kasi_approved)</b>, dan file PDF akan diunduh secara otomatis.
+              Surat ini akan disetujui, diarsipkan dengan status <b>Selesai </b>dan file PDF akan diunduh secara otomatis.
             </p>
 
             <div className="flex justify-end gap-3">

@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { Bell, User, Settings, LogOut, UserCircle } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import NotificationPopover from '@/features/notifikasi/components/NotificationPopover';
+import NotificationPopover from '@/features/notifikasi/components/NotificationPopover-Admin';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import useNotifications from "@/features/notifikasi/hooks/useNotifications";
 

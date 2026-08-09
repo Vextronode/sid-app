@@ -7,40 +7,69 @@ import api from '@/lib/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
-// Download PDF dari backend
-export function generateSuratPDF(surat, template = 'wet') {
+// buka file PDF dari backend
+export async function generateSuratPDF(surat, template = 'wet') {
   const url = `${API_URL}/api/letters/${surat.id}/download?template=${template}`;
 
-  fetch(url, {
-    method: 'GET',
-    credentials: 'include', // Kirim cookies otomatis
-    headers: {
-      'Accept': 'application/pdf',
-    },
-  })
-    .then((response) => {
-      if (!response.ok) {
-        return response.text().then(text => {
-          console.error(`HTTP ${response.status}:`, text);
-          throw new Error(`${response.status} ${response.statusText}: ${text}`);
-        });
-      }
-      return response.blob();
-    })
-    .then((blob) => {
-      const blobUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `surat_${surat.letter_type?.name ?? 'surat'}_${(surat.applicant_name ?? 'pemohon').replace(/\s+/g, '_')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(blobUrl);
-    })
-    .catch((error) => {
-      console.error('Error downloading PDF:', error);
-      alert('Gagal mengunduh surat:\n' + error.message);
+  // Buka tab SEBELUM await agar tidak diblokir browser
+  const pdfTab = window.open('', '_blank');
+
+  if (!pdfTab) {
+    throw new Error(
+      'Popup diblokir browser. Silakan izinkan popup untuk website ini.'
+    );
+  }
+
+  try {
+    pdfTab.document.write(`
+      <html>
+        <head>
+          <title>Memproses Surat...</title>
+        </head>
+        <body style="
+          font-family: Arial, sans-serif;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          margin: 0;
+        ">
+          <p>Memproses surat...</p>
+        </body>
+      </html>
+    `);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/pdf',
+      },
     });
+
+    if (!response.ok) {
+      const text = await response.text();
+
+      throw new Error(
+        `${response.status} ${response.statusText}: ${text}`
+      );
+    }
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    pdfTab.location.href = blobUrl;
+
+    // Jangan revoke terlalu cepat
+    setTimeout(() => {
+      window.URL.revokeObjectURL(blobUrl);
+    }, 60000);
+
+    return true;
+  } catch (error) {
+    pdfTab.close();
+    throw error;
+  }
 }
 
 // Preview PDF di tab baru dari backend

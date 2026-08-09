@@ -54,13 +54,13 @@ export default function DataWargaPage() {
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="Cari Nama atau NIK..."
-                className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
+                className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
               />
             </div>
             <select
               value={filterWilayah}
               onChange={(e) => setFilterWilayah(e.target.value)}
-              className="border rounded-full px-4 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
+              className="border rounded-full px-4 py-2.5 text-sm text-gray-400 outline-none focus:border-green-500"
             >
              <option value="">Semua RT/RW</option>
 
@@ -84,10 +84,10 @@ export default function DataWargaPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-gray-400 text-xs">
-                <th className="py-3 font-medium text-">Nama</th>
-                <th className="py-3 font-medium text-center">NIK</th>
-                <th className="py-3 font-medium text-center">RT/RW</th>
-                <th className="py-3 font-medium text-center">Jenis Kelamin</th>
+                <th className="py-3 font-medium text- text-gray-500">Nama</th>
+                <th className="py-3 font-medium text-center text-gray-500">NIK</th>
+                <th className="py-3 font-medium text-center text-gray-500">RT/RW</th>
+                <th className="py-3 font-medium text-center text-gray-500">Jenis Kelamin</th>
               </tr>
             </thead>
             <tbody>
@@ -101,12 +101,16 @@ export default function DataWargaPage() {
                 <tr><td colSpan={5} className="text-center text-gray-400 py-8">Belum ada data warga.</td></tr>
               ) : (
                 data.map((warga) => (
-                  <tr key={warga.id} className="border-b last:border-0">
-                    <td className="py-4 font-semibold text-gray-800 text-">{warga.name}</td>
-                    <td className="py-4 text-gray-600 text-center">{warga.nik}</td>
-                    <td className="py-4 text-gray-600 text-center">RT {warga.rt?.number} / RW {warga.rw?.number}</td>
+                  <tr key={warga.id} className="border-b last:border-0 text-gray-400">
+                    <td className="py-4 font-semibold text-gray-400 text-">{warga.name}</td>
+                    <td className="py-4 text-gray-400 text-center">{warga.nik}</td>
+                    <td className="py-4 text-gray-400 text-center">RT {warga.rt?.number} / RW {warga.rw?.number}</td>
                     <td className="py-4 text-center">
-                      {warga.gender}
+                      {warga.gender === 'L'
+                        ? 'Laki-Laki'
+                        : warga.gender === 'P'
+                        ? 'Perempuan'
+                        : '-'}
                     </td>
 
                   </tr>

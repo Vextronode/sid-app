@@ -59,10 +59,10 @@ export default function RTDashboardPage() {
   const STAT_CARDS = [
     {
       key: 'permohonan',
-      label: 'Permohonan',
+      label: 'Menunggu',
       value: stats.permohonanBaru,
       icon: Mail,
-      color: 'text-green-600 bg-green-100',
+      color: 'text-yellow-600 bg-yellow-100',
       onClick: () => navigate('/admin/list-rt?status=pending'),
     },
     {

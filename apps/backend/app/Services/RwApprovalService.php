@@ -81,29 +81,11 @@ class RwApprovalService
                     'status' => $data['status'],
                 ]);
 
-            $letterNumber = null;
-            $expiresAt = null;
 
-            if ($data['status'] === 'approved') {
-
-                $letterNumber = sprintf(
-                    '%03d/%s/%d',
-                    $letter->id,
-                    strtoupper($letter->letterType->code),
-                    now()->year
-                );
-
-                if ($letter->letterType->validity_days) {
-                    $expiresAt = now()->addDays(
-                        $letter->letterType->validity_days
-                    );
-                }
-            }
 
             $letter->update([
                 'status'        => $newStatus,
-                'letter_number' => $letterNumber,
-                'expires_at'    => $expiresAt,
+
                 'notes'         => $data['notes'] ?? null,
                 'processed_at'  => now(),
             ]);
