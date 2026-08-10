@@ -91,6 +91,14 @@ export const SURAT_TYPES = [
       { key: 'tanggalLahirAnak', label: 'Tanggal lahir anak', type: 'date' },
     ],
   },
+  {
+    value: 'SKPRM',
+    label: 'Surat Keterangan & Pertama Kali Memiliki Rumah',
+    fields: [
+      { key: 'alamatRumah', label: 'Alamat Rumah', type: 'text', placeholder: 'alamat rumah' },
+      { key: 'keperluan', label: 'Keperluan', type: 'textarea', required: true, placeholder: 'Jelaskan keperluan pengajuan surat.....' },
+    ],
+  },
 ];
 
 // Semua jenis surat wajib upload dokumen pendukung (sesuai desain: badge

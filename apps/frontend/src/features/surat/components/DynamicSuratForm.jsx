@@ -502,6 +502,38 @@ onRemoveFile={handleRemoveFile}
 
 
 
+{
+field.type==="date" && (
+
+<input
+
+type="date"
+
+required={field.required}
+
+onChange={(e)=>
+handleChange(
+field.name,
+e.target.value
+)
+}
+
+className="
+w-full
+px-4
+py-3
+border
+rounded-xl
+"
+
+/>
+
+)
+
+}
+
+
+
 </div>
 
 
