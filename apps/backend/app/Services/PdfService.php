@@ -24,16 +24,14 @@ class PdfService
         ]);
 
         /**
-         * Guard: Hanya bisa download jika sudah RW Approved atau lebih tinggi
+         * Guard: Hanya bisa download jika sudah disetujui Operator (Kasi)
          */
         $allowedStatuses = [
-            LetterStatus::RwApproved,
-            LetterStatus::KadusApproved,
             LetterStatus::KasiApproved,
         ];
         
         if (!in_array($letter->status, $allowedStatuses)) {
-            abort(403, 'Surat baru dapat diunduh setelah disetujui oleh RW.');
+            abort(403, 'Surat baru dapat diunduh setelah disetujui oleh Operator Desa.');
         }
 
         if (

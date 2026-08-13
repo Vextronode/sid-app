@@ -26,12 +26,16 @@ return new class extends Migration
             $table->text('purpose');
             $table->text('notes')->nullable();
             $table->enum('status', [
+                'draft',
+                'waiting_rt', 'rt_rejected',
+                'waiting_rw', 'rw_rejected',
+                'waiting_verification', 'waiting_revision_warga',
+                'rejected_revision', 'completed', 'cancelled',
                 'pending',
-                'rt_approved', 'rt_rejected',
-                'rw_approved', 'rw_rejected',
+                'rt_approved', 'rw_approved',
                 'kadus_approved', 'kadus_rejected',
                 'kasi_approved', 'kasi_rejected',
-            ])->default('pending');
+            ])->default('draft');
             $table->boolean('is_overdue')->default(false);
             $table->timestamp('expires_at')->nullable();
             $table->timestamp('submitted_at')->useCurrent();

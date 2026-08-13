@@ -20,6 +20,7 @@ class KasiApprovalRequest extends FormRequest
                 Rule::in([
                     'approved',
                     'rejected',
+                    'needs_revision',
                 ]),
             ],
 

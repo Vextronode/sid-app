@@ -44,6 +44,8 @@ class LetterStatusNotification extends Notification
 
                 'kasi_approved' => 'signature',
 
+                'waiting_revision_warga' => 'edit',
+
                 default => 'document',
             },
 
@@ -53,6 +55,8 @@ class LetterStatusNotification extends Notification
                 'rw_approved' => 'blue',
 
                 'kasi_approved' => 'green',
+
+                'waiting_revision_warga' => 'amber',
 
                 'rt_rejected',
                 'rw_rejected',

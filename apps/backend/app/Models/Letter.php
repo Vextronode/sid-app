@@ -24,6 +24,7 @@ class Letter extends Model
         'payload',
         'notes',
         'status',
+        'revision_count',
         'is_overdue',
         'expires_at',
         'submitted_at',
