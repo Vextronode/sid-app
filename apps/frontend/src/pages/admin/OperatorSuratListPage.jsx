@@ -216,7 +216,7 @@ result.sort((a, b) => {
 
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Daftar Permohonan Surat</h1>
-          <button className="flex items-center gap-2 border rounded-lg px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 bg-white">
+          <button className="flex items-center gap-2 bg-orange-600 text-white rounded-full px-5 py-2.5 text-sm font-medium hover:bg-orange-700 shrink-0">
             <Download size={16} /> Ekspor Laporan
           </button>
         </div>
@@ -232,13 +232,13 @@ result.sort((a, b) => {
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
                   placeholder="Nomor surat atau nama pemohon..."
-                  className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
+                  className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-blue-500"
                 />
               </div>
             </div>
             <div>
               <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Jenis Surat</p>
-              <select value={filterJenis} onChange={(e) => { setFilterJenis(e.target.value); setCurrentPage(1); }} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-green-500" > <option value="">Semua Jenis</option> {jenisOptions.map((j) => ( <option key={j} value={j}>{j}</option> ))} </select>
+              <select value={filterJenis} onChange={(e) => { setFilterJenis(e.target.value); setCurrentPage(1); }} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500" > <option value="">Semua Jenis</option> {jenisOptions.map((j) => ( <option key={j} value={j}>{j}</option> ))} </select>
             </div>
             <div>
               <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Status</p>
@@ -248,7 +248,7 @@ result.sort((a, b) => {
                   setFilterStatus(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-green-500"
+                className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500"
               >
                 <option value="">Semua Status</option>
                 <option value="verification">Verifikasi</option>
@@ -416,7 +416,7 @@ result.sort((a, b) => {
                   key={page}
                   onClick={() => setCurrentPage(page)}
                   className={`w-8 h-8 rounded-lg text-xs font-medium ${
-                    page === currentPage ? 'bg-green-600 text-white' : 'border text-gray-600'
+                    page === currentPage ? 'bg-[#185FA5] text-white' : 'border text-gray-600'
                   }`}
                 >
                   {page}

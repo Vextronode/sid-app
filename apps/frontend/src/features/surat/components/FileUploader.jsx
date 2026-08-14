@@ -34,10 +34,10 @@ export function FileUploader({
           {files.map((file, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-4 bg-gray-50 border border-[#4CAF4F]/50 rounded-xl transition"
+              className="flex items-center justify-between p-4 bg-gray-50 border border-[#185FA5]/50 rounded-xl transition"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-[#E8F5E9] text-[#4CAF4F] rounded-lg">
+                <div className="p-2.5 bg-[#E8F5E9] text-[#185FA5] rounded-lg">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div className="text-left">
@@ -65,7 +65,7 @@ export function FileUploader({
       {/* Drag n ddrop */}
       <div
         onClick={() => inputRef.current?.click()}
-        className="border-2 border-gray-200 border-dashed rounded-2xl p-6 text-center hover:bg-gray-50/50 hover:border-[#4CAF4F] transition cursor-pointer space-y-2"
+        className="border-2 border-gray-200 border-dashed rounded-2xl p-6 text-center hover:bg-gray-50/50 hover:border-[#185FA5] transition cursor-pointer space-y-2"
       >
         <UploadCloud className="w-10 h-10 text-gray-400 mx-auto" />
         <p className="text-xs font-semibold text-gray-600">

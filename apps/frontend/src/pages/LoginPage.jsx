@@ -75,7 +75,7 @@ const [showForgotModal, setShowForgotModal] = useState(false);
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-6 ">
       <div className="flex justify-center mb-4">
-        <div className="w-12 h-12 rounded-xl bg-green-600 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-[#185FA5] flex items-center justify-center">
           <Landmark size={24} className="text-white" />
         </div>
       </div>
@@ -101,7 +101,7 @@ const [showForgotModal, setShowForgotModal] = useState(false);
                 value={nik}
                 onChange={(e) => setNik(e.target.value.replace(/\D/g, ''))}
                 placeholder="16 Digit NIK"
-                className="w-full border rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none focus:border-green-500 bg-gray-50"
+                className="w-full border rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none focus:border-blue-500 bg-gray-50"
               />
             </div>
           </div>
@@ -112,7 +112,7 @@ const [showForgotModal, setShowForgotModal] = useState(false);
               <button
                 type="button"
                 onClick={() => setShowForgotModal(true)}
-                className="text-xs text-green-600 hover:underline"
+                className="text-xs text-orange-600 hover:underline"
               >
                 Lupa Password?
               </button>
@@ -125,7 +125,7 @@ const [showForgotModal, setShowForgotModal] = useState(false);
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full border rounded-lg pl-10 pr-10 py-2.5 text-sm outline-none focus:border-green-500 bg-gray-50"
+                className="w-full border rounded-lg pl-10 pr-10 py-2.5 text-sm outline-none focus:border-blue-500 bg-gray-50"
               />
               <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -134,14 +134,14 @@ const [showForgotModal, setShowForgotModal] = useState(false);
           </div>
 
           <label className="flex items-center gap-2 mb-5 cursor-pointer">
-            <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="rounded accent-green-600" />
+            <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="rounded accent-blue-600" />
             <span className="text-sm text-gray-600">Ingat saya di perangkat ini</span>
           </label>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-green-600 text-white rounded-lg py-3 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full bg-[#185FA5] text-white rounded-lg py-3 text-sm font-medium hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isLoading ? 'Memproses...' : 'Masuk Sekarang'} <LogIn size={16} />
           </button>
@@ -152,7 +152,7 @@ const [showForgotModal, setShowForgotModal] = useState(false);
             Belum punya akun? <button
   type="button"
   onClick={() => setShowRegisterModal(true)}
-  className="text-green-600 font-medium hover:underline"
+  className="text-orange-600 font-medium hover:underline"
 >
   Daftar sekarang
 </button>

@@ -60,17 +60,17 @@ export function DaftarSurat() {
                   h-12
                   rounded-xl
                   border
-                  border-green-600
+                  border-[#185FA5]
                   bg-white
                   pl-4
                   pr-10
                   text-sm
-                  text-gray-700
+                  text-[#185FA5]
                   appearance-none
                   focus:outline-none
                   focus:ring-2
-                  focus:ring-green-100
-                  focus:border-green-500
+                  focus:ring-blue-100
+                  focus:border-blue-500
                 "
               >
                 <option value="">Pilih jenis surat...</option>
@@ -89,7 +89,7 @@ export function DaftarSurat() {
                   right-4
                   top-1/2
                   -translate-y-1/2
-                  text-green-600
+                  text-[#185FA5]
                   pointer-events-none
                 "
               />

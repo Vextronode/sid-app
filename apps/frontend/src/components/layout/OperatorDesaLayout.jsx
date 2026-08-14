@@ -30,12 +30,12 @@ export function OperatorDesaLayout({ children }) {
     <div className="h-screen bg-gray-50 flex overflow-hidden">
       {/* ===== SIDEBAR ===== */}
       <aside className="fixed left-0 top-0 h-screen w-56 bg-white  flex flex-col z-40">
-        <div className="h-20 px-5 bg-green-600 text-white border-b border-green-700 flex flex-col justify-center">
+        <div className="h-20 px-5 bg-[#185FA5] text-white border-b border-[#185FA5] flex flex-col justify-center">
           <h1 className="font-bold text-lg leading-tight">
             SIDUTama
           </h1>
 
-          <p className="text-xs text-green-100 mt-1">
+          <p className="text-xs text-white-100 mt-1">
             Admin Petugas Desa
           </p>
         </div>
@@ -49,7 +49,7 @@ export function OperatorDesaLayout({ children }) {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive ? 'bg-green-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                  isActive ? 'bg-[#185FA5] text-white' : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 <Icon size={18} />
@@ -60,7 +60,7 @@ export function OperatorDesaLayout({ children }) {
         </nav>
 
         <div className="px-3 pb-5 flex flex-col gap-1  pt-4">
-          <Link to="/admin/operator-desa/surat" className="flex items-center gap-2 bg-green-600 text-white rounded-lg px-3 py-2.5 text-sm font-medium justify-center hover:bg-green-700">
+          <Link to="/admin/operator-desa/surat" className="flex items-center gap-2 bg-[#185FA5] text-white rounded-lg px-3 py-2.5 text-sm font-medium justify-center hover:bg-blue-700">
             <Plus size={16} /> Permohonan Baru
           </Link>
           <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 mt-2">
@@ -75,7 +75,7 @@ export function OperatorDesaLayout({ children }) {
       {/* ===== MAIN ===== */}
       <div className="flex-1 flex flex-col ml-56">
         {/* Topbar */}
-          <div className="fixed left-56 right-0 top-0 h-20 bg-green-600 px-6 flex items-center justify-between shadow-lg z-30">
+          <div className="fixed left-56 right-0 top-0 h-20 bg-[#185FA5] px-6 flex items-center justify-between shadow-lg z-30">
           <div className="relative">
             <Search
               size={18}
@@ -90,13 +90,13 @@ export function OperatorDesaLayout({ children }) {
                 pl-9 pr-4 py-2
                 text-sm
                 bg-white
-                text-green-600
+                text-[#185FA5]
                 placeholder:text-gray-400
                 border border-white
                 outline-none
                 focus:ring-2
-                focus:ring-green-300
-                focus:border-green
+                focus:ring-blue-300
+                focus:border-blue
               "
             />
           </div>
@@ -105,19 +105,19 @@ export function OperatorDesaLayout({ children }) {
             
 <button
     onClick={() => setNotifOpen((prev) => !prev)}
-    className="relative w-8 h-8 rounded-full flex items-center justify-center text-white hover:text-green-200 hover:bg-green-700/50 transition-colors"
+    className="relative w-8 h-8 rounded-full flex items-center justify-center text-white hover:text-blue-200 hover:bg-blue-700/50 transition-colors"
     title="Notifikasi"
   >
     <Bell size={18} />
 
     {/* Badge Merah di Pojok Kanan Atas */}
     {unreadCount > 0 && (
-      <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-green-600 pointer-events-none">
+      <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#185FA5] pointer-events-none">
         {unreadCount > 99 ? "99+" : unreadCount}
       </span>
     )}
   </button>
-            <button className="text-white hover:text-green-200">
+            <button className="text-white hover:text-blue-200">
               <Settings size={18} />
             </button>
             <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export function OperatorDesaLayout({ children }) {
                 <p className="text-white text-xs font-semibold text-gray-800">{user?.name ?? 'Bapak/Ibu'}</p>
                 <p className="text-white text-[10px] text-gray-400">{user?.role_label ?? 'Operator Desa'}</p>
               </div>
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-xs font-semibold">
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[#185FA5] text-xs font-semibold">
                 {(user?.name ?? 'OP').slice(0, 2).toUpperCase()}
               </div>
             </div>

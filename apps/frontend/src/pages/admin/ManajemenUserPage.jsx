@@ -64,13 +64,13 @@ export default function ManajemenUserPage() {
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="Cari nama atau email..."
-                className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
+                className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-blue-500"
               />
             </div>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="border rounded-full px-4 py-2.5 text-sm text-gray-400 outline-none focus:border-green-500"
+              className="border rounded-full px-4 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500"
             >
               <option value="">Semua Status</option>
               <option value="aktif">Aktif</option>
@@ -79,7 +79,7 @@ export default function ManajemenUserPage() {
             <button
               type="button"
               onClick={handleOpenAdd}
-              className="flex items-center gap-2 bg-green-600 text-white rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-700 shrink-0"
+              className="flex items-center gap-2 bg-orange-600 text-white rounded-full px-5 py-2.5 text-sm font-medium hover:bg-orange-700 shrink-0"
             >
               <UserPlus size={16} /> Tambah user
             </button>
@@ -154,7 +154,7 @@ RW {user.citizen?.rw?.number ?? '-'}</td>
                 key={page}
                 onClick={() => setCurrentPage(page)}
                 className={`w-9 h-9 rounded-full text-sm font-medium border ${
-                  page === currentPage ? 'bg-green-700 text-white border-green-700' : 'text-gray-600 hover:bg-gray-50'
+                  page === currentPage ? 'bg-[#185FA5] text-white border-blue-700' : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 {page}

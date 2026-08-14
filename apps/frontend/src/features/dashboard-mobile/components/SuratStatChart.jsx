@@ -103,7 +103,7 @@ export default function SuratStatChart({ letters = [] }) {
           {/* Kalender */}
           <button
             onClick={() => dateInputRef.current?.showPicker()}
-            className="w-full flex items-center justify-between border rounded-full px-3 py-2 text-xs hover:border-green-600"
+            className="w-full flex items-center justify-between border rounded-full px-3 py-2 text-xs hover:border-blue-600"
           >
             <span>
               {new Date(selectedDate).toLocaleDateString("id-ID", {
@@ -165,13 +165,13 @@ export default function SuratStatChart({ letters = [] }) {
             >
               <stop
                 offset="5%"
-                stopColor="#16a34a"
+                stopColor="#185FA5"
                 stopOpacity={0.35}
               />
 
               <stop
                 offset="95%"
-                stopColor="#16a34a"
+                stopColor="#185FA5"
                 stopOpacity={0}
               />
             </linearGradient>
@@ -196,7 +196,7 @@ export default function SuratStatChart({ letters = [] }) {
           <Area
             type="monotone"
             dataKey="jumlah"
-            stroke="#16a34a"
+            stroke="#185FA5"
             strokeWidth={2}
             fill="url(#colorJumlah)"
             isAnimationActive={!loading}
