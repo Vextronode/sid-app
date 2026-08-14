@@ -1,29 +1,29 @@
 // ==========================================
 // LoginPage.jsx
-// Redesign login sesuai desain: ikon bank hijau, judul "Cibenda",
-// "Masuk ke CID Cibenda", form NIK + Password, checkbox "Ingat saya",
+// Redesign login: ikon bank biru, judul "SIDUTama",
+// "Masuk ke SIDUTama", form Username + Password, checkbox "Ingat saya",
 // link "Lupa Password?" dan "Daftar sekarang".
-// Login pakai NIK (bukan email), sesuai validasi backend.
+// Login pakai Username (bukan NIK).
 // ==========================================
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Landmark, CreditCard, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Landmark, User, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // sesuaikan kalau nama fungsi di AuthContext beda
+  const { login } = useAuth();
 
-  const [nik, setNik] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-const [showRegisterModal, setShowRegisterModal] = useState(false);
-const [showForgotModal, setShowForgotModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,7 +31,7 @@ const [showForgotModal, setShowForgotModal] = useState(false);
     setIsLoading(true);
     try {
       await api.get('/sanctum/csrf-cookie');
-      const response = await api.post('/api/login', { nik, password, remember: rememberMe });
+      const response = await api.post('/api/login', { username, password, remember: rememberMe });
       const loggedUser = response.data.user ?? response.data;
 
       login(loggedUser);
@@ -64,7 +64,7 @@ const [showForgotModal, setShowForgotModal] = useState(false);
       }
 
     } catch (err) {
-      const message = err.response?.data?.errors?.nik?.[0] ?? err.response?.data?.message ?? 'NIK atau password salah.';
+      const message = err.response?.data?.errors?.username?.[0] ?? err.response?.data?.message ?? 'Username atau password salah.';
       setError(message);
     } finally {
       setIsLoading(false);
@@ -81,7 +81,7 @@ const [showForgotModal, setShowForgotModal] = useState(false);
       </div>
         <p className="font-bold text-gray-800"></p>
         <h1 className="text-xl font-bold text-gray-800 mt-1 text-center">Masuk ke SIDUTama</h1>
-        <p className="text-sm text-gray-500 mb-6 text-center">Masukkan NIK dan Password Anda</p>
+        <p className="text-sm text-gray-500 mb-6 text-center">Masukkan Username dan Password Anda</p>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2 mb-4">
@@ -91,16 +91,14 @@ const [showForgotModal, setShowForgotModal] = useState(false);
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Nomor Induk Kependudukan (NIK)</label>
+            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Username</label>
             <div className="relative mt-1">
-              <CreditCard size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 required
-                maxLength={16}
-                inputMode="numeric"
-                value={nik}
-                onChange={(e) => setNik(e.target.value.replace(/\D/g, ''))}
-                placeholder="16 Digit NIK"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Masukkan username"
                 className="w-full border rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none focus:border-blue-500 bg-gray-50"
               />
             </div>
@@ -228,4 +226,4 @@ const [showForgotModal, setShowForgotModal] = useState(false);
 )}
     </div>
   );
-}
+}

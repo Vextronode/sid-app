@@ -32,6 +32,7 @@ class User extends Authenticatable
         'village_id',
         'citizen_id',
         'name',
+        'username',
         'role',
         'email',
         'password',
