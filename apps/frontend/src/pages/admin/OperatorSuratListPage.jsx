@@ -60,6 +60,16 @@ const STATUS_LABEL = {
     label: "Ditolak Kasi",
     className: "bg-red-50 text-red-600",
   },
+  
+  waiting_revision_warga: {
+    label: "Menunggu Revisi",
+    className: "bg-amber-50 text-amber-700",
+  },
+  
+  rejected_revision: {
+    label: "Ditolak (Batas Revisi)",
+    className: "bg-red-50 text-red-600",
+  },
 };
 
 const ITEMS_PER_PAGE = 3;
@@ -274,7 +284,16 @@ result.sort((a, b) => {
                   const badge = STATUS_LABEL[s.status] ?? { label: s.status, className: 'bg-gray-50 text-gray-500' };
                   return (
                     <tr key={s.id} className="border-b last:border-0 hover:bg-gray-50 text-gray-400">
-                      <td className="py-4 px-5 font-semibold text-gray-400 ">#{s.letter_number ?? '-'}</td>
+                      <td className="py-4 px-5 font-semibold text-gray-400 ">
+                        <div className="flex flex-col gap-1 items-start">
+                          <span>#{s.letter_number ?? '-'}</span>
+                          {s.revision_count > 0 && (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[9px] rounded-full font-bold">
+                              Hasil Revisi
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-gray-400  text-center ">{s.applicant_name}</span>

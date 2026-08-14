@@ -16,13 +16,15 @@ import { FileUploader } from "./FileUploader";
 export function DynamicSuratForm({
   config,
   onCancel,
-  onSubmit
+  onSubmit,
+  initialData = {},
+  onSubmitAPI = null,
 }) {
 
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState(initialData);
   const [uploadedFiles, setUploadedFiles] = useState({});
 
 
@@ -200,8 +202,12 @@ const handleSubmit = async (e) => {
   });
 
   try {
-    const response = await submitSurat(payload);
-
+    let response;
+    if (onSubmitAPI) {
+      response = await onSubmitAPI(payload);
+    } else {
+      response = await submitSurat(payload);
+    }
 
     onSubmit?.(response);
   } catch (error) {
@@ -415,7 +421,7 @@ field.required &&
 field.type==="textarea" && (
 
 <textarea
-
+value={formData[field.name] || ""}
 required={field.required}
 
 placeholder={field.placeholder}
@@ -449,7 +455,7 @@ field.type==="text" && (
 <input
 
 type="text"
-
+value={formData[field.name] || ""}
 required={field.required}
 
 placeholder={field.placeholder}
@@ -508,7 +514,7 @@ field.type==="date" && (
 <input
 
 type="date"
-
+value={formData[field.name] || ""}
 required={field.required}
 
 onChange={(e)=>

@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Eye, FileText, Download } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Eye, FileText, Download, Edit } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DetailSuratModal } from "./DetailSuratModal";
 
 export function TableSurat({ data }) {
   const [selectedSurat, setSelectedSurat] = useState(null);
+  const navigate = useNavigate();
 
   const apiUrl =
     import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
@@ -97,6 +99,17 @@ export function TableSurat({ data }) {
                         <Eye className="w-3.5 h-3.5" />
                         Detail
                       </button>
+
+                      {/* Revisi Button */}
+                      {item.status === 'waiting_revision_warga' && (
+                        <button
+                          onClick={() => navigate(`/revisi-surat/${item.id}`)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 text-xs font-medium"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          Revisi
+                        </button>
+                      )}
 
                     </div>
                   </td>

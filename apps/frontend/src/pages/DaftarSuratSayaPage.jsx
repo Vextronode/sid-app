@@ -4,10 +4,12 @@
 // tombol Total Pengajuan / Disetujui / Ditolak di halaman Surat.
 // ==========================================
 
+import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Edit, Eye } from 'lucide-react';
 import { WargaLayout } from '@/components/layout/WargaLayout';
 import { useLetters } from '@/features/surat/hooks/useLetters';
+import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal';
 
 const STATUS_LABEL = {
   pending: {
@@ -49,6 +51,16 @@ const STATUS_LABEL = {
     label: "DISETUJUI",
     className: "bg-green-100 text-green-700",
   },
+
+  waiting_revision_warga: {
+    label: "MENUNGGU REVISI",
+    className: "bg-amber-100 text-amber-700",
+  },
+
+  rejected_revision: {
+    label: "DITOLAK (REVISI)",
+    className: "bg-red-100 text-red-600",
+  },
 };
 
 const PAGE_TITLE = {
@@ -63,6 +75,8 @@ export default function DaftarSuratSayaPage() {
   const filterStatus = searchParams.get('status') ?? '';
   const { letters, loading } = useLetters();
 
+  const [selectedSurat, setSelectedSurat] = useState(null);
+
   const approvedStatuses = [
     "kasi_approved",
     "kaur_tu_umum_approved",
@@ -73,7 +87,7 @@ export default function DaftarSuratSayaPage() {
     if (!filterStatus) return true;
 
     if (filterStatus === "ditolak") {
-      return item.status?.endsWith("_rejected");
+      return item.status?.endsWith("_rejected") || item.status === "waiting_revision_warga" || item.status === "rejected_revision";
     }
 
     if (filterStatus === "approved") {
@@ -105,6 +119,7 @@ export default function DaftarSuratSayaPage() {
                   <th className="py-3 px-4 font-semibold">Jenis Surat</th>
                   <th className="py-3 px-4 font-semibold">Tanggal</th>
                   <th className="py-3 px-4 font-semibold">Status</th>
+                  <th className="py-3 px-4 font-semibold text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,6 +137,33 @@ export default function DaftarSuratSayaPage() {
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
                       </td>
+                      <td className="py-3 px-4">
+                        <div className="flex justify-end gap-2 flex-wrap">
+                          <button
+                            onClick={() => setSelectedSurat({
+                              ...item,
+                              noSurat: item.letter_number,
+                              pemohon: item.applicant_name,
+                              jenis: item.letter_type?.name,
+                              tanggal: item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'
+                            })}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-gray-300 text-xs hover:bg-gray-100"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Detail
+                          </button>
+
+                          {item.status === 'waiting_revision_warga' && (
+                            <button
+                              onClick={() => navigate(`/revisi-surat/${item.id}`)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 text-xs font-medium"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                              Revisi
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -130,6 +172,13 @@ export default function DaftarSuratSayaPage() {
           )}
         </div>
       </div>
+
+      {selectedSurat && (
+        <DetailSuratModal
+          data={selectedSurat}
+          onClose={() => setSelectedSurat(null)}
+        />
+      )}
     </WargaLayout>
   );
 }

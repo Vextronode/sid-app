@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api",
+  baseURL: import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000",
   withCredentials: true,
   withXSRFToken: true,
 });
@@ -15,21 +15,21 @@ export function getSuratList(role) {
   switch (role) {
 
     case "rt":
-      return api.get("/rt/letters");
+      return api.get("/api/rt/letters");
 
 
     case "rw":
-      return api.get("/rw/letters");
+      return api.get("/api/rw/letters");
 
 
     case "kadus":
-      return api.get("/kadus/letters");
+      return api.get("/api/kadus/letters");
 
     case "kasi":
-      return api.get("/kasi/letters");
+      return api.get("/api/kasi/letters");
 
     default:
-      return api.get("/letters");
+      return api.get("/api/letters");
 
   }
 
@@ -48,21 +48,21 @@ export function getSuratDetail(
   switch (role) {
 
     case "rt":
-      return api.get(`/rt/letters/${id}`);
+      return api.get(`/api/rt/letters/${id}`);
 
 
     case "rw":
-      return api.get(`/rw/letters/${id}`);
+      return api.get(`/api/rw/letters/${id}`);
 
 
     case "kadus":
-      return api.get(`/kadus/letters/${id}`);
+      return api.get(`/api/kadus/letters/${id}`);
 
     case "kasi":
-      return api.get(`/kasi/letters/${id}`);
+      return api.get(`/api/kasi/letters/${id}`);
 
     default:
-      return api.get(`/letters/${id}`);
+      return api.get(`/api/letters/${id}`);
 
   }
 
@@ -82,7 +82,7 @@ export function submitDecision(
 ) {
 
   return api.patch(
-    `/${role}/letters/${id}/decision`,
+    `/api/${role}/letters/${id}/decision`,
     {
       status,
       notes,
@@ -105,7 +105,7 @@ export function approveSurat(
 ) {
 
   return api.patch(
-    `/${role}/approvals/${id}/approve`,
+    `/api/${role}/approvals/${id}/approve`,
     {
       status,
       notes,

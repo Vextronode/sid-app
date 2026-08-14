@@ -10,6 +10,7 @@ import { BeritaPage } from "@/pages/BeritaPage";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ProfilDesaPage } from "@/pages/ProfilDesaPage";
 import { PengajuanSuratPage } from "@/pages/PengajuanSuratPage";
+import { RevisiSuratPage } from "@/pages/RevisiSuratPage";
 import { DaftarSurat } from "@/pages/DaftarSurat";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
@@ -43,6 +44,7 @@ import ManajemenUserPage from "@/pages/admin/ManajemenUserPage";
 import KelolaBeritaPage from "@/pages/admin/KelolaBeritaPage";
 import KelolaProfilDesaPage from "@/pages/admin/KelolaProfilDesaPage";
 import OperatorSuratListPage from "@/pages/admin/OperatorSuratListPage";
+import TestRevisionFlowPage from "@/pages/admin/TestRevisionFlowPage";
 
 // Role yang termasuk "Operator Desa" (dipakai berulang di bawah)
 const OPERATOR_DESA_ROLES = ["kasi_pelayanan", "kaur_tu_umum", "petugas_desa"];
@@ -142,6 +144,15 @@ export default function App() {
   element={
     <ProtectedRoute allowedRoles={["warga"]}>
       <PengajuanSuratPage />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/revisi-surat/:id"
+  element={
+    <ProtectedRoute allowedRoles={["warga"]}>
+      <RevisiSuratPage />
     </ProtectedRoute>
   }
 />
@@ -291,6 +302,15 @@ export default function App() {
     </ProtectedRoute>
   }
 />
+
+          <Route
+            path="/admin/test-revision-flow"
+            element={
+              <ProtectedRoute allowedRoles={["rt", "rw", "kasi_pelayanan", "kaur_tu_umum", "petugas_desa", "warga"]}>
+                <AdminLayout><TestRevisionFlowPage /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
 
 <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
         <Route path="/lupa-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
