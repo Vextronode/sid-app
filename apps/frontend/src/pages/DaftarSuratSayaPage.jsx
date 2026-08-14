@@ -100,7 +100,7 @@ export default function DaftarSuratSayaPage() {
   return (
     <WargaLayout>
       <div className="px-4 py-5 max-w-3xl mx-auto">
-        <button onClick={() => navigate('/jenis-surat')} className="flex items-center gap-1 text-sm text-green-600 mb-4 hover:underline">
+        <button onClick={() => navigate('/jenis-surat')} className="flex items-center gap-1 text-sm text-orange-600 mb-4 hover:underline">
           <ArrowLeft size={16} /> Kembali
         </button>
 
