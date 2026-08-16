@@ -187,7 +187,7 @@ export default function OperatorSuratPreviewModal({
               mb-4
             ">
               Surat belum dapat dicetak. Menunggu persetujuan
-              dari Kasi terlebih dahulu.
+              dari operator terlebih dahulu.
             </div>
           )}
 
