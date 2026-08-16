@@ -27,15 +27,15 @@ const { unreadCount } = useNotifications();
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 relative pb-16 md:pb-0">
+    <div className="min-h-screen bg-blue-50 relative pb-16 md:pb-0">
       <nav className="sticky top-0 bg-white/95 backdrop-blur-sm shadow-sm py-3 px-6 flex items-center justify-between z-50">
         <Link to="/daftar-surat" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-full overflow-hidden bg-green-50 flex items-center justify-center border border-green-200">
-            <User size={18} className="text-green-600" />
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-blue-50 flex items-center justify-center border border-[#185FA5]">
+            <User size={18} className="text-[#185FA5]" />
           </div>
           <div>
-            <p className="text-xs text-gray-400 font-medium leading-none mb-0.5">Selamat datang,</p>
-            <p className="text-sm font-bold text-green-700 leading-tight">{user?.name ?? 'Warga Desa'}</p>
+            <p className="text-xs text-orange-400 font-medium leading-none mb-0.5">Selamat datang,</p>
+            <p className="text-sm font-bold text-[#185FA5] leading-tight">{user?.name ?? 'Warga Desa'}</p>
           </div>
         </Link>
 
@@ -43,7 +43,7 @@ const { unreadCount } = useNotifications();
         <div className="flex items-center gap-1">
         <button
           onClick={() => setNotifOpen((prev) => !prev)}
-          className="relative w-8 h-8 rounded-full flex items-center justify-center text-green-700 hover:text-green-800 hover:bg-green-50 transition-colors"
+          className="relative w-8 h-8 rounded-full flex items-center justify-center text-[#185FA5] hover:text-blue-800 hover:bg-blue-50 transition-colors"
           title="Notifikasi"
         >
           <Bell size={18} />
@@ -57,7 +57,7 @@ const { unreadCount } = useNotifications();
 
           <button 
             onClick={() => setHelpOpen(true)} 
-            className="w-8 h-8 rounded-full flex items-center justify-center text-green-700 hover:text-green-800 hover:bg-green-50 transition-colors" 
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[#185FA5] hover:text-blue-800 hover:bg-blue-50 transition-colors" 
             title="Pusat Bantuan"
           >
             <HelpCircle size={18} />
@@ -66,7 +66,7 @@ const { unreadCount } = useNotifications();
           <div className="relative flex items-center justify-center">
             <button 
               onClick={() => setSettingsOpen((v) => !v)} 
-              className="w-8 h-8 rounded-full flex items-center justify-center text-green-700 hover:text-green-800 hover:bg-green-50 transition-colors" 
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[#185FA5] hover:text-blue-800 hover:bg-blue-50 transition-colors" 
               title="Pengaturan"
             >
               <Settings size={18} />
@@ -75,13 +75,13 @@ const { unreadCount } = useNotifications();
             {settingsOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />
-                <div className="absolute right-0 top-10 bg-white shadow-xl rounded-xl border border-gray-100 z-50 w-48 py-1.5 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute right-0 top-10 bg-white shadow-xl rounded-xl border border-blue-100 z-50 w-48 py-1.5 animate-in fade-in zoom-in-95 duration-100">
                   <Link
                     to="/profile"
                     onClick={() => setSettingsOpen(false)}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors"
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[#185FA5] hover:bg-blue-50 hover:text-blue-700 transition-colors"
                   >
-                    <UserCircle size={18} className="text-gray-400" /> Profil
+                    <UserCircle size={18} className="text-[#185FA5]" /> Profil
                   </Link>
                   <button
                     onClick={handleLogout}

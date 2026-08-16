@@ -16,13 +16,15 @@ import { FileUploader } from "./FileUploader";
 export function DynamicSuratForm({
   config,
   onCancel,
-  onSubmit
+  onSubmit,
+  initialData = {},
+  onSubmitAPI = null,
 }) {
 
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState(initialData);
   const [uploadedFiles, setUploadedFiles] = useState({});
 
 
@@ -200,8 +202,12 @@ const handleSubmit = async (e) => {
   });
 
   try {
-    const response = await submitSurat(payload);
-
+    let response;
+    if (onSubmitAPI) {
+      response = await onSubmitAPI(payload);
+    } else {
+      response = await submitSurat(payload);
+    }
 
     onSubmit?.(response);
   } catch (error) {
@@ -279,12 +285,12 @@ Langkah 1 - Pilih Jenis Surat
       rounded-xl
       bg-white
       text-sm
-      text-green-700
+      text-[#185FA5]
       appearance-none
       focus:outline-none
-      focus:border-[#4CAF4F]
+      focus:border-[#185FA5]
       focus:ring-2
-      focus:ring-green-100
+      focus:ring-blue-100
     "
   >
     {LIST_SURAT_GLOBAL.map((surat) => (
@@ -296,7 +302,7 @@ Langkah 1 - Pilih Jenis Surat
 
   <ChevronDown
     size={18}
-    className="absolute right-3 top-1/2 -translate-y-1/2 text-green-700 pointer-events-none"
+    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#185FA5] pointer-events-none"
   />
 </div>
 
@@ -415,7 +421,7 @@ field.required &&
 field.type==="textarea" && (
 
 <textarea
-
+value={formData[field.name] || ""}
 required={field.required}
 
 placeholder={field.placeholder}
@@ -449,7 +455,7 @@ field.type==="text" && (
 <input
 
 type="text"
-
+value={formData[field.name] || ""}
 required={field.required}
 
 placeholder={field.placeholder}
@@ -508,7 +514,7 @@ field.type==="date" && (
 <input
 
 type="date"
-
+value={formData[field.name] || ""}
 required={field.required}
 
 onChange={(e)=>
@@ -569,8 +575,8 @@ className="
 flex-1
 py-3
 border
-border-[#4CAF4F]
-text-[#4CAF4F]
+border-[#185FA5]
+text-[#185FA5]
 rounded-xl
 "
 
@@ -592,7 +598,7 @@ disabled={loading}
 className="
 flex-1
 py-3
-bg-[#4CAF4F]
+bg-[#185FA5]
 text-white
 rounded-xl
 "

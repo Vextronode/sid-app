@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
-use App\Models\Citizen;
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -21,13 +21,10 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nik' => ['required', 'digits:16'],
-             'password' => [
-            'required',
-            'string',
-            'min:8',
-            'regex:/^[A-Z]/',
-            'regex:/[0-9]/',
+            'username' => ['required', 'string'],
+            'password' => [
+                'required',
+                'string',
             ],
         ];
     }
@@ -36,27 +33,26 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $citizen = Citizen::where('nik', $this->input('nik'))->first();
+        $user = User::where('username', $this->input('username'))->first();
 
         if (
-            !$citizen ||
-            !$citizen->user ||
+            !$user ||
             !Auth::attempt([
-                'email' => $citizen->user->email,
+                'username' => $this->input('username'),
                 'password' => $this->password,
             ])
         ) {
             RateLimiter::hit($this->throttleKey());
 
-           Log::warning('Failed login attempt', [
-            'nik' => $this->input('nik'),
-            'ip' => $this->ip(),
-            'user_agent' => $this->userAgent(),
-            'time' => now()->toDateTimeString(),
+            Log::warning('Failed login attempt', [
+                'username' => $this->input('username'),
+                'ip' => $this->ip(),
+                'user_agent' => $this->userAgent(),
+                'time' => now()->toDateTimeString(),
             ]);
 
             throw ValidationException::withMessages([
-                'nik' => __('auth.failed'),
+                'username' => __('auth.failed'),
             ]);
         }
 
@@ -74,7 +70,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'nik' => trans('auth.throttle', [
+            'username' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -84,7 +80,7 @@ class LoginRequest extends FormRequest
     public function throttleKey(): string
     {
         return Str::transliterate(
-            Str::lower($this->input('nik')).'|'.$this->ip()
+            Str::lower($this->input('username')).'|'.$this->ip()
         );
     }
 }

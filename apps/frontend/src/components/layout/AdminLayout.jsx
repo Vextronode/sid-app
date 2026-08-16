@@ -43,7 +43,7 @@ export function AdminLayout({ children, menuItems }) {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`text-sm ${isActive ? 'text-green-600 font-medium' : 'text-gray-600 hover:text-green-600'}`}
+                  className={`text-sm ${isActive ? 'text-[#185FA5] font-medium' : 'text-gray-600 hover:text-blue-600'}`}
                 >
                   {item.label}
                 </Link>
@@ -57,7 +57,7 @@ export function AdminLayout({ children, menuItems }) {
         <div className="flex items-center h-full">
         <button
           onClick={() => setNotifOpen((prev) => !prev)}
-          className="relative w-8 h-8 rounded-full flex items-center justify-center text-green-700 hover:text-green-800 hover:bg-green-50 transition-colors"
+          className="relative w-8 h-8 rounded-full flex items-center justify-center text-[#185FA5] hover:text-blue-800 hover:bg-blue-50 transition-colors"
           title="Notifikasi"
         >
           <Bell size={18} />
@@ -73,7 +73,7 @@ export function AdminLayout({ children, menuItems }) {
             <div className="relative h-full flex items-center">
               <button
                 onClick={() => setSettingsOpen((v) => !v)}
-                className="w-9 h-9 flex items-center justify-center text-green-600 hover:text-green-700"
+                className="w-9 h-9 flex items-center justify-center text-[#185FA5] hover:text-blue-700"
                 title="Pengaturan"
               >
                 <Settings size={20} />
@@ -90,7 +90,7 @@ export function AdminLayout({ children, menuItems }) {
                     <Link
                       to="/admin/profile"
                       onClick={() => setSettingsOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#185FA5] hover:bg-blue-50"
                     >
                       <UserCircle size={16} />
                       Profil
@@ -108,7 +108,7 @@ export function AdminLayout({ children, menuItems }) {
               )}
             </div>
           ) : (
-            <div className="w-9 h-9 rounded-full border-2 border-green-500 flex items-center justify-center text-green-600">
+            <div className="w-9 h-9 rounded-full border-2 border-[#185FA5] flex items-center justify-center text-[#185FA5]">
               <User size={18} />
             </div>
           )}

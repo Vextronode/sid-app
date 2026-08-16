@@ -17,6 +17,7 @@ export default function OperatorSuratActionModal({ surat, onClose }) {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [confirmType, setConfirmType] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [revisionNotes, setRevisionNotes] = useState("");
 
   useEffect(() => {
     if (!surat) return;
@@ -53,6 +54,12 @@ const handleConfirmAction = async () => {
   setLoading(true);
 
   try {
+    if (confirmType === 'revision') {
+      await approveSurat("kasi", surat.id, "needs_revision", revisionNotes);
+      onClose();
+      return;
+    }
+
     // 1. Approve surat
     await approveSurat(
       "kasi",
@@ -75,8 +82,8 @@ const handleConfirmAction = async () => {
     console.error("Gagal menyelesaikan surat:", err);
 
     alert(
-      "Surat berhasil diproses, tetapi PDF gagal dibuka.\n\n" +
-      err.message
+      "Gagal memproses aksi.\n\n" +
+      (err.response?.data?.message || err.message)
     );
   } finally {
     setLoading(false);
@@ -92,6 +99,13 @@ const handleConfirmAction = async () => {
 
           <h2 className="font-bold text-gray-800 text-lg">Detail Permohonan Surat</h2>
           <p className="text-xs text-gray-400 mb-4">#{surat.letter_number ?? '-'} · {surat.letter_type?.name ?? '-'}</p>
+
+          {surat.notes && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-[10px] font-semibold text-blue-800 uppercase mb-1">Catatan Warga / Revisi</p>
+              <p className="text-sm text-blue-900">{surat.notes}</p>
+            </div>
+          )}
 
           {/* Toggle Tipe Preview */}
           <div className="flex gap-2 mb-3 bg-gray-100 p-1 rounded-lg">
@@ -138,7 +152,22 @@ const handleConfirmAction = async () => {
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setConfirmType('revision')}
+              disabled={!bisaCetak}
+              className="flex-none flex items-center justify-center
+                border border-amber-300 text-amber-700 bg-amber-50
+                rounded-lg
+                px-4 py-2.5
+                text-sm font-medium
+                hover:bg-amber-100
+                disabled:opacity-40"
+              title="Minta Revisi"
+            >
+              Minta Revisi
+            </button>
+
             <button
               onClick={() => setConfirmType('basah')}
               disabled={!bisaCetak}
@@ -176,12 +205,29 @@ const handleConfirmAction = async () => {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-[400px] p-6 shadow-xl">
             <h3 className="font-bold text-lg mb-2">
-              Selesaikan Surat ({confirmType === 'digital' ? 'TTD Digital' : 'TTD Basah'})?
+              {confirmType === 'revision' 
+                ? 'Minta Revisi Surat' 
+                : `Selesaikan Surat (${confirmType === 'digital' ? 'TTD Digital' : 'TTD Basah'})?`}
             </h3>
 
-            <p className="text-sm text-gray-500 mb-6">
-              Surat ini akan disetujui, diarsipkan dengan status <b>Selesai </b>dan file PDF akan diunduh secara otomatis.
-            </p>
+            {confirmType === 'revision' ? (
+              <div className="mb-6">
+                <p className="text-sm text-gray-500 mb-3">
+                  Berikan catatan revisi untuk warga. Warga akan diminta untuk memperbaiki dan mengirim ulang permohonan.
+                </p>
+                <textarea
+                  value={revisionNotes}
+                  onChange={(e) => setRevisionNotes(e.target.value)}
+                  placeholder="Contoh: Lampiran KTP kurang jelas..."
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                  rows={3}
+                />
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 mb-6">
+                Surat ini akan disetujui, diarsipkan dengan status <b>Selesai </b>dan file PDF akan diunduh secara otomatis.
+              </p>
+            )}
 
             <div className="flex justify-end gap-3">
               <button

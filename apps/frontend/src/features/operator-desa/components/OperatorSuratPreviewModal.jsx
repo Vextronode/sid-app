@@ -60,6 +60,13 @@ export default function OperatorSuratPreviewModal({
             {surat.letter_type?.name ?? "-"}
           </p>
 
+          {surat.notes && (
+            <div className="mb-5 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-[10px] font-semibold text-blue-800 uppercase mb-1">Catatan Warga / Revisi</p>
+              <p className="text-sm text-blue-900">{surat.notes}</p>
+            </div>
+          )}
+
           <div className="relative border rounded-lg overflow-hidden mb-5 h-[500px] bg-gray-100">
 
             {previewUrl ? (

@@ -20,9 +20,8 @@ class KasiApprovalService
             ->whereIn('status', [
 
                 LetterStatus::RwApproved,
-
+                LetterStatus::WaitingRevisionWarga,
                 LetterStatus::KasiApproved,
-
                 LetterStatus::KasiRejected,
 
             ])
@@ -97,32 +96,47 @@ class KasiApprovalService
 
             $oldStatus = $letter->status->value;
 
-            $newStatus = $data['status'] === 'approved'
-                ? LetterStatus::KasiApproved->value
-                : LetterStatus::KasiRejected->value;
+            if ($data['status'] === 'needs_revision') {
+                $newRevisionCount = $letter->revision_count + 1;
 
-            $letterNumber = null;
-            $expiresAt = null;
+                // Revisi ke-3+ → auto-reject (maks 2x revisi)
+                if ($newRevisionCount > 2) {
+                    $newStatus = LetterStatus::RejectedRevision->value;
+                } else {
+                    $newStatus = LetterStatus::WaitingRevisionWarga->value;
+                }
 
-            if ($data['status'] === 'approved') {
+                $letter->revision_count = $newRevisionCount;
+                $letterNumber = null;
+                $expiresAt = null;
+            } else {
+                $newStatus = $data['status'] === 'approved'
+                    ? LetterStatus::KasiApproved->value
+                    : LetterStatus::KasiRejected->value;
 
-                $letter->approvals()
-                    ->where('approval_level', 'kasi')
-                    ->update([
-                        'approved_by' => $user->id,
-                    ]);
+                $letterNumber = null;
+                $expiresAt = null;
 
-                $letterNumber = sprintf(
-                    '%03d/%s/%d',
-                    $letter->id,
-                    strtoupper($letter->letterType->code),
-                    now()->year
-                );
+                if ($data['status'] === 'approved') {
 
-                if ($letter->letterType->validity_days) {
-                    $expiresAt = now()->addDays(
-                        $letter->letterType->validity_days
+                    $letter->approvals()
+                        ->where('approval_level', 'kasi')
+                        ->update([
+                            'approved_by' => $user->id,
+                        ]);
+
+                    $letterNumber = sprintf(
+                        '%03d/%s/%d',
+                        $letter->id,
+                        strtoupper($letter->letterType->code),
+                        now()->year
                     );
+
+                    if ($letter->letterType->validity_days) {
+                        $expiresAt = now()->addDays(
+                            $letter->letterType->validity_days
+                        );
+                    }
                 }
             }
 
@@ -143,6 +157,21 @@ class KasiApprovalService
 
             $citizenUser = $letter->citizen->user;
 
+            if ($data['status'] === 'needs_revision') {
+                if ($citizenUser) {
+                    $citizenUser->notify(
+                        new LetterStatusNotification(
+                            $letter,
+                            'Perlu Revisi Data',
+                            'Permohonan surat Anda perlu diperbaiki sebelum verifikasi final.',
+                            'waiting_revision_warga'
+                        )
+                    );
+                }
+
+                return;
+            }
+
             if ($data['status'] === 'approved') {
 
                 if ($citizenUser) {
@@ -150,8 +179,7 @@ class KasiApprovalService
                         new LetterStatusNotification(
                             $letter,
                             'Permohonan Disetujui',
-                            'Permohonan surat Anda telah selesai diproses ole operator. 
-                            silahkan ambil ke kantor desa',
+                            'Permohonan surat Anda telah selesai diproses oleh operator. Silakan ambil ke kantor desa.',
                             'kasi_approved'
                         )
                     );

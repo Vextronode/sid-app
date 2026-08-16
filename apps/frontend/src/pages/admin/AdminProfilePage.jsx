@@ -26,10 +26,10 @@ export default function AdminProfilePage() {
             <p className="text-xs text-gray-400">{user?.email ?? '-'}</p>
           </div>
         </div>
-        <div className="inline-flex items-center gap-1 bg-green-50 text-green-700 text-[10px] font-semibold px-2 py-1 rounded-full mb-3">
+        <div className="inline-flex items-center gap-1 bg-blue-50 text-[#185FA5] text-[10px] font-semibold px-2 py-1 rounded-full mb-3">
           <CheckCircle2 size={12} /> NIK TERVERIFIKASI
         </div>
-        <button onClick={() => setModalOpen(true)} className="w-full bg-green-600 text-white rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2 hover:bg-green-700">
+        <button onClick={() => setModalOpen(true)} className="w-full bg-[#185FA5] text-white rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2 hover:bg-blue-700">
           <Pencil size={14} /> Edit
         </button>
       </div>

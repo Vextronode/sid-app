@@ -10,4 +10,15 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  server: {
+    allowedHosts: true,
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:8000",
+      },
+      "/sanctum": {
+        target: "http://127.0.0.1:8000",
+      },
+    },
+  },
 });

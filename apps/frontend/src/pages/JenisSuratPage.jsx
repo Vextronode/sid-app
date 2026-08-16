@@ -72,7 +72,7 @@ export default function JenisSuratPage() {
           </button>
 
           {/* TIDAK bisa diklik, cuma tampilan biasa (div, bukan button) */}
-          <div className="bg-green-600 rounded-2xl shadow-sm p-5 flex items-center justify-between text-white">
+          <div className="bg-[#185FA5] rounded-2xl shadow-sm p-5 flex items-center justify-between text-white">
             <div>
               <p className="text-[10px] uppercase mb-1 opacity-90">Sedang Diproses</p>
               <p className="text-lg font-bold">Status Permohonan</p>

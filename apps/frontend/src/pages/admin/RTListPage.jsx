@@ -96,7 +96,7 @@ const handleReject = async (alasan) => {
                   defaultValue={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Nomor surat atau nama pemohon..."
-                  className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm text-gray-400 outline-none focus:border-green-500"
+                  className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500"
                 />
               </div>
             </div>
@@ -105,7 +105,7 @@ const handleReject = async (alasan) => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-green-500"
+                className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500"
               >
                 <option value="">Semua Status</option>
                 <option value="pending">Menunggu</option>
@@ -166,7 +166,7 @@ const handleReject = async (alasan) => {
                 Sebelumnya
               </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-lg text-xs font-medium ${page === currentPage ? 'bg-green-600 text-white' : 'border text-gray-600'}`}>
+                <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-lg text-xs font-medium ${page === currentPage ? 'bg-[#185FA5] text-white' : 'border text-gray-600'}`}>
                   {page}
                 </button>
               ))}
@@ -191,7 +191,7 @@ const handleReject = async (alasan) => {
               defaultValue={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama pemohon..."
-              className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm text-gray-400 outline-none focus:border-green-500 bg-white"
+              className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500 bg-white"
             />
           </div>
 
@@ -228,7 +228,7 @@ const handleReject = async (alasan) => {
 
           <div className="flex justify-center gap-2 mb-4">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-full text-xs font-medium ${page === currentPage ? 'bg-green-600 text-white' : 'bg-white border text-green-600'}`}>
+              <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-full text-xs font-medium ${page === currentPage ? 'bg-[#185FA5] text-white' : 'bg-white border text-blue-600'}`}>
                 {page}
               </button>
             ))}
