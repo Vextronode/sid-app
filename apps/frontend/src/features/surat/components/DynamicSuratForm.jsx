@@ -172,30 +172,49 @@ const handleSubmit = async (e) => {
 
   const payload = new FormData();
 
+  // ==============================
+  // FIELD LANGSUNG KE TABLE LETTERS
+  // ==============================
+
   payload.append("letter_type_id", selectedLetterType.id);
 
-  // purpose
+  // Keperluan → letters.purpose
   if (formData.keperluan) {
     payload.append("purpose", formData.keperluan);
   }
 
-  // notes
+  // Catatan → letters.notes
   if (formData.catatan) {
     payload.append("notes", formData.catatan);
   }
 
-  // attachments
+  // ==============================
+  // ATTACHMENTS
+  // ==============================
+
   if (Array.isArray(formData.dokumen)) {
     formData.dokumen.forEach((file) => {
       payload.append("attachments[]", file);
     });
   }
 
-  // Send all extra dynamic fields into payload[...]
+  // ==============================
+  // FIELD DINAMIS → letters.payload
+  // ==============================
+
   Object.keys(formData).forEach((key) => {
-    if (!["keperluan", "catatan", "dokumen"].includes(key)) {
+    // Jangan masukkan field ini ke payload JSON
+    if (
+      !["keperluan", "catatan", "dokumen"].includes(key)
+    ) {
       const val = formData[key];
-      if (val !== undefined && val !== null && !(val instanceof File) && !Array.isArray(val)) {
+
+      if (
+        val !== undefined &&
+        val !== null &&
+        !(val instanceof File) &&
+        !Array.isArray(val)
+      ) {
         payload.append(`payload[${key}]`, val);
       }
     }
@@ -203,6 +222,7 @@ const handleSubmit = async (e) => {
 
   try {
     let response;
+
     if (onSubmitAPI) {
       response = await onSubmitAPI(payload);
     } else {
@@ -213,10 +233,9 @@ const handleSubmit = async (e) => {
   } catch (error) {
     console.error(error);
 
-
     alert(
       error.response?.data?.message ??
-      "Gagal mengirim surat."
+        "Gagal mengirim surat."
     );
   }
 };
