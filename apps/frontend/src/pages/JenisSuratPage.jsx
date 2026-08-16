@@ -19,7 +19,7 @@ export default function JenisSuratPage() {
   const total = letters.length;
   const disetujui = letters.filter((s) => s.status === 'kasi_approved').length;
   const ditolak = letters.filter((s) => s.status?.endsWith('_rejected')).length;
-  const menunggu = letters.filter((s) => !s.status?.endsWith('_rejected') && s.status !== 'rw_approved').length;
+  const menunggu = letters.filter((s) => !s.status?.endsWith('_rejected') && s.status !== 'kasi_approved').length;
 
   return (
     <WargaLayout>
@@ -75,7 +75,6 @@ export default function JenisSuratPage() {
           <div className="bg-[#185FA5] rounded-2xl shadow-sm p-5 flex items-center justify-between text-white">
             <div>
               <p className="text-[10px] uppercase mb-1 opacity-90">Sedang Diproses</p>
-              <p className="text-lg font-bold">Status Permohonan</p>
               <p className="text-2xl font-bold mt-1">{loading ? '-' : menunggu}</p>
             </div>
             <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
