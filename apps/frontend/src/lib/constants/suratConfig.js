@@ -19,7 +19,7 @@ export const SURAT_CONFIG = {
         name: "dokumen",
         label: "Upload Dokumen Pendukung",
         type: "file",
-        required: true,
+        required: false,
         accept:
           ".pdf,.jpg,.jpeg,.png",
       },
@@ -73,9 +73,18 @@ export const SURAT_CONFIG = {
         name: "dokumen",
         label: "Upload Dokumen Pendukung",
         type: "file",
-        required: true,
+        required: false,
         accept:
           ".pdf,.jpg,.jpeg,.png",
+      },
+
+      {
+        name: "catatan",
+        label: "Catatan Tambahan",
+        type: "textarea",
+        required: false,
+        placeholder:
+          "Opsional",
       },
     ],
   },
@@ -98,9 +107,18 @@ export const SURAT_CONFIG = {
         name: "dokumen",
         label: "Upload Dokumen Pendukung",
         type: "file",
-        required: true,
+        required: false,
         accept:
           ".pdf,.jpg,.jpeg,.png",
+      },
+
+      {
+        name: "catatan",
+        label: "Catatan Tambahan",
+        type: "textarea",
+        required: false,
+        placeholder:
+          "Opsional",
       },
     ],
   },
@@ -137,9 +155,18 @@ export const SURAT_CONFIG = {
         name: "dokumen",
         label: "Upload Dokumen Pendukung",
         type: "file",
-        required: true,
+        required: false,
         accept:
           ".pdf,.jpg,.jpeg,.png",
+      },
+
+      {
+        name: "catatan",
+        label: "Catatan Tambahan",
+        type: "textarea",
+        required: false,
+        placeholder:
+          "Opsional",
       },
     ],
   },
@@ -163,10 +190,19 @@ export const SURAT_CONFIG = {
         name: "dokumen",
         label: "Upload Dokumen Pendukung",
         type: "file",
-        required: true,
+        required: false,
         accept:
-          ".pdf,.jpg,.jpeg,.png"
-      }
+          ".pdf,.jpg,.jpeg,.png",
+      },
+
+      {
+        name: "catatan",
+        label: "Catatan Tambahan",
+        type: "textarea",
+        required: false,
+        placeholder:
+          "Opsional",
+      },
     ]
   },
 
@@ -209,9 +245,18 @@ export const SURAT_CONFIG = {
         name: "dokumen",
         label: "Upload Dokumen Pendukung",
         type: "file",
-        required: true,
+        required: false,
         accept:
           ".pdf,.jpg,.jpeg,.png",
+      },
+
+      {
+        name: "catatan",
+        label: "Catatan Tambahan",
+        type: "textarea",
+        required: false,
+        placeholder:
+          "Opsional",
       },
     ],
   },
@@ -268,9 +313,18 @@ export const SURAT_CONFIG = {
         name: "dokumen",
         label: "Upload Dokumen Pendukung",
         type: "file",
-        required: true,
+        required: false,
         accept:
           ".pdf,.jpg,.jpeg,.png",
+      },
+
+      {
+        name: "catatan",
+        label: "Catatan Tambahan",
+        type: "textarea",
+        required: false,
+        placeholder:
+          "Opsional",
       },
     ],
   },
@@ -334,9 +388,18 @@ export const SURAT_CONFIG = {
         name: "dokumen",
         label: "Upload Dokumen Pendukung",
         type: "file",
-        required: true,
+        required: false,
         accept:
           ".pdf,.jpg,.jpeg,.png",
+      },
+
+      {
+        name: "catatan",
+        label: "Catatan Tambahan",
+        type: "textarea",
+        required: false,
+        placeholder:
+          "Opsional",
       },
     ],
   },
@@ -360,10 +423,19 @@ export const SURAT_CONFIG = {
         name: "dokumen",
         label: "Upload Dokumen Pendukung",
         type: "file",
-        required: true,
+        required: false,
         accept:
-          ".pdf,.jpg,.jpeg,.png"
-      }
+          ".pdf,.jpg,.jpeg,.png",
+      },
+
+      {
+        name: "catatan",
+        label: "Catatan Tambahan",
+        type: "textarea",
+        required: false,
+        placeholder:
+          "Opsional",
+      },
     ]
   },
 
@@ -386,10 +458,19 @@ export const SURAT_CONFIG = {
         name: "dokumen",
         label: "Upload Dokumen Pendukung",
         type: "file",
-        required: true,
+        required: false,
         accept:
-          ".pdf,.jpg,.jpeg,.png"
-      }
+          ".pdf,.jpg,.jpeg,.png",
+      },
+
+      {
+        name: "catatan",
+        label: "Catatan Tambahan",
+        type: "textarea",
+        required: false,
+        placeholder:
+          "Opsional",
+      },
     ]
   },
 
@@ -418,9 +499,18 @@ export const SURAT_CONFIG = {
         name: "dokumen",
         label: "Upload Dokumen Pendukung",
         type: "file",
-        required: true,
+        required: false,
         accept:
           ".pdf,.jpg,.jpeg,.png",
+      },
+
+      {
+        name: "catatan",
+        label: "Catatan Tambahan",
+        type: "textarea",
+        required: false,
+        placeholder:
+          "Opsional",
       },
     ],
   },
