@@ -107,70 +107,202 @@ export default function DaftarSuratSayaPage() {
         <h1 className="text-2xl font-bold text-gray-800 mb-1">{PAGE_TITLE[filterStatus] ?? 'Daftar Permohonan'}</h1>
         <p className="text-sm text-gray-500 mb-6">Daftar surat yang pernah Anda ajukan</p>
 
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden ">
-          {loading ? (
-            <p className="text-center text-gray-400 text-sm py-8">Memuat data surat...</p>
-          ) : filtered.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm py-8">Belum ada surat pada kategori ini.</p>
-          ) : (
-            <table className="w-full text-sm text-gray-400 ">
-              <thead>
-                <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                  <th className="py-3 px-4 font-semibold text-gray-500">Jenis Surat</th>
-                  <th className="py-3 px-4 font-semibold text-center text-gray-500">Tanggal</th>
-                  <th className="py-3 px-4 font-semibold text-center text-gray-500">Status</th>
-                  <th className="py-3 px-4 font-semibold text-center text-gray-500">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((item) => {
-                  const badge = STATUS_LABEL[item.status] ?? { label: item.status, className: 'bg-gray-100 text-gray-500' };
-                  return (
-                    <tr key={item.id} className="border-b last:border-0">
-                      <td className="py-3 px-4 text-gray-400">
-                        <p className="font-medium text-gray-400">{item.letter_type?.name ?? '-'}</p>
-                        <p className="text-[10px] text-gray-400">#{item.letter_number ?? `SKD-${item.id}`}</p>
-                      </td>
-                      <td className="py-3 px-4 text-gray-400">
-                        {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex justify-end gap-2 flex-wrap">
-                          <button
-                            onClick={() => setSelectedSurat({
-                              ...item,
-                              noSurat: item.letter_number,
-                              pemohon: item.applicant_name,
-                              jenis: item.letter_type?.name,
-                              tanggal: item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'
-                            })}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-gray-300 text-xs text-gray-800 hover:bg-gray-100"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            Detail
-                          </button>
+<div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+  {loading ? (
+    <p className="text-center text-gray-400 text-sm py-8">
+      Memuat data surat...
+    </p>
+  ) : filtered.length === 0 ? (
+    <p className="text-center text-gray-400 text-sm py-8">
+      Belum ada surat pada kategori ini.
+    </p>
+  ) : (
+    <table className="w-full table-fixed text-sm text-gray-400">
+      <thead>
+        <tr className="border-b text-gray-400 text-[9px] sm:text-[10px] uppercase">
+          
+          {/* JENIS */}
+          <th className="py-3 px-2 sm:px-4 font-semibold text-gray-500 text-left w-[32%]">
+            Jenis Surat
+          </th>
 
-                          {item.status === 'waiting_revision_warga' && (
-                            <button
-                              onClick={() => navigate(`/revisi-surat/${item.id}`)}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 text-xs font-medium"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                              Revisi
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+          {/* TANGGAL */}
+          <th className="py-3 px-1 sm:px-4 font-semibold text-gray-500 text-center w-[20%]">
+            Tanggal
+          </th>
+
+          {/* STATUS */}
+          <th className="py-3 px-1 sm:px-4 font-semibold text-gray-500 text-center w-[22%]">
+            Status
+          </th>
+
+          {/* AKSI */}
+          <th className="py-3 px-1 sm:px-4 font-semibold text-gray-500 text-center w-[26%]">
+            Aksi
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {filtered.map((item) => {
+          const badge =
+            STATUS_LABEL[item.status] ?? {
+              label: item.status,
+              className: "bg-gray-100 text-gray-500",
+            };
+
+          return (
+            <tr
+              key={item.id}
+              className="border-b last:border-0 hover:bg-gray-50/50 transition"
+            >
+
+              {/* ==========================
+                  JENIS SURAT
+              ========================== */}
+              <td className="py-3 px-2 sm:px-4 align-top">
+                <div className="min-w-0">
+                  <p className="
+                    font-medium
+                    text-gray-500
+                    text-[10px]
+                    sm:text-sm
+                    leading-4
+                    break-words
+                  ">
+                    {item.letter_type?.name ?? "-"}
+                  </p>
+
+                  <p className="
+                    text-[8px]
+                    sm:text-[10px]
+                    text-gray-400
+                    mt-0.5
+                    break-words
+                  ">
+                    #{item.letter_number ?? `SKD-${item.id}`}
+                  </p>
+                </div>
+              </td>
+
+              {/* ==========================
+                  TANGGAL
+              ========================== */}
+              <td className="py-3 px-1 sm:px-4 text-center">
+                <span className="text-[9px] sm:text-sm text-gray-400 whitespace-nowrap">
+                  {item.created_at
+                    ? new Date(item.created_at).toLocaleDateString(
+                        "id-ID"
+                      )
+                    : "-"}
+                </span>
+              </td>
+
+              {/* ==========================
+                  STATUS
+              ========================== */}
+              <td className="py-3 px-1 sm:px-4 text-center">
+                <span
+                  className={`
+                    inline-flex
+                    items-center
+                    justify-center
+                    whitespace-nowrap
+                    px-1.5
+                    sm:px-2
+                    py-1
+                    rounded-full
+                    text-[8px]
+                    sm:text-[10px]
+                    font-semibold
+                    ${badge.className}
+                  `}
+                >
+                  {badge.label}
+                </span>
+              </td>
+
+              {/* ==========================
+                  AKSI
+              ========================== */}
+              <td className="py-3 px-1 sm:px-4">
+                <div className="flex items-center justify-center gap-1 sm:gap-2">
+
+                  {/* DETAIL */}
+                  <button
+                    onClick={() =>
+                      setSelectedSurat({
+                        ...item,
+                        noSurat: item.letter_number,
+                        pemohon: item.applicant_name,
+                        jenis: item.letter_type?.name,
+                        tanggal: item.created_at
+                          ? new Date(
+                              item.created_at
+                            ).toLocaleDateString("id-ID")
+                          : "-",
+                      })
+                    }
+                    className="
+                      inline-flex
+                      items-center
+                      gap-1
+                      px-2
+                      sm:px-3
+                      py-1.5
+                      rounded-full
+                      border
+                      border-gray-300
+                      text-[9px]
+                      sm:text-xs
+                      text-gray-800
+                      hover:bg-gray-100
+                      whitespace-nowrap
+                    "
+                  >
+                    <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    Detail
+                  </button>
+
+                  {/* REVISI */}
+                  {item.status === "waiting_revision_warga" && (
+                    <button
+                      onClick={() =>
+                        navigate(`/revisi-surat/${item.id}`)
+                      }
+                      className="
+                        inline-flex
+                        items-center
+                        gap-1
+                        px-2
+                        sm:px-3
+                        py-1.5
+                        rounded-full
+                        border
+                        border-amber-300
+                        text-amber-700
+                        bg-amber-50
+                        hover:bg-amber-100
+                        text-[9px]
+                        sm:text-xs
+                        font-medium
+                        whitespace-nowrap
+                      "
+                    >
+                      <Edit className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      Revisi
+                    </button>
+                  )}
+
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  )}
+</div>
       </div>
 
       {selectedSurat && (
