@@ -107,19 +107,19 @@ export default function DaftarSuratSayaPage() {
         <h1 className="text-2xl font-bold text-gray-800 mb-1">{PAGE_TITLE[filterStatus] ?? 'Daftar Permohonan'}</h1>
         <p className="text-sm text-gray-500 mb-6">Daftar surat yang pernah Anda ajukan</p>
 
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden ">
           {loading ? (
             <p className="text-center text-gray-400 text-sm py-8">Memuat data surat...</p>
           ) : filtered.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-8">Belum ada surat pada kategori ini.</p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full text-sm text-gray-400 ">
               <thead>
                 <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                  <th className="py-3 px-4 font-semibold">Jenis Surat</th>
-                  <th className="py-3 px-4 font-semibold">Tanggal</th>
-                  <th className="py-3 px-4 font-semibold">Status</th>
-                  <th className="py-3 px-4 font-semibold text-right">Aksi</th>
+                  <th className="py-3 px-4 font-semibold text-gray-500">Jenis Surat</th>
+                  <th className="py-3 px-4 font-semibold text-center text-gray-500">Tanggal</th>
+                  <th className="py-3 px-4 font-semibold text-center text-gray-500">Status</th>
+                  <th className="py-3 px-4 font-semibold text-center text-gray-500">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -127,11 +127,11 @@ export default function DaftarSuratSayaPage() {
                   const badge = STATUS_LABEL[item.status] ?? { label: item.status, className: 'bg-gray-100 text-gray-500' };
                   return (
                     <tr key={item.id} className="border-b last:border-0">
-                      <td className="py-3 px-4">
-                        <p className="font-medium text-gray-800">{item.letter_type?.name ?? '-'}</p>
+                      <td className="py-3 px-4 text-gray-400">
+                        <p className="font-medium text-gray-400">{item.letter_type?.name ?? '-'}</p>
                         <p className="text-[10px] text-gray-400">#{item.letter_number ?? `SKD-${item.id}`}</p>
                       </td>
-                      <td className="py-3 px-4 text-gray-500">
+                      <td className="py-3 px-4 text-gray-400">
                         {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
                       </td>
                       <td className="py-3 px-4">
@@ -147,7 +147,7 @@ export default function DaftarSuratSayaPage() {
                               jenis: item.letter_type?.name,
                               tanggal: item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'
                             })}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-gray-300 text-xs hover:bg-gray-100"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-gray-300 text-xs text-gray-800 hover:bg-gray-100"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             Detail
