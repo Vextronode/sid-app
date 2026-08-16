@@ -59,14 +59,11 @@ export function OperatorDesaLayout({ children }) {
           })}
         </nav>
 
-        <div className="px-3 pb-5 flex flex-col gap-1  pt-4">
-          <Link to="/admin/operator-desa/surat" className="flex items-center gap-2 bg-[#185FA5] text-white rounded-lg px-3 py-2.5 text-sm font-medium justify-center hover:bg-blue-700">
-            <Plus size={16} /> Permohonan Baru
-          </Link>
-          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 mt-2">
+        <div className="px-3 pb-5 flex flex-col gap-1  pt-4 bg-orange-500">
+          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white hover:bg-gray-100 hover:text-orange-500 mt-2">
             <HelpCircle size={16} /> Pusat Bantuan
           </button>
-          <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50">
+          <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white hover:bg-red-50 hover:text-red-500">
             <LogOut size={16} /> Keluar
           </button>
         </div>
