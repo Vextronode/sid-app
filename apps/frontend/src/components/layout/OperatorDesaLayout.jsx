@@ -77,48 +77,23 @@ export function OperatorDesaLayout({ children }) {
         {/* Topbar */}
           <div className="fixed left-56 right-0 top-0 h-20 bg-[#185FA5] px-6 flex items-center justify-between shadow-lg z-30">
           <div className="relative">
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-
-            <input
-              placeholder="Cari data warga..."
-              className="
-                w-64
-                rounded-full
-                pl-9 pr-4 py-2
-                text-sm
-                bg-white
-                text-[#185FA5]
-                placeholder:text-gray-400
-                border border-white
-                outline-none
-                focus:ring-2
-                focus:ring-blue-300
-                focus:border-blue
-              "
-            />
           </div>
 
           <div className="flex items-center gap-4 ">
             
-<button
-    onClick={() => setNotifOpen((prev) => !prev)}
-    className="relative w-8 h-8 rounded-full flex items-center justify-center text-white hover:text-blue-200 hover:bg-blue-700/50 transition-colors"
-    title="Notifikasi"
-  >
-    <Bell size={18} />
+          <button
+              onClick={() => setNotifOpen((prev) => !prev)}
+              className="relative w-8 h-8 rounded-full flex items-center justify-center text-white hover:text-blue-200 hover:bg-blue-700/50 transition-colors"
+              title="Notifikasi"
+            >
+              <Bell size={18} />
 
-    {/* Badge Merah di Pojok Kanan Atas */}
-    {unreadCount > 0 && (
-      <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#185FA5] pointer-events-none">
-        {unreadCount > 99 ? "99+" : unreadCount}
-      </span>
-    )}
-  </button>
-            <button className="text-white hover:text-blue-200">
-              <Settings size={18} />
+              {/* Badge Merah di Pojok Kanan Atas */}
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#185FA5] pointer-events-none">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </button>
             <div className="flex items-center gap-2">
               <div className="text-right">
