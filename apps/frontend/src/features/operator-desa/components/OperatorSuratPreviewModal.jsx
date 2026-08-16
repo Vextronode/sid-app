@@ -1,33 +1,46 @@
 // ==========================================
 // OperatorSuratPreviewModal.jsx
 // Modal khusus untuk melihat preview surat.
+//
 // - Read Only
-// - Tidak ada download
-// - Tidak ada print
-// - Tidak ada TTD
-// - Preview PDF tidak bisa diinteraksi
+// - Preview PDF langsung di modal
+// - Tidak ada download dari iframe
+// - Tidak ada print dari iframe
+// - Tombol "Cetak Surat" hanya aktif jika status
+//   surat sudah kasi_approved
 // ==========================================
 
 import { useEffect, useState } from "react";
-import { previewSuratPDF } from "@/features/cetak-surat/utils/generateSuratPDF";
+import { Printer } from "lucide-react";
+
+import {
+  previewSuratPDF,
+  generateSuratPDF,
+} from "@/features/cetak-surat/utils/generateSuratPDF";
 
 export default function OperatorSuratPreviewModal({
   surat,
   onClose,
 }) {
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [loadingPrint, setLoadingPrint] = useState(false);
 
   useEffect(() => {
     if (!surat) return;
 
-    let url;
+    let url = null;
+
+    setPreviewUrl(null);
 
     previewSuratPDF(surat)
       .then((blobUrl) => {
         url = blobUrl;
         setPreviewUrl(blobUrl);
       })
-      .catch(console.error);
+      .catch((error) => {
+        console.error("Gagal preview PDF:", error);
+        setPreviewUrl(null);
+      });
 
     return () => {
       if (url) {
@@ -38,18 +51,65 @@ export default function OperatorSuratPreviewModal({
 
   if (!surat) return null;
 
+  // ==========================================
+  // HANYA KASI APPROVED YANG BOLEH CETAK
+  // ==========================================
+
+  const bisaCetak = surat.status === "kasi_approved";
+
+  // ==========================================
+  // CETAK SURAT
+  // ==========================================
+
+  const handleCetakSurat = async () => {
+    if (!bisaCetak || loadingPrint) return;
+
+    setLoadingPrint(true);
+
+    try {
+      // Membuka PDF di halaman/tab baru
+      await generateSuratPDF(surat);
+    } catch (error) {
+      console.error("Gagal mencetak surat:", error);
+
+      alert(
+        error.response?.data?.message ||
+          error.message ||
+          "Gagal membuka PDF surat."
+      );
+    } finally {
+      setLoadingPrint(false);
+    }
+  };
+
   return (
     <>
+      {/* ==========================================
+          MODAL
+      ========================================== */}
+
       <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4">
 
         <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
 
+          {/* CLOSE */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl"
+            className="
+              absolute
+              top-4
+              right-4
+              text-gray-400
+              hover:text-gray-600
+              text-xl
+            "
           >
             ✕
           </button>
+
+          {/* ==========================================
+              TITLE
+          ========================================== */}
 
           <h2 className="font-bold text-gray-800 text-lg">
             Detail Permohonan Surat
@@ -60,12 +120,27 @@ export default function OperatorSuratPreviewModal({
             {surat.letter_type?.name ?? "-"}
           </p>
 
+          {/* ==========================================
+              CATATAN
+          ========================================== */}
+
           {surat.notes && (
             <div className="mb-5 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-[10px] font-semibold text-blue-800 uppercase mb-1">Catatan Warga / Revisi</p>
-              <p className="text-sm text-blue-900">{surat.notes}</p>
+
+              <p className="text-[10px] font-semibold text-blue-800 uppercase mb-1">
+                Catatan Warga / Revisi
+              </p>
+
+              <p className="text-sm text-blue-900">
+                {surat.notes}
+              </p>
+
             </div>
           )}
+
+          {/* ==========================================
+              PREVIEW PDF
+          ========================================== */}
 
           <div className="relative border rounded-lg overflow-hidden mb-5 h-[500px] bg-gray-100">
 
@@ -77,10 +152,15 @@ export default function OperatorSuratPreviewModal({
                     "#toolbar=0&navpanes=0&scrollbar=0"
                   }
                   title="Preview Surat"
-                  className="w-full h-full pointer-events-none select-none"
+                  className="
+                    w-full
+                    h-full
+                    pointer-events-none
+                    select-none
+                  "
                 />
 
-                {/* Overlay supaya benar-benar tidak bisa diklik */}
+                {/* Overlay supaya iframe benar-benar tidak bisa diklik */}
                 <div className="absolute inset-0 bg-transparent" />
               </>
             ) : (
@@ -91,11 +171,57 @@ export default function OperatorSuratPreviewModal({
 
           </div>
 
+          {/* ==========================================
+              INFO JIKA BELUM KASI APPROVED
+          ========================================== */}
+
+          {!bisaCetak && (
+            <div className="
+              bg-yellow-50
+              border
+              border-yellow-200
+              text-yellow-700
+              text-xs
+              rounded-lg
+              p-3
+              mb-4
+            ">
+              Surat belum dapat dicetak. Menunggu persetujuan
+              dari operator terlebih dahulu.
+            </div>
+          )}
+
+          {/* ==========================================
+              TOMBOL CETAK
+          ========================================== */}
+
           <button
-            onClick={onClose}
-            className="w-full border border-gray-300 rounded-lg py-2.5 text-sm hover:bg-gray-50"
+            onClick={handleCetakSurat}
+            disabled={!bisaCetak || loadingPrint}
+            className="
+              w-full
+              flex
+              items-center
+              justify-center
+              gap-2
+              bg-[#185FA5]
+              text-white
+              rounded-lg
+              py-2.5
+              text-sm
+              font-medium
+              hover:bg-[#124A82]
+              disabled:opacity-40
+              disabled:cursor-not-allowed
+            "
           >
-            Tutup
+
+            <Printer size={16} />
+
+            {loadingPrint
+              ? "Membuka PDF..."
+              : "Cetak Surat"}
+
           </button>
 
         </div>

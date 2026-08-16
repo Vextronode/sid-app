@@ -79,33 +79,26 @@ export function AdminLayout({ children, menuItems }) {
                 <Settings size={20} />
               </button>
 
-              {settingsOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
+            {settingsOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />
+                <div className="absolute right-0 top-10 bg-white shadow-xl rounded-xl border border-blue-100 z-50 w-48 py-1.5 animate-in fade-in zoom-in-95 duration-100">
+                  <Link
+                    to="/profile"
                     onClick={() => setSettingsOpen(false)}
-                  />
-
-                  <div className="absolute right-0 top-11 bg-white shadow-lg rounded-xl border z-50 w-44 py-1">
-                    <Link
-                      to="/admin/profile"
-                      onClick={() => setSettingsOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#185FA5] hover:bg-blue-50"
-                    >
-                      <UserCircle size={16} />
-                      Profil
-                    </Link>
-
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
-                    >
-                      <LogOut size={16} />
-                      Keluar
-                    </button>
-                  </div>
-                </>
-              )}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[#185FA5] hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                  >
+                    <UserCircle size={18} className="text-[#185FA5]" /> Profil
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut size={18} className="text-red-500" /> Keluar
+                  </button>
+                </div>
+              </>
+            )}
             </div>
           ) : (
             <div className="w-9 h-9 rounded-full border-2 border-[#185FA5] flex items-center justify-center text-[#185FA5]">
