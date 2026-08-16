@@ -19,7 +19,6 @@ const FIELD_MAP = {
   keperluan: (s) => s.purpose ?? '-',
   diajukan: (s) => (s.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
   terakhirDiproses: (s) => (s.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
-  ipAktor: (s) => s.ip_address ?? '-',
   riwayat: (s) => s.decisions ?? [],
 };
 
@@ -42,7 +41,6 @@ export default function SuratDetailModalRW({ suratId, onClose, onApprove, onReje
         { label: 'Keperluan', value: FIELD_MAP.keperluan(surat) },
         { label: 'Diajukan', value: FIELD_MAP.diajukan(surat) },
         { label: 'Terakhir diproses', value: FIELD_MAP.terakhirDiproses(surat) },
-        { label: 'IP aktor', value: FIELD_MAP.ipAktor(surat) },
       ]
     : [];
 
