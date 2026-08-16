@@ -2,7 +2,7 @@ import api from "@/lib/api";
 
 export function getUsers(){
 
-    return api.get("api/users");
+    return api.get("/api/users");
 
 }
 
@@ -10,6 +10,6 @@ export function getUsers(){
 
 export function toggleUserStatus(id){
 
-    return api.patch(`api/users/${id}/toggle-status`);
+    return api.patch(`/api/users/${id}/toggle-status`);
 
 }
