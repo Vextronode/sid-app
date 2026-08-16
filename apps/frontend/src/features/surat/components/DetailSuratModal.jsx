@@ -954,6 +954,21 @@ const DetailInfo = ({ data }) => {
           : "-"}
       </div>
 
+      {/* Alasan penolakan */}
+{["rt_rejected", "rw_rejected", "kasi_rejected"].includes(
+  (data.status || "").toLowerCase()
+) && (
+  <>
+    <div className="text-gray-400">
+      Alasan Penolakan
+    </div>
+
+    <div className="text-black">
+      {data.notes || "-"}
+    </div>
+  </>
+)}
+
     </div>
 
   );
