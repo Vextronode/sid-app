@@ -12,7 +12,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Calendar, Check, Clock, X, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF';
+import * as pdfjsLib from "pdfjs-dist";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 // Hitung tahap tracking dari status surat: 0=Submit, 1=RT, 2=RW, 3=Selesai
 function getStepState(status) {
   const map = {
@@ -89,55 +92,211 @@ const canPreviewStatuses = [
 
 const canPreviewSurat = (status) =>
   canPreviewStatuses.includes(status);
-// Preview PDF Surat (read-only, sama seperti di DetailSuratModal)
+// ==========================================
+// PREVIEW PDF
+// PDF dirender menggunakan PDF.js
+// sehingga HP tidak perlu membuka PDF viewer
+// ==========================================
 function SuratPreview({ suratId, status }) {
-  const [previewUrl, setPreviewUrl] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [pages, setPages] = useState([]);
+
   const canPreview = canPreviewSurat(status);
-  // Reset state kalau suratId berubah (pindah slide)
+
+  // ==========================================
+  // RESET KETIKA SURAT BERUBAH
+  // ==========================================
   useEffect(() => {
     setShowPreview(false);
-    setPreviewUrl(null);
+    setLoadingPreview(false);
     setLoadError(false);
+    setPages([]);
   }, [suratId]);
 
+  // ==========================================
+  // LOAD DAN RENDER PDF
+  // ==========================================
   useEffect(() => {
     if (!suratId || !showPreview) return;
 
-    let url;
-    setLoadError(false);
+    let cancelled = false;
+    let blobUrl = null;
 
-    const template = status === 'kasi_approved' ? 'digital' : 'wet';
+    const loadPDF = async () => {
+      try {
+        setLoadingPreview(true);
+        setLoadError(false);
+        setPages([]);
 
-    previewSuratPDF({ id: suratId }, template)
-      .then((blobUrl) => {
-        url = blobUrl;
-        setPreviewUrl(blobUrl);
-      })
-      .catch(() => {
-        setLoadError(true);
-      });
+        const template =
+          status === "kasi_approved"
+            ? "digital"
+            : "wet";
+
+        console.log("PREVIEW SURAT:", {
+          suratId,
+          status,
+          template,
+        });
+
+        // Ambil blob URL dari backend
+        blobUrl = await previewSuratPDF(
+          { id: suratId },
+          template
+        );
+
+        if (!blobUrl) {
+          throw new Error("URL PDF tidak tersedia.");
+        }
+
+        if (cancelled) return;
+
+        // ==========================================
+        // FETCH BLOB
+        // ==========================================
+        const response = await fetch(blobUrl);
+
+        if (!response.ok) {
+          throw new Error(
+            `Gagal mengambil PDF: ${response.status}`
+          );
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+
+        if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+          throw new Error("File PDF kosong.");
+        }
+
+        if (cancelled) return;
+
+        // ==========================================
+        // PDF.JS
+        // ==========================================
+        const pdf = await pdfjsLib.getDocument({
+          data: arrayBuffer,
+        }).promise;
+
+        console.log(
+          "PDF berhasil dibuka:",
+          pdf.numPages,
+          "halaman"
+        );
+
+        if (cancelled) return;
+
+        const renderedPages = [];
+
+        // ==========================================
+        // RENDER SETIAP HALAMAN
+        // ==========================================
+        for (
+          let pageNumber = 1;
+          pageNumber <= pdf.numPages;
+          pageNumber++
+        ) {
+          if (cancelled) return;
+
+          const page = await pdf.getPage(pageNumber);
+
+          // Scale untuk tampilan HP
+          const viewport = page.getViewport({
+            scale: 1.5,
+          });
+
+          const canvas = document.createElement("canvas");
+
+          const context = canvas.getContext("2d", {
+            alpha: false,
+          });
+
+          if (!context) {
+            throw new Error(
+              "Browser tidak mendukung Canvas."
+            );
+          }
+
+          canvas.width = Math.ceil(viewport.width);
+          canvas.height = Math.ceil(viewport.height);
+
+          await page.render({
+            canvasContext: context,
+            viewport,
+          }).promise;
+
+          if (cancelled) return;
+
+          renderedPages.push({
+            pageNumber,
+            dataUrl: canvas.toDataURL(
+              "image/jpeg",
+              0.9
+            ),
+          });
+        }
+
+        if (!cancelled) {
+          setPages(renderedPages);
+        }
+
+      } catch (error) {
+        console.error(
+          "GAGAL RENDER PREVIEW PDF:",
+          error
+        );
+
+        if (!cancelled) {
+          setLoadError(true);
+        }
+
+      } finally {
+        if (!cancelled) {
+          setLoadingPreview(false);
+        }
+      }
+    };
+
+    loadPDF();
 
     return () => {
-      if (url) {
-        URL.revokeObjectURL(url);
+      cancelled = true;
+
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
       }
     };
   }, [suratId, showPreview, status]);
 
   return (
     <div className="space-y-3 mt-4">
+
+      {/* ==========================================
+          BUTTON PREVIEW
+      ========================================== */}
       <button
+        type="button"
         disabled={!canPreview}
         onClick={() => {
-          if (canPreview) {
-            setShowPreview((prev) => !prev);
-          }
+          if (!canPreview) return;
+
+          setShowPreview((prev) => !prev);
         }}
         className={`
-          inline-flex items-center gap-2 px-4 py-2.5 rounded-lg
-          border text-sm font-medium transition w-full justify-center
+          inline-flex
+          items-center
+          justify-center
+          gap-2
+          px-4
+          py-2.5
+          rounded-lg
+          border
+          text-sm
+          font-medium
+          transition
+          w-full
+
           ${
             canPreview
               ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -148,41 +307,146 @@ function SuratPreview({ suratId, status }) {
         <FileText className="w-4 h-4" />
 
         {canPreview
-          ? (showPreview
-              ? "Sembunyikan Preview Surat"
-              : "Lihat Preview Surat")
+          ? showPreview
+            ? "Sembunyikan Preview Surat"
+            : "Lihat Preview Surat"
           : "Preview tersedia setelah disetujui Kantor Desa"}
       </button>
 
+      {/* ==========================================
+          PREVIEW
+      ========================================== */}
       {showPreview && (
-        <div className="relative border rounded-lg overflow-hidden h-[500px] bg-gray-100">
-          {loadError ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
-              <FileText className="w-8 h-8" />
-              <p className="text-sm">Gagal memuat preview surat</p>
-            </div>
-          ) : previewUrl ? (
-            <>
-              <iframe
-                src={
-                  previewUrl +
-                  '#toolbar=0&navpanes=0&scrollbar=0'
-                }
-                title="Preview Surat"
-                className="w-full h-full pointer-events-none select-none"
+        <div
+          className="
+            border
+            rounded-lg
+            overflow-hidden
+            bg-gray-200
+            p-2
+          "
+        >
+
+          {/* ======================================
+              LOADING
+          ====================================== */}
+          {loadingPreview && (
+            <div
+              className="
+                h-[500px]
+                flex
+                flex-col
+                items-center
+                justify-center
+                gap-3
+              "
+            >
+              <div
+                className="
+                  w-8
+                  h-8
+                  border-2
+                  border-gray-300
+                  border-t-green-600
+                  rounded-full
+                  animate-spin
+                "
               />
 
-              {/* Overlay supaya benar-benar tidak bisa diklik */}
-              <div className="absolute inset-0 bg-transparent" />
-            </>
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-2 border-gray-300 border-t-green-600 rounded-full animate-spin" />
-                <p className="text-sm">Memuat preview...</p>
-              </div>
+              <p className="text-sm text-gray-500">
+                Memuat preview surat...
+              </p>
             </div>
           )}
+
+          {/* ======================================
+              ERROR
+          ====================================== */}
+          {!loadingPreview && loadError && (
+            <div
+              className="
+                h-[500px]
+                flex
+                flex-col
+                items-center
+                justify-center
+                gap-2
+                text-gray-400
+                text-center
+                px-5
+              "
+            >
+              <FileText className="w-10 h-10" />
+
+              <p className="text-sm">
+                Gagal memuat preview surat
+              </p>
+
+              <p className="text-xs text-gray-400">
+                Silakan coba lagi.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPreview(false);
+
+                  setTimeout(() => {
+                    setShowPreview(true);
+                  }, 100);
+                }}
+                className="
+                  mt-2
+                  px-4
+                  py-2
+                  rounded-lg
+                  bg-green-600
+                  text-white
+                  text-xs
+                  font-medium
+                  hover:bg-green-700
+                "
+              >
+                Coba Lagi
+              </button>
+            </div>
+          )}
+
+          {/* ======================================
+              HASIL PDF
+          ====================================== */}
+          {!loadingPreview &&
+            !loadError &&
+            pages.length > 0 && (
+              <div className="flex flex-col gap-3">
+
+                {pages.map((page) => (
+                  <div
+                    key={page.pageNumber}
+                    className="
+                      bg-white
+                      rounded-sm
+                      overflow-hidden
+                      shadow-sm
+                    "
+                  >
+                    <img
+                      src={page.dataUrl}
+                      alt={`Preview halaman ${page.pageNumber}`}
+                      className="
+                        block
+                        w-full
+                        h-auto
+                        select-none
+                      "
+                      draggable={false}
+                    />
+                  </div>
+                ))}
+
+              </div>
+            )}
+
         </div>
       )}
     </div>
@@ -389,4 +653,3 @@ export default function SuratDateTracker({ letters, loading }) {
     </div>
   );
 }
-
