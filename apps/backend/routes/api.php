@@ -101,6 +101,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/letters', [LetterController::class, 'index']);
 
+    Route::delete('/letters/{letter}', [LetterController::class, 'destroy']);
+
     Route::patch('/letters/{letter}/resubmit', [LetterController::class, 'resubmit']);
 
     Route::get('/letters/{id}', [LetterController::class, 'show']);
