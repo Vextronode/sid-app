@@ -188,7 +188,7 @@ const handleConfirmAction = async () => {
             <h3 className="font-bold text-lg mb-2">
               {confirmType === 'revision' 
                 ? 'Minta Revisi Surat' 
-                : `Selesaikan Surat (${confirmType === 'digital' ? 'TTD Digital' : 'TTD Basah'})?`}
+                : `Selesaikan Surat ?`}
             </h3>
 
             {confirmType === 'revision' ? (

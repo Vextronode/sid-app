@@ -5,72 +5,145 @@
 // ==========================================
 
 import { useState } from 'react';
-import { Pencil, CheckCircle2, User, MapPin, VenetianMask, CreditCard } from 'lucide-react';
+import {
+  Pencil,
+  CheckCircle2,
+  User,
+  MapPin,
+  VenetianMask,
+  CreditCard,
+} from 'lucide-react';
+
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import EditProfilWargaModal from '@/features/profil-warga/components/EditProfilWargaModal';
+import { FooterDesa } from '@/components/layout/FooterDesa';
 
 export default function AdminProfilePage() {
-  
   const { user, setUser } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
 
+  const gender =
+    user?.citizen?.gender === 'P'
+      ? 'Perempuan'
+      : user?.citizen?.gender === 'L'
+        ? 'Laki-laki'
+        : '-';
+
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
-            <User size={24} className="text-gray-400" />
-          </div>
-          <div>
-            <p className="font-bold text-gray-800">{user?.name ?? 'Pengguna'}</p>
-            <p className="text-xs text-gray-400">{user?.email ?? '-'}</p>
-          </div>
-        </div>
-        <div className="inline-flex items-center gap-1 bg-blue-50 text-[#185FA5] text-[10px] font-semibold px-2 py-1 rounded-full mb-3">
-          <CheckCircle2 size={12} /> NIK TERVERIFIKASI
-        </div>
-        <button onClick={() => setModalOpen(true)} className="w-full bg-[#185FA5] text-white rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2 hover:bg-blue-700">
-          <Pencil size={14} /> Edit
-        </button>
-      </div>
+    <div className="min-h-screen flex flex-col">
+      {/* ================= CONTENT ================= */}
+      <main className="flex-1">
+        <div className="max-w-3xl mx-auto p-6">
 
-      <div className="bg-white rounded-2xl shadow-sm p-5 flex flex-col gap-4">
-        <div>
-          <p className="text-xs text-gray-400 mb-1">Full Name</p>
-          <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
-            <span className="text-sm text-gray-700">{user?.name ?? '-'}</span>
-            <User size={14} className="text-gray-400" />
-          </div>
-        </div>
-        <div>
-          <p className="text-xs text-gray-400 mb-1">alamat</p>
-          <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
-            <span className="text-sm text-gray-700">{user?.citizen?.address ?? '-'}</span>
-            <MapPin size={14} className="text-gray-400" />
-          </div>
-        </div>
-        <div>
-          <p className="text-xs text-gray-400 mb-1">Gender</p>
-          <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
-            <span className="text-sm text-gray-700">{user?.citizen?.gender === 'P' ? 'Perempuan' : user?.citizen?.gender === 'L' ? 'Laki-laki' : '-'}</span>
-            <VenetianMask size={14} className="text-gray-400" />
-          </div>
-        </div>
-        <div>
-          <p className="text-xs text-gray-400 mb-1">nik</p>
-          <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
-            <span className="text-sm text-gray-700">{user?.citizen?.nik ?? '-'}</span>
-            <CreditCard size={14} className="text-gray-400" />
-          </div>
-        </div>
-      </div>
+          {/* PROFILE HEADER */}
+          <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                <User size={24} className="text-gray-400" />
+              </div>
 
-      <EditProfilWargaModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSaved={(updatedUser) => setUser?.(updatedUser)}
-        initialData={user}
-      />
+              <div>
+                <p className="font-bold text-gray-800">
+                  {user?.name ?? 'Pengguna'}
+                </p>
+
+                <p className="text-xs text-gray-400">
+                  {user?.email ?? '-'}
+                </p>
+              </div>
+            </div>
+
+            <div className="inline-flex items-center gap-1 bg-blue-50 text-[#185FA5] text-[10px] font-semibold px-2 py-1 rounded-full mb-3">
+              <CheckCircle2 size={12} />
+              NIK TERVERIFIKASI
+            </div>
+
+            <button
+              onClick={() => setModalOpen(true)}
+              className="w-full bg-[#185FA5] text-white rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition"
+            >
+              <Pencil size={14} />
+              Edit
+            </button>
+          </div>
+
+          {/* PROFILE DETAIL */}
+          <div className="bg-white rounded-2xl shadow-sm p-5 flex flex-col gap-4">
+
+            {/* Nama */}
+            <div>
+              <p className="text-xs text-gray-400 mb-1">
+                Nama Lengkap
+              </p>
+
+              <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
+                <span className="text-sm text-gray-700">
+                  {user?.name ?? '-'}
+                </span>
+
+                <User size={14} className="text-gray-400" />
+              </div>
+            </div>
+
+            {/* Alamat */}
+            <div>
+              <p className="text-xs text-gray-400 mb-1">
+                Alamat
+              </p>
+
+              <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
+                <span className="text-sm text-gray-700">
+                  {user?.citizen?.address ?? '-'}
+                </span>
+
+                <MapPin size={14} className="text-gray-400" />
+              </div>
+            </div>
+
+            {/* Jenis Kelamin */}
+            <div>
+              <p className="text-xs text-gray-400 mb-1">
+                Jenis Kelamin
+              </p>
+
+              <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
+                <span className="text-sm text-gray-700">
+                  {gender}
+                </span>
+
+                <VenetianMask size={14} className="text-gray-400" />
+              </div>
+            </div>
+
+            {/* NIK */}
+            <div>
+              <p className="text-xs text-gray-400 mb-1">
+                NIK
+              </p>
+
+              <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
+                <span className="text-sm text-gray-700">
+                  {user?.citizen?.nik ?? '-'}
+                </span>
+
+                <CreditCard size={14} className="text-gray-400" />
+              </div>
+            </div>
+          </div>
+
+          {/* EDIT MODAL */}
+          <EditProfilWargaModal
+            open={modalOpen}
+            onClose={() => setModalOpen(false)}
+            onSaved={(updatedUser) => setUser?.(updatedUser)}
+            initialData={user}
+          />
+
+        </div>
+      </main>
+
+      {/* ================= FOOTER ================= */}
+      <FooterDesa />
     </div>
   );
 }

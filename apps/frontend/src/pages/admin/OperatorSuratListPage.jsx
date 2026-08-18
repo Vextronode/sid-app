@@ -87,6 +87,10 @@ export default function OperatorSuratListPage() {
   const [selectedSurat, setSelectedSurat] = useState(null);
   const [previewSurat, setPreviewSurat] = useState(null);
 
+  // Delete confirmation
+  const [deleteSurat, setDeleteSurat] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const ROLE_ENDPOINT = {
     rt: "rt",
     rw: "rw",
@@ -377,24 +381,17 @@ export default function OperatorSuratListPage() {
                               <Pencil size={17} className="mx-auto" />
                             </button>
                           )}
-                          <button
-                            onClick={async () => {
-                              if (!window.confirm("Yakin ingin menghapus surat ini?")) return;
-                              try {
-                                await api.delete(`/api/letters/${s.id}`);
-                                loadLetters();
-                              } catch (err) {
-                                window.alert(
-                                  err.response?.data?.message ?? "Gagal menghapus surat."
-                                );
-                              }
-                            }}
-                            className="w-9 h-9 rounded-lg border border-red-200 bg-red-50
-                                      text-red-600 hover:bg-red-100 transition"
-                            title="Hapus Surat"
-                          >
-                            <Trash2 size={17} className="mx-auto" />
-                          </button>
+                            <button
+                              onClick={() => {
+                                setDeleteSurat(s);
+                                setDeleteConfirmation('');
+                              }}
+                              className="w-9 h-9 rounded-lg border border-red-200 bg-red-50
+                                        text-red-600 hover:bg-red-100 transition"
+                              title="Hapus Surat"
+                            >
+                              <Trash2 size={17} className="mx-auto" />
+                            </button>
 
 
                         </div>
@@ -461,6 +458,216 @@ export default function OperatorSuratListPage() {
             loadLetters();
           }}
         />
+      )}
+      {deleteSurat && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
+
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+
+            {/* Header */}
+            <div className="flex items-start gap-4">
+
+              <div className="
+                w-11 h-11
+                rounded-full
+                bg-red-100
+                text-red-600
+                flex
+                items-center
+                justify-center
+                shrink-0
+              ">
+                <Trash2 size={20} />
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">
+                  Hapus Surat
+                </h2>
+
+                <p className="text-sm text-gray-500 mt-1">
+                  Tindakan ini akan menghapus surat dari sistem.
+                  Data yang sudah dihapus tidak dapat dikembalikan.
+                </p>
+              </div>
+
+            </div>
+
+
+            {/* Informasi surat */}
+            <div className="
+              mt-5
+              p-4
+              rounded-xl
+              bg-gray-50
+              border
+              border-gray-100
+            ">
+
+              <p className="text-[10px] uppercase font-semibold text-gray-400">
+                Surat yang akan dihapus
+              </p>
+
+              <p className="text-sm font-semibold text-gray-800 mt-1">
+                #{deleteSurat.letter_number ?? '-'}
+              </p>
+
+              <p className="text-xs text-gray-500 mt-1">
+                {deleteSurat.applicant_name ?? '-'}
+              </p>
+
+              <p className="text-xs text-gray-500">
+                {deleteSurat.letter_type?.name ?? '-'}
+              </p>
+
+            </div>
+
+
+            {/* Instruksi */}
+            <div className="mt-5">
+
+              <label className="
+                block
+                text-xs
+                font-semibold
+                text-gray-700
+                mb-2
+              ">
+                Untuk melanjutkan, ketik
+                <span className="text-red-600 font-bold mx-1">
+                  DELETE
+                </span>
+                di bawah ini.
+              </label>
+
+              <input
+                type="text"
+                value={deleteConfirmation}
+                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                placeholder="Ketik DELETE"
+                autoFocus
+                disabled={deleting}
+                className="
+                  w-full
+                  border
+                  border-gray-300
+                  rounded-xl
+                  px-4
+                  py-3
+                  text-sm
+                  text-gray-800
+                  outline-none
+                  focus:border-red-500
+                  focus:ring-2
+                  focus:ring-red-100
+                  disabled:bg-gray-100
+                "
+              />
+
+              {deleteConfirmation &&
+                deleteConfirmation !== 'DELETE' && (
+                  <p className="text-xs text-red-500 mt-2">
+                    Ketik <strong>DELETE</strong> persis seperti yang diminta.
+                  </p>
+                )}
+
+            </div>
+
+
+            {/* Buttons */}
+            <div className="flex gap-3 mt-6">
+
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => {
+                  setDeleteSurat(null);
+                  setDeleteConfirmation('');
+                }}
+                className="
+                  flex-1
+                  border
+                  border-gray-300
+                  text-gray-600
+                  rounded-xl
+                  py-2.5
+                  text-sm
+                  font-medium
+                  hover:bg-gray-50
+                  disabled:opacity-50
+                "
+              >
+                Batal
+              </button>
+
+
+              <button
+                type="button"
+                disabled={
+                  deleteConfirmation !== 'DELETE' ||
+                  deleting
+                }
+                onClick={async () => {
+
+                  if (deleteConfirmation !== 'DELETE') {
+                    return;
+                  }
+
+                  try {
+
+                    setDeleting(true);
+
+                    await api.delete(
+                      `/api/letters/${deleteSurat.id}`
+                    );
+
+                    // Tutup popup
+                    setDeleteSurat(null);
+                    setDeleteConfirmation('');
+
+                    // Refresh daftar surat
+                    await loadLetters();
+
+                  } catch (err) {
+
+                    console.error(
+                      "GAGAL HAPUS SURAT:",
+                      err.response?.data ?? err
+                    );
+
+                    window.alert(
+                      err.response?.data?.message ??
+                      "Gagal menghapus surat."
+                    );
+
+                  } finally {
+
+                    setDeleting(false);
+
+                  }
+
+                }}
+                className="
+                  flex-1
+                  bg-red-600
+                  text-white
+                  rounded-xl
+                  py-2.5
+                  text-sm
+                  font-medium
+                  hover:bg-red-700
+                  disabled:opacity-40
+                  disabled:cursor-not-allowed
+                "
+              >
+                {deleting ? 'Menghapus...' : 'Hapus Surat'}
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
       )}
     </div>
   );

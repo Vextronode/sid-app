@@ -86,7 +86,6 @@ class RwApprovalService
             $letter->update([
                 'status'        => $newStatus,
 
-                'notes'         => $data['notes'] ?? null,
                 'processed_at'  => now(),
             ]);
 

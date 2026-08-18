@@ -144,7 +144,6 @@ class KasiApprovalService
                 'status' => $newStatus,
                 'letter_number' => $letterNumber,
                 'expires_at' => $expiresAt,
-                'notes' => $data['notes'] ?? null,
                 'processed_at' => now(),
             ]);
 
