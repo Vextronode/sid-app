@@ -15,6 +15,7 @@ import {
   Eye,
   Trash2,
 } from "lucide-react";
+import api from '@/lib/api';
 import { getSuratList } from '@/features/approval/api';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import OperatorSuratActionModal from '@/features/operator-desa/components/OperatorSuratActionModal';
@@ -86,62 +87,62 @@ export default function OperatorSuratListPage() {
   const [selectedSurat, setSelectedSurat] = useState(null);
   const [previewSurat, setPreviewSurat] = useState(null);
 
-const ROLE_ENDPOINT = {
-  rt: "rt",
-  rw: "rw",
+  const ROLE_ENDPOINT = {
+    rt: "rt",
+    rw: "rw",
 
-  kasi_pelayanan: "kasi",
-  kaur_tu_umum: "kasi",
-  petugas_desa: "kasi",
-};
+    kasi_pelayanan: "kasi",
+    kaur_tu_umum: "kasi",
+    petugas_desa: "kasi",
+  };
 
-const roleKey = ROLE_ENDPOINT[user?.role] ?? user?.role;
+  const roleKey = ROLE_ENDPOINT[user?.role] ?? user?.role;
 
-const loadLetters = async () => {
-  if (!roleKey) return;
+  const loadLetters = async () => {
+    if (!roleKey) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    const res = await getSuratList(roleKey);
-    setLetters(res.data);
-  } catch (err) {
-    console.error(err.response?.data ?? err);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      const res = await getSuratList(roleKey);
+      setLetters(res.data);
+    } catch (err) {
+      console.error(err.response?.data ?? err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-useEffect(() => {
-  loadLetters();
-}, [roleKey]);
+  useEffect(() => {
+    loadLetters();
+  }, [roleKey]);
 
   const filtered = useMemo(() => {
     let result = [...letters];
 
     if (filterJenis) result = result.filter((s) => s.letter_type?.name === filterJenis);
     if (filterStatus) {
-  switch (filterStatus) {
-    case "verification":
-      result = result.filter((s) =>
-        [ "rt_approved", "rw_approved"].includes(s.status)
-      );
-      break;
+      switch (filterStatus) {
+        case "verification":
+          result = result.filter((s) =>
+            ["rt_approved", "rw_approved"].includes(s.status)
+          );
+          break;
 
-    case "completed":
-      result = result.filter((s) => s.status === "kasi_approved");
-      break;
+        case "completed":
+          result = result.filter((s) => s.status === "kasi_approved");
+          break;
 
-    case "rejected":
-      result = result.filter((s) =>
-        ["rt_rejected", "rw_rejected"].includes(s.status)
-      );
-      break;
+        case "rejected":
+          result = result.filter((s) =>
+            ["rt_rejected", "rw_rejected"].includes(s.status)
+          );
+          break;
 
-    default:
-      break;
-  }
-}
+        default:
+          break;
+      }
+    }
     if (search) {
       const kw = search.toLowerCase();
       result = result.filter(
@@ -150,49 +151,49 @@ useEffect(() => {
     }
 
     // Urutkan berdasarkan selesai sampai di tolak
-const STATUS_ORDER = {
-  kasi_approved: 1,
-  rw_approved: 2,
-  rt_approved: 3,
-  pending: 4,
-  rw_rejected: 5,
-  rt_rejected: 6,
-  kasi_rejected: 7,
-};
+    const STATUS_ORDER = {
+      kasi_approved: 1,
+      rw_approved: 2,
+      rt_approved: 3,
+      pending: 4,
+      rw_rejected: 5,
+      rt_rejected: 6,
+      kasi_rejected: 7,
+    };
 
-result.sort((a, b) => {
-  // Ambil tanggal tanpa jam
-  const dateA = new Date(a.submitted_at ?? a.created_at);
-  const dateB = new Date(b.submitted_at ?? b.created_at);
+    result.sort((a, b) => {
+      // Ambil tanggal tanpa jam
+      const dateA = new Date(a.submitted_at ?? a.created_at);
+      const dateB = new Date(b.submitted_at ?? b.created_at);
 
-  const onlyDateA = new Date(
-    dateA.getFullYear(),
-    dateA.getMonth(),
-    dateA.getDate()
-  );
+      const onlyDateA = new Date(
+        dateA.getFullYear(),
+        dateA.getMonth(),
+        dateA.getDate()
+      );
 
-  const onlyDateB = new Date(
-    dateB.getFullYear(),
-    dateB.getMonth(),
-    dateB.getDate()
-  );
+      const onlyDateB = new Date(
+        dateB.getFullYear(),
+        dateB.getMonth(),
+        dateB.getDate()
+      );
 
-  // 1. Tanggal terbaru dulu
-  if (onlyDateA.getTime() !== onlyDateB.getTime()) {
-    return onlyDateB - onlyDateA;
-  }
+      // 1. Tanggal terbaru dulu
+      if (onlyDateA.getTime() !== onlyDateB.getTime()) {
+        return onlyDateB - onlyDateA;
+      }
 
-  // 2. Kalau tanggal sama → urut status
-  const orderA = STATUS_ORDER[a.status] ?? 999;
-  const orderB = STATUS_ORDER[b.status] ?? 999;
+      // 2. Kalau tanggal sama → urut status
+      const orderA = STATUS_ORDER[a.status] ?? 999;
+      const orderB = STATUS_ORDER[b.status] ?? 999;
 
-  if (orderA !== orderB) {
-    return orderA - orderB;
-  }
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
 
-  // 3. Kalau status sama → jam terbaru dulu
-  return dateB - dateA;
-});
+      // 3. Kalau status sama → jam terbaru dulu
+      return dateB - dateA;
+    });
 
     return result;
   }, [letters, filterJenis, filterStatus, search]);
@@ -377,10 +378,16 @@ result.sort((a, b) => {
                             </button>
                           )}
                           <button
-                            onClick={() => {
-                              window.alert(
-                                "Fitur hapus surat belum tersedia.\n\nSaat ini fitur tersebut masih dalam proses pengembangan."
-                              );
+                            onClick={async () => {
+                              if (!window.confirm("Yakin ingin menghapus surat ini?")) return;
+                              try {
+                                await api.delete(`/api/letters/${s.id}`);
+                                loadLetters();
+                              } catch (err) {
+                                window.alert(
+                                  err.response?.data?.message ?? "Gagal menghapus surat."
+                                );
+                              }
                             }}
                             className="w-9 h-9 rounded-lg border border-red-200 bg-red-50
                                       text-red-600 hover:bg-red-100 transition"
@@ -388,6 +395,7 @@ result.sort((a, b) => {
                           >
                             <Trash2 size={17} className="mx-auto" />
                           </button>
+
 
                         </div>
                       </td>
@@ -435,14 +443,14 @@ result.sort((a, b) => {
       </div>
 
       {/* Footer versi ringkas sesuai desain (lebih pendek dari FooterDesa default) */}
-        <FooterOperator />
+      <FooterOperator />
 
 
       {previewSurat && (
-          <OperatorSuratPreviewModal
-              surat={previewSurat}
-              onClose={() => setPreviewSurat(null)}
-          />
+        <OperatorSuratPreviewModal
+          surat={previewSurat}
+          onClose={() => setPreviewSurat(null)}
+        />
       )}
 
       {selectedSurat && (

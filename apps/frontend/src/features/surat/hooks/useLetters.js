@@ -2,27 +2,27 @@ import { useEffect, useState } from "react";
 import { getMyLetters } from "../api/letterApi";
 
 
-export function useLetters(){
+export function useLetters() {
 
-    const [letters,setLetters] = useState([]);
-    const [loading,setLoading] = useState(true);
+    const [letters, setLetters] = useState([]);
+    const [loading, setLoading] = useState(true);
 
 
-    useEffect(()=>{
+    useEffect(() => {
 
-        const fetchLetters = async()=>{
+        const fetchLetters = async () => {
 
-            try{
+            try {
 
                 const data = await getMyLetters();
 
                 setLetters(data);
 
-            }catch(error){
+            } catch (error) {
 
                 console.error(error);
 
-            }finally{
+            } finally {
 
                 setLoading(false);
 
@@ -33,7 +33,7 @@ export function useLetters(){
 
         fetchLetters();
 
-    },[]);
+    }, []);
 
 
     return {

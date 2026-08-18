@@ -107,4 +107,19 @@ class LetterController extends Controller
             'data' => $letter->fresh(),
         ]);
     }
+
+    public function destroy(Letter $letter)
+    {
+        $user = auth()->user();
+
+        if ($letter->submitted_by !== $user->id && !in_array($user->role, ['admin', 'operator', 'kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa'])) {
+            abort(403, 'Anda tidak berwenang menghapus surat ini.');
+        }
+
+        $letter->delete();
+
+        return response()->json([
+            'message' => 'Surat berhasil dihapus.',
+        ]);
+    }
 }
