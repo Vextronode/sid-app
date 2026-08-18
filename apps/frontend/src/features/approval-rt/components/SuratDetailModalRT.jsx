@@ -48,7 +48,6 @@ export default function SuratDetailModalRT({ suratId, onClose, onApprove, onReje
         { label: 'Keperluan', value: FIELD_MAP.keperluan(surat) },
         { label: 'Diajukan', value: FIELD_MAP.diajukan(surat) },
         { label: 'Terakhir diproses', value: FIELD_MAP.terakhirDiproses(surat) },
-        { label: 'IP aktor', value: FIELD_MAP.ipAktor(surat) },
       ]
     : [];
 

@@ -68,7 +68,7 @@ const stats = useMemo(() => {
   const permohonan = letters.length;
 
   const verifikasi = letters.filter((s) =>
-    ["rt_approved", "rw_approved"].includes(s.status)
+    ["rw_approved"].includes(s.status)
   ).length;
 
   const selesai = letters.filter(

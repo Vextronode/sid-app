@@ -59,14 +59,11 @@ export function OperatorDesaLayout({ children }) {
           })}
         </nav>
 
-        <div className="px-3 pb-5 flex flex-col gap-1  pt-4">
-          <Link to="/admin/operator-desa/surat" className="flex items-center gap-2 bg-[#185FA5] text-white rounded-lg px-3 py-2.5 text-sm font-medium justify-center hover:bg-blue-700">
-            <Plus size={16} /> Permohonan Baru
-          </Link>
-          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 mt-2">
+        <div className="px-3 pb-5 flex flex-col gap-1  pt-4 bg-orange-500">
+          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white hover:bg-gray-100 hover:text-orange-500 mt-2">
             <HelpCircle size={16} /> Pusat Bantuan
           </button>
-          <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50">
+          <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white hover:bg-red-50 hover:text-red-500">
             <LogOut size={16} /> Keluar
           </button>
         </div>
@@ -77,48 +74,23 @@ export function OperatorDesaLayout({ children }) {
         {/* Topbar */}
           <div className="fixed left-56 right-0 top-0 h-20 bg-[#185FA5] px-6 flex items-center justify-between shadow-lg z-30">
           <div className="relative">
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-
-            <input
-              placeholder="Cari data warga..."
-              className="
-                w-64
-                rounded-full
-                pl-9 pr-4 py-2
-                text-sm
-                bg-white
-                text-[#185FA5]
-                placeholder:text-gray-400
-                border border-white
-                outline-none
-                focus:ring-2
-                focus:ring-blue-300
-                focus:border-blue
-              "
-            />
           </div>
 
           <div className="flex items-center gap-4 ">
             
-<button
-    onClick={() => setNotifOpen((prev) => !prev)}
-    className="relative w-8 h-8 rounded-full flex items-center justify-center text-white hover:text-blue-200 hover:bg-blue-700/50 transition-colors"
-    title="Notifikasi"
-  >
-    <Bell size={18} />
+          <button
+              onClick={() => setNotifOpen((prev) => !prev)}
+              className="relative w-8 h-8 rounded-full flex items-center justify-center text-white hover:text-blue-200 hover:bg-blue-700/50 transition-colors"
+              title="Notifikasi"
+            >
+              <Bell size={18} />
 
-    {/* Badge Merah di Pojok Kanan Atas */}
-    {unreadCount > 0 && (
-      <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#185FA5] pointer-events-none">
-        {unreadCount > 99 ? "99+" : unreadCount}
-      </span>
-    )}
-  </button>
-            <button className="text-white hover:text-blue-200">
-              <Settings size={18} />
+              {/* Badge Merah di Pojok Kanan Atas */}
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#185FA5] pointer-events-none">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </button>
             <div className="flex items-center gap-2">
               <div className="text-right">

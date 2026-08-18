@@ -61,12 +61,12 @@ const STATUS_LABEL = {
     label: "Ditolak Kasi",
     className: "bg-red-50 text-red-600",
   },
-
+  
   waiting_revision_warga: {
     label: "Menunggu Revisi",
     className: "bg-amber-50 text-amber-700",
   },
-
+  
   rejected_revision: {
     label: "Ditolak (Batas Revisi)",
     className: "bg-red-50 text-red-600",
@@ -239,7 +239,7 @@ export default function OperatorSuratListPage() {
             </div>
             <div>
               <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Jenis Surat</p>
-              <select value={filterJenis} onChange={(e) => { setFilterJenis(e.target.value); setCurrentPage(1); }} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500" > <option value="">Semua Jenis</option> {jenisOptions.map((j) => (<option key={j} value={j}>{j}</option>))} </select>
+              <select value={filterJenis} onChange={(e) => { setFilterJenis(e.target.value); setCurrentPage(1); }} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500" > <option value="">Semua Jenis</option> {jenisOptions.map((j) => ( <option key={j} value={j}>{j}</option> ))} </select>
             </div>
             <div>
               <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Status</p>
@@ -423,8 +423,9 @@ export default function OperatorSuratListPage() {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded-lg text-xs font-medium ${page === currentPage ? 'bg-[#185FA5] text-white' : 'border text-gray-600'
-                    }`}
+                  className={`w-8 h-8 rounded-lg text-xs font-medium ${
+                    page === currentPage ? 'bg-[#185FA5] text-white' : 'border text-gray-600'
+                  }`}
                 >
                   {page}
                 </button>

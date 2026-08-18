@@ -115,16 +115,9 @@ const handleConfirmAction = async () => {
                 previewTemplate === 'wet' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-800'
               }`}
             >
-              Preview TTD Basah
+              Preview
             </button>
-            <button
-              onClick={() => setPreviewTemplate('digital')}
-              className={`flex-1 text-center py-1 text-xs font-medium rounded-md transition ${
-                previewTemplate === 'digital' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-800'
-              }`}
-            >
-              Preview TTD Digital
-            </button>
+
           </div>
 
           <div className="relative border rounded-lg overflow-hidden mb-5 h-[400px] bg-gray-100">
@@ -172,31 +165,19 @@ const handleConfirmAction = async () => {
               onClick={() => setConfirmType('basah')}
               disabled={!bisaCetak}
               className="flex-1 flex items-center justify-center gap-2
-                border border-gray-300
+                border border-green-300
+                bg-green-500
+                text-white
                 rounded-lg
                 py-2.5
                 text-sm
-                hover:bg-gray-50
-                disabled:opacity-40"
-            >
-              <PenTool size={16}/>
-              TTD Basah
-            </button>
-
-            <button
-              onClick={() => setConfirmType('digital')}
-              disabled={!bisaCetak}
-              className="flex-1 flex items-center justify-center gap-2
-                bg-green-600 text-white
-                rounded-lg
-                py-2.5
-                text-sm font-medium
                 hover:bg-green-700
                 disabled:opacity-40"
             >
-              <FileSignature size={16}/>
-              TTD Digital
+              <PenTool size={16}/>
+              Verifikasi
             </button>
+
           </div>
         </div>
       </div>
