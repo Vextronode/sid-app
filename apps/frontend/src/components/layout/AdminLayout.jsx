@@ -84,7 +84,7 @@ export function AdminLayout({ children, menuItems }) {
                 <div className="fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />
                 <div className="absolute right-0 top-10 bg-white shadow-xl rounded-xl border border-blue-100 z-50 w-48 py-1.5 animate-in fade-in zoom-in-95 duration-100">
                   <Link
-                    to="/profile"
+                    to="/admin/profile"
                     onClick={() => setSettingsOpen(false)}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[#185FA5] hover:bg-blue-50 hover:text-blue-700 transition-colors"
                   >

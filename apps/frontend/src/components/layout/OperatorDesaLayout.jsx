@@ -59,11 +59,11 @@ export function OperatorDesaLayout({ children }) {
           })}
         </nav>
 
-        <div className="px-3 pb-5 flex flex-col gap-1  pt-4 bg-orange-500">
-          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white hover:bg-gray-100 hover:text-orange-500 mt-2">
+        <div className="px-3 pb-5 flex flex-col gap-1  pt-4 bg-white-500">
+          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 mt-2">
             <HelpCircle size={16} /> Pusat Bantuan
           </button>
-          <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white hover:bg-red-50 hover:text-red-500">
+          <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50 hover:text-red-500">
             <LogOut size={16} /> Keluar
           </button>
         </div>

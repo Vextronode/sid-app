@@ -1,8 +1,16 @@
-/* eslint-disable no-unused-vars */
 // ==========================================
 // ApprovalStepperRW.jsx
-// Stepper 4 tahap (Submit -> RT -> RW -> Selesai), dari surat.status.
-// ⚠️ Sesuaikan getStepState kalau nilai status dari backend beda.
+// Stepper 4 tahap:
+// Submit -> RT -> RW -> Selesai
+//
+// Status mengikuti surat.status dari backend.
+//
+// pending       = menunggu RT
+// rt_approved   = menunggu RW
+// rt_rejected   = RT menolak
+// rw_approved   = RW sudah approve, menunggu proses selesai
+// rw_rejected   = RW menolak
+// completed     = selesai
 // ==========================================
 
 import { Check, X, Loader2 } from 'lucide-react';
@@ -10,68 +18,250 @@ import { Check, X, Loader2 } from 'lucide-react';
 const STEPS = ['Submit', 'RT', 'RW', 'Selesai'];
 
 function getStepState(status) {
-  const map = {
-    pending: { step: 1, state: 'current' },
-    rt_approved: { step: 2, state: 'current_rw' },
-    rt_rejected: { step: 1, state: 'rejected_rt' },
-    rw_approved: { step: 3, state: 'done_rw' },
-    rw_rejected: { step: 2, state: 'rejected_rw' },
-  };
-  return map[status] ?? { step: 0, state: 'waiting' };
+  switch (status) {
+
+    // Surat baru diajukan
+    // Submit selesai, RT sedang menunggu proses
+    case 'pending':
+      return {
+        step: 1,
+        state: 'current',
+      };
+
+    // RT sudah menyetujui
+    // Sekarang giliran RW
+    case 'rt_approved':
+      return {
+        step: 2,
+        state: 'current',
+      };
+
+    // RT menolak
+    case 'rt_rejected':
+      return {
+        step: 1,
+        state: 'rejected_rt',
+      };
+
+    // RW sudah menyetujui
+    // Belum selesai karena masih proses tahap akhir
+    case 'rw_approved':
+      return {
+        step: 3,
+        state: 'current',
+      };
+
+    // RW menolak
+    case 'rw_rejected':
+      return {
+        step: 2,
+        state: 'rejected_rw',
+      };
+
+    // Surat benar-benar selesai
+    case 'completed':
+      return {
+        step: 3,
+        state: 'completed',
+      };
+
+    default:
+      return {
+        step: 0,
+        state: 'waiting',
+      };
+  }
 }
 
 export default function ApprovalStepperRW({ surat }) {
+
   const { step, state } = getStepState(surat?.status);
 
   return (
     <div className="flex items-center justify-center gap-1 mb-6 flex-wrap">
+
       {STEPS.map((label, index) => {
+
         let circle;
         let statusText = 'Menunggu';
         let labelColor = 'text-gray-400';
 
-        const isRejectedHere = (index === 1 && state === 'rejected_rt') || (index === 2 && state === 'rejected_rw');
-        const isDoneRT =
+        // ==========================================
+        // REJECTED
+        // ==========================================
+
+        const isRejectedRT =
           index === 1 &&
-          [
-            "current_rw",
-            "done_rw",
-            "rejected_rw",
-          ].includes(state);
-        const isDoneRW =
+          state === 'rejected_rt';
+
+        const isRejectedRW =
           index === 2 &&
-          state === "done_rw";
-        const isCurrentSubmit = index === 0;
-        const isCurrentRW = index === 2 && state === 'current_rw';
-        const isCurrentPending = index === step && state === 'current';
+          state === 'rejected_rw';
+
+        const isRejectedHere =
+          isRejectedRT || isRejectedRW;
+
+
+        // ==========================================
+        // DONE
+        // ==========================================
+
+        const isDone =
+          index < step ||
+          (
+            index === step &&
+            state === 'completed'
+          );
+
+
+        // ==========================================
+        // CURRENT
+        // ==========================================
+
+        const isCurrent =
+          index === step &&
+          state === 'current';
+
+
+        // ==========================================
+        // TAMPILAN
+        // ==========================================
 
         if (isRejectedHere) {
-          circle = <div className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center"><X size={18} /></div>;
+
+          circle = (
+            <div className="
+              w-9 h-9
+              rounded-full
+              bg-red-500
+              text-white
+              flex
+              items-center
+              justify-center
+            ">
+              <X size={18} />
+            </div>
+          );
+
           statusText = 'Ditolak';
           labelColor = 'text-red-500';
-        } else if (isDoneRT || isDoneRW || (index === 0)) {
-          circle = <div className="w-9 h-9 rounded-full bg-green-500 text-white flex items-center justify-center"><Check size={18} /></div>;
-          statusText = 'Disetujui';
+
+
+        } else if (isDone) {
+
+          circle = (
+            <div className="
+              w-9 h-9
+              rounded-full
+              bg-green-500
+              text-white
+              flex
+              items-center
+              justify-center
+            ">
+              <Check size={18} />
+            </div>
+          );
+
+          statusText = 'Selesai';
           labelColor = 'text-green-600';
-        } else if (isCurrentRW || isCurrentPending) {
-          circle = <div className="w-9 h-9 rounded-full border-2 border-green-500 text-green-500 flex items-center justify-center"><Loader2 size={16} className="animate-spin" /></div>;
+
+
+        } else if (isCurrent) {
+
+          circle = (
+            <div className="
+              w-9 h-9
+              rounded-full
+              border-2
+              border-green-500
+              text-green-500
+              flex
+              items-center
+              justify-center
+            ">
+              <Loader2
+                size={16}
+                className="animate-spin"
+              />
+            </div>
+          );
+
           statusText = 'Menunggu';
           labelColor = 'text-green-500';
+
+
         } else {
-          circle = <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">{index + 1}</div>;
+
+          circle = (
+            <div className="
+              w-9 h-9
+              rounded-full
+              bg-gray-200
+              text-gray-500
+              flex
+              items-center
+              justify-center
+              text-sm
+              font-medium
+            ">
+              {index + 1}
+            </div>
+          );
+
         }
 
+
         return (
-          <div key={label} className="flex items-center">
-            <div className="flex flex-col items-center gap-1">
+          <div
+            key={label}
+            className="flex items-center"
+          >
+
+            <div className="
+              flex
+              flex-col
+              items-center
+              gap-1
+            ">
+
               {circle}
-              <span className={`text-xs font-semibold uppercase ${labelColor}`}>{label}</span>
-              <span className="text-[10px] text-gray-400">{statusText}</span>
+
+              <span
+                className={`
+                  text-xs
+                  font-semibold
+                  uppercase
+                  ${labelColor}
+                `}
+              >
+                {label}
+              </span>
+
+              <span className="
+                text-[10px]
+                text-gray-400
+              ">
+                {statusText}
+              </span>
+
             </div>
-            {index < STEPS.length - 1 && <div className="w-8 h-px bg-gray-300 mx-1 mt-[-16px]" />}
+
+
+            {index < STEPS.length - 1 && (
+              <div className="
+                w-8
+                h-px
+                bg-gray-300
+                mx-1
+                mt-[-16px]
+              " />
+            )}
+
           </div>
         );
       })}
+
     </div>
   );
 }

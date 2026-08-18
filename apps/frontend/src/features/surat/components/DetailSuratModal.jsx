@@ -1068,9 +1068,7 @@ export function DetailSuratModal({
             </div>
 
 
-            <StatusBadge
-              status={data.status}
-            />
+            
 
           </div>
 

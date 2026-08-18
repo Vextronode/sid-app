@@ -79,7 +79,6 @@ class RtApprovalService
             // Update letter
             $letter->update([
                 'status' => $newStatus,
-                'notes' => $data['notes'] ?? null,
                 'processed_at' => now(),
             ]);
 
