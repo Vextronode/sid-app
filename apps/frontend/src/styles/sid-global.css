@@ -6714,14 +6714,14 @@
 
 .sid-decision-box.approved {
   background: var(--sid-status-done-bg);
-  border-color: var(--sid-status-done-text);
-  border-opacity: 0.15;
+  border-color: rgb(var(--sid-status-done-text) / 0.15);
+
 }
 
 .sid-decision-box.rejected {
   background: var(--sid-status-rejected-bg);
-  border-color: var(--sid-status-rejected-text);
-  border-opacity: 0.15;
+  border-color: rgb(var(--sid-status-rejected-text) / 0.15);
+
 }
 
 .sid-decision-header {
@@ -10810,6 +10810,7 @@
   line-height: 1.4;
 
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -11111,6 +11112,7 @@
   line-height: 1.5;
 
   -webkit-line-clamp: 2;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 
@@ -12812,6 +12814,7 @@
   line-height: 1.4;
 
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 
   transition: color 0.15s ease;
