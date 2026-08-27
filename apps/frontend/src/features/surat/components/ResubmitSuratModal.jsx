@@ -2,7 +2,11 @@ import { useState } from "react";
 import { X, Send } from "lucide-react";
 import api from "@/lib/api";
 
-export function ResubmitSuratModal({ data, onClose, onSuccess }) {
+export function ResubmitSuratModal({
+  data,
+  onClose,
+  onSuccess,
+}) {
   const [purpose, setPurpose] = useState(data?.keperluan || "");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -10,6 +14,7 @@ export function ResubmitSuratModal({ data, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!purpose.trim()) {
       setError("Keperluan tidak boleh kosong.");
       return;
@@ -17,17 +22,24 @@ export function ResubmitSuratModal({ data, onClose, onSuccess }) {
 
     setLoading(true);
     setError(null);
+
     try {
       await api.patch(`/api/letters/${data.id}/resubmit`, {
         purpose,
         notes,
       });
-      if (onSuccess) onSuccess();
+
+      if (onSuccess) {
+        onSuccess();
+      }
+
       onClose();
     } catch (err) {
       console.error(err);
+
       setError(
-        err.response?.data?.message || "Terjadi kesalahan saat mengirim ulang surat."
+        err.response?.data?.message ||
+          "Terjadi kesalahan saat mengirim ulang surat."
       );
     } finally {
       setLoading(false);
@@ -35,83 +47,196 @@ export function ResubmitSuratModal({ data, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-          <h2 className="font-semibold text-gray-800">Kirim Ulang Revisi</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-200 rounded-lg transition"
-            disabled={loading}
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+    <div className="sid-modal-overlay">
+
+      {/* =========================
+          MODAL
+      ========================= */}
+      <div className="sid-modal">
+
+        {/* =========================
+            CLOSE
+        ========================= */}
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={loading}
+          className="sid-modal-close"
+          aria-label="Tutup modal"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+
+        {/* =========================
+            HEADER
+        ========================= */}
+        <div className="sid-modal-header">
+
+          <h2 className="sid-modal-title">
+            Kirim Ulang Revisi
+          </h2>
+
+          <p className="sid-modal-subtitle">
+            Perbarui data surat sebelum dikirim kembali.
+          </p>
+
         </div>
 
-        <div className="p-6 overflow-y-auto">
+
+        {/* =========================
+            CONTENT
+        ========================= */}
+        <div className="sid-modal-section">
+
+          {/* ERROR */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+            <div
+              className="
+                mb-4
+                p-3
+                rounded-[var(--radius-sm)]
+                border
+                border-[var(--sid-status-rejected-text)]
+                bg-[var(--sid-status-rejected-bg)]
+                text-[var(--sid-status-rejected-text)]
+                text-sm
+              "
+            >
               {error}
             </div>
           )}
 
-          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg">
-            <p className="font-medium mb-1">Surat ini memerlukan revisi.</p>
-            <p>Silakan perbarui keperluan atau catatan tambahan untuk operator desa.</p>
+
+          {/* INFO REVISI */}
+          <div
+            className="
+              mb-5
+              p-3
+              rounded-[var(--radius-sm)]
+              border
+              border-[var(--sid-border)]
+              bg-[var(--sid-status-pending-bg)]
+              text-[var(--sid-status-pending-text)]
+              text-sm
+            "
+          >
+            <p className="font-semibold mb-1">
+              Surat ini memerlukan revisi.
+            </p>
+
+            <p className="text-xs leading-relaxed">
+              Silakan perbarui keperluan atau tambahkan
+              catatan sebelum mengirim kembali surat kepada
+              operator desa.
+            </p>
           </div>
 
-          <form id="resubmit-form" onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+
+          {/* =========================
+              FORM
+          ========================= */}
+          <form
+            id="resubmit-form"
+            onSubmit={handleSubmit}
+          >
+
+            {/* KEPERLUAN */}
+            <div className="sid-form-group">
+
+              <label className="sid-label">
                 Keperluan Surat *
               </label>
+
               <textarea
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="sid-modal-textarea"
                 placeholder="Masukkan keperluan surat yang sudah direvisi..."
                 required
               />
+
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+
+
+            {/* CATATAN */}
+            <div className="sid-form-group">
+
+              <label className="sid-label">
                 Catatan Tambahan (Opsional)
               </label>
+
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                className="sid-modal-textarea"
                 placeholder="Misal: Saya sudah memperbaiki bagian keperluan..."
               />
+
             </div>
+
           </form>
+
         </div>
 
-        <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
-          >
-            Batal
-          </button>
-          <button
-            type="submit"
-            form="resubmit-form"
-            disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50"
-          >
-            {loading ? (
-              <span className="inline-block w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-            {loading ? "Mengirim..." : "Kirim Ulang"}
-          </button>
+
+        {/* =========================
+            FOOTER
+        ========================= */}
+        <div className="sid-modal-footer">
+
+          <div className="sid-modal-actions">
+
+            {/* BATAL */}
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="sid-btn sid-btn-secondary"
+            >
+              Batal
+            </button>
+
+
+            {/* KIRIM ULANG */}
+            <button
+              type="submit"
+              form="resubmit-form"
+              disabled={loading}
+              className="sid-btn sid-btn-primary"
+            >
+              {loading ? (
+                <>
+                  <span
+                    className="
+                      inline-block
+                      w-4
+                      h-4
+                      border-2
+                      border-white/30
+                      border-t-white
+                      rounded-full
+                      animate-spin
+                    "
+                  />
+
+                  Mengirim...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+
+                  Kirim Ulang
+                </>
+              )}
+            </button>
+
+          </div>
+
         </div>
+
       </div>
     </div>
   );

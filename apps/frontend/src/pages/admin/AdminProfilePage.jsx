@@ -1,10 +1,14 @@
 // ==========================================
 // AdminProfilePage.jsx
-// Halaman Profil untuk RT/RW, desain SAMA persis dengan ProfilePage
-// milik Warga (avatar, badge terverifikasi, edit lewat popup).
+// Halaman Profil untuk RT/RW/Kadus/Kades/
+// Operator Desa dan role admin lainnya.
+//
+// Styling mengikuti SID Global Theme.
+// MobileBottomNav menyesuaikan berdasarkan user.role.
 // ==========================================
 
 import { useState } from 'react';
+
 import {
   Pencil,
   CheckCircle2,
@@ -15,12 +19,65 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '@/features/auth/contexts/AuthContext';
+
 import EditProfilWargaModal from '@/features/profil-warga/components/EditProfilWargaModal';
+
 import { FooterDesa } from '@/components/layout/FooterDesa';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
+
+import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
+
+
+/* =========================================================
+   MOBILE NAVIGATION BERDASARKAN ROLE
+   ========================================================= */
+
+const getAdminMobileLinks = (role) => {
+  switch (role) {
+
+    case 'rt':
+      return ADMIN_MOBILE_LINKS(
+        '/admin/dashboard-surat-rt',
+        '/admin/list-rt'
+      );
+
+    case 'rw':
+      return ADMIN_MOBILE_LINKS(
+        '/admin/dashboard-surat-rw',
+        '/admin/list-rw'
+      );
+
+    case 'kadus':
+      return ADMIN_MOBILE_LINKS(
+        '/admin/dashboard-kadus',
+        '/admin/list-kadus'
+      );
+
+    case 'kades':
+      return ADMIN_MOBILE_LINKS(
+        '/admin/dashboard-kades',
+        '/admin/list-kades'
+      );
+
+    default:
+      return ADMIN_MOBILE_LINKS(
+        '/admin/dashboard',
+        '/admin'
+      );
+  }
+};
+
 
 export default function AdminProfilePage() {
+
   const { user, setUser } = useAuth();
+
   const [modalOpen, setModalOpen] = useState(false);
+
+
+  // ==========================================
+  // GENDER
+  // ==========================================
 
   const gender =
     user?.citizen?.gender === 'P'
@@ -29,109 +86,178 @@ export default function AdminProfilePage() {
         ? 'Laki-laki'
         : '-';
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      {/* ================= CONTENT ================= */}
-      <main className="flex-1">
-        <div className="max-w-3xl mx-auto p-6">
 
-          {/* PROFILE HEADER */}
-          <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
-                <User size={24} className="text-gray-400" />
+  // ==========================================
+  // MOBILE NAV
+  // ==========================================
+
+  const mobileLinks = getAdminMobileLinks(user?.role);
+
+
+  return (
+    <div className="sid-admin-profile-page">
+
+      {/* ======================================
+          CONTENT
+      ====================================== */}
+
+      <main className="sid-admin-profile-main">
+
+        <div className="sid-admin-profile-content">
+
+
+          {/* ====================================
+              PROFILE HEADER
+          ==================================== */}
+
+          <div className="sid-admin-profile-card sid-admin-profile-header">
+
+            <div className="sid-admin-profile-user">
+
+              <div className="sid-admin-profile-avatar">
+                <User size={24} />
               </div>
 
-              <div>
-                <p className="font-bold text-gray-800">
+              <div className="sid-admin-profile-user-info">
+
+                <p className="sid-admin-profile-name">
                   {user?.name ?? 'Pengguna'}
                 </p>
 
-                <p className="text-xs text-gray-400">
+                <p className="sid-admin-profile-email">
                   {user?.email ?? '-'}
                 </p>
+
               </div>
+
             </div>
 
-            <div className="inline-flex items-center gap-1 bg-blue-50 text-[#185FA5] text-[10px] font-semibold px-2 py-1 rounded-full mb-3">
+
+            {/* VERIFICATION */}
+
+            <div className="sid-admin-profile-verification">
+
               <CheckCircle2 size={12} />
+
               NIK TERVERIFIKASI
+
             </div>
+
+
+            {/* EDIT */}
 
             <button
+              type="button"
               onClick={() => setModalOpen(true)}
-              className="w-full bg-[#185FA5] text-white rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition"
+              className="sid-admin-profile-edit"
             >
+
               <Pencil size={14} />
+
               Edit
+
             </button>
+
           </div>
 
-          {/* PROFILE DETAIL */}
-          <div className="bg-white rounded-2xl shadow-sm p-5 flex flex-col gap-4">
 
-            {/* Nama */}
-            <div>
-              <p className="text-xs text-gray-400 mb-1">
+          {/* ====================================
+              PROFILE DETAIL
+          ==================================== */}
+
+          <div className="sid-admin-profile-card sid-admin-profile-detail">
+
+
+            {/* NAMA */}
+
+            <div className="sid-admin-profile-field">
+
+              <p className="sid-admin-profile-label">
                 Nama Lengkap
               </p>
 
-              <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
-                <span className="text-sm text-gray-700">
+              <div className="sid-admin-profile-value">
+
+                <span>
                   {user?.name ?? '-'}
                 </span>
 
-                <User size={14} className="text-gray-400" />
+                <User size={14} />
+
               </div>
+
             </div>
 
-            {/* Alamat */}
-            <div>
-              <p className="text-xs text-gray-400 mb-1">
+
+            {/* ALAMAT */}
+
+            <div className="sid-admin-profile-field">
+
+              <p className="sid-admin-profile-label">
                 Alamat
               </p>
 
-              <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
-                <span className="text-sm text-gray-700">
+              <div className="sid-admin-profile-value">
+
+                <span>
                   {user?.citizen?.address ?? '-'}
                 </span>
 
-                <MapPin size={14} className="text-gray-400" />
+                <MapPin size={14} />
+
               </div>
+
             </div>
 
-            {/* Jenis Kelamin */}
-            <div>
-              <p className="text-xs text-gray-400 mb-1">
+
+            {/* JENIS KELAMIN */}
+
+            <div className="sid-admin-profile-field">
+
+              <p className="sid-admin-profile-label">
                 Jenis Kelamin
               </p>
 
-              <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
-                <span className="text-sm text-gray-700">
+              <div className="sid-admin-profile-value">
+
+                <span>
                   {gender}
                 </span>
 
-                <VenetianMask size={14} className="text-gray-400" />
+                <VenetianMask size={14} />
+
               </div>
+
             </div>
 
+
             {/* NIK */}
-            <div>
-              <p className="text-xs text-gray-400 mb-1">
+
+            <div className="sid-admin-profile-field">
+
+              <p className="sid-admin-profile-label">
                 NIK
               </p>
 
-              <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
-                <span className="text-sm text-gray-700">
+              <div className="sid-admin-profile-value">
+
+                <span>
                   {user?.citizen?.nik ?? '-'}
                 </span>
 
-                <CreditCard size={14} className="text-gray-400" />
+                <CreditCard size={14} />
+
               </div>
+
             </div>
+
           </div>
 
-          {/* EDIT MODAL */}
+
+          {/* ====================================
+              EDIT MODAL
+          ==================================== */}
+
           <EditProfilWargaModal
             open={modalOpen}
             onClose={() => setModalOpen(false)}
@@ -140,10 +266,25 @@ export default function AdminProfilePage() {
           />
 
         </div>
+
       </main>
 
-      {/* ================= FOOTER ================= */}
+
+      {/* ======================================
+          FOOTER
+      ====================================== */}
+
       <FooterDesa />
+
+
+      {/* ======================================
+          MOBILE BOTTOM NAV
+      ====================================== */}
+
+      <MobileBottomNav
+        links={mobileLinks}
+      />
+
     </div>
   );
 }

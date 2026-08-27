@@ -1,33 +1,52 @@
+
+// ==========================================
+// SidebarBerita.jsx
+// Sidebar berita lain pada halaman detail berita publik.
+// Styling menggunakan Global CSS SID.
+// ==========================================
+
 import { Link } from "react-router-dom";
 
 export function SidebarBerita({ beritaLain }) {
   return (
-    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 h-fit space-y-4">
-      <h3 className="font-bold text-gray-800 text-xs tracking-wide uppercase">
+    <aside className="sid-sidebar-berita">
+
+      <h3 className="sid-sidebar-berita-title">
         berita lain
       </h3>
 
-      <div className="space-y-4">
+      <div className="sid-sidebar-berita-list">
+
         {beritaLain.map((item) => (
           <Link
             key={item.id}
             to={`/berita/${item.id}`}
-            className="flex flex-col border border-gray-100 rounded-xl p-2 hover:bg-gray-50 transition group"
+            className="sid-sidebar-berita-item"
           >
-            {/* Menggunakan item.imageUrl */}
+
+            {/* Gambar berita */}
             <img
               src={item.imageUrl}
               alt={item.title}
-              className="w-full h-24 object-cover rounded-lg mb-2"
+              className="sid-sidebar-berita-image"
             />
-            <h4 className="font-bold text-xs text-gray-900 group-hover:text-[#4CAF4F] transition line-clamp-2">
+
+            {/* Judul */}
+            <h4 className="sid-sidebar-berita-item-title">
               {item.title}
             </h4>
-            {/* Menggunakan item.date */}
-            <span className="text-[10px] text-gray-400 mt-1">{item.date}</span>
+
+            {/* Tanggal */}
+            <span className="sid-sidebar-berita-date">
+              {item.date}
+            </span>
+
           </Link>
         ))}
+
       </div>
-    </div>
+
+    </aside>
   );
 }
+

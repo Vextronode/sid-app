@@ -1,14 +1,17 @@
 // ==========================================
 // DataWargaPage.jsx
-// Halaman Data Penduduk, disamakan gayanya dengan ManajemenUserPage:
-// card putih besar, search bulat, filter RT/RW, tombol "+ Tambah"
-// hijau, tabel dengan badge status, pagination bulat, footer di bawah.
+// Halaman Data Penduduk.
+// Layout disamakan dengan OperatorSuratListPage.
+// Logic/API tidak diubah.
 // ==========================================
 
 import { useState } from 'react';
-import { Search, Pencil, Trash2, UserPlus } from 'lucide-react';
+import {
+  Search,
+  UserPlus,
+} from 'lucide-react';
+
 import { useWargaList } from '@/features/data-warga/hooks/useWargaList';
-import { FooterDesa } from '@/components/layout/FooterDesa';
 import { FooterOperator } from '../../components/layout/FooterOperator';
 
 export default function DataWargaPage() {
@@ -28,7 +31,8 @@ export default function DataWargaPage() {
     totalPages,
 
     deleteWarga,
-  } = useWargaList();  
+  } = useWargaList();
+
   const [keyword, setKeyword] = useState('');
 
   const handleSearchSubmit = (e) => {
@@ -37,105 +41,230 @@ export default function DataWargaPage() {
   };
 
   const handleDelete = (id) => {
-    if (confirm('Yakin mau hapus data warga ini?')) deleteWarga(id);
+    if (confirm('Yakin mau hapus data warga ini?')) {
+      deleteWarga(id);
+    }
   };
 
   return (
-    <div>
-      <div className="p-6">
-        <div className="bg-white rounded-2xl shadow-sm p-8">
-          <h1 className="text-2xl font-bold text-gray-800 mb-1">Data Penduduk</h1>
-          <p className="text-sm text-gray-500 mb-6">Kelola data warga dan wilayah administratif Desa Cibenda.</p>
+    <div className="sid-operator-page">
 
-          <form onSubmit={handleSearchSubmit} className="flex gap-3 mb-6">
-            <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                placeholder="Cari Nama atau NIK..."
-                className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-blue-500"
-              />
+      <div className="sid-operator-content">
+
+        {/* Breadcrumb */}
+        <p className="sid-operator-breadcrumb">
+          Admin / <span>Data Penduduk</span>
+        </p>
+
+        {/* Header */}
+        <div className="sid-operator-header">
+
+          <h1>Data Penduduk</h1>
+
+          <button
+            type="button"
+            className="sid-operator-primary"
+          >
+            <UserPlus size={16} />
+            Tambah
+          </button>
+
+        </div>
+
+        {/* Search & Filter */}
+        <div className="sid-operator-filter-card">
+
+          <form
+            onSubmit={handleSearchSubmit}
+            className="sid-operator-filter-grid warga-filter"
+          >
+
+            {/* Search */}
+            <div className="sid-operator-filter-field">
+
+              <p>Pencarian Cepat</p>
+
+              <div className="sid-operator-search">
+
+                <Search size={16} />
+
+                <input
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="Cari Nama atau NIK..."
+                />
+
+              </div>
+
             </div>
-            <select
-              value={filterWilayah}
-              onChange={(e) => setFilterWilayah(e.target.value)}
-              className="border rounded-full px-4 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500"
-            >
-             <option value="">Semua RT/RW</option>
 
-{wilayahOptions.map((item) => (
-  <option
-    key={`${item.rt_id}-${item.rw_id}`}
-    value={`${item.rt_id}-${item.rw_id}`}
-  >
-    RT {item.rt?.number} / RW {item.rw?.number}
-  </option>
-))}
-            </select>
-            <button
-              type="button"
-              className="flex items-center gap-2 bg-orange-600 text-white rounded-full px-5 py-2.5 text-sm font-medium hover:bg-orange-700 shrink-0"
-            >
-              <UserPlus size={16} /> Tambah
-            </button>
+            {/* Wilayah */}
+            <div className="sid-operator-filter-field">
+
+              <p>Wilayah</p>
+
+              <select
+                value={filterWilayah}
+                onChange={(e) => {
+                  setFilterWilayah(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+
+                <option value="">
+                  Semua RT/RW
+                </option>
+
+                {wilayahOptions.map((item) => (
+                  <option
+                    key={`${item.rt_id}-${item.rw_id}`}
+                    value={`${item.rt_id}-${item.rw_id}`}
+                  >
+                    RT {item.rt?.number} / RW {item.rw?.number}
+                  </option>
+                ))}
+
+              </select>
+
+            </div>
+
           </form>
 
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-gray-400 text-xs">
-                <th className="py-3 font-medium text- text-gray-500">Nama</th>
-                <th className="py-3 font-medium text-center text-gray-500">NIK</th>
-                <th className="py-3 font-medium text-center text-gray-500">RT/RW</th>
-                <th className="py-3 font-medium text-center text-gray-500">Jenis Kelamin</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-  <tr>
-    <td colSpan={5} className="text-center py-8">
-      Memuat data...
-    </td>
-  </tr>
-) : data.length === 0 ? (
-                <tr><td colSpan={5} className="text-center text-gray-400 py-8">Belum ada data warga.</td></tr>
-              ) : (
-                data.map((warga) => (
-                  <tr key={warga.id} className="border-b last:border-0 text-gray-400">
-                    <td className="py-4 font-semibold text-gray-400 text-">{warga.name}</td>
-                    <td className="py-4 text-gray-400 text-center">{warga.nik}</td>
-                    <td className="py-4 text-gray-400 text-center">RT {warga.rt?.number} / RW {warga.rw?.number}</td>
-                    <td className="py-4 text-center">
-                      {warga.gender === 'L'
-                        ? 'Laki-Laki'
-                        : warga.gender === 'P'
-                        ? 'Perempuan'
-                        : '-'}
-                    </td>
-
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-
-          <div className="flex justify-center gap-2 mt-8">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-9 h-9 rounded-full text-sm font-medium border ${
-                  page === currentPage ? 'bg-[#185FA5] text-white border-blue-700' : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-          </div>
         </div>
+
+        {/* Table */}
+        <div className="sid-operator-table-card">
+
+          <div className="sid-operator-table-wrapper">
+
+            <table className="sid-operator-table">
+
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th className="center">NIK</th>
+                  <th className="center">RT/RW</th>
+                  <th className="center">Jenis Kelamin</th>
+                </tr>
+              </thead>
+
+              <tbody>
+
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className="empty">
+                      Memuat data...
+                    </td>
+                  </tr>
+                ) : data.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="empty">
+                      Belum ada data warga.
+                    </td>
+                  </tr>
+                ) : (
+                  data.map((warga) => (
+                    <tr key={warga.id}>
+
+                      {/* Nama */}
+                      <td className="primary-text">
+                        {warga.name}
+                      </td>
+
+                      {/* NIK */}
+                      <td className="center">
+                        {warga.nik}
+                      </td>
+
+                      {/* RT / RW */}
+                      <td className="center">
+                        RT {warga.rt?.number ?? '-'}
+                        {' / '}
+                        RW {warga.rw?.number ?? '-'}
+                      </td>
+
+                      {/* Gender */}
+                      <td className="center">
+                        {warga.gender === 'L'
+                          ? 'Laki-Laki'
+                          : warga.gender === 'P'
+                            ? 'Perempuan'
+                            : '-'}
+                      </td>
+
+                    </tr>
+                  ))
+                )}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+          {/* Pagination */}
+          <div className="sid-operator-pagination">
+
+            <p>
+              Menampilkan{' '}
+              {data.length === 0 ? 0 : data.length}{' '}
+              dari {data.length} data
+            </p>
+
+            <div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.max(1, p - 1)
+                  )
+                }
+                disabled={currentPage === 1}
+              >
+                Sebelumnya
+              </button>
+
+              {Array.from(
+                { length: totalPages },
+                (_, i) => i + 1
+              ).map((page) => (
+                <button
+                  type="button"
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={
+                    page === currentPage
+                      ? 'active'
+                      : ''
+                  }
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.min(totalPages, p + 1)
+                  )
+                }
+                disabled={currentPage === totalPages}
+              >
+                Selanjutnya
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
 
       <FooterOperator />
+
     </div>
   );
 }

@@ -1,15 +1,14 @@
 // ==========================================
 // DesktopNavbar.jsx
-// Navbar publik (dipakai MainLayout untuk Beranda, Profil Desa, Berita).
-// Disederhanakan: cuma 3 menu + tombol "Masuk" satu-satunya (link Daftar
-// sudah ada di halaman Login). Tanpa notifikasi/bell, karena halaman
-// publik nggak butuh itu.
+// Navbar publik untuk Beranda, Profil Desa, dan Berita.
+// Styling menggunakan Global CSS SID.
+// Logic/API tidak diubah.
 // ==========================================
 
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { NAV_LINKS } from "@/lib/constants/navigation";
-import { useAuth } from "@/features/auth/contexts/AuthContext";
-import { User, LogOut } from "lucide-react";
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { NAV_LINKS } from '@/lib/constants/navigation';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { User, LogOut } from 'lucide-react';
 
 export function DesktopNavbar() {
   const location = useLocation();
@@ -17,68 +16,109 @@ export function DesktopNavbar() {
   const { user, logout, isLoading } = useAuth();
 
   if (isLoading) {
-    return <nav className="hidden md:flex h-20 bg-white border-b" />;
+    return (
+      <nav className="sid-desktop-navbar-loading" />
+    );
   }
 
   const handleLogout = async () => {
     try {
       await logout();
-      navigate("/login", { replace: true });
+      navigate('/login', { replace: true });
     } catch (error) {
-      console.error("Logout gagal", error);
+      console.error('Logout gagal', error);
     }
   };
 
   return (
-    <nav className="hidden md:flex w-full bg-white shadow-md border-b-[3px] border-gray-100 py-4 px-8 items-center justify-between sticky top-0 z-50">
-      <div className="font-bold text-2xl text-black">LOGO</div>
+    <nav className="sid-desktop-navbar">
 
-      <div className="flex gap-8 text-sm font-medium text-[#4CAF4F]">
+      {/* ==========================================
+          LOGO
+          ========================================== */}
+
+      <div className="sid-desktop-navbar-logo">
+        LOGO
+      </div>
+
+
+      {/* ==========================================
+          NAVIGATION
+          ========================================== */}
+
+      <div className="sid-desktop-navbar-menu">
+
         {NAV_LINKS.map((link) => {
+
           const isActive =
-            link.href === "/" ? location.pathname === "/" : location.pathname.startsWith(link.href);
+            link.href === '/'
+              ? location.pathname === '/'
+              : location.pathname.startsWith(link.href);
 
           return (
             <Link
               key={link.name}
               to={link.href}
-              className={`px-4 py-2 rounded-md transition ${
-                isActive ? "bg-[#4CAF4F]/50 text-white" : "hover:bg-[#4CAF4F]/10"
+              className={`sid-desktop-navbar-link ${
+                isActive
+                  ? 'active'
+                  : ''
               }`}
             >
               {link.name}
             </Link>
           );
         })}
+
       </div>
 
-      <div className="flex gap-4 items-center">
+
+      {/* ==========================================
+          USER / LOGIN
+          ========================================== */}
+
+      <div className="sid-desktop-navbar-actions">
+
         {user ? (
-          <div className="flex items-center gap-5">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-[#4CAF4F]/10 border border-[#4CAF4F] flex items-center justify-center text-[#4CAF4F]">
-                <User className="w-4 h-4" />
+
+          <div className="sid-desktop-navbar-user">
+
+            <div className="sid-desktop-navbar-user-info">
+
+              <div className="sid-desktop-navbar-user-avatar">
+                <User size={16} />
               </div>
-              <span className="text-sm font-semibold text-gray-700">{user.name}</span>
+
+              <span>
+                {user.name}
+              </span>
+
             </div>
+
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 text-red-500 hover:text-red-600 text-xs font-semibold border border-red-100 hover:bg-red-50 px-3 py-1.5 rounded-xl transition"
+              className="sid-desktop-navbar-logout"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut size={14} />
               <span>Keluar</span>
             </button>
+
           </div>
+
         ) : (
+
           <Link
             to="/login"
-            className="bg-[#4CAF4F] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#3d8c40] transition"
+            className="sid-desktop-navbar-login"
           >
             Masuk
           </Link>
+
         )}
+
       </div>
+
     </nav>
   );
 }

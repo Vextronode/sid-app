@@ -1,59 +1,100 @@
 // ==========================================
 // ApprovalStepperRT.jsx
-// Stepper 4 tahap (Submit -> RT -> RW -> Selesai), dihitung langsung
-// dari surat.status (string dari API), bukan dari dummy statusFlow.
-// ⚠️ Sesuaikan STATUS_STEP_MAP kalau nilai status dari backend beda
-// (misal backend pakai 'pending_rt' bukan 'pending').
+// Stepper 4 tahap:
+// Submit -> RT -> RW -> Selesai
+//
+// Status dihitung langsung dari surat.status
+// yang dikirim oleh API.
 // ==========================================
 
 import { Check, X, Loader2 } from 'lucide-react';
 
-const STEPS = ['Submit', 'RT', 'RW', 'Selesai'];
+const STEPS = [
+  'Submit',
+  'RT',
+  'RW',
+  'Selesai',
+];
+
+
+// ==========================================
+// GET STEP STATE
+// ==========================================
 
 function getStepState(status) {
   switch (status) {
-    // Surat baru masuk ke RT
+
+    // ========================================
+    // SURAT BARU MASUK KE RT
+    // ========================================
+
     case 'pending':
       return {
         step: 1,
         state: 'current',
       };
 
-    // RT sudah approve, sekarang menunggu RW
+
+    // ========================================
+    // RT SUDAH APPROVE
+    // MENUNGGU RW
+    // ========================================
+
     case 'rt_approved':
       return {
         step: 2,
         state: 'current',
       };
 
-    // RT menolak
+
+    // ========================================
+    // RT MENOLAK
+    // ========================================
+
     case 'rt_rejected':
       return {
         step: 1,
         state: 'rejected_rt',
       };
 
-    // RW sudah approve, sekarang proses menuju selesai
+
+    // ========================================
+    // RW SUDAH APPROVE
+    // PROSES MENUJU SELESAI
+    // ========================================
+
     case 'rw_approved':
       return {
         step: 3,
         state: 'current',
       };
 
-    // RW menolak
+
+    // ========================================
+    // RW MENOLAK
+    // ========================================
+
     case 'rw_rejected':
       return {
         step: 2,
         state: 'rejected_rw',
       };
 
-    // Kalau nanti backend punya status selesai
-    case 'completed':
+
+    // ========================================
+    // SELESAI
+    // ========================================
+
     case 'completed':
       return {
         step: 3,
         state: 'completed',
       };
+
+
+    // ========================================
+    // DEFAULT
+    // ========================================
 
     default:
       return {
@@ -63,51 +104,102 @@ function getStepState(status) {
   }
 }
 
+
+// ==========================================
+// COMPONENT
+// ==========================================
+
 export default function ApprovalStepperRT({ surat }) {
-  const { step, state } = getStepState(surat?.status);
+  const {
+    step,
+    state,
+  } = getStepState(surat?.status);
+
 
   return (
-    <div className="flex items-center justify-center gap-1 mb-6 flex-wrap">
+    <div className="sid-stepper">
+
       {STEPS.map((label, index) => {
+
         let circle;
         let statusText = 'Menunggu';
-        let labelColor = 'text-gray-400';
+        let labelClass = 'sid-stepper-label waiting';
+
+
+        // ======================================
+        // REJECTED
+        // ======================================
 
         const isRejectedHere =
           (index === 1 && state === 'rejected_rt') ||
           (index === 2 && state === 'rejected_rw');
 
+
+        // ======================================
+        // DONE
+        // ======================================
+
         const isDone =
           index < step ||
-          (index === step && state === 'completed');
+          (
+            index === step &&
+            state === 'completed'
+          );
+
+
+        // ======================================
+        // CURRENT
+        // ======================================
 
         const isCurrent =
           index === step &&
-          (state === 'current');
+          state === 'current';
+
+
+        // ======================================
+        // REJECTED CIRCLE
+        // ======================================
 
         if (isRejectedHere) {
+
           circle = (
-            <div className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center">
+            <div className="sid-stepper-circle rejected">
               <X size={18} />
             </div>
           );
 
           statusText = 'Ditolak';
-          labelColor = 'text-red-500';
+          labelClass = 'sid-stepper-label rejected';
 
-        } else if (isDone) {
+        }
+
+
+        // ======================================
+        // DONE CIRCLE
+        // ======================================
+
+        else if (isDone) {
+
           circle = (
-            <div className="w-9 h-9 rounded-full bg-green-500 text-white flex items-center justify-center">
+            <div className="sid-stepper-circle done">
               <Check size={18} />
             </div>
           );
 
           statusText = 'Selesai';
-          labelColor = 'text-green-600';
+          labelClass = 'sid-stepper-label done';
 
-        } else if (isCurrent) {
+        }
+
+
+        // ======================================
+        // CURRENT CIRCLE
+        // ======================================
+
+        else if (isCurrent) {
+
           circle = (
-            <div className="w-9 h-9 rounded-full border-2 border-green-500 text-green-500 flex items-center justify-center">
+            <div className="sid-stepper-circle current">
               <Loader2
                 size={16}
                 className="animate-spin"
@@ -116,38 +208,65 @@ export default function ApprovalStepperRT({ surat }) {
           );
 
           statusText = 'Menunggu';
-          labelColor = 'text-green-500';
+          labelClass = 'sid-stepper-label current';
 
-        } else {
+        }
+
+
+        // ======================================
+        // WAITING CIRCLE
+        // ======================================
+
+        else {
+
           circle = (
-            <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">
+            <div className="sid-stepper-circle waiting">
               {index + 1}
             </div>
           );
+
         }
 
+
         return (
-          <div key={label} className="flex items-center">
-            <div className="flex flex-col items-center gap-1">
+          <div
+            key={label}
+            className="sid-stepper-item"
+          >
+
+            {/* ==================================
+                STEP
+            ================================== */}
+
+            <div className="sid-stepper-content">
+
               {circle}
 
-              <span
-                className={`text-xs font-semibold uppercase ${labelColor}`}
-              >
+              <span className={labelClass}>
                 {label}
               </span>
 
-              <span className="text-[10px] text-gray-400">
+              <span className="sid-stepper-status">
                 {statusText}
               </span>
+
             </div>
 
+
+            {/* ==================================
+                CONNECTOR
+            ================================== */}
+
             {index < STEPS.length - 1 && (
-              <div className="w-8 h-px bg-gray-300 mx-1 mt-[-16px]" />
+
+              <div className="sid-stepper-connector" />
+
             )}
+
           </div>
         );
       })}
+
     </div>
   );
 }

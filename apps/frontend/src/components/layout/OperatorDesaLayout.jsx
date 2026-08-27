@@ -1,115 +1,245 @@
-// ==========================================
+ // ==========================================
 // OperatorDesaLayout.jsx
-// Layout khusus Operator Desa (Petugas Desa/Kasi/Kaur — 1 role gabungan,
-// tampilan sama untuk ketiganya). Sidebar kiri + topbar (search, bell,
-// settings, profil), beda dari AdminLayout yang dipakai RT/RW/Kadus/Kades.
+// Layout khusus Operator Desa
+// Styling menggunakan Global CSS SID.
+// Logic/auth/routing tidak diubah.
 // ==========================================
 
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Bell, Settings, LayoutGrid, FileText, Users, UserCog, Building2, Newspaper, Plus, HelpCircle, LogOut } from 'lucide-react';
+import {
+  Bell,
+  LayoutGrid,
+  FileText,
+  Users,
+  UserCog,
+  Building2,
+  Newspaper,
+  HelpCircle,
+  LogOut,
+} from 'lucide-react';
+
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover-Admin';
-import useNotifications from "@/features/notifikasi/hooks/useNotifications";
+import useNotifications from '@/features/notifikasi/hooks/useNotifications';
 
 const MENU_ITEMS = [
-  { label: 'Ringkasan', path: '/admin/operator-desa', icon: LayoutGrid },
-  { label: 'Permohonan Surat', path: '/admin/operator-desa/surat', icon: FileText },
-  { label: 'Data Penduduk', path: '/admin/data-warga', icon: Users },
-  { label: 'Manajemen Pengguna', path: '/admin/manajemen-user', icon: UserCog },
-  { label: 'Profil Desa', path: '/admin/kelola-profil-desa', icon: Building2 },
-  { label: 'Kelola Berita', path: '/admin/kelola-berita', icon: Newspaper },
+  {
+    label: 'Ringkasan',
+    path: '/admin/operator-desa',
+    icon: LayoutGrid,
+  },
+  {
+    label: 'Permohonan Surat',
+    path: '/admin/operator-desa/surat',
+    icon: FileText,
+  },
+  {
+    label: 'Data Penduduk',
+    path: '/admin/data-warga',
+    icon: Users,
+  },
+  {
+    label: 'Manajemen Pengguna',
+    path: '/admin/manajemen-user',
+    icon: UserCog,
+  },
+  {
+    label: 'Profil Desa',
+    path: '/admin/kelola-profil-desa',
+    icon: Building2,
+  },
+  {
+    label: 'Kelola Berita',
+    path: '/admin/kelola-berita',
+    icon: Newspaper,
+  },
 ];
 
 export function OperatorDesaLayout({ children }) {
   const location = useLocation();
   const { user, logout } = useAuth();
-  const [notifOpen, setNotifOpen] = useState(false);
- const { unreadCount } = useNotifications();
-  return (
-    <div className="h-screen bg-gray-50 flex overflow-hidden">
-      {/* ===== SIDEBAR ===== */}
-      <aside className="fixed left-0 top-0 h-screen w-56 bg-white  flex flex-col z-40">
-        <div className="h-20 px-5 bg-[#185FA5] text-white border-b border-[#185FA5] flex flex-col justify-center">
-          <h1 className="font-bold text-lg leading-tight">
-            SIDUTama
-          </h1>
 
-          <p className="text-xs text-white-100 mt-1">
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const { unreadCount } = useNotifications();
+
+  return (
+    <div className="sid-operator-layout">
+
+      {/* =================================================
+          SIDEBAR
+          ================================================= */}
+
+      <aside className="sid-operator-sidebar">
+
+        {/* BRAND */}
+
+        <div className="sid-operator-sidebar-brand">
+
+          <h1>SIDUTama</h1>
+
+          <p>
             Admin Petugas Desa
           </p>
+
         </div>
 
-        <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
+
+        {/* MENU */}
+
+        <nav className="sid-operator-sidebar-nav">
+
           {MENU_ITEMS.map((item) => {
-            const isActive = location.pathname === item.path;
+
+            const isActive =
+              location.pathname === item.path;
+
             const Icon = item.icon;
+
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#185FA5] text-white' : 'text-gray-600 hover:bg-gray-100'
+                className={`sid-operator-menu-item ${
+                  isActive
+                    ? 'active'
+                    : ''
                 }`}
               >
+
                 <Icon size={18} />
-                {item.label}
+
+                <span>
+                  {item.label}
+                </span>
+
               </Link>
             );
           })}
+
         </nav>
 
-        <div className="px-3 pb-5 flex flex-col gap-1  pt-4 bg-white-500">
-          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 mt-2">
-            <HelpCircle size={16} /> Pusat Bantuan
+
+        {/* SIDEBAR FOOTER */}
+
+        <div className="sid-operator-sidebar-footer">
+
+          <button
+            type="button"
+            className="sid-operator-sidebar-action"
+          >
+            <HelpCircle size={16} />
+            <span>Pusat Bantuan</span>
           </button>
-          <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50 hover:text-red-500">
-            <LogOut size={16} /> Keluar
+
+          <button
+            type="button"
+            onClick={logout}
+            className="sid-operator-sidebar-action logout"
+          >
+            <LogOut size={16} />
+            <span>Keluar</span>
           </button>
+
         </div>
+
       </aside>
 
-      {/* ===== MAIN ===== */}
-      <div className="flex-1 flex flex-col ml-56">
-        {/* Topbar */}
-          <div className="fixed left-56 right-0 top-0 h-20 bg-[#185FA5] px-6 flex items-center justify-between shadow-lg z-30">
-          <div className="relative">
-          </div>
 
-          <div className="flex items-center gap-4 ">
-            
-          <button
-              onClick={() => setNotifOpen((prev) => !prev)}
-              className="relative w-8 h-8 rounded-full flex items-center justify-center text-white hover:text-blue-200 hover:bg-blue-700/50 transition-colors"
+      {/* =================================================
+          MAIN AREA
+          ================================================= */}
+
+      <div className="sid-operator-main">
+
+        {/* =================================================
+            TOPBAR
+            ================================================= */}
+
+        <header className="sid-operator-topbar">
+
+          <div className="sid-operator-topbar-spacer" />
+
+
+          {/* TOPBAR RIGHT */}
+
+          <div className="sid-operator-topbar-right">
+
+            {/* NOTIFICATION */}
+
+            <button
+              type="button"
+              onClick={() =>
+                setNotifOpen((prev) => !prev)
+              }
+              className="sid-operator-notification-btn"
               title="Notifikasi"
             >
+
               <Bell size={18} />
 
-              {/* Badge Merah di Pojok Kanan Atas */}
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#185FA5] pointer-events-none">
-                  {unreadCount > 99 ? "99+" : unreadCount}
+                <span className="sid-operator-notification-badge">
+                  {unreadCount > 99
+                    ? '99+'
+                    : unreadCount}
                 </span>
               )}
+
             </button>
-            <div className="flex items-center gap-2">
-              <div className="text-right">
-                <p className="text-white text-xs font-semibold text-gray-800">{user?.name ?? 'Bapak/Ibu'}</p>
-                <p className="text-white text-[10px] text-gray-400">{user?.role_label ?? 'Operator Desa'}</p>
+
+
+            {/* PROFILE */}
+
+            <div className="sid-operator-profile">
+
+              <div className="sid-operator-profile-info">
+
+                <p className="sid-operator-profile-name">
+                  {user?.name ?? 'Bapak/Ibu'}
+                </p>
+
+                <p className="sid-operator-profile-role">
+                  {user?.role_label ?? 'Operator Desa'}
+                </p>
+
               </div>
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[#185FA5] text-xs font-semibold">
-                {(user?.name ?? 'OP').slice(0, 2).toUpperCase()}
+
+
+              <div className="sid-operator-profile-avatar">
+
+                {(user?.name ?? 'OP')
+                  .slice(0, 2)
+                  .toUpperCase()}
+
               </div>
+
             </div>
+
           </div>
 
-          <NotificationPopover open={notifOpen} onClose={() => setNotifOpen(false)} />
-        </div>
 
-        <main className="flex-1 overflow-y-auto mt-20">
-            {children}
+          {/* NOTIFICATION POPOVER */}
+
+          <NotificationPopover
+            open={notifOpen}
+            onClose={() => setNotifOpen(false)}
+          />
+
+        </header>
+
+
+        {/* =================================================
+            PAGE CONTENT
+            ================================================= */}
+
+        <main className="sid-operator-main-content">
+          {children}
         </main>
+
       </div>
+
     </div>
   );
 }

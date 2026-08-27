@@ -14,50 +14,81 @@ class RwApprovalService
         protected OfficialService $officialService
     ) {}
 
+
+    // ==========================================
+    // VALIDATE GATE
+    // ==========================================
+
     private function validateGate(
         Letter $letter,
         User $user
     ): void {
 
+        // Surat harus sudah disetujui RT
         if ($letter->status !== LetterStatus::RtApproved) {
-            abort(403, 'Surat belum dapat diproses oleh RW.');
+            abort(
+                403,
+                'Surat belum dapat diproses oleh RW.'
+            );
         }
 
+
+        // Cek official RW
         $official = $user->official;
 
-        if (! $official) {
-            abort(403, 'Data petugas tidak ditemukan.');
+        if (!$official) {
+            abort(
+                403,
+                'Data petugas tidak ditemukan.'
+            );
         }
 
-        if ($letter->citizen->rt->rw_id != $official->rw_id) {
-            abort(403, 'Anda tidak berwenang memproses surat ini.');
+
+        // Pastikan RW sesuai dengan RT pemohon
+        if (
+            $letter->citizen->rt->rw_id
+            != $official->rw_id
+        ) {
+            abort(
+                403,
+                'Anda tidak berwenang memproses surat ini.'
+            );
         }
     }
 
-    /**
-     * ============================================================
-     * Detail surat RW
-     * ============================================================
-     */
+
+    // ==========================================
+    // DETAIL SURAT RW
+    // ==========================================
+
     public function getLetterDetail(
         Letter $letter,
         User $user
-    )
-    {
+    ) {
+
         return $letter->load([
             'citizen',
             'letterType',
             'approvals.approver',
         ]);
     }
-    
+
+
+    // ==========================================
+    // APPROVE / REJECT RW
+    // ==========================================
+
     public function approve(
         Letter $letter,
         User $user,
         array $data
     ): void {
 
-        $this->validateGate($letter, $user);
+        $this->validateGate(
+            $letter,
+            $user
+        );
+
 
         DB::transaction(function () use (
             $letter,
@@ -65,66 +96,146 @@ class RwApprovalService
             $data
         ) {
 
-            $oldStatus = $letter->status->value;
+            // ======================================
+            // STATUS LAMA
+            // ======================================
 
-            $newStatus = $data['status'] === 'approved'
-                ? LetterStatus::RwApproved->value
-                : LetterStatus::RwRejected->value;
+            $oldStatus =
+                $letter->status->value;
 
-            $letter->approvals()
+
+            // ======================================
+            // STATUS BARU
+            // ======================================
+
+            $newStatus =
+                $data['status'] === 'approved'
+                    ? LetterStatus::RwApproved->value
+                    : LetterStatus::RwRejected->value;
+
+
+            // ======================================
+            // NOTES
+            // ======================================
+            //
+            // APPROVE:
+            //   Pertahankan notes sebelumnya.
+            //
+            // REJECT:
+            //   Ganti dengan alasan RW.
+            // ======================================
+
+            $notes = $letter->notes;
+
+
+            if ($data['status'] === 'rejected') {
+
+                $notes =
+                    isset($data['notes'])
+                        && trim($data['notes']) !== ''
+                    ? trim($data['notes'])
+                    : null;
+            }
+
+
+            // ======================================
+            // UPDATE APPROVAL RW
+            // ======================================
+
+            $approval = $letter->approvals()
                 ->where('approval_level', 'rw')
                 ->whereNull('approved_by')
                 ->latest()
-                ->first()
-                ?->update([
+                ->first();
+
+
+            if ($approval) {
+
+                $approval->update([
                     'approved_by' => $user->id,
                     'status' => $data['status'],
                 ]);
+            }
 
 
+            // ======================================
+            // UPDATE LETTER
+            // ======================================
 
             $letter->update([
-                'status'        => $newStatus,
-
-                'processed_at'  => now(),
+                'status' => $newStatus,
+                'notes' => $notes,
+                'processed_at' => now(),
             ]);
+
+
+            // ======================================
+            // STATUS LOG
+            // ======================================
 
             $letter->statusLogs()->create([
-                'actor_id'   => $user->id,
+                'actor_id' => $user->id,
                 'old_status' => $oldStatus,
                 'new_status' => $newStatus,
-                'reason'     => $data['notes'] ?? null,
+
+                'reason' =>
+                    $data['status'] === 'rejected'
+                        ? $notes
+                        : $letter->notes,
             ]);
 
-            $citizenUser = $this->officialService
-                ->resolveCitizenUser($letter);
-                $currentOfficial = $this->officialService->getCurrentRw($user);
 
-$nextOfficials = $this->officialService
-    ->resolveNextOfficials(
-        $user->official
-    );
+            // ======================================
+            // USER WARGA
+            // ======================================
+
+            $citizenUser =
+                $this->officialService
+                    ->resolveCitizenUser($letter);
 
 
-foreach ($nextOfficials as $official) {
+            // ======================================
+            // JIKA RW APPROVE
+            // ======================================
 
-    if ($official->user) {
+            if ($data['status'] === 'approved') {
 
-        $official->user->notify(
-            new LetterStatusNotification(
-                $letter,
-                'Surat Baru',
-                'Ada surat yang menunggu verifikasi Operator Desa.',
-                'rw_approved'
-            )
-        );
+                // ----------------------------------
+                // Cari operator desa berikutnya
+                // ----------------------------------
 
-    }
+                $nextOfficials =
+                    $this->officialService
+                        ->resolveNextOfficials(
+                            $user->official
+                        );
 
-}
-            if ($citizenUser) {
 
-                if ($data['status'] === 'approved') {
+                // ----------------------------------
+                // Notifikasi operator desa
+                // ----------------------------------
+
+                foreach ($nextOfficials as $official) {
+
+                    if ($official->user) {
+
+                        $official->user->notify(
+                            new LetterStatusNotification(
+                                $letter,
+                                'Surat Baru',
+                                'Ada surat yang menunggu verifikasi Operator Desa.',
+                                'rw_approved'
+                            )
+                        );
+                    }
+                }
+
+
+                // ----------------------------------
+                // Notifikasi warga
+                // ----------------------------------
+
+                if ($citizenUser) {
 
                     $citizenUser->notify(
                         new LetterStatusNotification(
@@ -134,8 +245,18 @@ foreach ($nextOfficials as $official) {
                             'rw_approved'
                         )
                     );
+                }
 
-                } else {
+            }
+
+
+            // ======================================
+            // JIKA RW REJECT
+            // ======================================
+
+            else {
+
+                if ($citizenUser) {
 
                     $citizenUser->notify(
                         new LetterStatusNotification(
@@ -145,12 +266,16 @@ foreach ($nextOfficials as $official) {
                             'rw_rejected'
                         )
                     );
-
                 }
             }
 
         });
     }
+
+
+    // ==========================================
+    // DAFTAR SURAT RW
+    // ==========================================
 
     public function getPendingLetters(User $user)
     {
@@ -172,12 +297,16 @@ foreach ($nextOfficials as $official) {
 
             ])
 
-            ->whereHas('citizen.rt', function ($query) use ($official) {
+            ->whereHas(
+                'citizen.rt',
+                function ($query) use ($official) {
 
-                $query->where('rw_id', $official->rw_id);
-
-            })
-
+                    $query->where(
+                        'rw_id',
+                        $official->rw_id
+                    );
+                }
+            )
 
             ->with([
 
@@ -185,15 +314,12 @@ foreach ($nextOfficials as $official) {
 
                 'letterType',
 
-                'approvals.approvedBy:id,name'
+                'approvals.approvedBy:id,name',
 
             ])
-
 
             ->latest()
 
             ->get();
     }
-
-
 }

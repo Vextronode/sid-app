@@ -1,7 +1,7 @@
 // ==========================================
 // DaftarSuratSayaPage.jsx
-// Tabel daftar surat, difilter sesuai query param status. Dibuka dari
-// tombol Total Pengajuan / Disetujui / Ditolak di halaman Surat.
+// Tabel daftar surat, difilter sesuai query param status.
+// Styling menggunakan SID Global Theme.
 // ==========================================
 
 import { useState } from 'react';
@@ -13,53 +13,53 @@ import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal';
 
 const STATUS_LABEL = {
   pending: {
-    label: "MENUNGGU RT",
-    className: "bg-gray-100 text-gray-600",
+    label: 'MENUNGGU RT',
+    className: 'status-pending',
   },
 
   rt_approved: {
-    label: "DIPROSES RW",
-    className: "bg-blue-100 text-blue-700",
+    label: 'DIPROSES RW',
+    className: 'status-progress',
   },
 
   rt_rejected: {
-    label: "DITOLAK RT",
-    className: "bg-red-100 text-red-600",
+    label: 'DITOLAK RT',
+    className: 'status-rejected',
   },
 
   rw_approved: {
-    label: "DIPROSES KANTOR DESA",
-    className: "bg-amber-100 text-amber-700",
+    label: 'DIPROSES',
+    className: 'status-progress',
   },
 
   rw_rejected: {
-    label: "DITOLAK RW",
-    className: "bg-red-100 text-red-600",
+    label: 'DITOLAK RW',
+    className: 'status-rejected',
   },
 
   kasi_approved: {
-    label: "DISETUJUI",
-    className: "bg-green-100 text-green-700",
+    label: 'DISETUJUI',
+    className: 'status-done',
   },
 
   kaur_tu_umum_approved: {
-    label: "DISETUJUI",
-    className: "bg-green-100 text-green-700",
+    label: 'DISETUJUI',
+    className: 'status-done',
   },
 
   petugas_desa_approved: {
-    label: "DISETUJUI",
-    className: "bg-green-100 text-green-700",
+    label: 'DISETUJUI',
+    className: 'status-done',
   },
 
   waiting_revision_warga: {
-    label: "MENUNGGU REVISI",
-    className: "bg-amber-100 text-amber-700",
+    label: 'REVISI',
+    className: 'status-pending',
   },
 
   rejected_revision: {
-    label: "DITOLAK (REVISI)",
-    className: "bg-red-100 text-red-600",
+    label: 'DITOLAK (REVISI)',
+    className: 'status-rejected',
   },
 };
 
@@ -72,25 +72,31 @@ const PAGE_TITLE = {
 export default function DaftarSuratSayaPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
   const filterStatus = searchParams.get('status') ?? '';
+
   const { letters, loading } = useLetters();
 
   const [selectedSurat, setSelectedSurat] = useState(null);
 
   const approvedStatuses = [
-    "kasi_approved",
-    "kaur_tu_umum_approved",
-    "petugas_desa_approved",
+    'kasi_approved',
+    'kaur_tu_umum_approved',
+    'petugas_desa_approved',
   ];
 
   const filtered = letters.filter((item) => {
     if (!filterStatus) return true;
 
-    if (filterStatus === "ditolak") {
-      return item.status?.endsWith("_rejected") || item.status === "waiting_revision_warga" || item.status === "rejected_revision";
+    if (filterStatus === 'ditolak') {
+      return (
+        item.status?.endsWith('_rejected') ||
+        item.status === 'waiting_revision_warga' ||
+        item.status === 'rejected_revision'
+      );
     }
 
-    if (filterStatus === "approved") {
+    if (filterStatus === 'approved') {
       return approvedStatuses.includes(item.status);
     }
 
@@ -99,211 +105,219 @@ export default function DaftarSuratSayaPage() {
 
   return (
     <WargaLayout>
-      <div className="px-4 py-5 max-w-3xl mx-auto">
-        <button onClick={() => navigate('/jenis-surat')} className="flex items-center gap-1 text-sm text-orange-600 mb-4 hover:underline">
-          <ArrowLeft size={16} /> Kembali
+      <div className="sid-page sid-surat-saya-page">
+
+        {/* ==========================================
+            KEMBALI
+            ========================================== */}
+
+        <button
+          type="button"
+          onClick={() => navigate('/jenis-surat')}
+          className="sid-surat-saya-back"
+        >
+          <ArrowLeft size={16} />
+          Kembali
         </button>
 
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">{PAGE_TITLE[filterStatus] ?? 'Daftar Permohonan'}</h1>
-        <p className="text-sm text-gray-500 mb-6">Daftar surat yang pernah Anda ajukan</p>
 
-<div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-  {loading ? (
-    <p className="text-center text-gray-400 text-sm py-8">
-      Memuat data surat...
-    </p>
-  ) : filtered.length === 0 ? (
-    <p className="text-center text-gray-400 text-sm py-8">
-      Belum ada surat pada kategori ini.
-    </p>
-  ) : (
-    <table className="w-full table-fixed text-sm text-gray-400">
-      <thead>
-        <tr className="border-b text-gray-400 text-[9px] sm:text-[10px] uppercase">
-          
-          {/* JENIS */}
-          <th className="py-3 px-2 sm:px-4 font-semibold text-gray-500 text-left w-[32%]">
-            Jenis Surat
-          </th>
+        {/* ==========================================
+            HEADER
+            ========================================== */}
 
-          {/* TANGGAL */}
-          <th className="py-3 px-1 sm:px-4 font-semibold text-gray-500 text-center w-[20%]">
-            Tanggal
-          </th>
+        <h1 className="sid-page-title">
+          {PAGE_TITLE[filterStatus] ?? 'Daftar Permohonan'}
+        </h1>
 
-          {/* STATUS */}
-          <th className="py-3 px-1 sm:px-4 font-semibold text-gray-500 text-center w-[22%]">
-            Status
-          </th>
+        <p className="sid-page-description">
+          Daftar surat yang pernah Anda ajukan
+        </p>
 
-          {/* AKSI */}
-          <th className="py-3 px-1 sm:px-4 font-semibold text-gray-500 text-center w-[26%]">
-            Aksi
-          </th>
-        </tr>
-      </thead>
 
-      <tbody>
-        {filtered.map((item) => {
-          const badge =
-            STATUS_LABEL[item.status] ?? {
-              label: item.status,
-              className: "bg-gray-100 text-gray-500",
-            };
+        {/* ==========================================
+            CARD TABEL
+            ========================================== */}
 
-          return (
-            <tr
-              key={item.id}
-              className="border-b last:border-0 hover:bg-gray-50/50 transition"
-            >
+        <div className="sid-card sid-surat-saya-table-card">
 
-              {/* ==========================
-                  JENIS SURAT
-              ========================== */}
-              <td className="py-3 px-2 sm:px-4 align-top">
-                <div className="min-w-0">
-                  <p className="
-                    font-medium
-                    text-gray-500
-                    text-[10px]
-                    sm:text-sm
-                    leading-4
-                    break-words
-                  ">
-                    {item.letter_type?.name ?? "-"}
-                  </p>
+          {loading ? (
 
-                  <p className="
-                    text-[8px]
-                    sm:text-[10px]
-                    text-gray-400
-                    mt-0.5
-                    break-words
-                  ">
-                    #{item.letter_number ?? `SKD-${item.id}`}
-                  </p>
-                </div>
-              </td>
+            <p className="sid-surat-saya-message">
+              Memuat data surat...
+            </p>
 
-              {/* ==========================
-                  TANGGAL
-              ========================== */}
-              <td className="py-3 px-1 sm:px-4 text-center">
-                <span className="text-[9px] sm:text-sm text-gray-400 whitespace-nowrap">
-                  {item.created_at
-                    ? new Date(item.created_at).toLocaleDateString(
-                        "id-ID"
-                      )
-                    : "-"}
-                </span>
-              </td>
+          ) : filtered.length === 0 ? (
 
-              {/* ==========================
-                  STATUS
-              ========================== */}
-              <td className="py-3 px-1 sm:px-4 text-center">
-                <span
-                  className={`
-                    inline-flex
-                    items-center
-                    justify-center
-                    whitespace-nowrap
-                    px-1.5
-                    sm:px-2
-                    py-1
-                    rounded-full
-                    text-[8px]
-                    sm:text-[10px]
-                    font-semibold
-                    ${badge.className}
-                  `}
-                >
-                  {badge.label}
-                </span>
-              </td>
+            <p className="sid-surat-saya-message">
+              Belum ada surat pada kategori ini.
+            </p>
 
-              {/* ==========================
-                  AKSI
-              ========================== */}
-              <td className="py-3 px-1 sm:px-4">
-                <div className="flex items-center justify-center gap-1 sm:gap-2">
+          ) : (
 
-                  {/* DETAIL */}
-                  <button
-                    onClick={() =>
-                      setSelectedSurat({
-                        ...item,
-                        noSurat: item.letter_number,
-                        pemohon: item.applicant_name,
-                        jenis: item.letter_type?.name,
-                        tanggal: item.created_at
-                          ? new Date(
-                              item.created_at
-                            ).toLocaleDateString("id-ID")
-                          : "-",
-                      })
-                    }
-                    className="
-                      inline-flex
-                      items-center
-                      gap-1
-                      px-2
-                      sm:px-3
-                      py-1.5
-                      rounded-full
-                      border
-                      border-gray-300
-                      text-[9px]
-                      sm:text-xs
-                      text-gray-800
-                      hover:bg-gray-100
-                      whitespace-nowrap
-                    "
-                  >
-                    <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    Detail
-                  </button>
+            <div className="sid-surat-saya-table-wrapper">
 
-                  {/* REVISI */}
-                  {item.status === "waiting_revision_warga" && (
-                    <button
-                      onClick={() =>
-                        navigate(`/revisi-surat/${item.id}`)
-                      }
-                      className="
-                        inline-flex
-                        items-center
-                        gap-1
-                        px-2
-                        sm:px-3
-                        py-1.5
-                        rounded-full
-                        border
-                        border-amber-300
-                        text-amber-700
-                        bg-amber-50
-                        hover:bg-amber-100
-                        text-[9px]
-                        sm:text-xs
-                        font-medium
-                        whitespace-nowrap
-                      "
-                    >
-                      <Edit className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      Revisi
-                    </button>
-                  )}
+              <table className="sid-surat-saya-table">
 
-                </div>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  )}
-</div>
+                {/* ==================================
+                    TABLE HEADER
+                    ================================== */}
+
+                <thead>
+                  <tr>
+
+                    <th className="sid-surat-saya-col-type">
+                      Jenis Surat
+                    </th>
+
+                    <th className="sid-surat-saya-col-date">
+                      Tanggal
+                    </th>
+
+                    <th className="sid-surat-saya-col-status">
+                      Status
+                    </th>
+
+                    <th className="sid-surat-saya-col-action">
+                      Aksi
+                    </th>
+
+                  </tr>
+                </thead>
+
+
+                {/* ==================================
+                    TABLE BODY
+                    ================================== */}
+
+                <tbody>
+
+                  {filtered.map((item) => {
+
+                    const badge =
+                      STATUS_LABEL[item.status] ?? {
+                        label: item.status,
+                        className: 'status-default',
+                      };
+
+                    return (
+                      <tr key={item.id}>
+
+                        {/* JENIS SURAT */}
+
+                        <td className="sid-surat-saya-type-cell">
+
+                          <div className="sid-surat-saya-type-info">
+
+                            <p className="sid-surat-saya-type-name">
+                              {item.letter_type?.name ?? '-'}
+                            </p>
+
+                            <p className="sid-surat-saya-letter-number">
+                              #{item.letter_number ?? `SKD-${item.id}`}
+                            </p>
+
+                          </div>
+
+                        </td>
+
+
+                        {/* TANGGAL */}
+
+                        <td className="sid-surat-saya-date-cell">
+
+                          <span>
+                            {item.created_at
+                              ? new Date(
+                                  item.created_at
+                                ).toLocaleDateString('id-ID')
+                              : '-'}
+                          </span>
+
+                        </td>
+
+
+                        {/* STATUS */}
+
+                        <td className="sid-surat-saya-status-cell">
+
+                          <span
+                            className={`sid-surat-saya-status ${badge.className}`}
+                          >
+                            {badge.label}
+                          </span>
+
+                        </td>
+
+
+                        {/* AKSI */}
+
+                        <td className="sid-surat-saya-action-cell">
+
+                          <div className="sid-surat-saya-actions">
+
+                            {/* DETAIL */}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedSurat({
+                                  ...item,
+                                  noSurat: item.letter_number,
+                                  pemohon: item.applicant_name,
+                                  jenis: item.letter_type?.name,
+                                  tanggal: item.created_at
+                                    ? new Date(
+                                        item.created_at
+                                      ).toLocaleDateString('id-ID')
+                                    : '-',
+                                })
+                              }
+                              className="sid-surat-saya-detail-button"
+                            >
+                              <Eye />
+                              Detail
+                            </button>
+
+
+                            {/* REVISI */}
+
+                            {item.status === 'waiting_revision_warga' && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  navigate(`/revisi-surat/${item.id}`)
+                                }
+                                className="sid-surat-saya-revision-button"
+                              >
+                                <Edit />
+                                Revisi
+                              </button>
+                            )}
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+                    );
+                  })}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          )}
+
+        </div>
+
       </div>
+
+
+      {/* ==========================================
+          DETAIL MODAL
+          ========================================== */}
 
       {selectedSurat && (
         <DetailSuratModal
@@ -311,6 +325,7 @@ export default function DaftarSuratSayaPage() {
           onClose={() => setSelectedSurat(null)}
         />
       )}
+
     </WargaLayout>
   );
 }

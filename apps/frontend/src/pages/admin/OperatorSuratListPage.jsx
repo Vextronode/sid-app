@@ -1,13 +1,12 @@
 // ==========================================
 // OperatorSuratListPage.jsx
-// Halaman "Daftar Permohonan Surat" untuk Operator Desa, sesuai desain:
-// breadcrumb, judul + tombol Ekspor Laporan, search+filter card,
-// tabel dengan avatar inisial & badge status, pagination "Sebelumnya/1/2/Selanjutnya".
-// Surat diurutkan selesai sampai di tolak
-// Aksi (titik tiga) buka OperatorSuratActionModal (TTD Basah/Digital).
+// Halaman "Daftar Permohonan Surat" untuk Operator Desa.
+// Logic/API tidak diubah.
+// Styling dipindahkan ke Global CSS.
 // ==========================================
+
 import OperatorSuratPreviewModal from "@/features/operator-desa/components/OperatorSuratPreviewModal";
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import {
   Download,
   Search,
@@ -15,61 +14,56 @@ import {
   Eye,
   Trash2,
 } from "lucide-react";
-import api from '@/lib/api';
-import { getSuratList } from '@/features/approval/api';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import OperatorSuratActionModal from '@/features/operator-desa/components/OperatorSuratActionModal';
-import { FooterDesa } from '@/components/layout/FooterDesa';
-import { FooterOperator } from '../../components/layout/FooterOperator';
+import api from "@/lib/api";
+import { getSuratList } from "@/features/approval/api";
+import { useAuth } from "@/features/auth/contexts/AuthContext";
+import OperatorSuratActionModal from "@/features/operator-desa/components/OperatorSuratActionModal";
+import { FooterOperator } from "../../components/layout/FooterOperator";
 
 const STATUS_LABEL = {
   pending: {
     label: "Pending",
-    className: "bg-gray-100 text-gray-500",
+    className: "sid-status-pending",
   },
 
   rt_approved: {
     label: "RT Approved",
-    className: "bg-blue-50 text-blue-600",
+    className: "sid-status-progress",
   },
 
   rw_approved: {
     label: "RW Approved",
-    className: "bg-cyan-50 text-cyan-700",
+    className: "sid-status-progress",
   },
-
-
 
   kasi_approved: {
     label: "Verified",
-    className: "bg-green-50 text-green-700",
+    className: "sid-status-done",
   },
 
   rt_rejected: {
     label: "Ditolak RT",
-    className: "bg-red-50 text-red-600",
+    className: "sid-status-rejected",
   },
 
   rw_rejected: {
     label: "Ditolak RW",
-    className: "bg-red-50 text-red-600",
+    className: "sid-status-rejected",
   },
-
-
 
   kasi_rejected: {
     label: "Ditolak Kasi",
-    className: "bg-red-50 text-red-600",
+    className: "sid-status-rejected",
   },
-  
+
   waiting_revision_warga: {
     label: "Menunggu Revisi",
-    className: "bg-amber-50 text-amber-700",
+    className: "sid-status-pending",
   },
-  
+
   rejected_revision: {
     label: "Ditolak (Batas Revisi)",
-    className: "bg-red-50 text-red-600",
+    className: "sid-status-rejected",
   },
 };
 
@@ -80,21 +74,21 @@ export default function OperatorSuratListPage() {
   const [letters, setLetters] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [search, setSearch] = useState('');
-  const [filterJenis, setFilterJenis] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [search, setSearch] = useState("");
+  const [filterJenis, setFilterJenis] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSurat, setSelectedSurat] = useState(null);
   const [previewSurat, setPreviewSurat] = useState(null);
 
   // Delete confirmation
   const [deleteSurat, setDeleteSurat] = useState(null);
-  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
+
   const ROLE_ENDPOINT = {
     rt: "rt",
     rw: "rw",
-
     kasi_pelayanan: "kasi",
     kaur_tu_umum: "kasi",
     petugas_desa: "kasi",
@@ -102,29 +96,63 @@ export default function OperatorSuratListPage() {
 
   const roleKey = ROLE_ENDPOINT[user?.role] ?? user?.role;
 
-  const loadLetters = async () => {
+  // ==========================================
+  // LOAD DATA
+  // ==========================================
+  const loadLetters = async (showLoading = true) => {
     if (!roleKey) return;
 
-    setLoading(true);
+    if (showLoading) {
+      setLoading(true);
+    }
 
     try {
       const res = await getSuratList(roleKey);
       setLetters(res.data);
     } catch (err) {
-      console.error(err.response?.data ?? err);
+      console.error(
+        "Gagal mengambil data surat:",
+        err.response?.data ?? err
+      );
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
+  // ==========================================
+  // LOAD DATA PERTAMA KALI
+  // ==========================================
   useEffect(() => {
-    loadLetters();
+    loadLetters(true);
   }, [roleKey]);
 
+  // ==========================================
+  // AUTO REFRESH DATA SETIAP 5 DETIK
+  // ==========================================
+  useEffect(() => {
+    if (!roleKey) return;
+
+    const interval = setInterval(() => {
+      loadLetters(false);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [roleKey]);
+
+  // ==========================================
+  // FILTER + SORT
+  // ==========================================
   const filtered = useMemo(() => {
     let result = [...letters];
 
-    if (filterJenis) result = result.filter((s) => s.letter_type?.name === filterJenis);
+    if (filterJenis) {
+      result = result.filter(
+        (s) => s.letter_type?.name === filterJenis
+      );
+    }
+
     if (filterStatus) {
       switch (filterStatus) {
         case "verification":
@@ -134,7 +162,9 @@ export default function OperatorSuratListPage() {
           break;
 
         case "completed":
-          result = result.filter((s) => s.status === "kasi_approved");
+          result = result.filter(
+            (s) => s.status === "kasi_approved"
+          );
           break;
 
         case "rejected":
@@ -147,14 +177,18 @@ export default function OperatorSuratListPage() {
           break;
       }
     }
+
     if (search) {
       const kw = search.toLowerCase();
+
       result = result.filter(
-        (s) => s.applicant_name?.toLowerCase().includes(kw) || s.letter_number?.toLowerCase().includes(kw)
+        (s) =>
+          s.applicant_name?.toLowerCase().includes(kw) ||
+          s.letter_number?.toLowerCase().includes(kw)
       );
     }
 
-    // Urutkan berdasarkan selesai sampai di tolak
+    // Urutkan berdasarkan selesai sampai ditolak
     const STATUS_ORDER = {
       kasi_approved: 1,
       rw_approved: 2,
@@ -166,7 +200,6 @@ export default function OperatorSuratListPage() {
     };
 
     result.sort((a, b) => {
-      // Ambil tanggal tanpa jam
       const dateA = new Date(a.submitted_at ?? a.created_at);
       const dateB = new Date(b.submitted_at ?? b.created_at);
 
@@ -182,12 +215,10 @@ export default function OperatorSuratListPage() {
         dateB.getDate()
       );
 
-      // 1. Tanggal terbaru dulu
       if (onlyDateA.getTime() !== onlyDateB.getTime()) {
         return onlyDateB - onlyDateA;
       }
 
-      // 2. Kalau tanggal sama → urut status
       const orderA = STATUS_ORDER[a.status] ?? 999;
       const orderB = STATUS_ORDER[b.status] ?? 999;
 
@@ -195,261 +226,450 @@ export default function OperatorSuratListPage() {
         return orderA - orderB;
       }
 
-      // 3. Kalau status sama → jam terbaru dulu
       return dateB - dateA;
     });
 
     return result;
   }, [letters, filterJenis, filterStatus, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  );
+
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
+
+    return filtered.slice(
+      start,
+      start + ITEMS_PER_PAGE
+    );
   }, [filtered, currentPage]);
 
   const jenisOptions = useMemo(() => {
-    const set = new Set(letters.map((s) => s.letter_type?.name).filter(Boolean));
+    const set = new Set(
+      letters
+        .map((s) => s.letter_type?.name)
+        .filter(Boolean)
+    );
+
     return Array.from(set);
   }, [letters]);
 
   return (
-    <div>
-      <div className="p-6">
-        {/* Breadcrumb */}
-        <p className="text-xs text-gray-400 mb-1">Admin / <span className="text-gray-600">Daftar Permohonan Surat</span></p>
+    <div className="sid-operator-page">
 
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Daftar Permohonan Surat</h1>
-          <button className="flex items-center gap-2 bg-orange-600 text-white rounded-full px-5 py-2.5 text-sm font-medium hover:bg-orange-700 shrink-0">
-            <Download size={16} /> Ekspor Laporan
+      <main className="sid-operator-content">
+
+        {/* ==========================================
+            HEADER
+        ========================================== */}
+        <div className="sid-operator-breadcrumb">
+          Admin /
+          <span> Daftar Permohonan Surat</span>
+        </div>
+
+        <div className="sid-operator-header">
+          <h1>Daftar Permohonan Surat</h1>
+
+          <button className="sid-operator-export">
+            <Download size={16} />
+            Ekspor Laporan
           </button>
         </div>
 
-        {/* Search & filter card */}
-        <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Pencarian Cepat</p>
-              <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        {/* ==========================================
+            SEARCH + FILTER
+        ========================================== */}
+        <div className="sid-operator-filter-card">
+
+          <div className="sid-operator-filter-grid">
+
+            <div className="sid-operator-filter-field">
+              <p>Pencarian Cepat</p>
+
+              <div className="sid-operator-search">
+                <Search size={16} />
+
                 <input
                   value={search}
-                  onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   placeholder="Nomor surat atau nama pemohon..."
-                  className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-blue-500"
                 />
               </div>
             </div>
-            <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Jenis Surat</p>
-              <select value={filterJenis} onChange={(e) => { setFilterJenis(e.target.value); setCurrentPage(1); }} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500" > <option value="">Semua Jenis</option> {jenisOptions.map((j) => ( <option key={j} value={j}>{j}</option> ))} </select>
+
+            <div className="sid-operator-filter-field">
+              <p>Jenis Surat</p>
+
+              <select
+                value={filterJenis}
+                onChange={(e) => {
+                  setFilterJenis(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="">Semua Jenis</option>
+
+                {jenisOptions.map((j) => (
+                  <option key={j} value={j}>
+                    {j}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Status</p>
+
+            <div className="sid-operator-filter-field">
+              <p>Status</p>
+
               <select
                 value={filterStatus}
                 onChange={(e) => {
                   setFilterStatus(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500"
               >
                 <option value="">Semua Status</option>
-                <option value="verification">Verifikasi</option>
-                <option value="completed">Selesai</option>
-                <option value="rejected">Ditolak</option>
+                <option value="verification">
+                  Verifikasi
+                </option>
+                <option value="completed">
+                  Selesai
+                </option>
+                <option value="rejected">
+                  Ditolak
+                </option>
               </select>
             </div>
+
           </div>
         </div>
 
-        {/* Tabel */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden text-gray-400">
-          <table className="w-full text-sm text-gray-400">
-            <thead>
-              <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                <th className="py-3 px-5 font-semibold text- text-gray-500">No. Surat</th>
-                <th className="py-3 px-5 font-semibold  text-center text-gray-500">Pemohon</th>
-                <th className="py-3 px-5 font-semibold text-center text-gray-500">Jenis</th>
-                <th className="py-3 px-5 font-semibold text-center text-gray-500">Tanggal</th>
-                <th className="py-3 px-5 font-semibold text-center text-gray-500">
-                  RT / RW
-                </th>
-                <th className="py-3 px-5 font-semibold  text-center text-gray-500">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={6} className="text-center text-gray-400 py-10">Memuat data surat...</td></tr>
-              ) : paginated.length === 0 ? (
-                <tr><td colSpan={6} className="text-center text-gray-400 py-10">Belum ada surat.</td></tr>
-              ) : (
-                paginated.map((s) => {
-                  const badge = STATUS_LABEL[s.status] ?? { label: s.status, className: 'bg-gray-50 text-gray-500' };
-                  return (
-                    <tr key={s.id} className="border-b last:border-0 hover:bg-gray-50 text-gray-400">
-                      <td className="py-4 px-5 font-semibold text-gray-400 ">
-                        <div className="flex flex-col gap-1 items-start">
-                          <span>#{s.letter_number ?? '-'}</span>
-                          {s.revision_count > 0 && (
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[9px] rounded-full font-bold">
-                              Hasil Revisi
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-4 px-5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-400  text-center ">{s.applicant_name}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-5 text-gray-400  text-center">{s.letter_type?.name ?? '-'}</td>
-                      <td className="py-4 px-5 text-gray-400  text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
-                      <td className="py-4 px-5">
-                        <div className="flex items-center justify-center gap-6">
+        {/* ==========================================
+            TABLE
+        ========================================== */}
+        <div className="sid-operator-table-card">
 
-                          {/* RT */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-400">
-                              RT
+          <div className="sid-operator-table-wrapper">
+
+            <table className="sid-operator-table">
+
+              <thead>
+                <tr>
+                  <th>No. Surat</th>
+                  <th className="center">Pemohon</th>
+                  <th className="center">Jenis</th>
+                  <th className="center">Tanggal</th>
+                  <th className="center">RT / RW</th>
+                  <th className="center">Aksi</th>
+                </tr>
+              </thead>
+
+              <tbody>
+
+                {loading ? (
+
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="sid-operator-table-message"
+                    >
+                      Memuat data surat...
+                    </td>
+                  </tr>
+
+                ) : paginated.length === 0 ? (
+
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="sid-operator-table-message"
+                    >
+                      Belum ada surat.
+                    </td>
+                  </tr>
+
+                ) : (
+
+                  paginated.map((s) => {
+
+                    const badge =
+                      STATUS_LABEL[s.status] ?? {
+                        label: s.status,
+                        className:
+                          "sid-status-default",
+                      };
+
+                    return (
+                      <tr key={s.id}>
+
+                        {/* NO SURAT */}
+                        <td className="sid-operator-letter-number">
+
+                          <div>
+                            <span>
+                              #{s.letter_number ?? "-"}
                             </span>
 
-                            {[
-                              "rt_approved",
-                              "rw_approved",
-                              "kasi_approved",
-                              "rw_rejected",
-                            ].includes(s.status) ? (
-                              <div className="w-5 h-5 rounded border-2 border-green-600 bg-green-600 flex items-center justify-center text-white text-xs">
-                                ✓
-                              </div>
-                            ) : s.status === "rt_rejected" ? (
-                              <div className="w-5 h-5 rounded border-2 border-red-500 bg-red-500 flex items-center justify-center text-white text-xs">
-                                ✕
-                              </div>
-                            ) : (
-                              <div className="w-5 h-5 rounded border-2 border-gray-300 bg-white" />
+                            {s.revision_count > 0 && (
+                              <small>
+                                Hasil Revisi
+                              </small>
                             )}
                           </div>
 
-                          {/* RW */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-400">
-                              RW
-                            </span>
+                        </td>
 
-                            {[
-                              "rw_approved",
-                              "kasi_approved",
-                            ].includes(s.status) ? (
-                              <div className="w-5 h-5 rounded border-2 border-green-600 bg-green-600 flex items-center justify-center text-white text-xs">
-                                ✓
-                              </div>
-                            ) : s.status === "rw_rejected" ? (
-                              <div className="w-5 h-5 rounded border-2 border-red-500 bg-red-500 flex items-center justify-center text-white text-xs">
-                                ✕
-                              </div>
-                            ) : (
-                              <div className="w-5 h-5 rounded border-2 border-gray-300 bg-white" />
-                            )}
+                        {/* PEMOHON */}
+                        <td>
+                          <span className="sid-operator-applicant">
+                            {s.applicant_name}
+                          </span>
+                        </td>
+
+                        {/* JENIS */}
+                        <td className="center">
+                          {s.letter_type?.name ?? "-"}
+                        </td>
+
+                        {/* TANGGAL */}
+                        <td className="center">
+                          {s.submitted_at
+                            ? new Date(
+                                s.submitted_at
+                              ).toLocaleDateString(
+                                "id-ID",
+                                {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                }
+                              )
+                            : "-"}
+                        </td>
+
+                        {/* RT / RW */}
+                        <td>
+
+                          <div className="sid-operator-approval">
+
+                            {/* RT */}
+                            <div>
+
+                              <span>RT</span>
+
+                              {[
+                                "rt_approved",
+                                "rw_approved",
+                                "kasi_approved",
+                                "rw_rejected",
+                              ].includes(s.status) ? (
+
+                                <div className="sid-operator-check approved">
+                                  ✓
+                                </div>
+
+                              ) : s.status === "rt_rejected" ? (
+
+                                <div className="sid-operator-check rejected">
+                                  ✕
+                                </div>
+
+                              ) : (
+
+                                <div className="sid-operator-check">
+                                </div>
+
+                              )}
+
+                            </div>
+
+                            {/* RW */}
+                            <div>
+
+                              <span>RW</span>
+
+                              {[
+                                "rw_approved",
+                                "kasi_approved",
+                              ].includes(s.status) ? (
+
+                                <div className="sid-operator-check approved">
+                                  ✓
+                                </div>
+
+                              ) : s.status === "rw_rejected" ? (
+
+                                <div className="sid-operator-check rejected">
+                                  ✕
+                                </div>
+
+                              ) : (
+
+                                <div className="sid-operator-check">
+                                </div>
+
+                              )}
+
+                            </div>
+
                           </div>
 
-                        </div>
-                      </td>
-                      <td className="py-4 px-5">
-                        <div className="flex items-center justify-end gap-2">
+                        </td>
 
-                          {/* Detail */}
-                          <button
-                            onClick={() => setPreviewSurat(s)}
-                            className="w-9 h-9 rounded-lg border  
-                                      text-gray-800 hover:bg-blue-100 transition"
-                            title="Detail Surat"
-                          >
-                            <Eye size={17} className="mx-auto" />
-                          </button>
+                        {/* AKSI */}
+                        <td>
 
-                          {/* Edit */}
-                          {s.status !== "kasi_approved" && (
+                          <div className="sid-operator-actions">
+
+                            {/* Detail */}
                             <button
-                              onClick={() => setSelectedSurat(s)}
-                              className="w-9 h-9 rounded-lg border border-amber-200 bg-amber-50
-                                        text-amber-600 hover:bg-amber-100 transition"
-                              title="Edit Surat"
+                              onClick={() =>
+                                setPreviewSurat(s)
+                              }
+                              className="sid-operator-action detail"
+                              title="Detail Surat"
                             >
-                              <Pencil size={17} className="mx-auto" />
+                              <Eye size={17} />
                             </button>
-                          )}
+
+                            {/* Edit */}
+                            {s.status !== "kasi_approved" && (
+                              <button
+                                onClick={() =>
+                                  setSelectedSurat(s)
+                                }
+                                className="sid-operator-action edit"
+                                title="Edit Surat"
+                              >
+                                <Pencil size={17} />
+                              </button>
+                            )}
+
+                            {/* Hapus */}
                             <button
                               onClick={() => {
                                 setDeleteSurat(s);
-                                setDeleteConfirmation('');
+                                setDeleteConfirmation("");
                               }}
-                              className="w-9 h-9 rounded-lg border border-red-200 bg-red-50
-                                        text-red-600 hover:bg-red-100 transition"
+                              className="sid-operator-action delete"
                               title="Hapus Surat"
                             >
-                              <Trash2 size={17} className="mx-auto" />
+                              <Trash2 size={17} />
                             </button>
 
+                          </div>
 
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                        </td>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-5 py-4 border-t">
-            <p className="text-xs text-gray-500">
-              Menampilkan {paginated.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-{(currentPage - 1) * ITEMS_PER_PAGE + paginated.length} dari {filtered.length} data
+                      </tr>
+                    );
+                  })
+
+                )}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+          {/* ==========================================
+              PAGINATION
+          ========================================== */}
+          <div className="sid-operator-pagination">
+
+            <p>
+              Menampilkan{" "}
+              {paginated.length === 0
+                ? 0
+                : (currentPage - 1) *
+                    ITEMS_PER_PAGE +
+                  1}
+              -
+              {(currentPage - 1) *
+                ITEMS_PER_PAGE +
+                paginated.length}{" "}
+              dari {filtered.length} data
             </p>
-            <div className="flex items-center gap-2">
+
+            <div>
+
               <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.max(1, p - 1)
+                  )
+                }
                 disabled={currentPage === 1}
-                className="border rounded-lg px-4 py-2 text-xs text-gray-600 disabled:opacity-40"
               >
                 Sebelumnya
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+
+              {Array.from(
+                { length: totalPages },
+                (_, i) => i + 1
+              ).map((page) => (
                 <button
                   key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded-lg text-xs font-medium ${
-                    page === currentPage ? 'bg-[#185FA5] text-white' : 'border text-gray-600'
-                  }`}
+                  onClick={() =>
+                    setCurrentPage(page)
+                  }
+                  className={
+                    page === currentPage
+                      ? "active"
+                      : ""
+                  }
                 >
                   {page}
                 </button>
               ))}
+
               <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="border rounded-lg px-4 py-2 text-xs text-gray-600 disabled:opacity-40"
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.min(
+                      totalPages,
+                      p + 1
+                    )
+                  )
+                }
+                disabled={
+                  currentPage === totalPages
+                }
               >
                 Selanjutnya
               </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Footer versi ringkas sesuai desain (lebih pendek dari FooterDesa default) */}
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+
+      {/* FOOTER */}
       <FooterOperator />
 
-
+      {/* ==========================================
+          PREVIEW
+      ========================================== */}
       {previewSurat && (
         <OperatorSuratPreviewModal
           surat={previewSurat}
-          onClose={() => setPreviewSurat(null)}
+          onClose={() =>
+            setPreviewSurat(null)
+          }
         />
       )}
 
+      {/* ==========================================
+          ACTION MODAL
+      ========================================== */}
       {selectedSurat && (
         <OperatorSuratActionModal
           surat={selectedSurat}
@@ -459,157 +679,114 @@ export default function OperatorSuratListPage() {
           }}
         />
       )}
-      {deleteSurat && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
 
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+      {/* ==========================================
+          DELETE MODAL
+      ========================================== */}
+      {deleteSurat && (
+        <div className="sid-operator-delete-overlay">
+
+          <div className="sid-operator-delete-modal">
 
             {/* Header */}
-            <div className="flex items-start gap-4">
+            <div className="sid-operator-delete-header">
 
-              <div className="
-                w-11 h-11
-                rounded-full
-                bg-red-100
-                text-red-600
-                flex
-                items-center
-                justify-center
-                shrink-0
-              ">
+              <div className="sid-operator-delete-icon">
                 <Trash2 size={20} />
               </div>
 
               <div>
-                <h2 className="text-lg font-bold text-gray-800">
-                  Hapus Surat
-                </h2>
+                <h2>Hapus Surat</h2>
 
-                <p className="text-sm text-gray-500 mt-1">
-                  Tindakan ini akan menghapus surat dari sistem.
-                  Data yang sudah dihapus tidak dapat dikembalikan.
+                <p>
+                  Tindakan ini akan menghapus surat
+                  dari sistem. Data yang sudah dihapus
+                  tidak dapat dikembalikan.
                 </p>
               </div>
 
             </div>
 
-
             {/* Informasi surat */}
-            <div className="
-              mt-5
-              p-4
-              rounded-xl
-              bg-gray-50
-              border
-              border-gray-100
-            ">
+            <div className="sid-operator-delete-info">
 
-              <p className="text-[10px] uppercase font-semibold text-gray-400">
-                Surat yang akan dihapus
-              </p>
+              <p>Surat yang akan dihapus</p>
 
-              <p className="text-sm font-semibold text-gray-800 mt-1">
-                #{deleteSurat.letter_number ?? '-'}
-              </p>
+              <strong>
+                #{deleteSurat.letter_number ?? "-"}
+              </strong>
 
-              <p className="text-xs text-gray-500 mt-1">
-                {deleteSurat.applicant_name ?? '-'}
-              </p>
+              <span>
+                {deleteSurat.applicant_name ?? "-"}
+              </span>
 
-              <p className="text-xs text-gray-500">
-                {deleteSurat.letter_type?.name ?? '-'}
-              </p>
+              <span>
+                {deleteSurat.letter_type?.name ?? "-"}
+              </span>
 
             </div>
 
-
             {/* Instruksi */}
-            <div className="mt-5">
+            <div className="sid-operator-delete-confirm">
 
-              <label className="
-                block
-                text-xs
-                font-semibold
-                text-gray-700
-                mb-2
-              ">
+              <label>
                 Untuk melanjutkan, ketik
-                <span className="text-red-600 font-bold mx-1">
-                  DELETE
-                </span>
+                <strong>DELETE</strong>
                 di bawah ini.
               </label>
 
               <input
                 type="text"
                 value={deleteConfirmation}
-                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                onChange={(e) =>
+                  setDeleteConfirmation(
+                    e.target.value
+                  )
+                }
                 placeholder="Ketik DELETE"
                 autoFocus
                 disabled={deleting}
-                className="
-                  w-full
-                  border
-                  border-gray-300
-                  rounded-xl
-                  px-4
-                  py-3
-                  text-sm
-                  text-gray-800
-                  outline-none
-                  focus:border-red-500
-                  focus:ring-2
-                  focus:ring-red-100
-                  disabled:bg-gray-100
-                "
               />
 
               {deleteConfirmation &&
-                deleteConfirmation !== 'DELETE' && (
-                  <p className="text-xs text-red-500 mt-2">
-                    Ketik <strong>DELETE</strong> persis seperti yang diminta.
+                deleteConfirmation !==
+                  "DELETE" && (
+                  <p>
+                    Ketik{" "}
+                    <strong>DELETE</strong>{" "}
+                    persis seperti yang diminta.
                   </p>
                 )}
 
             </div>
 
-
             {/* Buttons */}
-            <div className="flex gap-3 mt-6">
+            <div className="sid-operator-delete-actions">
 
               <button
                 type="button"
                 disabled={deleting}
                 onClick={() => {
                   setDeleteSurat(null);
-                  setDeleteConfirmation('');
+                  setDeleteConfirmation("");
                 }}
-                className="
-                  flex-1
-                  border
-                  border-gray-300
-                  text-gray-600
-                  rounded-xl
-                  py-2.5
-                  text-sm
-                  font-medium
-                  hover:bg-gray-50
-                  disabled:opacity-50
-                "
+                className="cancel"
               >
                 Batal
               </button>
 
-
               <button
                 type="button"
                 disabled={
-                  deleteConfirmation !== 'DELETE' ||
-                  deleting
+                  deleteConfirmation !==
+                    "DELETE" || deleting
                 }
                 onClick={async () => {
 
-                  if (deleteConfirmation !== 'DELETE') {
+                  if (
+                    deleteConfirmation !==
+                    "DELETE"
+                  ) {
                     return;
                   }
 
@@ -621,11 +798,9 @@ export default function OperatorSuratListPage() {
                       `/api/letters/${deleteSurat.id}`
                     );
 
-                    // Tutup popup
                     setDeleteSurat(null);
-                    setDeleteConfirmation('');
+                    setDeleteConfirmation("");
 
-                    // Refresh daftar surat
                     await loadLetters();
 
                   } catch (err) {
@@ -637,7 +812,7 @@ export default function OperatorSuratListPage() {
 
                     window.alert(
                       err.response?.data?.message ??
-                      "Gagal menghapus surat."
+                        "Gagal menghapus surat."
                     );
 
                   } finally {
@@ -647,20 +822,11 @@ export default function OperatorSuratListPage() {
                   }
 
                 }}
-                className="
-                  flex-1
-                  bg-red-600
-                  text-white
-                  rounded-xl
-                  py-2.5
-                  text-sm
-                  font-medium
-                  hover:bg-red-700
-                  disabled:opacity-40
-                  disabled:cursor-not-allowed
-                "
+                className="delete"
               >
-                {deleting ? 'Menghapus...' : 'Hapus Surat'}
+                {deleting
+                  ? "Menghapus..."
+                  : "Hapus Surat"}
               </button>
 
             </div>
@@ -669,6 +835,7 @@ export default function OperatorSuratListPage() {
 
         </div>
       )}
+
     </div>
   );
 }

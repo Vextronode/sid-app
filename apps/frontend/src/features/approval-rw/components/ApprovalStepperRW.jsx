@@ -3,25 +3,22 @@
 // Stepper 4 tahap:
 // Submit -> RT -> RW -> Selesai
 //
-// Status mengikuti surat.status dari backend.
-//
-// pending       = menunggu RT
-// rt_approved   = menunggu RW
-// rt_rejected   = RT menolak
-// rw_approved   = RW sudah approve, menunggu proses selesai
-// rw_rejected   = RW menolak
-// completed     = selesai
+// Styling mengikuti SID Global Theme.
 // ==========================================
 
 import { Check, X, Loader2 } from 'lucide-react';
 
 const STEPS = ['Submit', 'RT', 'RW', 'Selesai'];
 
+
+// ==========================================
+// STATUS
+// ==========================================
+
 function getStepState(status) {
   switch (status) {
 
     // Surat baru diajukan
-    // Submit selesai, RT sedang menunggu proses
     case 'pending':
       return {
         step: 1,
@@ -29,7 +26,6 @@ function getStepState(status) {
       };
 
     // RT sudah menyetujui
-    // Sekarang giliran RW
     case 'rt_approved':
       return {
         step: 2,
@@ -44,7 +40,6 @@ function getStepState(status) {
       };
 
     // RW sudah menyetujui
-    // Belum selesai karena masih proses tahap akhir
     case 'rw_approved':
       return {
         step: 3,
@@ -58,7 +53,7 @@ function getStepState(status) {
         state: 'rejected_rw',
       };
 
-    // Surat benar-benar selesai
+    // Surat selesai
     case 'completed':
       return {
         step: 3,
@@ -73,18 +68,26 @@ function getStepState(status) {
   }
 }
 
+
+// ==========================================
+// COMPONENT
+// ==========================================
+
 export default function ApprovalStepperRW({ surat }) {
 
-  const { step, state } = getStepState(surat?.status);
+  const { step, state } = getStepState(
+    surat?.status
+  );
 
   return (
-    <div className="flex items-center justify-center gap-1 mb-6 flex-wrap">
+    <div className="sid-stepper">
 
       {STEPS.map((label, index) => {
 
         let circle;
         let statusText = 'Menunggu';
-        let labelColor = 'text-gray-400';
+        let stepState = 'waiting';
+
 
         // ==========================================
         // REJECTED
@@ -124,62 +127,49 @@ export default function ApprovalStepperRW({ surat }) {
 
 
         // ==========================================
-        // TAMPILAN
+        // REJECTED
         // ==========================================
 
         if (isRejectedHere) {
 
+          stepState = 'rejected';
+
           circle = (
-            <div className="
-              w-9 h-9
-              rounded-full
-              bg-red-500
-              text-white
-              flex
-              items-center
-              justify-center
-            ">
+            <div className="sid-stepper-circle rejected">
               <X size={18} />
             </div>
           );
 
           statusText = 'Ditolak';
-          labelColor = 'text-red-500';
 
+
+        // ==========================================
+        // DONE
+        // ==========================================
 
         } else if (isDone) {
 
+          stepState = 'done';
+
           circle = (
-            <div className="
-              w-9 h-9
-              rounded-full
-              bg-green-500
-              text-white
-              flex
-              items-center
-              justify-center
-            ">
+            <div className="sid-stepper-circle done">
               <Check size={18} />
             </div>
           );
 
           statusText = 'Selesai';
-          labelColor = 'text-green-600';
 
+
+        // ==========================================
+        // CURRENT
+        // ==========================================
 
         } else if (isCurrent) {
 
+          stepState = 'current';
+
           circle = (
-            <div className="
-              w-9 h-9
-              rounded-full
-              border-2
-              border-green-500
-              text-green-500
-              flex
-              items-center
-              justify-center
-            ">
+            <div className="sid-stepper-circle current">
               <Loader2
                 size={16}
                 className="animate-spin"
@@ -188,23 +178,18 @@ export default function ApprovalStepperRW({ surat }) {
           );
 
           statusText = 'Menunggu';
-          labelColor = 'text-green-500';
 
+
+        // ==========================================
+        // WAITING
+        // ==========================================
 
         } else {
 
+          stepState = 'waiting';
+
           circle = (
-            <div className="
-              w-9 h-9
-              rounded-full
-              bg-gray-200
-              text-gray-500
-              flex
-              items-center
-              justify-center
-              text-sm
-              font-medium
-            ">
+            <div className="sid-stepper-circle waiting">
               {index + 1}
             </div>
           );
@@ -212,54 +197,44 @@ export default function ApprovalStepperRW({ surat }) {
         }
 
 
+        // ==========================================
+        // RENDER STEP
+        // ==========================================
+
         return (
           <div
             key={label}
-            className="flex items-center"
+            className="sid-stepper-item"
           >
 
-            <div className="
-              flex
-              flex-col
-              items-center
-              gap-1
-            ">
+            <div className="sid-stepper-content">
 
               {circle}
 
               <span
-                className={`
-                  text-xs
-                  font-semibold
-                  uppercase
-                  ${labelColor}
-                `}
+                className={`sid-stepper-label ${stepState}`}
               >
                 {label}
               </span>
 
-              <span className="
-                text-[10px]
-                text-gray-400
-              ">
+              <span className="sid-stepper-status">
                 {statusText}
               </span>
 
             </div>
 
 
+            {/* CONNECTOR */}
+
             {index < STEPS.length - 1 && (
-              <div className="
-                w-8
-                h-px
-                bg-gray-300
-                mx-1
-                mt-[-16px]
-              " />
+
+              <div className="sid-stepper-connector" />
+
             )}
 
           </div>
         );
+
       })}
 
     </div>
