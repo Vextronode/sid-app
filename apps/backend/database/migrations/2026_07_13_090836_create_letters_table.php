@@ -40,6 +40,7 @@ return new class extends Migration
             $table->timestamp('expires_at')->nullable();
             $table->timestamp('submitted_at')->useCurrent();
             $table->timestamp('processed_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
             $table->timestamps();
         });
     }
