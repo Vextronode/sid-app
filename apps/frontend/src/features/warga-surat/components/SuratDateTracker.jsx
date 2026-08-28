@@ -1,89 +1,219 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable no-unused-vars */
+
 // ==========================================
 // SuratDateTracker.jsx
-// Pengganti tabel "Status Permohonan". Pilih tanggal lewat date picker,
-// lalu tampilkan alur tracking (Submit -> RT -> RW -> Kantor Desa)
-// untuk surat yang diajukan di tanggal itu. Kalau ada beberapa surat
-// di tanggal yang sama, bisa geser (slide) pakai tombol panah.
-// Ditambah: Preview PDF surat (read-only) di bawah stepper.
+//
+// Tracking surat berdasarkan tanggal pengajuan.
+// Alur:
+// Submit -> RT -> RW -> Kantor Desa
+//
+// Styling menggunakan class global sid-*.
 // ==========================================
 
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { Calendar, Check, Clock, X, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
-import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  FileText,
+  X,
+} from "lucide-react";
+
+import { previewSuratPDF } from "@/features/cetak-surat/utils/generateSuratPDF";
+
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
-// Hitung tahap tracking dari status surat: 0=Submit, 1=RT, 2=RW, 3=Selesai
+
+// ==========================================
+// STATUS TRACKING
+// ==========================================
+
 function getStepState(status) {
   const map = {
-    pending: { step: 1, state: "current" },
+    pending: {
+      step: 1,
+      state: "current",
+    },
 
-    rt_approved: { step: 2, state: "current_rw" },
-    rt_rejected: { step: 1, state: "rejected_rt" },
+    rt_approved: {
+      step: 2,
+      state: "current_rw",
+    },
 
-    rw_approved: { step: 3, state: "current_office" },
-    rw_rejected: { step: 2, state: "rejected_rw" },
+    rt_rejected: {
+      step: 1,
+      state: "rejected_rt",
+    },
 
-    kasi_approved: { step: 4, state: "done" },
-    kaur_tu_umum_approved: { step: 4, state: "done" },
-    petugas_desa_approved: { step: 4, state: "done" },
+    rw_approved: {
+      step: 3,
+      state: "current_office",
+    },
+
+    rw_rejected: {
+      step: 2,
+      state: "rejected_rw",
+    },
+
+    kasi_approved: {
+      step: 4,
+      state: "done",
+    },
+
+    kaur_tu_umum_approved: {
+      step: 4,
+      state: "done",
+    },
+
+    petugas_desa_approved: {
+      step: 4,
+      state: "done",
+    },
   };
 
-  return map[status] ?? { step: 0, state: "waiting" };
+  return (
+    map[status] ?? {
+      step: 0,
+      state: "waiting",
+    }
+  );
 }
 
-const STEPS = ['Submit', 'RT', 'RW', 'Kantor Desa'];
+// ==========================================
+// TRACKING STEPS
+// ==========================================
+
+const STEPS = [
+  "Submit",
+  "RT",
+  "RW",
+  "Kantor Desa",
+];
+
+// ==========================================
+// TRACKING STEPPER
+// ==========================================
 
 function TrackingStepper({ status }) {
   const { step, state } = getStepState(status);
 
   return (
-    <div className="flex items-center justify-center gap-1 py-6">
-      {STEPS.map((label, index) => {
-        let circle;
-        let color = 'text-gray-400';
+    <div className="sid-tracker-scroll">
+      <div className="sid-tracker-stepper">
+        {STEPS.map((label, index) => {
+          const isRejectedHere =
+            (index === 1 && state === "rejected_rt") ||
+            (index === 2 && state === "rejected_rw");
 
-        const isRejectedHere = (index === 1 && state === 'rejected_rt') || (index === 2 && state === 'rejected_rw');
-        const isDone =
-          (index === 0) ||
-          (index === 1 && step >= 2) ||
-          (index === 2 && step >= 3) ||
-          (index === 3 && step >= 4);
+          const isDone =
+            index === 0 ||
+            (index === 1 && step >= 2) ||
+            (index === 2 && step >= 3) ||
+            (index === 3 && step >= 4);
 
-        const isCurrent =
-          (index === 1 && state === "current") ||
-          (index === 2 && state === "current_rw") ||
-          (index === 3 && state === "current_office");
+          const isCurrent =
+            (index === 1 && state === "current") ||
+            (index === 2 && state === "current_rw") ||
+            (index === 3 && state === "current_office");
 
-        if (isRejectedHere) {
-          circle = <div className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center"><X size={16} /></div>;
-          color = 'text-red-500';
-        } else if (isDone) {
-          circle = <div className="w-9 h-9 rounded-full bg-green-500 text-white flex items-center justify-center"><Check size={16} /></div>;
-          color = 'text-green-600';
-        } else if (isCurrent) {
-          circle = <div className="w-9 h-9 rounded-full border-2 border-green-500 text-green-500 flex items-center justify-center"><Clock size={16} /></div>;
-          color = 'text-green-500';
-        } else {
-          circle = <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">{index + 1}</div>;
-        }
+          let circleClass =
+            "sid-tracker-circle sid-tracker-circle-waiting";
 
-        return (
-          <div key={label} className="flex items-center">
-            <div className="flex flex-col items-center gap-1">
-              {circle}
-              <span className={`text-[11px] font-medium ${color}`}>{label}</span>
+          let labelClass = "sid-tracker-label";
+
+          let circleContent = index + 1;
+
+          if (isRejectedHere) {
+            circleClass =
+              "sid-tracker-circle sid-tracker-circle-rejected";
+
+            labelClass =
+              "sid-tracker-label sid-tracker-label-rejected";
+
+            circleContent = (
+              <X
+                size={15}
+                strokeWidth={2.5}
+              />
+            );
+          } else if (isDone) {
+            circleClass =
+              "sid-tracker-circle sid-tracker-circle-done";
+
+            labelClass =
+              "sid-tracker-label sid-tracker-label-done";
+
+            circleContent = (
+              <Check
+                size={15}
+                strokeWidth={2.5}
+              />
+            );
+          } else if (isCurrent) {
+            circleClass =
+              "sid-tracker-circle sid-tracker-circle-current";
+
+            labelClass =
+              "sid-tracker-label sid-tracker-label-current";
+
+            circleContent = (
+              <Clock size={15} />
+            );
+          }
+
+          const connectorDone =
+            index < step - 1;
+
+          return (
+            <div
+              key={label}
+              className="sid-tracker-step"
+            >
+<div className="sid-tracker-node">
+  <div className={circleClass}>
+    {circleContent}
+  </div>
+
+  {index < STEPS.length - 1 && (
+    <div
+      className={`sid-tracker-line${
+        connectorDone
+          ? " sid-tracker-line-done"
+          : ""
+      }`}
+    />
+  )}
+</div>
+
+<div className="sid-tracker-label-wrapper">
+  <span className={labelClass}>
+    {label}
+  </span>
+</div>
+
+
             </div>
-            {index < STEPS.length - 1 && <div className="w-8 sm:w-14 h-px bg-gray-300 mx-1" />}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
+
+// ==========================================
+// STATUS PREVIEW PDF
+// ==========================================
+
 const canPreviewStatuses = [
   "kasi_approved",
   "kaur_tu_umum_approved",
@@ -92,22 +222,61 @@ const canPreviewStatuses = [
 
 const canPreviewSurat = (status) =>
   canPreviewStatuses.includes(status);
+
+// ==========================================
+// TEMPLATE PDF
+// ==========================================
+
+function getPreviewTemplate(status) {
+  if (status === "kasi_approved") {
+    return "digital";
+  }
+
+  if (
+    status === "kaur_tu_umum_approved" ||
+    status === "petugas_desa_approved"
+  ) {
+    return "wet";
+  }
+
+  return null;
+}
+
 // ==========================================
 // PREVIEW PDF
-// PDF dirender menggunakan PDF.js
-// sehingga HP tidak perlu membuka PDF viewer
 // ==========================================
-function SuratPreview({ suratId, status }) {
-  const [showPreview, setShowPreview] = useState(false);
-  const [loadingPreview, setLoadingPreview] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const [pages, setPages] = useState([]);
 
-  const canPreview = canPreviewSurat(status);
+function SuratPreview({
+  suratId,
+  status,
+}) {
+  const [
+    showPreview,
+    setShowPreview,
+  ] = useState(false);
+
+  const [
+    loadingPreview,
+    setLoadingPreview,
+  ] = useState(false);
+
+  const [
+    loadError,
+    setLoadError,
+  ] = useState(false);
+
+  const [
+    pages,
+    setPages,
+  ] = useState([]);
+
+  const canPreview =
+    canPreviewSurat(status);
 
   // ==========================================
   // RESET KETIKA SURAT BERUBAH
   // ==========================================
+
   useEffect(() => {
     setShowPreview(false);
     setLoadingPreview(false);
@@ -116,10 +285,17 @@ function SuratPreview({ suratId, status }) {
   }, [suratId]);
 
   // ==========================================
-  // LOAD DAN RENDER PDF
+  // LOAD PDF
   // ==========================================
+
   useEffect(() => {
-    if (!suratId || !showPreview) return;
+    if (
+      !suratId ||
+      !showPreview ||
+      !canPreview
+    ) {
+      return;
+    }
 
     let cancelled = false;
     let blobUrl = null;
@@ -131,32 +307,43 @@ function SuratPreview({ suratId, status }) {
         setPages([]);
 
         const template =
-          status === "kasi_approved"
-            ? "digital"
-            : "wet";
+          getPreviewTemplate(status);
 
-        console.log("PREVIEW SURAT:", {
-          suratId,
-          status,
-          template,
-        });
-
-        // Ambil blob URL dari backend
-        blobUrl = await previewSuratPDF(
-          { id: suratId },
-          template
-        );
-
-        if (!blobUrl) {
-          throw new Error("URL PDF tidak tersedia.");
+        if (!template) {
+          throw new Error(
+            "Template PDF tidak tersedia."
+          );
         }
 
-        if (cancelled) return;
+        console.log(
+          "PREVIEW SURAT:",
+          {
+            suratId,
+            status,
+            template,
+          }
+        );
 
-        // ==========================================
-        // FETCH BLOB
-        // ==========================================
-        const response = await fetch(blobUrl);
+        blobUrl =
+          await previewSuratPDF(
+            {
+              id: suratId,
+            },
+            template
+          );
+
+        if (!blobUrl) {
+          throw new Error(
+            "URL PDF tidak tersedia."
+          );
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        const response =
+          await fetch(blobUrl);
 
         if (!response.ok) {
           throw new Error(
@@ -164,20 +351,28 @@ function SuratPreview({ suratId, status }) {
           );
         }
 
-        const arrayBuffer = await response.arrayBuffer();
+        const arrayBuffer =
+          await response.arrayBuffer();
 
-        if (!arrayBuffer || arrayBuffer.byteLength === 0) {
-          throw new Error("File PDF kosong.");
+        if (
+          !arrayBuffer ||
+          arrayBuffer.byteLength === 0
+        ) {
+          throw new Error(
+            "File PDF kosong."
+          );
         }
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
-        // ==========================================
-        // PDF.JS
-        // ==========================================
-        const pdf = await pdfjsLib.getDocument({
-          data: arrayBuffer,
-        }).promise;
+        const pdf =
+          await pdfjsLib
+            .getDocument({
+              data: arrayBuffer,
+            })
+            .promise;
 
         console.log(
           "PDF berhasil dibuka:",
@@ -185,32 +380,43 @@ function SuratPreview({ suratId, status }) {
           "halaman"
         );
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         const renderedPages = [];
 
-        // ==========================================
-        // RENDER SETIAP HALAMAN
-        // ==========================================
         for (
           let pageNumber = 1;
           pageNumber <= pdf.numPages;
           pageNumber++
         ) {
-          if (cancelled) return;
+          if (cancelled) {
+            return;
+          }
 
-          const page = await pdf.getPage(pageNumber);
+          const page =
+            await pdf.getPage(
+              pageNumber
+            );
 
-          // Scale untuk tampilan HP
-          const viewport = page.getViewport({
-            scale: 1.5,
-          });
+          const viewport =
+            page.getViewport({
+              scale: 1.5,
+            });
 
-          const canvas = document.createElement("canvas");
+          const canvas =
+            document.createElement(
+              "canvas"
+            );
 
-          const context = canvas.getContext("2d", {
-            alpha: false,
-          });
+          const context =
+            canvas.getContext(
+              "2d",
+              {
+                alpha: false,
+              }
+            );
 
           if (!context) {
             throw new Error(
@@ -218,29 +424,38 @@ function SuratPreview({ suratId, status }) {
             );
           }
 
-          canvas.width = Math.ceil(viewport.width);
-          canvas.height = Math.ceil(viewport.height);
+          canvas.width =
+            Math.ceil(
+              viewport.width
+            );
+
+          canvas.height =
+            Math.ceil(
+              viewport.height
+            );
 
           await page.render({
             canvasContext: context,
             viewport,
           }).promise;
 
-          if (cancelled) return;
+          if (cancelled) {
+            return;
+          }
 
           renderedPages.push({
             pageNumber,
-            dataUrl: canvas.toDataURL(
-              "image/jpeg",
-              0.9
-            ),
+            dataUrl:
+              canvas.toDataURL(
+                "image/jpeg",
+                0.9
+              ),
           });
         }
 
         if (!cancelled) {
           setPages(renderedPages);
         }
-
       } catch (error) {
         console.error(
           "GAGAL RENDER PREVIEW PDF:",
@@ -250,7 +465,6 @@ function SuratPreview({ suratId, status }) {
         if (!cancelled) {
           setLoadError(true);
         }
-
       } finally {
         if (!cancelled) {
           setLoadingPreview(false);
@@ -264,47 +478,39 @@ function SuratPreview({ suratId, status }) {
       cancelled = true;
 
       if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
+        URL.revokeObjectURL(
+          blobUrl
+        );
       }
     };
-  }, [suratId, showPreview, status]);
+  }, [
+    suratId,
+    showPreview,
+    status,
+    canPreview,
+  ]);
 
   return (
-    <div className="space-y-3 mt-4">
-
-      {/* ==========================================
-          BUTTON PREVIEW
-      ========================================== */}
+    <div className="sid-date-tracker-preview">
       <button
         type="button"
         disabled={!canPreview}
         onClick={() => {
-          if (!canPreview) return;
-
-          setShowPreview((prev) => !prev);
-        }}
-        className={`
-          inline-flex
-          items-center
-          justify-center
-          gap-2
-          px-4
-          py-2.5
-          rounded-lg
-          border
-          text-sm
-          font-medium
-          transition
-          w-full
-
-          ${
-            canPreview
-              ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
-              : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+          if (!canPreview) {
+            return;
           }
-        `}
+
+          setShowPreview(
+            (prev) => !prev
+          );
+        }}
+        className={`sid-date-tracker-preview-action${
+          !canPreview
+            ? " sid-date-tracker-preview-action-disabled"
+            : ""
+        }`}
       >
-        <FileText className="w-4 h-4" />
+        <FileText className="sid-date-tracker-preview-icon" />
 
         {canPreview
           ? showPreview
@@ -313,283 +519,348 @@ function SuratPreview({ suratId, status }) {
           : "Preview tersedia setelah disetujui Kantor Desa"}
       </button>
 
-      {/* ==========================================
-          PREVIEW
-      ========================================== */}
       {showPreview && (
-        <div
-          className="
-            border
-            rounded-lg
-            overflow-hidden
-            bg-gray-200
-            p-2
-          "
-        >
-
-          {/* ======================================
-              LOADING
-          ====================================== */}
+        <div className="sid-date-preview-container">
           {loadingPreview && (
-            <div
-              className="
-                h-[500px]
-                flex
-                flex-col
-                items-center
-                justify-center
-                gap-3
-              "
-            >
-              <div
-                className="
-                  w-8
-                  h-8
-                  border-2
-                  border-gray-300
-                  border-t-green-600
-                  rounded-full
-                  animate-spin
-                "
-              />
+            <div className="sid-date-preview-loading">
+              <div className="sid-date-preview-spinner" />
 
-              <p className="text-sm text-gray-500">
+              <p>
                 Memuat preview surat...
               </p>
             </div>
           )}
 
-          {/* ======================================
-              ERROR
-          ====================================== */}
-          {!loadingPreview && loadError && (
-            <div
-              className="
-                h-[500px]
-                flex
-                flex-col
-                items-center
-                justify-center
-                gap-2
-                text-gray-400
-                text-center
-                px-5
-              "
-            >
-              <FileText className="w-10 h-10" />
+          {!loadingPreview &&
+            loadError && (
+              <div className="sid-date-preview-error">
+                <FileText className="sid-date-preview-error-icon" />
 
-              <p className="text-sm">
-                Gagal memuat preview surat
-              </p>
+                <p>
+                  Gagal memuat preview surat
+                </p>
 
-              <p className="text-xs text-gray-400">
-                Silakan coba lagi.
-              </p>
+                <p className="sid-date-preview-error-description">
+                  Silakan coba lagi.
+                </p>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPreview(false);
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPreview(false);
 
-                  setTimeout(() => {
-                    setShowPreview(true);
-                  }, 100);
-                }}
-                className="
-                  mt-2
-                  px-4
-                  py-2
-                  rounded-lg
-                  bg-green-600
-                  text-white
-                  text-xs
-                  font-medium
-                  hover:bg-green-700
-                "
-              >
-                Coba Lagi
-              </button>
-            </div>
-          )}
+                    setTimeout(() => {
+                      setShowPreview(true);
+                    }, 100);
+                  }}
+                  className="sid-date-preview-retry"
+                >
+                  Coba Lagi
+                </button>
+              </div>
+            )}
 
-          {/* ======================================
-              HASIL PDF
-          ====================================== */}
           {!loadingPreview &&
             !loadError &&
             pages.length > 0 && (
-              <div className="flex flex-col gap-3">
-
+              <div className="sid-date-preview-pages">
                 {pages.map((page) => (
                   <div
                     key={page.pageNumber}
-                    className="
-                      bg-white
-                      rounded-sm
-                      overflow-hidden
-                      shadow-sm
-                    "
+                    className="sid-date-preview-page"
                   >
                     <img
                       src={page.dataUrl}
                       alt={`Preview halaman ${page.pageNumber}`}
-                      className="
-                        block
-                        w-full
-                        h-auto
-                        select-none
-                      "
+                      className="sid-date-preview-image"
                       draggable={false}
                     />
                   </div>
                 ))}
-
               </div>
             )}
-
         </div>
       )}
     </div>
   );
 }
 
+// ==========================================
+// HELPER FILTER TANGGAL
+// ==========================================
 
-export default function SuratDateTracker({ letters, loading }) {
-  const [selectedDate, setSelectedDate] = useState('');
-  const [slideIndex, setSlideIndex] = useState(0);
-  const dateInputRef = useRef(null);
+function getLocalDateString(rawDate) {
+  if (!rawDate) {
+    return null;
+  }
 
-  const filteredLetters = useMemo(() => {
-    // Tidak memilih tanggal = tampilkan SEMUA surat
-    if (!selectedDate) {
-      return letters;
+  const date =
+    new Date(rawDate);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return null;
+  }
+
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
+
+export default function SuratDateTracker({
+  letters,
+  loading,
+}) {
+  const [
+    selectedDate,
+    setSelectedDate,
+  ] = useState("");
+
+  const [
+    slideIndex,
+    setSlideIndex,
+  ] = useState(0);
+
+  const dateInputRef =
+    useRef(null);
+
+  // ==========================================
+  // FILTER SURAT
+  // ==========================================
+
+  const filteredLetters =
+    useMemo(() => {
+      if (!Array.isArray(letters)) {
+        return [];
+      }
+
+      if (!selectedDate) {
+        return letters;
+      }
+
+      return letters.filter(
+        (item) => {
+          const raw =
+            item.submitted_at ??
+            item.created_at;
+
+          const localDate =
+            getLocalDateString(raw);
+
+          return (
+            localDate ===
+            selectedDate
+          );
+        }
+      );
+    }, [
+      letters,
+      selectedDate,
+    ]);
+
+  // ==========================================
+  // JAGA SLIDE INDEX
+  // ==========================================
+
+  useEffect(() => {
+    if (
+      filteredLetters.length === 0
+    ) {
+      setSlideIndex(0);
+      return;
     }
 
-    // Memilih tanggal = filter surat berdasarkan tanggal pengajuan
-    return letters.filter((item) => {
-      const raw = item.submitted_at ?? item.created_at;
+    if (
+      slideIndex >=
+      filteredLetters.length
+    ) {
+      setSlideIndex(
+        filteredLetters.length - 1
+      );
+    }
+  }, [
+    filteredLetters.length,
+    slideIndex,
+  ]);
 
-      if (!raw) return false;
-
-      return new Date(raw).toISOString().slice(0, 10) === selectedDate;
-    });
-  }, [letters, selectedDate]);
+  // ==========================================
+  // FILTER TANGGAL
+  // ==========================================
 
   const handleDateChange = (e) => {
-    setSelectedDate(e.target.value);
+    setSelectedDate(
+      e.target.value
+    );
+
     setSlideIndex(0);
   };
 
   const clearDateFilter = () => {
-    setSelectedDate('');
+    setSelectedDate("");
     setSlideIndex(0);
   };
 
   const openCalendar = () => {
-    dateInputRef.current?.showPicker?.();
+    dateInputRef.current
+      ?.showPicker?.();
   };
 
-  const activeSurat = filteredLetters[slideIndex];
+  // ==========================================
+  // SURAT AKTIF
+  // ==========================================
+
+  const activeSurat =
+    filteredLetters[
+      slideIndex
+    ];
+
+  // ==========================================
+  // FORMAT TANGGAL
+  // ==========================================
+
+  const formattedSelectedDate =
+    selectedDate
+      ? new Date(
+          `${selectedDate}T00:00:00`
+        ).toLocaleDateString(
+          "id-ID",
+          {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }
+        )
+      : null;
+
+  // ==========================================
+  // UI
+  // ==========================================
 
   return (
-    <div className="pt-4">
+    <div className="sid-date-tracker">
+      {/* FILTER TANGGAL */}
 
-      {/* ==============================
-          FILTER KALENDER
-      ============================== */}
-      <div className="flex items-center gap-2 mb-4">
-
-        {/* Tombol kalender */}
+      <div className="sid-date-tracker-filter">
         <button
           type="button"
           onClick={openCalendar}
-          className="flex-1 flex items-center justify-between
-            border rounded-full px-4 py-2.5
-            text-sm text-gray-600 bg-white
-            hover:border-green-400 transition"
+          className="sid-date-tracker-calendar-button"
         >
-          <span>
-            {selectedDate
-              ? new Date(selectedDate).toLocaleDateString('id-ID', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })
-              : 'Semua tanggal'}
-          </span>
+          <div className="sid-date-tracker-calendar-label">
+            <Calendar
+              size={16}
+              strokeWidth={1.8}
+              className="sid-date-tracker-calendar-icon"
+            />
 
-          <Calendar size={16} className="text-gray-400" />
+            <span>
+              {formattedSelectedDate ??
+                "Pilih tanggal"}
+            </span>
+          </div>
+
+          <span className="sid-date-tracker-calendar-action">
+            {selectedDate
+              ? "Ubah"
+              : "Pilih"}
+          </span>
         </button>
 
-        {/* Input date asli */}
+        {selectedDate && (
+          <button
+            type="button"
+            onClick={clearDateFilter}
+            className="sid-date-tracker-clear-button"
+          >
+            Semua
+          </button>
+        )}
+
         <input
           ref={dateInputRef}
           type="date"
           value={selectedDate}
           onChange={handleDateChange}
-          className="absolute opacity-0 w-0 h-0 pointer-events-none"
+          className="sid-date-tracker-date-input"
         />
-
-        {/* Tombol reset */}
-        {selectedDate && (
-          <button
-            type="button"
-            onClick={clearDateFilter}
-            className="px-4 py-2.5
-              border rounded-full
-              text-xs font-medium
-              text-gray-500
-              bg-white
-              hover:bg-gray-50
-              whitespace-nowrap"
-          >
-            Semua
-          </button>
-        )}
       </div>
 
-      {/* ==============================
-          DATA SURAT
-      ============================== */}
+      {/* DATA SURAT */}
+
       {loading ? (
-        <p className="text-center text-gray-400 text-sm py-6">
+        <p className="sid-date-tracker-empty">
           Memuat data surat...
         </p>
       ) : filteredLetters.length === 0 ? (
-        <p className="text-center text-gray-400 text-sm py-6">
+        <p className="sid-date-tracker-empty">
           {selectedDate
-            ? 'Belum ada surat pada tanggal ini.'
-            : 'Belum ada permohonan surat.'}
+            ? "Belum ada surat pada tanggal ini."
+            : "Belum ada permohonan surat."}
         </p>
       ) : (
         <>
-          {/* ==============================
-              HEADER SURAT + SLIDER
-          ============================== */}
-          <div className="flex items-center justify-between mb-2">
+          {/* HEADER SURAT + NAVIGASI */}
 
+          <div className="sid-date-tracker-header">
             <button
               type="button"
               onClick={() =>
-                setSlideIndex((i) => Math.max(0, i - 1))
+                setSlideIndex(
+                  (i) =>
+                    Math.max(
+                      0,
+                      i - 1
+                    )
+                )
               }
-              disabled={slideIndex === 0}
-              className="w-8 h-8 rounded-full border
-                flex items-center justify-center
-                text-gray-500
-                disabled:opacity-30"
+              disabled={
+                slideIndex === 0
+              }
+              aria-label="Surat sebelumnya"
+              className="sid-date-tracker-nav-button"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft
+                size={17}
+                strokeWidth={1.8}
+              />
             </button>
 
-            <div className="text-center">
-              <p className="font-semibold text-gray-800 text-sm">
-                {activeSurat?.letter_type?.name ?? '-'}
+            <div className="sid-date-tracker-header-info">
+              <p className="sid-date-tracker-letter-type">
+                {activeSurat
+                  ?.letter_type?.name ??
+                  "-"}
               </p>
 
-              <p className="text-[10px] text-gray-400">
-                Surat {slideIndex + 1} dari {filteredLetters.length} · #
-                {activeSurat?.letter_number ??
+              <p className="sid-date-tracker-letter-number">
+                Surat{" "}
+                {slideIndex + 1}{" "}
+                dari{" "}
+                {filteredLetters.length}
+
+                {" · "}
+
+                #
+                {activeSurat
+                  ?.letter_number ??
                   `SKD-${activeSurat?.id}`}
               </p>
             </div>
@@ -597,56 +868,69 @@ export default function SuratDateTracker({ letters, loading }) {
             <button
               type="button"
               onClick={() =>
-                setSlideIndex((i) =>
-                  Math.min(
-                    filteredLetters.length - 1,
-                    i + 1
-                  )
+                setSlideIndex(
+                  (i) =>
+                    Math.min(
+                      filteredLetters.length - 1,
+                      i + 1
+                    )
                 )
               }
               disabled={
-                slideIndex === filteredLetters.length - 1
+                slideIndex ===
+                filteredLetters.length - 1
               }
-              className="w-8 h-8 rounded-full border
-                flex items-center justify-center
-                text-gray-500
-                disabled:opacity-30"
+              aria-label="Surat berikutnya"
+              className="sid-date-tracker-nav-button"
             >
-              <ChevronRight size={16} />
+              <ChevronRight
+                size={17}
+                strokeWidth={1.8}
+              />
             </button>
           </div>
 
-          {/* ==============================
-              TRACKING
-          ============================== */}
-          <TrackingStepper status={activeSurat?.status} />
+          {/* TRACKING */}
 
-          {/* ==============================
-              DOT SLIDER
-          ============================== */}
+          <TrackingStepper
+            status={
+              activeSurat?.status
+            }
+          />
+
+          {/* DOT SLIDER */}
+
           {filteredLetters.length > 1 && (
-            <div className="flex justify-center gap-1.5 mt-2">
-              {filteredLetters.map((_, i) => (
-                <button
-                  type="button"
-                  key={i}
-                  onClick={() => setSlideIndex(i)}
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    i === slideIndex
-                      ? 'bg-green-600'
-                      : 'bg-gray-300'
-                  }`}
-                />
-              ))}
+            <div className="sid-date-tracker-dots">
+              {filteredLetters.map(
+                (_, index) => (
+                  <button
+                    type="button"
+                    key={index}
+                    onClick={() =>
+                      setSlideIndex(index)
+                    }
+                    aria-label={`Pilih surat ${index + 1}`}
+                    className={`sid-date-tracker-dot${
+                      index === slideIndex
+                        ? " active"
+                        : ""
+                    }`}
+                  />
+                )
+              )}
             </div>
           )}
 
-          {/* ==============================
-              PREVIEW PDF
-          ============================== */}
+          {/* PREVIEW PDF */}
+
           <SuratPreview
-            suratId={activeSurat?.id}
-            status={activeSurat?.status}
+            suratId={
+              activeSurat?.id
+            }
+            status={
+              activeSurat?.status
+            }
           />
         </>
       )}

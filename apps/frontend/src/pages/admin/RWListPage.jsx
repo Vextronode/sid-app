@@ -1,17 +1,22 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable no-unused-vars */
+
 // ==========================================
 // RWListPage.jsx
+// Daftar permohonan surat RW
+// Styling menggunakan SID Global Theme.
 // ==========================================
 
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search } from 'lucide-react';
+
 import { useSuratList } from '@/features/approval-rw/hooks/useSuratListRW';
 import { useApprovalAction } from '@/features/approval-rw/hooks/useApprovalActionRW';
 import SuratDetailModalRW from '@/features/approval-rw/components/SuratDetailModalRW';
 import StatusBadgeRT from '@/features/approval-rt/components/StatusBadgeRT';
 import { BASE_PATH } from '@/features/approval-rw/constants/roleConfigRW';
+
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { FooterDesa } from '@/components/layout/FooterDesa';
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
@@ -21,225 +26,676 @@ const ITEMS_PER_PAGE = 5;
 export default function RWListPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
   const initialStatus = searchParams.get('status') ?? '';
+
   const [currentPage, setCurrentPage] = useState(1);
-
-const {
-  data,
-  loading,
-  search,
-  setSearch,
-  filterStatus,
-  setFilterStatus,
-  refresh,
-} = useSuratList({ initialStatus });
-  const { approve, reject } = useApprovalAction();
-
-  useEffect(() => setCurrentPage(1), [search, filterStatus]);
-
-  const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE));
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return data.slice(start, start + ITEMS_PER_PAGE);
-  }, [data, currentPage]);
-
   const [selectedId, setSelectedId] = useState(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
 
-const handleApprove = async () => {
-  try {
-    await approve(selectedId);
+  const {
+    data,
+    loading,
+    search,
+    setSearch,
+    filterStatus,
+    setFilterStatus,
+    refresh,
+  } = useSuratList({ initialStatus });
 
-    // Ambil data terbaru setelah approve
-    await refresh();
+  const { approve, reject } = useApprovalAction();
 
-    setSelectedId(null);
-    setIsReadOnly(false);
-  } catch (error) {
-    console.error("Gagal approve surat:", error);
-  }
-};
 
-const handleReject = async (alasan) => {
-  try {
-    await reject(selectedId, alasan);
+  // ==========================================
+  // AUTO REFRESH DATA SURAT
+  // ==========================================
 
-    // Ambil data terbaru setelah reject
-    await refresh();
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refresh();
+    }, 5000);
 
-    setSelectedId(null);
-    setIsReadOnly(false);
-  } catch (error) {
-    console.error("Gagal reject surat:", error);
-  }
-};
+    return () => clearInterval(interval);
+  }, [refresh]);
+
+
+  // ==========================================
+  // RESET PAGINATION
+  // ==========================================
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterStatus]);
+
+
+  // ==========================================
+  // PAGINATION
+  // ==========================================
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(data.length / ITEMS_PER_PAGE)
+  );
+
+  const paginatedData = useMemo(() => {
+    const start =
+      (currentPage - 1) * ITEMS_PER_PAGE;
+
+    return data.slice(
+      start,
+      start + ITEMS_PER_PAGE
+    );
+  }, [data, currentPage]);
+
+
+  // ==========================================
+  // APPROVE
+  // ==========================================
+
+  const handleApprove = async () => {
+    try {
+      await approve(selectedId);
+
+      await refresh();
+
+      setSelectedId(null);
+      setIsReadOnly(false);
+    } catch (error) {
+      console.error(
+        'Gagal approve surat:',
+        error
+      );
+    }
+  };
+
+
+  // ==========================================
+  // REJECT
+  // ==========================================
+
+  const handleReject = async (alasan) => {
+    try {
+      await reject(selectedId, alasan);
+
+      await refresh();
+
+      setSelectedId(null);
+      setIsReadOnly(false);
+    } catch (error) {
+      console.error(
+        'Gagal reject surat:',
+        error
+      );
+    }
+  };
+
+
+  // ==========================================
+  // BUKA DETAIL
+  // ==========================================
+
+  const handleOpenDetail = (surat) => {
+    setSelectedId(surat.id);
+    setIsReadOnly(surat.status !== 'rt_approved');
+  };
+
 
   return (
     <>
-      {/* ===== DESKTOP ===== */}
-      <div className="hidden md:block p-6">
-        <p className="text-xs text-gray-400 mb-1">Admin / <span className="text-gray-600">Daftar Permohonan Surat</span></p>
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Daftar Permohonan Surat</h1>
+      {/* ========================================
+          DESKTOP
+          ======================================== */}
 
-        <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Pencarian Cepat</p>
-              <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  defaultValue={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Nomor surat atau nama pemohon..."
-                  className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-blue-500"
-                />
+      <div className="rw-page-desktop">
+
+        <div className="sid-page rw-page-content">
+
+          {/* ======================================
+              HEADER
+              ====================================== */}
+
+          <p className="rw-breadcrumb">
+            Admin /{' '}
+            <span>
+              Daftar Permohonan Surat
+            </span>
+          </p>
+
+          <h1 className="sid-page-title">
+            Daftar Permohonan Surat
+          </h1>
+
+          <p className="sid-page-description">
+            Kelola dan proses permohonan surat warga
+            yang masuk ke wilayah RW.
+          </p>
+
+
+          {/* ======================================
+              FILTER
+              ====================================== */}
+
+          <div className="sid-card rw-filter-card">
+
+            <div className="rw-filter-grid">
+
+              {/* PENCARIAN */}
+
+              <div>
+                <p className="rw-filter-label">
+                  Pencarian Cepat
+                </p>
+
+                <div className="rw-search-wrapper">
+                  <Search
+                    size={16}
+                    className="sid-search-icon"
+                  />
+
+                  <input
+                    type="text"
+                    defaultValue={search}
+                    onChange={(e) =>
+                      setSearch(e.target.value)
+                    }
+                    placeholder="Nomor surat atau nama pemohon..."
+                    className="sid-search-input"
+                  />
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Status</p>
-              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-400 outline-none focus:border-blue-500">
-                <option value="">Semua Status</option>
-                <option value="rt_approved">Menunggu</option>
-                <option value="rw_approved">Disetujui</option>
-                <option value="rw_rejected">Ditolak</option>
-              </select>
+
+
+              {/* STATUS */}
+
+              <div>
+                <p className="rw-filter-label">
+                  Status
+                </p>
+
+                <select
+                  value={filterStatus}
+                  onChange={(e) =>
+                    setFilterStatus(e.target.value)
+                  }
+                  className="sid-select rw-status-select"
+                >
+                  <option value="">
+                    Semua Status
+                  </option>
+
+                  <option value="rt_approved">
+                    Menunggu
+                  </option>
+
+                  <option value="rw_approved">
+                    Disetujui
+                  </option>
+
+                  <option value="rw_rejected">
+                    Ditolak
+                  </option>
+                </select>
+              </div>
+
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden text-gray-400">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                <th className="py-3 px-5 font-semibold text-gray-500">No. Surat</th>
-                <th className="py-3 px-5 font-semibold text-center text-gray-500">Pemohon</th>
-                <th className="py-3 px-5 font-semibold text-center text-gray-500">Jenis</th>
-                <th className="py-3 px-5 font-semibold text-center text-gray-500">Tanggal</th>
-                <th className="py-3 px-5 font-semibold text-center text-gray-500">Status</th>
-                <th className="py-3 px-5 font-semibold text-center text-gray-500">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={6} className="text-center text-gray-400 py-10">Memuat data surat...</td></tr>
-              ) : paginatedData.length === 0 ? (
-                <tr><td colSpan={6} className="text-center text-gray-400 py-10">Belum ada surat.</td></tr>
-              ) : (
-                paginatedData.map((s) => (
-                  <tr key={s.id} className="border-b last:border-0 hover:bg-gray-50 text-gray-400">
-                    <td className="py-4 px-5 font-semibold text-gray-400">#{s.letter_number ?? '-'}</td>
-                    <td className="py-4 px-5 item-center text-center text-gray-400 ">
-                      {s.applicant_name}
-                      
-                    </td>
-                    <td className="py-4 px-5 text-gray-400 text-center">{s.letter_type?.name ?? '-'}</td>
-                    <td className="py-4 px-5 text-gray-400 text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
-                    <td className="py-4 px-5 text-center"><StatusBadgeRT status={s.status} /></td>
-                    <td className="py-4 px-5 text-center">
-                      <button
-                        onClick={() => { setSelectedId(s.id); setIsReadOnly(s.status !== 'rt_approved'); }}
-                        className="border rounded-lg px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100"
-                      >
-                        {s.status === 'rt_approved' ? 'Proses' : 'Lihat'}
-                      </button>
+
+          {/* ======================================
+              TABLE
+              ====================================== */}
+
+          <div className="sid-card rw-table-card">
+
+            <table className="rw-table">
+
+              <thead>
+                <tr className="rw-table-header">
+
+                  <th>
+                    No. Surat
+                  </th>
+
+                  <th>
+                    Pemohon
+                  </th>
+
+                  <th>
+                    Jenis
+                  </th>
+
+                  <th>
+                    Tanggal
+                  </th>
+
+                  <th>
+                    Status
+                  </th>
+
+                  <th>
+                    Aksi
+                  </th>
+
+                </tr>
+              </thead>
+
+
+              <tbody>
+
+                {loading ? (
+
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="rw-table-message"
+                    >
+                      Memuat data surat...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
 
-          <div className="flex items-center justify-between px-5 py-4 border-t">
-            <p className="text-xs text-gray-500">
-              Menampilkan {paginatedData.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-{(currentPage - 1) * ITEMS_PER_PAGE + paginatedData.length} dari {data.length} data
-            </p>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="border rounded-lg px-4 py-2 text-xs text-gray-600 disabled:opacity-40">
-                Sebelumnya
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-lg text-xs font-medium ${page === currentPage ? 'bg-[#185FA5] text-white' : 'border text-gray-600'}`}>
-                  {page}
+                ) : paginatedData.length === 0 ? (
+
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="rw-table-message"
+                    >
+                      Belum ada surat.
+                    </td>
+                  </tr>
+
+                ) : (
+
+                  paginatedData.map((s) => (
+
+                    <tr
+                      key={s.id}
+                      className="rw-table-row"
+                    >
+
+                      {/* NO SURAT */}
+
+                      <td className="rw-letter-number">
+                        #{s.letter_number ?? '-'}
+                      </td>
+
+
+                      {/* PEMOHON */}
+
+                      <td className="rw-table-center">
+                        {s.applicant_name}
+                      </td>
+
+
+                      {/* JENIS */}
+
+                      <td className="rw-table-center">
+                        {s.letter_type?.name ?? '-'}
+                      </td>
+
+
+                      {/* TANGGAL */}
+
+                      <td className="rw-table-date">
+                        {s.submitted_at
+                          ? new Date(
+                              s.submitted_at
+                            ).toLocaleDateString(
+                              'id-ID',
+                              {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                              }
+                            )
+                          : '-'}
+                      </td>
+
+
+                      {/* STATUS */}
+
+                      <td className="rw-table-center">
+                        <StatusBadgeRT
+                          status={s.status}
+                        />
+                      </td>
+
+
+                      {/* AKSI */}
+
+                      <td className="rw-table-center">
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleOpenDetail(s)
+                          }
+                          className="rw-action-button"
+                        >
+                          {s.status === 'rt_approved'
+                            ? 'Proses'
+                            : 'Lihat'}
+                        </button>
+
+                      </td>
+
+                    </tr>
+
+                  ))
+
+                )}
+
+              </tbody>
+
+            </table>
+
+
+            {/* ==================================
+                PAGINATION DESKTOP
+                ================================== */}
+
+            <div className="rw-pagination">
+
+              <p className="rw-pagination-info">
+                Menampilkan{' '}
+                {paginatedData.length === 0
+                  ? 0
+                  : (currentPage - 1) *
+                      ITEMS_PER_PAGE +
+                    1}
+                -
+                {(currentPage - 1) *
+                  ITEMS_PER_PAGE +
+                  paginatedData.length}{' '}
+                dari {data.length} data
+              </p>
+
+
+              <div className="rw-pagination-buttons">
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCurrentPage((p) =>
+                      Math.max(1, p - 1)
+                    )
+                  }
+                  disabled={currentPage === 1}
+                  className="rw-pagination-nav"
+                >
+                  Sebelumnya
                 </button>
-              ))}
-              <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="border rounded-lg px-4 py-2 text-xs text-gray-600 disabled:opacity-40">
-                Selanjutnya
-              </button>
+
+
+                {Array.from(
+                  { length: totalPages },
+                  (_, i) => i + 1
+                ).map((page) => (
+
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() =>
+                      setCurrentPage(page)
+                    }
+                    className={`rw-pagination-page ${
+                      page === currentPage
+                        ? 'rw-pagination-page-active'
+                        : ''
+                    }`}
+                  >
+                    {page}
+                  </button>
+
+                ))}
+
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCurrentPage((p) =>
+                      Math.min(
+                        totalPages,
+                        p + 1
+                      )
+                    )
+                  }
+                  disabled={
+                    currentPage === totalPages
+                  }
+                  className="rw-pagination-nav"
+                >
+                  Selanjutnya
+                </button>
+
+              </div>
+
             </div>
+
           </div>
+
         </div>
+
+
+        {/* FOOTER */}
+
+        <FooterDesa />
+
       </div>
 
-      {/* ===== MOBILE ===== */}
-      <div className="md:hidden flex flex-col min-h-screen bg-gray-50">
-        <div className="flex-1 px-4 pt-4">
 
-          <h1 className="text-xl font-bold text-gray-800 mb-1">Semua Surat</h1>
-          <p className="text-sm text-gray-500 mb-4">Kelola permohonan surat warga secara digital</p>
+      {/* ========================================
+          MOBILE
+          ======================================== */}
 
-          <div className="relative mb-3">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      <div className="rw-page-mobile">
+
+        <div className="sid-page rw-mobile-content">
+
+          {/* HEADER */}
+
+          <h1 className="sid-page-title">
+            Semua Surat
+          </h1>
+
+          <p className="sid-page-description">
+            Kelola permohonan surat warga secara digital.
+          </p>
+
+
+          {/* SEARCH */}
+
+          <div className="rw-mobile-search">
+            <Search
+              size={16}
+              className="sid-search-icon"
+            />
+
             <input
+              type="text"
               defaultValue={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
               placeholder="Cari nama pemohon..."
-              className="w-full border text-gray-400 rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-blue-500 bg-white"
+              className="sid-search-input"
             />
           </div>
 
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full border rounded-full px-3 py-2 text-xs text-gray-400 bg-white mb-4  focus:border-blue-500">
-                <option value="">Semua Status</option>
-                <option value="rt_approved">Menunggu</option>
-                <option value="rw_approved">Disetujui rw</option>
-                <option value="rw_rejected">Ditolak rw</option>
+
+          {/* FILTER STATUS */}
+
+          <select
+            value={filterStatus}
+            onChange={(e) =>
+              setFilterStatus(e.target.value)
+            }
+            className="sid-select rw-mobile-status-select"
+          >
+            <option value="">
+              Semua Status
+            </option>
+
+            <option value="rt_approved">
+              Menunggu
+            </option>
+
+            <option value="rw_approved">
+              Disetujui RW
+            </option>
+
+            <option value="rw_rejected">
+              Ditolak RW
+            </option>
           </select>
 
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
-            <div className="grid grid-cols-4 text-[10px] font-semibold text-gray-400 uppercase px-4 py-3 border-b ">
-              <span>No.Surat</span><span className="text-center">Pemohon</span><span className="text-center">Jenis</span><span className="text-center">Tanggal</span>
+
+          {/* MOBILE TABLE */}
+
+          <div className="sid-card rw-mobile-table-card">
+
+            <div className="rw-mobile-table-header">
+
+              <span>
+                No.Surat
+              </span>
+
+              <span>
+                Pemohon
+              </span>
+
+              <span>
+                Jenis
+              </span>
+
+              <span>
+                Tanggal
+              </span>
+
             </div>
+
+
             {loading ? (
-              <p className="text-center text-gray-400 text-sm py-8">Memuat...</p>
+
+              <p className="rw-mobile-message">
+                Memuat...
+              </p>
+
             ) : paginatedData.length === 0 ? (
-              <p className="text-center text-gray-400 text-sm py-8">Belum ada surat.</p>
+
+              <p className="rw-mobile-message">
+                Belum ada surat.
+              </p>
+
             ) : (
+
               paginatedData.map((s) => (
+
                 <button
                   key={s.id}
-                  onClick={() => { setSelectedId(s.id); setIsReadOnly(s.status !== 'rt_approved'); }}
-                  className="w-full grid grid-cols-4 items-center text-left px-4 py-3 border-b last:border-0 text-xs text-gray-400"
+                  type="button"
+                  onClick={() =>
+                    handleOpenDetail(s)
+                  }
+                  className="rw-mobile-row"
                 >
-                  <span className="text-gray-400">{s.letter_number ?? '-'}</span>
-                  <span className="font-semibold text-gray-400 text-center">{s.applicant_name}</span>
-                  <span className="text-gray-400 text-center">{s.letter_type?.name ?? '-'}</span>
-                  <span className="text-gray-400 text-center">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID') : '-'}</span>
+
+                  <span>
+                    {s.letter_number ?? '-'}
+                  </span>
+
+                  <span className="rw-mobile-applicant">
+                    {s.applicant_name}
+                  </span>
+
+                  <span>
+                    {s.letter_type?.name ?? '-'}
+                  </span>
+
+                  <span className="rw-mobile-date">
+                    {s.submitted_at
+                      ? new Date(
+                          s.submitted_at
+                        ).toLocaleDateString(
+                          'id-ID'
+                        )
+                      : '-'}
+                  </span>
+
                 </button>
+
               ))
+
             )}
+
           </div>
 
-          <div className="flex justify-center gap-2 mb-4">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-full text-xs font-medium ${page === currentPage ? 'bg-[#185FA5] text-white' : 'bg-white border text-[#185FA5]'}`}>
+
+          {/* MOBILE PAGINATION */}
+
+          <div className="rw-mobile-pagination">
+
+            {Array.from(
+              { length: totalPages },
+              (_, i) => i + 1
+            ).map((page) => (
+
+              <button
+                key={page}
+                type="button"
+                onClick={() =>
+                  setCurrentPage(page)
+                }
+                className={`rw-mobile-page-button ${
+                  page === currentPage
+                    ? 'rw-mobile-page-button-active'
+                    : ''
+                }`}
+              >
                 {page}
               </button>
-            ))}
-          </div>
-        </div >
 
-        <div className="pb-16">
+            ))}
+
+          </div>
+
+        </div>
+
+
+        {/* FOOTER */}
+
+        <div className="sid-mobile-footer">
           <FooterDesa />
         </div>
-        <MobileBottomNav links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rw', '/admin/list-rw')} />
+
+
+        {/* MOBILE NAV */}
+
+        <MobileBottomNav
+          links={ADMIN_MOBILE_LINKS(
+            '/admin/dashboard-surat-rw',
+            '/admin/list-rw'
+          )}
+        />
+
       </div>
+
+
+      {/* ========================================
+          DETAIL MODAL
+          ======================================== */}
 
       <SuratDetailModalRW
         suratId={selectedId}
-        onClose={() => { setSelectedId(null); setIsReadOnly(false); }}
+        onClose={() => {
+          setSelectedId(null);
+          setIsReadOnly(false);
+        }}
         onApprove={handleApprove}
         onReject={handleReject}
         readOnly={isReadOnly}
       />
+
     </>
   );
 }

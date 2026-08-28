@@ -1,204 +1,410 @@
 // ==========================================
 // KelolaProfilDesaPage.jsx
-// Halaman Profil Desa untuk Operator Desa, sesuai desain: hero image
-// besar + 3 kartu statistik di kanan, kartu Visi & Misi, kartu Perangkat
-// Desa (avatar Kepala Desa besar + 3 kartu jabatan + grid Kadus).
-// Semua bagian bisa diedit lewat popup terpisah.
+// Halaman Profil Desa untuk Operator Desa
+// Styling menggunakan Global CSS.
+// Logic/API tidak diubah.
 // ==========================================
 
 import { useState } from 'react';
-import { Pencil, Users, Building2, Home, Eye, ClipboardList } from 'lucide-react';
+import {
+  Pencil,
+  Users,
+  Building2,
+  Home,
+  Eye,
+  ClipboardList,
+} from 'lucide-react';
+
 import { useProfilDesa } from '@/features/profil-desa-admin/hooks/useProfilDesa';
 import EditProfilDesaModal from '@/features/profil-desa-admin/components/EditProfilDesaModal';
 import EditVisiMisiModal from '@/features/profil-desa-admin/components/EditVisiMisiModal';
 import EditPerangkatDesaModal from '@/features/profil-desa-admin/components/EditPerangkatDesaModal';
-import { FooterDesa } from '@/components/layout/FooterDesa';
+import { FooterOperator } from '@/components/layout/FooterOperator';
 
-function Avatar({ src, name, size = 'w-14 h-14' }) {
+function Avatar({ src, name, size = 'medium' }) {
   return (
-    <div className={`${size} rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0`}>
-      {src ? <img src={src} alt={name} className="w-full h-full object-cover" /> : <Users size={20} className="text-gray-400" />}
+    <div className={`sid-profil-desa-avatar sid-profil-desa-avatar-${size}`}>
+      {src ? (
+        <img src={src} alt={name} />
+      ) : (
+        <Users size={20} className="sid-profil-desa-avatar-placeholder" />
+      )}
     </div>
   );
 }
 
 export default function KelolaProfilDesaPage() {
-  const { data, updateHeroAndStats, updateVisiMisi, updatePerangkat } = useProfilDesa();
+  const {
+    data,
+    updateHeroAndStats,
+    updateVisiMisi,
+    updatePerangkat,
+  } = useProfilDesa();
 
   const [modalProfil, setModalProfil] = useState(false);
   const [modalVisiMisi, setModalVisiMisi] = useState(false);
   const [modalPerangkat, setModalPerangkat] = useState(false);
 
   return (
-    <div>
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Profil Desa Cibenda</h1>
-            <p className="text-sm text-gray-500 max-w-xl">
-              Halaman resmi informasi tata kelola, sejarah, dan capaian strategis Desa Cibenda untuk transparansi publik.
+    <div className="sid-profil-desa-page">
+      <div className="sid-profil-desa-content">
+
+        {/* ==========================================
+            HEADER
+            ========================================== */}
+        <div className="sid-profil-desa-header">
+          <div className="sid-profil-desa-header-info">
+            <h1>Profil Desa Cibenda</h1>
+
+            <p>
+              Halaman resmi informasi tata kelola, sejarah, dan capaian
+              strategis Desa Cibenda untuk transparansi publik.
             </p>
           </div>
+
           <button
             onClick={() => setModalProfil(true)}
-            className="flex items-center gap-2 bg-green-600 text-white rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-green-700 shrink-0"
+            className="sid-profil-desa-edit-btn"
           >
-            <Pencil size={14} /> Edit Profil Desa
+            <Pencil size={14} />
+            Edit Profil Desa
           </button>
         </div>
 
-        {/* Hero + Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="col-span-2 relative rounded-2xl overflow-hidden shadow-sm min-h-[220px] bg-gray-800">
+
+        {/* ==========================================
+            HERO + STATS
+            ========================================== */}
+        <div className="sid-profil-desa-hero-grid">
+
+          {/* HERO */}
+          <div className="sid-profil-desa-hero">
+
             {data.hero.image ? (
-              <img src={data.hero.image} alt="Hero" className="absolute inset-0 w-full h-full object-cover" />
+              <img
+                src={data.hero.image}
+                alt="Hero"
+                className="sid-profil-desa-hero-image"
+              />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-green-800 to-green-600" />
+              <div className="sid-profil-desa-hero-placeholder" />
             )}
-            <div className="absolute inset-0 bg-black/30" />
-            <div className="relative p-6 flex flex-col justify-end h-full text-white">
-              <span className="bg-green-500 text-white text-[10px] font-semibold px-3 py-1 rounded-full self-start mb-2">
+
+            <div className="sid-profil-desa-hero-overlay" />
+
+            <div className="sid-profil-desa-hero-content">
+
+              <span className="sid-profil-desa-hero-badge">
                 {data.hero.badge}
               </span>
-              <h2 className="text-2xl font-bold mb-2">{data.hero.title}</h2>
-              <p className="text-sm text-white/90 max-w-md">{data.hero.description}</p>
+
+              <h2>{data.hero.title}</h2>
+
+              <p>{data.hero.description}</p>
+
             </div>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-green-100 text-green-600 flex items-center justify-center shrink-0">
+
+          {/* STATS */}
+          <div className="sid-profil-desa-stats">
+
+            {/* Total Penduduk */}
+            <div className="sid-profil-desa-stat-card">
+
+              <div className="sid-profil-desa-stat-icon population">
                 <Users size={18} />
               </div>
-              <div>
-                <p className="text-[10px] text-gray-400 uppercase">Total Penduduk</p>
-                <p className="text-xl font-bold text-gray-800">{Number(data.stats.totalPenduduk).toLocaleString('id-ID')}</p>
-                <p className="text-[10px] text-green-600">{data.stats.pendudukKeterangan}</p>
+
+              <div className="sid-profil-desa-stat-content">
+                <p className="sid-profil-desa-stat-label">
+                  Total Penduduk
+                </p>
+
+                <p className="sid-profil-desa-stat-value">
+                  {Number(data.stats.totalPenduduk).toLocaleString('id-ID')}
+                </p>
+
+                <p className="sid-profil-desa-stat-description success">
+                  {data.stats.pendudukKeterangan}
+                </p>
               </div>
+
             </div>
-            <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+
+
+            {/* Luas Wilayah */}
+            <div className="sid-profil-desa-stat-card">
+
+              <div className="sid-profil-desa-stat-icon area">
                 <Building2 size={18} />
               </div>
-              <div>
-                <p className="text-[10px] text-gray-400 uppercase">Luas Wilayah</p>
-                <p className="text-xl font-bold text-gray-800">{data.stats.luasWilayah} ha</p>
-                <p className="text-[10px] text-gray-400">{data.stats.luasKeterangan}</p>
+
+              <div className="sid-profil-desa-stat-content">
+                <p className="sid-profil-desa-stat-label">
+                  Luas Wilayah
+                </p>
+
+                <p className="sid-profil-desa-stat-value">
+                  {data.stats.luasWilayah} ha
+                </p>
+
+                <p className="sid-profil-desa-stat-description">
+                  {data.stats.luasKeterangan}
+                </p>
               </div>
+
             </div>
-            <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+
+
+            {/* Jumlah Dusun */}
+            <div className="sid-profil-desa-stat-card">
+
+              <div className="sid-profil-desa-stat-icon hamlet">
                 <Home size={18} />
               </div>
-              <div>
-                <p className="text-[10px] text-gray-400 uppercase">Jumlah Dusun</p>
-                <p className="text-xl font-bold text-gray-800">{String(data.stats.jumlahDusun).padStart(2, '0')}</p>
-                <p className="text-[10px] text-gray-400">{data.stats.dusunKeterangan}</p>
+
+              <div className="sid-profil-desa-stat-content">
+                <p className="sid-profil-desa-stat-label">
+                  Jumlah Dusun
+                </p>
+
+                <p className="sid-profil-desa-stat-value">
+                  {String(data.stats.jumlahDusun).padStart(2, '0')}
+                </p>
+
+                <p className="sid-profil-desa-stat-description">
+                  {data.stats.dusunKeterangan}
+                </p>
               </div>
+
             </div>
+
           </div>
         </div>
 
-        {/* Visi & Misi */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
-          <div className="flex justify-end mb-1">
-            <button onClick={() => setModalVisiMisi(true)} className="text-xs text-green-600 flex items-center gap-1 hover:underline">
-              <Pencil size={12} /> Edit Visi &amp; Misi
+
+        {/* ==========================================
+            VISI & MISI
+            ========================================== */}
+        <div className="sid-profil-desa-card sid-profil-desa-visi-misi">
+
+          <div className="sid-profil-desa-card-action">
+            <button
+              onClick={() => setModalVisiMisi(true)}
+              className="sid-profil-desa-inline-edit"
+            >
+              <Pencil size={12} />
+              Edit Visi &amp; Misi
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+
+
+          <div className="sid-profil-desa-visi-misi-grid">
+
+            {/* VISI */}
+            <div className="sid-profil-desa-visi">
+
+              <div className="sid-profil-desa-section-heading">
+
+                <div className="sid-profil-desa-section-icon">
                   <Eye size={16} />
                 </div>
-                <h3 className="font-semibold text-gray-800">Visi</h3>
+
+                <h3>Visi</h3>
+
               </div>
-              <p className="text-sm text-green-700 font-medium italic">"{data.visiMisi.visi}"</p>
+
+              <p className="sid-profil-desa-visi-text">
+                "{data.visiMisi.visi}"
+              </p>
+
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+
+
+            {/* MISI */}
+            <div className="sid-profil-desa-misi">
+
+              <div className="sid-profil-desa-section-heading">
+
+                <div className="sid-profil-desa-section-icon">
                   <ClipboardList size={16} />
                 </div>
-                <h3 className="font-semibold text-gray-800">Misi</h3>
+
+                <h3>Misi</h3>
+
               </div>
-              <ol className="flex flex-col gap-2">
+
+              <ol className="sid-profil-desa-misi-list">
                 {data.visiMisi.misi.map((item, i) => (
-                  <li key={i} className="flex gap-2 text-sm text-gray-600">
-                    <span className="w-5 h-5 rounded-full bg-green-600 text-white text-[10px] flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                    {item}
+                  <li key={i}>
+
+                    <span>
+                      {i + 1}
+                    </span>
+
+                    <p>{item}</p>
+
                   </li>
                 ))}
               </ol>
+
             </div>
+
           </div>
         </div>
 
-        {/* Perangkat Desa */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+
+        {/* ==========================================
+            PERANGKAT DESA
+            ========================================== */}
+        <div className="sid-profil-desa-card sid-profil-desa-perangkat">
+
+          <div className="sid-profil-desa-perangkat-header">
+
+            <div className="sid-profil-desa-section-heading">
+
+              <div className="sid-profil-desa-section-icon">
                 <Users size={16} />
               </div>
-              <h3 className="font-semibold text-gray-800">Perangkat Desa</h3>
+
+              <h3>Perangkat Desa</h3>
+
             </div>
-            <button onClick={() => setModalPerangkat(true)} className="text-xs text-green-600 flex items-center gap-1 hover:underline">
-              <Pencil size={12} /> Edit Perangkat Desa
+
+            <button
+              onClick={() => setModalPerangkat(true)}
+              className="sid-profil-desa-inline-edit"
+            >
+              <Pencil size={12} />
+              Edit Perangkat Desa
             </button>
+
           </div>
 
-          <div className="flex flex-col items-center mb-6">
-            <Avatar src={data.perangkatUtama.kepalaDesa.foto} name={data.perangkatUtama.kepalaDesa.nama} size="w-20 h-20" />
-            <p className="font-semibold text-gray-800 mt-2">{data.perangkatUtama.kepalaDesa.nama}</p>
-            <p className="text-xs text-green-600">{data.perangkatUtama.kepalaDesa.jabatan}</p>
+
+          {/* KEPALA DESA */}
+          <div className="sid-profil-desa-kepala">
+
+            <Avatar
+              src={data.perangkatUtama.kepalaDesa.foto}
+              name={data.perangkatUtama.kepalaDesa.nama}
+              size="large"
+            />
+
+            <p className="sid-profil-desa-kepala-name">
+              {data.perangkatUtama.kepalaDesa.nama}
+            </p>
+
+            <p className="sid-profil-desa-kepala-role">
+              {data.perangkatUtama.kepalaDesa.jabatan}
+            </p>
+
           </div>
 
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            {[data.perangkatUtama.sekretarisDesa, data.perangkatUtama.kaur, data.perangkatUtama.kasi].map((p, i) => (
-              <div key={i} className="bg-gray-50 rounded-xl p-4 flex flex-col items-center text-center">
-                <Avatar src={p.foto} name={p.nama} size="w-12 h-12" />
-                <p className="font-semibold text-gray-800 text-sm mt-2">{p.nama}</p>
-                <p className="text-[11px] text-gray-500">{p.jabatan}</p>
+
+          {/* SEKRETARIS / KAUR / KASI */}
+          <div className="sid-profil-desa-main-officials">
+
+            {[
+              data.perangkatUtama.sekretarisDesa,
+              data.perangkatUtama.kaur,
+              data.perangkatUtama.kasi,
+            ].map((p, i) => (
+              <div
+                key={i}
+                className="sid-profil-desa-official-card"
+              >
+
+                <Avatar
+                  src={p.foto}
+                  name={p.nama}
+                  size="small"
+                />
+
+                <p className="sid-profil-desa-official-name">
+                  {p.nama}
+                </p>
+
+                <p className="sid-profil-desa-official-role">
+                  {p.jabatan}
+                </p>
+
               </div>
             ))}
+
           </div>
 
-          <p className="text-center text-xs font-semibold text-gray-400 uppercase mb-4">Kepala Dusun (Kadus)</p>
-          <div className="flex justify-center gap-6 flex-wrap">
+
+          {/* KADUS */}
+          <p className="sid-profil-desa-kadus-title">
+            Kepala Dusun (Kadus)
+          </p>
+
+          <div className="sid-profil-desa-kadus-list">
+
             {data.kadusList.map((k) => (
-              <div key={k.id} className="flex flex-col items-center gap-1">
-                <Avatar src={k.foto} name={k.nama} size="w-10 h-10" />
-                <p className="text-xs text-gray-600">{k.nama}</p>
+              <div
+                key={k.id}
+                className="sid-profil-desa-kadus"
+              >
+
+                <Avatar
+                  src={k.foto}
+                  name={k.nama}
+                  size="tiny"
+                />
+
+                <p>{k.nama}</p>
+
               </div>
             ))}
+
           </div>
+
         </div>
+
       </div>
 
-      <FooterDesa />
+
+      <FooterOperator />
+
+
+      {/* ==========================================
+          MODALS
+          ========================================== */}
 
       <EditProfilDesaModal
         open={modalProfil}
         onClose={() => setModalProfil(false)}
-        onSubmit={(payload) => { updateHeroAndStats(payload); setModalProfil(false); }}
+        onSubmit={(payload) => {
+          updateHeroAndStats(payload);
+          setModalProfil(false);
+        }}
         initialData={data}
       />
+
       <EditVisiMisiModal
         open={modalVisiMisi}
         onClose={() => setModalVisiMisi(false)}
-        onSubmit={(payload) => { updateVisiMisi(payload); setModalVisiMisi(false); }}
+        onSubmit={(payload) => {
+          updateVisiMisi(payload);
+          setModalVisiMisi(false);
+        }}
         initialData={data.visiMisi}
       />
+
       <EditPerangkatDesaModal
         open={modalPerangkat}
         onClose={() => setModalPerangkat(false)}
-        onSubmit={(perangkat, kadusList) => { updatePerangkat(perangkat, kadusList); setModalPerangkat(false); }}
+        onSubmit={(perangkat, kadusList) => {
+          updatePerangkat(perangkat, kadusList);
+          setModalPerangkat(false);
+        }}
         initialPerangkat={data.perangkatUtama}
         initialKadus={data.kadusList}
       />
+
     </div>
   );
 }

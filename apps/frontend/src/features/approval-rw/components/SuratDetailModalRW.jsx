@@ -1,176 +1,686 @@
 // ==========================================
 // SuratDetailModalRW.jsx
-// Popup detail surat RW. FIELD_MAP di bawah sesuaikan kalau backend
-// (LetterResource) sudah final dan nama fieldnya beda.
+// Popup detail surat RW
+//
+// UI dibuat SAMA dengan SuratDetailModalRT
+//
+// RULE:
+// - RW APPROVE  -> tidak mengubah notes sebelumnya
+// - RW REJECT   -> notes diganti dengan alasan RW
+// - RW memakai approveSurat(), bukan submitDecision()
 // ==========================================
 
 import { useState } from 'react';
 import { Eye } from 'lucide-react';
+
 import { useSuratDetail } from '../hooks/useSuratDetailRW';
 import ApprovalStepperRW from './ApprovalStepperRW';
+
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF';
+import { approveSurat } from '@/features/approval/api';
+
+
+// ==========================================
+// FIELD MAP
+// ==========================================
 
 const FIELD_MAP = {
-  noSurat: (s) => s.letter_number ?? '-',
-  namaPemohon: (s) => s.applicant_name ?? '-',
-  nik: (s) => s.applicant_nik ?? '-',
-  alamat: (s) => s.applicant_address ?? '-',
-  jenisSurat: (s) => s.letter_type?.name ?? '-',
-  keperluan: (s) => s.purpose ?? '-',
-  diajukan: (s) => (s.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
-  terakhirDiproses: (s) => (s.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
-  riwayat: (s) => s.decisions ?? [],
+  noSurat: (s) =>
+    s.letter_number ?? '-',
+
+  namaPemohon: (s) =>
+    s.applicant_name ?? '-',
+
+  nik: (s) =>
+    s.applicant_nik ?? '-',
+
+  alamat: (s) =>
+    s.applicant_address ?? '-',
+
+  jenisSurat: (s) =>
+    s.letter_type?.name ?? '-',
+
+  keperluan: (s) =>
+    s.purpose ?? '-',
+
+  diajukan: (s) =>
+    s.submitted_at
+      ? new Date(s.submitted_at).toLocaleString('id-ID')
+      : '-',
+
+  terakhirDiproses: (s) =>
+    s.updated_at
+      ? new Date(s.updated_at).toLocaleString('id-ID')
+      : '-',
+
+  ipAktor: (s) =>
+    s.ip_address ?? '-',
+
+  riwayat: (s) =>
+    s.decisions ?? [],
 };
 
-export default function SuratDetailModalRW({ suratId, onClose, onApprove, onReject, readOnly = false }) {
-  const { surat, notFound } = useSuratDetail(suratId);
+
+// ==========================================
+// COMPONENT
+// ==========================================
+
+export default function SuratDetailModalRW({
+  suratId,
+  onClose,
+  onApprove,
+  onReject,
+  readOnly = false,
+}) {
+
+  const {
+    surat,
+    notFound,
+  } = useSuratDetail(suratId);
+
   const [showRejectBox, setShowRejectBox] = useState(false);
   const [alasan, setAlasan] = useState('');
 
-  if (suratId === null) return null;
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const keputusanRT = surat ? FIELD_MAP.riwayat(surat).find((r) => r.stage === 'rt' || r.tahap === 'RT') : null;
-  const keputusanRW = surat ? FIELD_MAP.riwayat(surat).find((r) => r.stage === 'rw' || r.tahap === 'RW') : null;
+
+  // ==========================================
+  // CEK ID
+  // ==========================================
+
+  if (suratId === null) {
+    return null;
+  }
+
+
+  // ==========================================
+  // KEPUTUSAN RT
+  // ==========================================
+
+  const keputusanRT = surat
+    ? FIELD_MAP
+        .riwayat(surat)
+        .find(
+          (r) =>
+            r.stage === 'rt' ||
+            r.tahap === 'RT' ||
+            r.approval_level === 'rt'
+        )
+    : null;
+
+
+  // ==========================================
+  // KEPUTUSAN RW
+  // ==========================================
+
+  const keputusanRW = surat
+    ? FIELD_MAP
+        .riwayat(surat)
+        .find(
+          (r) =>
+            r.stage === 'rw' ||
+            r.tahap === 'RW' ||
+            r.approval_level === 'rw'
+        )
+    : null;
+
+
+  // ==========================================
+  // INFO SURAT
+  // ==========================================
 
   const infoFields = surat
     ? [
-        { label: 'Nama Pemohon', value: FIELD_MAP.namaPemohon(surat) },
-        { label: 'NIK', value: FIELD_MAP.nik(surat) },
-        { label: 'Alamat', value: FIELD_MAP.alamat(surat) },
-        { label: 'Jenis Surat', value: FIELD_MAP.jenisSurat(surat) },
-        { label: 'Keperluan', value: FIELD_MAP.keperluan(surat) },
-        { label: 'Diajukan', value: FIELD_MAP.diajukan(surat) },
-        { label: 'Terakhir diproses', value: FIELD_MAP.terakhirDiproses(surat) },
+        {
+          label: 'Nama Pemohon',
+          value: FIELD_MAP.namaPemohon(surat),
+        },
+        {
+          label: 'NIK',
+          value: FIELD_MAP.nik(surat),
+        },
+        {
+          label: 'Alamat',
+          value: FIELD_MAP.alamat(surat),
+        },
+        {
+          label: 'Jenis Surat',
+          value: FIELD_MAP.jenisSurat(surat),
+        },
+        {
+          label: 'Keperluan',
+          value: FIELD_MAP.keperluan(surat),
+        },
+        {
+          label: 'Diajukan',
+          value: FIELD_MAP.diajukan(surat),
+        },
+        {
+          label: 'Terakhir diproses',
+          value: FIELD_MAP.terakhirDiproses(surat),
+        },
       ]
     : [];
 
-  const handleSubmitReject = () => {
-    if (!alasan.trim()) return;
-    onReject(alasan);
-    setAlasan('');
-    setShowRejectBox(false);
+
+  // ==========================================
+  // APPROVE RW
+  // ==========================================
+
+  const handleApprove = async () => {
+
+    if (!suratId || isProcessing) {
+      return;
+    }
+
+    try {
+
+      setIsProcessing(true);
+
+      console.log('RW APPROVE:', {
+        suratId,
+        status: 'approved',
+        // Tidak mengirim notes baru.
+        // Notes sebelumnya tetap dipertahankan.
+      });
+
+
+      // ========================================
+      // APPROVE RW
+      // ========================================
+
+      const response = await approveSurat(
+        'rw',
+        suratId,
+        'approved'
+      );
+
+
+      console.log(
+        'RW APPROVE SUCCESS:',
+        response.data
+      );
+
+
+      // Callback parent
+      if (onApprove) {
+        await onApprove(response);
+      }
+
+
+      // Tutup modal
+      onClose();
+
+    } catch (error) {
+
+      console.error(
+        'RW APPROVE ERROR:',
+        error.response?.data ?? error
+      );
+
+      alert(
+        error.response?.data?.message ??
+        'Gagal menyetujui surat.'
+      );
+
+    } finally {
+
+      setIsProcessing(false);
+
+    }
   };
 
+
+  // ==========================================
+  // REJECT RW
+  // ==========================================
+
+  const handleSubmitReject = async () => {
+
+    const notes = alasan.trim();
+
+    if (!notes || !suratId || isProcessing) {
+      return;
+    }
+
+    try {
+
+      setIsProcessing(true);
+
+      console.log('RW REJECT:', {
+        suratId,
+        status: 'rejected',
+        notes,
+      });
+
+
+      // ========================================
+      // REJECT RW
+      // ========================================
+      //
+      // Notes dari textarea RW dikirim ke backend.
+      // Backend mengganti notes surat dengan alasan RW.
+      // ========================================
+
+      const response = await approveSurat(
+        'rw',
+        suratId,
+        'rejected',
+        notes
+      );
+
+
+      console.log(
+        'RW REJECT SUCCESS:',
+        response.data
+      );
+
+
+      // Callback parent
+      if (onReject) {
+        await onReject(notes, response);
+      }
+
+
+      // Bersihkan
+      setAlasan('');
+      setShowRejectBox(false);
+
+
+      // Tutup modal
+      onClose();
+
+    } catch (error) {
+
+      console.error(
+        'RW REJECT ERROR:',
+        error.response?.data ?? error
+      );
+
+      alert(
+        error.response?.data?.message ??
+        'Gagal menolak surat.'
+      );
+
+    } finally {
+
+      setIsProcessing(false);
+
+    }
+  };
+
+
+  // ==========================================
+  // CANCEL REJECT
+  // ==========================================
+
+  const handleCancelReject = () => {
+
+    if (isProcessing) {
+      return;
+    }
+
+    setShowRejectBox(false);
+    setAlasan('');
+  };
+
+
+  // ==========================================
+  // RENDER
+  // ==========================================
+
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4 pb-20">
-      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">✕</button>
+    <div className="sid-modal-overlay">
 
+      <div className="sid-modal">
+
+        {/* CLOSE */}
+        <button
+          onClick={onClose}
+          disabled={isProcessing}
+          className="sid-modal-close"
+        >
+          ✕
+        </button>
+
+        {/* NOT FOUND */}
         {notFound ? (
-          <p className="text-center text-gray-500 py-10">Surat tidak ditemukan.</p>
-        ) : !surat ? (
-          <p className="text-center text-gray-400 py-10">Memuat...</p>
-        ) : (
-          <>
-            <h2 className="font-bold text-gray-800 text-lg">Detail Permohonan Surat</h2>
-            <p className="text-xs text-gray-400 mb-5">#{FIELD_MAP.noSurat(surat)} · Surat saya</p>
 
+          <p className="sid-modal-message">
+            Surat tidak ditemukan.
+          </p>
+
+        ) : !surat ? (
+
+          <p className="sid-modal-message">
+            Memuat...
+          </p>
+
+        ) : (
+
+          <>
+
+            {/* HEADER */}
+            <h2 className="sid-modal-title">
+              Detail Permohonan Surat
+            </h2>
+
+            <p className="sid-modal-subtitle">
+              #{FIELD_MAP.noSurat(surat)} · Surat saya
+            </p>
+
+
+            {/* STEPPER */}
             <ApprovalStepperRW surat={surat} />
 
-            <div className="flex flex-col gap-4 mb-5">
-              {infoFields.map((f) => (
-                <div key={f.label}>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">{f.label}</p>
-                  <p className="text-sm font-semibold text-gray-800">{f.value}</p>
+
+            {/* DETAIL SURAT */}
+            <div className="sid-modal-info">
+
+              {infoFields.map((field) => (
+
+                <div key={field.label}>
+
+                  <p className="sid-modal-info-label">
+                    {field.label}
+                  </p>
+
+                  <p className="sid-modal-info-value">
+                    {field.value}
+                  </p>
+
                 </div>
+
               ))}
+
             </div>
 
-            {/* Riwayat keputusan RT — RW perlu lihat ini sebagai konteks sebelum putuskan */}
+
+            {/* KEPUTUSAN RT */}
             {keputusanRT && (
-              <div className="rounded-xl p-4 mb-3 bg-gray-50">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-semibold text-gray-800 text-sm">Keputusan RT</p>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500 text-white">RT_APPROVED</span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  diputuskan oleh <span className="font-medium text-gray-700">{keputusanRT.actor_name ?? keputusanRT.decided_by ?? '-'}</span>
-                </div>
-                {keputusanRT.notes && (
-                  <div className="bg-white text-gray-600 text-xs rounded-lg p-3 mt-2 border">{keputusanRT.notes}</div>
-                )}
-              </div>
-            )}
 
-            {/* Keputusan RW sendiri, kalau sudah pernah diputuskan */}
-            {keputusanRW && (
-              <div className={`rounded-xl p-4 mb-5 ${keputusanRW.status === 'rejected' ? 'bg-red-50' : 'bg-green-50'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-semibold text-gray-800 text-sm">Keputusan RW</p>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    keputusanRW.status === 'rejected' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
-                  }`}>
-                    {keputusanRW.status === 'rejected' ? 'RW_REJECTED' : 'RW_APPROVED'}
+              <div
+                className={`sid-decision-box ${
+                  keputusanRT.status === 'rejected'
+                    ? 'rejected'
+                    : 'approved'
+                }`}
+              >
+
+                <div className="sid-decision-header">
+
+                  <p className="sid-decision-title">
+                    Keputusan RT
+                  </p>
+
+                  <span
+                    className={`sid-decision-badge ${
+                      keputusanRT.status === 'rejected'
+                        ? 'rejected'
+                        : 'approved'
+                    }`}
+                  >
+                    {keputusanRT.status === 'rejected'
+                      ? 'RT_REJECTED'
+                      : 'RT_APPROVED'}
                   </span>
-                </div>
-                <div className="text-xs text-gray-500 mb-1">
-                  diputuskan oleh <span className="font-medium text-gray-700">{keputusanRW.actor_name ?? keputusanRW.decided_by ?? '-'}</span>
-                </div>
-                <div className="text-xs text-gray-500 mb-2">IP <span className="font-medium text-gray-700">{keputusanRW.ip_address ?? '-'}</span></div>
 
-                {keputusanRW.status === 'rejected' && keputusanRW.notes && (
+                </div>
+
+
+                <div className="sid-decision-meta">
+                  diputuskan oleh{' '}
+                  <strong>
+                    {keputusanRT.actor_name ??
+                      keputusanRT.decided_by ??
+                      keputusanRT.approved_by_name ??
+                      '-'}
+                  </strong>
+                </div>
+
+
+                <div className="sid-decision-meta">
+                  IP{' '}
+                  <strong>
+                    {keputusanRT.ip_address ?? '-'}
+                  </strong>
+                </div>
+
+
+                {/* NOTES */}
+                {keputusanRT.status === 'rejected' && (
+
                   <>
-                    <p className="text-[10px] font-semibold text-red-600 uppercase mt-3 mb-1">Komentar Penolakan</p>
-                    <div className="bg-red-100 text-red-700 text-xs rounded-lg p-3">{keputusanRW.notes}</div>
+                    <p className="sid-decision-comment-label">
+                      Komentar Penolakan
+                    </p>
+
+                    <div className="sid-decision-comment rejected">
+                      {keputusanRT.notes ??
+                        keputusanRT.reason ??
+                        surat.notes ??
+                        'Tidak ada catatan.'}
+                    </div>
                   </>
+
                 )}
-                {keputusanRW.status === 'approved' && keputusanRW.notes && (
-                  <div className="bg-green-100 text-green-700 text-xs rounded-lg p-3 mt-2">{keputusanRW.notes}</div>
+
+
+                {keputusanRT.status === 'approved' && (
+
+                  <div className="sid-decision-comment approved">
+                    {keputusanRT.notes ??
+                      keputusanRT.reason ??
+                      surat.notes ??
+                      'Tidak ada catatan.'}
+                  </div>
+
                 )}
+
               </div>
+
             )}
 
+
+            {/* KEPUTUSAN RW */}
+            {keputusanRW && (
+
+              <div
+                className={`sid-decision-box ${
+                  keputusanRW.status === 'rejected'
+                    ? 'rejected'
+                    : 'approved'
+                }`}
+              >
+
+                <div className="sid-decision-header">
+
+                  <p className="sid-decision-title">
+                    Keputusan RW
+                  </p>
+
+                  <span
+                    className={`sid-decision-badge ${
+                      keputusanRW.status === 'rejected'
+                        ? 'rejected'
+                        : 'approved'
+                    }`}
+                  >
+                    {keputusanRW.status === 'rejected'
+                      ? 'RW_REJECTED'
+                      : 'RW_APPROVED'}
+                  </span>
+
+                </div>
+
+
+                <div className="sid-decision-meta">
+                  diputuskan oleh{' '}
+                  <strong>
+                    {keputusanRW.actor_name ??
+                      keputusanRW.decided_by ??
+                      keputusanRW.approved_by_name ??
+                      '-'}
+                  </strong>
+                </div>
+
+
+                <div className="sid-decision-meta">
+                  IP{' '}
+                  <strong>
+                    {keputusanRW.ip_address ?? '-'}
+                  </strong>
+                </div>
+
+
+                {/* NOTES */}
+                {keputusanRW.status === 'rejected' && (
+
+                  <>
+                    <p className="sid-decision-comment-label">
+                      Komentar Penolakan
+                    </p>
+
+                    <div className="sid-decision-comment rejected">
+                      {keputusanRW.notes ??
+                        keputusanRW.reason ??
+                        surat.notes ??
+                        'Tidak ada catatan.'}
+                    </div>
+                  </>
+
+                )}
+
+
+                {keputusanRW.status === 'approved' && (
+
+                  <div className="sid-decision-comment approved">
+                    {keputusanRW.notes ??
+                      keputusanRW.reason ??
+                      surat.notes ??
+                      'Tidak ada catatan.'}
+                  </div>
+
+                )}
+
+              </div>
+
+            )}
+
+
+            {/* REJECT FORM */}
             {!readOnly && showRejectBox && (
-              <div className="mb-4">
-                <p className="text-xs text-gray-600 mb-1">Tulis alasan penolakan</p>
+
+              <div className="sid-reject-form">
+
+                <p className="sid-reject-label">
+                  Tulis alasan penolakan
+                </p>
+
                 <textarea
                   value={alasan}
-                  onChange={(e) => setAlasan(e.target.value)}
+                  onChange={(e) =>
+                    setAlasan(e.target.value)
+                  }
                   rows={3}
-                  placeholder="Contoh: Data pemohon perlu diverifikasi ulang."
-                  className="w-full border rounded-lg p-3 text-sm outline-none focus:border-red-400"
+                  placeholder="Contoh: Data NIK tidak sesuai dengan database desa."
+                  className="sid-reject-textarea"
+                  disabled={isProcessing}
                 />
-                <div className="flex gap-2 mt-2">
-                  <button onClick={() => { setShowRejectBox(false); setAlasan(''); }} className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-2 text-sm">
+
+
+                <div className="sid-modal-actions">
+
+                  <button
+                    onClick={handleCancelReject}
+                    disabled={isProcessing}
+                    className="sid-modal-action cancel"
+                  >
                     Batal
                   </button>
+
                   <button
                     onClick={handleSubmitReject}
-                    disabled={!alasan.trim()}
-                    className="flex-1 bg-red-500 text-white rounded-lg py-2 text-sm disabled:opacity-40"
+                    disabled={
+                      !alasan.trim() ||
+                      isProcessing
+                    }
+                    className="sid-modal-action reject"
                   >
-                    Konfirmasi Tolak
+                    {isProcessing
+                      ? 'Memproses...'
+                      : 'Konfirmasi Tolak'}
                   </button>
+
                 </div>
+
               </div>
+
             )}
 
+
+            {/* PREVIEW */}
             {!readOnly && (
+
               <button
-                onClick={() => previewSuratPDF(surat)}
-                className="w-full flex items-center justify-center gap-2 border border-gray-300 text-gray-600 rounded-lg py-2.5 text-sm mb-3 hover:bg-gray-50"
+                onClick={() =>
+                  previewSuratPDF(surat)
+                }
+                disabled={isProcessing}
+                className="sid-modal-preview"
               >
-                <Eye size={16} /> Lihat Dokumen (Preview)
+                <Eye size={16} />
+                Lihat Dokumen (Preview)
               </button>
+
             )}
 
+
+            {/* BUTTON */}
             {readOnly ? (
-              <button onClick={onClose} className="w-full border border-green-500 text-green-600 rounded-lg py-2.5 text-sm font-medium hover:bg-green-50">
+
+              <button
+                onClick={onClose}
+                className="sid-modal-action back"
+              >
                 ✓ Kembali
               </button>
+
             ) : !showRejectBox ? (
-              <div className="flex gap-3">
-                <button onClick={onApprove} className="flex-1 bg-green-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-green-700">
-                  Setuju
+
+              <div className="sid-modal-actions">
+
+                <button
+                  onClick={handleApprove}
+                  disabled={isProcessing}
+                  className="sid-modal-action approve"
+                >
+                  {isProcessing
+                    ? 'Memproses...'
+                    : 'Setuju'}
                 </button>
-                <button onClick={() => setShowRejectBox(true)} className="flex-1 bg-red-500 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-red-600">
+
+
+                <button
+                  onClick={() =>
+                    setShowRejectBox(true)
+                  }
+                  disabled={isProcessing}
+                  className="sid-modal-action reject"
+                >
                   Tolak
                 </button>
+
               </div>
+
             ) : null}
+
           </>
+
         )}
+
       </div>
+
     </div>
   );
 }

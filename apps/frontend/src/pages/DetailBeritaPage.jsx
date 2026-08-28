@@ -1,38 +1,95 @@
+
+// ==========================================
+// DetailBeritaPage.jsx
+// Halaman detail berita publik.
+// Styling menggunakan Global CSS SID.
+// ==========================================
+
 import { useParams } from "react-router-dom";
+
 import { MainContent } from "@/features/berita/components/MainContent";
 import { SidebarBerita } from "@/features/berita/components/SidebarBerita";
+
 import { FooterDesa } from "@/components/layout/FooterDesa";
-// Import data dummy dari file constants lu
+
+// Data dummy berita
 import { DUMMY_NEWS } from "@/lib/constants/dummyNews";
 
 export function DetailBeritaPage() {
   const { id } = useParams();
 
-  // Cari berita yang pas berdasarkan ID dari URL string
-  const beritaDetail = DUMMY_NEWS.find((news) => news.id === Number(id));
+  // ==========================================
+  // CARI BERITA
+  // ==========================================
 
-  // Ambil berita lain untuk sidebar
-  const beritaLain = DUMMY_NEWS.filter((news) => news.id !== Number(id));
+  const beritaId = Number(id);
 
-  // Handle kalau ID berita tidak ditemukan di array
+  const beritaDetail = DUMMY_NEWS.find(
+    (news) => news.id === beritaId
+  );
+
+  // ==========================================
+  // BERITA LAIN
+  // ==========================================
+
+  const beritaLain = DUMMY_NEWS.filter(
+    (news) => news.id !== beritaId
+  );
+
+  // ==========================================
+  // BERITA TIDAK DITEMUKAN
+  // ==========================================
+
   if (!beritaDetail) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500 font-medium">Berita tidak ditemukan.</p>
+      <div className="sid-detail-berita-not-found">
+        <p>
+          Berita tidak ditemukan.
+        </p>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
-      <main className="max-w-7xl mx-auto w-full px-4 md:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <MainContent berita={beritaDetail} />
+  // ==========================================
+  // RENDER
+  // ==========================================
 
-          <SidebarBerita beritaLain={beritaLain} />
+  return (
+    <div className="sid-detail-berita-page">
+
+      <main className="sid-detail-berita-content">
+
+        <div className="sid-detail-berita-grid">
+
+          {/* ====================================
+              KONTEN BERITA
+          ==================================== */}
+
+          <MainContent
+            berita={beritaDetail}
+          />
+
+
+          {/* ====================================
+              SIDEBAR BERITA
+          ==================================== */}
+
+          <SidebarBerita
+            beritaLain={beritaLain}
+          />
+
         </div>
+
       </main>
+
+
+      {/* ======================================
+          FOOTER
+      ====================================== */}
+
       <FooterDesa />
+
     </div>
   );
 }
+
