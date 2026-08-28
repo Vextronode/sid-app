@@ -1,173 +1,388 @@
 // ==========================================
 // RWDashboardPage.jsx
-// Isi 4 kotak SAMA di desktop & mobile (Permohonan, Sedang Diproses,
-// Selesai, Ditolak — 1 sumber data STAT_CARDS), tata letak beda:
-// desktop grid-cols-4 (sejajar), mobile grid-cols-2 (2x2).
+// Dashboard RW
+// 4 kotak: Menunggu / Sedang Diproses / Selesai / Ditolak
+// Desktop 4 kolom, Mobile 2x2.
+// Styling menggunakan SID Global Theme.
 // ==========================================
 
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  Mail,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
+
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { getSuratList } from '@/features/approval/api';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { FooterDesa } from '@/components/layout/FooterDesa';
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
 import { getGreeting } from '@/lib/utils/greeting';
-import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
-import QuickNavButtons from '@/features/dashboard-mobile/components/QuickNavButtons';
 
-const QUICK_NAV_RW = [
-  { key: 'rt_approved', label: 'Menunggu' },
-  { key: 'rw_approved', label: 'Disetujui' },
-  { key: 'rw_rejected', label: 'Ditolak' },
-  { key: '', label: 'Semua' },
-];
+import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
+
+
+// ==========================================
+// COMPONENT
+// ==========================================
 
 export default function RWDashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [letters, setLetters] = useState([]);
   const [loading, setLoading] = useState(true);
 
+
+  // ==========================================
+  // LOAD DATA RW
+  // ==========================================
+
+  const loadDashboardData = async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+    }
+
+    try {
+      const res = await getSuratList('rw');
+
+      setLetters(res.data?.data ?? []);
+    } catch (err) {
+      console.error(
+        'GET RW LIST ERROR',
+        err.response?.data ?? err
+      );
+    } finally {
+      if (showLoading) {
+        setLoading(false);
+      }
+    }
+  };
+
+
+  // ==========================================
+  // LOAD PERTAMA KALI
+  // ==========================================
+
   useEffect(() => {
-    getSuratList('rw')
-      .then((res) => setLetters(res.data.data ?? []))
-      .catch((err) => console.error('GET RW LIST ERROR', err.response?.data ?? err))
-      .finally(() => setLoading(false));
+    loadDashboardData(true);
   }, []);
 
+
+  // ==========================================
+  // AUTO REFRESH SETIAP 5 DETIK
+  // ==========================================
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadDashboardData(false);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+
+  // ==========================================
+  // STATISTIK
+  // ==========================================
+
   const stats = useMemo(() => {
-    const permohonanBaru = letters.filter((s) => s.status === 'rt_approved').length;
-    const sedangDiproses = letters.filter((s) => !s.status?.endsWith('_rejected') && s.status !== 'rw_approved' && s.status !== 'rt_approved').length;
-    const disetujuiFinal = letters.filter((s) => s.status === 'rw_approved').length;
-    const ditolak = letters.filter((s) => s.status?.endsWith('_rejected')).length;
-    return { permohonanBaru, sedangDiproses, disetujuiFinal, ditolak };
+    const permohonanBaru = letters.filter(
+      (s) => s.status === 'rt_approved'
+    ).length;
+
+    const sedangDiproses = letters.filter(
+      (s) =>
+        !s.status?.endsWith('_rejected') &&
+        s.status !== 'rw_approved' &&
+        s.status !== 'rt_approved'
+    ).length;
+
+    const disetujuiFinal = letters.filter(
+      (s) => s.status === 'rw_approved'
+    ).length;
+
+    const ditolak = letters.filter(
+      (s) => s.status?.endsWith('_rejected')
+    ).length;
+
+    return {
+      permohonanBaru,
+      sedangDiproses,
+      disetujuiFinal,
+      ditolak,
+    };
   }, [letters]);
 
-  const chartData = useMemo(() => {
-    const grouped = {};
-    letters.forEach((s) => {
-      const key = s.letter_type?.name ?? 'Lainnya';
-      grouped[key] = (grouped[key] ?? 0) + 1;
-    });
-    return Object.entries(grouped).map(([kategori, jumlah]) => ({ kategori, jumlah }));
-  }, [letters]);
 
-  // ⚠️ SATU sumber data, dipakai bareng oleh versi desktop & mobile —
-  // supaya ISINYA selalu konsisten, walau tata letaknya nanti beda.
+  // ==========================================
+  // STAT CARDS
+  // ==========================================
+
   const STAT_CARDS = [
     {
       key: 'permohonan',
       label: 'Menunggu',
       value: stats.permohonanBaru,
       icon: Mail,
-      color: 'text-yellow-600 bg-yellow-100',
-      onClick: () => navigate('/admin/list-rw?status=rt_approved'),
+      iconBg: 'var(--sid-status-pending-bg)',
+      iconColor: 'var(--sid-status-pending-text)',
+      onClick: () =>
+        navigate('/admin/list-rw?status=rt_approved'),
     },
+
     {
       key: 'diproses',
       label: 'Sedang Diproses',
       value: stats.sedangDiproses,
       icon: ShieldCheck,
-      color: 'text-blue-600 bg-blue-100',
-      onClick: () => navigate('/admin/list-rw'),
+      iconBg: 'var(--sid-status-progress-bg)',
+      iconColor: 'var(--sid-status-progress-text)',
+      onClick: () =>
+        navigate('/admin/list-rw'),
     },
+
     {
       key: 'selesai',
       label: 'Selesai',
       value: stats.disetujuiFinal,
       icon: CheckCircle2,
-      color: 'text-green-600 bg-green-100',
-      onClick: () => navigate('/admin/list-rw?status=rw_approved'),
+      iconBg: 'var(--sid-status-done-bg)',
+      iconColor: 'var(--sid-status-done-text)',
+      onClick: () =>
+        navigate('/admin/list-rw?status=rw_approved'),
     },
+
     {
       key: 'ditolak',
       label: 'Ditolak',
       value: stats.ditolak,
       icon: XCircle,
-      color: 'text-red-500 bg-red-100',
-      onClick: () => navigate('/admin/list-rw?status=rw_rejected'),
+      iconBg: 'var(--sid-status-rejected-bg)',
+      iconColor: 'var(--sid-status-rejected-text)',
+      onClick: () =>
+        navigate('/admin/list-rw?status=rw_rejected'),
     },
   ];
 
-  const hariIni = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // ==========================================
+  // TANGGAL
+  // ==========================================
+
+  const hariIni = new Date().toLocaleDateString(
+    'id-ID',
+    {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }
+  );
+
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <>
-      {/* ===== DESKTOP — tata letak 4 kolom sejajar ===== */}
-      <div className="hidden md:block">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+      {/* ========================================
+          DESKTOP
+          ======================================== */}
+
+      <div className="sid-desktop-page">
+
+        <div className="sid-page sid-page-dashboard">
+
+          {/* ======================================
+              HEADER
+              ====================================== */}
+
+          <div className="sid-dashboard-header">
+
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">{getGreeting()}, {user?.name ?? 'Bapak/Ibu'}</h1>
-              <p className="text-sm text-gray-500">Kelola administrasi warga {user?.wilayah_label ?? 'RW'} dengan lebih cepat.</p>
+              <h1 className="sid-page-title">
+                {getGreeting()}, {user?.name ?? 'Bapak/Ibu'}
+              </h1>
+
+              <p className="sid-page-description">
+                Kelola administrasi warga{' '}
+                {user?.wilayah_label ?? 'RW'} dengan lebih cepat.
+              </p>
             </div>
-            <span className="text-sm text-gray-500 capitalize">{hariIni}</span>
+
+            <span className="sid-dashboard-date">
+              {hariIni}
+            </span>
+
           </div>
 
-          <div className="grid grid-cols-4 gap-4 mb-6">
+
+          {/* ======================================
+              STAT CARD
+              ====================================== */}
+
+          <div className="sid-stat-grid">
+
             {STAT_CARDS.map((card) => {
               const Icon = card.icon;
+
               return (
                 <button
                   key={card.key}
                   onClick={card.onClick}
-                  className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between text-left hover:shadow-md transition-shadow"
+                  className="sid-stat-card"
                 >
-                  <div>
-                    <p className="text-[10px] text-gray-400 uppercase mb-1">{card.label}</p>
-                    <p className="text-3xl font-bold text-gray-800">{loading ? '-' : card.value}</p>
+
+                  <div className="sid-stat-card-content">
+
+                    <div>
+                      <p className="sid-stat-label">
+                        {card.label}
+                      </p>
+
+                      <p className="sid-stat-value">
+                        {loading ? '-' : card.value}
+                      </p>
+                    </div>
+
+                    <div
+                      className="sid-stat-icon"
+                      style={{
+                        background: card.iconBg,
+                        color: card.iconColor,
+                      }}
+                    >
+                      <Icon size={20} />
+                    </div>
+
                   </div>
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${card.color}`}>
-                    <Icon size={20} />
-                  </div>
+
                 </button>
               );
             })}
+
           </div>
 
-          <div className="mb-6">
+
+          {/* ======================================
+              GRAFIK
+              ====================================== */}
+
+          <div className="sid-dashboard-chart">
             <SuratStatChart letters={letters} />
           </div>
 
-          <QuickNavButtons items={QUICK_NAV_RW} basePath="/admin/list-rw" />
         </div>
+
+
+        {/* ======================================
+            FOOTER
+            ====================================== */}
+
         <FooterDesa />
+
       </div>
 
-      {/* ===== MOBILE — tata letak 2x2 ===== */}
-      <div className="md:hidden bg-gray-50 min-h-screen pb-20">
-        <div className="px-4 pt-4">
 
-          <h1 className="text-xl font-bold text-gray-800 mb-1">{getGreeting()}, {user?.name ?? 'Bapak/Ibu'}</h1>
-          <p className="text-sm text-gray-500 mb-4">Kelola administrasi warga {user?.wilayah_label ?? 'RW'} dengan lebih cepat.</p>
+      {/* ========================================
+          MOBILE
+          ======================================== */}
 
-          <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="sid-mobile-page">
+
+        <div className="sid-page sid-mobile-content">
+
+          {/* ======================================
+              HEADER
+              ====================================== */}
+
+          <h1 className="sid-page-title">
+            {getGreeting()}, {user?.name ?? 'Bapak/Ibu'}
+          </h1>
+
+          <p className="sid-page-description">
+            Kelola administrasi warga{' '}
+            {user?.wilayah_label ?? 'RW'} dengan lebih cepat.
+          </p>
+
+
+          {/* ======================================
+              STAT CARD
+              ====================================== */}
+
+          <div className="sid-stat-grid-mobile">
+
             {STAT_CARDS.map((card) => {
               const Icon = card.icon;
+
               return (
                 <button
                   key={card.key}
                   onClick={card.onClick}
-                  className="bg-white rounded-2xl shadow-sm p-4 text-left"
+                  className="sid-stat-card sid-stat-card-mobile"
                 >
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 ${card.color}`}>
+
+                  <div
+                    className="sid-stat-icon-mobile"
+                    style={{
+                      background: card.iconBg,
+                      color: card.iconColor,
+                    }}
+                  >
                     <Icon size={16} />
                   </div>
-                  <p className="text-[10px] text-gray-400 uppercase">{card.label}</p>
-                  <p className="text-2xl font-bold text-gray-800">{loading ? '-' : card.value}</p>
+
+                  <p className="sid-stat-label">
+                    {card.label}
+                  </p>
+
+                  <p className="sid-stat-value-mobile">
+                    {loading ? '-' : card.value}
+                  </p>
+
                 </button>
               );
             })}
+
           </div>
 
-          <div className="mb-4"><SuratStatChart letters={letters} /></div>
-          <div className="mb-4"><QuickNavButtons items={QUICK_NAV_RW} basePath="/admin/list-rw" /></div>
+
+          {/* ======================================
+              GRAFIK
+              ====================================== */}
+
+          <div className="sid-dashboard-chart-mobile">
+            <SuratStatChart letters={letters} />
+          </div>
+
         </div>
 
-        <FooterDesa />
-        <MobileBottomNav links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rw', '/admin/list-rw')} />
+
+        {/* ======================================
+            FOOTER
+            ====================================== */}
+
+        <div className="sid-mobile-footer">
+          <FooterDesa />
+        </div>
+
+
+        {/* ======================================
+            MOBILE NAV
+            ====================================== */}
+
+        <MobileBottomNav
+          links={ADMIN_MOBILE_LINKS(
+            '/admin/dashboard-surat-rw',
+            '/admin/list-rw'
+          )}
+        />
+
       </div>
     </>
   );

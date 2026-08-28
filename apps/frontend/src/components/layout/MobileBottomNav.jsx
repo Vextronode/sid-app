@@ -1,12 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
 import { MOBILE_ONLY_LINKS } from "@/lib/constants/navigation";
 
-export function MobileBottomNav({ links = MOBILE_ONLY_LINKS }) {
+export function MobileBottomNav({
+  links = MOBILE_ONLY_LINKS,
+}) {
   const location = useLocation();
 
   return (
-    <nav className="flex md:hidden fixed bottom-0 w-full bg-[#185FA5] text-white shadow-[0_-4px_10px_rgba(0,0,0,0.1)] z-50">
-      <div className="flex justify-around items-center w-full h-16">
+    <nav className="sid-mobile-nav">
+      <div className="sid-mobile-nav-inner">
         {links.map((item) => {
           const isActive =
             item.href === "/"
@@ -19,14 +21,18 @@ export function MobileBottomNav({ links = MOBILE_ONLY_LINKS }) {
             <Link
               key={item.name}
               to={item.href}
-              className={`flex flex-col items-center justify-center w-full h-full transition ${
-                isActive
-                  ? "bg-white text-orange-400"
-                  : "text-white hover:bg-blue-500"
+              className={`sid-mobile-nav-item ${
+                isActive ? "active" : ""
               }`}
             >
-              <Icon className="w-6 h-6 mb-1" strokeWidth={isActive ? 2 : 1.5} />
-              <span className="text-[10px] font-medium">{item.name}</span>
+              <Icon
+                className="sid-mobile-nav-icon"
+                strokeWidth={isActive ? 2 : 1.5}
+              />
+
+              <span className="sid-mobile-nav-label">
+                {item.name}
+              </span>
             </Link>
           );
         })}

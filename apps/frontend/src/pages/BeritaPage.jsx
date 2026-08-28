@@ -1,119 +1,448 @@
 // ==========================================
 // BeritaPage.jsx
-// Halaman publik Berita, tampilan SAMA persis dengan KelolaBeritaPage
-// (Operator Desa), tapi TANPA tombol edit/tambah. Data narik dari
-// sumber yang SAMA (dummyBerita), jadi update dari Operator otomatis
-// muncul juga di sini.
+// Halaman publik Berita.
+//
+// Tampilan mengikuti Global CSS SID yang sama dengan
+// KelolaBeritaPage Operator Desa.
+//
+// Perbedaan:
+// - Tidak ada tombol tambah
+// - Tidak ada tombol edit
+// - Hanya berita yang berstatus publikasi
+// - Data tetap mengambil dari sumber dummyBerita yang sama
 // ==========================================
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Newspaper } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Newspaper,
+} from 'lucide-react';
+
 import { dummyBerita } from '@/features/kelola-berita/data/dummyBerita';
 
 const ITEMS_PER_PAGE = 6;
 
 export function BeritaPage() {
   const navigate = useNavigate();
+
   const [currentPage, setCurrentPage] = useState(1);
 
-  const beritaUtama = dummyBerita.find((b) => b.utama) ?? dummyBerita[0];
-  const beritaTerbaru = dummyBerita.filter((b) => b.id !== beritaUtama?.id).slice(0, 3);
-  const kelolaList = dummyBerita.filter((b) => b.id !== beritaUtama?.id && b.status === 'publikasi');
+  // ==========================================
+  // BERITA UTAMA
+  // ==========================================
 
-  const totalPages = Math.max(1, Math.ceil(kelolaList.length / ITEMS_PER_PAGE));
-  const start = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginated = kelolaList.slice(start, start + ITEMS_PER_PAGE);
+  const beritaUtama =
+    dummyBerita.find((b) => b.utama) ??
+    dummyBerita[0];
+
+  // ==========================================
+  // BERITA TERBARU
+  // ==========================================
+
+  const beritaTerbaru = dummyBerita
+    .filter((b) => b.id !== beritaUtama?.id)
+    .filter((b) => b.status === 'publikasi')
+    .slice(0, 3);
+
+  // ==========================================
+  // SEMUA BERITA PUBLIK
+  // ==========================================
+
+  const kelolaList = dummyBerita.filter(
+    (b) =>
+      b.id !== beritaUtama?.id &&
+      b.status === 'publikasi'
+  );
+
+  // ==========================================
+  // PAGINATION
+  // ==========================================
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(kelolaList.length / ITEMS_PER_PAGE)
+  );
+
+  const start =
+    (currentPage - 1) * ITEMS_PER_PAGE;
+
+  const paginated = kelolaList.slice(
+    start,
+    start + ITEMS_PER_PAGE
+  );
+
+  // ==========================================
+  // NAVIGATE DETAIL
+  // ==========================================
+
+  const handleDetail = (id) => {
+    navigate(`/berita/${id}`);
+  };
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-        <div className="md:col-span-2 rounded-2xl overflow-hidden shadow-sm bg-white">
-          <div className="relative h-64 bg-gray-800">
-            {beritaUtama?.gambar ? (
-              <img src={beritaUtama.gambar} alt={beritaUtama.judul} className="absolute inset-0 w-full h-full object-cover" />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-green-800 to-green-600 flex items-center justify-center">
-                <Newspaper size={48} className="text-white/30" />
+    <div className="sid-kelola-berita-page">
+
+      <main className="sid-kelola-berita-content">
+
+        {/* ======================================
+            HEADER
+        ====================================== */}
+
+        <header className="sid-kelola-berita-header">
+
+          <div className="sid-kelola-berita-header-info">
+
+
+
+            <h1>
+              Berita Desa Cibenda
+            </h1>
+
+            <p>
+              Kabar dan informasi terbaru dari Desa Cibenda.
+            </p>
+
+          </div>
+
+        </header>
+
+
+        {/* ======================================
+            FEATURE + TERBARU
+        ====================================== */}
+
+        <section className="sid-kelola-berita-feature-grid">
+
+          {/* ====================================
+              BERITA UTAMA
+          ==================================== */}
+
+          <article className="sid-kelola-berita-feature-card">
+
+            <div className="sid-kelola-berita-feature-image">
+
+              {beritaUtama?.gambar ? (
+
+                <img
+                  src={beritaUtama.gambar}
+                  alt={beritaUtama.judul}
+                />
+
+              ) : (
+
+                <div className="sid-kelola-berita-image-placeholder">
+                  <Newspaper size={48} />
+                </div>
+
+              )}
+
+              <div className="sid-kelola-berita-feature-overlay" />
+
+              <div className="sid-kelola-berita-feature-content">
+
+                <div className="sid-kelola-berita-feature-meta">
+
+                  {beritaUtama?.kategori && (
+                    <span className="sid-kelola-berita-category featured">
+                      {beritaUtama.kategori}
+                    </span>
+                  )}
+
+                  {beritaUtama?.tanggal && (
+                    <span className="sid-kelola-berita-date featured">
+                      {beritaUtama.tanggal}
+                    </span>
+                  )}
+
+                </div>
+
+                <h2>
+                  {beritaUtama?.judul ??
+                    'Belum ada berita utama'}
+                </h2>
+
+              </div>
+
+            </div>
+
+
+            {/* FEATURE FOOTER */}
+
+            {beritaUtama && (
+              <div className="sid-kelola-berita-feature-footer">
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleDetail(beritaUtama.id)
+                  }
+                  className="sid-kelola-berita-read-more"
+                >
+                  Baca Selengkapnya
+                </button>
+
               </div>
             )}
-            <div className="absolute inset-0 bg-black/30" />
-            <div className="relative p-6 flex flex-col justify-end h-full text-white">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="bg-white/90 text-gray-800 text-[10px] font-semibold px-3 py-1 rounded-full uppercase">{beritaUtama?.kategori}</span>
-                <span className="text-xs text-white/80">{beritaUtama?.tanggal}</span>
-              </div>
-              <h2 className="text-2xl font-bold leading-snug">{beritaUtama?.judul}</h2>
+
+          </article>
+
+
+          {/* ====================================
+              BERITA TERBARU
+          ==================================== */}
+
+          <aside className="sid-kelola-berita-latest">
+
+            <h3 className="sid-kelola-berita-section-title">
+              Terbaru
+            </h3>
+
+            <div className="sid-kelola-berita-latest-list">
+
+              {beritaTerbaru.length === 0 ? (
+
+                <p className="sid-kelola-berita-empty-small">
+                  Belum ada berita terbaru.
+                </p>
+
+              ) : (
+
+                beritaTerbaru.map((b) => (
+
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() =>
+                      handleDetail(b.id)
+                    }
+                    className="sid-kelola-berita-latest-item"
+                  >
+
+                    <div className="sid-kelola-berita-latest-image">
+
+                      {b.gambar ? (
+
+                        <img
+                          src={b.gambar}
+                          alt={b.judul}
+                        />
+
+                      ) : (
+
+                        <div className="sid-kelola-berita-latest-placeholder">
+                          <Newspaper size={20} />
+                        </div>
+
+                      )}
+
+                    </div>
+
+
+                    <div className="sid-kelola-berita-latest-content">
+
+                      <p className="sid-kelola-berita-category">
+                        {b.kategori}
+                      </p>
+
+                      <p className="sid-kelola-berita-latest-title">
+                        {b.judul}
+                      </p>
+
+                      <span className="sid-kelola-berita-date">
+                        {b.tanggal}
+                      </span>
+
+                    </div>
+
+                  </button>
+
+                ))
+
+              )}
+
             </div>
-          </div>
-          <div className="p-5">
-            <button onClick={() => navigate(`/berita/${beritaUtama?.id}`)} className="text-green-600 text-sm font-medium hover:underline">
-              Baca Selengkapnya
-            </button>
-          </div>
-        </div>
 
-        <div>
-          <h3 className="font-bold text-gray-800 border-l-4 border-green-600 pl-3 mb-4">Terbaru</h3>
-          <div className="flex flex-col gap-4">
-            {beritaTerbaru.map((b) => (
-              <button key={b.id} onClick={() => navigate(`/berita/${b.id}`)} className="flex gap-3 text-left">
-                <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden shrink-0">
-                  {b.gambar ? <img src={b.gambar} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-green-100" />}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] text-green-600 font-semibold uppercase">{b.kategori}</p>
-                  <p className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2">{b.judul}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{b.tanggal}</p>
-                </div>
+          </aside>
+
+        </section>
+
+
+        {/* ======================================
+            SEMUA BERITA
+        ====================================== */}
+
+        <section>
+
+          <div className="sid-kelola-berita-management-header">
+
+            <div>
+
+              <h2>
+                Semua Berita
+              </h2>
+
+              <p>
+                Kabar dan pengumuman terbaru dari Desa Cibenda
+              </p>
+
+            </div>
+
+
+            {/* PAGINATION */}
+
+            <div className="sid-kelola-berita-pagination-buttons">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((page) =>
+                    Math.max(1, page - 1)
+                  )
+                }
+                disabled={currentPage === 1}
+                aria-label="Halaman sebelumnya"
+              >
+                <ChevronLeft size={16} />
               </button>
-            ))}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((page) =>
+                    Math.min(totalPages, page + 1)
+                  )
+                }
+                disabled={currentPage === totalPages}
+                aria-label="Halaman berikutnya"
+              >
+                <ChevronRight size={16} />
+              </button>
+
+            </div>
+
           </div>
-        </div>
-      </div>
 
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-gray-800">Semua Berita</h2>
-          <p className="text-sm text-gray-500">Kabar dan pengumuman terbaru dari Desa Cibenda</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="w-8 h-8 rounded-full border flex items-center justify-center text-gray-500 disabled:opacity-30">
-            <ChevronLeft size={16} />
-          </button>
-          <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="w-8 h-8 rounded-full border flex items-center justify-center text-gray-500 disabled:opacity-30">
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {paginated.length === 0 ? (
-          <p className="col-span-3 text-center text-gray-400 py-10">Belum ada berita.</p>
-        ) : (
-          paginated.map((b) => (
-            <button key={b.id} onClick={() => navigate(`/berita/${b.id}`)} className="bg-white rounded-2xl shadow-sm overflow-hidden text-left hover:shadow-md transition">
-              <div className="relative h-40 bg-gray-100">
-                {b.gambar ? (
-                  <img src={b.gambar} alt={b.judul} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-                    <Newspaper size={28} className="text-green-400" />
+          {/* ====================================
+              BERITA GRID
+          ==================================== */}
+
+          <div className="sid-kelola-berita-grid">
+
+            {paginated.length === 0 ? (
+
+              <div className="sid-kelola-berita-empty">
+
+                <Newspaper size={28} />
+
+                <p>
+                  Belum ada berita yang dipublikasikan.
+                </p>
+
+              </div>
+
+            ) : (
+
+              paginated.map((b) => (
+
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() =>
+                    handleDetail(b.id)
+                  }
+                  className="sid-kelola-berita-card"
+                >
+
+                  {/* IMAGE */}
+
+                  <div className="sid-kelola-berita-card-image">
+
+                    {b.gambar ? (
+
+                      <img
+                        src={b.gambar}
+                        alt={b.judul}
+                      />
+
+                    ) : (
+
+                      <div className="sid-kelola-berita-card-placeholder">
+                        <Newspaper size={28} />
+                      </div>
+
+                    )}
+
                   </div>
-                )}
-              </div>
-              <div className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-green-50 text-green-700 text-[10px] font-semibold px-2 py-1 rounded uppercase">{b.kategori}</span>
-                  <span className="text-[10px] text-gray-400">{b.tanggal}</span>
-                </div>
-                <h3 className="font-semibold text-gray-800 leading-snug mb-1">{b.judul}</h3>
-                <p className="text-xs text-gray-500 line-clamp-2">{b.ringkasan}</p>
-              </div>
-            </button>
-          ))
-        )}
-      </div>
+
+
+                  {/* CONTENT */}
+
+                  <div className="sid-kelola-berita-card-content">
+
+                    <div className="sid-kelola-berita-card-meta">
+
+                      <span className="sid-kelola-berita-category">
+                        {b.kategori}
+                      </span>
+
+                      <span className="sid-kelola-berita-date">
+                        {b.tanggal}
+                      </span>
+
+                    </div>
+
+
+                    <h3>
+                      {b.judul}
+                    </h3>
+
+                    <p>
+                      {b.ringkasan}
+                    </p>
+
+
+                    <span className="sid-kelola-berita-read-more">
+                      Baca Selengkapnya
+                    </span>
+
+                  </div>
+
+                </button>
+
+              ))
+
+            )}
+
+          </div>
+
+
+          {/* ====================================
+              PAGINATION INFO
+          ==================================== */}
+
+          {kelolaList.length > 0 && (
+
+            <div className="sid-kelola-berita-pagination-info">
+
+              Menampilkan{' '}
+              {start + 1}–
+              {Math.min(
+                start + ITEMS_PER_PAGE,
+                kelolaList.length
+              )}{' '}
+              dari {kelolaList.length} berita
+
+            </div>
+
+          )}
+
+        </section>
+
+      </main>
+
     </div>
   );
 }

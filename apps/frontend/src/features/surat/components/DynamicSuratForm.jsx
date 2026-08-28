@@ -27,53 +27,51 @@ export function DynamicSuratForm({
   const [formData, setFormData] = useState(initialData);
   const [uploadedFiles, setUploadedFiles] = useState({});
 
-
   const {
     handleSubmit: submitSurat,
-    loading
+    loading,
   } = useSubmitSurat();
-
 
   const letterTypes = useLetterTypes();
 
 
+  // ==========================================
+  // CHANGE FIELD
+  // ==========================================
 
-  const handleChange = (name,value)=>{
-
-    setFormData(prev=>({
+  const handleChange = (name, value) => {
+    setFormData((prev) => ({
       ...prev,
-      [name]:value
+      [name]: value,
     }));
-
   };
 
 
+  // ==========================================
+  // FILE CHANGE
+  // ==========================================
 
-
-  const handleFileChange = (e,name)=>{
+  const handleFileChange = (e, name) => {
 
     const files = Array.from(e.target.files);
 
+    if (files.length) {
 
-    if(files.length){
+      setUploadedFiles((prev) => {
 
-      setUploadedFiles(prev=>{
-
-        const newFiles=[
+        const newFiles = [
           ...(prev[name] || []),
-          ...files
+          ...files,
         ];
-
 
         handleChange(
           name,
           newFiles
         );
 
-
         return {
           ...prev,
-          [name]:newFiles
+          [name]: newFiles,
         };
 
       });
@@ -83,565 +81,507 @@ export function DynamicSuratForm({
   };
 
 
-
-
+  // ==========================================
+  // REMOVE FILE
+  // ==========================================
 
   const handleRemoveFile = (
     e,
     name,
     index
-  )=>{
-
+  ) => {
 
     e.stopPropagation();
 
+    setUploadedFiles((prev) => {
 
-    setUploadedFiles(prev=>{
-
-
-      const updated=[
-        ...(prev[name] || [])
+      const updated = [
+        ...(prev[name] || []),
       ];
 
+      updated.splice(index, 1);
 
-      updated.splice(index,1);
+      if (updated.length === 0) {
 
-
-
-      if(updated.length===0){
-
-
-        const copy={
-          ...prev
+        const copy = {
+          ...prev,
         };
 
-
         delete copy[name];
-
 
         handleChange(
           name,
           null
         );
 
-
         return copy;
 
       }
-
-
 
       handleChange(
         name,
         updated
       );
 
-
-
       return {
         ...prev,
-        [name]:updated
+        [name]: updated,
       };
 
-
     });
-
 
   };
 
 
+  // ==========================================
+  // SUBMIT
+  // ==========================================
 
+  const handleSubmit = async (e) => {
 
+    e.preventDefault();
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  if (!Array.isArray(letterTypes) || letterTypes.length === 0) {
-    alert("Jenis surat masih dimuat.");
-    return;
-  }
-
-  const selectedLetterType = letterTypes.find(
-    (item) => item.code === config.code
-  );
-
-  if (!selectedLetterType) {
-    alert("Jenis surat tidak ditemukan.");
-    return;
-  }
-
-  const payload = new FormData();
-
-  // ==============================
-  // FIELD LANGSUNG KE TABLE LETTERS
-  // ==============================
-
-  payload.append("letter_type_id", selectedLetterType.id);
-
-  // Keperluan → letters.purpose
-  if (formData.keperluan) {
-    payload.append("purpose", formData.keperluan);
-  }
-
-  // Catatan → letters.notes
-  if (formData.catatan) {
-    payload.append("notes", formData.catatan);
-  }
-
-  // ==============================
-  // ATTACHMENTS
-  // ==============================
-
-  if (Array.isArray(formData.dokumen)) {
-    formData.dokumen.forEach((file) => {
-      payload.append("attachments[]", file);
-    });
-  }
-
-  // ==============================
-  // FIELD DINAMIS → letters.payload
-  // ==============================
-
-  Object.keys(formData).forEach((key) => {
-    // Jangan masukkan field ini ke payload JSON
     if (
-      !["keperluan", "catatan", "dokumen"].includes(key)
+      !Array.isArray(letterTypes) ||
+      letterTypes.length === 0
     ) {
-      const val = formData[key];
+      alert("Jenis surat masih dimuat.");
+      return;
+    }
+
+    const selectedLetterType = letterTypes.find(
+      (item) => item.code === config.code
+    );
+
+    if (!selectedLetterType) {
+      alert("Jenis surat tidak ditemukan.");
+      return;
+    }
+
+    const payload = new FormData();
+
+
+    // ========================================
+    // FIELD LETTERS
+    // ========================================
+
+    payload.append(
+      "letter_type_id",
+      selectedLetterType.id
+    );
+
+
+    // Keperluan
+    if (formData.keperluan) {
+      payload.append(
+        "purpose",
+        formData.keperluan
+      );
+    }
+
+
+    // Catatan
+    if (formData.catatan) {
+      payload.append(
+        "notes",
+        formData.catatan
+      );
+    }
+
+
+    // ========================================
+    // ATTACHMENTS
+    // ========================================
+
+    if (Array.isArray(formData.dokumen)) {
+
+      formData.dokumen.forEach((file) => {
+
+        payload.append(
+          "attachments[]",
+          file
+        );
+
+      });
+
+    }
+
+
+    // ========================================
+    // DYNAMIC PAYLOAD
+    // ========================================
+
+    Object.keys(formData).forEach((key) => {
 
       if (
-        val !== undefined &&
-        val !== null &&
-        !(val instanceof File) &&
-        !Array.isArray(val)
+        ![
+          "keperluan",
+          "catatan",
+          "dokumen",
+        ].includes(key)
       ) {
-        payload.append(`payload[${key}]`, val);
+
+        const val = formData[key];
+
+        if (
+          val !== undefined &&
+          val !== null &&
+          !(val instanceof File) &&
+          !Array.isArray(val)
+        ) {
+
+          payload.append(
+            `payload[${key}]`,
+            val
+          );
+
+        }
+
       }
-    }
-  });
 
-  try {
-    let response;
+    });
 
-    if (onSubmitAPI) {
-      response = await onSubmitAPI(payload);
-    } else {
-      response = await submitSurat(payload);
-    }
 
-    onSubmit?.(response);
-  } catch (error) {
-    console.error(error);
+    // ========================================
+    // SEND
+    // ========================================
 
-    alert(
-      error.response?.data?.message ??
+    try {
+
+      let response;
+
+      if (onSubmitAPI) {
+
+        response = await onSubmitAPI(
+          payload
+        );
+
+      } else {
+
+        response = await submitSurat(
+          payload
+        );
+
+      }
+
+      onSubmit?.(response);
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert(
+        error.response?.data?.message ??
         "Gagal mengirim surat."
-    );
-  }
-};
+      );
+
+    }
+
+  };
 
 
-
-
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
 
-<form
-onSubmit={handleSubmit}
-className="
-bg-white
-p-6
-md:p-10
-rounded-2xl
-shadow-xl
-w-full
-border
-border-gray-100
-space-y-8
-"
->
-
-
+    <form
+      onSubmit={handleSubmit}
+      className="sid-card w-full"
+    >
 
-{/* PILIH SURAT */}
 
-<div className="space-y-3 text-left">
+      {/* ======================================
+          LANGKAH 1
+          ====================================== */}
 
+      <section className="sid-section">
 
-<h3 className="
-text-xs
-font-extrabold
-text-gray-500
-tracking-wider
-uppercase
-">
+        <h3 className="sid-section-title">
+          Langkah 1 - Pilih Jenis Surat
+        </h3>
 
-Langkah 1 - Pilih Jenis Surat
 
-</h3>
+        {/* JENIS SURAT */}
 
+        <div className="sid-form-group">
 
+          <label className="sid-label">
 
+            Jenis surat{" "}
 
-<div className="relative">
+            <span className="sid-required">
+              *
+            </span>
 
+          </label>
 
-<label className="block text-xs font-semibold text-gray-500 mb-2">
-  Jenis surat <span className="text-red-500">*</span>
-</label>
 
-<div className="relative">
-  <select
-    value={config.code}
-    onChange={(e) => navigate(`/pengajuan-surat/${e.target.value}`)}
-    className="
-      w-full
-      h-12
-      pl-4
-      pr-10
-      border
-      border-grren-700
-      rounded-xl
-      bg-white
-      text-sm
-      text-[#185FA5]
-      appearance-none
-      focus:outline-none
-      focus:border-[#185FA5]
-      focus:ring-2
-      focus:ring-blue-100
-    "
-  >
-    {LIST_SURAT_GLOBAL.map((surat) => (
-      <option key={surat.code} value={surat.code}>
-        {surat.name}
-      </option>
-    ))}
-  </select>
+          <div className="relative">
 
-  <ChevronDown
-    size={18}
-    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#185FA5] pointer-events-none"
-  />
-</div>
+            <select
+              value={config.code}
+              onChange={(e) =>
+                navigate(
+                  `/pengajuan-surat/${e.target.value}`
+                )
+              }
+              className="sid-select appearance-none pr-10"
+            >
 
+              {LIST_SURAT_GLOBAL.map(
+                (surat) => (
 
+                  <option
+                    key={surat.code}
+                    value={surat.code}
+                  >
+                    {surat.name}
+                  </option>
 
-</div>
+                )
+              )}
 
+            </select>
 
 
-<div className="
-bg-[#E8F5E9]
-border
-border-[#A5D6A7]
-text-[#2E7D32]
-text-xs
-px-4
-py-2
-rounded-full
-inline-flex
-items-center
-gap-2
-">
+            <ChevronDown
+              size={18}
+              className="
+                absolute
+                right-3
+                top-1/2
+                -translate-y-1/2
+                pointer-events-none
+              "
+              style={{
+                color: "var(--sid-primary)",
+              }}
+            />
 
+          </div>
 
-<CheckCircle2
-className="
-w-4
-h-4
-"
-/>
+        </div>
 
 
-Verifikasi:
-<strong>
-{config.type}
-</strong>
+        {/* VERIFIKASI */}
 
+        <div className="sid-info">
 
-</div>
+          <CheckCircle2
+            size={16}
+          />
 
+          <span>
 
-</div>
+            Verifikasi:{" "}
 
+            <strong>
+              {config.type}
+            </strong>
 
+          </span>
 
+        </div>
 
+      </section>
 
-{/* FORM */}
 
+      {/* ======================================
+          LANGKAH 2
+          ====================================== */}
 
-<div className="
-space-y-5
-text-left
-">
+      <section className="sid-section">
 
+        <h3 className="sid-section-title">
+          Langkah 2 - Isi Form
+        </h3>
 
-<h3 className="
-text-xs
-font-extrabold
-text-gray-500
-uppercase
-">
 
-Langkah 2 - Isi Form
+        {/* AUTO PROFILE */}
 
-</h3>
+        <AutoFillProfile
+          user={user}
+        />
 
 
+        {/* DYNAMIC FIELDS */}
 
-<AutoFillProfile
-user={user}
-/>
+        <div
+          className="
+            flex
+            flex-col
+            gap-4
+            pt-4
+            border-t
+          "
+          style={{
+            borderColor:
+              "var(--sid-border)",
+          }}
+        >
 
+          {config.fields.map(
+            (field) => (
 
+              <div
+                key={field.name}
+                className="sid-form-group"
+              >
 
 
+                {/* LABEL */}
 
-<div className="
-space-y-4
-pt-4
-border-t
-">
+                <label className="sid-label">
 
+                  {field.label}
 
-{
-config.fields.map(field=>(
+                  {field.required && (
 
+                    <span className="sid-required">
+                      {" "}*
+                    </span>
 
-<div
-key={field.name}
->
+                  )}
 
+                </label>
 
-<label className="
-text-xs
-font-semibold
-text-gray-700
-">
 
-{field.label}
+                {/* TEXTAREA */}
 
+                {field.type === "textarea" && (
 
-{
-field.required &&
-<span className="text-red-500">
-*
-</span>
-}
+                  <textarea
+                    value={
+                      formData[field.name] || ""
+                    }
+                    required={field.required}
+                    placeholder={field.placeholder}
+                    onChange={(e) =>
+                      handleChange(
+                        field.name,
+                        e.target.value
+                      )
+                    }
+                    className="sid-textarea"
+                  />
 
-</label>
+                )}
 
 
+                {/* TEXT */}
 
+                {field.type === "text" && (
 
-{
-field.type==="textarea" && (
+                  <input
+                    type="text"
+                    value={
+                      formData[field.name] || ""
+                    }
+                    required={field.required}
+                    placeholder={field.placeholder}
+                    onChange={(e) =>
+                      handleChange(
+                        field.name,
+                        e.target.value
+                      )
+                    }
+                    className="sid-input"
+                  />
 
-<textarea
-value={formData[field.name] || ""}
-required={field.required}
+                )}
 
-placeholder={field.placeholder}
 
-onChange={(e)=>
-handleChange(
-field.name,
-e.target.value
-)
-}
+                {/* FILE */}
 
-className="
-w-full
-px-4
-py-3
-border
-rounded-xl
-"
-/>
+                {field.type === "file" && (
 
-)
+                  <FileUploader
+                    field={field}
+                    files={
+                      uploadedFiles[field.name]
+                    }
+                    onFileChange={
+                      handleFileChange
+                    }
+                    onRemoveFile={
+                      handleRemoveFile
+                    }
+                  />
 
-}
+                )}
 
 
+                {/* DATE */}
 
+                {field.type === "date" && (
 
-{
-field.type==="text" && (
+                  <input
+                    type="date"
+                    value={
+                      formData[field.name] || ""
+                    }
+                    required={field.required}
+                    onChange={(e) =>
+                      handleChange(
+                        field.name,
+                        e.target.value
+                      )
+                    }
+                    className="sid-input"
+                  />
 
-<input
+                )}
 
-type="text"
-value={formData[field.name] || ""}
-required={field.required}
+              </div>
 
-placeholder={field.placeholder}
+            )
+          )}
 
-onChange={(e)=>
-handleChange(
-field.name,
-e.target.value
-)
-}
+        </div>
 
-className="
-w-full
-px-4
-py-3
-border
-rounded-xl
-"
+      </section>
 
-/>
 
-)
+      {/* ======================================
+          ACTION
+          ====================================== */}
 
-}
+      <div
+        className="sid-actions pt-4 border-t"
+        style={{
+          borderColor:
+            "var(--sid-border)",
+        }}
+      >
 
+        {/* BATAL */}
 
+        <button
+          type="button"
+          onClick={onCancel}
+          className="sid-btn sid-btn-secondary"
+        >
+          Batal
+        </button>
 
 
+        {/* KIRIM */}
 
-{
-field.type==="file" && (
+        <button
+          type="submit"
+          disabled={loading}
+          className="sid-btn sid-btn-primary"
+        >
+          {loading
+            ? "Mengirim..."
+            : "Kirim"}
+        </button>
 
-<FileUploader
+      </div>
 
-field={field}
-
-files={
-uploadedFiles[field.name]
-}
-
-onFileChange={handleFileChange}
-
-onRemoveFile={handleRemoveFile}
-
-/>
-
-)
-
-}
-
-
-
-{
-field.type==="date" && (
-
-<input
-
-type="date"
-value={formData[field.name] || ""}
-required={field.required}
-
-onChange={(e)=>
-handleChange(
-field.name,
-e.target.value
-)
-}
-
-className="
-w-full
-px-4
-py-3
-border
-rounded-xl
-"
-
-/>
-
-)
-
-}
-
-
-
-</div>
-
-
-))
-}
-
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-<div className="
-flex
-gap-4
-pt-4
-border-t
-">
-
-
-<button
-
-type="button"
-
-onClick={onCancel}
-
-className="
-flex-1
-py-3
-border
-border-[#185FA5]
-text-[#185FA5]
-rounded-xl
-"
-
->
-
-Batal
-
-</button>
-
-
-
-
-<button
-
-type="submit"
-
-disabled={loading}
-
-className="
-flex-1
-py-3
-bg-[#185FA5]
-text-white
-rounded-xl
-"
-
->
-
-{
-loading
-?
-"Mengirim..."
-:
-"Kirim"
-}
-
-
-</button>
-
-
-</div>
-
-
-
-</form>
-
+    </form>
 
   );
 

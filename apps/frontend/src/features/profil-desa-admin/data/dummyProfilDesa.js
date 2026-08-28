@@ -30,10 +30,10 @@ export const profilDesa = {
     ],
   },
   perangkatUtama: {
-    kepalaDesa: { nama: 'Bapak Rahmad', jabatan: 'Kepala Desa', foto: null },
-    sekretarisDesa: { nama: 'Sekretaris Desa', jabatan: 'Administrasi Umum', foto: null },
-    kaur: { nama: 'KAUR', jabatan: 'Kepala Urusan', foto: null },
-    kasi: { nama: 'KASI', jabatan: 'Kepala Seksi', foto: null },
+    kepalaDesa: { nama: 'Dede Rusliana', jabatan: 'Kepala Desa', foto: null },
+    sekretarisDesa: { nama: 'Saeful Millah', jabatan: 'Administrasi Umum', foto: null },
+    kaur: { nama: 'Ratini, S.Pd', jabatan: 'Kepala Urusan', foto: null },
+    kasi: { nama: 'Sakim Hidayat', jabatan: 'Kepala Seksi', foto: null },
   },
   kadusList: [
     { id: 1, nama: 'Kadus 01', foto: null },

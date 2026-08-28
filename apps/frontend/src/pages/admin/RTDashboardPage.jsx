@@ -1,173 +1,485 @@
 // ==========================================
 // RTDashboardPage.jsx
-// Isi 4 kotak SAMA di desktop & mobile (Permohonan, Sedang Diproses,
-// Selesai, Ditolak — 1 sumber data STAT_CARDS), tapi TATA LETAK beda:
-// desktop grid-cols-4 (sejajar), mobile grid-cols-2 (2x2).
+// Dashboard RT
+//
+// Desktop : 4 Stat Card sejajar
+// Mobile  : 4 Stat Card dalam layout 2x2
+//
+// Urutan:
+// Header
+//   ↓
+// Stat Cards
+//   ↓
+// Grafik
+//   ↓
+// Footer
+//
+// Tidak ada QuickNavButtons setelah grafik.
 // ==========================================
 
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react';
+
+import {
+  Mail,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
+
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { getSuratList } from '@/features/approval/api';
+
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { FooterDesa } from '@/components/layout/FooterDesa';
+
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
 import { getGreeting } from '@/lib/utils/greeting';
-import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
-import QuickNavButtons from '@/features/dashboard-mobile/components/QuickNavButtons';
 
-const QUICK_NAV_RT = [
-  { key: 'pending', label: 'Menunggu' },
-  { key: 'rt_approved', label: 'Disetujui' },
-  { key: 'rt_rejected', label: 'Ditolak' },
-  { key: '', label: 'Semua' },
-];
+import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
+
+
+// ==========================================
+// COMPONENT
+// ==========================================
 
 export default function RTDashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [letters, setLetters] = useState([]);
   const [loading, setLoading] = useState(true);
 
+
+  // ==========================================
+  // LOAD DATA DASHBOARD RT
+  // ==========================================
+
+  const loadDashboardData = async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+    }
+
+    try {
+      const res = await getSuratList('rt');
+
+      setLetters(res.data?.data ?? []);
+    } catch (err) {
+      console.error(
+        'GET RT DASHBOARD ERROR:',
+        err.response?.data ?? err
+      );
+    } finally {
+      if (showLoading) {
+        setLoading(false);
+      }
+    }
+  };
+
+
+  // ==========================================
+  // LOAD PERTAMA KALI
+  // ==========================================
+
   useEffect(() => {
-    getSuratList('rt')
-      .then((res) => setLetters(res.data.data ?? []))
-      .catch((err) => console.error('GET RT LIST ERROR', err.response?.data ?? err))
-      .finally(() => setLoading(false));
+    loadDashboardData(true);
   }, []);
 
+
+  // ==========================================
+  // AUTO REFRESH SETIAP 5 DETIK
+  // ==========================================
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadDashboardData(false);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+
+  // ==========================================
+  // STATISTIK
+  // ==========================================
+
   const stats = useMemo(() => {
-    const permohonanBaru = letters.filter((s) => s.status === 'pending').length;
-    const sedangDiproses = letters.filter((s) => !s.status?.endsWith('_rejected') && s.status !== 'rw_approved' && s.status !== 'pending').length;
-    const disetujuiFinal = letters.filter((s) => s.status === 'rw_approved').length;
-    const ditolak = letters.filter((s) => s.status?.endsWith('_rejected')).length;
-    return { permohonanBaru, sedangDiproses, disetujuiFinal, ditolak };
+    const permohonanBaru = letters.filter(
+      (s) => s.status === 'pending'
+    ).length;
+
+    const sedangDiproses = letters.filter(
+      (s) =>
+        !s.status?.endsWith('_rejected') &&
+        s.status !== 'rw_approved' &&
+        s.status !== 'pending'
+    ).length;
+
+    const disetujuiFinal = letters.filter(
+      (s) => s.status === 'rw_approved'
+    ).length;
+
+    const ditolak = letters.filter(
+      (s) => s.status?.endsWith('_rejected')
+    ).length;
+
+    return {
+      permohonanBaru,
+      sedangDiproses,
+      disetujuiFinal,
+      ditolak,
+    };
   }, [letters]);
 
-  const chartData = useMemo(() => {
-    const grouped = {};
-    letters.forEach((s) => {
-      const key = s.letter_type?.name ?? 'Lainnya';
-      grouped[key] = (grouped[key] ?? 0) + 1;
-    });
-    return Object.entries(grouped).map(([kategori, jumlah]) => ({ kategori, jumlah }));
-  }, [letters]);
 
-  // ⚠️ SATU sumber data, dipakai bareng oleh versi desktop & mobile —
-  // supaya ISINYA selalu konsisten, walau tata letaknya nanti beda.
+  // ==========================================
+  // STAT CARDS
+  // Satu sumber data untuk desktop & mobile
+  // ==========================================
+
   const STAT_CARDS = [
     {
       key: 'permohonan',
       label: 'Menunggu',
       value: stats.permohonanBaru,
       icon: Mail,
-      color: 'text-yellow-600 bg-yellow-100',
-      onClick: () => navigate('/admin/list-rt?status=pending'),
+
+      iconBg: 'var(--sid-status-pending-bg)',
+      iconColor: 'var(--sid-status-pending-text)',
+
+      onClick: () =>
+        navigate('/admin/list-rt?status=pending'),
     },
+
     {
       key: 'diproses',
       label: 'Sedang Diproses',
       value: stats.sedangDiproses,
       icon: ShieldCheck,
-      color: 'text-blue-600 bg-blue-100',
-      onClick: () => navigate('/admin/list-rt'),
+
+      iconBg: 'var(--sid-status-progress-bg)',
+      iconColor: 'var(--sid-status-progress-text)',
+
+      onClick: () =>
+        navigate('/admin/list-rt'),
     },
+
     {
       key: 'selesai',
       label: 'Selesai',
       value: stats.disetujuiFinal,
       icon: CheckCircle2,
-      color: 'text-green-600 bg-green-100',
-      onClick: () => navigate('/admin/list-rt?status=rw_approved'),
+
+      iconBg: 'var(--sid-status-done-bg)',
+      iconColor: 'var(--sid-status-done-text)',
+
+      onClick: () =>
+        navigate('/admin/list-rt?status=rw_approved'),
     },
+
     {
       key: 'ditolak',
       label: 'Ditolak',
       value: stats.ditolak,
       icon: XCircle,
-      color: 'text-red-500 bg-red-100',
-      onClick: () => navigate('/admin/list-rt?status=rt_rejected'),
+
+      iconBg: 'var(--sid-status-rejected-bg)',
+      iconColor: 'var(--sid-status-rejected-text)',
+
+      onClick: () =>
+        navigate('/admin/list-rt?status=rt_rejected'),
     },
   ];
 
-  const hariIni = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // ==========================================
+  // TANGGAL
+  // ==========================================
+
+  const hariIni = new Date().toLocaleDateString(
+    'id-ID',
+    {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }
+  );
+
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <>
-      {/* ===== DESKTOP — tata letak 4 kolom sejajar ===== */}
+      {/* ========================================
+          DESKTOP
+          ======================================== */}
+
       <div className="hidden md:block">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+
+        <div className="sid-page max-w-3xl">
+
+          {/* ======================================
+              HEADER
+              ====================================== */}
+
+          <div className="flex items-start justify-between mb-6">
+
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">{getGreeting()}, {user?.name ?? 'Bapak/Ibu'}</h1>
-              <p className="text-sm text-gray-500">Kelola administrasi warga {user?.wilayah_label ?? 'RT'} dengan lebih cepat.</p>
+
+              <h1 className="sid-page-title">
+                {getGreeting()}, {user?.name ?? 'Bapak/Ibu'}
+              </h1>
+
+              <p className="sid-page-description">
+                Kelola administrasi warga{' '}
+                {user?.wilayah_label ?? 'RT'} dengan lebih cepat.
+              </p>
+
             </div>
-            <span className="text-sm text-gray-500 capitalize">{hariIni}</span>
+
+            <span className="
+              text-xs
+              text-[var(--sid-text-muted)]
+              capitalize
+              pt-1
+            ">
+              {hariIni}
+            </span>
+
           </div>
 
-          <div className="grid grid-cols-4 gap-4 mb-6">
+
+          {/* ======================================
+              STAT CARDS
+              ====================================== */}
+
+          <div className="
+            grid
+            grid-cols-4
+            gap-4
+            mb-6
+          ">
+
             {STAT_CARDS.map((card) => {
+
               const Icon = card.icon;
+
               return (
                 <button
                   key={card.key}
                   onClick={card.onClick}
-                  className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between text-left hover:shadow-md transition-shadow"
+                  className="
+                    sid-stat-card
+                    p-5
+                    flex
+                    items-center
+                    justify-between
+                  "
                 >
+
                   <div>
-                    <p className="text-[10px] text-gray-400 uppercase mb-1">{card.label}</p>
-                    <p className="text-3xl font-bold text-gray-800">{loading ? '-' : card.value}</p>
+
+                    <p className="
+                      text-[10px]
+                      text-[var(--sid-text-muted)]
+                      uppercase
+                      mb-1
+                    ">
+                      {card.label}
+                    </p>
+
+                    <p className="
+                      text-3xl
+                      font-bold
+                      text-[var(--sid-text-primary)]
+                    ">
+                      {loading ? '-' : card.value}
+                    </p>
+
                   </div>
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${card.color}`}>
+
+
+                  <div
+                    className="
+                      w-11
+                      h-11
+                      rounded-[var(--radius-md)]
+                      flex
+                      items-center
+                      justify-center
+                      shrink-0
+                    "
+                    style={{
+                      background: card.iconBg,
+                      color: card.iconColor,
+                    }}
+                  >
                     <Icon size={20} />
                   </div>
+
                 </button>
               );
+
             })}
+
           </div>
+
+
+          {/* ======================================
+              GRAFIK
+              ====================================== */}
 
           <div className="mb-6">
             <SuratStatChart letters={letters} />
           </div>
 
-          <QuickNavButtons items={QUICK_NAV_RT} basePath="/admin/list-rt" />
         </div>
+
+
+        {/* ======================================
+            FOOTER DESKTOP
+            ====================================== */}
+
         <FooterDesa />
+
       </div>
 
-      {/* ===== MOBILE — tata letak 2x2 ===== */}
-      <div className="md:hidden bg-gray-50 min-h-screen pb-20">
-        <div className="px-4 pt-4">
 
-          <h1 className="text-xl font-bold text-gray-800 mb-1">{getGreeting()}, {user?.name ?? 'Bapak/Ibu'}</h1>
-          <p className="text-sm text-gray-500 mb-4">Kelola administrasi warga {user?.wilayah_label ?? 'RT'} dengan lebih cepat.</p>
+      {/* ========================================
+          MOBILE
+          ======================================== */}
 
-          <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="
+        md:hidden
+        min-h-screen
+        bg-[var(--sid-surface-page)]
+      ">
+
+        <div className="
+          sid-page
+          max-w-none
+          sid-mobile-content
+        ">
+
+          {/* ======================================
+              HEADER
+              ====================================== */}
+
+          <h1 className="sid-page-title">
+            {getGreeting()}, {user?.name ?? 'Bapak/Ibu'}
+          </h1>
+
+          <p className="sid-page-description">
+            Kelola administrasi warga{' '}
+            {user?.wilayah_label ?? 'RT'} dengan lebih cepat.
+          </p>
+
+
+          {/* ======================================
+              STAT CARDS
+              2 x 2
+              ====================================== */}
+
+          <div className="
+            grid
+            grid-cols-2
+            gap-3
+            mb-4
+          ">
+
             {STAT_CARDS.map((card) => {
+
               const Icon = card.icon;
+
               return (
                 <button
                   key={card.key}
                   onClick={card.onClick}
-                  className="bg-white rounded-2xl shadow-sm p-4 text-left"
+                  className="
+                    sid-stat-card
+                    p-4
+                    text-left
+                  "
                 >
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 ${card.color}`}>
+
+                  <div
+                    className="
+                      w-9
+                      h-9
+                      rounded-[var(--radius-sm)]
+                      flex
+                      items-center
+                      justify-center
+                      mb-2
+                    "
+                    style={{
+                      background: card.iconBg,
+                      color: card.iconColor,
+                    }}
+                  >
                     <Icon size={16} />
                   </div>
-                  <p className="text-[10px] text-gray-400 uppercase">{card.label}</p>
-                  <p className="text-2xl font-bold text-gray-800">{loading ? '-' : card.value}</p>
+
+
+                  <p className="
+                    text-[10px]
+                    text-[var(--sid-text-muted)]
+                    uppercase
+                  ">
+                    {card.label}
+                  </p>
+
+
+                  <p className="
+                    text-2xl
+                    font-bold
+                    text-[var(--sid-text-primary)]
+                  ">
+                    {loading ? '-' : card.value}
+                  </p>
+
                 </button>
               );
+
             })}
+
           </div>
 
-          <div className="mb-4"><SuratStatChart letters={letters} /></div>
-          <div className="mb-4"><QuickNavButtons items={QUICK_NAV_RT} basePath="/admin/list-rt" /></div>
+
+          {/* ======================================
+              GRAFIK
+              ====================================== */}
+
+          <div className="mb-4">
+            <SuratStatChart letters={letters} />
+          </div>
+
         </div>
 
-        <FooterDesa />
-        <MobileBottomNav links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rt', '/admin/list-rt')} />
+
+        {/* ======================================
+            FOOTER MOBILE
+            ====================================== */}
+
+        <div className="sid-mobile-footer">
+          <FooterDesa />
+        </div>
+
+
+        {/* ======================================
+            MOBILE BOTTOM NAVIGATION
+            ====================================== */}
+
+        <MobileBottomNav
+          links={ADMIN_MOBILE_LINKS(
+            '/admin/dashboard-surat-rt',
+            '/admin/list-rt'
+          )}
+        />
+
       </div>
     </>
   );

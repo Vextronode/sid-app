@@ -1,50 +1,79 @@
 export function AutoFillProfile({ user }) {
   return (
     <div className="grid grid-cols-1 gap-4">
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 mb-1">
+
+      {/* =========================
+          NAMA PEMOHON
+      ========================= */}
+      <div className="sid-form-group">
+        <label className="sid-label">
           Nama Pemohon (otomatis)
         </label>
+
         <input
           type="text"
           disabled
           value={user?.name || "Budi Santoso"}
-          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed outline-none"
+          className="sid-input sid-input-readonly"
         />
       </div>
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 mb-1">
+
+
+      {/* =========================
+          NIK
+      ========================= */}
+      <div className="sid-form-group">
+        <label className="sid-label">
           NIK (otomatis)
         </label>
+
         <input
           type="text"
           disabled
           value={user?.citizen?.nik || "****-****-0042"}
-          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed outline-none"
+          className="sid-input sid-input-readonly"
         />
       </div>
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 mb-1">
+
+
+      {/* =========================
+          ALAMAT
+      ========================= */}
+      <div className="sid-form-group">
+        <label className="sid-label">
           Alamat (otomatis)
         </label>
+
         <input
           type="text"
           disabled
           value={user?.citizen?.address || "Alamat belum diatur"}
-          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed outline-none"
+          className="sid-input sid-input-readonly"
         />
       </div>
-      <div>
-        <label className="block text-xs font-semibold text-gray-400 mb-1">
+
+
+      {/* =========================
+          RT / RW
+      ========================= */}
+      <div className="sid-form-group">
+        <label className="sid-label">
           RT/RW (otomatis)
         </label>
+
         <input
           type="text"
           disabled
-          value={`${user?.citizen?.rt?.number ?? ""}/${user?.citizen?.rw?.number ?? ""}`|| "000/000"}
-          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed outline-none"
+          value={
+            user?.citizen?.rt?.number != null ||
+            user?.citizen?.rw?.number != null
+              ? `${user?.citizen?.rt?.number ?? "-"}/${user?.citizen?.rw?.number ?? "-"}`
+              : "000/000"
+          }
+          className="sid-input sid-input-readonly"
         />
       </div>
+
     </div>
   );
 }

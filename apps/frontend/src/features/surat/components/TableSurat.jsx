@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, FileText, Download, Edit } from "lucide-react";
+import { Eye, FileText, Edit } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DetailSuratModal } from "./DetailSuratModal";
 
@@ -20,9 +20,10 @@ export function TableSurat({ data }) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="text-center py-10 bg-white border border-gray-200 rounded-2xl">
-        <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-400 text-sm">
+      <div className="sid-table-empty">
+        <FileText className="sid-table-empty-icon" />
+
+        <p className="sid-table-empty-text">
           Belum ada surat terbaru.
         </p>
       </div>
@@ -31,80 +32,56 @@ export function TableSurat({ data }) {
 
   return (
     <>
-      <div className="bg-white overflow-hidden rounded-2xl border border-gray-200">
+      <div className="sid-table-wrapper">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200">
+          <table className="sid-table">
+            <thead>
               <tr>
-                <th className="p-4 border-r text-center">
-                  No. Surat
-                </th>
-
-                <th className="p-4 border-r text-center">
-                  Pemohon
-                </th>
-
-                <th className="p-4 border-r text-center">
-                  Jenis
-                </th>
-
-                <th className="p-4 border-r text-center">
-                  Tanggal
-                </th>
-
-                <th className="p-4 border-r text-center">
-                  Status
-                </th>
-
-                <th className="p-4 text-center">
-                  Aksi
-                </th>
+                <th>No. Surat</th>
+                <th>Pemohon</th>
+                <th>Jenis</th>
+                <th>Tanggal</th>
+                <th>Status</th>
+                <th>Aksi</th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-200">
+            <tbody>
               {data.map((item, index) => (
-                <tr
-                  key={item.id || index}
-                  className="hover:bg-gray-50 transition"
-                >
-                  <td className="p-4 border-r text-center">
-                    {item.noSurat || "-"}
-                  </td>
+                <tr key={item.id || index}>
+                  <td>{item.noSurat || "-"}</td>
 
-                  <td className="p-4 border-r text-center">
-                    {item.pemohon}
-                  </td>
+                  <td>{item.pemohon}</td>
 
-                  <td className="p-4 border-r text-center">
-                    {item.jenis}
-                  </td>
+                  <td>{item.jenis}</td>
 
-                  <td className="p-4 border-r text-center">
-                    {item.tanggal}
-                  </td>
+                  <td>{item.tanggal}</td>
 
-                  <td className="p-4 border-r text-center">
+                  <td>
                     <StatusBadge status={item.status} />
                   </td>
 
-                  <td className="p-4">
-                    <div className="flex justify-center gap-2 flex-wrap">
+                  <td>
+                    <div className="sid-table-actions">
 
                       {/* Detail */}
                       <button
+                        type="button"
                         onClick={() => setSelectedSurat(item)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-gray-300 text-xs hover:bg-gray-100"
+                        className="sid-table-btn sid-table-btn-detail"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         Detail
                       </button>
 
-                      {/* Revisi Button */}
-                      {item.status === 'waiting_revision_warga' && (
+                      {/* Revisi */}
+                      {item.status === "waiting_revision_warga" && (
                         <button
-                          onClick={() => navigate(`/revisi-surat/${item.id}`)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 text-xs font-medium"
+                          type="button"
+                          onClick={() =>
+                            navigate(`/revisi-surat/${item.id}`)
+                          }
+                          className="sid-table-btn sid-table-btn-revision"
                         >
                           <Edit className="w-3.5 h-3.5" />
                           Revisi

@@ -11,13 +11,18 @@ export function FileUploader({
 
   const handleRemove = (e, index) => {
     onRemoveFile(e, field.name, index);
+
     if (inputRef.current) {
       inputRef.current.value = "";
     }
   };
 
   return (
-    <div className="space-y-2">
+    <div className="sid-form-group">
+
+      {/* =========================
+          INPUT FILE
+      ========================= */}
       <input
         type="file"
         multiple
@@ -25,56 +30,146 @@ export function FileUploader({
         required={field.required && files.length === 0}
         accept={field.accept}
         onChange={(e) => onFileChange(e, field.name)}
-        className="hidden"
+        className="sid-upload-input"
       />
 
-      {/* Render file" yg udah di upload */}
+
+      {/* =========================
+          FILE YANG SUDAH DIUPLOAD
+      ========================= */}
       {files.length > 0 && (
-        <div className="space-y-2 mb-3">
+        <div className="space-y-2">
+
           {files.map((file, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-4 bg-gray-50 border border-[#185FA5]/50 rounded-xl transition"
+              className="
+                flex
+                items-center
+                justify-between
+                gap-3
+                p-3
+                sm:p-4
+                bg-[#F7F6F1]
+                border
+                border-[var(--sid-border)]
+                rounded-[var(--radius-md)]
+                transition
+              "
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-[#E8F5E9] text-[#185FA5] rounded-lg">
+
+              {/* INFO FILE */}
+              <div className="flex items-center gap-3 min-w-0">
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    justify-center
+                    flex-shrink-0
+                    w-10
+                    h-10
+                    bg-[var(--sid-status-progress-bg)]
+                    text-[var(--sid-primary)]
+                    rounded-[var(--radius-sm)]
+                  "
+                >
                   <FileText className="w-5 h-5" />
                 </div>
-                <div className="text-left">
-                  <p className="text-xs font-semibold text-gray-800 max-w-45 md:max-w-xs truncate">
+
+
+                <div className="text-left min-w-0">
+
+                  <p
+                    className="
+                      text-xs
+                      font-semibold
+                      text-[var(--sid-text-primary)]
+                      truncate
+                      max-w-[180px]
+                      sm:max-w-xs
+                    "
+                    title={file.name}
+                  >
                     {file.name}
                   </p>
-                  <p className="text-[10px] text-gray-400">
+
+                  <p
+                    className="
+                      text-[10px]
+                      text-[var(--sid-text-muted)]
+                      mt-0.5
+                    "
+                  >
                     {(file.size / (1024 * 1024)).toFixed(2)} MB
                   </p>
+
                 </div>
+
               </div>
+
+
+              {/* HAPUS */}
               <button
                 type="button"
                 onClick={(e) => handleRemove(e, index)}
-                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                className="
+                  flex
+                  items-center
+                  justify-center
+                  flex-shrink-0
+                  w-8
+                  h-8
+                  rounded-[var(--radius-sm)]
+                  border
+                  border-transparent
+                  text-[var(--sid-status-rejected-text)]
+                  hover:bg-[var(--sid-status-rejected-bg)]
+                  transition
+                "
                 title="Hapus file"
+                aria-label={`Hapus ${file.name}`}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
+
             </div>
           ))}
+
         </div>
       )}
 
-      {/* Drag n ddrop */}
+
+      {/* =========================
+          UPLOAD AREA
+      ========================= */}
       <div
         onClick={() => inputRef.current?.click()}
-        className="border-2 border-gray-200 border-dashed rounded-2xl p-6 text-center hover:bg-gray-50/50 hover:border-[#185FA5] transition cursor-pointer space-y-2"
+        className="
+          sid-upload
+          w-full
+        "
       >
-        <UploadCloud className="w-10 h-10 text-gray-400 mx-auto" />
-        <p className="text-xs font-semibold text-gray-600">
-          Klik untuk upload dokumen {files.length > 0 && "tambahan"}
+
+        <UploadCloud
+          className="
+            w-10
+            h-10
+            text-[var(--sid-text-muted)]
+          "
+        />
+
+        <p className="sid-upload-title">
+          Klik untuk upload dokumen{" "}
+          {files.length > 0 && "tambahan"}
         </p>
-        <p className="text-[10px] text-gray-400">
+
+        <p className="sid-upload-description">
           PDF, DOCX, JPG, PNG - maks. 5MB per file
         </p>
+
       </div>
+
     </div>
   );
 }
