@@ -90,11 +90,13 @@ flow_steps (urutan approver per flow)
 - **Kadus dihapus total dari domain approval.** `officials.position='kadus'` tetap valid sebagai jabatan struktural (dipakai domain Governance/CMS untuk halaman publik), tapi tidak pernah menjadi target resolve di `OfficialService` untuk konteks approval surat.
 - **Resolve approver dua pola berbeda, harus dibedakan eksplisit di kode:**
   - **Berbasis wilayah** (RT): resolve via `citizens.rt_id → rts.id`, lalu cari `officials` aktif dengan `rt_id` yang sama.
-  - **Berbasis posisi murni** (Kepala Desa, Sekretaris Desa, Kasi/Kaur): resolve via `officials.position IN (...)` + `is_active=true`, **tanpa join wilayah sama sekali**. Kades/Sekdes resolve keduanya sekaligus (siapa pun yang aktif di posisi itu), karena keduanya saling menggantikan di step yang sama (lihat S3.3).
+  - **Berbasis posisi murni** (Kepala Desa, Sekretaris Desa, Kasi/Kaur): resolve via `officials.position IN (...)` + `is_active=true`, **tanpa join wilayah sama sekali**. Untuk step yang `approver_position`-nya mencakup baik `kepala_desa` maupun `sekdes`, resolve mengembalikan pejabat aktif di kedua posisi tersebut (lihat S3.3 untuk catatan status keputusan ini).
 
 ### 3.3 First-Action-Wins: Kades/Sekdes Concurrent Approval
 
-Kepala Desa dan Sekretaris Desa bisa saling menggantikan di step approval yang sama (`approver_position` bisa cocok untuk keduanya di satu `flow_step`). Ini **disengaja disederhanakan di application layer**, bukan row-level lock atau unique constraint di database:
+⚠️ **Catatan status keputusan:** apakah Sekretaris Desa benar-benar ikut menjadi approver di step yang sama dengan Kepala Desa masih berstatus **rekomendasi/asumsi default** di Rangkuman Percakapan v5.0 (bukan keputusan final eksplisit - user menjawab "no preference" saat ditanya, direkomendasikan mengikuti prinsip v4.2 di mana Sekdes selalu scope identik Kades). Bagian ini mendokumentasikan bagaimana backend **akan** menangani skenario tersebut *jika* keputusan itu dikonfirmasi final - implementasikan dengan asumsi ini boleh berubah, dan konfirmasikan ulang ke pemilik proyek sebelum mengunci desain ini di kode produksi.
+
+Dengan asumsi di atas: Kepala Desa dan Sekretaris Desa bisa saling menggantikan di step approval yang sama (`approver_position` bisa cocok untuk keduanya di satu `flow_step`). Ini **disengaja disederhanakan di application layer**, bukan row-level lock atau unique constraint di database:
 
 - Endpoint decision melakukan `SELECT ... FOR UPDATE` sederhana atau re-check status di dalam `DB::transaction()` sebelum commit - siapa pun (Kades atau Sekdes) yang request-nya sampai lebih dulu ke transaction yang berhasil commit, itu yang tercatat.
 - Request kedua yang datang setelah step sudah berpindah akan gagal di gate re-validasi (`InvalidLetterStatusException`, pola yang sama dengan gate logic RT→RW di v4.2), bukan dengan mekanisme locking khusus.
@@ -144,13 +146,19 @@ Untuk Staff Desa (`kasi_pelayanan`, `kaur_tu_umum`), resolusi kewenangan **bukan
 
 Backend mengikuti prinsip *single source of truth* dari skema v5.0: `families` (tipis, hanya fakta level-keluarga: `no_kk`, `family_address`, `family_status`) terpisah dari `citizens` (fakta level-individu, termasuk `address` domisili riil yang bisa berbeda dari `family_address`). Service layer (`CitizenService`, `FamilyService`) **tidak boleh** menyalin data KK ke `citizens` atau sebaliknya sebagai denormalisasi tambahan di luar `families.head_of_family_id` yang memang sudah didefinisikan sebagai denormalisasi opsional terjaga manual.
 
-### 5.2 Warga Non-NIK / Domisili Sementara
+### 5.2 Warga Lokal vs Pendatang — Satu Tabel, Bukan Dua
 
-Berbeda dari warga ber-NIK (master data 4 lapis di `citizens`), warga tanpa NIK terdaftar (pendatang sementara yang belum tervalidasi sebagai warga Cibenda) **tidak** mendapat record master data. Backend menangani ini sebagai **data transaksional** yang melekat langsung pada dokumen/permohonan terkait (misal field bebas di `letters` untuk pemohon yang belum jadi `citizens`), bukan entitas warga paralel. Ini konsisten dengan keputusan v5.0 bahwa `residency_type` (lokal/pendatang) tetap kolom di `citizens` yang sama untuk warga yang **sudah** terverifikasi NIK-nya - bukan tabel warga terpisah.
+**Tidak ada kategori "warga Non-NIK" di domain ini.** Ini koreksi eksplisit terhadap draft awal dokumen arsitektur - keputusan final TDD v5.0 (Patch Guide v4.2→v5.0, PATCH 41) menegaskan: **setiap row di `citizens` sudah pasti memiliki NIK** (`nik`/`nik_hash` adalah bagian inti skema sejak v3.2), baik untuk warga lokal maupun pendatang. Tidak ada jalur di mana seseorang menjadi warga tercatat di sistem tanpa NIK terverifikasi.
 
-### 5.3 Staging Perubahan Data Self-Service
+Pembeda lokal vs pendatang murni kolom `residency_type ENUM('lokal','pendatang')` pada `citizens` yang sama - **bukan** tabel terpisah, **bukan** entitas paralel, dan **bukan** kategori "data transaksional tanpa record master". Backend secara sengaja **tidak** membangun jalur mana pun (baik di `letters` maupun tabel lain) yang memungkinkan seseorang tercatat sebagai pemohon/warga tanpa melalui `citizens` terlebih dahulu - ini untuk mencegah duplikasi logic dan risiko integritas data yang justru menjadi alasan utama keputusan "tidak dipisah tabel" di v5.0.
 
-Untuk perubahan data warga yang diinput sendiri oleh warga (bukan oleh Petugas Desa), backend menerapkan pola *staging*: perubahan tidak langsung menimpa `citizens`, melainkan disimpan sebagai draft/pending yang menunggu verifikasi Petugas Desa sebelum diterapkan. Ini konsisten dengan prinsip *Human-in-the-Loop* di `SID-ARCH-SYS-001` S1 - data kependudukan bersifat sensitif dan legal, sehingga perubahan mandiri warga tidak boleh langsung menjadi source of truth tanpa verifikasi manusia.
+Alur bagi pendatang yang belum terverifikasi NIK-nya di `citizens` (misal baru pindah, KK belum diproses desa) **bukan** kasus "Non-NIK" - itu murni kasus "belum terdaftar sebagai warga sama sekali", ditangani sama seperti warga mana pun yang NIK-nya belum ada di database: tidak bisa register akun (UC-17, gate NIK harus ditemukan di `citizens`), dan tidak bisa submit surat self-service sampai Petugas Desa mencatatnya lebih dulu ke `citizens` (via UC-09, dengan `residency_type='pendatang'` jika relevan).
+
+### 5.3 Perubahan Data oleh Warga
+
+Sesuai TDD (UC-09), pengelolaan data `citizens` - termasuk koreksi/update - **hanya dilakukan oleh Petugas Desa**. Tidak ada mekanisme di mana warga mengedit data kependudukannya sendiri secara langsung maupun bertahap; ini konsisten dengan prinsip *Human-in-the-Loop* (`SID-ARCH-SYS-001` S1) yang menempatkan Petugas Desa sebagai satu-satunya pencatat resmi data sensitif ini.
+
+> Kapabilitas "warga mengajukan perubahan datanya sendiri" pernah disebut sepintas di `SID-ARCH-SYS-001` S2.2 sebagai *staging perubahan data self-service*, tapi ini **belum punya desain maupun keputusan final** - lihat S12 (Wacana Next Dev - Belum Ada Desain).
 
 ### 5.4 Impor Massal
 
@@ -203,7 +211,19 @@ Pola event-driven tidak berubah dari v3.2: `Action → Controller → Event → 
 
 ---
 
-## 10. Referensi Silang
+## 10. Wacana Next Dev — Belum Ada Desain
+
+Tiga istilah berikut disebut sepintas di `SID-ARCH-SYS-001` S2.1/S2.2 sebagai bagian scope domain, tapi **tidak punya skema tabel, UC, maupun keputusan teknis apa pun** di TDD v3.2 s.d. v5.0 manapun. Bagian ini sengaja hanya mencatat *bahwa istilah ini pernah disebut*, bukan mendesainnya - mendesain tanpa keputusan sumber akan berisiko menciptakan skema baru yang tidak pernah disepakati. Jangan mulai implementasi apa pun untuk ketiganya sebelum ada keputusan eksplisit dari pemilik proyek.
+
+| Istilah | Disebut di | Pertanyaan terbuka yang harus dijawab lebih dulu |
+|---|---|---|
+| **QR Verification** | `SID-ARCH-SYS-001` S2.1 (mekanisme operasional pendukung), S3 (kotak "Endpoint Verifikasi QR" di diagram komponen) | Token disimpan di kolom mana pada `letters`? Digenerate kapan (saat `kasi_approved`, atau setiap kali PDF di-generate ulang - ingat PDF bersifat on-demand, S6)? Halaman verifikasi publik menampilkan data apa saja (risiko privasi NIK)? Berlaku untuk kategori surat mana saja? |
+| **Void/Cancel Surat** | `SID-ARCH-SYS-001` S2.1 (mekanisme operasional pendukung) | Status baru di `letters.status` (saat ini hanya 4 nilai: `pending/in_progress/approved/rejected`) atau kolom terpisah? Siapa yang berwenang void - Petugas Desa saja, atau approver terkait? Berlaku untuk surat yang sudah `approved` saja, atau juga `in_progress`? Apakah `letter_number` yang sudah terbit ikut dibatalkan/dicatat sebagai riwayat? |
+| **Staging Perubahan Data Self-Service** | `SID-ARCH-SYS-001` S2.2 (scope domain Kependudukan) | Bertentangan langsung dengan UC-09 TDD saat ini (aktor hanya Petugas Desa) - apakah ini kapabilitas baru yang perlu UC baru? Field mana saja yang boleh diajukan warga? Siapa yang approve staging ini (Petugas Desa saja, atau ada gate lain)? |
+
+---
+
+## 11. Referensi Silang
 
 | Kebutuhan | Dokumen |
 |---|---|
@@ -219,8 +239,10 @@ Pola event-driven tidak berubah dari v3.2: `Action → Controller → Event → 
 
 ---
 
-## 11. Riwayat Revisi
+## 12. Riwayat Revisi
 
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | 1.0 | - | Penyusunan awal, disusun selaras dengan `SID-ARCH-SYS-001` v1.0, `SID-ARCH-FE-001` v1.0, dan skema TDD v5.0 (Category+Flow approval dinamis, restrukturisasi data kependudukan, 9-role RBAC flat) |
+| 1.1 | - | Koreksi S5.2: hapus konsep "warga Non-NIK/domisili sementara" sebagai entitas terpisah - bertentangan dengan keputusan final TDD v5.0 (PATCH 41) bahwa seluruh warga tercatat, lokal maupun pendatang, selalu berada di `citizens` dengan NIK, dibedakan murni lewat kolom `residency_type`. Tambah disclaimer status asumsi di S3.3 (Kades/Sekdes saling menggantikan belum jadi keputusan final eksplisit). |
+| 1.2 | - | Hapus desain spesifik "staging perubahan data" dari S5.3 (belum pernah jadi keputusan TDD, bertentangan dengan UC-09 yang aktornya hanya Petugas Desa). Tambah S10 (Wacana Next Dev - Belum Ada Desain) mencatat QR Verification, Void/Cancel Surat, dan Staging Perubahan Data Self-Service sebagai istilah yang disebut di `SID-ARCH-SYS-001` tapi belum punya skema/UC/keputusan apa pun - tidak untuk diimplementasikan sebelum ada keputusan eksplisit. |
