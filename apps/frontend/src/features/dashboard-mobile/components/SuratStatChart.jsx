@@ -13,7 +13,6 @@ import {
 import { Calendar } from "lucide-react";
 
 export default function SuratStatChart({ letters = [] }) {
-
   const dateInputRef = useRef(null);
 
   const [chartData, setChartData] = useState([]);
@@ -26,13 +25,11 @@ export default function SuratStatChart({ letters = [] }) {
 
   const [letterType, setLetterType] = useState("all");
 
-
   // ==========================================
   // DAFTAR JENIS SURAT
   // ==========================================
 
   const letterTypes = useMemo(() => {
-
     if (!letters?.length) {
       return [];
     }
@@ -40,26 +37,20 @@ export default function SuratStatChart({ letters = [] }) {
     const map = new Map();
 
     letters.forEach((item) => {
-
       const type = item?.letter_type;
 
       if (!type) return;
 
       if (!map.has(type.id)) {
-
         map.set(type.id, {
           id: type.id,
           name: type.name,
         });
-
       }
-
     });
 
     return Array.from(map.values());
-
   }, [letters]);
-
 
   // ==========================================
   // LOAD CHART
@@ -67,13 +58,10 @@ export default function SuratStatChart({ letters = [] }) {
   // ==========================================
 
   useEffect(() => {
-
     let cancelled = false;
 
     const fetchChart = async () => {
-
       try {
-
         setLoading(true);
 
         const response = await api.get(
@@ -91,7 +79,6 @@ export default function SuratStatChart({ letters = [] }) {
         const chart = response?.data?.chart;
 
         if (!chart) {
-
           console.error(
             "Data chart tidak ditemukan:",
             response?.data
@@ -115,14 +102,9 @@ export default function SuratStatChart({ letters = [] }) {
 
         setChartData(formattedData);
 
-        setMaxY(
-          Number(chart.maxY ?? 50)
-        );
-
+        setMaxY(Number(chart.maxY ?? 50));
       } catch (err) {
-
         if (!cancelled) {
-
           console.error(
             "GET LETTER STATS ERROR:",
             err.response?.data ?? err
@@ -131,64 +113,45 @@ export default function SuratStatChart({ letters = [] }) {
           setChartData([]);
           setMaxY(50);
         }
-
       } finally {
-
         if (!cancelled) {
           setLoading(false);
         }
-
       }
-
     };
 
-
-    // Load pertama
     fetchChart();
 
-
-    // Auto refresh
     const interval = setInterval(() => {
       fetchChart();
     }, 5000);
 
-
     return () => {
-
       cancelled = true;
-
       clearInterval(interval);
-
     };
-
   }, [selectedDate, letterType]);
-
 
   // ==========================================
   // RENDER
   // ==========================================
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-5">
+    <div className="sid-surat-stat-chart">
 
-      {/* HEADER */}
+      {/* ======================================
+          HEADER
+      ====================================== */}
 
-      <div className="flex justify-between items-start mb-5">
+      <div className="sid-surat-stat-chart-header">
 
-        <div>
+        <div className="sid-surat-stat-chart-title">
+          <h3>Statistik Pengajuan Surat</h3>
 
-          <h3 className="font-semibold text-gray-800">
-            Statistik Pengajuan Surat
-          </h3>
-
-          <p className="text-xs text-gray-400">
-            Distribusi jumlah surat
-          </p>
-
+          <p>Distribusi jumlah surat</p>
         </div>
 
-
-        <div className="w-56 space-y-2">
+        <div className="sid-surat-stat-chart-filters">
 
           {/* KALENDER */}
 
@@ -197,22 +160,8 @@ export default function SuratStatChart({ letters = [] }) {
             onClick={() => {
               dateInputRef.current?.showPicker?.();
             }}
-            className="
-              w-full
-              flex
-              items-center
-              justify-between
-              border
-              rounded-full
-              px-3
-              py-2
-              text-xs
-              text-gray-600
-              hover:border-blue-600
-              transition
-            "
+            className="sid-surat-stat-chart-date"
           >
-
             <span>
               {new Date(
                 `${selectedDate}T00:00:00`
@@ -224,9 +173,7 @@ export default function SuratStatChart({ letters = [] }) {
             </span>
 
             <Calendar size={14} />
-
           </button>
-
 
           <input
             ref={dateInputRef}
@@ -235,13 +182,8 @@ export default function SuratStatChart({ letters = [] }) {
             onChange={(e) => {
               setSelectedDate(e.target.value);
             }}
-            className="
-              absolute
-              opacity-0
-              pointer-events-none
-            "
+            className="sid-surat-stat-chart-date-input"
           />
-
 
           {/* JENIS SURAT */}
 
@@ -250,121 +192,100 @@ export default function SuratStatChart({ letters = [] }) {
             onChange={(e) => {
               setLetterType(e.target.value);
             }}
-            className="
-              w-full
-              border
-              rounded-full
-              px-3
-              py-2
-              text-xs
-              text-gray-600
-              outline-none
-              focus:border-blue-500
-            "
+            className="sid-surat-stat-chart-select"
           >
-
             <option value="all">
               Semua Jenis Surat
             </option>
 
             {letterTypes.map((item) => (
-
               <option
                 key={item.id}
                 value={item.id}
               >
                 {item.name}
               </option>
-
             ))}
-
           </select>
 
         </div>
-
       </div>
 
+      {/* ======================================
+          CHART
+      ====================================== */}
 
-      {/* CHART */}
+      <div className="sid-surat-stat-chart-area">
 
-      <ResponsiveContainer
-        width="100%"
-        height={180}
-      >
-
-        <AreaChart
-          data={chartData}
-          margin={{
-            top: 5,
-            right: 10,
-            left: 0,
-            bottom: 0,
-          }}
+        <ResponsiveContainer
+          width="100%"
+          height={180}
         >
-
-          <defs>
-
-            <linearGradient
-              id="colorJumlah"
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="1"
-            >
-
-              <stop
-                offset="5%"
-                stopColor="#185FA5"
-                stopOpacity={0.35}
-              />
-
-              <stop
-                offset="95%"
-                stopColor="#185FA5"
-                stopOpacity={0}
-              />
-
-            </linearGradient>
-
-          </defs>
-
-
-          <XAxis
-            dataKey="kategori"
-            axisLine={false}
-            tickLine={false}
-            tick={{
-              fontSize: 10,
+          <AreaChart
+            data={chartData}
+            margin={{
+              top: 5,
+              right: 10,
+              left: 0,
+              bottom: 0,
             }}
-          />
+          >
+            <defs>
+              <linearGradient
+                id="sidSuratStatGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop
+                  offset="5%"
+                  stopColor="var(--sid-primary)"
+                  stopOpacity={0.35}
+                />
 
+                <stop
+                  offset="95%"
+                  stopColor="var(--sid-primary)"
+                  stopOpacity={0}
+                />
+              </linearGradient>
+            </defs>
 
-          <YAxis
-            domain={[0, maxY]}
-            axisLine={false}
-            tickLine={false}
-            tick={{
-              fontSize: 10,
-            }}
-          />
+            <XAxis
+              dataKey="kategori"
+              axisLine={false}
+              tickLine={false}
+              tick={{
+                fontSize: 10,
+                fill: "var(--sid-text-muted)",
+              }}
+            />
 
+            <YAxis
+              domain={[0, maxY]}
+              axisLine={false}
+              tickLine={false}
+              tick={{
+                fontSize: 10,
+                fill: "var(--sid-text-muted)",
+              }}
+            />
 
-          <Tooltip />
+            <Tooltip />
 
+            <Area
+              type="monotone"
+              dataKey="jumlah"
+              stroke="var(--sid-primary)"
+              strokeWidth={2}
+              fill="url(#sidSuratStatGradient)"
+              isAnimationActive={!loading}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
 
-          <Area
-            type="monotone"
-            dataKey="jumlah"
-            stroke="#185FA5"
-            strokeWidth={2}
-            fill="url(#colorJumlah)"
-            isAnimationActive={!loading}
-          />
-
-        </AreaChart>
-
-      </ResponsiveContainer>
-
+      </div>
     </div>
   );
 }

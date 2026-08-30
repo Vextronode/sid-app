@@ -1,8 +1,8 @@
+
 // ==========================================
 // TambahUserModal.jsx
-// Popup form tambah user & role. Field "Wilayah" cuma muncul untuk
-// role RT dan RW (kepala_desa & petugas_desa tidak perlu wilayah,
-// sesuai catatan di desain).
+// Popup form tambah user & role.
+// Styling menggunakan SID Global Theme.
 // ==========================================
 
 import { useState } from 'react';
@@ -19,7 +19,11 @@ const ROLE_OPTIONS = [
 // Role yang butuh input wilayah (RT/RW)
 const ROLES_WITH_WILAYAH = ['rt', 'rw'];
 
-export default function TambahUserModal({ open, onClose, onSubmit }) {
+export default function TambahUserModal({
+  open,
+  onClose,
+  onSubmit,
+}) {
   const [form, setForm] = useState({
     nama: '',
     email: '',
@@ -32,123 +36,181 @@ export default function TambahUserModal({ open, onClose, onSubmit }) {
 
   if (!open) return null;
 
-  const handleChange = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const handleChange = (field) => (e) =>
+    setForm((prev) => ({
+      ...prev,
+      [field]: e.target.value,
+    }));
 
   const showWilayah = ROLES_WITH_WILAYAH.includes(form.role);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
     onSubmit(form);
-    setForm({ nama: '', email: '', role: '', wilayah: '', citizenId: '', password: '', status: 'aktif' });
+
+    setForm({
+      nama: '',
+      email: '',
+      role: '',
+      wilayah: '',
+      citizenId: '',
+      password: '',
+      status: 'aktif',
+    });
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4">
+    <div className="sid-user-modal-overlay">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-xl relative max-h-[90vh] overflow-y-auto"
+        className="sid-user-modal"
       >
-        <div className="flex flex-col gap-1 mb-4">
-          <label className="text-sm font-medium text-gray-700">Nama lengkap *</label>
+        {/* NAMA */}
+        <div className="sid-user-form-group">
+          <label className="sid-user-form-label">
+            Nama lengkap *
+          </label>
+
           <input
             required
             value={form.nama}
             onChange={handleChange('nama')}
             placeholder="Nama"
-            className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
+            className="sid-user-form-input"
           />
         </div>
 
-        <div className="flex flex-col gap-1 mb-4">
-          <label className="text-sm font-medium text-gray-700">Email *</label>
+        {/* EMAIL */}
+        <div className="sid-user-form-group">
+          <label className="sid-user-form-label">
+            Email *
+          </label>
+
           <input
             required
             type="email"
             value={form.email}
             onChange={handleChange('email')}
             placeholder="Email"
-            className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
+            className="sid-user-form-input"
           />
         </div>
 
-        <div className="flex flex-col gap-1 mb-2">
-          <label className="text-sm font-medium text-gray-700">Role *</label>
+        {/* ROLE */}
+        <div className="sid-user-form-group sid-user-form-group-role">
+          <label className="sid-user-form-label">
+            Role *
+          </label>
+
           <select
             required
             value={form.role}
             onChange={handleChange('role')}
-            className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
+            className="sid-user-form-input"
           >
-            <option value="">Pilih role</option>
+            <option value="">
+              Pilih role
+            </option>
+
             {ROLE_OPTIONS.map((r) => (
-              <option key={r.value} value={r.value}>{r.label}</option>
+              <option
+                key={r.value}
+                value={r.value}
+              >
+                {r.label}
+              </option>
             ))}
           </select>
         </div>
 
-        <p className="text-xs text-gray-400 mb-4">
-          Territory label hanya muncul untuk role RT dan RW (kepala_desa &amp; petugas_desa tidak perlu wilayah)
+        <p className="sid-user-form-helper">
+          Territory label hanya muncul untuk role RT dan RW
+          (kepala_desa &amp; petugas_desa tidak perlu wilayah)
         </p>
 
-        {/* Field wilayah cuma muncul kalau role yang dipilih RT atau RW */}
+        {/* WILAYAH */}
         {showWilayah && (
-          <div className="flex flex-col gap-1 mb-4">
-            <label className="text-sm font-medium text-gray-700">Wilayah (RT/RW)</label>
+          <div className="sid-user-form-group">
+            <label className="sid-user-form-label">
+              Wilayah (RT/RW)
+            </label>
+
             <input
               value={form.wilayah}
               onChange={handleChange('wilayah')}
               placeholder="Misal: RT 001/RW 001"
-              className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
+              className="sid-user-form-input"
             />
           </div>
         )}
 
-        <div className="flex flex-col gap-1 mb-4">
-          <label className="text-sm font-medium text-gray-700">Link ke warga (Citizen ID)</label>
+        {/* CITIZEN ID */}
+        <div className="sid-user-form-group">
+          <label className="sid-user-form-label">
+            Link ke warga (Citizen ID)
+          </label>
+
           <input
             value={form.citizenId}
             onChange={handleChange('citizenId')}
             placeholder="ID dari table citzens"
-            className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500 italic"
+            className="sid-user-form-input sid-user-form-input-italic"
           />
         </div>
 
-        <div className="flex flex-col gap-1 mb-4">
-          <label className="text-sm font-medium text-gray-700">Password</label>
+        {/* PASSWORD */}
+        <div className="sid-user-form-group">
+          <label className="sid-user-form-label">
+            Password
+          </label>
+
           <input
             type="password"
             value={form.password}
             onChange={handleChange('password')}
             placeholder="Password"
-            className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
+            className="sid-user-form-input"
           />
         </div>
 
-        <div className="flex flex-col gap-1 mb-6">
-          <label className="text-sm font-medium text-gray-700">Status akun</label>
+        {/* STATUS */}
+        <div className="sid-user-form-group sid-user-form-group-status">
+          <label className="sid-user-form-label">
+            Status akun
+          </label>
+
           <select
             value={form.status}
             onChange={handleChange('status')}
-            className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
+            className="sid-user-form-input"
           >
-            <option value="aktif">Aktif</option>
-            <option value="nonaktif">Nonaktif</option>
+            <option value="aktif">
+              Aktif
+            </option>
+
+            <option value="nonaktif">
+              Nonaktif
+            </option>
           </select>
         </div>
 
-        <div className="flex gap-3">
+        {/* ACTION */}
+        <div className="sid-user-modal-actions">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 border border-green-500 text-green-600 rounded-md py-2.5 text-sm font-medium hover:bg-green-50"
+            className="sid-user-modal-cancel"
           >
             Batal
           </button>
+
           <button
             type="submit"
-            className="flex-[2] bg-green-600 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2"
+            className="sid-user-modal-submit"
           >
-            <Send size={16} /> submit permohonan
+            <Send size={16} />
+            submit permohonan
           </button>
         </div>
       </form>

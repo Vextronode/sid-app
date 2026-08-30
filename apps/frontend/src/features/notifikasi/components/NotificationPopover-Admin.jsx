@@ -1,26 +1,35 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 // ==========================================
 // NotificationPopover.jsx
-// Popup notifikasi, dibuka dari ikon lonceng di navbar. Ada tab
-// Semua/Pelayanan/Informasi, tombol "Tandai Semua Dibaca", dan daftar
-// notifikasi dikelompokkan per hari.
+// Popup notifikasi dari ikon lonceng navbar.
+// Styling mengikuti SID Global Theme.
+// Logic/API tidak diubah.
 // ==========================================
+
 import { useAuth } from "@/features/auth/contexts/AuthContext";
-import { useState } from 'react';
-import { FileText, PenLine } from 'lucide-react';
+import { useState } from "react";
+import { FileText, PenLine } from "lucide-react";
 import useNotifications from "@/features/notifikasi/hooks/useNotifications";
+
 const TABS = [
-  { value: 'semua', label: 'Semua' },
-  { value: 'pelayanan', label: 'Pelayanan' },
-  { value: 'informasi', label: 'Informasi' },
+  { value: "semua", label: "Semua" },
+  { value: "pelayanan", label: "Pelayanan" },
+  { value: "informasi", label: "Informasi" },
 ];
 
-const ICON_MAP = { document: FileText, signature: PenLine };
-const WARNA_MAP = {
-  green: "bg-green-100 text-green-600",
-  blue: "bg-blue-100 text-blue-600",
-  red: "bg-red-100 text-red-600",
-  gray: "bg-gray-100 text-gray-400",
+const ICON_MAP = {
+  document: FileText,
+  signature: PenLine,
 };
+
+const WARNA_MAP = {
+  green: "sid-notification-icon-green",
+  blue: "sid-notification-icon-blue",
+  red: "sid-notification-icon-red",
+  gray: "sid-notification-icon-gray",
+};
+
 function getDayLabel(dateString) {
   const notifDate = new Date(dateString);
 
@@ -45,65 +54,81 @@ function getDayLabel(dateString) {
     year: "numeric",
   });
 }
+
 export default function NotificationPopover({ open, onClose }) {
   const { user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('semua');
-const {
+  const [activeTab, setActiveTab] = useState("semua");
 
+  const {
     notifications,
-
     loading,
-
     markAsRead,
-
     markAllAsRead,
+  } = useNotifications();
 
-} = useNotifications();
   if (!open) return null;
 
-const filtered =
+  const filtered =
     activeTab === "semua"
-        ? notifications
-        : notifications.filter(
-              (n) => n.category === activeTab
-          );  
-          const groupedNotifications = filtered.reduce((groups, notif) => {
-  const label = getDayLabel(notif.created_at);
+      ? notifications
+      : notifications.filter(
+          (n) => n.category === activeTab
+        );
 
-  if (!groups[label]) {
-    groups[label] = [];
-  }
+  const groupedNotifications = filtered.reduce(
+    (groups, notif) => {
+      const label = getDayLabel(notif.created_at);
 
-  groups[label].push(notif);
+      if (!groups[label]) {
+        groups[label] = [];
+      }
 
-  return groups;
-}, {});
+      groups[label].push(notif);
 
-const handleTandaiSemua = async () => {
+      return groups;
+    },
+    {}
+  );
 
+  const handleTandaiSemua = async () => {
     await markAllAsRead();
+  };
 
-};
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
+      {/* Overlay */}
+      <div
+        className="sid-notification-overlay"
+        onClick={onClose}
+      />
 
-      <div className="absolute right-4 top-16 w-full max-w-sm bg-white rounded-2xl shadow-xl z-50 max-h-[80vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 shadow-sm">
-          <h2 className="font-semibold text-gray-800">Notifikasi</h2>
-          <button onClick={handleTandaiSemua} className="text-xs text-green-600 hover:underline">
+      {/* Popover */}
+      <div className="sid-notification-popover">
+        {/* Header */}
+        <div className="sid-notification-header">
+          <h2 className="sid-notification-title">
+            Notifikasi
+          </h2>
+
+          <button
+            onClick={handleTandaiSemua}
+            className="sid-notification-mark-all"
+          >
             Tandai Semua Dibaca
           </button>
         </div>
 
-        <div className="flex gap-2 px-5 py-3">
+        {/* Tabs */}
+        <div className="sid-notification-tabs">
           {TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium ${
-                activeTab === tab.value ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'
+              className={`sid-notification-tab ${
+                activeTab === tab.value
+                  ? "sid-notification-tab-active"
+                  : "sid-notification-tab-inactive"
               }`}
             >
               {tab.label}
@@ -111,83 +136,87 @@ const handleTandaiSemua = async () => {
           ))}
         </div>
 
-<div className="px-5 pb-5 ">
-  {Object.entries(groupedNotifications).map(([label, items]) => (
-    <div key={label} className="mb-5">
+        {/* List */}
+        <div className="sid-notification-content">
+          {Object.entries(groupedNotifications).map(
+            ([label, items]) => (
+              <div
+                key={label}
+                className="sid-notification-day"
+              >
+                <p className="sid-notification-day-label">
+                  {label}
+                </p>
 
-      <p className="text-[10px] font-semibold  uppercase text-gray-400 mb-2">
-        {label}
-      </p>
+                <div className="sid-notification-list">
+                  {items.map((n) => (
+                    <NotifItem
+                      key={n.id}
+                      data={n}
+                      user={user}
+                      onRead={() => markAsRead(n.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          )}
 
-      <div className="flex flex-col gap-3">
-        {items.map((n) => (
-          <NotifItem
-            key={n.id}
-            data={n}
-            user={user}
-            onRead={() => markAsRead(n.id)}
-          />
-        ))}
-      </div>
-
-    </div>
-  ))}
-
-  {filtered.length === 0 && (
-    <p className="text-sm text-center text-gray-400 py-6">
-      Tidak ada notifikasi.
-    </p>
-  )}
-</div>
+          {filtered.length === 0 && (
+            <p className="sid-notification-empty">
+              Tidak ada notifikasi.
+            </p>
+          )}
+        </div>
       </div>
     </>
   );
 }
 
-function NotifItem({ data, onRead,user }) {
+function NotifItem({ data, onRead, user }) {
   const Icon = ICON_MAP[data.icon] ?? FileText;
 
   return (
     <div
       onClick={onRead}
-      className={`
-        rounded-xl
-        p-3
-        flex
-        gap-3
-        cursor-pointer
-        transition
-        hover:bg-green-50
-        ${data.read_at ? "bg-white" : "bg-gray-50"}
-      `}
+      className={`sid-notification-item ${
+        data.read_at
+          ? "sid-notification-item-read"
+          : "sid-notification-item-unread"
+      }`}
     >
+      {/* Icon */}
       <div
-        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-          WARNA_MAP[data.color] ?? WARNA_MAP.gray
+        className={`sid-notification-icon ${
+          WARNA_MAP[data.color] ??
+          WARNA_MAP.gray
         }`}
       >
         <Icon size={16} />
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-gray-800 mt-1">
-          {data.title}
-        </p>
+      {/* Content */}
+      <div className="sid-notification-item-content">
+        <div className="sid-notification-item-header">
+          <p className="sid-notification-item-title">
+            {data.title}
+          </p>
 
-          <span className="text-[10px] text-gray-400">
-            {new Date(data.created_at).toLocaleTimeString("id-ID", {
+          <span className="sid-notification-time">
+            {new Date(
+              data.created_at
+            ).toLocaleTimeString("id-ID", {
               hour: "2-digit",
               minute: "2-digit",
             })}
           </span>
         </div>
 
+        <p className="sid-notification-applicant">
+          Dari: {data.applicant}
+        </p>
 
-          <p className="text-xs text-green-700 font-medium truncate">
-            Dari: {data.applicant}
-          </p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="sid-notification-message">
           {data.message}
         </p>
       </div>

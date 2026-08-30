@@ -2,38 +2,43 @@ import { MapPin, Users, Home } from "lucide-react";
 
 export function StrukturWilayah({ stats, dusunList }) {
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+    <div className="sid-card sid-wilayah-card">
       <div>
-        <h4 className="font-semibold text-gray-500 text-xs md:text-sm mb-3">
+        <h4 className="sid-section-title sid-wilayah-title">
           Struktur Wilayah — Dusun, RW & RT
         </h4>
 
         {/* Statistik */}
-        <div className="flex flex-wrap gap-3">
-          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl text-emerald-700 text-xs font-semibold">
-            <MapPin className="w-4 h-4" /> <span>{stats.dusun} Dusun</span>
+        <div className="sid-wilayah-stats">
+          <div className="sid-wilayah-stat">
+            <MapPin className="sid-wilayah-stat-icon" />
+            <span>{stats.dusun} Dusun</span>
           </div>
-          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl text-emerald-700 text-xs font-semibold">
-            <Users className="w-4 h-4" /> <span>{stats.rw} RW</span>
+
+          <div className="sid-wilayah-stat">
+            <Users className="sid-wilayah-stat-icon" />
+            <span>{stats.rw} RW</span>
           </div>
-          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl text-emerald-700 text-xs font-semibold">
-            <Home className="w-4 h-4" /> <span>{stats.rt} RT</span>
+
+          <div className="sid-wilayah-stat">
+            <Home className="sid-wilayah-stat-icon" />
+            <span>{stats.rt} RT</span>
           </div>
         </div>
       </div>
 
-      <p className="text-[10px] md:text-xs text-gray-400 -mt-2">
+      <p className="sid-wilayah-description">
         Klik dusun untuk melihat RW, klik RW untuk melihat daftar RT.
       </p>
 
       {/* Accordion */}
-      <div className="space-y-3">
+      <div className="sid-wilayah-list">
         {dusunList.map((dusun, idx) => (
           <button
             key={idx}
-            className="w-full flex items-center gap-3 bg-[#4CAF4F] hover:bg-[#439E46] text-white p-3.5 rounded-xl text-left text-xs md:text-sm font-medium shadow-sm transition group"
+            className="sid-wilayah-item"
           >
-            <MapPin className="w-4 h-4 opacity-80 group-hover:scale-110 transition" />
+            <MapPin className="sid-wilayah-item-icon" />
             <span>Dusun {dusun}</span>
           </button>
         ))}

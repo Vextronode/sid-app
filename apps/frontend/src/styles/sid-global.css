@@ -10,6 +10,12 @@
   --sid-primary-hover: #0C447C;
   --sid-on-primary: #FFFFFF;
 
+    /* =========================
+     SECONDARY
+     ========================= */
+  --sid-secondary: #D85A30;
+  --sid-secondary-hover: #ab3d19;
+  --sid-on-secondary: #FFFFFF;
   /* =========================
      HEADER
      ========================= */
@@ -22,7 +28,7 @@
      ========================= */
   --sid-surface-page: #F3F3F3;
   --sid-surface-card: #FFFFFF;
-
+  --sid-card: #FFFFFF;
   /* =========================
      TEXT
      ========================= */
@@ -49,6 +55,7 @@
 
   --sid-status-rejected-bg: #FCEBEB;
   --sid-status-rejected-text: #E80F0F;
+  --sid-status-rejected-hover:#b91c1c;
 
   --sid-status-overdue-bg: #FAECE7;
   --sid-status-overdue-text: #712B13;
@@ -58,6 +65,13 @@
      ========================= */
   --sid-vendor-accent: #D85A30;
 
+  /*
+  WARNING
+  */
+  --sid-warning:#f8d393;
+  --sid-warning-soft:#F7E4C2;
+  --sid-warning-border:#faa108;
+  --sid-warning-hover:#F7E4C2;
   /* =========================
      RADIUS
      ========================= */
@@ -951,6 +965,7 @@
 .sid-mobile-footer {
   width: 100%;
 }
+
 
 
 /* =========================================================
@@ -13462,4 +13477,6465 @@
     font-size: 0.75rem;
   }
 
+}
+
+
+
+/* =========================================================
+   SID - APPROVAL ACTION BAR
+   ========================================================= */
+
+.sid-approval-action-bar {
+  display: flex;
+  align-items: center;
+
+  gap: 0.75rem;
+
+  width: 100%;
+}
+
+
+/* =========================================================
+   BASE BUTTON
+   ========================================================= */
+
+.sid-approval-action-bar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.5rem;
+
+  min-height: 2.375rem;
+
+  padding: 0.5rem 1rem;
+
+  border-radius: var(--radius-sm);
+
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.sid-approval-action-bar button:active {
+  transform: translateY(1px);
+}
+
+
+/* =========================================================
+   SETUJU
+   ========================================================= */
+
+.sid-approval-action-bar__approve {
+  border: 1px solid var(--sid-primary);
+
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-approval-action-bar__approve:hover {
+  border-color: var(--sid-primary-hover);
+
+  background: var(--sid-primary-hover);
+}
+
+
+/* =========================================================
+   TOLAK
+   ========================================================= */
+
+.sid-approval-action-bar__reject {
+  border: 1px solid var(--sid-status-rejected);
+
+  background: var(--sid-status-rejected);
+  color: #fff;
+}
+
+.sid-approval-action-bar__reject:hover {
+  background: var(--sid-status-rejected-hover);
+  border-color: var(--sid-status-rejected-hover);
+}
+
+
+/* =========================================================
+   KEMBALI
+   ========================================================= */
+
+.sid-approval-action-bar__back {
+  border: 1px solid var(--sid-primary);
+
+  background: transparent;
+  color: var(--sid-primary);
+}
+
+.sid-approval-action-bar__back:hover {
+  background: var(--sid-status-progress-bg);
+  border-color: var(--sid-primary-hover);
+  color: var(--sid-primary-hover);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 639px) {
+
+  .sid-approval-action-bar {
+    gap: 0.5rem;
+  }
+
+  .sid-approval-action-bar button {
+    flex: 1;
+
+    padding: 0.5rem 0.625rem;
+
+    font-size: 0.75rem;
+  }
+
+}
+
+/* =========================================================
+   SID - PAGINATION
+   ========================================================= */
+
+.sid-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sid-pagination button {
+  width: 2.25rem;
+  height: 2.25rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.sid-pagination button:hover {
+  background: var(--sid-header-subtext);
+  border-color: var(--sid-primary-hover);
+  color: var(--sid-primary-hover);
+}
+
+.sid-pagination button:active {
+  transform: translateY(1px);
+}
+
+.sid-pagination button.active {
+  background: var(--sid-primary);
+  border-color: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-pagination button.active:hover {
+  background: var(--sid-primary-hover);
+  border-color: var(--sid-primary-hover);
+  color: var(--sid-on-primary);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 639px) {
+  .sid-pagination {
+    gap: 0.375rem;
+  }
+
+  .sid-pagination button {
+    width: 2rem;
+    height: 2rem;
+
+    font-size: 0.8125rem;
+  }
+}
+
+/* =========================================================
+   SID - LOGIN FORM
+   ========================================================= */
+
+.sid-login-form {
+  width: 100%;
+}
+
+.sid-login-form-error {
+  width: 100%;
+
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+
+  border: 1px solid var(--sid-status-error-border);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-status-error-bg);
+  color: var(--sid-status-error);
+
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.sid-login-form-content {
+  width: 100%;
+}
+
+/* =========================================================
+   SID - DETAIL BERITA
+   Main content halaman detail berita publik.
+   ========================================================= */
+
+
+/* =========================================================
+   MAIN CONTENT
+   ========================================================= */
+
+.sid-berita-detail-main {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 1rem;
+
+  grid-column: span 3;
+}
+
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+.sid-berita-detail-title {
+  margin: 0;
+
+  padding: 0 0.5rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   IMAGE
+   ========================================================= */
+
+.sid-berita-detail-image-wrapper {
+  width: 100%;
+
+  overflow: hidden;
+
+  padding: 0.5rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+
+  background: var(--sid-surface-card);
+
+  box-shadow: var(--shadow-card);
+}
+
+.sid-berita-detail-image {
+  display: block;
+
+  width: 100%;
+  height: 25rem;
+
+  object-fit: cover;
+
+  border-radius: var(--radius-sm);
+}
+
+
+/* =========================================================
+   DESCRIPTION CARD
+   ========================================================= */
+
+.sid-berita-detail-description {
+  padding: 1.5rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+
+  box-shadow: var(--shadow-card);
+}
+
+
+/* =========================================================
+   DESCRIPTION TITLE
+   ========================================================= */
+
+.sid-berita-detail-description-title {
+  margin: 0 0 0.75rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+
+  text-transform: uppercase;
+}
+
+
+/* =========================================================
+   DESCRIPTION CONTENT
+   ========================================================= */
+
+.sid-berita-detail-content {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.5rem;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+  line-height: 1.625;
+}
+
+.sid-berita-detail-content p {
+  margin: 0;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1023px) {
+  .sid-berita-detail-main {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 639px) {
+  .sid-berita-detail-title {
+    padding: 0;
+
+    font-size: 1.25rem;
+  }
+
+  .sid-berita-detail-image-wrapper {
+    padding: 0.375rem;
+  }
+
+  .sid-berita-detail-image {
+    height: 15rem;
+  }
+
+  .sid-berita-detail-description {
+    padding: 1rem;
+  }
+
+  .sid-berita-detail-content {
+    font-size: 0.8125rem;
+  }
+}
+
+/* =========================================================
+   SID - NEWS ROW CARD
+   Card berita horizontal untuk halaman publik.
+   ========================================================= */
+
+
+/* =========================================================
+   CARD
+   ========================================================= */
+
+.sid-news-row-card {
+  width: 100%;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 1rem;
+
+  padding: 1rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+
+  box-shadow: var(--shadow-card);
+
+  text-decoration: none;
+
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.sid-news-row-card:hover {
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08);
+
+  transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   IMAGE
+   ========================================================= */
+
+.sid-news-row-image {
+  width: 100%;
+  height: 9rem;
+
+  overflow: hidden;
+
+  flex-shrink: 0;
+
+  border-radius: var(--radius-md);
+
+  background: var(--sid-surface-page);
+}
+
+.sid-news-row-image-content {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  transition:
+    transform 0.3s ease;
+}
+
+.sid-news-row-card:hover .sid-news-row-image-content {
+  transform: scale(1.05);
+}
+
+
+/* =========================================================
+   CONTENT
+   ========================================================= */
+
+.sid-news-row-content {
+  min-width: 0;
+
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  padding: 0.25rem 0;
+}
+
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+.sid-news-row-title {
+  display: -webkit-box;
+
+  margin: 0 0 0.25rem;
+
+  overflow: hidden;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+
+  transition: color 0.15s ease;
+}
+
+.sid-news-row-card:hover .sid-news-row-title {
+  color: var(--sid-primary);
+}
+
+
+/* =========================================================
+   DESCRIPTION
+   ========================================================= */
+
+.sid-news-row-description {
+  display: -webkit-box;
+
+  margin: 0 0 0.75rem;
+
+  overflow: hidden;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  line-height: 1.5;
+
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+
+/* =========================================================
+   META
+   ========================================================= */
+
+.sid-news-row-meta {
+  display: flex;
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 0.75rem;
+
+  margin-top: auto;
+}
+
+
+/* =========================================================
+   CATEGORY
+   ========================================================= */
+
+.sid-news-row-category {
+  display: inline-flex;
+  align-items: center;
+
+  width: fit-content;
+
+  padding: 0.25rem 1rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 9999px;
+
+  background: var(--sid-surface-page);
+  color: var(--sid-text-secondary);
+
+  font-size: 0.625rem;
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   DATE
+   ========================================================= */
+
+.sid-news-row-date {
+  color: var(--sid-text-muted);
+
+  font-size: 0.625rem;
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 640px) {
+  .sid-news-row-card {
+    flex-direction: row;
+  }
+
+  .sid-news-row-image {
+    width: 12rem;
+    height: 9rem;
+  }
+
+  .sid-news-row-title {
+    font-size: 1rem;
+  }
+
+  .sid-news-row-description {
+    font-size: 0.875rem;
+  }
+
+  .sid-news-row-category,
+  .sid-news-row-date {
+    font-size: 0.75rem;
+  }
+}
+
+/* =========================================================
+   SID - CETAK SURAT
+   ========================================================= */
+
+
+/* =========================================================
+   PAGE
+   ========================================================= */
+
+.sid-cetak-surat-page {
+  width: 100%;
+  min-height: 100%;
+
+  background: var(--sid-surface-page);
+  color: var(--sid-text-primary);
+}
+
+.sid-cetak-surat-content {
+  width: 100%;
+  max-width: 64rem;
+
+  margin: 0 auto;
+
+  padding: 1.5rem;
+}
+
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+.sid-cetak-surat-title {
+  margin: 0 0 1rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
+
+.sid-cetak-surat-search {
+  width: 100%;
+
+  display: flex;
+  align-items: stretch;
+
+  gap: 0.75rem;
+
+  margin-bottom: 1rem;
+}
+
+.sid-cetak-surat-search-input {
+  flex: 1;
+
+  min-width: 0;
+
+  padding: 0.625rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  outline: none;
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sid-cetak-surat-search-input::placeholder {
+  color: var(--sid-text-muted);
+}
+
+.sid-cetak-surat-search-input:focus {
+  border-color: var(--sid-primary);
+
+  box-shadow:
+    0 0 0 2px color-mix(
+      in srgb,
+      var(--sid-primary) 12%,
+      transparent
+    );
+}
+
+.sid-cetak-surat-search-button {
+  width: 2.5rem;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sid-cetak-surat-search-button:hover {
+  background: var(--sid-primary-hover);
+  border-color: var(--sid-primary-hover);
+}
+
+
+/* =========================================================
+   TABLE WRAPPER
+   ========================================================= */
+
+.sid-cetak-surat-table-wrapper {
+  width: 100%;
+
+  overflow-x: auto;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+
+  background: var(--sid-surface-card);
+
+  box-shadow: var(--shadow-card);
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.sid-cetak-surat-table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+}
+
+.sid-cetak-surat-table thead tr {
+  border-bottom: 1px solid var(--sid-border);
+}
+
+.sid-cetak-surat-table th {
+  padding: 0.75rem 1rem;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.8125rem;
+  font-weight: 500;
+
+  text-align: left;
+
+  white-space: nowrap;
+}
+
+.sid-cetak-surat-table td {
+  padding: 0.75rem 1rem;
+
+  border-bottom: 1px solid var(--sid-border);
+
+  color: var(--sid-text-primary);
+
+  vertical-align: middle;
+}
+
+.sid-cetak-surat-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.sid-cetak-surat-table tbody tr {
+  transition:
+    background-color 0.15s ease;
+}
+
+.sid-cetak-surat-table tbody tr:hover {
+  background: var(--sid-surface-page);
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.sid-cetak-surat-empty {
+  padding: 2rem 1rem !important;
+
+  color: var(--sid-text-muted) !important;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+
+.sid-cetak-surat-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 0.5rem;
+}
+
+.sid-cetak-surat-action {
+  width: 2rem;
+  height: 2rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+
+/* VIEW */
+
+.sid-cetak-surat-action-view {
+  border: 1px solid var(--sid-border);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-secondary);
+}
+
+.sid-cetak-surat-action-view:hover {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-header-subtext);
+  color: var(--sid-primary);
+}
+
+
+/* PRINT */
+
+.sid-cetak-surat-action-print {
+  border: 1px solid var(--sid-primary);
+
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-cetak-surat-action-print:hover {
+  border-color: var(--sid-primary-hover);
+
+  background: var(--sid-primary-hover);
+}
+
+
+/* =========================================================
+   MODAL OVERLAY
+   ========================================================= */
+
+.sid-cetak-surat-modal-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 40;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+
+  background: rgba(0, 0, 0, 0.4);
+}
+
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+.sid-cetak-surat-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 42rem;
+
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  padding: 2rem;
+
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.16);
+}
+
+
+/* =========================================================
+   MODAL CLOSE
+   ========================================================= */
+
+.sid-cetak-surat-modal-close {
+  position: absolute;
+
+  top: 1rem;
+  right: 1rem;
+
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+  color: var(--sid-text-muted);
+
+  font-family: inherit;
+  font-size: 1.125rem;
+
+  cursor: pointer;
+
+  transition: color 0.15s ease;
+}
+
+.sid-cetak-surat-modal-close:hover {
+  color: var(--sid-text-primary);
+}
+
+
+/* =========================================================
+   MODAL HEADER
+   ========================================================= */
+
+.sid-cetak-surat-modal-title {
+  margin: 0 0 0.25rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.sid-cetak-surat-modal-number {
+  margin: 0 0 1.5rem;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+}
+
+
+/* =========================================================
+   PRINT BUTTON
+   ========================================================= */
+
+.sid-cetak-surat-print-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.5rem;
+
+  margin-top: 1rem;
+
+  padding: 0.5rem 1rem;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sid-cetak-surat-print-button:hover {
+  background: var(--sid-primary-hover);
+  border-color: var(--sid-primary-hover);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 639px) {
+  .sid-cetak-surat-content {
+    padding: 1rem;
+  }
+
+  .sid-cetak-surat-search {
+    gap: 0.5rem;
+  }
+
+  .sid-cetak-surat-table {
+    min-width: 42rem;
+  }
+
+  .sid-cetak-surat-modal {
+    padding: 1.25rem;
+  }
+
+  .sid-cetak-surat-modal-overlay {
+    padding: 0.75rem;
+  }
+}
+
+/* =========================================================
+   SID - QUICK NAVIGATION
+   ========================================================= */
+
+/* =========================================================
+   CONTAINER
+   ========================================================= */
+
+.sid-quick-nav {
+  width: 100%;
+
+  padding: 1rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+
+  box-shadow: var(--shadow-card);
+}
+
+
+/* =========================================================
+   GRID
+   ========================================================= */
+
+.sid-quick-nav-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 0.75rem;
+}
+
+
+/* =========================================================
+   ITEM
+   ========================================================= */
+
+.sid-quick-nav-item {
+  width: 100%;
+
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.5rem;
+
+  padding: 1rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+
+  font-family: inherit;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.sid-quick-nav-item:hover {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-surface-page);
+
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06);
+
+  transform: translateY(-1px);
+}
+
+.sid-quick-nav-item:active {
+  transform: translateY(0);
+}
+
+
+/* =========================================================
+   ICON
+   ========================================================= */
+
+.sid-quick-nav-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+}
+
+
+/* =========================================================
+   ICON - MENUNGGU
+   ========================================================= */
+
+.sid-quick-nav-icon-waiting {
+  background: #fef3c7;
+  color: #eab308;
+}
+
+
+/* =========================================================
+   ICON - DISETUJUI
+   ========================================================= */
+
+.sid-quick-nav-icon-approved {
+  background: #f0fdf4;
+  color: var(--sid-primary);
+}
+
+
+/* =========================================================
+   ICON - DITOLAK
+   ========================================================= */
+
+.sid-quick-nav-icon-rejected {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+
+/* =========================================================
+   ICON - SEMUA
+   ========================================================= */
+
+.sid-quick-nav-icon-all {
+  background: var(--sid-header-subtext);
+  color: var(--sid-text-secondary);
+}
+
+
+/* =========================================================
+   LABEL
+   ========================================================= */
+
+.sid-quick-nav-label {
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  line-height: 1.4;
+
+  text-align: center;
+}
+
+.sid-quick-nav-item:hover .sid-quick-nav-label {
+  color: var(--sid-primary);
+}
+
+
+/* =========================================================
+   FOCUS
+   ========================================================= */
+
+.sid-quick-nav-item:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 639px) {
+
+  .sid-quick-nav {
+    padding: 0.75rem;
+  }
+
+  .sid-quick-nav-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 0.625rem;
+  }
+
+  .sid-quick-nav-item {
+    padding: 0.875rem 0.5rem;
+  }
+
+  .sid-quick-nav-label {
+    font-size: 0.8125rem;
+  }
+
+}
+
+/* =========================================================
+   SID - RIWAYAT VERIFIKASI
+   ========================================================= */
+
+
+/* =========================================================
+   CONTAINER
+   ========================================================= */
+
+.sid-riwayat-verifikasi {
+  width: 100%;
+
+  padding: 1.25rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+
+  box-shadow: var(--shadow-card);
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.sid-riwayat-verifikasi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  margin-bottom: 0.75rem;
+}
+
+.sid-riwayat-verifikasi-header h3 {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   VIEW ALL
+   ========================================================= */
+
+.sid-riwayat-verifikasi-view-all {
+  flex-shrink: 0;
+
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+  color: var(--sid-primary);
+
+  font-family: inherit;
+
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    color 0.15s ease;
+}
+
+.sid-riwayat-verifikasi-view-all:hover {
+  color: var(--sid-primary-hover);
+
+  text-decoration: underline;
+}
+
+
+/* =========================================================
+   TABLE COLUMNS
+   ========================================================= */
+
+.sid-riwayat-verifikasi-columns {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 1rem;
+
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+
+  border-bottom: 1px solid var(--sid-border);
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.625rem;
+  font-weight: 500;
+
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   LIST
+   ========================================================= */
+
+.sid-riwayat-verifikasi-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.75rem;
+}
+
+
+/* =========================================================
+   ITEM
+   ========================================================= */
+
+.sid-riwayat-verifikasi-item {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  align-items: start;
+
+  gap: 1rem;
+
+  color: var(--sid-text-primary);
+}
+
+
+/* =========================================================
+   CITIZEN
+   ========================================================= */
+
+.sid-riwayat-verifikasi-citizen {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 0.5rem;
+}
+
+
+/* =========================================================
+   AVATAR
+   ========================================================= */
+
+.sid-riwayat-verifikasi-avatar {
+  width: 2rem;
+  height: 2rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: var(--sid-header-subtext);
+  color: var(--sid-primary);
+
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  text-transform: uppercase;
+}
+
+
+/* =========================================================
+   CITIZEN INFO
+   ========================================================= */
+
+.sid-riwayat-verifikasi-citizen-info {
+  min-width: 0;
+}
+
+.sid-riwayat-verifikasi-name {
+  margin: 0;
+
+  overflow: hidden;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  line-height: 1.25;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sid-riwayat-verifikasi-nik {
+  margin: 0.125rem 0 0;
+
+  overflow: hidden;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.625rem;
+
+  line-height: 1.4;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   LETTER
+   ========================================================= */
+
+.sid-riwayat-verifikasi-letter {
+  min-width: 0;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 0.75rem;
+}
+
+.sid-riwayat-verifikasi-letter-type {
+  min-width: 0;
+
+  margin: 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+
+  line-height: 1.4;
+}
+
+.sid-riwayat-verifikasi-date {
+  flex-shrink: 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.625rem;
+
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 639px) {
+
+  .sid-riwayat-verifikasi {
+    padding: 1rem;
+  }
+
+  .sid-riwayat-verifikasi-item {
+    gap: 0.75rem;
+  }
+
+  .sid-riwayat-verifikasi-letter {
+    gap: 0.5rem;
+  }
+
+}
+
+
+@media (max-width: 420px) {
+
+  .sid-riwayat-verifikasi-item {
+    grid-template-columns:
+      minmax(0, 1.1fr)
+      minmax(0, 0.9fr);
+  }
+
+  .sid-riwayat-verifikasi-letter {
+    flex-direction: column;
+
+    gap: 0.125rem;
+  }
+
+}
+
+/* =========================================================
+   SID - STATISTIK PENGAJUAN SURAT
+   ========================================================= */
+
+
+/* =========================================================
+   CONTAINER
+   ========================================================= */
+
+.sid-surat-stat-chart {
+  width: 100%;
+
+  padding: 1.25rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+
+  box-shadow: var(--shadow-card);
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.sid-surat-stat-chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  margin-bottom: 1.25rem;
+}
+
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+.sid-surat-stat-chart-title {
+  min-width: 0;
+}
+
+.sid-surat-stat-chart-title h3 {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.9375rem;
+  font-weight: 600;
+
+  line-height: 1.4;
+}
+
+.sid-surat-stat-chart-title p {
+  margin: 0.125rem 0 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   FILTERS
+   ========================================================= */
+
+.sid-surat-stat-chart-filters {
+  position: relative;
+
+  width: 14rem;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.5rem;
+
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   DATE BUTTON
+   ========================================================= */
+
+.sid-surat-stat-chart-date {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 0.5rem;
+
+  padding: 0.5rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 9999px;
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-secondary);
+
+  font-family: inherit;
+  font-size: 0.75rem;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.sid-surat-stat-chart-date:hover {
+  border-color: var(--sid-primary);
+
+  color: var(--sid-primary);
+}
+
+
+/* =========================================================
+   DATE INPUT
+   ========================================================= */
+
+.sid-surat-stat-chart-date-input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  opacity: 0;
+
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   SELECT
+   ========================================================= */
+
+.sid-surat-stat-chart-select {
+  width: 100%;
+
+  padding: 0.5rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 9999px;
+
+  outline: none;
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-secondary);
+
+  font-family: inherit;
+  font-size: 0.75rem;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-surat-stat-chart-select:hover {
+  border-color: var(--sid-primary);
+}
+
+.sid-surat-stat-chart-select:focus {
+  border-color: var(--sid-primary);
+
+  box-shadow:
+    0 0 0 2px color-mix(
+      in srgb,
+      var(--sid-primary) 12%,
+      transparent
+    );
+}
+
+
+/* =========================================================
+   CHART AREA
+   ========================================================= */
+
+.sid-surat-stat-chart-area {
+  width: 100%;
+
+  min-height: 180px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 639px) {
+
+  .sid-surat-stat-chart {
+    padding: 1rem;
+  }
+
+  .sid-surat-stat-chart-header {
+    flex-direction: column;
+
+    gap: 0.75rem;
+  }
+
+  .sid-surat-stat-chart-filters {
+    width: 100%;
+  }
+
+}
+
+
+/* =========================================================
+   SID - BERITA FORM MODAL
+   ========================================================= */
+
+
+/* =========================================================
+   MODAL OVERLAY
+   ========================================================= */
+
+.sid-berita-modal-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 50;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+
+  background: rgba(0, 0, 0, 0.4);
+}
+
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+.sid-berita-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 36rem;
+
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  padding: 2rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+
+  box-shadow: var(--shadow-card);
+}
+
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+.sid-berita-modal-title {
+  margin: 0 0 1.5rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   FORM GROUP
+   ========================================================= */
+
+.sid-berita-form-group {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.25rem;
+
+  margin-bottom: 1rem;
+}
+
+.sid-berita-form-group-status {
+  margin-bottom: 1.5rem;
+}
+
+
+/* =========================================================
+   LABEL
+   ========================================================= */
+
+.sid-berita-form-label {
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   INPUT / SELECT
+   ========================================================= */
+
+.sid-berita-form-input {
+  width: 100%;
+
+  padding: 0.5rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  outline: none;
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sid-berita-form-input::placeholder {
+  color: var(--sid-text-muted);
+}
+
+.sid-berita-form-input:focus {
+  border-color: var(--sid-primary);
+
+  box-shadow:
+    0 0 0 2px
+    color-mix(
+      in srgb,
+      var(--sid-primary) 12%,
+      transparent
+    );
+}
+
+
+/* =========================================================
+   TEXTAREA
+   ========================================================= */
+
+.sid-berita-form-textarea {
+  width: 100%;
+
+  min-height: 7.5rem;
+
+  resize: none;
+
+  padding: 0.5rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  outline: none;
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+
+  line-height: 1.5;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sid-berita-form-textarea::placeholder {
+  color: var(--sid-text-muted);
+}
+
+.sid-berita-form-textarea:focus {
+  border-color: var(--sid-primary);
+
+  box-shadow:
+    0 0 0 2px
+    color-mix(
+      in srgb,
+      var(--sid-primary) 12%,
+      transparent
+    );
+}
+
+
+/* =========================================================
+   IMAGE UPLOAD
+   ========================================================= */
+
+.sid-berita-upload {
+  min-height: 8rem;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.5rem;
+
+  padding: 2rem 0.75rem;
+
+  border: 1px dashed var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-muted);
+
+  font-size: 0.875rem;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-berita-upload:hover {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-header-subtext);
+
+  color: var(--sid-primary);
+}
+
+.sid-berita-upload-input {
+  display: none;
+}
+
+.sid-berita-upload-preview {
+  width: 100%;
+  height: 8rem;
+
+  object-fit: cover;
+
+  border-radius: var(--radius-sm);
+}
+
+
+/* =========================================================
+   ACTION
+   ========================================================= */
+
+.sid-berita-modal-actions {
+  display: flex;
+
+  gap: 0.75rem;
+}
+
+
+/* =========================================================
+   CANCEL
+   ========================================================= */
+
+.sid-berita-modal-cancel {
+  flex: 1;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.625rem 1rem;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--radius-sm);
+
+  background: transparent;
+  color: var(--sid-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-berita-modal-cancel:hover {
+  background: var(--sid-header-subtext);
+}
+
+
+/* =========================================================
+   SUBMIT
+   ========================================================= */
+
+.sid-berita-modal-submit {
+  flex: 2;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.5rem;
+
+  padding: 0.625rem 1rem;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.sid-berita-modal-submit:hover {
+  background: var(--sid-primary-hover);
+  border-color: var(--sid-primary-hover);
+}
+
+.sid-berita-modal-submit:active {
+  transform: translateY(1px);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 639px) {
+
+  .sid-berita-modal-overlay {
+    padding: 0.75rem;
+  }
+
+  .sid-berita-modal {
+    padding: 1.25rem;
+
+    border-radius: var(--radius-lg);
+  }
+
+  .sid-berita-modal-title {
+    font-size: 1rem;
+  }
+
+  .sid-berita-modal-actions {
+    flex-direction: column;
+  }
+
+  .sid-berita-modal-cancel,
+  .sid-berita-modal-submit {
+    flex: none;
+
+    width: 100%;
+  }
+
+}
+
+
+/* =========================================================
+   SID - TAMBAH USER MODAL
+   ========================================================= */
+
+
+/* =========================================================
+   MODAL OVERLAY
+   ========================================================= */
+
+.sid-user-modal-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 40;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+
+  background: rgba(0, 0, 0, 0.4);
+}
+
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+.sid-user-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 36rem;
+
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  padding: 2rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+
+  box-shadow: var(--shadow-card);
+}
+
+
+/* =========================================================
+   FORM GROUP
+   ========================================================= */
+
+.sid-user-form-group {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.25rem;
+
+  margin-bottom: 1rem;
+}
+
+.sid-user-form-group-role {
+  margin-bottom: 0.5rem;
+}
+
+.sid-user-form-group-status {
+  margin-bottom: 1.5rem;
+}
+
+
+/* =========================================================
+   LABEL
+   ========================================================= */
+
+.sid-user-form-label {
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   INPUT / SELECT
+   ========================================================= */
+
+.sid-user-form-input {
+  width: 100%;
+
+  padding: 0.5rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  outline: none;
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sid-user-form-input::placeholder {
+  color: var(--sid-text-muted);
+}
+
+.sid-user-form-input:focus {
+  border-color: var(--sid-primary);
+
+  box-shadow:
+    0 0 0 2px
+    color-mix(
+      in srgb,
+      var(--sid-primary) 12%,
+      transparent
+    );
+}
+
+.sid-user-form-input-italic {
+  font-style: italic;
+}
+
+
+/* =========================================================
+   HELPER TEXT
+   ========================================================= */
+
+.sid-user-form-helper {
+  margin: 0 0 1rem;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   ACTION
+   ========================================================= */
+
+.sid-user-modal-actions {
+  display: flex;
+
+  gap: 0.75rem;
+}
+
+
+/* =========================================================
+   CANCEL
+   ========================================================= */
+
+.sid-user-modal-cancel {
+  flex: 1;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.625rem 1rem;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--radius-sm);
+
+  background: transparent;
+  color: var(--sid-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-user-modal-cancel:hover {
+  background: var(--sid-header-subtext);
+}
+
+
+/* =========================================================
+   SUBMIT
+   ========================================================= */
+
+.sid-user-modal-submit {
+  flex: 2;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.5rem;
+
+  padding: 0.625rem 1rem;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.sid-user-modal-submit:hover {
+  background: var(--sid-primary-hover);
+  border-color: var(--sid-primary-hover);
+}
+
+.sid-user-modal-submit:active {
+  transform: translateY(1px);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 639px) {
+
+  .sid-user-modal-overlay {
+    padding: 0.75rem;
+  }
+
+  .sid-user-modal {
+    padding: 1.25rem;
+
+    border-radius: var(--radius-lg);
+  }
+
+  .sid-user-modal-actions {
+    flex-direction: column;
+  }
+
+  .sid-user-modal-cancel,
+  .sid-user-modal-submit {
+    flex: none;
+
+    width: 100%;
+  }
+
+}
+
+/* ==========================================
+   SID GLOBAL
+   MODAL & FORM
+   ========================================== */
+
+.sid-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+
+  background: rgb(0 0 0 / 40%);
+}
+
+.sid-modal {
+  position: relative;
+
+  width: 100%;
+
+  background: var(--sid-surface-card);
+  border-radius: 1rem;
+
+  box-shadow: var(--sid-shadow-lg);
+
+  padding: 2rem;
+
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.sid-modal-user {
+  max-width: 32rem;
+}
+
+
+/* ==========================================
+   FORM GROUP
+   ========================================== */
+
+.sid-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  margin-bottom: 1rem;
+}
+
+.sid-form-group-compact {
+  margin-bottom: 0.5rem;
+}
+
+.sid-form-group-last {
+  margin-bottom: 1.5rem;
+}
+
+
+/* ==========================================
+   LABEL
+   ========================================== */
+
+.sid-form-label {
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+.sid-form-label-muted {
+  color: var(--sid-text-muted);
+  font-weight: 400;
+}
+
+
+/* ==========================================
+   INPUT
+   ========================================== */
+
+.sid-form-input {
+  width: 100%;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 0.375rem;
+
+  background: var(--sid-surface-card);
+
+  color: var(--sid-text-primary);
+
+  padding: 0.5rem 0.75rem;
+
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.sid-form-input::placeholder {
+  color: var(--sid-text-muted);
+}
+
+.sid-form-input:focus {
+  border-color: var(--sid-primary);
+
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--sid-primary) 12%, transparent);
+}
+
+.sid-form-input-italic {
+  font-style: italic;
+}
+
+.sid-form-select {
+  appearance: auto;
+}
+
+
+/* ==========================================
+   HINT
+   ========================================== */
+
+.sid-form-hint {
+  margin: 0 0 1rem;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+
+/* ==========================================
+   PASSWORD
+   ========================================== */
+
+.sid-password-wrapper {
+  position: relative;
+}
+
+.sid-form-password {
+  padding-right: 2.5rem;
+}
+
+.sid-password-toggle {
+  position: absolute;
+
+  right: 0.75rem;
+  top: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transform: translateY(-50%);
+
+  color: var(--sid-text-muted);
+
+  border: 0;
+  background: transparent;
+
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.sid-password-toggle:hover {
+  color: var(--sid-text-primary);
+}
+
+
+/* ==========================================
+   MODAL ACTION
+   ========================================== */
+
+.sid-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.sid-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  border-radius: 0.375rem;
+
+  padding: 0.625rem 1rem;
+
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.sid-button-outline {
+  flex: 1;
+
+  border: 1px solid var(--sid-primary);
+
+  background: transparent;
+
+  color: var(--sid-primary);
+}
+
+.sid-button-outline:hover {
+  background: var(--sid-primary-soft);
+}
+
+.sid-button-primary {
+  border: 1px solid var(--sid-primary);
+
+  background: var(--sid-primary);
+
+  color: #fff;
+}
+
+.sid-button-primary:hover {
+  background: var(--sid-primary-hover);
+  border-color: var(--sid-primary-hover);
+}
+
+.sid-button-submit {
+  flex: 2;
+}
+
+/* ==========================================
+   SID GLOBAL
+   NOTIFICATION POPOVER
+   ========================================== */
+
+.sid-notification-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+
+/* ==========================================
+   POPOVER
+   ========================================== */
+
+.sid-notification-popover {
+  position: absolute;
+
+  top: 4rem;
+  right: 1rem;
+
+  z-index: 50;
+
+  width: 100%;
+  max-width: 24rem;
+
+  max-height: 80vh;
+  overflow-y: auto;
+
+  background: var(--sid-surface-card);
+
+  border-radius: 1rem;
+
+  box-shadow: var(--sid-shadow-lg);
+}
+
+
+/* ==========================================
+   HEADER
+   ========================================== */
+
+.sid-notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 1rem 1.25rem;
+
+  box-shadow: var(--sid-shadow-sm);
+}
+
+.sid-notification-title {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.sid-notification-mark-all {
+  border: 0;
+  background: transparent;
+
+  padding: 0;
+
+  color: var(--sid-primary);
+
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition: opacity 0.2s ease;
+}
+
+.sid-notification-mark-all:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+
+/* ==========================================
+   TABS
+   ========================================== */
+
+.sid-notification-tabs {
+  display: flex;
+  gap: 0.5rem;
+
+  padding: 0.75rem 1.25rem;
+}
+
+.sid-notification-tab {
+  border: 0;
+  border-radius: 9999px;
+
+  padding: 0.375rem 1rem;
+
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.sid-notification-tab-active {
+  background: var(--sid-primary);
+  color: #fff;
+}
+
+.sid-notification-tab-inactive {
+  background: var(--sid-primary-soft);
+  color: var(--sid-primary);
+}
+
+.sid-notification-tab-inactive:hover {
+  background: var(--sid-primary);
+  color: #fff;
+}
+
+
+/* ==========================================
+   CONTENT
+   ========================================== */
+
+.sid-notification-content {
+  padding: 0 1.25rem 1.25rem;
+}
+
+.sid-notification-day {
+  margin-bottom: 1.25rem;
+}
+
+.sid-notification-day-label {
+  margin: 0 0 0.5rem;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.625rem;
+  font-weight: 600;
+
+  text-transform: uppercase;
+}
+
+.sid-notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+
+/* ==========================================
+   NOTIFICATION ITEM
+   ========================================== */
+
+.sid-notification-item {
+  display: flex;
+  gap: 0.75rem;
+
+  padding: 0.75rem;
+
+  border-radius: 0.75rem;
+
+  cursor: pointer;
+
+  transition: background-color 0.2s ease;
+}
+
+.sid-notification-item-read {
+  background: var(--sid-surface-card);
+}
+
+.sid-notification-item-unread {
+  background: var(--sid-surface-page);
+}
+
+.sid-notification-item:hover {
+  background: var(--sid-primary-soft);
+}
+
+
+/* ==========================================
+   ICON
+   ========================================== */
+
+.sid-notification-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9999px;
+}
+
+
+/* Green menggunakan SID Primary */
+
+.sid-notification-icon-green {
+  background: var(--sid-primary-soft);
+  color: var(--sid-primary);
+}
+
+
+/* Warna kategori lain */
+
+.sid-notification-icon-blue {
+  background: #eaf2fb;
+  color: var(--sid-primary);
+}
+
+.sid-notification-icon-red {
+  background: #fef0f0;
+  color: #dc2626;
+}
+
+.sid-notification-icon-gray {
+  background: #f3f4f6;
+  color: var(--sid-text-muted);
+}
+
+
+/* ==========================================
+   ITEM CONTENT
+   ========================================== */
+
+.sid-notification-item-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.sid-notification-item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 0.5rem;
+}
+
+.sid-notification-item-title {
+  margin: 0.25rem 0 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  line-height: 1.25rem;
+}
+
+.sid-notification-time {
+  flex-shrink: 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.625rem;
+}
+
+.sid-notification-applicant {
+  margin: 0.125rem 0 0;
+
+  color: var(--sid-primary);
+
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sid-notification-message {
+  margin: 0.25rem 0 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+}
+
+
+/* ==========================================
+   EMPTY STATE
+   ========================================== */
+
+.sid-notification-empty {
+  margin: 0;
+
+  padding: 1.5rem 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.875rem;
+
+  text-align: center;
+}
+
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+@media (max-width: 640px) {
+  .sid-notification-popover {
+    top: 4rem;
+    right: 0.75rem;
+    left: 0.75rem;
+
+    width: auto;
+
+    max-width: none;
+  }
+}
+
+/* =========================================================
+   SID DASHBOARD FLOW CARD
+   ========================================================= */
+
+.sid-dashboard-flow-card {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  padding: 1.25rem;
+
+  background: var(--sid-surface-card);
+  border: 1px solid var(--sid-border);
+  border-radius: 1rem;
+
+  box-shadow: var(--sid-shadow-sm);
+  color: var(--sid-text-primary);
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.sid-dashboard-flow-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 1.5rem;
+}
+
+.sid-dashboard-flow-title {
+  margin: 0;
+
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  color: var(--sid-text-primary);
+}
+
+.sid-dashboard-period-select {
+  padding: 0.25rem 0.5rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 0.5rem;
+
+  outline: none;
+
+  font-size: 0.75rem;
+  color: var(--sid-text-secondary);
+  background: var(--sid-surface-card);
+
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.sid-dashboard-period-select:hover,
+.sid-dashboard-period-select:focus {
+  border-color: var(--sid-primary);
+}
+
+
+/* =========================================================
+   BODY
+   ========================================================= */
+
+.sid-dashboard-flow-body {
+  display: flex;
+  flex: 1;
+
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sid-dashboard-flow-content {
+  flex: 1;
+
+  overflow: hidden;
+  text-align: center;
+}
+
+.sid-dashboard-flow-slide {
+  animation: sid-dashboard-fade-in 0.25s ease;
+}
+
+@keyframes sid-dashboard-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+
+.sid-dashboard-flow-arrow {
+  width: 2rem;
+  height: 2rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border: 0;
+  border-radius: 999px;
+
+  background: transparent;
+  color: var(--sid-text-secondary);
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.sid-dashboard-flow-arrow:hover {
+  background: var(--sid-surface-muted);
+  color: var(--sid-text-primary);
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.sid-dashboard-flow-label {
+  margin: 0 0 0.5rem;
+
+  font-size: 0.75rem;
+  text-transform: uppercase;
+
+  color: var(--sid-text-muted);
+}
+
+.sid-dashboard-flow-value {
+  margin: 0;
+
+  font-size: 2.25rem;
+  line-height: 1;
+
+  font-weight: 700;
+}
+
+.sid-dashboard-status-primary {
+  color: var(--sid-primary);
+}
+
+.sid-dashboard-status-warning {
+  color: var(--sid-warning);
+}
+
+.sid-dashboard-status-info {
+  color: var(--sid-info);
+}
+
+.sid-dashboard-status-cyan {
+  color: var(--sid-cyan);
+}
+
+.sid-dashboard-status-success {
+  color: var(--sid-success);
+}
+
+
+/* =========================================================
+   INDICATORS
+   ========================================================= */
+
+.sid-dashboard-flow-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+
+  margin-top: 1rem;
+}
+
+.sid-dashboard-flow-indicator {
+  height: 0.5rem;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 999px;
+
+  cursor: pointer;
+
+  transition:
+    width 0.3s ease,
+    background-color 0.3s ease;
+}
+
+.sid-dashboard-flow-indicator-active {
+  width: 1.5rem;
+  background: var(--sid-primary);
+}
+
+.sid-dashboard-flow-indicator-inactive {
+  width: 0.5rem;
+  background: var(--sid-border);
+}
+
+.sid-dashboard-flow-indicator-inactive:hover {
+  background: var(--sid-primary);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .sid-dashboard-flow-card {
+    padding: 1rem;
+  }
+
+  .sid-dashboard-flow-header {
+    margin-bottom: 1rem;
+  }
+
+  .sid-dashboard-flow-value {
+    font-size: 2rem;
+  }
+}
+
+/* ==========================================
+   GENDER STAT CARD
+   ========================================== */
+
+.gender-stat-card {
+  width: 100%;
+  max-width: 24rem;
+  padding: 1.25rem;
+
+  background: var(--sid-surface-card);
+  border: 1px solid var(--sid-border);
+  border-radius: 1rem;
+
+  box-shadow: var(--sid-shadow-sm);
+}
+
+.gender-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gender-stat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gender-stat-label {
+  margin: 0;
+
+  color: var(--sid-text-muted);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.gender-stat-total {
+  margin: 0.25rem 0 0;
+
+  color: var(--sid-text-primary);
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 800;
+}
+
+.gender-stat-pie {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.gender-stat-chart-label {
+  font-size: 9px;
+  font-weight: 700;
+  user-select: none;
+
+  filter: drop-shadow(
+    0 1px 2px rgb(0 0 0 / 20%)
+  );
+}
+
+.gender-stat-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding-top: 0.25rem;
+
+  border-top: 1px solid var(--sid-border);
+}
+
+.gender-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+
+  color: var(--sid-text-primary);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+}
+
+.gender-stat-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+
+  flex-shrink: 0;
+  border-radius: 9999px;
+}
+
+/* ==========================================
+   OPERATOR SURAT ACTION MODAL
+   ========================================== */
+
+.operator-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+
+  background: rgb(0 0 0 / 40%);
+}
+
+.operator-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 28rem;
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  padding: 1.5rem;
+
+  background: var(--sid-surface-card);
+  border-radius: 1rem;
+
+  box-shadow: var(--sid-shadow-lg);
+}
+
+.operator-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+
+  border: 0;
+  background: transparent;
+
+  color: var(--sid-text-muted);
+
+  font-size: 1.25rem;
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.operator-modal-close:hover {
+  color: var(--sid-text-primary);
+}
+
+.operator-modal-title {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  font-weight: 700;
+}
+
+.operator-modal-subtitle {
+  margin: 0.25rem 0 1rem;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+/* ==========================================
+   CATATAN
+   ========================================== */
+
+.operator-notes {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+
+  background: var(--sid-status-progress-bg);
+  border: 1px solid var(--sid-primary);
+  border-radius: 0.5rem;
+}
+
+.operator-notes-label {
+  margin: 0 0 0.25rem;
+
+  color: var(--sid-primary-dark);
+
+  font-size: 10px;
+  font-weight: 600;
+
+  text-transform: uppercase;
+}
+
+.operator-notes-text {
+  margin: 0;
+
+  color: var(--sid-primary-dark);
+
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+/* ==========================================
+   PREVIEW TOGGLE
+   ========================================== */
+
+.operator-preview-toggle {
+  display: flex;
+
+  margin-bottom: 0.75rem;
+  padding: 0.25rem;
+
+  background: var(--sid-surface-page);
+  border-radius: 0.5rem;
+}
+
+.operator-preview-tab {
+  flex: 1;
+
+  padding: 0.25rem 0;
+
+  border: 0;
+  border-radius: 0.375rem;
+
+  background: transparent;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.operator-preview-tab:hover {
+  color: var(--sid-text-primary);
+}
+
+.operator-preview-tab-active {
+  background: var(--sid-card);
+
+  color: var(--sid-text-primary);
+
+  box-shadow: var(--sid-shadow-sm);
+}
+
+/* ==========================================
+   PDF PREVIEW
+   ========================================== */
+
+.operator-pdf-preview {
+  position: relative;
+
+  height: 400px;
+
+  margin-bottom: 1.25rem;
+
+  overflow: hidden;
+
+  background: var(--sid-surface-muted);
+
+  border: 1px solid var(--sid-border);
+  border-radius: 0.5rem;
+}
+
+.operator-pdf-frame {
+  width: 100%;
+  height: 100%;
+
+  border: 0;
+
+  pointer-events: none;
+  user-select: none;
+}
+
+.operator-pdf-overlay {
+  position: absolute;
+  inset: 0;
+
+  background: transparent;
+}
+
+.operator-pdf-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.875rem;
+}
+
+/* ==========================================
+   WARNING
+   ========================================== */
+
+.operator-warning {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+
+  background: var(--sid-warning-soft);
+  border: 1px solid var(--sid-warning-border);
+  border-radius: 0.5rem;
+
+  color: var(--sid-warning-text);
+
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+/* ==========================================
+   ACTION BUTTON
+   ========================================== */
+
+.operator-action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.operator-revision-button,
+.operator-verify-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 0.5rem;
+
+  padding: 0.625rem 1rem;
+
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.operator-revision-button {
+  flex: none;
+  gap:0.5rem;
+
+  border: 1px solid var(--sid-warning-border);
+
+  background: var(--sid-vendor-accent);
+
+  color: var(--sid-on-primary);
+}
+
+.operator-revision-button:hover:not(:disabled) {
+  background: var(--sid-secondary-hover);
+}
+
+.operator-verify-button {
+  flex: 1;
+  gap: 0.5rem;
+
+  border: 1px solid var(--sid-primary);
+  background: var(--sid-primary);
+
+  color: white;
+}
+
+.operator-verify-button:hover:not(:disabled) {
+  background: var(--sid-primary-hover);
+}
+
+.operator-revision-button:disabled,
+.operator-verify-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   CONFIRMATION MODAL
+   ========================================== */
+
+.operator-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+
+  background: rgb(0 0 0 / 40%);
+}
+
+.operator-confirm-modal {
+  width: 400px;
+  max-width: 100%;
+
+  padding: 1.5rem;
+
+  background: var(--sid-card);
+
+  border-radius: 0.75rem;
+
+  box-shadow: var(--sid-shadow-lg);
+}
+
+.operator-confirm-title {
+  margin: 0 0 0.5rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  font-weight: 700;
+}
+
+.operator-confirm-description {
+  margin: 0 0 1.5rem;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.operator-revision-content {
+  margin-bottom: 1.5rem;
+}
+
+.operator-revision-content .operator-confirm-description {
+  margin-bottom: 0.75rem;
+}
+
+.operator-revision-textarea {
+  width: 100%;
+
+  padding: 0.5rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 0.5rem;
+
+  background: var(--sid-card);
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+
+  resize: none;
+  outline: none;
+
+  transition: border-color 0.2s ease,
+              box-shadow 0.2s ease;
+
+  box-sizing: border-box;
+}
+
+.operator-revision-textarea:focus {
+  border-color: var(--sid-warning);
+  box-shadow: 0 0 0 1px var(--sid-warning);
+}
+
+.operator-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.operator-cancel-button,
+.operator-confirm-button {
+  padding: 0.5rem 1rem;
+
+  border-radius: 0.5rem;
+
+  font-size: 0.875rem;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.operator-cancel-button {
+  border: 1px solid var(--sid-border);
+
+  background: var(--sid-card);
+
+  color: var(--sid-text-primary);
+}
+
+.operator-cancel-button:hover:not(:disabled) {
+  background: var(--sid-surface-muted);
+}
+
+.operator-confirm-button {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+
+  border: 1px solid var(--sid-primary);
+
+  background: var(--sid-primary);
+
+  color: white;
+}
+
+.operator-confirm-button:hover:not(:disabled) {
+  background: var(--sid-primary-hover);
+}
+
+.operator-cancel-button:disabled,
+.operator-confirm-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   MOBILE
+   ========================================== */
+
+@media (max-width: 640px) {
+  .operator-modal {
+    padding: 1.25rem;
+  }
+
+  .operator-pdf-preview {
+    height: 350px;
+  }
+
+  .operator-action-buttons {
+    flex-direction: column;
+  }
+
+  .operator-revision-button {
+    width: 100%;
+  }
+
+  .operator-confirm-modal {
+    width: 100%;
+  }
+}
+
+/* ==========================================
+   SID - PREVIEW / DETAIL MODAL
+   ========================================== */
+
+.sid-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+
+  background: rgb(0 0 0 / 40%);
+}
+
+.sid-preview-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 28rem;
+  max-height: 90vh;
+
+  padding: 1.5rem;
+
+  overflow-y: auto;
+
+  background: var(--sid-card);
+  border-radius: 1rem;
+
+  box-shadow: 0 20px 45px rgb(0 0 0 / 15%);
+}
+
+.sid-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2rem;
+  height: 2rem;
+
+  border: 0;
+  border-radius: 999px;
+
+  background: transparent;
+
+  color: #9ca3af;
+  font-size: 1.25rem;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.sid-modal-close:hover {
+  color: var(--sid-text-primary);
+  background: var(--sid-surface);
+}
+
+
+/* ==========================================
+   MODAL HEADER
+   ========================================== */
+
+.sid-modal-header {
+  margin-bottom: 1.25rem;
+  padding-right: 2rem;
+}
+
+.sid-modal-header h2 {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.sid-modal-header p {
+  margin: 0.25rem 0 0;
+
+  color: #9ca3af;
+
+  font-size: 0.75rem;
+}
+
+
+/* ==========================================
+   CATATAN
+   ========================================== */
+
+.sid-modal-note {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem;
+
+  border: 1px solid #bfdbfe;
+  border-radius: 0.5rem;
+
+  background: #eff6ff;
+}
+
+.sid-modal-note-label {
+  margin: 0 0 0.25rem;
+
+  color: #1e40af;
+
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.sid-modal-note-text {
+  margin: 0;
+
+  color: #1e3a8a;
+
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+
+/* ==========================================
+   PDF PREVIEW
+   ========================================== */
+
+.sid-pdf-preview {
+  position: relative;
+
+  width: 100%;
+  height: 31.25rem;
+
+  margin-bottom: 1.25rem;
+
+  overflow: hidden;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 0.5rem;
+
+  background: #f3f4f6;
+}
+
+.sid-pdf-frame {
+  width: 100%;
+  height: 100%;
+
+  border: 0;
+
+  pointer-events: none;
+  user-select: none;
+}
+
+.sid-pdf-overlay {
+  position: absolute;
+  inset: 0;
+
+  background: transparent;
+}
+
+.sid-pdf-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  color: #6b7280;
+
+  font-size: 0.875rem;
+}
+
+
+/* ==========================================
+   WARNING
+   ========================================== */
+
+.sid-warning-box {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+
+  background: var(--sid-warning-soft);
+  border: 1px solid var(--sid-warning-border);
+  border-radius: 0.5rem;
+
+  color: var(--sid-warning-text);
+
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+
+/* ==========================================
+   PRIMARY BUTTON
+   ========================================== */
+
+.sid-primary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  border: 0;
+  border-radius: 0.5rem;
+
+  background: var(--sid-primary);
+
+  color: #fff;
+
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.sid-primary-button:hover {
+  background: var(--sid-primary-hover);
+}
+
+.sid-primary-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sid-print-button {
+  width: 100%;
+  padding: 0.625rem 1rem;
+}
+
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+@media (min-width: 640px) {
+  .sid-preview-modal {
+    padding: 2rem;
+  }
+}
+
+
+/* =========================================================
+   SID — DASHBOARD CARD
+   ========================================================= */
+
+.sid-dashboard-card {
+  width: 100%;
+
+  background: var(--sid-surface-card);
+
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-card);
+
+  padding: 24px;
+}
+
+.sid-history-card {
+  overflow: visible;
+}
+
+
+/* =========================================================
+   CARD HEADER
+   ========================================================= */
+
+.sid-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 16px;
+}
+
+.sid-card-header h3 {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.sid-card-link {
+  border: 0;
+
+  background: transparent;
+
+  color: var(--sid-primary);
+
+  font-family: inherit;
+  font-size: 14px;
+
+  cursor: pointer;
+
+  transition: color 0.15s ease;
+}
+
+.sid-card-link:hover {
+  color: var(--sid-primary-hover);
+  text-decoration: underline;
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.sid-table-wrapper {
+  width: 100%;
+
+  overflow-x: auto;
+}
+
+.sid-history-table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  font-size: 14px;
+}
+
+.sid-history-table thead tr {
+  border-bottom: 1px solid var(--sid-border);
+}
+
+.sid-history-table th {
+  padding: 8px 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 12px;
+  font-weight: 500;
+
+  text-align: left;
+
+  white-space: nowrap;
+}
+
+.sid-history-table tbody tr {
+  border-bottom: 1px solid var(--sid-border);
+
+  transition: background-color 0.15s ease;
+}
+
+.sid-history-table tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.sid-history-table tbody tr:hover {
+  background: #F7F9FC;
+}
+
+.sid-history-table td {
+  padding: 12px 0;
+
+  vertical-align: middle;
+}
+
+.sid-table-action-header,
+.sid-table-action {
+  text-align: right;
+}
+
+
+/* =========================================================
+   RESIDENT
+   ========================================================= */
+
+.sid-resident-cell {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+}
+
+.sid-resident-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  flex-shrink: 0;
+
+  border-radius: 999px;
+
+  background: #E6F1FB;
+
+  color: var(--sid-primary);
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sid-resident-name {
+  color: var(--sid-text-primary);
+
+  font-weight: 500;
+
+  white-space: nowrap;
+}
+
+.sid-letter-type {
+  color: var(--sid-text-secondary);
+}
+
+.sid-submitted-date {
+  color: var(--sid-text-muted);
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   STATUS BADGE
+   ========================================================= */
+
+.sid-status-badge {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 4px 12px;
+
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+/* PENDING */
+
+.sid-status-pending {
+  background: var(--sid-status-pending-bg);
+  color: var(--sid-status-pending-text);
+}
+
+
+/* PROCESS */
+
+.sid-status-process {
+  background: var(--sid-status-progress-bg);
+  color: var(--sid-status-progress-text);
+}
+
+
+/* APPROVED */
+
+.sid-status-approved {
+  background: var(--sid-status-done-bg);
+  color: var(--sid-status-done-text);
+}
+
+
+/* REJECTED */
+
+.sid-status-rejected {
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+}
+
+
+/* DEFAULT */
+
+.sid-status-default {
+  background: var(--sid-surface-page);
+  color: var(--sid-text-muted);
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.sid-table-empty {
+  padding: 32px 0 !important;
+
+  color: var(--sid-text-muted);
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   ACTION BUTTON
+   ========================================================= */
+
+.sid-table-action {
+  position: relative;
+}
+
+.sid-action-menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 4px;
+
+  border: 0;
+
+  background: transparent;
+
+  color: var(--sid-text-muted);
+
+  cursor: pointer;
+
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.sid-action-menu-button:hover {
+  color: var(--sid-text-secondary);
+
+  background: var(--sid-surface-page);
+
+  border-radius: var(--radius-sm);
+}
+
+
+/* =========================================================
+   ACTION MENU
+   ========================================================= */
+
+.sid-action-backdrop {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 10;
+}
+
+.sid-action-menu {
+  position: absolute;
+
+  top: calc(100% - 4px);
+  right: 0;
+
+  z-index: 20;
+
+  width: 160px;
+
+  padding: 4px 0;
+
+  border: 1px solid var(--sid-border);
+
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-surface-card);
+
+  box-shadow: var(--sid-shadow-lg);
+}
+
+.sid-action-menu-item {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  width: 100%;
+
+  padding: 8px 12px;
+
+  border: 0;
+
+  background: transparent;
+
+  font-family: inherit;
+  font-size: 12px;
+
+  text-align: left;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-action-menu-item:not(:disabled) {
+  color: var(--sid-text-secondary);
+
+  cursor: pointer;
+}
+
+.sid-action-menu-item:not(:disabled):hover {
+  background: #F7F9FC;
+
+  color: var(--sid-text-primary);
+}
+
+
+/* =========================================================
+   PRINT ACTION
+   ========================================================= */
+
+.sid-action-print-active {
+  color: var(--sid-text-secondary);
+}
+
+.sid-action-print-active:hover {
+  color: var(--sid-primary);
+}
+
+.sid-action-print-disabled {
+  color: #B8B8B5;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .sid-dashboard-card {
+    padding: 16px;
+  }
+
+  .sid-history-table {
+    min-width: 700px;
+  }
+
+  .sid-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .sid-card-header h3 {
+    font-size: 16px;
+  }
+}
+/* =========================================================
+   SID CARD - INFORMASI UMUM
+   ========================================================= */
+
+.sid-info-card {
+  height: 100%;
+}
+
+.sid-info-card__title {
+  margin: 0 0 1rem;
+
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  color: var(--sid-text-muted, #737373);
+}
+
+.sid-info-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  font-size: 0.875rem;
+}
+
+.sid-info-card__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+
+  padding: 0.25rem 0;
+
+  border-bottom: 1px solid var(--sid-border-soft, #f1f1ed);
+}
+
+.sid-info-card__row:last-child {
+  border-bottom: none;
+}
+
+.sid-info-card__label {
+  color: var(--sid-text-muted, #a0a09a);
+  text-transform: capitalize;
+}
+
+.sid-info-card__value {
+  color: var(--sid-text-primary, #2c2c2a);
+  font-weight: 500;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .sid-info-card__content {
+    font-size: 0.75rem;
+  }
+
+  .sid-info-card__row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr);
+  }
+}
+
+/* =========================================================
+   SID CARD - PERANGKAT DESA
+   ========================================================= */
+
+.sid-perangkat-card {
+  height: 100%;
+}
+
+.sid-perangkat-card__title {
+  margin: 0 0 1rem;
+
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  color: var(--sid-text-primary, #2c2c2a);
+}
+
+.sid-perangkat-card__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sid-perangkat-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding-bottom: 0.5rem;
+
+  font-size: 0.875rem;
+
+  border-bottom: 1px solid var(--sid-border-soft, #f1f1ed);
+}
+
+.sid-perangkat-card__row:last-child {
+  border-bottom: none;
+}
+
+.sid-perangkat-card__jabatan {
+  color: var(--sid-text-muted, #a0a09a);
+}
+
+.sid-perangkat-card__nama {
+  color: var(--sid-text-primary, #2c2c2a);
+  font-weight: 600;
+  text-align: right;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .sid-perangkat-card__row {
+    font-size: 0.75rem;
+  }
+}
+
+/* =========================================================
+   STRUKTUR WILAYAH CARD
+   ========================================================= */
+
+.sid-wilayah-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+
+/* =========================================================
+   WILAYAH TITLE
+   ========================================================= */
+
+.sid-wilayah-title {
+  margin-bottom: 12px;
+
+  font-size: 13px;
+  color: var(--sid-text-secondary);
+}
+
+
+/* =========================================================
+   WILAYAH STATISTICS
+   ========================================================= */
+
+.sid-wilayah-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sid-wilayah-stat {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 8px 14px;
+
+  border: 1px solid rgba(24, 95, 165, 0.12);
+  border-radius: var(--radius-md);
+
+  background: #E6F1FB;
+
+  color: var(--sid-primary);
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sid-wilayah-stat-icon {
+  width: 16px;
+  height: 16px;
+
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   WILAYAH DESCRIPTION
+   ========================================================= */
+
+.sid-wilayah-description {
+  margin: -8px 0 0;
+
+  font-size: 11px;
+
+  color: var(--sid-text-muted);
+}
+
+
+/* =========================================================
+   WILAYAH LIST
+   ========================================================= */
+
+.sid-wilayah-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+
+/* =========================================================
+   WILAYAH ITEM
+   ========================================================= */
+
+.sid-wilayah-item {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 14px;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--radius-md);
+
+  background: var(--sid-primary);
+
+  color: var(--sid-on-primary);
+
+  text-align: left;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  box-shadow: var(--sid-shadow-sm);
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.sid-wilayah-item:hover {
+  background: var(--sid-primary-hover);
+
+  border-color: var(--sid-primary-hover);
+
+  box-shadow: var(--sid-shadow-md);
+
+  transform: translateY(-1px);
+}
+
+.sid-wilayah-item:active {
+  transform: translateY(0);
+}
+
+.sid-wilayah-item:focus-visible {
+  outline: 2px solid var(--sid-primary);
+
+  outline-offset: 2px;
+}
+
+.sid-wilayah-item-icon {
+  width: 16px;
+  height: 16px;
+
+  flex-shrink: 0;
+
+  opacity: 0.85;
+}
+
+/* =========================================================
+   VISI & MISI CARD
+   ========================================================= */
+
+.sid-visi-misi-card {
+  display: flex;
+  flex-direction: column;
+
+  gap: 16px;
+}
+
+
+/* =========================================================
+   VISI / MISI SECTION
+   ========================================================= */
+
+.sid-visi-section {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+
+/* =========================================================
+   VISI / MISI TITLE
+   ========================================================= */
+
+.sid-visi-misi-title {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 12px;
+  font-weight: 700;
+
+  letter-spacing: 0.05em;
+
+  text-transform: uppercase;
+}
+
+
+/* =========================================================
+   VISI / MISI TEXT
+   ========================================================= */
+
+.sid-visi-misi-text {
+  margin: 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 13px;
+
+  line-height: 1.7;
+}
+
+
+/* =========================================================
+   MISI LIST
+   ========================================================= */
+
+.sid-visi-misi-list {
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 13px;
+
+  line-height: 1.7;
+}
+
+/* =========================================================
+   EditInformasiUmum
+   ========================================================= */
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+.sid-modal-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 40;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 16px;
+
+  background: rgba(0, 0, 0, 0.4);
+}
+
+
+.sid-modal-card {
+  position: relative;
+
+  width: 100%;
+
+  max-width: 512px;
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  background: var(--sid-surface-card);
+
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--sid-shadow-lg);
+
+  padding: 32px;
+}
+
+
+/* =========================================================
+   MODAL TITLE
+   ========================================================= */
+
+.sid-modal-title {
+  margin: 0 0 24px;
+
+  color: var(--sid-text-primary);
+
+  font-size: 16px;
+  font-weight: 500;
+}
+
+
+/* =========================================================
+   EDIT INFORMASI UMUM
+   ========================================================= */
+
+.sid-edit-info-fields {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0;
+}
+
+
+/* =========================================================
+   MODAL ACTIONS
+   ========================================================= */
+
+.sid-modal-actions {
+  margin-top: 8px;
+}
+
+.sid-modal-submit {
+  flex: 2 1 0;
+}
+
+
+/* =========================================================
+   RESPONSIVE MODAL
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .sid-modal-card {
+    padding: 24px;
+
+    border-radius: var(--radius-md);
+  }
+
+  .sid-modal-title {
+    font-size: 15px;
+  }
+
+  .sid-modal-actions {
+    gap: 8px;
+  }
+}
+
+/* =========================================================
+   EditPerangkatDesa
+   ========================================================= */
+
+.sid-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 16px;
+
+  background: rgba(0, 0, 0, 0.40);
+}
+
+.sid-modal-overlay-front {
+  z-index: 50;
+}
+
+.sid-modal {
+  position: relative;
+
+  width: 100%;
+
+  background: var(--sid-surface-card);
+
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--sid-shadow-lg);
+
+  overflow-y: auto;
+}
+
+.sid-modal-lg {
+  max-width: 512px;
+  max-height: 90vh;
+}
+
+.sid-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  padding: 24px 24px 16px;
+}
+
+.sid-modal-title {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.sid-modal-description {
+  margin: 4px 0 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sid-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: var(--sid-text-muted);
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-modal-close:hover {
+  background: #F3F3F3;
+  color: var(--sid-text-primary);
+}
+
+.sid-modal-body {
+  padding: 8px 24px 24px;
+}
+
+.sid-modal-footer {
+  display: flex;
+
+  gap: 12px;
+
+  padding: 16px 24px 24px;
+}
+
+
+/* =========================================================
+   PERSON CARD
+   ========================================================= */
+
+.sid-person-card {
+  margin-bottom: 12px;
+
+  padding: 16px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+
+  background: var(--sid-surface-card);
+}
+
+.sid-person-label {
+  margin: 0 0 12px;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 12px;
+  font-weight: 600;
+
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sid-person-content {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+}
+
+.sid-person-fields {
+  display: flex;
+  flex: 1;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+
+/* =========================================================
+   AVATAR UPLOAD
+   ========================================================= */
+
+.sid-avatar-upload {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  overflow: hidden;
+
+  background: #F3F3F3;
+
+  border-radius: 999px;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sid-avatar-upload:hover {
+  background: #E6F1FB;
+  border-color: var(--sid-primary);
+}
+
+.sid-avatar-upload-lg {
+  width: 56px;
+  height: 56px;
+
+  border: 1px solid var(--sid-border);
+}
+
+.sid-avatar-upload-sm {
+  width: 40px;
+  height: 40px;
+
+  border: 1px solid var(--sid-border);
+}
+
+.sid-avatar-image {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.sid-avatar-icon {
+  color: var(--sid-text-muted);
+}
+
+.sid-file-hidden {
+  display: none;
+}
+
+
+/* =========================================================
+   SUBSECTION
+   ========================================================= */
+
+.sid-subsection {
+  margin-top: 24px;
+}
+
+.sid-subsection-title {
+  margin: 0 0 12px;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 12px;
+  font-weight: 600;
+
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+
+/* =========================================================
+   KADUS
+   ========================================================= */
+
+.sid-kadus-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  margin-bottom: 12px;
+}
+
+.sid-kadus-row {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+}
+
+.sid-kadus-row .sid-input {
+  flex: 1;
+}
+
+.sid-remove-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 36px;
+  height: 36px;
+
+  padding: 0;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  background: transparent;
+
+  color: var(--sid-status-rejected-text);
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sid-remove-button:hover {
+  background: var(--sid-status-rejected-bg);
+  border-color: var(--sid-status-rejected-text);
+}
+
+.sid-add-button {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 4px;
+
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+
+  color: var(--sid-primary);
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+.sid-add-button:hover {
+  text-decoration: underline;
+}
+
+
+/* =========================================================
+   SAVE BUTTON
+   ========================================================= */
+
+.sid-btn-save {
+  flex: 2 1 0;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .sid-modal-overlay {
+    padding: 12px;
+  }
+
+  .sid-modal-header {
+    padding: 20px 20px 14px;
+  }
+
+  .sid-modal-body {
+    padding: 8px 20px 20px;
+  }
+
+  .sid-modal-footer {
+    padding: 14px 20px 20px;
+  }
+
+  .sid-person-card {
+    padding: 14px;
+  }
+
+  .sid-person-content {
+    gap: 10px;
+  }
+}
+
+/* =========================================================
+   EditProfilDesaModal
+   ========================================================= */
+/* =========================================================
+   FORM LABEL
+   ========================================================= */
+
+.sid-form-label {
+  color: var(--sid-text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sid-form-group-last {
+  margin-bottom: 24px;
+}
+
+
+/* =========================================================
+   FORM SECTION
+   ========================================================= */
+
+.sid-form-section {
+  margin-top: 4px;
+}
+
+.sid-form-section .sid-section-title {
+  margin-bottom: 12px;
+}
+
+
+/* =========================================================
+   STATISTIC FORM GRID
+   ========================================================= */
+
+.sid-stat-form-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 16px;
+}
+
+
+/* =========================================================
+   IMAGE UPLOAD
+   ========================================================= */
+
+.sid-image-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  min-height: 140px;
+
+  padding: 16px;
+
+  border: 2px dashed var(--sid-border);
+  border-radius: var(--radius-md);
+
+  background: var(--sid-surface-card);
+
+  color: var(--sid-text-muted);
+
+  text-align: center;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sid-image-upload:hover {
+  background: #F7FAFD;
+  border-color: var(--sid-primary);
+}
+
+.sid-image-upload-icon {
+  margin-bottom: 4px;
+
+  color: var(--sid-primary);
+}
+
+.sid-image-upload-title {
+  color: var(--sid-text-secondary);
+
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sid-image-upload-description {
+  margin-top: 2px;
+
+  color: var(--sid-text-muted);
+
+  font-size: 11px;
+}
+
+.sid-image-preview {
+  display: block;
+
+  width: 100%;
+  height: 160px;
+
+  object-fit: cover;
+
+  border-radius: var(--radius-sm);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .sid-stat-form-grid {
+    grid-template-columns: 1fr;
+
+    gap: 0;
+  }
+
+  .sid-image-upload {
+    min-height: 120px;
+  }
+
+  .sid-image-preview {
+    height: 140px;
+  }
+}
+
+
+/* =========================================================
+   EDIT VISI & MISI MODAL
+   ========================================================= */
+
+.sid-edit-visi-misi-modal {
+  max-width: 512px;
+}
+
+
+/* =========================================================
+   MODAL HEADER
+   ========================================================= */
+
+.sid-modal-header {
+  margin-bottom: 24px;
+}
+
+.sid-modal-header h2 {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.sid-modal-header p {
+  margin: 4px 0 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   MODAL FIELD
+   ========================================================= */
+
+.sid-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sid-modal-field label {
+  color: var(--sid-text-secondary);
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sid-visi-field {
+  margin-bottom: 20px;
+}
+
+.sid-misi-field {
+  margin-bottom: 24px;
+}
+
+
+/* =========================================================
+   MISI LIST
+   ========================================================= */
+
+.sid-misi-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.sid-misi-item {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  width: 100%;
+}
+
+
+/* =========================================================
+   NOMOR MISI
+   ========================================================= */
+
+.sid-misi-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 28px;
+  height: 28px;
+
+  flex-shrink: 0;
+
+  border-radius: 999px;
+
+  background: var(--sid-status-progress-bg);
+
+  color: var(--sid-primary);
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   HAPUS MISI
+   ========================================================= */
+
+.sid-misi-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+
+  flex-shrink: 0;
+
+  padding: 0;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  background: transparent;
+
+  color: var(--sid-status-rejected-text);
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.sid-misi-remove:hover:not(:disabled) {
+  background: var(--sid-status-rejected-bg);
+
+  border-color: var(--sid-status-rejected-text);
+}
+
+.sid-misi-remove:disabled {
+  opacity: 0.3;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   TAMBAH MISI
+   ========================================================= */
+
+.sid-misi-add {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+
+  width: fit-content;
+
+  margin-top: 4px;
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+
+  color: var(--sid-primary);
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition: color 0.15s ease;
+}
+
+.sid-misi-add:hover {
+  color: var(--sid-primary-hover);
+
+  text-decoration: underline;
+}
+
+
+/* =========================================================
+   MODAL ACTION
+   ========================================================= */
+
+.sid-modal-actions {
+  margin-top: 0;
+}
+
+.sid-btn-save {
+  flex: 2 1 0;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .sid-edit-visi-misi-modal {
+    max-width: none;
+  }
+
+  .sid-modal-header {
+    margin-bottom: 20px;
+  }
+
+  .sid-misi-item {
+    gap: 6px;
+  }
+
+  .sid-misi-number {
+    width: 26px;
+    height: 26px;
+  }
+
+  .sid-misi-remove {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+
+/* =========================================================
+   EDIT PROFIL WARGA MODAL
+   ========================================================= */
+
+.sid-edit-profil-warga-modal {
+  max-width: 384px;
+}
+
+
+/* =========================================================
+   PROFILE FIELD
+   ========================================================= */
+
+.sid-profile-field {
+  margin-bottom: 12px;
+}
+
+.sid-profile-gender-field {
+  margin-bottom: 20px;
+}
+
+
+/* =========================================================
+   MODAL ERROR
+   ========================================================= */
+
+.sid-modal-error {
+  margin-bottom: 16px;
+
+  padding: 8px 12px;
+
+  border: 1px solid var(--sid-status-rejected-bg);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-status-rejected-bg);
+
+  color: var(--sid-status-rejected-text);
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   MODAL ACTION
+   ========================================================= */
+
+.sid-edit-profil-warga-modal .sid-modal-actions {
+  margin-top: 0;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .sid-edit-profil-warga-modal {
+    max-width: none;
+  }
+}
+
+
+/* =========================================================
+   FILE UPLOADER
+   ========================================================= */
+
+.sid-upload-file-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  margin-bottom: 12px;
+}
+
+
+/* =========================================================
+   UPLOADED FILE CARD
+   ========================================================= */
+
+.sid-upload-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  width: 100%;
+
+  padding: 12px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+
+  background: #F7F6F1;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sid-upload-file:hover {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-status-progress-bg);
+}
+
+
+/* =========================================================
+   FILE INFO
+   ========================================================= */
+
+.sid-upload-file-info {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  min-width: 0;
+}
+
+
+/* =========================================================
+   FILE ICON
+   ========================================================= */
+
+.sid-upload-file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 40px;
+  height: 40px;
+
+  flex-shrink: 0;
+
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-status-progress-bg);
+
+  color: var(--sid-primary);
+}
+
+.sid-upload-file-icon-svg {
+  width: 20px;
+  height: 20px;
+}
+
+
+/* =========================================================
+   FILE DETAILS
+   ========================================================= */
+
+.sid-upload-file-details {
+  min-width: 0;
+
+  text-align: left;
+}
+
+.sid-upload-file-name {
+  max-width: 180px;
+
+  margin: 0;
+
+  overflow: hidden;
+
+  color: var(--sid-text-primary);
+
+  font-size: 12px;
+  font-weight: 600;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sid-upload-file-size {
+  margin: 2px 0 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 10px;
+}
+
+
+/* =========================================================
+   REMOVE FILE
+   ========================================================= */
+
+.sid-upload-file-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  flex-shrink: 0;
+
+  padding: 0;
+
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+
+  background: transparent;
+
+  color: var(--sid-status-rejected-text);
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sid-upload-file-remove:hover {
+  background: var(--sid-status-rejected-bg);
+
+  border-color: var(--sid-status-rejected-text);
+}
+
+.sid-upload-file-remove-icon {
+  width: 16px;
+  height: 16px;
+}
+
+
+/* =========================================================
+   UPLOAD ICON
+   ========================================================= */
+
+.sid-upload-icon {
+  width: 40px;
+  height: 40px;
+
+  color: var(--sid-text-muted);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .sid-upload-file {
+    padding: 10px;
+  }
+
+  .sid-upload-file-info {
+    gap: 10px;
+  }
+
+  .sid-upload-file-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .sid-upload-file-name {
+    max-width: 160px;
+  }
+}
+/* =========================================================
+    Resubmitsurat
+   ========================================================= */
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+.sid-modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  z-index: 50;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 16px;
+
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.sid-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 520px;
+
+  max-height: 90vh;
+  overflow-y: auto;
+
+  background: var(--sid-surface-card);
+
+  border-radius: var(--radius-xl);
+
+  box-shadow: var(--sid-shadow-lg);
+}
+
+.sid-modal-close {
+  position: absolute;
+
+  top: 16px;
+  right: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: var(--radius-sm);
+
+  background: transparent;
+
+  color: var(--sid-text-muted);
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-modal-close:hover:not(:disabled) {
+  background: var(--sid-status-progress-bg);
+  color: var(--sid-primary);
+}
+
+.sid-modal-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   MODAL HEADER
+   ========================================================= */
+
+.sid-modal-header {
+  padding: 24px 24px 0;
+  padding-right: 64px;
+}
+
+.sid-modal-title {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.sid-modal-subtitle {
+  margin: 4px 0 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   MODAL CONTENT
+   ========================================================= */
+
+.sid-modal-section {
+  padding: 24px;
+}
+
+.sid-modal-textarea {
+  width: 100%;
+
+  min-height: 80px;
+
+  box-sizing: border-box;
+
+  padding: 10px 12px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-surface-card);
+
+  color: var(--sid-text-primary);
+
+  font-family: inherit;
+  font-size: 14px;
+
+  line-height: 1.5;
+
+  resize: vertical;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sid-modal-textarea::placeholder {
+  color: var(--sid-text-muted);
+}
+
+.sid-modal-textarea:focus {
+  border-color: var(--sid-primary);
+
+  box-shadow:
+    0 0 0 2px rgba(24, 95, 165, 0.10);
+}
+
+
+/* =========================================================
+   MODAL ALERT
+   ========================================================= */
+
+.sid-modal-alert-error {
+  margin-bottom: 16px;
+
+  padding: 12px;
+
+  border: 1px solid var(--sid-status-rejected-text);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-status-rejected-bg);
+
+  color: var(--sid-status-rejected-text);
+
+  font-size: 13px;
+}
+
+.sid-modal-alert-warning {
+  margin-bottom: 20px;
+
+  padding: 12px;
+
+  border: 1px solid var(--sid-warning-border);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-warning-soft);
+
+  color: var(--sid-status-pending-text);
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   MODAL FOOTER
+   ========================================================= */
+
+.sid-modal-footer {
+  padding: 0 24px 24px;
+}
+
+.sid-modal-actions {
+  display: flex;
+
+  gap: 12px;
+}
+
+.sid-modal-actions .sid-btn {
+  flex: 1 1 0;
+}
+
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.sid-loading-spinner {
+  display: inline-block;
+
+  width: 16px;
+  height: 16px;
+
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--sid-on-primary);
+
+  border-radius: 999px;
+
+  animation: sid-spin 0.7s linear infinite;
+}
+
+@keyframes sid-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .sid-modal {
+    max-width: 100%;
+  }
+
+  .sid-modal-header {
+    padding: 20px 20px 0;
+    padding-right: 56px;
+  }
+
+  .sid-modal-section {
+    padding: 20px;
+  }
+
+  .sid-modal-footer {
+    padding: 0 20px 20px;
+  }
+
+  .sid-modal-actions {
+    gap: 8px;
+  }
+}
+
+/* =========================================================
+   SURAT CARD
+   ========================================================= */
+
+.sid-surat-card {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  width: 100%;
+  min-height: 140px;
+
+  padding: 20px;
+
+  background: var(--sid-surface-card);
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-card);
+
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sid-surat-card:hover {
+  box-shadow: var(--sid-shadow-md);
+
+  transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   CARD HEADER
+   ========================================================= */
+
+.sid-surat-card-header {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 12px;
+}
+
+.sid-surat-card-code {
+  color: var(--sid-text-primary);
+
+  font-size: 14px;
+  font-weight: 700;
+
+  letter-spacing: 0.025em;
+}
+
+
+/* =========================================================
+   BADGE
+   ========================================================= */
+
+.sid-surat-card-badge {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 2px 8px;
+
+  border: 1px solid;
+
+  border-radius: var(--radius-sm);
+
+  font-size: 9px;
+  font-weight: 600;
+
+  line-height: 1.4;
+
+  white-space: nowrap;
+}
+
+/* AUTO */
+.sid-surat-card-badge-auto {
+  background: var(--sid-status-done-bg);
+
+  color: var(--sid-status-done-text);
+
+  border-color: var(--sid-status-done-text);
+}
+
+/* MANUAL */
+.sid-surat-card-badge-manual {
+  background: var(--sid-status-pending-bg);
+
+  color: var(--sid-status-pending-text);
+
+  border-color: var(--sid-status-pending-text);
+}
+
+/* DOCUMENT */
+.sid-surat-card-badge-document {
+  background: var(--sid-status-progress-bg);
+
+  color: var(--sid-status-progress-text);
+
+  border-color: var(--sid-status-progress-text);
+}
+
+
+/* =========================================================
+   FALLBACK BADGE
+   ========================================================= */
+
+.sid-surat-card-badge:not(
+  .sid-surat-card-badge-auto,
+  .sid-surat-card-badge-manual,
+  .sid-surat-card-badge-document
+) {
+  background: var(--sid-surface-page);
+
+  color: var(--sid-text-secondary);
+
+  border-color: var(--sid-border);
+}
+
+
+/* =========================================================
+   CARD CONTENT
+   ========================================================= */
+
+.sid-surat-card-content {
+  margin-top: 12px;
+}
+
+.sid-surat-card-title {
+  margin: 0 0 4px;
+
+  color: var(--sid-text-primary);
+
+  font-size: 12px;
+  font-weight: 700;
+
+  line-height: 1.5;
+}
+
+.sid-surat-card-description {
+  margin: 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (min-width: 768px) {
+  .sid-surat-card-title {
+    font-size: 14px;
+  }
+
+  .sid-surat-card-description {
+    font-size: 12px;
+  }
+}
+
+/* =========================================================
+   HELP CENTER MODAL
+   ========================================================= */
+
+.sid-help-modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  z-index: 50;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 16px;
+
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.sid-help-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 448px;
+
+  max-height: 85vh;
+  overflow-y: auto;
+
+  background: var(--sid-surface-card);
+
+  border-radius: var(--radius-xl);
+
+  box-shadow: var(--sid-shadow-lg);
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.sid-help-modal-header {
+  position: relative;
+
+  padding: 24px;
+
+  background: var(--sid-header-bg);
+
+  color: var(--sid-header-text);
+
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.sid-help-modal-close {
+  position: absolute;
+
+  top: 16px;
+  right: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: var(--radius-sm);
+
+  background: transparent;
+
+  color: rgba(255, 255, 255, 0.8);
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-help-modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+
+  color: var(--sid-header-text);
+}
+
+.sid-help-modal-icon {
+  margin-bottom: 8px;
+}
+
+.sid-help-modal-title {
+  margin: 0;
+
+  color: var(--sid-header-text);
+
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.sid-help-modal-subtitle {
+  margin: 4px 0 0;
+
+  color: var(--sid-header-subtext);
+
+  font-size: 14px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   CONTENT
+   ========================================================= */
+
+.sid-help-modal-content {
+  display: flex;
+  flex-direction: column;
+
+  gap: 16px;
+
+  padding: 24px;
+}
+
+
+/* =========================================================
+   HELP ITEM
+   ========================================================= */
+
+.sid-help-item {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+}
+
+.sid-help-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+
+  flex-shrink: 0;
+
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-status-progress-bg);
+
+  color: var(--sid-primary);
+}
+
+.sid-help-item-content {
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.sid-help-item-label {
+  margin: 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 12px;
+}
+
+.sid-help-item-value {
+  margin: 2px 0 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 14px;
+  font-weight: 600;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   CLOSE BUTTON
+   ========================================================= */
+
+.sid-help-close-button {
+  margin-top: 4px;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .sid-help-modal {
+    max-width: 100%;
+  }
+
+  .sid-help-modal-header {
+    padding: 20px;
+  }
+
+  .sid-help-modal-content {
+    padding: 20px;
+  }
 }
