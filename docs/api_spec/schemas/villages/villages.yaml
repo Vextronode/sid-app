@@ -1,0 +1,87 @@
+Village:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 1
+    name:
+      type: string
+      example: "Desa Cibenda"
+    code:
+      type: string
+      example: "32.01.05.2003"
+    head_name:
+      type: string
+      nullable: true
+      example: "H. Ridwan Saepudin"
+    address:
+      type: string
+      nullable: true
+      example: "Jl. Raya Cibenda No. 1"
+    phone:
+      type: string
+      nullable: true
+      example: "0261-1234567"
+    history:
+      type: string
+      nullable: true
+      example: "Desa Cibenda didirikan pada tahun 1945..."
+    vision:
+      type: string
+      nullable: true
+      example: "Menjadi desa mandiri, maju, dan sejahtera"
+    mission:
+      type: string
+      nullable: true
+      example: "1. Meningkatkan pelayanan publik\n2. Mengembangkan ekonomi desa"
+
+VillageUpdateRequest:
+  type: object
+  description: |
+    UC-18. Aktor HANYA Petugas Desa (SID-ARCH-SYS-001 S2.3 menegaskan
+    ulang: Kepala Desa/Sekretaris Desa eksplisit TIDAK punya akses ke
+    domain CMS ini meski keduanya kini approver aktif di domain surat).
+  properties:
+    name:
+      type: string
+      example: "Desa Cibenda"
+    head_name:
+      type: string
+      example: "H. Ridwan Saepudin"
+    address:
+      type: string
+      example: "Jl. Raya Cibenda No. 1"
+    phone:
+      type: string
+      example: "0261-1234567"
+    history:
+      type: string
+      example: "Desa Cibenda didirikan pada tahun 1945..."
+    vision:
+      type: string
+      example: "Menjadi desa mandiri, maju, dan sejahtera"
+    mission:
+      type: string
+      example: "1. Meningkatkan pelayanan publik\n2. Mengembangkan ekonomi desa"
+
+ContactUsResponse:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        type: object
+        properties:
+          position:
+            type: string
+            enum: [kasi_pelayanan, kaur_tu_umum]
+            example: "kasi_pelayanan"
+          name:
+            type: string
+            example: "Kasim"
+          phone_wa:
+            type: string
+            example: "6281234567890"
+          wa_link:
+            type: string
+            example: "https://wa.me/6281234567890"

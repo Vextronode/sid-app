@@ -1,0 +1,36 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Hubungi Kami - kontak WA Kasi Pelayanan & Kaur TU Umum (tanpa login)
+  description: |
+    UC-16 extended. Query officials WHERE position IN (kasi_pelayanan,
+    kaur_tu_umum) AND is_active=true AND ended_at IS NULL. Data diambil
+    live dari officials sehingga otomatis update saat rotasi jabatan.
+    Tidak berubah dari v4.2.
+  operationId: getPublicContactUs
+  responses:
+    '200':
+      description: Kontak Kasi/Kaur aktif berhasil diambil
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/villages/villages.yaml#/ContactUsResponse'
+          example:
+            data:
+              - position: "kasi_pelayanan"
+                name: "Kasim"
+                phone_wa: "6281234567890"
+                wa_link: "https://wa.me/6281234567890"
+              - position: "kaur_tu_umum"
+                name: "Rini"
+                phone_wa: "6289876543210"
+                wa_link: "https://wa.me/6289876543210"
+    '404':
+      description: Belum ada Kasi Pelayanan atau Kaur TU Umum aktif yang terdaftar
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
+          example:
+            message: "Belum ada kontak yang tersedia saat ini."
+    '500':
+      $ref: '../../responses/common.yaml#/ServerError'

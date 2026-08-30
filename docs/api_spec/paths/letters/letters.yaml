@@ -1,0 +1,152 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Lihat daftar surat (scoped otomatis sesuai role login)
+  description: |
+    UC-05. Scope ditentukan otomatis dari role user yang login. BARU v5.0
+    - query generik berbasis JOIN flow_steps ON flow_id + current_step_order,
+    menggantikan seluruh query hardcode per role granular status di v4.2:
+
+    ```sql
+    SELECT l.* FROM letters l
+    JOIN flow_steps fs ON fs.flow_id = l.flow_id AND fs.step_order = l.current_step_order
+    WHERE fs.approver_position = ? AND l.status IN ('pending','in_progress')
+    ```
+
+    Scope per role:
+    - warga: hanya surat milik sendiri (submitted_by / citizen_id)
+    - rt: surat wilayahnya (via citizens.rt_id), current_step.approver_position='rt', status pending
+    - rw: BARU v5.0 - bukan approver, hanya melihat riwayat surat yang lewat FYI notifikasi (read-only, tanpa filter status aktif)
+    - kepala_desa/sekretaris_desa: BARU v5.0 (approver aktif) - current_step.approver_position IN ('kepala_desa','sekdes'), status in_progress
+    - kasi_pelayanan/kaur_tu_umum: current_step.approver_position sesuai role, status in_progress
+    - petugas_desa: SEMUA surat tanpa filter status (full visibility pipeline, termasuk rejected di step manapun)
+    - kadus: DIHAPUS TOTAL v5.0 - tidak ada scope approval khusus, tidak ada daftar "menunggu Kadus" karena Kadus tidak lagi menjadi gate manapun
+
+    Catatan: untuk akses per-tahap approval yang lebih spesifik (dengan
+    detail approval history & aksi decision), gunakan endpoint
+    /rt/letters, /kades/letters, /kasi/letters.
+  operationId: listLetters
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [pending, in_progress, approved, rejected]
+      example: "pending"
+    - name: letter_type_id
+      in: query
+      required: false
+      schema:
+        type: integer
+    - name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+  responses:
+    '200':
+      description: Daftar surat berhasil diambil (sudah terfilter sesuai scope role)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letters/letters.yaml#/Letter'
+              meta:
+                $ref: '../../schemas/common/errors.yaml#/PaginationMeta'
+          examples:
+            warga_view:
+              summary: Warga - hanya surat sendiri
+              value:
+                data:
+                  - id: 501
+                    letter_type_id: 1
+                    letter_type: { code: "SKD", name: "Surat Keterangan Domisili" }
+                    status: "in_progress"
+                    current_step_order: 2
+                    current_step: { step_order: 2, approver_position: "kepala_desa", is_final: false }
+                    is_overdue: false
+                    submitted_at: "2026-07-01T09:00:00Z"
+                meta: { current_page: 1, per_page: 15, total: 1, last_page: 1 }
+            petugas_desa_view:
+              summary: Petugas Desa - semua status termasuk rejected
+              value:
+                data:
+                  - id: 501
+                    status: "in_progress"
+                    current_step_order: 2
+                  - id: 498
+                    status: "rejected"
+                    rejected_at_step: 1
+                meta: { current_page: 1, per_page: 15, total: 2, last_page: 1 }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+post:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Ajukan permohonan surat baru (self-service)
+  description: |
+    UC-03. Data pemohon diambil otomatis dari akun warga yang login
+    (auth()->user()->citizen). Hanya tipe surat dengan template != NULL
+    AND is_active = true yang boleh diajukan. Sistem resolve RT wilayah
+    warga via citizens.rt_id; jika tidak ditemukan, fallback broadcast
+    notifikasi ke semua petugas_desa aktif.
+
+    BARU v5.0: saat submit, sistem melakukan snapshot `letter_types.flow_id`
+    ke `letters.flow_id` (dikunci, bukan live-reference) dan set
+    `current_step_order = 1`. Status awal generik `pending` (bukan lagi
+    ENUM granular). TIDAK ADA proses hashing (blockchain hashing = Next
+    Dev, di luar MVP).
+  operationId: createLetter
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          $ref: '../../schemas/letters/letters.yaml#/LetterCreateRequest'
+  responses:
+    '201':
+      description: Permohonan berhasil disimpan dengan status pending
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Permohonan berhasil dikirim! Silakan pantau status di Dashboard."
+              data:
+                $ref: '../../schemas/letters/letters.yaml#/Letter'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Role bukan warga (hanya warga yang bisa mengajukan surat self-service)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+    '422':
+      description: Tipe surat tidak tersedia, dokumen pendukung wajib tidak diisi, atau field wajib kosong
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          examples:
+            letter_type_draft:
+              summary: Tipe surat masih Draft / nonaktif
+              value:
+                message: "The given data was invalid."
+                errors:
+                  letter_type_id: ["Tipe surat ini belum tersedia untuk diajukan"]
+            missing_document:
+              summary: Dokumen pendukung wajib untuk verification_type=document
+              value:
+                message: "The given data was invalid."
+                errors:
+                  supporting_document: ["File terlalu besar atau tidak diisi"]

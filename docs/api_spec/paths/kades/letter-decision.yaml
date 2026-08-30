@@ -1,0 +1,109 @@
+patch:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Berikan keputusan approve/reject Kepala Desa / Sekretaris Desa
+  description: |
+    BARU v5.0 (UC-04c versi baru). Endpoint ini MENGGANTIKAN TOTAL
+    `/kadus/letters/{id}/decision` yang sudah dihapus.
+
+    ⚠ **Catatan status keputusan (SID-ARCH-BE-001 S3.3):** bahwa
+    Sekretaris Desa benar-benar ikut approve di step yang sama dengan
+    Kepala Desa (first-action-wins) masih berstatus **rekomendasi/asumsi
+    default**, BUKAN keputusan final eksplisit - user menjawab
+    "no preference" saat ditanya di sesi v5.0. Spec ini mendokumentasikan
+    perilaku endpoint SESUAI asumsi tersebut karena itulah desain teknis
+    yang sudah dijabarkan di dokumen arsitektur; jika keputusan bisnisnya
+    berubah, kontrak endpoint ini (khususnya siapa saja yang boleh
+    memanggilnya) perlu ditinjau ulang.
+
+    **Mekanisme first-action-wins (bukan row-level lock):**
+    - Setiap request melakukan re-validasi status/current_step_order di
+      dalam `DB::transaction()` sebelum commit - siapa pun (Kades atau
+      Sekdes) yang transaksinya berhasil commit lebih dulu, itu yang
+      tercatat.
+    - Request kedua yang datang setelah step sudah berpindah akan gagal
+      di gate re-validasi (409 Conflict), pola yang sama dengan gate
+      logic RT->RW di v4.2 - BUKAN mekanisme locking khusus.
+    - Trade-off diterima sadar untuk traffic desa kecil (SID-ARCH-BE-001 S3.3).
+
+    **Approve**: INSERT ke `letter_approvals` (approval_level sesuai role
+    aktor yang benar-benar submit - 'kepala_desa' atau 'sekdes',
+    flow_step_id terisi), `current_step_order += 1`. Jika step berikutnya
+    `is_final=true`, status tetap `in_progress` sampai step final itu
+    benar-benar diputuskan Kasi/Kaur (lihat endpoint Kasi). Notifikasi
+    dikirim ke approver step berikutnya (Kasi/Kaur sesuai
+    letter_types.assigned_role via flow_steps).
+
+    **Reject**: `status = 'rejected'`, `rejected_at_step` dicatat,
+    TERMINAL, notifikasi ke Warga.
+  operationId: decideKadesLetter
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 501
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/letters/letters.yaml#/DecisionRequest'
+  responses:
+    '200':
+      description: Keputusan berhasil disimpan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/letters/letters.yaml#/DecisionResponse'
+          examples:
+            approved:
+              summary: Kades/Sekdes menyetujui surat - lanjut ke Kasi/Kaur
+              value:
+                message: "Keputusan berhasil disimpan"
+                data:
+                  id: 501
+                  status: "in_progress"
+                  current_step_order: 3
+                  current_step: { step_order: 3, approver_position: "kasi_pelayanan", is_final: true }
+            rejected:
+              summary: Kades/Sekdes menolak surat (TERMINAL)
+              value:
+                message: "Keputusan berhasil disimpan"
+                data:
+                  id: 501
+                  status: "rejected"
+                  rejected_at_step: 2
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Role bukan kepala_desa/sekretaris_desa, atau status belum in_progress di step ini (gate logic)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      description: |
+        Surat sudah diputuskan pihak lain (Kades/Sekdes yang lain sudah
+        action lebih dulu - first-action-wins), atau current_step_order
+        sudah berpindah sebelum transaksi ini commit.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ConflictResponse'
+          example:
+            message: "Surat sudah diproses oleh pejabat lain."
+    '422':
+      description: Memilih reject tanpa mengisi catatan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              notes: ["Catatan wajib diisi jika menolak"]

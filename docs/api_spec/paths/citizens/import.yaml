@@ -1,0 +1,46 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Import data warga massal via Excel
+  description: |
+    UC-09 (Main Flow - Import Excel). Library `maatwebsite/excel`.
+    Validasi per baris (format NIK, duplikat), baris error di-skip,
+    ringkasan hasil ditampilkan. Template Excel v5.0 disesuaikan untuk
+    kolom-kolom baru (residency_type, blood_type, dst) - lihat dokumen
+    template terpisah. Tidak all-or-nothing: satu baris gagal tidak
+    membatalkan baris lain yang valid (SID-ARCH-BE-001 S5.4).
+  operationId: importCitizensExcel
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [file]
+          properties:
+            file:
+              type: string
+              format: binary
+              description: File .xlsx atau .csv sesuai template yang disediakan
+  responses:
+    '200':
+      description: Import selesai diproses (bisa parsial - lihat error_count)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/citizens/citizens.yaml#/CitizenImportResponse'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: Format file tidak valid / header kolom tidak sesuai template
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              file: ["Format file harus .xlsx atau .csv sesuai template"]

@@ -1,0 +1,63 @@
+patch:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Edit peraturan desa
+  operationId: updateRegulation
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 3
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/regulations/regulations.yaml#/VillageRegulationCreateRequest'
+  responses:
+    '200':
+      description: Peraturan desa berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/regulations/regulations.yaml#/VillageRegulation'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+delete:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Hapus peraturan desa
+  operationId: deleteRegulation
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 3
+  responses:
+    '200':
+      description: Peraturan desa berhasil dihapus
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/SuccessMessage'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

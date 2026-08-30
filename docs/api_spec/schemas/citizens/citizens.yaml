@@ -1,0 +1,364 @@
+Citizen:
+  type: object
+  description: |
+    v5.0: kolom `no_kk` DIHAPUS TOTAL dari citizens, dipindah ke tabel
+    baru `families` (lihat schemas/families/families.yaml). Tambah 11
+    kolom baru: family_id, family_role, father_id/mother_id (self-reference),
+    father_name_text/mother_name_text (fallback teks), blood_type,
+    residency_type, origin_region, data_source, last_verified_at, sync_status.
+    Setiap warga (lokal maupun pendatang) SELALU punya NIK - tidak ada
+    kategori "warga Non-NIK" (SID-ARCH-BE-001 S5.2).
+  properties:
+    id:
+      type: integer
+      example: 55
+    village_id:
+      type: integer
+      example: 1
+    nik_masked:
+      type: string
+      example: "************0001"
+      description: NIK selalu ditampilkan ter-mask, tidak pernah plaintext di response
+    name:
+      type: string
+      example: "Siti Aminah"
+    date_of_birth:
+      type: string
+      format: date
+      nullable: true
+      example: "1990-05-12"
+    place_of_birth:
+      type: string
+      nullable: true
+      example: "Bandung"
+    gender:
+      type: string
+      enum: [L, P]
+      example: "P"
+    blood_type:
+      type: string
+      enum: [A, B, AB, O, tidak_tahu]
+      nullable: true
+      example: "O"
+      description: "BARU v5.0"
+    address:
+      type: string
+      example: "Jl. Merdeka No. 10"
+      description: "Domisili riil individu - bisa berbeda dari families.family_address"
+    rt_id:
+      type: integer
+      nullable: true
+      example: 12
+    hamlet_id:
+      type: integer
+      nullable: true
+      example: 1
+    family_id:
+      type: integer
+      nullable: true
+      example: 20
+      description: "BARU v5.0 - FK ke families.id. NULL = belum/tidak tergabung KK manapun di sistem"
+    family:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: integer
+          example: 20
+        no_kk_masked:
+          type: string
+          example: "************0001"
+    family_role:
+      type: string
+      enum: [kepala_keluarga, istri, suami, anak, famili_lain]
+      nullable: true
+      example: "istri"
+      description: "BARU v5.0"
+    father_id:
+      type: integer
+      nullable: true
+      example: 40
+      description: "BARU v5.0 - self-reference ke citizens.id, untuk fitur pohon keluarga"
+    mother_id:
+      type: integer
+      nullable: true
+      example: 41
+      description: "BARU v5.0 - self-reference"
+    father_name_text:
+      type: string
+      nullable: true
+      example: null
+      description: "BARU v5.0 - fallback teks bebas jika father_id NULL (ortu tidak terdaftar sebagai warga desa)"
+    mother_name_text:
+      type: string
+      nullable: true
+      example: null
+      description: "BARU v5.0 - fallback teks bebas jika mother_id NULL"
+    marital_status:
+      type: string
+      enum: [belum_kawin, kawin, cerai_hidup, cerai_mati]
+      nullable: true
+      example: "kawin"
+    occupation:
+      type: string
+      nullable: true
+      example: "Wiraswasta"
+    religion:
+      type: string
+      enum: [islam, kristen, katolik, hindu, buddha, konghucu]
+      nullable: true
+      example: "islam"
+    last_education:
+      type: string
+      enum: [tidak_sekolah, sd, smp, sma, diploma, s1, s2, s3]
+      nullable: true
+      example: "sma"
+    domicile_status:
+      type: string
+      enum: [menetap, merantau_dalam_negeri, merantau_luar_negeri, tki]
+      example: "menetap"
+      description: "Murni informatif, tidak mempengaruhi hak akses"
+    current_domicile:
+      type: string
+      nullable: true
+      example: null
+    residency_type:
+      type: string
+      enum: [lokal, pendatang]
+      default: lokal
+      example: "lokal"
+      description: |
+        BARU v5.0 - pembeda lokal/pendatang murni status kolom, BUKAN
+        tabel/entitas terpisah. Warga pendatang tetap wajib punya NIK
+        terverifikasi di tabel citizens yang sama (SID-ARCH-BE-001 S5.2).
+    origin_region:
+      type: string
+      nullable: true
+      example: null
+      description: "BARU v5.0 - asal daerah, relevan jika residency_type='pendatang'"
+    data_source:
+      type: string
+      enum: [manual_input_desa, import_excel, dukcapil_sync]
+      default: manual_input_desa
+      example: "manual_input_desa"
+      description: "BARU v5.0 - untuk future Dukcapil integration Tahap 3"
+    last_verified_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: null
+      description: "BARU v5.0 - kapan terakhir dicocokkan dengan dokumen fisik"
+    sync_status:
+      type: string
+      enum: [synced, pending, conflict]
+      nullable: true
+      example: null
+      description: "BARU v5.0"
+    is_active:
+      type: boolean
+      example: true
+
+CitizenCreateRequest:
+  type: object
+  required: [nik, name, gender, address, rt_id]
+  description: |
+    v5.0: field `no_kk` DIHAPUS dari request ini - KK dikelola lewat
+    endpoint /families terpisah (lihat UC-09 Sub-flow Kelola Data Keluarga).
+    Gunakan family_id untuk menautkan warga ke KK yang sudah ada.
+  properties:
+    nik:
+      type: string
+      example: "3201012345670001"
+      description: 16 digit numerik, plaintext hanya di request, langsung dienkripsi AES-256 di server
+    name:
+      type: string
+      example: "Siti Aminah"
+    date_of_birth:
+      type: string
+      format: date
+      example: "1990-05-12"
+    place_of_birth:
+      type: string
+      example: "Bandung"
+    gender:
+      type: string
+      enum: [L, P]
+      example: "P"
+    blood_type:
+      type: string
+      enum: [A, B, AB, O, tidak_tahu]
+      example: "O"
+    address:
+      type: string
+      example: "Jl. Merdeka No. 10"
+    rt_id:
+      type: integer
+      example: 12
+    hamlet_id:
+      type: integer
+      example: 1
+    family_id:
+      type: integer
+      nullable: true
+      example: 20
+      description: "Pilih dari dropdown KK yang sudah ada, atau buat KK baru dulu via POST /families"
+    family_role:
+      type: string
+      enum: [kepala_keluarga, istri, suami, anak, famili_lain]
+      nullable: true
+      example: "istri"
+    father_id:
+      type: integer
+      nullable: true
+      example: 40
+    mother_id:
+      type: integer
+      nullable: true
+      example: 41
+    father_name_text:
+      type: string
+      nullable: true
+      example: null
+    mother_name_text:
+      type: string
+      nullable: true
+      example: null
+    marital_status:
+      type: string
+      enum: [belum_kawin, kawin, cerai_hidup, cerai_mati]
+      example: "kawin"
+    occupation:
+      type: string
+      example: "Wiraswasta"
+    religion:
+      type: string
+      enum: [islam, kristen, katolik, hindu, buddha, konghucu]
+      example: "islam"
+    last_education:
+      type: string
+      enum: [tidak_sekolah, sd, smp, sma, diploma, s1, s2, s3]
+      example: "sma"
+    domicile_status:
+      type: string
+      enum: [menetap, merantau_dalam_negeri, merantau_luar_negeri, tki]
+      example: "menetap"
+    current_domicile:
+      type: string
+      nullable: true
+      example: null
+    residency_type:
+      type: string
+      enum: [lokal, pendatang]
+      example: "lokal"
+    origin_region:
+      type: string
+      nullable: true
+      example: null
+
+CitizenImportResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Import selesai diproses"
+    data:
+      type: object
+      properties:
+        total_rows:
+          type: integer
+          example: 120
+        success_count:
+          type: integer
+          example: 115
+        error_count:
+          type: integer
+          example: 5
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              row:
+                type: integer
+                example: 23
+              message:
+                type: string
+                example: "NIK sudah terdaftar dalam database warga"
+
+CitizenSocioeconomic:
+  type: object
+  description: |
+    BARU v5.0. Relasi 1:1 dengan citizens (per individu, BUKAN per keluarga).
+    Dipisah tabel karena sering kosong (belum semua warga disurvei).
+  properties:
+    id:
+      type: integer
+      example: 1
+    citizen_id:
+      type: integer
+      example: 55
+    income_range:
+      type: string
+      enum: ["<1jt", "1-3jt", "3-5jt", "5-10jt", ">10jt"]
+      nullable: true
+      example: "3-5jt"
+    house_ownership_status:
+      type: string
+      enum: [milik_sendiri, sewa, menumpang, dinas]
+      nullable: true
+      example: "milik_sendiri"
+    water_source:
+      type: string
+      enum: [pdam, sumur, sungai, lainnya]
+      nullable: true
+      example: "pdam"
+    electricity_source:
+      type: string
+      enum: [pln, non_pln, tidak_ada]
+      nullable: true
+      example: "pln"
+    dependents_count:
+      type: integer
+      nullable: true
+      example: 3
+    productive_assets:
+      type: object
+      nullable: true
+      additionalProperties: true
+      example: {"kendaraan": "motor", "ternak": null}
+    surveyed_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: "2026-05-01T09:00:00Z"
+    surveyed_by:
+      type: integer
+      nullable: true
+      example: 5
+
+CitizenSocioeconomicUpsertRequest:
+  type: object
+  properties:
+    income_range:
+      type: string
+      enum: ["<1jt", "1-3jt", "3-5jt", "5-10jt", ">10jt"]
+      example: "3-5jt"
+    house_ownership_status:
+      type: string
+      enum: [milik_sendiri, sewa, menumpang, dinas]
+      example: "milik_sendiri"
+    water_source:
+      type: string
+      enum: [pdam, sumur, sungai, lainnya]
+      example: "pdam"
+    electricity_source:
+      type: string
+      enum: [pln, non_pln, tidak_ada]
+      example: "pln"
+    dependents_count:
+      type: integer
+      example: 3
+    productive_assets:
+      type: object
+      additionalProperties: true
+      example: {"kendaraan": "motor"}

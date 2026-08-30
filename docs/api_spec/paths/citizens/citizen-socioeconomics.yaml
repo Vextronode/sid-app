@@ -1,0 +1,80 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Lihat data sosio-ekonomi warga (jika sudah disurvei)
+  description: |
+    BARU v5.0. Relasi 1:1 dengan citizens. Bisa kosong jika warga belum
+    pernah disurvei - lihat 404.
+  operationId: getCitizenSocioeconomic
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: citizen_id
+      schema:
+        type: integer
+      example: 55
+  responses:
+    '200':
+      description: Data sosio-ekonomi berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/citizens/citizens.yaml#/CitizenSocioeconomic'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      description: Warga ini belum pernah disurvei
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
+          example:
+            message: "Data sosio-ekonomi belum tersedia untuk warga ini."
+put:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Buat atau perbarui data sosio-ekonomi warga (upsert)
+  description: |
+    BARU v5.0. `surveyed_by` dan `surveyed_at` diisi otomatis oleh server
+    dari user yang login dan waktu request.
+  operationId: upsertCitizenSocioeconomic
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: citizen_id
+      schema:
+        type: integer
+      example: 55
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/citizens/citizens.yaml#/CitizenSocioeconomicUpsertRequest'
+  responses:
+    '200':
+      description: Data sosio-ekonomi berhasil disimpan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/citizens/citizens.yaml#/CitizenSocioeconomic'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

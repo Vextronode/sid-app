@@ -1,0 +1,55 @@
+get:
+  tags: [Epic 7 - Deadline & Reminder Approval]
+  summary: Lihat setting deadline approval per tahap
+  description: |
+    UC-22. ⚠ Lihat catatan technical debt di schema `ApprovalSetting` -
+    spec ini mengasumsikan enum approval_level 5 nilai baru (selaras
+    dengan letter_approvals) sesuai rekomendasi Rencana Migrasi Fase 6.1,
+    meski TDD v5.0 belum eksplisit mem-patch kolom ini. Jika desa punya
+    keputusan berbeda, response ini perlu disesuaikan.
+  operationId: listApprovalSettings
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Setting deadline approval per tahap berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/approval-settings/approval-settings.yaml#/ApprovalSetting'
+          example:
+            data:
+              - id: 1
+                approval_level: "rt"
+                deadline_hours: 24
+                reminder_hours: 12
+                is_active: true
+              - id: 2
+                approval_level: "kepala_desa"
+                deadline_hours: 24
+                reminder_hours: 12
+                is_active: true
+              - id: 3
+                approval_level: "sekdes"
+                deadline_hours: 24
+                reminder_hours: 12
+                is_active: true
+              - id: 4
+                approval_level: "kasi_pelayanan"
+                deadline_hours: 48
+                reminder_hours: 24
+                is_active: true
+              - id: 5
+                approval_level: "kaur_tu_umum"
+                deadline_hours: 48
+                reminder_hours: 24
+                is_active: true
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'

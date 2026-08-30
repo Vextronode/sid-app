@@ -13,6 +13,7 @@ import {
 import { Calendar } from "lucide-react";
 
 export default function SuratStatChart({ letters = [] }) {
+
   const dateInputRef = useRef(null);
 
   const [chartData, setChartData] = useState([]);
@@ -61,7 +62,9 @@ export default function SuratStatChart({ letters = [] }) {
     let cancelled = false;
 
     const fetchChart = async () => {
+
       try {
+
         setLoading(true);
 
         const response = await api.get(
@@ -118,8 +121,11 @@ export default function SuratStatChart({ letters = [] }) {
           setLoading(false);
         }
       }
+
     };
 
+
+    // Load pertama
     fetchChart();
 
     const interval = setInterval(() => {
@@ -162,6 +168,7 @@ export default function SuratStatChart({ letters = [] }) {
             }}
             className="sid-surat-stat-chart-date"
           >
+
             <span>
               {new Date(
                 `${selectedDate}T00:00:00`
@@ -173,7 +180,9 @@ export default function SuratStatChart({ letters = [] }) {
             </span>
 
             <Calendar size={14} />
+
           </button>
+
 
           <input
             ref={dateInputRef}
@@ -194,18 +203,22 @@ export default function SuratStatChart({ letters = [] }) {
             }}
             className="sid-surat-stat-chart-select"
           >
+
             <option value="all">
               Semua Jenis Surat
             </option>
 
             {letterTypes.map((item) => (
+
               <option
                 key={item.id}
                 value={item.id}
               >
                 {item.name}
               </option>
+
             ))}
+
           </select>
 
         </div>

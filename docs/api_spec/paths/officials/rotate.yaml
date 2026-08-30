@@ -1,0 +1,56 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Rotasi jabatan pejabat struktural (RT/RW/Kadus/dst)
+  description: |
+    UC-14. Dijalankan dalam `DB::transaction()`:
+    1. UPDATE officials lama SET ended_at=today, is_active=false
+    2. INSERT officials baru
+    3. Jika position='sekdes' -> UPDATE users SET role='sekretaris_desa'
+
+    Tidak berubah dari v4.2. Rotasi Kadus tetap didukung (jabatan
+    struktural tetap eksis), meski hasil rotasi tidak lagi berdampak ke
+    `flow_steps` manapun sejak v5.0.
+  operationId: rotateOfficial
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: ID record official yang sedang aktif (akan diakhiri jabatannya)
+      schema:
+        type: integer
+      example: 5
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/users/users.yaml#/RotateOfficialRequest'
+  responses:
+    '200':
+      description: Rotasi jabatan berhasil diproses
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/users/users.yaml#/RotateOfficialResponse'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      description: Record official yang mau dirotasi tidak ditemukan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
+    '422':
+      description: citizen_id/user_id baru tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              citizen_id: ["Data kependudukan tidak ditemukan"]

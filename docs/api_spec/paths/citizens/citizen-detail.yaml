@@ -1,0 +1,123 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Lihat detail warga
+  description: |
+    Response kini menyertakan family (KK), father_id/mother_id, blood_type,
+    residency_type, dan field v5.0 lainnya. Lihat schema Citizen.
+  operationId: getCitizen
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 55
+  responses:
+    '200':
+      description: Detail warga berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/citizens/citizens.yaml#/Citizen'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+patch:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Edit data warga
+  description: |
+    UC-09 (Main Flow - Edit Warga). NIK tidak bisa diubah setelah dibuat.
+    Catatan Alur Update KTP/KK v5.0 (TDD Section 5.4.2 UC-09): Petugas
+    Desa mencatat ulang data yang sudah resmi berubah di Kecamatan/Dukcapil
+    (bukan proses penerbitan) - murni pencatatan administratif, tidak
+    perlu approval flow apapun, cukup CRUD biasa lewat endpoint ini.
+    `family_id`/`family_role` bisa diubah di sini untuk memindahkan warga
+    antar KK.
+  operationId: updateCitizen
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 55
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          description: Semua field CitizenCreateRequest kecuali nik (tidak bisa diubah)
+          properties:
+            name:
+              type: string
+              example: "Siti Aminah"
+            address:
+              type: string
+              example: "Jl. Merdeka No. 12"
+            domicile_status:
+              type: string
+              enum: [menetap, merantau_dalam_negeri, merantau_luar_negeri, tki]
+              example: "merantau_dalam_negeri"
+            current_domicile:
+              type: string
+              nullable: true
+              example: "Jakarta Selatan"
+            family_id:
+              type: integer
+              nullable: true
+              example: 21
+            family_role:
+              type: string
+              enum: [kepala_keluarga, istri, suami, anak, famili_lain]
+              nullable: true
+              example: "anak"
+            residency_type:
+              type: string
+              enum: [lokal, pendatang]
+              example: "lokal"
+            origin_region:
+              type: string
+              nullable: true
+              example: null
+            last_verified_at:
+              type: string
+              format: date-time
+              nullable: true
+              example: "2026-07-15T10:00:00Z"
+  responses:
+    '200':
+      description: Data warga berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/citizens/citizens.yaml#/Citizen'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      description: NIK terdapat di payload (dilarang diubah) atau validasi gagal
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              nik: ["NIK tidak dapat diubah setelah data warga dibuat"]

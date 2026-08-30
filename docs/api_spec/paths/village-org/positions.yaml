@@ -1,0 +1,75 @@
+get:
+  tags: [Epic 10 - Organisasi Non-Struktural Desa]
+  summary: Lihat daftar jabatan organisasi non-struktural (grouping BPD/BUMDES/LPM/Karang Taruna/PKK)
+  description: |
+    UC-23. Aktor Petugas Desa. Berbeda dengan `officials` (jabatan
+    struktural desa) - ini untuk organisasi seperti BPD, BUMDES, dst.
+    STATUS: fitur rotasi PENDING konfirmasi desa (statis vs dinamis) -
+    endpoint tetap tersedia, UI toggle menyusul. Tidak berubah dari v4.2.
+  operationId: listVillageOrgPositions
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: org_type
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [bpd, bumdes, lpm, karang_taruna, pkk]
+      example: "bpd"
+  responses:
+    '200':
+      description: Daftar jabatan organisasi berhasil diambil (termasuk member aktif)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/village-org/village-org.yaml#/VillageOrgPosition'
+          example:
+            data:
+              - id: 1
+                org_type: "bpd"
+                position_label: "Ketua BPD"
+                is_single_occupant: true
+                is_active: true
+                members:
+                  - id: 1
+                    member_name: "Budi Santoso"
+                    started_at: "2024-01-01"
+                    is_active: true
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+post:
+  tags: [Epic 10 - Organisasi Non-Struktural Desa]
+  summary: Tambah jabatan organisasi baru
+  operationId: createVillageOrgPosition
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/village-org/village-org.yaml#/VillageOrgPositionCreateRequest'
+  responses:
+    '201':
+      description: Jabatan organisasi berhasil dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/village-org/village-org.yaml#/VillageOrgPosition'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

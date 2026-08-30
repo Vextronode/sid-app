@@ -1,0 +1,99 @@
+VillageOrgPosition:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 1
+    village_id:
+      type: integer
+      example: 1
+    org_type:
+      type: string
+      enum: [bpd, bumdes, lpm, karang_taruna, pkk]
+      example: "bpd"
+    position_label:
+      type: string
+      example: "Ketua BPD"
+    is_single_occupant:
+      type: boolean
+      example: true
+    sort_order:
+      type: integer
+      example: 1
+    is_active:
+      type: boolean
+      example: true
+    members:
+      type: array
+      items:
+        $ref: '#/VillageOrgMember'
+
+VillageOrgMember:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 1
+    position_id:
+      type: integer
+      example: 1
+    member_name:
+      type: string
+      example: "Budi Santoso"
+    photo_img:
+      type: string
+      nullable: true
+      example: null
+    phone_wa:
+      type: string
+      nullable: true
+      example: "6281111222333"
+    started_at:
+      type: string
+      format: date
+      example: "2024-01-01"
+    ended_at:
+      type: string
+      format: date
+      nullable: true
+      example: null
+    is_active:
+      type: boolean
+      example: true
+
+VillageOrgPositionCreateRequest:
+  type: object
+  required: [org_type, position_label]
+  properties:
+    org_type:
+      type: string
+      enum: [bpd, bumdes, lpm, karang_taruna, pkk]
+      example: "bpd"
+    position_label:
+      type: string
+      example: "Ketua BPD"
+    is_single_occupant:
+      type: boolean
+      example: true
+    sort_order:
+      type: integer
+      example: 1
+
+VillageOrgMemberCreateRequest:
+  type: object
+  required: [member_name, started_at]
+  properties:
+    member_name:
+      type: string
+      example: "Budi Santoso"
+    phone_wa:
+      type: string
+      example: "6281111222333"
+    started_at:
+      type: string
+      format: date
+      example: "2024-01-01"
+    notes:
+      type: string
+      nullable: true
+      example: null

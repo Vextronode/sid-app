@@ -131,6 +131,7 @@ export function ResubmitSuratModal({
                 placeholder="Masukkan keperluan surat yang sudah direvisi..."
                 required
               />
+
             </div>
 
 
@@ -147,6 +148,7 @@ export function ResubmitSuratModal({
                 className="sid-modal-textarea"
                 placeholder="Misal: Saya sudah memperbaiki bagian keperluan..."
               />
+
             </div>
 
           </form>

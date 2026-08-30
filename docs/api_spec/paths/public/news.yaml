@@ -1,0 +1,35 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Daftar berita & pengumuman publik (tanpa login)
+  description: |
+    UC-16. Hanya menampilkan news dengan is_published = true. Tidak
+    berubah dari v4.2.
+  operationId: getPublicNewsList
+  parameters:
+    - name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+  responses:
+    '200':
+      description: Daftar berita publik berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/news/news.yaml#/News'
+              meta:
+                $ref: '../../schemas/common/errors.yaml#/PaginationMeta'
+    '422':
+      description: Parameter page tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+    '500':
+      $ref: '../../responses/common.yaml#/ServerError'

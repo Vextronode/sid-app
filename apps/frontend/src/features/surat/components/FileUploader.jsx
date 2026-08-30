@@ -112,6 +112,7 @@ export function FileUploader({
         <p className="sid-upload-description">
           PDF, DOCX, JPG, PNG - maks. 5MB per file
         </p>
+
       </div>
 
     </div>

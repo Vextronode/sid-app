@@ -1,0 +1,118 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Lihat & cari daftar warga
+  description: |
+    UC-09 (Main Flow - Lihat & Cari Warga). Aktor Petugas Desa.
+    Tambahan filter `residency_type` (v5.0).
+  operationId: listCitizens
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: search
+      in: query
+      required: false
+      description: Cari berdasarkan nama (LIKE) atau NIK (dikonversi ke hash di server)
+      schema:
+        type: string
+      example: "Siti"
+    - name: residency_type
+      in: query
+      required: false
+      description: "BARU v5.0 - filter warga lokal vs pendatang"
+      schema:
+        type: string
+        enum: [lokal, pendatang]
+      example: "lokal"
+    - name: family_id
+      in: query
+      required: false
+      description: "BARU v5.0 - filter anggota satu KK"
+      schema:
+        type: integer
+      example: 20
+    - name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 1
+  responses:
+    '200':
+      description: Daftar warga berhasil diambil (NIK selalu ter-mask)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/citizens/citizens.yaml#/Citizen'
+              meta:
+                $ref: '../../schemas/common/errors.yaml#/PaginationMeta'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Tambah warga baru
+  description: |
+    UC-09 (Main Flow - Tambah Warga). NIK dienkripsi AES-256 (`nik`) dan
+    di-hash SHA-256 (`nik_hash`) untuk indexing, dijalankan dalam satu
+    `DB::transaction()`. BARU v5.0: `no_kk` DIHAPUS dari request ini -
+    gunakan `family_id` untuk menautkan ke KK yang sudah ada (buat KK
+    baru dulu lewat `POST /families` jika belum ada). Field baru:
+    family_role, father_id/mother_id, blood_type, residency_type,
+    origin_region.
+  operationId: createCitizen
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/citizens/citizens.yaml#/CitizenCreateRequest'
+  responses:
+    '201':
+      description: Data warga berhasil disimpan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Data warga berhasil disimpan"
+              data:
+                $ref: '../../schemas/citizens/citizens.yaml#/Citizen'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: NIK sudah terdaftar / format NIK salah / field wajib kosong / no_kk terkirim (dilarang di endpoint ini sejak v5.0)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          examples:
+            duplicate_nik:
+              summary: NIK sudah terdaftar
+              value:
+                message: "The given data was invalid."
+                errors:
+                  nik: ["NIK sudah ada dalam database warga"]
+            invalid_nik_format:
+              summary: Format NIK salah
+              value:
+                message: "The given data was invalid."
+                errors:
+                  nik: ["NIK harus 16 digit angka"]
+            no_kk_not_allowed:
+              summary: "no_kk dikirim di endpoint ini (v5.0 memindahkan KK ke /families)"
+              value:
+                message: "The given data was invalid."
+                errors:
+                  no_kk: ["No KK tidak lagi dikelola di endpoint ini sejak v5.0. Gunakan family_id, atau buat KK baru via POST /families."]

@@ -1,0 +1,158 @@
+DashboardWarga:
+  type: object
+  required: [role]
+  properties:
+    role:
+      type: string
+      enum: [warga]
+      example: "warga"
+    my_letters:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: integer
+            example: 501
+          letter_type_name:
+            type: string
+            example: "Surat Keterangan Domisili"
+          status:
+            type: string
+            enum: [pending, in_progress, approved, rejected]
+            example: "in_progress"
+          current_stage_label:
+            type: string
+            example: "Menunggu Kepala Desa / Sekretaris Desa"
+            description: "Derived dari current_step_order + JOIN flow_steps, bukan lagi status granular"
+    unread_notifications_count:
+      type: integer
+      example: 2
+
+DashboardRt:
+  type: object
+  required: [role]
+  properties:
+    role:
+      type: string
+      enum: [rt]
+      example: "rt"
+    total_pending:
+      type: integer
+      example: 3
+    total_processed:
+      type: integer
+      example: 15
+    pending_letters:
+      type: array
+      items:
+        $ref: '../letters/letters.yaml#/Letter'
+    unread_notifications_count:
+      type: integer
+      example: 1
+
+DashboardRw:
+  type: object
+  description: |
+    BARU v5.0 (BERUBAH TOTAL). Bukan lagi "daftar surat menunggu approval" -
+    RW bukan approver sejak v5.0. Sekarang murni "daftar surat yang lewat
+    FYI", read-only, tanpa tombol approve/reject sama sekali.
+  required: [role]
+  properties:
+    role:
+      type: string
+      enum: [rw]
+      example: "rw"
+    fyi_letters:
+      type: array
+      items:
+        $ref: '../letters/letters.yaml#/Letter'
+      description: "Riwayat notifikasi FYI yang pernah diterima, bukan filter status aktif"
+    unread_notifications_count:
+      type: integer
+      example: 1
+
+DashboardKadesSekdes:
+  type: object
+  description: |
+    BARU v5.0 (BERUBAH TOTAL dari v4.2 monitoring-only). Kepala Desa /
+    Sekretaris Desa sekarang approver aktif - dashboard menampilkan
+    daftar surat yang MENUNGGU approval mereka (action item), bukan lagi
+    murni read-only monitoring. Dashboard keduanya identik.
+  required: [role]
+  properties:
+    role:
+      type: string
+      enum: [kepala_desa, sekretaris_desa]
+      example: "kepala_desa"
+    total_menunggu_approval:
+      type: integer
+      example: 4
+    pending_letters:
+      type: array
+      items:
+        $ref: '../letters/letters.yaml#/Letter'
+      description: "Surat dengan current_step_order menunjuk ke posisi kepala_desa/sekdes, status in_progress"
+    unread_notifications_count:
+      type: integer
+      example: 5
+
+DashboardKasi:
+  type: object
+  required: [role]
+  properties:
+    role:
+      type: string
+      enum: [kasi_pelayanan, kaur_tu_umum]
+      example: "kasi_pelayanan"
+    total_menunggu_final:
+      type: integer
+      example: 4
+    pending_letters:
+      type: array
+      items:
+        $ref: '../letters/letters.yaml#/Letter'
+    unread_notifications_count:
+      type: integer
+      example: 3
+
+DashboardPetugasDesa:
+  type: object
+  required: [role]
+  properties:
+    role:
+      type: string
+      enum: [petugas_desa]
+      example: "petugas_desa"
+    total_warga:
+      type: integer
+      example: 2450
+    total_surat_bulan_ini:
+      type: integer
+      example: 87
+    surat_per_status:
+      type: object
+      description: "BARU v5.0 - key mengikuti status generik 4 nilai, bukan lagi granular per posisi"
+      additionalProperties:
+        type: integer
+      example:
+        pending: 5
+        in_progress: 12
+        approved: 70
+        rejected: 3
+    unread_notifications_count:
+      type: integer
+      example: 0
+
+DashboardKadus:
+  type: object
+  deprecated: true
+  description: |
+    DIHAPUS TOTAL sejak v5.0 (Patch 39) - Kadus tidak lagi punya action
+    item approval apapun, tidak ada dashboard aktif untuk role ini.
+    Skema dipertahankan di sini HANYA sebagai catatan historis migrasi;
+    JANGAN diimplementasikan atau direferensikan di /dashboard v5.
+  properties:
+    role:
+      type: string
+      example: "kadus"

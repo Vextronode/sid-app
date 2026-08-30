@@ -1,0 +1,40 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Lihat daftar surat wilayah RT (status pending, step aktif = rt)
+  description: |
+    UC-04a (Tahap 1). Aktor RT. Filter otomatis berdasarkan citizens.rt_id
+    yang sesuai dengan officials.rt_id milik RT yang login, DAN
+    current_step.approver_position = 'rt' (query generik v5.0, RT tetap
+    satu-satunya approver yang gate-nya berbasis wilayah - lihat
+    SID-ARCH-BE-001 S3.2).
+  operationId: listRtLetters
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar surat pending di wilayah RT berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letters/letters.yaml#/Letter'
+          example:
+            data:
+              - id: 501
+                applicant_name: "Siti Aminah"
+                status: "pending"
+                current_step_order: 1
+                is_overdue: false
+                submitted_at: "2026-07-01T09:00:00Z"
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: User yang login bukan RT aktif
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'

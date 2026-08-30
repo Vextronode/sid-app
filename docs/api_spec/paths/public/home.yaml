@@ -1,0 +1,39 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Beranda publik (landing page, tanpa login)
+  description: |
+    UC-16. Aktor Pengunjung tanpa login. Menampilkan sambutan kepala
+    desa, info singkat desa, statistik publik. Read-only, tidak ada
+    data sensitif warga. Tidak berubah dari v4.2.
+  operationId: getPublicHome
+  responses:
+    '200':
+      description: Data beranda publik berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  village:
+                    $ref: '../../schemas/villages/villages.yaml#/Village'
+                  latest_news:
+                    type: array
+                    items:
+                      $ref: '../../schemas/news/news.yaml#/News'
+                  public_stats:
+                    type: object
+                    properties:
+                      total_letter_types:
+                        type: integer
+                        example: 8
+    '404':
+      description: Profil desa belum tersedia (data villages belum di-setup)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
+    '500':
+      $ref: '../../responses/common.yaml#/ServerError'

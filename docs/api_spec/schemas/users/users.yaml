@@ -1,0 +1,189 @@
+User:
+  type: object
+  description: |
+    9 nilai role ENUM TIDAK berubah dari v4.2 ke v5.0 - lihat
+    SID-ARCH-BE-001 S4.1. Yang berubah adalah SCOPE OTORISASI di
+    baliknya (kepala_desa/sekretaris_desa jadi approver aktif, bukan
+    lagi read-only), bukan daftar nilai ENUM itu sendiri.
+  properties:
+    id:
+      type: integer
+      example: 12
+    village_id:
+      type: integer
+      example: 1
+    citizen_id:
+      type: integer
+      nullable: true
+      example: 30
+      description: "NULL diizinkan untuk akun teknis tanpa data kependudukan"
+    name:
+      type: string
+      example: "Ahmad Budiman"
+    email:
+      type: string
+      example: "ahmad.budiman@cibenda.desa.id"
+    role:
+      type: string
+      enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, kepala_desa, sekretaris_desa]
+      example: "rt"
+    is_active:
+      type: boolean
+      example: true
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+
+UserCreateRequest:
+  type: object
+  required: [name, email, password, role, citizen_id]
+  properties:
+    name:
+      type: string
+      example: "Ahmad Budiman"
+    email:
+      type: string
+      example: "ahmad.budiman@cibenda.desa.id"
+    password:
+      type: string
+      format: password
+      example: "Password123!"
+    role:
+      type: string
+      enum: [rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, kepala_desa, sekretaris_desa]
+      example: "rt"
+      description: |
+        Tidak termasuk 'warga' - warga register sendiri via UC-17.
+        Catatan: jika position_data.position='sekdes', sistem OTOMATIS
+        override role jadi 'sekretaris_desa' terlepas dari nilai field
+        ini (logic tidak berubah dari v4.2).
+    citizen_id:
+      type: integer
+      example: 30
+      description: Link ke data kependudukan warga yang menjabat
+    position_data:
+      type: object
+      description: Data tambahan untuk INSERT ke tabel officials
+      properties:
+        position:
+          type: string
+          enum: [kepala_desa, kasi_pelayanan, kaur_tu_umum, kadus, petugas_desa, rw, rt, sekdes, kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes]
+          example: "rt"
+          description: |
+            14 nilai - tidak berubah dari v4.2. 'kadus' tetap valid untuk
+            keperluan struktural non-approval (SID-ARCH-BE-001 S3.2) -
+            hanya tidak lagi direferensikan flow_steps.approver_position.
+        rt_id:
+          type: integer
+          nullable: true
+          example: 12
+        rw_id:
+          type: integer
+          nullable: true
+          example: null
+        hamlet_id:
+          type: integer
+          nullable: true
+          example: null
+        started_at:
+          type: string
+          format: date
+          example: "2026-07-01"
+
+UserUpdateRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      example: "Ahmad Budiman"
+    email:
+      type: string
+      example: "ahmad.budiman@cibenda.desa.id"
+    is_active:
+      type: boolean
+      example: true
+
+RotateOfficialRequest:
+  type: object
+  required: [citizen_id, user_id, started_at]
+  properties:
+    citizen_id:
+      type: integer
+      example: 45
+      description: Warga baru yang akan menjabat
+    user_id:
+      type: integer
+      example: 78
+      description: Akun sistem baru untuk pejabat pengganti
+    started_at:
+      type: string
+      format: date
+      example: "2026-08-01"
+    notes:
+      type: string
+      nullable: true
+      example: "Pergantian rutin akhir periode"
+
+Official:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 5
+    citizen_id:
+      type: integer
+      example: 30
+    user_id:
+      type: integer
+      nullable: true
+      example: 12
+    position:
+      type: string
+      enum: [kepala_desa, kasi_pelayanan, kaur_tu_umum, kadus, petugas_desa, rw, rt, sekdes, kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes]
+      example: "rt"
+    village_id:
+      type: integer
+      example: 1
+    rt_id:
+      type: integer
+      nullable: true
+      example: 12
+    rw_id:
+      type: integer
+      nullable: true
+      example: null
+    hamlet_id:
+      type: integer
+      nullable: true
+      example: null
+    phone_wa:
+      type: string
+      nullable: true
+      example: "6281234567890"
+    started_at:
+      type: string
+      format: date
+      example: "2024-01-01"
+    ended_at:
+      type: string
+      format: date
+      nullable: true
+      example: null
+    is_active:
+      type: boolean
+      example: true
+
+RotateOfficialResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Rotasi jabatan berhasil diproses"
+    data:
+      type: object
+      properties:
+        old_official:
+          $ref: '#/Official'
+        new_official:
+          $ref: '#/Official'

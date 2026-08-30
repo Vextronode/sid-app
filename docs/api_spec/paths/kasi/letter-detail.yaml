@@ -1,0 +1,116 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Lihat detail surat & seluruh riwayat (RT+FYI RW+Kades/Sekdes) untuk diperiksa Kasi/Kaur
+  operationId: getKasiLetterDetail
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 501
+  responses:
+    '200':
+      description: Detail surat berhasil diambil (termasuk seluruh riwayat RT, FYI RW, Kades/Sekdes)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/letters/letters.yaml#/LetterDetail'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Step aktif bukan posisi user ini, atau bukan step is_final
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+          example:
+            message: "Surat bukan kewenangan Anda"
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+patch:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Berikan keputusan final approve/reject Kasi/Kaur (Tahap Final)
+  description: |
+    UC-04d. Tahap FINAL (flow_steps.is_final = true). Gate logic: surat
+    harus berada di current_step_order yang menunjuk ke step dengan
+    approver_position sesuai role user DAN is_final=true, status
+    `in_progress`.
+
+    **Approve**: status generik menjadi `approved` (BUKAN lagi
+    `kasi_approved`), generate `letter_number`, hitung `expires_at` (jika
+    `validity_days` != NULL), notifikasi ke Warga + Kepala Desa DAN
+    Sekretaris Desa (keduanya, monitoring saja - tidak seperti v4.2 yang
+    hanya ke Kepala Desa).
+
+    **Reject**: status `rejected`, `rejected_at_step` dicatat, TERMINAL -
+    TIDAK diteruskan ke Kepala Desa (tidak berubah dari v4.2).
+  operationId: decideKasiLetter
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 501
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/letters/letters.yaml#/DecisionRequest'
+  responses:
+    '200':
+      description: Keputusan final berhasil disimpan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/letters/letters.yaml#/DecisionResponse'
+          examples:
+            approved:
+              summary: Kasi/Kaur menyetujui surat (FINAL)
+              value:
+                message: "Keputusan berhasil disimpan"
+                data:
+                  id: 501
+                  status: "approved"
+                  letter_number: "470/SKD/VII/2026"
+                  expires_at: "2026-10-01T00:00:00Z"
+            rejected:
+              summary: Kasi/Kaur menolak surat (FINAL, TERMINAL)
+              value:
+                message: "Keputusan berhasil disimpan"
+                data:
+                  id: 501
+                  status: "rejected"
+                  rejected_at_step: 3
+                  letter_number: null
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Role tidak sesuai posisi step, atau status/step tidak sesuai (gate logic)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      $ref: '../../responses/common.yaml#/Conflict'
+    '422':
+      description: Memilih reject tanpa mengisi catatan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              notes: ["Catatan wajib diisi jika menolak"]

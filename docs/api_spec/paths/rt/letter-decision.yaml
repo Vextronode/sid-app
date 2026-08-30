@@ -1,0 +1,92 @@
+patch:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Berikan keputusan approve/reject RT (Tahap 1)
+  description: |
+    UC-04a. BARU v5.0 - alur setelah approve berubah total dari v4.2:
+
+    - **Approve**: `current_step_order += 1`, `status = 'in_progress'`
+      (bukan lagi `rt_approved`). INSERT ke `letter_approvals`
+      (approval_level='rt', flow_step_id terisi). Sistem lalu (a) kirim
+      notifikasi FYI ke RW secara non-blocking (side-effect, TIDAK
+      membuat row di letter_approvals - RW bukan approver sejak v5.0)
+      DAN (b) secara paralel/independen resolve approver berikutnya
+      (Kepala Desa/Sekretaris Desa, berbasis posisi bukan wilayah) lalu
+      kirim notifikasi ke mereka. RW tidak pernah jadi blocking gate -
+      surat langsung lanjut ke step berikutnya begitu RT approve.
+    - **Reject**: `status = 'rejected'`, `rejected_at_step` = step RT,
+      TERMINAL, notifikasi ke Warga, tidak ada eskalasi ke atas (tidak
+      berubah dari v4.2).
+
+    Gate otorisasi tetap sama: hanya RT yang rt_id-nya sesuai wilayah
+    warga pemohon yang boleh approve (via OfficialService, tidak berubah).
+  operationId: decideRtLetter
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 501
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/letters/letters.yaml#/DecisionRequest'
+  responses:
+    '200':
+      description: Keputusan berhasil disimpan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/letters/letters.yaml#/DecisionResponse'
+          examples:
+            approved:
+              summary: RT menyetujui surat - lanjut ke step berikutnya + FYI RW
+              value:
+                message: "Keputusan berhasil disimpan"
+                data:
+                  id: 501
+                  status: "in_progress"
+                  current_step_order: 2
+                  current_step: { step_order: 2, approver_position: "kepala_desa", is_final: false }
+                  processed_at: "2026-07-01T14:00:00Z"
+            rejected:
+              summary: RT menolak surat (TERMINAL)
+              value:
+                message: "Keputusan berhasil disimpan"
+                data:
+                  id: 501
+                  status: "rejected"
+                  rejected_at_step: 1
+                  processed_at: "2026-07-01T14:00:00Z"
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Surat bukan wilayah RT ini
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      description: Surat sudah diproses sebelumnya (status bukan lagi pending, atau current_step_order sudah berpindah)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ConflictResponse'
+          example:
+            message: "Surat sudah diproses sebelumnya"
+    '422':
+      description: Memilih reject tanpa mengisi catatan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              notes: ["Catatan wajib diisi jika menolak"]

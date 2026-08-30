@@ -1,0 +1,23 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Profil desa publik (tanpa login)
+  description: UC-16. Sejarah, visi misi, struktur pemerintahan desa. Tidak berubah dari v4.2.
+  operationId: getPublicVillageProfile
+  responses:
+    '200':
+      description: Profil desa berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/villages/villages.yaml#/Village'
+    '404':
+      description: Profil desa belum tersedia
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
+    '500':
+      $ref: '../../responses/common.yaml#/ServerError'

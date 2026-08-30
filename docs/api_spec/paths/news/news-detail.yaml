@@ -1,0 +1,66 @@
+patch:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Edit berita (termasuk toggle Draft <-> Publikasikan)
+  operationId: updateNews
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 12
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/news/news.yaml#/NewsUpdateRequest'
+  responses:
+    '200':
+      description: Berita berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/news/news.yaml#/News'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+delete:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Hapus berita (soft delete)
+  description: Berita tidak lagi tampil di halaman publik setelah dihapus.
+  operationId: deleteNews
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 12
+  responses:
+    '200':
+      description: Berita berhasil dihapus
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/SuccessMessage'
+          example:
+            message: "Berita berhasil dihapus"
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

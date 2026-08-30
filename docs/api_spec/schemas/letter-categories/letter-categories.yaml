@@ -1,0 +1,145 @@
+LetterCategory:
+  type: object
+  description: |
+    BARU v5.0. Gate awal klasifikasi surat, menentukan handler/modul yang
+    menangani. Jarang berubah. Lihat SID-ARCH-BE-001 S3.2.
+  properties:
+    id:
+      type: integer
+      example: 1
+    code:
+      type: string
+      enum: [approval_normal, upload_mandiri, dokumen_pendukung, update_data]
+      example: "approval_normal"
+    name:
+      type: string
+      example: "Approval Normal"
+    description:
+      type: string
+      nullable: true
+      example: "Melalui rangkaian approval bertingkat; jumlah & urutan tahap ditentukan approval_flows"
+    handler_class:
+      type: string
+      example: "App\\Services\\Letters\\ApprovalNormalHandler"
+    is_active:
+      type: boolean
+      example: true
+
+ApprovalFlow:
+  type: object
+  description: |
+    BARU v5.0. Anak dari category, urutan step approval spesifik. 1 category
+    bisa punya banyak flow berbeda - flow baru = tambah row, bukan ubah kode.
+  properties:
+    id:
+      type: integer
+      example: 3
+    category_id:
+      type: integer
+      example: 1
+    category:
+      type: object
+      nullable: true
+      properties:
+        code:
+          type: string
+          example: "approval_normal"
+        name:
+          type: string
+          example: "Approval Normal"
+    name:
+      type: string
+      example: "RT-Kades/Sekdes-Staff (3 Tahap)"
+    description:
+      type: string
+      nullable: true
+      example: "Flow default untuk surat kategori approval normal"
+    is_active:
+      type: boolean
+      example: true
+    steps:
+      type: array
+      items:
+        $ref: '#/FlowStep'
+
+ApprovalFlowCreateRequest:
+  type: object
+  required: [category_id, name]
+  properties:
+    category_id:
+      type: integer
+      example: 1
+    name:
+      type: string
+      example: "RT-Kades/Sekdes-Staff (3 Tahap)"
+    description:
+      type: string
+      nullable: true
+      example: "Flow default untuk surat kategori approval normal"
+    is_active:
+      type: boolean
+      example: true
+
+FlowStep:
+  type: object
+  description: |
+    BARU v5.0. Urutan approver per flow. UNIQUE(flow_id, step_order).
+    'rw' dan 'kadus' TIDAK PERNAH muncul sebagai approver_position -
+    RW ditangani sebagai side-effect notifikasi, Kadus dihapus total
+    dari domain approval (SID-ARCH-BE-001 S3.2).
+  properties:
+    id:
+      type: integer
+      example: 12
+    flow_id:
+      type: integer
+      example: 3
+    step_order:
+      type: integer
+      example: 1
+    approver_position:
+      type: string
+      enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+      example: "rt"
+    is_final:
+      type: boolean
+      example: false
+
+FlowStepUpsertRequest:
+  type: object
+  required: [step_order, approver_position]
+  properties:
+    step_order:
+      type: integer
+      example: 1
+    approver_position:
+      type: string
+      enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+      example: "rt"
+    is_final:
+      type: boolean
+      example: false
+
+ApprovalFlowStepsReplaceRequest:
+  type: object
+  required: [steps]
+  description: |
+    Replace seluruh flow_steps milik satu flow sekaligus (idiomatik untuk
+    urutan step yang saling bergantung). Konsisten dengan prinsip
+    Config over Code - flow baru/berubah cukup lewat data, bukan kode.
+  properties:
+    steps:
+      type: array
+      minItems: 1
+      items:
+        $ref: '#/FlowStepUpsertRequest'
+      example:
+        - step_order: 1
+          approver_position: "rt"
+          is_final: false
+        - step_order: 2
+          approver_position: "kepala_desa"
+          is_final: false
+        - step_order: 3
+          approver_position: "kasi_pelayanan"
+          is_final: true

@@ -1,0 +1,39 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Info jenis surat & persyaratan (tanpa login)
+  description: |
+    UC-16. Hanya menampilkan letter_types dengan is_active = true.
+    Berbeda dengan endpoint /letter-types (Epic 4) yang butuh auth dan
+    menampilkan status Draft juga untuk Petugas Desa. Tidak menampilkan
+    category_id/flow_id (irrelevan untuk publik).
+  operationId: getPublicLetterTypes
+  responses:
+    '200':
+      description: Daftar jenis surat publik berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                      example: "SKD"
+                    name:
+                      type: string
+                      example: "Surat Keterangan Domisili"
+                    requirements_info:
+                      type: string
+                      example: "Fotokopi KTP dan KK"
+    '404':
+      description: Belum ada tipe surat aktif yang tersedia
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
+    '500':
+      $ref: '../../responses/common.yaml#/ServerError'

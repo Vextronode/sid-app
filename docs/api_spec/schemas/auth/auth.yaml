@@ -1,0 +1,130 @@
+RegisterRequest:
+  type: object
+  required: [nik, name, email, password, password_confirmation]
+  description: |
+    UC-17. Tidak berubah secara struktural dari v4.2 - validasi tetap
+    berbasis nik_hash lookup ke citizens. v5.0 hanya memastikan citizen
+    yang ditemukan sudah mengikuti skema baru (family_id/residency_type/dst),
+    tidak menambah field baru ke request registrasi ini.
+  properties:
+    nik:
+      type: string
+      example: "3201012345670001"
+      description: NIK 16 digit, harus sudah terdaftar di tabel citizens
+    name:
+      type: string
+      example: "Siti Aminah"
+    email:
+      type: string
+      format: email
+      example: "siti.aminah@gmail.com"
+    password:
+      type: string
+      format: password
+      example: "RahasiaAman123!"
+    password_confirmation:
+      type: string
+      format: password
+      example: "RahasiaAman123!"
+
+RegisterResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Akun berhasil dibuat, silakan login"
+    data:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        name:
+          type: string
+          example: "Siti Aminah"
+        email:
+          type: string
+          example: "siti.aminah@gmail.com"
+        role:
+          type: string
+          example: "warga"
+
+LoginRequest:
+  type: object
+  required: [email, password]
+  properties:
+    email:
+      type: string
+      format: email
+      example: "siti.aminah@gmail.com"
+    password:
+      type: string
+      format: password
+      example: "RahasiaAman123!"
+
+LoginResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Login berhasil"
+    data:
+      $ref: '#/CurrentUser'
+
+CurrentUser:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 101
+    name:
+      type: string
+      example: "Siti Aminah"
+    email:
+      type: string
+      example: "siti.aminah@gmail.com"
+    role:
+      type: string
+      enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, kepala_desa, sekretaris_desa]
+      example: "warga"
+    village_id:
+      type: integer
+      example: 1
+    citizen:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: integer
+          example: 55
+        name:
+          type: string
+          example: "Siti Aminah"
+        nik_masked:
+          type: string
+          example: "************0001"
+        rt_id:
+          type: integer
+          nullable: true
+          example: 12
+        hamlet_id:
+          type: integer
+          nullable: true
+          example: 2
+        family_id:
+          type: integer
+          nullable: true
+          example: 20
+          description: "BARU v5.0"
+        residency_type:
+          type: string
+          enum: [lokal, pendatang]
+          example: "lokal"
+          description: "BARU v5.0"
+
+LogoutResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Logout berhasil"
