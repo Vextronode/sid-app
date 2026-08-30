@@ -1,0 +1,81 @@
+get:
+  tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
+  summary: Lihat daftar tipe surat
+  description: |
+    Untuk Petugas Desa: menampilkan semua tipe surat (termasuk Draft/Nonaktif).
+    Untuk Warga (saat submit surat, dipanggil dari Epic 5): filter otomatis
+    hanya `template IS NOT NULL AND is_active = true` via parameter `active_only`.
+    Response kini menyertakan `category` dan `flow` (v5.0).
+  operationId: listLetterTypes
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: active_only
+      in: query
+      required: false
+      description: Jika true, hanya tampilkan tipe surat yang bisa dipakai warga (template terisi & aktif)
+      schema:
+        type: boolean
+      example: true
+    - name: category_id
+      in: query
+      required: false
+      description: "BARU v5.0"
+      schema:
+        type: integer
+  responses:
+    '200':
+      description: Daftar tipe surat berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letter-types/letter-types.yaml#/LetterType'
+          examples:
+            petugas_view:
+              summary: Tampilan Petugas Desa (semua status)
+              value:
+                data:
+                  - id: 1
+                    code: "SKD"
+                    name: "Surat Keterangan Domisili"
+                    template: "<html>...template...</html>"
+                    verification_type: "auto"
+                    assigned_role: "kasi_pelayanan"
+                    validity_days: 90
+                    category_id: 1
+                    category: { code: "approval_normal", name: "Approval Normal" }
+                    flow_id: 3
+                    flow: { id: 3, name: "RT-Kades/Sekdes-Staff (3 Tahap)" }
+                    is_active: true
+                    status_label: "aktif"
+                  - id: 2
+                    code: "SKTM"
+                    name: "Surat Keterangan Tidak Mampu"
+                    template: null
+                    verification_type: "manual"
+                    validity_days: null
+                    category_id: 1
+                    flow_id: 3
+                    is_active: false
+                    status_label: "draft"
+            warga_view:
+              summary: Tampilan Warga (active_only=true)
+              value:
+                data:
+                  - id: 1
+                    code: "SKD"
+                    name: "Surat Keterangan Domisili"
+                    template: "<html>...template...</html>"
+                    verification_type: "auto"
+                    validity_days: 90
+                    category_id: 1
+                    flow_id: 3
+                    is_active: true
+                    status_label: "aktif"
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

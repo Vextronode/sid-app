@@ -1,0 +1,57 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Lihat riwayat surat yang lewat notifikasi FYI (read-only)
+  description: |
+    BARU v5.0 (BERUBAH TOTAL). Menggantikan `/rw/letters` versi v4.2 yang
+    dulunya endpoint approval (UC-04b, tahap 2 dari 4). Sejak v5.0, RW
+    BUKAN approver - tidak pernah tercatat sebagai approval_level di
+    `letter_approvals`, dan tidak pernah memblokir alur surat. Endpoint
+    ini murni menampilkan riwayat notifikasi FYI yang pernah diterima
+    RW, side-effect non-blocking yang dipicu begitu RT approve
+    (SID-ARCH-BE-001 S3.2, S7).
+
+    ⚠ **PENTING**: Tidak ada dan tidak akan pernah ada endpoint
+    `PATCH /rw/letters/{id}/decision` di v5.0 - endpoint approval RW dari
+    v4.2 dihapus total, bukan di-deprecate. Secara struktural, route
+    decision/approval untuk role RW tidak pernah dibuka di level backend
+    (bukan hanya disembunyikan di UI) - lihat SID-ARCH-BE-001 S3.2.
+    Frontend (`ApprovalStepRenderer`) juga tidak pernah merender tombol
+    approve/reject untuk RW (SID-ARCH-FE-001 S6).
+  operationId: listRwFyiLetters
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+  responses:
+    '200':
+      description: Daftar surat yang lewat FYI ke RW berhasil diambil (read-only)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letters/letters.yaml#/Letter'
+              meta:
+                $ref: '../../schemas/common/errors.yaml#/PaginationMeta'
+          example:
+            data:
+              - id: 501
+                applicant_name: "Siti Aminah"
+                status: "in_progress"
+                current_step_order: 2
+                is_overdue: false
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: User yang login bukan RW aktif
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'

@@ -1,0 +1,53 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Tautkan warga (sudah ada di citizens) sebagai anggota KK ini
+  description: |
+    BARU v5.0. Sistem otomatis validasi: hanya 1 family_role='kepala_keluarga'
+    per family_id aktif. Untuk warga baru yang belum ada di citizens,
+    buat dulu via POST /citizens dengan family_id diisi langsung.
+  operationId: addFamilyMember
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: family_id
+      schema:
+        type: integer
+      example: 20
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/families/families.yaml#/FamilyMemberAddRequest'
+  responses:
+    '200':
+      description: Anggota berhasil ditautkan ke KK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Anggota berhasil ditambahkan ke KK"
+              data:
+                $ref: '../../schemas/citizens/citizens.yaml#/Citizen'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      description: Sudah ada kepala_keluarga aktif lain di KK ini, atau citizen_id tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              family_role: ["KK ini sudah memiliki kepala keluarga aktif"]

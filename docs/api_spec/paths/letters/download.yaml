@@ -1,0 +1,57 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Download PDF surat (generate on-demand)
+  description: |
+    UC-08. Trigger status generik `approved` (BUKAN lagi `kasi_approved` -
+    ENUM granular sudah dihapus total di v5.0). PDF digenerate on-demand
+    (barryvdh/laravel-dompdf) saat request, tidak disimpan di server
+    (keputusan final struktural, SID-ARCH-BE-001 S6 - bukan sekadar hemat
+    storage, tapi menghindari PDF stale jika data surat berubah setelah
+    digenerate). TTD & stempel diambil dari officials (Kades aktif:
+    is_active=true AND ended_at IS NULL). Untuk role warga, dicek
+    expires_at - jika sudah lewat, akses ditolak (403). Role lain
+    (petugas_desa, kasi_pelayanan, kaur_tu_umum, kepala_desa,
+    sekretaris_desa) selalu bisa download tanpa cek expires_at.
+  operationId: downloadLetterPdf
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 501
+  responses:
+    '200':
+      description: File PDF berhasil digenerate dan di-stream sebagai response
+      content:
+        application/pdf:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Status belum approved, atau (khusus warga) expires_at sudah lewat
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+          examples:
+            not_final:
+              summary: Surat belum berstatus approved
+              value:
+                message: "Surat baru dapat diunduh setelah seluruh proses persetujuan selesai."
+            expired_for_warga:
+              summary: Warga mencoba download setelah masa berlaku habis
+              value:
+                message: "Masa berlaku surat telah habis."
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '500':
+      description: Gagal generate PDF (misal TTD/stempel Kades belum tersedia)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ServerErrorResponse'

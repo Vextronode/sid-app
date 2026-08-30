@@ -1,0 +1,97 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Lihat & cari daftar Kartu Keluarga (KK)
+  description: |
+    BARU v5.0. UC-09 Sub-flow Kelola Data Keluarga. Aktor Petugas Desa.
+  operationId: listFamilies
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: search
+      in: query
+      required: false
+      description: Cari berdasarkan No KK (dikonversi ke hash di server)
+      schema:
+        type: string
+    - name: rt_id
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 12
+    - name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+  responses:
+    '200':
+      description: Daftar KK berhasil diambil (No KK selalu ter-mask)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/families/families.yaml#/Family'
+              meta:
+                $ref: '../../schemas/common/errors.yaml#/PaginationMeta'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Tambah Kartu Keluarga (KK) baru
+  description: |
+    BARU v5.0. no_kk dienkripsi AES-256 + di-hash SHA-256 (no_kk_hash),
+    pola dual-column sama seperti NIK. Setelah KK dibuat, tautkan anggota
+    lewat POST /families/{id}/members atau isi family_id saat create/update
+    citizen.
+  operationId: createFamily
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/families/families.yaml#/FamilyCreateRequest'
+  responses:
+    '201':
+      description: KK berhasil dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Kartu Keluarga berhasil ditambahkan"
+              data:
+                $ref: '../../schemas/families/families.yaml#/Family'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: No KK sudah terdaftar / format salah
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          examples:
+            duplicate_no_kk:
+              summary: No KK sudah terdaftar
+              value:
+                message: "The given data was invalid."
+                errors:
+                  no_kk: ["No KK sudah ada dalam database"]
+            invalid_no_kk_format:
+              summary: Format No KK salah
+              value:
+                message: "The given data was invalid."
+                errors:
+                  no_kk: ["No KK harus 16 digit angka"]

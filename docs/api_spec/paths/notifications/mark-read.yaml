@@ -1,0 +1,31 @@
+patch:
+  tags: [Epic 6 - Sistem Notifikasi]
+  summary: Tandai notifikasi sudah dibaca
+  operationId: markNotificationRead
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: "9c858901-8a57-4791-81fe-4c455b099bc9"
+  responses:
+    '200':
+      description: Notifikasi berhasil ditandai dibaca
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/notifications/notifications.yaml#/MarkReadResponse'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Notifikasi bukan milik user yang login
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

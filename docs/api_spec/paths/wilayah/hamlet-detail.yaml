@@ -1,0 +1,55 @@
+patch:
+  tags: [Epic 1 - Struktur Wilayah]
+  summary: Edit / nonaktifkan dusun
+  description: |
+    UC-20. Guard: menonaktifkan dusun yang masih punya warga aktif
+    akan ditolak (cek relasi citizens.hamlet_id). Tidak berubah dari v4.2.
+  operationId: updateHamlet
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              example: "Dusun Patrol"
+            is_active:
+              type: boolean
+              example: false
+  responses:
+    '200':
+      description: Dusun berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/wilayah/wilayah.yaml#/Hamlet'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      description: Tidak bisa nonaktifkan - masih ada warga aktif di dusun ini
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ConflictResponse'
+          example:
+            message: "Dusun tidak bisa dinonaktifkan karena masih ada warga aktif terdaftar di wilayah ini."
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

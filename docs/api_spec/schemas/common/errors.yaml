@@ -1,0 +1,80 @@
+ValidationErrorResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "The given data was invalid."
+    errors:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      example:
+        nik: ["NIK harus 16 digit angka."]
+        email: ["Email sudah terdaftar."]
+
+ErrorResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Surat bukan wewenang Anda."
+
+UnauthenticatedResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Unauthenticated."
+
+ForbiddenResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Anda tidak memiliki akses untuk aksi ini."
+
+NotFoundResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Data tidak ditemukan."
+
+ConflictResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Surat sudah diproses sebelumnya."
+
+ServerErrorResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Terjadi kesalahan pada server. Silakan coba lagi nanti."
+
+PaginationMeta:
+  type: object
+  properties:
+    current_page:
+      type: integer
+      example: 1
+    per_page:
+      type: integer
+      example: 15
+    total:
+      type: integer
+      example: 42
+    last_page:
+      type: integer
+      example: 3
+
+SuccessMessage:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Operasi berhasil dilakukan."

@@ -1,0 +1,57 @@
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Register akun warga (self-service)
+  description: |
+    UC-17. Validasi NIK terhadap tabel `citizens` via `nik_hash` (SHA-256).
+    Akun langsung aktif tanpa approval manual jika NIK ditemukan dan belum
+    punya akun. Gate logic hanya cek `citizens.is_active` - `domicile_status`
+    murni informatif, tidak mempengaruhi kelayakan registrasi. Skema
+    `citizens` v5.0 (family_id, residency_type, dst) tidak menambah field
+    baru ke alur registrasi ini - lookup tetap murni via nik_hash.
+  operationId: registerWarga
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/auth/auth.yaml#/RegisterRequest'
+  responses:
+    '201':
+      description: Akun warga berhasil dibuat
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/auth/auth.yaml#/RegisterResponse'
+    '422':
+      description: Validasi gagal - NIK tidak ditemukan, NIK sudah punya akun, atau format tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          examples:
+            nik_not_found:
+              summary: NIK tidak terdaftar sebagai warga Desa Cibenda
+              value:
+                message: "The given data was invalid."
+                errors:
+                  nik: ["NIK tidak terdaftar sebagai warga Desa Cibenda"]
+            nik_already_registered:
+              summary: NIK sudah terdaftar dan punya akun
+              value:
+                message: "The given data was invalid."
+                errors:
+                  nik: ["NIK sudah terdaftar, silakan login"]
+            email_taken:
+              summary: Email sudah digunakan akun lain
+              value:
+                message: "The given data was invalid."
+                errors:
+                  email: ["Email sudah terdaftar"]
+            weak_password:
+              summary: Password terlalu lemah
+              value:
+                message: "The given data was invalid."
+                errors:
+                  password: ["Password minimal 8 karakter dan mengandung kombinasi huruf & angka"]
+    '500':
+      $ref: '../../responses/common.yaml#/ServerError'

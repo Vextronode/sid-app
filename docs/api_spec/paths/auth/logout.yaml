@@ -1,0 +1,21 @@
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Logout
+  description: |
+    UC-02. Menghapus token Sanctum dari server & HttpOnly cookie dari
+    browser. Mencatat event logout (timestamp, IP, user agent). Tidak
+    berubah dari v4.2.
+  operationId: logout
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Logout berhasil
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/auth/auth.yaml#/LogoutResponse'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '500':
+      $ref: '../../responses/common.yaml#/ServerError'

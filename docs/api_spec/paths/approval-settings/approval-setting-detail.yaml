@@ -1,0 +1,50 @@
+patch:
+  tags: [Epic 7 - Deadline & Reminder Approval]
+  summary: Edit setting deadline approval untuk 1 tahap
+  description: |
+    UC-22. Validasi: deadline_hours > 0, reminder_hours < deadline_hours.
+    Jika deadline terlewat: surat TIDAK auto-reject, hanya is_overdue=true
+    + notifikasi reminder via scheduler (SendApprovalReminderJob, tidak
+    berubah dari v4.2 - SID-ARCH-BE-001 S9).
+  operationId: updateApprovalSetting
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/approval-settings/approval-settings.yaml#/ApprovalSettingUpdateRequest'
+  responses:
+    '200':
+      description: Setting berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/approval-settings/approval-settings.yaml#/ApprovalSetting'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      description: reminder_hours >= deadline_hours, atau deadline_hours <= 0
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              reminder_hours: ["Reminder hours harus lebih kecil dari deadline hours"]

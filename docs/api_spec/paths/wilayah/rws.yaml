@@ -1,0 +1,70 @@
+get:
+  tags: [Epic 1 - Struktur Wilayah]
+  summary: Lihat daftar RW (opsional filter per dusun)
+  operationId: listRws
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: hamlet_id
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 1
+  responses:
+    '200':
+      description: Daftar RW berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/wilayah/wilayah.yaml#/Rw'
+          example:
+            data:
+              - id: 1
+                hamlet_id: 1
+                number: "001"
+                full_label: "RW 001"
+                is_active: true
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+post:
+  tags: [Epic 1 - Struktur Wilayah]
+  summary: Tambah RW baru
+  operationId: createRw
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/wilayah/wilayah.yaml#/RwCreateRequest'
+  responses:
+    '201':
+      description: RW berhasil dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/wilayah/wilayah.yaml#/Rw'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: full_label sudah digunakan dalam dusun ini / hamlet_id tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              number: ["RW dengan nomor ini sudah ada di dusun tersebut"]

@@ -1,0 +1,50 @@
+ApprovalSetting:
+  type: object
+  description: |
+    ⚠ CATATAN TECHNICAL DEBT (dicatat eksplisit di TDD v5.0 Section 5.4.2 &
+    Table 70): approval_level ENUM di tabel ini ('rt','rw','kadus','kasi')
+    adalah peninggalan skema v4.2 yang BELUM di-patch ulang oleh Patch
+    Guide v5.0 secara eksplisit - berbeda dari letter_approvals.approval_level
+    yang sudah pasti berubah ke 5 nilai baru. Spec ini MENDOKUMENTASIKAN
+    kondisi apa adanya (ENUM lama, 4 nilai) sesuai TDD, bukan menciptakan
+    keputusan baru. Rekomendasi TDD: tim teknis meninjau ulang konsistensi
+    ini sebelum implementasi final - lihat juga Rencana Migrasi Fase 6.1
+    yang mengasumsikan enum baru akan dipakai saat UC-22 dibangun. Jika
+    keputusan final berbeda dari asumsi di sini, field `approval_level`
+    di bawah perlu disesuaikan.
+  properties:
+    id:
+      type: integer
+      example: 1
+    village_id:
+      type: integer
+      example: 1
+    approval_level:
+      type: string
+      enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+      example: "rt"
+      description: |
+        Spec ini mengikuti REKOMENDASI Rencana Migrasi (Fase 6.1): enum
+        diselaraskan ke 5 nilai baru yang sama dengan letter_approvals,
+        supaya deadline setting tetap merujuk tahap approval yang benar-benar
+        berjalan di v5.0. Ini BUKAN keputusan final TDD eksplisit - lihat
+        deskripsi schema di atas untuk konteks lengkap technical debt-nya.
+    deadline_hours:
+      type: integer
+      example: 24
+    reminder_hours:
+      type: integer
+      example: 12
+    is_active:
+      type: boolean
+      example: true
+
+ApprovalSettingUpdateRequest:
+  type: object
+  properties:
+    deadline_hours:
+      type: integer
+      example: 48
+    reminder_hours:
+      type: integer
+      example: 24

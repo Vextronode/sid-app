@@ -1,0 +1,267 @@
+Letter:
+  type: object
+  description: |
+    v5.0: `status` sekarang generik (4 nilai), bukan granular per posisi.
+    Posisi "sedang di step mana" dibaca dari `current_step_order` + `current_step`
+    (di-JOIN backend ke flow_steps), bukan dari nama status.
+  properties:
+    id:
+      type: integer
+      example: 501
+    village_id:
+      type: integer
+      example: 1
+    letter_type_id:
+      type: integer
+      example: 1
+    letter_type:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "SKD"
+        name:
+          type: string
+          example: "Surat Keterangan Domisili"
+    submitted_by:
+      type: integer
+      example: 101
+    citizen_id:
+      type: integer
+      nullable: true
+      example: 55
+    on_behalf_of:
+      type: integer
+      nullable: true
+      example: null
+      description: "Selalu NULL di MVP - dipersiapkan untuk future use case"
+    letter_number:
+      type: string
+      nullable: true
+      example: null
+      description: "Diisi otomatis saat status = approved pada step is_final=true"
+    applicant_name:
+      type: string
+      example: "Siti Aminah"
+    applicant_nik_masked:
+      type: string
+      example: "************0001"
+    purpose:
+      type: string
+      example: "Untuk keperluan pembuatan rekening bank"
+    notes:
+      type: string
+      nullable: true
+      example: null
+    status:
+      type: string
+      enum: [pending, in_progress, approved, rejected]
+      example: "pending"
+      description: |
+        BARU v5.0 - status generik menggantikan ENUM granular per posisi
+        (rt_approved/rw_approved/kadus_approved/dst sudah dihapus total).
+        pending: step 1 belum ada action.
+        in_progress: minimal 1 step approve, belum sampai step is_final=true.
+        approved: step is_final=true sudah di-approve.
+        rejected: TERMINAL, rejected_at_step dicatat.
+    flow_id:
+      type: integer
+      example: 3
+      description: "BARU v5.0 - snapshot dari letter_types.flow_id saat submit, dikunci (bukan live-reference)"
+    current_step_order:
+      type: integer
+      example: 1
+      description: "BARU v5.0 - step_order yang sedang aktif/ditunggu, dicocokkan ke flow_steps"
+    current_step:
+      type: object
+      nullable: true
+      description: "Hasil JOIN current_step_order ke flow_steps, untuk kemudahan FE (ApprovalStepRenderer) tanpa request tambahan"
+      properties:
+        step_order:
+          type: integer
+          example: 1
+        approver_position:
+          type: string
+          enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+          example: "rt"
+        is_final:
+          type: boolean
+          example: false
+    rejected_at_step:
+      type: integer
+      nullable: true
+      example: null
+      description: "BARU v5.0 - step_order tempat surat direject, untuk histori/laporan"
+    is_overdue:
+      type: boolean
+      example: false
+    expires_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: null
+    submitted_at:
+      type: string
+      format: date-time
+      example: "2026-07-01T09:00:00Z"
+    processed_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: null
+
+LetterDetail:
+  allOf:
+    - $ref: '#/Letter'
+    - type: object
+      properties:
+        approvals:
+          type: array
+          items:
+            $ref: '#/LetterApproval'
+        status_logs:
+          type: array
+          items:
+            $ref: '#/LetterStatusLog'
+        rw_fyi_notified:
+          type: boolean
+          example: true
+          description: |
+            BARU v5.0 - indikator apakah notifikasi FYI ke RW sudah terkirim
+            untuk surat ini. RW TIDAK PERNAH punya row di letter_approvals -
+            field ini murni penanda notifikasi side-effect, bukan approval.
+
+LetterApproval:
+  type: object
+  description: |
+    v5.0: approval_level ENUM berubah total. 'rw' dan 'kadus' DIHAPUS -
+    keduanya tidak pernah membuat row di tabel ini (RW = notif-only side
+    effect, Kadus = dihapus total dari alur approval).
+  properties:
+    id:
+      type: integer
+      example: 901
+    letter_id:
+      type: integer
+      example: 501
+    approved_by:
+      type: integer
+      nullable: true
+      example: 40
+    approver_name:
+      type: string
+      nullable: true
+      example: "Pak RT Ujang"
+    approval_level:
+      type: string
+      enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+      example: "rt"
+      description: "BARU v5.0 - 5 nilai. Tahap lanjutan (kepala_desa/sekdes) saling menggantikan, first-action-wins."
+    flow_step_id:
+      type: integer
+      nullable: true
+      example: 12
+      description: "BARU v5.0 - referensi step spesifik yang dieksekusi, untuk audit trail granular"
+    action:
+      type: string
+      enum: [approved, rejected]
+      nullable: true
+      example: "approved"
+    notes:
+      type: string
+      nullable: true
+      example: null
+    deadline_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: "2026-07-02T09:00:00Z"
+    reminded_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: null
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-07-01T14:00:00Z"
+
+LetterStatusLog:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 1200
+    letter_id:
+      type: integer
+      example: 501
+    actor_id:
+      type: integer
+      example: 40
+    actor_name:
+      type: string
+      example: "Pak RT Ujang"
+    old_status:
+      type: string
+      enum: [pending, in_progress, approved, rejected]
+      nullable: true
+      example: null
+    new_status:
+      type: string
+      enum: [pending, in_progress, approved, rejected]
+      example: "in_progress"
+    notes:
+      type: string
+      nullable: true
+      example: null
+    ip_address:
+      type: string
+      nullable: true
+      example: "182.1.2.3"
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-07-01T14:00:00Z"
+
+LetterCreateRequest:
+  type: object
+  required: [letter_type_id, purpose]
+  properties:
+    letter_type_id:
+      type: integer
+      example: 1
+    purpose:
+      type: string
+      example: "Untuk keperluan pembuatan rekening bank"
+    notes:
+      type: string
+      nullable: true
+      example: "Mohon diproses secepatnya"
+    supporting_document:
+      type: string
+      format: binary
+      nullable: true
+      description: "Wajib diisi jika letter_type.verification_type = document"
+
+DecisionRequest:
+  type: object
+  required: [action]
+  properties:
+    action:
+      type: string
+      enum: [approved, rejected]
+      example: "approved"
+    notes:
+      type: string
+      nullable: true
+      example: null
+      description: "Wajib diisi jika action = rejected"
+
+DecisionResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Keputusan berhasil disimpan"
+    data:
+      $ref: '#/Letter'

@@ -1,0 +1,46 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Lihat daftar surat menunggu keputusan final Kasi/Kaur
+  description: |
+    UC-04d (Tahap Final). Aktor Kasi Pelayanan atau Kaur TU Umum. Filter
+    generik v5.0: `current_step.approver_position` sesuai role user DAN
+    `current_step.is_final = true` DAN `status = 'in_progress'`.
+
+    ⚠ Catatan migrasi (Audit §3.4): implementasi v4.2 sebelumnya salah
+    memfilter berdasarkan `letter_types.assigned_role == 'rw'` (bug -
+    seharusnya 'kasi_pelayanan'/'kaur_tu_umum'). Spec v5.0 ini
+    mendefinisikan kontrak yang BENAR sesuai TDD - filter berbasis
+    `flow_steps.approver_position` sebagai source of truth (bukan
+    `assigned_role` langsung, yang dipertahankan hanya sebagai cache -
+    SID-ARCH-BE-001 S4.2).
+  operationId: listKasiLetters
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar surat step final sesuai posisi user berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letters/letters.yaml#/Letter'
+          example:
+            data:
+              - id: 501
+                applicant_name: "Siti Aminah"
+                status: "in_progress"
+                current_step_order: 3
+                current_step: { step_order: 3, approver_position: "kasi_pelayanan", is_final: true }
+                is_overdue: false
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Role user bukan kasi_pelayanan/kaur_tu_umum
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'

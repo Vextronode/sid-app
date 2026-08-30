@@ -1,0 +1,102 @@
+get:
+  tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
+  summary: Lihat daftar flow approval
+  description: |
+    BARU v5.0. Realisasi prinsip Config over Code (SID-ARCH-SYS-001 S1) -
+    1 category bisa punya banyak flow berbeda. Aktor Petugas Desa.
+  operationId: listApprovalFlows
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: category_id
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 1
+  responses:
+    '200':
+      description: Daftar flow berhasil diambil (termasuk steps masing-masing)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letter-categories/letter-categories.yaml#/ApprovalFlow'
+          example:
+            data:
+              - id: 3
+                category_id: 1
+                name: "RT-Kades/Sekdes-Staff (3 Tahap)"
+                is_active: true
+                steps:
+                  - id: 12
+                    flow_id: 3
+                    step_order: 1
+                    approver_position: "rt"
+                    is_final: false
+                  - id: 13
+                    flow_id: 3
+                    step_order: 2
+                    approver_position: "kepala_desa"
+                    is_final: false
+                  - id: 14
+                    flow_id: 3
+                    step_order: 3
+                    approver_position: "kasi_pelayanan"
+                    is_final: true
+              - id: 4
+                category_id: 2
+                name: "Direct - Tanpa Approval Bertingkat"
+                is_active: true
+                steps: []
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+post:
+  tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
+  summary: Buat flow approval baru
+  description: |
+    BARU v5.0. Flow baru = tambah row, bukan ubah kode (Config over Code).
+    Untuk category selain approval_normal (upload_mandiri/dokumen_pendukung/
+    update_data), tetap WAJIB dibuatkan 1 row flow (misal "Direct") meski
+    steps-nya kosong/minimal, demi konsistensi pola query generik di
+    seluruh sistem (SID-ARCH-BE-001 S3.4). Setelah flow dibuat, isi
+    steps-nya lewat PUT /approval-flows/{id}/steps.
+  operationId: createApprovalFlow
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/letter-categories/letter-categories.yaml#/ApprovalFlowCreateRequest'
+  responses:
+    '201':
+      description: Flow berhasil dibuat (steps masih kosong, isi via endpoint terpisah)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/letter-categories/letter-categories.yaml#/ApprovalFlow'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: category_id tidak valid / nama kosong
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              category_id: ["Kategori surat tidak ditemukan"]

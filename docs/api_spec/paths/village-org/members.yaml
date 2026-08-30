@@ -1,0 +1,61 @@
+post:
+  tags: [Epic 10 - Organisasi Non-Struktural Desa]
+  summary: Tambah / rotasi anggota untuk suatu jabatan organisasi
+  description: |
+    UC-23. Jika is_single_occupant=true dan sudah ada anggota aktif,
+    sistem otomatis UPDATE ended_at anggota lama + INSERT baru (pola
+    rotasi sama seperti tabel officials). Jika is_single_occupant=false
+    (misal "Anggota BPD"), anggota baru ditambahkan tanpa mengakhiri
+    yang lama. Tidak berubah dari v4.2.
+  operationId: addVillageOrgMember
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: positionId
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/village-org/village-org.yaml#/VillageOrgMemberCreateRequest'
+  responses:
+    '201':
+      description: Anggota berhasil ditambahkan / dirotasi
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Anggota berhasil ditambahkan"
+              data:
+                $ref: '../../schemas/village-org/village-org.yaml#/VillageOrgMember'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: |
+        Tidak berwenang, atau fitur rotasi belum diaktifkan untuk
+        org_type ini (pending konfirmasi desa)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+          examples:
+            not_authorized:
+              summary: Bukan Petugas Desa
+              value:
+                message: "Anda tidak memiliki akses untuk aksi ini."
+            feature_pending:
+              summary: Fitur rotasi belum diaktifkan
+              value:
+                message: "Fitur rotasi untuk organisasi ini belum diaktifkan, menunggu konfirmasi desa."
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

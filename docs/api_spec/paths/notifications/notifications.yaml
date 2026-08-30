@@ -1,0 +1,45 @@
+get:
+  tags: [Epic 6 - Sistem Notifikasi]
+  summary: Lihat daftar notifikasi milik user yang login
+  description: |
+    Dipanggil setiap halaman dimuat (dashboard). Query utama:
+    WHERE notifiable_type AND notifiable_id AND read_at IS NULL untuk
+    badge "belum dibaca". Struktur tabel tidak berubah dari v3.2/v4.2 -
+    yang berubah di v5.0 adalah Event pemicu di backend (FlowStepAdvanced
+    generik, bukan Event per posisi), lihat SID-ARCH-BE-001 S7.
+  operationId: listNotifications
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: unread_only
+      in: query
+      required: false
+      schema:
+        type: boolean
+      example: true
+  responses:
+    '200':
+      description: Daftar notifikasi berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/notifications/notifications.yaml#/Notification'
+          example:
+            data:
+              - id: "9c858901-8a57-4791-81fe-4c455b099bc9"
+                type: "App\\Notifications\\LetterSubmittedNotification"
+                data: { letter_id: 501, message: "Ada permohonan surat baru dari warga wilayahmu" }
+                read_at: null
+                created_at: "2026-07-01T09:00:00Z"
+              - id: "a1b2c3d4-8a57-4791-81fe-4c455b099bc9"
+                type: "App\\Notifications\\FlowStepAdvancedNotification"
+                data: { letter_id: 501, message: "Ada surat lolos RT (FYI)", role_context: "rw_fyi" }
+                read_at: null
+                created_at: "2026-07-01T14:00:01Z"
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

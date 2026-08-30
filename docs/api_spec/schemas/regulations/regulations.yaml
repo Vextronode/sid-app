@@ -1,0 +1,44 @@
+VillageRegulation:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 3
+    village_id:
+      type: integer
+      example: 1
+    regulation_number:
+      type: string
+      example: "01/PERDES/2026"
+    title:
+      type: string
+      example: "Peraturan Desa tentang Pengelolaan Sampah"
+    content:
+      type: string
+      example: "Bab I Ketentuan Umum..."
+    enacted_date:
+      type: string
+      format: date
+      nullable: true
+      example: "2026-01-15"
+    created_by:
+      type: integer
+      example: 5
+
+VillageRegulationCreateRequest:
+  type: object
+  required: [regulation_number, title, content]
+  properties:
+    regulation_number:
+      type: string
+      example: "01/PERDES/2026"
+    title:
+      type: string
+      example: "Peraturan Desa tentang Pengelolaan Sampah"
+    content:
+      type: string
+      example: "Bab I Ketentuan Umum..."
+    enacted_date:
+      type: string
+      format: date
+      example: "2026-01-15"

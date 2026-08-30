@@ -1,0 +1,54 @@
+patch:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Edit / nonaktifkan akun user
+  description: |
+    UC-14. Guard (tidak berubah dari v4.2): tidak bisa nonaktifkan diri
+    sendiri, dan tidak bisa nonaktifkan satu-satunya akun petugas_desa
+    aktif yang tersisa.
+  operationId: updateUser
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 12
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/users/users.yaml#/UserUpdateRequest'
+  responses:
+    '200':
+      description: Akun berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/users/users.yaml#/User'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Tidak berwenang, atau melanggar guard (nonaktifkan diri sendiri / satu-satunya petugas_desa aktif)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+          examples:
+            self_deactivate:
+              summary: Mencoba nonaktifkan diri sendiri
+              value:
+                message: "Anda tidak dapat menonaktifkan akun Anda sendiri."
+            last_petugas_desa:
+              summary: Mencoba nonaktifkan satu-satunya Petugas Desa aktif
+              value:
+                message: "Tidak dapat menonaktifkan satu-satunya akun Petugas Desa yang masih aktif."
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

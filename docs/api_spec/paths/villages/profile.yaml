@@ -1,0 +1,72 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Lihat data profil desa (untuk form edit)
+  operationId: getVillageProfile
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Data profil desa berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/villages/villages.yaml#/Village'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+patch:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Edit profil desa
+  description: |
+    UC-18. Aktor HANYA Petugas Desa. Guard ini ditegaskan ulang secara
+    eksplisit di SID-ARCH-SYS-001 S2.3: domain CMS (Profil Desa, Berita,
+    Peraturan Desa) dimiliki EKSKLUSIF oleh petugas_desa - Kepala Desa
+    dan Sekretaris Desa TIDAK memiliki akses ke domain ini meski v5.0
+    menjadikan keduanya approver aktif di domain Surat-Menyurat. Dua
+    domain ini terpisah tegas meski sama-sama berada di "Tier 2" untuk
+    kebutuhan navigasi. Perubahan langsung tampil di halaman publik
+    (UC-16), tidak ada approval bertingkat.
+  operationId: updateVillageProfile
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/villages/villages.yaml#/VillageUpdateRequest'
+  responses:
+    '200':
+      description: Profil desa berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Profil desa berhasil diperbarui"
+              data:
+                $ref: '../../schemas/villages/villages.yaml#/Village'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Role bukan Petugas Desa (termasuk jika role adalah kepala_desa/sekretaris_desa)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+          example:
+            message: "Hanya Petugas Desa yang dapat mengubah profil desa"
+    '422':
+      description: Field wajib kosong (nama desa, nama Kepala Desa)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              name: ["Nama desa wajib diisi"]

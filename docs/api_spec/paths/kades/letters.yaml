@@ -1,0 +1,44 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Lihat daftar surat menunggu approval Kepala Desa / Sekretaris Desa
+  description: |
+    BARU v5.0 (UC-04c versi baru). Endpoint ini MENGGANTIKAN TOTAL
+    `/kadus/letters` yang sudah dihapus - Kadus tidak lagi bagian dari
+    alur approval surat sejak v5.0 (Patch 37). Aktor: Kepala Desa ATAU
+    Sekretaris Desa (saling menggantikan, first-action-wins - lihat
+    catatan status keputusan di endpoint decision).
+
+    Resolve BUKAN berbasis wilayah (beda dari RT) - murni berbasis posisi:
+    query generik `current_step.approver_position IN ('kepala_desa','sekdes')
+    AND status = 'in_progress'`. Kedua role melihat daftar yang IDENTIK.
+  operationId: listKadesLetters
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar surat yang menunggu approval Kades/Sekdes berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letters/letters.yaml#/Letter'
+          example:
+            data:
+              - id: 501
+                applicant_name: "Siti Aminah"
+                status: "in_progress"
+                current_step_order: 2
+                current_step: { step_order: 2, approver_position: "kepala_desa", is_final: false }
+                is_overdue: false
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Role user bukan kepala_desa/sekretaris_desa
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'

@@ -1,0 +1,43 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Lihat detail surat & riwayat RT+FYI RW untuk diperiksa Kades/Sekdes
+  description: |
+    BARU v5.0. Menampilkan riwayat approval RT dan indikator apakah
+    notifikasi FYI ke RW sudah terkirim (`rw_fyi_notified`) - RW tidak
+    pernah punya row approval formal untuk ditampilkan sebagai "riwayat
+    keputusan", murni indikator notifikasi.
+  operationId: getKadesLetterDetail
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 501
+  responses:
+    '200':
+      description: Detail surat berhasil diambil (termasuk riwayat approval RT + indikator FYI RW)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/letters/letters.yaml#/LetterDetail'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Status belum in_progress di step kepala_desa/sekdes (gate logic)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+          examples:
+            gate_not_at_step:
+              summary: Surat belum sampai di step Kades/Sekdes
+              value:
+                message: "Surat belum berada di tahap Kepala Desa/Sekretaris Desa. Akses tidak diizinkan."
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

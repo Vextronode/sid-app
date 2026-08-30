@@ -1,0 +1,100 @@
+Hamlet:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 1
+    village_id:
+      type: integer
+      example: 1
+    name:
+      type: string
+      example: "Dusun Patrol"
+    code:
+      type: string
+      example: "PTR"
+    is_active:
+      type: boolean
+      example: true
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+
+HamletCreateRequest:
+  type: object
+  required: [name, code]
+  properties:
+    name:
+      type: string
+      example: "Dusun Patrol"
+    code:
+      type: string
+      example: "PTR"
+
+Rw:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 1
+    hamlet_id:
+      type: integer
+      example: 1
+    number:
+      type: string
+      example: "001"
+    full_label:
+      type: string
+      example: "RW 001"
+    is_active:
+      type: boolean
+      example: true
+
+RwCreateRequest:
+  type: object
+  required: [hamlet_id, number]
+  properties:
+    hamlet_id:
+      type: integer
+      example: 1
+    number:
+      type: string
+      example: "001"
+
+Rt:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 1
+    rw_id:
+      type: integer
+      example: 1
+    number:
+      type: string
+      example: "001"
+    full_label:
+      type: string
+      example: "RT 001/RW 001"
+    is_active:
+      type: boolean
+      example: true
+
+RtCreateRequest:
+  type: object
+  required: [rw_id, number]
+  properties:
+    rw_id:
+      type: integer
+      example: 1
+    number:
+      type: string
+      example: "001"
+
+RegionDeactivateResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Wilayah berhasil dinonaktifkan"

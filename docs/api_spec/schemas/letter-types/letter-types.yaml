@@ -1,0 +1,111 @@
+LetterType:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 1
+    code:
+      type: string
+      example: "SKD"
+    name:
+      type: string
+      example: "Surat Keterangan Domisili"
+    description:
+      type: string
+      nullable: true
+      example: "Surat keterangan tempat tinggal warga"
+    template:
+      type: string
+      nullable: true
+      example: "<html>...template blade...</html>"
+      description: "NULL = status Draft, belum bisa dipakai warga"
+    verification_type:
+      type: string
+      enum: [auto, manual, document]
+      example: "auto"
+    requirements_info:
+      type: string
+      nullable: true
+      example: "Fotokopi KTP dan KK"
+    assigned_role:
+      type: string
+      enum: [kasi_pelayanan, kaur_tu_umum]
+      nullable: true
+      example: "kasi_pelayanan"
+      description: |
+        Dipertahankan sebagai derived/cache column (keputusan final
+        SID-ARCH-BE-001 S4.2). Source of truth resmi approver tetap
+        flow_steps - kolom ini TIDAK dipakai Policy untuk validasi,
+        murni kompatibilitas mundur & query cepat.
+    validity_days:
+      type: integer
+      nullable: true
+      example: 90
+      description: "NULL = surat tidak pernah expire"
+    category_id:
+      type: integer
+      example: 1
+      description: "BARU v5.0 - gate awal jenis surat, FK ke letter_categories"
+    category:
+      type: object
+      nullable: true
+      properties:
+        code:
+          type: string
+          example: "approval_normal"
+        name:
+          type: string
+          example: "Approval Normal"
+    flow_id:
+      type: integer
+      example: 3
+      description: |
+        BARU v5.0 - selalu diisi, termasuk untuk category upload_mandiri/
+        dokumen_pendukung/update_data (flow "Direct" dengan steps kosong/minimal),
+        demi konsistensi query generik di seluruh sistem.
+    flow:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: integer
+          example: 3
+        name:
+          type: string
+          example: "RT-Kades/Sekdes-Staff (3 Tahap)"
+    is_active:
+      type: boolean
+      example: true
+    status_label:
+      type: string
+      enum: [draft, aktif, dinonaktifkan]
+      example: "aktif"
+      description: "Derived: template=NULL+is_active=false -> draft; template!=NULL+is_active=true -> aktif; template!=NULL+is_active=false -> dinonaktifkan"
+
+LetterTypeUpdateRequest:
+  type: object
+  description: |
+    MVP (UC-21 versi sederhana): field yang bisa diedit Petugas Desa.
+    category_id/flow_id ditambahkan di v5.0 agar Petugas Desa bisa
+    mengganti flow approval suatu tipe surat tanpa developer, sesuai
+    prinsip Config over Code. Template & field requirement developer-only
+    via seeder (full CRUD = Next Dev Paket 1).
+  properties:
+    validity_days:
+      type: integer
+      nullable: true
+      example: 90
+    assigned_role:
+      type: string
+      enum: [kasi_pelayanan, kaur_tu_umum]
+      nullable: true
+      example: "kasi_pelayanan"
+    category_id:
+      type: integer
+      example: 1
+    flow_id:
+      type: integer
+      example: 3
+    is_active:
+      type: boolean
+      example: true

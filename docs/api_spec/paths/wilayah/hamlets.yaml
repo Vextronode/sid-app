@@ -1,0 +1,73 @@
+get:
+  tags: [Epic 1 - Struktur Wilayah]
+  summary: Lihat daftar dusun (hamlets)
+  operationId: listHamlets
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar dusun berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/wilayah/wilayah.yaml#/Hamlet'
+          example:
+            data:
+              - id: 1
+                village_id: 1
+                name: "Dusun Patrol"
+                code: "PTR"
+                is_active: true
+              - id: 2
+                village_id: 1
+                name: "Dusun Sinargalih"
+                code: "SNG"
+                is_active: true
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+post:
+  tags: [Epic 1 - Struktur Wilayah]
+  summary: Tambah dusun baru
+  description: UC-20. Aktor Petugas Desa saja. Tidak berubah dari v4.2.
+  operationId: createHamlet
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/wilayah/wilayah.yaml#/HamletCreateRequest'
+  responses:
+    '201':
+      description: Dusun berhasil dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/wilayah/wilayah.yaml#/Hamlet'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Hanya Petugas Desa yang berwenang
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+    '422':
+      description: Kode dusun sudah digunakan / validasi gagal
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              code: ["Kode dusun sudah digunakan"]

@@ -1,0 +1,93 @@
+get:
+  tags: [Epic 8 - Dashboard & Statistik]
+  summary: Lihat dashboard sesuai role user yang login
+  description: |
+    UC-15. Response bentuknya adaptif tergantung role user yang
+    terautentikasi. BARU v5.0:
+    - Dashboard Kadus DIHAPUS TOTAL (Patch 39) - tidak ada action item
+      approval apapun untuk role ini lagi.
+    - Dashboard RW berubah total: dari daftar menunggu approval menjadi
+      daftar riwayat FYI read-only.
+    - Dashboard Kepala Desa/Sekretaris Desa berubah total: dari
+      monitoring-only menjadi approver aktif dengan daftar surat yang
+      menunggu keputusan mereka (action item), identik satu sama lain.
+  operationId: getDashboard
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Data dashboard berhasil diambil, bentuk menyesuaikan role
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardWarga'
+              - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardRt'
+              - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardRw'
+              - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardKasi'
+              - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardPetugasDesa'
+              - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardKadesSekdes'
+            discriminator:
+              propertyName: role
+              mapping:
+                warga: '../../schemas/dashboard/dashboard.yaml#/DashboardWarga'
+                rt: '../../schemas/dashboard/dashboard.yaml#/DashboardRt'
+                rw: '../../schemas/dashboard/dashboard.yaml#/DashboardRw'
+                kasi_pelayanan: '../../schemas/dashboard/dashboard.yaml#/DashboardKasi'
+                kaur_tu_umum: '../../schemas/dashboard/dashboard.yaml#/DashboardKasi'
+                petugas_desa: '../../schemas/dashboard/dashboard.yaml#/DashboardPetugasDesa'
+                kepala_desa: '../../schemas/dashboard/dashboard.yaml#/DashboardKadesSekdes'
+                sekretaris_desa: '../../schemas/dashboard/dashboard.yaml#/DashboardKadesSekdes'
+          examples:
+            warga:
+              summary: Dashboard Warga
+              value:
+                role: "warga"
+                my_letters:
+                  - id: 501
+                    letter_type_name: "Surat Keterangan Domisili"
+                    status: "in_progress"
+                    current_stage_label: "Menunggu Kepala Desa / Sekretaris Desa"
+                unread_notifications_count: 2
+            rt:
+              summary: Dashboard RT
+              value:
+                role: "rt"
+                total_pending: 3
+                total_processed: 15
+                pending_letters: []
+                unread_notifications_count: 1
+            rw:
+              summary: Dashboard RW (BARU v5.0 - read-only FYI, bukan lagi approval)
+              value:
+                role: "rw"
+                fyi_letters: []
+                unread_notifications_count: 1
+            kasi_kaur:
+              summary: Dashboard Kasi Pelayanan / Kaur TU Umum
+              value:
+                role: "kasi_pelayanan"
+                total_menunggu_final: 4
+                pending_letters: []
+                unread_notifications_count: 3
+            petugas_desa:
+              summary: Dashboard Petugas Desa (full visibility)
+              value:
+                role: "petugas_desa"
+                total_warga: 2450
+                total_surat_bulan_ini: 87
+                surat_per_status:
+                  pending: 5
+                  in_progress: 12
+                  approved: 70
+                  rejected: 3
+                unread_notifications_count: 0
+            kades_sekdes:
+              summary: Dashboard Kepala Desa / Sekretaris Desa (BARU v5.0 - approver aktif, identik)
+              value:
+                role: "kepala_desa"
+                total_menunggu_approval: 4
+                pending_letters: []
+                unread_notifications_count: 5
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

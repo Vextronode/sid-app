@@ -1,0 +1,63 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Lihat semua peraturan desa (untuk manajemen)
+  description: UC-24. Aktor HANYA Petugas Desa.
+  operationId: listRegulationsManagement
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar peraturan desa berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/regulations/regulations.yaml#/VillageRegulation'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+post:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Tambah peraturan desa baru
+  description: |
+    UC-24. Aktor HANYA Petugas Desa. Tidak ada file lampiran di MVP,
+    murni teks. Langsung tampil di halaman publik setelah dibuat (tidak
+    ada status draft).
+  operationId: createRegulation
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/regulations/regulations.yaml#/VillageRegulationCreateRequest'
+  responses:
+    '201':
+      description: Peraturan desa berhasil dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/regulations/regulations.yaml#/VillageRegulation'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: regulation_number, title, atau content kosong
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              title: ["Judul peraturan wajib diisi"]

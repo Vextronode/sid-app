@@ -1,0 +1,70 @@
+get:
+  tags: [Epic 1 - Struktur Wilayah]
+  summary: Lihat daftar RT (opsional filter per RW)
+  operationId: listRts
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: rw_id
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 1
+  responses:
+    '200':
+      description: Daftar RT berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/wilayah/wilayah.yaml#/Rt'
+          example:
+            data:
+              - id: 1
+                rw_id: 1
+                number: "001"
+                full_label: "RT 001/RW 001"
+                is_active: true
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+post:
+  tags: [Epic 1 - Struktur Wilayah]
+  summary: Tambah RT baru
+  operationId: createRt
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/wilayah/wilayah.yaml#/RtCreateRequest'
+  responses:
+    '201':
+      description: RT berhasil dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/wilayah/wilayah.yaml#/Rt'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: full_label sudah digunakan dalam RW ini / rw_id tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              number: ["RT dengan nomor ini sudah ada di RW tersebut"]

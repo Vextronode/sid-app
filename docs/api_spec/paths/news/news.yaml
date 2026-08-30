@@ -1,0 +1,74 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Lihat semua berita (Draft & Publikasi) milik desa
+  description: |
+    UC-19. Aktor HANYA Petugas Desa (SID-ARCH-SYS-001 S2.3 - Kades/Sekdes
+    eksplisit tidak termasuk meski satu "Tier" navigasi).
+  operationId: listNewsManagement
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: status
+      in: query
+      required: false
+      description: "Filter: draft atau published"
+      schema:
+        type: string
+        enum: [draft, published]
+  responses:
+    '200':
+      description: Daftar berita berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/news/news.yaml#/News'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+post:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Tambah berita baru
+  description: |
+    UC-19. Aktor HANYA Petugas Desa. Slug digenerate otomatis dari judul.
+    Jika slug sudah digunakan, sistem generate slug alternatif otomatis
+    (tambah suffix angka). is_published=true -> berita langsung tampil
+    di halaman publik (UC-16).
+  operationId: createNews
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          $ref: '../../schemas/news/news.yaml#/NewsCreateRequest'
+  responses:
+    '201':
+      description: Berita berhasil dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/news/news.yaml#/News'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: Judul atau konten kosong
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              title: ["Judul berita wajib diisi"]

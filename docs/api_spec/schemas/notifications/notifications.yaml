@@ -1,0 +1,36 @@
+Notification:
+  type: object
+  description: |
+    Struktur tabel TIDAK berubah dari v3.2/v4.2. Yang berubah di v5.0
+    adalah Event yang men-trigger-nya (FlowStepAdvanced generik,
+    menggantikan Event spesifik per posisi) - lihat SID-ARCH-BE-001 S7.
+    Payload `data` tetap JSON bebas per jenis notifikasi.
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "9c858901-8a57-4791-81fe-4c455b099bc9"
+    type:
+      type: string
+      example: "App\\Notifications\\LetterSubmittedNotification"
+    data:
+      type: object
+      example:
+        letter_id: 501
+        message: "Ada permohonan surat baru dari warga wilayahmu"
+    read_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: null
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-07-01T09:00:00Z"
+
+MarkReadResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Notifikasi ditandai sudah dibaca"

@@ -1,0 +1,88 @@
+get:
+  tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
+  summary: Lihat detail tipe surat
+  operationId: getLetterType
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  responses:
+    '200':
+      description: Detail tipe surat berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/letter-types/letter-types.yaml#/LetterType'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+patch:
+  tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
+  summary: Edit konfigurasi tipe surat (versi sederhana - MVP)
+  description: |
+    UC-21. MVP: Petugas Desa bisa edit validity_days, assigned_role,
+    category_id, flow_id, dan toggle is_active. BARU v5.0: category_id
+    dan flow_id ditambahkan agar Petugas Desa bisa memindahkan suatu tipe
+    surat ke flow approval lain tanpa developer (Config over Code).
+    Template & field requirement developer-only via seeder (full CRUD =
+    Next Dev Paket 1).
+  operationId: updateLetterType
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/letter-types/letter-types.yaml#/LetterTypeUpdateRequest'
+  responses:
+    '200':
+      description: Konfigurasi tipe surat berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/letter-types/letter-types.yaml#/LetterType'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      description: assigned_role tidak valid / validity_days negatif / flow_id tidak ditemukan atau tidak sesuai category_id
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          examples:
+            invalid_validity:
+              summary: validity_days negatif
+              value:
+                message: "The given data was invalid."
+                errors:
+                  validity_days: ["Masa berlaku harus lebih dari 0 hari"]
+            flow_category_mismatch:
+              summary: flow_id tidak termasuk dalam category_id yang dipilih
+              value:
+                message: "The given data was invalid."
+                errors:
+                  flow_id: ["Flow yang dipilih tidak termasuk dalam kategori surat ini"]

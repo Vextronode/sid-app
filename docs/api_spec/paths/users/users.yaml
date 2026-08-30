@@ -1,0 +1,82 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Lihat daftar user/akun sistem
+  description: UC-14. Aktor Petugas Desa. Tidak berubah dari v4.2.
+  operationId: listUsers
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: role
+      in: query
+      required: false
+      schema:
+        type: string
+      example: "rt"
+  responses:
+    '200':
+      description: Daftar user berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/users/users.yaml#/User'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Tambah akun user baru (RT/RW/Kadus/Kasi/Kaur/Kades/Sekdes/Petugas Desa)
+  description: |
+    UC-14. Jika role adalah jabatan struktural (rt, rw, kadus, dst),
+    sistem juga INSERT ke tabel `officials`. Jika `position_data.position
+    = 'sekdes'`, `users.role` otomatis diset `sekretaris_desa` (bukan
+    `kepala_desa`) - logic tidak berubah dari v4.2. Kadus tetap bisa
+    dibuat sebagai jabatan struktural (login/lihat status), meski sejak
+    v5.0 tidak lagi relevan terhadap `flow_steps.approver_position`.
+  operationId: createUser
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/users/users.yaml#/UserCreateRequest'
+  responses:
+    '201':
+      description: Akun berhasil dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/users/users.yaml#/User'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: Email sudah terdaftar / citizen_id tidak ditemukan / role tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          examples:
+            email_taken:
+              summary: Email sudah digunakan
+              value:
+                message: "The given data was invalid."
+                errors:
+                  email: ["Email sudah digunakan"]
+            citizen_not_found:
+              summary: citizen_id tidak ditemukan
+              value:
+                message: "The given data was invalid."
+                errors:
+                  citizen_id: ["Data kependudukan tidak ditemukan"]

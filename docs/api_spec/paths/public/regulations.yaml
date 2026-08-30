@@ -1,0 +1,28 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Daftar peraturan desa publik (tanpa login)
+  description: |
+    UC-16 extended. Berbeda dengan news, TIDAK ADA konsep is_published -
+    begitu dibuat oleh Petugas Desa, selalu tampil di halaman publik.
+    Tidak berubah dari v4.2.
+  operationId: getPublicRegulations
+  responses:
+    '200':
+      description: Daftar peraturan desa berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/regulations/regulations.yaml#/VillageRegulation'
+    '404':
+      description: Belum ada peraturan desa yang diterbitkan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
+    '500':
+      $ref: '../../responses/common.yaml#/ServerError'
