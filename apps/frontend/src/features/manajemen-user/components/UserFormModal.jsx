@@ -1,11 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 // ==========================================
 // UserFormModal.jsx
-// Popup form Tambah/Edit user. Mode ditentukan dari initialData:
-// - initialData null  -> mode Tambah (tombol "Tambah Pengguna")
-// - initialData terisi -> mode Edit (tombol "Simpan Perubahan", field terisi)
-// Field "Wilayah" cuma muncul untuk role RT/RW (kepala_desa & petugas_desa
-// tidak perlu wilayah, sesuai catatan di desain).
+// Popup form Tambah/Edit user.
+// Styling mengikuti SID Global Theme.
+// Logic dan behavior tidak diubah.
 // ==========================================
 
 import { useState, useEffect } from 'react';
@@ -23,9 +21,21 @@ const ROLE_OPTIONS = [
 
 const ROLES_WITH_WILAYAH = ['rt', 'rw'];
 
-const EMPTY_FORM = { name: '', email: '', role: '', citizen_id: '', password: '', is_active: true };
+const EMPTY_FORM = {
+  name: '',
+  email: '',
+  role: '',
+  citizen_id: '',
+  password: '',
+  is_active: true,
+};
 
-export default function UserFormModal({ open, onClose, onSubmit, initialData }) {
+export default function UserFormModal({
+  open,
+  onClose,
+  onSubmit,
+  initialData,
+}) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -33,15 +43,26 @@ export default function UserFormModal({ open, onClose, onSubmit, initialData }) 
 
   useEffect(() => {
     if (open) {
-      setForm(initialData ? { ...EMPTY_FORM, ...initialData, password: '' } : EMPTY_FORM);
+      setForm(
+        initialData
+          ? { ...EMPTY_FORM, ...initialData, password: '' }
+          : EMPTY_FORM
+      );
     }
   }, [open, initialData]);
 
   if (!open) return null;
 
   const handleChange = (field) => (e) => {
-    const value = field === 'is_active' ? e.target.value === 'aktif' : e.target.value;
-    setForm((prev) => ({ ...prev, [field]: value }));
+    const value =
+      field === 'is_active'
+        ? e.target.value === 'aktif'
+        : e.target.value;
+
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const showWilayah = ROLES_WITH_WILAYAH.includes(form.role);
@@ -52,112 +73,177 @@ export default function UserFormModal({ open, onClose, onSubmit, initialData }) 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
-        <div className="flex flex-col gap-1 mb-4">
-          <label className="text-sm font-medium text-gray-700">Nama lengkap *</label>
+    <div className="sid-modal-overlay">
+      <form
+        onSubmit={handleSubmit}
+        className="sid-modal sid-modal-user"
+      >
+        {/* Nama */}
+        <div className="sid-form-group">
+          <label className="sid-form-label">
+            Nama lengkap *
+          </label>
+
           <input
             required
             value={form.name}
             onChange={handleChange('name')}
             placeholder="Nama"
-            className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
+            className="sid-form-input"
           />
         </div>
 
-        <div className="flex flex-col gap-1 mb-4">
-          <label className="text-sm font-medium text-gray-700">Email *</label>
+        {/* Email */}
+        <div className="sid-form-group">
+          <label className="sid-form-label">
+            Email *
+          </label>
+
           <input
             required
             type="email"
             value={form.email}
             onChange={handleChange('email')}
             placeholder="Email"
-            className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
+            className="sid-form-input"
           />
         </div>
 
-        <div className="flex flex-col gap-1 mb-2">
-          <label className="text-sm font-medium text-gray-700">Role *</label>
+        {/* Role */}
+        <div className="sid-form-group sid-form-group-compact">
+          <label className="sid-form-label">
+            Role *
+          </label>
+
           <select
             required
             value={form.role}
             onChange={handleChange('role')}
-            className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
+            className="sid-form-input sid-form-select"
           >
             <option value="">Pilih role</option>
+
             {ROLE_OPTIONS.map((r) => (
-              <option key={r.value} value={r.value}>{r.label}</option>
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
             ))}
           </select>
         </div>
 
-        <p className="text-xs text-gray-400 mb-4">
-          Territory label hanya muncul untuk role RT dan RW (kepala_desa &amp; petugas_desa tidak perlu wilayah)
+        <p className="sid-form-hint">
+          Territory label hanya muncul untuk role RT dan RW
+          (kepala_desa &amp; petugas_desa tidak perlu wilayah)
         </p>
 
+        {/* Wilayah */}
         {showWilayah && (
-          <div className="flex flex-col gap-1 mb-4">
-            <label className="text-sm font-medium text-gray-700">Wilayah (RT/RW)</label>
+          <div className="sid-form-group">
+            <label className="sid-form-label">
+              Wilayah (RT/RW)
+            </label>
+
             <input
               value={form.wilayah ?? ''}
               onChange={handleChange('wilayah')}
               placeholder="Misal: RT 001/RW 001"
-              className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
+              className="sid-form-input"
             />
           </div>
         )}
 
-        <div className="flex flex-col gap-1 mb-4">
-          <label className="text-sm font-medium text-gray-700">Link ke warga (Citizen ID)</label>
+        {/* Citizen ID */}
+        <div className="sid-form-group">
+          <label className="sid-form-label">
+            Link ke warga (Citizen ID)
+          </label>
+
           <input
             value={form.citizen_id}
             onChange={handleChange('citizen_id')}
             placeholder="ID dari table citizens"
-            className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500 italic"
+            className="sid-form-input sid-form-input-italic"
           />
         </div>
 
-        <div className="flex flex-col gap-1 mb-4">
-          <label className="text-sm font-medium text-gray-700">Password {isEdit && <span className="text-gray-400 font-normal">(kosongkan jika tidak diubah)</span>}</label>
-          <div className="relative">
+        {/* Password */}
+        <div className="sid-form-group">
+          <label className="sid-form-label">
+            Password{' '}
+            {isEdit && (
+              <span className="sid-form-label-muted">
+                (kosongkan jika tidak diubah)
+              </span>
+            )}
+          </label>
+
+          <div className="sid-password-wrapper">
             <input
               type={showPassword ? 'text' : 'password'}
               value={form.password}
               onChange={handleChange('password')}
               placeholder="Password"
-              className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500 w-full pr-10"
+              className="sid-form-input sid-form-password"
             />
-            <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="sid-password-toggle"
+              aria-label={
+                showPassword
+                  ? 'Sembunyikan password'
+                  : 'Tampilkan password'
+              }
+            >
+              {showPassword ? (
+                <EyeOff size={16} />
+              ) : (
+                <Eye size={16} />
+              )}
             </button>
           </div>
         </div>
 
-        <div className="flex flex-col gap-1 mb-6">
-          <label className="text-sm font-medium text-gray-700">Status akun</label>
+        {/* Status */}
+        <div className="sid-form-group sid-form-group-last">
+          <label className="sid-form-label">
+            Status akun
+          </label>
+
           <select
             value={form.is_active ? 'aktif' : 'nonaktif'}
             onChange={handleChange('is_active')}
-            className="border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500"
+            className="sid-form-input sid-form-select"
           >
             <option value="aktif">Aktif</option>
             <option value="nonaktif">Nonaktif</option>
           </select>
         </div>
 
-        <div className="flex gap-3">
-          <button type="button" onClick={onClose} className="flex-1 border border-green-500 text-green-600 rounded-md py-2.5 text-sm font-medium hover:bg-green-50">
+        {/* Action */}
+        <div className="sid-modal-actions">
+          <button
+            type="button"
+            onClick={onClose}
+            className="sid-button sid-button-outline"
+          >
             Batal
           </button>
-          <button type="submit" className="flex-[2] bg-green-600 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2">
+
+          <button
+            type="submit"
+            className="sid-button sid-button-primary sid-button-submit"
+          >
             {isEdit ? (
               <>
-                <Save size={16} /> Simpan Perubahan
+                <Save size={16} />
+                Simpan Perubahan
               </>
             ) : (
               <>
-                <UserPlus size={16} /> Tambah Pengguna
+                <UserPlus size={16} />
+                Tambah Pengguna
               </>
             )}
           </button>

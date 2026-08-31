@@ -1,21 +1,24 @@
 export function VisiMisi({ visi, misi }) {
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-      <div>
-        <h4 className="font-bold text-gray-800 text-xs tracking-wide uppercase mb-2">
+    <div className="sid-card sid-visi-misi-card">
+      <div className="sid-visi-section">
+        <h4 className="sid-visi-misi-title">
           Visi
         </h4>
-        <p className="text-xs md:text-sm text-gray-500 leading-relaxed">
+
+        <p className="sid-visi-misi-text">
           {visi}
         </p>
       </div>
-      <div>
-        <h4 className="font-bold text-gray-800 text-xs tracking-wide uppercase mb-2">
+
+      <div className="sid-visi-section">
+        <h4 className="sid-visi-misi-title">
           Misi
         </h4>
-        <ul className="text-xs md:text-sm text-gray-500 space-y-2 list-none pl-0">
+
+        <ul className="sid-visi-misi-list">
           {misi.map((item, idx) => (
-            <li key={idx} className="leading-relaxed">
+            <li key={idx}>
               {idx + 1}. {item}
             </li>
           ))}

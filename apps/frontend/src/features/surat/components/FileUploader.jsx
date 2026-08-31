@@ -1,3 +1,4 @@
+
 import { useRef } from "react";
 import { UploadCloud, FileText, Trash2 } from "lucide-react";
 
@@ -23,6 +24,7 @@ export function FileUploader({
       {/* =========================
           INPUT FILE
       ========================= */}
+
       <input
         type="file"
         multiple
@@ -37,70 +39,34 @@ export function FileUploader({
       {/* =========================
           FILE YANG SUDAH DIUPLOAD
       ========================= */}
+
       {files.length > 0 && (
-        <div className="space-y-2">
+        <div className="sid-upload-file-list">
 
           {files.map((file, index) => (
             <div
               key={index}
-              className="
-                flex
-                items-center
-                justify-between
-                gap-3
-                p-3
-                sm:p-4
-                bg-[#F7F6F1]
-                border
-                border-[var(--sid-border)]
-                rounded-[var(--radius-md)]
-                transition
-              "
+              className="sid-upload-file"
             >
 
               {/* INFO FILE */}
-              <div className="flex items-center gap-3 min-w-0">
 
-                <div
-                  className="
-                    flex
-                    items-center
-                    justify-center
-                    flex-shrink-0
-                    w-10
-                    h-10
-                    bg-[var(--sid-status-progress-bg)]
-                    text-[var(--sid-primary)]
-                    rounded-[var(--radius-sm)]
-                  "
-                >
-                  <FileText className="w-5 h-5" />
+              <div className="sid-upload-file-info">
+
+                <div className="sid-upload-file-icon">
+                  <FileText className="sid-upload-file-icon-svg" />
                 </div>
 
-
-                <div className="text-left min-w-0">
+                <div className="sid-upload-file-details">
 
                   <p
-                    className="
-                      text-xs
-                      font-semibold
-                      text-[var(--sid-text-primary)]
-                      truncate
-                      max-w-[180px]
-                      sm:max-w-xs
-                    "
+                    className="sid-upload-file-name"
                     title={file.name}
                   >
                     {file.name}
                   </p>
 
-                  <p
-                    className="
-                      text-[10px]
-                      text-[var(--sid-text-muted)]
-                      mt-0.5
-                    "
-                  >
+                  <p className="sid-upload-file-size">
                     {(file.size / (1024 * 1024)).toFixed(2)} MB
                   </p>
 
@@ -110,27 +76,15 @@ export function FileUploader({
 
 
               {/* HAPUS */}
+
               <button
                 type="button"
                 onClick={(e) => handleRemove(e, index)}
-                className="
-                  flex
-                  items-center
-                  justify-center
-                  flex-shrink-0
-                  w-8
-                  h-8
-                  rounded-[var(--radius-sm)]
-                  border
-                  border-transparent
-                  text-[var(--sid-status-rejected-text)]
-                  hover:bg-[var(--sid-status-rejected-bg)]
-                  transition
-                "
+                className="sid-upload-file-remove"
                 title="Hapus file"
                 aria-label={`Hapus ${file.name}`}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="sid-upload-file-remove-icon" />
               </button>
 
             </div>
@@ -143,21 +97,12 @@ export function FileUploader({
       {/* =========================
           UPLOAD AREA
       ========================= */}
+
       <div
         onClick={() => inputRef.current?.click()}
-        className="
-          sid-upload
-          w-full
-        "
+        className="sid-upload"
       >
-
-        <UploadCloud
-          className="
-            w-10
-            h-10
-            text-[var(--sid-text-muted)]
-          "
-        />
+        <UploadCloud className="sid-upload-icon" />
 
         <p className="sid-upload-title">
           Klik untuk upload dokumen{" "}
@@ -173,3 +118,4 @@ export function FileUploader({
     </div>
   );
 }
+

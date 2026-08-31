@@ -5,12 +5,13 @@
 // ==========================================
 
 export default function DynamicField({ field, value, onChange }) {
-  const commonClass = 'w-full border rounded-md px-3 py-2 text-sm outline-none focus:border-green-500';
-
   return (
-    <div className="flex flex-col gap-1 mb-4">
-      <label className="text-xs text-gray-500">
-        {field.label} {field.required && <span className="text-red-500">*</span>}
+    <div className="sid-form-group">
+      <label className="sid-label">
+        {field.label}{' '}
+        {field.required && (
+          <span className="sid-required">*</span>
+        )}
       </label>
 
       {field.type === 'textarea' ? (
@@ -20,7 +21,7 @@ export default function DynamicField({ field, value, onChange }) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
-          className={`${commonClass} resize-none`}
+          className="sid-textarea"
         />
       ) : field.type === 'date' ? (
         <input
@@ -28,7 +29,7 @@ export default function DynamicField({ field, value, onChange }) {
           required={field.required}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={commonClass}
+          className="sid-input"
         />
       ) : (
         <input
@@ -37,7 +38,7 @@ export default function DynamicField({ field, value, onChange }) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
-          className={commonClass}
+          className="sid-input"
         />
       )}
     </div>

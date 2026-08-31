@@ -1,7 +1,16 @@
+// ==========================================
+// DashboardFlowCard.jsx
+// Card status surat dengan filter periode dan carousel.
+// Styling mengikuti SID Global Theme.
+// ==========================================
+
 import { useMemo, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export default function DashboardFlowCard({ letters = [], loading }) {
+export default function DashboardFlowCard({
+  letters = [],
+  loading,
+}) {
   const [period, setPeriod] = useState("day");
   const [index, setIndex] = useState(0);
 
@@ -16,7 +25,10 @@ export default function DashboardFlowCard({ letters = [], loading }) {
       }
 
       if (period === "week") {
-        const diff = (now - date) / (1000 * 60 * 60 * 24);
+        const diff =
+          (now - date) /
+          (1000 * 60 * 60 * 24);
+
         return diff <= 7;
       }
 
@@ -32,59 +44,69 @@ export default function DashboardFlowCard({ letters = [], loading }) {
   }, [letters, period]);
 
   const cards = [
-  {
-    title: "Total Surat",
-    value: filteredLetters.length,
-    color: "text-green-600",
-  },
-  {
-    title: "Menunggu RT",
-    value: filteredLetters.filter((l) => l.status === "pending").length,
-    color: "text-orange-500",
-  },
-  {
-    title: "Menunggu RW",
-    value: filteredLetters.filter((l) => l.status === "rt_approved").length,
-    color: "text-blue-600",
-  },
-  {
-    title: "Verifikasi Operator",
-    value: filteredLetters.filter((l) => l.status === "rw_approved").length,
-    color: "text-cyan-600",
-  },
-  {
-    title: "Selesai",
-    value: filteredLetters.filter((l) => l.status === "kasi_approved").length,
-    color: "text-green-700",
-  },
-];
+    {
+      title: "Total Surat",
+      value: filteredLetters.length,
+      color: "sid-dashboard-status-primary",
+    },
+    {
+      title: "Menunggu RT",
+      value: filteredLetters.filter(
+        (l) => l.status === "pending"
+      ).length,
+      color: "sid-dashboard-status-warning",
+    },
+    {
+      title: "Menunggu RW",
+      value: filteredLetters.filter(
+        (l) => l.status === "rt_approved"
+      ).length,
+      color: "sid-dashboard-status-info",
+    },
+    {
+      title: "Verifikasi Operator",
+      value: filteredLetters.filter(
+        (l) => l.status === "rw_approved"
+      ).length,
+      color: "sid-dashboard-status-cyan",
+    },
+    {
+      title: "Selesai",
+      value: filteredLetters.filter(
+        (l) => l.status === "kasi_approved"
+      ).length,
+      color: "sid-dashboard-status-success",
+    },
+  ];
 
-useEffect(() => {
-  const timer = setInterval(() => {
-    setIndex((i) => (i + 1) % cards.length);
-  }, 5000);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex(
+        (i) => (i + 1) % cards.length
+      );
+    }, 5000);
 
-  return () => clearInterval(timer);
-}, [cards.length]);
-
-
-
-
+    return () => clearInterval(timer);
+  }, [cards.length]);
 
   const current = cards[index] ?? cards[0];
 
   const next = () => {
-    setIndex((i) => (i + 1) % cards.length);
+    setIndex(
+      (i) => (i + 1) % cards.length
+    );
   };
 
   const prev = () => {
-    setIndex((i) => (i - 1 + cards.length) % cards.length);
+    setIndex(
+      (i) => (i - 1 + cards.length) % cards.length
+    );
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-5 flex flex-col justify-between w-full h-full">  
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="font-semibold text-gray-700">
+    <div className="sid-dashboard-flow-card">
+      <div className="sid-dashboard-flow-header">
+        <h3 className="sid-dashboard-flow-title">
           Status Surat
         </h3>
 
@@ -94,7 +116,7 @@ useEffect(() => {
             setPeriod(e.target.value);
             setIndex(0);
           }}
-          className="text-xs border rounded-lg px-2 py-1 outline-none"
+          className="sid-dashboard-period-select"
         >
           <option value="day">Hari</option>
           <option value="week">Minggu</option>
@@ -102,52 +124,51 @@ useEffect(() => {
         </select>
       </div>
 
-      <div className="flex flex-1 items-center justify-between">
-
+      <div className="sid-dashboard-flow-body">
         <button
           onClick={prev}
-          className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
+          className="sid-dashboard-flow-arrow"
         >
           <ChevronLeft size={18} />
         </button>
 
-        <div className="flex-1 overflow-hidden">
-  <div
-    key={index}
-    className="text-center animate-[fadeIn_.25s_ease]"
-  >
-          <p className="text-xs uppercase text-gray-400 mb-2">
-            {current.title}
-          </p>
+        <div className="sid-dashboard-flow-content">
+          <div
+            key={index}
+            className="sid-dashboard-flow-slide"
+          >
+            <p className="sid-dashboard-flow-label">
+              {current.title}
+            </p>
 
-          <p className={`text-4xl font-bold ${current.color}`}>
-            {loading ? "-" : current.value}
-          </p>
+            <p
+              className={`sid-dashboard-flow-value ${current.color}`}
+            >
+              {loading ? "-" : current.value}
+            </p>
 
-          <div className="flex justify-center gap-2 mt-4">
-  {cards.map((_, i) => (
-    <button
-      key={i}
-      onClick={() => setIndex(i)}
-      className={`h-2 rounded-full transition-all duration-300 ${
-        index === i
-          ? "w-6 bg-green-600"
-          : "w-2 bg-gray-300"
-      }`}
-    />
-  ))}
-</div>
-          
-        </div>
+            <div className="sid-dashboard-flow-indicators">
+              {cards.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setIndex(i)}
+                  className={`sid-dashboard-flow-indicator ${
+                    index === i
+                      ? "sid-dashboard-flow-indicator-active"
+                      : "sid-dashboard-flow-indicator-inactive"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
         <button
           onClick={next}
-          className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
+          className="sid-dashboard-flow-arrow"
         >
           <ChevronRight size={18} />
         </button>
-
       </div>
     </div>
   );

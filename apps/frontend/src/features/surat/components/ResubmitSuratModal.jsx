@@ -72,7 +72,6 @@ export function ResubmitSuratModal({
             HEADER
         ========================= */}
         <div className="sid-modal-header">
-
           <h2 className="sid-modal-title">
             Kirim Ulang Revisi
           </h2>
@@ -80,7 +79,6 @@ export function ResubmitSuratModal({
           <p className="sid-modal-subtitle">
             Perbarui data surat sebelum dikirim kembali.
           </p>
-
         </div>
 
 
@@ -91,36 +89,14 @@ export function ResubmitSuratModal({
 
           {/* ERROR */}
           {error && (
-            <div
-              className="
-                mb-4
-                p-3
-                rounded-[var(--radius-sm)]
-                border
-                border-[var(--sid-status-rejected-text)]
-                bg-[var(--sid-status-rejected-bg)]
-                text-[var(--sid-status-rejected-text)]
-                text-sm
-              "
-            >
+            <div className="sid-modal-alert-error">
               {error}
             </div>
           )}
 
 
           {/* INFO REVISI */}
-          <div
-            className="
-              mb-5
-              p-3
-              rounded-[var(--radius-sm)]
-              border
-              border-[var(--sid-border)]
-              bg-[var(--sid-status-pending-bg)]
-              text-[var(--sid-status-pending-text)]
-              text-sm
-            "
-          >
+          <div className="sid-modal-alert-warning">
             <p className="font-semibold mb-1">
               Surat ini memerlukan revisi.
             </p>
@@ -143,7 +119,6 @@ export function ResubmitSuratModal({
 
             {/* KEPERLUAN */}
             <div className="sid-form-group">
-
               <label className="sid-label">
                 Keperluan Surat *
               </label>
@@ -162,7 +137,6 @@ export function ResubmitSuratModal({
 
             {/* CATATAN */}
             <div className="sid-form-group">
-
               <label className="sid-label">
                 Catatan Tambahan (Opsional)
               </label>
@@ -186,7 +160,6 @@ export function ResubmitSuratModal({
             FOOTER
         ========================= */}
         <div className="sid-modal-footer">
-
           <div className="sid-modal-actions">
 
             {/* BATAL */}
@@ -209,32 +182,18 @@ export function ResubmitSuratModal({
             >
               {loading ? (
                 <>
-                  <span
-                    className="
-                      inline-block
-                      w-4
-                      h-4
-                      border-2
-                      border-white/30
-                      border-t-white
-                      rounded-full
-                      animate-spin
-                    "
-                  />
-
+                  <span className="sid-loading-spinner" />
                   Mengirim...
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-
                   Kirim Ulang
                 </>
               )}
             </button>
 
           </div>
-
         </div>
 
       </div>

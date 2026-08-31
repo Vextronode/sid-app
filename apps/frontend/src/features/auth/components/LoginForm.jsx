@@ -1,5 +1,5 @@
-/* eslint-disable no-undef */
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { useLoginForm } from "@/features/auth/hooks/useLoginForm";
@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 export function LoginForm() {
-  const { formData, errors, handleChange, handleSubmit } = useLoginForm();
+  const navigate = useNavigate();
 
+  const { formData, errors, handleChange, handleSubmit } = useLoginForm();
   const { login } = useAuth();
 
   const [serverError, setServerError] = useState("");
@@ -47,7 +48,8 @@ export function LoginForm() {
             replace: true,
           });
           break;
-                case "kasi":
+
+        case "kasi":
           navigate("/admin/dashboard-surat-kasi", {
             replace: true,
           });
@@ -67,22 +69,22 @@ export function LoginForm() {
 
       setServerError(
         error.response?.data?.message ??
-        "Login gagal."
+          "Login gagal."
       );
     }
   };
 
   return (
-    <>
+    <div className="sid-login-form">
       {serverError && (
-        <div className="mb-4 rounded-lg bg-red-100 p-3 text-sm text-red-700">
+        <div className="sid-login-form-error">
           {serverError}
         </div>
       )}
 
       <form
         onSubmit={(e) => handleSubmit(e, handleLoginSuccess)}
-        className="w-full"
+        className="sid-login-form-content"
       >
         <Input
           label="NIK"
@@ -109,6 +111,6 @@ export function LoginForm() {
           Masuk
         </Button>
       </form>
-    </>
+    </div>
   );
 }
