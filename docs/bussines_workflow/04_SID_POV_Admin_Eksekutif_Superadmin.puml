@@ -1,0 +1,91 @@
+@startuml
+title SID - POV Admin Desa, Eksekutif & Superadmin [Business Workflow]
+
+skinparam activity {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C0A000
+}
+
+|#Wheat|Admin Desa (role: petugas_desa)|
+start
+:Login;
+
+if (Aktivitas?) then (Kelola Data Warga)
+  :CRUD Data Warga (manual);
+  :Impor Data Warga via Excel\n(maatwebsite/excel, validasi per baris,\nbaris gagal di-skip + ringkasan);
+  stop
+elseif (Kelola Konten - CMS) then
+  :Buat/Edit Profil Desa,\nBerita & Pengumuman, Peraturan Desa;
+  |#LightYellow|Database & Backend|
+  :Catat created_by/updated_by;
+  :Set is_published = true;
+  :Tampil di Halaman Publik;
+  stop
+elseif (Konfigurasi Sistem) then
+  :Kelola Struktur Wilayah (Dusun/RW/RT);
+  :Kelola User, Role & Jabatan;
+  :Kelola Setting Deadline Approval\n(approval_settings: deadline_hours,\nreminder_hours per approval_level);
+  :Edit Konfigurasi Tipe Surat\n(versi sederhana: validity_days,\nassigned_role, is_active);
+  stop
+else (Monitoring Surat)
+  :Lihat SELURUH Surat\n(full visibility, semua status\ntermasuk rejected di step manapun);
+  stop
+endif
+
+|#Thistle|Eksekutif (role: kepala_desa / sekretaris_desa)|
+:Login;
+:Buka Daftar Surat dengan\ncurrent_step_order menunjuk posisi ini\n(approver_position IN kepala_desa, sekdes);
+note right
+  BERBEDA dari asumsi sebelumnya:
+  Kepala Desa & Sekretaris Desa adalah
+  APPROVER AKTIF sejak v5.0 (bukan
+  monitoring-only), menggantikan posisi
+  Kadus lama. Keduanya saling
+  menggantikan pada step yang sama
+  (first-action-wins, disederhanakan di
+  application layer - lihat disclaimer
+  status keputusan di SID-ARCH-BE-001 S3.3:
+  ini masih berstatus rekomendasi/asumsi
+  default, BELUM keputusan final eksplisit).
+end note
+:Lihat Detail + Riwayat Keputusan (RT, FYI RW);
+:Putuskan Setuju / Tolak;
+
+if (Keputusan?) then (Tolak)
+  |#LightYellow|Database & Backend|
+  :letters.status = rejected (terminal);
+  :Notifikasi ke Warga;
+  stop
+else (Setuju)
+  |#LightYellow|Database & Backend|
+  :current_step_order += 1;
+  :Resolve approver step berikutnya\n(kasi_pelayanan/kaur_tu_umum);
+  :Notifikasi ke Staff Desa;
+  note right
+    Lihat 03_BWF_PovRtRwStaffDesa_v2.puml
+    (segmen Staff Desa) untuk step final.
+  end note
+  stop
+endif
+
+|#LightSteelBlue|Superadmin|
+note right
+  BELUM DIIMPLEMENTASIKAN.
+  Tidak ada role, middleware, atau
+  halaman untuk tier ini di sistem
+  saat ini. Slot dicadangkan untuk
+  kebutuhan masa depan (mis. jika
+  sistem berkembang multi-desa).
+  Seluruh kapabilitas konfigurasi/audit
+  yang relevan saat ini dijalankan
+  oleh petugas_desa (lihat segmen
+  Admin Desa di atas).
+end note
+
+@enduml

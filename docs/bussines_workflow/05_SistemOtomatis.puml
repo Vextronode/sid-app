@@ -1,0 +1,101 @@
+@startuml
+
+title SID - Sistem (Otomatis): Overdue/Reminder & Fallback Broadcast [Business Workflow]
+
+skinparam activity {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C0A000
+}
+
+|#LightYellow|Sistem (Scheduler)|
+
+start
+
+fork
+
+  :Cek seluruh letter_approvals aktif\nyang belum di-action;
+
+  if (deadline_at (approval_settings.deadline_hours)\nterlewati?) then (ya)
+
+    :Set letters.is_overdue = true;
+
+    note right
+      TIDAK auto-reject.
+      Murni penanda visual
+      (badge overdue) -
+      keputusan final sejak UC-22.
+    end note
+
+  endif
+
+  if (Mendekati reminder_hours\nsebelum deadline?) then (ya)
+
+    |#LightGreen|Approver aktif pada step tersebut|
+
+    :Terima Notifikasi Reminder;
+
+  endif
+
+
+fork again
+
+  |#LightYellow|Sistem (Scheduler)|
+
+  :Warga submit surat baru,\nsistem resolve RT wilayah;
+
+  if (RT wilayah ditemukan?\n(via citizens.rt_id -> officials aktif)) then (tidak)
+
+    :Surat tetap tersimpan PENDING;
+
+    |#Wheat|Seluruh petugas_desa aktif|
+
+    :Terima Notifikasi Broadcast Fallback;
+
+    note right
+      Cakupan fallback ini SPESIFIK
+      untuk RT wilayah tidak
+      ditemukan/kosong
+      (UC-03 alt flow 9a).
+
+      Bukan konsep umum
+      "Bidang kosong".
+    end note
+
+  else (ya)
+
+    |#LightYellow|Sistem (Scheduler)|
+
+    :Lanjut proses normal;
+
+  endif
+
+end fork
+
+
+stop
+
+
+floating note right
+  Void/Cancel Surat dan Verifikasi QR
+  SENGAJA TIDAK digambarkan di sini.
+
+  Keduanya berstatus:
+  "Wacana Next Dev - Belum Ada Desain"
+
+  (SID-ARCH-BE-001 S10)
+
+  Tidak punya skema tabel maupun
+  keputusan teknis apa pun di TDD.
+
+  Jangan diimplementasikan sebelum ada
+  keputusan eksplisit dari pemilik proyek.
+end note
+
+@enduml
