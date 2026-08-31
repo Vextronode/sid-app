@@ -1,0 +1,111 @@
+@startuml
+
+title SID - POV RT/RW & Staff Desa (Kasi/Kaur) [Business Workflow]
+
+skinparam activity {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C0A000
+}
+
+|#MistyRose|RT|
+start
+:Login;
+:Buka Daftar Surat Wilayah\n(status: pending, current_step_order\nsesuai step RT, filter via citizens.rt_id);
+:Pilih Surat & Lihat Detail;
+:Putuskan Setuju / Tolak;
+
+if (Keputusan?) then (Tolak)
+  |#LightYellow|Database & Backend|
+  :letters.status = rejected (terminal);
+  :Notifikasi ke Warga;
+  stop
+else (Setuju)
+  |#LightYellow|Database & Backend|
+  :current_step_order += 1;
+  :INSERT letter_approvals\n(approval_level: rt);
+end if
+
+fork
+  |#LightYellow|Database & Backend|
+  :Kirim notifikasi FYI ke RW\n(via rts.rw_id) - side-effect,\nNON-BLOCKING, asinkron;
+
+  |#MistyRose|RW|
+  :Terima Notifikasi FYI;
+  note right
+    RW TIDAK PERNAH menjadi
+    approver_position di flow_steps
+    manapun. Tidak ada tombol
+    approve/reject/block untuk RW -
+    murni riwayat notifikasi read-only.
+  end note
+  stop
+fork again
+  |#LightYellow|Database & Backend|
+  :Resolve approver step berikutnya\nsesuai approval_flows/flow_steps;
+
+  if (approver_position step berikutnya?) then (kepala_desa / sekdes)
+    :Kirim notifikasi ke Eksekutif;
+    note right
+      Step ini diproses di
+      04_BWF_PovAdminEksekutifSuperadmin_v2.puml
+      (segmen Eksekutif).
+    end note
+    stop
+  else (kasi_pelayanan / kaur_tu_umum - langsung final)
+    :Kirim notifikasi ke Staff Desa;
+  endif
+end fork
+
+|#LightGreen|Staff Desa (Kasi Pelayanan / Kaur TU Umum)|
+:Terima Notifikasi;
+note right
+  Resolusi murni berbasis posisi
+  (flow_steps.approver_position IN
+  ('kasi_pelayanan','kaur_tu_umum')),
+  BUKAN berbasis wilayah. Kolom
+  letter_types.assigned_role hanya
+  derived cache - source of truth
+  tetap flow_steps.
+end note
+:Buka Daftar Surat sesuai posisinya\n(current_step_order menunjuk step ini);
+:Lihat Detail + Riwayat Keputusan Sebelumnya;
+:Putuskan Setuju / Tolak (step is_final = true);
+
+if (Keputusan?) then (Tolak)
+  |#LightYellow|Database & Backend|
+  :letters.status = rejected (terminal);
+  :Notifikasi ke Warga;
+  stop
+else (Setuju)
+
+  |#LightYellow|Database & Backend|
+
+  :Generate letter_number;
+  :Hitung expires_at;
+  :letters.status = approved;
+  :Notifikasi ke Warga + Kades/Sekdes (monitoring);
+
+  stop
+
+endif
+
+note right
+  Pengelolaan data warga (CRUD manual,
+  impor Excel UC-09), konfigurasi wilayah,
+  dan CMS BUKAN kewenangan Staff Desa
+  (Tier 3).
+
+  Itu kewenangan Petugas Desa
+  (Tier 2).
+
+  Lihat:
+  04_BWF_PovAdminEksekutifSuperadmin_v2.puml
+end note
+
+@enduml

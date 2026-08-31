@@ -1,0 +1,55 @@
+@startuml
+
+title SID - General Overview: Peta RBAC & Entry Point per POV
+
+skinparam activity {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C0A000
+}
+
+start
+:Login / Akses SID;
+
+if (Role Login?) then (warga)
+  :Lihat detail -> **02_BWF_PovWarga_v2.puml**\n(Self-service: pengajuan surat);
+  stop
+
+elseif (rt / rw) then
+  :Lihat detail -> **03_BWF_PovRtRwStaffDesa_v2.puml**\n(RT: verifikasi wilayah tahap 1.\nRW: TIDAK PERNAH approver -\nhanya penerima notifikasi FYI);
+  stop
+
+elseif (kasi_pelayanan / kaur_tu_umum) then
+  :Lihat detail -> **03_BWF_PovRtRwStaffDesa_v2.puml**\n(Approval final surat sesuai\nflow_steps.approver_position);
+  stop
+
+elseif (petugas_desa) then
+  :Lihat detail -> **04_BWF_PovAdminEksekutifSuperadmin_v2.puml**\n(CMS, CRUD data warga, konfigurasi\nwilayah/jabatan/tipe surat, full\nvisibility seluruh surat);
+  stop
+
+elseif (kepala_desa / sekretaris_desa) then
+  :Lihat detail -> **04_BWF_PovAdminEksekutifSuperadmin_v2.puml**\n(Approver aktif pada step yang\nditunjuk flow_steps, monitoring\nsurat level desa ke atas);
+  stop
+
+else (Superadmin)
+  :Lihat detail -> **04_BWF_PovAdminEksekutifSuperadmin_v2.puml**\n(BELUM DIIMPLEMENTASIKAN -\nslot dicadangkan, tidak ada\nrole/middleware/halaman saat ini);
+  stop
+endif
+
+note right
+  Catatan Istilah: label "RT/RW", "Staff Desa",
+  "Admin Desa/Eksekutif" di seluruh file BWF
+  adalah label navigasi untuk audiens bisnis.
+  Pemetaan resmi label ini ke 9 nilai users.role
+  yang sebenarnya diimplementasikan HANYA
+  dirujuk dari satu sumber: SID-ARCH-SYS-001 S4.
+  File BWF manapun TIDAK mendefinisikan ulang
+  pemetaan role secara independen.
+end note
+
+@enduml
