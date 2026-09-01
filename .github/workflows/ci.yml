@@ -1,0 +1,172 @@
+name: SID CI
+
+# Trigger: push langsung ke main/dev, dan setiap PR yang menargetkan main/dev.
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+# Batasi permission default token ke read-only — prinsip least privilege,
+# selaras dengan baseline keamanan AWG-SEC.
+permissions:
+  contents: read
+
+# Cancel run lama di branch/PR yang sama kalau ada push baru, hemat CI minutes.
+concurrency:
+  group: sid-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------
+  # Job 0: Deteksi folder mana yang berubah (apps/backend vs apps/frontend)
+  # ---------------------------------------------------------------------
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'apps/backend/**'
+            frontend:
+              - 'apps/frontend/**'
+
+  # ---------------------------------------------------------------------
+  # Job 1: Backend (Laravel 13 / PHP 8.3 / PostgreSQL 16)
+  # PostgreSQL 16 dipilih mengikuti referensi eksplisit di TDD (Tech Stack
+  # Tahap 2 / Laravel Sail). Belum ada pin versi resmi untuk Tahap 1 di
+  # dokumen — kalau versi ini keliru, tinggal sesuaikan image tag di bawah.
+  # ---------------------------------------------------------------------
+  backend-ci:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sid_ci
+          POSTGRES_PASSWORD: sid_ci
+          POSTGRES_DB: sid_ci_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      APP_ENV: testing
+      APP_DEBUG: true
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: sid_ci_test
+      DB_USERNAME: sid_ci
+      DB_PASSWORD: sid_ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          # ext-zip & ext-gd disiapkan untuk maatwebsite/excel (Next Dev /
+          # belum ada di composer.json saat ini — lihat catatan di README CI).
+          extensions: mbstring, pdo, pdo_pgsql, pgsql, bcmath, xml, curl, zip, gd
+          coverage: none
+        # Catatan: laravel/pao dikonfirmasi package public/open-source,
+        # jadi tidak perlu auth token untuk private registry.
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: apps/backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('apps/backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Prepare environment file
+        run: |
+          cp .env.example .env || touch .env
+          php artisan key:generate --ansi
+
+      - name: Run database migrations
+        run: php artisan migrate --force
+
+      - name: Lint (Laravel Pint — check only, no auto-fix)
+        run: vendor/bin/pint --test
+
+      - name: Run test suite
+        run: php artisan test
+
+  # ---------------------------------------------------------------------
+  # Job 2: Frontend (React 19 / Vite / Tailwind 4)
+  # Belum ada test runner (Vitest/RTL) terpasang di package.json — status
+  # ini masih pending konfirmasi tim. Step "test" karena itu bersifat
+  # kondisional, TIDAK dipalsukan sebagai pass.
+  # ---------------------------------------------------------------------
+  frontend-ci:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Check for test runner
+        id: has_tests
+        run: |
+          if npm run | grep -qE '^\s+test\b'; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run tests
+        if: steps.has_tests.outputs.present == 'true'
+        run: npm run test
+
+      - name: Skip tests (no test runner configured yet)
+        if: steps.has_tests.outputs.present == 'false'
+        run: echo "::warning::Tidak ada script 'test' di package.json — Vitest/RTL belum dikonfirmasi tim. Step ini di-skip, bukan pass palsu."
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sid-frontend-dist
+          path: apps/frontend/dist
+          retention-days: 7
