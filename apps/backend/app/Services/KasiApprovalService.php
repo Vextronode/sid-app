@@ -25,7 +25,7 @@ class KasiApprovalService
                 LetterStatus::KasiRejected,
 
             ])
-            ->whereHas('letterType', function ($query) use ($user) {
+            ->whereHas('letterType', function ($query) {
 
                 $query->where(
                     'assigned_role',
@@ -45,6 +45,7 @@ class KasiApprovalService
             ->latest()
             ->get();
     }
+
     public function getDashboardLetters(User $user)
     {
         return Letter::query()
@@ -67,7 +68,7 @@ class KasiApprovalService
         }
 
         if (
-            !in_array($user->role, [
+            ! in_array($user->role, [
                 'petugas_desa',
                 'kasi_pelayanan',
                 'kaur_tu_umum',

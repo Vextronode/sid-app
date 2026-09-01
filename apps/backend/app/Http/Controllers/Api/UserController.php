@@ -8,35 +8,30 @@ use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-
     public function index(Request $request)
     {
         $users = User::with([
             'citizen.rt',
             'citizen.rw',
-            'official'
+            'official',
         ])
-        ->latest()
-        ->get();
-
+            ->latest()
+            ->get();
 
         return response()->json([
-            'data' => $users
+            'data' => $users,
         ]);
     }
-
 
     public function updateStatus(User $user)
     {
         $user->update([
-            'is_active' => !$user->is_active
+            'is_active' => ! $user->is_active,
         ]);
-
 
         return response()->json([
-            'message'=>'Status user berhasil diperbarui',
-            'data'=>$user
+            'message' => 'Status user berhasil diperbarui',
+            'data' => $user,
         ]);
     }
-
 }

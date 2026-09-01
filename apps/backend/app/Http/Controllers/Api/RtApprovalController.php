@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Letter;
 use App\Http\Requests\RtDecisionRequest;
+use App\Models\Letter;
 use App\Services\RtApprovalService;
+use Illuminate\Http\Request;
 
 class RtApprovalController extends Controller
 {
@@ -46,14 +46,12 @@ class RtApprovalController extends Controller
         $letter->load([
             'citizen',
             'letterType',
-            'approvals.approvedBy:id,name'
+            'approvals.approvedBy:id,name',
         ]);
-
 
         return response()->json([
-            'message'=>'Detail surat berhasil diambil',
-            'data'=>$letter
+            'message' => 'Detail surat berhasil diambil',
+            'data' => $letter,
         ]);
     }
-
 }

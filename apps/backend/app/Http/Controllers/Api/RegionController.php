@@ -86,7 +86,7 @@ class RegionController extends Controller
     private function guardDeactivation(array $data, $region, $citizenQuery)
     {
         $isDeactivating = array_key_exists('is_active', $data)
-            && !$data['is_active']
+            && ! $data['is_active']
             && $region->is_active;
 
         if ($isDeactivating && $citizenQuery->where('is_active', true)->exists()) {

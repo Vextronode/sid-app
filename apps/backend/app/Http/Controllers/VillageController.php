@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Citizen;
 use App\Models\Letter;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class VillageController extends Controller
 {
@@ -32,9 +32,9 @@ class VillageController extends Controller
 
                 $official = $user->official;
 
-                if (!$official || !$official->rt_id) {
+                if (! $official || ! $official->rt_id) {
                     return response()->json([
-                        'message' => 'Data official RT tidak ditemukan.'
+                        'message' => 'Data official RT tidak ditemukan.',
                     ], 403);
                 }
 
@@ -43,18 +43,17 @@ class VillageController extends Controller
 
                 break;
 
-
-            // ==========================================
-            // RW
-            // Hanya warga RW yang login
-            // ==========================================
+                // ==========================================
+                // RW
+                // Hanya warga RW yang login
+                // ==========================================
             case 'rw':
 
                 $official = $user->official;
 
-                if (!$official || !$official->rw_id) {
+                if (! $official || ! $official->rw_id) {
                     return response()->json([
-                        'message' => 'Data official RW tidak ditemukan.'
+                        'message' => 'Data official RW tidak ditemukan.',
                     ], 403);
                 }
 
@@ -63,12 +62,11 @@ class VillageController extends Controller
 
                 break;
 
-
-            // ==========================================
-            // OPERATOR DESA
-            // Kasi / Kaur / Petugas Desa
-            // Semua warga dalam desa
-            // ==========================================
+                // ==========================================
+                // OPERATOR DESA
+                // Kasi / Kaur / Petugas Desa
+                // Semua warga dalam desa
+                // ==========================================
             case 'kasi_pelayanan':
             case 'kaur_tu_umum':
             case 'petugas_desa':
@@ -80,17 +78,15 @@ class VillageController extends Controller
 
                 break;
 
-
-            // ==========================================
-            // ROLE LAIN
-            // ==========================================
+                // ==========================================
+                // ROLE LAIN
+                // ==========================================
             default:
 
                 return response()->json([
-                    'message' => 'Tidak memiliki akses.'
+                    'message' => 'Tidak memiliki akses.',
                 ], 403);
         }
-
 
         // ==========================================
         // HITUNG GENDER
@@ -104,14 +100,12 @@ class VillageController extends Controller
             ->where('gender', 'P')
             ->count();
 
-
         return response()->json([
             'total' => $laki + $perempuan,
             'laki' => $laki,
             'perempuan' => $perempuan,
         ]);
     }
-
 
     // ==========================================
     // LETTER STATS
@@ -128,7 +122,6 @@ class VillageController extends Controller
 
         $baseQuery = Letter::query();
 
-
         // ==========================================
         // SCOPE DATA BERDASARKAN USER LOGIN
         // ==========================================
@@ -142,9 +135,9 @@ class VillageController extends Controller
 
                 $official = $user->official;
 
-                if (!$official || !$official->rt_id) {
+                if (! $official || ! $official->rt_id) {
                     return response()->json([
-                        'message' => 'Data official RT tidak ditemukan.'
+                        'message' => 'Data official RT tidak ditemukan.',
                     ], 403);
                 }
 
@@ -156,17 +149,16 @@ class VillageController extends Controller
 
                 break;
 
-
-            // ==========================================
-            // RW
-            // ==========================================
+                // ==========================================
+                // RW
+                // ==========================================
             case 'rw':
 
                 $official = $user->official;
 
-                if (!$official || !$official->rw_id) {
+                if (! $official || ! $official->rw_id) {
                     return response()->json([
-                        'message' => 'Data official RW tidak ditemukan.'
+                        'message' => 'Data official RW tidak ditemukan.',
                     ], 403);
                 }
 
@@ -178,10 +170,9 @@ class VillageController extends Controller
 
                 break;
 
-
-            // ==========================================
-            // OPERATOR DESA
-            // ==========================================
+                // ==========================================
+                // OPERATOR DESA
+                // ==========================================
             case 'kasi_pelayanan':
             case 'kaur_tu_umum':
             case 'petugas_desa':
@@ -193,17 +184,15 @@ class VillageController extends Controller
 
                 break;
 
-
-            // ==========================================
-            // ROLE TIDAK DIIZINKAN
-            // ==========================================
+                // ==========================================
+                // ROLE TIDAK DIIZINKAN
+                // ==========================================
             default:
 
                 return response()->json([
-                    'message' => 'Tidak memiliki akses.'
+                    'message' => 'Tidak memiliki akses.',
                 ], 403);
         }
-
 
         // ==========================================
         // FILTER JENIS SURAT
@@ -216,7 +205,6 @@ class VillageController extends Controller
                 $letterType
             );
         }
-
 
         // ==========================================
         // DATA PER MINGGU
@@ -238,7 +226,6 @@ class VillageController extends Controller
             ->copy()
             ->startOfWeek(Carbon::MONDAY);
 
-
         foreach ($labels as $i => $label) {
 
             $currentDate = $startOfWeek
@@ -253,7 +240,6 @@ class VillageController extends Controller
                 ->count();
         }
 
-
         // ==========================================
         // MAX Y
         // ==========================================
@@ -264,7 +250,6 @@ class VillageController extends Controller
             50,
             ceil($maxValue / 5) * 5
         );
-
 
         return response()->json([
             'chart' => [

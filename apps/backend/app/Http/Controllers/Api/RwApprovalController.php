@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\RwApprovalRequest;
 use App\Models\Letter;
 use App\Services\RwApprovalService;
-use App\Http\Requests\RwApprovalRequest;
+use Illuminate\Http\Request;
 
 class RwApprovalController extends Controller
 {
@@ -26,12 +26,10 @@ class RwApprovalController extends Controller
         ]);
     }
 
-
     public function approve(
         RwApprovalRequest $request,
         Letter $letter
-    )
-    {
+    ) {
         $this->service->approve(
             $letter,
             $request->user(),
@@ -43,7 +41,7 @@ class RwApprovalController extends Controller
         ]);
     }
 
-        /**
+    /**
      * ============================================================
      * Detail surat yang sedang diproses RW
      * ============================================================
@@ -51,8 +49,7 @@ class RwApprovalController extends Controller
     public function show(
         Request $request,
         Letter $letter
-    )
-    {
+    ) {
         $detail = $this->service->getLetterDetail(
             $letter,
             $request->user()

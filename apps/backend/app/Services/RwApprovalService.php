@@ -14,7 +14,6 @@ class RwApprovalService
         protected OfficialService $officialService
     ) {}
 
-
     // ==========================================
     // VALIDATE GATE
     // ==========================================
@@ -32,17 +31,15 @@ class RwApprovalService
             );
         }
 
-
         // Cek official RW
         $official = $user->official;
 
-        if (!$official) {
+        if (! $official) {
             abort(
                 403,
                 'Data petugas tidak ditemukan.'
             );
         }
-
 
         // Pastikan RW sesuai dengan RT pemohon
         if (
@@ -55,7 +52,6 @@ class RwApprovalService
             );
         }
     }
-
 
     // ==========================================
     // DETAIL SURAT RW
@@ -73,7 +69,6 @@ class RwApprovalService
         ]);
     }
 
-
     // ==========================================
     // APPROVE / REJECT RW
     // ==========================================
@@ -89,7 +84,6 @@ class RwApprovalService
             $user
         );
 
-
         DB::transaction(function () use (
             $letter,
             $user,
@@ -103,7 +97,6 @@ class RwApprovalService
             $oldStatus =
                 $letter->status->value;
 
-
             // ======================================
             // STATUS BARU
             // ======================================
@@ -112,7 +105,6 @@ class RwApprovalService
                 $data['status'] === 'approved'
                     ? LetterStatus::RwApproved->value
                     : LetterStatus::RwRejected->value;
-
 
             // ======================================
             // NOTES
@@ -127,7 +119,6 @@ class RwApprovalService
 
             $notes = $letter->notes;
 
-
             if ($data['status'] === 'rejected') {
 
                 $notes =
@@ -136,7 +127,6 @@ class RwApprovalService
                     ? trim($data['notes'])
                     : null;
             }
-
 
             // ======================================
             // UPDATE APPROVAL RW
@@ -148,7 +138,6 @@ class RwApprovalService
                 ->latest()
                 ->first();
 
-
             if ($approval) {
 
                 $approval->update([
@@ -156,7 +145,6 @@ class RwApprovalService
                     'status' => $data['status'],
                 ]);
             }
-
 
             // ======================================
             // UPDATE LETTER
@@ -168,7 +156,6 @@ class RwApprovalService
                 'processed_at' => now(),
             ]);
 
-
             // ======================================
             // STATUS LOG
             // ======================================
@@ -178,12 +165,10 @@ class RwApprovalService
                 'old_status' => $oldStatus,
                 'new_status' => $newStatus,
 
-                'reason' =>
-                    $data['status'] === 'rejected'
+                'reason' => $data['status'] === 'rejected'
                         ? $notes
                         : $letter->notes,
             ]);
-
 
             // ======================================
             // USER WARGA
@@ -192,7 +177,6 @@ class RwApprovalService
             $citizenUser =
                 $this->officialService
                     ->resolveCitizenUser($letter);
-
 
             // ======================================
             // JIKA RW APPROVE
@@ -209,7 +193,6 @@ class RwApprovalService
                         ->resolveNextOfficials(
                             $user->official
                         );
-
 
                 // ----------------------------------
                 // Notifikasi operator desa
@@ -230,7 +213,6 @@ class RwApprovalService
                     }
                 }
 
-
                 // ----------------------------------
                 // Notifikasi warga
                 // ----------------------------------
@@ -248,7 +230,6 @@ class RwApprovalService
                 }
 
             }
-
 
             // ======================================
             // JIKA RW REJECT
@@ -272,7 +253,6 @@ class RwApprovalService
         });
     }
 
-
     // ==========================================
     // DAFTAR SURAT RW
     // ==========================================
@@ -283,7 +263,6 @@ class RwApprovalService
             ->where('position', 'rw')
             ->where('is_active', true)
             ->firstOrFail();
-
 
         return Letter::query()
 

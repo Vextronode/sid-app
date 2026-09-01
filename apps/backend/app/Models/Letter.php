@@ -3,10 +3,8 @@
 namespace App\Models;
 
 use App\Enums\LetterStatus;
-use App\Models\LetterApproval;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Letter extends Model
 {
@@ -51,7 +49,7 @@ class Letter extends Model
     protected static function booted(): void
     {
         static::saving(function (Letter $letter) {
-            if($letter->isDirty('applicant_nik')) {
+            if ($letter->isDirty('applicant_nik')) {
                 $letter->applicant_nik_hash = hash('sha256', $letter->applicant_nik);
             }
         });
@@ -104,5 +102,4 @@ class Letter extends Model
     {
         return $this->belongsTo(Citizen::class);
     }
-
 }

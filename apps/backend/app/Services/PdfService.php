@@ -29,8 +29,8 @@ class PdfService
         $allowedStatuses = [
             LetterStatus::KasiApproved,
         ];
-        
-        if (!in_array($letter->status, $allowedStatuses)) {
+
+        if (! in_array($letter->status, $allowedStatuses)) {
             abort(403, 'Surat baru dapat diunduh setelah disetujui oleh Operator Desa.');
         }
 
@@ -55,7 +55,7 @@ class PdfService
         /**
          * Check if letterType exists
          */
-        if (!$letter->letterType) {
+        if (! $letter->letterType) {
             abort(500, 'Template surat tidak ditemukan. Hubungi administrator.');
         }
 
@@ -66,12 +66,12 @@ class PdfService
 
         $view = match ($template) {
             'digital' => 'pdf.templates.digital',
-            default   => 'pdf.templates.wet',
+            default => 'pdf.templates.wet',
         };
 
         $pdf = Pdf::loadView($view, [
-            'letter'   => $letter,
-            'kades'    => $kades,
+            'letter' => $letter,
+            'kades' => $kades,
             'template' => $templateHtml,
         ]);
 
@@ -103,7 +103,7 @@ class PdfService
         /**
          * Check if letterType exists
          */
-        if (!$letter->letterType) {
+        if (! $letter->letterType) {
             abort(500, 'Template surat tidak ditemukan. Hubungi administrator.');
         }
 
@@ -114,12 +114,12 @@ class PdfService
 
         $view = match ($template) {
             'digital' => 'pdf.templates.digital',
-            default   => 'pdf.templates.wet',
+            default => 'pdf.templates.wet',
         };
 
         $pdf = Pdf::loadView($view, [
-            'letter'   => $letter,
-            'kades'    => $kades,
+            'letter' => $letter,
+            'kades' => $kades,
             'template' => $templateHtml,
         ]);
 
@@ -164,36 +164,36 @@ class PdfService
 
         $signatureHtml = '';
         if ($template === 'digital' && $kades->signature_img) {
-            $signatureHtml .= '<img src="' . storage_path('app/public/' . $kades->signature_img) . '" style="max-height: 60px; width: auto;">';
+            $signatureHtml .= '<img src="'.storage_path('app/public/'.$kades->signature_img).'" style="max-height: 60px; width: auto;">';
         }
         if ($kades->stamp_img) {
-            $signatureHtml .= '<img src="' . public_path('storage/' . $kades->stamp_img) . '" style="max-height: 45px; width: auto; margin-left: 10px;">';
+            $signatureHtml .= '<img src="'.public_path('storage/'.$kades->stamp_img).'" style="max-height: 45px; width: auto; margin-left: 10px;">';
         }
 
         $logoPath = public_path('images/logo-pangandaran.png');
         $logoHtml = file_exists($logoPath)
-            ? '<img src="' . $logoPath . '" style="width: 75px; height: auto;">'
+            ? '<img src="'.$logoPath.'" style="width: 75px; height: auto;">'
             : '';
 
         $replacements = [
-            '{{ logo_img }}'                   => $logoHtml,
-            '{{ letter_number }}'              => $letter->letter_number ?? '470/      /Des/      /20',
-            '{{ applicant_name }}'             => $letter->applicant_name ?? '________________________________________',
-            '{{ applicant_nik }}'              => $letter->applicant_nik ?? '________________________________________',
-            '{{ applicant_address }}'          => $letter->applicant_address ?? '________________________________________',
-            '{{ applicant_gender }}'           => $gender,
+            '{{ logo_img }}' => $logoHtml,
+            '{{ letter_number }}' => $letter->letter_number ?? '470/      /Des/      /20',
+            '{{ applicant_name }}' => $letter->applicant_name ?? '________________________________________',
+            '{{ applicant_nik }}' => $letter->applicant_nik ?? '________________________________________',
+            '{{ applicant_address }}' => $letter->applicant_address ?? '________________________________________',
+            '{{ applicant_gender }}' => $gender,
             '{{ applicant_birth_place_date }}' => $birthPlaceDate,
-            '{{ purpose }}'                    => $letter->purpose ?? '________________________________________',
-            '{{ submitted_at }}'               => $submittedAtFormatted,
-            '{{ village_name }}'               => $letter->village->name ?? 'Cibenda',
-            '{{ village_name_short }}'         => preg_replace('/^Desa\s+/i', '', $letter->village->name ?? 'Cibenda'),
-            '{{ village_address }}'            => $letter->village->address ?? 'Jl.Raya Cijulang Nomor.173.Tlp.0265.2640613',
-            '{{ village_phone }}'              => $letter->village->phone ?? '0265.2640613',
-            '{{ village_head_name }}'          => $kades->citizen->name ?? '________________________________________',
-            '{{ signature_img }}'              => $signatureHtml,
+            '{{ purpose }}' => $letter->purpose ?? '________________________________________',
+            '{{ submitted_at }}' => $submittedAtFormatted,
+            '{{ village_name }}' => $letter->village->name ?? 'Cibenda',
+            '{{ village_name_short }}' => preg_replace('/^Desa\s+/i', '', $letter->village->name ?? 'Cibenda'),
+            '{{ village_address }}' => $letter->village->address ?? 'Jl.Raya Cijulang Nomor.173.Tlp.0265.2640613',
+            '{{ village_phone }}' => $letter->village->phone ?? '0265.2640613',
+            '{{ village_head_name }}' => $kades->citizen->name ?? '________________________________________',
+            '{{ signature_img }}' => $signatureHtml,
         ];
 
-        if (!empty($letter->payload) && is_array($letter->payload)) {
+        if (! empty($letter->payload) && is_array($letter->payload)) {
             foreach ($letter->payload as $key => $value) {
                 if (is_scalar($value) && $value !== null && $value !== '') {
                     $replacements["{{ {$key} }}"] = (string) $value;

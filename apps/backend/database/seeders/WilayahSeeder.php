@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Citizen;
+use App\Models\Official;
+use App\Models\User;
+use App\Models\Village;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Village;
-use App\Models\Citizen;
-use App\Models\User;
-use App\Models\Official;
 
 class WilayahSeeder extends Seeder
 {
