@@ -22,6 +22,7 @@ return new class extends Migration
                 'rw_approved', 'rw_rejected',
                 'kadus_approved', 'kadus_rejected',
                 'kasi_approved', 'kasi_rejected',
+                'waiting_revision_warga', 'rejected_revision',
             ])->nullable();
 
             $table->enum('new_status', [
@@ -30,6 +31,7 @@ return new class extends Migration
                 'rw_approved', 'rw_rejected',
                 'kadus_approved', 'kadus_rejected',
                 'kasi_approved', 'kasi_rejected',
+                'waiting_revision_warga', 'rejected_revision',
             ]);
 
             $table->text('reason')->nullable();

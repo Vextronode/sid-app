@@ -36,6 +36,7 @@ return new class extends Migration
                 'kadus_approved', 'kadus_rejected',
                 'kasi_approved', 'kasi_rejected',
             ])->default('draft');
+            $table->unsignedTinyInteger('revision_count')->default(0);
             $table->boolean('is_overdue')->default(false);
             $table->timestamp('expires_at')->nullable();
             $table->timestamp('submitted_at')->useCurrent();
