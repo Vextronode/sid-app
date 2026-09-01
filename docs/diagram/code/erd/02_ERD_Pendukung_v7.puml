@@ -1,0 +1,246 @@
+    '==================================================================================
+    ' SECTION: ERD (ENTITY RELATIONSHIP DIAGRAM)
+    ' FILE: 02_ERD_Pendukung_v7.puml
+    ' JUDUL: ERD - Pendukung [2/2]
+    ' SUMBER: TECHNICAL DESIGN DOCUMENT SID Desa Cibenda v5.0 (Section 5.4.1, 5.4.2)
+    ' CATATAN: Menggantikan 02_ERD_Pendukung_v6.puml (v4.2). Struktur 5 tabel di
+    '          file ini TIDAK BERUBAH dari v6 - hanya shadow entities yang
+    '          disinkronkan ke skema Core v7. Lihat catatan revisi di akhir file.
+    '==================================================================================
+
+    @startuml 5.4.1b_v7 ERD Pendukung
+    skinparam backgroundColor #FFFFFF
+    skinparam entity {
+      BackgroundColor #EBF3FB
+      BorderColor #2E5FA3
+      FontName Arial
+      FontSize 11
+      HeaderBackgroundColor #2E5FA3
+      HeaderFontColor #FFFFFF
+    }
+    skinparam arrow {
+      Color #2E5FA3
+      FontName Arial
+      FontSize 10
+    }
+    skinparam linetype ortho
+
+    title Entity Relationship Diagram (ERD) v7 - PENDUKUNG [2/2] - SID Desa Cibenda\n(Organisasi Non-Struktural, Notifikasi, Berita, Peraturan Desa)\nLihat file ERD Core [1/2] untuk struktur lengkap: Wilayah, Users, Citizens/Families/Socioeconomics, Officials, Pipeline Surat\nSelaras TDD v5.0 Section 5.4
+
+    ' ─────────────────────────────────────────────
+    ' SHADOW / GHOST ENTITIES
+    ' Representasi ringkas tabel dari file ERD Core [1/2].
+    ' Hanya kolom PK + kolom yang relevan untuk FK
+    ' di halaman ini. Definisi kolom LENGKAP ada di
+    ' file 01_ERD_Core_v7.puml - JANGAN dianggap
+    ' sebagai definisi final, ini murni referensi visual
+    ' agar relasi di halaman ini tidak ambigu.
+    ' ─────────────────────────────────────────────
+
+    entity "villages\n(bayangan - lihat ERD Core)" as VIL <<shadow>> #F5F5F5 {
+      * id : BIGINT <<PK>>
+      --
+      ..lihat 01_ERD_Core_v7.puml\nuntuk kolom lengkap..
+    }
+
+    entity "users\n(bayangan - lihat ERD Core)" as USR <<shadow>> #F5F5F5 {
+      * id : BIGINT <<PK>>
+      --
+      * village_id : BIGINT <<FK -> villages>>
+      * role : ENUM(9 nilai)
+      ..lihat 01_ERD_Core_v7.puml\nuntuk kolom lengkap..
+    }
+
+    note bottom of VIL
+      ENTITY BAYANGAN (shadow/ghost).
+      Struktur lengkap ada di file
+      ERD Core [1/2]. Ditampilkan di sini
+      hanya agar relasi FK ke tabel
+      pendukung tidak terlihat ambigu
+      tanpa konteks.
+      TIDAK BERUBAH dari v4.2/v6.
+    end note
+
+    note bottom of USR
+      ENTITY BAYANGAN (shadow/ghost).
+      Struktur lengkap ada di file
+      ERD Core [1/2].
+      role ENUM TETAP 9 nilai flat sejak
+      v4.2 (TIDAK BERUBAH di v5.0) - lihat
+      SID-ARCH-BE-001 S4.1.
+    end note
+
+    ' ─────────────────────────────────────────────
+    ' REAL ENTITIES - TABEL PENDUKUNG (5 TABEL)
+    ' STRUKTUR TIDAK BERUBAH DARI v4.2/v6
+    ' ─────────────────────────────────────────────
+
+    entity "village_org_positions" as VOP {
+      * id : BIGINT <<PK>>
+      --
+      * village_id : BIGINT <<FK -> villages>>
+      * org_type : ENUM('bpd','bumdes','lpm',\n'karang_taruna','pkk')
+      * position_label : VARCHAR(100)
+      * is_single_occupant : BOOLEAN <<DEFAULT true>>
+      * sort_order : INT <<DEFAULT 0>>
+      * is_active : BOOLEAN
+      created_at : TIMESTAMP
+      updated_at : TIMESTAMP
+    }
+
+    note right of VOP
+      TIDAK BERUBAH dari v4.2/v6.
+      Master jabatan organisasi NON-struktural
+      (bukan officials - beda konsep).
+      is_single_occupant=false untuk jabatan
+      yang bisa diisi banyak orang
+      (contoh: "Anggota BPD").
+    end note
+
+    entity "village_org_members" as VOM {
+      * id : BIGINT <<PK>>
+      --
+      * position_id : BIGINT <<FK -> village_org_positions>>
+      * member_name : VARCHAR(150)
+      photo_img : VARCHAR(255) <<NULL>>
+      phone_wa : VARCHAR(20) <<NULL>>
+      * started_at : DATE
+      ended_at : DATE <<NULL = masih aktif>>
+      * is_active : BOOLEAN
+      notes : TEXT <<NULL>>
+      created_at : TIMESTAMP
+      updated_at : TIMESTAMP
+    }
+
+    note right of VOM
+      TIDAK BERUBAH dari v4.2/v6.
+      History pemegang jabatan organisasi
+      non-struktural (BPD, BUMDES, LPM,
+      Karang Taruna, PKK).
+      Rotasi: UPDATE ended_at lama + INSERT
+      baru, pola sama seperti rotasi di
+      tabel officials.
+      STATUS (TDD Table 69 & 70): fitur
+      rotasi masih PENDING konfirmasi desa
+      (statis vs dinamis) - tabel sudah ada,
+      toggle UI menyusul.
+    end note
+
+    entity "notifications" as NOTIF {
+      * id : UUID <<PK>>
+      --
+      * type : VARCHAR(255)
+      * notifiable_type : VARCHAR(255) <<INDEX>>
+      * notifiable_id : BIGINT <<INDEX>>
+      * data : JSON
+      read_at : TIMESTAMP <<INDEX>>
+      created_at : TIMESTAMP
+      updated_at : TIMESTAMP
+    }
+
+    note right of NOTIF
+      STRUKTUR TABEL TIDAK BERUBAH dari v4.2/v6.
+      notifiable_type/notifiable_id = polymorphic
+      relation ke users (biasanya App\\Models\\User).
+      --
+      PERUBAHAN v5.0 murni di level EVENT
+      ARCHITECTURE (bukan struktur tabel ini) -
+      lihat SID-ARCH-BE-001 S7:
+      - Setiap perpindahan current_step_order
+        memicu Event GENERIK (FlowStepAdvanced),
+        BUKAN lagi Event spesifik per posisi
+        (RtApproved/RwApproved/dst seperti v4.2).
+      - Notifikasi ke RW tetap ada, tapi levelnya
+        side-effect non-blocking yang dipicu
+        BERSAMAAN (bukan berurutan) dengan
+        resolusi approver berikutnya.
+      - Fallback broadcast (RT wilayah tidak
+        ditemukan -> semua petugas_desa aktif)
+        tetap dipertahankan.
+    end note
+
+    entity "news" as NEWS {
+      * id : BIGINT <<PK>>
+      --
+      * village_id : BIGINT <<FK -> villages>>
+      * author_id : BIGINT <<FK -> users>>
+      * title : VARCHAR(200)
+      * slug : VARCHAR(200) <<UNIQUE>>
+      * content : TEXT
+      thumbnail : VARCHAR(255) <<NULL>>
+      * is_published : BOOLEAN <<DEFAULT false>>
+      published_at : TIMESTAMP <<NULL>>
+      created_at : TIMESTAMP
+      updated_at : TIMESTAMP
+    }
+
+    note right of NEWS
+      TIDAK BERUBAH dari v4.2/v6.
+      Aktor UC-19 (Kelola Berita) TETAP HANYA
+      Petugas Desa - Kepala Desa DAN Sekretaris
+      Desa TIDAK memiliki akses (dikonfirmasi
+      ulang eksplisit di SID-ARCH-SYS-001 S2.3:
+      CMS domain dimiliki eksklusif petugas_desa,
+      BUKAN seluruh Tier 2).
+    end note
+
+    entity "village_regulations" as REG {
+      * id : BIGINT <<PK>>
+      --
+      * village_id : BIGINT <<FK -> villages>>
+      * regulation_number : VARCHAR(100)
+      * title : VARCHAR(200)
+      * content : TEXT
+      enacted_date : DATE <<NULL>>
+      * created_by : BIGINT <<FK -> users>>
+      created_at : TIMESTAMP
+      updated_at : TIMESTAMP
+    }
+
+    note right of REG
+      TIDAK BERUBAH dari v4.2/v6.
+      TIDAK ADA kolom is_published - berbeda
+      dengan news. Begitu dibuat, SELALU
+      tampil di halaman publik (UC-16 extend).
+      CRUD oleh Petugas Desa (UC-24).
+      Murni teks, tidak ada file lampiran di MVP.
+    end note
+
+    ' ─────────────────────────────────────────────
+    ' RELATIONSHIPS
+    ' ─────────────────────────────────────────────
+
+    VIL ||--o{ VOP : "master jabatan\norganisasi desa"
+    VOP ||--o{ VOM : "history pemegang\njabatan"
+
+    USR ||--o{ NOTIF : "menerima notifikasi\n(polymorphic notifiable)"
+
+    VIL ||--o{ NEWS : "menerbitkan berita"
+    USR ||--o{ NEWS : "menulis\n(author_id)"
+
+    VIL ||--o{ REG : "menerbitkan\nperaturan desa"
+    USR ||--o{ REG : "mencatat\n(created_by)"
+
+    @enduml
+
+    '==================================================================================
+    ' CATATAN REVISI: 02_ERD_Pendukung_v6.puml (v4.2) -> 02_ERD_Pendukung_v7.puml (v5.0)
+    '==================================================================================
+    '
+    ' Kelima tabel di file ini (village_org_positions, village_org_members,
+    ' notifications, news, village_regulations) TIDAK MENGALAMI PERUBAHAN
+    ' STRUKTUR KOLOM apa pun dari v4.2 ke v5.0 - tidak ada patch yang menyentuh
+    ' tabel-tabel ini di Patch Guide v4.2->v5.0 maupun TDD v5.0 Section 5.4.2.
+    '
+    ' Perubahan pada file ini murni:
+    '   1. Shadow entities (villages, users) disinkronkan referensinya ke
+    '      01_ERD_Core_v7.puml (bukan lagi v6).
+    '   2. Catatan/note diperbarui untuk mengklarifikasi bahwa perubahan
+    '      arsitektural terkait notifications terjadi di level EVENT SYSTEM
+    '      (lihat SID-ARCH-BE-001 S7 - FlowStepAdvanced generik menggantikan
+    '      Event granular per posisi), BUKAN di level struktur tabel.
+    '   3. Catatan pada NEWS diperkuat dengan rujukan SID-ARCH-SYS-001 S2.3
+    '      yang secara eksplisit menegaskan CMS eksklusif milik petugas_desa,
+    '      bukan seluruh Tier "Admin Desa/Eksekutif".
+    '
+    '==================================================================================

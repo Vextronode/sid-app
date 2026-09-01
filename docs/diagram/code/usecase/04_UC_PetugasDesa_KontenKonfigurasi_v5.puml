@@ -1,0 +1,131 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 04_UC_PetugasDesa_KontenKonfigurasi_v5.puml
+' JUDUL: Use Case - Petugas Desa (Konten Publik & Konfigurasi Surat)
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-18/19/21/24)
+' CATATAN: Menggantikan 04_UC_PetugasDesa_KontenKonfigurasi_v4.puml.
+'==================================================================================
+
+@startuml 5.3.1b3_v5 UC_Petugas_Desa_Konten_Konfigurasi
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+  FontName Arial
+  FontSize 12
+}
+
+title Use Case Diagram - Petugas Desa (3/3: Konten Publik & Konfigurasi Surat) [v5.0]
+
+actor "Petugas Desa" as PD
+
+rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
+
+  rectangle "UC-18: Kelola Profil Desa" #FDF2F8 {
+    usecase "Edit Profil Desa\n(sejarah, visi misi, dll)" as UC_DESA
+  }
+
+  rectangle "UC-19: Kelola Berita\n/ Informasi" #FDF2F8 {
+    usecase "Tambah/Edit/Hapus\nBerita & Pengumuman" as UC_NEWS
+  }
+
+  rectangle "UC-21: Edit Konfigurasi\nTipe Surat (Versi Sederhana)" #FFF3E0 {
+    usecase "Toggle is_active\ntipe surat" as UC_LT_TOGGLE
+    usecase "Edit validity_days" as UC_LT_VALIDITY
+    usecase "Edit assigned_role\n(Kasi / Kaur)" as UC_LT_ROLE
+  }
+
+  rectangle "UC-24: Kelola\nPeraturan Desa" #E8F5E9 {
+    usecase "Tambah/Edit/Hapus\nPeraturan Desa" as UC_REG
+  }
+
+  rectangle "Autentikasi" #F0F4FF {
+    usecase "UC-01: Login" as UC_LOGIN
+    usecase "UC-02: Logout" as UC_LOGOUT
+  }
+}
+
+PD -- UC_LOGIN
+PD -- UC_LOGOUT
+PD -- UC_DESA
+PD -- UC_NEWS
+PD -- UC_LT_TOGGLE
+PD -- UC_LT_VALIDITY
+PD -- UC_LT_ROLE
+PD -- UC_REG
+
+note bottom of UC_DESA
+  Aktor HANYA Petugas Desa.
+  Kepala Desa DAN Sekretaris Desa
+  TIDAK memiliki akses ke UC-18 -
+  ditegaskan ulang secara eksplisit di
+  SID-ARCH-SYS-001 S2.3: domain CMS
+  (Profil Desa, Berita, Peraturan Desa)
+  dimiliki EKSKLUSIF oleh petugas_desa,
+  BUKAN seluruh Tier 2 (Admin Desa/
+  Eksekutif) - meski Kades/Sekdes kini
+  jadi approver aktif di domain Surat
+  sejak v5.0, scope mereka TIDAK meluas
+  ke CMS. TIDAK BERUBAH dari v4.2.
+end note
+
+note bottom of UC_NEWS
+  Aktor HANYA Petugas Desa.
+  Sama seperti UC-18 - Kepala Desa dan
+  Sekretaris Desa DIHAPUS dari aktor.
+  TIDAK BERUBAH dari v4.2.
+end note
+
+note bottom of UC_LT_ROLE
+  Template HTML & field requirement
+  TIDAK bisa diedit di MVP - developer-only
+  via seeder. Full CRUD tipe surat +
+  WYSIWYG = Next Dev Paket 1.
+  ---
+  v5.0: letter_types kini juga punya
+  category_id & flow_id (FK, NOT NULL),
+  TAPI keduanya BUKAN bagian dari scope
+  UC-21 versi sederhana ini - assignment
+  category/flow ke tipe surat baru masih
+  developer-only via seeder di MVP,
+  konsisten dengan template surat.
+  assigned_role tetap bisa diedit Petugas
+  Desa sebagai kolom cache/derived
+  (source of truth resmi = flow_steps).
+end note
+
+note bottom of UC_REG
+  Tidak ada is_published.
+  Setelah dibuat, selalu tampil
+  di halaman publik (UC-16).
+  TIDAK BERUBAH dari v4.2.
+end note
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 04_UC_PetugasDesa_KontenKonfigurasi_v4.puml -> ..._v5.puml
+'==================================================================================
+'
+' TIDAK ADA PERUBAHAN pada use case, aktor, maupun relasi di diagram ini -
+' UC-18, UC-19, UC-21, UC-24 identik cakupannya dengan v4.2.
+'
+' Perubahan murni pada CATATAN (note):
+'   - UC_DESA & UC_NEWS: penegasan ulang bahwa Kades/Sekdes TETAP tidak
+'     punya akses CMS meski di v5.0 mereka sudah jadi approver aktif di
+'     domain Surat - dua domain ini terpisah tegas (rujuk
+'     SID-ARCH-SYS-001 S2.3).
+'   - UC_LT_ROLE: ditambahkan catatan bahwa letter_types kini punya
+'     category_id/flow_id (BARU v5.0), namun pengaturannya TETAP
+'     developer-only via seeder di MVP - tidak masuk scope UC-21
+'     sederhana ini.
+'
+'==================================================================================

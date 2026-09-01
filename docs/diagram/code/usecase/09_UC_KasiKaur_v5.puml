@@ -1,0 +1,125 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 09_UC_KasiKaur_v5.puml
+' JUDUL: Use Case - Kasi/Kaur (Approver Final)
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-04d, Table 9)
+' CATATAN: Menggantikan 09_UC_KasiKaur_v4.puml. Kasi/Kaur tetap approver
+'          final, TAPI sumber notifikasi masuk berubah dari Kadus ke
+'          Kepala Desa/Sekretaris Desa.
+'==================================================================================
+
+@startuml 5.3.1g_v5 UC_Kasi_Kaur
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+  FontName Arial
+  FontSize 12
+}
+
+title Use Case Diagram - Kasi Pelayanan & Kaur TU Umum (Approver Final, Step is_final=true) [v5.0]
+
+actor "Kasi\nPelayanan" as KASI
+actor "Kaur TU\n& Umum" as KAUR
+actor "Sistem\n(Otomatis)" as SYS
+
+rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
+
+  rectangle "Autentikasi" #F0F4FF {
+    usecase "UC-01: Login" as UC_LOGIN
+    usecase "UC-02: Logout" as UC_LOGOUT
+  }
+
+  rectangle "UC-04d: Approval Kasi/Kaur\n(Step Final, is_final=true)" #FFE0B2 {
+    usecase "UC-05: Lihat Daftar Surat\n(current_step_order menunjuk\nposisinya, status in_progress)" as UC_KASI_LIST
+    usecase "UC-06: Lihat Detail Permohonan\n& Seluruh Riwayat\n(RT + FYI RW + Kades/Sekdes)" as UC_KASI_DETAIL
+    usecase "Approve / Reject Surat\n(Final)" as UC_KASI_APPROVE
+  }
+
+  rectangle "Efek Approval Final" #E8F5E9 {
+    usecase "Generate letter_number" as UC_GEN_NUM
+    usecase "Hitung expires_at\n(jika validity_days != NULL)" as UC_CALC_EXP
+  }
+
+  rectangle "Notifikasi" #FFF8E1 {
+    usecase "Terima Notifikasi\nSurat Lolos Kades/Sekdes" as UC_NOTIF_IN
+    usecase "Kirim Notifikasi\n(ke Warga + Kades/Sekdes Monitoring)" as UC_NOTIF_SND
+  }
+
+  rectangle "Fitur Pendukung" #FDF2F8 {
+    usecase "UC-15: Dashboard Kasi/Kaur\n(Ringkasan + Badge Overdue)" as UC_DASH
+  }
+}
+
+KASI -- UC_LOGIN
+KASI -- UC_LOGOUT
+KASI -- UC_KASI_LIST
+KASI -- UC_KASI_DETAIL
+KASI -- UC_KASI_APPROVE
+KASI -- UC_NOTIF_IN
+KASI -- UC_DASH
+
+KAUR -- UC_LOGIN
+KAUR -- UC_LOGOUT
+KAUR -- UC_KASI_LIST
+KAUR -- UC_KASI_DETAIL
+KAUR -- UC_KASI_APPROVE
+KAUR -- UC_NOTIF_IN
+KAUR -- UC_DASH
+
+SYS -- UC_NOTIF_SND
+
+UC_KASI_LIST ..> UC_KASI_DETAIL : <<include>>
+UC_KASI_DETAIL ..> UC_KASI_APPROVE : <<extend>>
+UC_KASI_APPROVE ..> UC_GEN_NUM : <<extend>>\n(jika approved)
+UC_GEN_NUM ..> UC_CALC_EXP : <<include>>
+UC_KASI_APPROVE ..> UC_NOTIF_SND : <<trigger>>
+
+note "Kasi Pelayanan dan Kaur TU Umum digabung dalam 1 diagram\nkarena scope UC identik - resolusi kewenangan BERBASIS POSISI\n(flow_steps.approver_position yang cocok dengan role login),\nBUKAN wilayah. TIDAK BERUBAH dari v4.2." as NOTE1
+
+note "*** PERUBAHAN v5.0: SUMBER NOTIFIKASI MASUK ***\nSurat yang masuk ke Kasi/Kaur kini berasal dari step\nKepala Desa/Sekretaris Desa (approver_position IN\n('kepala_desa','sekdes')), BUKAN LAGI dari Kadus\n(posisi Kadus sudah dihapus total dari pipeline).\nGate: current_step_order surat menunjuk ke step dengan\napprover_position sesuai role Kasi/Kaur DAN is_final=true." as NOTE2
+
+note "Tahap ini adalah step FINAL (is_final=true).\nApprove -> status letters berubah jadi 'approved'\n(status generik, BUKAN lagi nama granular 'kasi_approved')\n-> memicu letter_number + expires_at + PDF siap download.\nReject -> status 'rejected' (TERMINAL, rejected_at_step\ndicatat), tidak ada eskalasi ke Kepala Desa/Sekdes." as NOTE3
+
+note "Kepala Desa & Sekretaris Desa hanya MENERIMA notifikasi\nMONITORING saat approve final (Kasi/Kaur approve ->\nnotif ke Warga + Kades/Sekdes) - TIDAK terlibat approval\ndi step ini. Ini berbeda dari peran mereka di step\nsebelumnya (UC-04c) di mana mereka BENAR-BENAR approver\naktif, bukan sekadar dimonitoring." as NOTE4
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 09_UC_KasiKaur_v4.puml -> 09_UC_KasiKaur_v5.puml
+'==================================================================================
+'
+' TIDAK BERUBAH: Kasi Pelayanan & Kaur TU Umum tetap approver FINAL berbasis
+'   posisi (bukan wilayah), aktor dan use case dasar (Login/Logout/Lihat
+'   Daftar/Lihat Detail/Approve-Final/Generate Nomor/Hitung Expires) TIDAK
+'   berubah strukturnya dari v4.2.
+'
+' PERUBAHAN:
+'   - Judul rectangle UC-04d diubah dari "Tahap 4/Final" menjadi
+'     "Step Final, is_final=true" - karena posisi step kini ditentukan
+'     oleh flag is_final di flow_steps, bukan lagi asumsi hardcode "tahap
+'     ke-4".
+'   - Sumber notifikasi masuk diubah dari "Surat Lolos Kadus" (v4.2) menjadi
+'     "Surat Lolos Kades/Sekdes" (v5.0) - konsekuensi langsung dari Kadus
+'     dihapus total dan digantikan Kepala Desa/Sekretaris Desa di step
+'     sebelum step final.
+'   - UC-06 (Lihat Detail): riwayat yang ditampilkan diperbarui dari
+'     "RT+RW+Kadus" menjadi "RT + FYI RW + Kades/Sekdes" - mencerminkan
+'     bahwa RW kini murni catatan FYI (bukan approval formal) dan posisi
+'     approval sebelum final diisi Kades/Sekdes.
+'   - Catatan status: dari nama status granular "kasi_approved" (v4.2)
+'     menjadi status generik "approved" dengan step is_final=true (v5.0).
+'   - NOTE4 diperjelas untuk membedakan peran Kades/Sekdes sebagai approver
+'     aktif di step sebelumnya vs sebagai pihak yang hanya dimonitoring
+'     di step final ini - supaya tidak ambigu dengan file
+'     05_UC_KepalaDesa_SekretarisDesa_v5.puml.
+'
+'==================================================================================

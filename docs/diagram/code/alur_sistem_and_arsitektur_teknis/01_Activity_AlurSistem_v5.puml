@@ -1,0 +1,272 @@
+'==================================================================================
+' SECTION: ACTIVITY DIAGRAM
+' FILE: 01_Activity_AlurSistem_v5.puml
+' JUDUL: Diagram Alur Sistem
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.1.2 Table 6, Section 5.1.1)
+'         + SID-ARCH-BE-001 S3.2, S3.3, S7
+' CATATAN: Menggantikan 5.1.3_v4 (Diagram Alur Sistem, v4.2). REVISI BESAR:
+'          swimlane Kadus DIHAPUS, RW berubah dari approver jadi notifier
+'          pasif, Kepala Desa/Sekdes berubah dari monitoring-only jadi
+'          approver aktif, dan alur linear 4-tahap diganti alur dengan
+'          notifikasi paralel + jumlah tahap dinamis (Category+Flow).
+'==================================================================================
+
+@startuml 5.1.3_v5 Diagram Alur Sistem
+skinparam backgroundColor #FFFFFF
+skinparam activity {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 13
+  ArrowColor #2E5FA3
+  DiamondBackgroundColor #FFF8E1
+  DiamondBorderColor #F9A825
+}
+skinparam note {
+  BackgroundColor #FFF9C4
+  BorderColor #F9A825
+  FontName Arial
+  FontSize 11
+}
+
+title Diagram Alur Sistem - SID Desa Cibenda (v5.0 - Category + Flow Dinamis, Default 3-Tahap-Approve)
+
+|#D6E4F7|Warga|
+|#D5F5E3|Sistem|
+|#E8F5E9|RT|
+|#FFF3E0|RW (Notifier)|
+|#FDEBD0|Kepala Desa / Sekdes|
+|#FFE0B2|Kasi / Kaur|
+
+|Warga|
+start
+:Login ke sistem;
+:Pilih jenis surat\n(hanya yang template != NULL\nDAN is_active = true);
+
+|Sistem|
+:Tampilkan persyaratan\nberdasarkan verification_type;
+
+|Warga|
+:Melengkapi form permohonan\n(data diambil otomatis dari akun);
+
+|Sistem|
+:Validasi & simpan data permohonan;
+:SNAPSHOT flow_id dari\nletter_types.flow_id\n(dikunci, tidak berubah\nmeski konfigurasi diedit nanti);
+:Status = **pending**;
+:current_step_order = 1;
+:Catat timestamp & actor;
+:Resolve RT wilayah warga\n(via OfficialService, berdasarkan citizens.rt_id);
+:Kirim notifikasi ke RT wilayah warga;
+
+note right
+  Jika RT tidak ditemukan / jabatan kosong:
+  fallback broadcast notifikasi ke
+  SEMUA petugas_desa aktif.
+  TIDAK BERUBAH dari v4.2.
+end note
+
+|RT|
+:Menerima notifikasi\npermohonan baru;
+:Membuka & memeriksa\ndata permohonan;
+:Memberikan keputusan\n(approve / reject);
+
+if (Keputusan RT?) then (Setujui)
+  :Status = **in_progress**;
+  :current_step_order += 1;
+  note right: Step berikutnya ditentukan\nflow_steps (BUKAN hardcode)
+else (Tolak)
+  :Status = **rejected**;
+  :rejected_at_step = 1;
+  note right: Catatan alasan\npenolakan dicatat (TERMINAL)
+
+  |Sistem|
+  :Catat keputusan + timestamp\n+ identitas + IP;
+  :Kirim notifikasi penolakan\nke Warga;
+
+  |Warga|
+  :Menerima notifikasi\nsurat ditolak RT;
+  stop
+endif
+
+|Sistem|
+:Catat keputusan RT\n+ timestamp + identitas + IP;
+
+fork
+  :Resolve RW wilayah\n(via rts.rw_id);
+  :Kirim notifikasi FYI ke RW\n(non-blocking, paralel);
+fork again
+  :Resolve Kepala Desa/Sekdes\n(BERBASIS POSISI, BUKAN wilayah -\nofficials.position IN\n('kepala_desa','sekdes'));
+  :Kirim notifikasi ke\nKepala Desa & Sekretaris Desa\n(approver berikutnya);
+end fork
+
+note right
+  *** PERUBAHAN UTAMA v5.0 ***
+  DUA proses di atas berjalan PARALEL
+  (fork/end fork), BUKAN berurutan
+  seperti v4.2 (RT->RW->Kadus->Kasi).
+  Sistem TIDAK PERNAH menunggu aksi RW
+  sebelum lanjut ke approver berikutnya -
+  RW BUKAN gate sejak v5.0.
+end note
+
+|RW (Notifier)|
+:Menerima notifikasi FYI\n(read-only, tanpa aksi apapun);
+note right
+  RW TIDAK memiliki tombol
+  approve/reject sama sekali.
+  RW TIDAK PERNAH tercatat sebagai
+  approval_level di letter_approvals.
+  Alur RW BERHENTI DI SINI - tidak
+  ada percabangan keputusan.
+end note
+
+|Kepala Desa / Sekdes|
+:Menerima notifikasi\nsurat lolos RT\n(sebagai approver berikutnya);
+:Membuka daftar surat dengan\ncurrent_step_order menunjuk\nposisi kepala_desa/sekdes;
+
+if (Gate: current_step_order\nmenunjuk step ini?) then (Ya)
+  :Memeriksa data permohonan\n& keputusan RT sebelumnya\n(+ catatan FYI RW jika relevan);
+  :Memberikan keputusan\n(approve / reject);
+
+  note right
+    *** PERUBAHAN UTAMA v5.0 ***
+    Kepala Desa & Sekretaris Desa kini
+    APPROVER AKTIF (bukan lagi monitoring
+    only seperti v4.2). Keduanya SALING
+    MENGGANTIKAN di step yang sama
+    (first-action-wins) - ⚠ status ini
+    masih asumsi/rekomendasi default,
+    belum keputusan final eksplisit.
+  end note
+
+  if (Keputusan Kades/Sekdes?) then (Setujui)
+    :Status = **in_progress**\n(atau **approved** jika step\nberikutnya is_final=true);
+    :current_step_order += 1;
+    note right: Diteruskan ke Kasi / Kaur\nsesuai flow_steps.approver_position
+  else (Tolak)
+    :Status = **rejected**;
+    :rejected_at_step = step\nKades/Sekdes saat ini;
+    note right: Catatan alasan\npenolakan dicatat (TERMINAL)
+
+    |Sistem|
+    :Catat keputusan + timestamp + IP;
+    :Kirim notifikasi ke Warga;
+
+    |Warga|
+    :Menerima notifikasi\nsurat ditolak Kades/Sekdes;
+    stop
+  endif
+else (Tidak - 403 Forbidden /\nFirst-Action-Wins gagal)
+  :Akses ditolak\n(step sudah berpindah, kemungkinan\ndiproses lebih dulu oleh\nKades/Sekdes yang lain);
+  stop
+endif
+
+|Sistem|
+:Catat keputusan Kades/Sekdes\n+ timestamp + identitas + IP;
+:Resolve Kasi / Kaur\n(via flow_steps.approver_position\nstep berikutnya, is_final=true);
+:Kirim notifikasi ke Kasi / Kaur;
+
+|Kasi / Kaur|
+:Menerima notifikasi\nsurat lolos Kades/Sekdes;
+:Membuka daftar surat dengan\ncurrent_step_order menunjuk\nposisinya (step final);
+
+if (Gate: current_step_order\nmenunjuk step is_final=true?) then (Ya)
+  :Memeriksa seluruh riwayat\nkeputusan RT + Kades/Sekdes;
+  :Memberikan keputusan final\n(approve / reject);
+  if (Keputusan Kasi/Kaur?) then (Setujui)
+    :Status = **approved**;
+    :Generate letter_number resmi;
+    :Hitung expires_at\n(jika validity_days != NULL);
+    note right: Surat FINAL.\nSiap didownload sebagai PDF\n(on-demand, tidak disimpan)
+  else (Tolak)
+    :Status = **rejected**;
+    :rejected_at_step = step final;
+    note right: Catatan alasan\npenolakan dicatat, TERMINAL
+
+    |Sistem|
+    :Catat keputusan + timestamp + IP;
+    :Kirim notifikasi ke Warga;
+
+    |Warga|
+    :Menerima notifikasi\nsurat ditolak Kasi/Kaur;
+    stop
+  endif
+else (Tidak - 403 Forbidden)
+  :Akses ditolak\n(surat belum sampai step final);
+  stop
+endif
+
+|Sistem|
+:Catat keputusan final\n+ timestamp + identitas + IP;
+:Kirim notifikasi hasil akhir\nke Warga;
+:Kirim notifikasi monitoring\nke Kepala Desa & Sekretaris Desa;
+
+note right
+  Di step FINAL ini, Kepala Desa &
+  Sekretaris Desa HANYA dimonitoring
+  (bukan approve) - berbeda dari peran
+  mereka di step SEBELUMNYA (di atas)
+  di mana mereka benar-benar approver
+  aktif.
+end note
+
+|Warga|
+:Menerima notifikasi\nhasil akhir permohonan;
+:Melihat status & riwayat\nlengkap permohonan\n(indikator step generik:\nRT / RW-FYI / Kades-Sekdes / Kasi-Kaur);
+:Download PDF surat\n(jika approved & step final,\ndan expires_at belum lewat);
+stop
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 5.1.3_v4 (Diagram Alur Sistem v4.2) -> 01_Activity_AlurSistem_v5.puml
+'==================================================================================
+'
+' *** REVISI BESAR - SWIMLANE DIROMBAK TOTAL ***
+'
+' SWIMLANE:
+'   - "Kadus" DIHAPUS TOTAL dari diagram - tidak ada swimlane pengganti
+'     langsung, karena posisinya di pipeline digantikan "Kepala Desa /
+'     Sekdes" yang punya karakteristik berbeda (approver aktif, bukan
+'     wilayah).
+'   - "RW" berubah label dari swimlane approver murni menjadi
+'     "RW (Notifier)" - tidak ada lagi percabangan keputusan (if/else
+'     approve-reject) di swimlane ini, hanya satu aktivitas: menerima
+'     notifikasi FYI read-only.
+'   - "Kepala Desa / Sekdes" berubah TOTAL dari swimlane monitoring-only
+'     (yang di v4.2 hanya muncul di akhir alur sebagai penerima notifikasi)
+'     menjadi swimlane APPROVER AKTIF LENGKAP dengan percabangan keputusan
+'     approve/reject sendiri, ditempatkan SETELAH RT (menggantikan posisi
+'     Kadus lama), SEBELUM Kasi/Kaur.
+'
+' ALUR:
+'   - Titik krusial setelah RT approve diubah dari LINEAR (v4.2: -> RW
+'     approve -> Kadus approve -> Kasi approve) menjadi PARALEL, digambar
+'     eksplisit dengan `fork / fork again / end fork` PlantUML: satu
+'     cabang ke RW (FYI, non-blocking), satu cabang ke Kepala Desa/Sekdes
+'     (approver berikutnya) - keduanya berjalan BERSAMAAN.
+'   - Status yang ditulis di setiap tahap diubah dari GRANULAR (v4.2:
+'     rt_approved, rw_approved, kadus_approved, kasi_approved, dst)
+'     menjadi GENERIK (v5.0: pending, in_progress, approved, rejected),
+'     disertai current_step_order dan rejected_at_step sebagai penanda
+'     posisi/histori tambahan.
+'   - Gate logic di setiap swimlane approver diubah dari pengecekan status
+'     granular spesifik (misal "status = rw_approved?") menjadi pengecekan
+'     current_step_order menunjuk ke step yang sesuai posisi aktor.
+'   - Ditambahkan catatan First-Action-Wins pada swimlane Kepala Desa/
+'     Sekdes - konsep yang sama sekali tidak ada di v4.2 karena approver
+'     tahap itu (Kadus) adalah individu tunggal per dusun, bukan dua role
+'     yang saling menggantikan di step yang sama.
+'   - Judul diagram diubah untuk mencerminkan filosofi "Category + Flow
+'     Dinamis, Default 3-Tahap-Approve" (bukan lagi hardcode "Approval
+'     4 Tahap" seperti v4.2) - jumlah tahap kini bisa berbeda per jenis
+'     surat, diagram ini menggambarkan FLOW DEFAULT saja.
+'
+' YANG TETAP SAMA:
+'   - Swimlane Warga, RT, Sistem: aktivitas dasarnya (login, pilih surat,
+'     submit, approve/reject RT, generate letter_number, download PDF)
+'     tidak berubah strukturnya.
+'   - Fallback broadcast RT kosong tetap dipertahankan.
+'   - Sifat TERMINAL dari reject di step manapun tetap sama.
+'
+'==================================================================================

@@ -1,0 +1,399 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 05_Sequence_ProcessFlowStep_Generic_v5.puml
+' JUDUL: Sequence - Process Flow Step (Generic Approval)
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-04c baru & UC-04d,
+'         Section 5.3.3 daftar sequence diagram)
+'         + SID-ARCH-BE-001 S3.2, S3.3, S4.3 + SID-ARCH-FE-001 S6
+' CATATAN: **FILE BARU SEPENUHNYA**. Sequence GENERIK untuk approver
+'          berbasis POSISI MURNI: Kepala Desa, Sekretaris Desa,
+'          Kasi Pelayanan, Kaur TU Umum - satu diagram untuk keempatnya,
+'          dengan approver_position sebagai parameter. MENGGANTIKAN
+'          05_Sequence_KadusApproval_v4.puml (Kadus dihapus total, TIDAK
+'          ADA penggantinya sebagai approver) dan menggabungkan konsep
+'          06_Sequence_KasiKaurApprovalFinal_v4.puml ke pola generik ini,
+'          dengan percabangan eksplisit untuk step FINAL (Kasi/Kaur).
+'          Sesuai TDD Section 5.3.3 yang menyebutkan sequence ini
+'          eksplisit sebagai pengganti kebutuhan sequence terpisah per role.
+'==================================================================================
+
+@startuml 5.3.3e_v5 Sequence - Process Flow Step Generic Approval
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ParticipantFontName Arial
+  ParticipantFontSize 12
+  ActorBackgroundColor #D6E4F7
+  ActorBorderColor #1F3864
+  ActorFontName Arial
+  LifeLineBorderColor #2E5FA3
+  ArrowColor #2E5FA3
+  ArrowFontName Arial
+  ArrowFontSize 11
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+
+title Sequence Diagram - Process Flow Step (Generic Approval) [BARU - v5.0] \n(UC-04c & UC-04d - Satu Pola untuk Kepala Desa / Sekretaris Desa / Kasi Pelayanan / Kaur TU Umum)\nMenggantikan Kebutuhan Sequence Terpisah per Role (Kadus Approval v4.2 Dihapus Total, Tidak Ada Pengganti Langsung)
+
+actor "Approver\n(Kepala Desa / Sekdes /\nKasi Pelayanan / Kaur TU Umum)" as APPR
+participant "React\nFrontend\n(ApprovalStepRenderer)" as FE
+participant "FlowStepApprovalController" as CTRL
+participant "Policy\n(Authorization)" as POL
+participant "Form\nRequest" as FREQ
+participant "LetterService" as SVC
+participant "OfficialService" as OSVC
+participant "LetterRepository" as REPO
+participant "ApprovalFlowRepository" as AFREPO
+participant "OfficialRepository" as OREPO
+participant "DB::transaction" as TX
+participant "Queue\n(Jobs)" as Q
+participant "PostgreSQL" as DB
+actor "Approver Berikutnya\n(Jika Ada Step Lanjutan)" as NEXT
+actor "Warga\n(Pemohon)" as WRG
+actor "Kepala Desa / Sekdes\n(Monitoring, Jika Step Final)" as KDMON
+
+note over APPR, KDMON
+  *** SEQUENCE GENERIK - PARAMETER approver_position ***
+  Diagram ini SATU untuk EMPAT role berbeda: kepala_desa, sekdes,
+  kasi_pelayanan, kaur_tu_umum. Perilakunya IDENTIK secara struktural -
+  yang membedakan hanyalah NILAI approver_position yang dicocokkan ke
+  flow_steps, dan APAKAH step tersebut is_final=true (menentukan efek
+  approve: lanjut ke step berikutnya, atau surat selesai & letter_number
+  digenerate). Ini merealisasikan Config over Code (SID-ARCH-SYS-001 S1) -
+  TIDAK ADA controller/service method terpisah per role.
+end note
+
+== Lihat Daftar Surat Sesuai Step Aktif (Query Generik) ==
+
+APPR -> FE : Buka dashboard / menu "Surat Masuk"
+FE -> CTRL : GET /api/flow-steps/letters?position={role}
+CTRL -> POL : authorize('viewFlowStepLetters')
+POL -> POL : cek user.role IN\n('kepala_desa','sekretaris_desa',\n'kasi_pelayanan','kaur_tu_umum')
+POL --> CTRL : allowed
+
+CTRL -> SVC : getFlowStepLetters(auth()->user()->role, village_id)
+SVC -> REPO : findByFlowStepAndStatus(\n  auth()->user()->role, ['pending','in_progress'])
+REPO -> DB : SELECT letters.* FROM letters l\nJOIN flow_steps fs\nON fs.flow_id = l.flow_id\nAND fs.step_order = l.current_step_order\nWHERE fs.approver_position = ?\nAND l.status IN ('pending','in_progress')
+note right of DB
+  *** QUERY GENERIK PALING KRITIS v5.0 ***
+  SATU query melayani SEMUA approver
+  berbasis posisi. Untuk role kepala_desa
+  ATAU sekretaris_desa, approver_position
+  yang dicocokkan bisa berupa
+  ('kepala_desa','sekdes') sekaligus
+  (step yang sama menerima keduanya) -
+  lihat catatan First-Action-Wins di
+  bagian bawah. Menggantikan
+  findByHamletIdAndStatus (Kadus,
+  DIHAPUS) dan findByAssignedRoleAndStatus
+  (Kasi/Kaur, v4.2) sepenuhnya.
+end note
+DB --> REPO : collection surat\n(step aktif = posisi user)
+REPO --> SVC : LetterCollection
+SVC --> CTRL : LetterCollection
+CTRL --> FE : 200 OK {letters[]}
+FE --> APPR : Tampilkan daftar surat\nmenunggu keputusannya\n(badge overdue jika is_overdue=true)
+
+== Buka & Periksa Detail Surat (Riwayat Lengkap Sebelumnya) ==
+
+APPR -> FE : Klik salah satu surat
+FE -> CTRL : GET /api/flow-steps/letters/{id}
+CTRL -> POL : authorize('viewFlowStepLetter', letter_id)
+POL -> REPO : findById(letter_id)
+REPO -> DB : SELECT letters.*, flow_steps.*\nFROM letters\nJOIN flow_steps\nON flow_steps.flow_id = letters.flow_id\nAND flow_steps.step_order = letters.current_step_order\nWHERE letters.id = ?
+DB --> REPO : letter + step aktif
+REPO --> POL : letter (dengan step aktif)
+
+alt flow_steps.approver_position tidak cocok dengan role user
+  POL --> CTRL : 403 Forbidden
+  CTRL --> FE : 403 {error: "Surat bukan\nkewenangan Anda saat ini"}
+  FE --> APPR : Tampilkan pesan error
+else approver_position sesuai
+  POL --> CTRL : allowed
+  CTRL -> SVC : getLetterDetailWithFullHistory(letter_id)
+  SVC -> REPO : findByIdWithApprovals(letter_id)
+  REPO -> DB : SELECT letters.*,\nletter_approvals.*, citizens.*\nFROM letters\nLEFT JOIN letter_approvals\nON letters.id = letter_approvals.letter_id\nWHERE letters.id = ?\nORDER BY letter_approvals.created_at
+  DB --> REPO : letter + SELURUH riwayat approval\n(RT, dan step-step sebelumnya\nyang sudah lewat)
+  REPO --> SVC : letter
+  SVC --> CTRL : LetterResource
+  CTRL --> FE : 200 OK {letter detail +\nfull approval history}
+  FE --> APPR : Tampilkan detail permohonan,\n+ riwayat RT (+ FYI RW jika ada)\n(+ Kades/Sekdes jika step ini Kasi/Kaur)
+  note right of FE
+    ApprovalStepRenderer (SID-ARCH-FE-001
+    S6) merender tombol Setujui/Tolak
+    HANYA jika approver_position step
+    aktif cocok dengan role login.
+    Label "Tahap Final" dirender jika
+    is_final=true pada step ini.
+  end note
+end
+
+== Berikan Keputusan ==
+
+APPR -> FE : Klik "Setujui" atau "Tolak",\nisi catatan jika menolak
+FE -> CTRL : PATCH /api/flow-steps/letters/{id}/decision\n{action: "approved"|"rejected", notes}
+CTRL -> FREQ : validate(request)
+
+alt Memilih "Tolak" tanpa catatan
+  FREQ --> CTRL : ValidationException
+  CTRL --> FE : 422 {error: "Catatan wajib\ndiisi jika menolak"}
+  FE --> APPR : Tampilkan pesan error
+
+else Validasi lolos
+  FREQ --> CTRL : validated data
+  CTRL -> POL : authorize('decideFlowStepLetter', letter_id)
+  POL -> REPO : findById(letter_id)
+  REPO -> DB : SELECT letters.*, flow_steps.*\nFROM letters JOIN flow_steps\nON flow_steps.flow_id = letters.flow_id\nAND flow_steps.step_order = letters.current_step_order\nWHERE letters.id = ?
+  DB --> REPO : letter + step aktif
+  REPO --> POL : letter
+
+  alt approver_position tidak cocok
+    POL --> CTRL : 403 Forbidden
+    CTRL --> FE : 403 {error: "Surat bukan\nkewenangan Anda"}
+    FE --> APPR : Tampilkan pesan error
+  else approver_position sesuai
+    POL --> CTRL : allowed
+
+    CTRL -> SVC : processStepDecision(\n  letter_id, action, notes,\n  auth()->id(), auth()->user()->role)
+
+    == GATE LOGIC (Re-validasi, First-Action-Wins jika Kades/Sekdes) ==
+
+    SVC -> REPO : findById(letter_id)
+    REPO -> DB : SELECT * FROM letters WHERE id = ?
+    DB --> REPO : letter
+    REPO --> SVC : letter
+
+    alt Step sudah berpindah saat submit keputusan
+      note right of SVC
+        Double-check gate logic: status/
+        current_step_order bisa berubah
+        antara buka halaman & submit
+        keputusan.
+        *** First-Action-Wins (Kepala
+        Desa/Sekdes) - SID-ARCH-BE-001
+        S3.3 *** : jika step ini
+        approver_position mencakup
+        ('kepala_desa','sekdes') dan
+        SALAH SATU dari mereka sudah
+        submit keputusan lebih dulu
+        (request-nya sampai duluan ke
+        transaction yang commit), maka
+        request approver yang TERLAMBAT
+        akan gagal di sini.
+        ⚠ Mekanisme ini masih status
+        rekomendasi/asumsi default,
+        BELUM keputusan final eksplisit -
+        disederhanakan sebagai app-layer
+        check (SELECT...FOR UPDATE atau
+        re-check di transaction), BUKAN
+        row-level lock/unique constraint.
+      end note
+      SVC --> CTRL : InvalidLetterStatusException
+      CTRL --> FE : 409 {error: "Surat sudah diproses\n(kemungkinan oleh Kades/Sekdes\nyang lain, atau step berpindah)"}
+      FE --> APPR : Tampilkan pesan error status konflik
+
+    else Step masih valid untuk diproses
+      SVC -> AFREPO : findWithSteps(letter.flow_id)
+      AFREPO -> DB : SELECT * FROM flow_steps\nWHERE flow_id = ?\nORDER BY step_order
+      DB --> AFREPO : seluruh steps milik flow ini
+      AFREPO --> SVC : Collection<FlowStep>
+
+      SVC -> SVC : currentStep = steps.firstWhere(\n  'step_order', letter.current_step_order)
+      SVC -> SVC : isFinal = currentStep.is_final
+
+      SVC -> TX : DB::transaction() begin
+
+      alt action = "approved"
+
+        alt isFinal = true (Step Final - Kasi/Kaur)
+          TX -> SVC : generateLetterNumber(letter.letterType.code)
+          SVC --> TX : letter_number (format resmi desa)
+
+          TX -> SVC : calculateExpiresAt(\n  now(), letter.letterType.validity_days)
+          note right of SVC
+            Jika validity_days IS NULL ->
+            expires_at = NULL (tidak pernah
+            expire). TIDAK BERUBAH dari v4.2.
+          end note
+          SVC --> TX : expires_at
+
+          TX -> REPO : update(letter, {\n  status: 'approved',        <<GENERIK, step final>>\n  letter_number: generated,\n  expires_at: calculated,\n  processed_at: now()\n})
+          REPO -> DB : UPDATE letters\nSET status = 'approved',\nletter_number = ?, expires_at = ?,\nprocessed_at = now()
+          DB --> REPO : updated
+          note right of DB
+            current_step_order TIDAK
+            di-increment lagi di step
+            final - tidak ada step
+            berikutnya.
+          end note
+
+        else isFinal = false (Step Lanjutan - Kades/Sekdes)
+          TX -> REPO : update(letter, {\n  status: 'in_progress',     <<GENERIK, step lanjutan>>\n  current_step_order: [step_order + 1],\n  processed_at: now()\n})
+          REPO -> DB : UPDATE letters\nSET status = 'in_progress',\ncurrent_step_order = current_step_order + 1,\nprocessed_at = now()
+          DB --> REPO : updated
+        end
+
+        TX -> REPO : createApproval({\n  letter_id,\n  approved_by: auth()->id(),\n  approval_level: [role user, misal\n  'kepala_desa'|'sekdes'|\n  'kasi_pelayanan'|'kaur_tu_umum'],\n  action: 'approved', notes,\n  flow_step_id: currentStep.id\n})
+        REPO -> DB : INSERT INTO letter_approvals\n(approval_level sesuai role,\nflow_step_id)
+        note right of DB
+          Jumlah record letter_approvals kini
+          DINAMIS sesuai jumlah step di flow
+          surat ini - TIDAK LAGI selalu
+          "hingga 4" seperti asumsi v4.2.
+        end note
+        DB --> REPO : approval created
+
+        TX -> REPO : createStatusLog({\n  letter_id, actor_id: auth()->id(),\n  old_status: 'in_progress',\n  new_status: [approved|in_progress],\n  ip_address\n})
+        REPO -> DB : INSERT INTO letter_status_logs
+        DB --> REPO : log created
+
+        TX --> SVC : commit
+
+        alt isFinal = true (Step Final)
+          SVC -> Q : dispatch(SendNotificationJob -> Warga)
+          Q -> REPO : createNotification({\n  notifiable_id: warga.user_id,\n  data: {letter_id, letter_number}\n})
+          REPO -> DB : INSERT INTO notifications
+          DB --> REPO : notification created
+          Q --> WRG : Notifikasi in-app + email:\n"Permohonan surat Anda disetujui!\nNomor Surat: [letter_number]"
+
+          SVC -> Q : dispatch(SendNotificationJob ->\nKepala Desa & Sekretaris Desa, type: monitoring)
+          note right of Q
+            Notifikasi MONITORING saja -
+            Kepala Desa & Sekretaris Desa
+            TIDAK terlibat approval di step
+            FINAL ini, hanya diberi tahu.
+            (Berbeda dari peran mereka
+            sebagai approver AKTIF di step
+            SEBELUMNYA - lihat blok isFinal=
+            false di atas, yang dijalankan
+            oleh Service yang SAMA persis
+            saat mereka sendiri yang jadi
+            APPR di sequence ini.)
+          end note
+          Q -> REPO : createNotification({\n  notifiable: kepala_desa + sekretaris_desa\n})
+          REPO -> DB : INSERT INTO notifications
+          DB --> REPO : notifications created
+          Q --> KDMON : Notifikasi in-app:\n"Surat [Nomor] telah selesai\ndiproses (approved)"
+
+        else isFinal = false (Step Lanjutan)
+          SVC -> OSVC : resolveApproverForNextStep(\n  steps.firstWhere('step_order',\n  currentStep.step_order + 1))
+          note right of OSVC
+            Resolve approver_position step
+            berikutnya - BISA berbasis
+            wilayah (jika 'rt', walau jarang
+            terjadi Kades/Sekdes lanjut ke RT
+            lagi) ATAU berbasis posisi murni
+            (kasi_pelayanan/kaur_tu_umum,
+            sesuai letter_types.assigned_role
+            - source of truth TETAP
+            flow_steps, assigned_role hanya
+            cache).
+          end note
+          OSVC -> OREPO : findActiveByPosition(\n  nextStep.approver_position)
+          OREPO -> DB : SELECT * FROM officials\nWHERE position = ?\nAND is_active = true\nAND ended_at IS NULL
+          DB --> OREPO : official(s) step berikutnya
+          OREPO --> OSVC : Official(s)
+          OSVC --> SVC : Official(s)
+
+          SVC -> Q : dispatch(SendNotificationJob ->\nApprover Berikutnya)
+          Q -> OREPO : createNotification({\n  notifiable_id: [user_id approver\n  berikutnya],\n  data: {letter_id, pesan}\n})
+          OREPO -> DB : INSERT INTO notifications
+          DB --> OREPO : notification created
+          Q --> NEXT : Notifikasi in-app + email:\n"Ada surat menunggu\npersetujuanmu"
+        end
+
+      else action = "rejected"
+        TX -> REPO : update(letter, {\n  status: 'rejected',              <<GENERIK>>\n  rejected_at_step: currentStep.step_order,\n  processed_at: now()\n})
+        REPO -> DB : UPDATE letters\nSET status = 'rejected',\nrejected_at_step = ?,\nprocessed_at = now()
+        DB --> REPO : updated
+
+        TX -> REPO : createApproval({\n  letter_id, approved_by: auth()->id(),\n  approval_level: [role user],\n  action: 'rejected',\n  flow_step_id: currentStep.id,\n  notes: [catatan alasan]\n})
+        REPO -> DB : INSERT INTO letter_approvals
+        DB --> REPO : approval created
+
+        TX -> REPO : createStatusLog({\n  letter_id, actor_id: auth()->id(),\n  old_status: 'in_progress',\n  new_status: 'rejected', ip_address\n})
+        REPO -> DB : INSERT INTO letter_status_logs
+        DB --> REPO : log created
+
+        TX --> SVC : commit
+
+        SVC -> Q : dispatch(SendNotificationJob -> Warga)
+        Q -> REPO : createNotification({\n  notifiable_id: warga.user_id,\n  data: {letter_id, alasan}\n})
+        REPO -> DB : INSERT INTO notifications
+        DB --> REPO : notification created
+        Q --> WRG : Notifikasi in-app + email:\n"Surat Anda ditolak\n- [catatan alasan]"
+        note right of WRG
+          Status FINAL: 'rejected' (TERMINAL),
+          rejected_at_step dicatat = step_order
+          saat ini. TIDAK ADA eskalasi ke
+          step manapun setelah ini, terlepas
+          dari step ini final atau bukan.
+        end note
+      end
+
+      SVC --> CTRL : LetterResource (updated)
+      CTRL --> FE : 200 OK\n{letter: {status, current_step_order,\nletter_number, expires_at\n(jika approved & final)}}
+      FE --> APPR : Tampilkan konfirmasi keputusan,\nkembali ke daftar surat
+    end
+  end
+end
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: PENGGANTI 05_Sequence_KadusApproval_v4.puml
+'                  DAN 06_Sequence_KasiKaurApprovalFinal_v4.puml
+'==================================================================================
+'
+' *** FILE INI ADALAH PENGGABUNGAN + PENGGANTI, BUKAN UPDATE LANGSUNG ***
+'
+' File v4.2 05_Sequence_KadusApproval_v4.puml menggambarkan UC-04c versi
+' LAMA (Kadus sebagai approver tahap 3 dari 4, gate logic status
+' rw_approved). SELURUH SEQUENCE INI SUDAH TIDAK BERLAKU - Kadus dihapus
+' total dari approval sejak v5.0 (Patch 37), TIDAK ADA pengganti langsung
+' untuk "Kadus Approval" karena posisi Kadus di pipeline digantikan Kepala
+' Desa/Sekretaris Desa (yang punya karakteristik BERBEDA: resolve berbasis
+' posisi bukan wilayah, first-action-wins, dst - bukan sekadar ganti nama
+' aktor di sequence yang sama).
+'
+' File v4.2 06_Sequence_KasiKaurApprovalFinal_v4.puml menggambarkan UC-04d
+' (Kasi/Kaur sebagai approver final tahap 4, gate logic status
+' kadus_approved, resolve berbasis letter_types.assigned_role).
+'
+' Sesuai TDD Section 5.3.3 yang SECARA EKSPLISIT menyebutkan:
+'   "Sequence Diagram: Process Flow Step (Generic Approval) - sequence
+'    generik untuk approver manapun (RT/Kades/Sekdes/Kasi/Kaur) dengan
+'    parameter approver_position, menggantikan kebutuhan sequence diagram
+'    terpisah per role"
+' ...dan catatan revisi TDD: "Sequence RW Approval" dan "Sequence Kadus"
+' dihapus dari daftar rujukan, diganti dengan sequence generik.
+'
+' Maka file BARU ini SATU sequence yang:
+'   1. Melayani KEDUA konteks sekaligus: step LANJUTAN (Kades/Sekdes,
+'      is_final=false, lanjut ke step berikutnya) DAN step FINAL (Kasi/
+'      Kaur, is_final=true, generate letter_number + expires_at) -
+'      dipisahkan dengan blok `alt isFinal = true / else isFinal = false`
+'      di titik krusial approve.
+'   2. Query daftar surat menggunakan SATU method generik
+'      findByFlowStepAndStatus(approverPosition) - menggantikan
+'      findByHamletIdAndStatus (Kadus, v4.2) dan
+'      findByAssignedRoleAndStatus (Kasi/Kaur, v4.2) sekaligus.
+'   3. Menyertakan blok First-Action-Wins (SID-ARCH-BE-001 S3.3) sebagai
+'      bagian dari gate re-validasi - konsep yang SAMA SEKALI TIDAK ADA
+'      di v4.2 karena di v4.2 Kadus adalah individu tunggal per dusun,
+'      bukan dua role yang saling menggantikan di step yang sama.
+'   4. Notifikasi keluar ke step berikutnya kini generik lewat
+'      resolveApproverForNextStep(), bukan hardcode "notif ke Kasi/Kaur
+'      via assigned_role" seperti di v4.2.
+'   5. Approval_level yang dicatat ke letter_approvals kini eksplisit 4
+'      kemungkinan nilai (kepala_desa/sekdes/kasi_pelayanan/kaur_tu_umum),
+'      TIDAK ADA lagi nilai 'kadus'.
+'
+' YANG TETAP DIPERTAHANKAN dari konsep v4.2 (khususnya dari sequence Kasi/
+' Kaur): pola generate letter_number + calculateExpiresAt saat step final
+' approve, notifikasi monitoring ke Kepala Desa/Sekretaris Desa saat step
+' final selesai, dan sifat TERMINAL dari reject di step manapun.
+'
+'==================================================================================

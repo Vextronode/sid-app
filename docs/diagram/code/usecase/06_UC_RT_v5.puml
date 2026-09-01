@@ -1,0 +1,97 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 06_UC_RT_v5.puml
+' JUDUL: Use Case - RT
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-04a, Table 9)
+' CATATAN: Menggantikan 06_UC_RT_v4.puml. RT tetap approver tahap 1, TAPI
+'          target notifikasi setelah approve berubah signifikan.
+'==================================================================================
+
+@startuml 5.3.1d_v5 UC_RT
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+  FontName Arial
+  FontSize 12
+}
+
+title Use Case Diagram - RT (Approver Tahap 1, Step Berbasis Wilayah) [v5.0]
+
+actor "RT" as RT
+actor "Sistem\n(Otomatis)" as SYS
+
+rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
+
+  rectangle "Autentikasi" #F0F4FF {
+    usecase "UC-01: Login" as UC_LOGIN
+    usecase "UC-02: Logout" as UC_LOGOUT
+  }
+
+  rectangle "UC-04a: Approval RT\n(Tahap 1, Berbasis Wilayah)" #E8FFE8 {
+    usecase "UC-05: Lihat Daftar Surat\nWilayah RT (status: pending,\nstep aktif = rt)" as UC_RT_LIST
+    usecase "UC-06: Lihat Detail\nPermohonan" as UC_RT_DETAIL
+    usecase "Approve / Reject Surat" as UC_RT_APPROVE
+  }
+
+  rectangle "Notifikasi" #FFF8E1 {
+    usecase "Terima Notifikasi\nPermohonan Baru" as UC_NOTIF_IN
+    usecase "Kirim Notifikasi\n(Otomatis, Paralel)" as UC_NOTIF_SND
+  }
+
+  rectangle "Fitur Pendukung" #FDF2F8 {
+    usecase "UC-15: Dashboard RT\n(Ringkasan Wilayah + Badge Overdue)" as UC_DASH
+  }
+}
+
+RT -- UC_LOGIN
+RT -- UC_LOGOUT
+RT -- UC_RT_LIST
+RT -- UC_RT_DETAIL
+RT -- UC_RT_APPROVE
+RT -- UC_NOTIF_IN
+RT -- UC_DASH
+
+SYS -- UC_NOTIF_SND
+
+UC_RT_APPROVE ..> UC_NOTIF_SND : <<trigger>>
+UC_RT_LIST ..> UC_RT_DETAIL : <<include>>
+UC_RT_DETAIL ..> UC_RT_APPROVE : <<extend>>
+
+note "RT hanya bisa approve surat di wilayahnya\nsendiri. Gate: cek rt_id (via OfficialService,\nresolve BERBASIS WILAYAH - berbeda dengan\nresolve Kades/Sekdes/Kasi/Kaur yang berbasis\nposisi murni). TIDAK BERUBAH dari v4.2." as NOTE1
+
+note "*** PERUBAHAN UTAMA v5.0 ***\nJika APPROVE -> current_step_order += 1, DUA hal\nterjadi SECARA PARALEL (tidak berurutan):\n(a) notifikasi FYI ke RW (non-blocking, side-effect,\n    RW TIDAK PERNAH jadi gate - lihat file\n    07_UC_RW_v5.puml)\n(b) notifikasi ke Kepala Desa/Sekretaris Desa\n    sebagai approver berikutnya (resolve berbasis\n    posisi, BUKAN wilayah)\nBerbeda dari v4.2 di mana approve RT hanya\nmengirim notif ke RW (approver berikutnya secara\nBERURUTAN, bukan paralel).\nJika REJECT -> notifikasi ke Warga, status\n'rejected' (TERMINAL, rejected_at_step dicatat)." as NOTE2
+
+note "letter_approvals yang di-INSERT menyertakan\ndeadline_at (dari approval_settings.deadline_hours)\ndan flow_step_id (BARU v5.0, referensi step\nspesifik untuk audit trail granular).\napproval_level yang dicatat: 'rt'." as NOTE3
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 06_UC_RT_v4.puml -> 06_UC_RT_v5.puml
+'==================================================================================
+'
+' TIDAK BERUBAH: RT tetap approver tahap 1 berbasis wilayah (rt_id), aktor
+'   dan use case dasar (Login/Logout/Lihat Daftar/Lihat Detail/Approve-Reject)
+'   TIDAK berubah dari v4.2.
+'
+' PERUBAHAN UTAMA:
+'   - Judul rectangle diubah dari "Tahap 1 dari 4" menjadi "Tahap 1, Berbasis
+'     Wilayah" - karena jumlah tahap kini DINAMIS per flow (bukan hardcode 4),
+'     RT tetap SELALU tahap 1 tapi bukan lagi "dari 4" secara pasti.
+'   - Use case "Kirim Notifikasi" diubah menjadi PARALEL: approve RT kini
+'     memicu notifikasi ke RW (FYI, non-blocking) DAN Kepala Desa/Sekretaris
+'     Desa (approver berikutnya) SECARA BERSAMAAN - bukan lagi berurutan
+'     "RT approve -> notif ke RW -> RW approve -> notif ke Kadus" seperti
+'     v4.2. Di v5.0, RW BUKAN gate, jadi sistem tidak menunggu aksi RW sama
+'     sekali sebelum lanjut ke approver berikutnya.
+'   - Ditambahkan catatan flow_step_id sebagai field baru di letter_approvals.
+'
+'==================================================================================

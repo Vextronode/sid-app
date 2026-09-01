@@ -1,0 +1,147 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 05_UC_KepalaDesa_SekretarisDesa_v5.puml
+' JUDUL: Use Case - Kepala Desa & Sekretaris Desa (Approver Aktif)
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-04c baru, Section 4 Table 4)
+'         + SID-ARCH-BE-001 S3.3 (First-Action-Wins), S4.1
+' CATATAN: **REVISI TOTAL** dari 05_UC_KepalaDesa_SekretarisDesa_v4.puml.
+'          Diagram v4.2 berjudul "Monitoring Only" - peran ini SUDAH TIDAK
+'          BERLAKU sejak v5.0. Kepala Desa & Sekretaris Desa kini APPROVER
+'          AKTIF menggantikan posisi Kadus lama di pipeline approval.
+'==================================================================================
+
+@startuml 5.3.1c_v5 UC_Kepala_Desa_Sekretaris_Desa
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+  FontName Arial
+  FontSize 12
+}
+
+title Use Case Diagram - Kepala Desa & Sekretaris Desa (Approver Aktif) [BARU - v5.0]\n(Menggantikan diagram "Monitoring Only" v4.2 - lihat catatan revisi)
+
+actor "Kepala Desa" as KD
+actor "Sekretaris\nDesa" as SEKDES
+actor "Sistem\n(Otomatis)" as SYS
+
+rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
+
+  rectangle "Autentikasi" #F0F4FF {
+    usecase "UC-01: Login" as UC_LOGIN
+    usecase "UC-02: Logout" as UC_LOGOUT
+  }
+
+  rectangle "UC-04c: Approval Kades/Sekdes\n(Step Generik, Menggantikan Kadus)" #E0F2F1 {
+    usecase "UC-05: Lihat Daftar Surat\n(current_step_order menunjuk\nposisi kepala_desa/sekdes,\nstatus in_progress)" as UC_LIST
+    usecase "UC-06: Lihat Detail Permohonan\n& Riwayat RT + FYI RW" as UC_DETAIL
+    usecase "Approve / Reject Surat" as UC_APPROVE
+  }
+
+  rectangle "UC-08: Download Surat" #E0F7FA {
+    usecase "Download PDF\n(selalu aktif, tanpa cek expires_at)" as UC_DOWNLOAD
+  }
+
+  rectangle "Integritas Data\n(NEXT DEV)" #F0FFF4 {
+    usecase "UC-07: Validasi Integritas\nData Surat" as UC_VALID
+  }
+
+  rectangle "Notifikasi" #FFF8E1 {
+    usecase "Terima Notifikasi\nSurat Lolos RT\n(approver berikutnya)" as UC_NOTIF_IN
+    usecase "Kirim Notifikasi\n(Otomatis ke Kasi/Kaur)" as UC_NOTIF_SND
+  }
+
+  rectangle "Fitur Pendukung" #FFF3E0 {
+    usecase "UC-15: Lihat Dashboard\n(Daftar Surat Menunggu\nApproval - Action Item)" as UC_DASH
+  }
+}
+
+' Relasi Kepala Desa
+KD -- UC_LOGIN
+KD -- UC_LOGOUT
+KD -- UC_LIST
+KD -- UC_DETAIL
+KD -- UC_APPROVE
+KD -- UC_DOWNLOAD
+KD -- UC_VALID
+KD -- UC_NOTIF_IN
+KD -- UC_DASH
+
+' Relasi Sekretaris Desa - scope IDENTIK dengan Kepala Desa (saling menggantikan)
+SEKDES -- UC_LOGIN
+SEKDES -- UC_LOGOUT
+SEKDES -- UC_LIST
+SEKDES -- UC_DETAIL
+SEKDES -- UC_APPROVE
+SEKDES -- UC_DOWNLOAD
+SEKDES -- UC_NOTIF_IN
+SEKDES -- UC_DASH
+
+SYS -- UC_NOTIF_SND
+
+' Relasi Internal
+UC_LIST ..> UC_DETAIL : <<include>>
+UC_DETAIL ..> UC_APPROVE : <<extend>>
+UC_DETAIL ..> UC_DOWNLOAD : <<extend>>
+UC_DETAIL ..> UC_VALID : <<extend>>
+UC_APPROVE ..> UC_NOTIF_SND : <<trigger>>\n(jika approve)
+
+note "*** PERUBAHAN PALING MENDASAR v5.0 ***\nKepala Desa & Sekretaris Desa kini APPROVER AKTIF,\nBUKAN LAGI monitoring only seperti v4.2.\nMereka menggantikan POSISI Kadus lama di pipeline\n(step generik approver_position IN\n('kepala_desa','sekdes'), RESOLVE BERBASIS POSISI,\nBUKAN wilayah - beda pola dengan RT)." as NOTE1
+
+note "First-Action-Wins (SID-ARCH-BE-001 S3.3):\nKepala Desa & Sekretaris Desa SALING MENGGANTIKAN\ndi step yang sama - siapa pun yang request-nya\nsampai lebih dulu ke transaction yang commit,\nitu yang tercatat sebagai approved_by.\nRequest kedua akan gagal di gate re-validasi\n(InvalidLetterStatusException).\n⚠ STATUS: masih rekomendasi/asumsi default,\nBELUM keputusan final eksplisit - perlu\ndikonfirmasi ulang ke pemilik proyek\n(lihat TDD Table 68 & SID-ARCH-BE-001 S3.3)." as NOTE2
+
+note "UC-07 (Validasi Integritas) HANYA milik Kepala Desa,\ntidak dimiliki Sekretaris Desa.\nStatus: NEXT DEV Paket 2 - belum ada di MVP\n(letter_hashes, HashingService belum diimplementasikan).\nTIDAK BERUBAH dari v4.2." as NOTE3
+
+note "Kelola Profil Desa (UC-18) & Kelola Berita (UC-19)\nTETAP TIDAK ADA di aktor Kepala Desa maupun\nSekretaris Desa - domain CMS eksklusif Petugas Desa\n(SID-ARCH-SYS-001 S2.3). Menjadi approver aktif\nTIDAK memperluas akses ke domain konfigurasi/CMS." as NOTE4
+
+note "Jika APPROVE -> current_step_order += 1,\nresolve Kasi/Kaur via flow_steps.approver_position\nberikutnya -> kirim notifikasi.\nJika step berikutnya adalah is_final -> status\nlangsung 'approved' setelah step final di-approve.\nJika REJECT -> notifikasi ke Warga, status\n'rejected' (TERMINAL), rejected_at_step dicatat." as NOTE5
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 05_UC_KepalaDesa_SekretarisDesa_v4.puml -> ..._v5.puml
+'==================================================================================
+'
+' *** INI ADALAH REVISI PALING SIGNIFIKAN DI SELURUH BATCH UC v5.0 ***
+'
+' Diagram v4.2 berjudul "Monitoring Only" - Kepala Desa & Sekretaris Desa
+' HANYA punya UC read-only (lihat daftar surat status kadus_approved ke atas,
+' lihat detail, download, validasi integritas). TIDAK ADA use case approve/
+' reject sama sekali di v4.2.
+'
+' Sejak v5.0, PERAN INI BERUBAH TOTAL:
+'   1. Use case BARU "Approve / Reject Surat" ditambahkan - Kepala Desa &
+'      Sekretaris Desa kini APPROVER AKTIF, menggantikan POSISI yang dulu
+'      dipegang Kadus (v4.2) di pipeline approval.
+'   2. Resolve approver berbasis POSISI MURNI (officials.position IN
+'      ('kepala_desa','sekdes') + is_active=true), TANPA join wilayah -
+'      berbeda dari RT yang berbasis wilayah (rt_id).
+'   3. First-Action-Wins: Kepala Desa dan Sekretaris Desa bisa saling
+'      menggantikan di step approval yang sama - didokumentasikan sebagai
+'      catatan status yang MASIH ASUMSI/REKOMENDASI, belum keputusan final
+'      eksplisit (lihat SID-ARCH-BE-001 S3.3 dan TDD Table 68).
+'   4. UC-05/06 (Lihat Daftar & Detail Surat): filter scope berubah dari
+'      "status kadus_approved ke atas" (v4.2, status granular) menjadi
+'      "current_step_order menunjuk posisi kepala_desa/sekdes, status
+'      in_progress" (v5.0, status generik + step pointer).
+'   5. Dashboard (UC-15): dari "read-only list surat level desa" menjadi
+'      "daftar surat menunggu approval mereka (action item)".
+'   6. Notifikasi masuk: dari "notifikasi monitoring setelah surat selesai"
+'      (v4.2) menjadi "notifikasi surat lolos RT, sebagai approver
+'      berikutnya yang harus bertindak" (v5.0).
+'
+' YANG TETAP SAMA:
+'   - UC-07 (Validasi Integritas) tetap HANYA milik Kepala Desa (bukan
+'     Sekretaris Desa), tetap berstatus Next Dev Paket 2.
+'   - UC-18/UC-19 (CMS) tetap TIDAK ADA di aktor manapun di file ini.
+'   - UC-08 (Download) tetap selalu aktif tanpa cek expires_at.
+'
+'==================================================================================

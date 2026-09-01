@@ -1,0 +1,197 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 02_Sequence_RegisterWarga_v5.puml
+' JUDUL: Sequence - Register Warga
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-17)
+'         + SID-ARCH-BE-001 S5.2 (Warga Lokal vs Pendatang - Satu Tabel)
+' CATATAN: Menggantikan 02_Sequence_RegisterWarga_v4.puml. Alur inti TIDAK
+'          berubah - update murni pada catatan skema citizens yang di-fetch.
+'==================================================================================
+
+@startuml 5.3.3b_v5 Sequence - Register Akun Warga
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ParticipantFontName Arial
+  ParticipantFontSize 12
+  ActorBackgroundColor #D6E4F7
+  ActorBorderColor #1F3864
+  ActorFontName Arial
+  LifeLineBorderColor #2E5FA3
+  ArrowColor #2E5FA3
+  ArrowFontName Arial
+  ArrowFontSize 11
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+
+title Sequence Diagram - Register Akun Warga [v5.0] \n(UC-17 - Validasi NIK warga Desa Cibenda, Lokal maupun Pendatang)
+
+actor "Calon Warga\n(Belum Punya Akun)" as USR
+participant "React\nFrontend" as FE
+participant "AuthController" as CTRL
+participant "Form\nRequest" as FREQ
+participant "AuthService" as SVC
+participant "CitizenRepository" as CREPO
+participant "UserRepository" as UREPO
+participant "PostgreSQL" as DB
+
+== Buka Halaman Registrasi ==
+
+USR -> FE : Buka halaman publik,\nklik "Daftar Akun Warga"
+FE --> USR : Tampilkan form registrasi:\nNIK, Nama Lengkap, Email, Password
+
+== Submit Form Registrasi ==
+
+USR -> FE : Isi form & klik "Daftar"
+FE -> CTRL : POST /api/auth/register\n{nik, name, email, password,\npassword_confirmation}
+CTRL -> FREQ : validate(request)
+
+alt Format NIK salah (bukan 16 digit numerik)
+  FREQ --> CTRL : ValidationException
+  CTRL --> FE : 422 {error: "NIK harus 16 digit angka"}
+  FE --> USR : Tampilkan error validasi NIK
+
+else Email sudah digunakan akun lain
+  FREQ --> CTRL : ValidationException
+  CTRL --> FE : 422 {error: "Email sudah terdaftar"}
+  FE --> USR : Tampilkan error email duplikat
+
+else Password terlalu lemah
+  FREQ --> CTRL : ValidationException
+  CTRL --> FE : 422 {error: panduan password}
+  FE --> USR : Tampilkan panduan password
+
+else Semua format valid
+  FREQ --> CTRL : validated data
+  CTRL -> SVC : registerWarga(data)
+
+  == Validasi NIK ke Database Citizens ==
+
+  SVC -> SVC : nik_hash = SHA-256(nik_input)
+  note right of SVC
+    TIDAK BERUBAH dari v4.2. NIK plaintext
+    tidak dikirim ke DB. Hanya hash-nya
+    yang dipakai untuk lookup
+    (privacy-safe). Dual-column
+    nik/nik_hash tetap fungsinya untuk
+    indexing & pencarian, bukan chain
+    integrity.
+  end note
+
+  SVC -> CREPO : findByNikHash(nik_hash)
+  CREPO -> DB : SELECT * FROM citizens\nWHERE nik_hash = ?\nAND village_id = [desa_cibenda_id]\nAND is_active = true
+  DB --> CREPO : citizen | null
+
+  alt NIK tidak ditemukan di citizens
+    CREPO --> SVC : null
+    SVC --> CTRL : NikNotFoundException
+    CTRL --> FE : 422 {error: "NIK tidak terdaftar\nsebagai warga Desa Cibenda"}
+    FE --> USR : Tampilkan error NIK tidak ditemukan
+    note right of FE
+      v5.0 (SID-ARCH-BE-001 S5.2): TIDAK
+      ADA jalur "Non-NIK" di sini. Baik
+      warga lokal maupun pendatang yang
+      NIK-nya belum ada di citizens
+      SAMA-SAMA ditangani sebagai kasus
+      ini - "belum terdaftar sebagai
+      warga sama sekali", bukan kategori
+      terpisah. Warga harus menunggu
+      Petugas Desa mencatatkan datanya
+      lebih dulu ke citizens (UC-09,
+      dengan residency_type='pendatang'
+      jika relevan) sebelum bisa register.
+    end note
+
+  else NIK ditemukan - cek apakah sudah punya akun
+    CREPO --> SVC : citizen model\n(id, name, rt_id, hamlet_id,\nresidency_type, family_id, ...)
+    note right of CREPO
+      v5.0: citizen model kini membawa
+      kolom tambahan hasil restrukturisasi
+      (family_id, residency_type, dst -
+      lihat TDD 5.4.2), TAPI tidak satupun
+      dari kolom baru ini mempengaruhi
+      LOGIKA registrasi - tetap murni
+      "NIK ditemukan atau tidak" + "sudah
+      punya akun atau belum". rt_id dan
+      hamlet_id (FK) tetap dipakai seperti
+      v4.2 untuk keperluan display/resolve
+      wilayah di form.
+    end note
+
+    SVC -> UREPO : findByCitizenId(citizen.id)
+    UREPO -> DB : SELECT * FROM users\nWHERE citizen_id = ?
+    DB --> UREPO : user | null
+
+    alt citizen sudah punya akun (user ditemukan)
+      UREPO --> SVC : existing user
+      SVC --> CTRL : CitizenAlreadyHasAccountException
+      CTRL --> FE : 422 {error: "NIK sudah terdaftar,\nsilakan login"}
+      FE --> USR : Tampilkan error,\narahkan ke halaman login
+
+    else citizen belum punya akun
+      UREPO --> SVC : null
+
+      == Buat Akun Warga ==
+
+      SVC -> UREPO : create({\n  village_id: citizen.village_id,\n  citizen_id: citizen.id,\n  name: data.name,\n  email: data.email,\n  password: Argon2id(data.password),\n  role: 'warga',\n  is_active: true\n})
+      note right of UREPO
+        TIDAK BERUBAH dari v4.2. Akun
+        langsung aktif (is_active: true)
+        karena NIK sudah terverifikasi
+        dari database citizens. Tidak
+        perlu approval manual.
+        Gate logic HANYA cek is_active -
+        domicile_status (menetap/merantau/
+        tki) DAN residency_type
+        (lokal/pendatang) murni informatif,
+        TIDAK mempengaruhi akses
+        (SID-ARCH-BE-001 S5.2).
+      end note
+      UREPO -> DB : INSERT INTO users
+      DB --> UREPO : user model (id, ...)
+      UREPO --> SVC : user created
+
+      SVC --> CTRL : user model
+      CTRL --> FE : 201 Created\n{message: "Akun berhasil dibuat,\nsilakan login"}
+      FE --> USR : Tampilkan pesan sukses,\narahkan ke halaman login
+    end
+  end
+end
+
+== Login Setelah Register ==
+
+USR -> FE : Input email & password, klik Login
+FE -> CTRL : POST /api/auth/login\n{email, password}
+CTRL -> SVC : attemptLogin(credentials)
+SVC -> UREPO : findByEmail(email)
+UREPO -> DB : SELECT * FROM users\nWHERE email = ?
+DB --> UREPO : user model
+UREPO --> SVC : user
+SVC -> SVC : Argon2id verify(password,\n  user.password)
+SVC --> CTRL : user authenticated
+CTRL --> FE : 200 OK {token / session cookie}
+FE --> USR : Masuk ke Dashboard Warga\n(siap ajukan permohonan surat)
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 02_Sequence_RegisterWarga_v4.puml -> ..._v5.puml
+'==================================================================================
+'
+' TIDAK ADA PERUBAHAN ALUR/LOGIKA - seluruh langkah, kondisi alt/else,
+'   dan urutan interaksi identik dengan v4.2.
+'
+' Perubahan murni pada CATATAN (note):
+'   - Ditambahkan penegasan eksplisit (mengacu SID-ARCH-BE-001 S5.2) bahwa
+'     kasus "NIK tidak ditemukan" TIDAK dipecah jadi kategori "Non-NIK"
+'     terpisah untuk pendatang - baik warga lokal maupun pendatang yang
+'     belum tercatat di citizens diperlakukan SAMA PERSIS: harus dicatat
+'     dulu oleh Petugas Desa via UC-09 sebelum bisa register.
+'   - Ditambahkan catatan bahwa citizen model kini membawa kolom hasil
+'     restrukturisasi v5.0 (family_id, residency_type, dst), namun kolom-
+'     kolom ini TIDAK mengubah logika registrasi - murni informasi
+'     tambahan yang ikut ter-fetch bersama query yang sama.
+'
+'==================================================================================

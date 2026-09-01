@@ -1,0 +1,1076 @@
+'==================================================================================
+' SECTION: CLASS DIAGRAM
+' FILE: 01_Class_Core_v5.puml
+' JUDUL: Class Diagram - Core [1/2]
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.4, 5.4.2)
+'         + SID-ARCH-BE-001 v1.0 (S2 Pola Arsitektur, S3 Pipeline Dinamis,
+'           S4 RBAC, S5 Kependudukan)
+' CATATAN: Menggantikan 01_Class_Core_v4.puml. Perubahan v4->v5 didokumentasikan
+'          di catatan revisi bawah file ini. Ini adalah revisi paling besar
+'          di seluruh batch Class Diagram karena merombak layer Controller
+'          approval per-role menjadi generik.
+'==================================================================================
+
+@startuml 5.3.4a_v5 Class Diagram Core
+skinparam backgroundColor #FFFFFF
+skinparam class {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+  HeaderBackgroundColor #2E5FA3
+  HeaderFontColor #FFFFFF
+  ArrowColor #2E5FA3
+}
+skinparam stereotypeCBackgroundColor #D5EAD0
+skinparam stereotypeIBackgroundColor #FDE8D8
+skinparam packageStyle rectangle
+skinparam arrow {
+  Color #2E5FA3
+  FontName Arial
+  FontSize 9
+}
+
+title Class Diagram [1/2: CORE] - SID Desa Cibenda (v5.0)\nLayer: Controller -> Form Request -> Service -> Repository -> Eloquent Model -> DB (Policy di sisi Service, lihat SID-ARCH-BE-001 S2)\nScope: Wilayah, Pengguna & Jabatan Struktural, Kependudukan (Citizens+Families+Socioeconomics), Pipeline Approval Dinamis, Surat\nLihat file Class Diagram Pendukung [2/2] untuk: Organisasi Non-Struktural, Notifikasi, Berita, Peraturan Desa
+
+' ═══════════════════════════════════════════════════
+' LAYER 1: CONTROLLER
+' ═══════════════════════════════════════════════════
+
+package "Controller Layer" #F0F4FF {
+
+  class AuthController {
+    +register(RegisterRequest) : JsonResponse
+    +login(LoginRequest) : JsonResponse
+    +logout() : JsonResponse
+    +me() : JsonResponse
+  }
+
+  class LetterController {
+    +index() : JsonResponse
+    +show(id) : JsonResponse
+    +store(StoreLetterRequest) : JsonResponse
+    +downloadPdf(id) : BinaryFileResponse
+    note right
+      index()/show(): dipakai Warga
+      (scope: citizen_id miliknya) dan
+      Petugas Desa (scope: full visibility,
+      SEMUA status termasuk rejected
+      di step manapun).
+    end note
+  }
+
+  class RtApprovalController {
+    +index() : JsonResponse
+    +show(id) : JsonResponse
+    +decision(id, DecisionRequest) : JsonResponse
+    note right
+      TETAP TERPISAH (tidak digabung ke
+      FlowStepApprovalController) karena
+      RT resolve BERBASIS WILAYAH (rt_id),
+      pola query & otorisasi beda dengan
+      approver berbasis posisi murni.
+    end note
+  }
+
+  class FlowStepApprovalController {
+    +index() : JsonResponse
+    +show(id) : JsonResponse
+    +decision(id, DecisionRequest) : JsonResponse
+    note right
+      *** BARU v5.0 - PENGGANTI GENERIK ***
+      Menggantikan RwApprovalController
+      (DIHAPUS - RW bukan approver),
+      KadusApprovalController (DIHAPUS -
+      Kadus bukan approver), dan
+      KasiApprovalController (DIGABUNG ke
+      sini). SATU controller melayani
+      SEMUA approver berbasis posisi murni:
+      kepala_desa, sekdes, kasi_pelayanan,
+      kaur_tu_umum. Route/middleware
+      menyaring role di layer otorisasi,
+      bukan class Controller terpisah
+      per role (Config over Code,
+      SID-ARCH-SYS-001 S1).
+    end note
+  }
+
+  class CitizenController {
+    +index() : JsonResponse
+    +store(StoreCitizenRequest) : JsonResponse
+    +update(id, UpdateCitizenRequest) : JsonResponse
+    +importExcel(ImportExcelRequest) : JsonResponse
+  }
+
+  class FamilyController {
+    +index() : JsonResponse
+    +store(StoreFamilyRequest) : JsonResponse
+    +update(id, UpdateFamilyRequest) : JsonResponse
+    +addMember(id, AddFamilyMemberRequest) : JsonResponse
+    note right
+      BARU v5.0. Kelola Kartu Keluarga
+      (families) - terpisah dari
+      CitizenController karena families
+      adalah entity tersendiri sejak
+      restrukturisasi kependudukan v5.0.
+    end note
+  }
+
+  class UserManagementController {
+    +index() : JsonResponse
+    +store(StoreUserRequest) : JsonResponse
+    +update(id, UpdateUserRequest) : JsonResponse
+    +rotateOfficial(id, RotateOfficialRequest) : JsonResponse
+    +deactivate(id) : JsonResponse
+  }
+
+  class RegionController {
+    +manageHamlets() : JsonResponse
+    +manageRws() : JsonResponse
+    +manageRts() : JsonResponse
+  }
+
+  class ApprovalSettingController {
+    +index() : JsonResponse
+    +update(id, UpdateSettingRequest) : JsonResponse
+  }
+
+  class LetterTypeController {
+    +index() : JsonResponse
+    +update(id, UpdateLetterTypeRequest) : JsonResponse
+    note right
+      MVP: hanya edit validity_days,
+      assigned_role, toggle is_active
+      (UC-21 versi sederhana).
+      category_id/flow_id: developer-only
+      via seeder di MVP, TIDAK ada endpoint
+      edit untuk keduanya.
+    end note
+  }
+
+  class ApprovalFlowController {
+    +index() : JsonResponse
+    +show(id) : JsonResponse
+    note right
+      BARU v5.0, READ-ONLY di MVP.
+      Untuk keperluan Frontend menampilkan
+      struktur flow (misal preview alur
+      approval suatu tipe surat).
+      CRUD letter_categories/approval_flows/
+      flow_steps TETAP developer-only via
+      seeder/migration di MVP - TIDAK ada
+      endpoint create/update/delete di sini.
+    end note
+  }
+}
+
+' ═══════════════════════════════════════════════════
+' LAYER 2: SERVICE (Business Logic)
+' ═══════════════════════════════════════════════════
+
+package "Service Layer" #D5EAD0 {
+
+  class AuthService {
+    +registerWarga(data) : User
+    +attemptLogin(credentials) : User
+    -hashNik(nik) : string
+  }
+
+  class LetterService {
+    +getActiveLetterTypes() : Collection
+    +createLetter(data, user) : Letter
+    +processRtDecision(id, action, notes, actorId) : Letter
+    +processStepDecision(id, action, notes, actorId, approverPosition) : Letter
+    +validateStepAccess(id, approverPosition) : bool
+    +generateLetterNumber(typeCode) : string
+    +calculateExpiresAt(from, validityDays) : Carbon
+    +getLetterDetailWithFullHistory(id) : Letter
+    -advanceToNextStep(letter) : void
+    -isCurrentStepFinal(letter) : bool
+    note right
+      *** PERUBAHAN UTAMA v5.0 ***
+      processRwDecision(), processKadusDecision(),
+      processKasiDecision(), validateRwAccess(),
+      validateKadusAccess() SEMUA DIHAPUS.
+      Digantikan SATU method generik
+      processStepDecision() yang menerima
+      approverPosition sbg parameter - dipakai
+      untuk Kepala Desa/Sekdes/Kasi/Kaur
+      sekaligus. RT tetap method terpisah
+      (processRtDecision) karena basis
+      otorisasinya wilayah, bukan posisi.
+      advanceToNextStep(): increment
+      current_step_order + cek is_final untuk
+      tentukan status jadi in_progress/approved.
+    end note
+  }
+
+  class OfficialService {
+    +resolveRtForCitizen(citizen) : Official
+    +resolveRwForCitizen(citizen) : Official
+    +resolveByPositionOnly(position) : Collection
+    +isOfficialAuthorized(userId, position) : bool
+    +isOfficialAuthorized(userId, letterId, position) : bool
+    note right
+      *** PERUBAHAN v5.0 ***
+      resolveKadusForCitizen() DIHAPUS -
+      Kadus tidak lagi target resolve utk
+      approval surat.
+      resolveRwForCitizen() TETAP ADA tapi
+      TURUN LEVEL: dari "resolve approver
+      dengan gate otorisasi" (v4.2) menjadi
+      "resolve NOTIFIER FYI saja" (v5.0) -
+      tidak ada pengecekan otorisasi approve
+      untuk hasil resolve ini, karena RW
+      tidak pernah memanggil endpoint
+      decision/approval.
+      resolveByPositionOnly() BARU - generik
+      untuk Kepala Desa/Sekdes/Kasi/Kaur,
+      resolve via officials.position IN (...)
+      + is_active=true, TANPA join wilayah
+      sama sekali (SID-ARCH-BE-001 S3.2).
+    end note
+  }
+
+  class CitizenService {
+    +importFromExcel(file) : ImportResult
+    +findByNikHash(nikHash) : Citizen
+    +validateNikUniqueness(nik) : bool
+    note right
+      Sesuai UC-09/SID-ARCH-BE-001 S5.3:
+      HANYA Petugas Desa yang boleh
+      create/update citizens. Tidak ada
+      mekanisme warga edit data sendiri
+      (Human-in-the-Loop principle).
+    end note
+  }
+
+  class FamilyService {
+    +createFamily(data) : Family
+    +addMember(familyId, citizenData) : Citizen
+    -guardSingleHeadOfFamily(familyId) : void
+    note right
+      BARU v5.0. guardSingleHeadOfFamily():
+      validasi hanya 1 family_role=
+      'kepala_keluarga' per family_id aktif.
+      Service ini TIDAK BOLEH menyalin data
+      KK ke citizens atau sebaliknya sebagai
+      denormalisasi tambahan di luar
+      families.head_of_family_id yang memang
+      sudah didefinisikan sebagai
+      denormalisasi opsional terjaga manual
+      (SID-ARCH-BE-001 S5.1).
+    end note
+  }
+
+  class UserManagementService {
+    +createOfficialAccount(data) : User
+    +rotateOfficial(officialId, newData) : Official
+    +deactivateUser(userId) : bool
+    -guardLastActivePetugasDesa(userId) : void
+    -syncSekdesRole(official) : void
+    note right
+      syncSekdesRole(): saat rotasi jabatan
+      'sekdes', otomatis update
+      users.role = 'sekretaris_desa'.
+      TIDAK BERUBAH dari v4.2.
+    end note
+  }
+
+  class RegionService {
+    +createHamlet(data) : Hamlet
+    +createRw(hamletId, data) : Rw
+    +createRt(rwId, data) : Rt
+    +deactivateRegion(id) : bool
+  }
+
+  class PdfService {
+    +generateLetterPdf(letterId) : string
+    -checkExpiryForWarga(letter, user) : bool
+    -getActiveKadesSignature() : Official
+    note right
+      On-demand generation, TIDAK BERUBAH
+      dari v4.0. Gate akses: warga dicek
+      expires_at, role lain (Petugas Desa,
+      Kasi/Kaur, Kades, Sekdes) selalu
+      bisa generate (SID-ARCH-BE-001 S6).
+    end note
+  }
+
+  class ApprovalDeadlineService {
+    +calculateDeadline(villageId, level) : Carbon
+    +checkOverdueLetters() : Collection
+    +sendReminders() : void
+    note right
+      ⚠ approvalLevel parameter di sini
+      MASIH mengacu ENUM lama
+      approval_settings.approval_level
+      ('rt','rw','kadus','kasi') - BELUM
+      diselaraskan dengan
+      letter_approvals.approval_level v5.0
+      (technical debt, TDD Table 70).
+    end note
+  }
+}
+
+' ═══════════════════════════════════════════════════
+' LAYER 3: REPOSITORY (Data Access)
+' ═══════════════════════════════════════════════════
+
+package "Repository Layer" #C8E6C9 {
+
+  class UserRepository {
+    +findByEmail(email) : User
+    +findByIdWithCitizen(id) : User
+    +findByCitizenId(citizenId) : User
+    +create(data) : User
+    +createNotificationBroadcast(data) : void
+  }
+
+  class CitizenRepository {
+    +findByNikHash(nikHash) : Citizen
+    +create(data) : Citizen
+    +bulkInsert(rows) : int
+  }
+
+  class FamilyRepository {
+    +findByNoKkHash(noKkHash) : Family
+    +create(data) : Family
+    +findMembersByFamilyId(familyId) : Collection
+    note right
+      BARU v5.0.
+    end note
+  }
+
+  class OfficialRepository {
+    +findActiveByUserId(userId, position) : Official
+    +findActiveByRtId(rtId) : Official
+    +findActiveByRwId(rwId) : Official
+    +findActiveByPosition(position) : Collection
+    +createNotification(data) : Notification
+    note right
+      findActiveByHamletId() (v4.2, utk
+      resolve Kadus approval) DIHAPUS -
+      tidak ada lagi kebutuhan resolve
+      Kadus untuk konteks approval.
+      findActiveByPosition() kini
+      mengembalikan Collection (bisa >1
+      pejabat aktif, relevan utk step
+      kepala_desa/sekdes yang saling
+      menggantikan - lihat
+      SID-ARCH-BE-001 S3.2).
+    end note
+  }
+
+  class LetterRepository {
+    +findById(id) : Letter
+    +findByIdWithRelations(id) : Letter
+    +findByIdWithApprovals(id) : Letter
+    +findByRtIdAndStatus(rtId, status) : Collection
+    +findByFlowStepAndStatus(approverPosition, status) : Collection
+    +create(data) : Letter
+    +update(letter, data) : Letter
+    +createApproval(data) : LetterApproval
+    +createStatusLog(data) : LetterStatusLog
+    note right
+      *** PERUBAHAN UTAMA v5.0 ***
+      findByRwIdAndStatus(), findByHamletIdAndStatus(),
+      findByAssignedRoleAndStatus() SEMUA DIHAPUS.
+      Digantikan SATU method generik
+      findByFlowStepAndStatus(approverPosition, status):
+        SELECT l.* FROM letters l
+        JOIN flow_steps fs ON fs.flow_id = l.flow_id
+          AND fs.step_order = l.current_step_order
+        WHERE fs.approver_position = ?
+          AND l.status IN ('pending','in_progress')
+      Method ini dipakai LINTAS Service (dashboard,
+      notifikasi, reminder scheduler) - inilah alasan
+      Repository dipertahankan meski proyek capstone
+      (SID-ARCH-BE-001 S2), untuk mencegah query
+      terduplikasi di banyak Service.
+      findByRtIdAndStatus() TETAP TERPISAH karena RT
+      butuh JOIN tambahan ke citizens.rt_id (berbasis
+      wilayah, bukan posisi murni).
+    end note
+  }
+
+  class LetterTypeRepository {
+    +findAllActive() : Collection
+    +findById(id) : LetterType
+  }
+
+  class LetterCategoryRepository {
+    +findByCode(code) : LetterCategory
+    +findAllActive() : Collection
+    note right
+      BARU v5.0.
+    end note
+  }
+
+  class ApprovalFlowRepository {
+    +findById(id) : ApprovalFlow
+    +findWithSteps(id) : ApprovalFlow
+    +findByCategoryId(categoryId) : Collection
+    note right
+      BARU v5.0. findWithSteps() eager-load
+      flow_steps terurut step_order - dipakai
+      LetterService saat submit surat (snapshot
+      flow_id) dan saat validasi gate step.
+    end note
+  }
+
+  class RegionRepository {
+    +findHamletById(id) : Hamlet
+    +findRwById(id) : Rw
+    +findRtById(id) : Rt
+  }
+
+  class ApprovalSettingRepository {
+    +findByVillageAndLevel(villageId, level) : ApprovalSetting
+  }
+}
+
+' ═══════════════════════════════════════════════════
+' LAYER 4: ELOQUENT MODEL (Domain)
+' ═══════════════════════════════════════════════════
+
+package "Eloquent Model Layer" #FDE8D8 {
+
+  class Village {
+    +id : bigint
+    +name : string
+    +code : string
+    +headName : string
+    --
+    +hamlets() : HasMany
+    +users() : HasMany
+    +citizens() : HasMany
+    +families() : HasMany
+    +officials() : HasMany
+    +letters() : HasMany
+  }
+
+  class Hamlet {
+    +id : bigint
+    +villageId : bigint
+    +name : string
+    +code : string
+    +isActive : bool
+    --
+    +village() : BelongsTo
+    +rws() : HasMany
+    +officials() : HasMany
+    +citizens() : HasMany
+  }
+
+  class Rw {
+    +id : bigint
+    +hamletId : bigint
+    +number : string
+    +fullLabel : string
+    +isActive : bool
+    --
+    +hamlet() : BelongsTo
+    +rts() : HasMany
+    +officials() : HasMany
+  }
+
+  class Rt {
+    +id : bigint
+    +rwId : bigint
+    +number : string
+    +fullLabel : string
+    +isActive : bool
+    --
+    +rw() : BelongsTo
+    +citizens() : HasMany
+    +officials() : HasMany
+  }
+
+  class User {
+    +id : bigint
+    +villageId : bigint
+    +citizenId : bigint?
+    +name : string
+    +email : string
+    -password : string
+    +role : enum
+    +isActive : bool
+    --
+    +village() : BelongsTo
+    +citizen() : BelongsTo
+    +official() : HasOne
+    +submittedLetters() : HasMany
+    +approvals() : HasMany
+    note right
+      role ENUM TETAP 9 nilai (TIDAK
+      BERUBAH dari v4.2): warga, rt, rw,
+      kadus, kasi_pelayanan, kaur_tu_umum,
+      petugas_desa, kepala_desa,
+      sekretaris_desa.
+    end note
+  }
+
+  class Citizen {
+    +id : bigint
+    +villageId : bigint
+    -nik : string <<encrypted>>
+    +nikHash : string
+    +name : string
+    +gender : enum
+    -address : string <<encrypted>>
+    +rtId : bigint?
+    +hamletId : bigint?
+    +domicileStatus : enum
+    +currentDomicile : string?
+    +familyId : bigint?
+    +familyRole : enum?
+    +fatherId : bigint?
+    +motherId : bigint?
+    +fatherNameText : string?
+    +motherNameText : string?
+    +bloodType : enum?
+    +residencyType : enum
+    +originRegion : string?
+    +dataSource : enum
+    +lastVerifiedAt : datetime?
+    +syncStatus : enum?
+    +isActive : bool
+    --
+    +village() : BelongsTo
+    +rt() : BelongsTo
+    +hamlet() : BelongsTo
+    +family() : BelongsTo
+    +father() : BelongsTo
+    +mother() : BelongsTo
+    +childrenAsFather() : HasMany
+    +childrenAsMother() : HasMany
+    +socioeconomic() : HasOne
+    +user() : HasOne
+    +official() : HasOne
+    note right
+      *** PERUBAHAN BESAR v5.0 (Patch 41) ***
+      Kolom no_kk DIHAPUS TOTAL (pindah ke
+      Family.noKk).
+      Tambah: familyId, familyRole, fatherId/
+      motherId (SELF-REFERENCE - father()/
+      mother() BelongsTo ke Citizen sendiri;
+      childrenAsFather()/childrenAsMother()
+      HasMany kebalikannya - untuk fitur pohon
+      keluarga), fatherNameText/
+      motherNameText (fallback teks bebas),
+      bloodType, residencyType, originRegion,
+      dataSource, lastVerifiedAt, syncStatus.
+      socioeconomic(): HasOne ke
+      CitizenSocioeconomic (1:1 per individu).
+      ---
+      TIDAK ADA kategori "warga Non-NIK" -
+      setiap row di sini SUDAH PASTI punya
+      NIK, baik lokal maupun pendatang.
+      Pembeda murni residencyType, BUKAN
+      model/tabel terpisah (SID-ARCH-BE-001
+      S5.2).
+      Gate akses tetap HANYA cek isActive -
+      domicileStatus & residencyType murni
+      informatif.
+    end note
+  }
+
+  class Family {
+    +id : bigint
+    -noKk : string <<encrypted>>
+    +noKkHash : string
+    -familyAddress : string <<encrypted>>
+    +familyStatus : enum
+    +villageId : bigint
+    +rtId : bigint?
+    +hamletId : bigint?
+    +headOfFamilyId : bigint?
+    --
+    +village() : BelongsTo
+    +rt() : BelongsTo
+    +hamlet() : BelongsTo
+    +members() : HasMany
+    +headOfFamily() : BelongsTo
+    note right
+      BARU v5.0. Tabel KK, sengaja TIPIS -
+      hanya fakta level-keluarga. noKk/
+      noKkHash: dual-column pola SAMA PERSIS
+      dengan nik/nikHash (bukan pola baru).
+      headOfFamily(): denormalisasi OPSIONAL
+      untuk performa query - bisa diturunkan
+      dari members().where('familyRole',
+      'kepala_keluarga'). Jika dipakai,
+      WAJIB dijaga konsisten manual.
+    end note
+  }
+
+  class CitizenSocioeconomic {
+    +id : bigint
+    +citizenId : bigint
+    +incomeRange : enum?
+    +houseOwnershipStatus : enum?
+    +waterSource : enum?
+    +electricitySource : enum?
+    +dependentsCount : int?
+    +productiveAssets : json?
+    +surveyedAt : datetime?
+    +surveyedBy : bigint?
+    --
+    +citizen() : BelongsTo
+    +surveyor() : BelongsTo
+    note right
+      BARU v5.0, MASUK MVP. Relasi 1:1
+      dengan Citizen (per INDIVIDU, bukan
+      per keluarga). Dipisah dari Citizen
+      karena sering kosong (belum semua
+      warga disurvei) dan butuh jejak waktu
+      survei terpisah.
+    end note
+  }
+
+  class Official {
+    +id : bigint
+    +citizenId : bigint
+    +userId : bigint?
+    +position : enum
+    +villageId : bigint
+    +rtId : bigint?
+    +rwId : bigint?
+    +hamletId : bigint?
+    +signatureImg : string?
+    +stampImg : string?
+    +photoImg : string?
+    +phoneWa : string?
+    +startedAt : date
+    +endedAt : date?
+    +isActive : bool
+    --
+    +citizen() : BelongsTo
+    +user() : BelongsTo
+    +village() : BelongsTo
+    +rt() : BelongsTo
+    +rw() : BelongsTo
+    +hamlet() : BelongsTo
+    +isCurrentlyActive() : bool
+    note right
+      STRUKTUR ATRIBUT TIDAK BERUBAH dari
+      v4.2. Perubahan MURNI di level
+      MAKNA relasi: hamlet_id utk
+      position='kadus' TETAP tersimpan
+      (jabatan struktural non-approval
+      masih ada), TAPI TIDAK LAGI dipakai
+      OfficialService untuk resolve
+      approval surat (lihat OfficialService
+      di atas & FlowStep di bawah).
+      position ENUM 14 nilai, TIDAK BERUBAH.
+    end note
+  }
+
+  class LetterCategory {
+    +id : bigint
+    +code : enum
+    +name : string
+    +description : string?
+    +handlerClass : string
+    +isActive : bool
+    --
+    +flows() : HasMany
+    +letterTypes() : HasMany
+    note right
+      BARU v5.0. code ENUM: approval_normal
+      | upload_mandiri | dokumen_pendukung |
+      update_data. Gate awal klasifikasi
+      surat, jarang berubah. handlerClass
+      -> pola Strategy: dispatch ke
+      handler berdasarkan ini, bukan
+      if/else bertingkat tersebar
+      (SID-ARCH-BE-001 S3.4).
+    end note
+  }
+
+  class ApprovalFlow {
+    +id : bigint
+    +categoryId : bigint
+    +name : string
+    +description : string?
+    +isActive : bool
+    --
+    +category() : BelongsTo
+    +steps() : HasMany
+    +letterTypes() : HasMany
+    +letters() : HasMany
+    note right
+      BARU v5.0. 1 category bisa punya
+      BANYAK flow - flow baru = tambah
+      row, BUKAN ubah kode (Config over
+      Code, SID-ARCH-SYS-001 S1). Untuk
+      category non-approval_normal, TETAP
+      wajib punya 1 row flow (misal
+      "Direct - Tanpa Approval Bertingkat")
+      meski steps() kosong/minimal.
+    end note
+  }
+
+  class FlowStep {
+    +id : bigint
+    +flowId : bigint
+    +stepOrder : int
+    +approverPosition : enum
+    +isFinal : bool
+    --
+    +flow() : BelongsTo
+    +approvals() : HasMany
+    note right
+      BARU v5.0. approverPosition ENUM:
+      rt | kepala_desa | sekdes |
+      kasi_pelayanan | kaur_tu_umum.
+      *** 'rw' DAN 'kadus' TIDAK PERNAH
+      MUNCUL di ENUM ini *** - keduanya
+      TIDAK PERNAH menjadi gate approval
+      formal (SID-ARCH-BE-001 S3.2).
+      UNIQUE(flowId, stepOrder).
+    end note
+  }
+
+  class LetterType {
+    +id : bigint
+    +code : string
+    +name : string
+    +template : string?
+    +verificationType : enum
+    +assignedRole : enum?
+    +validityDays : int?
+    +categoryId : bigint
+    +flowId : bigint
+    +isActive : bool
+    --
+    +category() : BelongsTo
+    +flow() : BelongsTo
+    +letters() : HasMany
+    +isDraft() : bool
+    +isPublishable() : bool
+    note right
+      Tambah categoryId (FK NOT NULL) &
+      flowId (FK NOT NULL, BARU v5.0).
+      assignedRole DIPERTAHANKAN sbg
+      DERIVED CACHE utk kompatibilitas
+      mundur - source of truth resmi soal
+      approver adalah FlowStep.
+      approverPosition. Policy WAJIB
+      validasi lewat flow_steps, BUKAN
+      assignedRole langsung, untuk cegah
+      drift antar 2 sumber data
+      (SID-ARCH-BE-001 S4.2).
+    end note
+  }
+
+  class Letter {
+    +id : bigint
+    +villageId : bigint
+    +letterTypeId : bigint
+    +submittedBy : bigint
+    +onBehalfOf : bigint?
+    +citizenId : bigint?
+    +letterNumber : string?
+    +applicantName : string
+    -applicantNik : string <<encrypted>>
+    +applicantNikHash : string
+    -applicantAddress : string? <<encrypted>>
+    +purpose : string
+    +status : enum
+    +isOverdue : bool
+    +expiresAt : datetime?
+    +flowId : bigint
+    +currentStepOrder : int
+    +rejectedAtStep : int?
+    +submittedAt : datetime
+    +processedAt : datetime?
+    --
+    +village() : BelongsTo
+    +letterType() : BelongsTo
+    +flow() : BelongsTo
+    +submitter() : BelongsTo
+    +citizen() : BelongsTo
+    +approvals() : HasMany
+    +statusLogs() : HasMany
+    +currentStep() : HasOneThrough
+    +isDownloadable() : bool
+    +isExpiredForWarga() : bool
+    note right
+      *** PERUBAHAN PALING BESAR v5.0 ***
+      status: ENUM turun dari 9 nilai
+      granular (v4.2: rt_approved,
+      kadus_rejected, dst) MENJADI 4 nilai
+      GENERIK: pending | in_progress |
+      approved | rejected.
+      Tambah: flowId (SNAPSHOT dari
+      letterType.flowId saat submit,
+      DIKUNCI - bukan live-reference),
+      currentStepOrder (step aktif,
+      dicocokkan ke flow_steps),
+      rejectedAtStep (histori step
+      penolakan).
+      currentStep(): akses ke FlowStep
+      yang sedang aktif via JOIN
+      flowId+currentStepOrder - inilah
+      cara sistem tahu "sedang di step
+      mana", BUKAN dari nama status lagi.
+      Blockchain hashing (Next Dev) - TIDAK
+      ada model/relasi terkait hash di
+      layer ini, TIDAK BERUBAH dari v4.2.
+    end note
+  }
+
+  class LetterApproval {
+    +id : bigint
+    +letterId : bigint
+    +approvedBy : bigint
+    +approvalLevel : enum
+    +action : enum
+    +flowStepId : bigint?
+    +notes : string?
+    +deadlineAt : datetime?
+    +remindedAt : datetime?
+    --
+    +letter() : BelongsTo
+    +approver() : BelongsTo
+    +flowStep() : BelongsTo
+    +isOverdue() : bool
+    note right
+      approvalLevel ENUM turun dari 4 nilai
+      (rt,rw,kadus,kasi) MENJADI 5 nilai
+      (rt, kepala_desa, sekdes,
+      kasi_pelayanan, kaur_tu_umum).
+      'rw' DAN 'kadus' DIHAPUS - keduanya
+      TIDAK PERNAH membuat row di sini
+      sejak v5.0.
+      Tambah flowStepId (BARU v5.0, FK
+      nullable) - audit trail granular ke
+      step spesifik yang dieksekusi.
+      Jumlah record per letter kini
+      DINAMIS mengikuti jumlah FlowStep
+      milik flow surat ybs (TIDAK LAGI
+      pasti "hingga 4" seperti v4.2).
+    end note
+  }
+
+  class LetterStatusLog {
+    +id : bigint
+    +letterId : bigint
+    +actorId : bigint
+    +oldStatus : enum?
+    +newStatus : enum
+    +notes : string?
+    +ipAddress : string?
+    +userAgent : string?
+    --
+    +letter() : BelongsTo
+    +actor() : BelongsTo
+    note right
+      oldStatus/newStatus ENUM ikut turun
+      ke 4 nilai generik, selaras
+      Letter.status.
+    end note
+  }
+
+  class ApprovalSetting {
+    +id : bigint
+    +villageId : bigint
+    +approvalLevel : enum
+    +deadlineHours : int
+    +reminderHours : int
+    +isActive : bool
+    --
+    +village() : BelongsTo
+    note right
+      ⚠ approvalLevel ENUM MASIH peninggalan
+      v4.2 ('rt','rw','kadus','kasi') - BELUM
+      di-patch eksplisit oleh Patch Guide
+      v5.0, TIDAK selaras dengan
+      LetterApproval.approvalLevel. Digambar
+      apa adanya sesuai TDD (technical debt,
+      TDD Table 70 & Section 8.3.2).
+    end note
+  }
+}
+
+' ═══════════════════════════════════════════════════
+' RELATIONSHIPS: Controller -> Service
+' ═══════════════════════════════════════════════════
+
+AuthController ..> AuthService : uses
+LetterController ..> LetterService : uses
+LetterController ..> PdfService : uses
+RtApprovalController ..> LetterService : uses
+RtApprovalController ..> OfficialService : uses
+FlowStepApprovalController ..> LetterService : uses
+FlowStepApprovalController ..> OfficialService : uses
+CitizenController ..> CitizenService : uses
+FamilyController ..> FamilyService : uses
+UserManagementController ..> UserManagementService : uses
+RegionController ..> RegionService : uses
+ApprovalSettingController ..> ApprovalDeadlineService : uses
+ApprovalFlowController ..> ApprovalFlowRepository : uses (read-only)
+
+' ═══════════════════════════════════════════════════
+' RELATIONSHIPS: Service -> Repository
+' ═══════════════════════════════════════════════════
+
+AuthService ..> UserRepository : uses
+AuthService ..> CitizenRepository : uses
+LetterService ..> LetterRepository : uses
+LetterService ..> LetterTypeRepository : uses
+LetterService ..> ApprovalFlowRepository : uses
+OfficialService ..> OfficialRepository : uses
+OfficialService ..> LetterRepository : uses
+CitizenService ..> CitizenRepository : uses
+FamilyService ..> FamilyRepository : uses
+FamilyService ..> CitizenRepository : uses
+UserManagementService ..> UserRepository : uses
+UserManagementService ..> OfficialRepository : uses
+RegionService ..> RegionRepository : uses
+PdfService ..> LetterRepository : uses
+PdfService ..> OfficialRepository : uses
+ApprovalDeadlineService ..> ApprovalSettingRepository : uses
+ApprovalDeadlineService ..> LetterRepository : uses
+
+' ═══════════════════════════════════════════════════
+' RELATIONSHIPS: Repository -> Eloquent Model
+' ═══════════════════════════════════════════════════
+
+UserRepository ..> User : queries
+CitizenRepository ..> Citizen : queries
+FamilyRepository ..> Family : queries
+OfficialRepository ..> Official : queries
+LetterRepository ..> Letter : queries
+LetterRepository ..> LetterApproval : queries
+LetterRepository ..> LetterStatusLog : queries
+LetterTypeRepository ..> LetterType : queries
+LetterCategoryRepository ..> LetterCategory : queries
+ApprovalFlowRepository ..> ApprovalFlow : queries
+ApprovalFlowRepository ..> FlowStep : queries
+RegionRepository ..> Hamlet : queries
+RegionRepository ..> Rw : queries
+RegionRepository ..> Rt : queries
+ApprovalSettingRepository ..> ApprovalSetting : queries
+
+' ═══════════════════════════════════════════════════
+' RELATIONSHIPS: Eloquent Model (Domain)
+' ═══════════════════════════════════════════════════
+
+Village "1" *-- "many" Hamlet
+Hamlet "1" *-- "many" Rw
+Rw "1" *-- "many" Rt
+
+Village "1" o-- "many" User
+Village "1" o-- "many" Citizen
+Village "1" o-- "many" Family
+Village "1" o-- "many" Official
+Village "1" o-- "many" Letter
+Village "1" o-- "many" ApprovalSetting
+
+User "1" -- "0..1" Citizen : citizenId
+
+Citizen "1" o-- "0..1" Rt : rtId
+Citizen "1" o-- "0..1" Hamlet : hamletId
+Citizen "many" o-- "0..1" Family : familyId
+Citizen "0..1" -- "0..1" Citizen : fatherId (self-ref)
+Citizen "0..1" -- "0..1" Citizen : motherId (self-ref)
+Citizen "1" -- "0..1" CitizenSocioeconomic : 1:1
+
+Family "0..1" -- "0..1" Citizen : headOfFamilyId\n(denormalisasi opsional)
+
+User "0..1" -- "0..1" Official : userId
+Citizen "1" -- "many" Official : citizenId
+Official "0..1" o-- "0..1" Rt : rtId (exclusive)
+Official "0..1" o-- "0..1" Rw : rwId (exclusive)
+Official "0..1" o-- "0..1" Hamlet : hamletId (exclusive,\nstruktural non-approval)
+
+LetterCategory "1" *-- "many" ApprovalFlow
+ApprovalFlow "1" *-- "many" FlowStep
+LetterCategory "1" o-- "many" LetterType
+ApprovalFlow "1" o-- "many" LetterType : flow default
+ApprovalFlow "1" o-- "many" Letter : flow_id (snapshot,\ndikunci saat submit)
+FlowStep "1" o-- "many" LetterApproval : flow_step_id\n(nullable, audit granular)
+
+LetterType "1" *-- "many" Letter
+Letter "1" *-- "many" LetterApproval
+Letter "1" *-- "many" LetterStatusLog
+User "1" -- "many" Letter : submittedBy
+Citizen "0..1" -- "many" Letter : citizenId
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 01_Class_Core_v4.puml -> 01_Class_Core_v5.puml
+'==================================================================================
+'
+' *** PERUBAHAN PALING BESAR DI SELURUH BATCH CLASS DIAGRAM ***
+'
+' CONTROLLER LAYER:
+'   - RwApprovalController DIHAPUS TOTAL (RW bukan approver).
+'   - KadusApprovalController DIHAPUS TOTAL (Kadus bukan approver).
+'   - KasiApprovalController DIGABUNG ke controller generik baru.
+'   - TAMBAH FlowStepApprovalController (BARU) - satu controller generik
+'     melayani Kepala Desa, Sekretaris Desa, Kasi Pelayanan, Kaur TU Umum
+'     sekaligus, karena keempatnya resolve BERBASIS POSISI MURNI (bukan
+'     wilayah). RtApprovalController TETAP TERPISAH karena basis wilayah.
+'   - TAMBAH FamilyController (BARU) - CRUD families/KK.
+'   - TAMBAH ApprovalFlowController (BARU, READ-ONLY) - expose struktur
+'     flow untuk kebutuhan preview di Frontend.
+'
+' SERVICE LAYER:
+'   - LetterService: processRwDecision(), processKadusDecision(),
+'     processKasiDecision(), validateRwAccess(), validateKadusAccess()
+'     SEMUA DIHAPUS. Digantikan processStepDecision() dan
+'     validateStepAccess() generik yang menerima approverPosition sebagai
+'     parameter - method tunggal melayani 4 posisi approver berbasis
+'     posisi murni. processRtDecision() TETAP TERPISAH (basis wilayah).
+'   - OfficialService: resolveKadusForCitizen() DIHAPUS. resolveRwForCitizen()
+'     DIPERTAHANKAN tapi didokumentasikan turun level jadi notifier saja
+'     (bukan authorizer). TAMBAH resolveByPositionOnly() generik untuk
+'     4 posisi approver berbasis posisi.
+'   - TAMBAH FamilyService (BARU) dengan guardSingleHeadOfFamily().
+'
+' REPOSITORY LAYER:
+'   - LetterRepository: findByRwIdAndStatus(), findByHamletIdAndStatus(),
+'     findByAssignedRoleAndStatus() SEMUA DIHAPUS. Digantikan SATU method
+'     generik findByFlowStepAndStatus(approverPosition, status) yang
+'     dipakai lintas Service (dashboard, notifikasi, reminder scheduler) -
+'     ini alasan utama Repository layer dipertahankan (SID-ARCH-BE-001 S2).
+'     findByRtIdAndStatus() TETAP TERPISAH (basis wilayah, butuh JOIN
+'     citizens.rt_id tambahan).
+'   - OfficialRepository: findActiveByHamletId() DIHAPUS (tidak ada lagi
+'     kebutuhan resolve Kadus untuk approval). findActiveByPosition()
+'     kini return Collection (bukan single Official) karena Kepala
+'     Desa/Sekdes bisa >1 pejabat aktif yang saling menggantikan.
+'   - TAMBAH FamilyRepository, LetterCategoryRepository,
+'     ApprovalFlowRepository (semua BARU v5.0).
+'
+' ELOQUENT MODEL LAYER:
+'   - TAMBAH 5 model baru: LetterCategory, ApprovalFlow, FlowStep, Family,
+'     CitizenSocioeconomic.
+'   - Citizen: hapus atribut noKk; tambah familyId/familyRole, fatherId/
+'     motherId (SELF-REFERENCE relasi father()/mother()/childrenAsFather()/
+'     childrenAsMother()), fatherNameText/motherNameText, bloodType,
+'     residencyType, originRegion, dataSource, lastVerifiedAt, syncStatus,
+'     socioeconomic() HasOne.
+'   - Letter: status ENUM 9->4 nilai generik; tambah flowId (snapshot),
+'     currentStepOrder, rejectedAtStep, flow() BelongsTo, currentStep()
+'     accessor via JOIN.
+'   - LetterType: tambah categoryId, flowId (FK NOT NULL keduanya).
+'   - LetterApproval: approvalLevel ENUM 4->5 nilai (rw & kadus dihapus,
+'     kepala_desa & sekdes & kasi_pelayanan & kaur_tu_umum eksplisit);
+'     tambah flowStepId (nullable).
+'   - LetterStatusLog: oldStatus/newStatus ikut turun ke 4 nilai generik.
+'   - Official: atribut TIDAK BERUBAH, hanya catatan makna relasi
+'     (hamletId utk kadus tetap tersimpan tapi tidak dipakai approval).
+'
+' TIDAK BERUBAH: Village, Hamlet, Rw, Rt, User (struktur & role ENUM),
+'   AuthController/AuthService, RtApprovalController (TETAP terpisah),
+'   CitizenController/CitizenService dasar, UserManagementController/
+'   Service, RegionController/Service, PdfService, ApprovalSetting model
+'   (ENUM technical debt sengaja tidak dikoreksi).
+'
+'==================================================================================

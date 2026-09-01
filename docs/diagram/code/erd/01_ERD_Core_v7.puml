@@ -1,0 +1,693 @@
+'==================================================================================
+' SECTION: ERD (ENTITY RELATIONSHIP DIAGRAM)
+' FILE: 01_ERD_Core_v7.puml
+' JUDUL: ERD - Core [1/2]
+' SUMBER: TECHNICAL DESIGN DOCUMENT SID Desa Cibenda v5.0 (Section 5.4.1, 5.4.2)
+'         + SID-ARCH-BE-001 v1.0 (S3, S5)
+' CATATAN: Menggantikan 01_ERD_Core_v6.puml (v4.2). Perubahan utama v6 -> v7
+'          didokumentasikan di catatan revisi bawah file ini.
+'==================================================================================
+
+@startuml 5.4.1a_v7 ERD Core
+skinparam backgroundColor #FFFFFF
+skinparam entity {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+  HeaderBackgroundColor #2E5FA3
+  HeaderFontColor #FFFFFF
+}
+skinparam arrow {
+  Color #2E5FA3
+  FontName Arial
+  FontSize 10
+}
+skinparam linetype ortho
+
+title Entity Relationship Diagram (ERD) v7 - CORE [1/2] - SID Desa Cibenda\n(Wilayah, Pengguna & Jabatan Struktural, Kependudukan (KK+Individu+Sosioekonomi), Surat, Pipeline Approval Dinamis)\nLihat file ERD Pendukung [2/2] untuk: Organisasi Non-Struktural, Notifikasi, Berita, Peraturan Desa\nSelaras TDD v5.0 Section 5.4 & SID-ARCH-BE-001 S3/S5
+
+' ─────────────────────────────────────────────
+' WILAYAH
+' ─────────────────────────────────────────────
+
+entity "villages" as VIL {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(100)
+  * code : VARCHAR(20) <<UNIQUE>>
+  head_name : VARCHAR(100)
+  address : TEXT
+  phone : VARCHAR(20)
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "hamlets" as HAM {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : BIGINT <<FK -> villages>>
+  * name : VARCHAR(100)
+  * code : VARCHAR(20) <<UNIQUE>>
+  * is_active : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of HAM
+  TIDAK BERUBAH dari v4.2/v6.
+  5 Dusun Desa Cibenda: Patrol,
+  Sinargalih, Cibenda, Budiasih, Sucen
+  (di-seed saat instalasi).
+end note
+
+entity "rws" as RWS {
+  * id : BIGINT <<PK>>
+  --
+  * hamlet_id : BIGINT <<FK -> hamlets>>
+  * number : VARCHAR(5)
+  * full_label : VARCHAR(20)
+  * is_active : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "rts" as RTS {
+  * id : BIGINT <<PK>>
+  --
+  * rw_id : BIGINT <<FK -> rws>>
+  * number : VARCHAR(5)
+  * full_label : VARCHAR(30)
+  * is_active : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of RTS
+  Hierarki wilayah TIDAK BERUBAH v5.0:
+  villages -> hamlets -> rws -> rts.
+end note
+
+' ─────────────────────────────────────────────
+' PENGGUNA & JABATAN STRUKTURAL
+' ─────────────────────────────────────────────
+
+entity "users" as USR {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : BIGINT <<FK -> villages>>
+  citizen_id : BIGINT <<FK -> citizens, NULL>>
+  * name : VARCHAR(100)
+  * email : VARCHAR(100) <<UNIQUE>>
+  * password : VARCHAR(255) <<Argon2id>>
+  * role : ENUM('warga','rt','rw','kadus',\n'kasi_pelayanan','kaur_tu_umum',\n'petugas_desa','kepala_desa',\n'sekretaris_desa')
+  * is_active : BOOLEAN
+  email_verified_at : TIMESTAMP
+  remember_token : VARCHAR(100)
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of USR
+  TIDAK BERUBAH dari v4.2 (role ENUM
+  tetap 9 nilai flat - lihat
+  SID-ARCH-BE-001 S4.1).
+  'kadus' TETAP ADA di ENUM untuk
+  kompatibilitas akun (login/logout/
+  lihat status), namun sejak v5.0 TIDAK
+  lagi relevan terhadap
+  flow_steps.approver_position.
+  citizen_id: NULL diizinkan untuk
+  akun teknis tanpa data kependudukan.
+end note
+
+entity "families" as FAM {
+  * id : BIGINT <<PK, AUTO INCREMENT>>
+  --
+  * no_kk : TEXT <<AES-256 encrypted>>
+  * no_kk_hash : VARCHAR(64) <<UNIQUE INDEX>>
+  * family_address : TEXT <<AES-256 encrypted>>
+  * family_status : ENUM('aktif','pindah','bubar')\nDEFAULT 'aktif'
+  * village_id : BIGINT <<FK -> villages>>
+  rt_id : BIGINT <<FK -> rts, NULL>>
+  hamlet_id : BIGINT <<FK -> hamlets, NULL>>
+  head_of_family_id : BIGINT <<FK -> citizens, NULL>>
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of FAM
+  BARU v5.0. Tabel Kartu Keluarga (KK),
+  sengaja TIPIS - hanya fakta level-keluarga.
+  no_kk/no_kk_hash: dual-column pola sama
+  persis dengan nik/nik_hash sejak v3.2
+  (BUKAN pola baru).
+  head_of_family_id: denormalisasi
+  OPSIONAL untuk performa query - pada
+  prinsipnya bisa diturunkan dari
+  citizens.family_role='kepala_keluarga'.
+  Jika dipakai, aplikasi WAJIB jaga
+  konsistensi manual antar 2 sumber ini.
+end note
+
+entity "citizens" as CIT {
+  * id : BIGINT <<PK, AUTO INCREMENT>>
+  --
+  * village_id : BIGINT <<FK -> villages>>
+  * nik : TEXT <<AES-256 encrypted>>
+  * nik_hash : VARCHAR(64) <<UNIQUE INDEX>>
+  * name : VARCHAR(100)
+  date_of_birth : DATE
+  place_of_birth : VARCHAR(100)
+  * gender : ENUM('L','P')
+  * address : TEXT <<AES-256 encrypted>>
+  rt_id : BIGINT <<FK -> rts, NULL>>
+  hamlet_id : BIGINT <<FK -> hamlets, NULL>>
+  marital_status : ENUM('belum_kawin',\n'kawin','cerai_hidup','cerai_mati')
+  occupation : VARCHAR(100)
+  religion : ENUM('islam','kristen',\n'katolik','hindu','buddha','konghucu')
+  last_education : ENUM('tidak_sekolah','sd',\n'smp','sma','diploma','s1','s2','s3')
+  * domicile_status : ENUM('menetap',\n'merantau_dalam_negeri',\n'merantau_luar_negeri','tki')\nDEFAULT 'menetap'
+  current_domicile : VARCHAR(150)
+  family_id : BIGINT <<FK -> families, NULL>>
+  family_role : ENUM('kepala_keluarga','istri',\n'suami','anak','famili_lain') <<NULL>>
+  father_id : BIGINT <<FK -> citizens, NULL>>
+  mother_id : BIGINT <<FK -> citizens, NULL>>
+  father_name_text : VARCHAR(100) <<NULL>>
+  mother_name_text : VARCHAR(100) <<NULL>>
+  blood_type : ENUM('A','B','AB','O',\n'tidak_tahu') <<NULL>>
+  * residency_type : ENUM('lokal','pendatang')\nDEFAULT 'lokal'
+  origin_region : VARCHAR(150) <<NULL>>
+  * data_source : ENUM('manual_input_desa',\n'import_excel','dukcapil_sync')\nDEFAULT 'manual_input_desa'
+  last_verified_at : TIMESTAMP <<NULL>>
+  sync_status : ENUM('synced','pending',\n'conflict') <<NULL>>
+  * is_active : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of CIT
+  PATCH BESAR v5.0 (Patch 41):
+  - Kolom no_kk DIHAPUS TOTAL, pindah ke
+    families.no_kk (lihat entity families).
+  - Tambah 11 kolom baru: family_id,
+    family_role, father_id, mother_id,
+    father_name_text, mother_name_text,
+    blood_type, residency_type,
+    origin_region, data_source,
+    last_verified_at, sync_status.
+  - father_id/mother_id: SELF-REFERENCE FK
+    ke citizens.id sendiri, untuk fitur
+    pohon keluarga. Fallback teks bebas
+    (father_name_text/mother_name_text)
+    jika ortu tidak terdaftar sebagai
+    warga desa.
+  ---
+  KEPUTUSAN PENTING (SID-ARCH-BE-001 S5.2):
+  TIDAK ADA kategori "warga Non-NIK".
+  Setiap row di sini SUDAH PASTI punya
+  NIK terverifikasi - baik lokal maupun
+  pendatang. Pembeda lokal/pendatang
+  murni kolom residency_type, BUKAN
+  tabel/entitas terpisah.
+  ---
+  Gate logic warga self-service HANYA
+  cek is_active - domicile_status &
+  residency_type murni informatif.
+end note
+
+entity "citizen_socioeconomics" as CSE {
+  * id : BIGINT <<PK, AUTO INCREMENT>>
+  --
+  * citizen_id : BIGINT <<FK -> citizens, UNIQUE NOT NULL>>
+  income_range : ENUM('<1jt','1-3jt','3-5jt',\n'5-10jt','>10jt') <<NULL>>
+  house_ownership_status : ENUM('milik_sendiri',\n'sewa','menumpang','dinas') <<NULL>>
+  water_source : ENUM('pdam','sumur',\n'sungai','lainnya') <<NULL>>
+  electricity_source : ENUM('pln','non_pln',\n'tidak_ada') <<NULL>>
+  dependents_count : INT <<NULL>>
+  productive_assets : JSON <<NULL>>
+  surveyed_at : TIMESTAMP <<NULL>>
+  surveyed_by : BIGINT <<FK -> users, NULL>>
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of CSE
+  BARU v5.0, MASUK MVP.
+  Relasi 1:1 dengan citizens
+  (per INDIVIDU, bukan per keluarga).
+  Dipisah dari citizens karena:
+  sering kosong (belum semua warga
+  disurvei), diinput petugas berbeda-beda,
+  butuh jejak waktu survei (surveyed_at).
+  ---
+  Cluster Kelayakan Bansos
+  (citizen_aid_eligibility,
+  citizen_aid_history, aid_programs)
+  TIDAK masuk MVP - lihat Next Dev/
+  Tahap 2, TIDAK digambar di ERD ini.
+end note
+
+entity "officials" as OFF {
+  * id : BIGINT <<PK, AUTO INCREMENT>>
+  --
+  * citizens_id : BIGINT <<FK -> citizens, NOT NULL>>
+  user_id : BIGINT <<FK -> users, NULL>>
+  * position : ENUM('kepala_desa','kasi_pelayanan',\n'kaur_tu_umum','kadus','petugas_desa',\n'rw','rt','sekdes','kasi_kesejahteraan',\n'kasi_pemerintahan','kaur_perencanaan',\n'kaur_keuangan','staf_sipades','staf_siskeudes')
+  * village_id : BIGINT <<FK -> villages, NOT NULL>>
+  rt_id : BIGINT <<FK -> rts, NULL>>
+  rw_id : BIGINT <<FK -> rws, NULL>>
+  hamlet_id : BIGINT <<FK -> hamlets, NULL>>
+  signature_img : VARCHAR(255) <<NULL>>
+  stamp_img : VARCHAR(255) <<NULL>>
+  photo_img : VARCHAR(255) <<NULL>>
+  phone_wa : VARCHAR(20) <<NULL>>
+  * started_at : DATE
+  ended_at : DATE <<NULL = masih aktif>>
+  * is_active : BOOLEAN <<DEFAULT true>>
+  notes : TEXT <<NULL>>
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of OFF
+  STRUKTUR KOLOM TIDAK BERUBAH dari v4.2.
+  PERUBAHAN v5.0 murni di level MAKNA
+  relasi (lihat SID-ARCH-BE-001 S3.2):
+  - officials.position='kadus' TETAP
+    eksis untuk keperluan struktural
+    non-approval (halaman publik, dsb),
+    TAPI tidak lagi menjadi target
+    resolve OfficialService untuk
+    konteks approval surat - TIDAK ADA
+    relasi eksplisit OFF ke flow_steps
+    di ERD ini (lihat catatan flow_steps).
+  - Resolve Kepala Desa/Sekdes/Kasi/Kaur:
+    BERBASIS POSISI MURNI (position IN
+    (...) + is_active=true), TANPA join
+    wilayah sama sekali - beda pola
+    dengan resolve RT (berbasis rt_id).
+  ---
+  KONSTRAINT EXCLUSIVE rt_id/rw_id/hamlet_id
+  (sama seperti v4.2, divalidasi di level
+  aplikasi bukan DB constraint):
+    position='rt'    -> rt_id terisi saja
+    position='rw'    -> rw_id terisi saja
+    position='kadus' -> hamlet_id terisi saja
+    lainnya          -> ketiganya NULL
+  ---
+  user_id: NULL untuk jabatan non-sistem.
+  Sekdes (sekdes) PUNYA akun - user_id
+  NOT NULL, users.role='sekretaris_desa'.
+end note
+
+' ─────────────────────────────────────────────
+' PIPELINE SURAT - KONFIGURASI DINAMIS (BARU v5.0)
+' ─────────────────────────────────────────────
+
+entity "letter_categories" as LCAT {
+  * id : BIGINT <<PK, AUTO INCREMENT>>
+  --
+  * code : ENUM('approval_normal',\n'upload_mandiri','dokumen_pendukung',\n'update_data') <<UNIQUE>>
+  * name : VARCHAR(100)
+  description : TEXT <<NULL>>
+  * handler_class : VARCHAR(150)
+  * is_active : BOOLEAN <<DEFAULT true>>
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of LCAT
+  BARU v5.0. Gate awal klasifikasi surat,
+  menentukan handler/modul yang menangani.
+  Jarang berubah (SID-ARCH-SYS-001 S2.1).
+  handler_class -> pola Strategy: Controller
+  dispatch ke handler berdasarkan ini,
+  BUKAN if/else bertingkat berdasar code
+  yang tersebar di banyak tempat.
+end note
+
+entity "approval_flows" as AFLOW {
+  * id : BIGINT <<PK, AUTO INCREMENT>>
+  --
+  * category_id : BIGINT <<FK -> letter_categories, NOT NULL>>
+  * name : VARCHAR(150)
+  description : TEXT <<NULL>>
+  * is_active : BOOLEAN <<DEFAULT true>>
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of AFLOW
+  BARU v5.0. Anak dari category, urutan
+  step approval spesifik. 1 category bisa
+  punya BANYAK flow (flow baru = tambah
+  row, BUKAN ubah kode - Config over Code,
+  SID-ARCH-SYS-001 S1).
+  Untuk category upload_mandiri/
+  dokumen_pendukung/update_data: TETAP
+  WAJIB punya row di sini (misal flow
+  "Direct - Tanpa Approval Bertingkat"),
+  meski flow_steps-nya kosong/minimal -
+  demi 1 pola query generik seragam.
+end note
+
+entity "flow_steps" as FSTEP {
+  * id : BIGINT <<PK, AUTO INCREMENT>>
+  --
+  * flow_id : BIGINT <<FK -> approval_flows, NOT NULL>>
+  * step_order : INT
+  * approver_position : ENUM('rt','kepala_desa',\n'sekdes','kasi_pelayanan',\n'kaur_tu_umum')
+  * is_final : BOOLEAN <<DEFAULT false>>
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of FSTEP
+  BARU v5.0. Urutan approver per flow.
+  UNIQUE(flow_id, step_order).
+  --
+  *** PENTING (TDD & SID-ARCH-BE-001 S3.2) ***
+  'rw' dan 'kadus' TIDAK PERNAH muncul
+  sebagai approver_position di tabel ini:
+  - RW: side-effect notifikasi FYI saja,
+    bukan gate approval formal. Endpoint
+    decision/approval TIDAK PERNAH dibuka
+    untuk role RW di level route.
+  - Kadus: dihapus total dari domain
+    approval sejak v5.0.
+  --
+  Resolve approver 2 pola berbeda:
+  - approver_position='rt' -> berbasis
+    WILAYAH (citizens.rt_id -> rts.id,
+    lalu officials aktif dg rt_id sama)
+  - approver_position IN ('kepala_desa',
+    'sekdes','kasi_pelayanan',
+    'kaur_tu_umum') -> berbasis POSISI
+    MURNI (officials.position + is_active,
+    TANPA join wilayah sama sekali)
+end note
+
+entity "letter_types" as LT {
+  * id : BIGINT <<PK>>
+  --
+  * code : VARCHAR(20) <<UNIQUE>>
+  * name : VARCHAR(100)
+  description : TEXT
+  template : TEXT <<NULL = Draft>>
+  * verification_type : ENUM('auto',\n'manual','document')
+  requirements_info : TEXT
+  assigned_role : ENUM('kasi_pelayanan',\n'kaur_tu_umum') <<NULL>>
+  validity_days : INT <<NULL = tidak expire>>
+  * category_id : BIGINT <<FK -> letter_categories, NOT NULL>>
+  * flow_id : BIGINT <<FK -> approval_flows, NOT NULL>>
+  * is_active : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of LT
+  PATCH v5.0: tambah category_id (FK,
+  NOT NULL) dan flow_id (FK, NOT NULL -
+  selalu diisi termasuk untuk category
+  non-approval_normal, demi konsistensi).
+  ---
+  assigned_role (peninggalan v4.2):
+  DIPERTAHANKAN sebagai kolom derived/
+  cache untuk kompatibilitas mundur -
+  BUKAN lagi source of truth. Source of
+  truth resmi soal "siapa approver di
+  step mana" adalah flow_steps.
+  approver_position (SID-ARCH-BE-001 S4.2).
+  Policy WAJIB validasi lewat flow_steps,
+  bukan assigned_role langsung.
+  ---
+  Status: template=NULL + is_active=false
+          = Draft
+  MVP: Petugas Desa hanya edit
+  validity_days, assigned_role,
+  toggle is_active (UC-21 sederhana).
+  Full CRUD + WYSIWYG = Next Dev Paket 1
+  (letter_type_fields/letter_field_values
+  TIDAK ada di MVP, TIDAK digambar di sini).
+end note
+
+entity "letters" as LET {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : BIGINT <<FK -> villages>>
+  * letter_type_id : BIGINT <<FK -> letter_types>>
+  * submitted_by : BIGINT <<FK -> users>>
+  on_behalf_of : BIGINT <<FK -> citizens, NULL>>
+  citizen_id : BIGINT <<FK -> citizens, NULL>>
+  letter_number : VARCHAR(50) <<UNIQUE, NULL>>
+  * applicant_name : VARCHAR(100)
+  * applicant_nik : TEXT <<AES-256 encrypted>>
+  * applicant_nik_hash : VARCHAR(64) <<INDEX>>
+  applicant_address : TEXT <<AES-256 encrypted>>
+  * purpose : TEXT
+  notes : TEXT
+  * is_overdue : BOOLEAN <<DEFAULT false>>
+  expires_at : TIMESTAMP <<NULL>>
+  * status : ENUM('pending','in_progress',\n'approved','rejected')\nDEFAULT 'pending'
+  * flow_id : BIGINT <<FK -> approval_flows, NOT NULL>>
+  * current_step_order : INT <<DEFAULT 1>>
+  rejected_at_step : INT <<NULL>>
+  * submitted_at : TIMESTAMP
+  processed_at : TIMESTAMP <<NULL>>
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of LET
+  PATCH BESAR v5.0 (menggantikan status
+  granular per posisi v4.2):
+  - status: ENUM turun dari 9 nilai granular
+    (rt_approved, kadus_rejected, dst) MENJADI
+    4 nilai GENERIK: pending | in_progress |
+    approved | rejected.
+    "Sedang di step mana" dibaca dari
+    current_step_order di-JOIN ke flow_steps,
+    BUKAN dari nama status.
+  - flow_id: SNAPSHOT dari letter_types.flow_id
+    saat submit, DIKUNCI. BUKAN live-reference.
+    Jika admin ubah konfigurasi flow di
+    letter_types di tengah jalan, surat yang
+    sedang berjalan TIDAK nyasar/lompat step.
+  - current_step_order: step_order yang sedang
+    aktif/ditunggu, dicocokkan ke flow_steps.
+  - rejected_at_step: step_order tempat surat
+    direject, untuk histori/laporan.
+  ---
+  Semantik status (TDD 5.4.2):
+  pending     : step 1 belum ada action
+  in_progress : minimal 1 step approve,
+                belum sampai step is_final=true
+  approved    : step is_final=true di-approve
+                -> trigger letter_number+expires_at
+  rejected    : TERMINAL, rejected_at_step dicatat
+  ---
+  letter_number & expires_at tetap diisi saat
+  step FINAL approve (bukan lagi "kasi_approved"
+  sebagai nama status, tapi status='approved'
+  dengan step is_final=true).
+  TIDAK ADA kolom PDF - tetap on-demand generation
+  (barryvdh/laravel-dompdf), tidak berubah dari v4.0.
+end note
+
+entity "letter_approvals" as LA {
+  * id : BIGINT <<PK>>
+  --
+  * letter_id : BIGINT <<FK -> letters>>
+  * approved_by : BIGINT <<FK -> users>>
+  * approval_level : ENUM('rt','kepala_desa',\n'sekdes','kasi_pelayanan',\n'kaur_tu_umum')
+  * action : ENUM('approved','rejected')
+  flow_step_id : BIGINT <<FK -> flow_steps, NULL>>
+  notes : TEXT
+  deadline_at : TIMESTAMP <<NULL>>
+  reminded_at : TIMESTAMP <<NULL>>
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of LA
+  PATCH v5.0: approval_level ENUM berubah
+  dari 4 nilai (rt,rw,kadus,kasi) MENJADI
+  5 nilai (rt, kepala_desa, sekdes,
+  kasi_pelayanan, kaur_tu_umum).
+  'rw' DAN 'kadus' DIHAPUS dari ENUM -
+  keduanya TIDAK PERNAH membuat row di
+  tabel ini sejak v5.0.
+  ---
+  Tambah flow_step_id (FK -> flow_steps,
+  NULL) BARU v5.0 - referensi step
+  spesifik yang dieksekusi, untuk audit
+  trail granular.
+  ---
+  1 surat kini punya record approval
+  sesuai JUMLAH STEP di flow-nya (bisa
+  2, 3, atau lebih tergantung flow_steps
+  milik flow tsb) - TIDAK LAGI selalu
+  "hingga 4 record" seperti asumsi v4.2,
+  karena jumlah tahap kini dinamis per flow.
+end note
+
+entity "letter_status_logs" as LSL {
+  * id : BIGINT <<PK>>
+  --
+  * letter_id : BIGINT <<FK -> letters, INDEX>>
+  * actor_id : BIGINT <<FK -> users>>
+  old_status : ENUM('pending','in_progress',\n'approved','rejected') <<NULL>>
+  * new_status : ENUM('pending','in_progress',\n'approved','rejected')
+  notes : TEXT
+  ip_address : VARCHAR(45)
+  user_agent : TEXT
+  * created_at : TIMESTAMP <<INDEX>>
+}
+
+note right of LSL
+  PATCH v5.0: old_status & new_status ENUM
+  ikut turun ke 4 nilai generik, selaras
+  dengan letters.status. Struktur kolom
+  lain TIDAK BERUBAH dari v4.2.
+end note
+
+entity "approval_settings" as APS {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : BIGINT <<FK -> villages>>
+  * approval_level : ENUM('rt','rw',\n'kadus','kasi')
+  * deadline_hours : INT <<DEFAULT 24>>
+  * reminder_hours : INT <<DEFAULT 12>>
+  * is_active : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+note right of APS
+  ⚠ BELUM DI-PATCH EKSPLISIT oleh Patch
+  Guide v5.0 (dicatat sebagai technical
+  debt di TDD Section 8.3.2 & Table 70).
+  ENUM approval_level MASIH peninggalan
+  v4.2 ('rt','rw','kadus','kasi') -
+  TIDAK SELARAS lagi dengan
+  letter_approvals.approval_level yang
+  sudah berubah 5 nilai di v5.0.
+  Digambar APA ADANYA sesuai TDD saat ini
+  (bukan dikoreksi sepihak di ERD ini) -
+  perlu ditinjau ulang tim teknis.
+  UNIQUE(village_id, approval_level).
+end note
+
+' ─────────────────────────────────────────────
+' RELATIONSHIPS - WILAYAH
+' ─────────────────────────────────────────────
+
+VIL ||--o{ HAM : "memiliki dusun"
+HAM ||--o{ RWS : "memiliki RW"
+RWS ||--o{ RTS : "memiliki RT"
+
+' ─────────────────────────────────────────────
+' RELATIONSHIPS - PENGGUNA & JABATAN
+' ─────────────────────────────────────────────
+
+VIL ||--o{ USR : "memiliki akun user"
+VIL ||--o{ CIT : "memiliki warga"
+VIL ||--o{ OFF : "wilayah jabatan"
+VIL ||--o{ FAM : "memiliki KK"
+VIL ||--o{ LET : "asal surat"
+VIL ||--o{ APS : "setting approval"
+
+USR }o--|| CIT : "citizen_id\n(nullable)"
+
+CIT }o--o| RTS : "rt_id (nullable)"
+CIT }o--o| HAM : "hamlet_id (nullable)"
+CIT }o--o| FAM : "family_id (nullable)"
+CIT }o--o| CIT : "father_id (self-ref, nullable)"
+CIT }o--o| CIT : "mother_id (self-ref, nullable)"
+
+FAM }o--o| RTS : "rt_id (nullable)"
+FAM }o--o| HAM : "hamlet_id (nullable)"
+FAM |o--o| CIT : "head_of_family_id\n(nullable, denormalisasi opsional)"
+
+CIT ||--o| CSE : "1:1 data\nsosio-ekonomi"
+USR ||--o{ CSE : "surveyed_by\n(petugas survei, nullable)"
+
+USR ||--o{ OFF : "menjabat sebagai\n(user_id nullable)"
+CIT ||--o{ OFF : "data kependudukan\npejabat (citizens_id)"
+OFF }o--o| RTS : "rt_id (exclusive,\nhanya utk position=rt)"
+OFF }o--o| RWS : "rw_id (exclusive,\nhanya utk position=rw)"
+OFF }o--o| HAM : "hamlet_id (exclusive,\nhanya utk position=kadus,\nstruktural non-approval)"
+
+' ─────────────────────────────────────────────
+' RELATIONSHIPS - PIPELINE SURAT DINAMIS
+' ─────────────────────────────────────────────
+
+LCAT ||--o{ AFLOW : "1 kategori bisa\npunya banyak flow"
+AFLOW ||--o{ FSTEP : "urutan approver\nper flow"
+LCAT ||--o{ LT : "gate awal\njenis surat"
+AFLOW ||--o{ LT : "flow default\njenis surat"
+AFLOW ||--o{ LET : "flow_id = SNAPSHOT\nsaat submit (dikunci)"
+FSTEP |o--o{ LA : "flow_step_id\n(referensi audit granular,\nnullable)"
+
+USR ||--o{ LET : "mengajukan\n(submitted_by)"
+USR ||--o{ LA : "memproses\n(approved_by: RT/Kades/\nSekdes/Kasi/Kaur)"
+USR ||--o{ LSL : "aktor perubahan"
+
+CIT |o--o{ LET : "on_behalf_of\n(nullable, selalu NULL di MVP)"
+CIT |o--o{ LET : "citizen_id\n(nullable)"
+
+LT ||--o{ LET : "jenis surat"
+
+LET ||--o{ LSL : "riwayat status\n(generik: pending/\nin_progress/approved/\nrejected)"
+LET ||--o{ LA : "keputusan approval\n(jumlah record dinamis\nsesuai flow_steps milik\nflow surat ybs)"
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 01_ERD_Core_v6.puml (v4.2) -> 01_ERD_Core_v7.puml (v5.0)
+'==================================================================================
+'
+' ENTITY BARU (5):
+'   - letter_categories  : gate awal klasifikasi surat (approval_normal/
+'                           upload_mandiri/dokumen_pendukung/update_data)
+'   - approval_flows     : anak dari category, urutan step approval spesifik
+'   - flow_steps         : urutan approver per flow (approver_position, is_final)
+'   - families            : tabel KK (no_kk pindah dari citizens ke sini)
+'   - citizen_socioeconomics : data sosio-ekonomi 1:1 per individu warga
+'
+' ENTITY BERUBAH SIGNIFIKAN:
+'   - citizens : hapus no_kk; tambah 11 kolom baru termasuk 2 self-reference
+'                FK (father_id, mother_id -> citizens.id)
+'   - letters  : status granular (9 nilai) -> status generik (4 nilai) +
+'                tambah flow_id (snapshot), current_step_order, rejected_at_step
+'   - letter_types : tambah category_id (FK, NOT NULL) dan flow_id (FK, NOT NULL)
+'   - letter_approvals : approval_level ENUM 4 nilai (rt,rw,kadus,kasi) ->
+'                         5 nilai (rt,kepala_desa,sekdes,kasi_pelayanan,
+'                         kaur_tu_umum); tambah flow_step_id (FK, nullable)
+'   - letter_status_logs : old_status/new_status ikut turun ke ENUM 4 nilai
+'                           generik, selaras letters.status
+'
+' ENTITY TIDAK BERUBAH STRUKTUR (relasinya saja yang berubah makna):
+'   - officials : kolom sama persis dengan v4.2. Perubahan murni di level
+'                 MAKNA - relasi ke Kadus untuk approval DILEPAS (Kadus
+'                 tetap ada sebagai jabatan struktural, tapi flow_steps
+'                 TIDAK PERNAH menunjuk position='kadus')
+'
+' ENTITY TIDAK BERUBAH SAMA SEKALI:
+'   - villages, hamlets, rws, rts, users
+'
+' ENTITY YANG DIKELUARKAN DARI ERD MVP (dipindah ke Next Dev/Tahap 2,
+' TIDAK digambar di sini - lihat TDD Section 3.3/3.4/3.5 & Table 70):
+'   - letter_hashes (Next Dev Paket 2 - Blockchain-Inspired Hashing)
+'   - letter_type_fields, letter_field_values (Next Dev Paket 1 - Dynamic Form)
+'   - village_assets, village_finances (Tahap 2)
+'   - citizen_aid_eligibility, citizen_aid_history, aid_programs (Next Dev/Tahap 2)
+'
+' TECHNICAL DEBT YANG SENGAJA TIDAK DIKOREKSI DI ERD INI:
+'   - approval_settings.approval_level ENUM masih peninggalan v4.2
+'     ('rt','rw','kadus','kasi'), belum di-patch eksplisit oleh Patch Guide
+'     v5.0. Digambar apa adanya sesuai TDD Table 70 & Section 8.3.2, BUKAN
+'     dikoreksi sepihak di dokumen diagram ini.
+'
+'==================================================================================

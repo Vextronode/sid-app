@@ -1,0 +1,272 @@
+'==================================================================================
+' SECTION: COMPONENT DIAGRAM
+' FILE: 02_Component_ArsitekturTeknis_v5.puml
+' JUDUL: Diagram Arsitektur Teknis
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.2.1, 5.2.3, 5.4.2)
+'         + SID-ARCH-BE-001 v1.0 (S1 Tech Stack, S2 Pola Arsitektur,
+'           S3 Pipeline Dinamis, S7 Notifikasi & Event)
+' CATATAN: Menggantikan 5.2.2_v4 (Diagram Arsitektur Teknis, v4.2). Layer
+'          dasar (Client/API/Data/External) TIDAK berubah strukturnya -
+'          perubahan ada di ISI komponen Business Layer (pipeline dinamis
+'          menggantikan hardcode per-role) dan Async Layer (event generik).
+'==================================================================================
+
+@startuml 5.2.2_v5 Diagram Arsitektur Teknis
+skinparam backgroundColor #FFFFFF
+skinparam rectangle {
+  FontName Arial
+  FontSize 12
+  BorderColor #2E5FA3
+}
+skinparam component {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 12
+}
+skinparam database {
+  BackgroundColor #D5F5E3
+  BorderColor #1E8449
+  FontName Arial
+  FontSize 12
+}
+skinparam cloud {
+  BackgroundColor #FEF9E7
+  BorderColor #F39C12
+  FontName Arial
+}
+skinparam arrow {
+  Color #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+
+title Diagram Arsitektur Teknis - SID Desa Cibenda (v5.0)
+
+rectangle "CLIENT LAYER" #EBF3FB {
+  [Browser\n(Warga / RT / RW / Kasi / Kaur /\nPetugas Desa / Kepala Desa /\nSekretaris Desa)] as CLIENT
+  rectangle "React SPA (Vite)" #D6E4F7 {
+    [Pages & Components\n(Feature-Based: /surat,\n/kependudukan, /cms,\n/admin-config)] as PAGES
+    [ApprovalStepRenderer\n(Komponen Generik)] as ASR
+    [Services (Axios /\nTanStack Query)] as AXIOS
+    [Auth Context\n(HttpOnly Cookie)] as AUTH
+  }
+}
+
+note right of ASR
+  BARU v5.0 (SID-ARCH-FE-001 S6).
+  Komponen generik TUNGGAL yang
+  merender tombol approve/reject
+  berdasarkan approver_position +
+  is_final dari API - TIDAK ADA
+  komponen terpisah per role
+  (RTApprovalCard/KadesApprovalCard/
+  dst DIHAPUS). Untuk RW, TIDAK
+  PERNAH merender aksi apapun.
+end note
+
+rectangle "API LAYER  -  Laravel REST API" #D5EAD0 {
+  rectangle "HTTP Layer" #C8E6C9 {
+    [Middleware\n(Sanctum Auth, RBAC Custom,\nThrottle)] as MW
+    [Controllers\n(RtApprovalController,\nFlowStepApprovalController*,\ndst)] as CTRL
+    [Form Requests\n(Validation)] as FREQ
+    [API Resources] as ARES
+  }
+  rectangle "Business Layer" #A5D6A7 {
+    [Services\n(LetterService, OfficialService,\nAuthService, PdfService,\nFamilyService*)] as SVC
+    [Repositories\n(LetterRepository, UserRepository,\nOfficialRepository, ApprovalFlowRepository*,\nFamilyRepository*, ...)] as REPO
+    [Policies\n(Authorization,\nLetterPolicy::decide())] as POL
+  }
+  rectangle "Async Layer" #81C784 {
+    [Events &\nListeners\n(FlowStepAdvanced*\n- generik)] as EVT
+    [Jobs / Queue\nWorker] as QUEUE
+    [Notifications] as NOTIF
+    [Scheduler] as SCHED
+  }
+  rectangle "Dokumen & Import" #B2DFDB {
+    [PDF Generator\n(barryvdh/laravel-dompdf)\nOn-Demand] as PDFGEN
+    [Excel Importer\n(maatwebsite/excel)] as EXCEL
+  }
+}
+
+note right of CTRL
+  * FlowStepApprovalController BARU v5.0 -
+  menggantikan RwApprovalController (DIHAPUS)
+  dan KadusApprovalController (DIHAPUS).
+  Satu controller generik melayani
+  Kepala Desa/Sekdes/Kasi/Kaur sekaligus.
+  RtApprovalController TETAP TERPISAH
+  (basis wilayah, bukan posisi murni).
+end note
+
+note right of SVC
+  LetterService: processStepDecision()
+  generik menggantikan
+  processRwDecision/processKadusDecision/
+  processKasiDecision (v4.2, DIHAPUS).
+  OfficialService: resolveByPositionOnly()
+  BARU untuk Kades/Sekdes/Kasi/Kaur;
+  resolveKadusForCitizen() DIHAPUS;
+  resolveRwForCitizen() turun level jadi
+  notifier saja (SID-ARCH-BE-001 S3.2).
+  * FamilyService BARU - kelola KK.
+end note
+
+note right of REPO
+  LetterRepository: findByFlowStepAndStatus()
+  generik menggantikan findByRwIdAndStatus/
+  findByHamletIdAndStatus/
+  findByAssignedRoleAndStatus (v4.2,
+  SEMUA DIHAPUS) - dipakai lintas Service
+  (dashboard, notifikasi, scheduler).
+  * ApprovalFlowRepository, FamilyRepository,
+  LetterCategoryRepository: BARU v5.0.
+end note
+
+note right of EVT
+  *** PERUBAHAN v5.0 (SID-ARCH-BE-001 S7) ***
+  FlowStepAdvanced: Event GENERIK, dipicu
+  SETIAP kali current_step_order berpindah -
+  MENGGANTIKAN Event spesifik per posisi
+  (RtApproved/RwApproved/dst - v4.2, DIHAPUS).
+  Satu Listener generik resolve approver
+  berikutnya via OfficialService, PLUS
+  memicu notifikasi FYI ke RW secara
+  paralel/non-blocking jika step
+  sebelumnya = RT.
+end note
+
+rectangle "DATA LAYER" #FDE8D8 {
+  database "PostgreSQL 16" as DB {
+    [letters (status generik,\nflow_id, current_step_order,\nrejected_at_step)\nletter_approvals, letter_status_logs\nletter_types, letter_categories*\napproval_flows*, flow_steps*\nusers, citizens (+ 11 kolom baru),\nfamilies*, citizen_socioeconomics*\nofficials, hamlets, rws, rts\napproval_settings\nvillage_org_positions/members\nnotifications, news\nvillage_regulations, villages] as TABLES
+  }
+  [Eloquent ORM\n+ Migrations] as ORM
+}
+
+note bottom of TABLES
+  * Tabel/kolom BARU v5.0: letter_categories,
+  approval_flows, flow_steps, families,
+  citizen_socioeconomics, + kolom baru di
+  citizens (family_id, father_id, mother_id,
+  residency_type, dst - lihat TDD 5.4.2).
+  Kolom no_kk DIHAPUS dari citizens (pindah
+  ke families.no_kk).
+  letter_hashes, village_assets,
+  village_finances, letter_type_fields,
+  letter_field_values TIDAK ADA di MVP
+  (Next Dev/Tahap 2) - TIDAK digambar di sini,
+  TIDAK BERUBAH dari v4.2.
+end note
+
+cloud "EXTERNAL" #FEF9E7 {
+  [Mail Server\n(SMTP)] as MAIL
+  [Laravel Telescope\n(Dev Monitoring)] as TEL
+}
+
+CLIENT --> PAGES
+PAGES --> ASR
+PAGES --> AXIOS
+AXIOS --> AUTH
+AXIOS --> MW : HTTPS + Cookie
+MW --> CTRL
+CTRL --> FREQ
+CTRL --> SVC
+SVC --> POL
+SVC --> REPO
+REPO --> ORM
+SVC --> EVT
+EVT --> QUEUE
+QUEUE --> NOTIF
+NOTIF --> MAIL
+QUEUE --> REPO
+SCHED --> REPO
+SCHED --> QUEUE : SendApprovalReminderJob\n(cek deadline_at setiap jam)
+ORM --> DB
+CTRL --> ARES
+ARES --> AXIOS
+TEL ..> DB : monitor (dev only)
+
+CTRL --> PDFGEN : trigger saat\nklik Download
+PDFGEN --> REPO : ambil data surat\n+ TTD/stempel (officials)
+PDFGEN --> CTRL : return binary PDF\n(tidak disimpan)
+
+CTRL --> EXCEL : trigger saat\nImport Data Warga
+EXCEL --> REPO : validasi & simpan\nper baris (citizens)
+
+note bottom of SVC
+  OfficialService kini punya DUA pola
+  resolve yang harus dibedakan eksplisit:
+  - BERBASIS WILAYAH (RT): via citizens.rt_id
+    -> rts.id, lalu officials aktif dg rt_id sama
+  - BERBASIS POSISI MURNI (Kepala Desa, Sekdes,
+    Kasi/Kaur): via officials.position IN (...)
+    + is_active=true, TANPA join wilayah
+    sama sekali (SID-ARCH-BE-001 S3.2)
+end note
+
+note bottom of PDFGEN
+  Generate PDF ON-DEMAND saat tombol
+  download diklik. Tidak ada kolom path
+  PDF di tabel letters, tidak ada file
+  tersimpan di server. TIDAK BERUBAH
+  dari v4.0.
+end note
+
+note bottom of QUEUE
+  Queue driver: database (Tahap 1).
+  Job yang berjalan: SendNotificationJob
+  (generik, menerima approverPosition),
+  SendApprovalReminderJob.
+  TIDAK ADA GenerateLetterHashJob
+  (blockchain hashing = Next Dev, belum
+  diimplementasikan di MVP).
+  TIDAK BERUBAH dari v4.2.
+end note
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 5.2.2_v4 (Diagram Arsitektur Teknis v4.2) -> 02_Component_ArsitekturTeknis_v5.puml
+'==================================================================================
+'
+' LAYER DASAR TIDAK BERUBAH: Client Layer (React SPA) -> API Layer
+'   (HTTP/Business/Async/Dokumen) -> Data Layer (PostgreSQL) -> External
+'   (Mail Server, Telescope). Struktur besar 4-layer ini identik dengan v4.2.
+'
+' PERUBAHAN ISI KOMPONEN:
+'   1. Client Layer: TAMBAH komponen "ApprovalStepRenderer" (BARU v5.0,
+'      SID-ARCH-FE-001 S6) - komponen generik pengganti kartu approval
+'      per-role yang di v4.2 tersirat ada tapi tidak digambar eksplisit.
+'   2. HTTP Layer: Controllers kini merujuk FlowStepApprovalController
+'      (BARU, generik) menggantikan RwApprovalController+
+'      KadusApprovalController (DIHAPUS) sebagai representasi - dicatat
+'      via note, bukan komponen box terpisah (mengikuti gaya diagram asli
+'      yang meringkas Controllers jadi satu box).
+'   3. Business Layer: Services & Repositories diberi catatan (note)
+'      eksplisit tentang method yang dihapus/diganti/ditambah - mengikuti
+'      detail yang sudah dirinci di Class Diagram Core v5, versi ringkas
+'      untuk level component diagram ini.
+'   4. Async Layer: Events & Listeners diberi label "(FlowStepAdvanced -
+'      generik)" dan catatan tentang perubahan filosofi Event generik
+'      menggantikan Event granular per posisi (SID-ARCH-BE-001 S7).
+'   5. Data Layer: daftar tabel di dalam box PostgreSQL diperbarui -
+'      tambah letter_categories, approval_flows, flow_steps, families,
+'      citizen_socioeconomics; kolom citizens diberi catatan perubahan
+'      (+11 kolom baru, no_kk dihapus); letters diberi catatan kolom baru
+'      (flow_id, current_step_order, rejected_at_step).
+'   6. Note di bawah SVC (OfficialService dua pola resolve) DIPERBARUI
+'      untuk secara eksplisit membedakan resolve berbasis wilayah vs
+'      berbasis posisi murni - di v4.2 catatan ini hanya menyebutkan
+'      "resolve via rt_id/rw_id/hamlet_id", sekarang perlu penjelasan
+'      lebih tajam karena ada 2 POLA BERBEDA yang harus dibedakan
+'      eksplisit di kode (bukan sekadar 3 kolom FK yang mirip).
+'
+' YANG TETAP SAMA:
+'   - Middleware, Form Requests, API Resources, PDF Generator, Excel
+'     Importer, Scheduler: struktur dan alur panah TIDAK berubah.
+'   - Catatan "TIDAK ADA GenerateLetterHashJob" (blockchain masih Next
+'     Dev) tetap dipertahankan apa adanya.
+'   - Auth Context (HttpOnly Cookie), Laravel Sanctum, Laravel Telescope:
+'     tidak berubah.
+'
+'==================================================================================

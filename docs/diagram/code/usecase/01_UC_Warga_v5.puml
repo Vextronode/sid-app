@@ -1,0 +1,135 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 01_UC_Warga_v5.puml
+' JUDUL: Use Case - Warga
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.1, 5.3.2 UC-01/02/03/05/06/08/16/17)
+' CATATAN: Menggantikan 01_UC_Warga_v4.puml. Perubahan v4->v5 didokumentasikan
+'          di catatan revisi bawah file ini.
+'==================================================================================
+
+@startuml 5.3.1a_v5 UC_Warga
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+  FontName Arial
+  FontSize 12
+}
+
+title Use Case Diagram - Warga (Self-Service) [v5.0]
+
+actor "Warga\n(Self-Service)" as WRG
+actor "Pengunjung\n(Publik)" as PUB
+
+rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
+
+  rectangle "Registrasi & Autentikasi" #F0F4FF {
+    usecase "UC-17: Register\nAkun Warga" as UC_REGISTER
+    usecase "UC-01: Login" as UC_LOGIN
+    usecase "UC-02: Logout" as UC_LOGOUT
+  }
+
+  rectangle "UC-16: Halaman Publik\n(Tanpa Login)" #FCE4EC {
+    usecase "Lihat Beranda Desa" as UC_PUB_HOME
+    usecase "Lihat Info &\nProfil Desa" as UC_PUB_INFO
+    usecase "Lihat Pengumuman\n& Berita" as UC_PUB_NEWS
+    usecase "Lihat Info Jenis\nSurat & Syarat" as UC_PUB_LETTER
+    usecase "Lihat Peraturan\nDesa" as UC_PUB_REG
+    usecase "Hubungi Kami\n(WA Kasi/Kaur)" as UC_PUB_CONTACT
+  }
+
+  rectangle "Warga Self-Service: Permohonan Surat" #E8F0FF {
+    usecase "UC-03: Ajukan\nPermohonan Surat" as UC_SUBMIT
+    usecase "UC-05: Lihat Daftar\nSurat Saya" as UC_MY_LIST
+    usecase "UC-06: Lihat Detail\n& Status Surat" as UC_MY_STATUS
+    usecase "UC-08: Download\nSurat (PDF On-Demand)" as UC_DOWNLOAD
+  }
+
+  rectangle "Notifikasi" #FFF8E1 {
+    usecase "Terima Notifikasi\nStatus Surat" as UC_NOTIF
+  }
+
+  rectangle "Fitur Pendukung" #FDF2F8 {
+    usecase "UC-15: Lihat\nDashboard Surat" as UC_DASH
+  }
+}
+
+' Relasi Pengunjung Publik
+PUB -- UC_PUB_HOME
+PUB -- UC_PUB_INFO
+PUB -- UC_PUB_NEWS
+PUB -- UC_PUB_LETTER
+PUB -- UC_PUB_REG
+PUB -- UC_PUB_CONTACT
+
+' Relasi Warga Self-Service
+WRG -- UC_REGISTER
+WRG -- UC_LOGIN
+WRG -- UC_LOGOUT
+WRG -- UC_SUBMIT
+WRG -- UC_MY_LIST
+WRG -- UC_MY_STATUS
+WRG -- UC_DOWNLOAD
+WRG -- UC_NOTIF
+WRG -- UC_DASH
+
+' Relasi Internal
+UC_SUBMIT ..> UC_MY_LIST : <<extend>>
+UC_MY_LIST ..> UC_MY_STATUS : <<include>>
+UC_MY_STATUS ..> UC_DOWNLOAD : <<extend>>
+
+note right of UC_DOWNLOAD
+  v5.0: Trigger = status letter 'approved'
+  DENGAN step is_final=true sudah approve
+  (BUKAN lagi status granular 'kasi_approved'
+  seperti v4.2 - status kini generik,
+  dibaca via current_step_order JOIN
+  flow_steps WHERE is_final=true).
+  Gate tambahan: expires_at belum lewat
+  (khusus role warga).
+end note
+
+note bottom of UC_SUBMIT
+  Hanya tipe surat dengan
+  template != NULL AND is_active = true
+  yang tampil untuk dipilih warga.
+  TIDAK BERUBAH dari v4.2.
+end note
+
+note bottom of UC_MY_STATUS
+  v5.0: Detail status kini menampilkan
+  indikator step generik (RT / RW-FYI /
+  Kades-Sekdes / Kasi-Kaur) berdasarkan
+  current_step_order JOIN flow_steps,
+  BUKAN lagi status granular per posisi
+  seperti 'rw_approved'/'kadus_approved'
+  (sudah tidak ada sejak v5.0).
+end note
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 01_UC_Warga_v4.puml -> 01_UC_Warga_v5.puml
+'==================================================================================
+'
+' TIDAK ADA PERUBAHAN STRUKTURAL pada use case maupun aktor di diagram ini -
+' seluruh UC dan relasi Warga/Pengunjung Publik TETAP SAMA dengan v4.2.
+'
+' Perubahan murni pada CATATAN (note) untuk menyelaraskan dengan mekanisme
+' status generik v5.0:
+'   - UC-08 (Download): trigger kini dijelaskan sebagai "status approved +
+'     step is_final=true", bukan lagi nama status granular 'kasi_approved'.
+'   - UC-06 (Lihat Detail & Status): ditambahkan catatan bahwa indikator
+'     tahap kini dibaca dari current_step_order JOIN flow_steps, bukan
+'     status granular per posisi (rw_approved/kadus_approved sudah tidak
+'     ada di ENUM letters.status sejak v5.0).
+'
+'==================================================================================

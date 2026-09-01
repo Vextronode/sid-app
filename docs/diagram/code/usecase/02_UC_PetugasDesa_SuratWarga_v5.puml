@@ -1,0 +1,150 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 02_UC_PetugasDesa_SuratWarga_v5.puml
+' JUDUL: Use Case - Petugas Desa (Monitoring Surat & Data Warga)
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-05/06/08/09)
+' CATATAN: Menggantikan 02_UC_PetugasDesa_SuratWarga_v4.puml.
+'==================================================================================
+
+@startuml 5.3.1b1_v5 UC_Petugas_Desa_Surat_Warga
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+  FontName Arial
+  FontSize 12
+}
+
+title Use Case Diagram - Petugas Desa (1/3: Monitoring Surat & Data Warga) [v5.0]
+
+actor "Petugas Desa" as PD
+
+rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
+
+  rectangle "Autentikasi" #F0F4FF {
+    usecase "UC-01: Login" as UC_LOGIN
+    usecase "UC-02: Logout" as UC_LOGOUT
+  }
+
+  rectangle "UC-05 & UC-06: Monitoring Surat\n(FULL VISIBILITY - Semua Status)" #EBF3FB {
+    usecase "Lihat Daftar Surat\n(SEMUA status, termasuk rejected\ndi step manapun)" as UC_LIST
+    usecase "Lihat Detail &\nStatus Surat" as UC_DETAIL
+  }
+
+  rectangle "UC-08: Download Surat" #E0F7FA {
+    usecase "Download PDF\n(selalu aktif, tanpa cek expires_at)" as UC_DOWNLOAD
+  }
+
+  rectangle "UC-09: Data Warga (Citizens)" #E8F8E8 {
+    usecase "Kelola Data Warga\n(CRUD Manual)" as UC_CIT_CRUD
+    usecase "Cari & Lihat\nData Warga" as UC_CIT_LIST
+    usecase "Import Data Warga\nvia Excel" as UC_CIT_IMPORT
+    usecase "Kelola Data Keluarga\n(KK - families)" as UC_FAM_CRUD
+  }
+
+  rectangle "Notifikasi" #FFF8E1 {
+    usecase "Terima Notifikasi\n(Fallback Broadcast RT Kosong)" as UC_NOTIF_RES
+  }
+
+  rectangle "Fitur Pendukung" #FDF2F8 {
+    usecase "UC-15: Lihat Dashboard\nOperasional" as UC_DASH
+  }
+}
+
+PD -- UC_LOGIN
+PD -- UC_LOGOUT
+PD -- UC_LIST
+PD -- UC_DETAIL
+PD -- UC_DOWNLOAD
+PD -- UC_CIT_CRUD
+PD -- UC_CIT_LIST
+PD -- UC_CIT_IMPORT
+PD -- UC_FAM_CRUD
+PD -- UC_NOTIF_RES
+PD -- UC_DASH
+
+UC_CIT_CRUD ..> UC_CIT_LIST : <<include>>
+UC_CIT_CRUD ..> UC_CIT_IMPORT : <<extend>>
+UC_CIT_CRUD ..> UC_FAM_CRUD : <<extend>>
+UC_LIST ..> UC_DETAIL : <<include>>
+UC_DETAIL ..> UC_DOWNLOAD : <<extend>>
+
+note bottom of UC_LIST
+  Petugas Desa = satu-satunya role dengan
+  full visibility seluruh pipeline surat,
+  TERMASUK yang berstatus rejected di
+  STEP MANAPUN (rejected_at_step dicatat).
+  v5.0: status kini GENERIK (pending/
+  in_progress/approved/rejected), bukan
+  lagi granular per posisi seperti
+  rt_rejected/rw_rejected/kadus_rejected
+  (v4.2, sudah tidak berlaku).
+  Beda dengan Kepala Desa/Sekdes yang
+  hanya lihat surat dengan
+  current_step_order menunjuk posisi
+  mereka (approver aktif, bukan lagi
+  read-only monitoring seperti v4.2).
+end note
+
+note bottom of UC_CIT_IMPORT
+  Library: maatwebsite/excel
+  Validasi per baris (format NIK, duplikat)
+  Baris error di-skip, ringkasan ditampilkan.
+  TIDAK BERUBAH dari v4.2.
+end note
+
+note bottom of UC_FAM_CRUD
+  BARU v5.0. Tidak ada di TDD v4.2.
+  Tambah KK baru: input no_kk,
+  family_address, pilih rt_id/hamlet_id.
+  Tambah anggota ke KK: pilih/buat citizen,
+  set family_role, FK ke family_id.
+  Sistem otomatis validasi: hanya 1
+  family_role='kepala_keluarga' per
+  family_id aktif.
+  Catatan: ini murni pencatatan
+  administratif desa (Petugas Desa sifatnya
+  asesor/pencatat, BUKAN penerbit resmi -
+  penerbitan KK/KTP tetap di Kecamatan/
+  Dukcapil). TIDAK perlu approval flow
+  apapun (RT/Kades/dst), cukup CRUD biasa.
+end note
+
+note bottom of UC_NOTIF_RES
+  Menerima notifikasi broadcast jika
+  RT wilayah warga tidak ditemukan /
+  jabatan kosong saat submit surat.
+  TIDAK BERUBAH dari v4.2.
+end note
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 02_UC_PetugasDesa_SuratWarga_v4.puml -> ..._v5.puml
+'==================================================================================
+'
+' PERUBAHAN:
+'   - Tambah use case BARU "Kelola Data Keluarga (KK - families)" di dalam
+'     rectangle UC-09, sebagai <<extend>> dari UC_CIT_CRUD. Ini merefleksikan
+'     restrukturisasi data kependudukan v5.0 (Patch 41) di mana KK dipisah
+'     ke tabel families tersendiri, terpisah dari citizens.
+'   - Catatan UC_LIST diperbarui: full visibility Petugas Desa kini mencakup
+'     status GENERIK (pending/in_progress/approved/rejected) - bukan lagi
+'     status granular per posisi (rt_rejected/rw_rejected/kadus_rejected)
+'     yang sudah tidak ada di skema v5.0.
+'   - Ditambahkan catatan pembanding eksplisit dengan Kades/Sekdes: di v5.0
+'     mereka adalah APPROVER AKTIF (bukan lagi read-only monitoring seperti
+'     v4.2) - lihat file 05_UC_KepalaDesa_SekretarisDesa_v5.puml.
+'
+' TIDAK BERUBAH: UC-01, UC-02, UC-05/06 (monitoring), UC-08 (download),
+'   UC_CIT_CRUD/UC_CIT_LIST/UC_CIT_IMPORT dasar, notifikasi fallback broadcast.
+'
+'==================================================================================

@@ -1,0 +1,104 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 08_UC_Kadus_v5.puml
+' JUDUL: Use Case - Kadus (Aktor Non-Approval, Struktural Saja)
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 4 Table 4/5 catatan status Kadus,
+'         Section 5.3.2 UC-01/02/05/06)
+' CATATAN: **REVISI TOTAL** dari 08_UC_Kadus_v4.puml. UC-04c versi lama
+'          (Kadus Approval, "Tahap 3 dari 4") SUDAH DIHAPUS TOTAL sejak v5.0
+'          (Patch 37). Nomor UC-04c DI-REUSE untuk use case BARU (Kades/
+'          Sekdes Approval - lihat file 05_UC_KepalaDesa_SekretarisDesa_v5.puml).
+'          Kadus TIDAK PUNYA use case approval apapun lagi di v5.0.
+'==================================================================================
+
+@startuml 5.3.1f_v5 UC_Kadus
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+  FontName Arial
+  FontSize 12
+}
+
+title Use Case Diagram - Kadus / Kepala Dusun (Jabatan Struktural, TANPA Approval) [REVISI TOTAL - v5.0]\n(Menggantikan diagram "Approver Tahap 3 dari 4" v4.2 - lihat catatan revisi)
+
+actor "Kadus" as KADUS
+
+rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
+
+  rectangle "Autentikasi" #F0F4FF {
+    usecase "UC-01: Login" as UC_LOGIN
+    usecase "UC-02: Logout" as UC_LOGOUT
+  }
+
+  rectangle "Monitoring Read-Only\n(Tanpa Hak Approval Apapun)" #E0F2F1 {
+    usecase "UC-05: Lihat Daftar Surat\n(read-only, tidak ada filter\napproval khusus)" as UC_KADUS_LIST
+    usecase "UC-06: Lihat Detail\n& Status Surat (read-only)" as UC_KADUS_DETAIL
+  }
+}
+
+KADUS -- UC_LOGIN
+KADUS -- UC_LOGOUT
+KADUS -- UC_KADUS_LIST
+KADUS -- UC_KADUS_DETAIL
+
+UC_KADUS_LIST ..> UC_KADUS_DETAIL : <<include>>
+
+note "*** KADUS DIHAPUS TOTAL DARI ALUR APPROVAL SURAT (v5.0, Patch 37) ***\nTIDAK ADA use case 'Approve/Reject Surat' di diagram ini.\nUC-04c versi lama ('Kadus Approval', Tahap 3 dari 4) SUDAH DIHAPUS TOTAL.\nNomor UC-04c DI-REUSE untuk use case BARU: Kades/Sekdes Approval\n(lihat 05_UC_KepalaDesa_SekretarisDesa_v5.puml) - posisi Kadus di pipeline\ndigantikan oleh Kepala Desa/Sekretaris Desa." as NOTE1
+
+note "Jabatan struktural officials.position='kadus' TETAP EKSIS di sistem\n(dipakai domain Governance/CMS, misal halaman publik struktur desa),\nDAN akun Kadus TETAP BISA LOGIN - hanya kehilangan hak approval,\nBUKAN kehilangan akun sistemnya sama sekali." as NOTE2
+
+note "Kadus TIDAK memiliki scope approval khusus (bukan approver sejak v5.0).\nTidak ada daftar surat 'menunggu Kadus' karena Kadus tidak lagi menjadi\ngate manapun di flow_steps - hamlet_id pada officials tetap dipakai untuk\nkeperluan resolve struktural non-approval (contoh: halaman publik struktur\ndesa per dusun), BUKAN untuk resolve approval surat." as NOTE3
+
+note "Kadus TIDAK LAGI muncul di UC-15 (Dashboard) sebagai aktor dashboard\naktif - tidak ada action item apapun untuk Kadus. Kadus hanya tetap\nmuncul sebagai aktor pasif di UC-01 (Login), UC-02 (Logout),\nUC-05 (Lihat Daftar Surat - read-only), dan UC-06 (Lihat Detail Surat)." as NOTE4
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 08_UC_Kadus_v4.puml -> 08_UC_Kadus_v5.puml
+'==================================================================================
+'
+' *** INI ADALAH REVISI PALING SIGNIFIKAN KETIGA DI BATCH UC v5.0 ***
+'
+' Diagram v4.2 berjudul "Approver Tahap 3 dari 4" - Kadus punya use case
+' penuh: UC-04c (approval), lihat daftar surat berstatus rw_approved, gate
+' logic, notifikasi masuk dari RW, notifikasi keluar ke Kasi/Kaur jika
+' approve.
+'
+' Sejak v5.0 (Patch 37), PERAN INI DIHAPUS TOTAL:
+'   1. UC-04c versi Kadus ("Approval Kadus") DIHAPUS TOTAL - tidak ada
+'      pengganti langsung untuk Kadus. Nomor UC-04c DI-REUSE untuk use
+'      case BARU yang sepenuhnya berbeda aktor: Kades/Sekdes Approval.
+'   2. Rectangle "UC-04c: Approval Kadus (Tahap 3 dari 4)" DIHAPUS SELURUHNYA,
+'      diganti rectangle "Monitoring Read-Only (Tanpa Hak Approval Apapun)"
+'      yang hanya berisi UC-05/UC-06 versi read-only.
+'   3. Use case "Approve / Reject Surat" DIHAPUS dari aktor Kadus.
+'   4. Seluruh rectangle "Notifikasi" (terima notifikasi surat lolos RW,
+'      kirim notifikasi ke Kasi/Kaur) DIHAPUS - Kadus tidak lagi menerima
+'      maupun memicu notifikasi terkait pipeline surat sama sekali.
+'   5. Rectangle "Fitur Pendukung" (UC-15 Dashboard Kadus) DIHAPUS TOTAL -
+'      tidak ada dashboard approval untuk Kadus lagi (selaras dengan TDD
+'      Section 3.2 catatan revisi: "Dashboard Kadus sudah dihapus dari
+'      daftar ini sesuai Patch 39 v5.0").
+'
+' YANG DIPERTAHANKAN (justru untuk menegaskan Kadus TIDAK hilang total
+' dari sistem, hanya kehilangan hak approval):
+'   - UC-01 (Login) dan UC-02 (Logout) tetap ada - akun Kadus tetap bisa
+'     login, jabatan struktural officials.position='kadus' tetap eksis.
+'   - UC-05/UC-06 tetap ada TAPI diberi label eksplisit "read-only" tanpa
+'     filter approval khusus - berbeda total dari v4.2 yang filternya
+'     "status: rw_approved" (menyiratkan Kadus adalah gate aktif).
+'
+' File ini sengaja dibuat MINIMALIS untuk mencerminkan betapa kecilnya sisa
+' peran Kadus di sistem v5.0 dibanding v4.2 - ini konsisten dengan TDD yang
+' secara eksplisit mencatat "Kadus DIHAPUS TOTAL dari alur approval surat".
+'
+'==================================================================================

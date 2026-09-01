@@ -1,0 +1,179 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 04_Sequence_NotifikasiRW_SideEffect_v5.puml
+' JUDUL: Sequence - Notifikasi RW (Side-Effect, Non-Blocking)
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-04a sub-flow
+'         "Notifikasi RW", Section 5.3.3 daftar sequence diagram)
+'         + SID-ARCH-BE-001 S3.2, S7 + SID-ARCH-FE-001 S6
+' CATATAN: **FILE BARU SEPENUHNYA**. Menggantikan
+'          04_Sequence_RWApproval_v4.puml yang SUDAH TIDAK BERLAKU sejak
+'          v5.0 (UC-04b RW Approval dihapus total). File ini BUKAN sequence
+'          approval - murni menjelaskan mekanisme side-effect notifikasi.
+'          Sesuai TDD Section 5.3.3, sequence ini secara eksplisit
+'          disebutkan menggantikan "Sequence RW Approval" v4.2.
+'==================================================================================
+
+@startuml 5.3.3d_v5 Sequence - Notifikasi RW Side-Effect Non-Blocking
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ParticipantFontName Arial
+  ParticipantFontSize 12
+  ActorBackgroundColor #D6E4F7
+  ActorBorderColor #1F3864
+  ActorFontName Arial
+  LifeLineBorderColor #2E5FA3
+  ArrowColor #2E5FA3
+  ArrowFontName Arial
+  ArrowFontSize 11
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+
+title Sequence Diagram - Notifikasi RW (Side-Effect, Non-Blocking) [BARU - v5.0] \n(Bagian dari UC-04a, BUKAN Use Case Approval Tersendiri - Menggantikan UC-04b v4.2 yang Dihapus)
+
+participant "LetterService\n(dipanggil dari dalam\nUC-04a RT Approval)" as SVC
+participant "OfficialService" as OSVC
+participant "OfficialRepository" as OREPO
+participant "Queue\n(Jobs)" as Q
+participant "PostgreSQL" as DB
+actor "RW\n(Wilayah Terkait)" as RW
+actor "Petugas Desa\n(Fallback)" as PD
+
+note over SVC, PD
+  *** KONTEKS PENTING ***
+  Sequence ini BUKAN dipicu oleh aksi user RW - RW TIDAK PERNAH
+  memanggil endpoint apapun untuk memicu alur ini. Sequence ini
+  adalah SIDE-EFFECT yang berjalan OTOMATIS sebagai bagian dari
+  UC-04a (RT Approval) saat RT menekan "Setujui" - lihat
+  03_Sequence_RTApproval_v5.puml blok "par...else...end" untuk
+  konteks lengkap di mana sequence ini dipanggil.
+  Endpoint decision/approval TIDAK PERNAH dibuka untuk role RW
+  di level route backend (SID-ARCH-BE-001 S3.2).
+end note
+
+== Trigger: RT Baru Saja Approve Surat ==
+
+SVC -> SVC : (dipanggil dari dalam\nprocessRtDecision(),\nsetelah TX RT approve commit)
+
+== Resolve RW Wilayah (Berbasis Wilayah, Sama Pola dengan RT) ==
+
+SVC -> OSVC : resolveRwForCitizen(letter.citizen)
+note right of OSVC
+  Resolve TETAP berbasis WILAYAH -
+  via citizen.rt.rw_id (RT surat ini
+  berada di RW mana). Pola resolve-nya
+  SAMA seperti v4.2 (JOIN rts.rw_id).
+  YANG BERUBEDA adalah PENGGUNAAN hasil
+  resolve ini - v4.2 hasil resolve
+  dipakai untuk OTORISASI APPROVE,
+  v5.0 hasil resolve HANYA dipakai
+  untuk KIRIM NOTIFIKASI, tidak ada
+  pengecekan wewenang approve sama
+  sekali (karena tidak ada endpoint
+  approve untuk RW).
+end note
+
+OSVC -> OREPO : findActiveByRwId(citizen.rt.rw_id)
+OREPO -> DB : SELECT * FROM officials\nWHERE rw_id = ?\nAND position = 'rw'\nAND is_active = true\nAND ended_at IS NULL
+DB --> OREPO : official RW | null
+OREPO --> OSVC : Official RW | null
+
+alt RW wilayah ditemukan
+  OSVC --> SVC : Official RW (user_id)
+
+  == Dispatch Notifikasi FYI ==
+
+  SVC -> Q : dispatch(SendNotificationJob -> RW,\ntype: 'fyi_rt_approved')
+  Q -> OREPO : createNotification({\n  notifiable_id: RW.user_id,\n  notifiable_type: 'App\\Models\\User',\n  type: 'FyiRtApprovedNotification',\n  data: {\n    letter_id,\n    applicant_name,\n    letter_type_name,\n    message: "Surat di wilayah Anda\ntelah disetujui RT"\n  }\n})
+  OREPO -> DB : INSERT INTO notifications\n(polymorphic notifiable)
+  DB --> OREPO : notification created
+  Q --> RW : Notifikasi in-app + email:\n"FYI: Surat [nomor/jenis] dari\nwilayah Anda telah disetujui RT"
+
+  note right of RW
+    RW dapat MELIHAT notifikasi ini
+    dan detail surat terkait (read-only,
+    UC-05/UC-06 versi RW), TAPI:
+    - TIDAK ADA tombol Approve/Reject
+    - TIDAK ADA endpoint decision yang
+      bisa dipanggil untuk surat ini
+    - Frontend: ApprovalStepRenderer
+      TIDAK PERNAH merender aksi apapun
+      untuk role RW (SID-ARCH-FE-001 S6) -
+      RW dilayani komponen tampilan
+      TERPISAH yang murni read-only
+    RW TIDAK PERNAH tercatat sebagai
+    approval_level di letter_approvals.
+  end note
+
+else RW wilayah tidak ditemukan / jabatan kosong
+  OSVC --> SVC : null
+
+  SVC -> Q : dispatch(SendNotificationJob -> Semua Petugas Desa,\ntype: 'fyi_broadcast_fallback')
+  note right of Q
+    Fallback broadcast: pola SAMA dengan
+    fallback RT (jika RT wilayah tidak
+    ditemukan). Karena notifikasi ini
+    murni FYI (bukan gate), fallback
+    di sini TIDAK memblokir proses -
+    surat tetap lanjut ke approver
+    berikutnya (Kepala Desa/Sekdes)
+    terlepas dari berhasil/tidaknya
+    notifikasi FYI RW terkirim.
+  end note
+  Q -> OREPO : createNotificationBroadcast({\n  notifiable: semua petugas_desa aktif,\n  data: {letter_id, alasan: "RW tidak ditemukan"}\n})
+  OREPO -> DB : INSERT INTO notifications\n(multiple rows)
+  DB --> OREPO : notifications created
+  Q --> PD : Notifikasi in-app:\n"FYI RW gagal dikirim -\nRW wilayah tidak ditemukan\nuntuk surat [id]"
+end
+
+== Kembali ke Alur Utama UC-04a ==
+
+SVC -> SVC : return (proses paralel selesai,\nTIDAK menunggu RW membuka/\nmembaca notifikasi apapun)
+
+note over SVC
+  Sequence ini SELESAI di titik ini dan TIDAK PERNAH
+  menghasilkan panggilan balik (callback) apapun ke
+  proses approval utama. Resolve & notifikasi ke Kepala
+  Desa/Sekretaris Desa (approver berikutnya) berjalan
+  SECARA TERPISAH dan PARALEL - lihat blok
+  "par...else...end" di 03_Sequence_RTApproval_v5.puml.
+end note
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 04_Sequence_RWApproval_v4.puml -> 04_Sequence_NotifikasiRW_SideEffect_v5.puml
+'==================================================================================
+'
+' *** FILE INI ADALAH PENGGANTI TOTAL, BUKAN UPDATE ***
+'
+' File v4.2 (04_Sequence_RWApproval_v4.puml) menggambarkan UC-04b sebagai
+' USE CASE APPROVAL PENUH: RW membuka daftar surat berstatus rt_approved,
+' gate logic re-validasi status, form decision (approve/reject dengan
+' catatan wajib jika tolak), DB::transaction() untuk update status jadi
+' rw_approved/rw_rejected, INSERT ke letter_approvals dengan
+' approval_level='rw', lalu notifikasi ke Kadus (jika approve) atau Warga
+' (jika reject).
+'
+' SELURUH ALUR TERSEBUT SUDAH TIDAK BERLAKU SEJAK v5.0. UC-04b dihapus
+' total. File pengganti ini (BARU, bukan revisi baris-per-baris) hanya
+' berisi:
+'   - TIDAK ADA endpoint GET untuk "daftar surat menunggu approval RW"
+'     (yang ada hanya "daftar surat yang lewat FYI", read-only, dilayani
+'     UC-05/06 versi RW - lihat file UC diagram, bukan sequence approval).
+'   - TIDAK ADA endpoint PATCH decision untuk RW sama sekali.
+'   - TIDAK ADA gate logic status rt_approved (karena tidak ada status
+'     granular itu lagi).
+'   - TIDAK ADA INSERT ke letter_approvals dengan approval_level='rw'
+'     (ENUM approval_level di v5.0 bahkan sudah tidak punya nilai 'rw').
+'   - TIDAK ADA notifikasi ke Kadus (karena Kadus juga bukan approver).
+'
+' Yang tersisa dan digambarkan di file baru ini HANYALAH mekanisme
+' notifikasi FYI: resolve RW berbasis wilayah (pola query sama dengan
+' v4.2), lalu dispatch notifikasi read-only, dengan fallback broadcast
+' jika RW tidak ditemukan. Sequence ini dipanggil sebagai SUB-ROUTINE dari
+' dalam UC-04a (RT Approval), bukan dipicu independen oleh aksi RW.
+'
+'==================================================================================

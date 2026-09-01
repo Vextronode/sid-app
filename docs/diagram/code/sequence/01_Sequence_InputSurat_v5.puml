@@ -1,0 +1,258 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 01_Sequence_InputSurat_v5.puml
+' JUDUL: Sequence - Input Permohonan Surat
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-03, Section 5.4.2 letters)
+'         + SID-ARCH-BE-001 S3.2 (flow_id snapshot)
+' CATATAN: Menggantikan 01_Sequence_InputSurat_v4.puml.
+'==================================================================================
+
+@startuml 5.3.3a_v5 Sequence - Input Permohonan Surat
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ParticipantFontName Arial
+  ParticipantFontSize 12
+  ActorBackgroundColor #D6E4F7
+  ActorBorderColor #1F3864
+  ActorFontName Arial
+  LifeLineBorderColor #2E5FA3
+  ArrowColor #2E5FA3
+  ArrowFontName Arial
+  ArrowFontSize 11
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+
+title Sequence Diagram - Input Permohonan Surat [v5.0] \n(Warga Self-Service -> Snapshot Flow -> Notifikasi ke RT, Step 1)
+
+actor "Warga\n(Self-Service)" as WRG
+participant "React\nFrontend" as FE
+participant "LetterController" as CTRL
+participant "AuthController" as AUTHCTRL
+participant "Form\nRequest" as FREQ
+participant "LetterService" as SVC
+participant "OfficialService" as OSVC
+participant "LetterTypeRepository" as LTREPO
+participant "ApprovalFlowRepository" as AFREPO
+participant "UserRepository" as UREPO
+participant "LetterRepository" as REPO
+participant "OfficialRepository" as OREPO
+participant "DB::transaction" as TX
+participant "Queue\n(Jobs)" as Q
+participant "PostgreSQL" as DB
+actor "RT\n(Wilayah Warga)" as RT
+
+== Buka Form & Pilih Jenis Surat ==
+
+WRG -> FE : Buka menu "Ajukan Permohonan Surat"
+FE -> CTRL : GET /api/letter-types?active=true
+CTRL -> SVC : getActiveLetterTypes()
+SVC -> LTREPO : findAllActive()
+LTREPO -> DB : SELECT * FROM letter_types\nWHERE is_active = true\nAND template IS NOT NULL
+note right of DB
+  TIDAK BERUBAH dari v4.2: filter
+  template IS NOT NULL. Tipe surat
+  dengan template = NULL (status:
+  Draft) tidak boleh tampil untuk warga.
+end note
+DB --> LTREPO : collection letter_types
+LTREPO --> SVC : collection
+SVC --> CTRL : LetterTypeCollection
+CTRL --> FE : 200 OK {letter_types[]}
+FE --> WRG : Tampilkan pilihan jenis surat
+
+WRG -> FE : Pilih jenis surat
+FE -> CTRL : GET /api/letter-types/{id}
+CTRL -> SVC : getLetterTypeDetail(id)
+SVC -> LTREPO : findById(id)
+LTREPO -> DB : SELECT * FROM letter_types WHERE id = ?
+DB --> LTREPO : letter_type\n(verification_type, requirements_info,\nassigned_role, validity_days,\ncategory_id, flow_id)
+note right of DB
+  v5.0: letter_type kini membawa
+  category_id & flow_id (FK NOT NULL
+  keduanya) - dipakai nanti sebagai
+  SUMBER SNAPSHOT saat surat disubmit.
+end note
+LTREPO --> SVC : letter_type
+SVC --> CTRL : LetterTypeResource
+CTRL --> FE : 200 OK {letter_type detail}
+
+alt verification_type = "auto"
+  FE --> WRG : Tampilkan form langsung\n(NIK otomatis tervalidasi dari akun)
+else verification_type = "manual"
+  FE --> WRG : Tampilkan checklist persyaratan\n(warga wajib konfirmasi kelengkapan)
+else verification_type = "document"
+  FE --> WRG : Tampilkan form + field\nupload dokumen pendukung (wajib)
+end
+
+== Ambil Data Warga dari Session ==
+
+FE -> AUTHCTRL : GET /api/auth/me
+AUTHCTRL -> UREPO : findByIdWithCitizen(auth()->id())
+UREPO -> DB : SELECT users.*, citizens.*\nFROM users\nLEFT JOIN citizens\nON users.citizen_id = citizens.id\nWHERE users.id = ?
+DB --> UREPO : user + citizen data\n(termasuk family_id, residency_type\njika relevan ditampilkan)
+UREPO --> AUTHCTRL : user model (dengan relasi citizen)
+AUTHCTRL --> FE : 200 OK {nama, nik_masked, alamat,\nrt_id, hamlet_id}
+FE --> WRG : Form terisi otomatis: nama, alamat\n(dari akun login)\nWarga hanya isi: keperluan, catatan
+
+note right of FE
+  TIDAK BERUBAH dari v4.2. Tidak ada
+  step "input NIK manual". Data warga
+  diambil dari auth()->user()->citizen
+  (sudah terautentikasi).
+end note
+
+== Submit Permohonan ==
+
+WRG -> FE : Lengkapi form & klik Submit
+FE -> CTRL : POST /api/letters\n{letter_type_id, purpose, notes,\n dokumen (jika document type)}
+CTRL -> FREQ : validate(request)
+
+alt Validasi Gagal
+  FREQ --> CTRL : ValidationException
+  CTRL --> FE : 422 {errors per field}
+  FE --> WRG : Tampilkan pesan error per field
+
+else Validasi Berhasil
+  FREQ --> CTRL : validated data
+
+  CTRL -> SVC : createLetter(data, auth()->user())
+
+  == Snapshot Flow Sebelum Simpan (BARU v5.0) ==
+
+  SVC -> LTREPO : findById(data.letter_type_id)
+  LTREPO -> DB : SELECT * FROM letter_types WHERE id = ?
+  DB --> LTREPO : letter_type (flow_id, category_id)
+  LTREPO --> SVC : letter_type
+
+  SVC -> AFREPO : findWithSteps(letter_type.flow_id)
+  AFREPO -> DB : SELECT * FROM approval_flows\nWHERE id = ?;\nSELECT * FROM flow_steps\nWHERE flow_id = ?\nORDER BY step_order
+  DB --> AFREPO : flow + steps terurut
+  AFREPO --> SVC : ApprovalFlow (dengan steps)
+  note right of SVC
+    *** BARU v5.0 ***
+    flow_id yang akan disimpan ke
+    letters.flow_id adalah SNAPSHOT,
+    DIKUNCI saat ini juga. Jika admin
+    ubah konfigurasi flow di letter_types
+    di kemudian hari, surat yang sudah
+    berjalan TIDAK terpengaruh/nyasar
+    (SID-ARCH-BE-001 S3.2).
+  end note
+
+  SVC -> TX : DB::transaction() begin
+
+  TX -> REPO : create(letterData)
+  note right of REPO
+    citizen_id   = auth()->user()->citizen_id
+    submitted_by = auth()->user()->id (role: warga)
+    applicant_nik_hash = SHA-256(nik plaintext)
+    applicant_nik = AES-256 encrypt(nik)
+    status = 'pending'              <<GENERIK v5.0>>
+    flow_id = letter_type.flow_id   <<SNAPSHOT, BARU v5.0>>
+    current_step_order = 1          <<BARU v5.0>>
+    rejected_at_step = NULL         <<BARU v5.0>>
+    submitted_at = now()
+    is_overdue = false
+    expires_at = NULL (diisi nanti saat\nstep is_final=true di-approve)
+  end note
+  note right of REPO
+    Blockchain-inspired hashing TETAP
+    dikeluarkan dari MVP (Next Dev
+    Paket 2). Tidak ada proses hashing
+    di alur ini. TIDAK BERUBAH dari v4.2.
+  end note
+  REPO -> DB : INSERT INTO letters
+  DB --> REPO : letter model (id, ...)
+
+  TX -> REPO : createStatusLog({\n  letter_id, actor_id,\n  old_status: NULL,\n  new_status: 'pending', ip_address\n})
+  REPO -> DB : INSERT INTO letter_status_logs
+  DB --> REPO : log created
+
+  TX --> SVC : letter created (commit)
+
+  == Resolve RT Wilayah Warga (Step 1, Berbasis Wilayah) ==
+
+  SVC -> OSVC : resolveRtForCitizen(citizen)
+  note right of OSVC
+    TIDAK BERUBAH dari v4.2: resolve
+    berdasarkan citizens.rt_id (FK ->
+    rts.id). Step 1 SELALU RT untuk
+    kategori approval_normal - ini
+    ditentukan oleh flow_steps
+    step_order=1, approver_position='rt'
+    (bukan lagi hardcode di kode).
+  end note
+  OSVC -> OREPO : findActiveByRtId(citizen.rt_id)
+  OREPO -> DB : SELECT * FROM officials\nWHERE rt_id = ?\nAND position = 'rt'\nAND is_active = true\nAND ended_at IS NULL
+  DB --> OREPO : official RT | null
+  OREPO --> OSVC : Official RT | null
+
+  alt RT wilayah ditemukan
+    OSVC --> SVC : Official RT (user_id)
+
+    SVC -> SVC : hitung deadline_at\n(dari approval_settings\nWHERE approval_level='rt')
+
+    SVC -> REPO : createApprovalPlaceholder(\n  letter_id, approval_level: 'rt',\n  flow_step_id, deadline_at\n)
+    note right of REPO
+      flow_step_id (BARU v5.0): referensi
+      eksplisit ke row flow_steps step 1
+      milik flow surat ini - untuk audit
+      trail granular.
+    end note
+
+    SVC -> Q : dispatch(SendNotificationJob -> RT)
+    Q -> OREPO : createNotification({\n  notifiable_id: RT.user_id,\n  data: {letter_id, pesan}\n})
+    OREPO -> DB : INSERT INTO notifications
+    DB --> OREPO : notification created
+    Q --> RT : Notifikasi in-app + email:\n"Ada permohonan surat baru\ndari warga wilayahmu"
+
+  else RT wilayah tidak ditemukan / jabatan kosong
+    OSVC --> SVC : null
+    SVC -> Q : dispatch(SendNotificationJob -> Semua Petugas Desa)
+    note right of Q
+      Fallback broadcast: notif ke SEMUA
+      petugas_desa aktif untuk penanganan
+      manual (jabatan RT kosong / belum
+      diisi). TIDAK BERUBAH dari v4.2.
+    end note
+    Q -> UREPO : createNotificationBroadcast({\n  notifiable: semua petugas_desa aktif\n})
+    UREPO -> DB : INSERT INTO notifications\n(multiple rows)
+    DB --> UREPO : notifications created
+  end
+
+  SVC --> CTRL : LetterResource
+  CTRL --> FE : 201 Created {letter data, status: 'pending',\ncurrent_step_order: 1}
+  FE --> WRG : "Permohonan berhasil dikirim!\nSilakan pantau status di Dashboard."
+end
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 01_Sequence_InputSurat_v4.puml -> 01_Sequence_InputSurat_v5.puml
+'==================================================================================
+'
+' TIDAK BERUBAH: alur pemilihan jenis surat, pengambilan data warga dari
+'   session, validasi form, resolve RT berbasis wilayah (citizens.rt_id),
+'   fallback broadcast RT kosong, enkripsi NIK, dan seluruh mekanisme
+'   verification_type (auto/manual/document).
+'
+' PERUBAHAN:
+'   - TAMBAH interaksi baru "Snapshot Flow Sebelum Simpan": sebelum
+'     DB::transaction(), Service kini WAJIB fetch letter_type.flow_id
+'     lalu load ApprovalFlow beserta flow_steps-nya (via
+'     ApprovalFlowRepository::findWithSteps()) - untuk memastikan flow_id
+'     yang disimpan ke letters.flow_id adalah snapshot yang valid dan
+'     dikunci pada saat submit ini juga.
+'   - Data yang di-INSERT ke letters berubah: status kini 'pending' sebagai
+'     nilai ENUM GENERIK (4 nilai: pending/in_progress/approved/rejected),
+'     BUKAN lagi bagian dari status granular. TAMBAH flow_id (snapshot)
+'     dan current_step_order=1, rejected_at_step=NULL sebagai kolom baru.
+'   - createApprovalPlaceholder() kini juga menyertakan flow_step_id
+'     (BARU v5.0) sebagai referensi granular ke step 1 milik flow surat.
+'   - Response 201 Created kini eksplisit menyertakan current_step_order:1
+'     di payload, bukan hanya status.
+'
+'==================================================================================

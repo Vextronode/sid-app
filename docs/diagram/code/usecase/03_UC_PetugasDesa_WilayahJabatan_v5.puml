@@ -1,0 +1,161 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 03_UC_PetugasDesa_WilayahJabatan_v5.puml
+' JUDUL: Use Case - Petugas Desa (Wilayah, Jabatan & Approval Setting)
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-14/20/22/23)
+' CATATAN: Menggantikan 03_UC_PetugasDesa_WilayahJabatan_v4.puml.
+'==================================================================================
+
+@startuml 5.3.1b2_v5 UC_Petugas_Desa_Wilayah_Jabatan
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+  FontName Arial
+  FontSize 12
+}
+
+title Use Case Diagram - Petugas Desa (2/3: Wilayah, Jabatan & Approval Setting) [v5.0]
+
+actor "Petugas Desa" as PD
+actor "Sistem\n(Otomatis)" as SYS
+
+rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
+
+  rectangle "Autentikasi" #F0F4FF {
+    usecase "UC-01: Login" as UC_LOGIN
+    usecase "UC-02: Logout" as UC_LOGOUT
+  }
+
+  rectangle "UC-20: Kelola Struktur\nWilayah" #E1F5FE {
+    usecase "Tambah/Edit/Nonaktifkan\nDusun (hamlets)" as UC_HAMLET
+    usecase "Tambah/Edit/Nonaktifkan\nRW (rws)" as UC_RW_MGT
+    usecase "Tambah/Edit/Nonaktifkan\nRT (rts)" as UC_RT_MGT
+  }
+
+  rectangle "UC-14: Kelola User,\nRole & Jabatan Struktural" #F0F4FF {
+    usecase "Tambah/Edit akun\nRT/RW/Kadus/Kasi/Kaur/\nKades/Sekdes" as UC_USER
+    usecase "Rotasi Jabatan\n(officials)" as UC_ROTASI
+  }
+
+  rectangle "UC-22: Kelola Setting\nDeadline Approval" #FFF3E0 {
+    usecase "Edit deadline_hours &\nreminder_hours per tahap" as UC_DEADLINE
+  }
+
+  rectangle "UC-23: Kelola Organisasi\nDesa (Non-Struktural)" #F3E5F5 {
+    usecase "Kelola Jabatan &\nAnggota BPD" as UC_BPD
+    usecase "Kelola Jabatan &\nAnggota BUMDES" as UC_BUMDES
+    usecase "Kelola Jabatan &\nAnggota LPM" as UC_LPM
+    usecase "Kelola Jabatan &\nAnggota Karang Taruna" as UC_KT
+    usecase "Kelola Jabatan &\nAnggota PKK" as UC_PKK
+  }
+
+  rectangle "Notifikasi" #FFF8E1 {
+    usecase "Kirim Notifikasi\n(Otomatis)" as UC_NOTIF_SND
+  }
+
+  rectangle "Fitur Pendukung" #FDF2F8 {
+    usecase "UC-15: Lihat Dashboard\nOperasional" as UC_DASH
+  }
+}
+
+PD -- UC_LOGIN
+PD -- UC_LOGOUT
+PD -- UC_HAMLET
+PD -- UC_RW_MGT
+PD -- UC_RT_MGT
+PD -- UC_USER
+PD -- UC_ROTASI
+PD -- UC_DEADLINE
+PD -- UC_BPD
+PD -- UC_BUMDES
+PD -- UC_LPM
+PD -- UC_KT
+PD -- UC_PKK
+PD -- UC_DASH
+
+SYS -- UC_NOTIF_SND
+
+UC_USER ..> UC_ROTASI : <<include>>
+UC_ROTASI ..> UC_NOTIF_SND : <<trigger>>
+UC_HAMLET ..> UC_RW_MGT : <<extend>>
+UC_RW_MGT ..> UC_RT_MGT : <<extend>>
+
+note bottom of UC_ROTASI
+  DB::transaction():
+  1. UPDATE officials lama SET ended_at=today, is_active=false
+  2. INSERT officials baru
+  3. Jika posisi = 'sekdes' -> UPDATE users SET role='sekretaris_desa'
+  Guard: tidak bisa nonaktifkan diri sendiri /
+  satu-satunya petugas_desa aktif.
+  TIDAK BERUBAH dari v4.2.
+end note
+
+note bottom of UC_USER
+  v5.0: Kadus TETAP tercantum dalam daftar
+  jabatan yang bisa dikelola di UC-14
+  (jabatan strukturalnya masih ada di
+  ENUM officials.position), NAMUN Kadus
+  tidak lagi punya relevansi terhadap
+  flow_steps.approver_position sejak
+  v5.0 - akun Kadus tidak pernah menjadi
+  target resolve approval surat.
+end note
+
+note bottom of UC_DEADLINE
+  UNIQUE(village_id, approval_level).
+  Jika deadline lewat: TIDAK auto-reject,
+  hanya is_overdue=true + reminder scheduler.
+  ⚠ CATATAN v5.0: kolom approval_settings.
+  approval_level MASIH ber-ENUM peninggalan
+  v4.2 ('rt','rw','kadus','kasi') - BELUM
+  di-patch eksplisit oleh Patch Guide v5.0,
+  sehingga BELUM SELARAS dengan
+  letter_approvals.approval_level yang
+  sudah berubah 5 nilai (rt, kepala_desa,
+  sekdes, kasi_pelayanan, kaur_tu_umum).
+  Dicatat sebagai technical debt di TDD
+  Table 70 & Section 8.3.2 - Petugas Desa
+  MASIH mengelola deadline dengan skema
+  lama ini apa adanya sampai ditinjau ulang
+  tim teknis. TIDAK dikoreksi sepihak di
+  diagram ini.
+end note
+
+note bottom of UC_BPD
+  Fitur rotasi (tambah anggota, ganti jabatan)
+  status: PENDING konfirmasi desa.
+  Tabel sudah ada (village_org_positions,
+  village_org_members), toggle UI menyusul.
+  TIDAK BERUBAH dari v4.2.
+end note
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 03_UC_PetugasDesa_WilayahJabatan_v4.puml -> ..._v5.puml
+'==================================================================================
+'
+' TIDAK ADA PERUBAHAN STRUKTURAL pada use case, aktor, maupun relasi di
+' diagram ini - identik dengan v4.2.
+'
+' Perubahan murni pada CATATAN (note):
+'   - UC_DEADLINE: label "(RT/RW/Kadus/Kasi)" pada teks use case DIHAPUS
+'     (disamakan menjadi "per tahap" generik) karena tahap kini dinamis
+'     per flow, bukan lagi 4 tahap hardcode. Ditambahkan catatan PENTING
+'     bahwa ENUM approval_settings.approval_level MASIH memakai skema lama
+'     v4.2 dan BELUM diselaraskan dengan letter_approvals.approval_level
+'     v5.0 - ini technical debt eksplisit dari TDD, sengaja TIDAK dikoreksi
+'     di diagram ini agar tetap merepresentasikan kondisi TDD apa adanya.
+'   - UC_USER: ditambahkan catatan status Kadus (tetap bisa dikelola sebagai
+'     jabatan struktural, tapi tidak lagi relevan untuk flow_steps).
+'
+'==================================================================================

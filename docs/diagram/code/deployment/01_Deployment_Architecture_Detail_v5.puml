@@ -1,0 +1,306 @@
+'==================================================================================
+' SECTION: DEPLOYMENT ARCHITECTURE
+' FILE: 01_Deployment_Architecture_Detail_v5.puml
+' JUDUL: Deployment Architecture v5 (Detail)
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.2.1 Table 7/8, Section 5.6.2,
+'         Section 8.2.1) + SID-ARCH-SYS-001 v1.1 (S5 Topologi Deployment)
+'         + SID-ARCH-BE-001 v1.0 (S1 Tech Stack, S7 Notifikasi)
+' CATATAN: Menggantikan 01_Deployment_Architecture_v4.puml. INFRASTRUKTUR
+'          TEKNIS TIDAK BERUBAH dari v4.2 - perubahan v5.0 murni di level
+'          APLIKASI (pipeline approval), bukan di level server/deployment.
+'          Update di file ini terbatas pada: label aktor (Kadus dihapus
+'          dari daftar approver aktif), referensi job generik, dan
+'          penambahan info topologi Staging/Production dari dokumen
+'          arsitektur (SID-ARCH-SYS-001 S5).
+'==================================================================================
+
+@startuml 5.2.5_v5 Diagram Deployment Architecture Detail
+skinparam backgroundColor #FFFFFF
+skinparam node {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 12
+}
+skinparam rectangle {
+  FontName Arial
+  FontSize 11
+  BorderColor #2E5FA3
+}
+skinparam component {
+  BackgroundColor #D5EAD0
+  BorderColor #1E8449
+  FontName Arial
+  FontSize 11
+}
+skinparam database {
+  BackgroundColor #FDE8D8
+  BorderColor #E67E22
+  FontName Arial
+  FontSize 11
+}
+skinparam cloud {
+  BackgroundColor #FEF9E7
+  BorderColor #F39C12
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+  FontName Arial
+}
+skinparam arrow {
+  Color #2E5FA3
+  FontName Arial
+  FontSize 10
+}
+
+title Diagram Deployment Architecture - SID Desa Cibenda (v5.0)\nSkenario: Single VPS - Tahap 1 (Tanpa Docker/Redis, sesuai roadmap MVP)\nInfrastruktur TIDAK BERUBAH dari v4.2 - lihat catatan revisi
+
+actor "Warga / RT / RW / Kasi / Kaur /\nPetugas Desa / Kepala Desa /\nSekretaris Desa / Kadus\n(login only, non-approval)" as USER
+
+cloud "INTERNET" #FEF9E7 {
+  [Browser Client\n(React SPA)] as BROWSER
+}
+
+node "VPS / Server Produksi\n(Minimum: 2 vCPU, 2GB RAM, 20GB SSD)" as VPS #EBF3FB {
+
+  rectangle "Firewall (UFW / iptables)" #FFF3E0 {
+    component "Port 443 (HTTPS)" as P443
+    component "Port 80 (HTTP - redirect ke 443)" as P80
+    component "Port SSH Custom\n(non-default 22)" as PSSH
+    note bottom of PSSH
+      SSH key authentication only.
+      Password-based login DISABLED.
+      TIDAK BERUBAH dari v4.2.
+    end note
+  }
+
+  rectangle "fail2ban" #FFE0B2 {
+    component "Monitor: SSH brute-force\n+ Login endpoint brute-force" as FAIL2BAN
+  }
+
+  rectangle "Web Server Layer" #D5EAD0 {
+    component "Nginx\n(Reverse Proxy + Static Files)" as NGINX
+    component "TLS 1.2 / 1.3\n(HTTPS Certificate)" as TLS
+    note bottom of NGINX
+      Directory listing DISABLED.
+      Force HTTPS redirect aktif
+      di level Nginx + Laravel
+      (AppServiceProvider).
+      TIDAK BERUBAH dari v4.2.
+    end note
+  }
+
+  rectangle "Application Layer" #C8E6C9 {
+    component "PHP-FPM\n(PHP 8.3)" as PHPFPM
+    component "Laravel REST API\n(app/)\n- Pipeline Approval Dinamis v5.0" as LARAVEL
+    note bottom of LARAVEL
+      PHP error display DISABLED
+      di production. Logging ke
+      file (storage/logs).
+      v5.0: business logic pipeline
+      approval kini config-driven
+      (letter_categories/approval_flows/
+      flow_steps) - TIDAK menambah
+      requirement infrastruktur apapun,
+      murni perubahan level aplikasi.
+    end note
+  }
+
+  rectangle "React SPA (Build Static)" #A5D6A7 {
+    component "dist/ atau build/\n(Served via Nginx)" as REACTBUILD
+  }
+
+  rectangle "Background Processing" #81C784 {
+    component "Supervisor" as SUPERVISOR
+    component "Queue Worker\n(php artisan queue:work)" as QWORKER
+    component "Laravel Scheduler\n(Cron: * * * * *\nphp artisan schedule:run)" as SCHEDULER
+    note bottom of SUPERVISOR
+      Queue worker HARUS selalu aktif -
+      Supervisor auto-restart jika worker
+      crash/mati. Jobs yang berjalan:
+      SendNotificationJob (GENERIK v5.0 -
+      menerima approverPosition sebagai
+      parameter, menggantikan asumsi job
+      terpisah per posisi),
+      SendApprovalReminderJob (via
+      scheduler, setiap jam).
+      Queue driver: database (Tahap 1),
+      BUKAN Redis (Redis = Tahap 2).
+      TIDAK ADA GenerateLetterHashJob
+      (blockchain = Next Dev Paket 2).
+    end note
+  }
+
+  rectangle "PDF Generation (On-Demand)" #B2DFDB {
+    component "barryvdh/laravel-dompdf" as DOMPDF
+    note bottom of DOMPDF
+      Tidak ada storage khusus -
+      PDF digenerate saat request,
+      langsung di-stream sebagai
+      response, tidak disimpan
+      ke disk server. TIDAK BERUBAH
+      dari v4.2.
+    end note
+  }
+
+  rectangle "Database Layer" #FDE8D8 {
+    database "PostgreSQL 16" as PGSQL
+    note bottom of PGSQL
+      Sama VPS (single-server MVP).
+      v5.0: +5 tabel baru (letter_categories,
+      approval_flows, flow_steps, families,
+      citizen_socioeconomics) - total 22
+      tabel MVP (naik dari 17 di v4.2).
+      TIDAK menambah requirement resource
+      signifikan untuk skala desa.
+      Backup dijadwalkan via Laravel
+      Scheduler, file backup dienkripsi,
+      disimpan terpisah dari direktori
+      aplikasi.
+    end note
+  }
+
+  rectangle "Storage" #FFF9C4 {
+    component "Local Disk Storage\n(storage/app)" as DISK
+    note bottom of DISK
+      Untuk: dokumen pendukung upload
+      warga (jika verification_type=document),
+      foto/TTD/stempel officials,
+      thumbnail news.
+      TIDAK menyimpan PDF surat
+      (on-demand, tidak persisten).
+      TIDAK BERUBAH dari v4.2.
+    end note
+  }
+
+  rectangle "Dev Monitoring (Non-Production)" #EEEEEE {
+    component "Laravel Telescope\n(Dev/Staging Only)" as TELESCOPE
+  }
+
+  note as APPKEYNOTE #FFCDD2
+    ⚠ APP_KEY tersimpan di file .env
+    di server ini. TIDAK PERNAH
+    di-commit ke repository.
+    TIDAK BOLEH diregenerate di
+    production - semua data
+    terenkripsi (AES-256) akan
+    tidak terbaca jika berubah.
+    Backup key disimpan terpisah
+    (password manager / vault).
+    v5.0: cakupan field terenkripsi
+    bertambah (families.no_kk,
+    families.family_address) -
+    TIDAK mengubah kebijakan key
+    management ini.
+  end note
+}
+
+cloud "EXTERNAL SERVICES" #FEF9E7 {
+  [SMTP Mail Server\n(untuk email notifikasi)] as SMTP
+}
+
+' ── Flow Koneksi ──
+
+USER --> BROWSER
+BROWSER --> P443 : HTTPS (TLS 1.2/1.3)
+P80 --> P443 : redirect
+PSSH ..> FAIL2BAN : dipantau
+
+P443 --> NGINX
+NGINX --> TLS
+NGINX --> REACTBUILD : serve static files\n(SPA)
+NGINX --> PHPFPM : proxy /api/* requests
+
+PHPFPM --> LARAVEL
+LARAVEL --> PGSQL : Eloquent ORM
+LARAVEL --> QWORKER : dispatch jobs
+LARAVEL --> DOMPDF : generate PDF\n(saat request download)
+LARAVEL --> DISK : simpan/ambil\nfile upload
+
+SUPERVISOR --> QWORKER : monitor & auto-restart
+SCHEDULER --> QWORKER : trigger scheduled jobs\n(reminder, backup)
+
+QWORKER --> PGSQL : proses job\n(notifications table)
+QWORKER --> SMTP : kirim email\n(opsional channel)
+
+TELESCOPE ..> PGSQL : monitor query\n(dev/staging only)
+
+note bottom of VPS
+  KETERANGAN SKENARIO (v5.0):
+  - Single VPS: seluruh komponen (Nginx, PHP-FPM,
+    PostgreSQL, Queue Worker, Scheduler) berjalan
+    di satu server yang sama, sesuai roadmap MVP
+    Tahap 1 (constraint minimum 2 vCPU / 2GB RAM).
+  - Docker + Laravel Sail BELUM dipakai (masuk Tahap 2).
+  - Redis BELUM dipakai (queue driver: database,
+    caching: belum aktif). Migrasi ke Redis + Horizon
+    dijadwalkan Tahap 2.
+  - Tidak ada CDN/load balancer terpisah - traffic desa
+    kecil dianggap cukup untuk single-server setup.
+  --
+  *** INFRASTRUKTUR TEKNIS TIDAK BERUBAH DARI v4.2 ***
+  Seluruh perubahan v5.0 (Category+Flow approval dinamis,
+  restrukturisasi data kependudukan) adalah perubahan
+  LEVEL APLIKASI (skema database + business logic),
+  BUKAN perubahan topologi/komponen deployment.
+  --
+  TOPOLOGI ENVIRONMENT (SID-ARCH-SYS-001 S5):
+  Staging  -> Hosting Kampus (aktif sejak Sprint Foundation)
+  Production -> Hosting Desa (aktif setelah Gate G7 -
+                 Deployment Ready tercapai)
+  Diagram Single VPS di atas berlaku untuk KEDUA
+  environment tersebut - hanya lokasi hosting fisiknya
+  yang berbeda, arsitektur komponennya identik.
+end note
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 01_Deployment_Architecture_v4.puml -> 01_Deployment_Architecture_Detail_v5.puml
+'==================================================================================
+'
+' *** INFRASTRUKTUR TEKNIS TIDAK BERUBAH SAMA SEKALI DARI v4.2 KE v5.0 ***
+' Seluruh perubahan v5.0 (Category+Flow approval dinamis, restrukturisasi
+' data kependudukan/families) adalah perubahan LEVEL APLIKASI (skema
+' database + business logic backend), BUKAN perubahan topologi atau
+' komponen infrastruktur. Firewall, fail2ban, Nginx, PHP-FPM, Supervisor,
+' Scheduler, PostgreSQL, storage lokal, PDF on-demand - SELURUHNYA identik
+' strukturnya dengan v4.2.
+'
+' PERUBAHAN YANG DILAKUKAN DI FILE INI (murni kosmetik/kontekstual, BUKAN
+' perubahan arsitektur infrastruktur):
+'   1. Label aktor USER diperbarui: "Kadus" ditambahkan secara eksplisit
+'      dengan keterangan "(login only, non-approval)" - karena meski Kadus
+'      tidak lagi approver, akunnya tetap ada di sistem dan tetap
+'      mengakses aplikasi via jalur yang sama.
+'   2. Catatan pada komponen LARAVEL (Application Layer) ditambah,
+'      menjelaskan bahwa pipeline approval kini config-driven - murni
+'      informasi kontekstual, TIDAK menambah requirement resource server.
+'   3. Catatan pada QWORKER (Background Processing) diperbarui:
+'      SendNotificationJob kini dijelaskan sebagai GENERIK (menerima
+'      approverPosition sebagai parameter), menggantikan asumsi implisit
+'      job terpisah per posisi approver.
+'   4. Catatan pada PGSQL (Database Layer) diperbarui: disebutkan +5 tabel
+'      baru dan total 22 tabel MVP (naik dari 17 di v4.2), dengan penegasan
+'      bahwa ini tidak menambah requirement resource signifikan untuk
+'      skala desa.
+'   5. Catatan APPKEYNOTE diperbarui: disebutkan cakupan field terenkripsi
+'      bertambah (families.no_kk, families.family_address), tanpa mengubah
+'      kebijakan key management.
+'   6. TAMBAH informasi topologi Staging (Hosting Kampus) vs Production
+'      (Hosting Desa, setelah Gate G7) - informasi ini BARU tersedia di
+'      SID-ARCH-SYS-001 S5, TIDAK ADA rujukan setara di TDD v4.2 manapun.
+'   7. TAMBAH catatan eksplisit di bagian bawah diagram yang menegaskan
+'      bahwa infrastruktur teknis tidak berubah - untuk menghindari
+'      kesalahpahaman bahwa perubahan besar di TDD/skema otomatis berarti
+'      perubahan topologi deployment.
+'
+' YANG TIDAK DIUBAH SAMA SEKALI: seluruh komponen, koneksi/panah, dan
+'   struktur box (Firewall, fail2ban, Web Server Layer, Application Layer,
+'   React SPA Build, Background Processing, PDF Generation, Database
+'   Layer, Storage, Dev Monitoring) identik dengan v4.2.
+'
+'==================================================================================

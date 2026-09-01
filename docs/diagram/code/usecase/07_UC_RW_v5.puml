@@ -1,0 +1,118 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 07_UC_RW_v5.puml
+' JUDUL: Use Case - RW (Notifier Pasif, Bukan Approver)
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 4 Table 4/5, Section 5.3.2 catatan
+'         UC-04a sub-flow) + SID-ARCH-FE-001 S6 (ApprovalStepRenderer)
+' CATATAN: **REVISI TOTAL** dari 07_UC_RW_v4.puml. UC-04b (RW Approval)
+'          SUDAH DIHAPUS TOTAL sejak v5.0. RW tidak lagi punya use case
+'          approval sendiri - digantikan sub-flow notifikasi pasif yang
+'          merupakan bagian dari UC-04a (RT Approval), BUKAN UC tersendiri.
+'==================================================================================
+
+@startuml 5.3.1e_v5 UC_RW
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+  FontName Arial
+  FontSize 12
+}
+
+title Use Case Diagram - RW (NOTIF ONLY, Bukan Approver) [REVISI TOTAL - v5.0]\n(Menggantikan diagram "Approval Tahap 2 dari 4" v4.2 - lihat catatan revisi)
+
+actor "RW" as RW
+actor "Sistem\n(Otomatis)" as SYS
+
+rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
+
+  rectangle "Autentikasi" #F0F4FF {
+    usecase "UC-01: Login" as UC_LOGIN
+    usecase "UC-02: Logout" as UC_LOGOUT
+  }
+
+  rectangle "Notifikasi FYI (Read-Only)\nBukan Use Case Approval" #FFF0E8 {
+    usecase "UC-05: Lihat Daftar Surat\nYang Lewat FYI (read-only)" as UC_RW_LIST
+    usecase "UC-06: Lihat Detail\nPermohonan (read-only)" as UC_RW_DETAIL
+    usecase "Terima Notifikasi FYI\n(Surat Lolos RT)" as UC_NOTIF_IN
+  }
+
+  rectangle "Fitur Pendukung" #FDF2F8 {
+    usecase "UC-15: Dashboard RW\n(Riwayat Notifikasi, Read-Only)" as UC_DASH
+  }
+}
+
+RW -- UC_LOGIN
+RW -- UC_LOGOUT
+RW -- UC_RW_LIST
+RW -- UC_RW_DETAIL
+RW -- UC_NOTIF_IN
+RW -- UC_DASH
+
+SYS -- UC_NOTIF_IN : dispatch
+
+UC_RW_LIST ..> UC_RW_DETAIL : <<include>>
+
+note "*** RW BUKAN APPROVER SEJAK v5.0 ***\nTIDAK ADA use case 'Approve/Reject Surat' di\ndiagram ini - dan MEMANG SENGAJA TIDAK ADA.\nUC-04b (RW Approval) versi v4.2 SUDAH DIHAPUS\nTOTAL. RW tidak pernah tercatat sebagai\napproval_level di tabel letter_approvals,\ndan TIDAK PERNAH muncul sebagai approver_position\ndi tabel flow_steps." as NOTE1
+
+note "RW TIDAK MEMBLOKIR alur surat - surat langsung\nlanjut ke approver berikutnya (Kepala Desa/\nSekretaris Desa) begitu RT approve, TANPA\nmenunggu aksi apapun dari RW (non-blocking).\nNotifikasi ke RW murni SIDE-EFFECT paralel,\nbagian dari UC-04a (RT Approval) - lihat\nfile 06_UC_RT_v5.puml." as NOTE2
+
+note "Konsekuensi STRUKTURAL (bukan hanya UI):\nEndpoint decision/approval TIDAK PERNAH dibuka\nuntuk role RW di level route backend.\nDi Frontend, komponen ApprovalStepRenderer\nTIDAK PERNAH merender tombol Setujui/Tolak\nuntuk RW - dilayani komponen tampilan\nterpisah (read-only), karena secara struktural\nRW tidak pernah menjadi target endpoint decision\n(SID-ARCH-FE-001 S6)." as NOTE3
+
+note "Fallback notifikasi RW kosong/tidak ditemukan:\nbroadcast ke semua petugas_desa aktif\n(pola sama dengan fallback RT).\nGate/resolve RW: via rts.rw_id (masih berbasis\nwilayah, sama seperti resolve RT), TAPI\nhasilnya HANYA dipakai untuk notifikasi FYI,\nBUKAN untuk validasi otorisasi approve\n(karena RW tidak pernah approve apapun)." as NOTE4
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 07_UC_RW_v4.puml -> 07_UC_RW_v5.puml
+'==================================================================================
+'
+' *** INI ADALAH REVISI PALING SIGNIFIKAN KEDUA DI BATCH UC v5.0 ***
+'
+' Diagram v4.2 berjudul "Approver Tahap 2 dari 4" - RW punya use case
+' "Approve / Reject Surat" lengkap dengan gate logic (hanya bisa akses surat
+' berstatus rt_approved), notifikasi masuk dari RT, dan notifikasi keluar
+' ke Kadus jika approve.
+'
+' Sejak v5.0, PERAN INI DIHAPUS TOTAL DAN DIGANTIKAN:
+'   1. UC-04b (RW Approval) - use case ini SUDAH TIDAK ADA. Tidak ada lagi
+'      "UC-04b" di penomoran use case TDD v5.0.
+'   2. Use case "Approve / Reject Surat" DIHAPUS dari aktor RW sepenuhnya -
+'      TIDAK ADA gate logic rt_approved untuk RW karena RW tidak pernah
+'      mengakses endpoint decision.
+'   3. UC-05/UC-06 untuk RW berubah makna total: dari "daftar surat
+'      menunggu approval RW (status rt_approved)" menjadi "daftar surat
+'      yang LEWAT FYI (read-only, tanpa filter status aktif karena RW
+'      bukan approver)".
+'   4. Dashboard (UC-15): dari "ringkasan wilayah + badge overdue milik RW
+'      sendiri" (karena RW dulu punya deadline approval sendiri) menjadi
+'      "riwayat notifikasi yang pernah diterima, murni read-only" - RW
+'      tidak lagi punya deadline/overdue karena tidak pernah jadi gate.
+'   5. Notifikasi keluar ke Kadus (v4.2) DIHAPUS - karena Kadus juga sudah
+'      bukan approver, dan RW toh tidak pernah memicu notifikasi keluar
+'      (RW murni penerima, bukan pemicu langkah berikutnya).
+'
+' KONSEKUENSI STRUKTURAL yang ditekankan di catatan diagram ini (mengacu
+' SID-ARCH-BE-001 S3.2 & SID-ARCH-FE-001 S6):
+'   - Backend: endpoint decision/approval TIDAK PERNAH dibuka untuk role RW
+'     di level ROUTE, bukan hanya disembunyikan di UI.
+'   - Frontend: komponen ApprovalStepRenderer generik TIDAK PERNAH
+'     merender tombol approve/reject untuk RW.
+'
+' YANG TETAP SAMA:
+'   - RW tetap menerima notifikasi FYI setiap kali RT approve surat di
+'     wilayahnya (resolve via rts.rw_id, pola resolve wilayah sama seperti
+'     sebelumnya - hanya PENGGUNAAN hasil resolve-nya yang berubah, dari
+'     "otorisasi approve" menjadi "murni pemicu notifikasi").
+'   - Fallback broadcast ke petugas_desa aktif jika RW tidak ditemukan
+'     tetap dipertahankan.
+'
+'==================================================================================

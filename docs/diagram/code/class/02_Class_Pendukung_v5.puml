@@ -1,0 +1,514 @@
+'==================================================================================
+' SECTION: CLASS DIAGRAM
+' FILE: 02_Class_Pendukung_v5.puml
+' JUDUL: Class Diagram - Pendukung [2/2]
+' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.4, 5.4.2)
+'         + SID-ARCH-BE-001 v1.0 (S7 Notifikasi & Event Architecture)
+' CATATAN: Menggantikan 02_Class_Pendukung_v4.puml. Struktur 5 tabel pendukung
+'          TIDAK BERUBAH dari v4.2 - perubahan utama ada di level Service/Event
+'          (notifikasi generik), bukan di Model/Repository. Lihat catatan
+'          revisi di akhir file.
+'==================================================================================
+
+@startuml 5.3.4b_v5 Class Diagram Pendukung
+skinparam backgroundColor #FFFFFF
+skinparam class {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+  HeaderBackgroundColor #2E5FA3
+  HeaderFontColor #FFFFFF
+  ArrowColor #2E5FA3
+}
+skinparam packageStyle rectangle
+skinparam arrow {
+  Color #2E5FA3
+  FontName Arial
+  FontSize 9
+}
+
+title Class Diagram [2/2: PENDUKUNG] - SID Desa Cibenda (v5.0)\nLayer: Controller -> Service -> Repository -> Eloquent Model\nScope: Organisasi Non-Struktural, Notifikasi & Event (Generik), Berita, Peraturan Desa\nLihat file Class Diagram Core [1/2] untuk struktur lengkap: Village, User, Citizen/Family, Official, Pipeline Surat, Letter
+
+' ═══════════════════════════════════════════════════
+' SHADOW / GHOST CLASSES
+' Representasi ringkas dari file Class Diagram Core [1/2].
+' Hanya atribut PK + atribut relevan untuk relasi
+' di halaman ini. Definisi lengkap ada di
+' 01_Class_Core_v5.puml - JANGAN dianggap sebagai
+' definisi final, murni referensi visual.
+' ═══════════════════════════════════════════════════
+
+class "Village\n(bayangan - lihat Class Core)" as Village <<shadow>> #F5F5F5 {
+  +id : bigint
+  ..lihat 01_Class_Core_v5.puml\nuntuk method & relasi lengkap..
+}
+
+class "User\n(bayangan - lihat Class Core)" as User <<shadow>> #F5F5F5 {
+  +id : bigint
+  +role : enum
+  ..lihat 01_Class_Core_v5.puml\nuntuk method & relasi lengkap..
+}
+
+class "Letter\n(bayangan - lihat Class Core)" as Letter <<shadow>> #F5F5F5 {
+  +id : bigint
+  +currentStepOrder : int
+  +flowId : bigint
+  ..lihat 01_Class_Core_v5.puml\nuntuk method & relasi lengkap..
+}
+
+class "FlowStep\n(bayangan - lihat Class Core)" as FlowStep <<shadow>> #F5F5F5 {
+  +id : bigint
+  +approverPosition : enum
+  ..lihat 01_Class_Core_v5.puml\nuntuk method & relasi lengkap..
+}
+
+note bottom of Village
+  ENTITY BAYANGAN (shadow/ghost).
+  Struktur & behavior lengkap ada
+  di file Class Core [1/2].
+  TIDAK BERUBAH dari v4.2.
+end note
+
+note bottom of User
+  ENTITY BAYANGAN (shadow/ghost).
+  role ENUM TETAP 9 nilai flat,
+  TIDAK BERUBAH dari v4.2.
+end note
+
+note bottom of Letter
+  ENTITY BAYANGAN (shadow/ghost).
+  BARU ditampilkan di file ini (v5.0) -
+  diperlukan agar relasi NotificationService
+  ke event pipeline generik tidak ambigu
+  tanpa konteks currentStepOrder/flowId.
+end note
+
+note bottom of FlowStep
+  ENTITY BAYANGAN (shadow/ghost).
+  BARU ditampilkan di file ini (v5.0) -
+  diperlukan agar EventListener generik
+  (FlowStepAdvanced) terlihat jelas
+  sumber approverPosition-nya.
+end note
+
+' ═══════════════════════════════════════════════════
+' LAYER 1: CONTROLLER
+' ═══════════════════════════════════════════════════
+
+package "Controller Layer" #F0F4FF {
+
+  class VillageOrgController {
+    +index() : JsonResponse
+    +storePosition(StorePositionRequest) : JsonResponse
+    +storeMember(id, StoreMemberRequest) : JsonResponse
+    +rotateMember(memberId, RotateRequest) : JsonResponse
+  }
+
+  class VillageProfileController {
+    +show() : JsonResponse
+    +update(UpdateProfileRequest) : JsonResponse
+    note right
+      Aktor HANYA Petugas Desa. Kepala Desa
+      DAN Sekretaris Desa TIDAK memiliki
+      akses - ditegaskan ulang eksplisit
+      di SID-ARCH-SYS-001 S2.3: domain CMS
+      eksklusif petugas_desa, TIDAK meluas
+      meski Kades/Sekdes kini approver aktif
+      di domain Surat (v5.0).
+    end note
+  }
+
+  class NewsController {
+    +index() : JsonResponse
+    +store(StoreNewsRequest) : JsonResponse
+    +update(id, UpdateNewsRequest) : JsonResponse
+    +destroy(id) : JsonResponse
+    note right
+      Aktor HANYA Petugas Desa, sama seperti
+      VillageProfileController. TIDAK BERUBAH
+      dari v4.2.
+    end note
+  }
+
+  class RegulationController {
+    +index() : JsonResponse
+    +store(StoreRegulationRequest) : JsonResponse
+    +update(id, UpdateRegulationRequest) : JsonResponse
+    +destroy(id) : JsonResponse
+  }
+
+  class PublicPageController {
+    +home() : JsonResponse
+    +villageProfile() : JsonResponse
+    +newsList() : JsonResponse
+    +regulationList() : JsonResponse
+    +letterTypeList() : JsonResponse
+    +contactUs() : JsonResponse
+  }
+
+  class NotificationController {
+    +index() : JsonResponse
+    +markAsRead(id) : JsonResponse
+  }
+}
+
+' ═══════════════════════════════════════════════════
+' LAYER 2: SERVICE (Business Logic)
+' ═══════════════════════════════════════════════════
+
+package "Service Layer" #D5EAD0 {
+
+  class VillageOrgService {
+    +createPosition(data) : VillageOrgPosition
+    +assignMember(positionId, data) : VillageOrgMember
+    +rotateMember(memberId, newData) : VillageOrgMember
+    note right
+      STATUS: fitur rotasi PENDING
+      konfirmasi desa (statis vs dinamis).
+      TIDAK BERUBAH dari v4.2 (TDD Table 69).
+    end note
+  }
+
+  class VillageProfileService {
+    +getProfile(villageId) : Village
+    +updateProfile(villageId, data) : Village
+  }
+
+  class NewsService {
+    +createNews(data, authorId) : News
+    +generateUniqueSlug(title) : string
+    +publish(newsId) : News
+  }
+
+  class RegulationService {
+    +createRegulation(data, createdBy) : VillageRegulation
+    note right
+      Tidak ada konsep publish/draft -
+      begitu dibuat, otomatis publik.
+      TIDAK BERUBAH dari v4.2.
+    end note
+  }
+
+  class ContactService {
+    +getActiveKasiKaurContacts(villageId) : Collection
+  }
+
+  class NotificationService {
+    +getUnreadForUser(userId) : Collection
+    +markAsRead(notificationId) : bool
+    +broadcastToRole(role, data) : void
+    +notifyFlowStepAdvanced(letter, nextStep) : void
+    +notifyRwFyi(letter) : void
+    note right
+      *** PERUBAHAN v5.0 (SID-ARCH-BE-001 S7) ***
+      TAMBAH notifyFlowStepAdvanced() - dipicu
+      SATU kali oleh Event generik
+      FlowStepAdvanced setiap kali
+      current_step_order berpindah (approve),
+      MENGGANTIKAN kebutuhan listener terpisah
+      per posisi (RtApproved/RwApproved/dst
+      seperti v4.2). Method ini resolve
+      approver di step berikutnya lewat
+      OfficialService sesuai approverPosition
+      pada FlowStep aktif.
+      TAMBAH notifyRwFyi() - dipanggil SECARA
+      PARALEL/BERSAMAAN dengan
+      notifyFlowStepAdvanced() (bukan
+      berurutan menunggu), karena RW TIDAK
+      PERNAH berada di jalur kritis proses -
+      murni side-effect non-blocking.
+      broadcastToRole() TETAP dipakai untuk
+      fallback RT/RW kosong, TIDAK BERUBAH.
+    end note
+  }
+}
+
+' ═══════════════════════════════════════════════════
+' LAYER 3: REPOSITORY (Data Access)
+' ═══════════════════════════════════════════════════
+
+package "Repository Layer" #C8E6C9 {
+
+  class VillageOrgRepository {
+    +findPositionsByType(villageId, orgType) : Collection
+    +createPosition(data) : VillageOrgPosition
+    +createMember(data) : VillageOrgMember
+    +deactivateMember(memberId) : bool
+  }
+
+  class VillageRepository {
+    +findById(id) : Village
+    +update(village, data) : Village
+  }
+
+  class NewsRepository {
+    +findAllByVillage(villageId) : Collection
+    +findPublished(villageId) : Collection
+    +create(data) : News
+    +update(news, data) : News
+    +delete(id) : bool
+  }
+
+  class RegulationRepository {
+    +findAllByVillage(villageId) : Collection
+    +create(data) : VillageRegulation
+    +update(regulation, data) : VillageRegulation
+    +delete(id) : bool
+  }
+
+  class NotificationRepository {
+    +findUnreadByUser(userId) : Collection
+    +create(data) : Notification
+    +createBulk(dataList) : void
+    +markRead(id) : bool
+  }
+}
+
+' ═══════════════════════════════════════════════════
+' LAYER 4: ELOQUENT MODEL (Domain)
+' ═══════════════════════════════════════════════════
+
+package "Eloquent Model Layer" #FDE8D8 {
+
+  class VillageOrgPosition {
+    +id : bigint
+    +villageId : bigint
+    +orgType : enum
+    +positionLabel : string
+    +isSingleOccupant : bool
+    +sortOrder : int
+    +isActive : bool
+    --
+    +village() : BelongsTo
+    +members() : HasMany
+    +activeMembers() : HasMany
+  }
+
+  class VillageOrgMember {
+    +id : bigint
+    +positionId : bigint
+    +memberName : string
+    +photoImg : string?
+    +phoneWa : string?
+    +startedAt : date
+    +endedAt : date?
+    +isActive : bool
+    +notes : string?
+    --
+    +position() : BelongsTo
+    +isCurrentlyActive() : bool
+  }
+
+  class Notification {
+    +id : uuid
+    +type : string
+    +notifiableType : string
+    +notifiableId : bigint
+    +data : json
+    +readAt : datetime?
+    --
+    +notifiable() : MorphTo
+    +isUnread() : bool
+    note right
+      STRUKTUR TABEL TIDAK BERUBAH dari v4.2.
+      Polymorphic relation - notifiable
+      biasanya App\\Models\\User.
+      data (json) kini bisa berisi payload
+      generik berbeda tergantung event
+      pemicu (FlowStepAdvanced vs RwFyi vs
+      broadcast fallback), tapi struktur
+      kolom Model ini sendiri sama sekali
+      tidak berubah.
+    end note
+  }
+
+  class News {
+    +id : bigint
+    +villageId : bigint
+    +authorId : bigint
+    +title : string
+    +slug : string
+    +content : string
+    +thumbnail : string?
+    +isPublished : bool
+    +publishedAt : datetime?
+    --
+    +village() : BelongsTo
+    +author() : BelongsTo
+    +isVisibleToPublic() : bool
+    note right
+      TIDAK BERUBAH dari v4.2. Aktor UC-19
+      TETAP HANYA Petugas Desa - Kepala
+      Desa dan Sekretaris Desa TIDAK
+      memiliki akses.
+    end note
+  }
+
+  class VillageRegulation {
+    +id : bigint
+    +villageId : bigint
+    +regulationNumber : string
+    +title : string
+    +content : string
+    +enactedDate : date?
+    +createdBy : bigint
+    --
+    +village() : BelongsTo
+    +creator() : BelongsTo
+    note right
+      TIDAK BERUBAH dari v4.2. TIDAK ADA
+      isPublished - selalu tampil di halaman
+      publik begitu dibuat.
+    end note
+  }
+}
+
+' ═══════════════════════════════════════════════════
+' EVENT / LISTENER (Ilustrasi Alur Notifikasi Generik v5.0)
+' ═══════════════════════════════════════════════════
+
+package "Event & Listener Layer (Ilustrasi Alur v5.0)" #FFF3E0 {
+
+  class "FlowStepAdvanced\n<<Event>>" as EvtFlowStep {
+    +letter : Letter
+    +previousStep : FlowStep?
+    +nextStep : FlowStep?
+  }
+
+  class "FlowStepNotificationListener\n<<Listener>>" as ListenerFlowStep {
+    +handle(FlowStepAdvanced) : void
+  }
+
+  note bottom of EvtFlowStep
+    *** BARU v5.0 (SID-ARCH-BE-001 S7) ***
+    Event GENERIK - dipicu SETIAP kali
+    current_step_order berpindah (approve),
+    MENGGANTIKAN Event spesifik per posisi
+    (RtApproved, RwApproved, dst - v4.2).
+    Dipicu oleh LetterService (lihat Class
+    Core [1/2]) setelah advanceToNextStep().
+  end note
+
+  note bottom of ListenerFlowStep
+    SATU Listener generik menggantikan
+    kebutuhan Listener terpisah per tahap.
+    Membaca nextStep.approverPosition,
+    resolve approver lewat OfficialService
+    (lihat Class Core [1/2]:
+    resolveByPositionOnly() atau
+    resolveRtForCitizen() tergantung
+    posisi), lalu memanggil
+    NotificationService.notifyFlowStepAdvanced().
+    SECARA TERPISAH/PARALEL (dalam handler
+    yang sama, non-blocking terhadap
+    resolve approver berikutnya), listener
+    ini juga memicu
+    NotificationService.notifyRwFyi() jika
+    previousStep.approverPosition = 'rt'
+    (RT baru saja approve).
+  end note
+}
+
+' ═══════════════════════════════════════════════════
+' RELATIONSHIPS: Controller -> Service
+' ═══════════════════════════════════════════════════
+
+VillageOrgController ..> VillageOrgService : uses
+VillageProfileController ..> VillageProfileService : uses
+NewsController ..> NewsService : uses
+RegulationController ..> RegulationService : uses
+PublicPageController ..> VillageProfileService : uses
+PublicPageController ..> NewsService : uses
+PublicPageController ..> RegulationService : uses
+PublicPageController ..> ContactService : uses
+NotificationController ..> NotificationService : uses
+
+' ═══════════════════════════════════════════════════
+' RELATIONSHIPS: Service -> Repository
+' ═══════════════════════════════════════════════════
+
+VillageOrgService ..> VillageOrgRepository : uses
+VillageProfileService ..> VillageRepository : uses
+NewsService ..> NewsRepository : uses
+RegulationService ..> RegulationRepository : uses
+ContactService ..> "OfficialRepository\n(lihat Class Core)" : uses
+NotificationService ..> NotificationRepository : uses
+
+' ═══════════════════════════════════════════════════
+' RELATIONSHIPS: Repository -> Eloquent Model
+' ═══════════════════════════════════════════════════
+
+VillageOrgRepository ..> VillageOrgPosition : queries
+VillageOrgRepository ..> VillageOrgMember : queries
+VillageRepository ..> Village : queries
+NewsRepository ..> News : queries
+RegulationRepository ..> VillageRegulation : queries
+NotificationRepository ..> Notification : queries
+
+' ═══════════════════════════════════════════════════
+' RELATIONSHIPS: Eloquent Model (Domain)
+' ═══════════════════════════════════════════════════
+
+Village "1" o-- "many" VillageOrgPosition
+VillageOrgPosition "1" *-- "many" VillageOrgMember
+
+User "1" o-- "many" Notification : notifiable (polymorphic)
+
+Village "1" o-- "many" News
+User "1" -- "many" News : authorId
+
+Village "1" o-- "many" VillageRegulation
+User "1" -- "many" VillageRegulation : createdBy
+
+' ═══════════════════════════════════════════════════
+' RELATIONSHIPS: Event/Listener -> Service & Model (Ilustrasi)
+' ═══════════════════════════════════════════════════
+
+Letter ..> EvtFlowStep : dispatched by\nLetterService
+FlowStep ..> EvtFlowStep : nextStep/\npreviousStep
+EvtFlowStep ..> ListenerFlowStep : handled by
+ListenerFlowStep ..> NotificationService : calls\nnotifyFlowStepAdvanced()\n+ notifyRwFyi()
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 02_Class_Pendukung_v4.puml -> 02_Class_Pendukung_v5.puml
+'==================================================================================
+'
+' TIDAK BERUBAH (struktur Model & Repository & Controller CMS):
+'   - VillageOrgPosition, VillageOrgMember, Notification, News,
+'     VillageRegulation: TIDAK ADA perubahan kolom/atribut sama sekali.
+'   - VillageOrgController/Service/Repository, VillageProfileController/
+'     Service/Repository, NewsController/Service/Repository,
+'     RegulationController/Service/Repository, PublicPageController,
+'     ContactService: seluruhnya identik dengan v4.2.
+'
+' PERUBAHAN:
+'   1. NotificationService: TAMBAH 2 method baru -
+'      notifyFlowStepAdvanced() dan notifyRwFyi() - menggantikan asumsi
+'      lama bahwa notifikasi dipicu per Event granular per posisi
+'      (RtApproved/RwApproved/KadusApproved/dst di v4.2, yang sudah
+'      tidak ada). Method generik ini merefleksikan filosofi Config
+'      over Code: satu handler melayani semua posisi approver.
+'   2. TAMBAH package baru "Event & Listener Layer (Ilustrasi Alur v5.0)"
+'      berisi FlowStepAdvanced (Event) dan FlowStepNotificationListener
+'      (Listener) - digambar sebagai ILUSTRASI untuk memperjelas
+'      bagaimana SID-ARCH-BE-001 S7 (perubahan struktural notifikasi
+'      v5.0) terhubung ke NotificationService di file ini. Sebelumnya
+'      (v4.2) diagram ini tidak menggambarkan Event/Listener layer sama
+'      sekali - keputusan menambahkannya di v5.0 murni untuk kejelasan,
+'      karena perubahan notifikasi adalah salah satu poin arsitektural
+'      paling ditekankan di SID-ARCH-BE-001 (S7) namun sebelumnya tidak
+'      tervisualisasikan di Class Diagram manapun.
+'   3. TAMBAH shadow entities Letter & FlowStep (BARU di file ini) - agar
+'      relasi Event/Listener ke pipeline approval generik tidak ambigu
+'      tanpa membuka file Class Core [1/2].
+'
+' CATATAN PENTING: package Event/Listener bersifat ILUSTRATIF untuk
+' memperjelas alur - bukan berarti v4.2 tidak punya Event/Listener sama
+' sekali (Laravel Events & Listeners memang sudah dipakai sejak v3.2 sesuai
+' TDD Table 7 Tech Stack). Yang BARU di v5.0 adalah SIFAT GENERIK dari
+' Event tersebut (satu Event untuk semua posisi, bukan Event per-posisi).
+'
+'==================================================================================
