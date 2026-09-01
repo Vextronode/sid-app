@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\KasiApprovalController;
 use App\Http\Controllers\Api\LetterDownloadController;
 use App\Http\Controllers\VillageController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\RegionController;
 //use App\Http\Controllers\Api\OfficialController;
 
 /*
@@ -97,6 +98,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/letter-types', [LetterTypeController::class, 'index']);
 
+    Route::get('/hamlets', [RegionController::class, 'indexHamlets']);
+    Route::post('/hamlets', [RegionController::class, 'storeHamlet']);
+    Route::patch('/hamlets/{hamlet}', [RegionController::class, 'updateHamlet']);
+    Route::delete('/hamlets/{hamlet}', [RegionController::class, 'destroyHamlet']);
+    
     Route::post('/letters', [LetterController::class, 'store']);
 
     Route::get('/letters', [LetterController::class, 'index']);
