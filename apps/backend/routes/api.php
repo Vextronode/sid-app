@@ -87,6 +87,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/hamlets/{hamlet}', [RegionController::class, 'updateHamlet']);
     Route::delete('/hamlets/{hamlet}', [RegionController::class, 'destroyHamlet']);
 
+    Route::get('/rws', [RegionController::class, 'indexRws']);
+    Route::post('/rws', [RegionController::class, 'storeRw']);
+    Route::patch('/rws/{rw}', [RegionController::class, 'updateRw']);
+    Route::delete('/rws/{rw}', [RegionController::class, 'destroyRw']);
+
+    Route::get('/rts', [RegionController::class, 'indexRts']);
+    Route::post('/rts', [RegionController::class, 'storeRt']);
+    Route::patch('/rts/{rt}', [RegionController::class, 'updateRt']);
+    Route::delete('/rts/{rt}', [RegionController::class, 'destroyRt']);
+
     Route::post('/letters', [LetterController::class, 'store']);
 
     Route::get('/letters', [LetterController::class, 'index']);
