@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Citizen;
 use App\Models\Hamlet;
+use App\Models\Rt;
 use App\Models\Rw;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -155,6 +156,92 @@ class RegionController extends Controller
         $rw->delete();
 
         return response()->json(['message' => 'RW berhasil dihapus.']);
+    }
+
+    // ==========================================
+    // RTS
+    // ==========================================
+
+    public function indexRts(Request $request)
+    {
+        $query = Rt::query();
+
+        if ($request->filled('rw_id')) {
+            $query->where('rw_id', $request->query('rw_id'));
+        }
+
+        return response()->json([
+            'data' => $query->orderBy('number')->get(),
+        ]);
+    }
+
+    public function storeRt(Request $request)
+    {
+        $this->authorizePetugasDesa($request);
+
+        $data = $request->validate([
+            'rw_id' => 'required|exists:rws,id',
+            'number' => [
+                'required',
+                'string',
+                'max:10',
+                Rule::unique('rts')->where(fn ($q) => $q->where('rw_id', $request->input('rw_id'))),
+            ],
+        ], [
+            'number.unique' => 'RT dengan nomor ini sudah ada di RW tersebut',
+        ]);
+
+        $rw = Rw::findOrFail($data['rw_id']);
+
+        $rt = Rt::create([
+            'rw_id' => $data['rw_id'],
+            'number' => $data['number'],
+            'full_label' => "RT {$data['number']} / RW {$rw->number}",
+            'is_active' => true,
+        ]);
+
+        return response()->json(['data' => $rt], 201);
+    }
+
+    public function updateRt(Request $request, Rt $rt)
+    {
+        $this->authorizePetugasDesa($request);
+
+        $data = $request->validate([
+            'number' => [
+                'sometimes',
+                'string',
+                'max:10',
+                Rule::unique('rts')->where(fn ($q) => $q->where('rw_id', $rt->rw_id))->ignore($rt->id),
+            ],
+            'is_active' => 'sometimes|boolean',
+        ], [
+            'number.unique' => 'RT dengan nomor ini sudah ada di RW tersebut',
+        ]);
+
+        $this->guardDeactivation($data, $rt, Citizen::where('rt_id', $rt->id), 'RT tidak bisa dinonaktifkan karena masih ada warga aktif terdaftar di wilayah ini.');
+
+        if (isset($data['number'])) {
+            $rt->loadMissing('rw');
+            $data['full_label'] = "RT {$data['number']} / RW {$rt->rw->number}";
+        }
+
+        $rt->update($data);
+
+        return response()->json(['data' => $rt]);
+    }
+
+    public function destroyRt(Request $request, Rt $rt)
+    {
+        $this->authorizePetugasDesa($request);
+
+        if (Citizen::where('rt_id', $rt->id)->exists()) {
+            abort(409, 'RT tidak bisa dihapus karena masih ada warga terdaftar di wilayah ini.');
+        }
+
+        $rt->delete();
+
+        return response()->json(['message' => 'RT berhasil dihapus.']);
     }
 
     // ==========================================
