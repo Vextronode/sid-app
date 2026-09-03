@@ -11,8 +11,6 @@ enum LetterStatus: string
     case RtRejected = 'rt_rejected';
     case RwApproved = 'rw_approved';
     case RwRejected = 'rw_rejected';
-    case WaitingRevisionWarga = 'waiting_revision_warga';
-    case RejectedRevision = 'rejected_revision';
     case KadusApproved = 'kadus_approved';
     case KadusRejected = 'kadus_rejected';
     case KasiApproved = 'kasi_approved';
@@ -26,8 +24,6 @@ enum LetterStatus: string
             self::RtRejected => 'Ditolak RT',
             self::RwApproved => 'Disetujui RW',
             self::RwRejected => 'Ditolak RW',
-            self::WaitingRevisionWarga => 'Menunggu Revisi Warga',
-            self::RejectedRevision => 'Ditolak Revisi',
             self::KadusApproved => 'Disetujui Kadus',
             self::KadusRejected => 'Ditolak Kadus',
             self::KasiApproved => 'Disetujui Kasi Pelayanan',
@@ -40,7 +36,6 @@ enum LetterStatus: string
         return in_array($this, [
             self::RtRejected,
             self::RwRejected,
-            self::RejectedRevision,
             self::KadusRejected,
             self::KasiRejected,
         ], true);

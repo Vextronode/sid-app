@@ -23,10 +23,4 @@ class RevisionFlowTest extends TestCase
 
         $this->assertFalse($validator->fails(), $validator->errors()->toJson());
     }
-
-    public function test_waiting_revision_warga_status_is_defined_for_revision_flow(): void
-    {
-        $this->assertSame('waiting_revision_warga', LetterStatus::WaitingRevisionWarga->value);
-        $this->assertSame('rw_approved', LetterStatus::RwApproved->value);
-    }
 }
