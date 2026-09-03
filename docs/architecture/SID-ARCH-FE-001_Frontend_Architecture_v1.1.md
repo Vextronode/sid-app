@@ -100,7 +100,23 @@ Detail implementasi (batas ukuran, dokumentasi props) ada di `DEV-CODE-001`.
 
 ## 7. Integrasi Design System
 
-`tailwind.config.js` meng-extend theme dari token yang didefinisikan di `sid-design-tokens.css` (warna primer, warna status semantik: amber/blue/green/red/coral). Ini memastikan satu sumber kebenaran desain - nilai warna tidak pernah ditulis manual sebagai hex di dalam kode komponen.
+Proyek menggunakan **Tailwind CSS v4** via plugin Vite (`@tailwindcss/vite`), **bukan** Tailwind v3 dengan `tailwind.config.js`. Pendekatan v4 bersifat CSS-first — token desain didefinisikan langsung di berkas CSS lewat directive `@theme`, bukan lewat `theme.extend` di file konfigurasi JS.
+
+Token warna (primer, status semantik: amber/blue/green/red/coral) yang sudah ada di `sid-global.css` sebagai CSS custom property (`--sid-primary`, dst.) **wajib dihubungkan** ke Tailwind lewat `@theme inline` yang me-reference variable tersebut — bukan didefinisikan ulang secara terpisah. Contoh pola:
+
+```css
+/* sid-global.css tetap menjadi sumber nilai */
+:root {
+  --sid-primary: #185FA5;
+}
+
+/* dihubungkan ke Tailwind agar tersedia sebagai utility (bg-primary, text-primary) */
+@theme inline {
+  --color-primary: var(--sid-primary);
+}
+```
+
+Ini memastikan satu sumber kebenaran desain — nilai warna tidak pernah ditulis manual sebagai hex arbitrary (`bg-[#1F3864]`) di dalam kode komponen, dan token tetap bisa diubah dari satu tempat (`sid-global.css`) tanpa menyentuh kode komponen manapun.
 
 ---
 
