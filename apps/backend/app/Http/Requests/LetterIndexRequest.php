@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class LetterIndexRequest extends FormRequest
 {
@@ -20,24 +19,24 @@ class LetterIndexRequest extends FormRequest
 
             'letter_type_id' => [
                 'nullable',
-                'exists:letter_types,id'
+                'exists:letter_types,id',
             ],
 
             'from' => [
                 'nullable',
-                'date'
+                'date',
             ],
 
             'to' => [
                 'nullable',
                 'date',
-                'after_or_equal:from'
+                'after_or_equal:from',
             ],
 
             'applicant_name' => [
                 'nullable',
                 'string',
-                'max:255'
+                'max:255',
             ],
 
         ];

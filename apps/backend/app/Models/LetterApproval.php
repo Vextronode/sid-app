@@ -31,6 +31,7 @@ class LetterApproval extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
     public function official()
     {
         return $this->belongsTo(Official::class);

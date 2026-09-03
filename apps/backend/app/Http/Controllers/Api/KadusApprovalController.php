@@ -7,7 +7,6 @@ use App\Http\Requests\KadusDecisionRequest;
 use App\Models\Letter;
 use App\Services\KadusApprovalService;
 use Illuminate\Http\Request;
-use App\Models\User;
 
 class KadusApprovalController extends Controller
 {
@@ -16,16 +15,15 @@ class KadusApprovalController extends Controller
     ) {}
 
     public function index(Request $request)
-        {
+    {
 
-            return response()->json([
-                'data' =>
-                    $this->service->getLetters(
-                        $request->user()
-                    )
-            ]);
+        return response()->json([
+            'data' => $this->service->getLetters(
+                $request->user()
+            ),
+        ]);
 
-        }
+    }
 
     public function decision(
         KadusDecisionRequest $request,
@@ -44,19 +42,17 @@ class KadusApprovalController extends Controller
 
     }
 
-
     public function show(Letter $letter)
     {
         $letter->load([
             'citizen',
             'letterType',
-            'approvals.approvedBy:id,name'
+            'approvals.approvedBy:id,name',
         ]);
 
-
         return response()->json([
-            'message'=>'Detail surat berhasil diambil',
-            'data'=>$letter
+            'message' => 'Detail surat berhasil diambil',
+            'data' => $letter,
         ]);
     }
 }

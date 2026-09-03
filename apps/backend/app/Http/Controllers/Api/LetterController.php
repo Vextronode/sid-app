@@ -61,7 +61,7 @@ class LetterController extends Controller
     {
         $user = auth()->user();
 
-        if ($letter->submitted_by !== $user->id && !in_array($user->role, ['admin', 'operator', 'kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa'])) {
+        if ($letter->submitted_by !== $user->id && ! in_array($user->role, ['admin', 'operator', 'kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa'])) {
             abort(403, 'Anda tidak berwenang menghapus surat ini.');
         }
 

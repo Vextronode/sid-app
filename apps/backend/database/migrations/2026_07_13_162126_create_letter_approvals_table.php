@@ -9,28 +9,28 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('letter_approvals', function (Blueprint $table) {
-        $table->id();
+            $table->id();
 
-        $table->foreignId('letter_id')
-            ->constrained('letters')
-            ->cascadeOnDelete();
+            $table->foreignId('letter_id')
+                ->constrained('letters')
+                ->cascadeOnDelete();
 
-        $table->foreignId('approved_by')
-            ->nullable()
-            ->constrained('users')
-            ->restrictOnDelete();
+            $table->foreignId('approved_by')
+                ->nullable()
+                ->constrained('users')
+                ->restrictOnDelete();
 
-        $table->enum('approval_level', [
-            'rt',
-            'rw',
-            'kadus',
-            'kasi',
-        ]);
+            $table->enum('approval_level', [
+                'rt',
+                'rw',
+                'kadus',
+                'kasi',
+            ]);
 
-        $table->timestamp('deadline_at')->nullable();
-        $table->timestamp('reminded_at')->nullable();
+            $table->timestamp('deadline_at')->nullable();
+            $table->timestamp('reminded_at')->nullable();
 
-        $table->timestamps();
+            $table->timestamps();
         });
     }
 

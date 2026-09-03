@@ -15,8 +15,8 @@ class CitizenController extends Controller
             'hamlet',
             'village',
         ])
-        ->orderBy('name')
-        ->get();
+            ->orderBy('name')
+            ->get();
     }
 
     public function destroy(Citizen $citizen)
@@ -24,7 +24,7 @@ class CitizenController extends Controller
         $citizen->delete();
 
         return response()->json([
-            'message' => 'Data warga berhasil dihapus.'
+            'message' => 'Data warga berhasil dihapus.',
         ]);
     }
 
@@ -32,10 +32,10 @@ class CitizenController extends Controller
     {
         return Citizen::with([
             'rt',
-            'rw'
+            'rw',
         ])
-        ->select('rt_id','rw_id')
-        ->distinct()
-        ->get();
+            ->select('rt_id', 'rw_id')
+            ->distinct()
+            ->get();
     }
 }

@@ -34,7 +34,7 @@ class LetterTypeSeeder extends Seeder
 
     private function baseTemplate(string $code, string $title, string $body): string
     {
-        $kop = <<<HTML
+        $kop = <<<'HTML'
         <div style="text-align: center; margin-bottom: 5px;">
             <table style="width: 100%; border-collapse: collapse;">
                 <tr>
@@ -57,7 +57,7 @@ class LetterTypeSeeder extends Seeder
         </div>
         HTML;
 
-        $ttdPetugas = <<<HTML
+        $ttdPetugas = <<<'HTML'
         <div style="margin-bottom: 12px;">
             <p style="margin: 0 0 8px 0;">Yang bertanda tangan dibawah ini :</p>
             <table style="width: 100%; border-collapse: collapse; margin-left: 30px;">
@@ -75,7 +75,7 @@ class LetterTypeSeeder extends Seeder
         </div>
         HTML;
 
-        $pemohon = <<<HTML
+        $pemohon = <<<'HTML'
         <div style="margin-bottom: 15px;">
             <p style="margin: 0 0 8px 0;">Menerangkan dengan sebenarnya bahwa :</p>
             <table style="width: 100%; border-collapse: collapse; margin-left: 30px;">
@@ -108,7 +108,7 @@ class LetterTypeSeeder extends Seeder
         </div>
         HTML;
 
-        $signature = <<<HTML
+        $signature = <<<'HTML'
         <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
             <tr>
                 <td style="width: 50%;"></td>
@@ -186,7 +186,7 @@ class LetterTypeSeeder extends Seeder
         }
 
         if ($code === 'A05') {
-            $pemohonPendek = <<<HTML
+            $pemohonPendek = <<<'HTML'
             <div style="margin-bottom: 12px;">
                 <p style="margin: 0 0 6px 0;">Menerangkan dengan sebenarnya bahwa :</p>
                 <table style="width: 100%; border-collapse: collapse; margin-left: 30px;">
@@ -219,7 +219,7 @@ class LetterTypeSeeder extends Seeder
             </div>
             HTML;
 
-            $anak = <<<HTML
+            $anak = <<<'HTML'
             <div style="margin-bottom: 12px;">
                 <p style="margin: 0 0 6px 0; text-decoration: underline;">Selaku Orangtua dari :</p>
                 <table style="width: 100%; border-collapse: collapse; margin-left: 30px;">
@@ -272,8 +272,6 @@ class LetterTypeSeeder extends Seeder
             </div>
             HTML;
         }
-
-
 
         return <<<HTML
         <div style="font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.4; color: #000;">

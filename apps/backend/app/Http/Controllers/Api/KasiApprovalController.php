@@ -37,18 +37,18 @@ class KasiApprovalController extends Controller
             'message' => 'Approval berhasil diproses.',
         ]);
     }
-        public function show(Letter $letter)
+
+    public function show(Letter $letter)
     {
         $letter->load([
             'citizen',
             'letterType',
-            'approvals.approvedBy:id,name'
+            'approvals.approvedBy:id,name',
         ]);
 
-
         return response()->json([
-            'message'=>'Detail surat berhasil diambil',
-            'data'=>$letter
+            'message' => 'Detail surat berhasil diambil',
+            'data' => $letter,
         ]);
     }
 }
