@@ -1,39 +1,25 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-
-use App\Http\Requests\Auth\LoginRequest;
-
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Api\CitizenController;
-use App\Http\Controllers\Api\LetterController;
-use App\Http\Controllers\Api\LetterTypeController;
-use App\Http\Controllers\Api\LetterApprovalController;
-use App\Http\Controllers\Api\RtApprovalController;
-use App\Http\Controllers\Api\RwApprovalController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
+use App\Http\Controllers\Api\LetterApprovalController;
+use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
-use App\Http\Controllers\VillageController;
-use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\RegionController;
-//use App\Http\Controllers\Api\OfficialController;
+use App\Http\Controllers\Api\RtApprovalController;
+use App\Http\Controllers\Api\RwApprovalController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\VillageController;
+use App\Models\Letter;
+use App\Services\PdfService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Public Routes
-|--------------------------------------------------------------------------
-*/
-
-    Route::post(
-        '/login',
-        [AuthenticatedSessionController::class, 'store']
-    );
-
-
+// use App\Http\Controllers\Api\OfficialController;
 
 /*
 |--------------------------------------------------------------------------
@@ -65,13 +51,12 @@ Route::middleware('auth:sanctum')->group(function () {
         '/logout',
         [AuthenticatedSessionController::class, 'logout']
     )->middleware('auth:sanctum');
-        Route::get('/users',
-        [UserController::class,'index']
+    Route::get('/users',
+        [UserController::class, 'index']
     );
 
-
     Route::patch('/users/{user}/toggle-status',
-        [UserController::class,'updateStatus']
+        [UserController::class, 'updateStatus']
     );
     Route::get('/user', function (Request $request) {
 
@@ -82,7 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
                 'citizen.hamlet',
                 'citizen.rt',
                 'citizen.rw',
-                'official'
+                'official',
             ]);
 
     });
@@ -91,10 +76,9 @@ Route::middleware('auth:sanctum')->group(function () {
         [VillageController::class, 'genderStats']
     );
     Route::get(
-    '/dashboard/letter-stats',
-    [VillageController::class, 'letterStats']
-);
-
+        '/dashboard/letter-stats',
+        [VillageController::class, 'letterStats']
+    );
 
     Route::get('/letter-types', [LetterTypeController::class, 'index']);
 
@@ -102,7 +86,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/hamlets', [RegionController::class, 'storeHamlet']);
     Route::patch('/hamlets/{hamlet}', [RegionController::class, 'updateHamlet']);
     Route::delete('/hamlets/{hamlet}', [RegionController::class, 'destroyHamlet']);
-    
+
     Route::post('/letters', [LetterController::class, 'store']);
 
     Route::get('/letters', [LetterController::class, 'index']);
@@ -123,9 +107,9 @@ Route::middleware('auth:sanctum')->group(function () {
         [LetterDownloadController::class, 'download']
     );
 
-    Route::get('/letters/{letter}/preview', function (\App\Models\Letter $letter, \App\Services\PdfService $service) {
+    Route::get('/letters/{letter}/preview', function (Letter $letter, PdfService $service) {
         return $service->preview($letter, auth()->user(), request('template', 'wet'));
-    })->name('letters.preview');    
+    })->name('letters.preview');
 
     Route::prefix('citizens')->group(function () {
 
@@ -142,22 +126,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
     Route::prefix('rt')->group(function () {
-        
+
         Route::get(
             '/letters',
-            [RtApprovalController::class,'index']
+            [RtApprovalController::class, 'index']
         );
-
 
         Route::get(
             '/letters/{letter}',
-            [RtApprovalController::class,'show']
+            [RtApprovalController::class, 'show']
         );
-
 
         Route::patch(
             '/letters/{letter}/decision',
-            [RtApprovalController::class,'decision']
+            [RtApprovalController::class, 'decision']
         );
 
     });
@@ -175,7 +157,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get(
             '/letters/{letter}',
             [RwApprovalController::class, 'show']
-);
+        );
 
     });
 
@@ -190,34 +172,33 @@ Route::middleware('auth:sanctum')->group(function () {
             '/approvals/{letter}/approve',
             [KasiApprovalController::class, 'approve']
         );
-                Route::get(
-                '/letters/{letter}',
-                [KasiApprovalController::class,'show']
-            );    
-
-    });
-
-    
-    Route::prefix('kadus')->group(function (){
-        
         Route::get(
-                '/letters',
-                [KadusApprovalController::class, 'index']
-            );
+            '/letters/{letter}',
+            [KasiApprovalController::class, 'show']
+        );
 
-            Route::patch(
-                '/letters/{letter}/decision',
-                [KadusApprovalController::class, 'decision']
-            );
-            Route::get(
-                '/letters/{letter}',
-                [KadusApprovalController::class,'show']
-            );
     });
 
-    //Route::prefix('official')->group(function () {
-        //Route::post('/signature', [OfficialController::class, 'uploadSignature']);
-        //Route::get('/signature', [OfficialController::class, 'getSignature']);
-    //});
+    Route::prefix('kadus')->group(function () {
+
+        Route::get(
+            '/letters',
+            [KadusApprovalController::class, 'index']
+        );
+
+        Route::patch(
+            '/letters/{letter}/decision',
+            [KadusApprovalController::class, 'decision']
+        );
+        Route::get(
+            '/letters/{letter}',
+            [KadusApprovalController::class, 'show']
+        );
+    });
+
+    // Route::prefix('official')->group(function () {
+    // Route::post('/signature', [OfficialController::class, 'uploadSignature']);
+    // Route::get('/signature', [OfficialController::class, 'getSignature']);
+    // });
 
 });

@@ -6,6 +6,7 @@ use App\Enums\LetterStatus;
 use App\Models\Letter;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class KasiApprovalService
@@ -14,7 +15,7 @@ class KasiApprovalService
         protected OfficialService $officialService
     ) {}
 
-    public function getPendingLetters(User $user): \Illuminate\Database\Eloquent\Collection
+    public function getPendingLetters(User $user): Collection
     {
         return Letter::query()
             ->whereIn('status', [
@@ -24,7 +25,7 @@ class KasiApprovalService
                 LetterStatus::KasiRejected,
 
             ])
-            ->whereHas('letterType', function ($query) use ($user) {
+            ->whereHas('letterType', function ($query) {
 
                 $query->where(
                     'assigned_role',
@@ -44,6 +45,7 @@ class KasiApprovalService
             ->latest()
             ->get();
     }
+
     public function getDashboardLetters(User $user)
     {
         return Letter::query()
@@ -66,7 +68,7 @@ class KasiApprovalService
         }
 
         if (
-            !in_array($user->role, [
+            ! in_array($user->role, [
                 'petugas_desa',
                 'kasi_pelayanan',
                 'kaur_tu_umum',

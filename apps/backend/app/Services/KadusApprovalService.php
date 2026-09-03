@@ -7,7 +7,6 @@ use App\Models\Official;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use Illuminate\Support\Facades\DB;
-use App\Enums\LetterStatus;
 
 class KadusApprovalService
 {
@@ -15,36 +14,36 @@ class KadusApprovalService
         protected OfficialService $officialService
     ) {}
 
-public function getLetters(User $user)
-{
-    $official = $user->official;
+    public function getLetters(User $user)
+    {
+        $official = $user->official;
 
-    if (!$official) {
-        abort(403,'Data official tidak ditemukan.');
+        if (! $official) {
+            abort(403, 'Data official tidak ditemukan.');
+        }
+
+        return Letter::query()
+
+            ->whereHas('citizen', function ($query) use ($official) {
+
+                $query->where(
+                    'hamlet_id',
+                    $official->hamlet_id
+                );
+
+            })
+
+            ->with([
+                'citizen',
+                'letterType',
+                'approvals.approvedBy:id,name',
+            ])
+
+            ->latest()
+
+            ->get();
     }
 
-
-    return Letter::query()
-
-        ->whereHas('citizen', function($query) use($official){
-
-            $query->where(
-                'hamlet_id',
-                $official->hamlet_id
-            );
-
-        })
-
-        ->with([
-            'citizen',
-            'letterType',
-            'approvals.approvedBy:id,name'
-        ])
-
-        ->latest()
-
-        ->get();
-}
     public function decision(
         Letter $letter,
         User $user,
@@ -79,10 +78,10 @@ public function getLetters(User $user)
             ]);
 
             $letter->approvals()
-                ->where('approval_level','kadus')
+                ->where('approval_level', 'kadus')
                 ->whereNull('approved_by')
                 ->update([
-                    'approved_by'=>$user->id,
+                    'approved_by' => $user->id,
                 ]);
 
             $letter->statusLogs()->create([
@@ -117,7 +116,7 @@ public function getLetters(User $user)
                             $letter,
                             'Surat Baru',
                             'Ada surat yang menunggu persetujuan '
-                                . strtoupper($letter->letterType->assigned_role) . '.',
+                                .strtoupper($letter->letterType->assigned_role).'.',
                             'kadus_approved'
                         )
                     );
@@ -134,7 +133,7 @@ public function getLetters(User $user)
                             $letter,
                             'Permohonan Diproses',
                             'Permohonan surat Anda telah disetujui oleh Kepala Dusun dan sedang diproses oleh '
-                                . strtoupper($letter->letterType->assigned_role) . '.',
+                                .strtoupper($letter->letterType->assigned_role).'.',
                             'kadus_approved'
                         )
                     );

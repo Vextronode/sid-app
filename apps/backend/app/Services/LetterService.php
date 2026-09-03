@@ -3,20 +3,20 @@
 namespace App\Services;
 
 use App\Models\Letter;
-use App\Models\LetterType;
 use App\Models\LetterStatusLog;
-use Illuminate\Support\Facades\DB;
-use App\Services\OfficialService;
-use Illuminate\Validation\ValidationException;
+use App\Models\LetterType;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
 use App\Notifications\LetterStatusNotification;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class LetterService
 {
     public function __construct(
         protected OfficialService $officialService
     ) {}
+
     public function createLetter(array $data): Letter
     {
         return DB::transaction(function () use ($data) {
@@ -25,11 +25,9 @@ class LetterService
 
             $citizen = $user->citizen;
 
-
             $letterType = LetterType::findOrFail(
                 $data['letter_type_id']
             );
-
 
             $letter = Letter::create([
 
@@ -41,7 +39,6 @@ class LetterService
 
                 'citizen_id' => $citizen->id,
 
-
                 'applicant_name' => $citizen->name,
 
                 'applicant_nik' => $citizen->nik,
@@ -50,21 +47,17 @@ class LetterService
 
                 'applicant_address' => $citizen->address,
 
-
                 'purpose' => $data['purpose'],
 
                 'payload' => $data['payload'] ?? null,
 
                 'notes' => $data['notes'] ?? null,
 
-
                 'status' => 'pending',
 
                 'submitted_at' => now(),
 
             ]);
-
-
 
             LetterStatusLog::create([
 
@@ -80,12 +73,11 @@ class LetterService
 
             ]);
 
-        $this->createFirstApproval($letter);
-        
+            $this->createFirstApproval($letter);
 
-        $this->notifyRt($letter);
+            $this->notifyRt($letter);
 
-        return $letter;
+            return $letter;
 
         });
     }
@@ -100,14 +92,13 @@ class LetterService
 
             case 'auto':
 
-                if (!$citizen || !$citizen->is_active) {
+                if (! $citizen || ! $citizen->is_active) {
                     throw ValidationException::withMessages([
-                        'letter_type_id' => 'Data warga tidak valid.'
+                        'letter_type_id' => 'Data warga tidak valid.',
                     ]);
                 }
 
                 break;
-
 
             case 'manual':
 
@@ -115,14 +106,13 @@ class LetterService
                 // status tetap pending
                 break;
 
-
             case 'document':
 
                 if (
                     empty($data['attachments'])
                 ) {
                     throw ValidationException::withMessages([
-                        'attachments' => 'Dokumen wajib diupload.'
+                        'attachments' => 'Dokumen wajib diupload.',
                     ]);
                 }
 
@@ -137,13 +127,11 @@ class LetterService
         $official = $this->officialService
             ->resolveRtForCitizen($citizen);
 
-
-        if (!$official) {
+        if (! $official) {
             throw ValidationException::withMessages([
-                'approval' => 'Petugas RT belum tersedia.'
+                'approval' => 'Petugas RT belum tersedia.',
             ]);
         }
-
 
         $letter->approvals()->create([
             'approved_by' => $official->user_id,
@@ -153,29 +141,28 @@ class LetterService
     }
 
     private function notifyRt(Letter $letter): void
-{
-    $official = $this->officialService
-        ->resolveRtForCitizen($letter->citizen);
+    {
+        $official = $this->officialService
+            ->resolveRtForCitizen($letter->citizen);
 
-    if ($official?->user) {
+        if ($official?->user) {
 
-        $official->user->notify(
-            new LetterStatusNotification(
-                $letter,
-                'Permohonan Surat Baru',
-                'Ada permohonan surat baru yang menunggu verifikasi RT.',
-                'pending'
-            )
-        );
+            $official->user->notify(
+                new LetterStatusNotification(
+                    $letter,
+                    'Permohonan Surat Baru',
+                    'Ada permohonan surat baru yang menunggu verifikasi RT.',
+                    'pending'
+                )
+            );
 
+        }
     }
-}
 
     public function getScopedLetters(
         User $user,
         array $filters = []
-    ): Collection
-    {
+    ): Collection {
         $query = Letter::query()
             ->with([
                 'citizen',
@@ -230,7 +217,6 @@ class LetterService
             case 'kasi_pelayanan':
 
             case 'kaur_tu_umum':
-
 
             case 'petugas_desa':
 
@@ -294,7 +280,7 @@ class LetterService
             $query->where(
                 'applicant_name',
                 'like',
-                '%' . $filters['applicant_name'] . '%'
+                '%'.$filters['applicant_name'].'%'
             );
 
         }

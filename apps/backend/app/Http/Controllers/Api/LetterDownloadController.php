@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Services\PdfService;
 use App\Models\Letter;
+use App\Services\PdfService;
+use Illuminate\Http\Request;
 
 class LetterDownloadController extends Controller
 {
-   public function __construct(
+    public function __construct(
         protected PdfService $pdfService
     ) {}
 

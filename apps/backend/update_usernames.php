@@ -1,11 +1,12 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
-$app = require_once __DIR__ . '/bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+require __DIR__.'/vendor/autoload.php';
+$app = require_once __DIR__.'/bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
 use App\Models\User;
+use Illuminate\Contracts\Console\Kernel;
 
 $users = User::all();
 foreach ($users as $user) {
@@ -25,20 +26,20 @@ foreach ($users as $user) {
             // For warga, maybe just use 'warga1', 'warga2', etc. or their NIK if they have citizen_id
             if ($user->citizen) {
                 // we can't easily decrypt NIK here unless we use the model's cast, which we can
-                $user->username = 'warga_' . $user->id;
+                $user->username = 'warga_'.$user->id;
             } else {
-                $user->username = 'user_' . $user->id;
+                $user->username = 'user_'.$user->id;
             }
         }
-        
+
         // Ensure uniqueness
         $baseUsername = $user->username;
         $counter = 1;
         while (User::where('username', $user->username)->where('id', '!=', $user->id)->exists()) {
-            $user->username = $baseUsername . '_' . $counter;
+            $user->username = $baseUsername.'_'.$counter;
             $counter++;
         }
-        
+
         $user->save();
         echo "Set username for user {$user->id} ({$user->name}) to: {$user->username}\n";
     }

@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\LetterStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LetterIndexRequest;
 use App\Http\Requests\StoreLetterRequest;
 use App\Models\Letter;
 use App\Services\LetterService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class LetterController extends Controller
 {
@@ -61,7 +58,7 @@ class LetterController extends Controller
     {
         $user = auth()->user();
 
-        if ($letter->submitted_by !== $user->id && !in_array($user->role, ['admin', 'operator', 'kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa'])) {
+        if ($letter->submitted_by !== $user->id && ! in_array($user->role, ['admin', 'operator', 'kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa'])) {
             abort(403, 'Anda tidak berwenang menghapus surat ini.');
         }
 
