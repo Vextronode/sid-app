@@ -24,19 +24,6 @@ use App\Http\Controllers\Api\RegionController;
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes
-|--------------------------------------------------------------------------
-*/
-
-    Route::post(
-        '/login',
-        [AuthenticatedSessionController::class, 'store']
-    );
-
-
-
-/*
-|--------------------------------------------------------------------------
 | Protected Routes
 |--------------------------------------------------------------------------
 */
@@ -102,7 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/hamlets', [RegionController::class, 'storeHamlet']);
     Route::patch('/hamlets/{hamlet}', [RegionController::class, 'updateHamlet']);
     Route::delete('/hamlets/{hamlet}', [RegionController::class, 'destroyHamlet']);
-    
+
     Route::post('/letters', [LetterController::class, 'store']);
 
     Route::get('/letters', [LetterController::class, 'index']);
@@ -125,7 +112,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/letters/{letter}/preview', function (\App\Models\Letter $letter, \App\Services\PdfService $service) {
         return $service->preview($letter, auth()->user(), request('template', 'wet'));
-    })->name('letters.preview');    
+    })->name('letters.preview');
 
     Route::prefix('citizens')->group(function () {
 
@@ -142,7 +129,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
     Route::prefix('rt')->group(function () {
-        
+
         Route::get(
             '/letters',
             [RtApprovalController::class,'index']
@@ -193,13 +180,13 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::get(
                 '/letters/{letter}',
                 [KasiApprovalController::class,'show']
-            );    
+            );
 
     });
 
-    
+
     Route::prefix('kadus')->group(function (){
-        
+
         Route::get(
                 '/letters',
                 [KadusApprovalController::class, 'index']
