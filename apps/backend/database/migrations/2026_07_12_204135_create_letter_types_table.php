@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('template')->nullable();
             $table->enum('verification_type', ['manual', 'auto', 'document']);
             $table->text('requirement_info');
-            $table->enum('assigned_role', ['rw'])->nullable();
+            $table->enum('assigned_role', ['kasi_pelayanan', 'kaur_tu_umum'])->nullable();
             $table->unsignedInteger('validity_days')->nullable();
             $table->boolean('is_active');
             $table->timestamps();

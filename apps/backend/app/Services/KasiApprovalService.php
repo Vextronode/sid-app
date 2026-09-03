@@ -6,6 +6,7 @@ use App\Enums\LetterStatus;
 use App\Models\Letter;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class KasiApprovalService
@@ -14,13 +15,12 @@ class KasiApprovalService
         protected OfficialService $officialService
     ) {}
 
-    public function getPendingLetters(User $user)
+    public function getPendingLetters(User $user): Collection
     {
         return Letter::query()
             ->whereIn('status', [
 
                 LetterStatus::RwApproved,
-                LetterStatus::WaitingRevisionWarga,
                 LetterStatus::KasiApproved,
                 LetterStatus::KasiRejected,
 
@@ -97,47 +97,32 @@ class KasiApprovalService
 
             $oldStatus = $letter->status->value;
 
-            if ($data['status'] === 'needs_revision') {
-                $newRevisionCount = $letter->revision_count + 1;
+            $newStatus = $data['status'] === 'approved'
+                ? LetterStatus::KasiApproved->value
+                : LetterStatus::KasiRejected->value;
 
-                // Revisi ke-3+ → auto-reject (maks 2x revisi)
-                if ($newRevisionCount > 2) {
-                    $newStatus = LetterStatus::RejectedRevision->value;
-                } else {
-                    $newStatus = LetterStatus::WaitingRevisionWarga->value;
-                }
+            $letterNumber = null;
+            $expiresAt = null;
 
-                $letter->revision_count = $newRevisionCount;
-                $letterNumber = null;
-                $expiresAt = null;
-            } else {
-                $newStatus = $data['status'] === 'approved'
-                    ? LetterStatus::KasiApproved->value
-                    : LetterStatus::KasiRejected->value;
+            if ($data['status'] === 'approved') {
 
-                $letterNumber = null;
-                $expiresAt = null;
+                $letter->approvals()
+                    ->where('approval_level', 'kasi')
+                    ->update([
+                        'approved_by' => $user->id,
+                    ]);
 
-                if ($data['status'] === 'approved') {
+                $letterNumber = sprintf(
+                    '%03d/%s/%d',
+                    $letter->id,
+                    strtoupper($letter->letterType->code),
+                    now()->year
+                );
 
-                    $letter->approvals()
-                        ->where('approval_level', 'kasi')
-                        ->update([
-                            'approved_by' => $user->id,
-                        ]);
-
-                    $letterNumber = sprintf(
-                        '%03d/%s/%d',
-                        $letter->id,
-                        strtoupper($letter->letterType->code),
-                        now()->year
+                if ($letter->letterType->validity_days) {
+                    $expiresAt = now()->addDays(
+                        $letter->letterType->validity_days
                     );
-
-                    if ($letter->letterType->validity_days) {
-                        $expiresAt = now()->addDays(
-                            $letter->letterType->validity_days
-                        );
-                    }
                 }
             }
 
@@ -156,21 +141,6 @@ class KasiApprovalService
             ]);
 
             $citizenUser = $letter->citizen->user;
-
-            if ($data['status'] === 'needs_revision') {
-                if ($citizenUser) {
-                    $citizenUser->notify(
-                        new LetterStatusNotification(
-                            $letter,
-                            'Perlu Revisi Data',
-                            'Permohonan surat Anda perlu diperbaiki sebelum verifikasi final.',
-                            'waiting_revision_warga'
-                        )
-                    );
-                }
-
-                return;
-            }
 
             if ($data['status'] === 'approved') {
 
