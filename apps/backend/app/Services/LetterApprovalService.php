@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use app\Models\Letter;
-use app\Models\Official;
+use App\Models\Letter;
+use App\Models\Official;
 use Illuminate\Validation\ValidationException;
 
 class LetterApprovalService

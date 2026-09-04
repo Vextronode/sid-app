@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use app\Models\Citizen;
-use app\Models\Official;
-use app\Models\User;
-use app\Models\Village;
+use App\Models\Citizen;
+use App\Models\Official;
+use App\Models\User;
+use App\Models\Village;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -28,50 +28,60 @@ class WilayahSeeder extends Seeder
             'phone' => '081234567890',
         ]);
 
-        // Data yang diberikan hanya mencantumkan
-        // RW dan RT, tidak ada pembagian dusun.
-        // Maka digunakan 1 dusun teknis sebagai parent wilayah.
-        $hamlet = $village->hamlets()->create([
-            'code' => '321803200101',
-            'name' => 'Cibenda',
-            'is_active' => true,
-            'village_id' => $village->id,
-        ]);
+        // 5 Dusun sesuai TDD (EV5-7-S0). Data Ketua RT/RW existing (yang
+        // sebelumnya di-seed di bawah 1 "dusun teknis") dipetakan ke dusun
+        // Cibenda (RW 001 & RW 002) dan Patrol (RW 001) — bukan dihapus.
+        // Dusun lain (Sinargalih, Budiasih, Sucen) berisi RW/RT struktural
+        // tanpa data Ketua RT/RW spesifik (belum ada di data sumber).
+        $hamletsConfig = [
+            ['key' => 'PATROL', 'name' => 'Patrol', 'code' => '321803200101'],
+            ['key' => 'SINARGALIH', 'name' => 'Sinargalih', 'code' => '321803200102'],
+            ['key' => 'CIBENDA', 'name' => 'Cibenda', 'code' => '321803200103'],
+            ['key' => 'BUDIASIH', 'name' => 'Budiasih', 'code' => '321803200104'],
+            ['key' => 'SUCEN', 'name' => 'Sucen', 'code' => '321803200105'],
+        ];
 
-        // Mapping RW dan RT
+        // Mapping dusun, RW, dan RT — 2 RW per dusun, 2 RT per RW.
+        $hamlets = [];
         $rws = [];
         $rts = [];
 
-        // ==========================================
-        // RW 001 - RW 003
-        // Masing-masing memiliki RT 001 & RT 002
-        // ==========================================
-
-        for ($rwNum = 1; $rwNum <= 3; $rwNum++) {
-            $rwPad = str_pad($rwNum, 3, '0', STR_PAD_LEFT);
-            $rwKey = "RW_{$rwPad}";
-
-            $rw = $hamlet->rws()->create([
-                'hamlet_id' => $hamlet->id,
-                'number' => $rwPad,
-                'full_label' => "RW {$rwPad}",
+        foreach ($hamletsConfig as $h) {
+            $hamlet = $village->hamlets()->create([
+                'code' => $h['code'],
+                'name' => $h['name'],
                 'is_active' => true,
+                'village_id' => $village->id,
             ]);
 
-            $rws[$rwKey] = $rw;
+            $hamlets[$h['key']] = $hamlet;
 
-            for ($rtNum = 1; $rtNum <= 2; $rtNum++) {
-                $rtPad = str_pad($rtNum, 3, '0', STR_PAD_LEFT);
-                $rtKey = "RT_{$rtPad}_RW_{$rwPad}";
+            for ($rwNum = 1; $rwNum <= 2; $rwNum++) {
+                $rwPad = str_pad($rwNum, 3, '0', STR_PAD_LEFT);
+                $rwKey = "{$h['key']}_RW_{$rwPad}";
 
-                $rt = $rw->rts()->create([
-                    'rw_id' => $rw->id,
-                    'number' => $rtPad,
+                $rw = $hamlet->rws()->create([
+                    'hamlet_id' => $hamlet->id,
+                    'number' => $rwPad,
+                    'full_label' => "RW {$rwPad}",
                     'is_active' => true,
-                    'full_label' => "RT {$rtPad} / RW {$rwPad}",
                 ]);
 
-                $rts[$rtKey] = $rt;
+                $rws[$rwKey] = $rw;
+
+                for ($rtNum = 1; $rtNum <= 2; $rtNum++) {
+                    $rtPad = str_pad($rtNum, 3, '0', STR_PAD_LEFT);
+                    $rtKey = "{$h['key']}_RT_{$rtPad}_RW_{$rwPad}";
+
+                    $rt = $rw->rts()->create([
+                        'rw_id' => $rw->id,
+                        'number' => $rtPad,
+                        'is_active' => true,
+                        'full_label' => "RT {$rtPad} / RW {$rwPad}",
+                    ]);
+
+                    $rts[$rtKey] = $rt;
+                }
             }
         }
 
@@ -87,7 +97,7 @@ class WilayahSeeder extends Seeder
                 'email' => 'rw01@example.com',
                 'position' => 'rw',
                 'role' => 'rw',
-                'rw_key' => 'RW_001',
+                'rw_key' => 'CIBENDA_RW_001',
                 'rt_key' => null,
             ],
             [
@@ -97,8 +107,8 @@ class WilayahSeeder extends Seeder
                 'email' => 'rt01rw01@example.com',
                 'position' => 'rt',
                 'role' => 'rt',
-                'rw_key' => 'RW_001',
-                'rt_key' => 'RT_001_RW_001',
+                'rw_key' => 'CIBENDA_RW_001',
+                'rt_key' => 'CIBENDA_RT_001_RW_001',
             ],
             [
                 'nik' => '3218030101010003',
@@ -107,8 +117,8 @@ class WilayahSeeder extends Seeder
                 'email' => 'rt02rw01@example.com',
                 'position' => 'rt',
                 'role' => 'rt',
-                'rw_key' => 'RW_001',
-                'rt_key' => 'RT_002_RW_001',
+                'rw_key' => 'CIBENDA_RW_001',
+                'rt_key' => 'CIBENDA_RT_002_RW_001',
             ],
             [
                 'nik' => '3218030101010004',
@@ -117,7 +127,7 @@ class WilayahSeeder extends Seeder
                 'email' => 'rw02@example.com',
                 'position' => 'rw',
                 'role' => 'rw',
-                'rw_key' => 'RW_002',
+                'rw_key' => 'CIBENDA_RW_002',
                 'rt_key' => null,
             ],
             [
@@ -127,8 +137,8 @@ class WilayahSeeder extends Seeder
                 'email' => 'rt01rw02@example.com',
                 'position' => 'rt',
                 'role' => 'rt',
-                'rw_key' => 'RW_002',
-                'rt_key' => 'RT_001_RW_002',
+                'rw_key' => 'CIBENDA_RW_002',
+                'rt_key' => 'CIBENDA_RT_001_RW_002',
             ],
             [
                 'nik' => '3218030101010006',
@@ -137,8 +147,8 @@ class WilayahSeeder extends Seeder
                 'email' => 'rt02rw02@example.com',
                 'position' => 'rt',
                 'role' => 'rt',
-                'rw_key' => 'RW_002',
-                'rt_key' => 'RT_002_RW_002',
+                'rw_key' => 'CIBENDA_RW_002',
+                'rt_key' => 'CIBENDA_RT_002_RW_002',
             ],
             [
                 'nik' => '3218030101010007',
@@ -147,7 +157,7 @@ class WilayahSeeder extends Seeder
                 'email' => 'rw03@example.com',
                 'position' => 'rw',
                 'role' => 'rw',
-                'rw_key' => 'RW_003',
+                'rw_key' => 'PATROL_RW_001',
                 'rt_key' => null,
             ],
             [
@@ -157,8 +167,8 @@ class WilayahSeeder extends Seeder
                 'email' => 'rt01rw03@example.com',
                 'position' => 'rt',
                 'role' => 'rt',
-                'rw_key' => 'RW_003',
-                'rt_key' => 'RT_001_RW_003',
+                'rw_key' => 'PATROL_RW_001',
+                'rt_key' => 'PATROL_RT_001_RW_001',
             ],
             [
                 'nik' => '3218030101010009',
@@ -167,8 +177,8 @@ class WilayahSeeder extends Seeder
                 'email' => 'rt02rw03@example.com',
                 'position' => 'rt',
                 'role' => 'rt',
-                'rw_key' => 'RW_003',
-                'rt_key' => 'RT_002_RW_003',
+                'rw_key' => 'PATROL_RW_001',
+                'rt_key' => 'PATROL_RT_002_RW_001',
             ],
         ];
 
@@ -193,7 +203,7 @@ class WilayahSeeder extends Seeder
                 'address' => 'Desa Cibenda',
                 'rt_id' => $targetRt
                     ? $targetRt->id
-                    : $rts["RT_001_{$off['rw_key']}"]->id,
+                    : $rts[str_replace('_RW_', '_RT_001_RW_', $off['rw_key'])]->id,
                 'rw_id' => $targetRw->id,
                 'hamlet_id' => $targetRw->hamlet_id,
                 'no_kk' => $off['nik'],
@@ -251,8 +261,8 @@ class WilayahSeeder extends Seeder
                 'email' => 'Desa_Rusliana@example.com',
                 'role' => 'kepala_desa',
                 'position' => 'kepala_desa',
-                'rw_key' => 'RW_001',
-                'rt_key' => 'RT_001_RW_001',
+                'rw_key' => 'CIBENDA_RW_001',
+                'rt_key' => 'CIBENDA_RT_001_RW_001',
             ],
             [
                 'nik' => '3218030101010011',
@@ -261,8 +271,8 @@ class WilayahSeeder extends Seeder
                 'email' => 'Sakim_hidayat@example.com',
                 'role' => 'kasi_pelayanan',
                 'position' => 'kasi_pelayanan',
-                'rw_key' => 'RW_001',
-                'rt_key' => 'RT_001_RW_001',
+                'rw_key' => 'CIBENDA_RW_001',
+                'rt_key' => 'CIBENDA_RT_001_RW_001',
             ],
 
             // =========================
@@ -276,8 +286,8 @@ class WilayahSeeder extends Seeder
                 'email' => 'kadus.cibenda@example.com',
                 'role' => 'kadus',
                 'position' => 'kadus',
-                'rw_key' => 'RW_001',
-                'rt_key' => 'RT_001_RW_001',
+                'rw_key' => 'CIBENDA_RW_001',
+                'rt_key' => 'CIBENDA_RT_001_RW_001',
             ],
         ];
 
@@ -301,7 +311,7 @@ class WilayahSeeder extends Seeder
                 'address' => 'Desa Cibenda',
                 'rt_id' => $targetRt->id,
                 'rw_id' => $targetRw->id,
-                'hamlet_id' => $hamlet->id,
+                'hamlet_id' => $targetRw->hamlet_id,
                 'no_kk' => $staff['nik'],
                 'marital_status' => 'kawin',
                 'occupation' => match ($staff['role']) {
@@ -344,7 +354,7 @@ class WilayahSeeder extends Seeder
                 'village_id' => $village->id,
                 'rt_id' => $targetRt->id,
                 'rw_id' => $targetRw->id,
-                'hamlet_id' => $hamlet->id,
+                'hamlet_id' => $targetRw->hamlet_id,
                 'started_at' => now()->toDateString(),
                 'is_active' => true,
             ]);
@@ -361,8 +371,8 @@ class WilayahSeeder extends Seeder
                 'username' => 'ahmad_hidayat',
                 'email' => 'ahmad@example.com',
                 'gender' => 'L',
-                'rt_key' => 'RT_001_RW_001',
-                'rw_key' => 'RW_001',
+                'rt_key' => 'CIBENDA_RT_001_RW_001',
+                'rw_key' => 'CIBENDA_RW_001',
             ],
             [
                 'nik' => '3218030101010102',
@@ -370,8 +380,8 @@ class WilayahSeeder extends Seeder
                 'username' => 'siti_nurhaliza',
                 'email' => 'siti@example.com',
                 'gender' => 'P',
-                'rt_key' => 'RT_001_RW_001',
-                'rw_key' => 'RW_001',
+                'rt_key' => 'CIBENDA_RT_001_RW_001',
+                'rw_key' => 'CIBENDA_RW_001',
             ],
             [
                 'nik' => '3218030101010103',
@@ -379,8 +389,8 @@ class WilayahSeeder extends Seeder
                 'username' => 'euis_rosmiati',
                 'email' => 'euis@example.com',
                 'gender' => 'P',
-                'rt_key' => 'RT_002_RW_001',
-                'rw_key' => 'RW_001',
+                'rt_key' => 'CIBENDA_RT_002_RW_001',
+                'rw_key' => 'CIBENDA_RW_001',
             ],
             [
                 'nik' => '3218030101010104',
@@ -388,8 +398,8 @@ class WilayahSeeder extends Seeder
                 'username' => 'deden_gunawan',
                 'email' => 'dedengunawan@example.com',
                 'gender' => 'L',
-                'rt_key' => 'RT_002_RW_001',
-                'rw_key' => 'RW_001',
+                'rt_key' => 'CIBENDA_RT_002_RW_001',
+                'rw_key' => 'CIBENDA_RW_001',
             ],
             [
                 'nik' => '3218030101010105',
@@ -397,8 +407,8 @@ class WilayahSeeder extends Seeder
                 'username' => 'nia_kurniasih',
                 'email' => 'nia@example.com',
                 'gender' => 'P',
-                'rt_key' => 'RT_001_RW_002',
-                'rw_key' => 'RW_002',
+                'rt_key' => 'CIBENDA_RT_001_RW_002',
+                'rw_key' => 'CIBENDA_RW_002',
             ],
             [
                 'nik' => '3218030101010106',
@@ -406,8 +416,8 @@ class WilayahSeeder extends Seeder
                 'username' => 'toto_sugiarto',
                 'email' => 'toto@example.com',
                 'gender' => 'L',
-                'rt_key' => 'RT_001_RW_002',
-                'rw_key' => 'RW_002',
+                'rt_key' => 'CIBENDA_RT_001_RW_002',
+                'rw_key' => 'CIBENDA_RW_002',
             ],
             [
                 'nik' => '3218030101010107',
@@ -415,8 +425,8 @@ class WilayahSeeder extends Seeder
                 'username' => 'cecep_hendra',
                 'email' => 'cecep@example.com',
                 'gender' => 'L',
-                'rt_key' => 'RT_002_RW_002',
-                'rw_key' => 'RW_002',
+                'rt_key' => 'CIBENDA_RT_002_RW_002',
+                'rw_key' => 'CIBENDA_RW_002',
             ],
             [
                 'nik' => '3218030101010108',
@@ -424,8 +434,8 @@ class WilayahSeeder extends Seeder
                 'username' => 'rina_marlina',
                 'email' => 'rina@example.com',
                 'gender' => 'P',
-                'rt_key' => 'RT_002_RW_002',
-                'rw_key' => 'RW_002',
+                'rt_key' => 'CIBENDA_RT_002_RW_002',
+                'rw_key' => 'CIBENDA_RW_002',
             ],
             [
                 'nik' => '3218030101010109',
@@ -433,8 +443,8 @@ class WilayahSeeder extends Seeder
                 'username' => 'endang_hidayat',
                 'email' => 'endang@example.com',
                 'gender' => 'L',
-                'rt_key' => 'RT_001_RW_003',
-                'rw_key' => 'RW_003',
+                'rt_key' => 'PATROL_RT_001_RW_001',
+                'rw_key' => 'PATROL_RW_001',
             ],
             [
                 'nik' => '3218030101010110',
@@ -442,8 +452,8 @@ class WilayahSeeder extends Seeder
                 'username' => 'titing_surtini',
                 'email' => 'titing@example.com',
                 'gender' => 'P',
-                'rt_key' => 'RT_002_RW_003',
-                'rw_key' => 'RW_003',
+                'rt_key' => 'PATROL_RT_002_RW_001',
+                'rw_key' => 'PATROL_RW_001',
             ],
         ];
 

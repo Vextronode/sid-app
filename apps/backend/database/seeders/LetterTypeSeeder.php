@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use app\Models\LetterType;
+use App\Models\LetterType;
 use Illuminate\Database\Seeder;
 
 class LetterTypeSeeder extends Seeder

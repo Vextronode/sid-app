@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use app\Models\Citizen;
-use app\Models\Letter;
-use app\Models\Official;
-use app\Models\User;
+use App\Models\Citizen;
+use App\Models\Letter;
+use App\Models\Official;
+use App\Models\User;
 
 class OfficialService
 {

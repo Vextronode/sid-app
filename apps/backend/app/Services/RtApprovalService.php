@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use app\Models\Letter;
-use app\Models\Official;
-use app\Models\User;
+use App\Models\Letter;
+use App\Models\Official;
+use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use Illuminate\Support\Facades\DB;
 
