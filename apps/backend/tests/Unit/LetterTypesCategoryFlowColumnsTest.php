@@ -6,6 +6,7 @@ use App\Models\ApprovalFlow;
 use App\Models\LetterCategory;
 use App\Models\LetterType;
 use Database\Seeders\ApprovalFlowSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -25,7 +26,7 @@ class LetterTypesCategoryFlowColumnsTest extends TestCase
         // requirement_info WAJIB disertakan (NOT NULL, tanpa default) agar
         // exception yang tertangkap benar-benar berasal dari
         // category_id/flow_id yang hilang, bukan dari kolom lain.
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         DB::table('letter_types')->insert([
             'code' => 'SKD',
@@ -44,7 +45,7 @@ class LetterTypesCategoryFlowColumnsTest extends TestCase
         $this->seed(ApprovalFlowSeeder::class);
         $flow = ApprovalFlow::query()->first();
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         DB::table('letter_types')->insert([
             'code' => 'SKX',
@@ -65,7 +66,7 @@ class LetterTypesCategoryFlowColumnsTest extends TestCase
         $this->seed(ApprovalFlowSeeder::class);
         $category = LetterCategory::query()->first();
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         DB::table('letter_types')->insert([
             'code' => 'SKY',
