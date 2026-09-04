@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\Letter;
+use app\Models\Letter;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 

@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Citizen;
-use App\Models\Official;
-use App\Models\User;
-use App\Models\Village;
+use app\Models\Citizen;
+use app\Models\Official;
+use app\Models\User;
+use app\Models\Village;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
