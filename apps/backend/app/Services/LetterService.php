@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Letter;
-use App\Models\LetterStatusLog;
-use App\Models\LetterType;
-use App\Models\User;
+use app\Models\Letter;
+use app\Models\LetterStatusLog;
+use app\Models\LetterType;
+use app\Models\User;
 use App\Notifications\LetterStatusNotification;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;

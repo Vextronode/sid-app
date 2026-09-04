@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Enums\LetterStatus;
-use App\Models\Letter;
-use App\Models\User;
+use app\Models\Letter;
+use app\Models\User;
 use App\Notifications\LetterStatusNotification;
 use Illuminate\Support\Facades\DB;
 

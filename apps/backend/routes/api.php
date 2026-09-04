@@ -4,17 +4,18 @@ use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
 use App\Http\Controllers\Api\LetterApprovalController;
+use App\Http\Controllers\Api\LetterCategoryController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
 use App\Http\Controllers\Api\LetterTypeController;
+use app\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RwApprovalController;
 use App\Http\Controllers\Api\UserController;
+use app\Http\Controllers\Api\VillageController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\VillageController;
-use App\Models\Letter;
+use app\Models\Letter;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,10 @@ Route::middleware('auth:sanctum')->group(function () {
         '/notifications',
         [NotificationController::class, 'index']
     );
+
+    Route::get(
+        '/letter-categories',
+        [LetterCategoryController::class, 'index']);
 
     Route::post(
         '/notifications/read-all',
