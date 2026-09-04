@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\ApprovalFlow;
+use App\Models\LetterCategory;
 use App\Models\LetterType;
 use Illuminate\Database\Seeder;
 
@@ -18,6 +20,12 @@ class LetterTypeSeeder extends Seeder
      */
     public function run(): void
     {
+        $category = LetterCategory::query()->where('code', 'approval_normal')->firstOrFail();
+        $flow = ApprovalFlow::query()
+            ->where('category_id', $category->id)
+            ->where('name', 'RT-Kades-Staff (3 Tahap)')
+            ->firstOrFail();
+
         foreach ($this->letterTypes() as $type) {
             $body = $type['body'];
             unset($type['body']);
@@ -27,6 +35,8 @@ class LetterTypeSeeder extends Seeder
                 array_merge($type, [
                     'template' => $this->baseTemplate($type['code'], $type['name'], $body),
                     'is_active' => true,
+                    'category_id' => $category->id,
+                    'flow_id' => $flow->id,
                 ])
             );
         }

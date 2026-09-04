@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
@@ -20,8 +21,6 @@ use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// use App\Http\Controllers\Api\OfficialController;
-
 /*
 |--------------------------------------------------------------------------
 | Protected Routes
@@ -29,42 +28,171 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get(
-        '/notifications',
-        [NotificationController::class, 'index']
-    );
 
-    Route::get(
-        '/letter-categories',
-        [LetterCategoryController::class, 'index']);
+    /*
+    |----------------------------------------------------------------------
+    | Auth
+    |----------------------------------------------------------------------
+    */
+    Route::post('/logout', [AuthenticatedSessionController::class, 'logout']);
 
-    Route::post(
-        '/notifications/read-all',
-        [NotificationController::class, 'readAll']
-    );
+    /*
+    |----------------------------------------------------------------------
+    | Approval Flows
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('approval-flows')->group(function () {
+        Route::get('/', [ApprovalFlowController::class, 'index']);
+        Route::post('/', [ApprovalFlowController::class, 'store']);
+        Route::get('/{id}', [ApprovalFlowController::class, 'show']);
+        Route::put('/{id}/steps', [ApprovalFlowController::class, 'replaceSteps']);
+    });
 
-    Route::post(
-        '/notifications/{id}/read',
-        [NotificationController::class, 'read']
-    );
+    /*
+    |----------------------------------------------------------------------
+    | Citizens
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('citizens')->group(function () {
+        Route::get('/', [CitizenController::class, 'index']);
+        Route::delete('/{citizen}', [CitizenController::class, 'destroy']);
+        Route::get('/wilayah', [CitizenController::class, 'wilayah']);
+    });
 
-    Route::get(
-        '/notifications/unread-count',
-        [NotificationController::class, 'unreadCount']
-    );
-    Route::post(
-        '/logout',
-        [AuthenticatedSessionController::class, 'logout']
-    )->middleware('auth:sanctum');
-    Route::get('/users',
-        [UserController::class, 'index']
-    );
+    /*
+    |----------------------------------------------------------------------
+    | Dashboard
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/gender-stats', [VillageController::class, 'genderStats']);
+        Route::get('/letter-stats', [VillageController::class, 'letterStats']);
+    });
 
-    Route::patch('/users/{user}/toggle-status',
-        [UserController::class, 'updateStatus']
-    );
+    /*
+    |----------------------------------------------------------------------
+    | Regions: Hamlets
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('hamlets')->group(function () {
+        Route::get('/', [RegionController::class, 'indexHamlets']);
+        Route::post('/', [RegionController::class, 'storeHamlet']);
+        Route::patch('/{hamlet}', [RegionController::class, 'updateHamlet']);
+        Route::delete('/{hamlet}', [RegionController::class, 'destroyHamlet']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Kadus Approvals
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('kadus')->group(function () {
+        Route::get('/letters', [KadusApprovalController::class, 'index']);
+        Route::get('/letters/{letter}', [KadusApprovalController::class, 'show']);
+        Route::patch('/letters/{letter}/decision', [KadusApprovalController::class, 'decision']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Kasi Approvals
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('kasi')->group(function () {
+        Route::get('/letters', [KasiApprovalController::class, 'index']);
+        Route::get('/letters/{letter}', [KasiApprovalController::class, 'show']);
+        Route::patch('/approvals/{letter}/approve', [KasiApprovalController::class, 'approve']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Letters
+    |----------------------------------------------------------------------
+    */
+    Route::get('/letter-categories', [LetterCategoryController::class, 'index']);
+    Route::get('/letter-types', [LetterTypeController::class, 'index']);
+
+    Route::prefix('letters')->group(function () {
+        Route::get('/', [LetterController::class, 'index']);
+        Route::post('/', [LetterController::class, 'store']);
+        Route::get('/{id}', [LetterController::class, 'show']);
+        Route::delete('/{letter}', [LetterController::class, 'destroy']);
+        Route::patch('/{letter}/resubmit', [LetterController::class, 'resubmit']);
+        Route::post('/{letter}/approve', [LetterApprovalController::class, 'approve']);
+        Route::get('/{letter}/download', [LetterDownloadController::class, 'download']);
+        Route::get('/{letter}/preview', function (Letter $letter, PdfService $service) {
+            return $service->preview($letter, auth()->user(), request('template', 'wet'));
+        })->name('letters.preview');
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Notifications
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::post('/read-all', [NotificationController::class, 'readAll']);
+        Route::post('/{id}/read', [NotificationController::class, 'read']);
+    });
+
+    // Route::prefix('official')->group(function () {
+    //     Route::post('/signature', [OfficialController::class, 'uploadSignature']);
+    //     Route::get('/signature', [OfficialController::class, 'getSignature']);
+    // });
+
+    /*
+    |----------------------------------------------------------------------
+    | Regions: RTs
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('rts')->group(function () {
+        Route::get('/', [RegionController::class, 'indexRts']);
+        Route::post('/', [RegionController::class, 'storeRt']);
+        Route::patch('/{rt}', [RegionController::class, 'updateRt']);
+        Route::delete('/{rt}', [RegionController::class, 'destroyRt']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | RT Approvals
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('rt')->group(function () {
+        Route::get('/letters', [RtApprovalController::class, 'index']);
+        Route::get('/letters/{letter}', [RtApprovalController::class, 'show']);
+        Route::patch('/letters/{letter}/decision', [RtApprovalController::class, 'decision']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Regions: RWs
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('rws')->group(function () {
+        Route::get('/', [RegionController::class, 'indexRws']);
+        Route::post('/', [RegionController::class, 'storeRw']);
+        Route::patch('/{rw}', [RegionController::class, 'updateRw']);
+        Route::delete('/{rw}', [RegionController::class, 'destroyRw']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | RW Approvals
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('rw')->group(function () {
+        Route::get('/letters', [RwApprovalController::class, 'index']);
+        Route::get('/letters/{letter}', [RwApprovalController::class, 'show']);
+        Route::patch('/approvals/{letter}/approve', [RwApprovalController::class, 'approve']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Users
+    |----------------------------------------------------------------------
+    */
     Route::get('/user', function (Request $request) {
-
         return $request
             ->user()
             ->load([
@@ -74,146 +202,11 @@ Route::middleware('auth:sanctum')->group(function () {
                 'citizen.rw',
                 'official',
             ]);
-
-    });
-    Route::get(
-        '/dashboard/gender-stats',
-        [VillageController::class, 'genderStats']
-    );
-    Route::get(
-        '/dashboard/letter-stats',
-        [VillageController::class, 'letterStats']
-    );
-
-    Route::get('/letter-types', [LetterTypeController::class, 'index']);
-
-    Route::get('/hamlets', [RegionController::class, 'indexHamlets']);
-    Route::post('/hamlets', [RegionController::class, 'storeHamlet']);
-    Route::patch('/hamlets/{hamlet}', [RegionController::class, 'updateHamlet']);
-    Route::delete('/hamlets/{hamlet}', [RegionController::class, 'destroyHamlet']);
-
-    Route::get('/rws', [RegionController::class, 'indexRws']);
-    Route::post('/rws', [RegionController::class, 'storeRw']);
-    Route::patch('/rws/{rw}', [RegionController::class, 'updateRw']);
-    Route::delete('/rws/{rw}', [RegionController::class, 'destroyRw']);
-
-    Route::get('/rts', [RegionController::class, 'indexRts']);
-    Route::post('/rts', [RegionController::class, 'storeRt']);
-    Route::patch('/rts/{rt}', [RegionController::class, 'updateRt']);
-    Route::delete('/rts/{rt}', [RegionController::class, 'destroyRt']);
-
-    Route::post('/letters', [LetterController::class, 'store']);
-
-    Route::get('/letters', [LetterController::class, 'index']);
-
-    Route::delete('/letters/{letter}', [LetterController::class, 'destroy']);
-
-    Route::patch('/letters/{letter}/resubmit', [LetterController::class, 'resubmit']);
-
-    Route::get('/letters/{id}', [LetterController::class, 'show']);
-
-    Route::post(
-        '/letters/{letter}/approve',
-        [LetterApprovalController::class, 'approve']
-    );
-
-    Route::get(
-        '/letters/{letter}/download',
-        [LetterDownloadController::class, 'download']
-    );
-
-    Route::get('/letters/{letter}/preview', function (Letter $letter, PdfService $service) {
-        return $service->preview($letter, auth()->user(), request('template', 'wet'));
-    })->name('letters.preview');
-
-    Route::prefix('citizens')->group(function () {
-
-        Route::get('/', [CitizenController::class, 'index']);
-
-        Route::delete(
-            '/{citizen}',
-            [CitizenController::class, 'destroy']
-        );
-        Route::get(
-            '/wilayah',
-            [CitizenController::class, 'wilayah']
-        );
-
-    });
-    Route::prefix('rt')->group(function () {
-
-        Route::get(
-            '/letters',
-            [RtApprovalController::class, 'index']
-        );
-
-        Route::get(
-            '/letters/{letter}',
-            [RtApprovalController::class, 'show']
-        );
-
-        Route::patch(
-            '/letters/{letter}/decision',
-            [RtApprovalController::class, 'decision']
-        );
-
     });
 
-    Route::prefix('rw')->group(function () {
-
-        Route::patch(
-            '/approvals/{letter}/approve',
-            [RwApprovalController::class, 'approve']
-        );
-        Route::get(
-            '/letters',
-            [RwApprovalController::class, 'index']
-        );
-        Route::get(
-            '/letters/{letter}',
-            [RwApprovalController::class, 'show']
-        );
-
+    Route::prefix('users')->group(function () {
+        Route::get('/', [UserController::class, 'index']);
+        Route::patch('/{user}/toggle-status', [UserController::class, 'updateStatus']);
     });
-
-    Route::prefix('kasi')->group(function () {
-
-        Route::get(
-            '/letters',
-            [KasiApprovalController::class, 'index']
-        );
-
-        Route::patch(
-            '/approvals/{letter}/approve',
-            [KasiApprovalController::class, 'approve']
-        );
-        Route::get(
-            '/letters/{letter}',
-            [KasiApprovalController::class, 'show']
-        );
-
-    });
-
-    Route::prefix('kadus')->group(function () {
-
-        Route::get(
-            '/letters',
-            [KadusApprovalController::class, 'index']
-        );
-
-        Route::patch(
-            '/letters/{letter}/decision',
-            [KadusApprovalController::class, 'decision']
-        );
-        Route::get(
-            '/letters/{letter}',
-            [KadusApprovalController::class, 'show']
-        );
-    });
-
-    // Route::prefix('official')->group(function () {
-    // Route::post('/signature', [OfficialController::class, 'uploadSignature']);
-    // Route::get('/signature', [OfficialController::class, 'getSignature']);
-    // });
 
 });

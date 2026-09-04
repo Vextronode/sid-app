@@ -20,6 +20,8 @@ return new class extends Migration
             $table->enum('verification_type', ['manual', 'auto', 'document']);
             $table->text('requirement_info');
             $table->enum('assigned_role', ['kasi_pelayanan', 'kaur_tu_umum'])->nullable();
+            $table->foreignId('category_id')->after('assigned_role')->constrained('letter_categories');
+            $table->foreignId('flow_id')->after('category_id')->constrained('approval_flows');
             $table->unsignedInteger('validity_days')->nullable();
             $table->boolean('is_active');
             $table->timestamps();

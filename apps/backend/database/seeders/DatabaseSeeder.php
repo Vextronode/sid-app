@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call([
+            ApprovalFlowSeeder::class,
             WilayahSeeder::class,
             LetterTypeSeeder::class,
             AdminSeeder::class,
