@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
@@ -29,6 +30,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/approval-flows', [ApprovalFlowController::class, 'index']);
+    Route::post('/approval-flows', [ApprovalFlowController::class, 'store']);
+    Route::get('/approval-flows/{id}', [ApprovalFlowController::class, 'show']);
+
     Route::get(
         '/notifications',
         [NotificationController::class, 'index']
