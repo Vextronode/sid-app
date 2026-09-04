@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\LetterCategory;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -97,7 +97,7 @@ class LetterCategoryEndpointTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         LetterCategory::query()->create([
             'code' => 'approval_normal',

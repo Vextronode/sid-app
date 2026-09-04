@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-
 use App\Models\LetterCategory;
 use App\Repositories\LetterCategoryRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,7 +19,6 @@ use Tests\TestCase;
  *  - findByCode() mengembalikan null untuk code yang tidak ada.
  *  - Urutan hasil all() konsisten (ORDER BY id).
  */
-
 class LetterCategoryRepositoryTest extends TestCase
 {
     use RefreshDatabase;
@@ -31,7 +29,7 @@ class LetterCategoryRepositoryTest extends TestCase
     {
         parent::setUp();
 
-        $this->repository = new LetterCategoryRepository();
+        $this->repository = new LetterCategoryRepository;
     }
 
     #[Test]

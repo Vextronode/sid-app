@@ -9,8 +9,7 @@ class LetterCategoryService
 {
     public function __construct(
         private readonly LetterCategoryRepository $repository,
-    ) {
-    }
+    ) {}
 
     /**
      * Ambil seluruh kategori surat (termasuk yang nonaktif), sesuai

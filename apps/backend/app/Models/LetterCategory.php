@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\LetterCategoriesFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LetterCategory extends Model
 {
-    /** @use HasFactory<\Database\Factories\LetterCategoriesFactory> */
+    /** @use HasFactory<LetterCategoriesFactory> */
     use HasFactory;
 
     protected $fillable = [
