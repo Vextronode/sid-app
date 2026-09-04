@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use app\Services\LetterCategoryService;
+use App\Services\LetterCategoryService;
 use Illuminate\Http\JsonResponse;
 
 class LetterCategoryController extends Controller

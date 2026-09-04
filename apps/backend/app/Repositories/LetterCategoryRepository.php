@@ -2,7 +2,7 @@
 
 namespace app\Repositories;
 
-use app\Models\LetterCategory;
+use App\Models\LetterCategory;
 use Illuminate\Database\Eloquent\Collection;
 
 class LetterCategoryRepository
