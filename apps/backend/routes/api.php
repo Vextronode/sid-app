@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/approval-flows', [ApprovalFlowController::class, 'index']);
     Route::post('/approval-flows', [ApprovalFlowController::class, 'store']);
     Route::get('/approval-flows/{id}', [ApprovalFlowController::class, 'show']);
+    Route::put('/approval-flows/{id}/steps', [ApprovalFlowController::class, 'replaceSteps']);
 
     Route::get(
         '/notifications',

@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\ApprovalFlow;
+use App\Models\FlowStep;
 use App\Models\LetterCategory;
 use App\Repositories\ApprovalFlowRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,7 +42,7 @@ class ApprovalFlowRepositoryTest extends TestCase
     {
         parent::setUp();
 
-        $this->repository = new ApprovalFlowRepository();
+        $this->repository = new ApprovalFlowRepository;
     }
 
     #[Test]

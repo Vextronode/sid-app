@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\ApprovalFlow;
+use App\Models\FlowStep;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -10,7 +11,7 @@ class ApprovalFlowRepository
 {
     public function __construct()
     {
-
+        //
     }
 
     public function findById(int $id): ?ApprovalFlow
@@ -57,7 +58,7 @@ class ApprovalFlowRepository
      * — Service hanya mengorkestrasi kapan method ini dipanggil.
      *
      * @param  array<int, array<string, mixed>>  $stepsData
-     * @return Collection<int, \App\Models\FlowStep>
+     * @return Collection<int, FlowStep>
      */
     public function replaceSteps(ApprovalFlow $flow, array $stepsData): Collection
     {

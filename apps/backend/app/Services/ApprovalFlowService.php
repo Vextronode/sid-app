@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ApprovalFlow;
+use App\Models\FlowStep;
 use App\Repositories\ApprovalFlowRepository;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -10,8 +11,7 @@ class ApprovalFlowService
 {
     public function __construct(
         private readonly ApprovalFlowRepository $repository,
-    ) {
-    }
+    ) {}
 
     public function list(?int $categoryId): Collection
     {
@@ -46,13 +46,13 @@ class ApprovalFlowService
      * jika tidak), lalu delegasikan operasi replace ke Repository.
      *
      * @param  array<int, array<string, mixed>>  $stepsData
-     * @return Collection<int, \App\Models\FlowStep>
+     * @return Collection<int, FlowStep>
      */
     public function replaceSteps(int $flowId, array $stepsData): Collection
     {
         $flow = $this->repository->findById($flowId);
 
-        if (!$flow) {
+        if (! $flow) {
             abort(404, 'Flow tidak ditemukan.');
         }
 

@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Database\Factories\ApprovalFlowsFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
 
 /**
  * EV5-1-S2. Sesuai Class Diagram Core v5 (entity ApprovalFlow).
@@ -14,10 +14,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * 1 category bisa punya BANYAK flow berbeda — flow baru = tambah row,
  * BUKAN ubah kode (Config over Code, SID-ARCH-SYS-001 S1).
  */
-
 class ApprovalFlow extends Model
 {
-    /** @use HasFactory<\Database\Factories\ApprovalFlowsFactory> */
+    /** @use HasFactory<ApprovalFlowsFactory> */
     use HasFactory;
 
     protected $fillable = [

@@ -6,11 +6,9 @@ use App\Models\ApprovalFlow;
 use App\Models\LetterCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
-
 
 /**
  * EV5-1-S2 — Feature test untuk GET/POST /approval-flows dan

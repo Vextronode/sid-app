@@ -3,13 +3,14 @@
 namespace Tests\Unit;
 
 use App\Models\ApprovalFlow;
+use App\Models\FlowStep;
 use App\Models\LetterCategory;
 use App\Repositories\ApprovalFlowRepository;
 use App\Services\ApprovalFlowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Tests\TestCase;
 
 /**
  * EV5-1-S2/S3 — Unit test untuk ApprovalFlowService.
@@ -40,7 +41,7 @@ class ApprovalFlowServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new ApprovalFlowService(new ApprovalFlowRepository());
+        $this->service = new ApprovalFlowService(new ApprovalFlowRepository);
     }
 
     #[Test]

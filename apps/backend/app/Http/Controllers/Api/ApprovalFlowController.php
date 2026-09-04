@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\ReplaceApprovalFlowStepsRequest;
 use App\Http\Requests\StoreApprovalFlowRequest;
 use App\Services\ApprovalFlowService;
 use Illuminate\Http\JsonResponse;
@@ -14,8 +15,7 @@ class ApprovalFlowController
      */
     public function __construct(
         private readonly ApprovalFlowService $service,
-    )
-    {
+    ) {
         //
     }
 
@@ -42,4 +42,13 @@ class ApprovalFlowController
         return response()->json(['data' => $flow], 201);
     }
 
+    public function replaceSteps(ReplaceApprovalFlowStepsRequest $request, int $id): JsonResponse
+    {
+        $steps = $this->service->replaceSteps($id, $request->validated('steps'));
+
+        return response()->json([
+            'message' => 'Urutan approval berhasil diperbarui',
+            'data' => $steps,
+        ]);
+    }
 }
