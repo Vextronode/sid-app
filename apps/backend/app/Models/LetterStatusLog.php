@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\LetterStatus;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class LetterStatusLog extends Model

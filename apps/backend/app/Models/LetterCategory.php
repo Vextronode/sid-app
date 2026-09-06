@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LetterCategory extends Model
 {
-    /** @use HasFactory<LetterCategoriesFactory> */
     use HasFactory;
 
     protected $fillable = [

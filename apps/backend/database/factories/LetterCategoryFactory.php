@@ -12,7 +12,16 @@ class LetterCategoryFactory extends Factory
     public function definition(): array
     {
         return [
-
+            'code' => fake()->unique()->randomElement([
+                'approval_normal',
+                'upload_mandiri',
+                'dokumen_pendukung',
+                'update_data',
+            ]),
+            'name' => fake()->words(3, true),
+            'description' => fake()->sentence(),
+            'handler_class' => 'App\\Handlers\\DefaultLetterCategoryHandler',
+            'is_active' => true,
         ];
     }
 }
