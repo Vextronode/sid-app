@@ -6,12 +6,17 @@ use App\Enums\LetterStatus;
 use App\Models\Letter;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
+use App\Repositories\LetterApprovalRepository;
+use App\Repositories\LetterRepository;
 use Illuminate\Support\Facades\DB;
 
 class RwApprovalService
 {
     public function __construct(
-        protected OfficialService $officialService
+        protected OfficialService $officialService,
+        protected LetterRepository $letterRepository,
+        protected OfficialRepository $officialRepository,
+        protected LetterApprovalRepository $letterApprovalRepository,
     ) {}
 
     // ==========================================
@@ -62,11 +67,7 @@ class RwApprovalService
         User $user
     ) {
 
-        return $letter->load([
-            'citizen',
-            'letterType',
-            'approvals.approver',
-        ]);
+        return $this->letterRepository->loadDetailForApproval($letter);
     }
 
     // ==========================================
@@ -123,34 +124,27 @@ class RwApprovalService
 
                 $notes =
                     isset($data['notes'])
-                        && trim($data['notes']) !== ''
-                    ? trim($data['notes'])
-                    : null;
+                    && trim($data['notes']) !== ''
+                        ? trim($data['notes'])
+                        : null;
             }
 
             // ======================================
             // UPDATE APPROVAL RW
             // ======================================
 
-            $approval = $letter->approvals()
-                ->where('approval_level', 'rw')
-                ->whereNull('approved_by')
-                ->latest()
-                ->first();
+            $approval = $this->letterApprovalRepository->findLatestPendingByLevel($letter, 'rw');
 
             if ($approval) {
 
-                $approval->update([
-                    'approved_by' => $user->id,
-                    'status' => $data['status'],
-                ]);
+                $this->letterApprovalRepository->updateApprovedByAndStatus($approval, $user->id, $data['status']);
             }
 
             // ======================================
             // UPDATE LETTER
             // ======================================
 
-            $letter->update([
+            $this->letterRepository->update($letter, [
                 'status' => $newStatus,
                 'notes' => $notes,
                 'processed_at' => now(),
@@ -160,14 +154,14 @@ class RwApprovalService
             // STATUS LOG
             // ======================================
 
-            $letter->statusLogs()->create([
+            $this->letterRepository->createStatusLogForLetter($letter, [
                 'actor_id' => $user->id,
                 'old_status' => $oldStatus,
                 'new_status' => $newStatus,
 
                 'reason' => $data['status'] === 'rejected'
-                        ? $notes
-                        : $letter->notes,
+                    ? $notes
+                    : $letter->notes,
             ]);
 
             // ======================================
@@ -259,46 +253,17 @@ class RwApprovalService
 
     public function getPendingLetters(User $user)
     {
-        $official = $user->official()
-            ->where('position', 'rw')
-            ->where('is_active', true)
-            ->firstOrFail();
+        $official = $this->officialService->getCurrentRw($user);
 
-        return Letter::query()
-
-            ->whereIn('status', [
-
-                LetterStatus::RtApproved,
-
-                LetterStatus::RwApproved,
-
-                LetterStatus::RwRejected,
-
-            ])
-
-            ->whereHas(
-                'citizen.rt',
-                function ($query) use ($official) {
-
-                    $query->where(
-                        'rw_id',
-                        $official->rw_id
-                    );
-                }
-            )
-
-            ->with([
-
-                'citizen',
-
-                'letterType',
-
-                'approvals.approvedBy:id,name',
-
-            ])
-
+        return $this->letterRepository->queryByStatusesAndCitizenRw(
+            [
+                LetterStatus::RtApproved->value,
+                LetterStatus::RwApproved->value,
+                LetterStatus::RwRejected->value,
+            ],
+            $official->rw_id
+        )
             ->latest()
-
             ->get();
     }
 }

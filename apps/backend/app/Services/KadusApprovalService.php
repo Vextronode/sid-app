@@ -6,12 +6,15 @@ use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
+use App\Repositories\LetterRepository;
 use Illuminate\Support\Facades\DB;
 
 class KadusApprovalService
 {
     public function __construct(
-        protected OfficialService $officialService
+        protected OfficialService $officialService,
+        protected LetterRepository $letterRepository,
+        protected OfficialRepository $officialRepository,
     ) {}
 
     public function getLetters(User $user)
@@ -22,26 +25,14 @@ class KadusApprovalService
             abort(403, 'Data official tidak ditemukan.');
         }
 
-        return Letter::query()
-
-            ->whereHas('citizen', function ($query) use ($official) {
-
-                $query->where(
-                    'hamlet_id',
-                    $official->hamlet_id
-                );
-
-            })
-
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals.approvedBy:id,name',
-            ])
-
+        return $this->letterRepository->queryByCitizenHamlet($official->hamlet_id)
             ->latest()
-
             ->get();
+    }
+
+    public function getLetterDetail(Letter $letter): Letter
+    {
+        return $this->letterRepository->loadDetailForApproval($letter);
     }
 
     public function decision(
@@ -71,20 +62,17 @@ class KadusApprovalService
                 ? 'kadus_approved'
                 : 'kadus_rejected';
 
-            $letter->update([
+            $this->letterRepository->update($letter, [
                 'status' => $newStatus,
                 'notes' => $data['notes'] ?? null,
                 'processed_at' => now(),
             ]);
 
-            $letter->approvals()
-                ->where('approval_level', 'kadus')
-                ->whereNull('approved_by')
-                ->update([
-                    'approved_by' => $user->id,
-                ]);
+            $this->letterRepository->updateApprovalsByLevel($letter, 'kadus', [
+                'approved_by' => $user->id,
+            ], onlyPending: true);
 
-            $letter->statusLogs()->create([
+            $this->letterRepository->createStatusLogForLetter($letter, [
                 'actor_id' => $user->id,
                 'old_status' => $oldStatus,
                 'new_status' => $newStatus,
@@ -93,20 +81,10 @@ class KadusApprovalService
 
             if ($data['status'] === 'approved') {
 
-                $nextOfficial = Official::query()
-                    ->where(
-                        'position',
-                        $letter->letterType->assigned_role
-                    )
-                    ->where(
-                        'village_id',
-                        $letter->village_id
-                    )
-                    ->where(
-                        'is_active',
-                        true
-                    )
-                    ->first();
+                $nextOfficial = $this->officialRepository->findActiveByPositionAndVillage(
+                    $letter->letterType->assigned_role,
+                    $letter->village_id
+                );
 
                 // Notifikasi Kasi/Kaur
                 if ($nextOfficial?->user) {
@@ -116,7 +94,7 @@ class KadusApprovalService
                             $letter,
                             'Surat Baru',
                             'Ada surat yang menunggu persetujuan '
-                                .strtoupper($letter->letterType->assigned_role).'.',
+                            .strtoupper($letter->letterType->assigned_role).'.',
                             'kadus_approved'
                         )
                     );
@@ -133,7 +111,7 @@ class KadusApprovalService
                             $letter,
                             'Permohonan Diproses',
                             'Permohonan surat Anda telah disetujui oleh Kepala Dusun dan sedang diproses oleh '
-                                .strtoupper($letter->letterType->assigned_role).'.',
+                            .strtoupper($letter->letterType->assigned_role).'.',
                             'kadus_approved'
                         )
                     );
@@ -155,10 +133,7 @@ class KadusApprovalService
                         )
                     );
                 }
-
             }
-
         });
-
     }
 }
