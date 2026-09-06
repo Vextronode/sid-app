@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Collection;
 
 class CitizenRepository
 {
-
     public function __construct()
     {
         //

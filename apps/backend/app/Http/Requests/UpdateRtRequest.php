@@ -26,6 +26,7 @@ class UpdateRtRequest extends FormRequest
     {
         /** @var Rt $rt */
         $rt = $this->route('rt');
+
         return [
             'number' => [
                 'sometimes',

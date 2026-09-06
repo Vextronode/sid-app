@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Citizen extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'village_id',
         'nik',

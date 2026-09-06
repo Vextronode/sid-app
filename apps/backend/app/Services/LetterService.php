@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\Letter;
-use App\Models\LetterStatusLog;
 use App\Models\LetterType;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
+use App\Repositories\LetterRepository;
+use App\Repositories\LetterStatusLogRepository;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -14,7 +16,10 @@ use Illuminate\Validation\ValidationException;
 class LetterService
 {
     public function __construct(
-        protected OfficialService $officialService
+        protected OfficialService $officialService,
+        protected LetterRepository $letterRepository,
+        protected LetterStatusLogRepository $letterStatusLogRepository,
+        protected LetterTypeRepository $letterTypeRepository,
     ) {}
 
     public function createLetter(array $data): Letter
@@ -25,11 +30,11 @@ class LetterService
 
             $citizen = $user->citizen;
 
-            $letterType = LetterType::findOrFail(
+            $letterType = $this->letterTypeRepository->findOrFail(
                 $data['letter_type_id']
             );
 
-            $letter = Letter::create([
+            $letter = $this->letterRepository->create([
 
                 'village_id' => $user->village_id,
 
@@ -59,7 +64,7 @@ class LetterService
 
             ]);
 
-            LetterStatusLog::create([
+            $this->letterStatusLogRepository->create([
 
                 'letter_id' => $letter->id,
 
@@ -133,7 +138,7 @@ class LetterService
             ]);
         }
 
-        $letter->approvals()->create([
+        $this->letterRepository->createApprovalForLetter($letter, [
             'approved_by' => $official->user_id,
             'approval_level' => 'rt',
             'deadline_at' => now()->addDays(3),
@@ -163,22 +168,13 @@ class LetterService
         User $user,
         array $filters = []
     ): Collection {
-        $query = Letter::query()
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals',
-                'user',
-            ]);
+        $query = $this->letterRepository->queryForList();
 
         switch ($user->role) {
 
             case 'warga':
 
-                $query->where(
-                    'submitted_by',
-                    $user->id
-                );
+                $this->letterRepository->whereSubmittedBy($query, $user->id);
 
                 break;
 
@@ -186,13 +182,7 @@ class LetterService
 
                 $official = $user->official;
 
-                $query->whereHas(
-                    'citizen',
-                    fn ($q) => $q->where(
-                        'rt_id',
-                        $official->rt_id
-                    )
-                );
+                $this->letterRepository->whereCitizenRtId($query, $official->rt_id);
 
                 break;
 
@@ -200,13 +190,7 @@ class LetterService
 
                 $official = $user->official;
 
-                $query->whereHas(
-                    'citizen.rt',
-                    fn ($q) => $q->where(
-                        'rw_id',
-                        $official->rw_id
-                    )
-                );
+                $this->letterRepository->whereCitizenRwId($query, $official->rw_id);
 
                 break;
 
@@ -233,10 +217,19 @@ class LetterService
 
         }
 
-        // ===========================
-        // FILTER
-        // ===========================
+        $this->applyFilters($query, $filters);
 
+        $letters = $query
+            ->latest()
+            ->get();
+
+        $this->flagOverdueLetters($letters);
+
+        return $letters;
+    }
+
+    private function applyFilters(Builder $query, array $filters): void
+    {
         if (! empty($filters['status'])) {
 
             $query->where(
@@ -284,15 +277,10 @@ class LetterService
             );
 
         }
+    }
 
-        $letters = $query
-            ->latest()
-            ->get();
-
-        // ===========================
-        // FLAG IS_OVERDUE
-        // ===========================
-
+    private function flagOverdueLetters(Collection $letters): void
+    {
         $letters->each(function ($letter) {
 
             $approval = $letter->approvals
@@ -306,7 +294,34 @@ class LetterService
                 now()->greaterThan($approval->deadline_at);
 
         });
+    }
 
-        return $letters;
+    public function getForShow(int $id): Letter
+    {
+        return $this->letterRepository->findWithApprovalActorForShow($id);
+    }
+
+    public function delete(Letter $letter, User $user): bool
+    {
+        $this->guardCanDelete($letter, $user);
+
+        return $this->letterRepository->delete($letter);
+    }
+
+    private function guardCanDelete(Letter $letter, User $user): void
+    {
+        $isOwner = $letter->submitted_by === $user->id;
+
+        $isAuthorizedStaff = in_array($user->role, [
+            'admin',
+            'operator',
+            'kasi_pelayanan',
+            'kaur_tu_umum',
+            'petugas_desa',
+        ], true);
+
+        if (! $isOwner && ! $isAuthorizedStaff) {
+            abort(403, 'Anda tidak berwenang menghapus surat ini.');
+        }
     }
 }

@@ -10,9 +10,7 @@ class CitizenService
 {
     public function __construct(
         protected CitizenRepository $citizenRepository
-    )
-    {}
-
+    ) {}
 
     public function getAllWithWilayah(): Collection
     {

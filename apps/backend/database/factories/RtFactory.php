@@ -19,6 +19,7 @@ class RtFactory extends Factory
     public function definition(): array
     {
         $number = fake()->unique()->numberBetween(1, 20);
+
         return [
             'rw_id' => Rw::factory(),
             'number' => (string) $number,

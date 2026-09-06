@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Official extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'citizen_id',
         'user_id',

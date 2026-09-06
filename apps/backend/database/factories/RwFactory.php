@@ -19,6 +19,7 @@ class RwFactory extends Factory
     public function definition(): array
     {
         $number = fake()->unique()->numberBetween(1, 20);
+
         return [
             'hamlet_id' => Hamlet::factory(),
             'number' => (string) $number,

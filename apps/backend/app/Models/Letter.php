@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Letter extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'village_id',
         'letter_type_id',

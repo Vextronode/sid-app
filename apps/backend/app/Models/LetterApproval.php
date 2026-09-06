@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\ApprovalLevel;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class LetterApproval extends Model
@@ -14,6 +13,7 @@ class LetterApproval extends Model
         'approval_level',
         'deadline_at',
         'reminded_at',
+        'status',
     ];
 
     protected $casts = [

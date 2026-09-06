@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Rt extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'number',
         'rw_id',
