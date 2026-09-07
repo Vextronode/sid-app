@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-class LetterTypesCategoryFlowColumnsTest extends TestCase
+class LetterTypeCategoryFlowColumnsTest extends TestCase
 {
     use RefreshDatabase;
 

@@ -4,15 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\ReplaceApprovalFlowStepsRequest;
 use App\Http\Requests\StoreApprovalFlowRequest;
+use App\Http\Resources\ApprovalFlowCollection;
+use App\Http\Resources\ApprovalFlowResource;
+use App\Http\Resources\FlowStepResource;
 use App\Services\ApprovalFlowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ApprovalFlowController
 {
-    /**
-     * Create a new class instance.
-     */
     public function __construct(
         private readonly ApprovalFlowService $service,
     ) {
@@ -25,21 +25,21 @@ class ApprovalFlowController
 
         $flows = $this->service->list($categoryId);
 
-        return response()->json(['data' => $flows]);
+        return (new ApprovalFlowCollection($flows))->response();
     }
 
     public function show(int $id): JsonResponse
     {
         $flow = $this->service->findWithStepsOrFail($id);
 
-        return response()->json(['data' => $flow]);
+        return (new ApprovalFlowResource($flow))->response();
     }
 
     public function store(StoreApprovalFlowRequest $request): JsonResponse
     {
         $flow = $this->service->create($request->validated());
 
-        return response()->json(['data' => $flow], 201);
+        return (new ApprovalFlowResource($flow))->response()->setStatusCode(201);
     }
 
     public function replaceSteps(ReplaceApprovalFlowStepsRequest $request, int $id): JsonResponse
@@ -48,7 +48,7 @@ class ApprovalFlowController
 
         return response()->json([
             'message' => 'Urutan approval berhasil diperbarui',
-            'data' => $steps,
+            'data' => FlowStepResource::collection($steps),
         ]);
     }
 }
