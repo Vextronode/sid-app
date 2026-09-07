@@ -46,13 +46,15 @@ class OfficialRepositoryTest extends TestCase
 
     public function test_find_active_by_position_and_village(): void
     {
+        $village = Village::factory()->create();
+
         $official = Official::factory()->create([
             'position' => 'kasi_pelayanan',
-            'village_id' => 1,
+            'village_id' => $village->id,   // bukan angka 1 hardcode
             'is_active' => true,
         ]);
 
-        $result = $this->repository->findActiveByPositionAndVillage('kasi_pelayanan', 1);
+        $result = $this->repository->findActiveByPositionAndVillage('kasi_pelayanan', $village->id);
 
         $this->assertSame($official->id, $result->id);
     }
