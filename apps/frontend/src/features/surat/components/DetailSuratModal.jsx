@@ -109,20 +109,32 @@ function SuratPreview({
   ].includes(status);
 
 
+
   // ========================================
   // RESET
   // ========================================
 
   useEffect(() => {
-    setShowPreview(false);
-    setLoading(false);
-    setLoadError(false);
-
     if (pdfDocumentRef.current) {
       pdfDocumentRef.current.destroy();
       pdfDocumentRef.current = null;
     }
+
+    // Reset state dilakukan melalui callback async
+    // agar tidak memicu cascading render secara
+    // synchronous di dalam effect.
+    const resetTimer = setTimeout(() => {
+      setShowPreview(false);
+      setLoading(false);
+      setLoadError(false);
+    }, 0);
+
+    return () => {
+      clearTimeout(resetTimer);
+    };
   }, [surat?.id]);
+
+
 
 
   // ========================================

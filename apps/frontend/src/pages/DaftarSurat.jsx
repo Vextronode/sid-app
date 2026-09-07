@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { WargaLayout } from "@/components/layout/WargaLayout";
 import { SURAT_CONFIG } from "@/lib/constants/suratConfig";
 import { DynamicSuratForm } from "@/features/surat/components/DynamicSuratForm";
@@ -8,7 +7,6 @@ import { FileText, ChevronDown } from "lucide-react";
 
 export function DaftarSurat() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [selectedCode, setSelectedCode] = useState("");
 
   const currentConfig = useMemo(
@@ -18,7 +16,7 @@ export function DaftarSurat() {
 
   const handleCancel = () => setSelectedCode("");
 
-  const handleSubmit = (data) => {
+  const handleSubmit = () => {
     // TODO: sambungkan ke endpoint submit surat asli
     navigate("/jenis-surat");
   };

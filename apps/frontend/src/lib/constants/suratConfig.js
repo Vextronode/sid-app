@@ -404,40 +404,7 @@ export const SURAT_CONFIG = {
     ],
   },
 
-  A05: {
-    code: "A05",
-    title: "Surat Keterangan Tidak Mampu",
-    type: "Manual",
 
-    fields: [
-      {
-        name: "keperluan",
-        label: "Keperluan",
-        type: "textarea",
-        required: true,
-        placeholder:
-          "Jelaskan keperluan SKTM"
-      },
-
-      {
-        name: "dokumen",
-        label: "Upload Dokumen Pendukung",
-        type: "file",
-        required: false,
-        accept:
-          ".pdf,.jpg,.jpeg,.png",
-      },
-
-      {
-        name: "catatan",
-        label: "Catatan Tambahan",
-        type: "textarea",
-        required: false,
-        placeholder:
-          "Opsional",
-      },
-    ]
-  },
 
   A09: {
     code: "A09",

@@ -18,7 +18,37 @@ export function AuthProvider({ children }) {
   // ==========================================
 
   useEffect(() => {
+    let isMounted = true;
+
+    const checkSession = async () => {
+      try {
+        const response = await api.get("/api/user");
+
+        if (isMounted) {
+          setUser(response.data);
+        }
+      } catch (error) {
+        // 401 = memang belum login.
+        // Tidak perlu dianggap sebagai error aplikasi.
+        if (error.response?.status !== 401) {
+          console.error("CHECK SESSION ERROR:", error);
+        }
+
+        if (isMounted) {
+          setUser(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
     checkSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // ==========================================
@@ -36,10 +66,7 @@ export function AuthProvider({ children }) {
       // 401 = memang belum login.
       // Tidak perlu dianggap sebagai error aplikasi.
       if (error.response?.status !== 401) {
-        console.error(
-          "CHECK SESSION ERROR:",
-          error
-        );
+        console.error("CHECK SESSION ERROR:", error);
       }
 
       setUser(null);
@@ -78,10 +105,7 @@ export function AuthProvider({ children }) {
     try {
       await api.post("/api/logout");
     } catch (error) {
-      console.error(
-        "LOGOUT ERROR:",
-        error
-      );
+      console.error("LOGOUT ERROR:", error);
     } finally {
       setUser(null);
     }
@@ -111,5 +135,4 @@ export function AuthProvider({ children }) {
 // ==========================================
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () =>
-  useContext(AuthContext);
+export const useAuth = () => useContext(AuthContext);

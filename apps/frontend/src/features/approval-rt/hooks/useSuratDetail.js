@@ -1,68 +1,93 @@
+// ==========================================
+// useSuratDetail.js
+// Mengambil detail surat untuk RT.
+// ==========================================
+
 import { useEffect, useState } from "react";
 import { getSuratDetail } from "@/features/approval/api";
 
+export function useSuratDetail(id) {
+  const [surat, setSurat] = useState(null);
+  const [isLoading, setIsLoading] = useState(Boolean(id));
+  const [notFound, setNotFound] = useState(false);
 
-export function useSuratDetail(id){
+  // ==========================================
+  // Refresh detail surat
+  // ==========================================
 
- const [surat,setSurat]=useState(null);
- const [isLoading,setIsLoading]=useState(true);
- const [notFound,setNotFound]=useState(false);
+  const refresh = async () => {
+    if (!id) return;
 
+    try {
+      setIsLoading(true);
 
+      const response = await getSuratDetail(id, "rt");
 
- const fetchDetail = async()=>{
+      setSurat(response.data.data);
+      setNotFound(false);
+    } catch (error) {
+      console.error(
+        "DETAIL ERROR",
+        error.response?.data ?? error
+      );
 
-  try{
-
-    setIsLoading(true);
-
-
-    const response = await getSuratDetail(id,"rt");
-
-
-    setSurat(response.data.data);
-    setNotFound(false);
-
-
-  }catch(error){
-
-
-    console.error(
-      "DETAIL ERROR",
-      error.response?.data ?? error
-    );
-
-
-    if(error.response?.status === 404){
-      setNotFound(true);
+      if (error.response?.status === 404) {
+        setNotFound(true);
+      }
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  // ==========================================
+  // Load ketika id berubah
+  // ==========================================
 
-  }finally{
+  useEffect(() => {
+    if (!id) return;
 
-    setIsLoading(false);
+    let isMounted = true;
 
-  }
+    const loadDetail = async () => {
+      try {
+        setIsLoading(true);
 
- };
+        const response = await getSuratDetail(id, "rt");
 
+        if (isMounted) {
+          setSurat(response.data.data);
+          setNotFound(false);
+        }
+      } catch (error) {
+        console.error(
+          "DETAIL ERROR",
+          error.response?.data ?? error
+        );
 
+        if (
+          isMounted &&
+          error.response?.status === 404
+        ) {
+          setNotFound(true);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
 
- useEffect(()=>{
+    loadDetail();
 
-   if(id){
-     fetchDetail();
-   }
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
- },[id]);
-
-
-
- return {
-   surat,
-   isLoading,
-   notFound,
-   refresh:fetchDetail
- };
-
+  return {
+    surat,
+    isLoading,
+    notFound,
+    refresh,
+  };
 }

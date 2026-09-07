@@ -1,261 +1,106 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+
 import {
   useEffect,
   useMemo,
-  useState
+  useState,
 } from "react";
 
-
 import {
-  getKadusLetters
+  getKadusLetters,
 } from "../api";
 
-
-import {
-  RELEVANT_STATUSES
-} from "../constants/roleConfigkadus";
-
-
-
 export function useSuratList({
-  initialStatus = ""
+  initialStatus = "",
 } = {}) {
-
-
-
   const [letters, setLetters] = useState([]);
-
   const [loading, setLoading] = useState(false);
 
-
-
   const [search, setSearch] = useState("");
-
   const [filterJenis, setFilterJenis] = useState("");
-
-  const [filterStatus, setFilterStatus] =
-    useState(initialStatus);
-
-
-
-
-
-
+  const [filterStatus, setFilterStatus] = useState(initialStatus);
 
   // ==========================================
   // Ambil surat Kadus
   // ==========================================
 
-  const fetchLetters = async()=>{
-
-
-    try{
-
-
+  const fetchLetters = async () => {
+    try {
       setLoading(true);
 
+      const response = await getKadusLetters();
 
-
-      const response =
-          await getKadusLetters();
-
-
-
-      setLetters(
-        response.data.data ?? []
-      );
-
-
-
-    }catch(error){
-
-
+      setLetters(response.data.data ?? []);
+    } catch (error) {
       console.error(
         "GET KADUS LETTER ERROR",
         error.response?.data ?? error
       );
 
-
-
       setLetters([]);
-
-
-
-    }finally{
-
-
+    } finally {
       setLoading(false);
-
-
     }
-
-
   };
 
-
-
-
-
-
-
-  useEffect(()=>{
-
-
+  useEffect(() => {
     fetchLetters();
-
-
-  },[]);
-
-
-
-
-
-
-
+  }, []);
 
   // ==========================================
   // Filter data
   // ==========================================
 
-  const data = useMemo(()=>{
-
-
-    let result = [
-      ...letters
-    ];
-
-
-
-
-
-
-
-
-
-
-
+  const data = useMemo(() => {
+    let result = [...letters];
 
     // filter jenis surat
-
-    if(filterJenis){
-
-
-      result =
-        result.filter(letter =>
-          letter.letter_type?.name
-          === filterJenis
-        );
-
-
+    if (filterJenis) {
+      result = result.filter(
+        (letter) =>
+          letter.letter_type?.name === filterJenis
+      );
     }
-
-
-
-
-
-
-
 
     // filter status
-
-    if(filterStatus){
-
-
-      result =
-        result.filter(letter =>
-          letter.status
-          === filterStatus
-        );
-
-
+    if (filterStatus) {
+      result = result.filter(
+        (letter) =>
+          letter.status === filterStatus
+      );
     }
-
-
-
-
-
-
-
 
     // pencarian nama pemohon
-
-    if(search){
-
-
-      result =
-        result.filter(letter =>
-
-
-          letter.citizen?.name
+    if (search) {
+      result = result.filter((letter) =>
+        letter.citizen?.name
           ?.toLowerCase()
-          .includes(
-            search.toLowerCase()
-          )
-
-
-        );
-
-
+          .includes(search.toLowerCase())
+      );
     }
 
-
-
-
-
-
     return result;
-
-
-
-  },[
-
+  }, [
     letters,
-
     filterJenis,
-
     filterStatus,
-
-    search
-
+    search,
   ]);
 
-
-
-
-
-
-
   return {
-
-
-
     data,
 
-
-
     loading,
-
-
 
     search,
     setSearch,
 
-
-
     filterJenis,
     setFilterJenis,
-
-
 
     filterStatus,
     setFilterStatus,
 
-
-
-    refresh:
-      fetchLetters
-
-
+    refresh: fetchLetters,
   };
-
 }

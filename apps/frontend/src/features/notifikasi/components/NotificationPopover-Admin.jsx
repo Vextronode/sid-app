@@ -1,13 +1,11 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 
 // ==========================================
-// NotificationPopover.jsx
+// NotificationPopover-Admin.jsx
 // Popup notifikasi dari ikon lonceng navbar.
 // Styling mengikuti SID Global Theme.
 // Logic/API tidak diubah.
 // ==========================================
 
-import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { useState } from "react";
 import { FileText, PenLine } from "lucide-react";
 import useNotifications from "@/features/notifikasi/hooks/useNotifications";
@@ -56,13 +54,10 @@ function getDayLabel(dateString) {
 }
 
 export default function NotificationPopover({ open, onClose }) {
-  const { user } = useAuth();
-
   const [activeTab, setActiveTab] = useState("semua");
 
   const {
     notifications,
-    loading,
     markAsRead,
     markAllAsRead,
   } = useNotifications();
@@ -149,12 +144,13 @@ export default function NotificationPopover({ open, onClose }) {
                 </p>
 
                 <div className="sid-notification-list">
-                  {items.map((n) => (
+                  {items.map((notification) => (
                     <NotifItem
-                      key={n.id}
-                      data={n}
-                      user={user}
-                      onRead={() => markAsRead(n.id)}
+                      key={notification.id}
+                      data={notification}
+                      onRead={() =>
+                        markAsRead(notification.id)
+                      }
                     />
                   ))}
                 </div>
@@ -173,7 +169,7 @@ export default function NotificationPopover({ open, onClose }) {
   );
 }
 
-function NotifItem({ data, onRead, user }) {
+function NotifItem({ data, onRead }) {
   const Icon = ICON_MAP[data.icon] ?? FileText;
 
   return (
@@ -223,3 +219,4 @@ function NotifItem({ data, onRead, user }) {
     </div>
   );
 }
+
