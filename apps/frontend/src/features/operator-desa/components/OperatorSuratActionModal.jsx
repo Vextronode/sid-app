@@ -49,8 +49,8 @@ return () => {
 
 if (!surat) return null;
 
-// Aksi cetak cuma boleh dilakukan kalau surat sudah lolos RT & RW
-const bisaCetak = surat.status === 'rw_approved';
+// Aksi cetak cuma boleh dilakukan kalau surat sudah lolos RT 
+const bisaCetak = surat.status === 'rt_approved';
 
 const handleConfirmAction = async () => {
 if (!confirmType) return;
@@ -183,7 +183,7 @@ DETAIL MODAL
       {!bisaCetak && (
         <div className="operator-warning">
           Surat ini belum bisa dicetak — menunggu
-          persetujuan RT dan RW terlebih dahulu.
+          persetujuan RT terlebih dahulu.
         </div>
       )}
 

@@ -1,3 +1,4 @@
+
 // ==========================================
 // LoginPage.jsx
 // ==========================================
@@ -23,8 +24,10 @@ export default function LoginPage() {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,22 +44,62 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (isLoading) {
+      return;
+    }
+
     setError('');
     setIsLoading(true);
 
     try {
+      // ==========================================
+      // 1. AMBIL CSRF COOKIE
+      // ==========================================
+
+
       await api.get('/sanctum/csrf-cookie');
 
-      const response = await api.post('/api/login', {
+
+
+      // ==========================================
+      // 2. LOGIN
+      // ==========================================
+
+
+      const response = await api.post('/login', {
         username,
         password,
-        remember: rememberMe,
       });
 
-      const loggedUser =
-        response.data.user ?? response.data;
 
-      login(loggedUser);
+      // ==========================================
+      // 3. AMBIL USER
+      // ==========================================
+
+      const loggedUser = response.data?.user;
+
+
+      if (!loggedUser) {
+        throw new Error(
+          'Data user tidak ditemukan dari response login.'
+        );
+      }
+
+
+      // ==========================================
+      // 4. SIMPAN KE AUTH CONTEXT
+      // ==========================================
+
+
+      await login(loggedUser);
+
+
+
+      // ==========================================
+      // 5. REDIRECT SESUAI ROLE
+      // ==========================================
+
+
 
       switch (loggedUser.role) {
         case 'rt':
@@ -95,14 +138,50 @@ export default function LoginPage() {
           navigate('/daftar-surat', {
             replace: true,
           });
+          break;
       }
-    } catch (err) {
-      const message =
-        err.response?.data?.errors?.username?.[0] ??
-        err.response?.data?.message ??
-        'Username atau password salah.';
 
-      setError(message);
+    } catch (err) {
+      console.error('LOGIN ERROR:', err);
+
+      console.error(
+        'STATUS:',
+        err.response?.status
+      );
+
+      console.error(
+        'RESPONSE:',
+        err.response?.data
+      );
+
+      if (err.response?.status === 422) {
+        const backendErrors =
+          err.response.data?.errors;
+
+        setError(
+          backendErrors?.username?.[0] ??
+          backendErrors?.password?.[0] ??
+          err.response.data?.message ??
+          'Username atau password salah.'
+        );
+
+        return;
+      }
+
+      if (err.response?.status === 401) {
+        setError(
+          'Username atau password salah.'
+        );
+
+        return;
+      }
+
+      setError(
+        err.response?.data?.message ??
+        err.message ??
+        'Terjadi kesalahan saat login.'
+      );
+
     } finally {
       setIsLoading(false);
     }
@@ -159,7 +238,10 @@ export default function LoginPage() {
 
           <div className="sid-login-field">
 
-            <label className="sid-login-label">
+            <label
+              htmlFor="username"
+              className="sid-login-label"
+            >
               Username
             </label>
 
@@ -168,12 +250,16 @@ export default function LoginPage() {
               <User className="sid-login-input-icon" />
 
               <input
+                id="username"
                 required
+                type="text"
+                name="username"
                 value={username}
                 onChange={(e) =>
                   setUsername(e.target.value)
                 }
                 placeholder="Masukkan username"
+                autoComplete="username"
                 className="sid-login-input sid-login-input-with-left-icon"
               />
 
@@ -188,7 +274,10 @@ export default function LoginPage() {
 
             <div className="sid-login-password-header">
 
-              <label className="sid-login-label">
+              <label
+                htmlFor="password"
+                className="sid-login-label"
+              >
                 Password
               </label>
 
@@ -210,17 +299,20 @@ export default function LoginPage() {
               <Lock className="sid-login-input-icon" />
 
               <input
+                id="password"
                 required
                 type={
                   showPassword
                     ? 'text'
                     : 'password'
                 }
+                name="password"
                 value={password}
                 onChange={(e) =>
                   setPassword(e.target.value)
                 }
                 placeholder="••••••••"
+                autoComplete="current-password"
                 className="sid-login-input sid-login-input-password"
               />
 
@@ -276,6 +368,7 @@ export default function LoginPage() {
             disabled={isLoading}
             className="sid-login-submit"
           >
+
             <span>
               {isLoading
                 ? 'Memproses...'
@@ -283,6 +376,7 @@ export default function LoginPage() {
             </span>
 
             <LogIn size={16} />
+
           </button>
 
         </form>
@@ -413,3 +507,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

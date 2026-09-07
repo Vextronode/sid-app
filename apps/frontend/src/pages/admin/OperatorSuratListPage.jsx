@@ -31,10 +31,7 @@ const STATUS_LABEL = {
     className: "sid-status-progress",
   },
 
-  rw_approved: {
-    label: "RW Approved",
-    className: "sid-status-progress",
-  },
+
 
   kasi_approved: {
     label: "Verified",
@@ -46,10 +43,6 @@ const STATUS_LABEL = {
     className: "sid-status-rejected",
   },
 
-  rw_rejected: {
-    label: "Ditolak RW",
-    className: "sid-status-rejected",
-  },
 
   kasi_rejected: {
     label: "Ditolak Kasi",
@@ -88,7 +81,6 @@ export default function OperatorSuratListPage() {
 
   const ROLE_ENDPOINT = {
     rt: "rt",
-    rw: "rw",
     kasi_pelayanan: "kasi",
     kaur_tu_umum: "kasi",
     petugas_desa: "kasi",
@@ -157,7 +149,7 @@ export default function OperatorSuratListPage() {
       switch (filterStatus) {
         case "verification":
           result = result.filter((s) =>
-            ["rt_approved", "rw_approved"].includes(s.status)
+            ["rt_approved"].includes(s.status)
           );
           break;
 
@@ -169,7 +161,7 @@ export default function OperatorSuratListPage() {
 
         case "rejected":
           result = result.filter((s) =>
-            ["rt_rejected", "rw_rejected"].includes(s.status)
+            ["rt_rejected"].includes(s.status)
           );
           break;
 
@@ -191,12 +183,10 @@ export default function OperatorSuratListPage() {
     // Urutkan berdasarkan selesai sampai ditolak
     const STATUS_ORDER = {
       kasi_approved: 1,
-      rw_approved: 2,
-      rt_approved: 3,
-      pending: 4,
-      rw_rejected: 5,
-      rt_rejected: 6,
-      kasi_rejected: 7,
+      rt_approved: 2,
+      pending: 3,
+      rt_rejected: 4,
+      kasi_rejected: 5,
     };
 
     result.sort((a, b) => {
@@ -363,7 +353,7 @@ export default function OperatorSuratListPage() {
                   <th className="center">Pemohon</th>
                   <th className="center">Jenis</th>
                   <th className="center">Tanggal</th>
-                  <th className="center">RT / RW</th>
+                  <th className="center">RT</th>
                   <th className="center">Aksi</th>
                 </tr>
               </thead>
@@ -451,7 +441,7 @@ export default function OperatorSuratListPage() {
                             : "-"}
                         </td>
 
-                        {/* RT / RW */}
+                        {/* RT  */}
                         <td>
 
                           <div className="sid-operator-approval">
@@ -463,9 +453,8 @@ export default function OperatorSuratListPage() {
 
                               {[
                                 "rt_approved",
-                                "rw_approved",
                                 "kasi_approved",
-                                "rw_rejected",
+                                ,
                               ].includes(s.status) ? (
 
                                 <div className="sid-operator-check approved">
@@ -487,34 +476,7 @@ export default function OperatorSuratListPage() {
 
                             </div>
 
-                            {/* RW */}
-                            <div>
-
-                              <span>RW</span>
-
-                              {[
-                                "rw_approved",
-                                "kasi_approved",
-                              ].includes(s.status) ? (
-
-                                <div className="sid-operator-check approved">
-                                  ✓
-                                </div>
-
-                              ) : s.status === "rw_rejected" ? (
-
-                                <div className="sid-operator-check rejected">
-                                  ✕
-                                </div>
-
-                              ) : (
-
-                                <div className="sid-operator-check">
-                                </div>
-
-                              )}
-
-                            </div>
+                      
 
                           </div>
 

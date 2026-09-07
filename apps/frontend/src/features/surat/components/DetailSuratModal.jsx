@@ -1,381 +1,175 @@
-import { useEffect, useState, useRef } from "react";
+// ==========================================
+// DetailSuratModal.jsx
+// Popup detail surat untuk Warga.
+//
+// Styling dan struktur mengikuti
+// SuratDetailModalRT.
+//
+// Workflow:
+// Submit -> RT -> Selesai / TTD
+//
+// Warga hanya dapat melihat detail,
+// keputusan RT, progress, dan preview.
+// ==========================================
+
+import { useEffect, useRef, useState } from 'react';
 import {
-  Check,
-  Clock,
   ChevronLeft,
-  X,
+  Eye,
   FileText,
-} from "lucide-react";
+  X,
+} from 'lucide-react';
 
-import { previewSuratPDF } from "@/features/cetak-surat/utils/generateSuratPDF";
+import ApprovalStepperRT from '@/features/approval-rt/components/ApprovalStepperRT';
+import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF';
 
-import * as pdfjsLib from "pdfjs-dist";
-import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 
-// ======================================================
-// PROGRESS TRACKER
-// ======================================================
+// ==========================================
+// FIELD MAP
+// ==========================================
 
-const ProgressTracker = ({ status, tanggal }) => {
-  const currentStatus = (status || "").toLowerCase();
+const FIELD_MAP = {
+  noSurat: (s) =>
+    s?.letter_number ?? '-',
 
-  const isRtRejected = currentStatus === "rt_rejected";
+  namaPemohon: (s) =>
+    s?.applicant_name ?? '-',
 
-  const isRtDone = [
-    "rt_approved",
-    "rw_approved",
-    "rw_rejected",
-    "kasi_approved",
-    "kasi_rejected",
-    "kaur_tu_umum_approved",
-    "petugas_desa_approved",
-  ].includes(currentStatus);
+  nik: (s) =>
+    s?.applicant_nik ?? '-',
 
-  const isRwRejected = currentStatus === "rw_rejected";
+  alamat: (s) =>
+    s?.applicant_address ?? '-',
 
-  const isRwDone = [
-    "rw_approved",
-    "rw_rejected",
-    "kasi_approved",
-    "kasi_rejected",
-    "kaur_tu_umum_approved",
-    "petugas_desa_approved",
-  ].includes(currentStatus);
+  jenisSurat: (s) =>
+    s?.letter_type?.name ?? '-',
 
-  const isSelesaiRejected = currentStatus === "kasi_rejected";
+  keperluan: (s) =>
+    s?.purpose ?? '-',
 
-  const isSelesaiDone = [
-    "kasi_approved",
-    "kaur_tu_umum_approved",
-    "petugas_desa_approved",
-  ].includes(currentStatus);
+  diajukan: (s) =>
+    s?.submitted_at
+      ? new Date(
+          s.submitted_at
+        ).toLocaleString('id-ID')
+      : '-',
 
-  return (
-    <div className="sid-progress-tracker">
+  terakhirDiproses: (s) =>
+    s?.updated_at
+      ? new Date(
+          s.updated_at
+        ).toLocaleString('id-ID')
+      : '-',
 
-      {/* GARIS */}
-      <div className="sid-progress-line" />
-
-
-      {/* ==================================================
-          SUBMIT
-      ================================================== */}
-
-      <div className="sid-progress-item">
-        <div className="sid-progress-circle sid-progress-done">
-          <Check
-            className="w-4 h-4 sm:w-5 sm:h-5"
-            strokeWidth={3}
-          />
-        </div>
-
-        <div className="sid-progress-text">
-          <p>Submit</p>
-
-          <span>
-            {tanggal}
-          </span>
-        </div>
-      </div>
-
-
-      {/* ==================================================
-          RT
-      ================================================== */}
-
-      <div className="sid-progress-item">
-
-        <div
-          className={`
-            sid-progress-circle
-            ${
-              isRtRejected
-                ? "sid-progress-rejected"
-                : isRtDone
-                ? "sid-progress-done"
-                : "sid-progress-waiting"
-            }
-          `}
-        >
-          {isRtRejected ? (
-            <X
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              strokeWidth={3}
-            />
-          ) : isRtDone ? (
-            <Check
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              strokeWidth={3}
-            />
-          ) : (
-            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          )}
-        </div>
-
-        <div className="sid-progress-text">
-          <p>RT</p>
-
-          <span
-            className={
-              isRtRejected
-                ? "sid-progress-status-rejected"
-                : ""
-            }
-          >
-            {isRtRejected
-              ? "Ditolak"
-              : isRtDone
-              ? "Selesai"
-              : "Menunggu"}
-          </span>
-        </div>
-
-      </div>
-
-
-      {/* ==================================================
-          RW
-      ================================================== */}
-
-      <div className="sid-progress-item">
-
-        <div
-          className={`
-            sid-progress-circle
-            ${
-              isRwRejected
-                ? "sid-progress-rejected"
-                : isRwDone
-                ? "sid-progress-done"
-                : isRtDone && !isRtRejected
-                ? "sid-progress-waiting-active"
-                : "sid-progress-disabled"
-            }
-          `}
-        >
-          {isRwRejected ? (
-            <X
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              strokeWidth={3}
-            />
-          ) : isRwDone ? (
-            <Check
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              strokeWidth={3}
-            />
-          ) : isRtDone && !isRtRejected ? (
-            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          ) : (
-            <span>3</span>
-          )}
-        </div>
-
-        <div className="sid-progress-text">
-          <p>RW</p>
-
-          <span
-            className={
-              isRwRejected
-                ? "sid-progress-status-rejected"
-                : ""
-            }
-          >
-            {isRwRejected
-              ? "Ditolak"
-              : !isRtDone || isRtRejected
-              ? "-"
-              : isRwDone
-              ? "Selesai"
-              : "Menunggu"}
-          </span>
-        </div>
-
-      </div>
-
-
-      {/* ==================================================
-          SELESAI
-      ================================================== */}
-
-      <div className="sid-progress-item">
-
-        <div
-          className={`
-            sid-progress-circle
-            ${
-              isSelesaiRejected
-                ? "sid-progress-rejected"
-                : isSelesaiDone
-                ? "sid-progress-done"
-                : isRwDone && !isRwRejected
-                ? "sid-progress-waiting-active"
-                : "sid-progress-disabled"
-            }
-          `}
-        >
-          {isSelesaiRejected ? (
-            <X
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              strokeWidth={3}
-            />
-          ) : isSelesaiDone ? (
-            <Check
-              className="w-4 h-4 sm:w-5 sm:h-5"
-              strokeWidth={3}
-            />
-          ) : isRwDone && !isRwRejected ? (
-            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          ) : (
-            <span>4</span>
-          )}
-        </div>
-
-        <div className="sid-progress-text">
-          <p>Selesai</p>
-
-          <span
-            className={
-              isSelesaiRejected
-                ? "sid-progress-status-rejected"
-                : ""
-            }
-          >
-            {isSelesaiRejected
-              ? "Ditolak"
-              : isSelesaiDone
-              ? "Selesai"
-              : "-"}
-          </span>
-        </div>
-
-      </div>
-
-    </div>
-  );
+  riwayat: (s) =>
+    s?.decisions ?? [],
 };
 
 
-// ======================================================
+// ==========================================
 // PREVIEW PDF
-// ======================================================
+// ==========================================
 
-const SuratPreview = ({ suratId, status }) => {
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+function SuratPreview({
+  surat,
+}) {
+  const [showPreview, setShowPreview] =
+    useState(false);
 
-  const canvasContainerRef = useRef(null);
-  const pdfDocumentRef = useRef(null);
+  const [loading, setLoading] =
+    useState(false);
 
-  const canPreview =
-    status === "kasi_approved" ||
-    status === "kaur_tu_umum_approved" ||
-    status === "petugas_desa_approved";
+  const [loadError, setLoadError] =
+    useState(false);
 
+  const canvasContainerRef =
+    useRef(null);
+
+  const pdfDocumentRef =
+    useRef(null);
+
+
+  // ========================================
+  // STATUS PREVIEW
+  // ========================================
+
+  const status =
+    surat?.status;
+
+  const canPreview = [
+    'kasi_approved',
+    'kaur_tu_umum_approved',
+    'petugas_desa_approved',
+    'completed',
+  ].includes(status);
+
+
+  // ========================================
+  // RESET
+  // ========================================
 
   useEffect(() => {
     setShowPreview(false);
-    setPreviewUrl(null);
+    setLoading(false);
     setLoadError(false);
 
     if (pdfDocumentRef.current) {
       pdfDocumentRef.current.destroy();
       pdfDocumentRef.current = null;
     }
-  }, [suratId]);
+  }, [surat?.id]);
 
 
-  useEffect(() => {
-    if (!suratId || !showPreview || !canPreview) {
-      return;
-    }
-
-    let cancelled = false;
-    let url = null;
-
-    const loadPDF = async () => {
-      try {
-        setLoading(true);
-        setLoadError(false);
-        setPreviewUrl(null);
-
-        const template =
-          status === "kasi_approved"
-            ? "digital"
-            : "wet";
-
-        const blobUrl = await previewSuratPDF(
-          { id: suratId },
-          template
-        );
-
-        if (cancelled) {
-          if (blobUrl) {
-            URL.revokeObjectURL(blobUrl);
-          }
-          return;
-        }
-
-        url = blobUrl;
-        setPreviewUrl(blobUrl);
-
-      } catch (error) {
-        console.error(
-          "Gagal mengambil PDF:",
-          error
-        );
-
-        if (!cancelled) {
-          setLoadError(true);
-        }
-
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadPDF();
-
-    return () => {
-      cancelled = true;
-
-      if (url) {
-        URL.revokeObjectURL(url);
-      }
-    };
-  }, [
-    suratId,
-    showPreview,
-    status,
-    canPreview,
-  ]);
-
+  // ========================================
+  // LOAD PDF
+  // ========================================
 
   useEffect(() => {
     if (
-      !previewUrl ||
       !showPreview ||
-      !canvasContainerRef.current
+      !canPreview ||
+      !surat?.id
     ) {
       return;
     }
 
     let cancelled = false;
+    let blobUrl = null;
 
-    const renderPDF = async () => {
+    const loadPDF = async () => {
       try {
         setLoading(true);
         setLoadError(false);
 
+        const template =
+          status === 'kasi_approved'
+            ? 'digital'
+            : 'wet';
+
+        blobUrl =
+          await previewSuratPDF(
+            surat,
+            template
+          );
+
+        if (cancelled) {
+          if (blobUrl) {
+            URL.revokeObjectURL(
+              blobUrl
+            );
+          }
+
+          return;
+        }
+
         const loadingTask =
           pdfjsLib.getDocument({
-            url: previewUrl,
+            url: blobUrl,
           });
 
         const pdf =
@@ -383,6 +177,11 @@ const SuratPreview = ({ suratId, status }) => {
 
         if (cancelled) {
           await pdf.destroy();
+
+          URL.revokeObjectURL(
+            blobUrl
+          );
+
           return;
         }
 
@@ -391,17 +190,25 @@ const SuratPreview = ({ suratId, status }) => {
         const container =
           canvasContainerRef.current;
 
-        container.innerHTML = "";
+        if (!container) {
+          return;
+        }
+
+        container.innerHTML = '';
 
         for (
           let pageNumber = 1;
           pageNumber <= pdf.numPages;
           pageNumber++
         ) {
-          if (cancelled) break;
+          if (cancelled) {
+            break;
+          }
 
           const page =
-            await pdf.getPage(pageNumber);
+            await pdf.getPage(
+              pageNumber
+            );
 
           const baseViewport =
             page.getViewport({
@@ -409,10 +216,13 @@ const SuratPreview = ({ suratId, status }) => {
             });
 
           const containerWidth =
-            container.clientWidth || 600;
+            container.clientWidth ||
+            600;
 
           const computedStyle =
-            window.getComputedStyle(container);
+            window.getComputedStyle(
+              container
+            );
 
           const paddingLeft =
             parseFloat(
@@ -435,20 +245,27 @@ const SuratPreview = ({ suratId, status }) => {
 
           const viewport =
             page.getViewport({
-              scale: Math.max(scale, 0.5),
+              scale: Math.max(
+                scale,
+                0.5
+              ),
             });
 
           const pageWrapper =
-            document.createElement("div");
+            document.createElement(
+              'div'
+            );
 
           pageWrapper.className =
-            "sid-pdf-page";
+            'sid-pdf-page';
 
           const canvas =
-            document.createElement("canvas");
+            document.createElement(
+              'canvas'
+            );
 
           const context =
-            canvas.getContext("2d");
+            canvas.getContext('2d');
 
           const pixelRatio =
             window.devicePixelRatio || 1;
@@ -456,13 +273,13 @@ const SuratPreview = ({ suratId, status }) => {
           canvas.width =
             Math.floor(
               viewport.width *
-              pixelRatio
+                pixelRatio
             );
 
           canvas.height =
             Math.floor(
               viewport.height *
-              pixelRatio
+                pixelRatio
             );
 
           canvas.style.width =
@@ -472,7 +289,7 @@ const SuratPreview = ({ suratId, status }) => {
             `${viewport.height}px`;
 
           canvas.className =
-            "sid-pdf-canvas";
+            'sid-pdf-canvas';
 
           context.setTransform(
             pixelRatio,
@@ -483,25 +300,28 @@ const SuratPreview = ({ suratId, status }) => {
             0
           );
 
-          pageWrapper.appendChild(canvas);
-          container.appendChild(pageWrapper);
+          pageWrapper.appendChild(
+            canvas
+          );
+
+          container.appendChild(
+            pageWrapper
+          );
 
           await page.render({
             canvasContext: context,
             viewport,
           }).promise;
         }
-
       } catch (error) {
         console.error(
-          "Gagal render PDF:",
+          'Gagal memuat preview PDF:',
           error
         );
 
         if (!cancelled) {
           setLoadError(true);
         }
-
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -509,72 +329,86 @@ const SuratPreview = ({ suratId, status }) => {
       }
     };
 
-    renderPDF();
+    loadPDF();
 
     return () => {
       cancelled = true;
-    };
-  }, [previewUrl, showPreview]);
 
+      if (pdfDocumentRef.current) {
+        pdfDocumentRef.current.destroy();
+        pdfDocumentRef.current = null;
+      }
+
+      if (blobUrl) {
+        URL.revokeObjectURL(
+          blobUrl
+        );
+      }
+    };
+  }, [
+    showPreview,
+    canPreview,
+    surat,
+    status,
+  ]);
+
+
+  // ========================================
+  // RENDER
+  // ========================================
 
   return (
-    <div className="sid-preview">
-
+    <>
       <button
         type="button"
-        disabled={!canPreview}
         onClick={() => {
-          if (!canPreview) return;
+          if (!canPreview) {
+            return;
+          }
 
-          setShowPreview((prev) => !prev);
+          setShowPreview(
+            (prev) => !prev
+          );
         }}
-        className={`
-          sid-btn
-          sid-btn-preview
-          sid-btn-full
-          ${!canPreview ? "sid-preview-disabled" : ""}
-        `}
+        disabled={!canPreview}
+        className={`sid-modal-preview ${
+          !canPreview
+            ? 'sid-preview-disabled'
+            : ''
+        }`}
       >
-        <FileText className="w-4 h-4" />
+        <Eye size={16} />
 
         {canPreview
           ? showPreview
-            ? "Sembunyikan Preview Surat"
-            : "Lihat Preview Surat"
-          : "Preview tersedia setelah surat selesai"}
+            ? 'Sembunyikan Preview'
+            : 'Lihat Dokumen (Preview)'
+          : 'Preview tersedia setelah surat selesai'}
       </button>
-
 
       {showPreview && (
         <div className="sid-preview-container">
-
           {loading && (
             <div className="sid-preview-loading">
-
               <div className="sid-loading-spinner" />
 
               <p>
                 Memuat preview...
               </p>
-
             </div>
           )}
 
-
           {!loading && loadError && (
             <div className="sid-preview-error">
-
-              <FileText className="w-8 h-8" />
+              <FileText size={32} />
 
               <p>
-                Gagal memuat preview surat
+                Gagal memuat preview surat.
               </p>
 
               <button
                 type="button"
                 onClick={() => {
-                  setLoadError(false);
-                  setPreviewUrl(null);
                   setShowPreview(false);
 
                   setTimeout(() => {
@@ -585,239 +419,296 @@ const SuratPreview = ({ suratId, status }) => {
               >
                 Coba Lagi
               </button>
-
             </div>
           )}
 
-
-          {!loadError && (
+          {!loading && !loadError && (
             <div
               ref={canvasContainerRef}
               className="sid-pdf-container"
             />
           )}
-
         </div>
       )}
-
-    </div>
+    </>
   );
-};
+}
 
 
-// ======================================================
+// ==========================================
 // DETAIL INFORMATION
-// ======================================================
+// ==========================================
 
-const DetailInfo = ({ data }) => {
-  const namaPanjangSurat = {
-    SKD: "Surat Keterangan Domisili",
-    SKTM: "Surat Keterangan Tidak Mampu",
-    SKU: "Surat Keterangan Usaha",
-  };
+function DetailInfo({
+  surat,
+}) {
+  const infoFields = [
+    {
+      label: 'Nama Pemohon',
+      value:
+        FIELD_MAP.namaPemohon(
+          surat
+        ),
+    },
+    {
+      label: 'NIK',
+      value:
+        FIELD_MAP.nik(surat),
+    },
+    {
+      label: 'Alamat',
+      value:
+        FIELD_MAP.alamat(surat),
+    },
+    {
+      label: 'Jenis Surat',
+      value:
+        FIELD_MAP.jenisSurat(
+          surat
+        ),
+    },
+    {
+      label: 'Keperluan',
+      value:
+        FIELD_MAP.keperluan(
+          surat
+        ),
+    },
+    {
+      label: 'Diajukan',
+      value:
+        FIELD_MAP.diajukan(
+          surat
+        ),
+    },
+    {
+      label: 'Terakhir diproses',
+      value:
+        FIELD_MAP.terakhirDiproses(
+          surat
+        ),
+    },
+  ];
 
   return (
-    <div className="sid-detail-grid">
+    <div className="sid-modal-info">
+      {infoFields.map(
+        (field) => (
+          <div
+            key={field.label}
+          >
+            <p className="sid-modal-info-label">
+              {field.label}
+            </p>
 
-      <div className="sid-detail-label">
-        Nama Pemohon
-      </div>
-
-      <div className="sid-detail-value">
-        {data.pemohon || "-"}
-      </div>
-
-
-      <div className="sid-detail-label">
-        NIK
-      </div>
-
-      <div className="sid-detail-value sid-break">
-        {data.nik || "3276********0042"}
-      </div>
-
-
-      <div className="sid-detail-label">
-        Alamat
-      </div>
-
-      <div className="sid-detail-value sid-break">
-        {data.alamat ||
-          "Kp. Cibenda RT 001/RW 001"}
-      </div>
-
-
-      <div className="sid-detail-label">
-        Jenis Surat
-      </div>
-
-      <div className="sid-detail-value sid-break">
-        {data.jenis} —{" "}
-        {namaPanjangSurat[data.jenis] ||
-          "Surat Desa"}
-      </div>
-
-
-      <div className="sid-detail-label">
-        Keperluan
-      </div>
-
-      <div className="sid-detail-value sid-break">
-        {data.purpose ||
-          "Keperluan administrasi pengajuan"}
-      </div>
-
-
-      <div className="sid-detail-label">
-        Diajukan
-      </div>
-
-      <div className="sid-detail-value">
-        {data.tanggal}
-      </div>
-
-
-      <div className="sid-detail-label">
-        Terakhir diproses
-      </div>
-
-      <div className="sid-detail-value">
-        {data.processed_at
-          ? new Date(
-              data.processed_at
-            ).toLocaleDateString("id-ID")
-          : "-"}
-      </div>
-
-
-      {[
-        "rt_rejected",
-        "rw_rejected",
-        "kasi_rejected",
-      ].includes(
-        (data.status || "").toLowerCase()
-      ) && (
-        <>
-          <div className="sid-detail-label">
-            Alasan Penolakan
+            <p className="sid-modal-info-value">
+              {field.value}
+            </p>
           </div>
+        )
+      )}
+    </div>
+  );
+}
 
-          <div className="sid-detail-value sid-break sid-rejection-text">
-            {data.notes || "-"}
+
+// ==========================================
+// KEPUTUSAN RT
+// ==========================================
+
+function DecisionRT({
+  surat,
+}) {
+  const keputusanRT =
+    FIELD_MAP
+      .riwayat(surat)
+      .find(
+        (r) =>
+          r.stage === 'rt' ||
+          r.tahap === 'RT' ||
+          r.approval_level === 'rt'
+      );
+
+  if (!keputusanRT) {
+    return null;
+  }
+
+  const isRejected =
+    keputusanRT.status ===
+    'rejected';
+
+  const actor =
+    keputusanRT.actor_name ??
+    keputusanRT.decided_by ??
+    keputusanRT.approved_by_name ??
+    '-';
+
+  const notes =
+    keputusanRT.notes ??
+    keputusanRT.reason ??
+    surat.notes ??
+    'Tidak ada catatan.';
+
+  return (
+    <div
+      className={`sid-decision-box ${
+        isRejected
+          ? 'rejected'
+          : 'approved'
+      }`}
+    >
+      <div className="sid-decision-header">
+        <p className="sid-decision-title">
+          Keputusan RT
+        </p>
+
+        <span
+          className={`sid-decision-badge ${
+            isRejected
+              ? 'rejected'
+              : 'approved'
+          }`}
+        >
+          {isRejected
+            ? 'RT_REJECTED'
+            : 'RT_APPROVED'}
+        </span>
+      </div>
+
+      <div className="sid-decision-meta">
+        diputuskan oleh{' '}
+
+        <strong>
+          {actor}
+        </strong>
+      </div>
+
+      <div className="sid-decision-meta">
+        IP{' '}
+
+        <strong>
+          {keputusanRT.ip_address ??
+            '-'}
+        </strong>
+      </div>
+
+      {isRejected && (
+        <>
+          <p className="sid-decision-comment-label">
+            Komentar Penolakan
+          </p>
+
+          <div className="sid-decision-comment rejected">
+            {notes}
           </div>
         </>
       )}
 
+      {!isRejected && (
+        <div className="sid-decision-comment approved">
+          {notes}
+        </div>
+      )}
     </div>
   );
-};
+}
 
 
-// ======================================================
+// ==========================================
 // MAIN COMPONENT
-// ======================================================
+// ==========================================
 
 export function DetailSuratModal({
   data,
   onClose,
 }) {
-  if (!data) return null;
+  if (!data) {
+    return null;
+  }
 
   return (
-    <div className="sid-modal-overlay sid-detail-modal-overlay">
+    <div className="sid-modal-overlay">
+      <div className="sid-modal">
+        {/* ======================================
+            CLOSE
+        ====================================== */}
 
-      <div className="sid-modal sid-detail-modal">
-
-        <div className="sid-detail-modal-content">
-
-          {/* ==================================================
-              HEADER
-          ================================================== */}
-
-          <div className="sid-modal-header">
-
-            <div className="sid-detail-header-text">
-
-              <h2 className="sid-modal-title">
-                Detail Permohonan Surat
-              </h2>
-
-              <p className="sid-modal-subtitle">
-                {data.noSurat !== "-"
-                  ? data.noSurat
-                  : `#024/${data.jenis}/V/2026`}{" "}
-                - Surat saya
-              </p>
-
-            </div>
-
-          </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="sid-modal-close"
+          aria-label="Tutup"
+        >
+          <X size={18} />
+        </button>
 
 
-          {/* ==================================================
-              PROGRESS
-          ================================================== */}
+        {/* ======================================
+            HEADER
+        ====================================== */}
 
-          <div className="sid-modal-stepper sid-detail-stepper">
+        <h2 className="sid-modal-title">
+          Detail Permohonan Surat
+        </h2>
 
-            <div className="sid-progress-scroll">
-
-              <ProgressTracker
-                status={data.status}
-                tanggal={data.tanggal}
-              />
-
-            </div>
-
-          </div>
-
-
-          {/* ==================================================
-              DETAIL
-          ================================================== */}
-
-          <div className="sid-detail-box">
-
-            <DetailInfo data={data} />
-
-          </div>
+        <p className="sid-modal-subtitle">
+          #
+          {FIELD_MAP.noSurat(
+            data
+          )}
+          {' · Surat saya'}
+        </p>
 
 
-          {/* ==================================================
-              PREVIEW
-          ================================================== */}
+        {/* ======================================
+            STEPPER
+        ====================================== */}
 
-          <div className="sid-detail-preview">
-
-            <SuratPreview
-              suratId={data.id}
-              status={data.status}
-            />
-
-          </div>
+        <ApprovalStepperRT
+          surat={data}
+        />
 
 
-          {/* ==================================================
-              FOOTER
-          ================================================== */}
+        {/* ======================================
+            DETAIL SURAT
+        ====================================== */}
 
-          <div className="sid-detail-footer">
+        <DetailInfo
+          surat={data}
+        />
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="sid-btn sid-btn-secondary sid-detail-back-btn"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Kembali
-            </button>
 
-          </div>
+        {/* ======================================
+            KEPUTUSAN RT
+        ====================================== */}
 
-        </div>
+        <DecisionRT
+          surat={data}
+        />
 
+
+        {/* ======================================
+            PREVIEW
+        ====================================== */}
+
+        <SuratPreview
+          surat={data}
+        />
+
+
+        {/* ======================================
+            BUTTON KEMBALI
+        ====================================== */}
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="sid-modal-action back"
+        >
+          <ChevronLeft size={16} />
+          Kembali
+        </button>
       </div>
-
     </div>
   );
 }

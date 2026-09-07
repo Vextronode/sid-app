@@ -90,19 +90,17 @@ export default function RWDashboardPage() {
   // ==========================================
 
   const stats = useMemo(() => {
-    const permohonanBaru = letters.filter(
-      (s) => s.status === 'rt_approved'
-    ).length;
+    const permohonanBaru = letters.length;
 
     const sedangDiproses = letters.filter(
       (s) =>
         !s.status?.endsWith('_rejected') &&
-        s.status !== 'rw_approved' &&
-        s.status !== 'rt_approved'
+        s.status !== '_approved' &&
+        s.status !== '_approved'
     ).length;
 
     const disetujuiFinal = letters.filter(
-      (s) => s.status === 'rw_approved'
+      (s) => s.status === 'kasi_approved'
     ).length;
 
     const ditolak = letters.filter(
@@ -125,13 +123,13 @@ export default function RWDashboardPage() {
   const STAT_CARDS = [
     {
       key: 'permohonan',
-      label: 'Menunggu',
+      label: 'Total Surat',
       value: stats.permohonanBaru,
       icon: Mail,
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
       onClick: () =>
-        navigate('/admin/list-rw?status=rt_approved'),
+        navigate('/admin/list-rw'),
     },
 
     {

@@ -39,7 +39,6 @@ export default function OperatorDesaDashboardPage() {
 
   const ROLE_ENDPOINT = {
     rt: 'rt',
-    rw: 'rw',
     kasi_pelayanan: 'kasi',
     kaur_tu_umum: 'kasi',
     petugas_desa: 'kasi',
@@ -109,7 +108,7 @@ export default function OperatorDesaDashboardPage() {
     const permohonan = letters.length;
 
     const verifikasi = letters.filter(
-      (s) => s.status === 'rw_approved'
+      (s) => s.status === 'rt_approved'
     ).length;
 
     const selesai = letters.filter(

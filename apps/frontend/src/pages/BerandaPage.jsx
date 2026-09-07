@@ -150,7 +150,7 @@ export function BerandaPage() {
               },
               {
                 num: '4',
-                text: 'Tunggu persetujuan dari RT dan RW. Anda bisa memantau statusnya kapan saja.',
+                text: 'Tunggu persetujuan dari RT  . Anda bisa memantau statusnya kapan saja.',
               },
             ].map((step) => (
 

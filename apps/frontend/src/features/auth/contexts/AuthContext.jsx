@@ -1,55 +1,95 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+} from "react";
+
 import api from "@/lib/api";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-const [user, setUser] = useState(null);
-const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ==========================================
+  // CHECK SESSION SAAT APP PERTAMA DIBUKA
+  // ==========================================
 
   useEffect(() => {
-      const checkSession = async () => {
-          try {
-              const { data } = await api.get("/api/user");
-              setUser(data);
-          } catch {
-              setUser(null);
-          } finally {
-              setIsLoading(false);
-          }
-      };
-
-      checkSession();
+    checkSession();
   }, []);
+
+  // ==========================================
+  // CHECK SESSION
+  // ==========================================
 
   const checkSession = async () => {
     try {
-      const { data } = await api.get("/api/user");
-      setUser(data);
-    } catch {
+      const response = await api.get("/api/user");
+
+      setUser(response.data);
+
+      return response.data;
+    } catch (error) {
+      // 401 = memang belum login.
+      // Tidak perlu dianggap sebagai error aplikasi.
+      if (error.response?.status !== 401) {
+        console.error(
+          "CHECK SESSION ERROR:",
+          error
+        );
+      }
+
       setUser(null);
+
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Mengambil data user yang sedang login dari session Laravel
-  // kemudian menyimpannya ke AuthContext.
-  // Data user juga dikembalikan agar bisa digunakan
-  // untuk redirect berdasarkan role setelah login.
-  const login = async () => {
-    const { data } = await api.get("/api/user");
+  // ==========================================
+  // LOGIN
+  // ==========================================
 
-    setUser(data);
+  const login = async (loggedUser = null) => {
+    // User sudah didapat dari response POST /login
+    if (loggedUser) {
+      setUser(loggedUser);
 
-    return data;
+      return loggedUser;
+    }
+
+    // Fallback jika login dipanggil tanpa user
+    const response = await api.get("/api/user");
+
+    setUser(response.data);
+
+    return response.data;
   };
+
+  // ==========================================
+  // LOGOUT
+  // ==========================================
 
   const logout = async () => {
-    await api.post("/api/logout");
-
-    setUser(null);
+    try {
+      await api.post("/api/logout");
+    } catch (error) {
+      console.error(
+        "LOGOUT ERROR:",
+        error
+      );
+    } finally {
+      setUser(null);
+    }
   };
+
+  // ==========================================
+  // PROVIDER
+  // ==========================================
 
   return (
     <AuthContext.Provider
@@ -66,5 +106,10 @@ const [isLoading, setIsLoading] = useState(true);
   );
 }
 
+// ==========================================
+// HOOK
+// ==========================================
+
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () =>
+  useContext(AuthContext);

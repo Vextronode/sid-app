@@ -29,20 +29,52 @@ export default function TestRevisionFlowPage() {
     }
   };
 
-  const handleApprove = async (action) => {
+  const handleApprove = async () => {
     if (!selectedLetter) return;
 
-    setLoading(true);
+    // ==========================================
+    // RW TIDAK MEMILIKI KEWENANGAN KEPUTUSAN
+    // ==========================================
+
+    if (user?.role === 'rw') {
+      setMessage(
+        'RW hanya dapat memantau proses surat dan tidak memiliki kewenangan untuk menyetujui atau menolak.'
+      );
+      return;
+    }
+
     try {
-      const role = user?.role === 'rt' ? 'rt' : user?.role === 'rw' ? 'rw' : 'kasi';
-      await approveSurat(role, selectedLetter.id, action, actionNotes);
-      alert(`Aksi "${action}" berhasil dilakukan`);
-      setActionNotes('');
-      setSelectedLetter(null);
-      loadLetters();
+      setLoading(true);
+      setMessage('');
+
+      const role =
+        user?.role === 'rt'
+          ? 'rt'
+          : 'kasi';
+
+      await approveSurat(
+        role,
+        selectedLetter.id,
+        action,
+        actionNotes
+      );
+
+      setMessage(
+        `Surat berhasil ${
+          action === 'approved'
+            ? 'disetujui'
+            : 'ditolak'
+        }.`
+      );
+
+      await loadLetters();
     } catch (error) {
-      console.error('Error:', error);
-      alert(error.response?.data?.message ?? 'Gagal melakukan aksi');
+      console.error('APPROVAL ERROR:', error);
+
+      setMessage(
+        error.response?.data?.message ??
+          'Gagal memproses keputusan surat.'
+      );
     } finally {
       setLoading(false);
     }
@@ -247,23 +279,27 @@ export default function TestRevisionFlowPage() {
               </div>
 
               <div className="flex gap-2">
-                <button
-                  onClick={handleResubmit}
-                  disabled={loading || !resubmitData.purpose}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
-                >
-                  Kirim Ulang
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedLetter(null);
-                    setResubmitData({ purpose: '', notes: '' });
-                    setTestStep('view');
-                  }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300"
-                >
-                  Batal
-                </button>
+              {user?.role !== 'rw' && (
+                <>
+                  <button
+                    onClick={() => {
+                      setAction('approved');
+                      setActionNotes('');
+                    }}
+                  >
+                    Setujui
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAction('rejected');
+                      setActionNotes('');
+                    }}
+                  >
+                    Tolak
+                  </button>
+                </>
+              )}
               </div>
             </div>
           )}
