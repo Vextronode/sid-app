@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\Official;
 use App\Models\Rt;
 use App\Models\Rw;
+use App\Models\Village;
 use App\Repositories\OfficialRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
