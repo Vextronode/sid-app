@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { getSuratDetail } from "@/features/approval/api";
-import { ROLE_KEY } from "../constants/roleConfigkades";
+import { ROLE_KEY } from "../constants/roleConfigKades";
 
 export function useSuratDetail(id) {
   const [surat, setSurat] = useState(null);

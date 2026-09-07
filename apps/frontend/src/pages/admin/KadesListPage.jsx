@@ -12,7 +12,7 @@ import { Search, Eye } from 'lucide-react';
 import { useSuratList } from '@/features/approval-kades/hooks/useSuratListKades';
 import StatusBadgeRT from '@/features/approval-rt/components/StatusBadgeRT';
 import SuratDetailModalKades from '@/features/approval-kades/components/SuratDetailModalKades';
-import { BASE_PATH } from '@/features/approval-kades/constants/roleConfigkades';
+import { BASE_PATH } from '@/features/approval-kades/constants/roleConfigKades';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { FooterDesa } from '@/components/layout/FooterDesa';
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
