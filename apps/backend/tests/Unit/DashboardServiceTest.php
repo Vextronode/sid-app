@@ -5,10 +5,13 @@ namespace Tests\Unit;
 use App\Models\Citizen;
 use App\Models\Letter;
 use App\Models\Official;
+use App\Models\Rt;
 use App\Models\User;
+use App\Models\Village;
 use App\Repositories\CitizenRepository;
+use App\Repositories\LetterRepository;
 use App\Services\DashboardService;
-use HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -30,10 +33,11 @@ class DashboardServiceTest extends TestCase
 
     public function test_gender_stats_for_petugas_desa_counts_all_citizens_in_village(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
-        Citizen::factory()->create(['village_id' => $user->village_id, 'gender' => 'L']);
-        Citizen::factory()->create(['village_id' => $user->village_id, 'gender' => 'P']);
-        Citizen::factory()->create(['village_id' => $user->village_id, 'gender' => 'P']);
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'L']);
+        Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'P']);
+        Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'P']);
 
         $stats = $this->service->getGenderStats($user);
 
@@ -44,9 +48,14 @@ class DashboardServiceTest extends TestCase
 
     public function test_gender_stats_for_rt_scopes_to_own_rt(): void
     {
-        $official = Official::factory()->create(['position' => 'rt']);
-        $official->rt_id = $official->citizen->rt_id;
-        $official->save();
+        $ownRt = Rt::factory()->create();
+        $otherRt = Rt::factory()->create();
+
+        $official = Official::factory()->create([
+            'position' => 'rt',
+            'rt_id' => $ownRt->id,
+        ]);
+        $official->citizen->update(['rt_id' => $otherRt->id]);
 
         $user = User::factory()->create([
             'village_id' => $official->citizen->village_id,
@@ -56,12 +65,12 @@ class DashboardServiceTest extends TestCase
 
         Citizen::factory()->create([
             'village_id' => $user->village_id,
-            'rt_id' => $official->rt_id,
+            'rt_id' => $ownRt->id,
             'gender' => 'L',
         ]);
         Citizen::factory()->create([
             'village_id' => $user->village_id,
-            'rt_id' => $official->rt_id + 999,
+            'rt_id' => $otherRt->id,
             'gender' => 'L',
         ]);
 
@@ -92,7 +101,8 @@ class DashboardServiceTest extends TestCase
 
     public function test_letter_stats_returns_chart_with_seven_days_and_min_max_y_of_50(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
         Letter::factory()->create([
             'village_id' => $user->village_id,
             'submitted_at' => now(),
@@ -108,7 +118,8 @@ class DashboardServiceTest extends TestCase
 
     public function test_letter_stats_filters_by_letter_type_when_given(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
         $letter = Letter::factory()->create([
             'village_id' => $user->village_id,
             'submitted_at' => now(),

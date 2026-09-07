@@ -31,7 +31,8 @@ class KasiApprovalControllerTest extends TestCase
     {
         Notification::fake();
 
-        $letter = Letter::factory()->create(['status' => 'rw_approved']);
+        $citizen = \App\Models\Citizen::factory()->create();
+        $letter = Letter::factory()->create(['status' => 'rw_approved', 'citizen_id' => $citizen->id]);
         $user = User::factory()->create(['role' => 'kasi_pelayanan']);
 
         $this->actingAs($user)

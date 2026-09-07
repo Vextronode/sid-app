@@ -24,7 +24,11 @@ class LetterControllerTest extends TestCase
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
         Official::factory()->create(['rt_id' => $rt->id, 'position' => 'rt', 'is_active' => true]);
         $letterType = LetterType::factory()->create();
-        $user = User::factory()->create(['citizen_id' => $citizen->id]);
+        $user = User::factory()->create([
+            'citizen_id' => $citizen->id,
+            'village_id' => $citizen->village_id,
+        ]);
+
 
         $this->actingAs($user)
             ->postJson('/api/letters', [

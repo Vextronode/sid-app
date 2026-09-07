@@ -9,7 +9,7 @@ use App\Models\Village;
 use App\Repositories\CitizenRepository;
 use App\Repositories\HamletRepository;
 use App\Services\HamletService;
-use HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

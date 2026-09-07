@@ -4,7 +4,8 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Repositories\CitizenRepository;
-use HttpException;
+use App\Repositories\LetterRepository;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Support\Carbon;
 
 class DashboardService

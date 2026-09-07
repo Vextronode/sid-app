@@ -7,6 +7,7 @@ use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
 use App\Repositories\OfficialRepository;
+use App\Repositories\UserRepository;
 
 class OfficialService
 {

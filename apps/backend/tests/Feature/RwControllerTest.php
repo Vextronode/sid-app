@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Citizen;
 use App\Models\Hamlet;
 use App\Models\Rw;
 use App\Models\User;

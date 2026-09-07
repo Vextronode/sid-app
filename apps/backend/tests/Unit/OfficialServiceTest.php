@@ -9,6 +9,7 @@ use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
 use App\Repositories\OfficialRepository;
+use App\Repositories\UserRepository;
 use App\Services\OfficialService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

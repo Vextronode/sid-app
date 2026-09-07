@@ -32,7 +32,7 @@ class LetterFactory extends Factory
             'applicant_address' => fake()->address(),
             'purpose' => fake()->sentence(),
             'notes' => null,
-            'status' => 'draft',
+            'status' => 'pending',
             'revision_count' => 0,
             'is_overdue' => false,
             'expires_at' => null,

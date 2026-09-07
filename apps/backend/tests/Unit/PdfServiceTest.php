@@ -9,7 +9,7 @@ use App\Models\Official;
 use App\Models\User;
 use App\Repositories\OfficialRepository;
 use App\Services\PdfService;
-use HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

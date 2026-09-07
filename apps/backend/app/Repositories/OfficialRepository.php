@@ -53,7 +53,7 @@ class OfficialRepository
             ->first();
     }
 
-    public function allActiveByPositionsAndVillage(array $positions, int $villageId): Collection
+    public function allActiveByPositionsAndVillage(array $positions, ?int $villageId): Collection
     {
         return Official::query()
             ->whereIn('position', $positions)

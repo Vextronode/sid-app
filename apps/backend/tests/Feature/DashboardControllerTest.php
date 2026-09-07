@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Citizen;
 use App\Models\User;
+use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,9 +14,10 @@ class DashboardControllerTest extends TestCase
 
     public function test_gender_stats_returns_counts_for_petugas_desa(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
-        Citizen::factory()->create(['village_id' => $user->village_id, 'gender' => 'L']);
-        Citizen::factory()->create(['village_id' => $user->village_id, 'gender' => 'P']);
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'L']);
+        Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'P']);
 
         $this->actingAs($user)
             ->getJson('/api/dashboard/gender-stats')
@@ -39,7 +41,8 @@ class DashboardControllerTest extends TestCase
 
     public function test_letter_stats_returns_chart_structure(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
 
         $this->actingAs($user)
             ->getJson('/api/dashboard/letter-stats')

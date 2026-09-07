@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
-class LetterApprovalServiceTest extends TestCase
+class clsLetterApprovalServiceTest extends TestCase
 {
     use RefreshDatabase;
 

@@ -6,6 +6,7 @@ use App\Models\Letter;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
+use App\Repositories\OfficialRepository;
 use Illuminate\Support\Facades\DB;
 
 class KadusApprovalService

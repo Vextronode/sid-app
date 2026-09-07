@@ -38,12 +38,13 @@ class RwApprovalControllerTest extends TestCase
     {
         Notification::fake();
 
+        $village = \App\Models\Village::factory()->create();
         $rw = Rw::factory()->create();
         $rt = Rt::factory()->create(['rw_id' => $rw->id]);
-        $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
-        $letter = Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'rt_approved']);
+        $citizen = Citizen::factory()->create(['rt_id' => $rt->id, 'village_id' => $village->id]);
+        $letter = Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'rt_approved', 'village_id' => $village->id]);
 
-        $official = Official::factory()->create(['position' => 'rw', 'rw_id' => $rw->id]);
+        $official = Official::factory()->create(['position' => 'rw', 'rw_id' => $rw->id, 'village_id' => $village->id]);
         $user = User::factory()->create(['role' => 'rw']);
         $user->official()->save($official);
 

@@ -36,11 +36,12 @@ class RtApprovalControllerTest extends TestCase
     {
         Notification::fake();
 
-        $rt = Rt::factory()->create();
+        $rw = \App\Models\Rw::factory()->create();
+        $rt = Rt::factory()->create(['rw_id' => $rw->id]);
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
         $letter = Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'pending']);
 
-        $official = Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id]);
+        $official = Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'rw_id' => $rw->id]);
         $user = User::factory()->create(['role' => 'rt']);
         $user->official()->save($official);
 

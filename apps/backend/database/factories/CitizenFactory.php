@@ -38,7 +38,7 @@ class CitizenFactory extends Factory
             'no_kk' => fake()->numerify('################'),
             'marital_status' => fake()->randomElement(['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati']),
             'occupation' => fake()->jobTitle(),
-            'religion' => fake()->randomElement(Religion::cases()),
+            'religion' => fake()->randomElement(['islam', 'kristen', 'katolik', 'hindu', 'buddha', 'konghucu']),
             'last_education' => fake()->randomElement(LastEducation::cases()),
             'domicile_status' => fake()->randomElement(DomicileStatus::cases()),
             'current_domicile' => null,

@@ -16,6 +16,8 @@ class ApprovalFlowFactory extends Factory
      *
      * @return array<string, mixed>
      */
+    protected $model = ApprovalFlow::class;
+
     public function definition(): array
     {
         return [

@@ -26,7 +26,7 @@ class LetterTypeFactory extends Factory
             'template' => null,
             'verification_type' => 'manual',
             'requirement_info' => fake()->sentence(),
-            'category_id' => LetterCategory::factory(),
+            'category_id' => LetterCategory::query()->inRandomOrder()->value('id') ?? LetterCategory::factory(),
             'flow_id' => ApprovalFlow::factory(),
             'assigned_role' => 'kasi_pelayanan',
             'validity_days' => 30,

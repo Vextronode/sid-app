@@ -10,6 +10,9 @@ use App\Models\Rt;
 use App\Models\User;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
+use App\Repositories\LetterTypeRepository;
+use App\Repositories\OfficialRepository;
+use App\Repositories\UserRepository;
 use App\Services\LetterService;
 use App\Services\OfficialService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -50,7 +53,10 @@ class LetterServiceTest extends TestCase
         ]);
         $letterType = LetterType::factory()->create();
 
-        $user = User::factory()->create(['citizen_id' => $citizen->id]);
+        $user = User::factory()->create([
+            'citizen_id' => $citizen->id,
+            'village_id' => $citizen->village_id,
+        ]);
         $this->actingAs($user);
 
         $letter = $this->service->createLetter([
@@ -118,12 +124,12 @@ class LetterServiceTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'petugas_desa']);
         Letter::factory()->create(['status' => 'pending']);
-        Letter::factory()->create(['status' => 'approved']);
+        Letter::factory()->create(['status' => 'kasi_approved']);
 
-        $result = $this->service->getScopedLetters($user, ['status' => 'approved']);
+        $result = $this->service->getScopedLetters($user, ['status' => 'kasi_approved']);
 
         $this->assertCount(1, $result);
-        $this->assertSame('approved', $result->first()->status->value);
+        $this->assertSame('kasi_approved', $result->first()->status->value);
     }
 
     public function test_delete_allowed_for_owner(): void

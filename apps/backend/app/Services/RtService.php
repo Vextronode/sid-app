@@ -6,7 +6,7 @@ use App\Models\Rt;
 use App\Repositories\CitizenRepository;
 use App\Repositories\RtRepository;
 use App\Repositories\RwRepository;
-use HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Database\Eloquent\Collection;
 
 class RtService

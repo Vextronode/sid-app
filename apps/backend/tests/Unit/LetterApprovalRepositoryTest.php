@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Letter;
+use App\Models\User;
 use App\Repositories\LetterApprovalRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -49,10 +50,11 @@ class LetterApprovalRepositoryTest extends TestCase
             'approval_level' => 'rw',
             'deadline_at' => now()->addDays(3),
         ]);
+        $approver = User::factory()->create();
 
-        $updated = $this->repository->updateApprovedBy($approval, 42);
+        $updated = $this->repository->updateApprovedBy($approval, $approver->id);
 
-        $this->assertSame(42, $updated->approved_by);
-        $this->assertDatabaseHas('letter_approvals', ['id' => $approval->id, 'approved_by' => 42]);
+        $this->assertSame($approver->id, $updated->approved_by);
+        $this->assertDatabaseHas('letter_approvals', ['id' => $approval->id, 'approved_by' => $approver->id]);
     }
 }

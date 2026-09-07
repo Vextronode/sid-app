@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RwApprovalRequest;
 use App\Http\Resources\LetterCollection;
+use App\Http\Resources\LetterResource;
 use App\Models\Letter;
 use App\Services\RwApprovalService;
 use Illuminate\Http\Request;
@@ -58,7 +59,7 @@ class RwApprovalController extends Controller
 
         return response()->json([
             'message' => 'Detail surat berhasil diambil.',
-            'data' => new LetterCollection([$detail]),
+            'data' => new LetterResource($detail),
         ]);
     }
 }

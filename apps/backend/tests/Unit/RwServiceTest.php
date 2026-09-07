@@ -8,7 +8,7 @@ use App\Models\Rw;
 use App\Repositories\CitizenRepository;
 use App\Repositories\RwRepository;
 use App\Services\RwService;
-use HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

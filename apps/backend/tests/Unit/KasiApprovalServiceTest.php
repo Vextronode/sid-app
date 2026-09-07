@@ -7,9 +7,11 @@ use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\User;
 use App\Repositories\LetterRepository;
+use App\Repositories\OfficialRepository;
+use App\Repositories\UserRepository;
 use App\Services\KasiApprovalService;
 use App\Services\OfficialService;
-use HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -90,7 +92,8 @@ class KasiApprovalServiceTest extends TestCase
     {
         Notification::fake();
 
-        $letter = Letter::factory()->create(['status' => 'rw_approved']);
+        $citizen = Citizen::factory()->create();
+        $letter = Letter::factory()->create(['status' => 'rw_approved', 'citizen_id' => $citizen->id]);
         $user = User::factory()->create(['role' => 'kasi_pelayanan']);
 
         $this->service->approve($letter, $user, ['status' => 'rejected', 'notes' => 'Data tidak lengkap']);

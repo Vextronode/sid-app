@@ -6,7 +6,7 @@ use App\Models\Hamlet;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
 use App\Repositories\HamletRepository;
-use HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Database\Eloquent\Collection;
 
 class HamletService
