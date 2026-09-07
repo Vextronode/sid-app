@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\RtController;
 use App\Http\Controllers\Api\RwApprovalController;
 use App\Http\Controllers\Api\RwController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\VillageProfileController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Models\Letter;
 use App\Services\PdfService;
@@ -209,4 +210,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [UserController::class, 'index']);
         Route::patch('/{user}/toggle-status', [UserController::class, 'updateStatus']);
     });
+
+    /*
+    |----------------------------------------------------------------------
+    | Villages: Profile
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('villages')->group(function () {
+        Route::get('/profile', [VillageProfileController::class, 'show']);
+        Route::patch('/profile', [VillageProfileController::class, 'update']);
+    });
+
 });
