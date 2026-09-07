@@ -6,4 +6,5 @@ enum ApprovalLevel: string
 {
     case RT = 'rt';
     case RW = 'rw';
+    case KASI = 'kasi';
 }

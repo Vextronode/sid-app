@@ -18,7 +18,10 @@ class FlowStepFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'flow_id' => ApprovalFlow::factory(),
+            'step_order' => 1,
+            'approver_position' => 'rt',
+            'is_final' => false,
         ];
     }
 }

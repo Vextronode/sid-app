@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\CitizenController;
+use App\Http\Controllers\Api\CurrentUserController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
 use App\Http\Controllers\Api\LetterApprovalController;
@@ -12,13 +15,13 @@ use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\RtApprovalController;
+use App\Http\Controllers\Api\RtController;
 use App\Http\Controllers\Api\RwApprovalController;
+use App\Http\Controllers\Api\RwController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\VillageController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Models\Letter;
 use App\Services\PdfService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -65,8 +68,8 @@ Route::middleware('auth:sanctum')->group(function () {
     |----------------------------------------------------------------------
     */
     Route::prefix('dashboard')->group(function () {
-        Route::get('/gender-stats', [VillageController::class, 'genderStats']);
-        Route::get('/letter-stats', [VillageController::class, 'letterStats']);
+        Route::get('/gender-stats', [DashboardController::class, 'genderStats']);
+        Route::get('/letter-stats', [DashboardController::class, 'letterStats']);
     });
 
     /*
@@ -75,10 +78,10 @@ Route::middleware('auth:sanctum')->group(function () {
     |----------------------------------------------------------------------
     */
     Route::prefix('hamlets')->group(function () {
-        Route::get('/', [RegionController::class, 'indexHamlets']);
-        Route::post('/', [RegionController::class, 'storeHamlet']);
-        Route::patch('/{hamlet}', [RegionController::class, 'updateHamlet']);
-        Route::delete('/{hamlet}', [RegionController::class, 'destroyHamlet']);
+        Route::get('/', [HamletController::class, 'index']);
+        Route::post('/', [HamletController::class, 'store']);
+        Route::patch('/{hamlet}', [HamletController::class, 'update']);
+        Route::delete('/{hamlet}', [HamletController::class, 'destroy']);
     });
 
     /*
@@ -116,12 +119,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [LetterController::class, 'store']);
         Route::get('/{id}', [LetterController::class, 'show']);
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
-        Route::patch('/{letter}/resubmit', [LetterController::class, 'resubmit']);
+        //        Route::patch('/{letter}/resubmit', [LetterController::class, 'resubmit']);
         Route::post('/{letter}/approve', [LetterApprovalController::class, 'approve']);
         Route::get('/{letter}/download', [LetterDownloadController::class, 'download']);
-        Route::get('/{letter}/preview', function (Letter $letter, PdfService $service) {
-            return $service->preview($letter, auth()->user(), request('template', 'wet'));
-        })->name('letters.preview');
+
+        // Catatan refactor: sebelumnya closure inline yang langsung
+        // memanggil PdfService, sekarang lewat
+        // LetterDownloadController::preview() agar konsisten dengan
+        // pola controller -> service.
+        Route::get('/{letter}/preview', [LetterDownloadController::class, 'preview'])
+            ->name('letters.preview');
     });
 
     /*
@@ -145,12 +152,14 @@ Route::middleware('auth:sanctum')->group(function () {
     |----------------------------------------------------------------------
     | Regions: RTs
     |----------------------------------------------------------------------
+    | Catatan refactor: sebelumnya RegionController (lihat catatan di
+    | grup Hamlets di atas). Dipecah menjadi RtController.
     */
     Route::prefix('rts')->group(function () {
-        Route::get('/', [RegionController::class, 'indexRts']);
-        Route::post('/', [RegionController::class, 'storeRt']);
-        Route::patch('/{rt}', [RegionController::class, 'updateRt']);
-        Route::delete('/{rt}', [RegionController::class, 'destroyRt']);
+        Route::get('/', [RtController::class, 'index']);
+        Route::post('/', [RtController::class, 'store']);
+        Route::patch('/{rt}', [RtController::class, 'update']);
+        Route::delete('/{rt}', [RtController::class, 'destroy']);
     });
 
     /*
@@ -168,12 +177,14 @@ Route::middleware('auth:sanctum')->group(function () {
     |----------------------------------------------------------------------
     | Regions: RWs
     |----------------------------------------------------------------------
+    | Catatan refactor: sebelumnya RegionController (lihat catatan di
+    | grup Hamlets di atas). Dipecah menjadi RwController.
     */
     Route::prefix('rws')->group(function () {
-        Route::get('/', [RegionController::class, 'indexRws']);
-        Route::post('/', [RegionController::class, 'storeRw']);
-        Route::patch('/{rw}', [RegionController::class, 'updateRw']);
-        Route::delete('/{rw}', [RegionController::class, 'destroyRw']);
+        Route::get('/', [RwController::class, 'index']);
+        Route::post('/', [RwController::class, 'store']);
+        Route::patch('/{rw}', [RwController::class, 'update']);
+        Route::delete('/{rw}', [RwController::class, 'destroy']);
     });
 
     /*
@@ -192,21 +203,10 @@ Route::middleware('auth:sanctum')->group(function () {
     | Users
     |----------------------------------------------------------------------
     */
-    Route::get('/user', function (Request $request) {
-        return $request
-            ->user()
-            ->load([
-                'citizen.village',
-                'citizen.hamlet',
-                'citizen.rt',
-                'citizen.rw',
-                'official',
-            ]);
-    });
+    Route::get('/user', [CurrentUserController::class, 'show']);
 
     Route::prefix('users')->group(function () {
         Route::get('/', [UserController::class, 'index']);
         Route::patch('/{user}/toggle-status', [UserController::class, 'updateStatus']);
     });
-
 });

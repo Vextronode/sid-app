@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\KasiApprovalRequest;
+use App\Http\Resources\LetterResource;
 use App\Models\Letter;
 use App\Services\KasiApprovalService;
 use Illuminate\Http\Request;
@@ -16,10 +17,19 @@ class KasiApprovalController extends Controller
 
     public function index(Request $request)
     {
+        $letters = $this->service->getDashboardLetters(
+            $request->user()
+        );
+
+        // Catatan refactor: response asli adalah array polos (tanpa
+        // wrapper 'data'). JsonResource::collection(...)->response()
+        // akan MEMBUNGKUS hasilnya dengan {data: [...]} secara default
+        // (perilaku standar Laravel), sehingga tidak bisa dipakai
+        // langsung tanpa mengubah kontrak endpoint ini. Dipakai toArray()
+        // manual lalu response()->json() supaya bentuknya tetap array
+        // polos persis seperti kode asli.
         return response()->json(
-            $this->service->getDashboardLetters(
-                $request->user()
-            )
+            LetterResource::collection($letters)->toArray($request)
         );
     }
 
@@ -40,15 +50,11 @@ class KasiApprovalController extends Controller
 
     public function show(Letter $letter)
     {
-        $letter->load([
-            'citizen',
-            'letterType',
-            'approvals.approvedBy:id,name',
-        ]);
+        $letter = $this->service->getLetterDetail($letter);
 
         return response()->json([
             'message' => 'Detail surat berhasil diambil',
-            'data' => $letter,
+            'data' => new LetterResource($letter),
         ]);
     }
 }

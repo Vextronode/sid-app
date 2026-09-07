@@ -1,0 +1,673 @@
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\ApprovalFlowRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mfind by id returns existing flow[39m[90m                                                                                                        [39m [90m0.82s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind by id returns null for nonexistent flow[39m[90m                                                                                            [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind with steps eager loads steps ordered by step order[39m[90m                                                                                 [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind with steps returns flow with empty steps collection[39m[90m                                                                                [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind with steps returns null for nonexistent flow[39m[90m                                                                                       [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind by category id only returns flows of that category[39m[90m                                                                                 [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind by category id returns empty collection when category has no flow[39m[90m                                                                  [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mall active excludes inactive flows[39m[90m                                                                                                      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90ma category can have multiple flows config over code[39m[90m                                                                                     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcreate persists new flow with given attributes[39m[90m                                                                                          [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreplace steps deletes old steps and creates new ones[39m[90m                                                                                    [39m [90m0.06s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\ApprovalFlowServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mlist returns only active flows when no category given[39m[90m                                                                                   [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mlist filters by category id when given[39m[90m                                                                                                  [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind with steps or fail returns flow with steps[39m[90m                                                                                         [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind with steps or fail aborts 404 for nonexistent flow[39m[90m                                                                                 [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcreate persists new flow via repository[39m[90m                                                                                                 [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreplace steps aborts 404 for nonexistent flow[39m[90m                                                                                           [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreplace steps delegates replace all to repository for existing flow[39m[90m                                                                     [39m [90m0.04s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\AssignedRoleEnumTest[39m
+  [32;1m✓[39;22m[90m [39m[90mit no longer has rw case[39m[90m                                                                                                                [39m [90m0.01s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has exactly two cases matching final step approvers[39m
+  [32;1m✓[39;22m[90m [39m[90mit has kasi pelayanan case with correct value[39m
+  [32;1m✓[39;22m[90m [39m[90mit has kaur tu umum case with correct value[39m
+  [32;1m✓[39;22m[90m [39m[90mit can be constructed from string value[39m
+  [32;1m✓[39;22m[90m [39m[90mconstructing from rw throws[39m
+  [32;1m✓[39;22m[90m [39m[90mevery case has a non empty label[39m
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\CitizenRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mall with wilayah returns citizens ordered by name[39m[90m                                                                                       [39m [90m0.11s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mdelete removes citizen[39m[90m                                                                                                                  [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdistinct wilayah returns unique rt rw pairs[39m[90m                                                                                             [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mexists by hamlet and exists active by hamlet[39m[90m                                                                                            [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mexists by rw and exists active by rw[39m[90m                                                                                                    [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mexists by rt and exists active by rt[39m[90m                                                                                                    [39m [90m0.04s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\CitizenServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mget all with wilayah returns all citizens[39m[90m                                                                                               [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete removes citizen[39m[90m                                                                                                                  [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mget distinct wilayah returns collection[39m[90m                                                                                                 [39m [90m0.06s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\DashboardServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mgender stats for petugas desa counts all citizens in village[39m[90m                                                                            [39m [90m0.10s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mgender stats for rt scopes to own rt[39m[90m                                                                                                    [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgender stats for rt without official data throws 403[39m[90m                                                                                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgender stats for unauthorized role throws 403[39m[90m                                                                                           [39m [90m0.05s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mletter stats returns chart with seven days and min max y of 50[39m[90m                                                                          [39m [90m0.07s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mletter stats filters by letter type when given[39m[90m                                                                                          [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mletter stats for unauthorized role throws 403[39m[90m                                                                                           [39m [90m0.04s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\ExampleTest[39m
+  [32;1m✓[39;22m[90m [39m[90mthat true is true[39m[90m                                                                                                                       [39m [90m0.01s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\FlowStepModelTest[39m
+  [32;1m✓[39;22m[90m [39m[90mis region based is true only for rt[39m[90m                                                                                                     [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mis region based is false for position based approvers with data set "kepala desa"[39m[90m                                                       [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mis region based is false for position based approvers with data set "sekdes"[39m[90m                                                            [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mis region based is false for position based approvers with data set "kasi pelayanan"[39m[90m                                                    [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mis region based is false for position based approvers with data set "kaur tu umum"[39m[90m                                                      [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mresolvable positions always returns single element array[39m[90m                                                                                [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mresolvable positions for kepala desa step never includes sekdes[39m[90m                                                                         [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mis final is cast to boolean[39m[90m                                                                                                             [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstep order is cast to integer[39m[90m                                                                                                           [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90munique constraint on flow id and step order is enforced[39m[90m                                                                                 [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90msame step order is allowed across different flows[39m[90m                                                                                       [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mflow relation returns the owning approval flow[39m[90m                                                                                          [39m [90m0.05s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\HamletRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mall ordered by name returns hamlets sorted alphabetically[39m[90m                                                                               [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcreate persists hamlet[39m[90m                                                                                                                  [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mupdate persists changes[39m[90m                                                                                                                 [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete removes hamlet[39m[90m                                                                                                                   [39m [90m0.04s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\HamletServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mcreate sets village id from user and defaults is active true[39m[90m                                                                            [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mupdate allows change when no active citizens[39m[90m                                                                                            [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mupdate blocks deactivation when active citizens exist[39m[90m                                                                                   [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mupdate allows deactivation when only inactive citizens exist[39m[90m                                                                            [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete removes hamlet without citizens[39m[90m                                                                                                  [39m [90m0.05s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mdelete is blocked when citizens still registered[39m[90m                                                                                        [39m [90m0.07s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\KadusApprovalServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mget letters throws 403 when official missing[39m[90m                                                                                            [39m [90m0.06s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mget letters scopes to own hamlet[39m[90m                                                                                                        [39m [90m0.06s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mdecision approve notifies next official and updates letter[39m[90m                                                                              [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdecision forbidden when hamlet mismatch[39m[90m                                                                                                 [39m [90m0.08s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\KasiApprovalServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mget dashboard letters returns all letters with relations[39m[90m                                                                                [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapprove throws 403 when letter not rw approved[39m[90m                                                                                          [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapprove throws 403 when role unauthorized[39m[90m                                                                                               [39m [90m0.06s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mapprove generates letter number and expiry[39m[90m                                                                                              [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapprove reject does not generate letter number[39m[90m                                                                                          [39m [90m0.07s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\LetterApprovalRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mfind latest pending by level returns null when none pending[39m[90m                                                                             [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind latest pending by level returns pending approval[39m[90m                                                                                   [39m [90m0.06s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mupdate approved by sets approver[39m[90m                                                                                                        [39m [90m0.07s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\LetterApprovalServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mapprove throws when letter already processed[39m[90m                                                                                            [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapprove throws when official inactive[39m[90m                                                                                                   [39m [90m0.06s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\LetterCategoryRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mall returns every category regardless of active status[39m[90m                                                                                  [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mall returns empty collection when no category exists[39m[90m                                                                                    [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mall is ordered by id ascending[39m[90m                                                                                                          [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind all active only returns active categories[39m[90m                                                                                          [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind all active returns empty when all categories inactive[39m[90m                                                                              [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind by code returns matching category[39m[90m                                                                                                  [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind by code returns null when code does not exist[39m[90m                                                                                      [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind by code is case sensitive and exact match[39m[90m                                                                                          [39m [90m0.04s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\LetterRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mcreate persists letter[39m[90m                                                                                                                  [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind with approval actor for show eager loads relations[39m[90m                                                                                 [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete removes letter[39m[90m                                                                                                                   [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mquery by village filters correctly[39m[90m                                                                                                      [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mwhere citizen rt id filters via relation[39m[90m                                                                                                [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mwhere citizen rw id filters via nested relation[39m[90m                                                                                         [39m [90m0.08s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\LetterServiceTest[39m
+  [31;1m⨯[39;22m[90m [39m[90mcreate letter persists letter status log and first approval[39m[90m                                                                             [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mget scoped letters for warga only returns own letters[39m[90m                                                                                   [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mget scoped letters for rt scopes to citizen rt[39m[90m                                                                                          [39m [90m0.10s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mget scoped letters for petugas desa sees all[39m[90m                                                                                            [39m [90m0.10s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mget scoped letters applies status filter[39m[90m                                                                                                [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete allowed for owner[39m[90m                                                                                                                [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete allowed for authorized staff role[39m[90m                                                                                                [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete forbidden for unrelated user[39m[90m                                                                                                     [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mget for show eager loads letter type and approvals[39m[90m                                                                                      [39m [90m0.07s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\LetterTypeCategoryFlowColumnsTest[39m
+  [32;1m✓[39;22m[90m [39m[90mcategory id and flow id columns exist and are not nullable[39m[90m                                                                              [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mforeign key constraint prevents invalid category id[39m[90m                                                                                     [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mforeign key constraint prevents invalid flow id[39m[90m                                                                                         [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mseeder does not create duplicate category or flow when run twice[39m[90m                                                                        [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mseeded flow steps never contain sekdes rw or kadus[39m[90m                                                                                      [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mletter type belongs to correct category and flow relations[39m[90m                                                                              [39m [90m0.07s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\LetterTypeRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mfind or fail returns letter type[39m[90m                                                                                                        [39m [90m0.06s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mall active with template excludes inactive and null template[39m[90m                                                                            [39m [90m0.09s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\LetterTypeServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mget active with template returns only valid letter types[39m[90m                                                                                [39m [90m0.05s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\NotificationRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mall for user latest first returns notifications[39m[90m                                                                                         [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind or fail for user returns notification by id[39m[90m                                                                                        [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmark as read sets read at[39m[90m                                                                                                               [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmark all as read for user[39m[90m                                                                                                               [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcount unread for user[39m[90m                                                                                                                   [39m [90m0.07s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\NotificationServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mget for user transforms notification data[39m[90m                                                                                               [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmark as read marks notification[39m[90m                                                                                                         [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmark all as read[39m[90m                                                                                                                        [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mget unread count[39m[90m                                                                                                                        [39m [90m0.05s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\OfficialRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mfind active rt by rt id returns only active rt official[39m[90m                                                                                 [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mall active rw by rw id returns collection[39m[90m                                                                                               [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind active by position and village[39m[90m                                                                                                     [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind active village head[39m[90m                                                                                                                [39m [90m0.06s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\OfficialServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mresolve rt for citizen returns active rt official[39m[90m                                                                                       [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mresolve next officials for rt returns rw officials[39m[90m                                                                                      [39m [90m0.05s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mresolve next officials for unknown position returns empty[39m[90m                                                                               [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mresolve citizen user returns user by citizen id[39m[90m                                                                                         [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mresolve citizen user returns null when no user linked[39m[90m                                                                                   [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mresolve village head returns active kepala desa[39m[90m                                                                                         [39m [90m0.05s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\PdfServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mdownload blocked when letter not kasi approved[39m[90m                                                                                          [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdownload blocked for warga when letter expired[39m[90m                                                                                          [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdownload succeeds and returns pdf response[39m[90m                                                                                              [39m [90m0.37s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdownload fails when no active village head[39m[90m                                                                                              [39m [90m0.05s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\RtApprovalServiceTest[39m
+  [31;1m⨯[39;22m[90m [39m[90mget pending letters throws 403 when official missing[39m[90m                                                                                    [39m [90m0.04s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mget pending letters scopes to own rt and relevant statuses[39m[90m                                                                              [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdecision approve updates letter and creates rw approval[39m[90m                                                                                 [39m [90m0.08s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mdecision reject requires notes[39m[90m                                                                                                          [39m [90m0.09s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mdecision forbidden when rt mismatch[39m[90m                                                                                                     [39m [90m0.10s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\RtRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mall ordered by number filters by rw when given[39m[90m                                                                                          [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcreate persists rt[39m[90m                                                                                                                      [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mupdate persists changes[39m[90m                                                                                                                 [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete removes rt[39m[90m                                                                                                                       [39m [90m0.04s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\RtServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mcreate generates full label using rw number[39m[90m                                                                                             [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mupdate regenerates full label when number changes[39m[90m                                                                                       [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mupdate blocks deactivation when active citizens exist[39m[90m                                                                                   [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete is blocked when citizens still registered[39m[90m                                                                                        [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete removes rt without citizens[39m[90m                                                                                                      [39m [90m0.06s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\RwApprovalServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mapprove throws 403 when letter not rt approved yet[39m[90m                                                                                      [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapprove throws 403 when rw mismatch[39m[90m                                                                                                     [39m [90m0.09s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mapprove fails with query exception when pending rw approval exists[39m[90m                                                                      [39m [90m0.07s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mapprove succeeds when no pending rw approval exists[39m[90m                                                                                     [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mget pending letters scopes to own rw[39m[90m                                                                                                    [39m [90m0.12s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\RwRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mall ordered by number filters by hamlet when given[39m[90m                                                                                      [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mall ordered by number returns all when no filter[39m[90m                                                                                        [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcreate persists rw[39m[90m                                                                                                                      [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfind or fail returns rw[39m[90m                                                                                                                 [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mupdate persists changes[39m[90m                                                                                                                 [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete removes rw[39m[90m                                                                                                                       [39m [90m0.05s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\RwServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mcreate generates full label from number[39m[90m                                                                                                 [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mupdate regenerates full label when number changes[39m[90m                                                                                       [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mupdate blocks deactivation when active citizens exist[39m[90m                                                                                   [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete is blocked when citizens still registered[39m[90m                                                                                        [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdelete removes rw without citizens[39m[90m                                                                                                      [39m [90m0.05s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\UserRepositoryTest[39m
+  [32;1m✓[39;22m[90m [39m[90mfind by citizen id returns matching user[39m[90m                                                                                                [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mall with citizen and official eager loads relations[39m[90m                                                                                     [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtoggle active flips is active flag[39m[90m                                                                                                      [39m [90m0.05s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\UserServiceTest[39m
+  [32;1m✓[39;22m[90m [39m[90mget all with citizen and official returns users[39m[90m                                                                                         [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtoggle active flips status[39m[90m                                                                                                              [39m [90m0.04s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ApprovalFlowEndpointTest[39m
+  [32;1m✓[39;22m[90m [39m[90mmigration creates approval flows table with fk to letter categories[39m[90m                                                                     [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mguest cannot list approval flows[39m[90m                                                                                                        [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mauthenticated user receives only active flows by default[39m[90m                                                                                [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mlist can be filtered by category id[39m[90m                                                                                                     [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mshow returns 404 for nonexistent flow[39m[90m                                                                                                   [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mshow returns flow with its steps[39m[90m                                                                                                        [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpetugas desa can create new flow[39m[90m                                                                                                        [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnon petugas desa role cannot create flow[39m[90m                                                                                                [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcreate flow fails validation when category id does not exist[39m[90m                                                                            [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcreate flow fails validation when name is missing[39m[90m                                                                                       [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcreate flow fails validation when name exceeds max length[39m[90m                                                                               [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnew flow defaults to active when is active not provided[39m[90m                                                                                 [39m [90m0.07s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ApprovalFlowStepsEndpointTest[39m
+  [32;1m✓[39;22m[90m [39m[90mmigration creates flow steps table with expected columns and indexes[39m[90m                                                                    [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mguest cannot replace steps[39m[90m                                                                                                              [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnon petugas desa cannot replace steps[39m[90m                                                                                                   [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreplacing steps of nonexistent flow returns 404[39m[90m                                                                                         [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpetugas desa can replace steps with valid payload[39m[90m                                                                                       [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreplace is truly replace all not append[39m[90m                                                                                                 [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapprover position rw is rejected with specific message[39m[90m                                                                                  [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapprover position kadus is rejected with specific message[39m[90m                                                                               [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapprover position sekdes is still a syntactically valid enum value[39m[90m                                                                      [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpayload without any final step is rejected[39m[90m                                                                                              [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate step order within same flow is rejected[39m[90m                                                                                       [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mempty steps array is rejected[39m[90m                                                                                                           [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmissing steps key entirely is rejected[39m[90m                                                                                                  [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstep order must be a positive integer[39m[90m                                                                                                   [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mis final is optional and defaults to falsy when omitted[39m[90m                                                                                 [39m [90m0.06s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\EmailVerificationTest[39m
+  [32;1m✓[39;22m[90m [39m[90memail can be verified[39m[90m                                                                                                                   [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90memail is not verified with invalid hash[39m[90m                                                                                                 [39m [90m0.04s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\PasswordResetTest[39m
+  [32;1m✓[39;22m[90m [39m[90mreset password link can be requested[39m[90m                                                                                                    [39m [90m0.28s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpassword can be reset with valid token[39m[90m                                                                                                  [39m [90m0.28s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Feature\CitizenControllerTest[39m
+  [31;1m⨯[39;22m[90m [39m[90mindex returns citizens wrapped in resource collection[39m[90m                                                                                   [39m [90m0.06s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mdestroy deletes citizen[39m[90m                                                                                                                 [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mwilayah returns distinct rt rw pairs[39m[90m                                                                                                    [39m [90m0.07s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\CurrentUserControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mshow returns authenticated user with full profile[39m[90m                                                                                       [39m [90m0.06s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\DashboardControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mgender stats returns counts for petugas desa[39m[90m                                                                                            [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgender stats forbidden for unauthorized role[39m[90m                                                                                            [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mletter stats returns chart structure[39m[90m                                                                                                    [39m [90m0.06s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ExampleTest[39m
+  [32;1m✓[39;22m[90m [39m[90mthe application returns a successful response[39m[90m                                                                                           [39m [90m0.05s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\HamletControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mpetugas desa can create list and update hamlets[39m[90m                                                                                         [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnon petugas desa cannot create hamlet[39m[90m                                                                                                   [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate hamlet code is rejected[39m[90m                                                                                                       [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdeactivating hamlet with active citizens is blocked[39m[90m                                                                                     [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdeactivating hamlet without active citizens succeeds[39m[90m                                                                                    [39m [90m0.05s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Feature\KadusApprovalControllerTest[39m
+  [31;1m⨯[39;22m[90m [39m[90mindex returns letters for own hamlet[39m[90m                                                                                                    [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdecision approve marks letter kadus approved[39m[90m                                                                                            [39m [90m0.11s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mshow returns letter detail[39m[90m                                                                                                              [39m [90m0.08s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KasiApprovalControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mindex returns plain array without data wrapper[39m[90m                                                                                          [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapprove marks letter kasi approved[39m[90m                                                                                                      [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mshow returns letter detail[39m[90m                                                                                                              [39m [90m0.08s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\LetterCategoryEndpointTest[39m
+  [32;1m✓[39;22m[90m [39m[90mmigration creates letter categories table with expected columns[39m[90m                                                                         [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mguest cannot access letter categories endpoint[39m[90m                                                                                          [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mauthenticated user receives all categories including inactive ones[39m[90m                                                                      [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mendpoint returns empty array when no category seeded[39m[90m                                                                                    [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcode column is unique at database level[39m[90m                                                                                                 [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mis active column is cast to boolean[39m[90m                                                                                                     [39m [90m0.04s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Feature\LetterControllerTest[39m
+  [31;1m⨯[39;22m[90m [39m[90mstore creates letter for authenticated citizen user[39m[90m                                                                                     [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mindex returns letters scoped to user[39m[90m                                                                                                    [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mshow returns letter detail[39m[90m                                                                                                              [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdestroy deletes letter for owner[39m[90m                                                                                                        [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdestroy forbidden for unrelated user[39m[90m                                                                                                    [39m [90m0.06s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\LetterDownloadControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mexample[39m[90m                                                                                                                                 [39m [90m0.05s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\LetterStatusTest[39m
+  [32;1m✓[39;22m[90m [39m[90mit does not have waiting revision warga case[39m[90m                                                                                            [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit does not have rejected revision case[39m[90m                                                                                                 [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgranular v4 cases still exist because downstream services are not migrated yet with data set " pending"[39m[90m                                 [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgranular v4 cases still exist because downstream services are not migrated yet with data set " rt approved"[39m[90m                             [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgranular v4 cases still exist because downstream services are not migrated yet with data set " rt rejected"[39m[90m                             [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgranular v4 cases still exist because downstream services are not migrated yet with data set " rw approved"[39m[90m                             [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgranular v4 cases still exist because downstream services are not migrated yet with data set " rw rejected"[39m[90m                             [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgranular v4 cases still exist because downstream services are not migrated yet with data set " kadus approved"[39m[90m                          [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgranular v4 cases still exist because downstream services are not migrated yet with data set " kadus rejected"[39m[90m                          [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgranular v4 cases still exist because downstream services are not migrated yet with data set " kasi approved"[39m[90m                           [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mgranular v4 cases still exist because downstream services are not migrated yet with data set " kasi rejected"[39m[90m                           [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mit has exactly nine cases after removing only the two revision cases[39m[90m                                                                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mis approved and is rejected no longer reference removed revision cases[39m[90m                                                                  [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mkasi approved is still the only final approval[39m[90m                                                                                          [39m [90m0.04s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\LetterTypeControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mindex returns only active letter types with template[39m[90m                                                                                    [39m [90m0.06s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\NotificationControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mindex returns transformed notifications[39m[90m                                                                                                 [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mread marks single notification[39m[90m                                                                                                          [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mread all marks all notifications[39m[90m                                                                                                        [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90munread count returns correct number[39m[90m                                                                                                     [39m [90m0.04s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\RegionControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mpetugas desa can create list and update hamlets[39m[90m                                                                                         [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnon petugas desa cannot create hamlet[39m[90m                                                                                                   [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate hamlet code is rejected[39m[90m                                                                                                       [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdeactivating hamlet with active citizens is blocked[39m[90m                                                                                     [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdeactivating hamlet without active citizens succeeds[39m[90m                                                                                    [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpetugas desa can create list update and delete rws[39m[90m                                                                                      [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnon petugas desa cannot create rw[39m[90m                                                                                                       [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate rw number within same hamlet is rejected[39m[90m                                                                                      [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdeactivating rw with active citizens is blocked[39m[90m                                                                                         [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpetugas desa can create list update and delete rts[39m[90m                                                                                      [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnon petugas desa cannot create rt[39m[90m                                                                                                       [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate rt number within same rw is rejected[39m[90m                                                                                          [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdeactivating rt with active citizens is blocked[39m[90m                                                                                         [39m [90m0.06s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\RevisionFlowTest[39m
+  [32;1m✓[39;22m[90m [39m[90mkasi approval request accepts needs revision status[39m[90m                                                                                     [39m [90m0.06s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\RtApprovalControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mindex returns pending letters for rt[39m[90m                                                                                                    [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdecision approve marks letter rt approved[39m[90m                                                                                               [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdecision reject requires notes[39m[90m                                                                                                          [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mshow returns letter detail with relations[39m[90m                                                                                               [39m [90m0.09s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\RtControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mpetugas desa can create list update and delete rts[39m[90m                                                                                      [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnon petugas desa cannot create rt[39m[90m                                                                                                       [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate rt number within same rw is rejected[39m[90m                                                                                          [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdeactivating rt with active citizens is blocked[39m[90m                                                                                         [39m [90m0.06s[39m  
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Feature\RwApprovalControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mindex returns pending letters for rw[39m[90m                                                                                                    [39m [90m0.09s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mapprove without pending rw approval succeeds[39m[90m                                                                                            [39m [90m0.08s[39m  
+  [31;1m⨯[39;22m[90m [39m[90mshow returns letter detail[39m[90m                                                                                                              [39m [90m0.06s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\RwControllerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mpetugas desa can create list update and delete rws[39m[90m                                                                                      [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnon petugas desa cannot create rw[39m[90m                                                                                                       [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate rw number within same hamlet is rejected[39m[90m                                                                                      [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdeactivating rw with active citizens is blocked[39m[90m                                                                                         [39m [90m0.06s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\UserCotrollerTest[39m
+  [32;1m✓[39;22m[90m [39m[90mindex returns all users wrapped in resource collection[39m[90m                                                                                  [39m [90m0.06s[39m  
+  [32;1m✓[39;22m[90m [39m[90mupdate status toggles is active[39m[90m                                                                                                         [39m [90m0.05s[39m  
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\CitizenRepositoryTest[22m [90m>[39m delete removes citizen                                                                  [41;1m ValueError [49;22m  
+[39;1m  "budha" is not a valid backing value for enum App\Enums\Religion[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39m:[32m1317[39m
+    1313▕      */
+    1314▕     protected function getEnumCaseFromValue($enumClass, $value)
+    1315▕     {
+    1316▕         return is_subclass_of($enumClass, BackedEnum::class)
+  ➜ 1317▕             ? $enumClass::from($value)
+    1318▕             : constant($enumClass.'::'.$value);
+    1319▕     }
+    1320▕ 
+    1321▕     /**
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1317[39;22m
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1302[39;22m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\DashboardServiceTest[22m [90m>[39m gender stats for rt scopes to own rt                                                 [41;1m QueryException [49;22m  
+[39;1m  SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (Connection: sqlite, Database: :memory:, SQL: insert into "citizens" ("village_id", "nik", "name", "date_of_birth", "place_of_birth", "gender", "address", "rt_id", "rw_id", "hamlet_id", "no_kk", "marital_status", "occupation", "religion", "last_education", "domicile_status", "current_domicile", "is_active", "nik_hash", "updated_at", "created_at") values (1, 3169955412695909, Jordy Lehner, 1970-02-09 00:00:00, Edisonburgh, L, 31894 West Locks Apt. 065
+Chanelville, AK 73629-3371, 1000, 4, 7, 6341217770645694, kawin, Environmental Science Technician, katolik, tidak_sekolah, menetap, ?, 1, 461594822ebaafed21f5f7ceb352e59d2d137aef1e3750cb94d852e3b155319d, 2026-09-07 03:14:19, 2026-09-07 03:14:19))[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39m:[32m857[39m
+    853▕             $exceptionType = ($isUniqueConstraintError = $this->isUniqueConstraintError($e))
+    854▕                 ? UniqueConstraintViolationException::class
+    855▕                 : QueryException::class;
+    856▕ 
+  ➜ 857▕             $exception = new $exceptionType(
+    858▕                 $this->getNameWithReadWriteType(),
+    859▕                 $query,
+    860▕                 $this->prepareBindings($bindings),
+    861▕                 $e,
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m857[39;22m
+
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m601[39;22m
+  [90m    NunoMaduro\Collision\Exceptions\TestException::("SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed")[39m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\DashboardServiceTest[22m [90m>[39m letter stats returns chart with seven days and min max y of 50                       [41;1m QueryException [49;22m  
+[39;1m  SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: letters.village_id (Connection: sqlite, Database: :memory:, SQL: insert into "letters" ("village_id", "letter_type_id", "submitted_by", "on_behalf_of", "citizen_id", "letter_number", "applicant_name", "applicant_nik", "applicant_address", "purpose", "notes", "status", "revision_count", "is_overdue", "expires_at", "submitted_at", "processed_at", "applicant_nik_hash", "updated_at", "created_at") values (?, 1, 2, ?, ?, ?, Furman Satterfield, eyJpdiI6ImxLRTFMYmxKZXA1cXkrdTFpSm5tSkE9PSIsInZhbHVlIjoiT0oxQWxpWm40S1laTUZFRWRyMFNWdG5qWU9mejdYQUw3WXRTY0ZhMDJtMD0iLCJtYWMiOiI5Y2VhZDFjNDEwMzljZWJmMzIyODQ3YjcyZDZhMWI4MDM5MmViOTIyODU1OGQ4MDBiN2FiNWU1NDUwMzM2MjAyIiwidGFnIjoiIn0=, eyJpdiI6IkpwR0J3YzltdjhpZmlQbHNmeDU3UUE9PSIsInZhbHVlIjoiNytYRHhZMmJaV2RMQVExMlpsN3lENVcvanFKVThITWo4bVFYM0dwNFphU0NScE83Tm05eVJtN0ljMzVScjBQRyIsIm1hYyI6Ijc3Yzg4NGRlMjA5NWNkZDdlODgwYzI5MmE5ZmQ0MmFhMjBiM2MyOGUwNTRlMjY0ZTA4Y2IyNWMxNGJmYTlkZmMiLCJ0YWciOiIifQ==, Neque dignissimos at earum similique occaecati quidem consequatur., ?, pending, 0, 0, ?, 2026-09-07 03:14:19, ?, 45bcaed7f2c0757b421d625d7732de4e60d979bc48092416be969480da9db59e, 2026-09-07 03:14:19, 2026-09-07 03:14:19))[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39m:[32m857[39m
+    853▕             $exceptionType = ($isUniqueConstraintError = $this->isUniqueConstraintError($e))
+    854▕                 ? UniqueConstraintViolationException::class
+    855▕                 : QueryException::class;
+    856▕ 
+  ➜ 857▕             $exception = new $exceptionType(
+    858▕                 $this->getNameWithReadWriteType(),
+    859▕                 $query,
+    860▕                 $this->prepareBindings($bindings),
+    861▕                 $e,
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m857[39;22m
+
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m601[39;22m
+  [90m    NunoMaduro\Collision\Exceptions\TestException::("SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: letters.village_id")[39m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\DashboardServiceTest[22m [90m>[39m letter stats filters by letter type when given                                       [41;1m QueryException [49;22m  
+[39;1m  SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: letters.village_id (Connection: sqlite, Database: :memory:, SQL: insert into "letters" ("village_id", "letter_type_id", "submitted_by", "on_behalf_of", "citizen_id", "letter_number", "applicant_name", "applicant_nik", "applicant_address", "purpose", "notes", "status", "revision_count", "is_overdue", "expires_at", "submitted_at", "processed_at", "applicant_nik_hash", "updated_at", "created_at") values (?, 1, 2, ?, ?, ?, Noemy Hermann, eyJpdiI6InkvZU9JSG5ZRmtlTG9HeE1JV0hhR2c9PSIsInZhbHVlIjoiVHhLd0xQamZpN0RPbjNnaFUxeGFqSGd3YWhGZ3F3dWNrK1E5QlgwUU1mYz0iLCJtYWMiOiI3M2Q1ZjZlMjAwOGMzMWI4YjcyNjNkYzVlYjY0NTI0ZTY4NTMzODE2MjZmMGY0ODA5NGRiNzUwZmJkMWZjZTNjIiwidGFnIjoiIn0=, eyJpdiI6IjRBMi9mVjRJdGVId01NZEsxbzFYaEE9PSIsInZhbHVlIjoidkRrMXdJUEtJK01JTW1WYTNYVkJuN2F2U1lOT0lTdW5DK0p2M1NjVlRiVmxtM1ZZWHNIZjRRT1BXUlU5cElhMTIwRThGRFV4U2o3aGp0elBjamZHVkE9PSIsIm1hYyI6IjdiNDlhZDEwZDIxOGJiNTUzYzYzYmE5OGQ1ZmM1ZTE1Yzg2ZjBlZTNiODM2Zjg5MWJjNDg5N2QwNDhiNWZhM2QiLCJ0YWciOiIifQ==, Occaecati molestias nisi earum eius vel molestias., ?, pending, 0, 0, ?, 2026-09-07 03:14:19, ?, acb5c5871523faa699c1767bfe0857df672d7f67e8bec088cbb71f2b077fac2b, 2026-09-07 03:14:19, 2026-09-07 03:14:19))[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39m:[32m857[39m
+    853▕             $exceptionType = ($isUniqueConstraintError = $this->isUniqueConstraintError($e))
+    854▕                 ? UniqueConstraintViolationException::class
+    855▕                 : QueryException::class;
+    856▕ 
+  ➜ 857▕             $exception = new $exceptionType(
+    858▕                 $this->getNameWithReadWriteType(),
+    859▕                 $query,
+    860▕                 $this->prepareBindings($bindings),
+    861▕                 $e,
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m857[39;22m
+
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m601[39;22m
+  [90m    NunoMaduro\Collision\Exceptions\TestException::("SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: letters.village_id")[39m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\HamletServiceTest[22m [90m>[39m delete is blocked when citizens still registered                                            [41;1m ValueError [49;22m  
+[39;1m  "budha" is not a valid backing value for enum App\Enums\Religion[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39m:[32m1317[39m
+    1313▕      */
+    1314▕     protected function getEnumCaseFromValue($enumClass, $value)
+    1315▕     {
+    1316▕         return is_subclass_of($enumClass, BackedEnum::class)
+  ➜ 1317▕             ? $enumClass::from($value)
+    1318▕             : constant($enumClass.'::'.$value);
+    1319▕     }
+    1320▕ 
+    1321▕     /**
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1317[39;22m
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1302[39;22m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\KadusApprovalServiceTest[22m [90m>[39m get letters scopes to own hamlet                                                     [41;1m ValueError [49;22m  
+[39;1m  "budha" is not a valid backing value for enum App\Enums\Religion[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39m:[32m1317[39m
+    1313▕      */
+    1314▕     protected function getEnumCaseFromValue($enumClass, $value)
+    1315▕     {
+    1316▕         return is_subclass_of($enumClass, BackedEnum::class)
+  ➜ 1317▕             ? $enumClass::from($value)
+    1318▕             : constant($enumClass.'::'.$value);
+    1319▕     }
+    1320▕ 
+    1321▕     /**
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1317[39;22m
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1302[39;22m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\KadusApprovalServiceTest[22m [90m>[39m decision approve notifies next official and updates letter                           [41;1m ValueError [49;22m  
+[39;1m  "kadus" is not a valid backing value for enum App\Enums\ApprovalLevel[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39m:[32m1317[39m
+    1313▕      */
+    1314▕     protected function getEnumCaseFromValue($enumClass, $value)
+    1315▕     {
+    1316▕         return is_subclass_of($enumClass, BackedEnum::class)
+  ➜ 1317▕             ? $enumClass::from($value)
+    1318▕             : constant($enumClass.'::'.$value);
+    1319▕     }
+    1320▕ 
+    1321▕     /**
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1317[39;22m
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1302[39;22m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\KasiApprovalServiceTest[22m [90m>[39m approve generates letter number and expiry                                            [41;1m ValueError [49;22m  
+[39;1m  "kasi" is not a valid backing value for enum App\Enums\ApprovalLevel[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39m:[32m1317[39m
+    1313▕      */
+    1314▕     protected function getEnumCaseFromValue($enumClass, $value)
+    1315▕     {
+    1316▕         return is_subclass_of($enumClass, BackedEnum::class)
+  ➜ 1317▕             ? $enumClass::from($value)
+    1318▕             : constant($enumClass.'::'.$value);
+    1319▕     }
+    1320▕ 
+    1321▕     /**
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1317[39;22m
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1302[39;22m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\LetterApprovalRepositoryTest[22m [90m>[39m update approved by sets approver                                             [41;1m QueryException [49;22m  
+[39;1m  SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (Connection: sqlite, Database: :memory:, SQL: update "letter_approvals" set "approved_by" = 42, "updated_at" = 2026-09-07 03:14:21 where "id" = 1)[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39m:[32m857[39m
+    853▕             $exceptionType = ($isUniqueConstraintError = $this->isUniqueConstraintError($e))
+    854▕                 ? UniqueConstraintViolationException::class
+    855▕                 : QueryException::class;
+    856▕ 
+  ➜ 857▕             $exception = new $exceptionType(
+    858▕                 $this->getNameWithReadWriteType(),
+    859▕                 $query,
+    860▕                 $this->prepareBindings($bindings),
+    861▕                 $e,
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m857[39;22m
+
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m626[39;22m
+  [90m    NunoMaduro\Collision\Exceptions\TestException::("SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed")[39m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\LetterServiceTest[22m [90m>[39m create letter persists letter status log and first approval                             [41;1m QueryException [49;22m  
+[39;1m  SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: letters.village_id (Connection: sqlite, Database: :memory:, SQL: insert into "letters" ("village_id", "letter_type_id", "submitted_by", "citizen_id", "applicant_name", "applicant_nik", "applicant_address", "purpose", "payload", "notes", "status", "submitted_at", "applicant_nik_hash", "updated_at", "created_at") values (?, 1, 2, 1, Dr. Lauriane Pouros MD, eyJpdiI6InllVVMvcHRTaENqRFp5RUxTMlhEWXc9PSIsInZhbHVlIjoiU0ZPTEpLVXNQclBmMXpCSlYxbG9uWW5KbHFBTVNJSTNVdE9sRjBCN2REdz0iLCJtYWMiOiJkYTQ3YjVmZmIwMDlkMmQ4ZDZhMmMyZWU3ZjI5MDVhNzUxYzhmMjgwNTQ1NjNkODRkZWRiMzU1ZDYwYTZhMmQ0IiwidGFnIjoiIn0=, eyJpdiI6InFLcHEwdUFLL1gzZUJWeGtodGlmaUE9PSIsInZhbHVlIjoiUDZuMmpaVStvVXl5dkpUaUgrUXJsRmRLNzl6SjlxTzlTOWxrNmd1aXpySUJld1BDcldVUmhFWWtOZDI4MWVKcSIsIm1hYyI6IjhkN2ZjM2I4YTkwMTRkMzliZjgxNTgwNmRiNzZkMGE2NGRkZmU2NWE1ZWFkNDhiYzJlYTVmYjg0NWRjMDM4NmEiLCJ0YWciOiIifQ==, Keperluan administrasi, ?, ?, pending, 2026-09-07 03:14:22, 8027c4e9916f8c96aa43189c7305ee174e0ebaab1522b2c645caa78d0a5a144e, 2026-09-07 03:14:22, 2026-09-07 03:14:22))[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39m:[32m857[39m
+    853▕             $exceptionType = ($isUniqueConstraintError = $this->isUniqueConstraintError($e))
+    854▕                 ? UniqueConstraintViolationException::class
+    855▕                 : QueryException::class;
+    856▕ 
+  ➜ 857▕             $exception = new $exceptionType(
+    858▕                 $this->getNameWithReadWriteType(),
+    859▕                 $query,
+    860▕                 $this->prepareBindings($bindings),
+    861▕                 $e,
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m857[39;22m
+
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Connection.php[39;22m:[39;1m601[39;22m
+  [90m    NunoMaduro\Collision\Exceptions\TestException::("SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: letters.village_id")[39m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\LetterServiceTest[22m [90m>[39m get scoped letters for petugas desa sees all                                         [41;1m OverflowException [49;22m  
+[39;1m  Maximum retries of 10000 reached without finding a unique value[39;22m
+
+  at [32mvendor\fakerphp\faker\src\Faker\UniqueGenerator.php[39m:[32m80[39m
+     76▕             $res = call_user_func_array([$this->generator, $name], $arguments);
+     77▕             ++$i;
+     78▕ 
+     79▕             if ($i > $this->maxRetries) {
+  ➜  80▕                 throw new \OverflowException(sprintf('Maximum retries of %d reached without finding a unique value', $this->maxRetries));
+     81▕             }
+     82▕         } while (array_key_exists(serialize($res), $this->uniques[$name]));
+     83▕         $this->uniques[$name][serialize($res)] = null;
+     84▕
+
+  [33m1   [39m[39;1mvendor\fakerphp\faker\src\Faker\UniqueGenerator.php[39;22m:[39;1m80[39;22m
+  [33m2   [39m[39;1mdatabase\factories\LetterCategoryFactory.php[39;22m:[39;1m15[39;22m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\LetterServiceTest[22m [90m>[39m get scoped letters applies status filter                                                    [41;1m ValueError [49;22m  
+[39;1m  "approved" is not a valid backing value for enum App\Enums\LetterStatus[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39m:[32m1317[39m
+    1313▕      */
+    1314▕     protected function getEnumCaseFromValue($enumClass, $value)
+    1315▕     {
+    1316▕         return is_subclass_of($enumClass, BackedEnum::class)
+  ➜ 1317▕             ? $enumClass::from($value)
+    1318▕             : constant($enumClass.'::'.$value);
+    1319▕     }
+    1320▕ 
+    1321▕     /**
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1317[39;22m
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1302[39;22m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\LetterTypeRepositoryTest[22m [90m>[39m all active with template excludes inactive and null template                  [41;1m OverflowException [49;22m  
+[39;1m  Maximum retries of 10000 reached without finding a unique value[39;22m
+
+  at [32mvendor\fakerphp\faker\src\Faker\UniqueGenerator.php[39m:[32m80[39m
+     76▕             $res = call_user_func_array([$this->generator, $name], $arguments);
+     77▕             ++$i;
+     78▕ 
+     79▕             if ($i > $this->maxRetries) {
+  ➜  80▕                 throw new \OverflowException(sprintf('Maximum retries of %d reached without finding a unique value', $this->maxRetries));
+     81▕             }
+     82▕         } while (array_key_exists(serialize($res), $this->uniques[$name]));
+     83▕         $this->uniques[$name][serialize($res)] = null;
+     84▕
+
+  [33m1   [39m[39;1mvendor\fakerphp\faker\src\Faker\UniqueGenerator.php[39;22m:[39;1m80[39;22m
+  [33m2   [39m[39;1mdatabase\factories\LetterCategoryFactory.php[39;22m:[39;1m15[39;22m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\OfficialServiceTest[22m [90m>[39m resolve next officials for unknown position returns empty                                 [41;1m ValueError [49;22m  
+[39;1m  "budha" is not a valid backing value for enum App\Enums\Religion[39;22m
+
+  at [32mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39m:[32m1317[39m
+    1313▕      */
+    1314▕     protected function getEnumCaseFromValue($enumClass, $value)
+    1315▕     {
+    1316▕         return is_subclass_of($enumClass, BackedEnum::class)
+  ➜ 1317▕             ? $enumClass::from($value)
+    1318▕             : constant($enumClass.'::'.$value);
+    1319▕     }
+    1320▕ 
+    1321▕     /**
+
+  [33m1   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1317[39;22m
+  [33m2   [39m[39;1mvendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php[39;22m:[39;1m1302[39;22m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\RtApprovalServiceTest[22m [90m>[39m get pending letters throws 403 when official missing                                     [41;1m Exception [49;22m  
+[39;1m  Class "HttpException" does not exist[39;22m
+[39;1m  str_replace(): Argument #3 ($subject) must be of type array|string, null given[39;22m
+
+  at [32mvendor\filp\whoops\src\Whoops\Exception\FrameCollection.php[39m:[32m43[39m
+     39▕      * @return FrameCollection
+     40▕      */
+     41▕     public function filter($callable)
+     42▕     {
+  ➜  43▕         $this->frames = array_values(array_filter($this->frames, $callable));
+     44▕         return $this;
+     45▕     }
+     46▕ 
+     47▕     /**
+
