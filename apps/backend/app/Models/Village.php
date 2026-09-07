@@ -13,6 +13,9 @@ class Village extends Model
         'head_name',
         'address',
         'phone',
+        'history',
+        'vision',
+        'mission',
     ];
 
     public function hamlets(): HasMany
