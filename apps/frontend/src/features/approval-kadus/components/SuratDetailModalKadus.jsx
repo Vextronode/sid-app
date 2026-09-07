@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 
-import { useSuratDetailKadus } from "../hooks/useSuratDetailkadus";
+import { useSuratDetailKadus } from "../hooks/useSuratDetailKadus";
 
 import ApprovalStepperKadus from "./ApprovalStepperKadus";
 import SuratInfoGridKadus from "./SuratInfoGridKadus";
