@@ -6,6 +6,7 @@ use App\Models\Citizen;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -36,7 +37,7 @@ class RtApprovalControllerTest extends TestCase
     {
         Notification::fake();
 
-        $rw = \App\Models\Rw::factory()->create();
+        $rw = Rw::factory()->create();
         $rt = Rt::factory()->create(['rw_id' => $rw->id]);
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
         $letter = Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'pending']);

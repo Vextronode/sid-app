@@ -9,9 +9,9 @@ use App\Models\Official;
 use App\Models\User;
 use App\Repositories\OfficialRepository;
 use App\Services\PdfService;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class PdfServiceTest extends TestCase

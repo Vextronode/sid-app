@@ -9,8 +9,8 @@ use App\Repositories\CitizenRepository;
 use App\Repositories\RtRepository;
 use App\Repositories\RwRepository;
 use App\Services\RtService;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class RtServiceTest extends TestCase

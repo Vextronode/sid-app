@@ -14,10 +14,10 @@ use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\OfficialService;
 use App\Services\RwApprovalService;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class RwApprovalServiceTest extends TestCase

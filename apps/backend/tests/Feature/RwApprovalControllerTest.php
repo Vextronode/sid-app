@@ -8,6 +8,7 @@ use App\Models\Official;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
+use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -38,7 +39,7 @@ class RwApprovalControllerTest extends TestCase
     {
         Notification::fake();
 
-        $village = \App\Models\Village::factory()->create();
+        $village = Village::factory()->create();
         $rw = Rw::factory()->create();
         $rt = Rt::factory()->create(['rw_id' => $rw->id]);
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id, 'village_id' => $village->id]);

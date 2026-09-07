@@ -29,7 +29,6 @@ class LetterControllerTest extends TestCase
             'village_id' => $citizen->village_id,
         ]);
 
-
         $this->actingAs($user)
             ->postJson('/api/letters', [
                 'letter_type_id' => $letterType->id,

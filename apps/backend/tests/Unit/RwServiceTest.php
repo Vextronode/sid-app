@@ -8,8 +8,8 @@ use App\Models\Rw;
 use App\Repositories\CitizenRepository;
 use App\Repositories\RwRepository;
 use App\Services\RwService;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class RwServiceTest extends TestCase

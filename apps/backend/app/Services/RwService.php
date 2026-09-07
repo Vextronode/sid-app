@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Models\Rw;
 use App\Repositories\CitizenRepository;
 use App\Repositories\RwRepository;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Database\Eloquent\Collection;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class RwService
 {

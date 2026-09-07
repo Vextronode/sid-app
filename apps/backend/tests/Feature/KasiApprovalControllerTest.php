@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Citizen;
 use App\Models\Letter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,7 +32,7 @@ class KasiApprovalControllerTest extends TestCase
     {
         Notification::fake();
 
-        $citizen = \App\Models\Citizen::factory()->create();
+        $citizen = Citizen::factory()->create();
         $letter = Letter::factory()->create(['status' => 'rw_approved', 'citizen_id' => $citizen->id]);
         $user = User::factory()->create(['role' => 'kasi_pelayanan']);
 

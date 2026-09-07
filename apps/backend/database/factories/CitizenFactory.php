@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use App\Enums\DomicileStatus;
 use App\Enums\LastEducation;
-use App\Enums\Religion;
 use App\Models\Citizen;
 use App\Models\Hamlet;
 use App\Models\Rt;

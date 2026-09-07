@@ -2,10 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Citizen;
-use App\Models\Letter;
-use App\Models\LetterType;
-use App\Models\Official;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
