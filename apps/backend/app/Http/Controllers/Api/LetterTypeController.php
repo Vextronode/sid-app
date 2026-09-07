@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LetterTypeCollection;
-use App\Models\LetterType;
 use App\Services\LetterTypeService;
 
 class LetterTypeController extends Controller

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Letter;
-use App\Models\Official;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
