@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Repositories\NotificationRepository;
+use Illuminate\Support\Collection;
 
 class NotificationService
 {
@@ -11,7 +12,7 @@ class NotificationService
         protected NotificationRepository $notificationRepository
     ) {}
 
-    public function getForUser(User $user): \Illuminate\Support\Collection
+    public function getForUser(User $user): Collection
     {
         return $this->notificationRepository
             ->allForUserLatestFirst($user)
