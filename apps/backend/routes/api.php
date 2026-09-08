@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\LetterCategoryController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
 use App\Http\Controllers\Api\LetterTypeController;
+use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\RtApprovalController;
@@ -130,6 +131,18 @@ Route::middleware('auth:sanctum')->group(function () {
         // pola controller -> service.
         Route::get('/{letter}/preview', [LetterDownloadController::class, 'preview'])
             ->name('letters.preview');
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | News
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('news')->group(function () {
+        Route::get('/', [NewsController::class, 'index']);
+        Route::post('/', [NewsController::class, 'store']);
+        Route::patch('/{id}', [NewsController::class, 'update']);
+        Route::delete('/{id}', [NewsController::class, 'destroy']);
     });
 
     /*
