@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateVillageProfileRequest;
+use App\Http\Resources\VillageResource;
 use App\Services\VillageProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,9 +17,9 @@ class VillageProfileController extends Controller
 
     public function show(Request $request): JsonResponse
     {
-        return response()->json([
-            'data' => $this->service->getProfile($request->user()),
-        ]);
+        $village = $this->service->getProfile($request->user());
+
+        return (new VillageResource($village))->response();
     }
 
     public function update(UpdateVillageProfileRequest $request): JsonResponse
@@ -27,7 +28,7 @@ class VillageProfileController extends Controller
 
         return response()->json([
             'message' => 'Profil desa berhasil diperbarui',
-            'data' => $village,
+            'data' => new VillageResource($village),
         ]);
     }
 }
