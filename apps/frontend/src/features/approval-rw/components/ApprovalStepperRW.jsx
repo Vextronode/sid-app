@@ -1,62 +1,72 @@
 // ==========================================
 // ApprovalStepperRW.jsx
-// Stepper 4 tahap:
-// Submit -> RT -> RW -> Selesai
+// Stepper 3 tahap:
+// Submit -> RT -> Selesai
 //
-// Styling mengikuti SID Global Theme.
+// Catatan:
+// - RW sudah tidak menjadi tahap keputusan.
+// - RT adalah satu-satunya tahap approval.
+// - Selesai merepresentasikan proses setelah RT,
+//   termasuk proses TTD.
+// - Logic status lanjutan tetap dipertahankan.
 // ==========================================
 
 import { Check, X, Loader2 } from 'lucide-react';
 
-const STEPS = ['Submit', 'RT', 'RW', 'Selesai'];
+// ==========================================
+// STEPS
+// ==========================================
 
+const STEPS = ['Submit', 'RT', 'Selesai'];
 
 // ==========================================
-// STATUS
+// STATUS MAPPING
 // ==========================================
 
 function getStepState(status) {
   switch (status) {
-
-    // Surat baru diajukan
     case 'pending':
       return {
         step: 1,
         state: 'current',
       };
 
-    // RT sudah menyetujui
     case 'rt_approved':
       return {
         step: 2,
         state: 'current',
       };
 
-    // RT menolak
     case 'rt_rejected':
       return {
         step: 1,
         state: 'rejected_rt',
       };
 
-    // RW sudah menyetujui
+    // Status lama tetap dipertahankan
     case 'rw_approved':
       return {
-        step: 3,
+        step: 2,
         state: 'current',
       };
 
-    // RW menolak
     case 'rw_rejected':
       return {
         step: 2,
         state: 'rejected_rw',
       };
 
-    // Surat selesai
     case 'completed':
       return {
-        step: 3,
+        step: 2,
+        state: 'completed',
+      };
+
+    case 'kasi_approved':
+    case 'kaur_tu_umum_approved':
+    case 'petugas_desa_approved':
+      return {
+        step: 2,
         state: 'completed',
       };
 
@@ -68,34 +78,32 @@ function getStepState(status) {
   }
 }
 
-
 // ==========================================
 // COMPONENT
 // ==========================================
 
 export default function ApprovalStepperRW({ surat }) {
-
-  const { step, state } = getStepState(
-    surat?.status
-  );
+  const { step, state } = getStepState(surat?.status);
 
   return (
     <div className="sid-stepper">
-
       {STEPS.map((label, index) => {
-
         let circle;
         let statusText = 'Menunggu';
-        let stepState = 'waiting';
 
-
-        // ==========================================
-        // REJECTED
-        // ==========================================
+        // ==================================
+        // REJECT RT
+        // ==================================
 
         const isRejectedRT =
           index === 1 &&
           state === 'rejected_rt';
+
+        // ==================================
+        // REJECT RW
+        //
+        // Status lama tetap dikenali.
+        // ==================================
 
         const isRejectedRW =
           index === 2 &&
@@ -104,10 +112,9 @@ export default function ApprovalStepperRW({ surat }) {
         const isRejectedHere =
           isRejectedRT || isRejectedRW;
 
-
-        // ==========================================
+        // ==================================
         // DONE
-        // ==========================================
+        // ==================================
 
         const isDone =
           index < step ||
@@ -116,24 +123,19 @@ export default function ApprovalStepperRW({ surat }) {
             state === 'completed'
           );
 
-
-        // ==========================================
+        // ==================================
         // CURRENT
-        // ==========================================
+        // ==================================
 
         const isCurrent =
           index === step &&
           state === 'current';
 
-
-        // ==========================================
+        // ==================================
         // REJECTED
-        // ==========================================
+        // ==================================
 
         if (isRejectedHere) {
-
-          stepState = 'rejected';
-
           circle = (
             <div className="sid-stepper-circle rejected">
               <X size={18} />
@@ -142,15 +144,11 @@ export default function ApprovalStepperRW({ surat }) {
 
           statusText = 'Ditolak';
 
-
-        // ==========================================
+        // ==================================
         // DONE
-        // ==========================================
+        // ==================================
 
         } else if (isDone) {
-
-          stepState = 'done';
-
           circle = (
             <div className="sid-stepper-circle done">
               <Check size={18} />
@@ -159,15 +157,11 @@ export default function ApprovalStepperRW({ surat }) {
 
           statusText = 'Selesai';
 
-
-        // ==========================================
+        // ==================================
         // CURRENT
-        // ==========================================
+        // ==================================
 
         } else if (isCurrent) {
-
-          stepState = 'current';
-
           circle = (
             <div className="sid-stepper-circle current">
               <Loader2
@@ -179,40 +173,36 @@ export default function ApprovalStepperRW({ surat }) {
 
           statusText = 'Menunggu';
 
-
-        // ==========================================
+        // ==================================
         // WAITING
-        // ==========================================
+        // ==================================
 
         } else {
-
-          stepState = 'waiting';
-
           circle = (
             <div className="sid-stepper-circle waiting">
               {index + 1}
             </div>
           );
-
         }
 
-
-        // ==========================================
-        // RENDER STEP
-        // ==========================================
+        const stepClass = isRejectedHere
+          ? 'rejected'
+          : isDone
+            ? 'done'
+            : isCurrent
+              ? 'current'
+              : 'waiting';
 
         return (
           <div
             key={label}
             className="sid-stepper-item"
           >
-
             <div className="sid-stepper-content">
-
               {circle}
 
               <span
-                className={`sid-stepper-label ${stepState}`}
+                className={`sid-stepper-label ${stepClass}`}
               >
                 {label}
               </span>
@@ -220,23 +210,14 @@ export default function ApprovalStepperRW({ surat }) {
               <span className="sid-stepper-status">
                 {statusText}
               </span>
-
             </div>
 
-
-            {/* CONNECTOR */}
-
             {index < STEPS.length - 1 && (
-
               <div className="sid-stepper-connector" />
-
             )}
-
           </div>
         );
-
       })}
-
     </div>
   );
 }

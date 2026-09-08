@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import {
   getCitizens,
@@ -17,26 +18,36 @@ export function useWargaList() {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      try {
+        setLoading(true);
+
+        const [citizenRes, wilayahRes] = await Promise.all([
+          getCitizens(),
+          getWilayah(),
+        ]);
+
+        if (isMounted) {
+          setCitizens(citizenRes.data);
+          setWilayahOptions(wilayahRes.data);
+        }
+      } catch (err) {
+        console.error("GET CITIZENS ERROR", err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
-
-  async function loadData() {
-    try {
-      setLoading(true);
-
-      const [citizenRes, wilayahRes] = await Promise.all([
-        getCitizens(),
-        getWilayah(),
-      ]);
-
-      setCitizens(citizenRes.data);
-      setWilayahOptions(wilayahRes.data);
-    } catch (err) {
-      console.error("GET CITIZENS ERROR", err);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const filtered = useMemo(() => {
     let result = [...citizens];
@@ -45,16 +56,16 @@ export function useWargaList() {
       const keyword = search.toLowerCase();
 
       result = result.filter(
-        (w) =>
-          w.name?.toLowerCase().includes(keyword) ||
-          w.nik?.includes(keyword)
+        (warga) =>
+          warga.name?.toLowerCase().includes(keyword) ||
+          warga.nik?.includes(keyword)
       );
     }
 
     if (filterWilayah) {
       result = result.filter(
-        (w) =>
-          `${w.rt_id}-${w.rw_id}` === filterWilayah
+        (warga) =>
+          `${warga.rt_id}-${warga.rw_id}` === filterWilayah
       );
     }
 
@@ -69,7 +80,10 @@ export function useWargaList() {
   const data = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
 
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
+    return filtered.slice(
+      start,
+      start + ITEMS_PER_PAGE
+    );
   }, [filtered, currentPage]);
 
   async function removeCitizen(id) {
@@ -98,3 +112,4 @@ export function useWargaList() {
     deleteWarga: removeCitizen,
   };
 }
+

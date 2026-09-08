@@ -6,7 +6,7 @@
 
 import { useState, useMemo } from 'react';
 import { dummySurat } from '@/features/approval/data/dummySurat';
-import { RELEVANT_STATUSES } from '../constants/roleConfigkades';
+import { RELEVANT_STATUSES } from '../constants/roleConfigKades';
 
 export function useSuratList({ initialStatus = '' } = {}) {
   const [search, setSearch] = useState('');

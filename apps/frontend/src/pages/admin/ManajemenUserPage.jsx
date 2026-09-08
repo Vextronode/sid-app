@@ -12,7 +12,7 @@ import {
   Eye,
   EyeOff,
   UserPlus,
-  ChevronRight,
+
 } from 'lucide-react';
 
 import { useUserList } from '@/features/manajemen-user/hooks/useUserList';

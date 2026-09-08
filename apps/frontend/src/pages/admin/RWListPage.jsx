@@ -1,22 +1,26 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable no-unused-vars */
 
 // ==========================================
 // RWListPage.jsx
 // Daftar permohonan surat RW
+//
+// STATUS:
+// - RW hanya memiliki akses monitoring.
+// - RW tidak memiliki kewenangan approve/reject.
+// - RW dapat melihat daftar dan detail surat.
+// - Workflow:
+//   Submit -> RT -> Selesai
+//
 // Styling menggunakan SID Global Theme.
 // ==========================================
 
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Search } from 'lucide-react';
 
 import { useSuratList } from '@/features/approval-rw/hooks/useSuratListRW';
-import { useApprovalAction } from '@/features/approval-rw/hooks/useApprovalActionRW';
 import SuratDetailModalRW from '@/features/approval-rw/components/SuratDetailModalRW';
 import StatusBadgeRT from '@/features/approval-rt/components/StatusBadgeRT';
-import { BASE_PATH } from '@/features/approval-rw/constants/roleConfigRW';
-
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { FooterDesa } from '@/components/layout/FooterDesa';
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
@@ -24,14 +28,16 @@ import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
 const ITEMS_PER_PAGE = 5;
 
 export default function RWListPage() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const initialStatus = searchParams.get('status') ?? '';
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedId, setSelectedId] = useState(null);
-  const [isReadOnly, setIsReadOnly] = useState(false);
+
+  // ==========================================
+  // DATA
+  // ==========================================
 
   const {
     data,
@@ -41,10 +47,9 @@ export default function RWListPage() {
     filterStatus,
     setFilterStatus,
     refresh,
-  } = useSuratList({ initialStatus });
-
-  const { approve, reject } = useApprovalAction();
-
+  } = useSuratList({
+    initialStatus,
+  });
 
   // ==========================================
   // AUTO REFRESH DATA SURAT
@@ -58,7 +63,6 @@ export default function RWListPage() {
     return () => clearInterval(interval);
   }, [refresh]);
 
-
   // ==========================================
   // RESET PAGINATION
   // ==========================================
@@ -66,7 +70,6 @@ export default function RWListPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [search, filterStatus]);
-
 
   // ==========================================
   // PAGINATION
@@ -87,58 +90,19 @@ export default function RWListPage() {
     );
   }, [data, currentPage]);
 
-
-  // ==========================================
-  // APPROVE
-  // ==========================================
-
-  const handleApprove = async () => {
-    try {
-      await approve(selectedId);
-
-      await refresh();
-
-      setSelectedId(null);
-      setIsReadOnly(false);
-    } catch (error) {
-      console.error(
-        'Gagal approve surat:',
-        error
-      );
-    }
-  };
-
-
-  // ==========================================
-  // REJECT
-  // ==========================================
-
-  const handleReject = async (alasan) => {
-    try {
-      await reject(selectedId, alasan);
-
-      await refresh();
-
-      setSelectedId(null);
-      setIsReadOnly(false);
-    } catch (error) {
-      console.error(
-        'Gagal reject surat:',
-        error
-      );
-    }
-  };
-
-
   // ==========================================
   // BUKA DETAIL
+  //
+  // RW SELALU READ-ONLY.
   // ==========================================
 
   const handleOpenDetail = (surat) => {
     setSelectedId(surat.id);
-    setIsReadOnly(surat.status !== 'rt_approved');
   };
 
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <>
@@ -166,10 +130,9 @@ export default function RWListPage() {
           </h1>
 
           <p className="sid-page-description">
-            Kelola dan proses permohonan surat warga
-            yang masuk ke wilayah RW.
+            Pantau permohonan surat warga yang masuk
+            ke wilayah RW.
           </p>
-
 
           {/* ======================================
               FILTER
@@ -187,6 +150,7 @@ export default function RWListPage() {
                 </p>
 
                 <div className="rw-search-wrapper">
+
                   <Search
                     size={16}
                     className="sid-search-icon"
@@ -201,13 +165,14 @@ export default function RWListPage() {
                     placeholder="Nomor surat atau nama pemohon..."
                     className="sid-search-input"
                   />
+
                 </div>
               </div>
-
 
               {/* STATUS */}
 
               <div>
+
                 <p className="rw-filter-label">
                   Status
                 </p>
@@ -219,27 +184,29 @@ export default function RWListPage() {
                   }
                   className="sid-select rw-status-select"
                 >
+
                   <option value="">
                     Semua Status
                   </option>
 
+                  <option value="pending">
+                    Menunggu RT
+                  </option>
+
                   <option value="rt_approved">
-                    Menunggu
+                    Diproses Setelah RT
                   </option>
 
-                  <option value="rw_approved">
-                    Disetujui
+                  <option value="rt_rejected">
+                    Ditolak RT
                   </option>
 
-                  <option value="rw_rejected">
-                    Ditolak
-                  </option>
                 </select>
+
               </div>
 
             </div>
           </div>
-
 
           {/* ======================================
               TABLE
@@ -250,6 +217,7 @@ export default function RWListPage() {
             <table className="rw-table">
 
               <thead>
+
                 <tr className="rw-table-header">
 
                   <th>
@@ -277,31 +245,35 @@ export default function RWListPage() {
                   </th>
 
                 </tr>
-              </thead>
 
+              </thead>
 
               <tbody>
 
                 {loading ? (
 
                   <tr>
+
                     <td
                       colSpan={6}
                       className="rw-table-message"
                     >
                       Memuat data surat...
                     </td>
+
                   </tr>
 
                 ) : paginatedData.length === 0 ? (
 
                   <tr>
+
                     <td
                       colSpan={6}
                       className="rw-table-message"
                     >
                       Belum ada surat.
                     </td>
+
                   </tr>
 
                 ) : (
@@ -319,13 +291,11 @@ export default function RWListPage() {
                         #{s.letter_number ?? '-'}
                       </td>
 
-
                       {/* PEMOHON */}
 
                       <td className="rw-table-center">
                         {s.applicant_name}
                       </td>
-
 
                       {/* JENIS */}
 
@@ -333,10 +303,10 @@ export default function RWListPage() {
                         {s.letter_type?.name ?? '-'}
                       </td>
 
-
                       {/* TANGGAL */}
 
                       <td className="rw-table-date">
+
                         {s.submitted_at
                           ? new Date(
                               s.submitted_at
@@ -349,17 +319,18 @@ export default function RWListPage() {
                               }
                             )
                           : '-'}
-                      </td>
 
+                      </td>
 
                       {/* STATUS */}
 
                       <td className="rw-table-center">
+
                         <StatusBadgeRT
                           status={s.status}
                         />
-                      </td>
 
+                      </td>
 
                       {/* AKSI */}
 
@@ -372,9 +343,7 @@ export default function RWListPage() {
                           }
                           className="rw-action-button"
                         >
-                          {s.status === 'rt_approved'
-                            ? 'Proses'
-                            : 'Lihat'}
+                          Lihat
                         </button>
 
                       </td>
@@ -389,7 +358,6 @@ export default function RWListPage() {
 
             </table>
 
-
             {/* ==================================
                 PAGINATION DESKTOP
                 ================================== */}
@@ -397,19 +365,24 @@ export default function RWListPage() {
             <div className="rw-pagination">
 
               <p className="rw-pagination-info">
+
                 Menampilkan{' '}
+
                 {paginatedData.length === 0
                   ? 0
                   : (currentPage - 1) *
                       ITEMS_PER_PAGE +
                     1}
+
                 -
+
                 {(currentPage - 1) *
                   ITEMS_PER_PAGE +
                   paginatedData.length}{' '}
-                dari {data.length} data
-              </p>
 
+                dari {data.length} data
+
+              </p>
 
               <div className="rw-pagination-buttons">
 
@@ -425,7 +398,6 @@ export default function RWListPage() {
                 >
                   Sebelumnya
                 </button>
-
 
                 {Array.from(
                   { length: totalPages },
@@ -448,7 +420,6 @@ export default function RWListPage() {
                   </button>
 
                 ))}
-
 
                 <button
                   type="button"
@@ -476,13 +447,11 @@ export default function RWListPage() {
 
         </div>
 
-
         {/* FOOTER */}
 
         <FooterDesa />
 
       </div>
-
 
       {/* ========================================
           MOBILE
@@ -499,13 +468,13 @@ export default function RWListPage() {
           </h1>
 
           <p className="sid-page-description">
-            Kelola permohonan surat warga secara digital.
+            Pantau permohonan surat warga secara digital.
           </p>
-
 
           {/* SEARCH */}
 
           <div className="rw-mobile-search">
+
             <Search
               size={16}
               className="sid-search-icon"
@@ -520,8 +489,8 @@ export default function RWListPage() {
               placeholder="Cari nama pemohon..."
               className="sid-search-input"
             />
-          </div>
 
+          </div>
 
           {/* FILTER STATUS */}
 
@@ -532,23 +501,24 @@ export default function RWListPage() {
             }
             className="sid-select rw-mobile-status-select"
           >
+
             <option value="">
               Semua Status
             </option>
 
+            <option value="pending">
+              Menunggu RT
+            </option>
+
             <option value="rt_approved">
-              Menunggu
+              Diproses Setelah RT
             </option>
 
-            <option value="rw_approved">
-              Disetujui RW
+            <option value="rt_rejected">
+              Ditolak RT
             </option>
 
-            <option value="rw_rejected">
-              Ditolak RW
-            </option>
           </select>
-
 
           {/* MOBILE TABLE */}
 
@@ -573,7 +543,6 @@ export default function RWListPage() {
               </span>
 
             </div>
-
 
             {loading ? (
 
@@ -613,6 +582,7 @@ export default function RWListPage() {
                   </span>
 
                   <span className="rw-mobile-date">
+
                     {s.submitted_at
                       ? new Date(
                           s.submitted_at
@@ -620,6 +590,7 @@ export default function RWListPage() {
                           'id-ID'
                         )
                       : '-'}
+
                   </span>
 
                 </button>
@@ -629,7 +600,6 @@ export default function RWListPage() {
             )}
 
           </div>
-
 
           {/* MOBILE PAGINATION */}
 
@@ -661,13 +631,11 @@ export default function RWListPage() {
 
         </div>
 
-
         {/* FOOTER */}
 
         <div className="sid-mobile-footer">
           <FooterDesa />
         </div>
-
 
         {/* MOBILE NAV */}
 
@@ -680,7 +648,6 @@ export default function RWListPage() {
 
       </div>
 
-
       {/* ========================================
           DETAIL MODAL
           ======================================== */}
@@ -689,11 +656,7 @@ export default function RWListPage() {
         suratId={selectedId}
         onClose={() => {
           setSelectedId(null);
-          setIsReadOnly(false);
         }}
-        onApprove={handleApprove}
-        onReject={handleReject}
-        readOnly={isReadOnly}
       />
 
     </>

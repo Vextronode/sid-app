@@ -16,8 +16,8 @@ const STATUS_LABEL = {
   },
 
   rt_approved: {
-    label: 'PROSES',
-    className: 'sid-status-process',
+    label: 'VERIFIED',
+    className: 'sid-status-approved',
   },
 
   rt_rejected: {
@@ -25,15 +25,7 @@ const STATUS_LABEL = {
     className: 'sid-status-rejected',
   },
 
-  rw_approved: {
-    label: 'VERIFIED',
-    className: 'sid-status-approved',
-  },
 
-  rw_rejected: {
-    label: 'DITOLAK',
-    className: 'sid-status-rejected',
-  },
 };
 
 export default function RiwayatVerifikasiTable({ data }) {
@@ -84,9 +76,9 @@ export default function RiwayatVerifikasiTable({ data }) {
 
               data.map((surat) => {
 
-                // Surat cuma bisa di-print kalau sudah lolos RT & RW
+                // Surat cuma bisa di-print kalau sudah lolos RT 
                 const bisaCetak =
-                  surat.status === 'rw_approved';
+                  surat.status === 'rt_approved';
 
                 const badge =
                   STATUS_LABEL[surat.status] ?? {
@@ -198,7 +190,7 @@ export default function RiwayatVerifikasiTable({ data }) {
                               }`}
                               title={
                                 !bisaCetak
-                                  ? 'Surat belum disetujui RT & RW'
+                                  ? 'Surat belum disetujui RT  '
                                   : ''
                               }
                             >

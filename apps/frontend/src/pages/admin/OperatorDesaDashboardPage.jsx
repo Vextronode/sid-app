@@ -1,10 +1,11 @@
+
 // ==========================================
 // OperatorDesaDashboardPage.jsx
 // Halaman Ringkasan Operator Desa
 // Styling menggunakan Global CSS SID.
 // ==========================================
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   getSuratList,
   getGenderStats,
@@ -39,7 +40,6 @@ export default function OperatorDesaDashboardPage() {
 
   const ROLE_ENDPOINT = {
     rt: 'rt',
-    rw: 'rw',
     kasi_pelayanan: 'kasi',
     kaur_tu_umum: 'kasi',
     petugas_desa: 'kasi',
@@ -52,7 +52,7 @@ export default function OperatorDesaDashboardPage() {
   // LOAD DATA DASHBOARD
   // ==========================================
 
-  const loadDashboardData = async (showLoading = true) => {
+  const loadDashboardData = useCallback(async (showLoading = true) => {
     if (!roleKey) return;
 
     if (showLoading) {
@@ -77,15 +77,27 @@ export default function OperatorDesaDashboardPage() {
         setLoading(false);
       }
     }
-  };
+  }, [roleKey]);
 
   // ==========================================
   // LOAD PERTAMA KALI
   // ==========================================
 
   useEffect(() => {
-    loadDashboardData(true);
-  }, [roleKey]);
+    let isMounted = true;
+
+    const loadInitialData = async () => {
+      if (!isMounted) return;
+
+      await loadDashboardData(true);
+    };
+
+    loadInitialData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loadDashboardData]);
 
   // ==========================================
   // AUTO REFRESH SETIAP 5 DETIK
@@ -99,7 +111,7 @@ export default function OperatorDesaDashboardPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [roleKey]);
+  }, [roleKey, loadDashboardData]);
 
   // ==========================================
   // STATISTIK
@@ -109,7 +121,7 @@ export default function OperatorDesaDashboardPage() {
     const permohonan = letters.length;
 
     const verifikasi = letters.filter(
-      (s) => s.status === 'rw_approved'
+      (s) => s.status === 'rt_approved'
     ).length;
 
     const selesai = letters.filter(
@@ -139,15 +151,12 @@ export default function OperatorDesaDashboardPage() {
 
   return (
     <div className="sid-operator-dashboard">
-
       <main className="sid-operator-dashboard-content">
-
         {/* ======================================
             HEADER
         ====================================== */}
 
         <header className="sid-operator-header">
-
           <div className="sid-operator-header-info">
             <h1 className="sid-operator-greeting">
               {greeting},{' '}
@@ -158,22 +167,17 @@ export default function OperatorDesaDashboardPage() {
           <span className="sid-operator-date">
             {hariIni}
           </span>
-
         </header>
-
 
         {/* ======================================
             STATISTIK
         ====================================== */}
 
         <section className="sid-operator-stats-grid">
-
           {/* TOTAL PERMOHONAN */}
 
           <div className="sid-operator-stat-card">
-
             <div className="sid-operator-stat-content">
-
               <p className="sid-operator-stat-label">
                 Total Permohonan
               </p>
@@ -181,22 +185,17 @@ export default function OperatorDesaDashboardPage() {
               <p className="sid-operator-stat-value yellow">
                 {loading ? '-' : stats.permohonan}
               </p>
-
             </div>
 
             <div className="sid-operator-stat-icon yellow">
               <ClipboardList size={20} />
             </div>
-
           </div>
-
 
           {/* VERIFIKASI */}
 
           <div className="sid-operator-stat-card">
-
             <div className="sid-operator-stat-content">
-
               <p className="sid-operator-stat-label">
                 Verifikasi
               </p>
@@ -204,22 +203,17 @@ export default function OperatorDesaDashboardPage() {
               <p className="sid-operator-stat-value blue">
                 {loading ? '-' : stats.verifikasi}
               </p>
-
             </div>
 
             <div className="sid-operator-stat-icon blue">
               <ListChecks size={20} />
             </div>
-
           </div>
-
 
           {/* SELESAI */}
 
           <div className="sid-operator-stat-card">
-
             <div className="sid-operator-stat-content">
-
               <p className="sid-operator-stat-label">
                 Selesai
               </p>
@@ -227,37 +221,29 @@ export default function OperatorDesaDashboardPage() {
               <p className="sid-operator-stat-value green">
                 {loading ? '-' : stats.selesai}
               </p>
-
             </div>
 
             <div className="sid-operator-stat-icon green">
               <CheckCircle2 size={20} />
             </div>
-
           </div>
-
 
           {/* GENDER */}
 
           <div className="sid-operator-gender-card">
-
             <GenderStatCard
               total={genderStats.total}
               laki={genderStats.laki}
               perempuan={genderStats.perempuan}
             />
-
           </div>
-
         </section>
-
 
         {/* ======================================
             CHART + FLOW
         ====================================== */}
 
         <section className="sid-operator-dashboard-grid">
-
           <div className="sid-operator-chart-wrapper">
             <SuratStatChart
               letters={letters}
@@ -270,18 +256,14 @@ export default function OperatorDesaDashboardPage() {
               loading={loading}
             />
           </div>
-
         </section>
-
       </main>
-
 
       {/* ======================================
           FOOTER
       ====================================== */}
 
       <FooterOperator />
-
     </div>
   );
 }

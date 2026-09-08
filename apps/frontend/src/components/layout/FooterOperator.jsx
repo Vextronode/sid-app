@@ -1,4 +1,3 @@
-import { Phone, Mail, MapPin, Clock } from "lucide-react";
 
 export function FooterOperator() {
   return (

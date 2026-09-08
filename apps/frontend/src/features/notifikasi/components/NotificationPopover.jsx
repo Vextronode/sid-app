@@ -4,7 +4,6 @@
 // Styling mengikuti SID Global Theme.
 // ==========================================
 
-import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { useState } from "react";
 import { FileText, PenLine } from "lucide-react";
 import useNotifications from "@/features/notifikasi/hooks/useNotifications";
@@ -53,13 +52,13 @@ function getDayLabel(dateString) {
 }
 
 export default function NotificationPopover({ open, onClose }) {
-  const { user } = useAuth();
+
 
   const [activeTab, setActiveTab] = useState("semua");
 
   const {
     notifications,
-    loading,
+  
     markAsRead,
     markAllAsRead,
   } = useNotifications();
@@ -148,7 +147,6 @@ export default function NotificationPopover({ open, onClose }) {
                     <NotifItem
                       key={n.id}
                       data={n}
-                      user={user}
                       onRead={() => markAsRead(n.id)}
                     />
                   ))}

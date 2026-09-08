@@ -41,14 +41,7 @@ export default function KadusDashboardPage() {
     return { total, sedangDiproses, disetujuiFinal };
   }, [letters]);
 
-  const chartData = useMemo(() => {
-    const grouped = {};
-    letters.forEach((s) => {
-      const key = s.letter_type?.name ?? 'Lainnya';
-      grouped[key] = (grouped[key] ?? 0) + 1;
-    });
-    return Object.entries(grouped).map(([kategori, jumlah]) => ({ kategori, jumlah }));
-  }, [letters]);
+
 
   const hariIni = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 

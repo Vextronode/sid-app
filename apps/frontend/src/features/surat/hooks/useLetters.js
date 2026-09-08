@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { getMyLetters } from "../api/letterApi";
 
@@ -7,7 +8,6 @@ export function useLetters() {
 
     const fetchLetters = useCallback(async (initial = false) => {
         try {
-            // Hanya tampilkan loading saat pertama kali
             if (initial) {
                 setLoading(true);
             }
@@ -28,7 +28,19 @@ export function useLetters() {
     // LOAD PERTAMA KALI
     // ==========================================
     useEffect(() => {
-        fetchLetters(true);
+        let isMounted = true;
+
+        const loadLetters = async () => {
+            if (!isMounted) return;
+
+            await fetchLetters(true);
+        };
+
+        loadLetters();
+
+        return () => {
+            isMounted = false;
+        };
     }, [fetchLetters]);
 
     // ==========================================

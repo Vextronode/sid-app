@@ -8,15 +8,8 @@ export function TableSurat({ data }) {
   const [selectedSurat, setSelectedSurat] = useState(null);
   const navigate = useNavigate();
 
-  const apiUrl =
-    import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
 
-  const handleDownload = (id, template) => {
-    window.open(
-      `${apiUrl}/api/letters/${id}/download?template=${template}`,
-      "_blank"
-    );
-  };
+
 
   if (!data || data.length === 0) {
     return (

@@ -1,3 +1,4 @@
+
 // ==========================================
 // OperatorSuratListPage.jsx
 // Halaman "Daftar Permohonan Surat" untuk Operator Desa.
@@ -6,7 +7,7 @@
 // ==========================================
 
 import OperatorSuratPreviewModal from "@/features/operator-desa/components/OperatorSuratPreviewModal";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Download,
   Search,
@@ -20,52 +21,7 @@ import { useAuth } from "@/features/auth/contexts/AuthContext";
 import OperatorSuratActionModal from "@/features/operator-desa/components/OperatorSuratActionModal";
 import { FooterOperator } from "../../components/layout/FooterOperator";
 
-const STATUS_LABEL = {
-  pending: {
-    label: "Pending",
-    className: "sid-status-pending",
-  },
 
-  rt_approved: {
-    label: "RT Approved",
-    className: "sid-status-progress",
-  },
-
-  rw_approved: {
-    label: "RW Approved",
-    className: "sid-status-progress",
-  },
-
-  kasi_approved: {
-    label: "Verified",
-    className: "sid-status-done",
-  },
-
-  rt_rejected: {
-    label: "Ditolak RT",
-    className: "sid-status-rejected",
-  },
-
-  rw_rejected: {
-    label: "Ditolak RW",
-    className: "sid-status-rejected",
-  },
-
-  kasi_rejected: {
-    label: "Ditolak Kasi",
-    className: "sid-status-rejected",
-  },
-
-  waiting_revision_warga: {
-    label: "Menunggu Revisi",
-    className: "sid-status-pending",
-  },
-
-  rejected_revision: {
-    label: "Ditolak (Batas Revisi)",
-    className: "sid-status-rejected",
-  },
-};
 
 const ITEMS_PER_PAGE = 3;
 
@@ -88,7 +44,6 @@ export default function OperatorSuratListPage() {
 
   const ROLE_ENDPOINT = {
     rt: "rt",
-    rw: "rw",
     kasi_pelayanan: "kasi",
     kaur_tu_umum: "kasi",
     petugas_desa: "kasi",
@@ -99,34 +54,50 @@ export default function OperatorSuratListPage() {
   // ==========================================
   // LOAD DATA
   // ==========================================
-  const loadLetters = async (showLoading = true) => {
-    if (!roleKey) return;
+  const loadLetters = useCallback(
+    async (showLoading = true) => {
+      if (!roleKey) return;
 
-    if (showLoading) {
-      setLoading(true);
-    }
-
-    try {
-      const res = await getSuratList(roleKey);
-      setLetters(res.data);
-    } catch (err) {
-      console.error(
-        "Gagal mengambil data surat:",
-        err.response?.data ?? err
-      );
-    } finally {
       if (showLoading) {
-        setLoading(false);
+        setLoading(true);
       }
-    }
-  };
+
+      try {
+        const res = await getSuratList(roleKey);
+        setLetters(res.data);
+      } catch (err) {
+        console.error(
+          "Gagal mengambil data surat:",
+          err.response?.data ?? err
+        );
+      } finally {
+        if (showLoading) {
+          setLoading(false);
+        }
+      }
+    },
+    [roleKey]
+  );
 
   // ==========================================
   // LOAD DATA PERTAMA KALI
   // ==========================================
   useEffect(() => {
-    loadLetters(true);
-  }, [roleKey]);
+    if (!roleKey) return;
+
+    let isMounted = true;
+
+    const loadInitialLetters = async () => {
+      if (!isMounted) return;
+      await loadLetters(true);
+    };
+
+    loadInitialLetters();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [roleKey, loadLetters]);
 
   // ==========================================
   // AUTO REFRESH DATA SETIAP 5 DETIK
@@ -139,7 +110,7 @@ export default function OperatorSuratListPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [roleKey]);
+  }, [roleKey, loadLetters]);
 
   // ==========================================
   // FILTER + SORT
@@ -157,7 +128,7 @@ export default function OperatorSuratListPage() {
       switch (filterStatus) {
         case "verification":
           result = result.filter((s) =>
-            ["rt_approved", "rw_approved"].includes(s.status)
+            ["rt_approved"].includes(s.status)
           );
           break;
 
@@ -169,7 +140,7 @@ export default function OperatorSuratListPage() {
 
         case "rejected":
           result = result.filter((s) =>
-            ["rt_rejected", "rw_rejected"].includes(s.status)
+            ["rt_rejected"].includes(s.status)
           );
           break;
 
@@ -191,12 +162,10 @@ export default function OperatorSuratListPage() {
     // Urutkan berdasarkan selesai sampai ditolak
     const STATUS_ORDER = {
       kasi_approved: 1,
-      rw_approved: 2,
-      rt_approved: 3,
-      pending: 4,
-      rw_rejected: 5,
-      rt_rejected: 6,
-      kasi_rejected: 7,
+      rt_approved: 2,
+      pending: 3,
+      rt_rejected: 4,
+      kasi_rejected: 5,
     };
 
     result.sort((a, b) => {
@@ -258,9 +227,7 @@ export default function OperatorSuratListPage() {
 
   return (
     <div className="sid-operator-page">
-
       <main className="sid-operator-content">
-
         {/* ==========================================
             HEADER
         ========================================== */}
@@ -282,9 +249,7 @@ export default function OperatorSuratListPage() {
             SEARCH + FILTER
         ========================================== */}
         <div className="sid-operator-filter-card">
-
           <div className="sid-operator-filter-grid">
-
             <div className="sid-operator-filter-field">
               <p>Pencarian Cepat</p>
 
@@ -344,7 +309,6 @@ export default function OperatorSuratListPage() {
                 </option>
               </select>
             </div>
-
           </div>
         </div>
 
@@ -352,26 +316,21 @@ export default function OperatorSuratListPage() {
             TABLE
         ========================================== */}
         <div className="sid-operator-table-card">
-
           <div className="sid-operator-table-wrapper">
-
             <table className="sid-operator-table">
-
               <thead>
                 <tr>
                   <th>No. Surat</th>
                   <th className="center">Pemohon</th>
                   <th className="center">Jenis</th>
                   <th className="center">Tanggal</th>
-                  <th className="center">RT / RW</th>
+                  <th className="center">RT</th>
                   <th className="center">Aksi</th>
                 </tr>
               </thead>
 
               <tbody>
-
                 {loading ? (
-
                   <tr>
                     <td
                       colSpan={6}
@@ -380,9 +339,7 @@ export default function OperatorSuratListPage() {
                       Memuat data surat...
                     </td>
                   </tr>
-
                 ) : paginated.length === 0 ? (
-
                   <tr>
                     <td
                       colSpan={6}
@@ -391,197 +348,128 @@ export default function OperatorSuratListPage() {
                       Belum ada surat.
                     </td>
                   </tr>
-
                 ) : (
+                  paginated.map((s) => (
+                    <tr key={s.id}>
+                      {/* NO SURAT */}
+                      <td className="sid-operator-letter-number">
+                        <div>
+                          <span>
+                            #{s.letter_number ?? "-"}
+                          </span>
 
-                  paginated.map((s) => {
+                          {s.revision_count > 0 && (
+                            <small>
+                              Hasil Revisi
+                            </small>
+                          )}
+                        </div>
+                      </td>
 
-                    const badge =
-                      STATUS_LABEL[s.status] ?? {
-                        label: s.status,
-                        className:
-                          "sid-status-default",
-                      };
+                      {/* PEMOHON */}
+                      <td>
+                        <span className="sid-operator-applicant">
+                          {s.applicant_name}
+                        </span>
+                      </td>
 
-                    return (
-                      <tr key={s.id}>
+                      {/* JENIS */}
+                      <td className="center">
+                        {s.letter_type?.name ?? "-"}
+                      </td>
 
-                        {/* NO SURAT */}
-                        <td className="sid-operator-letter-number">
+                      {/* TANGGAL */}
+                      <td className="center">
+                        {s.submitted_at
+                          ? new Date(
+                              s.submitted_at
+                            ).toLocaleDateString(
+                              "id-ID",
+                              {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              }
+                            )
+                          : "-"}
+                      </td>
 
+                      {/* RT */}
+                      <td>
+                        <div className="sid-operator-approval">
                           <div>
-                            <span>
-                              #{s.letter_number ?? "-"}
-                            </span>
+                            <span>RT</span>
 
-                            {s.revision_count > 0 && (
-                              <small>
-                                Hasil Revisi
-                              </small>
+                            {[
+                              "rt_approved",
+                              "kasi_approved",
+                            ].includes(s.status) ? (
+                              <div className="sid-operator-check approved">
+                                ✓
+                              </div>
+                            ) : s.status === "rt_rejected" ? (
+                              <div className="sid-operator-check rejected">
+                                ✕
+                              </div>
+                            ) : (
+                              <div className="sid-operator-check">
+                              </div>
                             )}
                           </div>
+                        </div>
+                      </td>
 
-                        </td>
+                      {/* AKSI */}
+                      <td>
+                        <div className="sid-operator-actions">
+                          {/* Detail */}
+                          <button
+                            onClick={() =>
+                              setPreviewSurat(s)
+                            }
+                            className="sid-operator-action detail"
+                            title="Detail Surat"
+                          >
+                            <Eye size={17} />
+                          </button>
 
-                        {/* PEMOHON */}
-                        <td>
-                          <span className="sid-operator-applicant">
-                            {s.applicant_name}
-                          </span>
-                        </td>
-
-                        {/* JENIS */}
-                        <td className="center">
-                          {s.letter_type?.name ?? "-"}
-                        </td>
-
-                        {/* TANGGAL */}
-                        <td className="center">
-                          {s.submitted_at
-                            ? new Date(
-                                s.submitted_at
-                              ).toLocaleDateString(
-                                "id-ID",
-                                {
-                                  day: "numeric",
-                                  month: "long",
-                                  year: "numeric",
-                                }
-                              )
-                            : "-"}
-                        </td>
-
-                        {/* RT / RW */}
-                        <td>
-
-                          <div className="sid-operator-approval">
-
-                            {/* RT */}
-                            <div>
-
-                              <span>RT</span>
-
-                              {[
-                                "rt_approved",
-                                "rw_approved",
-                                "kasi_approved",
-                                "rw_rejected",
-                              ].includes(s.status) ? (
-
-                                <div className="sid-operator-check approved">
-                                  ✓
-                                </div>
-
-                              ) : s.status === "rt_rejected" ? (
-
-                                <div className="sid-operator-check rejected">
-                                  ✕
-                                </div>
-
-                              ) : (
-
-                                <div className="sid-operator-check">
-                                </div>
-
-                              )}
-
-                            </div>
-
-                            {/* RW */}
-                            <div>
-
-                              <span>RW</span>
-
-                              {[
-                                "rw_approved",
-                                "kasi_approved",
-                              ].includes(s.status) ? (
-
-                                <div className="sid-operator-check approved">
-                                  ✓
-                                </div>
-
-                              ) : s.status === "rw_rejected" ? (
-
-                                <div className="sid-operator-check rejected">
-                                  ✕
-                                </div>
-
-                              ) : (
-
-                                <div className="sid-operator-check">
-                                </div>
-
-                              )}
-
-                            </div>
-
-                          </div>
-
-                        </td>
-
-                        {/* AKSI */}
-                        <td>
-
-                          <div className="sid-operator-actions">
-
-                            {/* Detail */}
+                          {/* Edit */}
+                          {s.status !== "kasi_approved" && (
                             <button
                               onClick={() =>
-                                setPreviewSurat(s)
+                                setSelectedSurat(s)
                               }
-                              className="sid-operator-action detail"
-                              title="Detail Surat"
+                              className="sid-operator-action edit"
+                              title="Edit Surat"
                             >
-                              <Eye size={17} />
+                              <Pencil size={17} />
                             </button>
+                          )}
 
-                            {/* Edit */}
-                            {s.status !== "kasi_approved" && (
-                              <button
-                                onClick={() =>
-                                  setSelectedSurat(s)
-                                }
-                                className="sid-operator-action edit"
-                                title="Edit Surat"
-                              >
-                                <Pencil size={17} />
-                              </button>
-                            )}
-
-                            {/* Hapus */}
-                            <button
-                              onClick={() => {
-                                setDeleteSurat(s);
-                                setDeleteConfirmation("");
-                              }}
-                              className="sid-operator-action delete"
-                              title="Hapus Surat"
-                            >
-                              <Trash2 size={17} />
-                            </button>
-
-                          </div>
-
-                        </td>
-
-                      </tr>
-                    );
-                  })
-
+                          {/* Hapus */}
+                          <button
+                            onClick={() => {
+                              setDeleteSurat(s);
+                              setDeleteConfirmation("");
+                            }}
+                            className="sid-operator-action delete"
+                            title="Hapus Surat"
+                          >
+                            <Trash2 size={17} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
-
               </tbody>
-
             </table>
-
           </div>
 
           {/* ==========================================
               PAGINATION
           ========================================== */}
           <div className="sid-operator-pagination">
-
             <p>
               Menampilkan{" "}
               {paginated.length === 0
@@ -597,7 +485,6 @@ export default function OperatorSuratListPage() {
             </p>
 
             <div>
-
               <button
                 onClick={() =>
                   setCurrentPage((p) =>
@@ -643,13 +530,9 @@ export default function OperatorSuratListPage() {
               >
                 Selanjutnya
               </button>
-
             </div>
-
           </div>
-
         </div>
-
       </main>
 
       {/* FOOTER */}
@@ -685,12 +568,9 @@ export default function OperatorSuratListPage() {
       ========================================== */}
       {deleteSurat && (
         <div className="sid-operator-delete-overlay">
-
           <div className="sid-operator-delete-modal">
-
             {/* Header */}
             <div className="sid-operator-delete-header">
-
               <div className="sid-operator-delete-icon">
                 <Trash2 size={20} />
               </div>
@@ -704,12 +584,10 @@ export default function OperatorSuratListPage() {
                   tidak dapat dikembalikan.
                 </p>
               </div>
-
             </div>
 
             {/* Informasi surat */}
             <div className="sid-operator-delete-info">
-
               <p>Surat yang akan dihapus</p>
 
               <strong>
@@ -723,12 +601,10 @@ export default function OperatorSuratListPage() {
               <span>
                 {deleteSurat.letter_type?.name ?? "-"}
               </span>
-
             </div>
 
             {/* Instruksi */}
             <div className="sid-operator-delete-confirm">
-
               <label>
                 Untuk melanjutkan, ketik
                 <strong>DELETE</strong>
@@ -757,12 +633,10 @@ export default function OperatorSuratListPage() {
                     persis seperti yang diminta.
                   </p>
                 )}
-
             </div>
 
             {/* Buttons */}
             <div className="sid-operator-delete-actions">
-
               <button
                 type="button"
                 disabled={deleting}
@@ -782,7 +656,6 @@ export default function OperatorSuratListPage() {
                     "DELETE" || deleting
                 }
                 onClick={async () => {
-
                   if (
                     deleteConfirmation !==
                     "DELETE"
@@ -791,7 +664,6 @@ export default function OperatorSuratListPage() {
                   }
 
                   try {
-
                     setDeleting(true);
 
                     await api.delete(
@@ -802,9 +674,7 @@ export default function OperatorSuratListPage() {
                     setDeleteConfirmation("");
 
                     await loadLetters();
-
                   } catch (err) {
-
                     console.error(
                       "GAGAL HAPUS SURAT:",
                       err.response?.data ?? err
@@ -814,13 +684,9 @@ export default function OperatorSuratListPage() {
                       err.response?.data?.message ??
                         "Gagal menghapus surat."
                     );
-
                   } finally {
-
                     setDeleting(false);
-
                   }
-
                 }}
                 className="delete"
               >
@@ -828,14 +694,11 @@ export default function OperatorSuratListPage() {
                   ? "Menghapus..."
                   : "Hapus Surat"}
               </button>
-
             </div>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 }
+
