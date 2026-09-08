@@ -1,3 +1,4 @@
+
 import {
   createContext,
   useContext,
@@ -14,6 +15,33 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   // ==========================================
+  // NORMALIZE USER RESPONSE
+  // ==========================================
+  // API /api/user mengembalikan:
+  //
+  // {
+  //   data: {
+  //     id: 12,
+  //     name: "...",
+  //     role: "rt",
+  //     ...
+  //   }
+  // }
+  //
+  // Frontend membutuhkan:
+  //
+  // {
+  //   id: 12,
+  //   name: "...",
+  //   role: "rt",
+  //   ...
+  // }
+  //
+  const normalizeUser = (response) => {
+    return response?.data?.data ?? response?.data ?? null;
+  };
+
+  // ==========================================
   // CHECK SESSION SAAT APP PERTAMA DIBUKA
   // ==========================================
 
@@ -24,14 +52,25 @@ export function AuthProvider({ children }) {
       try {
         const response = await api.get("/api/user");
 
+        const authenticatedUser = normalizeUser(response);
+
+        console.log("=================================");
+        console.log("AUTH SESSION CHECK");
+        console.log("RAW RESPONSE:", response.data);
+        console.log("AUTH USER:", authenticatedUser);
+        console.log("USER ROLE:", authenticatedUser?.role);
+        console.log("=================================");
+
         if (isMounted) {
-          setUser(response.data);
+          setUser(authenticatedUser);
         }
       } catch (error) {
-        // 401 = memang belum login.
-        // Tidak perlu dianggap sebagai error aplikasi.
         if (error.response?.status !== 401) {
-          console.error("CHECK SESSION ERROR:", error);
+          console.error(
+            "CHECK SESSION ERROR:",
+            error.response?.status,
+            error.response?.data || error.message
+          );
         }
 
         if (isMounted) {
@@ -59,14 +98,25 @@ export function AuthProvider({ children }) {
     try {
       const response = await api.get("/api/user");
 
-      setUser(response.data);
+      const authenticatedUser = normalizeUser(response);
 
-      return response.data;
+      console.log("=================================");
+      console.log("MANUAL SESSION CHECK");
+      console.log("RAW RESPONSE:", response.data);
+      console.log("AUTH USER:", authenticatedUser);
+      console.log("USER ROLE:", authenticatedUser?.role);
+      console.log("=================================");
+
+      setUser(authenticatedUser);
+
+      return authenticatedUser;
     } catch (error) {
-      // 401 = memang belum login.
-      // Tidak perlu dianggap sebagai error aplikasi.
       if (error.response?.status !== 401) {
-        console.error("CHECK SESSION ERROR:", error);
+        console.error(
+          "CHECK SESSION ERROR:",
+          error.response?.status,
+          error.response?.data || error.message
+        );
       }
 
       setUser(null);
@@ -82,19 +132,54 @@ export function AuthProvider({ children }) {
   // ==========================================
 
   const login = async (loggedUser = null) => {
-    // User sudah didapat dari response POST /login
-    if (loggedUser) {
-      setUser(loggedUser);
+    // ==========================================
+    // USER DARI RESPONSE LOGIN
+    // ==========================================
 
-      return loggedUser;
+    if (loggedUser) {
+      const authenticatedUser =
+        loggedUser?.data ?? loggedUser;
+
+      console.log("=================================");
+      console.log("LOGIN USER");
+      console.log("AUTH USER:", authenticatedUser);
+      console.log("ROLE:", authenticatedUser?.role);
+      console.log("=================================");
+
+      setUser(authenticatedUser);
+
+      return authenticatedUser;
     }
 
-    // Fallback jika login dipanggil tanpa user
-    const response = await api.get("/api/user");
+    // ==========================================
+    // FALLBACK
+    // ==========================================
 
-    setUser(response.data);
+    try {
+      const response = await api.get("/api/user");
 
-    return response.data;
+      const authenticatedUser = normalizeUser(response);
+
+      console.log("=================================");
+      console.log("LOGIN FALLBACK USER");
+      console.log("AUTH USER:", authenticatedUser);
+      console.log("ROLE:", authenticatedUser?.role);
+      console.log("=================================");
+
+      setUser(authenticatedUser);
+
+      return authenticatedUser;
+    } catch (error) {
+      console.error(
+        "LOGIN SESSION ERROR:",
+        error.response?.status,
+        error.response?.data || error.message
+      );
+
+      setUser(null);
+
+      return null;
+    }
   };
 
   // ==========================================

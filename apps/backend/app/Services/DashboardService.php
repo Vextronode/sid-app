@@ -14,6 +14,7 @@ class DashboardService
         'kasi_pelayanan',
         'kaur_tu_umum',
         'petugas_desa',
+        'kadus',
     ];
 
     private const WEEK_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];

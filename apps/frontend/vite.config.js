@@ -8,13 +8,16 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+
     VitePWA({
       registerType: "autoUpdate",
+
       includeAssets: [
         "assets/icons/icon-192.png",
         "assets/icons/icon-512.png",
         "assets/icons/icon-512-maskable.png",
       ],
+
       manifest: {
         name: "SIDUTama Cibenda",
         short_name: "SIDUTama",
@@ -25,62 +28,76 @@ export default defineConfig({
         orientation: "portrait",
         start_url: "/",
         scope: "/",
+
         icons: [
           {
-            src: '/assets/icons/icon-192.png',
-            sizes: '192x192',
-            type: 'image/png',
+            src: "/assets/icons/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
           },
           {
-            src: '/assets/icons/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
+            src: "/assets/icons/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
           },
           {
-            src: '/assets/icons/icon-512-maskable.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
+            src: "/assets/icons/icon-512-maskable.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
           },
         ],
       },
+
       workbox: {
-        navigateFallback: '/index.html',
+        navigateFallback: "/index.html",
+
         runtimeCaching: [
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
-            handler: 'NetworkFirst',
+            handler: "NetworkFirst",
+
             options: {
-              cacheName: 'api-cache',
+              cacheName: "api-cache",
+
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 60,
               },
+
               cacheableResponse: {
                 statuses: [0, 200],
-              }
-            }
-          }
-        ]
-      }
-    })
+              },
+            },
+          },
+        ],
+      },
+    }),
   ],
+
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+
   server: {
     host: "127.0.0.1",
     port: 5173,
+
     allowedHosts: true,
+
     proxy: {
       "/api": {
         target: "http://127.0.0.1:8000",
+        changeOrigin: true,
       },
+
       "/sanctum": {
         target: "http://127.0.0.1:8000",
+        changeOrigin: true,
       },
     },
   },
 });
+
