@@ -1,7 +1,15 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/set-state-in-effect */
+
 // ==========================================
 // useSuratDetailKadus.js
-// Mengambil detail surat Kadus dari backend.
-// Mengikuti pola useSuratDetailRW.
+//
+// Mengambil detail surat untuk monitoring Kadus.
+//
+// Kadus hanya monitoring:
+// Submit → RT → Selesai
+//
+// Tidak ada aksi approve / reject.
 // ==========================================
 
 import { useEffect, useState } from "react";
@@ -9,13 +17,14 @@ import { getSuratDetail } from "@/features/approval/api";
 
 export function useSuratDetailKadus(id) {
   const [surat, setSurat] = useState(null);
-  const [isLoading, setIsLoading] = useState(Boolean(id));
+  const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // ===============================
-  // Refresh detail surat
-  // ===============================
-  const refresh = async () => {
+  // ==========================================
+  // Fetch detail surat
+  // ==========================================
+
+  const fetchDetail = async () => {
     if (!id) return;
 
     try {
@@ -27,9 +36,11 @@ export function useSuratDetailKadus(id) {
       setNotFound(false);
     } catch (error) {
       console.error(
-        "DETAIL KADUS ERROR",
+        "GET DETAIL KADUS ERROR:",
         error.response?.data ?? error
       );
+
+      setSurat(null);
 
       if (error.response?.status === 404) {
         setNotFound(true);
@@ -39,54 +50,24 @@ export function useSuratDetailKadus(id) {
     }
   };
 
-  // ===============================
-  // Load ketika id berubah
-  // ===============================
+  // ==========================================
+  // Load ketika ID berubah
+  // ==========================================
+
   useEffect(() => {
-    if (!id) return;
-
-    let isMounted = true;
-
-    const fetchDetail = async () => {
-      try {
-        setIsLoading(true);
-
-        const response = await getSuratDetail(id, "kadus");
-
-        if (isMounted) {
-          setSurat(response.data.data);
-          setNotFound(false);
-        }
-      } catch (error) {
-        console.error(
-          "DETAIL KADUS ERROR",
-          error.response?.data ?? error
-        );
-
-        if (
-          isMounted &&
-          error.response?.status === 404
-        ) {
-          setNotFound(true);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchDetail();
-
-    return () => {
-      isMounted = false;
-    };
+    if (id) {
+      fetchDetail();
+    }
   }, [id]);
+
+  // ==========================================
+  // Return
+  // ==========================================
 
   return {
     surat,
     isLoading,
     notFound,
-    refresh,
+    refresh: fetchDetail,
   };
 }

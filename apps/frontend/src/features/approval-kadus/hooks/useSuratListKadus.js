@@ -1,14 +1,36 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
+// ==========================================
+// useSuratListKadus.js
+//
+// Kadus = monitoring semua perjalanan surat.
+//
+// Workflow:
+// Submit → RT → RW → Kantor Desa
+//
+// Kadus tidak melakukan approve / reject.
+//
+// Fungsi hook:
+// - Mengambil semua surat Kadus
+// - Membatasi status yang relevan
+// - Filter jenis surat
+// - Filter status
+// - Search nomor surat / nama pemohon
+// - Refresh data
+// ==========================================
+
 import {
   useEffect,
   useMemo,
   useState,
 } from "react";
 
-import {
-  getKadusLetters,
-} from "../api";
+import { getKadusLetters } from "../api";
+import { RELEVANT_STATUSES } from "../constants/roleConfigKadus";
+
+// ==========================================
+// HOOK
+// ==========================================
 
 export function useSuratList({
   initialStatus = "",
@@ -18,10 +40,11 @@ export function useSuratList({
 
   const [search, setSearch] = useState("");
   const [filterJenis, setFilterJenis] = useState("");
-  const [filterStatus, setFilterStatus] = useState(initialStatus);
+  const [filterStatus, setFilterStatus] =
+    useState(initialStatus);
 
   // ==========================================
-  // Ambil surat Kadus
+  // Ambil semua surat untuk Kadus
   // ==========================================
 
   const fetchLetters = async () => {
@@ -30,10 +53,14 @@ export function useSuratList({
 
       const response = await getKadusLetters();
 
-      setLetters(response.data.data ?? []);
+      setLetters(
+        Array.isArray(response.data?.data)
+          ? response.data.data
+          : []
+      );
     } catch (error) {
       console.error(
-        "GET KADUS LETTER ERROR",
+        "GET KADUS LETTER ERROR:",
         error.response?.data ?? error
       );
 
@@ -43,18 +70,33 @@ export function useSuratList({
     }
   };
 
+  // ==========================================
+  // INITIAL LOAD
+  // ==========================================
+
   useEffect(() => {
     fetchLetters();
   }, []);
 
   // ==========================================
-  // Filter data
+  // FILTER DATA
   // ==========================================
 
   const data = useMemo(() => {
     let result = [...letters];
 
-    // filter jenis surat
+    // ========================================
+    // STATUS RELEVAN UNTUK KADUS
+    // ========================================
+
+    result = result.filter((letter) =>
+      RELEVANT_STATUSES.includes(letter.status)
+    );
+
+    // ========================================
+    // FILTER JENIS SURAT
+    // ========================================
+
     if (filterJenis) {
       result = result.filter(
         (letter) =>
@@ -62,7 +104,10 @@ export function useSuratList({
       );
     }
 
-    // filter status
+    // ========================================
+    // FILTER STATUS
+    // ========================================
+
     if (filterStatus) {
       result = result.filter(
         (letter) =>
@@ -70,13 +115,33 @@ export function useSuratList({
       );
     }
 
-    // pencarian nama pemohon
-    if (search) {
-      result = result.filter((letter) =>
-        letter.citizen?.name
-          ?.toLowerCase()
-          .includes(search.toLowerCase())
-      );
+    // ========================================
+    // SEARCH
+    //
+    // Bisa mencari:
+    // - Nomor surat
+    // - Nama pemohon
+    // ========================================
+
+    const keyword = search.trim().toLowerCase();
+
+    if (keyword) {
+      result = result.filter((letter) => {
+        const letterNumber = String(
+          letter.letter_number ?? ""
+        ).toLowerCase();
+
+        const applicantName = String(
+          letter.applicant_name ??
+          letter.citizen?.name ??
+          ""
+        ).toLowerCase();
+
+        return (
+          letterNumber.includes(keyword) ||
+          applicantName.includes(keyword)
+        );
+      });
     }
 
     return result;
@@ -86,6 +151,10 @@ export function useSuratList({
     filterStatus,
     search,
   ]);
+
+  // ==========================================
+  // RETURN
+  // ==========================================
 
   return {
     data,

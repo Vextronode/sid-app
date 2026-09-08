@@ -1,61 +1,252 @@
-import { Check, Clock, X } from "lucide-react";
-import { getStepStatuses } from "@/features/approval/constants/statusFlow";
 
-export default function ApprovalStepperKadus({ surat }) {
-  if (!surat) {
-    return null;
+import { Check, X, Loader2 } from "lucide-react";
+
+// ==========================================
+// ApprovalStepperKadus.jsx
+//
+// Monitoring Kadus:
+//
+// Submit -> RT -> Selesai
+//
+// Kadus hanya melihat progress.
+// Tidak ada aksi approve / reject.
+// ==========================================
+
+const STEPS = ["Submit", "RT", "Selesai"];
+
+// ==========================================
+// Normalisasi status
+// ==========================================
+
+function normalizeStatus(status) {
+  if (!status) return null;
+
+  // Jika API mengembalikan enum/object
+  if (typeof status === "object") {
+    return (
+      status.value ??
+      status.name ??
+      status.status ??
+      null
+    );
   }
 
-  const steps = getStepStatuses(surat);
+  return String(status).toLowerCase();
+}
+
+// ==========================================
+// Status surat -> kondisi stepper
+// ==========================================
+
+function getStepState(status) {
+  const normalizedStatus = normalizeStatus(status);
+
+  switch (normalizedStatus) {
+    // ========================================
+    // Baru diajukan
+    // Submit selesai
+    // RT sedang memproses
+    // ========================================
+
+    case "pending":
+      return {
+        submit: "done",
+        rt: "current",
+        selesai: "waiting",
+      };
+
+    // ========================================
+    // RT sudah approve
+    // Submit selesai
+    // RT selesai
+    // Proses berikutnya berjalan
+    // ========================================
+
+    case "rt_approved":
+      return {
+        submit: "done",
+        rt: "done",
+        selesai: "current",
+      };
+
+    // ========================================
+    // RT menolak
+    // ========================================
+
+    case "rt_rejected":
+      return {
+        submit: "done",
+        rt: "rejected",
+        selesai: "waiting",
+      };
+
+    // ========================================
+    // RW sudah approve
+    // Surat masih diproses menuju selesai
+    // ========================================
+
+    case "rw_approved":
+      return {
+        submit: "done",
+        rt: "done",
+        selesai: "current",
+      };
+
+    // ========================================
+    // RW menolak
+    // ========================================
+
+    case "rw_rejected":
+      return {
+        submit: "done",
+        rt: "done",
+        selesai: "rejected",
+      };
+
+    // ========================================
+    // Proses Kantor Desa
+    // ========================================
+
+    case "kasi_approved":
+    case "kaur_tu_umum_approved":
+      return {
+        submit: "done",
+        rt: "done",
+        selesai: "current",
+      };
+
+    // ========================================
+    // Surat sudah selesai
+    // ========================================
+
+    case "petugas_desa_approved":
+    case "completed":
+      return {
+        submit: "done",
+        rt: "done",
+        selesai: "done",
+      };
+
+    // ========================================
+    // Fallback
+    // ========================================
+
+    default:
+      return {
+        submit: "waiting",
+        rt: "waiting",
+        selesai: "waiting",
+      };
+  }
+}
+
+// ==========================================
+// COMPONENT
+// ==========================================
+
+export default function ApprovalStepperKadus({ surat }) {
+  const status = surat?.status;
+
+  const stepState = getStepState(status);
+
+  const states = [
+    stepState.submit,
+    stepState.rt,
+    stepState.selesai,
+  ];
 
   return (
-    <div className="flex items-center justify-center gap-1 mb-8 flex-wrap">
-      {steps.map((step, index) => {
-        let circleClass = "bg-gray-200 text-gray-500";
-        let icon = index + 1;
-        let statusText = "Menunggu";
+    <div className="sid-stepper">
+      {STEPS.map((label, index) => {
+        const currentState = states[index];
 
-        if (step.state === "done") {
-          circleClass = "bg-green-500 text-white";
-          icon = <Check size={16} />;
-          statusText = step.timestamp
-            ? new Date(step.timestamp).toLocaleDateString("id-ID")
-            : "Selesai";
-        } else if (step.state === "rejected") {
-          circleClass = "bg-red-500 text-white";
-          icon = <X size={16} />;
-          statusText = step.timestamp
-            ? `Ditolak · ${step.timestamp}`
-            : "Ditolak";
-        } else if (step.state === "current") {
-          circleClass = "bg-yellow-100 text-yellow-600";
-          icon = <Clock size={16} />;
-          statusText = "Sedang diproses";
-        }
+        const isRejected =
+          currentState === "rejected";
+
+        const isDone =
+          currentState === "done";
+
+        const isCurrent =
+          currentState === "current";
+
+        const isWaiting =
+          currentState === "waiting";
+
+        // ==================================
+        // STEP CLASS
+        // ==================================
+
+        const stepClass = isRejected
+          ? "rejected"
+          : isDone
+            ? "done"
+            : isCurrent
+              ? "current"
+              : "waiting";
 
         return (
           <div
-            key={step.label}
-            className="flex items-center"
+            key={label}
+            className="sid-stepper-item"
           >
-            <div className="flex flex-col items-center gap-1">
+            <div className="sid-stepper-content">
+
+              {/* ==================================
+                  Circle
+              ================================== */}
+
               <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium ${circleClass}`}
+                className={`sid-stepper-circle ${stepClass}`}
               >
-                {icon}
+                {isRejected ? (
+                  <X
+                    size={18}
+                    strokeWidth={2.5}
+                  />
+                ) : isDone ? (
+                  <Check
+                    size={18}
+                    strokeWidth={2.5}
+                  />
+                ) : isCurrent ? (
+                  <Loader2
+                    size={16}
+                    strokeWidth={2.5}
+                    className="animate-spin"
+                  />
+                ) : (
+                  index + 1
+                )}
               </div>
 
-              <span className="text-xs text-gray-600 text-center w-20">
-                {step.label}
+              {/* ==================================
+                  Label
+              ================================== */}
+
+              <span
+                className={`sid-stepper-label ${stepClass}`}
+              >
+                {label}
               </span>
 
-              <span className="text-[10px] text-gray-400 text-center w-20">
-                {statusText}
+              {/* ==================================
+                  Status
+              ================================== */}
+
+              <span className="sid-stepper-status">
+                {isRejected && "Ditolak"}
+                {isDone && "Selesai"}
+                {isCurrent && "Menunggu"}
+                {isWaiting && "Menunggu"}
               </span>
             </div>
 
-            {index < steps.length - 1 && (
-              <div className="w-10 h-px bg-gray-300 mx-1" />
+            {/* ==================================
+                Connector
+            ================================== */}
+
+            {index < STEPS.length - 1 && (
+              <div className="sid-stepper-connector" />
             )}
           </div>
         );

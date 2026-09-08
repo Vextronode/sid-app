@@ -1,18 +1,28 @@
-
 /* eslint-disable react-hooks/set-state-in-effect */
 
 // ==========================================
 // KadusListPage.jsx
-// Desktop gaya baru, tapi read-only — cuma tombol Lihat,
-// tanpa Setuju/Tolak.
+// Daftar permohonan surat Kadus
+//
+// STATUS:
+// - Kadus hanya memiliki akses monitoring.
+// - Kadus tidak memiliki kewenangan approve/reject.
+// - Kadus dapat melihat daftar dan detail surat.
+//
+// Workflow monitoring:
+// Submit -> RT -> RW -> Selesai
+//
+// Styling menggunakan SID Global Theme.
+// Struktur dibuat konsisten dengan RWListPage.jsx.
 // ==========================================
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Eye } from 'lucide-react';
+import { Search } from 'lucide-react';
+
 import { useSuratList } from '@/features/approval-kadus/hooks/useSuratListKadus';
-import StatusBadgeRT from '@/features/approval-rt/components/StatusBadgeRT';
 import SuratDetailModalKadus from '@/features/approval-kadus/components/SuratDetailModalKadus';
+import StatusBadgeRT from '@/features/approval-rt/components/StatusBadgeRT';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { FooterDesa } from '@/components/layout/FooterDesa';
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
@@ -21,8 +31,15 @@ const ITEMS_PER_PAGE = 5;
 
 export default function KadusListPage() {
   const [searchParams] = useSearchParams();
+
   const initialStatus = searchParams.get('status') ?? '';
+
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedId, setSelectedId] = useState(null);
+
+  // ==========================================
+  // DATA
+  // ==========================================
 
   const {
     data,
@@ -31,11 +48,34 @@ export default function KadusListPage() {
     setSearch,
     filterStatus,
     setFilterStatus,
-  } = useSuratList({ initialStatus });
+    refresh,
+  } = useSuratList({
+    initialStatus,
+  });
+
+  // ==========================================
+  // AUTO REFRESH DATA SURAT
+  // ==========================================
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refresh();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [refresh]);
+
+  // ==========================================
+  // RESET PAGINATION
+  // ==========================================
 
   useEffect(() => {
     setCurrentPage(1);
   }, [search, filterStatus]);
+
+  // ==========================================
+  // PAGINATION
+  // ==========================================
 
   const totalPages = Math.max(
     1,
@@ -43,7 +83,8 @@ export default function KadusListPage() {
   );
 
   const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const start =
+      (currentPage - 1) * ITEMS_PER_PAGE;
 
     return data.slice(
       start,
@@ -51,336 +92,596 @@ export default function KadusListPage() {
     );
   }, [data, currentPage]);
 
-  const [selectedId, setSelectedId] = useState(null);
+  // ==========================================
+  // BUKA DETAIL
+  //
+  // KADUS SELALU READ-ONLY.
+  // ==========================================
+
+  const handleOpenDetail = (surat) => {
+    setSelectedId(surat.id);
+  };
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <>
-      {/* ===== DESKTOP ===== */}
-      <div className="hidden md:block p-6">
-        <p className="text-xs text-gray-400 mb-1">
-          Admin /{' '}
-          <span className="text-gray-600">
-            Daftar Permohonan Surat (Monitoring)
-          </span>
-        </p>
+      {/* ========================================
+          DESKTOP
+          ======================================== */}
 
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">
-          Daftar Permohonan Surat
-        </h1>
+      <div className="rw-page-desktop">
 
-        <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">
-                Pencarian Cepat
-              </p>
+        <div className="sid-page rw-page-content">
 
-              <div className="relative">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
+          {/* ======================================
+              HEADER
+              ====================================== */}
 
-                <input
-                  defaultValue={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Nomor surat atau nama pemohon..."
-                  className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">
-                Status
-              </p>
-
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full border rounded-full px-3 py-2.5 text-sm text-gray-600 outline-none focus:border-green-500"
-              >
-                <option value="">Semua Status</option>
-                <option value="pending">Pending</option>
-                <option value="rt_approved">RT Approved</option>
-                <option value="rt_rejected">RT Rejected</option>
-                <option value="rw_approved">RW Approved</option>
-                <option value="rw_rejected">RW Rejected</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-gray-400 text-[10px] uppercase">
-                <th className="py-3 px-5 font-semibold">No. Surat</th>
-                <th className="py-3 px-5 font-semibold">Pemohon</th>
-                <th className="py-3 px-5 font-semibold">Jenis</th>
-                <th className="py-3 px-5 font-semibold">Tanggal</th>
-                <th className="py-3 px-5 font-semibold">Status</th>
-                <th className="py-3 px-5 font-semibold text-right">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="text-center text-gray-400 py-10"
-                  >
-                    Memuat data surat...
-                  </td>
-                </tr>
-              ) : paginatedData.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="text-center text-gray-400 py-10"
-                  >
-                    Belum ada surat.
-                  </td>
-                </tr>
-              ) : (
-                paginatedData.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="border-b last:border-0 hover:bg-gray-50"
-                  >
-                    <td className="py-4 px-5 font-semibold text-gray-800">
-                      #{s.letter_number ?? '-'}
-                    </td>
-
-                    <td className="py-4 px-5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold shrink-0">
-                          {(s.applicant_name ?? '?')
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .slice(0, 2)}
-                        </div>
-
-                        <span className="font-medium text-gray-800">
-                          {s.applicant_name}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td className="py-4 px-5 text-gray-600">
-                      {s.letter_type?.name ?? '-'}
-                    </td>
-
-                    <td className="py-4 px-5 text-gray-500">
-                      {s.submitted_at
-                        ? new Date(
-                            s.submitted_at
-                          ).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                          })
-                        : '-'}
-                    </td>
-
-                    <td className="py-4 px-5">
-                      <StatusBadgeRT status={s.status} />
-                    </td>
-
-                    <td className="py-4 px-5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(s.id)}
-                        className="w-9 h-9 rounded-lg border flex items-center justify-center hover:bg-gray-100 text-gray-600 ml-auto"
-                      >
-                        <Eye size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-
-          <div className="flex items-center justify-between px-5 py-4 border-t">
-            <p className="text-xs text-gray-500">
-              Menampilkan{' '}
-              {paginatedData.length === 0
-                ? 0
-                : (currentPage - 1) * ITEMS_PER_PAGE + 1}
-              -
-              {(currentPage - 1) * ITEMS_PER_PAGE +
-                paginatedData.length}{' '}
-              dari {data.length} data
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  setCurrentPage((p) => Math.max(1, p - 1))
-                }
-                disabled={currentPage === 1}
-                className="border rounded-lg px-4 py-2 text-xs text-gray-600 disabled:opacity-40"
-              >
-                Sebelumnya
-              </button>
-
-              {Array.from(
-                { length: totalPages },
-                (_, i) => i + 1
-              ).map((page) => (
-                <button
-                  type="button"
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded-lg text-xs font-medium ${
-                    page === currentPage
-                      ? 'bg-green-600 text-white'
-                      : 'border text-gray-600'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                onClick={() =>
-                  setCurrentPage((p) =>
-                    Math.min(totalPages, p + 1)
-                  )
-                }
-                disabled={currentPage === totalPages}
-                className="border rounded-lg px-4 py-2 text-xs text-gray-600 disabled:opacity-40"
-              >
-                Selanjutnya
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ===== MOBILE ===== */}
-      <div className="md:hidden flex flex-col min-h-screen bg-gray-50">
-        <div className="flex-1 px-4 pt-4">
-          <p className="text-green-700 font-semibold"></p>
-
-          <p className="text-xs text-gray-400 mb-4">
-            Dashboard Kepala Dusun
+          <p className="rw-breadcrumb">
+            Admin /{' '}
+            <span>
+              Daftar Permohonan Surat
+            </span>
           </p>
 
-          <h1 className="text-xl font-bold text-gray-800 mb-1">
+          <h1 className="sid-page-title">
+            Daftar Permohonan Surat
+          </h1>
+
+          <p className="sid-page-description">
+            Pantau permohonan surat warga di wilayah
+            dusun secara digital.
+          </p>
+
+          {/* ======================================
+              FILTER
+              ====================================== */}
+
+          <div className="sid-card rw-filter-card">
+
+            <div className="rw-filter-grid">
+
+              {/* ==================================
+                  PENCARIAN
+                  ================================== */}
+
+              <div>
+                <p className="rw-filter-label">
+                  Pencarian Cepat
+                </p>
+
+                <div className="rw-search-wrapper">
+
+                  <Search
+                    size={16}
+                    className="sid-search-icon"
+                  />
+
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) =>
+                      setSearch(e.target.value)
+                    }
+                    placeholder="Nomor surat atau nama pemohon..."
+                    className="sid-search-input"
+                  />
+
+                </div>
+              </div>
+
+              {/* ==================================
+                  STATUS
+                  ================================== */}
+
+              <div>
+
+                <p className="rw-filter-label">
+                  Status
+                </p>
+
+                <select
+                  value={filterStatus}
+                  onChange={(e) =>
+                    setFilterStatus(e.target.value)
+                  }
+                  className="sid-select rw-status-select"
+                >
+
+                  <option value="">
+                    Semua Status
+                  </option>
+
+                  <option value="pending">
+                    Menunggu RT
+                  </option>
+
+                  <option value="rt_approved">
+                    Diproses Setelah RT
+                  </option>
+
+                  <option value="rt_rejected">
+                    Ditolak RT
+                  </option>
+
+                  <option value="rw_approved">
+                    Selesai
+                  </option>
+
+                  <option value="rw_rejected">
+                    Ditolak RW
+                  </option>
+
+                </select>
+
+              </div>
+
+            </div>
+          </div>
+
+          {/* ======================================
+              TABLE
+              ====================================== */}
+
+          <div className="sid-card rw-table-card">
+
+            <table className="rw-table">
+
+              <thead>
+
+                <tr className="rw-table-header">
+
+                  <th>
+                    No. Surat
+                  </th>
+
+                  <th>
+                    Pemohon
+                  </th>
+
+                  <th>
+                    Jenis
+                  </th>
+
+                  <th>
+                    Tanggal
+                  </th>
+
+                  <th>
+                    Status
+                  </th>
+
+                  <th>
+                    Aksi
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                {loading ? (
+
+                  <tr>
+
+                    <td
+                      colSpan={6}
+                      className="rw-table-message"
+                    >
+                      Memuat data surat...
+                    </td>
+
+                  </tr>
+
+                ) : paginatedData.length === 0 ? (
+
+                  <tr>
+
+                    <td
+                      colSpan={6}
+                      className="rw-table-message"
+                    >
+                      Belum ada surat.
+                    </td>
+
+                  </tr>
+
+                ) : (
+
+                  paginatedData.map((s) => (
+
+                    <tr
+                      key={s.id}
+                      className="rw-table-row"
+                    >
+
+                      {/* ============================
+                          NO SURAT
+                          ============================ */}
+
+                      <td className="rw-letter-number">
+                        #{s.letter_number ?? '-'}
+                      </td>
+
+                      {/* ============================
+                          PEMOHON
+                          ============================ */}
+
+                      <td className="rw-table-center">
+                        {s.applicant_name ?? '-'}
+                      </td>
+
+                      {/* ============================
+                          JENIS
+                          ============================ */}
+
+                      <td className="rw-table-center">
+                        {s.letter_type?.name ?? '-'}
+                      </td>
+
+                      {/* ============================
+                          TANGGAL
+                          ============================ */}
+
+                      <td className="rw-table-date">
+                        {s.submitted_at
+                          ? new Date(
+                              s.submitted_at
+                            ).toLocaleDateString(
+                              'id-ID',
+                              {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                              }
+                            )
+                          : '-'}
+                      </td>
+
+                      {/* ============================
+                          STATUS
+                          ============================ */}
+
+                      <td className="rw-table-center">
+                        <StatusBadgeRT
+                          status={s.status}
+                        />
+                      </td>
+
+                      {/* ============================
+                          AKSI
+                          ============================ */}
+
+                      <td className="rw-table-center">
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleOpenDetail(s)
+                          }
+                          className="rw-action-button"
+                        >
+                          Lihat
+                        </button>
+
+                      </td>
+
+                    </tr>
+
+                  ))
+
+                )}
+
+              </tbody>
+
+            </table>
+
+            {/* ==================================
+                PAGINATION DESKTOP
+                ================================== */}
+
+            <div className="rw-pagination">
+
+              <p className="rw-pagination-info">
+
+                Menampilkan{' '}
+
+                {paginatedData.length === 0
+                  ? 0
+                  : (currentPage - 1) *
+                      ITEMS_PER_PAGE +
+                    1}
+
+                -
+
+                {(currentPage - 1) *
+                  ITEMS_PER_PAGE +
+                  paginatedData.length}{' '}
+
+                dari {data.length} data
+
+              </p>
+
+              <div className="rw-pagination-buttons">
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCurrentPage((page) =>
+                      Math.max(1, page - 1)
+                    )
+                  }
+                  disabled={currentPage === 1}
+                  className="rw-pagination-nav"
+                >
+                  Sebelumnya
+                </button>
+
+                {Array.from(
+                  { length: totalPages },
+                  (_, i) => i + 1
+                ).map((page) => (
+
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() =>
+                      setCurrentPage(page)
+                    }
+                    className={`rw-pagination-page ${
+                      page === currentPage
+                        ? 'rw-pagination-page-active'
+                        : ''
+                    }`}
+                  >
+                    {page}
+                  </button>
+
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCurrentPage((page) =>
+                      Math.min(
+                        totalPages,
+                        page + 1
+                      )
+                    )
+                  }
+                  disabled={
+                    currentPage === totalPages
+                  }
+                  className="rw-pagination-nav"
+                >
+                  Selanjutnya
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* ======================================
+            FOOTER
+            ====================================== */}
+
+        <FooterDesa />
+
+      </div>
+
+      {/* ========================================
+          MOBILE
+          ======================================== */}
+
+      <div className="rw-page-mobile">
+
+        <div className="sid-page rw-mobile-content">
+
+          {/* ======================================
+              HEADER
+              ====================================== */}
+
+          <h1 className="sid-page-title">
             Semua Surat
           </h1>
 
-          <p className="text-sm text-gray-500 mb-4">
-            Monitoring seluruh permohonan surat warga
+          <p className="sid-page-description">
+            Pantau permohonan surat warga secara digital.
           </p>
 
-          <div className="relative mb-3">
+          {/* ======================================
+              SEARCH
+              ====================================== */}
+
+          <div className="rw-mobile-search">
+
             <Search
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="sid-search-icon"
             />
 
             <input
-              defaultValue={search}
-              onChange={(e) => setSearch(e.target.value)}
+              type="text"
+              value={search}
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
               placeholder="Cari nama pemohon..."
-              className="w-full border rounded-full pl-9 pr-3 py-2.5 text-sm outline-none focus:border-green-500 bg-white"
+              className="sid-search-input"
             />
+
           </div>
+
+          {/* ======================================
+              FILTER STATUS
+              ====================================== */}
 
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full border rounded-full px-3 py-2 text-xs text-gray-600 bg-white mb-4"
+            onChange={(e) =>
+              setFilterStatus(e.target.value)
+            }
+            className="sid-select rw-mobile-status-select"
           >
-            <option value="">Semua Status</option>
-            <option value="pending">pending</option>
-            <option value="rt_approved">rt_approved</option>
-            <option value="rt_rejected">rt_rejected</option>
-            <option value="rw_approved">rw_approved</option>
-            <option value="rw_rejected">rw_rejected</option>
+
+            <option value="">
+              Semua Status
+            </option>
+
+            <option value="pending">
+              Menunggu RT
+            </option>
+
+            <option value="rt_approved">
+              Diproses Setelah RT
+            </option>
+
+            <option value="rt_rejected">
+              Ditolak RT
+            </option>
+
+            <option value="rw_approved">
+              Selesai
+            </option>
+
+            <option value="rw_rejected">
+              Ditolak RW
+            </option>
+
           </select>
 
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
-            <div className="grid grid-cols-4 text-[10px] font-semibold text-gray-400 uppercase px-4 py-3 border-b">
-              <span>No.Surat</span>
-              <span className="text-center">Pemohon</span>
-              <span className="text-center">Jenis</span>
-              <span className="text-center">Tanggal</span>
+          {/* ======================================
+              MOBILE TABLE
+              ====================================== */}
+
+          <div className="sid-card rw-mobile-table-card">
+
+            <div className="rw-mobile-table-header">
+
+              <span>
+                No.Surat
+              </span>
+
+              <span>
+                Pemohon
+              </span>
+
+              <span>
+                Jenis
+              </span>
+
+              <span>
+                Tanggal
+              </span>
+
             </div>
 
             {loading ? (
-              <p className="text-center text-gray-400 text-sm py-8">
+
+              <p className="rw-mobile-message">
                 Memuat...
               </p>
+
             ) : paginatedData.length === 0 ? (
-              <p className="text-center text-gray-400 text-sm py-8">
+
+              <p className="rw-mobile-message">
                 Belum ada surat.
               </p>
+
             ) : (
+
               paginatedData.map((s) => (
+
                 <button
-                  type="button"
                   key={s.id}
-                  onClick={() => setSelectedId(s.id)}
-                  className="w-full grid grid-cols-4 items-center text-left px-4 py-3 border-b last:border-0 text-xs"
+                  type="button"
+                  onClick={() =>
+                    handleOpenDetail(s)
+                  }
+                  className="rw-mobile-row"
                 >
-                  <span className="text-gray-500">
+
+                  <span>
                     {s.letter_number ?? '-'}
                   </span>
 
-                  <span className="font-semibold text-gray-800 text-center">
-                    {s.applicant_name}
+                  <span className="rw-mobile-applicant">
+                    {s.applicant_name ?? '-'}
                   </span>
 
-                  <span className="text-gray-600 text-center">
+                  <span>
                     {s.letter_type?.name ?? '-'}
                   </span>
 
-                  <span className="text-gray-500 text-center">
+                  <span className="rw-mobile-date">
                     {s.submitted_at
                       ? new Date(
                           s.submitted_at
-                        ).toLocaleDateString('id-ID')
+                        ).toLocaleDateString(
+                          'id-ID'
+                        )
                       : '-'}
                   </span>
+
                 </button>
+
               ))
+
             )}
+
           </div>
 
-          <div className="flex justify-center gap-2 mb-4">
+          {/* ======================================
+              MOBILE PAGINATION
+              ====================================== */}
+
+          <div className="rw-mobile-pagination">
+
             {Array.from(
               { length: totalPages },
               (_, i) => i + 1
             ).map((page) => (
+
               <button
-                type="button"
                 key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 rounded-full text-xs font-medium ${
+                type="button"
+                onClick={() =>
+                  setCurrentPage(page)
+                }
+                className={`rw-mobile-page-button ${
                   page === currentPage
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white border text-green-600'
+                    ? 'rw-mobile-page-button-active'
+                    : ''
                 }`}
               >
                 {page}
               </button>
+
             ))}
+
           </div>
+
         </div>
 
-        <div className="pb-16">
+        {/* ======================================
+            FOOTER
+            ====================================== */}
+
+        <div className="sid-mobile-footer">
           <FooterDesa />
         </div>
+
+        {/* ======================================
+            MOBILE NAV
+            ====================================== */}
 
         <MobileBottomNav
           links={ADMIN_MOBILE_LINKS(
@@ -388,12 +689,20 @@ export default function KadusListPage() {
             '/admin/list-kadus'
           )}
         />
+
       </div>
+
+      {/* ========================================
+          DETAIL MODAL
+          ======================================== */}
 
       <SuratDetailModalKadus
         suratId={selectedId}
-        onClose={() => setSelectedId(null)}
+        onClose={() => {
+          setSelectedId(null);
+        }}
       />
+
     </>
   );
 }
