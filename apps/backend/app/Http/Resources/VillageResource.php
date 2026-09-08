@@ -21,6 +21,9 @@ class VillageResource extends JsonResource
             'head_name' => $this->head_name,
             'address' => $this->address,
             'phone' => $this->phone,
+            'history' => $this->history,
+            'vision' => $this->vision,
+            'mission' => $this->mission,
         ];
     }
 }
