@@ -25,7 +25,7 @@ class LetterApprovalRepositoryTest extends TestCase
     {
         $letter = Letter::factory()->create();
 
-        $result = $this->repository->findLatestPendingByLevel($letter, 'rw');
+        $result = $this->repository->findLatestPendingByLevel($letter, 'kepala_desa');
 
         $this->assertNull($result);
     }
@@ -34,11 +34,17 @@ class LetterApprovalRepositoryTest extends TestCase
     {
         $letter = Letter::factory()->create();
         $approval = $letter->approvals()->create([
-            'approval_level' => 'rw',
+            // 🔍 EV5-2-S2: 'rw' dihapus dari ENUM approval_level (RW
+            // bukan approver sejak v5.0). Diganti 'kepala_desa' — nilai
+            // ENUM valid berikutnya di posisi setara (step approver
+            // aktif kedua di flow default), murni untuk menjaga test ini
+            // tetap bisa dijalankan terhadap skema baru. Rewrite intent
+            // penuh (Kades/Sekdes service) tetap scope EV5-4-S5.
+            'approval_level' => 'kepala_desa',
             'deadline_at' => now()->addDays(3),
         ]);
 
-        $result = $this->repository->findLatestPendingByLevel($letter, 'rw');
+        $result = $this->repository->findLatestPendingByLevel($letter, 'kepala_desa');
 
         $this->assertSame($approval->id, $result->id);
     }
@@ -47,7 +53,7 @@ class LetterApprovalRepositoryTest extends TestCase
     {
         $letter = Letter::factory()->create();
         $approval = $letter->approvals()->create([
-            'approval_level' => 'rw',
+            'approval_level' => 'kepala_desa',
             'deadline_at' => now()->addDays(3),
         ]);
         $approver = User::factory()->create();

@@ -6,6 +6,7 @@ use App\Enums\LetterStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Letter extends Model
 {
@@ -25,7 +26,9 @@ class Letter extends Model
         'payload',
         'notes',
         'status',
-        'revision_count',
+        'flow_id',
+        'current_step_order',
+        'rejected_at_step',
         'is_overdue',
         'expires_at',
         'submitted_at',
@@ -43,6 +46,9 @@ class Letter extends Model
 
         'status' => LetterStatus::class,
 
+        'current_step_order' => 'integer',
+        'rejected_at_step' => 'integer',
+
         'is_overdue' => 'boolean',
         'expires_at' => 'datetime',
         'submitted_at' => 'datetime',
@@ -58,45 +64,40 @@ class Letter extends Model
         });
     }
 
-    protected $appends = [
-        'is_overdue',
-    ];
-
-    public function getIsOverdueAttribute(): bool
-    {
-        $approval = $this->approvals
-            ->whereNull('approved_at')
-            ->sortBy('deadline_at')
-            ->first();
-
-        if (! $approval || ! $approval->deadline_at) {
-            return false;
-        }
-
-        return now()->gt($approval->deadline_at);
-    }
-
-    public function village()
+    public function village(): BelongsTo
     {
         return $this->belongsTo(Village::class);
     }
 
-    public function approvals()
+    public function flow(): BelongsTo
+    {
+        return $this->belongsTo(ApprovalFlow::class, 'flow_id');
+    }
+
+    public function currentFlowStep(): ?FlowStep
+    {
+        return FlowStep::query()
+            ->where('flow_id', $this->flow_id)
+            ->where('step_order', $this->current_step_order)
+            ->first();
+    }
+
+    public function approvals(): HasMany
     {
         return $this->hasMany(LetterApproval::class);
     }
 
-    public function letterType()
+    public function letterType(): BelongsTo
     {
         return $this->belongsTo(LetterType::class);
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
     }
 
-    public function statusLogs()
+    public function statusLogs(): HasMany
     {
         return $this->hasMany(LetterStatusLog::class)->latest('created_at');
     }

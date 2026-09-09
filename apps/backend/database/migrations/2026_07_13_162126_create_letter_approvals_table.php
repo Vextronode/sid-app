@@ -22,15 +22,36 @@ return new class extends Migration
 
             $table->enum('approval_level', [
                 'rt',
-                'rw',
-                'kadus',
-                'kasi',
+                'kepala_desa',
+                'sekdes',
+                'kasi_pelayanan',
+                'kaur_tu_umum',
             ]);
+
+            $table->foreignId('flow_step_id')
+                ->nullable()
+                ->constrained('flow_steps')
+                ->nullOnDelete();
+
+            $table->enum('action', ['approved', 'rejected'])->nullable();
+            $table->text('notes')->nullable();
 
             $table->timestamp('deadline_at')->nullable();
             $table->timestamp('reminded_at')->nullable();
 
             $table->timestamps();
+
+            // TDD "Indexing Strategy - Table letter_approvals":
+            //   idx_approvals_letter — semua approval untuk 1 surat.
+            $table->index('letter_id', 'idx_approvals_letter');
+
+            // idx_approvals_deadline — scheduler cek deadline yang
+            // terlewat (SendApprovalReminderJob).
+            $table->index('deadline_at', 'idx_approvals_deadline');
+
+            // idx_approvals_level — cek apakah sudah ada approval tahap
+            // tertentu untuk surat tertentu.
+            $table->index(['letter_id', 'approval_level'], 'idx_approvals_level');
         });
     }
 

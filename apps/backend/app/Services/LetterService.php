@@ -61,6 +61,11 @@ class LetterService
 
                 'status' => 'pending',
 
+                // Snapshot flow_id dari letter type saat submit — dikunci,
+                // tidak boleh ikut berubah walau letter_types.flow_id
+                // berubah di kemudian hari (lihat LettersMigrationTest).
+                'flow_id' => $letterType->flow_id,
+
                 'submitted_at' => now(),
 
             ]);
