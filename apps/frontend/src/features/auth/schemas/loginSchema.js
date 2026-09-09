@@ -1,11 +1,9 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  nik: z
+  username: z
     .string()
-    .min(1, "NIK wajib diisi")
-    .length(16, "NIK harus 16 digit")
-    .regex(/^\d+$/, "NIK hanya boleh berisi angka"),
+    .min(1, "Username wajib diisi"),
 
   password: z
     .string()

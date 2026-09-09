@@ -41,7 +41,7 @@ export default function RegisterPage() {
         await api.get('/sanctum/csrf-cookie');
       await api.post('/api/register', form);
       setSuccess(true);
-      setTimeout(() => navigate('/login'), 1500);
+      setTimeout(() => navigate('/loginpage'), 1500);
     } catch (err) {
       const errors = err.response?.data?.errors;
       const message = errors ? Object.values(errors)[0]?.[0] : err.response?.data?.message ?? 'Pendaftaran gagal, coba lagi.';
@@ -154,7 +154,7 @@ export default function RegisterPage() {
 
         <div className="border-t mt-6 pt-4 text-center">
           <p className="text-sm text-gray-500">
-            Sudah punya akun? <Link to="/login" className="text-green-600 font-medium hover:underline">Masuk di sini</Link>
+            Sudah punya akun? <Link to="/loginpage" className="text-green-600 font-medium hover:underline">Masuk di sini</Link>
           </p>
           <p className="text-[11px] text-gray-400 mt-3">© 2024 Sistem Informasi Desa Modern.</p>
         </div>

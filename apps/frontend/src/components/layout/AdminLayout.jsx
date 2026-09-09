@@ -34,7 +34,7 @@ export function AdminLayout({ children, menuItems }) {
   const handleLogout = () => {
     setSettingsOpen(false);
     logout?.();
-    navigate('/login');
+    navigate('/loginpage');
   };
 
   return (

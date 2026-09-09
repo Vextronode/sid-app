@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
     try {
       await api.post('/api/reset-password', { nik, password: newPassword, password_confirmation: confirmPassword });
       setSuccess(true);
-      setTimeout(() => navigate('/login'), 1500);
+      setTimeout(() => navigate('/loginpage'), 1500);
     } catch (err) {
       setError(err.response?.data?.message ?? 'Gagal reset password.');
     } finally {
@@ -169,7 +169,7 @@ export default function ForgotPasswordPage() {
         )}
 
         <div className="border-t mt-6 pt-4 text-center">
-          <Link to="/login" className="text-sm text-green-600 font-medium hover:underline flex items-center justify-center gap-1">
+          <Link to="/loginpage" className="text-sm text-green-600 font-medium hover:underline flex items-center justify-center gap-1">
             <ArrowLeft size={14} /> Kembali ke Login
           </Link>
           <p className="text-[11px] text-gray-400 mt-3">© 2024 Sistem Informasi Desa Modern.</p>

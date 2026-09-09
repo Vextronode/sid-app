@@ -34,7 +34,7 @@ export function WargaLayout({ children }) {
   const handleLogout = () => {
     setSettingsOpen(false);
     logout?.();
-    navigate('/login');
+    navigate('/loginpage');
   };
 
   return (

@@ -59,7 +59,16 @@
 
   --sid-status-overdue-bg: #FAECE7;
   --sid-status-overdue-text: #712B13;
+  /* =========================
+   FORM ERROR
+   ========================= */
 
+  :root {
+    --sid-danger: #C53030;
+    --sid-danger-hover: #9B2C2C;
+    --sid-danger-soft: #FCEBEB;
+    --sid-danger-border: #E80F0F;
+  }
   /* =========================
      ACCENT
      ========================= */
@@ -4772,7 +4781,17 @@
     0 0 0 2px
     rgb(0 0 0 / 0%);
 }
+.sid-login-input-error {
+  border-color: var(--sid-status-rejected-text);
+}
 
+.sid-login-input-error:focus {
+  border-color: var(--sid-status-rejected-text);
+
+  box-shadow:
+    0 0 0 2px
+    rgba(232, 15, 15, 0.10);
+}
 
 /* =========================================================
    INPUT ICON
@@ -5150,6 +5169,21 @@
 
 }
 
+/* =========================================================
+   FIELD ERROR
+   ========================================================= */
+
+.sid-login-field-error {
+  display: block;
+
+  margin-top: 5px;
+
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 500;
+
+  color: var(--sid-status-rejected-text);
+}
 /* =========================================================
    DAFTAR SURAT SAYA
    ========================================================= */
@@ -19938,4 +19972,47 @@
   .sid-help-modal-content {
     padding: 20px;
   }
+}
+
+/* =========================================================
+   LOGIN FORM ERROR
+   ========================================================= */
+
+.sid-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  margin-bottom: 16px;
+}
+
+.sid-form-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sid-form-field-error {
+  margin: 0;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  color: var(--sid-danger);
+}
+
+.sid-input-error {
+  border-color: var(--sid-danger-border) !important;
+
+  background: var(--sid-surface-card);
+
+  box-shadow: none;
+}
+
+.sid-input-error:focus {
+  border-color: var(--sid-danger-border) !important;
+
+  box-shadow:
+    0 0 0 2px rgba(232, 15, 15, 0.10);
 }
