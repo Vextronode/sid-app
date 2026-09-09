@@ -1,3 +1,4 @@
+
 // ==========================================
 // RWDashboardPage.jsx
 // Dashboard RW
@@ -6,7 +7,7 @@
 // Styling menggunakan SID Global Theme.
 // ==========================================
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Mail,
@@ -24,7 +25,6 @@ import { getGreeting } from '@/lib/utils/greeting';
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
 
-
 // ==========================================
 // COMPONENT
 // ==========================================
@@ -36,41 +36,53 @@ export default function RWDashboardPage() {
   const [letters, setLetters] = useState([]);
   const [loading, setLoading] = useState(true);
 
-
   // ==========================================
   // LOAD DATA RW
   // ==========================================
 
-  const loadDashboardData = async (showLoading = true) => {
-    if (showLoading) {
-      setLoading(true);
-    }
-
-    try {
-      const res = await getSuratList('rw');
-
-      setLetters(res.data?.data ?? []);
-    } catch (err) {
-      console.error(
-        'GET RW LIST ERROR',
-        err.response?.data ?? err
-      );
-    } finally {
+  const loadDashboardData = useCallback(
+    async (showLoading = true) => {
       if (showLoading) {
-        setLoading(false);
+        setLoading(true);
       }
-    }
-  };
 
+      try {
+        const res = await getSuratList('rw');
+
+        setLetters(res.data?.data ?? []);
+      } catch (err) {
+        console.error(
+          'GET RW LIST ERROR',
+          err.response?.data ?? err
+        );
+      } finally {
+        if (showLoading) {
+          setLoading(false);
+        }
+      }
+    },
+    []
+  );
 
   // ==========================================
   // LOAD PERTAMA KALI
   // ==========================================
 
   useEffect(() => {
-    loadDashboardData(true);
-  }, []);
+    let isMounted = true;
 
+    const loadInitialData = async () => {
+      if (!isMounted) return;
+
+      await loadDashboardData(true);
+    };
+
+    loadInitialData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loadDashboardData]);
 
   // ==========================================
   // AUTO REFRESH SETIAP 5 DETIK
@@ -82,27 +94,24 @@ export default function RWDashboardPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
-
+  }, [loadDashboardData]);
 
   // ==========================================
   // STATISTIK
   // ==========================================
 
   const stats = useMemo(() => {
-    const permohonanBaru = letters.filter(
-      (s) => s.status === 'rt_approved'
-    ).length;
+    const permohonanBaru = letters.length;
 
     const sedangDiproses = letters.filter(
       (s) =>
         !s.status?.endsWith('_rejected') &&
-        s.status !== 'rw_approved' &&
-        s.status !== 'rt_approved'
+        s.status !== '_approved' &&
+        s.status !== '_approved'
     ).length;
 
     const disetujuiFinal = letters.filter(
-      (s) => s.status === 'rw_approved'
+      (s) => s.status === 'kasi_approved'
     ).length;
 
     const ditolak = letters.filter(
@@ -117,7 +126,6 @@ export default function RWDashboardPage() {
     };
   }, [letters]);
 
-
   // ==========================================
   // STAT CARDS
   // ==========================================
@@ -125,13 +133,13 @@ export default function RWDashboardPage() {
   const STAT_CARDS = [
     {
       key: 'permohonan',
-      label: 'Menunggu',
+      label: 'Total Surat',
       value: stats.permohonanBaru,
       icon: Mail,
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
       onClick: () =>
-        navigate('/admin/list-rw?status=rt_approved'),
+        navigate('/admin/list-rw'),
     },
 
     {
@@ -168,7 +176,6 @@ export default function RWDashboardPage() {
     },
   ];
 
-
   // ==========================================
   // TANGGAL
   // ==========================================
@@ -183,7 +190,6 @@ export default function RWDashboardPage() {
     }
   );
 
-
   // ==========================================
   // RENDER
   // ==========================================
@@ -195,15 +201,12 @@ export default function RWDashboardPage() {
           ======================================== */}
 
       <div className="sid-desktop-page">
-
         <div className="sid-page sid-page-dashboard">
-
           {/* ======================================
               HEADER
               ====================================== */}
 
           <div className="sid-dashboard-header">
-
             <div>
               <h1 className="sid-page-title">
                 {getGreeting()}, {user?.name ?? 'Bapak/Ibu'}
@@ -218,16 +221,13 @@ export default function RWDashboardPage() {
             <span className="sid-dashboard-date">
               {hariIni}
             </span>
-
           </div>
-
 
           {/* ======================================
               STAT CARD
               ====================================== */}
 
           <div className="sid-stat-grid">
-
             {STAT_CARDS.map((card) => {
               const Icon = card.icon;
 
@@ -237,9 +237,7 @@ export default function RWDashboardPage() {
                   onClick={card.onClick}
                   className="sid-stat-card"
                 >
-
                   <div className="sid-stat-card-content">
-
                     <div>
                       <p className="sid-stat-label">
                         {card.label}
@@ -259,15 +257,11 @@ export default function RWDashboardPage() {
                     >
                       <Icon size={20} />
                     </div>
-
                   </div>
-
                 </button>
               );
             })}
-
           </div>
-
 
           {/* ======================================
               GRAFIK
@@ -276,27 +270,21 @@ export default function RWDashboardPage() {
           <div className="sid-dashboard-chart">
             <SuratStatChart letters={letters} />
           </div>
-
         </div>
-
 
         {/* ======================================
             FOOTER
             ====================================== */}
 
         <FooterDesa />
-
       </div>
-
 
       {/* ========================================
           MOBILE
           ======================================== */}
 
       <div className="sid-mobile-page">
-
         <div className="sid-page sid-mobile-content">
-
           {/* ======================================
               HEADER
               ====================================== */}
@@ -310,13 +298,11 @@ export default function RWDashboardPage() {
             {user?.wilayah_label ?? 'RW'} dengan lebih cepat.
           </p>
 
-
           {/* ======================================
               STAT CARD
               ====================================== */}
 
           <div className="sid-stat-grid-mobile">
-
             {STAT_CARDS.map((card) => {
               const Icon = card.icon;
 
@@ -326,7 +312,6 @@ export default function RWDashboardPage() {
                   onClick={card.onClick}
                   className="sid-stat-card sid-stat-card-mobile"
                 >
-
                   <div
                     className="sid-stat-icon-mobile"
                     style={{
@@ -344,13 +329,10 @@ export default function RWDashboardPage() {
                   <p className="sid-stat-value-mobile">
                     {loading ? '-' : card.value}
                   </p>
-
                 </button>
               );
             })}
-
           </div>
-
 
           {/* ======================================
               GRAFIK
@@ -359,9 +341,7 @@ export default function RWDashboardPage() {
           <div className="sid-dashboard-chart-mobile">
             <SuratStatChart letters={letters} />
           </div>
-
         </div>
-
 
         {/* ======================================
             FOOTER
@@ -370,7 +350,6 @@ export default function RWDashboardPage() {
         <div className="sid-mobile-footer">
           <FooterDesa />
         </div>
-
 
         {/* ======================================
             MOBILE NAV
@@ -382,8 +361,8 @@ export default function RWDashboardPage() {
             '/admin/list-rw'
           )}
         />
-
       </div>
     </>
   );
 }
+

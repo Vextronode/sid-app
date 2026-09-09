@@ -18,22 +18,12 @@ const STATUS_LABEL = {
   },
 
   rt_approved: {
-    label: 'DIPROSES RW',
+    label: 'DIPROSES',
     className: 'status-progress',
   },
 
   rt_rejected: {
     label: 'DITOLAK RT',
-    className: 'status-rejected',
-  },
-
-  rw_approved: {
-    label: 'DIPROSES',
-    className: 'status-progress',
-  },
-
-  rw_rejected: {
-    label: 'DITOLAK RW',
     className: 'status-rejected',
   },
 

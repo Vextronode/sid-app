@@ -4,11 +4,16 @@ import api from "@/lib/api";
 
 export function useLoginForm() {
   const [formData, setFormData] = useState({
-    nik: "",
+    username: "",
     password: "",
   });
 
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  // ==========================================
+  // VALIDASI FORM
+  // ==========================================
 
   const validateForm = () => {
     const result = loginSchema.safeParse(formData);
@@ -34,18 +39,19 @@ export function useLoginForm() {
     return true;
   };
 
+  // ==========================================
+  // HANDLE CHANGE
+  // ==========================================
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    if (name === "nik" && value !== "" && !/^\d+$/.test(value)) {
-      return;
-    }
 
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
 
+    // Hapus error field ketika user mulai mengetik lagi
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -54,32 +60,103 @@ export function useLoginForm() {
     }
   };
 
+  // ==========================================
+  // HANDLE SUBMIT
+  // ==========================================
+
   const handleSubmit = async (e, onSuccess) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    // ==========================================
+    // VALIDASI FRONTEND
+    // ==========================================
+
+    if (!validateForm()) {
+      return;
+    }
 
     try {
-      // Ambil CSRF Cookie
+      setIsLoading(true);
+      setErrors({});
+
+      // ==========================================
+      // CSRF COOKIE
+      // Laravel Sanctum
+      // ==========================================
+
       await api.get("/sanctum/csrf-cookie");
 
-      // Login
-      await api.post("/api/login", formData);
+      // ==========================================
+      // LOGIN
+      // ==========================================
 
-      // Login berhasil
-      onSuccess();
-    } catch (err) {
-      if (err.response?.status === 422) {
-        setErrors(err.response.data.errors ?? {});
-      } else {
-        throw err;
+      const response = await api.post("/login", {
+        username: formData.username,
+        password: formData.password,
+      });
+
+      // ==========================================
+      // AMBIL USER DARI RESPONSE BE
+      //
+      // BE:
+      // {
+      //   message: "Login berhasil",
+      //   user: {...}
+      // }
+      // ==========================================
+
+      const loggedUser =
+        response.data?.user ?? response.data;
+
+      // ==========================================
+      // SUCCESS
+      // ==========================================
+
+      if (onSuccess) {
+        onSuccess(loggedUser);
       }
+    } catch (err) {
+      console.error("LOGIN ERROR:", err);
+
+      // ==========================================
+      // VALIDATION ERROR 422
+      // ==========================================
+
+      if (err.response?.status === 422) {
+        const backendErrors =
+          err.response.data?.errors ?? {};
+
+        setErrors(backendErrors);
+
+        return;
+      }
+
+      // ==========================================
+      // ERROR LAIN
+      // ==========================================
+
+      setErrors({
+        general:
+          err.response?.data?.message ??
+          "Username atau password salah.",
+      });
+    } finally {
+      // ==========================================
+      // SELESAI LOADING
+      // ==========================================
+
+      setIsLoading(false);
     }
   };
+
+  // ==========================================
+  // RETURN
+  // ==========================================
 
   return {
     formData,
     errors,
+    isLoading,
     handleChange,
     handleSubmit,
   };

@@ -5,7 +5,11 @@
 //
 // Tracking surat berdasarkan tanggal pengajuan.
 // Alur:
-// Submit -> RT -> RW -> Kantor Desa
+// Submit -> RT -> Selesai / TTD
+//
+// RW tidak lagi menjadi tahap keputusan.
+// Status rw_approved / rw_rejected tetap
+// dikenali untuk data lama.
 //
 // Styling menggunakan class global sid-*.
 // ==========================================
@@ -40,43 +44,66 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 function getStepState(status) {
   const map = {
+    // ======================================
+    // PENGAJUAN
+    // ======================================
+
     pending: {
       step: 1,
       state: "current",
     },
 
+    // ======================================
+    // RT DISETUJUI
+    // ======================================
+
     rt_approved: {
       step: 2,
-      state: "current_rw",
+      state: "current",
     },
+
+    // ======================================
+    // RT DITOLAK
+    // ======================================
 
     rt_rejected: {
       step: 1,
       state: "rejected_rt",
     },
 
+    // ======================================
+    // STATUS LEGACY RW
+    //
+    // Tetap dikenali supaya data lama tidak
+    // membuat tracker kosong / rusak.
+    // ======================================
+
     rw_approved: {
-      step: 3,
-      state: "current_office",
+      step: 2,
+      state: "current",
     },
 
     rw_rejected: {
       step: 2,
-      state: "rejected_rw",
+      state: "current",
     },
 
+    // ======================================
+    // SELESAI
+    // ======================================
+
     kasi_approved: {
-      step: 4,
+      step: 2,
       state: "done",
     },
 
     kaur_tu_umum_approved: {
-      step: 4,
+      step: 2,
       state: "done",
     },
 
     petugas_desa_approved: {
-      step: 4,
+      step: 2,
       state: "done",
     },
   };
@@ -96,8 +123,7 @@ function getStepState(status) {
 const STEPS = [
   "Submit",
   "RT",
-  "RW",
-  "Kantor Desa",
+  "Selesai",
 ];
 
 // ==========================================
@@ -105,33 +131,60 @@ const STEPS = [
 // ==========================================
 
 function TrackingStepper({ status }) {
-  const { step, state } = getStepState(status);
+  const { step, state } =
+    getStepState(status);
 
   return (
     <div className="sid-tracker-scroll">
       <div className="sid-tracker-stepper">
         {STEPS.map((label, index) => {
+          // ==================================
+          // REJECTED
+          // ==================================
+
           const isRejectedHere =
-            (index === 1 && state === "rejected_rt") ||
-            (index === 2 && state === "rejected_rw");
+            (index === 1 &&
+              state === "rejected_rt");
+
+          // ==================================
+          // DONE
+          // ==================================
 
           const isDone =
             index === 0 ||
-            (index === 1 && step >= 2) ||
-            (index === 2 && step >= 3) ||
-            (index === 3 && step >= 4);
+            (index === 1 &&
+              step >= 2 &&
+              state !== "rejected_rt") ||
+            (index === 2 &&
+              step >= 2 &&
+              state === "done");
+
+          // ==================================
+          // CURRENT
+          // ==================================
 
           const isCurrent =
-            (index === 1 && state === "current") ||
-            (index === 2 && state === "current_rw") ||
-            (index === 3 && state === "current_office");
+            (index === 1 &&
+              state === "current") ||
+            (index === 2 &&
+              state === "current");
+
+          // ==================================
+          // DEFAULT
+          // ==================================
 
           let circleClass =
             "sid-tracker-circle sid-tracker-circle-waiting";
 
-          let labelClass = "sid-tracker-label";
+          let labelClass =
+            "sid-tracker-label";
 
-          let circleContent = index + 1;
+          let circleContent =
+            index + 1;
+
+          // ==================================
+          // REJECTED
+          // ==================================
 
           if (isRejectedHere) {
             circleClass =
@@ -146,7 +199,13 @@ function TrackingStepper({ status }) {
                 strokeWidth={2.5}
               />
             );
-          } else if (isDone) {
+          }
+
+          // ==================================
+          // DONE
+          // ==================================
+
+          else if (isDone) {
             circleClass =
               "sid-tracker-circle sid-tracker-circle-done";
 
@@ -159,7 +218,13 @@ function TrackingStepper({ status }) {
                 strokeWidth={2.5}
               />
             );
-          } else if (isCurrent) {
+          }
+
+          // ==================================
+          // CURRENT
+          // ==================================
+
+          else if (isCurrent) {
             circleClass =
               "sid-tracker-circle sid-tracker-circle-current";
 
@@ -171,6 +236,10 @@ function TrackingStepper({ status }) {
             );
           }
 
+          // ==================================
+          // CONNECTOR
+          // ==================================
+
           const connectorDone =
             index < step - 1;
 
@@ -179,29 +248,30 @@ function TrackingStepper({ status }) {
               key={label}
               className="sid-tracker-step"
             >
-<div className="sid-tracker-node">
-  <div className={circleClass}>
-    {circleContent}
-  </div>
+              <div className="sid-tracker-node">
+                <div className={circleClass}>
+                  {circleContent}
+                </div>
 
-  {index < STEPS.length - 1 && (
-    <div
-      className={`sid-tracker-line${
-        connectorDone
-          ? " sid-tracker-line-done"
-          : ""
-      }`}
-    />
-  )}
-</div>
+                {index <
+                  STEPS.length - 1 && (
+                  <div
+                    className={`sid-tracker-line${
+                      connectorDone
+                        ? " sid-tracker-line-done"
+                        : ""
+                    }`}
+                  />
+                )}
+              </div>
 
-<div className="sid-tracker-label-wrapper">
-  <span className={labelClass}>
-    {label}
-  </span>
-</div>
-
-
+              <div className="sid-tracker-label-wrapper">
+                <span
+                  className={labelClass}
+                >
+                  {label}
+                </span>
+              </div>
             </div>
           );
         })}
@@ -233,8 +303,10 @@ function getPreviewTemplate(status) {
   }
 
   if (
-    status === "kaur_tu_umum_approved" ||
-    status === "petugas_desa_approved"
+    status ===
+      "kaur_tu_umum_approved" ||
+    status ===
+      "petugas_desa_approved"
   ) {
     return "wet";
   }

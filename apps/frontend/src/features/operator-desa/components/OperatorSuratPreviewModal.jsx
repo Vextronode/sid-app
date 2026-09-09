@@ -1,3 +1,4 @@
+
 // ==========================================
 // OperatorSuratPreviewModal.jsx
 // Modal khusus untuk melihat preview surat.
@@ -29,20 +30,31 @@ export default function OperatorSuratPreviewModal({
     if (!surat) return;
 
     let url = null;
+    let isMounted = true;
 
-    setPreviewUrl(null);
+    const loadPreview = async () => {
+      try {
+        const blobUrl = await previewSuratPDF(surat);
 
-    previewSuratPDF(surat)
-      .then((blobUrl) => {
         url = blobUrl;
-        setPreviewUrl(blobUrl);
-      })
-      .catch((error) => {
+
+        if (isMounted) {
+          setPreviewUrl(blobUrl);
+        }
+      } catch (error) {
         console.error("Gagal preview PDF:", error);
-        setPreviewUrl(null);
-      });
+
+        if (isMounted) {
+          setPreviewUrl(null);
+        }
+      }
+    };
+
+    loadPreview();
 
     return () => {
+      isMounted = false;
+
       if (url) {
         URL.revokeObjectURL(url);
       }
@@ -86,9 +98,7 @@ export default function OperatorSuratPreviewModal({
       {/* MODAL */}
 
       <div className="sid-modal-overlay">
-
         <div className="sid-preview-modal">
-
           {/* CLOSE */}
 
           <button
@@ -127,7 +137,6 @@ export default function OperatorSuratPreviewModal({
           {/* PREVIEW PDF */}
 
           <div className="sid-pdf-preview">
-
             {previewUrl ? (
               <>
                 <iframe
@@ -146,7 +155,6 @@ export default function OperatorSuratPreviewModal({
                 Memuat preview...
               </div>
             )}
-
           </div>
 
           {/* INFO JIKA BELUM KASI APPROVED */}
@@ -171,10 +179,9 @@ export default function OperatorSuratPreviewModal({
               ? "Membuka PDF..."
               : "Cetak Surat"}
           </button>
-
         </div>
-
       </div>
     </>
   );
 }
+

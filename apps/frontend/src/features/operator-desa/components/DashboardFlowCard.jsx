@@ -56,17 +56,11 @@ export default function DashboardFlowCard({
       ).length,
       color: "sid-dashboard-status-warning",
     },
-    {
-      title: "Menunggu RW",
-      value: filteredLetters.filter(
-        (l) => l.status === "rt_approved"
-      ).length,
-      color: "sid-dashboard-status-info",
-    },
+
     {
       title: "Verifikasi Operator",
       value: filteredLetters.filter(
-        (l) => l.status === "rw_approved"
+        (l) => l.status === "rt_approved"
       ).length,
       color: "sid-dashboard-status-cyan",
     },

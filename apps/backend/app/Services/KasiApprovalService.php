@@ -6,56 +6,45 @@ use App\Enums\LetterStatus;
 use App\Models\Letter;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
+use App\Repositories\LetterRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class KasiApprovalService
 {
     public function __construct(
-        protected OfficialService $officialService
+        protected OfficialService $officialService,
+        protected LetterRepository $letterRepository,
     ) {}
 
+    /**
+     * Catatan refactor: method ini dipertahankan apa adanya (termasuk
+     * scope assigned_role='rw') sesuai kode asli, meskipun saat ini
+     * tidak dipanggil oleh KasiApprovalController manapun -
+     * index() controller memanggil getDashboardLetters(), bukan ini.
+     */
     public function getPendingLetters(User $user): Collection
     {
-        return Letter::query()
-            ->whereIn('status', [
-
+        return $this->letterRepository->queryByStatusesAndLetterTypeAssignedRole(
+            [
                 LetterStatus::RwApproved,
                 LetterStatus::KasiApproved,
                 LetterStatus::KasiRejected,
-
-            ])
-            ->whereHas('letterType', function ($query) {
-
-                $query->where(
-                    'assigned_role',
-                    'rw'
-                );
-
-            })
-            ->with([
-
-                'citizen',
-
-                'letterType',
-
-                'approvals.approvedBy:id,name',
-
-            ])
+            ],
+            'rw'
+        )
             ->latest()
             ->get();
     }
 
     public function getDashboardLetters(User $user)
     {
-        return Letter::query()
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals.approvedBy:id,name',
-            ])
-            ->latest()
-            ->get();
+        return $this->letterRepository->allWithDetailForApproval();
+    }
+
+    public function getLetterDetail(Letter $letter): Letter
+    {
+        return $this->letterRepository->loadDetailForApproval($letter);
     }
 
     private function validateGate(
@@ -106,11 +95,9 @@ class KasiApprovalService
 
             if ($data['status'] === 'approved') {
 
-                $letter->approvals()
-                    ->where('approval_level', 'kasi')
-                    ->update([
-                        'approved_by' => $user->id,
-                    ]);
+                $this->letterRepository->updateApprovalsByLevel($letter, 'kasi', [
+                    'approved_by' => $user->id,
+                ]);
 
                 $letterNumber = sprintf(
                     '%03d/%s/%d',
@@ -126,14 +113,14 @@ class KasiApprovalService
                 }
             }
 
-            $letter->update([
+            $this->letterRepository->update($letter, [
                 'status' => $newStatus,
                 'letter_number' => $letterNumber,
                 'expires_at' => $expiresAt,
                 'processed_at' => now(),
             ]);
 
-            $letter->statusLogs()->create([
+            $this->letterRepository->createStatusLogForLetter($letter, [
                 'actor_id' => $user->id,
                 'old_status' => $oldStatus,
                 'new_status' => $newStatus,
@@ -182,7 +169,6 @@ class KasiApprovalService
                     );
                 }
             }
-
         });
     }
 }

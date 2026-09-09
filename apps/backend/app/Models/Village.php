@@ -2,17 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Village extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'code',
         'head_name',
         'address',
         'phone',
+        'history',
+        'vision',
+        'mission',
     ];
 
     public function hamlets(): HasMany

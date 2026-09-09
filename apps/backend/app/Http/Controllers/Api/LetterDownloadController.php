@@ -23,4 +23,15 @@ class LetterDownloadController extends Controller
             $request->query('template', 'wet')
         );
     }
+
+    public function preview(
+        Request $request,
+        Letter $letter
+    ) {
+        return $this->pdfService->preview(
+            $letter,
+            $request->user(),
+            $request->query('template', 'wet')
+        );
+    }
 }

@@ -6,11 +6,16 @@ use App\Enums\LetterStatus;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
+use App\Repositories\OfficialRepository;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Symfony\Component\HttpFoundation\Response;
 
 class PdfService
 {
+    public function __construct(
+        protected OfficialRepository $officialRepository
+    ) {}
+
     public function download(
         Letter $letter,
         User $user,
@@ -42,15 +47,7 @@ class PdfService
             abort(403, 'Masa berlaku surat telah habis.');
         }
 
-        /**
-         * Kepala Desa aktif
-         */
-        $kades = Official::query()
-            ->with('citizen')
-            ->where('position', 'kepala_desa')
-            ->where('is_active', true)
-            ->whereNull('ended_at')
-            ->firstOrFail();
+        $kades = $this->officialRepository->findActiveVillageHeadWithCitizenOrFail();
 
         /**
          * Check if letterType exists
@@ -90,15 +87,7 @@ class PdfService
             'village',
         ]);
 
-        /**
-         * Kepala Desa aktif
-         */
-        $kades = Official::query()
-            ->with('citizen')
-            ->where('position', 'kepala_desa')
-            ->where('is_active', true)
-            ->whereNull('ended_at')
-            ->firstOrFail();
+        $kades = $this->officialRepository->findActiveVillageHeadWithCitizenOrFail();
 
         /**
          * Check if letterType exists
@@ -137,7 +126,7 @@ class PdfService
         );
 
         // Replace any unmapped {{ placeholder }} tags with fallback underline line
-        return preg_replace('/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/', '________________________', $templateHtml);
+        return preg_replace('/\{\{\s*([a-zA-Z0-9_]+)\s*}}/', '________________________', $templateHtml);
     }
 
     private function getReplacements(Letter $letter, Official $kades, string $template): array

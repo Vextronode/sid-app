@@ -30,7 +30,7 @@ export default function DataWargaPage() {
 
     totalPages,
 
-    deleteWarga,
+  
   } = useWargaList();
 
   const [keyword, setKeyword] = useState('');
@@ -40,11 +40,7 @@ export default function DataWargaPage() {
     setSearch(keyword);
   };
 
-  const handleDelete = (id) => {
-    if (confirm('Yakin mau hapus data warga ini?')) {
-      deleteWarga(id);
-    }
-  };
+
 
   return (
     <div className="sid-operator-page">

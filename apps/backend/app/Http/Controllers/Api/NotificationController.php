@@ -3,50 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
+    public function __construct(
+        protected NotificationService $notificationService
+    ) {}
+
     /**
      * List notifikasi user login
      */
     public function index(Request $request)
     {
-        $notifications = $request->user()
-            ->notifications()
-            ->latest()
-            ->get()
-            ->map(function ($notification) {
-
-                $data = $notification->data;
-
-                return [
-                    'id' => $notification->id,
-
-                    'title' => $data['title'],
-                    'message' => $data['message'],
-
-                    'category' => $data['category'] ?? 'pelayanan',
-
-                    'icon' => $data['icon'] ?? 'document',
-
-                    'color' => $data['color'] ?? 'gray',
-
-                    'status' => $data['status'],
-
-                    'letter_id' => $data['letter_id'],
-
-                    'letter_no' => $data['letter_no'] ?? null,
-
-                    'applicant' => $data['applicant'] ?? null,
-
-                    'read' => $notification->read_at !== null,
-
-                    'created_at' => $notification->created_at,
-
-                    'time' => $notification->created_at->diffForHumans(),
-                ];
-            });
+        $notifications = $this->notificationService->getForUser($request->user());
 
         return response()->json($notifications);
     }
@@ -56,11 +27,7 @@ class NotificationController extends Controller
      */
     public function read(Request $request, $id)
     {
-        $notification = $request->user()
-            ->notifications()
-            ->findOrFail($id);
-
-        $notification->markAsRead();
+        $this->notificationService->markAsRead($request->user(), $id);
 
         return response()->json([
             'message' => 'Notification marked as read',
@@ -72,9 +39,7 @@ class NotificationController extends Controller
      */
     public function readAll(Request $request)
     {
-        $request->user()
-            ->unreadNotifications
-            ->markAsRead();
+        $this->notificationService->markAllAsRead($request->user());
 
         return response()->json([
             'message' => 'All notifications marked as read',
@@ -87,9 +52,7 @@ class NotificationController extends Controller
     public function unreadCount(Request $request)
     {
         return response()->json([
-            'count' => $request->user()
-                ->unreadNotifications()
-                ->count(),
+            'count' => $this->notificationService->getUnreadCount($request->user()),
         ]);
     }
 }

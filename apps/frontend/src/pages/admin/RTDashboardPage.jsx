@@ -1,3 +1,4 @@
+
 // ==========================================
 // RTDashboardPage.jsx
 // Dashboard RT
@@ -17,7 +18,7 @@
 // Tidak ada QuickNavButtons setelah grafik.
 // ==========================================
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -38,7 +39,6 @@ import { getGreeting } from '@/lib/utils/greeting';
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
 
-
 // ==========================================
 // COMPONENT
 // ==========================================
@@ -50,41 +50,53 @@ export default function RTDashboardPage() {
   const [letters, setLetters] = useState([]);
   const [loading, setLoading] = useState(true);
 
-
   // ==========================================
   // LOAD DATA DASHBOARD RT
   // ==========================================
 
-  const loadDashboardData = async (showLoading = true) => {
-    if (showLoading) {
-      setLoading(true);
-    }
-
-    try {
-      const res = await getSuratList('rt');
-
-      setLetters(res.data?.data ?? []);
-    } catch (err) {
-      console.error(
-        'GET RT DASHBOARD ERROR:',
-        err.response?.data ?? err
-      );
-    } finally {
+  const loadDashboardData = useCallback(
+    async (showLoading = true) => {
       if (showLoading) {
-        setLoading(false);
+        setLoading(true);
       }
-    }
-  };
 
+      try {
+        const res = await getSuratList('rt');
+
+        setLetters(res.data?.data ?? []);
+      } catch (err) {
+        console.error(
+          'GET RT DASHBOARD ERROR:',
+          err.response?.data ?? err
+        );
+      } finally {
+        if (showLoading) {
+          setLoading(false);
+        }
+      }
+    },
+    []
+  );
 
   // ==========================================
   // LOAD PERTAMA KALI
   // ==========================================
 
   useEffect(() => {
-    loadDashboardData(true);
-  }, []);
+    let isMounted = true;
 
+    const loadInitialData = async () => {
+      if (!isMounted) return;
+
+      await loadDashboardData(true);
+    };
+
+    loadInitialData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loadDashboardData]);
 
   // ==========================================
   // AUTO REFRESH SETIAP 5 DETIK
@@ -96,8 +108,7 @@ export default function RTDashboardPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
-
+  }, [loadDashboardData]);
 
   // ==========================================
   // STATISTIK
@@ -111,12 +122,12 @@ export default function RTDashboardPage() {
     const sedangDiproses = letters.filter(
       (s) =>
         !s.status?.endsWith('_rejected') &&
-        s.status !== 'rw_approved' &&
+        s.status !== 'rt_approved' &&
         s.status !== 'pending'
     ).length;
 
     const disetujuiFinal = letters.filter(
-      (s) => s.status === 'rw_approved'
+      (s) => s.status === 'kasi_approved'
     ).length;
 
     const ditolak = letters.filter(
@@ -130,7 +141,6 @@ export default function RTDashboardPage() {
       ditolak,
     };
   }, [letters]);
-
 
   // ==========================================
   // STAT CARDS
@@ -191,7 +201,6 @@ export default function RTDashboardPage() {
     },
   ];
 
-
   // ==========================================
   // TANGGAL
   // ==========================================
@@ -206,7 +215,6 @@ export default function RTDashboardPage() {
     }
   );
 
-
   // ==========================================
   // RENDER
   // ==========================================
@@ -218,17 +226,13 @@ export default function RTDashboardPage() {
           ======================================== */}
 
       <div className="hidden md:block">
-
         <div className="sid-page max-w-3xl">
-
           {/* ======================================
               HEADER
               ====================================== */}
 
           <div className="flex items-start justify-between mb-6">
-
             <div>
-
               <h1 className="sid-page-title">
                 {getGreeting()}, {user?.name ?? 'Bapak/Ibu'}
               </h1>
@@ -237,7 +241,6 @@ export default function RTDashboardPage() {
                 Kelola administrasi warga{' '}
                 {user?.wilayah_label ?? 'RT'} dengan lebih cepat.
               </p>
-
             </div>
 
             <span className="
@@ -248,9 +251,7 @@ export default function RTDashboardPage() {
             ">
               {hariIni}
             </span>
-
           </div>
-
 
           {/* ======================================
               STAT CARDS
@@ -262,9 +263,7 @@ export default function RTDashboardPage() {
             gap-4
             mb-6
           ">
-
             {STAT_CARDS.map((card) => {
-
               const Icon = card.icon;
 
               return (
@@ -279,9 +278,7 @@ export default function RTDashboardPage() {
                     justify-between
                   "
                 >
-
                   <div>
-
                     <p className="
                       text-[10px]
                       text-[var(--sid-text-muted)]
@@ -298,9 +295,7 @@ export default function RTDashboardPage() {
                     ">
                       {loading ? '-' : card.value}
                     </p>
-
                   </div>
-
 
                   <div
                     className="
@@ -319,14 +314,10 @@ export default function RTDashboardPage() {
                   >
                     <Icon size={20} />
                   </div>
-
                 </button>
               );
-
             })}
-
           </div>
-
 
           {/* ======================================
               GRAFIK
@@ -335,18 +326,14 @@ export default function RTDashboardPage() {
           <div className="mb-6">
             <SuratStatChart letters={letters} />
           </div>
-
         </div>
-
 
         {/* ======================================
             FOOTER DESKTOP
             ====================================== */}
 
         <FooterDesa />
-
       </div>
-
 
       {/* ========================================
           MOBILE
@@ -357,13 +344,11 @@ export default function RTDashboardPage() {
         min-h-screen
         bg-[var(--sid-surface-page)]
       ">
-
         <div className="
           sid-page
           max-w-none
           sid-mobile-content
         ">
-
           {/* ======================================
               HEADER
               ====================================== */}
@@ -377,7 +362,6 @@ export default function RTDashboardPage() {
             {user?.wilayah_label ?? 'RT'} dengan lebih cepat.
           </p>
 
-
           {/* ======================================
               STAT CARDS
               2 x 2
@@ -389,9 +373,7 @@ export default function RTDashboardPage() {
             gap-3
             mb-4
           ">
-
             {STAT_CARDS.map((card) => {
-
               const Icon = card.icon;
 
               return (
@@ -404,7 +386,6 @@ export default function RTDashboardPage() {
                     text-left
                   "
                 >
-
                   <div
                     className="
                       w-9
@@ -423,7 +404,6 @@ export default function RTDashboardPage() {
                     <Icon size={16} />
                   </div>
 
-
                   <p className="
                     text-[10px]
                     text-[var(--sid-text-muted)]
@@ -432,7 +412,6 @@ export default function RTDashboardPage() {
                     {card.label}
                   </p>
 
-
                   <p className="
                     text-2xl
                     font-bold
@@ -440,14 +419,10 @@ export default function RTDashboardPage() {
                   ">
                     {loading ? '-' : card.value}
                   </p>
-
                 </button>
               );
-
             })}
-
           </div>
-
 
           {/* ======================================
               GRAFIK
@@ -456,9 +431,7 @@ export default function RTDashboardPage() {
           <div className="mb-4">
             <SuratStatChart letters={letters} />
           </div>
-
         </div>
-
 
         {/* ======================================
             FOOTER MOBILE
@@ -467,7 +440,6 @@ export default function RTDashboardPage() {
         <div className="sid-mobile-footer">
           <FooterDesa />
         </div>
-
 
         {/* ======================================
             MOBILE BOTTOM NAVIGATION
@@ -479,8 +451,8 @@ export default function RTDashboardPage() {
             '/admin/list-rt'
           )}
         />
-
       </div>
     </>
   );
 }
+

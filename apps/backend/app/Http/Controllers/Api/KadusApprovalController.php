@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\KadusDecisionRequest;
+use App\Http\Resources\LetterCollection;
+use App\Http\Resources\LetterResource;
 use App\Models\Letter;
 use App\Services\KadusApprovalService;
 use Illuminate\Http\Request;
@@ -18,9 +20,9 @@ class KadusApprovalController extends Controller
     {
 
         return response()->json([
-            'data' => $this->service->getLetters(
+            'data' => new LetterCollection($this->service->getLetters(
                 $request->user()
-            ),
+            )),
         ]);
 
     }
@@ -44,15 +46,11 @@ class KadusApprovalController extends Controller
 
     public function show(Letter $letter)
     {
-        $letter->load([
-            'citizen',
-            'letterType',
-            'approvals.approvedBy:id,name',
-        ]);
+        $letter = $this->service->getLetterDetail($letter);
 
         return response()->json([
             'message' => 'Detail surat berhasil diambil',
-            'data' => $letter,
+            'data' => new LetterResource($letter),
         ]);
     }
 }

@@ -3,33 +3,38 @@
 namespace App\Services;
 
 use App\Models\Letter;
+use App\Models\LetterApproval;
 use App\Models\Official;
+use App\Repositories\LetterApprovalRepository;
+use App\Repositories\LetterRepository;
 use Illuminate\Validation\ValidationException;
 
 class LetterApprovalService
 {
+    public function __construct(
+        protected LetterApprovalRepository $letterApprovalRepository,
+        protected LetterRepository $letterRepository,
+    ) {}
+
     public function approve(
         Letter $letter,
         Official $official,
         string $status,
         ?string $notes = null
-    ) {
+    ): ?LetterApproval {
 
         $this->validateApproval(
             $letter,
             $official
         );
 
-        $letter->approvals()
-            ->where('approval_level', 'rw')
-            ->whereNull('approved_by')
-            ->latest()
-            ->first()
-            ?->update([
-                'approved_by' => $user->id,
-            ]);
+        $approval = $this->letterApprovalRepository->findLatestPendingByLevel($letter, 'rw');
 
-        $letter->update([
+        if ($approval) {
+            $this->letterApprovalRepository->updateApprovedBy($approval, $official->user_id);
+        }
+
+        $this->letterRepository->update($letter, [
             'status' => $status,
             'processed_at' => now(),
         ]);

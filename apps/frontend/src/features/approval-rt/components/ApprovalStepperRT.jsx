@@ -1,18 +1,26 @@
 // ==========================================
 // ApprovalStepperRT.jsx
-// Stepper 4 tahap:
-// Submit -> RT -> RW -> Selesai
+// Stepper 3 tahap:
+//
+// Submit -> RT -> Selesai
+//
+// RW tidak lagi menjadi tahap keputusan.
+// Status rw_approved / rw_rejected tetap
+// dikenali untuk kompatibilitas data lama.
 //
 // Status dihitung langsung dari surat.status
 // yang dikirim oleh API.
 // ==========================================
 
-import { Check, X, Loader2 } from 'lucide-react';
+import {
+  Check,
+  X,
+  Loader2,
+} from 'lucide-react';
 
 const STEPS = [
   'Submit',
   'RT',
-  'RW',
   'Selesai',
 ];
 
@@ -37,7 +45,7 @@ function getStepState(status) {
 
     // ========================================
     // RT SUDAH APPROVE
-    // MENUNGGU RW
+    // LANGSUNG MENUJU PROSES TTD
     // ========================================
 
     case 'rt_approved':
@@ -59,35 +67,37 @@ function getStepState(status) {
 
 
     // ========================================
-    // RW SUDAH APPROVE
-    // PROSES MENUJU SELESAI
+    // STATUS LEGACY RW
+    //
+    // Tetap dikenali agar data lama tidak
+    // membuat stepper kembali ke waiting.
+    // RW bukan lagi gate proses.
     // ========================================
 
     case 'rw_approved':
       return {
-        step: 3,
+        step: 2,
+        state: 'current',
+      };
+
+
+    case 'rw_rejected':
+      return {
+        step: 2,
         state: 'current',
       };
 
 
     // ========================================
-    // RW MENOLAK
+    // PROSES KANTOR DESA SELESAI
     // ========================================
 
-    case 'rw_rejected':
-      return {
-        step: 2,
-        state: 'rejected_rw',
-      };
-
-
-    // ========================================
-    // SELESAI
-    // ========================================
-
+    case 'kasi_approved':
+    case 'kaur_tu_umum_approved':
+    case 'petugas_desa_approved':
     case 'completed':
       return {
-        step: 3,
+        step: 2,
         state: 'completed',
       };
 
@@ -109,11 +119,15 @@ function getStepState(status) {
 // COMPONENT
 // ==========================================
 
-export default function ApprovalStepperRT({ surat }) {
+export default function ApprovalStepperRT({
+  surat,
+}) {
   const {
     step,
     state,
-  } = getStepState(surat?.status);
+  } = getStepState(
+    surat?.status
+  );
 
 
   return (
@@ -122,8 +136,11 @@ export default function ApprovalStepperRT({ surat }) {
       {STEPS.map((label, index) => {
 
         let circle;
-        let statusText = 'Menunggu';
-        let labelClass = 'sid-stepper-label waiting';
+        let statusText =
+          'Menunggu';
+
+        let labelClass =
+          'sid-stepper-label waiting';
 
 
         // ======================================
@@ -131,8 +148,8 @@ export default function ApprovalStepperRT({ surat }) {
         // ======================================
 
         const isRejectedHere =
-          (index === 1 && state === 'rejected_rt') ||
-          (index === 2 && state === 'rejected_rw');
+          index === 1 &&
+          state === 'rejected_rt';
 
 
         // ======================================
@@ -169,7 +186,9 @@ export default function ApprovalStepperRT({ surat }) {
           );
 
           statusText = 'Ditolak';
-          labelClass = 'sid-stepper-label rejected';
+
+          labelClass =
+            'sid-stepper-label rejected';
 
         }
 
@@ -187,7 +206,9 @@ export default function ApprovalStepperRT({ surat }) {
           );
 
           statusText = 'Selesai';
-          labelClass = 'sid-stepper-label done';
+
+          labelClass =
+            'sid-stepper-label done';
 
         }
 
@@ -207,8 +228,24 @@ export default function ApprovalStepperRT({ surat }) {
             </div>
           );
 
-          statusText = 'Menunggu';
-          labelClass = 'sid-stepper-label current';
+          // ==================================
+          // RT
+          // ==================================
+
+          if (index === 1) {
+            statusText = 'Menunggu';
+          }
+
+          // ==================================
+          // SELESAI
+          // ==================================
+
+          if (index === 2) {
+            statusText = 'Menunggu TTD';
+          }
+
+          labelClass =
+            'sid-stepper-label current';
 
         }
 
@@ -242,7 +279,9 @@ export default function ApprovalStepperRT({ surat }) {
 
               {circle}
 
-              <span className={labelClass}>
+              <span
+                className={labelClass}
+              >
                 {label}
               </span>
 
@@ -257,7 +296,8 @@ export default function ApprovalStepperRT({ surat }) {
                 CONNECTOR
             ================================== */}
 
-            {index < STEPS.length - 1 && (
+            {index <
+              STEPS.length - 1 && (
 
               <div className="sid-stepper-connector" />
 

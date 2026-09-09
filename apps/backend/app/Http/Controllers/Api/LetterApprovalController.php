@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\LetterApprovalResource;
 use App\Models\Letter;
 use App\Services\LetterApprovalService;
 use Illuminate\Http\Request;
@@ -30,7 +31,7 @@ class LetterApprovalController extends Controller
 
         return response()->json([
             'message' => 'Surat berhasil diproses',
-            'data' => $approval,
+            'data' => $approval ? new LetterApprovalResource($approval) : null,
         ]);
 
     }

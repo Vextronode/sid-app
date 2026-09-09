@@ -3,15 +3,18 @@
 namespace App\Services;
 
 use App\Models\Letter;
-use App\Models\Official;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
+use App\Repositories\LetterRepository;
+use App\Repositories\OfficialRepository;
 use Illuminate\Support\Facades\DB;
 
 class RtApprovalService
 {
     public function __construct(
-        protected OfficialService $officialService
+        protected OfficialService $officialService,
+        protected LetterRepository $letterRepository,
+        protected OfficialRepository $officialRepository,
     ) {}
 
     public function getPendingLetters(User $user)
@@ -22,26 +25,17 @@ class RtApprovalService
             abort(403, 'Data official tidak ditemukan.');
         }
 
-        return Letter::query()
-            ->whereIn('status', [
-                'pending',
-                'rt_approved',
-                'rw_approved',
-                'rt_rejected',
-            ])
-            ->whereHas('citizen', function ($query) use ($official) {
-                $query->where(
-                    'rt_id',
-                    $official->rt_id
-                );
-            })
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals.approvedBy:id,name',
-            ])
+        return $this->letterRepository->queryByStatusesAndCitizenRt(
+            ['pending', 'rt_approved', 'rw_approved', 'rt_rejected'],
+            $official->rt_id
+        )
             ->latest()
             ->get();
+    }
+
+    public function getLetterDetail(Letter $letter): Letter
+    {
+        return $this->letterRepository->loadDetailForApproval($letter);
     }
 
     public function decision(
@@ -109,7 +103,7 @@ class RtApprovalService
             // UPDATE LETTER
             // ==========================================
 
-            $letter->update([
+            $this->letterRepository->update($letter, [
                 'status' => $newStatus,
                 'processed_at' => now(),
 
@@ -125,11 +119,9 @@ class RtApprovalService
             // APPROVAL RT
             // ==========================================
 
-            $letter->approvals()
-                ->where('approval_level', 'rt')
-                ->update([
-                    'approved_by' => $user->id,
-                ]);
+            $this->letterRepository->updateApprovalsByLevel($letter, 'rt', [
+                'approved_by' => $user->id,
+            ]);
 
             // ==========================================
             // APPROVED
@@ -137,19 +129,13 @@ class RtApprovalService
 
             if ($data['status'] === 'approved') {
 
-                $letter->approvals()->create([
+                $this->letterRepository->createApprovalForLetter($letter, [
                     'approved_by' => null,
                     'approval_level' => 'rw',
                     'deadline_at' => now()->addDays(2),
                 ]);
 
-                $rwOfficial = Official::where(
-                    'rw_id',
-                    $official->rw_id
-                )
-                    ->where('position', 'rw')
-                    ->where('is_active', true)
-                    ->first();
+                $rwOfficial = $this->officialRepository->findActiveRwByRwId($official->rw_id);
 
                 if ($rwOfficial?->user) {
 
@@ -204,7 +190,7 @@ class RtApprovalService
             // STATUS LOG
             // ==========================================
 
-            $letter->statusLogs()->create([
+            $this->letterRepository->createStatusLogForLetter($letter, [
                 'actor_id' => $user->id,
                 'old_status' => $oldStatus,
                 'new_status' => $newStatus,

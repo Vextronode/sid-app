@@ -6,15 +6,19 @@ use App\Models\Citizen;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
+use App\Repositories\OfficialRepository;
+use App\Repositories\UserRepository;
 
 class OfficialService
 {
+    public function __construct(
+        protected OfficialRepository $officialRepository,
+        protected UserRepository $userRepository,
+    ) {}
+
     public function resolveRtForCitizen(Citizen $citizen)
     {
-        return Official::where('rt_id', $citizen->rt_id)
-            ->where('position', 'rt')
-            ->where('is_active', true)
-            ->first();
+        return $this->officialRepository->findActiveRtByRtId($citizen->rt_id);
     }
 
     public function getCurrentOfficial(User $user): Official
@@ -46,19 +50,13 @@ class OfficialService
 
         return match ($official->position) {
 
-            'rt' => Official::where('rw_id', $official->rw_id)
-                ->where('position', 'rw')
-                ->where('is_active', true)
-                ->get(),
+            'rt' => $this->officialRepository->allActiveRwByRwId($official->rw_id),
 
-            'rw' => Official::whereIn('position', [
+            'rw' => $this->officialRepository->allActiveByPositionsAndVillage([
                 'kasi_pelayanan',
                 'kaur_tu_umum',
                 'petugas_desa',
-            ])
-                ->where('village_id', $official->village_id)
-                ->where('is_active', true)
-                ->get(),
+            ], $official->village_id),
 
             default => collect(),
         };
@@ -68,16 +66,11 @@ class OfficialService
         Letter $letter
     ): ?User {
 
-        return User::where(
-            'citizen_id',
-            $letter->citizen_id
-        )->first();
+        return $this->userRepository->findByCitizenId($letter->citizen_id);
     }
 
     public function resolveVillageHead(): ?Official
     {
-        return Official::where('position', 'kepala_desa')
-            ->where('is_active', true)
-            ->first();
+        return $this->officialRepository->findActiveVillageHead();
     }
 }

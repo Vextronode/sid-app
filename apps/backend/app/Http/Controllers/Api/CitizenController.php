@@ -3,39 +3,36 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CitizenCollection;
 use App\Models\Citizen;
+use App\Services\CitizenService;
 
 class CitizenController extends Controller
 {
+    public function __construct(
+        protected CitizenService $citizenService
+    ) {}
+
     public function index()
     {
-        return Citizen::with([
-            'rt',
-            'rw',
-            'hamlet',
-            'village',
-        ])
-            ->orderBy('name')
-            ->get();
+        $citizens = $this->citizenService->getAllWithWilayah();
+
+        return (new CitizenCollection($citizens))->response()->setStatusCode(200);
     }
 
     public function destroy(Citizen $citizen)
     {
-        $citizen->delete();
+        $this->citizenService->delete($citizen);
 
         return response()->json([
             'message' => 'Data warga berhasil dihapus.',
-        ]);
+        ])->setStatusCode(200);
     }
 
     public function wilayah()
     {
-        return Citizen::with([
-            'rt',
-            'rw',
-        ])
-            ->select('rt_id', 'rw_id')
-            ->distinct()
-            ->get();
+        $citizens = $this->citizenService->getDistinctWilayah();
+
+        return (new CitizenCollection($citizens))->response()->setStatusCode(200);
     }
 }

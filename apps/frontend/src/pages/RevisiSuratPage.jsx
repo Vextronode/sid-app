@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { SURAT_CONFIG } from "@/lib/constants/suratConfig";
 import { DynamicSuratForm } from "@/features/surat/components/DynamicSuratForm";
 import { WargaLayout } from "@/components/layout/WargaLayout";
@@ -12,7 +11,6 @@ export function RevisiSuratPage() {
 
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const [surat, setSurat] = useState(null);
   const [loading, setLoading] = useState(true);
