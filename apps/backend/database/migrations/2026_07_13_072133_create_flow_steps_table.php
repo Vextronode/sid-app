@@ -47,9 +47,6 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['flow_id', 'step_order']);
-            // TDD "Indexing Strategy - Table flow_steps":
-            //   idx_flowsteps_position — resolve semua flow yang punya
-            //   step approver tertentu.
             $table->index('approver_position', 'idx_flowsteps_position');
         });
     }

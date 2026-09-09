@@ -24,6 +24,7 @@ class LetterApprovalRepository
 
         return $approval;
     }
+
     public function updateApprovedByAndStatus(LetterApproval $approval, int $userId, string $status): LetterApproval
     {
         $approval->update([

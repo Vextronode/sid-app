@@ -44,7 +44,6 @@ class LetterFactory extends Factory
         ];
     }
 
-
     /**
      * Helper state: surat sedang berjalan (in_progress) di step tertentu.
      */

@@ -5,6 +5,8 @@ namespace Tests\Unit;
 use App\Models\ApprovalFlow;
 use App\Models\Letter;
 use App\Models\LetterType;
+use App\Models\User;
+use App\Models\Village;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -254,9 +256,9 @@ class LettersMigrationTest extends TestCase
         $letterType = LetterType::factory()->create();
 
         return [
-            'village_id' => \App\Models\Village::factory()->create()->id,
+            'village_id' => Village::factory()->create()->id,
             'letter_type_id' => $letterType->id,
-            'submitted_by' => \App\Models\User::factory()->create()->id,
+            'submitted_by' => User::factory()->create()->id,
             'applicant_name' => 'Test Applicant',
             'applicant_nik' => encrypt('3201012345670001'),
             'applicant_nik_hash' => hash('sha256', '3201012345670001'),
