@@ -24,12 +24,11 @@ class LetterApprovalRepository
 
         return $approval;
     }
-
     public function updateApprovedByAndStatus(LetterApproval $approval, int $userId, string $status): LetterApproval
     {
         $approval->update([
             'approved_by' => $userId,
-            'status' => $status,
+            'action' => $status,
         ]);
 
         return $approval;

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class RtApprovalService
@@ -17,7 +18,7 @@ class RtApprovalService
         protected OfficialRepository $officialRepository,
     ) {}
 
-    public function getPendingLetters(User $user)
+    public function getPendingLetters(User $user): Collection
     {
         $official = $user->official;
 
@@ -128,10 +129,9 @@ class RtApprovalService
             // ==========================================
 
             if ($data['status'] === 'approved') {
-
                 $this->letterRepository->createApprovalForLetter($letter, [
                     'approved_by' => null,
-                    'approval_level' => 'rw',
+                    'approval_level' => 'kepala_desa',
                     'deadline_at' => now()->addDays(2),
                 ]);
 

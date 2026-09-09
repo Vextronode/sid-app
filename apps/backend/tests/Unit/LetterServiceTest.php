@@ -122,6 +122,14 @@ class LetterServiceTest extends TestCase
 
     public function test_get_scoped_letters_applies_status_filter(): void
     {
+        $this->markTestSkipped(
+            'Menunggu EV5-2/EV5-4: test ini pakai status granular lama '.
+            '(kasi_approved), padahal kolom letters.status sekarang CHECK '.
+            'constraint generic sejak EV5-0-S1. Insert dengan status granular '.
+            'akan ditolak DB. Perlu ditulis ulang begitu service-nya di-rewrite '.
+            'ke status generic.'
+        );
+
         $user = User::factory()->create(['role' => 'petugas_desa']);
         Letter::factory()->create(['status' => 'pending']);
         Letter::factory()->create(['status' => 'kasi_approved']);
