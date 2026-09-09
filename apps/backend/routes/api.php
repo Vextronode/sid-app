@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RegionController;
+use App\Http\Controllers\Api\RegulationController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RtController;
 use App\Http\Controllers\Api\RwApprovalController;
@@ -161,6 +162,18 @@ Route::middleware('auth:sanctum')->group(function () {
     //     Route::post('/signature', [OfficialController::class, 'uploadSignature']);
     //     Route::get('/signature', [OfficialController::class, 'getSignature']);
     // });
+
+    /*
+    |----------------------------------------------------------------------
+    | Village Regulations
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('regulations')->group(function () {
+        Route::get('/', [RegulationController::class, 'index']);
+        Route::post('/', [RegulationController::class, 'store']);
+        Route::patch('/{id}', [RegulationController::class, 'update']);
+        Route::delete('/{id}', [RegulationController::class, 'destroy']);
+    });
 
     /*
     |----------------------------------------------------------------------
