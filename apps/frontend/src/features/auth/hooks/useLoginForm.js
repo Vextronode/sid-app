@@ -86,9 +86,6 @@ export function useLoginForm() {
       // 2. CSRF COOKIE
       // ==========================================
 
-      const csrfUrl =
-        `${api.defaults.baseURL}/sanctum/csrf-cookie`;
-
 
 
       await api.get("/sanctum/csrf-cookie");
