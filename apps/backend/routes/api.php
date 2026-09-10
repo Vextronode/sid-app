@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\api\FamilyController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
@@ -71,6 +72,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [CitizenController::class, 'index']);
         Route::delete('/{citizen}', [CitizenController::class, 'destroy']);
         Route::get('/wilayah', [CitizenController::class, 'wilayah']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Families (Kartu Keluarga)
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('families')->group(function () {
+        Route::get('/', [FamilyController::class, 'index']);
+        Route::post('/', [FamilyController::class, 'store']);
+        Route::get('/{family}', [FamilyController::class, 'show']);
+        Route::patch('/{family}', [FamilyController::class, 'update']);
+        Route::delete('/{family}', [FamilyController::class, 'destroy']);
     });
 
     /*
