@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\api\FamilyController;
+use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
@@ -15,7 +15,6 @@ use App\Http\Controllers\Api\LetterDownloadController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\RegulationController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RtController;
@@ -24,8 +23,6 @@ use App\Http\Controllers\Api\RwController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillageProfileController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Models\Letter;
-use App\Services\PdfService;
 use Illuminate\Support\Facades\Route;
 
 /*
