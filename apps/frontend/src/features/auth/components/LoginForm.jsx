@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/features/auth/contexts/AuthContext";
@@ -10,31 +9,52 @@ import { Button } from "@/components/ui/Button";
 export function LoginForm() {
   const navigate = useNavigate();
 
-  const { formData, errors, handleChange, handleSubmit } = useLoginForm();
+  const {
+    formData,
+    errors,
+    isLoading,
+    handleChange,
+    handleSubmit,
+  } = useLoginForm();
+
   const { login } = useAuth();
 
-  const [serverError, setServerError] = useState("");
+  // ==========================================
+  // LOGIN SUCCESS
+  // ==========================================
 
-  const handleLoginSuccess = async () => {
+  const handleLoginSuccess = async (loggedUser) => {
     try {
-      setServerError("");
+      // Simpan user hasil login ke AuthContext.
+      const user = await login(loggedUser);
 
-      // Mengambil data user yang berhasil login
-      // agar dapat menentukan halaman tujuan sesuai role.
-      const user = await login();
+      if (!user?.role) {
+        console.error("USER ROLE TIDAK DITEMUKAN:", user);
 
-      // Redirect otomatis berdasarkan role user.
+        return;
+      }
+
+      // ==========================================
+      // REDIRECT BERDASARKAN ROLE
+      // ==========================================
+
       switch (user.role) {
         case "rt":
-          navigate("/admin/dashboard-surat-rt", { replace: true });
+          navigate("/admin/dashboard-surat-rt", {
+            replace: true,
+          });
           break;
 
         case "rw":
-          navigate("/admin/dashboard-surat-rw", { replace: true });
+          navigate("/admin/dashboard-surat-rw", {
+            replace: true,
+          });
           break;
 
         case "kadus":
-          navigate("/admin/dashboard-surat-kadus", { replace: true });
+          navigate("/admin/dashboard-surat-kadus", {
+            replace: true,
+          });
           break;
 
         case "petugas_desa":
@@ -50,52 +70,85 @@ export function LoginForm() {
           break;
 
         case "kasi":
+        case "kasi_pelayanan":
           navigate("/admin/dashboard-surat-kasi", {
             replace: true,
           });
           break;
 
-        // Role admin lainnya sementara diarahkan ke beranda
-        // sampai dashboard masing-masing tersedia.
-        case "sekretaris_desa":
-        case "kasi_pelayanan":
         case "kaur_tu_umum":
+          navigate("/admin/dashboard-surat-kaur", {
+            replace: true,
+          });
+          break;
+
+        case "sekretaris_desa":
+          navigate("/", {
+            replace: true,
+          });
+          break;
+
         case "warga":
+          navigate("/daftar-surat", {
+            replace: true,
+          });
+          break;
+
         default:
-          navigate("/", { replace: true });
+          console.warn(
+            "ROLE BELUM MEMILIKI REDIRECT:",
+            user.role,
+          );
+
+          navigate("/", {
+            replace: true,
+          });
       }
     } catch (error) {
-      console.error(error);
-
-      setServerError(
-        error.response?.data?.message ??
-          "Login gagal."
-      );
+      console.error("LOGIN SUCCESS ERROR:", error);
     }
   };
 
   return (
     <div className="sid-login-form">
-      {serverError && (
+      {/* ==========================================
+          GENERAL ERROR
+          ========================================== */}
+
+      {errors.general && (
         <div className="sid-login-form-error">
-          {serverError}
+          {errors.general}
         </div>
       )}
 
+      {/* ==========================================
+          FORM
+          ========================================== */}
+
       <form
-        onSubmit={(e) => handleSubmit(e, handleLoginSuccess)}
+        onSubmit={(e) =>
+          handleSubmit(e, handleLoginSuccess)
+        }
         className="sid-login-form-content"
       >
+        {/* ==========================================
+            USERNAME
+            ========================================== */}
+
         <Input
-          label="NIK"
-          name="nik"
+          label="Username"
+          name="username"
           type="text"
-          maxLength={16}
-          placeholder="321xxxxxxxxxxxxx"
-          value={formData.nik}
+          placeholder="Masukkan username"
+          value={formData.username}
           onChange={handleChange}
-          error={errors.nik}
+          error={errors.username}
+          autoComplete="username"
         />
+
+        {/* ==========================================
+            PASSWORD
+            ========================================== */}
 
         <Input
           label="Password"
@@ -105,12 +158,21 @@ export function LoginForm() {
           value={formData.password}
           onChange={handleChange}
           error={errors.password}
+          autoComplete="current-password"
         />
 
-        <Button type="submit">
-          Masuk
+        {/* ==========================================
+            SUBMIT
+            ========================================== */}
+
+        <Button
+          type="submit"
+          disabled={isLoading}
+        >
+          {isLoading ? "Memproses..." : "Masuk"}
         </Button>
       </form>
     </div>
   );
 }
+

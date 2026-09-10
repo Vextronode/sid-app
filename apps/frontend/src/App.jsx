@@ -91,7 +91,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/loginpage" replace />;
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
@@ -326,7 +326,7 @@ export default function App() {
 
           {/* ===== LOGIN ===== */}
           <Route
-            path="/login"
+            path="/loginpage"
             element={
               <GuestRoute>
                 <LoginPage />

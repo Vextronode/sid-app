@@ -1,10 +1,11 @@
-
 // ==========================================
 // LoginPage.jsx
 // ==========================================
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+import { useLoginForm } from '@/features/auth/hooks/useLoginForm';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
 
 import {
   Landmark,
@@ -15,21 +16,28 @@ import {
   LogIn,
 } from 'lucide-react';
 
-import api from '@/lib/api';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  // ==========================================
+  // LOGIN FORM HOOK
+  // ==========================================
+
+  const {
+    formData,
+    errors,
+    isLoading,
+    handleChange,
+    handleSubmit,
+  } = useLoginForm();
+
+  // ==========================================
+  // UI STATE
+  // ==========================================
 
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const [showRegisterModal, setShowRegisterModal] =
     useState(false);
@@ -38,70 +46,19 @@ export default function LoginPage() {
     useState(false);
 
   // ==========================================
-  // LOGIN
+  // LOGIN SUCCESS
   // ==========================================
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (isLoading) {
-      return;
-    }
-
-    setError('');
-    setIsLoading(true);
-
+  const handleLoginSuccess = async (loggedUser) => {
     try {
-      // ==========================================
-      // 1. AMBIL CSRF COOKIE
-      // ==========================================
-
-
-      await api.get('/sanctum/csrf-cookie');
-
-
-
-      // ==========================================
-      // 2. LOGIN
-      // ==========================================
-
-
-      const response = await api.post('/login', {
-        username,
-        password,
-      });
-
-
-      // ==========================================
-      // 3. AMBIL USER
-      // ==========================================
-
-      const loggedUser = response.data?.user;
-
-
-      if (!loggedUser) {
-        throw new Error(
-          'Data user tidak ditemukan dari response login.'
-        );
-      }
-
-
-      // ==========================================
-      // 4. SIMPAN KE AUTH CONTEXT
-      // ==========================================
-
-
+      // Simpan user hasil login ke AuthContext
       await login(loggedUser);
 
-
-
       // ==========================================
-      // 5. REDIRECT SESUAI ROLE
+      // REDIRECT SESUAI ROLE
       // ==========================================
 
-
-
-      switch (loggedUser.role) {
+      switch (loggedUser?.role) {
         case 'rt':
           navigate('/admin/dashboard-surat-rt', {
             replace: true,
@@ -140,52 +97,17 @@ export default function LoginPage() {
           });
           break;
       }
-
-    } catch (err) {
-      console.error('LOGIN ERROR:', err);
-
+    } catch (error) {
       console.error(
-        'STATUS:',
-        err.response?.status
+        'LOGIN SUCCESS HANDLER ERROR:',
+        error
       );
-
-      console.error(
-        'RESPONSE:',
-        err.response?.data
-      );
-
-      if (err.response?.status === 422) {
-        const backendErrors =
-          err.response.data?.errors;
-
-        setError(
-          backendErrors?.username?.[0] ??
-          backendErrors?.password?.[0] ??
-          err.response.data?.message ??
-          'Username atau password salah.'
-        );
-
-        return;
-      }
-
-      if (err.response?.status === 401) {
-        setError(
-          'Username atau password salah.'
-        );
-
-        return;
-      }
-
-      setError(
-        err.response?.data?.message ??
-        err.message ??
-        'Terjadi kesalahan saat login.'
-      );
-
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <div className="sid-login">
@@ -202,7 +124,6 @@ export default function LoginPage() {
           <Landmark size={24} />
         </div>
 
-
         {/* HEADER */}
 
         <div className="sid-login-header">
@@ -217,20 +138,22 @@ export default function LoginPage() {
 
         </div>
 
-
         {/* ERROR */}
 
-        {error && (
+        {errors.general && (
           <div className="sid-login-error">
-            {error}
+            {Array.isArray(errors.general)
+              ? errors.general[0]
+              : errors.general}
           </div>
         )}
-
 
         {/* FORM */}
 
         <form
-          onSubmit={handleSubmit}
+          onSubmit={(e) =>
+            handleSubmit(e, handleLoginSuccess)
+          }
           className="sid-login-form"
         >
 
@@ -238,46 +161,49 @@ export default function LoginPage() {
 
           <div className="sid-login-field">
 
-            <label
-              htmlFor="username"
-              className="sid-login-label"
-            >
+            <label className="sid-login-label">
               Username
             </label>
 
             <div className="sid-login-input-wrapper">
 
-              <User className="sid-login-input-icon" />
+              <User
+                size={16}
+                className="sid-login-input-icon"
+              />
 
               <input
-                id="username"
-                required
                 type="text"
                 name="username"
-                value={username}
-                onChange={(e) =>
-                  setUsername(e.target.value)
-                }
+                value={formData.username}
+                onChange={handleChange}
+                className={`sid-login-input sid-login-input-with-left-icon ${
+                  errors.username
+                    ? 'sid-login-input-error'
+                    : ''
+                }`}
                 placeholder="Masukkan username"
                 autoComplete="username"
-                className="sid-login-input sid-login-input-with-left-icon"
               />
 
             </div>
 
+            {errors.username && (
+              <span className="sid-login-field-error">
+                {Array.isArray(errors.username)
+                  ? errors.username[0]
+                  : errors.username}
+              </span>
+            )}
+
           </div>
-
-
           {/* PASSWORD */}
 
           <div className="sid-login-field">
 
             <div className="sid-login-password-header">
 
-              <label
-                htmlFor="password"
-                className="sid-login-label"
-              >
+              <label className="sid-login-label">
                 Password
               </label>
 
@@ -288,32 +214,34 @@ export default function LoginPage() {
                 }
                 className="sid-login-forgot"
               >
-                Lupa Password?
+                Lupa password?
               </button>
 
             </div>
 
-
             <div className="sid-login-input-wrapper">
 
-              <Lock className="sid-login-input-icon" />
+              <Lock
+                size={16}
+                className="sid-login-input-icon"
+              />
 
               <input
-                id="password"
-                required
                 type={
                   showPassword
                     ? 'text'
                     : 'password'
                 }
                 name="password"
-                value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
-                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                className={`sid-login-input sid-login-input-password ${
+                  errors.password
+                    ? 'sid-login-input-error'
+                    : ''
+                }`}
+                placeholder="Masukkan password"
                 autoComplete="current-password"
-                className="sid-login-input sid-login-input-password"
               />
 
               <button
@@ -339,9 +267,15 @@ export default function LoginPage() {
 
             </div>
 
+            {errors.password && (
+              <span className="sid-login-field-error">
+                {Array.isArray(errors.password)
+                  ? errors.password[0]
+                  : errors.password}
+              </span>
+            )}
+
           </div>
-
-
           {/* REMEMBER ME */}
 
           <label className="sid-login-remember">
@@ -359,7 +293,6 @@ export default function LoginPage() {
             </span>
 
           </label>
-
 
           {/* SUBMIT */}
 
@@ -380,7 +313,6 @@ export default function LoginPage() {
           </button>
 
         </form>
-
 
         {/* FOOTER */}
 
@@ -407,7 +339,6 @@ export default function LoginPage() {
         </div>
 
       </div>
-
 
       {/* ==========================================
           FORGOT PASSWORD MODAL
@@ -455,7 +386,6 @@ export default function LoginPage() {
 
         </div>
       )}
-
 
       {/* ==========================================
           REGISTER MODAL
@@ -507,4 +437,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

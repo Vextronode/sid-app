@@ -53,7 +53,7 @@ export function BerandaPage() {
         </p>
 
         <Link
-          to="/login"
+          to="/loginpage"
           className="sid-beranda-hero-button"
         >
           Masuk &amp; Ajukan Surat

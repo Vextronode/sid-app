@@ -24,7 +24,7 @@ export function DesktopNavbar() {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login', { replace: true });
+      navigate('/loginpage', { replace: true });
     } catch (error) {
       console.error('Logout gagal', error);
     }
@@ -109,7 +109,7 @@ export function DesktopNavbar() {
         ) : (
 
           <Link
-            to="/login"
+            to="/loginpage"
             className="sid-desktop-navbar-login"
           >
             Masuk
