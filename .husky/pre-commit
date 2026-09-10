@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd apps/frontend || exit 1
+exec npm.cmd exec lint-staged
