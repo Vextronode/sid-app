@@ -8,7 +8,7 @@ enum LastEducation: string
     case SD = 'sd';
     case SMP = 'smp';
     case SMA = 'sma';
-    case D3 = 'd3';
+    case DIPLOMA = 'diploma';
     case S1 = 's1';
     case S2 = 's2';
     case S3 = 's3';
