@@ -102,6 +102,11 @@ class Citizen extends Model
         return $this->belongsTo(Hamlet::class);
     }
 
+    public function family(): BelongsTo
+    {
+        return $this->belongsTo(Family::class);
+    }
+
     public function father(): BelongsTo
     {
         return $this->belongsTo(Citizen::class, 'father_id');
