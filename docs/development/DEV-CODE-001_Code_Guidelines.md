@@ -61,7 +61,48 @@ Urutan import: (1) pustaka eksternal, (2) modul internal fitur lain melalui `/sh
 
 ## BAGIAN B - BACKEND
 
-*(Placeholder - menunggu pengisian oleh tim Backend, mengikuti format yang sama dengan Bagian A: Naming Convention spesifik PHP/Laravel, konvensi struktur Controller/Service, konvensi dokumentasi (PHPDoc), dan aturan static analysis jika ada - mis. PHPStan/Larastan.)*
+### B.1 Struktur Layer dan Tanggung Jawab
+
+Alur Backend wajib mengikuti: **Controller -> Service -> Repository -> Model**.
+
+| Layer | Tanggung jawab | Tidak boleh dilakukan |
+|---|---|---|
+| Controller | Menerima HTTP request, memanggil service, dan mengembalikan HTTP response/resource. | Menulis business logic, query Eloquent, atau akses database langsung. |
+| Service | Menjalankan business logic, otorisasi proses, orkestrasi beberapa repository, dan transaction bila diperlukan. | Menangani detail HTTP atau mengembalikan response JSON langsung. |
+| Repository | Menjadi satu-satunya layer yang melakukan query Eloquent dan akses database melalui model. | Menyimpan business rule atau menangani HTTP request/response. |
+| Model | Merepresentasikan entitas database, relasi Eloquent, casts, accessor/mutator, dan konfigurasi model. | Menjadi tempat business logic proses aplikasi yang kompleks. |
+
+1. Controller melakukan dependency injection terhadap service yang diperlukan.
+2. Service melakukan dependency injection terhadap repository yang diperlukan; service tidak memanggil model atau query Eloquent secara langsung.
+3. Repository menggunakan model Eloquent untuk operasi baca/tulis database, eager loading, dan query scope.
+4. Untuk proses yang melibatkan beberapa operasi tulis, transaction (`DB::transaction`) diletakkan pada service.
+5. Akses model langsung di controller hanya diperbolehkan untuk route model binding pada parameter method; operasi setelahnya tetap didelegasikan ke service.
+
+### B.2 Request Validation dan API Resource
+
+1. Setiap endpoint yang menerima input wajib menggunakan **Form Request** di `app/Http/Requests`; controller memakai data dari `$request->validated()`.
+2. Aturan validasi, otorisasi request, dan normalisasi input ditempatkan pada Form Request, bukan ditulis inline di controller.
+3. Respons data API wajib menggunakan **Laravel API Resource** di `app/Http/Resources`, bukan mengembalikan model Eloquent secara langsung.
+4. Endpoint yang mengembalikan satu entitas menggunakan `{Entity}Resource`; endpoint daftar/paginasi menggunakan `{Entity}Collection`.
+5. Resource menentukan bentuk data API, termasuk relasi yang boleh diekspos. Field internal atau sensitif tidak boleh diteruskan ke client.
+
+### B.3 Naming Convention
+
+| Konteks | Konvensi | Contoh |
+|---|---|---|
+| Class PHP | `PascalCase` | `LetterService`, `LetterRepository` |
+| Method, variabel, dan properti | `camelCase` | `getScopedLetters()` |
+| Model | Bentuk tunggal (singular) | `Letter`, `LetterType` |
+| Service dan repository | Nama model/fitur + akhiran layer | `CitizenService`, `CitizenRepository` |
+| Form Request | Aksi + nama entitas + `Request` | `StoreLetterRequest`, `UpdateVillageProfileRequest` |
+| Resource dan collection | Nama entitas + `Resource`/`Collection` | `LetterResource`, `LetterCollection` |
+
+### B.4 Dokumentasi dan Kualitas Kode
+
+1. Method publik pada service atau repository yang tidak langsung jelas dari signature-nya wajib diberi PHPDoc, khususnya untuk parameter array, tipe return, dan efek samping penting.
+2. Gunakan type declaration untuk parameter, return type, dan properti bila tipe data telah diketahui.
+3. Hindari duplikasi query dan business logic; ekstrak ke repository atau service sesuai tanggung jawabnya.
+4. Setiap perubahan Backend wajib mempertahankan atau menambahkan test yang relevan pada `tests/Unit` dan/atau `tests/Feature`.
 
 ---
 
@@ -70,3 +111,4 @@ Urutan import: (1) pustaka eksternal, (2) modul internal fitur lain melalui `/sh
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | 1.0 | - | Rancangan Awal |
+| 1.1 | 2026-09-12 | Menambahkan pedoman struktur Backend, Form Request, API Resource, dan Resource Collection. |

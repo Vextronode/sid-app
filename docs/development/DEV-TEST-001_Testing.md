@@ -29,7 +29,45 @@ Mengingat batasan waktu program (target stabilitas ±2 bulan untuk SIDUTama seba
 
 ## 3. Backend
 
-*(Placeholder - menunggu pengisian oleh tim Backend. Sekurang-kurangnya perlu mencakup: tools pengujian yang dipakai (mis. PHPUnit/Pest), cakupan minimum untuk PipelineStep evaluation engine, dan strategi pengujian untuk endpoint verifikasi publik.)*
+**Tools yang digunakan:** PHPUnit melalui Laravel Test Runner (`php artisan test`). Konfigurasi suite tersedia di `apps/backend/phpunit.xml` dengan database SQLite in-memory untuk environment testing.
+
+Backend memiliki dua jenis pengujian:
+
+| Jenis | Lokasi | Fokus |
+|---|---|---|
+| Unit Test | `apps/backend/tests/Unit` | Menguji logic pada service, repository, model, enum, migration, atau komponen Backend secara terisolasi. |
+| Feature Test | `apps/backend/tests/Feature` | Menguji endpoint API dari request sampai response, termasuk autentikasi, otorisasi, validasi, status HTTP, dan struktur payload. |
+
+### 3.1 Unit Test
+
+1. Unit Test wajib ditambahkan atau diperbarui saat mengubah business logic service, query repository, perilaku model, enum, atau migration yang kritikal.
+2. Test harus memverifikasi hasil logic dan efek samping yang relevan, misalnya data tersimpan, relasi/approval terbentuk, status berubah, atau akses ditolak.
+3. Gunakan factory, `RefreshDatabase`, fake Laravel (misalnya notification), dan dependency yang diperlukan agar test deterministik serta tidak bergantung pada data lokal.
+4. Nama test menjelaskan perilaku yang diuji, misalnya `test_create_letter_persists_letter_status_log_and_first_approval`.
+
+### 3.2 Feature Test (Endpoint Test)
+
+1. Setiap endpoint baru atau perubahan kontrak endpoint wajib memiliki Feature Test di `tests/Feature`.
+2. Cakupan minimum endpoint meliputi: akses guest/tidak terautentikasi bila relevan, akses pengguna yang berwenang, validasi input gagal, respons sukses, status HTTP, dan bentuk data JSON.
+3. Skenario otorisasi per role wajib diuji bila endpoint memiliki pembatasan role atau scope data.
+4. Gunakan helper HTTP Laravel seperti `getJson`, `postJson`, `putJson`, atau `deleteJson`, kemudian assert dengan `assertStatus`, `assertJson`, `assertJsonPath`, atau assertion yang paling spesifik.
+5. Feature Test tidak boleh bergantung pada database lokal; gunakan `RefreshDatabase` serta factory/seed data yang didefinisikan oleh test.
+
+### 3.3 Menjalankan Test
+
+Jalankan dari direktori `apps/backend`:
+
+```bash
+composer test
+```
+
+Atau jalankan seluruh test dengan:
+
+```bash
+php artisan test
+```
+
+Untuk menjalankan satu suite, gunakan `php artisan test --testsuite=Unit` atau `php artisan test --testsuite=Feature`.
 
 ---
 
@@ -44,3 +82,4 @@ Selaras dengan struktur task baku program (PIC, Reviewer, Deadline, Definition o
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | 1.0 | - | Rancangan Awal |
+| 1.1 | 2026-09-12 | Menambahkan strategi pengujian Backend dengan PHPUnit, Unit Test, dan Feature Test endpoint. |
