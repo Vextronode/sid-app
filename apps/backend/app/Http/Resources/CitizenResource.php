@@ -26,7 +26,6 @@ class CitizenResource extends JsonResource
             'rt_id' => $this->rt_id,
             'rw_id' => $this->rw_id,
             'hamlet_id' => $this->hamlet_id,
-            'no_kk' => $this->no_kk,
             'marital_status' => $this->marital_status,
             'occupation' => $this->occupation,
             'religion' => $this->religion,

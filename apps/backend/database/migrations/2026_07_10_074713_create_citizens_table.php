@@ -20,17 +20,37 @@ return new class extends Migration
             $table->date('date_of_birth');
             $table->string('place_of_birth', 100)->nullable();
             $table->enum('gender', ['L', 'P']);
+            $table->enum('blood_type', ['A', 'B', 'AB', 'O', 'tidak_tahu'])->nullable();
             $table->text('address');
             $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
             $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
             $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();
-            $table->text('no_kk', 16)->nullable();
+
+            // EV5-3-S2: no_kk dipindah ke families.no_kk (EV5-3-S1). family_id
+            // sengaja belum diberi FK constraint - tabel families belum ada
+            // (EV5-3-S1 belum dikerjakan track A). Tambahkan
+            // ->constrained('families')->nullOnDelete() begitu families jadi.
+            $table->unsignedBigInteger('family_id')->nullable();
+            $table->enum('family_role', ['kepala_keluarga', 'istri', 'suami', 'anak', 'famili_lain'])->nullable();
+            $table->foreignId('father_id')->nullable()->constrained('citizens')->nullOnDelete();
+            $table->foreignId('mother_id')->nullable()->constrained('citizens')->nullOnDelete();
+            $table->string('father_name_text')->nullable();
+            $table->string('mother_name_text')->nullable();
+
             $table->enum('marital_status', ['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati'])->nullable();
             $table->string('occupation', 100)->nullable();
             $table->enum('religion', ['islam', 'kristen', 'katolik', 'hindu', 'buddha', 'konghucu'])->nullable();
-            $table->enum('last_education', ['tidak_sekolah', 'sd', 'smp', 'sma', 'd3', 's1', 's2', 's3'])->nullable();
+            $table->enum('last_education', ['tidak_sekolah', 'sd', 'smp', 'sma', 'diploma', 's1', 's2', 's3'])->nullable();
             $table->enum('domicile_status', ['menetap', 'merantau_dalam_negeri', 'merantau_luar_negeri', 'tki'])->default('menetap');
             $table->string('current_domicile', 150)->nullable();
+
+            $table->enum('residency_type', ['lokal', 'pendatang'])->default('lokal');
+            $table->string('origin_region')->nullable();
+
+            $table->enum('data_source', ['manual_input_desa', 'import_excel', 'dukcapil_sync'])->default('manual_input_desa');
+            $table->timestamp('last_verified_at')->nullable();
+            $table->enum('sync_status', ['synced', 'pending', 'conflict'])->nullable();
+
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
