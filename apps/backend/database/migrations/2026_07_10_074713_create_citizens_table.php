@@ -26,10 +26,10 @@ return new class extends Migration
             $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
             $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();
 
-            // EV5-3-S2: no_kk dipindah ke families.no_kk (EV5-3-S1). family_id
-            // sengaja belum diberi FK constraint - tabel families belum ada
-            // (EV5-3-S1 belum dikerjakan track A). Tambahkan
-            // ->constrained('families')->nullOnDelete() begitu families jadi.
+            // EV5-3-S2: no_kk dipindah ke families.no_kk (EV5-3-S1). FK
+            // constraint family_id -> families.id ditambahkan di migration
+            // terpisah (2026_09_12_..._add_family_id_foreign_to_citizens_table)
+            // karena families dibuat setelah citizens secara kronologis.
             $table->unsignedBigInteger('family_id')->nullable();
             $table->enum('family_role', ['kepala_keluarga', 'istri', 'suami', 'anak', 'famili_lain'])->nullable();
             $table->foreignId('father_id')->nullable()->constrained('citizens')->nullOnDelete();
