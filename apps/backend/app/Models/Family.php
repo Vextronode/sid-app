@@ -28,6 +28,8 @@ class Family extends Model
 
     protected $casts = [
         'family_status' => FamilyStatus::class,
+        'no_kk' => 'encrypted',
+        'family_address' => 'encrypted',
     ];
 
     protected static function booted(): void
