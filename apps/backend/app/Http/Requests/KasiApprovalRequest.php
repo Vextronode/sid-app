@@ -15,20 +15,8 @@ class KasiApprovalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => [
-                'required',
-                Rule::in([
-                    'approved',
-                    'rejected',
-                    'needs_revision',
-                ]),
-            ],
-
-            'notes' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
+            'status' => ['required', Rule::in(['approved', 'rejected'])],
+            'notes' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

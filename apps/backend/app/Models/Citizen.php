@@ -71,14 +71,9 @@ class Citizen extends Model
     protected static function booted(): void
     {
         static::saving(function (Citizen $citizen) {
-
             if ($citizen->isDirty('nik')) {
-                $citizen->nik_hash = hash(
-                    'sha256',
-                    $citizen->nik
-                );
+                $citizen->nik_hash = hash('sha256', $citizen->nik);
             }
-
         });
     }
 
@@ -109,12 +104,21 @@ class Citizen extends Model
 
     public function father(): BelongsTo
     {
-        return $this->belongsTo(Citizen::class, 'father_id');
+        return $this->belongsTo(self::class, 'father_id');
     }
 
     public function mother(): BelongsTo
     {
-        return $this->belongsTo(Citizen::class, 'mother_id');
+        return $this->belongsTo(self::class, 'mother_id');
+    }
+
+    /**
+     * EV5-3-S3 provides the related model and table in Sprint 3.
+     * Do not call this relation before that migration is implemented.
+     */
+    public function socioeconomics(): HasOne
+    {
+        return $this->hasOne(CitizenSocioeconomic::class);
     }
 
     public function user(): HasOne

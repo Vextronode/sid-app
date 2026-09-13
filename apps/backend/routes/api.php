@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
-use App\Http\Controllers\Api\LetterApprovalController;
 use App\Http\Controllers\Api\LetterCategoryController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
@@ -142,8 +141,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [LetterController::class, 'show']);
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
         //        Route::patch('/{letter}/resubmit', [LetterController::class, 'resubmit']);
-        Route::post('/{letter}/approve', [LetterApprovalController::class, 'approve']);
-        Route::get('/{letter}/download', [LetterDownloadController::class, 'download']);
 
         // Catatan refactor: sebelumnya closure inline yang langsung
         // memanggil PdfService, sekarang lewat

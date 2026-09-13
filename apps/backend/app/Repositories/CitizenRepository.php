@@ -15,12 +15,21 @@ class CitizenRepository
     public function allWithWilayah(): Collection
     {
         return Citizen::query()
-            ->with([
-                'rt',
-                'rw',
-                'hamlet',
-                'village',
-            ])
+            ->with(['rt', 'rw', 'hamlet', 'village'])
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function findByNikHash(string $nikHash): ?Citizen
+    {
+        return Citizen::query()->where('nik_hash', $nikHash)->first();
+    }
+
+    public function findByFamilyId(int $familyId): Collection
+    {
+        return Citizen::query()
+            ->with(['rt', 'rw', 'hamlet', 'village'])
+            ->where('family_id', $familyId)
             ->orderBy('name')
             ->get();
     }
@@ -33,10 +42,7 @@ class CitizenRepository
     public function distinctWilayah(): Collection
     {
         return Citizen::query()
-            ->with([
-                'rt',
-                'rw',
-            ])
+            ->with(['rt', 'rw'])
             ->select('rt_id', 'rw_id')
             ->distinct()
             ->get();
