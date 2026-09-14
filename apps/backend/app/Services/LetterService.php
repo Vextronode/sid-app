@@ -95,12 +95,6 @@ class LetterService
         });
     }
 
-    /**
-     * @param LetterType $letterType
-     * @param array $data
-     * @param Citizen|null $citizen
-     * @return void
-     */
     private function verifyLetterType(
         LetterType $letterType,
         array $data,
