@@ -243,7 +243,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('rw')->group(function () {
         Route::get('/letters', [RwApprovalController::class, 'index']);
         Route::get('/letters/{letter}', [RwApprovalController::class, 'show']);
-        Route::patch('/approvals/{letter}/approve', [RwApprovalController::class, 'approve']);
     });
 
     /*
