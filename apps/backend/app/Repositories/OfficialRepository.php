@@ -12,6 +12,104 @@ class OfficialRepository
         //
     }
 
+    public function allWithRelations(): Collection
+    {
+        return Official::query()
+            ->with([
+                'citizen',
+                'user',
+                'village',
+                'hamlet',
+                'rt',
+                'rw',
+            ])
+            ->latest()
+            ->get();
+    }
+
+    public function find(int $id): ?Official
+    {
+        return Official::query()->find($id);
+    }
+
+    public function findOrFail(int $id): Official
+    {
+        return Official::query()->findOrFail($id);
+    }
+
+    public function findWithRelationsOrFail(int $id): Official
+    {
+        return Official::query()
+            ->with([
+                'citizen',
+                'user',
+                'village',
+                'hamlet',
+                'rt',
+                'rw',
+            ])
+            ->findOrFail($id);
+    }
+
+    public function create(array $data): Official
+    {
+        return Official::create($data);
+    }
+
+    public function update(Official $official, array $data): Official
+    {
+        $official->update($data);
+
+        return $official;
+    }
+
+    public function delete(Official $official): bool
+    {
+        return $official->delete();
+    }
+
+    /**
+     * Cek apakah masih ada pejabat aktif lain pada posisi & lingkup
+     * wilayah yang sama, dipakai saat validasi supaya tidak ada dua
+     * pejabat aktif sekaligus untuk satu jabatan di wilayah yang sama.
+     * $excludeId dipakai saat update agar record yang sedang diedit
+     * tidak menghitung dirinya sendiri.
+     */
+    public function existsActiveByPositionAndScope(
+        string $position,
+        ?int $villageId = null,
+        ?int $rtId = null,
+        ?int $rwId = null,
+        ?int $hamletId = null,
+        ?int $excludeId = null,
+    ): bool {
+        $query = Official::query()
+            ->where('position', $position)
+            ->where('is_active', true);
+
+        if ($villageId !== null) {
+            $query->where('village_id', $villageId);
+        }
+
+        if ($rtId !== null) {
+            $query->where('rt_id', $rtId);
+        }
+
+        if ($rwId !== null) {
+            $query->where('rw_id', $rwId);
+        }
+
+        if ($hamletId !== null) {
+            $query->where('hamlet_id', $hamletId);
+        }
+
+        if ($excludeId !== null) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->exists();
+    }
+
     public function findActiveRtByRtId(int $rtId): ?Official
     {
         return Official::query()

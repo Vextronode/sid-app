@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\LetterDownloadController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\OfficialController;
 use App\Http\Controllers\Api\RegulationController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RtController;
@@ -144,6 +145,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [LetterController::class, 'show']);
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
         //        Route::patch('/{letter}/resubmit', [LetterController::class, 'resubmit']);
+        Route::get('/{letter}/download', [LetterDownloadController::class, 'download']);
 
         // Catatan refactor: sebelumnya closure inline yang langsung
         // memanggil PdfService, sekarang lewat
@@ -242,6 +244,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/letters', [RwApprovalController::class, 'index']);
         Route::get('/letters/{letter}', [RwApprovalController::class, 'show']);
         Route::patch('/approvals/{letter}/approve', [RwApprovalController::class, 'approve']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Officials
+    |----------------------------------------------------------------------
+    | Fondasi CRUD data pejabat/petugas desa (RT, RW, Kadus, Kasi, dll).
+    | Otorisasi didelegasikan ke OfficialPolicy lewat $this->authorize()
+    | di OfficialController.
+    */
+    Route::prefix('officials')->group(function () {
+        Route::get('/', [OfficialController::class, 'index']);
+        Route::post('/', [OfficialController::class, 'store']);
+        Route::get('/{official}', [OfficialController::class, 'show']);
+        Route::patch('/{official}', [OfficialController::class, 'update']);
+        Route::delete('/{official}', [OfficialController::class, 'destroy']);
     });
 
     /*

@@ -7,6 +7,7 @@ use App\Models\Letter;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Repositories\LetterRepository;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -28,6 +29,39 @@ class LetterRepositoryTest extends TestCase
         $letter = $this->repository->create(Letter::factory()->make()->toArray());
 
         $this->assertDatabaseHas('letters', ['id' => $letter->id]);
+    }
+
+    public function test_find_returns_letter_when_exists(): void
+    {
+        $letter = Letter::factory()->create();
+
+        $result = $this->repository->find($letter->id);
+
+        $this->assertNotNull($result);
+        $this->assertSame($letter->id, $result->id);
+    }
+
+    public function test_find_returns_null_when_not_exists(): void
+    {
+        $result = $this->repository->find(999999);
+
+        $this->assertNull($result);
+    }
+
+    public function test_find_or_fail_returns_letter_when_exists(): void
+    {
+        $letter = Letter::factory()->create();
+
+        $result = $this->repository->findOrFail($letter->id);
+
+        $this->assertSame($letter->id, $result->id);
+    }
+
+    public function test_find_or_fail_throws_when_not_exists(): void
+    {
+        $this->expectException(ModelNotFoundException::class);
+
+        $this->repository->findOrFail(999999);
     }
 
     public function test_find_with_approval_actor_for_show_eager_loads_relations(): void
