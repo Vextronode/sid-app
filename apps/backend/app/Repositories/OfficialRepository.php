@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Official;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 
 class OfficialRepository
@@ -35,6 +36,19 @@ class OfficialRepository
     public function findOrFail(int $id): Official
     {
         return Official::query()->findOrFail($id);
+    }
+
+    public function findActiveForUserOrFail(User $user, ?string $position = null): Official
+    {
+        $query = Official::query()
+            ->where('user_id', $user->id)
+            ->where('is_active', true);
+
+        if ($position !== null) {
+            $query->where('position', $position);
+        }
+
+        return $query->firstOrFail();
     }
 
     public function findWithRelationsOrFail(int $id): Official

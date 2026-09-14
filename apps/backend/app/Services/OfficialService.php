@@ -7,6 +7,7 @@ use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
+use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Database\Eloquent\Collection;
@@ -16,6 +17,7 @@ class OfficialService
     public function __construct(
         protected OfficialRepository $officialRepository,
         protected UserRepository $userRepository,
+        protected LetterRepository $letterRepository,
     ) {}
 
     public function resolveRtForCitizen(Citizen $citizen)
@@ -25,25 +27,17 @@ class OfficialService
 
     public function getCurrentOfficial(User $user): Official
     {
-        return $user->official()
-            ->where('is_active', true)
-            ->firstOrFail();
+        return $this->officialRepository->findActiveForUserOrFail($user);
     }
 
     public function getCurrentRw(User $user): Official
     {
-        return $user->official()
-            ->where('position', 'rw')
-            ->where('is_active', true)
-            ->firstOrFail();
+        return $this->officialRepository->findActiveForUserOrFail($user, 'rw');
     }
 
     public function getCurrentRt(User $user): Official
     {
-        return $user->official()
-            ->where('position', 'rt')
-            ->where('is_active', true)
-            ->firstOrFail();
+        return $this->officialRepository->findActiveForUserOrFail($user, 'rt');
     }
 
     /**
@@ -69,7 +63,7 @@ class OfficialService
      */
     public function resolveNextOfficials(Letter $letter): Collection
     {
-        $step = $letter->currentFlowStep();
+        $step = $this->letterRepository->findCurrentFlowStep($letter);
 
         if (! $step) {
             return new Collection;
@@ -102,7 +96,7 @@ class OfficialService
     public function resolveOfficialsForStep(FlowStep $step, Letter $letter): Collection
     {
         if ($step->isRegionBased()) {
-            $rtId = $letter->citizen?->rt_id;
+            $rtId = $this->letterRepository->findCitizenRtId($letter);
 
             if (! $rtId) {
                 return new Collection;

@@ -11,15 +11,12 @@ class RwApprovalService
 {
     public function __construct(
         protected LetterRepository $letterRepository,
+        protected OfficialService $officialService,
     ) {}
 
     public function getPendingLetters(User $user): Collection
     {
-        $official = $user->official;
-
-        if (! $official) {
-            abort(403, 'Data official tidak ditemukan.');
-        }
+        $official = $this->officialService->getCurrentOfficial($user);
 
         if (! $official->rw_id) {
             abort(403, 'Data wilayah RW tidak ditemukan.');
@@ -38,17 +35,9 @@ class RwApprovalService
      */
     public function getLetterDetail(Letter $letter, User $user): Letter
     {
-        $official = $user->official;
+        $official = $this->officialService->getCurrentOfficial($user);
 
-        if (! $official) {
-            abort(403, 'Data official tidak ditemukan.');
-        }
-
-        $letter = $letter->loadMissing([
-            'citizen.rt',
-            'letterType',
-            'approvals.approvedBy:id,name',
-        ]);
+        $letter = $this->letterRepository->loadDetailForRw($letter);
 
         if ($letter->citizen?->rt?->rw_id !== $official->rw_id) {
             abort(403, 'Anda tidak berwenang melihat surat ini.');

@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\LetterApproval;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,6 +29,32 @@ class LetterRepository
     public function findOrFail(int $id): Letter
     {
         return Letter::query()->findOrFail($id);
+    }
+
+    public function findForUpdateOrFail(int $id): Letter
+    {
+        return Letter::query()
+            ->whereKey($id)
+            ->lockForUpdate()
+            ->firstOrFail();
+    }
+
+    public function findCurrentFlowStep(Letter $letter): ?FlowStep
+    {
+        return FlowStep::query()
+            ->where('flow_id', $letter->flow_id)
+            ->where('step_order', $letter->current_step_order)
+            ->first();
+    }
+
+    public function findCitizenRtId(Letter $letter): ?int
+    {
+        return $letter->citizen()->value('rt_id');
+    }
+
+    public function loadForPdf(Letter $letter): Letter
+    {
+        return $letter->load(['letterType', 'citizen', 'village']);
     }
 
     public function update(Letter $letter, array $data): Letter
@@ -73,7 +100,7 @@ class LetterRepository
     {
         return Letter::query()
             ->with([
-                'citizen',
+                'citizen.user',
                 'letterType',
                 'approvals.approvedBy:id,name',
             ])
@@ -100,7 +127,16 @@ class LetterRepository
     public function loadDetailForApproval(Letter $letter): Letter
     {
         return $letter->load([
-            'citizen',
+            'citizen.user',
+            'letterType',
+            'approvals.approvedBy:id,name',
+        ]);
+    }
+
+    public function loadDetailForRw(Letter $letter): Letter
+    {
+        return $letter->load([
+            'citizen.rt',
             'letterType',
             'approvals.approvedBy:id,name',
         ]);

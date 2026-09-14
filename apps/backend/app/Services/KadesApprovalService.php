@@ -62,7 +62,7 @@ class KadesApprovalService
             abort(403, 'Anda tidak berwenang memproses surat ini.');
         }
 
-        $step = $letter->currentFlowStep();
+        $step = $this->letterRepository->findCurrentFlowStep($letter);
 
         if (! $step || $step->approver_position !== 'kepala_desa') {
             abort(409, 'Surat ini tidak sedang berada di tahap Kepala Desa/Sekdes.');
@@ -86,12 +86,9 @@ class KadesApprovalService
             // akan melihat current_step_order masih di step ini;
             // request kedua akan melihat step sudah maju (atau surat
             // sudah reject) dan gagal di guard ini.
-            $locked = Letter::query()
-                ->whereKey($letter->id)
-                ->lockForUpdate()
-                ->firstOrFail();
+            $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
 
-            $currentStep = $locked->currentFlowStep();
+            $currentStep = $this->letterRepository->findCurrentFlowStep($locked);
 
             if (! $currentStep || $currentStep->id !== $step->id) {
                 abort(409, 'Surat ini sudah diproses oleh Kepala Desa/Sekdes lain sebelum Anda.');
@@ -125,11 +122,7 @@ class KadesApprovalService
 
     private function authorizeOfficial(User $user): Official
     {
-        $official = $user->official;
-
-        if (! $official) {
-            abort(403, 'Data official tidak ditemukan.');
-        }
+        $official = $this->officialService->getCurrentOfficial($user);
 
         if (! in_array($official->position, self::AUTHORIZED_POSITIONS, true)) {
             abort(403, 'Anda tidak berwenang mengakses approval Kepala Desa.');

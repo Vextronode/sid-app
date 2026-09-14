@@ -6,6 +6,7 @@ use App\Enums\LetterStatus;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
+use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,7 +14,8 @@ use Symfony\Component\HttpFoundation\Response;
 class PdfService
 {
     public function __construct(
-        protected OfficialRepository $officialRepository
+        protected OfficialRepository $officialRepository,
+        protected LetterRepository $letterRepository,
     ) {}
 
     public function download(
@@ -22,11 +24,7 @@ class PdfService
         string $template = 'wet'
     ): Response {
 
-        $letter->load([
-            'letterType',
-            'citizen',
-            'village',
-        ]);
+        $letter = $this->letterRepository->loadForPdf($letter);
 
         /**
          * Guard: Hanya bisa download jika sudah disetujui Operator (Kasi)
@@ -81,11 +79,7 @@ class PdfService
         string $template = 'wet'
     ): Response {
 
-        $letter->load([
-            'letterType',
-            'citizen',
-            'village',
-        ]);
+        $letter = $this->letterRepository->loadForPdf($letter);
 
         $kades = $this->officialRepository->findActiveVillageHeadWithCitizenOrFail();
 

@@ -39,7 +39,7 @@ class KadesApprovalServiceTest extends TestCase
 
         $this->service = new KadesApprovalService(
             new LetterRepository,
-            new OfficialService(new OfficialRepository, new UserRepository),
+            new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository),
         );
     }
 

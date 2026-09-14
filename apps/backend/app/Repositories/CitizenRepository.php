@@ -25,6 +25,11 @@ class CitizenRepository
         return Citizen::query()->where('nik_hash', $nikHash)->first();
     }
 
+    public function findOrFail(int $id): Citizen
+    {
+        return Citizen::query()->findOrFail($id);
+    }
+
     public function findByFamilyId(int $familyId): Collection
     {
         return Citizen::query()
