@@ -2,12 +2,16 @@
 
 namespace Tests\Unit;
 
+use App\Models\ApprovalFlow;
 use App\Models\Citizen;
+use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\Rt;
 use App\Models\User;
+use App\Notifications\LetterStatusNotification;
+use App\Repositories\ApprovalFlowRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\LetterTypeRepository;
@@ -35,6 +39,7 @@ class LetterServiceTest extends TestCase
             new LetterRepository,
             new LetterStatusLogRepository,
             new LetterTypeRepository,
+            new ApprovalFlowRepository,
         );
     }
 
@@ -51,7 +56,19 @@ class LetterServiceTest extends TestCase
             'is_active' => true,
             'user_id' => $rtOfficialUser->id,
         ]);
-        $letterType = LetterType::factory()->create();
+
+        // step pertama dibaca dari flow yang di-snapshot ke
+        // letter.flow_id, bukan lagi hardcode 'rt' — flow di sini
+        // sengaja diberi FlowStep eksplisit (step_order 1,
+        // approver_position 'rt') supaya first approval yang
+        // dihasilkan sesuai skenario ini.
+        $flow = ApprovalFlow::factory()->create();
+        $firstStep = FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'rt',
+        ]);
+        $letterType = LetterType::factory()->create(['flow_id' => $flow->id]);
 
         $user = User::factory()->create([
             'citizen_id' => $citizen->id,
@@ -75,10 +92,80 @@ class LetterServiceTest extends TestCase
             'new_status' => 'pending',
         ]);
 
+        // approved_by SENGAJA null (placeholder menunggu keputusan) —
+        // lihat docblock LetterService::createFirstApproval().
         $this->assertDatabaseHas('letter_approvals', [
             'letter_id' => $letter->id,
             'approval_level' => 'rt',
+            'flow_step_id' => $firstStep->id,
+            'approved_by' => null,
         ]);
+    }
+
+    public function test_create_letter_notifies_all_officials_resolved_for_first_step(): void
+    {
+        Notification::fake();
+
+        $rt = Rt::factory()->create();
+        $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
+        $rtOfficialUser = User::factory()->create();
+        Official::factory()->create([
+            'rt_id' => $rt->id,
+            'position' => 'rt',
+            'is_active' => true,
+            'user_id' => $rtOfficialUser->id,
+        ]);
+
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'rt',
+        ]);
+        $letterType = LetterType::factory()->create(['flow_id' => $flow->id]);
+
+        $user = User::factory()->create([
+            'citizen_id' => $citizen->id,
+            'village_id' => $citizen->village_id,
+        ]);
+        $this->actingAs($user);
+
+        $this->service->createLetter([
+            'letter_type_id' => $letterType->id,
+            'purpose' => 'Keperluan administrasi',
+        ]);
+
+        Notification::assertSentTo(
+            $rtOfficialUser,
+            LetterStatusNotification::class,
+        );
+    }
+
+    public function test_create_letter_skips_first_approval_when_flow_has_no_steps(): void
+    {
+        Notification::fake();
+
+        $citizen = Citizen::factory()->create();
+
+        // Flow tanpa FlowStep sama sekali (mis. kategori direct —
+        // upload_mandiri, dokumen_pendukung) — tidak boleh error,
+        // cukup tidak membuat approval apapun.
+        $flow = ApprovalFlow::factory()->create();
+        $letterType = LetterType::factory()->create(['flow_id' => $flow->id]);
+
+        $user = User::factory()->create([
+            'citizen_id' => $citizen->id,
+            'village_id' => $citizen->village_id,
+        ]);
+        $this->actingAs($user);
+
+        $letter = $this->service->createLetter([
+            'letter_type_id' => $letterType->id,
+            'purpose' => 'Keperluan administrasi',
+        ]);
+
+        $this->assertDatabaseHas('letters', ['id' => $letter->id]);
+        $this->assertDatabaseMissing('letter_approvals', ['letter_id' => $letter->id]);
     }
 
     public function test_get_scoped_letters_for_warga_only_returns_own_letters(): void

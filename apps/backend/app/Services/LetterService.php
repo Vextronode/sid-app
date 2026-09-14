@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
-use App\Models\Citizen;
+use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Policies\LetterPolicy;
+use App\Repositories\ApprovalFlowRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\LetterTypeRepository;
@@ -23,6 +24,7 @@ class LetterService
         protected LetterRepository $letterRepository,
         protected LetterStatusLogRepository $letterStatusLogRepository,
         protected LetterTypeRepository $letterTypeRepository,
+        protected ApprovalFlowRepository $approvalFlowRepository,
     ) {}
 
     public function createLetter(array $data): Letter
@@ -88,7 +90,7 @@ class LetterService
 
             $this->createFirstApproval($letter);
 
-            $this->notifyRt($letter);
+            $this->notifyFirstApprovers($letter);
 
             return $letter;
 
@@ -98,7 +100,7 @@ class LetterService
     private function verifyLetterType(
         LetterType $letterType,
         array $data,
-        ?Citizen $citizen
+        $citizen
     ): void {
 
         switch ($letterType->verification_type) {
@@ -133,43 +135,99 @@ class LetterService
         }
     }
 
+    /**
+     * EV5-4-S8. Membuat row LetterApproval PLACEHOLDER untuk step
+     * PERTAMA dari flow yang sudah di-snapshot ke letter.flow_id saat
+     * submit (lihat komentar di createLetter()) — bukan lagi hardcode
+     * approval_level 'rt' seperti implementasi lama.
+     *
+     * "Snapshot flow saat submit" berarti step pertama dibaca dari
+     * ApprovalFlow::steps() milik flow_id yang SUDAH DIKUNCI ke surat
+     * ini (findWithSteps($letter->flow_id)), bukan dari letter_types
+     * (yang flow_id-nya bisa berubah di kemudian hari tanpa
+     * memengaruhi surat yang sudah terlanjur submit).
+     *
+     * Kategori tanpa approval berjenjang (mis. upload_mandiri,
+     * dokumen_pendukung — lihat ApprovalFlowSeeder::seedDirectFlow())
+     * sengaja punya flow TANPA FlowStep sama sekali; untuk kasus itu,
+     * method ini tidak membuat approval apapun (bukan error) — surat
+     * kategori tersebut memang tidak melalui approval bertingkat.
+     *
+     * approved_by SENGAJA null (placeholder "menunggu keputusan"),
+     * BUKAN diisi id official yang di-resolve seperti implementasi
+     * lama — resolve official di sini hanya menentukan siapa yang
+     * berwenang/dinotifikasi, bukan berarti sudah memutuskan. Pola ini
+     * konsisten dengan RtApprovalService::decision() yang meng-update
+     * approved_by SAAT approve, bukan saat placeholder dibuat.
+     */
     private function createFirstApproval(Letter $letter): void
     {
-        $citizen = $letter->citizen;
+        $step = $this->firstStepOf($letter);
 
-        $official = $this->officialService
-            ->resolveRtForCitizen($citizen);
-
-        if (! $official) {
-            throw ValidationException::withMessages([
-                'approval' => 'Petugas RT belum tersedia.',
-            ]);
+        if (! $step) {
+            return;
         }
 
         $this->letterRepository->createApprovalForLetter($letter, [
-            'approved_by' => $official->user_id,
-            'approval_level' => 'rt',
+            'approved_by' => null,
+            'approval_level' => $step->approver_position,
+            'flow_step_id' => $step->id,
             'deadline_at' => now()->addDays(3),
         ]);
     }
 
-    private function notifyRt(Letter $letter): void
+    /**
+     * Notifikasi ke SEMUA official yang berwenang atas step pertama
+     * (bisa lebih dari satu — mis. kepala_desa DAN sekdes bila flow
+     * kebetulan langsung mulai dari step itu, lihat
+     * OfficialService::resolveOfficialsForStep), bukan hardcode "RT"
+     * seperti implementasi lama (notifyRt()).
+     */
+    private function notifyFirstApprovers(Letter $letter): void
     {
-        $official = $this->officialService
-            ->resolveRtForCitizen($letter->citizen);
+        $step = $this->firstStepOf($letter);
 
-        if ($official?->user) {
+        if (! $step) {
+            return;
+        }
+
+        $officials = $this->officialService->resolveOfficialsForStep($step, $letter);
+
+        foreach ($officials as $official) {
+            if (! $official->user) {
+                continue;
+            }
 
             $official->user->notify(
                 new LetterStatusNotification(
                     $letter,
                     'Permohonan Surat Baru',
-                    'Ada permohonan surat baru yang menunggu verifikasi RT.',
+                    'Ada permohonan surat baru yang menunggu verifikasi Anda.',
                     'pending'
                 )
             );
-
         }
+    }
+
+    /**
+     * Titik tunggal "step pertama dari flow yang sudah di-snapshot ke
+     * surat ini". Dipakai oleh createFirstApproval() dan
+     * notifyFirstApprovers() supaya keduanya selalu membaca step yang
+     * persis sama, bukan dua query terpisah yang bisa drift.
+     *
+     * findWithSteps() (bukan $letter->flow lazy-load) dipakai sesuai
+     * arahan docblock ApprovalFlow::steps(): "dipakai LetterService
+     * saat submit surat (snapshot flow_id)".
+     */
+    private function firstStepOf(Letter $letter): ?FlowStep
+    {
+        if (! $letter->flow_id) {
+            return null;
+        }
+
+        $flow = $this->approvalFlowRepository->findWithSteps($letter->flow_id);
+
+        return $flow?->steps->first();
     }
 
     public function getScopedLetters(
