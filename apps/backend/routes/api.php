@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\HamletController;
+use App\Http\Controllers\Api\KadesApprovalController;
 use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
 use App\Http\Controllers\Api\LetterCategoryController;
@@ -219,6 +220,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/letters', [RtApprovalController::class, 'index']);
         Route::get('/letters/{letter}', [RtApprovalController::class, 'show']);
         Route::patch('/letters/{letter}/decision', [RtApprovalController::class, 'decision']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Kades Approvals
+    |----------------------------------------------------------------------
+    | Diakses oleh official position 'kepala_desa' ATAU
+    | 'sekdes' — keduanya saling menggantikan (first-come-first-served),
+    | lihat docblock KadesApprovalService.
+    */
+    Route::prefix('kades')->group(function () {
+        Route::get('/letters', [KadesApprovalController::class, 'index']);
+        Route::get('/letters/{letter}', [KadesApprovalController::class, 'show']);
+        Route::patch('/letters/{letter}/decision', [KadesApprovalController::class, 'decision']);
     });
 
     /*
