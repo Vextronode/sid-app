@@ -230,6 +230,117 @@ class OfficialServiceTest extends TestCase
         $this->assertSame($official->id, $result->first()->id);
     }
 
+    /**
+     * EV5-4-S5: jawaban pertanyaan Sekdes sudah dikonfirmasi — Kepala
+     * Desa dan Sekdes saling menggantikan. Step 'kepala_desa' harus
+     * meresolve KEDUA posisi sekaligus.
+     */
+    public function test_resolve_next_officials_for_kepala_desa_step_includes_sekdes(): void
+    {
+        $village = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id]);
+        $kades = Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+        $sekdes = Official::factory()->create([
+            'position' => 'sekdes',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'kepala_desa']);
+
+        $letter = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+        ]);
+
+        $result = $this->service->resolveNextOfficials($letter);
+
+        $this->assertCount(2, $result);
+        $this->assertEqualsCanonicalizing(
+            [$kades->id, $sekdes->id],
+            $result->pluck('id')->all(),
+        );
+    }
+
+    /**
+     * Sekdes tetap dibatasi village yang sama seperti Kades — bukan
+     * seluruh sekdes se-sistem.
+     */
+    public function test_resolve_next_officials_for_kepala_desa_step_excludes_sekdes_in_other_village(): void
+    {
+        $village = Village::factory()->create();
+        $otherVillage = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id]);
+
+        $kades = Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+        Official::factory()->create([
+            'position' => 'sekdes',
+            'village_id' => $otherVillage->id,
+            'is_active' => true,
+        ]);
+
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'kepala_desa']);
+
+        $letter = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+        ]);
+
+        $result = $this->service->resolveNextOfficials($letter);
+
+        $this->assertCount(1, $result);
+        $this->assertSame($kades->id, $result->first()->id);
+    }
+
+    /**
+     * Posisi lain (bukan kepala_desa) tidak ikut terpengaruh perluasan
+     * ini — sekdes TIDAK muncul untuk step selain kepala_desa.
+     */
+    public function test_resolve_next_officials_for_non_kepala_desa_step_excludes_sekdes(): void
+    {
+        $village = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id]);
+        Official::factory()->create([
+            'position' => 'sekdes',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+        $kasi = Official::factory()->create([
+            'position' => 'kasi_pelayanan',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'kasi_pelayanan']);
+
+        $letter = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+        ]);
+
+        $result = $this->service->resolveNextOfficials($letter);
+
+        $this->assertCount(1, $result);
+        $this->assertSame($kasi->id, $result->first()->id);
+    }
+
     public function test_resolve_citizen_user_returns_user_by_citizen_id(): void
     {
         $citizen = Citizen::factory()->create();

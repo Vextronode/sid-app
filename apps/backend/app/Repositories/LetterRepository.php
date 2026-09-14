@@ -156,6 +156,40 @@ class LetterRepository
     }
 
     /**
+     * Surat yang SEDANG BERADA di step approval dengan
+     * approver_position termasuk salah satu dari $positions, discope
+     * ke village tertentu. Generik terhadap posisi (bukan hardcode
+     * 'kepala_desa') supaya bisa dipakai ulang oleh service approval
+     * level manapun yang berbasis FlowStep (EV5-4-S1), termasuk
+     * KadesApprovalService (EV5-4-S5) yang perlu me-resolve surat
+     * berdasarkan DUA posisi sekaligus (kepala_desa DAN sekdes —
+     * lihat OfficialService::resolveOfficialsForStep untuk konteks
+     * "siapa cepat dia dapat").
+     *
+     * Join ke flow_steps lewat flow_id + current_step_order (bukan
+     * whereIn('status', [...])) karena letters.status saat ini masih
+     * murni 'pending' untuk surat yang berjalan di flow manapun —
+     * progres sesungguhnya direpresentasikan oleh current_step_order,
+     * bukan status (lihat catatan di KadesApprovalService).
+     */
+    public function queryPendingAtFlowStepPositions(array $positions, int $villageId): Builder
+    {
+        return Letter::query()
+            ->where('village_id', $villageId)
+            ->whereHas('flow', function (Builder $flowQuery) use ($positions) {
+                $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($positions) {
+                    $stepQuery->whereColumn('step_order', 'letters.current_step_order')
+                        ->whereIn('approver_position', $positions);
+                });
+            })
+            ->with([
+                'citizen',
+                'letterType',
+                'approvals.approvedBy:id,name',
+            ]);
+    }
+
+    /**
      * Query surat yang discope ke warga dalam sebuah dusun (hamlet)
      * tertentu (dipakai KadusApprovalService::getLetters()).
      */

@@ -84,12 +84,18 @@ class OfficialService
      * ulang langsung dengan FlowStep yang sudah di tangan (mis. saat
      * validasi gate step lain), tanpa perlu melalui objek Letter.
      *
-     * Catatan untuk EV5-4-S5 (pertanyaan terbuka Sekdes, lihat
-     * FlowStep::resolvablePositions()): saat jawabannya sudah final,
-     * perluasan "posisi mana saja yang relevan untuk approver_position
-     * tertentu" cukup dilakukan di sini (mis. tambah 'sekdes' ke daftar
-     * saat approver_position === 'kepala_desa'), tanpa mengubah
-     * pemanggil manapun.
+     * EV5-4-S5: pertanyaan terbuka Sekdes (lihat
+     * FlowStep::resolvablePositions()) SUDAH TERJAWAB — Kepala Desa
+     * dan Sekretaris Desa saling menggantikan (first-come-first-served)
+     * untuk step approver_position 'kepala_desa': siapapun di antara
+     * keduanya yang memutuskan lebih dulu, step itu selesai dan yang
+     * lain tidak perlu (dan tidak bisa lagi) memutuskan surat yang
+     * sama. Karena itu murni soal "siapa saja yang berhak melihat &
+     * memutuskan step ini", perluasannya cukup di method resolve
+     * (di sini), TIDAK di FlowStep::resolvablePositions() — kolom
+     * approver_position di flow_steps tetap bernilai tunggal
+     * 'kepala_desa' apa adanya, guard race-condition "siapa cepat dia
+     * dapat" sesungguhnya ditegakkan di KadesApprovalService::decision().
      *
      * @return Collection<int, Official>
      */
@@ -109,9 +115,29 @@ class OfficialService
         }
 
         return $this->officialRepository->allActiveByPositionsAndVillage(
-            $step->resolvablePositions(),
+            $this->resolvablePositionsFor($step),
             $letter->village_id,
         );
+    }
+
+    /**
+     * EV5-4-S5. Posisi Official mana saja yang relevan untuk satu
+     * FlowStep, TERMASUK perluasan bisnis "Kepala Desa dan Sekdes
+     * saling menggantikan" — bukan sekadar FlowStep::resolvablePositions()
+     * apa adanya. Dipisah jadi method sendiri (bukan inline di
+     * resolveOfficialsForStep) supaya titik perluasan ini gampang
+     * ditemukan bila suatu saat ada posisi lain yang perlu perlakuan
+     * serupa.
+     *
+     * @return array<int, string>
+     */
+    private function resolvablePositionsFor(FlowStep $step): array
+    {
+        if ($step->approver_position === 'kepala_desa') {
+            return ['kepala_desa', 'sekdes'];
+        }
+
+        return $step->resolvablePositions();
     }
 
     public function resolveCitizenUser(
