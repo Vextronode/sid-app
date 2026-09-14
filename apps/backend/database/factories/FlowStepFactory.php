@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\ApprovalFlow;
 use App\Models\FlowStep;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

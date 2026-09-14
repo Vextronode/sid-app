@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Citizen;
+use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
@@ -45,22 +46,72 @@ class OfficialService
             ->firstOrFail();
     }
 
-    public function resolveNextOfficials(
-        Official $official
-    ) {
+    /**
+     * EV5-4-S1. Resolve pejabat mana saja yang berwenang atas STEP
+     * APPROVAL SAAT INI pada sebuah surat, dibaca murni dari
+     * FlowStep::approver_position (Config over Code — SID-ARCH-SYS-001
+     * S1), BUKAN hardcode match berdasarkan posisi Official pemanggil
+     * seperti implementasi lama.
+     *
+     * Dua pola resolve dibedakan eksplisit sesuai SID-ARCH-BE-001 S3.2:
+     *  - Region-based (FlowStep::isRegionBased() true, saat ini hanya
+     *    untuk approver_position 'rt'): resolve berdasarkan rt_id milik
+     *    citizen pemohon surat.
+     *  - Position-based (selain 'rt'): resolve semua official aktif
+     *    dengan position yang sama di village_id milik surat.
+     *
+     * Mengembalikan collect() kosong (bukan exception) bila surat tidak
+     * punya flow step aktif, atau data wilayah yang dibutuhkan tidak
+     * tersedia (mis. citizen_id null) — konsisten dengan perilaku
+     * "unknown/tidak dapat diresolve" pada implementasi sebelumnya.
+     *
+     * @return Collection<int, Official>
+     */
+    public function resolveNextOfficials(Letter $letter): Collection
+    {
+        $step = $letter->currentFlowStep();
 
-        return match ($official->position) {
+        if (! $step) {
+            return new Collection;
+        }
 
-            'rt' => $this->officialRepository->allActiveRwByRwId($official->rw_id),
+        return $this->resolveOfficialsForStep($step, $letter);
+    }
 
-            'rw' => $this->officialRepository->allActiveByPositionsAndVillage([
-                'kasi_pelayanan',
-                'kaur_tu_umum',
-                'petugas_desa',
-            ], $official->village_id),
+    /**
+     * Titik tunggal abstraksi resolve officials untuk satu FlowStep
+     * tertentu. Dipisah dari resolveNextOfficials() agar bisa dipakai
+     * ulang langsung dengan FlowStep yang sudah di tangan (mis. saat
+     * validasi gate step lain), tanpa perlu melalui objek Letter.
+     *
+     * Catatan untuk EV5-4-S5 (pertanyaan terbuka Sekdes, lihat
+     * FlowStep::resolvablePositions()): saat jawabannya sudah final,
+     * perluasan "posisi mana saja yang relevan untuk approver_position
+     * tertentu" cukup dilakukan di sini (mis. tambah 'sekdes' ke daftar
+     * saat approver_position === 'kepala_desa'), tanpa mengubah
+     * pemanggil manapun.
+     *
+     * @return Collection<int, Official>
+     */
+    public function resolveOfficialsForStep(FlowStep $step, Letter $letter): Collection
+    {
+        if ($step->isRegionBased()) {
+            $rtId = $letter->citizen?->rt_id;
 
-            default => collect(),
-        };
+            if (! $rtId) {
+                return new Collection;
+            }
+
+            return $this->officialRepository->allActiveByPositionAndRt(
+                $step->approver_position,
+                $rtId,
+            );
+        }
+
+        return $this->officialRepository->allActiveByPositionsAndVillage(
+            $step->resolvablePositions(),
+            $letter->village_id,
+        );
     }
 
     public function resolveCitizenUser(
