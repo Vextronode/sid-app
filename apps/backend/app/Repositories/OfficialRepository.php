@@ -142,6 +142,25 @@ class OfficialRepository
             ->get();
     }
 
+    /**
+     * Resolve generik untuk step approval berbasis wilayah (RT). Tidak
+     * hardcode ke position 'rt' secara implisit di caller — position
+     * tetap diteruskan sebagai parameter agar method ini bisa dipakai
+     * kembali bila suatu saat skema approval region-based lain (selain
+     * RT) ditambahkan, tanpa perlu method baru.
+     *
+     * Dipakai oleh OfficialService::resolveNextOfficials() (EV5-4-S1)
+     * untuk step FlowStep::isRegionBased() === true.
+     */
+    public function allActiveByPositionAndRt(string $position, int $rtId): Collection
+    {
+        return Official::query()
+            ->where('rt_id', $rtId)
+            ->where('position', $position)
+            ->where('is_active', true)
+            ->get();
+    }
+
     public function findActiveByPositionAndVillage(string $position, int $villageId): ?Official
     {
         return Official::query()

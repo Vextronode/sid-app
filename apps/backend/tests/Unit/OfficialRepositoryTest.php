@@ -130,6 +130,48 @@ class OfficialRepositoryTest extends TestCase
         $this->assertDatabaseMissing('officials', ['id' => $official->id]);
     }
 
+    public function test_all_active_by_position_and_rt_returns_matching_active_officials(): void
+    {
+        $rt = Rt::factory()->create();
+        $official = Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
+
+        $result = $this->repository->allActiveByPositionAndRt('rt', $rt->id);
+
+        $this->assertCount(1, $result);
+        $this->assertSame($official->id, $result->first()->id);
+    }
+
+    public function test_all_active_by_position_and_rt_excludes_inactive(): void
+    {
+        $rt = Rt::factory()->create();
+        Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => false]);
+
+        $result = $this->repository->allActiveByPositionAndRt('rt', $rt->id);
+
+        $this->assertCount(0, $result);
+    }
+
+    public function test_all_active_by_position_and_rt_excludes_different_position(): void
+    {
+        $rt = Rt::factory()->create();
+        Official::factory()->create(['position' => 'kadus', 'rt_id' => $rt->id, 'is_active' => true]);
+
+        $result = $this->repository->allActiveByPositionAndRt('rt', $rt->id);
+
+        $this->assertCount(0, $result);
+    }
+
+    public function test_all_active_by_position_and_rt_excludes_different_rt(): void
+    {
+        $rtA = Rt::factory()->create();
+        $rtB = Rt::factory()->create();
+        Official::factory()->create(['position' => 'rt', 'rt_id' => $rtB->id, 'is_active' => true]);
+
+        $result = $this->repository->allActiveByPositionAndRt('rt', $rtA->id);
+
+        $this->assertCount(0, $result);
+    }
+
     public function test_exists_active_by_position_and_scope_detects_active_conflict(): void
     {
         $rt = Rt::factory()->create();
