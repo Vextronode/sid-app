@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\CitizenController;
+use App\Http\Controllers\Api\CitizenSocioeconomicController;
 use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FamilyController;
@@ -68,6 +69,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [CitizenController::class, 'index']);
         Route::delete('/{citizen}', [CitizenController::class, 'destroy']);
         Route::get('/wilayah', [CitizenController::class, 'wilayah']);
+        Route::get('/{id}/socioeconomic', [CitizenSocioeconomicController::class, 'show']);
+        Route::put('/{id}/socioeconomic', [CitizenSocioeconomicController::class, 'upsert']);
     });
 
     /*
