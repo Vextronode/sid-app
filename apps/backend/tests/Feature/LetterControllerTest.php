@@ -85,4 +85,31 @@ class LetterControllerTest extends TestCase
             ->deleteJson("/api/letters/{$letter->id}")
             ->assertStatus(403);
     }
+
+    public function test_destroy_allowed_for_authorized_staff_role(): void
+    {
+        $owner = User::factory()->create();
+        $staff = User::factory()->create(['role' => 'kasi_pelayanan']);
+        $letter = Letter::factory()->create(['submitted_by' => $owner->id]);
+
+        $this->actingAs($staff)
+            ->deleteJson("/api/letters/{$letter->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('letters', ['id' => $letter->id]);
+    }
+
+    public function test_index_requires_authentication(): void
+    {
+        $this->getJson('/api/letters')->assertUnauthorized();
+    }
+
+    public function test_show_returns_404_for_unknown_letter(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->getJson('/api/letters/999999')
+            ->assertNotFound();
+    }
 }

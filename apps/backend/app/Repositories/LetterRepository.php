@@ -20,6 +20,16 @@ class LetterRepository
         return Letter::create($data);
     }
 
+    public function find(int $id): ?Letter
+    {
+        return Letter::query()->find($id);
+    }
+
+    public function findOrFail(int $id): Letter
+    {
+        return Letter::query()->findOrFail($id);
+    }
+
     public function update(Letter $letter, array $data): Letter
     {
         $letter->update($data);

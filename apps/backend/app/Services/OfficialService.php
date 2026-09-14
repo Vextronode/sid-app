@@ -8,6 +8,7 @@ use App\Models\Official;
 use App\Models\User;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
+use Illuminate\Database\Eloquent\Collection;
 
 class OfficialService
 {
@@ -72,5 +73,71 @@ class OfficialService
     public function resolveVillageHead(): ?Official
     {
         return $this->officialRepository->findActiveVillageHead();
+    }
+
+    public function getAllWithRelations(): Collection
+    {
+        return $this->officialRepository->allWithRelations();
+    }
+
+    public function getForShow(int $id): Official
+    {
+        return $this->officialRepository->findWithRelationsOrFail($id);
+    }
+
+    public function create(array $data): Official
+    {
+        $this->guardSinglePositionPerScope($data);
+
+        return $this->officialRepository->create($data);
+    }
+
+    public function update(Official $official, array $data): Official
+    {
+        $merged = array_merge([
+            'position' => $official->position,
+            'village_id' => $official->village_id,
+            'rt_id' => $official->rt_id,
+            'rw_id' => $official->rw_id,
+            'hamlet_id' => $official->hamlet_id,
+            'is_active' => $official->is_active,
+        ], $data);
+
+        $this->guardSinglePositionPerScope($merged, excludeId: $official->id);
+
+        return $this->officialRepository->update($official, $data);
+    }
+
+    public function delete(Official $official): bool
+    {
+        return $this->officialRepository->delete($official);
+    }
+
+    /**
+     * Mencegah dua pejabat aktif sekaligus menjabat posisi yang sama
+     * pada lingkup wilayah yang sama (mis. dua RT aktif untuk rt_id
+     * yang sama, atau dua Kepala Desa aktif dalam satu village).
+     * Hanya diperiksa ketika data yang disimpan berstatus aktif.
+     */
+    private function guardSinglePositionPerScope(array $data, ?int $excludeId = null): void
+    {
+        $isActive = $data['is_active'] ?? true;
+
+        if (! $isActive) {
+            return;
+        }
+
+        $exists = $this->officialRepository->existsActiveByPositionAndScope(
+            position: $data['position'],
+            villageId: $data['village_id'] ?? null,
+            rtId: $data['rt_id'] ?? null,
+            rwId: $data['rw_id'] ?? null,
+            hamletId: $data['hamlet_id'] ?? null,
+            excludeId: $excludeId,
+        );
+
+        if ($exists) {
+            abort(409, 'Sudah ada pejabat aktif lain untuk posisi dan wilayah yang sama.');
+        }
     }
 }

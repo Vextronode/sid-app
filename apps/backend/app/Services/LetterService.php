@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\Citizen;
 use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
+use App\Policies\LetterPolicy;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\LetterTypeRepository;
@@ -96,7 +98,7 @@ class LetterService
     private function verifyLetterType(
         LetterType $letterType,
         array $data,
-        $citizen
+        ?Citizen $citizen
     ): void {
 
         switch ($letterType->verification_type) {
@@ -307,6 +309,13 @@ class LetterService
         return $this->letterRepository->findWithApprovalActorForShow($id);
     }
 
+    /**
+     * Aturan otorisasi penghapusan surat kini didefinisikan satu kali
+     * di LetterPolicy@delete (juga dipakai LetterController lewat
+     * $this->authorize()). Method ini tetap melakukan guard agar
+     * pemanggil yang langsung memanggil service (mis. dari command,
+     * job, atau test) tetap terlindungi walau tidak lewat controller.
+     */
     public function delete(Letter $letter, User $user): bool
     {
         $this->guardCanDelete($letter, $user);
@@ -316,17 +325,7 @@ class LetterService
 
     private function guardCanDelete(Letter $letter, User $user): void
     {
-        $isOwner = $letter->submitted_by === $user->id;
-
-        $isAuthorizedStaff = in_array($user->role, [
-            'admin',
-            'operator',
-            'kasi_pelayanan',
-            'kaur_tu_umum',
-            'petugas_desa',
-        ], true);
-
-        if (! $isOwner && ! $isAuthorizedStaff) {
+        if (! (new LetterPolicy)->delete($user, $letter)) {
             abort(403, 'Anda tidak berwenang menghapus surat ini.');
         }
     }

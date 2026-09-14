@@ -14,7 +14,6 @@ class LetterIndexRequest extends FormRequest
     public function rules(): array
     {
         return [
-
             'status' => ['nullable', 'string'],
 
             'letter_type_id' => [
@@ -38,7 +37,6 @@ class LetterIndexRequest extends FormRequest
                 'string',
                 'max:255',
             ],
-
         ];
     }
 }

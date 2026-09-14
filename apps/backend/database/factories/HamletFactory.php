@@ -19,7 +19,7 @@ class HamletFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => 'Dusun '.fake()->unique()->citySuffix(),
+            'name' => 'Dusun '.ucfirst(fake()->unique()->word()),
             'code' => fake()->unique()->numerify('DSN-####'),
             'is_active' => true,
             'village_id' => Village::factory(),
