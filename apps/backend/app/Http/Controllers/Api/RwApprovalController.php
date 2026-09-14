@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\RwApprovalRequest;
 use App\Http\Resources\LetterCollection;
 use App\Http\Resources\LetterResource;
 use App\Models\Letter;
@@ -28,24 +27,9 @@ class RwApprovalController extends Controller
         ]);
     }
 
-    public function approve(
-        RwApprovalRequest $request,
-        Letter $letter
-    ) {
-        $this->service->approve(
-            $letter,
-            $request->user(),
-            $request->validated()
-        );
-
-        return response()->json([
-            'message' => 'Surat berhasil diproses.',
-        ]);
-    }
-
     /**
      * ============================================================
-     * Detail surat yang sedang diproses RW
+     * Detail surat yang sedang berjalan di wilayah RW (read-only)
      * ============================================================
      */
     public function show(
