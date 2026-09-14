@@ -9,7 +9,11 @@ use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
 use App\Repositories\LetterRepository;
+use App\Repositories\OfficialRepository;
+use App\Repositories\UserRepository;
+use App\Services\OfficialService;
 use App\Services\RwApprovalService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -27,6 +31,7 @@ class RwApprovalServiceTest extends TestCase
 
         $this->service = new RwApprovalService(
             new LetterRepository,
+            new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository),
         );
     }
 
@@ -115,7 +120,7 @@ class RwApprovalServiceTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'rw']);
 
-        $this->expectException(HttpException::class);
+        $this->expectException(ModelNotFoundException::class);
 
         $this->service->getPendingLetters($user);
     }
@@ -173,7 +178,7 @@ class RwApprovalServiceTest extends TestCase
 
         $user = User::factory()->create(['role' => 'rw']);
 
-        $this->expectException(HttpException::class);
+        $this->expectException(ModelNotFoundException::class);
 
         $this->service->getLetterDetail($letter, $user);
     }

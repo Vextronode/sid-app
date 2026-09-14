@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\Citizen;
 use App\Models\CitizenSocioeconomic;
 use App\Models\User;
+use App\Repositories\CitizenRepository;
 use App\Repositories\CitizenSocioeconomicRepository;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -12,11 +12,12 @@ class CitizenSocioeconomicService
 {
     public function __construct(
         private readonly CitizenSocioeconomicRepository $repository,
+        private readonly CitizenRepository $citizenRepository,
     ) {}
 
     public function get(int $citizenId): CitizenSocioeconomic
     {
-        Citizen::query()->findOrFail($citizenId);
+        $this->citizenRepository->findOrFail($citizenId);
 
         $socioeconomic = $this->repository->findByCitizenId($citizenId);
 
@@ -33,7 +34,7 @@ class CitizenSocioeconomicService
      */
     public function upsert(User $user, int $citizenId, array $data): CitizenSocioeconomic
     {
-        Citizen::query()->findOrFail($citizenId);
+        $this->citizenRepository->findOrFail($citizenId);
 
         return $this->repository->upsertForCitizen($citizenId, [
             ...$data,

@@ -35,7 +35,7 @@ class LetterServiceTest extends TestCase
         parent::setUp();
 
         $this->service = new LetterService(
-            new OfficialService(new OfficialRepository, new UserRepository),
+            new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository),
             new LetterRepository,
             new LetterStatusLogRepository,
             new LetterTypeRepository,

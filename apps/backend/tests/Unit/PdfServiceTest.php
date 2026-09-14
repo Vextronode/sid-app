@@ -7,6 +7,7 @@ use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\User;
+use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Services\PdfService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -24,7 +25,7 @@ class PdfServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new PdfService(new OfficialRepository);
+        $this->service = new PdfService(new OfficialRepository, new LetterRepository);
     }
 
     public function test_download_blocked_when_letter_not_kasi_approved(): void

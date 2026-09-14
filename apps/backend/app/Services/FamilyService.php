@@ -6,7 +6,6 @@ use App\Models\Family;
 use App\Models\User;
 use App\Repositories\FamilyRepository;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class FamilyService
@@ -57,7 +56,7 @@ class FamilyService
 
     public function delete(Family $family): bool
     {
-        if (Schema::hasColumn('citizens', 'family_id') && $family->members()->exists()) {
+        if ($this->familyRepository->hasMembers($family)) {
             abort(409, 'Kartu Keluarga tidak bisa dihapus karena masih memiliki anggota terdaftar.');
         }
 

@@ -10,6 +10,7 @@ use App\Models\Official;
 use App\Models\Rt;
 use App\Models\User;
 use App\Models\Village;
+use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\OfficialService;
@@ -31,6 +32,7 @@ class OfficialServiceTest extends TestCase
         $this->service = new OfficialService(
             new OfficialRepository,
             new UserRepository,
+            new LetterRepository,
         );
     }
 

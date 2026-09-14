@@ -20,11 +20,7 @@ class RtApprovalService
 
     public function getPendingLetters(User $user): Collection
     {
-        $official = $user->official;
-
-        if (! $official) {
-            abort(403, 'Data official tidak ditemukan.');
-        }
+        $official = $this->officialService->getCurrentOfficial($user);
 
         return $this->letterRepository->queryByStatusesAndCitizenRt(
             ['pending', 'rt_approved', 'rw_approved', 'rt_rejected'],
@@ -45,11 +41,8 @@ class RtApprovalService
         array $data
     ): void {
 
-        $official = $user->official;
-
-        if (! $official) {
-            abort(403, 'Data petugas tidak ditemukan.');
-        }
+        $official = $this->officialService->getCurrentOfficial($user);
+        $letter = $this->letterRepository->loadDetailForApproval($letter);
 
         if ($letter->citizen->rt_id != $official->rt_id) {
             abort(403, 'Anda tidak berwenang memproses surat ini.');

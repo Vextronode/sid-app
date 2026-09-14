@@ -13,6 +13,7 @@ use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\OfficialService;
 use App\Services\RtApprovalService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -29,7 +30,7 @@ class RtApprovalServiceTest extends TestCase
         parent::setUp();
 
         $this->service = new RtApprovalService(
-            new OfficialService(new OfficialRepository, new UserRepository),
+            new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository),
             new LetterRepository,
             new OfficialRepository,
         );
@@ -39,8 +40,7 @@ class RtApprovalServiceTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'rt']);
 
-        $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Data official tidak ditemukan.');
+        $this->expectException(ModelNotFoundException::class);
 
         $this->service->getPendingLetters($user);
     }

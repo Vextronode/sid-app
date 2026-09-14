@@ -19,11 +19,7 @@ class KadusApprovalService
 
     public function getLetters(User $user)
     {
-        $official = $user->official;
-
-        if (! $official) {
-            abort(403, 'Data official tidak ditemukan.');
-        }
+        $official = $this->officialService->getCurrentOfficial($user);
 
         return $this->letterRepository->queryByCitizenHamlet($official->hamlet_id)
             ->latest()
@@ -41,7 +37,8 @@ class KadusApprovalService
         array $data
     ): void {
 
-        $official = $user->official;
+        $official = $this->officialService->getCurrentOfficial($user);
+        $letter = $this->letterRepository->loadDetailForApproval($letter);
 
         if (
             $letter->citizen->hamlet_id !=

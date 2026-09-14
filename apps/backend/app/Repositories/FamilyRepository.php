@@ -63,6 +63,12 @@ class FamilyRepository
         return $family->delete();
     }
 
+    public function hasMembers(Family $family): bool
+    {
+        return Schema::hasColumn('citizens', 'family_id')
+            && $family->members()->exists();
+    }
+
     public function existsByHamlet(int $hamletId): bool
     {
         return Family::query()->where('hamlet_id', $hamletId)->exists();
