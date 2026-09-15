@@ -6,7 +6,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-class UpdateVillageOrgMemberRequest extends FormRequest
+class ShowVillageOrgPositionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -28,12 +28,6 @@ class UpdateVillageOrgMemberRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'member_name' => ['sometimes', 'string', 'max:150'],
-            'photo_img' => ['nullable', 'string', 'max:255'],
-            'phone_wa' => ['nullable', 'string', 'max:20'],
-            'notes' => ['nullable', 'string'],
-            'is_active' => ['sometimes', 'boolean'],
-        ];
+        return [];
     }
 }

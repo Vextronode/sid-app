@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DestroyVillageOrgPositionRequest;
 use App\Http\Requests\IndexVillageOrgPositionRequest;
+use App\Http\Requests\ShowVillageOrgPositionRequest;
 use App\Http\Requests\StoreVillageOrgPositionRequest;
 use App\Http\Requests\UpdateVillageOrgPositionRequest;
 use App\Http\Resources\VillageOrgPositionCollection;
@@ -25,6 +26,13 @@ class VillageOrgPositionController extends Controller
         return (new VillageOrgPositionCollection($positions))->response();
     }
 
+    public function show(ShowVillageOrgPositionRequest $request, int $id): JsonResponse
+    {
+        $position = $this->service->find($request->user(), $id);
+
+        return (new VillageOrgPositionResource($position))->response();
+    }
+
     public function store(StoreVillageOrgPositionRequest $request): JsonResponse
     {
         $position = $this->service->create($request->user(), $request->validated());
@@ -34,14 +42,14 @@ class VillageOrgPositionController extends Controller
 
     public function update(UpdateVillageOrgPositionRequest $request, int $id): JsonResponse
     {
-        $position = $this->service->update($id, $request->validated());
+        $position = $this->service->update($request->user(), $id, $request->validated());
 
         return (new VillageOrgPositionResource($position))->response();
     }
 
     public function destroy(DestroyVillageOrgPositionRequest $request, int $id): JsonResponse
     {
-        $this->service->delete($id);
+        $this->service->delete($request->user(), $id);
 
         return response()->json(['message' => 'Jabatan organisasi berhasil dihapus']);
     }

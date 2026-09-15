@@ -28,6 +28,14 @@ class VillageOrgPositionRepository
         return VillageOrgPosition::query()->with('members')->findOrFail($id);
     }
 
+    public function findByIdForVillageOrFail(int $id, int $villageId): VillageOrgPosition
+    {
+        return VillageOrgPosition::query()
+            ->with(['members' => fn ($query) => $query->orderByDesc('started_at')])
+            ->where('village_id', $villageId)
+            ->findOrFail($id);
+    }
+
     public function create(array $data): VillageOrgPosition
     {
         return VillageOrgPosition::create($data);

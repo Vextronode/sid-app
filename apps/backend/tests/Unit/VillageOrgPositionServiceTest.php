@@ -7,6 +7,7 @@ use App\Models\Village;
 use App\Models\VillageOrgPosition;
 use App\Repositories\VillageOrgPositionRepository;
 use App\Services\VillageOrgPositionService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -71,21 +72,84 @@ class VillageOrgPositionServiceTest extends TestCase
         $this->assertCount(1, $result);
     }
 
-    public function test_update_persists_changes(): void
+    public function test_find_returns_position_belonging_to_user_village(): void
     {
-        $position = VillageOrgPosition::factory()->create(['position_label' => 'Lama']);
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['village_id' => $village->id]);
+        $position = VillageOrgPosition::factory()->create(['village_id' => $village->id]);
 
-        $updated = $this->service->update($position->id, ['position_label' => 'Baru']);
+        $found = $this->service->find($user, $position->id);
+
+        $this->assertSame($position->id, $found->id);
+    }
+
+    /**
+     * Guard multi-tenant (EV5-10-S2): Petugas Desa tidak boleh bisa
+     * "menebak" ID jabatan milik desa lain lewat GET /village-org-positions/{id}.
+     */
+    public function test_find_throws_when_position_belongs_to_other_village(): void
+    {
+        $village = Village::factory()->create();
+        $otherVillage = Village::factory()->create();
+        $user = User::factory()->create(['village_id' => $village->id]);
+        $position = VillageOrgPosition::factory()->create(['village_id' => $otherVillage->id]);
+
+        $this->expectException(ModelNotFoundException::class);
+
+        $this->service->find($user, $position->id);
+    }
+
+    public function test_update_persists_changes_for_own_village_position(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['village_id' => $village->id]);
+        $position = VillageOrgPosition::factory()->create([
+            'village_id' => $village->id,
+            'position_label' => 'Lama',
+        ]);
+
+        $updated = $this->service->update($user, $position->id, ['position_label' => 'Baru']);
 
         $this->assertSame('Baru', $updated->position_label);
     }
 
-    public function test_delete_removes_position(): void
+    public function test_update_throws_when_position_belongs_to_other_village(): void
     {
-        $position = VillageOrgPosition::factory()->create();
+        $village = Village::factory()->create();
+        $otherVillage = Village::factory()->create();
+        $user = User::factory()->create(['village_id' => $village->id]);
+        $position = VillageOrgPosition::factory()->create(['village_id' => $otherVillage->id]);
 
-        $this->service->delete($position->id);
+        $this->expectException(ModelNotFoundException::class);
+
+        $this->service->update($user, $position->id, ['position_label' => 'Baru']);
+    }
+
+    public function test_delete_removes_position_of_own_village(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['village_id' => $village->id]);
+        $position = VillageOrgPosition::factory()->create(['village_id' => $village->id]);
+
+        $this->service->delete($user, $position->id);
 
         $this->assertDatabaseMissing('village_org_positions', ['id' => $position->id]);
+    }
+
+    public function test_delete_throws_when_position_belongs_to_other_village(): void
+    {
+        $village = Village::factory()->create();
+        $otherVillage = Village::factory()->create();
+        $user = User::factory()->create(['village_id' => $village->id]);
+        $position = VillageOrgPosition::factory()->create(['village_id' => $otherVillage->id]);
+
+        try {
+            $this->service->delete($user, $position->id);
+            $this->fail('Expected ModelNotFoundException was not thrown.');
+        } catch (ModelNotFoundException) {
+            // expected
+        }
+
+        $this->assertDatabaseHas('village_org_positions', ['id' => $position->id]);
     }
 }

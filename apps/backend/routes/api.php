@@ -311,6 +311,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('village-org-positions')->group(function () {
         Route::get('/', [VillageOrgPositionController::class, 'index']);
         Route::post('/', [VillageOrgPositionController::class, 'store']);
+        Route::get('/{id}', [VillageOrgPositionController::class, 'show']);
         Route::patch('/{id}', [VillageOrgPositionController::class, 'update']);
         Route::delete('/{id}', [VillageOrgPositionController::class, 'destroy']);
 

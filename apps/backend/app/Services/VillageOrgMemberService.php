@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use App\Models\VillageOrgMember;
 use App\Models\VillageOrgPosition;
 use App\Repositories\VillageOrgMemberRepository;
@@ -14,8 +15,9 @@ class VillageOrgMemberService
         private readonly VillageOrgMemberRepository $repository,
     ) {}
 
-    public function addOrRotate(VillageOrgPosition $position, array $data): VillageOrgMember
+    public function addOrRotate(User $user, VillageOrgPosition $position, array $data): VillageOrgMember
     {
+        $this->guardBelongsToVillage($user, $position);
         $this->guardFeatureEnabled($position);
 
         return DB::transaction(function () use ($position, $data) {
@@ -40,20 +42,31 @@ class VillageOrgMemberService
         });
     }
 
-    public function update(VillageOrgPosition $position, int $id, array $data): VillageOrgMember
+    public function update(User $user, VillageOrgPosition $position, int $id, array $data): VillageOrgMember
     {
+        $this->guardBelongsToVillage($user, $position);
+
         $member = $this->repository->findByIdOrFail($id);
         $this->guardBelongsToPosition($member, $position);
 
         return $this->repository->update($member, $data);
     }
 
-    public function delete(VillageOrgPosition $position, int $id): void
+    public function delete(User $user, VillageOrgPosition $position, int $id): void
     {
+        $this->guardBelongsToVillage($user, $position);
+
         $member = $this->repository->findByIdOrFail($id);
         $this->guardBelongsToPosition($member, $position);
 
         $this->repository->delete($member);
+    }
+
+    private function guardBelongsToVillage(User $user, VillageOrgPosition $position): void
+    {
+        if ($position->village_id !== $user->village_id) {
+            throw new HttpException(404, 'Jabatan organisasi tidak ditemukan.');
+        }
     }
 
     private function guardBelongsToPosition(VillageOrgMember $member, VillageOrgPosition $position): void
