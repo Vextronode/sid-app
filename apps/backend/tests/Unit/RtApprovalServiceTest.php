@@ -8,9 +8,11 @@ use App\Models\Official;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
+use App\Repositories\ApprovalSettingRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
+use App\Services\ApprovalSettingService;
 use App\Services\OfficialService;
 use App\Services\RtApprovalService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -33,6 +35,7 @@ class RtApprovalServiceTest extends TestCase
             new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository),
             new LetterRepository,
             new OfficialRepository,
+            new ApprovalSettingService(new ApprovalSettingRepository),
         );
     }
 
