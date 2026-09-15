@@ -76,13 +76,13 @@ class LetterRepository
 
     /**
      * Update semua approval milik surat pada level tertentu (dipakai
-     * saat RT/RW/Kadus/Kasi memutuskan surat: menandai approval level
-     * mereka sebagai approved_by user yang memutuskan).
+     * saat RT/Kasi memutuskan surat: menandai approval level mereka
+     * sebagai approved_by user yang memutuskan).
      *
      * @param  bool  $onlyPending  Jika true, hanya approval yang belum
      *                             di-approve (approved_by masih null)
-     *                             yang di-update - dipakai Kadus/Kasi
-     *                             approval agar tidak menimpa approval
+     *                             yang di-update - dipakai Kasi approval
+     *                             agar tidak menimpa approval
      *                             sebelumnya yang sudah selesai.
      */
     public function updateApprovalsByLevel(Letter $letter, string $level, array $data, bool $onlyPending = false): int
@@ -218,21 +218,6 @@ class LetterRepository
                         ->whereIn('approver_position', $positions);
                 });
             })
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals.approvedBy:id,name',
-            ]);
-    }
-
-    /**
-     * Query surat yang discope ke warga dalam sebuah dusun (hamlet)
-     * tertentu (dipakai KadusApprovalService::getLetters()).
-     */
-    public function queryByCitizenHamlet(int $hamletId): Builder
-    {
-        return Letter::query()
-            ->whereHas('citizen', fn (Builder $q) => $q->where('hamlet_id', $hamletId))
             ->with([
                 'citizen',
                 'letterType',
