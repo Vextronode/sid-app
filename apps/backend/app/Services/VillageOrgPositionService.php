@@ -30,21 +30,21 @@ class VillageOrgPositionService
         ]);
     }
 
-    public function find(int $id): VillageOrgPosition
+    public function find(User $user, int $id): VillageOrgPosition
     {
-        return $this->repository->findByIdOrFail($id);
+        return $this->repository->findByIdForVillageOrFail($id, $user->village_id);
     }
 
-    public function update(int $id, array $data): VillageOrgPosition
+    public function update(User $user, int $id, array $data): VillageOrgPosition
     {
-        $position = $this->repository->findByIdOrFail($id);
+        $position = $this->repository->findByIdForVillageOrFail($id, $user->village_id);
 
         return $this->repository->update($position, $data);
     }
 
-    public function delete(int $id): void
+    public function delete(User $user, int $id): void
     {
-        $position = $this->repository->findByIdOrFail($id);
+        $position = $this->repository->findByIdForVillageOrFail($id, $user->village_id);
 
         $this->repository->delete($position);
     }

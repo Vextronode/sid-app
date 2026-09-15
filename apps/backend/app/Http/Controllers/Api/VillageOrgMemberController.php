@@ -23,21 +23,21 @@ class VillageOrgMemberController extends Controller
      */
     public function store(AddVillageOrgMemberRequest $request, VillageOrgPosition $position): JsonResponse
     {
-        $member = $this->service->addOrRotate($position, $request->validated());
+        $member = $this->service->addOrRotate($request->user(), $position, $request->validated());
 
         return (new VillageOrgMemberResource($member))->response()->setStatusCode(201);
     }
 
     public function update(UpdateVillageOrgMemberRequest $request, VillageOrgPosition $position, int $id): JsonResponse
     {
-        $member = $this->service->update($position, $id, $request->validated());
+        $member = $this->service->update($request->user(), $position, $id, $request->validated());
 
         return (new VillageOrgMemberResource($member))->response();
     }
 
     public function destroy(DestroyVillageOrgMemberRequest $request, VillageOrgPosition $position, int $id): JsonResponse
     {
-        $this->service->delete($position, $id);
+        $this->service->delete($request->user(), $position, $id);
 
         return response()->json(['message' => 'Anggota organisasi berhasil dihapus']);
     }
