@@ -23,6 +23,8 @@ use App\Http\Controllers\Api\RtController;
 use App\Http\Controllers\Api\RwApprovalController;
 use App\Http\Controllers\Api\RwController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\VillageOrgMemberController;
+use App\Http\Controllers\Api\VillageOrgPositionController;
 use App\Http\Controllers\Api\VillageProfileController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
@@ -298,4 +300,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/profile', [VillageProfileController::class, 'update']);
     });
 
+    /*
+    |--------------------------------------------------------------------------
+    | Village Org (Organisasi Non-Struktural: BPD/BUMDES/LPM/Karang Taruna/PKK)
+    |--------------------------------------------------------------------------
+    | Route resource untuk jabatan
+    | (village_org_positions) dan anggota (village_org_members) mengikuti
+    | struktur nested sesuai api_spec_v5 paths/village-org/*.yaml.
+    */
+    Route::prefix('village-org-positions')->group(function () {
+        Route::get('/', [VillageOrgPositionController::class, 'index']);
+        Route::post('/', [VillageOrgPositionController::class, 'store']);
+        Route::patch('/{id}', [VillageOrgPositionController::class, 'update']);
+        Route::delete('/{id}', [VillageOrgPositionController::class, 'destroy']);
+
+        Route::post('/{position}/members', [VillageOrgMemberController::class, 'store']);
+        Route::patch('/{position}/members/{id}', [VillageOrgMemberController::class, 'update']);
+        Route::delete('/{position}/members/{id}', [VillageOrgMemberController::class, 'destroy']);
+    });
 });
