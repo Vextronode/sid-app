@@ -8,8 +8,9 @@ namespace App\Enums;
  * Status surat selama transisi approval v5.
  *
  * Nilai generik dipakai oleh schema v5 dan service approval yang telah
- * dimigrasikan. Nilai granular dipertahankan sementara karena service
- * Kasi dan PDF belum dimigrasikan (EV5-4-S6 dan EV5-4-S9).
+ * dimigrasikan (RT - EV5-4-S4, Kasi/Kaur - EV5-4-S6). Nilai granular
+ * dipertahankan sementara karena PdfService belum dimigrasikan
+ * (EV5-4-S9) dan beberapa masih dipakai data lama.
  */
 enum LetterStatus: string
 {
@@ -71,7 +72,7 @@ enum LetterStatus: string
 
     public function isFinalApproval(): bool
     {
-        return $this === self::Approved || $this === self::KasiApproved;
+        return in_array($this, [self::Approved, self::KasiApproved], true);
     }
 
     public function isTerminal(): bool

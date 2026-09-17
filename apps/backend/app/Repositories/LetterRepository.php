@@ -2,11 +2,11 @@
 
 namespace App\Repositories;
 
+use App\Enums\LetterStatus;
 use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\LetterApproval;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
 class LetterRepository
@@ -101,23 +101,6 @@ class LetterRepository
                 'approvals.approvedBy:id,name',
             ])
             ->findOrFail($id);
-    }
-
-    /**
-     * Semua surat dengan detail lengkap (citizen, letterType,
-     * approvals.approvedBy), tanpa scope tambahan - dipakai
-     * KasiApprovalService::getDashboardLetters().
-     */
-    public function allWithDetailForApproval(): Collection
-    {
-        return Letter::query()
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals.approvedBy:id,name',
-            ])
-            ->latest()
-            ->get();
     }
 
     public function loadDetailForApproval(Letter $letter): Letter
@@ -233,16 +216,30 @@ class LetterRepository
     }
 
     /**
-     * Query surat berstatus tertentu, discope ke letter type dengan
-     * assigned_role tertentu (dipakai
-     * KasiApprovalService::getPendingLetters() - saat ini belum ada
-     * pemanggil dari controller manapun, dipertahankan sesuai kode asli).
+     * Surat yang sedang berada di step FINAL (is_final=true) dengan
+     * approver_position sesuai posisi Kasi/Kaur yang memanggil,
+     * discope ke village, dan belum diputuskan (status masih
+     * 'pending') - dipakai KasiApprovalService::getPendingLetters()
+     * (EV5-4-S6). MENGGANTIKAN filter lama yang salah membandingkan ke
+     * assigned_role='rw' (Audit §3.4).
+     *
+     * Filter status=Pending diperlukan karena step final tidak pernah
+     * maju ke step berikutnya (current_step_order tetap sama setelah
+     * diputuskan) - status generik 'approved'/'rejected' adalah
+     * satu-satunya penanda surat ini sudah diputuskan Kasi/Kaur.
      */
-    public function queryByStatusesAndLetterTypeAssignedRole(array $statuses, string $assignedRole): Builder
+    public function queryPendingAtFinalStepPosition(string $position, int $villageId): Builder
     {
         return Letter::query()
-            ->whereIn('status', $statuses)
-            ->whereHas('letterType', fn (Builder $q) => $q->where('assigned_role', $assignedRole))
+            ->where('village_id', $villageId)
+            ->where('status', LetterStatus::Pending)
+            ->whereHas('flow', function (Builder $flowQuery) use ($position) {
+                $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($position) {
+                    $stepQuery->whereColumn('step_order', 'letters.current_step_order')
+                        ->where('approver_position', $position)
+                        ->where('is_final', true);
+                });
+            })
             ->with([
                 'citizen',
                 'letterType',
