@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OfficialController;
+use App\Http\Controllers\Api\PublicPageController;
 use App\Http\Controllers\Api\RegulationController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RtController;
@@ -36,6 +37,21 @@ use Illuminate\Support\Facades\Route;
 */
 
 require __DIR__.'/auth.php';
+
+/*
+|--------------------------------------------------------------------------
+| Public Routes (UC-16 - tanpa login)
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('public')->group(function () {
+    Route::get('/home', [PublicPageController::class, 'home']);
+    Route::get('/village-profile', [PublicPageController::class, 'villageProfile']);
+    Route::get('/news', [PublicPageController::class, 'newsList']);
+    Route::get('/letter-types', [PublicPageController::class, 'letterTypeList']);
+    Route::get('/regulations', [PublicPageController::class, 'regulationList']);
+    Route::get('/contact-us', [PublicPageController::class, 'contactUs']);
+});
 
 /*
 |--------------------------------------------------------------------------
