@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ApprovalFlowSeeder::class,
             WilayahSeeder::class,
+            ApprovalSettingSeeder::class,
             LetterTypeSeeder::class,
             AdminSeeder::class,
         ]);

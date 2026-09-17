@@ -25,6 +25,7 @@ class LetterService
         protected LetterStatusLogRepository $letterStatusLogRepository,
         protected LetterTypeRepository $letterTypeRepository,
         protected ApprovalFlowRepository $approvalFlowRepository,
+        protected ApprovalSettingService $approvalSettingService,
     ) {}
 
     public function createLetter(array $data): Letter
@@ -172,7 +173,10 @@ class LetterService
             'approved_by' => null,
             'approval_level' => $step->approver_position,
             'flow_step_id' => $step->id,
-            'deadline_at' => now()->addDays(3),
+            'deadline_at' => $this->approvalSettingService->resolveDeadline(
+                $step->approver_position,
+                $letter->village_id,
+            ),
         ]);
     }
 

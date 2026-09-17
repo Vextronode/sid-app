@@ -12,11 +12,13 @@ use App\Models\Rt;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\ApprovalFlowRepository;
+use App\Repositories\ApprovalSettingRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\LetterTypeRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
+use App\Services\ApprovalSettingService;
 use App\Services\LetterService;
 use App\Services\OfficialService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -40,6 +42,7 @@ class LetterServiceTest extends TestCase
             new LetterStatusLogRepository,
             new LetterTypeRepository,
             new ApprovalFlowRepository,
+            new ApprovalSettingService(new ApprovalSettingRepository),
         );
     }
 

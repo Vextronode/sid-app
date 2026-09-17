@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ApprovalFlowController;
+use App\Http\Controllers\Api\ApprovalSettingController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\CitizenSocioeconomicController;
 use App\Http\Controllers\Api\CurrentUserController;
@@ -61,6 +62,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [ApprovalFlowController::class, 'store']);
         Route::get('/{id}', [ApprovalFlowController::class, 'show']);
         Route::put('/{id}/steps', [ApprovalFlowController::class, 'replaceSteps']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Approval Settings
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('approval-settings')->group(function () {
+        Route::get('/', [ApprovalSettingController::class, 'index']);
+        Route::patch('/{id}', [ApprovalSettingController::class, 'update']);
     });
 
     /*

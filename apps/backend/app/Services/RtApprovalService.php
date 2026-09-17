@@ -16,6 +16,7 @@ class RtApprovalService
         protected OfficialService $officialService,
         protected LetterRepository $letterRepository,
         protected OfficialRepository $officialRepository,
+        protected ApprovalSettingService $approvalSettingService,
     ) {}
 
     public function getPendingLetters(User $user): Collection
@@ -125,7 +126,10 @@ class RtApprovalService
                 $this->letterRepository->createApprovalForLetter($letter, [
                     'approved_by' => null,
                     'approval_level' => 'kepala_desa',
-                    'deadline_at' => now()->addDays(2),
+                    'deadline_at' => $this->approvalSettingService->resolveDeadline(
+                        'kepala_desa',
+                        $letter->village_id,
+                    ),
                 ]);
 
                 $rwOfficial = $this->officialRepository->findActiveRwByRwId($official->rw_id);
