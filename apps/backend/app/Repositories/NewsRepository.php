@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\News;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 class NewsRepository
@@ -18,6 +19,21 @@ class NewsRepository
         }
 
         return $query->get();
+    }
+
+    /**
+     * UC-16. Halaman publik /public/news - hanya berita published,
+     * dipaginasi (beda dengan allForVillage() yang dipakai admin, selalu
+     * kembalikan seluruh baris tanpa pagination).
+     */
+    public function paginatePublishedForVillage(int $villageId, int $perPage = 10): LengthAwarePaginator
+    {
+        return News::query()
+            ->with('author')
+            ->where('village_id', $villageId)
+            ->where('is_published', true)
+            ->latest('published_at')
+            ->paginate($perPage);
     }
 
     public function findByIdOrFail(int $id): News
