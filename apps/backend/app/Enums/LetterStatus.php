@@ -16,6 +16,17 @@ enum LetterStatus: string
     case KasiApproved = 'kasi_approved';
     case KasiRejected = 'kasi_rejected';
 
+    /**
+     * EV5-4-S6. Status generik target v5.0 (TDD-03 §"Semantik
+     * letters.status") - dipakai KasiApprovalService mulai sekarang,
+     * BUKAN lagi KasiApproved/KasiRejected. Case granular di atas
+     * TETAP dipertahankan (bukan dihapus) karena PdfService::download()
+     * masih menggate ke KasiApproved sampai EV5-4-S9 menyesuaikannya
+     * ke status generik ini.
+     */
+    case Approved = 'approved';
+    case Rejected = 'rejected';
+
     public function label(): string
     {
         return match ($this) {
@@ -28,6 +39,8 @@ enum LetterStatus: string
             self::KadusRejected => 'Ditolak Kadus',
             self::KasiApproved => 'Disetujui Kasi Pelayanan',
             self::KasiRejected => 'Ditolak Kasi Pelayanan',
+            self::Approved => 'Disetujui',
+            self::Rejected => 'Ditolak',
         };
     }
 
@@ -38,6 +51,7 @@ enum LetterStatus: string
             self::RwRejected,
             self::KadusRejected,
             self::KasiRejected,
+            self::Rejected,
         ], true);
     }
 
@@ -48,16 +62,17 @@ enum LetterStatus: string
             self::RwApproved,
             self::KadusApproved,
             self::KasiApproved,
+            self::Approved,
         ], true);
     }
 
     public function isFinalApproval(): bool
     {
-        return $this === self::KasiApproved;
+        return in_array($this, [self::KasiApproved, self::Approved], true);
     }
 
     public function isTerminal(): bool
     {
-        return $this->isRejected() || $this === self::KasiApproved;
+        return $this->isRejected() || $this->isFinalApproval();
     }
 }

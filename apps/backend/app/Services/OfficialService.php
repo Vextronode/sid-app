@@ -146,6 +146,21 @@ class OfficialService
         return $this->officialRepository->findActiveVillageHead();
     }
 
+    /**
+     * EV5-4-S6. Kepala Desa DAN Sekretaris Desa aktif di sebuah
+     * village, dipakai untuk notifikasi monitoring saat Kasi/Kaur
+     * menyelesaikan surat (keduanya, bukan cuma Kepala Desa seperti
+     * resolveVillageHead() di atas - lihat kasi/letter-detail.yaml).
+     *
+     * @return Collection<int, Official>
+     */
+    public function resolveVillageMonitoringOfficials(int $villageId): Collection
+    {
+        return $this->officialRepository
+            ->allActiveByPositionsAndVillage(['kepala_desa', 'sekdes'], $villageId)
+            ->load('user');
+    }
+
     public function getAllWithRelations(): Collection
     {
         return $this->officialRepository->allWithRelations();
