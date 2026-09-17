@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\KadesApprovalController;
-use App\Http\Controllers\Api\KadusApprovalController;
 use App\Http\Controllers\Api\KasiApprovalController;
 use App\Http\Controllers\Api\LetterCategoryController;
 use App\Http\Controllers\Api\LetterController;
@@ -110,17 +109,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [HamletController::class, 'store']);
         Route::patch('/{hamlet}', [HamletController::class, 'update']);
         Route::delete('/{hamlet}', [HamletController::class, 'destroy']);
-    });
-
-    /*
-    |----------------------------------------------------------------------
-    | Kadus Approvals
-    |----------------------------------------------------------------------
-    */
-    Route::prefix('kadus')->group(function () {
-        Route::get('/letters', [KadusApprovalController::class, 'index']);
-        Route::get('/letters/{letter}', [KadusApprovalController::class, 'show']);
-        Route::patch('/letters/{letter}/decision', [KadusApprovalController::class, 'decision']);
     });
 
     /*
