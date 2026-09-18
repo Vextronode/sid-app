@@ -58,12 +58,12 @@ class LetterStatusTest extends TestCase
     }
 
     #[Test]
-    public function it_has_exactly_eleven_cases_after_ev5_4_s6_adds_the_generic_ones(): void
+    public function it_has_twelve_cases_with_generic_and_granular_statuses(): void
     {
-        // 11 case lama - 2 case revisi (WaitingRevisionWarga, RejectedRevision)
-        // + 2 case generik baru (Approved, Rejected - dipakai
-        // KasiApprovalService mulai EV5-4-S6) = 11.
-        $this->assertCount(11, LetterStatus::cases());
+        // 4 generik (Pending, InProgress, Approved, Rejected) +
+        // 8 granular legacy (Rt*/Rw*/Kadus*/Kasi*) = 12.
+        // Approved & Rejected sudah ada sebelum EV5-4-S6 (dari audit Sprint 3).
+        $this->assertCount(12, LetterStatus::cases());
     }
 
     #[Test]
