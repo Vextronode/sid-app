@@ -7,13 +7,10 @@ namespace App\Enums;
 /**
  * Status surat selama transisi approval v5.
  *
- * Nilai generik (Pending, InProgress, Approved, Rejected) adalah target
- * akhir v5.0 dan sudah dipakai oleh schema letters & letter_status_logs.
- * KasiApprovalService mulai menulis Approved/Rejected sejak EV5-4-S6.
- *
- * Nilai granular v4 (Rt*, Rw*, Kadus*, Kasi*) dipertahankan sementara
- * karena PdfService masih menggate ke KasiApproved sampai EV5-4-S9
- * menyesuaikannya ke status generik.
+ * Nilai generik dipakai oleh schema v5 dan service approval yang telah
+ * dimigrasikan (RT - EV5-4-S4, Kasi/Kaur - EV5-4-S6). Nilai granular
+ * dipertahankan sementara karena PdfService belum dimigrasikan
+ * (EV5-4-S9) dan beberapa masih dipakai data lama.
  */
 enum LetterStatus: string
 {
@@ -75,7 +72,7 @@ enum LetterStatus: string
 
     public function isFinalApproval(): bool
     {
-        return in_array($this, [self::KasiApproved, self::Approved], true);
+        return in_array($this, [self::Approved, self::KasiApproved], true);
     }
 
     public function isTerminal(): bool

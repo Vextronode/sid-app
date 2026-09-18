@@ -169,58 +169,30 @@ class LetterService
         return $flow?->steps->first();
     }
 
+    /**
+     * EV5-4-S7. Rewrite total dari switch lama yang salah menggabungkan
+     * kasi_pelayanan/kaur_tu_umum/petugas_desa/sekretaris_desa/
+     * kepala_desa jadi satu case "lihat semua surat" (TDD-01 Table 3 -
+     * Scope Monitoring Surat per Role, paths/letters/letters.yaml).
+     * Setiap role berbasis posisi kini di-scope KE STEP AKTIF mereka
+     * sendiri lewat LetterRepository::findByFlowStepAndStatus(), bukan
+     * full visibility - kecuali petugas_desa yang memang tetap full
+     * visibility, dan kadus yang tidak lagi punya scope approval sama
+     * sekali (dihapus total, lihat paths/letters/letters.yaml).
+     */
     public function getScopedLetters(
         User $user,
         array $filters = []
     ): Collection {
-        $query = $this->letterRepository->queryForList();
-
-        switch ($user->role) {
-
-            case 'warga':
-
-                $this->letterRepository->whereSubmittedBy($query, $user->id);
-
-                break;
-
-            case 'rt':
-
-                $official = $user->official;
-
-                $this->letterRepository->whereCitizenRtId($query, $official->rt_id);
-
-                break;
-
-            case 'rw':
-
-                $official = $user->official;
-
-                $this->letterRepository->whereCitizenRwId($query, $official->rw_id);
-
-                break;
-
-            case 'kadus':
-
-                break;
-
-            case 'kasi_pelayanan':
-
-            case 'kaur_tu_umum':
-
-            case 'petugas_desa':
-
-            case 'sekretaris_desa':
-
-            case 'kepala_desa':
-
-                // melihat semua surat
-                break;
-
-            default:
-
-                abort(403);
-
-        }
+        $query = match ($user->role) {
+            'warga' => $this->scopeForWarga($user),
+            'rt' => $this->scopeForRt($user),
+            'rw' => $this->scopeForRw($user),
+            'kepala_desa', 'sekretaris_desa' => $this->scopeForKadesSekdes($user),
+            'kasi_pelayanan', 'kaur_tu_umum' => $this->scopeForKasiKaur($user),
+            'petugas_desa' => $this->letterRepository->queryForList(),
+            default => abort(403, 'Anda tidak berwenang mengakses daftar surat ini.'),
+        };
 
         $this->applyFilters($query, $filters);
 
@@ -231,6 +203,59 @@ class LetterService
         $this->flagOverdueLetters($letters);
 
         return $letters;
+    }
+
+    private function scopeForWarga(User $user): Builder
+    {
+        $query = $this->letterRepository->queryForList();
+
+        $this->letterRepository->whereSubmittedBy($query, $user->id);
+
+        return $query;
+    }
+
+    /**
+     * RT: surat wilayahnya (via citizens.rt_id) yang SEDANG berada di
+     * step 'rt' - bukan seluruh riwayat surat warga di RT-nya seperti
+     * implementasi lama (whereCitizenRtId() murni tanpa filter step).
+     */
+    private function scopeForRt(User $user): Builder
+    {
+        $official = $this->officialService->getCurrentRt($user);
+
+        return $this->letterRepository
+            ->findByFlowStepAndStatus('rt', ['pending', 'in_progress'])
+            ->whereHas('citizen', fn (Builder $q) => $q->where('rt_id', $official->rt_id));
+    }
+
+    /**
+     * RW: BUKAN approver - read-only histori FYI, tanpa filter status
+     * aktif sama sekali (beda dari RwApprovalService::getPendingLetters()
+     * yang membatasi ke status 'pending' untuk dashboard-nya sendiri).
+     */
+    private function scopeForRw(User $user): Builder
+    {
+        $official = $this->officialService->getCurrentRw($user);
+
+        return $this->letterRepository->queryByCitizenRw($official->rw_id);
+    }
+
+    private function scopeForKadesSekdes(User $user): Builder
+    {
+        $official = $this->officialService->getCurrentOfficial($user);
+
+        return $this->letterRepository
+            ->findByFlowStepAndStatus('kepala_desa', ['pending', 'in_progress'])
+            ->where('village_id', $official->village_id);
+    }
+
+    private function scopeForKasiKaur(User $user): Builder
+    {
+        $official = $this->officialService->getCurrentOfficial($user);
+
+        return $this->letterRepository
+            ->findByFlowStepAndStatus($official->position, ['pending', 'in_progress'])
+            ->where('village_id', $official->village_id);
     }
 
     private function applyFilters(Builder $query, array $filters): void

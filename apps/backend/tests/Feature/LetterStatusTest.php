@@ -98,6 +98,10 @@ class LetterStatusTest extends TestCase
     #[Test]
     public function kasi_approved_remains_a_legacy_final_approval_during_transition(): void
     {
+        // KasiApprovalService (EV5-4-S6) tidak lagi MENULIS nilai ini
+        // (lihat Approved di atas), tapi baris lama yang sudah
+        // terlanjur tersimpan dengan status ini tetap harus
+        // diklasifikasikan benar oleh isFinalApproval()/isTerminal().
         $this->assertTrue(LetterStatus::KasiApproved->isFinalApproval());
         $this->assertTrue(LetterStatus::KasiApproved->isTerminal());
     }

@@ -44,7 +44,9 @@ class KasiApprovalService
     public function getLetterDetail(Letter $letter, User $user): Letter
     {
         $official = $this->authorizeOfficial($user);
+
         $letter = $this->letterRepository->loadDetailForApproval($letter);
+
         if ($letter->village_id !== $official->village_id) {
             abort(403, 'Anda tidak berwenang melihat surat ini.');
         }
@@ -87,7 +89,7 @@ class KasiApprovalService
 
             $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
 
-            if ($locked->status !== LetterStatus::Pending) {
+            if (! in_array($locked->status, [LetterStatus::Pending, LetterStatus::InProgress], true)) {
                 abort(409, 'Surat ini sudah diputuskan sebelumnya.');
             }
 

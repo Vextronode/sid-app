@@ -106,6 +106,61 @@ class KasiApprovalServiceTest extends TestCase
         $this->assertSame($letter->id, $result->first()->id);
     }
 
+    /**
+     * Simulasi realistis: surat sudah lewat RT (EV5-4-S4) yang menulis
+     * status='in_progress', BUKAN 'pending' - Kasi harus tetap
+     * menganggapnya "belum diputuskan" (lihat catatan di
+     * LetterRepository::queryPendingAtFinalStepPosition()).
+     */
+    public function test_get_pending_letters_includes_letters_already_in_progress_via_rt(): void
+    {
+        $village = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id]);
+
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'rt', 'is_final' => false]);
+        $finalStep = FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'kasi_pelayanan', 'is_final' => true]);
+
+        $letter = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => $finalStep->step_order,
+            'status' => 'in_progress',
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+        ]);
+
+        $kasi = $this->makeUserWithPosition('kasi_pelayanan', $village);
+
+        $result = $this->service->getPendingLetters($kasi);
+
+        $this->assertCount(1, $result);
+        $this->assertSame($letter->id, $result->first()->id);
+    }
+
+    public function test_decision_approve_works_on_a_letter_that_arrived_in_progress_via_rt(): void
+    {
+        $village = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id]);
+
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'rt', 'is_final' => false]);
+        $finalStep = FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'kasi_pelayanan', 'is_final' => true]);
+
+        $letter = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => $finalStep->step_order,
+            'status' => 'in_progress',
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+        ]);
+
+        $kasi = $this->makeUserWithPosition('kasi_pelayanan', $village);
+
+        $this->service->decision($letter, $kasi, ['status' => 'approved']);
+
+        $this->assertTrue($letter->fresh()->status === LetterStatus::Approved);
+    }
+
     public function test_get_pending_letters_scoped_to_exact_position_not_the_other_kasi_role(): void
     {
         $village = Village::factory()->create();
