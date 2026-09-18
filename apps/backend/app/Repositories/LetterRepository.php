@@ -274,7 +274,7 @@ class LetterRepository
     {
         return Letter::query()
             ->where('village_id', $villageId)
-            ->whereIn('status', [LetterStatus::Pending, LetterStatus::InProgress]
+            ->whereIn('status', [LetterStatus::Pending, LetterStatus::InProgress])
             ->whereHas('flow', function (Builder $flowQuery) use ($position) {
                 $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($position) {
                     $stepQuery->whereColumn('step_order', 'letters.current_step_order')
