@@ -89,7 +89,7 @@ class KasiApprovalService
 
             $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
 
-            if ($locked->status !== LetterStatus::Pending) {
+            if (! in_array($locked->status, [LetterStatus::Pending, LetterStatus::InProgress], true)) {
                 abort(409, 'Surat ini sudah diputuskan sebelumnya.');
             }
 

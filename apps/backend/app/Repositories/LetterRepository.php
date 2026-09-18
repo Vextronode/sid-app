@@ -218,21 +218,24 @@ class LetterRepository
     /**
      * Surat yang sedang berada di step FINAL (is_final=true) dengan
      * approver_position sesuai posisi Kasi/Kaur yang memanggil,
-     * discope ke village, dan belum diputuskan (status masih
-     * 'pending') - dipakai KasiApprovalService::getPendingLetters()
-     * (EV5-4-S6). MENGGANTIKAN filter lama yang salah membandingkan ke
-     * assigned_role='rw' (Audit §3.4).
+     * discope ke village, dan belum diputuskan - dipakai
+     * KasiApprovalService::getPendingLetters() (EV5-4-S6). MENGGANTIKAN
+     * filter lama yang salah membandingkan ke assigned_role='rw'
+     * (Audit §3.4).
      *
-     * Filter status=Pending diperlukan karena step final tidak pernah
-     * maju ke step berikutnya (current_step_order tetap sama setelah
-     * diputuskan) - status generik 'approved'/'rejected' adalah
-     * satu-satunya penanda surat ini sudah diputuskan Kasi/Kaur.
+     * Status bisa 'pending' (flow langsung mulai di step final, tanpa
+     * RT/Kades) ATAU 'in_progress' (sudah lewat RT dan/atau Kades lebih
+     * dulu - lihat RtApprovalService::decision(), EV5-4-S4) - keduanya
+     * berarti "belum diputuskan". Step final tidak pernah maju ke step
+     * berikutnya (current_step_order tetap sama setelah diputuskan),
+     * jadi status generik 'approved'/'rejected' adalah satu-satunya
+     * penanda surat ini SUDAH diputuskan Kasi/Kaur.
      */
     public function queryPendingAtFinalStepPosition(string $position, int $villageId): Builder
     {
         return Letter::query()
             ->where('village_id', $villageId)
-            ->where('status', LetterStatus::Pending)
+            ->whereIn('status', [LetterStatus::Pending, LetterStatus::InProgress])
             ->whereHas('flow', function (Builder $flowQuery) use ($position) {
                 $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($position) {
                     $stepQuery->whereColumn('step_order', 'letters.current_step_order')
