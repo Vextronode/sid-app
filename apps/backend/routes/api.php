@@ -146,7 +146,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('kasi')->group(function () {
         Route::get('/letters', [KasiApprovalController::class, 'index']);
         Route::get('/letters/{letter}', [KasiApprovalController::class, 'show']);
-        Route::patch('/approvals/{letter}/approve', [KasiApprovalController::class, 'approve']);
+        Route::patch('/letters/{letter}', [KasiApprovalController::class, 'decision']);
     });
 
     /*

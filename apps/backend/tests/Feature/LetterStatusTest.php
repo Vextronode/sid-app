@@ -58,11 +58,21 @@ class LetterStatusTest extends TestCase
     }
 
     #[Test]
-    public function it_has_twelve_cases_during_the_v5_transition(): void
+    public function it_has_twelve_cases_with_generic_and_granular_statuses(): void
     {
-        // Empat status generik v5 dan delapan status granular yang masih
-        // dipakai service downstream sampai EV5-4-S6/S9 selesai.
+        // 4 generik (Pending, InProgress, Approved, Rejected) +
+        // 8 granular legacy (Rt*/Rw*/Kadus*/Kasi*) = 12.
+        // Approved & Rejected sudah ada sebelum EV5-4-S6 (dari audit Sprint 3).
         $this->assertCount(12, LetterStatus::cases());
+    }
+
+    #[Test]
+    public function it_has_the_generic_approved_and_rejected_cases_added_by_ev5_4_s6(): void
+    {
+        $caseNames = array_map(fn (LetterStatus $c) => $c->name, LetterStatus::cases());
+
+        $this->assertContains('Approved', $caseNames);
+        $this->assertContains('Rejected', $caseNames);
     }
 
     #[Test]
@@ -90,5 +100,16 @@ class LetterStatusTest extends TestCase
     {
         $this->assertTrue(LetterStatus::KasiApproved->isFinalApproval());
         $this->assertTrue(LetterStatus::KasiApproved->isTerminal());
+    }
+
+    #[Test]
+    public function generic_approved_is_a_final_approval_and_generic_rejected_is_terminal(): void
+    {
+        // EV5-4-S6: KasiApprovalService sekarang menulis status generik
+        // ini, bukan lagi KasiApproved/KasiRejected.
+        $this->assertTrue(LetterStatus::Approved->isFinalApproval());
+        $this->assertTrue(LetterStatus::Approved->isTerminal());
+        $this->assertTrue(LetterStatus::Rejected->isTerminal());
+        $this->assertTrue(LetterStatus::Rejected->isRejected());
     }
 }
