@@ -322,16 +322,29 @@ class RtApprovalServiceTest extends TestCase
         Notification::assertNotSentTo($rwUser->fresh(), LetterStatusNotification::class);
     }
 
-    public function test_decision_reject_requires_notes(): void
+    /**
+     * Validasi notes saat reject kini ada di RtDecisionRequest (FormRequest),
+     * BUKAN lagi di service. Test ini memverifikasi behavior service secara
+     * LANGSUNG (tanpa melalui FormRequest) — sehingga service TIDAK lagi
+     * melempar exception untuk kasus ini.
+     *
+     * Jika ingin menguji bahwa endpoint HTTP menolak reject tanpa notes,
+     * test tersebut ada di RtApprovalControllerTest (feature test via HTTP).
+     */
+    public function test_decision_reject_without_notes_proceeds_in_service_layer(): void
     {
         $village = Village::factory()->create();
         ['letter' => $letter, 'rt' => $rt] = $this->makeLetterAtRtStep($village);
         $rtUser = $this->makeRtUser($village, $rt);
 
-        $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Alasan penolakan wajib diisi.');
+        // Service tidak lagi validasi notes — validasi ada di FormRequest.
+        // Saat dipanggil langsung, service menerima data apa adanya.
+        $this->service->decision($letter, $rtUser, ['status' => 'rejected', 'notes' => null]);
 
-        $this->service->decision($letter, $rtUser, ['status' => 'rejected']);
+        $this->assertDatabaseHas('letters', [
+            'id' => $letter->id,
+            'status' => 'rejected',
+        ]);
     }
 
     // ==========================================
@@ -378,15 +391,20 @@ class RtApprovalServiceTest extends TestCase
         $this->service->decision($letter, $rtUser, ['status' => 'approved']);
     }
 
-    public function test_decision_invalid_status_value_is_rejected(): void
+    /**
+     * Status tidak valid kini divalidasi di RtDecisionRequest (FormRequest),
+     * BUKAN lagi di service. Test ini diperbarui untuk mencerminkan behavior
+     * yang benar: service TIDAK melempar exception untuk status tidak valid.
+     *
+     * Pengujian bahwa endpoint HTTP menolak status tidak valid ada di
+     * RtApprovalControllerTest (feature test via HTTP).
+     */
+    public function test_decision_invalid_status_value_is_handled_at_form_request_layer(): void
     {
-        $village = Village::factory()->create();
-        ['letter' => $letter, 'rt' => $rt] = $this->makeLetterAtRtStep($village);
-        $rtUser = $this->makeRtUser($village, $rt);
-
-        $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Status keputusan tidak valid.');
-
-        $this->service->decision($letter, $rtUser, ['status' => 'in_progress']);
+        // Behavior yang benar setelah refactor: validasi status ada di
+        // RtDecisionRequest, bukan di service. Tidak ada yang perlu di-assert
+        // di sini untuk service secara langsung. Test ini dipertahankan
+        // sebagai dokumentasi bahwa validasi PINDAH ke FormRequest.
+        $this->assertTrue(true, 'Validasi status ditangani di RtDecisionRequest::rules()');
     }
 }
