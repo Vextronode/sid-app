@@ -52,6 +52,13 @@ class LetterRepository
         return $letter->citizen()->value('rt_id');
     }
 
+    public function findCitizenRwId(Letter $letter): ?int
+    {
+        return $letter->citizen()
+            ->join('rts', 'rts.id', '=', 'citizens.rt_id')
+            ->value('rts.rw_id');
+    }
+
     public function loadForPdf(Letter $letter): Letter
     {
         return $letter->load(['letterType', 'citizen', 'village']);
@@ -74,17 +81,6 @@ class LetterRepository
         $letter->statusLogs()->create($data);
     }
 
-    /**
-     * Update semua approval milik surat pada level tertentu (dipakai
-     * saat RT/Kasi memutuskan surat: menandai approval level mereka
-     * sebagai approved_by user yang memutuskan).
-     *
-     * @param  bool  $onlyPending  Jika true, hanya approval yang belum
-     *                             di-approve (approved_by masih null)
-     *                             yang di-update - dipakai Kasi approval
-     *                             agar tidak menimpa approval
-     *                             sebelumnya yang sudah selesai.
-     */
     public function updateApprovalsByLevel(Letter $letter, string $level, array $data, bool $onlyPending = false): int
     {
         $query = $letter->approvals()->where('approval_level', $level);
@@ -218,6 +214,17 @@ class LetterRepository
                         ->whereIn('approver_position', $positions);
                 });
             })
+            ->with([
+                'citizen',
+                'letterType',
+                'approvals.approvedBy:id,name',
+            ]);
+    }
+
+    public function queryByCitizenHamlet(int $hamletId): Builder
+    {
+        return Letter::query()
+            ->whereHas('citizen', fn (Builder $q) => $q->where('hamlet_id', $hamletId))
             ->with([
                 'citizen',
                 'letterType',
