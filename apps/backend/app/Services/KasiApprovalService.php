@@ -8,7 +8,6 @@ use App\Models\Official;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -30,27 +29,28 @@ class KasiApprovalService
         protected OfficialService $officialService,
         protected LetterRepository $letterRepository,
     ) {}
-
+  
     public function getPendingLetters(User $user): Collection
     {
         $official = $this->authorizeOfficial($user);
-
         return $this->letterRepository
             ->queryPendingAtFinalStepPosition($official->position, $official->village_id)
             ->latest()
             ->get();
     }
-
+   
+    public function getDashboardLetters(User $user)
+    {
+        return $this->letterRepository->allWithDetailForApproval();
+    }
+    
     public function getLetterDetail(Letter $letter, User $user): Letter
     {
         $official = $this->authorizeOfficial($user);
-
         $letter = $this->letterRepository->loadDetailForApproval($letter);
-
         if ($letter->village_id !== $official->village_id) {
             abort(403, 'Anda tidak berwenang melihat surat ini.');
         }
-
         return $letter;
     }
 

@@ -4,9 +4,22 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+/**
+ * Status surat selama transisi approval v5.
+ *
+ * Nilai generik dipakai oleh schema v5 dan service approval yang telah
+ * dimigrasikan. Nilai granular dipertahankan sementara karena service
+ * Kasi dan PDF belum dimigrasikan (EV5-4-S6 dan EV5-4-S9).
+ */
 enum LetterStatus: string
 {
+    // Status generik v5 (sesuai enum kolom letters dan letter_status_logs).
     case Pending = 'pending';
+    case InProgress = 'in_progress';
+    case Approved = 'approved';
+    case Rejected = 'rejected';
+
+    // Status granular v4: compatibility sementara untuk service yang belum direwrite.
     case RtApproved = 'rt_approved';
     case RtRejected = 'rt_rejected';
     case RwApproved = 'rw_approved';
@@ -31,6 +44,9 @@ enum LetterStatus: string
     {
         return match ($this) {
             self::Pending => 'Menunggu',
+            self::InProgress => 'Sedang Diproses',
+            self::Approved => 'Disetujui',
+            self::Rejected => 'Ditolak',
             self::RtApproved => 'Disetujui RT',
             self::RtRejected => 'Ditolak RT',
             self::RwApproved => 'Disetujui RW',
@@ -47,6 +63,7 @@ enum LetterStatus: string
     public function isRejected(): bool
     {
         return in_array($this, [
+            self::Rejected,
             self::RtRejected,
             self::RwRejected,
             self::KadusRejected,
@@ -58,6 +75,7 @@ enum LetterStatus: string
     public function isApproved(): bool
     {
         return in_array($this, [
+            self::Approved,
             self::RtApproved,
             self::RwApproved,
             self::KadusApproved,
