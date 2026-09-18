@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\ApprovalFlow;
 use App\Models\Citizen;
+use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\Official;
@@ -102,6 +104,55 @@ class LetterControllerTest extends TestCase
     public function test_index_requires_authentication(): void
     {
         $this->getJson('/api/letters')->assertUnauthorized();
+    }
+
+    /**
+     * EV5-4-S7. RT sekarang hanya melihat surat yang SEDANG berada di
+     * step 'rt' miliknya - bukan seluruh riwayat surat warga di RT-nya
+     * seperti implementasi lama.
+     */
+    public function test_index_for_rt_only_shows_letters_currently_at_rt_step(): void
+    {
+        $rt = Rt::factory()->create();
+        $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
+
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'rt',
+        ]);
+
+        $letter = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'citizen_id' => $citizen->id,
+        ]);
+
+        // surat lain punya citizen di RT yang sama tapi tidak
+        // berhubungan dengan flow/step ini sama sekali - tidak boleh
+        // ikut muncul.
+        Letter::factory()->create(['citizen_id' => $citizen->id]);
+
+        $official = Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
+        $user = User::factory()->create(['role' => 'rt']);
+        $user->official()->save($official);
+
+        $this->actingAs($user->fresh())
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $letter->id);
+    }
+
+    public function test_index_forbidden_for_kadus_role(): void
+    {
+        Letter::factory()->count(2)->create();
+        $user = User::factory()->create(['role' => 'kadus']);
+
+        $this->actingAs($user)
+            ->getJson('/api/letters')
+            ->assertStatus(403);
     }
 
     public function test_show_returns_404_for_unknown_letter(): void
