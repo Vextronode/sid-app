@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\FlowStep;
 use App\Models\Letter;
-use App\Models\LetterType;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Policies\LetterPolicy;
@@ -15,7 +14,6 @@ use App\Repositories\LetterTypeRepository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class LetterService
 {
@@ -98,69 +96,6 @@ class LetterService
         });
     }
 
-    private function verifyLetterType(
-        LetterType $letterType,
-        array $data,
-        $citizen
-    ): void {
-
-        switch ($letterType->verification_type) {
-
-            case 'auto':
-
-                if (! $citizen || ! $citizen->is_active) {
-                    throw ValidationException::withMessages([
-                        'letter_type_id' => 'Data warga tidak valid.',
-                    ]);
-                }
-
-                break;
-
-            case 'manual':
-
-                // menunggu verifikasi petugas
-                // status tetap pending
-                break;
-
-            case 'document':
-
-                if (
-                    empty($data['attachments'])
-                ) {
-                    throw ValidationException::withMessages([
-                        'attachments' => 'Dokumen wajib diupload.',
-                    ]);
-                }
-
-                break;
-        }
-    }
-
-    /**
-     * EV5-4-S8. Membuat row LetterApproval PLACEHOLDER untuk step
-     * PERTAMA dari flow yang sudah di-snapshot ke letter.flow_id saat
-     * submit (lihat komentar di createLetter()) — bukan lagi hardcode
-     * approval_level 'rt' seperti implementasi lama.
-     *
-     * "Snapshot flow saat submit" berarti step pertama dibaca dari
-     * ApprovalFlow::steps() milik flow_id yang SUDAH DIKUNCI ke surat
-     * ini (findWithSteps($letter->flow_id)), bukan dari letter_types
-     * (yang flow_id-nya bisa berubah di kemudian hari tanpa
-     * memengaruhi surat yang sudah terlanjur submit).
-     *
-     * Kategori tanpa approval berjenjang (mis. upload_mandiri,
-     * dokumen_pendukung — lihat ApprovalFlowSeeder::seedDirectFlow())
-     * sengaja punya flow TANPA FlowStep sama sekali; untuk kasus itu,
-     * method ini tidak membuat approval apapun (bukan error) — surat
-     * kategori tersebut memang tidak melalui approval bertingkat.
-     *
-     * approved_by SENGAJA null (placeholder "menunggu keputusan"),
-     * BUKAN diisi id official yang di-resolve seperti implementasi
-     * lama — resolve official di sini hanya menentukan siapa yang
-     * berwenang/dinotifikasi, bukan berarti sudah memutuskan. Pola ini
-     * konsisten dengan RtApprovalService::decision() yang meng-update
-     * approved_by SAAT approve, bukan saat placeholder dibuat.
-     */
     private function createFirstApproval(Letter $letter): void
     {
         $step = $this->firstStepOf($letter);

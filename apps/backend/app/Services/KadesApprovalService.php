@@ -52,7 +52,7 @@ class KadesApprovalService
      * Boleh dipanggil oleh official kepala_desa ATAU sekdes di village
      * yang sama — siapapun yang lebih dulu, menang; percobaan kedua
      * (dari posisi manapun) akan ditolak karena step sudah tidak lagi
-     * berada di 'kepala_desa' begitu keputusan pertama tercatat.
+     * berada di 'kepala_desa' begitu keputusan pertama tercatat
      */
     public function decision(Letter $letter, User $user, array $data): void
     {
@@ -66,14 +66,6 @@ class KadesApprovalService
 
         if (! $step || $step->approver_position !== 'kepala_desa') {
             abort(409, 'Surat ini tidak sedang berada di tahap Kepala Desa/Sekdes.');
-        }
-
-        if (! isset($data['status']) || ! in_array($data['status'], ['approved', 'rejected'], true)) {
-            abort(422, 'Status keputusan tidak valid.');
-        }
-
-        if ($data['status'] === 'rejected' && (! isset($data['notes']) || trim($data['notes']) === '')) {
-            abort(422, 'Alasan penolakan wajib diisi.');
         }
 
         DB::transaction(function () use ($letter, $user, $official, $data, $step) {
@@ -104,17 +96,36 @@ class KadesApprovalService
                 'notes' => $data['notes'] ?? null,
             ]);
 
+            $oldStatus = $locked->status->value;
+
             if ($data['status'] === 'approved') {
+                // Jika step ini is_final (flow 1-step langsung ke Kades),
+                // status langsung 'approved'. Jika tidak (ada step lanjutan
+                // misal Kasi), status menjadi 'in_progress'.
+                $newStatus = $step->is_final ? 'approved' : 'in_progress';
+
                 $this->letterRepository->update($locked, [
+                    'status' => $newStatus,
                     'current_step_order' => $step->step_order + 1,
                     'processed_at' => now(),
                 ]);
             } else {
+                $newStatus = 'rejected';
+
                 $this->letterRepository->update($locked, [
+                    'status' => $newStatus,
                     'rejected_at_step' => $step->step_order,
                     'processed_at' => now(),
                 ]);
             }
+
+            // Catat audit trail — konsisten dengan RtApprovalService.
+            $this->letterRepository->createStatusLogForLetter($locked, [
+                'actor_id' => $user->id,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'reason' => $data['notes'] ?? null,
+            ]);
 
             $this->notifyApplicant($locked, $data['status'], $approvalLevel);
         });

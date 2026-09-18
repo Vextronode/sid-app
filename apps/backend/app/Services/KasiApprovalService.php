@@ -7,7 +7,6 @@ use App\Models\Letter;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class KasiApprovalService
@@ -16,26 +15,6 @@ class KasiApprovalService
         protected OfficialService $officialService,
         protected LetterRepository $letterRepository,
     ) {}
-
-    /**
-     * Catatan refactor: method ini dipertahankan apa adanya (termasuk
-     * scope assigned_role='rw') sesuai kode asli, meskipun saat ini
-     * tidak dipanggil oleh KasiApprovalController manapun -
-     * index() controller memanggil getDashboardLetters(), bukan ini.
-     */
-    public function getPendingLetters(User $user): Collection
-    {
-        return $this->letterRepository->queryByStatusesAndLetterTypeAssignedRole(
-            [
-                LetterStatus::RwApproved,
-                LetterStatus::KasiApproved,
-                LetterStatus::KasiRejected,
-            ],
-            'rw'
-        )
-            ->latest()
-            ->get();
-    }
 
     public function getDashboardLetters(User $user)
     {

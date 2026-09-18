@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DestroyRwRequest;
 use App\Http\Requests\StoreRwRequest;
 use App\Http\Requests\UpdateRwRequest;
 use App\Http\Resources\RwCollection;
@@ -40,12 +41,8 @@ class RwController extends Controller
         return (new RwResource($rw))->response()->setStatusCode(200);
     }
 
-    public function destroy(Request $request, Rw $rw)
+    public function destroy(DestroyRwRequest $request, Rw $rw)
     {
-        if ($request->user()->role !== 'petugas_desa') {
-            abort(403, 'Hanya Petugas Desa yang berwenang.');
-        }
-
         $this->rwService->delete($rw);
 
         return response()->json([
