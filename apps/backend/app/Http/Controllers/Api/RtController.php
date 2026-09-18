@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DestroyRtRequest;
 use App\Http\Requests\StoreRtRequest;
 use App\Http\Requests\UpdateRtRequest;
 use App\Http\Resources\RtCollection;
@@ -40,12 +41,8 @@ class RtController extends Controller
         return (new RtResource($rt))->response()->setStatusCode(200);
     }
 
-    public function destroy(Request $request, Rt $rt)
+    public function destroy(DestroyRtRequest $request, Rt $rt)
     {
-        if ($request->user()->role !== 'petugas_desa') {
-            abort(403, 'Hanya Petugas Desa yang berwenang.');
-        }
-
         $this->rtService->delete($rt);
 
         return response()->json([

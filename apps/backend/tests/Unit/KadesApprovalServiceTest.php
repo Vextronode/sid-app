@@ -45,7 +45,7 @@ class KadesApprovalServiceTest extends TestCase
 
     /**
      * Membuat surat yang sedang berada di step 'kepala_desa' pada
-     * sebuah flow 1-step, di village tertentu.
+     * sebuah flow 2-step (kepala_desa -> kasi_pelayanan), di village tertentu.
      */
     private function makeLetterAtKadesStep(Village $village, ?Citizen $citizen = null): Letter
     {
@@ -62,6 +62,30 @@ class KadesApprovalServiceTest extends TestCase
             'flow_id' => $flow->id,
             'step_order' => 2,
             'approver_position' => 'kasi_pelayanan',
+            'is_final' => true,
+        ]);
+
+        return Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+        ]);
+    }
+
+    /**
+     * Membuat surat di flow 1-step (kepala_desa is_final=true), untuk
+     * menguji bahwa status menjadi 'approved' langsung (bukan in_progress).
+     */
+    private function makeLetterAtKadesFinalStep(Village $village): Letter
+    {
+        $citizen = Citizen::factory()->create(['village_id' => $village->id]);
+
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'kepala_desa',
             'is_final' => true,
         ]);
 
@@ -242,15 +266,93 @@ class KadesApprovalServiceTest extends TestCase
         $this->assertSame(1, $fresh->rejected_at_step);
     }
 
-    public function test_decision_reject_without_notes_fails_validation(): void
+    /**
+     * FIX BUG: status harus diupdate menjadi 'rejected' saat Kades reject.
+     * Versi lama TIDAK mengupdate status sama sekali (bug).
+     */
+    public function test_decision_reject_updates_status_to_rejected(): void
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesStep($village);
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
 
-        $this->expectException(HttpException::class);
+        $this->service->decision($letter, $kades, ['status' => 'rejected', 'notes' => 'Dokumen tidak lengkap']);
 
-        $this->service->decision($letter, $kades, ['status' => 'rejected']);
+        $this->assertDatabaseHas('letters', [
+            'id' => $letter->id,
+            'status' => 'rejected',
+        ]);
+    }
+
+    /**
+     * FIX BUG: status harus diupdate menjadi 'in_progress' saat Kades
+     * approve dan step bukan is_final. Versi lama TIDAK mengupdate status
+     * sama sekali (bug).
+     */
+    public function test_decision_approve_updates_status_to_in_progress_when_not_final(): void
+    {
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesStep($village); // step is_final=false
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+
+        $this->service->decision($letter, $kades, ['status' => 'approved']);
+
+        $this->assertDatabaseHas('letters', [
+            'id' => $letter->id,
+            'status' => 'in_progress',
+        ]);
+    }
+
+    /**
+     * FIX BUG: status harus 'approved' saat Kades approve dan step is_final.
+     */
+    public function test_decision_approve_updates_status_to_approved_when_final_step(): void
+    {
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesFinalStep($village); // step is_final=true
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+
+        $this->service->decision($letter, $kades, ['status' => 'approved']);
+
+        $this->assertDatabaseHas('letters', [
+            'id' => $letter->id,
+            'status' => 'approved',
+        ]);
+    }
+
+    /**
+     * FIX BUG: audit trail letter_status_logs harus dicatat saat Kades decide.
+     * Versi lama tidak memanggil createStatusLogForLetter sama sekali (bug).
+     */
+    public function test_decision_approve_writes_status_log(): void
+    {
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesStep($village);
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+
+        $this->service->decision($letter, $kades, ['status' => 'approved']);
+
+        $this->assertDatabaseHas('letter_status_logs', [
+            'letter_id' => $letter->id,
+            'new_status' => 'in_progress',
+            'actor_id' => $kades->id,
+        ]);
+    }
+
+    public function test_decision_reject_without_notes_does_not_throw_at_service_layer(): void
+    {
+        // Validasi notes saat reject kini ada di KadesDecisionRequest (FormRequest),
+        // BUKAN lagi di service — service menerima data apa adanya bila dipanggil langsung.
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesStep($village);
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+
+        $this->service->decision($letter, $kades, ['status' => 'rejected', 'notes' => null]);
+
+        $this->assertDatabaseHas('letters', [
+            'id' => $letter->id,
+            'status' => 'rejected',
+        ]);
     }
 
     /**
@@ -337,21 +439,5 @@ class KadesApprovalServiceTest extends TestCase
         $this->expectException(HttpException::class);
 
         $this->service->decision($letter, $kades, ['status' => 'approved']);
-    }
-
-    public function test_decision_does_not_write_letter_status_column(): void
-    {
-        $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
-        $kades = $this->makeUserWithPosition('kepala_desa', $village);
-
-        $this->service->decision($letter, $kades, ['status' => 'approved']);
-
-        // status kolom TIDAK disentuh sama sekali — tetap 'pending'
-        // (lihat catatan status di docblock KadesApprovalService).
-        $this->assertDatabaseHas('letters', [
-            'id' => $letter->id,
-            'status' => 'pending',
-        ]);
     }
 }

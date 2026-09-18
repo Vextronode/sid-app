@@ -14,13 +14,13 @@ namespace App\Enums;
  */
 enum LetterStatus: string
 {
-    // Status generik v5 (sesuai enum kolom letters dan letter_status_logs).
+    // - Status generik v5
     case Pending = 'pending';
     case InProgress = 'in_progress';
     case Approved = 'approved';
     case Rejected = 'rejected';
 
-    // Status granular v4: compatibility sementara untuk service yang belum direwrite.
+    // - Status granular v4: compatibility sementara
     case RtApproved = 'rt_approved';
     case RtRejected = 'rt_rejected';
     case RwApproved = 'rw_approved';

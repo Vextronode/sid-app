@@ -237,12 +237,7 @@ class LetterRepository
                         ->where('approver_position', $approverPosition);
                 });
             })
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals.approvedBy:id,name',
-                'user',
-            ]);
+            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'user']);
     }
 
     /**
@@ -256,12 +251,7 @@ class LetterRepository
     {
         return Letter::query()
             ->whereHas('citizen.rt', fn (Builder $q) => $q->where('rw_id', $rwId))
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals.approvedBy:id,name',
-                'user',
-            ]);
+            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'user']);
     }
 
     /**
@@ -284,7 +274,7 @@ class LetterRepository
     {
         return Letter::query()
             ->where('village_id', $villageId)
-            ->whereIn('status', [LetterStatus::Pending, LetterStatus::InProgress])
+            ->whereIn('status', [LetterStatus::Pending, LetterStatus::InProgress]
             ->whereHas('flow', function (Builder $flowQuery) use ($position) {
                 $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($position) {
                     $stepQuery->whereColumn('step_order', 'letters.current_step_order')

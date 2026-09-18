@@ -57,14 +57,6 @@ class RtApprovalService
             abort(409, 'Surat ini tidak sedang berada di tahap RT.');
         }
 
-        if (! isset($data['status']) || ! in_array($data['status'], ['approved', 'rejected'], true)) {
-            abort(422, 'Status keputusan tidak valid.');
-        }
-
-        if ($data['status'] === 'rejected' && (! isset($data['notes']) || trim($data['notes']) === '')) {
-            abort(422, 'Alasan penolakan wajib diisi.');
-        }
-
         DB::transaction(function () use ($letter, $user, $data, $step) {
 
             // Lock row, lalu re-cek step SETELAH lock didapat — menutup
