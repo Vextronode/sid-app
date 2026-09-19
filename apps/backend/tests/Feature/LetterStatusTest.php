@@ -36,7 +36,7 @@ class LetterStatusTest extends TestCase
 
     #[DataProvider('legacyGranularCasesThatMustStillExist')]
     #[Test]
-    public function granular_v4_cases_still_exist_until_downstream_services_are_migrated(string $caseName): void
+    public function granular_v4_cases_still_exist_for_legacy_data(string $caseName): void
     {
         $caseNames = array_map(fn (LetterStatus $case) => $case->name, LetterStatus::cases());
 
@@ -96,12 +96,13 @@ class LetterStatusTest extends TestCase
     }
 
     #[Test]
-    public function kasi_approved_remains_a_legacy_final_approval_during_transition(): void
+    public function kasi_approved_remains_a_legacy_final_approval_for_old_data(): void
     {
-        // KasiApprovalService (EV5-4-S6) tidak lagi MENULIS nilai ini
-        // (lihat Approved di atas), tapi baris lama yang sudah
-        // terlanjur tersimpan dengan status ini tetap harus
-        // diklasifikasikan benar oleh isFinalApproval()/isTerminal().
+        // Baik KasiApprovalService (EV5-4-S6) maupun gate PdfService
+        // (EV5-4-S9) sudah tidak lagi menulis/mengecek nilai ini (lihat
+        // Approved di atas) - tapi baris lama yang sudah terlanjur
+        // tersimpan dengan status ini tetap harus diklasifikasikan
+        // benar oleh isFinalApproval()/isTerminal().
         $this->assertTrue(LetterStatus::KasiApproved->isFinalApproval());
         $this->assertTrue(LetterStatus::KasiApproved->isTerminal());
     }

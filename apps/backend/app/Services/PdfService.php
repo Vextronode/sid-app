@@ -27,14 +27,12 @@ class PdfService
         $letter = $this->letterRepository->loadForPdf($letter);
 
         /**
-         * Guard: Hanya bisa download jika sudah disetujui Operator (Kasi)
+         * EV5-4-S9. Guard generik: hanya bisa download jika status
+         * surat sudah 'approved' (bukan lagi KasiApproved granular v4.2
+         * - lihat paths/letters/download.yaml).
          */
-        $allowedStatuses = [
-            LetterStatus::KasiApproved,
-        ];
-
-        if (! in_array($letter->status, $allowedStatuses)) {
-            abort(403, 'Surat baru dapat diunduh setelah disetujui oleh Operator Desa.');
+        if ($letter->status !== LetterStatus::Approved) {
+            abort(403, 'Surat baru dapat diunduh setelah seluruh proses persetujuan selesai.');
         }
 
         if (
