@@ -8,9 +8,10 @@ namespace App\Enums;
  * Status surat selama transisi approval v5.
  *
  * Nilai generik dipakai oleh schema v5 dan service approval yang telah
- * dimigrasikan (RT - EV5-4-S4, Kasi/Kaur - EV5-4-S6). Nilai granular
- * dipertahankan sementara karena PdfService belum dimigrasikan
- * (EV5-4-S9) dan beberapa masih dipakai data lama.
+ * dimigrasikan (RT - EV5-4-S4, Kasi/Kaur - EV5-4-S6, gate PdfService -
+ * EV5-4-S9). Nilai granular dipertahankan sementara untuk baris data
+ * lama yang sudah terlanjur tersimpan sebelum migrasi - penghapusan
+ * totalnya adalah scope EV5-5.
  */
 enum LetterStatus: string
 {
