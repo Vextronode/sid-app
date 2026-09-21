@@ -37,6 +37,11 @@ enum LetterStatus: string
         return $this === self::Approved;
     }
 
+    public function isInProgress(): bool
+    {
+        return $this === self::InProgress;
+    }
+
     public function isTerminal(): bool
     {
         return $this->isRejected() || $this->isFinalApproval();
