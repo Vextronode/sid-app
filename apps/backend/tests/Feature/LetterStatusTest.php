@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\LetterStatus;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -34,36 +33,12 @@ class LetterStatusTest extends TestCase
         $this->assertSame(LetterStatus::Rejected, LetterStatus::from('rejected'));
     }
 
-    #[DataProvider('legacyGranularCasesThatMustStillExist')]
     #[Test]
-    public function granular_v4_cases_still_exist_for_legacy_data(string $caseName): void
-    {
-        $caseNames = array_map(fn (LetterStatus $case) => $case->name, LetterStatus::cases());
-
-        $this->assertContains($caseName, $caseNames);
-    }
-
-    public static function legacyGranularCasesThatMustStillExist(): array
-    {
-        return [
-            'RtApproved' => ['RtApproved'],
-            'RtRejected' => ['RtRejected'],
-            'RwApproved' => ['RwApproved'],
-            'RwRejected' => ['RwRejected'],
-            'KadusApproved' => ['KadusApproved'],
-            'KadusRejected' => ['KadusRejected'],
-            'KasiApproved' => ['KasiApproved'],
-            'KasiRejected' => ['KasiRejected'],
-        ];
-    }
-
-    #[Test]
-    public function it_has_twelve_cases_with_generic_and_granular_statuses(): void
+    public function it_has_four_cases_with_generic_statuses(): void
     {
         // 4 generik (Pending, InProgress, Approved, Rejected) +
-        // 8 granular legacy (Rt*/Rw*/Kadus*/Kasi*) = 12.
-        // Approved & Rejected sudah ada sebelum EV5-4-S6 (dari audit Sprint 3).
-        $this->assertCount(12, LetterStatus::cases());
+        // 8 granular legacy (Rt*/Rw*/Kadus*/Kasi*) = 12. DIHAPUS
+        $this->assertCount(4, LetterStatus::cases());
     }
 
     #[Test]
@@ -93,18 +68,6 @@ class LetterStatusTest extends TestCase
         $this->assertTrue(LetterStatus::Approved->isTerminal());
         $this->assertTrue(LetterStatus::Rejected->isRejected());
         $this->assertTrue(LetterStatus::Rejected->isTerminal());
-    }
-
-    #[Test]
-    public function kasi_approved_remains_a_legacy_final_approval_for_old_data(): void
-    {
-        // Baik KasiApprovalService (EV5-4-S6) maupun gate PdfService
-        // (EV5-4-S9) sudah tidak lagi menulis/mengecek nilai ini (lihat
-        // Approved di atas) - tapi baris lama yang sudah terlanjur
-        // tersimpan dengan status ini tetap harus diklasifikasikan
-        // benar oleh isFinalApproval()/isTerminal().
-        $this->assertTrue(LetterStatus::KasiApproved->isFinalApproval());
-        $this->assertTrue(LetterStatus::KasiApproved->isTerminal());
     }
 
     #[Test]
