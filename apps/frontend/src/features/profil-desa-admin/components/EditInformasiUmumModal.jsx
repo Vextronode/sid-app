@@ -1,71 +1,160 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-// ==========================================
-// EditInformasiUmumModal.jsx
-// Form edit informasi umum desa (Nama Desa, Kecamatan, Kabupaten, dll).
-// ==========================================
+import { useEffect, useState } from 'react'
+import { Send } from 'lucide-react'
 
-import { useState, useEffect } from "react";
-import { Send } from "lucide-react";
+const EMPTY_FORM = {
+  name: '',
+  head_name: '',
+  code: '',
+  address: '',
+  phone: '',
+}
 
 export default function EditInformasiUmumModal({
   open,
   onClose,
   onSubmit,
   initialData,
+  processing = false,
 }) {
-  const [form, setForm] = useState(initialData);
+  const [form, setForm] = useState(EMPTY_FORM)
 
   useEffect(() => {
-    if (open) setForm(initialData);
-  }, [open, initialData]);
+    if (!open) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setForm({
+      name: initialData?.name ?? '',
+      head_name: initialData?.head_name ?? '',
+      code: initialData?.code ?? '',
+      address: initialData?.address ?? '',
+      phone: initialData?.phone ?? '',
+    })
+  }, [open, initialData])
 
-  if (!open) return null;
+  if (!open) return null
 
-  const handleChange = (field) => (e) =>
-    setForm((prev) => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
+  const handleChange = (field) => (event) => {
+    setForm((current) => ({
+      ...current,
+      [field]: event.target.value,
+    }))
+  }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(form);
-  };
+  const handleSubmit = async (event) => {
+    event.preventDefault()
 
-  const fields = [
-    { key: "namaDesa", label: "Nama Desa" },
-    { key: "kecamatan", label: "Kecamatan" },
-    { key: "kabupaten", label: "Kabupaten" },
-    { key: "kodeDesa", label: "Kode Desa" },
-    { key: "kepalaDesa", label: "Kepala Desa" },
-    { key: "alamat", label: "Alamat" },
-    { key: "telepon", label: "Telepon" },
-  ];
+    if (!form.name.trim() || !form.head_name.trim()) {
+      return
+    }
+
+    await onSubmit({
+      name: form.name.trim(),
+      head_name: form.head_name.trim(),
+      address: form.address.trim(),
+      phone: form.phone.trim(),
+    })
+  }
 
   return (
     <div className="sid-modal-overlay">
-      <form
-        onSubmit={handleSubmit}
-        className="sid-modal-card sid-edit-info-modal"
-      >
-        <h2 className="sid-modal-title">
-          Edit Informasi Umum
-        </h2>
+      <form onSubmit={handleSubmit} className="sid-modal-card sid-edit-info-modal">
+        <div className="sid-modal-header">
+          <div>
+            <p className="sid-modal-eyebrow">Profil Desa</p>
+
+            <h2 className="sid-modal-title">Edit Informasi Umum</h2>
+
+            <p className="sid-modal-description">
+              Perbarui informasi dasar Desa yang ditampilkan pada sistem.
+            </p>
+          </div>
+        </div>
 
         <div className="sid-edit-info-fields">
-          {fields.map((f) => (
-            <div key={f.key} className="sid-form-group">
-              <label className="sid-label">
-                {f.label}
-              </label>
+          <div className="sid-form-group">
+            <label className="sid-label" htmlFor="profil-name">
+              Nama Desa
+            </label>
 
-              <input
-                value={form[f.key] ?? ""}
-                onChange={handleChange(f.key)}
-                className="sid-input"
-              />
-            </div>
-          ))}
+            <input
+              id="profil-name"
+              type="text"
+              value={form.name}
+              onChange={handleChange('name')}
+              className="sid-input"
+              placeholder="Masukkan nama desa"
+              maxLength={100}
+              required
+              disabled={processing}
+            />
+          </div>
+
+          <div className="sid-form-group">
+            <label className="sid-label" htmlFor="profil-head-name">
+              Kepala Desa
+            </label>
+
+            <input
+              id="profil-head-name"
+              type="text"
+              value={form.head_name}
+              onChange={handleChange('head_name')}
+              className="sid-input"
+              placeholder="Masukkan nama kepala desa"
+              maxLength={100}
+              required
+              disabled={processing}
+            />
+          </div>
+
+          <div className="sid-form-group">
+            <label className="sid-label" htmlFor="profil-code">
+              Kode Desa
+            </label>
+
+            <input
+              id="profil-code"
+              type="text"
+              value={form.code}
+              className="sid-input"
+              readOnly
+              disabled
+            />
+
+            <span className="sid-form-help">Kode desa dikelola oleh sistem.</span>
+          </div>
+
+          <div className="sid-form-group">
+            <label className="sid-label" htmlFor="profil-phone">
+              Telepon
+            </label>
+
+            <input
+              id="profil-phone"
+              type="text"
+              value={form.phone}
+              onChange={handleChange('phone')}
+              className="sid-input"
+              placeholder="Contoh: 081234567890"
+              maxLength={20}
+              disabled={processing}
+            />
+          </div>
+
+          <div className="sid-form-group sid-edit-info-field-full">
+            <label className="sid-label" htmlFor="profil-address">
+              Alamat
+            </label>
+
+            <textarea
+              id="profil-address"
+              value={form.address}
+              onChange={handleChange('address')}
+              className="sid-input sid-textarea"
+              placeholder="Masukkan alamat desa"
+              rows={4}
+              disabled={processing}
+            />
+          </div>
         </div>
 
         <div className="sid-actions sid-modal-actions">
@@ -73,6 +162,7 @@ export default function EditInformasiUmumModal({
             type="button"
             onClick={onClose}
             className="sid-btn sid-btn-secondary"
+            disabled={processing}
           >
             Batal
           </button>
@@ -80,12 +170,14 @@ export default function EditInformasiUmumModal({
           <button
             type="submit"
             className="sid-btn sid-btn-primary sid-modal-submit"
+            disabled={processing || !form.name.trim() || !form.head_name.trim()}
           >
             <Send size={16} />
-            Simpan
+
+            {processing ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
       </form>
     </div>
-  );
+  )
 }

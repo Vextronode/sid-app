@@ -18,10 +18,10 @@ class AdminSeeder extends Seeder
                 'name' => 'Administrator Desa',
                 'username' => 'admin',
                 'role' => 'petugas_desa',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Password123'),
                 'is_active' => true,
                 'email_verified_at' => now(),
-                'village_id' => null,
+                'village_id' => 1,
                 'citizen_id' => null,
             ]
         );
