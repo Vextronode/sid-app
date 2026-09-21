@@ -252,7 +252,6 @@ class WilayahSeeder extends Seeder
         // 3. DATA KEPALA DESA, KASI PELAYANAN & KADUS
         // ==========================================
 
-
         $staffData = [
             // ==========================================
             // KEPALA DESA
@@ -389,8 +388,6 @@ class WilayahSeeder extends Seeder
                 'rt_key' => 'CIBENDA_RT_001_RW_002',
             ],
         ];
-
-
 
         foreach ($staffData as $staff) {
 
