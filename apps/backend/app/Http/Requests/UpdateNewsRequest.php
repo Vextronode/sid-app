@@ -44,6 +44,7 @@ class UpdateNewsRequest extends FormRequest
             'title' => ['sometimes', 'string', 'max:200'],
             'content' => ['sometimes', 'string'],
             'is_published' => ['sometimes', 'boolean'],
+            'thumbnail' => ['nullable', 'image', 'max:2048'],
         ];
     }
 }

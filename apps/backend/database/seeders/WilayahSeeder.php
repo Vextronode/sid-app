@@ -253,6 +253,10 @@ class WilayahSeeder extends Seeder
         // ==========================================
 
         $staffData = [
+            // ==========================================
+            // KEPALA DESA
+            // ==========================================
+
             [
                 'nik' => '3218030101010010',
                 'name' => 'Desa Rusliana',
@@ -263,6 +267,11 @@ class WilayahSeeder extends Seeder
                 'rw_key' => 'CIBENDA_RW_001',
                 'rt_key' => 'CIBENDA_RT_001_RW_001',
             ],
+
+            // ==========================================
+            // KASI PELAYANAN
+            // ==========================================
+
             [
                 'nik' => '3218030101010011',
                 'name' => 'Sakim Hidayat',
@@ -274,9 +283,9 @@ class WilayahSeeder extends Seeder
                 'rt_key' => 'CIBENDA_RT_001_RW_001',
             ],
 
-            // =========================
+            // ==========================================
             // KEPALA DUSUN
-            // =========================
+            // ==========================================
 
             [
                 'nik' => '3218030101010012',
@@ -287,6 +296,96 @@ class WilayahSeeder extends Seeder
                 'position' => 'kadus',
                 'rw_key' => 'CIBENDA_RW_001',
                 'rt_key' => 'CIBENDA_RT_001_RW_001',
+            ],
+
+            // ==========================================
+            // SEKRETARIS DESA
+            // ==========================================
+
+            [
+                'nik' => '3218030101010013',
+                'name' => 'Rudi Hartono',
+                'username' => 'Rudi Hartono',
+                'email' => 'rudi.hartono@example.com',
+                'role' => 'petugas_desa',
+                'position' => 'sekdes',
+                'rw_key' => 'CIBENDA_RW_001',
+                'rt_key' => 'CIBENDA_RT_001_RW_001',
+            ],
+
+            // ==========================================
+            // KASI KESEJAHTERAAN
+            // ==========================================
+
+            [
+                'nik' => '3218030101010014',
+                'name' => 'Rahmat Hidayat',
+                'username' => 'Rahmat Hidayat',
+                'email' => 'rahmat.hidayat@example.com',
+                'role' => 'petugas_desa',
+                'position' => 'kasi_kesejahteraan',
+                'rw_key' => 'CIBENDA_RW_001',
+                'rt_key' => 'CIBENDA_RT_001_RW_001',
+            ],
+
+            // ==========================================
+            // KASI PEMERINTAHAN
+            // ==========================================
+
+            [
+                'nik' => '3218030101010015',
+                'name' => 'Deni Firmansyah',
+                'username' => 'Deni Firmansyah',
+                'email' => 'deni.firmansyah@example.com',
+                'role' => 'petugas_desa',
+                'position' => 'kasi_pemerintahan',
+                'rw_key' => 'CIBENDA_RW_001',
+                'rt_key' => 'CIBENDA_RT_001_RW_001',
+            ],
+
+            // ==========================================
+            // KAUR PERENCANAAN
+            // ==========================================
+
+            [
+                'nik' => '3218030101010016',
+                'name' => 'Andi Setiawan',
+                'username' => 'Andi Setiawan',
+                'email' => 'andi.setiawan@example.com',
+                'role' => 'petugas_desa',
+                'position' => 'kaur_perencanaan',
+                'rw_key' => 'CIBENDA_RW_002',
+                'rt_key' => 'CIBENDA_RT_001_RW_002',
+            ],
+
+            // ==========================================
+            // KAUR KEUANGAN
+            // ==========================================
+
+            [
+                'nik' => '3218030101010017',
+                'name' => 'Fajar Nugraha',
+                'username' => 'Fajar Nugraha',
+                'email' => 'fajar.nugraha@example.com',
+                'role' => 'petugas_desa',
+                'position' => 'kaur_keuangan',
+                'rw_key' => 'CIBENDA_RW_002',
+                'rt_key' => 'CIBENDA_RT_001_RW_002',
+            ],
+
+            // ==========================================
+            // KAUR TU UMUM
+            // ==========================================
+
+            [
+                'nik' => '3218030101010018',
+                'name' => 'Agus Setiawan',
+                'username' => 'Agus Setiawan',
+                'email' => 'agus.setiawan@example.com',
+                'role' => 'kaur_tu_umum',
+                'position' => 'kaur_tu_umum',
+                'rw_key' => 'CIBENDA_RW_002',
+                'rt_key' => 'CIBENDA_RT_001_RW_002',
             ],
         ];
 

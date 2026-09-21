@@ -1,302 +1,203 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 // ==========================================
 // EditProfilDesaModal.jsx
-// Form edit profil desa.
-// Styling menggunakan SID Global Theme.
+// Edit informasi profil desa berdasarkan
+// contract PATCH /api/villages/profile.
 // ==========================================
 
-import { useState, useEffect } from "react";
-import { Send, Image as ImageIcon } from "lucide-react";
+import { useEffect, useState } from 'react'
+import { X, Save } from 'lucide-react'
+
+const EMPTY_FORM = {
+  name: '',
+  head_name: '',
+  address: '',
+  phone: '',
+  history: '',
+}
 
 export default function EditProfilDesaModal({
   open,
   onClose,
   onSubmit,
   initialData,
+  processing = false,
 }) {
-  const [hero, setHero] = useState({
-    image: null,
-    badge: "",
-    title: "",
-    description: "",
-  });
-
-  const [stats, setStats] = useState({
-    totalPenduduk: "",
-    pendudukKeterangan: "",
-    luasWilayah: "",
-    luasKeterangan: "",
-    jumlahDusun: "",
-    dusunKeterangan: "",
-  });
+  const [form, setForm] = useState(EMPTY_FORM)
 
   useEffect(() => {
-    if (open) {
-      setHero(initialData.hero);
-      setStats(initialData.stats);
+    if (!open) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setForm({
+      name: initialData?.name ?? '',
+      head_name: initialData?.head_name ?? '',
+      address: initialData?.address ?? '',
+      phone: initialData?.phone ?? '',
+      history: initialData?.history ?? '',
+    })
+  }, [open, initialData])
+
+  if (!open) return null
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }))
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+
+    if (!form.name.trim() || !form.head_name.trim()) {
+      return
     }
-  }, [open, initialData]);
 
-  if (!open) return null;
-
-  const handleHeroChange = (field) => (e) =>
-    setHero((prev) => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
-
-  const handleStatsChange = (field) => (e) =>
-    setStats((prev) => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
-
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-
-    if (!file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = () =>
-      setHero((prev) => ({
-        ...prev,
-        image: reader.result,
-      }));
-
-    reader.readAsDataURL(file);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit({ hero, stats });
-  };
+    await onSubmit({
+      name: form.name.trim(),
+      head_name: form.head_name.trim(),
+      address: form.address.trim(),
+      phone: form.phone.trim(),
+      history: form.history.trim(),
+    })
+  }
 
   return (
-    <div className="sid-modal-overlay sid-modal-overlay-front">
-      <form
-        onSubmit={handleSubmit}
-        className="sid-modal sid-modal-lg"
+    <div
+      className="sid-profil-desa-modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !processing) {
+          onClose()
+        }
+      }}
+    >
+      <div
+        className="sid-profil-desa-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-profil-desa-title"
       >
-        {/* HEADER */}
-        <div className="sid-modal-header">
+        <div className="sid-profil-desa-modal-header">
           <div>
-            <h2 className="sid-modal-title">
-              Edit Profil Desa
-            </h2>
+            <p className="sid-profil-desa-modal-eyebrow">Profil Desa</p>
 
-            <p className="sid-modal-description">
-              Perbarui informasi profil dan statistik desa.
-            </p>
+            <h2 id="edit-profil-desa-title">Edit Profil Desa</h2>
+
+            <p>Perbarui informasi resmi Desa yang ditampilkan pada sistem.</p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="sid-modal-close"
+            className="sid-profil-desa-modal-close"
+            disabled={processing}
             aria-label="Tutup"
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
-        <div className="sid-modal-body">
-          {/* =========================
-              HERO
-              ========================= */}
-
-          <div className="sid-form-group">
-            <label className="sid-label sid-form-label">
-              Gambar Hero (opsional)
-            </label>
-
-            <label className="sid-image-upload">
-              {hero.image ? (
-                <img
-                  src={hero.image}
-                  alt="preview"
-                  className="sid-image-preview"
-                />
-              ) : (
-                <>
-                  <ImageIcon
-                    size={22}
-                    className="sid-image-upload-icon"
-                  />
-
-                  <span className="sid-image-upload-title">
-                    Klik untuk upload gambar
-                  </span>
-
-                  <span className="sid-image-upload-description">
-                    Format gambar JPG, PNG, atau WEBP
-                  </span>
-                </>
-              )}
+        <form onSubmit={handleSubmit} className="sid-profil-desa-modal-form">
+          <div className="sid-profil-desa-form-grid">
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-name">Nama Desa</label>
 
               <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="sid-file-hidden"
+                id="profil-name"
+                name="name"
+                type="text"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Masukkan nama desa"
+                maxLength={100}
+                required
+                disabled={processing}
               />
-            </label>
-          </div>
+            </div>
 
-          <div className="sid-form-group">
-            <label className="sid-label sid-form-label">
-              Badge Sambutan
-            </label>
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-head-name">Nama Kepala Desa</label>
 
-            <input
-              value={hero.badge}
-              onChange={handleHeroChange("badge")}
-              className="sid-input"
-            />
-          </div>
+              <input
+                id="profil-head-name"
+                name="head_name"
+                type="text"
+                value={form.head_name}
+                onChange={handleChange}
+                placeholder="Masukkan nama kepala desa"
+                maxLength={100}
+                required
+                disabled={processing}
+              />
+            </div>
 
-          <div className="sid-form-group">
-            <label className="sid-label sid-form-label">
-              Judul Sambutan
-            </label>
+            <div className="sid-profil-desa-form-field sid-profil-desa-form-field-full">
+              <label htmlFor="profil-address">Alamat</label>
 
-            <input
-              value={hero.title}
-              onChange={handleHeroChange("title")}
-              className="sid-input"
-            />
-          </div>
+              <textarea
+                id="profil-address"
+                name="address"
+                value={form.address}
+                onChange={handleChange}
+                placeholder="Masukkan alamat desa"
+                rows={3}
+                disabled={processing}
+              />
+            </div>
 
-          <div className="sid-form-group sid-form-group-last">
-            <label className="sid-label sid-form-label">
-              Deskripsi Desa
-            </label>
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-phone">Nomor Telepon</label>
 
-            <textarea
-              rows={4}
-              value={hero.description}
-              onChange={handleHeroChange("description")}
-              className="sid-textarea"
-            />
-          </div>
+              <input
+                id="profil-phone"
+                name="phone"
+                type="text"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="Contoh: 081234567890"
+                maxLength={20}
+                disabled={processing}
+              />
+            </div>
 
-          {/* =========================
-              STATISTIK DESA
-              ========================= */}
+            <div className="sid-profil-desa-form-field sid-profil-desa-form-field-full">
+              <label htmlFor="profil-history">Sejarah Desa</label>
 
-          <div className="sid-form-section">
-            <h3 className="sid-section-title">
-              Statistik Desa
-            </h3>
-
-            <div className="sid-stat-form-grid">
-              <div className="sid-form-group">
-                <label className="sid-label">
-                  Total Penduduk
-                </label>
-
-                <input
-                  type="number"
-                  value={stats.totalPenduduk}
-                  onChange={handleStatsChange("totalPenduduk")}
-                  className="sid-input"
-                />
-              </div>
-
-              <div className="sid-form-group">
-                <label className="sid-label">
-                  Keterangan
-                </label>
-
-                <input
-                  value={stats.pendudukKeterangan}
-                  onChange={handleStatsChange(
-                    "pendudukKeterangan"
-                  )}
-                  placeholder="+2.4% Tahun ini"
-                  className="sid-input"
-                />
-              </div>
-
-              <div className="sid-form-group">
-                <label className="sid-label">
-                  Luas Wilayah (ha)
-                </label>
-
-                <input
-                  type="number"
-                  step="0.1"
-                  value={stats.luasWilayah}
-                  onChange={handleStatsChange("luasWilayah")}
-                  className="sid-input"
-                />
-              </div>
-
-              <div className="sid-form-group">
-                <label className="sid-label">
-                  Keterangan
-                </label>
-
-                <input
-                  value={stats.luasKeterangan}
-                  onChange={handleStatsChange(
-                    "luasKeterangan"
-                  )}
-                  placeholder="65% Lahan Produktif"
-                  className="sid-input"
-                />
-              </div>
-
-              <div className="sid-form-group">
-                <label className="sid-label">
-                  Jumlah Dusun
-                </label>
-
-                <input
-                  type="number"
-                  value={stats.jumlahDusun}
-                  onChange={handleStatsChange("jumlahDusun")}
-                  className="sid-input"
-                />
-              </div>
-
-              <div className="sid-form-group">
-                <label className="sid-label">
-                  Keterangan
-                </label>
-
-                <input
-                  value={stats.dusunKeterangan}
-                  onChange={handleStatsChange(
-                    "dusunKeterangan"
-                  )}
-                  placeholder="Tersebar di 24 RT / 08 RW"
-                  className="sid-input"
-                />
-              </div>
+              <textarea
+                id="profil-history"
+                name="history"
+                value={form.history}
+                onChange={handleChange}
+                placeholder="Tuliskan sejarah Desa"
+                rows={6}
+                disabled={processing}
+              />
             </div>
           </div>
-        </div>
 
-        {/* FOOTER */}
-        <div className="sid-modal-footer">
-          <button
-            type="button"
-            onClick={onClose}
-            className="sid-btn sid-btn-secondary"
-          >
-            Batal
-          </button>
+          <div className="sid-profil-desa-modal-actions">
+            <button
+              type="button"
+              onClick={onClose}
+              className="sid-profil-desa-modal-secondary"
+              disabled={processing}
+            >
+              Batal
+            </button>
 
-          <button
-            type="submit"
-            className="sid-btn sid-btn-primary sid-btn-save"
-          >
-            <Send size={16} />
-            Simpan
-          </button>
-        </div>
-      </form>
+            <button
+              type="submit"
+              className="sid-profil-desa-modal-primary"
+              disabled={processing || !form.name.trim() || !form.head_name.trim()}
+            >
+              <Save size={15} />
+
+              {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-  );
+  )
 }

@@ -1,77 +1,201 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-// ==========================================
-// useBeritaList.js
-// CRUD berita + helper ambil berita utama (hero) dan 3 berita terbaru
-// (buat sidebar "Terbaru").
-// ==========================================
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  createBerita,
+  deleteBerita as deleteBeritaApi,
+  getBeritaList,
+  publishBerita as publishBeritaApi,
+  updateBerita,
+} from '@/features/kelola-berita/api'
 
-import { useState, useMemo } from 'react';
-import { dummyBerita } from '../data/dummyBerita';
-
-const ITEMS_PER_PAGE = 3;
+const ITEMS_PER_PAGE = 6
 
 export function useBeritaList() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [version, setVersion] = useState(0);
+  const [berita, setBerita] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [processing, setProcessing] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const semua = useMemo(() => [...dummyBerita], [version]);
+  // ==========================================
+  // AMBIL SEMUA DATA BERITA DARI BACKEND
+  // ==========================================
 
-  const beritaUtama = useMemo(() => semua.find((b) => b.utama) ?? semua[0], [semua]);
-  const beritaTerbaru = useMemo(() => semua.filter((b) => b.id !== beritaUtama?.id).slice(0, 3), [semua, beritaUtama]);
+  const fetchBerita = useCallback(async () => {
+    try {
+      const firstResponse = await getBeritaList({
+        page: 1,
+      })
 
-  // Grid "Kelola Berita" — semua kecuali yang jadi hero
-  const kelolaList = useMemo(() => semua.filter((b) => b.id !== beritaUtama?.id), [semua, beritaUtama]);
+      const firstResponseData = firstResponse?.data
+      const firstData = firstResponseData?.data ?? []
+      const lastPage = firstResponseData?.meta?.last_page ?? 1
 
-  const totalPages = Math.max(1, Math.ceil(kelolaList.length / ITEMS_PER_PAGE));
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return kelolaList.slice(start, start + ITEMS_PER_PAGE);
-  }, [kelolaList, currentPage]);
+      // Kalau cuma 1 halaman
+      if (lastPage === 1) {
+        setBerita(firstData)
 
-  const deleteBerita = (id) => {
-    const index = dummyBerita.findIndex((b) => b.id === id);
-    if (index !== -1) dummyBerita.splice(index, 1);
-    setVersion((v) => v + 1);
-  };
+        return
+      }
 
-  const addBerita = (formData) => {
-    dummyBerita.push({
-      id: dummyBerita.length + 1,
-      judul: formData.judul,
-      kategori: formData.kategori || 'Umum',
-      konten: formData.konten,
-      gambar: formData.gambar,
-      ringkasan: formData.konten.slice(0, 100),
-      status: formData.status,
-      tanggal: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-      penulis: 'Admin Desa',
-      utama: false,
-    });
-    setVersion((v) => v + 1);
-  };
+      // Ambil halaman berikutnya
+      const requests = []
 
-  const updateBerita = (id, formData) => {
-    const berita = dummyBerita.find((b) => b.id === id);
-    if (berita) {
-      berita.judul = formData.judul;
-      berita.kategori = formData.kategori || berita.kategori;
-      berita.konten = formData.konten;
-      berita.gambar = formData.gambar;
-      berita.ringkasan = formData.konten.slice(0, 100);
-      berita.status = formData.status;
+      for (let page = 2; page <= lastPage; page += 1) {
+        requests.push(
+          getBeritaList({
+            page,
+          }),
+        )
+      }
+
+      const responses = await Promise.all(requests)
+
+      const remainingData = responses.flatMap((response) => response?.data?.data ?? [])
+
+      setBerita([...firstData, ...remainingData])
+    } catch (error) {
+      console.error('GET BERITA ERROR:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method,
+      })
+
+      setBerita([])
     }
-    setVersion((v) => v + 1);
-  };
+  }, [])
+
+  // ==========================================
+  // LOAD BERITA PERTAMA KALI
+  // ==========================================
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        await fetchBerita()
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadInitialData()
+  }, [fetchBerita])
+
+  // ==========================================
+  // TOTAL PAGE FRONTEND
+  // ==========================================
+
+  const totalPages = Math.max(1, Math.ceil(berita.length / ITEMS_PER_PAGE))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  // ==========================================
+  // REMOVE BERITA
+  // ==========================================
+
+  const removeBerita = async (id) => {
+    setProcessing(true)
+
+    try {
+      await deleteBeritaApi(id)
+      await fetchBerita()
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  // ==========================================
+  // DATA YANG DITAMPILKAN DI HALAMAN AKTIF
+  // ==========================================
+
+  const data = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE
+
+    const endIndex = startIndex + ITEMS_PER_PAGE
+
+    return berita.slice(startIndex, endIndex)
+  }, [berita, safeCurrentPage])
+
+  // ==========================================
+  // BERITA UTAMA
+  // ==========================================
+
+  const beritaUtama = useMemo(() => {
+    return berita[0] ?? null
+  }, [berita])
+
+  // ==========================================
+  // BERITA TERBARU
+  // ==========================================
+
+  const beritaTerbaru = useMemo(() => {
+    return berita.slice(1, 5)
+  }, [berita])
+
+  // ==========================================
+  // TAMBAH BERITA
+  // ==========================================
+
+  const addBerita = async (payload) => {
+    setProcessing(true)
+
+    try {
+      await createBerita(payload)
+
+      setCurrentPage(1)
+
+      await fetchBerita()
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  // ==========================================
+  // UPDATE BERITA
+  // ==========================================
+
+  const updateBeritaData = async (id, payload) => {
+    setProcessing(true)
+
+    try {
+      await updateBerita(id, payload)
+
+      await fetchBerita()
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  // ==========================================
+  // PUBLISH BERITA
+  // ==========================================
+
+  const publishBerita = async (id) => {
+    setProcessing(true)
+
+    try {
+      await publishBeritaApi(id)
+
+      await fetchBerita()
+    } finally {
+      setProcessing(false)
+    }
+  }
 
   return {
     beritaUtama,
     beritaTerbaru,
-    data: paginatedData,
+
+    // Data yang khusus untuk grid halaman aktif
+    data,
+
     currentPage,
     setCurrentPage,
     totalPages,
-    deleteBerita,
+
     addBerita,
-    updateBerita,
-  };
+    updateBerita: updateBeritaData,
+    publishBerita,
+    deleteBerita: removeBerita,
+
+    processing,
+    loading,
+  }
 }

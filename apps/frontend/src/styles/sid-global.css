@@ -6,81 +6,81 @@
   /* =========================
      PRIMARY
      ========================= */
-  --sid-primary: #185FA5;
-  --sid-primary-hover: #0C447C;
-  --sid-on-primary: #FFFFFF;
+  --sid-primary: #185fa5;
+  --sid-primary-hover: #0c447c;
+  --sid-on-primary: #ffffff;
 
-    /* =========================
+  /* =========================
      SECONDARY
      ========================= */
-  --sid-secondary: #D85A30;
+  --sid-secondary: #d85a30;
   --sid-secondary-hover: #ab3d19;
-  --sid-on-secondary: #FFFFFF;
+  --sid-on-secondary: #ffffff;
   /* =========================
      HEADER
      ========================= */
-  --sid-header-bg: #185FA5;
-  --sid-header-text: #FFFFFF;
-  --sid-header-subtext: #B5D4F4;
+  --sid-header-bg: #185fa5;
+  --sid-header-text: #ffffff;
+  --sid-header-subtext: #b5d4f4;
 
   /* =========================
      SURFACE
      ========================= */
-  --sid-surface-page: #F3F3F3;
-  --sid-surface-card: #FFFFFF;
-  --sid-card: #FFFFFF;
+  --sid-surface-page: #f3f3f3;
+  --sid-surface-card: #ffffff;
+  --sid-card: #ffffff;
   /* =========================
      TEXT
      ========================= */
-  --sid-text-primary: #2C2C2A;
-  --sid-text-secondary: #5F5E5A;
+  --sid-text-primary: #2c2c2a;
+  --sid-text-secondary: #5f5e5a;
   --sid-text-muted: #888780;
 
   /* =========================
      BORDER
      ========================= */
-  --sid-border: #D3D1C7;
+  --sid-border: #d3d1c7;
 
   /* =========================
      STATUS
      ========================= */
-  --sid-status-pending-bg: #FAEEDA;
-  --sid-status-pending-text: #854F0B;
+  --sid-status-pending-bg: #faeeda;
+  --sid-status-pending-text: #854f0b;
 
-  --sid-status-progress-bg: #E6F1FB;
-  --sid-status-progress-text: #0C447C;
+  --sid-status-progress-bg: #e6f1fb;
+  --sid-status-progress-text: #0c447c;
 
-  --sid-status-done-bg: #EAF3DE;
-  --sid-status-done-text: #0C447C;
+  --sid-status-done-bg: #eaf3de;
+  --sid-status-done-text: #0c447c;
 
-  --sid-status-rejected-bg: #FCEBEB;
-  --sid-status-rejected-text: #E80F0F;
-  --sid-status-rejected-hover:#b91c1c;
+  --sid-status-rejected-bg: #fcebeb;
+  --sid-status-rejected-text: #e80f0f;
+  --sid-status-rejected-hover: #b91c1c;
 
-  --sid-status-overdue-bg: #FAECE7;
-  --sid-status-overdue-text: #712B13;
+  --sid-status-overdue-bg: #faece7;
+  --sid-status-overdue-text: #712b13;
   /* =========================
    FORM ERROR
    ========================= */
 
   :root {
-    --sid-danger: #C53030;
-    --sid-danger-hover: #9B2C2C;
-    --sid-danger-soft: #FCEBEB;
-    --sid-danger-border: #E80F0F;
+    --sid-danger: #c53030;
+    --sid-danger-hover: #9b2c2c;
+    --sid-danger-soft: #fcebeb;
+    --sid-danger-border: #e80f0f;
   }
   /* =========================
      ACCENT
      ========================= */
-  --sid-vendor-accent: #D85A30;
+  --sid-vendor-accent: #d85a30;
 
   /*
   WARNING
   */
-  --sid-warning:#f8d393;
-  --sid-warning-soft:#F7E4C2;
-  --sid-warning-border:#faa108;
-  --sid-warning-hover:#F7E4C2;
+  --sid-warning: #f8d393;
+  --sid-warning-soft: #f7e4c2;
+  --sid-warning-border: #faa108;
+  --sid-warning-hover: #f7e4c2;
   /* =========================
      RADIUS
      ========================= */
@@ -98,19 +98,14 @@
   /* =========================
      SHADOW
      ========================= */
-  --shadow-card:
-    0 1px 2px rgba(44, 44, 42, 0.04),
-    0 4px 16px rgba(44, 44, 42, 0.05);
+  --shadow-card: 0 1px 2px rgba(44, 44, 42, 0.04), 0 4px 16px rgba(44, 44, 42, 0.05);
 
   /* Alias */
-  --sid-shadow-sm:
-    0 1px 2px rgba(44, 44, 42, 0.04);
+  --sid-shadow-sm: 0 1px 2px rgba(44, 44, 42, 0.04);
 
-  --sid-shadow-md:
-    0 4px 16px rgba(44, 44, 42, 0.08);
+  --sid-shadow-md: 0 4px 16px rgba(44, 44, 42, 0.08);
 
-  --sid-shadow-lg:
-    0 8px 24px rgba(44, 44, 42, 0.10);
+  --sid-shadow-lg: 0 8px 24px rgba(44, 44, 42, 0.1);
 
   /* =========================
      MOBILE
@@ -120,9 +115,8 @@
   /* =========================
      HOME
      ========================= */
-  --sid-gallery-placeholder-start: #4B89C6;
+  --sid-gallery-placeholder-start: #4b89c6;
 }
-
 
 /* =========================================================
    GLOBAL BASE
@@ -159,7 +153,6 @@
   color: var(--sid-text-muted);
 }
 
-
 /* =========================================================
    CARD
    ========================================================= */
@@ -173,7 +166,6 @@
 
   padding: 24px;
 }
-
 
 /* =========================================================
    SECTION
@@ -191,7 +183,6 @@
 
   color: var(--sid-text-primary);
 }
-
 
 /* =========================================================
    FORM GROUP
@@ -212,9 +203,8 @@
 }
 
 .sid-required {
-  color: #C53030;
+  color: #c53030;
 }
-
 
 /* =========================================================
    INPUT / SELECT / TEXTAREA
@@ -250,17 +240,15 @@
 .sid-textarea:focus {
   border-color: var(--sid-primary);
 
-  box-shadow:
-    0 0 0 2px rgba(24, 95, 165, 0.10);
+  box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.1);
 }
-
 
 /* =========================================================
    READ ONLY / AUTO FIELD
    ========================================================= */
 
 .sid-input-readonly {
-  background: #F7F6F1;
+  background: #f7f6f1;
 
   color: var(--sid-text-muted);
 
@@ -273,7 +261,6 @@
   box-shadow: none;
 }
 
-
 /* =========================================================
    SELECT
    ========================================================= */
@@ -285,7 +272,6 @@
 
   cursor: pointer;
 }
-
 
 /* =========================================================
    SEARCH INPUT
@@ -343,10 +329,8 @@
 .sid-search-input:focus {
   border-color: var(--sid-primary);
 
-  box-shadow:
-    0 0 0 2px rgba(24, 95, 165, 0.10);
+  box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.1);
 }
-
 
 /* =========================================================
    INFO / VERIFICATION
@@ -361,10 +345,10 @@
   margin-bottom: 24px;
   padding: 9px 12px;
 
-  border: 1px solid #B5D4F4;
+  border: 1px solid #b5d4f4;
   border-radius: 999px;
 
-  background: #E6F1FB;
+  background: #e6f1fb;
 
   color: var(--sid-primary);
 
@@ -374,7 +358,6 @@
 .sid-info strong {
   font-weight: 700;
 }
-
 
 /* =========================================================
    FILE UPLOAD
@@ -404,7 +387,7 @@
 }
 
 .sid-upload:hover {
-  background: #F7F6F1;
+  background: #f7f6f1;
 
   border-color: var(--sid-primary);
 }
@@ -425,7 +408,6 @@
   display: none;
 }
 
-
 /* =========================================================
    TEXTAREA
    ========================================================= */
@@ -436,7 +418,6 @@
   resize: none;
 }
 
-
 /* =========================================================
    BUTTON AREA
    ========================================================= */
@@ -446,7 +427,6 @@
 
   gap: 12px;
 }
-
 
 /* =========================================================
    BUTTON BASE
@@ -488,7 +468,6 @@
   cursor: not-allowed;
 }
 
-
 /* =========================================================
    PRIMARY BUTTON
    ========================================================= */
@@ -507,7 +486,6 @@
   border-color: var(--sid-primary-hover);
 }
 
-
 /* =========================================================
    SECONDARY BUTTON
    ========================================================= */
@@ -523,7 +501,6 @@
 .sid-btn-secondary:hover:not(:disabled) {
   background: rgba(24, 95, 165, 0.06);
 }
-
 
 /* =========================================================
    SUCCESS BUTTON
@@ -541,7 +518,6 @@
   opacity: 0.9;
 }
 
-
 /* =========================================================
    DANGER BUTTON
    ========================================================= */
@@ -558,7 +534,6 @@
   opacity: 0.9;
 }
 
-
 /* =========================================================
    FULL BUTTON
    ========================================================= */
@@ -568,7 +543,6 @@
 
   flex: none;
 }
-
 
 /* =========================================================
    STAT CARD
@@ -612,7 +586,6 @@
   outline-offset: 2px;
 }
 
-
 /* =========================================================
    ADMIN NAVBAR
    ========================================================= */
@@ -649,7 +622,6 @@
 .sid-navbar-brand:hover {
   color: var(--sid-primary-hover);
 }
-
 
 /* =========================================================
    NAVIGATION MENU
@@ -688,7 +660,7 @@
 }
 
 .sid-navbar-link-active::after {
-  content: "";
+  content: '';
 
   position: absolute;
 
@@ -702,7 +674,6 @@
 
   background: var(--sid-primary);
 }
-
 
 /* =========================================================
    NAVBAR ACTION
@@ -753,7 +724,6 @@
   outline-offset: 2px;
 }
 
-
 /* =========================================================
    NAVBAR AVATAR
    ========================================================= */
@@ -774,7 +744,6 @@
 
   background: var(--sid-surface-page);
 }
-
 
 /* =========================================================
    NOTIFICATION BADGE
@@ -801,14 +770,13 @@
 
   background: var(--sid-status-rejected-text);
 
-  color: #FFFFFF;
+  color: #ffffff;
 
   font-size: 9px;
   font-weight: 700;
 
   pointer-events: none;
 }
-
 
 /* =========================================================
    SETTINGS DROPDOWN
@@ -841,17 +809,13 @@
   from {
     opacity: 0;
 
-    transform:
-      translateY(-4px)
-      scale(0.98);
+    transform: translateY(-4px) scale(0.98);
   }
 
   to {
     opacity: 1;
 
-    transform:
-      translateY(0)
-      scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -901,7 +865,6 @@
 
   color: var(--sid-status-rejected-text);
 }
-
 
 /* =========================================================
    MOBILE BOTTOM NAVIGATION
@@ -962,7 +925,6 @@
   line-height: 1;
 }
 
-
 /* =========================================================
    MOBILE CONTENT
    ========================================================= */
@@ -974,8 +936,6 @@
 .sid-mobile-footer {
   width: 100%;
 }
-
-
 
 /* =========================================================
    MODAL
@@ -1024,7 +984,6 @@
   scrollbar-width: thin;
 }
 
-
 /* =========================================================
    MODAL CLOSE
    ========================================================= */
@@ -1068,7 +1027,6 @@
   cursor: not-allowed;
 }
 
-
 /* =========================================================
    MODAL HEADER
    ========================================================= */
@@ -1098,7 +1056,6 @@
   color: var(--sid-text-muted);
 }
 
-
 /* =========================================================
    MODAL STEPPER
    ========================================================= */
@@ -1112,7 +1069,6 @@
 
   background: var(--sid-surface-page);
 }
-
 
 /* =========================================================
    MODAL SECTION
@@ -1131,7 +1087,6 @@
   color: var(--sid-text-primary);
 }
 
-
 /* =========================================================
    MODAL INFO GRID
    ========================================================= */
@@ -1139,8 +1094,7 @@
 .sid-modal-info-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 12px;
 }
@@ -1150,7 +1104,7 @@
 
   padding: 11px 12px;
 
-  background: #F7F6F1;
+  background: #f7f6f1;
 
   border-radius: var(--radius-sm);
 }
@@ -1184,7 +1138,6 @@
 
   overflow-wrap: anywhere;
 }
-
 
 /* =========================================================
    DECISION
@@ -1291,7 +1244,6 @@
   color: var(--sid-status-rejected-text);
 }
 
-
 /* =========================================================
    REJECT BOX
    ========================================================= */
@@ -1334,14 +1286,12 @@
 .sid-modal-textarea:focus {
   border-color: var(--sid-status-rejected-text);
 
-  box-shadow:
-    0 0 0 2px rgba(232, 15, 15, 0.08);
+  box-shadow: 0 0 0 2px rgba(232, 15, 15, 0.08);
 }
 
 .sid-modal-textarea:disabled {
   opacity: 0.6;
 }
-
 
 /* =========================================================
    MODAL FOOTER / ACTION
@@ -1370,7 +1320,6 @@
   font-size: 13px;
 }
 
-
 /* =========================================================
    PREVIEW BUTTON
    ========================================================= */
@@ -1395,7 +1344,6 @@
   color: var(--sid-primary);
 }
 
-
 /* =========================================================
    MODAL STATE
    ========================================================= */
@@ -1411,7 +1359,6 @@
 
   font-size: 13px;
 }
-
 
 /* =========================================================
    DETAIL SURAT MODAL
@@ -1442,7 +1389,6 @@
 .sid-detail-header-text {
   min-width: 0;
 }
-
 
 /* =========================================================
    PROGRESS TRACKER
@@ -1522,8 +1468,7 @@
   font-size: 12px;
   font-weight: 600;
 
-  box-shadow:
-    0 1px 3px rgba(44, 44, 42, 0.08);
+  box-shadow: 0 1px 3px rgba(44, 44, 42, 0.08);
 }
 
 .sid-progress-done {
@@ -1600,7 +1545,6 @@
   font-weight: 600;
 }
 
-
 /* =========================================================
    DETAIL BOX
    ========================================================= */
@@ -1618,8 +1562,7 @@
 .sid-detail-grid {
   display: grid;
 
-  grid-template-columns:
-    160px minmax(0, 1fr);
+  grid-template-columns: 160px minmax(0, 1fr);
 
   column-gap: 20px;
   row-gap: 14px;
@@ -1655,7 +1598,6 @@
 .sid-rejection-text {
   color: var(--sid-status-rejected-text);
 }
-
 
 /* =========================================================
    PDF PREVIEW
@@ -1729,8 +1671,7 @@
 
   background: var(--sid-surface-card);
 
-  box-shadow:
-    0 1px 3px rgba(44, 44, 42, 0.10);
+  box-shadow: 0 1px 3px rgba(44, 44, 42, 0.1);
 }
 
 .sid-preview-loading {
@@ -1802,7 +1743,6 @@
   color: var(--sid-text-secondary);
 }
 
-
 /* =========================================================
    DETAIL FOOTER
    ========================================================= */
@@ -1823,7 +1763,6 @@
   width: auto;
 }
 
-
 /* =========================================================
    SURAT DATE TRACKER
    ========================================================= */
@@ -1833,7 +1772,6 @@
 
   padding-top: 16px;
 }
-
 
 /* =========================================================
    DATE FILTER
@@ -1909,8 +1847,7 @@
   transition: color 0.15s ease;
 }
 
-.sid-date-tracker-calendar-button:hover
-.sid-date-tracker-calendar-icon {
+.sid-date-tracker-calendar-button:hover .sid-date-tracker-calendar-icon {
   color: var(--sid-primary);
 }
 
@@ -1963,7 +1900,6 @@
   color: var(--sid-primary);
 }
 
-
 /* =========================================================
    DATE TRACKER EMPTY
    ========================================================= */
@@ -1981,7 +1917,6 @@
 
   line-height: 1.5;
 }
-
 
 /* =========================================================
    TRACKER HEADER
@@ -2031,7 +1966,6 @@
 
   overflow-wrap: anywhere;
 }
-
 
 /* =========================================================
    TRACKER NAVIGATION
@@ -2086,7 +2020,6 @@
   outline-offset: 2px;
 }
 
-
 /* =========================================================
    SLIDER DOTS
    ========================================================= */
@@ -2131,7 +2064,6 @@
 
   transform: scale(1.15);
 }
-
 
 /* =========================================================
    DATE TRACKER PREVIEW
@@ -2204,7 +2136,6 @@
   flex-shrink: 0;
 }
 
-
 /* =========================================================
    DATE PREVIEW CONTAINER
    ========================================================= */
@@ -2226,7 +2157,6 @@
 
   background: var(--sid-surface-page);
 }
-
 
 /* =========================================================
    DATE PREVIEW LOADING
@@ -2263,8 +2193,7 @@
 
   border-radius: 50%;
 
-  animation:
-    sid-date-preview-spin 0.8s linear infinite;
+  animation: sid-date-preview-spin 0.8s linear infinite;
 }
 
 @keyframes sid-date-preview-spin {
@@ -2272,7 +2201,6 @@
     transform: rotate(360deg);
   }
 }
-
 
 /* =========================================================
    DATE PREVIEW ERROR
@@ -2348,7 +2276,6 @@
   border-color: var(--sid-primary-hover);
 }
 
-
 /* =========================================================
    DATE PREVIEW PDF PAGES
    ========================================================= */
@@ -2367,8 +2294,7 @@
 
   border-radius: 2px;
 
-  box-shadow:
-    0 1px 3px rgba(44, 44, 42, 0.10);
+  box-shadow: 0 1px 3px rgba(44, 44, 42, 0.1);
 }
 
 .sid-date-preview-image {
@@ -2380,7 +2306,6 @@
   user-select: none;
 }
 
-
 /* =========================================================
    SID HOME / LANDING PAGE
    ========================================================= */
@@ -2390,7 +2315,6 @@
 
   color: var(--sid-text-primary);
 }
-
 
 /* =========================================================
    HOME HERO
@@ -2459,7 +2383,6 @@
   box-shadow: var(--sid-shadow-lg);
 }
 
-
 /* =========================================================
    HOME SECTION HEADER
    ========================================================= */
@@ -2491,7 +2414,6 @@
 
   color: var(--sid-text-secondary);
 }
-
 
 /* =========================================================
    HOME GALLERY
@@ -2545,12 +2467,7 @@
   align-items: center;
   justify-content: center;
 
-  background:
-    linear-gradient(
-      135deg,
-      var(--sid-gallery-placeholder-start),
-      var(--sid-primary)
-    );
+  background: linear-gradient(135deg, var(--sid-gallery-placeholder-start), var(--sid-primary));
 }
 
 .sid-home__gallery-placeholder-icon {
@@ -2574,7 +2491,6 @@
 
   color: var(--sid-text-primary);
 }
-
 
 /* =========================================================
    HOME STEPS
@@ -2650,7 +2566,6 @@
   color: var(--sid-text-secondary);
 }
 
-
 /* =========================================================
    HOME CONTACT
    ========================================================= */
@@ -2711,13 +2626,11 @@
   color: var(--sid-primary);
 }
 
-
 /* =========================================================
    RESPONSIVE - TABLET / DESKTOP
    ========================================================= */
 
 @media (min-width: 768px) {
-
   .sid-home__hero-title {
     font-size: 3rem;
   }
@@ -2727,23 +2640,19 @@
   }
 
   .sid-home__gallery-grid {
-    grid-template-columns:
-      repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .sid-home__contact-list {
     flex-direction: row;
   }
-
 }
-
 
 /* =========================================================
    RESPONSIVE - MOBILE
    ========================================================= */
 
 @media (max-width: 767px) {
-
   /* =========================
      PAGE
      ========================= */
@@ -2755,7 +2664,6 @@
   .sid-card {
     padding: 18px;
   }
-
 
   /* =========================
      BUTTON
@@ -2770,7 +2678,6 @@
   .sid-btn {
     min-width: 0;
   }
-
 
   /* =========================
      MOBILE NAV
@@ -2792,23 +2699,16 @@
 
     color: var(--sid-on-primary);
 
-    box-shadow:
-      0 -4px 10px rgba(0, 0, 0, 0.10);
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
 
     z-index: 50;
 
-    padding-bottom:
-      env(safe-area-inset-bottom, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .sid-mobile-footer {
-    padding-bottom:
-      calc(
-        var(--sid-mobile-nav-height) +
-        env(safe-area-inset-bottom, 0px)
-      );
+    padding-bottom: calc(var(--sid-mobile-nav-height) + env(safe-area-inset-bottom, 0px));
   }
-
 
   /* =========================
      MODAL
@@ -2831,18 +2731,13 @@
 
     padding: 18px 16px 20px;
 
-    border-radius:
-      var(--radius-lg)
-      var(--radius-lg)
-      0
-      0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 
     border-left: none;
     border-right: none;
     border-bottom: none;
 
-    box-shadow:
-      0 -6px 24px rgba(44, 44, 42, 0.12);
+    box-shadow: 0 -6px 24px rgba(44, 44, 42, 0.12);
   }
 
   .sid-modal-close {
@@ -2886,8 +2781,7 @@
   }
 
   .sid-modal-info-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 
     gap: 8px;
   }
@@ -2960,7 +2854,6 @@
     font-size: 12px;
   }
 
-
   /* =========================
      DETAIL MODAL
      ========================= */
@@ -2970,11 +2863,7 @@
 
     padding: 0;
 
-    padding-bottom:
-      calc(
-        var(--sid-mobile-nav-height) +
-        env(safe-area-inset-bottom, 0px)
-      );
+    padding-bottom: calc(var(--sid-mobile-nav-height) + env(safe-area-inset-bottom, 0px));
 
     box-sizing: border-box;
   }
@@ -2984,12 +2873,7 @@
 
     max-width: none;
 
-    max-height:
-      calc(
-        100dvh -
-        var(--sid-mobile-nav-height) -
-        env(safe-area-inset-bottom, 0px)
-      );
+    max-height: calc(100dvh - var(--sid-mobile-nav-height) - env(safe-area-inset-bottom, 0px));
 
     min-height: 0;
 
@@ -2997,11 +2881,7 @@
 
     padding: 0;
 
-    border-radius:
-      var(--radius-lg)
-      var(--radius-lg)
-      0
-      0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 
     border-bottom: none;
   }
@@ -3017,7 +2897,6 @@
 
     -webkit-overflow-scrolling: touch;
   }
-
 
   /* =========================
      DETAIL HEADER
@@ -3040,7 +2919,6 @@
 
     overflow-wrap: anywhere;
   }
-
 
   /* =========================
      DETAIL PROGRESS
@@ -3081,7 +2959,6 @@
   .sid-progress-text span {
     font-size: 9px;
   }
-
 
   /* =========================
      DETAIL INFO
@@ -3127,7 +3004,6 @@
     line-height: 1.45;
   }
 
-
   /* =========================
      PDF
      ========================= */
@@ -3154,7 +3030,6 @@
     margin-bottom: 10px;
   }
 
-
   /* =========================
      DETAIL FOOTER
      ========================= */
@@ -3172,7 +3047,6 @@
 
     font-size: 12px;
   }
-
 
   /* =========================
      DATE TRACKER
@@ -3252,7 +3126,6 @@
     font-size: 12px;
   }
 
-
   /* =========================
      HOME
      ========================= */
@@ -3305,16 +3178,13 @@
   .sid-home__contact-item {
     font-size: 1rem;
   }
-
 }
-
 
 /* =========================================================
    EXTRA SMALL MOBILE
    ========================================================= */
 
 @media (max-width: 380px) {
-
   .sid-modal-info-grid {
     grid-template-columns: 1fr;
   }
@@ -3331,10 +3201,7 @@
     padding-left: 10px;
     padding-right: 10px;
   }
-
 }
-
-
 
 .sid-tracker-label-done {
   color: var(--sid-status-done-text);
@@ -3354,7 +3221,6 @@
 
   background: var(--sid-border);
 }
-
 
 /* =========================================================
    SURAT DATE TRACKER - PREVIEW
@@ -3395,7 +3261,6 @@
 .sid-date-tracker-pdf-container iframe {
   border: 0;
 }
-
 
 /* =========================================================
    DATE TRACKER LOADING
@@ -3444,7 +3309,6 @@
     transform: rotate(360deg);
   }
 }
-
 
 /* =========================================================
    DATE TRACKER ERROR
@@ -3505,7 +3369,6 @@
   opacity: 0.9;
 }
 
-
 /* =========================================================
    DATE TRACKER PREVIEW BUTTON
    ========================================================= */
@@ -3564,7 +3427,6 @@
   color: var(--sid-text-muted);
 }
 
-
 /* =========================================================
    DATE TRACKER OVERLAY
    ========================================================= */
@@ -3580,7 +3442,6 @@
 
   pointer-events: auto;
 }
-
 
 /* =========================================================
    DATE TRACKER EMPTY / LOADING
@@ -3598,7 +3459,6 @@
 
   color: var(--sid-text-muted);
 }
-
 
 /* =========================================================
    DATE TRACKER SLIDER
@@ -3691,7 +3551,6 @@
   cursor: not-allowed;
 }
 
-
 /* =========================================================
    DATE TRACKER DOTS
    ========================================================= */
@@ -3737,13 +3596,11 @@
   transform: scale(1.15);
 }
 
-
 /* =========================================================
    DATE TRACKER MOBILE
    ========================================================= */
 
 @media (max-width: 767px) {
-
   .sid-tracker-stepper {
     padding: 20px 0;
   }
@@ -3785,7 +3642,6 @@
     font-size: 9px;
   }
 }
-
 
 /* =========================================================
    TRACKER STEPPER - CENTERED
@@ -3829,7 +3685,6 @@
   align-items: center;
 }
 
-
 /* =========================================================
    CIRCLE + CONNECTOR
    ========================================================= */
@@ -3868,7 +3723,6 @@
   font-weight: 500;
 }
 
-
 /* =========================================================
    CONNECTOR LINE
    ========================================================= */
@@ -3896,7 +3750,6 @@
 .sid-tracker-line-done {
   background: var(--sid-primary);
 }
-
 
 /* =========================================================
    STATUS CIRCLE
@@ -3933,7 +3786,6 @@
 
   box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
 }
-
 
 /* =========================================================
    LABEL
@@ -3978,13 +3830,11 @@
   color: var(--sid-status-rejected-text);
 }
 
-
 /* =========================================================
    MOBILE
    ========================================================= */
 
 @media (max-width: 767px) {
-
   .sid-tracker-scroll {
     padding: 16px 0;
   }
@@ -4082,7 +3932,6 @@
   margin: 0 auto;
 }
 
-
 /* =========================================================
    HEADER
    ========================================================= */
@@ -4120,7 +3969,6 @@
 .sid-daftar-surat-header-content {
   min-width: 0;
 }
-
 
 /* =========================================================
    SELECTOR
@@ -4166,7 +4014,6 @@
 
   color: var(--sid-primary);
 }
-
 
 /* =========================================================
    EMPTY STATE
@@ -4221,13 +4068,11 @@
   color: var(--sid-text-muted);
 }
 
-
 /* =========================================================
    MOBILE
    ========================================================= */
 
 @media (max-width: 767px) {
-
   .sid-daftar-surat-page {
     padding-top: 12px;
   }
@@ -4269,7 +4114,6 @@
   margin: 0 auto;
 }
 
-
 /* =========================================================
    HEADER
    ========================================================= */
@@ -4277,7 +4121,6 @@
 .sid-surat-header {
   margin-bottom: 24px;
 }
-
 
 /* =========================================================
    STAT GRID
@@ -4291,7 +4134,6 @@
 
   margin-bottom: 24px;
 }
-
 
 /* =========================================================
    STAT CARD
@@ -4334,7 +4176,6 @@
   box-shadow: var(--shadow-card-hover, var(--shadow-card));
 }
 
-
 /* =========================================================
    STAT CONTENT
    ========================================================= */
@@ -4342,7 +4183,6 @@
 .sid-surat-stat-content {
   min-width: 0;
 }
-
 
 .sid-surat-stat-label {
   margin: 0 0 4px;
@@ -4357,7 +4197,6 @@
   color: var(--sid-text-muted);
 }
 
-
 .sid-surat-stat-number {
   margin: 0;
 
@@ -4369,16 +4208,13 @@
   color: var(--sid-text-primary);
 }
 
-
 .sid-surat-stat-number-approved {
   color: var(--sid-status-done-text);
 }
 
-
 .sid-surat-stat-number-rejected {
   color: var(--sid-status-rejected-text);
 }
-
 
 /* =========================================================
    STAT ICON
@@ -4397,7 +4233,6 @@
   border-radius: var(--radius-md);
 }
 
-
 /* TOTAL */
 
 .sid-surat-stat-icon-total {
@@ -4405,7 +4240,6 @@
 
   color: var(--sid-text-secondary);
 }
-
 
 /* DISETUJUI */
 
@@ -4415,7 +4249,6 @@
   color: var(--sid-status-done-text);
 }
 
-
 /* DITOLAK */
 
 .sid-surat-stat-icon-rejected {
@@ -4423,7 +4256,6 @@
 
   color: var(--sid-status-rejected-text);
 }
-
 
 /* =========================================================
    SEDANG DIPROSES
@@ -4437,27 +4269,21 @@
   cursor: default;
 }
 
-
-.sid-surat-stat-card-processing
-.sid-surat-stat-label {
+.sid-surat-stat-card-processing .sid-surat-stat-label {
   color: var(--sid-on-primary);
 
   opacity: 0.9;
 }
 
-
-.sid-surat-stat-card-processing
-.sid-surat-stat-number {
+.sid-surat-stat-card-processing .sid-surat-stat-number {
   color: var(--sid-on-primary);
 }
-
 
 .sid-surat-stat-icon-processing {
   background: rgb(255 255 255 / 20%);
 
   color: var(--sid-on-primary);
 }
-
 
 /* Jangan efek hover seperti tombol */
 
@@ -4467,13 +4293,11 @@
   box-shadow: var(--shadow-card);
 }
 
-
 /* =========================================================
    MOBILE
    ========================================================= */
 
 @media (max-width: 767px) {
-
   .sid-surat-page {
     max-width: 100%;
   }
@@ -4502,16 +4326,13 @@
 
     flex-basis: 40px;
   }
-
 }
-
 
 /* =========================================================
    EXTRA SMALL MOBILE
    ========================================================= */
 
 @media (max-width: 380px) {
-
   .sid-surat-stat-grid {
     gap: 8px;
   }
@@ -4536,7 +4357,6 @@
 
     flex-basis: 36px;
   }
-
 }
 
 /* =========================================================
@@ -4557,7 +4377,6 @@
   background: var(--sid-surface-page);
 }
 
-
 /* =========================================================
    LOGIN CARD
    ========================================================= */
@@ -4576,7 +4395,6 @@
 
   box-shadow: var(--shadow-card);
 }
-
 
 /* =========================================================
    LOGO
@@ -4598,7 +4416,6 @@
 
   color: var(--sid-on-primary);
 }
-
 
 /* =========================================================
    HEADER
@@ -4630,7 +4447,6 @@
   color: var(--sid-text-secondary);
 }
 
-
 /* =========================================================
    ERROR
    ========================================================= */
@@ -4652,7 +4468,6 @@
   line-height: 1.4;
 }
 
-
 /* =========================================================
    FORM
    ========================================================= */
@@ -4667,7 +4482,6 @@
 .sid-login-field {
   width: 100%;
 }
-
 
 /* =========================================================
    LABEL
@@ -4688,7 +4502,6 @@
 
   color: var(--sid-text-secondary);
 }
-
 
 /* =========================================================
    PASSWORD HEADER
@@ -4726,7 +4539,6 @@
 .sid-login-forgot:hover {
   text-decoration: underline;
 }
-
 
 /* =========================================================
    INPUT
@@ -4777,9 +4589,7 @@
 .sid-login-input:focus {
   border-color: var(--sid-primary);
 
-  box-shadow:
-    0 0 0 2px
-    rgb(0 0 0 / 0%);
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 0%);
 }
 .sid-login-input-error {
   border-color: var(--sid-status-rejected-text);
@@ -4788,9 +4598,7 @@
 .sid-login-input-error:focus {
   border-color: var(--sid-status-rejected-text);
 
-  box-shadow:
-    0 0 0 2px
-    rgba(232, 15, 15, 0.10);
+  box-shadow: 0 0 0 2px rgba(232, 15, 15, 0.1);
 }
 
 /* =========================================================
@@ -4812,7 +4620,6 @@
 
   color: var(--sid-text-muted);
 }
-
 
 /* =========================================================
    PASSWORD TOGGLE
@@ -4848,7 +4655,6 @@
   color: var(--sid-text-secondary);
 }
 
-
 /* =========================================================
    REMEMBER ME
    ========================================================= */
@@ -4878,7 +4684,6 @@
 
   cursor: pointer;
 }
-
 
 /* =========================================================
    SUBMIT
@@ -4927,7 +4732,6 @@
 
   cursor: not-allowed;
 }
-
 
 /* =========================================================
    FOOTER
@@ -4979,7 +4783,6 @@
 
   color: var(--sid-text-muted);
 }
-
 
 /* =========================================================
    MODAL
@@ -5046,7 +4849,6 @@
   }
 }
 
-
 /* =========================================================
    MODAL ICON
    ========================================================= */
@@ -5076,7 +4878,6 @@
   color: var(--sid-status-pending-text);
 }
 
-
 /* =========================================================
    MODAL TEXT
    ========================================================= */
@@ -5100,7 +4901,6 @@
 
   color: var(--sid-text-secondary);
 }
-
 
 /* =========================================================
    MODAL BUTTON
@@ -5140,13 +4940,11 @@
   border-color: var(--sid-primary-hover);
 }
 
-
 /* =========================================================
    MOBILE
    ========================================================= */
 
 @media (max-width: 480px) {
-
   .sid-login {
     padding: 24px 16px;
   }
@@ -5166,7 +4964,6 @@
   .sid-login-modal-dialog {
     padding: 20px;
   }
-
 }
 
 /* =========================================================
@@ -5191,7 +4988,6 @@
 .sid-surat-saya-page {
   max-width: 768px;
 }
-
 
 /* =========================================================
    BACK BUTTON
@@ -5223,7 +5019,6 @@
   color: var(--sid-primary-hover);
 }
 
-
 /* =========================================================
    TABLE CARD
    ========================================================= */
@@ -5233,7 +5028,6 @@
 
   overflow: hidden;
 }
-
 
 /* =========================================================
    MESSAGE
@@ -5251,7 +5045,6 @@
   font-size: 14px;
 }
 
-
 /* =========================================================
    TABLE WRAPPER
    ========================================================= */
@@ -5261,7 +5054,6 @@
 
   overflow-x: auto;
 }
-
 
 /* =========================================================
    TABLE
@@ -5278,7 +5070,6 @@
 
   font-size: 14px;
 }
-
 
 /* =========================================================
    TABLE HEADER
@@ -5326,7 +5117,6 @@
   text-align: center;
 }
 
-
 /* =========================================================
    TABLE BODY
    ========================================================= */
@@ -5344,7 +5134,6 @@
 .sid-surat-saya-table tbody tr:hover {
   background: var(--sid-surface-page);
 }
-
 
 /* =========================================================
    TYPE
@@ -5386,7 +5175,6 @@
   overflow-wrap: anywhere;
 }
 
-
 /* =========================================================
    DATE
    ========================================================= */
@@ -5406,7 +5194,6 @@
 
   white-space: nowrap;
 }
-
 
 /* =========================================================
    STATUS
@@ -5469,7 +5256,6 @@
   color: var(--sid-text-secondary);
 }
 
-
 /* =========================================================
    ACTION
    ========================================================= */
@@ -5492,7 +5278,6 @@
 
   flex-wrap: wrap;
 }
-
 
 /* =========================================================
    DETAIL BUTTON
@@ -5542,7 +5327,6 @@
   height: 14px;
 }
 
-
 /* =========================================================
    REVISION BUTTON
    ========================================================= */
@@ -5585,13 +5369,11 @@
   height: 14px;
 }
 
-
 /* =========================================================
    MOBILE
    ========================================================= */
 
 @media (max-width: 767px) {
-
   .sid-surat-saya-table {
     min-width: 560px;
   }
@@ -5641,7 +5423,6 @@
   .sid-surat-saya-actions {
     gap: 4px;
   }
-
 }
 
 /* =========================================================
@@ -5655,7 +5436,6 @@
   background: var(--sid-primary);
   color: var(--sid-on-primary);
 }
-
 
 /* =========================================================
    FOOTER CONTAINER
@@ -5679,7 +5459,6 @@
   box-sizing: border-box;
 }
 
-
 /* =========================================================
    FOOTER COLUMN
    ========================================================= */
@@ -5687,7 +5466,6 @@
 .sid-footer-column {
   min-width: 0;
 }
-
 
 /* =========================================================
    FOOTER TITLE
@@ -5707,7 +5485,6 @@
   opacity: 0.9;
 }
 
-
 /* =========================================================
    FOOTER DESCRIPTION
    ========================================================= */
@@ -5720,7 +5497,6 @@
 
   opacity: 0.8;
 }
-
 
 /* =========================================================
    FOOTER CONTACT
@@ -5756,7 +5532,6 @@
   flex-shrink: 0;
 }
 
-
 /* =========================================================
    FOOTER OPERATIONAL
    ========================================================= */
@@ -5768,7 +5543,6 @@
 .sid-footer-operational .sid-footer-icon {
   margin-top: 2px;
 }
-
 
 /* =========================================================
    FOOTER COPYRIGHT
@@ -5793,13 +5567,11 @@
   color: var(--sid-on-accent, #ffffff);
 }
 
-
 /* =========================================================
    FOOTER MOBILE
    ========================================================= */
 
 @media (max-width: 640px) {
-
   .sid-footer-container {
     grid-template-columns: 1fr;
 
@@ -5807,7 +5579,6 @@
 
     padding: 20px 16px;
   }
-
 }
 
 /* =========================================================
@@ -5834,7 +5605,6 @@
 .rw-breadcrumb span {
   color: var(--sid-text-secondary);
 }
-
 
 /* =========================================================
    RW FILTER
@@ -5873,7 +5643,6 @@
   border-radius: 999px;
   padding: 10px 12px;
 }
-
 
 /* =========================================================
    RW TABLE
@@ -5951,7 +5720,6 @@
   color: var(--sid-text-muted);
 }
 
-
 /* =========================================================
    RW TABLE MESSAGE
    ========================================================= */
@@ -5963,7 +5731,6 @@
 
   color: var(--sid-text-muted);
 }
-
 
 /* =========================================================
    RW ACTION
@@ -5998,7 +5765,6 @@
 
   color: var(--sid-primary);
 }
-
 
 /* =========================================================
    RW PAGINATION
@@ -6103,7 +5869,6 @@
   color: var(--sid-on-primary);
 }
 
-
 /* =========================================================
    RW MOBILE
    ========================================================= */
@@ -6132,7 +5897,6 @@
   font-size: 12px;
 }
 
-
 /* =========================================================
    RW MOBILE TABLE
    ========================================================= */
@@ -6148,8 +5912,7 @@
 .rw-mobile-table-header {
   display: grid;
 
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 
   align-items: center;
 
@@ -6173,7 +5936,6 @@
   text-align: left;
 }
 
-
 /* =========================================================
    RW MOBILE ROW
    ========================================================= */
@@ -6183,8 +5945,7 @@
 
   display: grid;
 
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 
   align-items: center;
 
@@ -6238,7 +5999,6 @@
   color: var(--sid-text-muted);
 }
 
-
 /* =========================================================
    RW MOBILE MESSAGE
    ========================================================= */
@@ -6254,7 +6014,6 @@
 
   font-size: 14px;
 }
-
 
 /* =========================================================
    RW MOBILE PAGINATION
@@ -6304,13 +6063,11 @@
   color: var(--sid-on-primary);
 }
 
-
 /* =========================================================
    RW RESPONSIVE
    ========================================================= */
 
 @media (max-width: 767px) {
-
   .rw-page-desktop {
     display: none;
   }
@@ -6322,7 +6079,6 @@
 
     background: var(--sid-surface-page);
   }
-
 }
 
 /* ==========================================
@@ -6354,7 +6110,6 @@
   }
 }
 
-
 /* ==========================================
    DASHBOARD PAGE
    ========================================== */
@@ -6362,7 +6117,6 @@
 .sid-page-dashboard {
   max-width: 48rem;
 }
-
 
 /* ==========================================
    DASHBOARD HEADER
@@ -6385,7 +6139,6 @@
   white-space: nowrap;
 }
 
-
 /* ==========================================
    STAT GRID
    ========================================== */
@@ -6396,7 +6149,6 @@
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
-
 
 /* ==========================================
    STAT CARD
@@ -6434,7 +6186,6 @@
   padding: 1.25rem;
 }
 
-
 /* ==========================================
    STAT LABEL
    ========================================== */
@@ -6448,7 +6199,6 @@
   text-transform: uppercase;
 }
 
-
 /* ==========================================
    STAT VALUE
    ========================================== */
@@ -6460,7 +6210,6 @@
   font-weight: 700;
   color: var(--sid-text-primary);
 }
-
 
 /* ==========================================
    STAT ICON
@@ -6478,7 +6227,6 @@
   border-radius: var(--radius-md);
 }
 
-
 /* ==========================================
    DASHBOARD CHART
    ========================================== */
@@ -6486,7 +6234,6 @@
 .sid-dashboard-chart {
   margin-bottom: 1.5rem;
 }
-
 
 /* ==========================================
    MOBILE
@@ -6527,7 +6274,6 @@
   margin-bottom: 1rem;
 }
 
-
 /* ==========================================
    RESPONSIVE DESKTOP
    ========================================== */
@@ -6537,7 +6283,6 @@
     padding: 0;
   }
 }
-
 
 /* ==========================================
    RESPONSIVE MOBILE
@@ -6582,7 +6327,6 @@
     margin-bottom: 1rem;
   }
 }
-
 
 /* ==========================================
    RESPONSIVE EXTRA SMALL
@@ -6650,7 +6394,6 @@
   }
 }
 
-
 /* ==========================================
    MODAL CLOSE
    ========================================== */
@@ -6690,7 +6433,6 @@
   cursor: not-allowed;
 }
 
-
 /* ==========================================
    MODAL HEADER
    ========================================== */
@@ -6710,7 +6452,6 @@
   font-size: 0.75rem;
   color: var(--sid-text-muted);
 }
-
 
 /* ==========================================
    MODAL INFO
@@ -6746,7 +6487,6 @@
   word-break: break-word;
 }
 
-
 /* ==========================================
    KEPUTUSAN RT
    ========================================== */
@@ -6764,13 +6504,11 @@
 .sid-decision-box.approved {
   background: var(--sid-status-done-bg);
   border-color: rgb(var(--sid-status-done-text) / 0.15);
-
 }
 
 .sid-decision-box.rejected {
   background: var(--sid-status-rejected-bg);
   border-color: rgb(var(--sid-status-rejected-text) / 0.15);
-
 }
 
 .sid-decision-header {
@@ -6862,7 +6600,6 @@
   color: var(--sid-status-rejected-text);
 }
 
-
 /* ==========================================
    REJECT FORM
    ========================================== */
@@ -6895,8 +6632,9 @@
   outline: none;
   resize: vertical;
 
-  transition: border-color 0.15s ease,
-              box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .sid-reject-textarea::placeholder {
@@ -6906,19 +6644,13 @@
 .sid-reject-textarea:focus {
   border-color: var(--sid-status-rejected-text);
 
-  box-shadow: 0 0 0 2px
-    color-mix(
-      in srgb,
-      var(--sid-status-rejected-text) 15%,
-      transparent
-    );
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sid-status-rejected-text) 15%, transparent);
 }
 
 .sid-reject-textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-
 
 /* ==========================================
    MODAL ACTIONS
@@ -6957,7 +6689,6 @@
   cursor: not-allowed;
 }
 
-
 /* SETUJU */
 
 .sid-modal-action.approve {
@@ -6970,7 +6701,6 @@
 .sid-modal-action.approve:hover:not(:disabled) {
   filter: brightness(0.92);
 }
-
 
 /* TOLAK */
 
@@ -6985,7 +6715,6 @@
   filter: brightness(0.92);
 }
 
-
 /* BATAL */
 
 .sid-modal-action.cancel {
@@ -6998,7 +6727,6 @@
 .sid-modal-action.cancel:hover:not(:disabled) {
   background: var(--sid-surface-page);
 }
-
 
 /* KEMBALI */
 
@@ -7014,7 +6742,6 @@
 .sid-modal-action.back:hover:not(:disabled) {
   background: var(--sid-status-done-bg);
 }
-
 
 /* ==========================================
    PREVIEW BUTTON
@@ -7053,7 +6780,6 @@
   cursor: not-allowed;
 }
 
-
 /* ==========================================
    MODAL EMPTY / LOADING
    ========================================== */
@@ -7089,7 +6815,6 @@
   display: none;
 }
 
-
 /* ==========================================
    STEP ITEM
    ========================================== */
@@ -7110,7 +6835,6 @@
 
   min-width: 3.75rem;
 }
-
 
 /* ==========================================
    CIRCLE
@@ -7137,7 +6861,6 @@
     border-color 0.15s ease;
 }
 
-
 /* ==========================================
    WAITING
    ========================================== */
@@ -7146,7 +6869,6 @@
   background: var(--sid-border);
   color: var(--sid-text-muted);
 }
-
 
 /* ==========================================
    CURRENT
@@ -7159,7 +6881,6 @@
   color: var(--sid-status-done-text);
 }
 
-
 /* ==========================================
    DONE
    ========================================== */
@@ -7169,7 +6890,6 @@
   color: var(--sid-on-primary);
 }
 
-
 /* ==========================================
    REJECTED
    ========================================== */
@@ -7178,7 +6898,6 @@
   background: var(--sid-status-rejected-text);
   color: var(--sid-on-primary);
 }
-
 
 /* ==========================================
    LABEL
@@ -7209,7 +6928,6 @@
   color: var(--sid-status-rejected-text);
 }
 
-
 /* ==========================================
    STATUS TEXT
    ========================================== */
@@ -7222,7 +6940,6 @@
 
   white-space: nowrap;
 }
-
 
 /* ==========================================
    CONNECTOR
@@ -7239,13 +6956,11 @@
   background: var(--sid-border);
 }
 
-
 /* ==========================================
    MOBILE
    ========================================== */
 
 @media (max-width: 639px) {
-
   .sid-stepper {
     justify-content: flex-start;
     padding-bottom: 0.25rem;
@@ -7278,7 +6993,6 @@
    ========================================== */
 
 .sid-page-state {
-
   min-height: 60vh;
 
   display: flex;
@@ -7286,24 +7000,19 @@
   justify-content: center;
 
   padding: 1.5rem;
-
 }
 
 .sid-page-state-text {
-
   font-size: 0.875rem;
 
   color: var(--sid-text-muted);
-
 }
-
 
 /* ==========================================
    SID - PAGE ALERT
    ========================================== */
 
 .sid-page-alert {
-
   padding: 1rem;
 
   border-radius: var(--radius-md);
@@ -7311,41 +7020,29 @@
   font-size: 0.875rem;
 
   line-height: 1.5;
-
 }
 
 .sid-page-alert.error {
-
   background: var(--sid-status-rejected-bg);
 
   color: var(--sid-status-rejected-text);
 
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--sid-status-rejected-text) 15%,
-      transparent
-    );
-
+  border: 1px solid color-mix(in srgb, var(--sid-status-rejected-text) 15%, transparent);
 }
-
 
 /* ==========================================
    SID - REVISI SURAT
    ========================================== */
 
 .sid-revision-page {
-
   min-height: 100vh;
 
   padding-top: 1.5rem;
 
   padding-bottom: 1.5rem;
-
 }
 
 .sid-revision-content {
-
   width: 100%;
 
   max-width: 48rem;
@@ -7357,41 +7054,31 @@
   flex-direction: column;
 
   gap: 1.5rem;
-
 }
-
 
 /* ==========================================
    REVISION HEADER
    ========================================== */
 
 .sid-revision-header {
-
   text-align: left;
-
 }
-
 
 /* ==========================================
    REVISION NOTE
    ========================================== */
 
 .sid-revision-note {
-
   padding: 1rem;
 
-  border: 1px solid
-    var(--sid-status-info-border, #bfdbfe);
+  border: 1px solid var(--sid-status-info-border, #bfdbfe);
 
   border-radius: var(--radius-md);
 
-  background:
-    var(--sid-status-info-bg, #eff6ff);
-
+  background: var(--sid-status-info-bg, #eff6ff);
 }
 
 .sid-revision-note-title {
-
   margin-bottom: 0.25rem;
 
   font-size: 0.75rem;
@@ -7400,53 +7087,39 @@
 
   line-height: 1.4;
 
-  color:
-    var(--sid-status-info-text, #1e40af);
+  color: var(--sid-status-info-text, #1e40af);
 
   text-transform: uppercase;
-
 }
 
 .sid-revision-note-text {
-
   font-size: 0.875rem;
 
   line-height: 1.5;
 
-  color:
-    var(--sid-status-info-dark, #1e3a8a);
+  color: var(--sid-status-info-dark, #1e3a8a);
 
   word-break: break-word;
-
 }
-
 
 /* ==========================================
    MOBILE
    ========================================== */
 
 @media (max-width: 639px) {
-
   .sid-revision-page {
-
     padding-top: 1rem;
 
     padding-bottom: 1rem;
-
   }
 
   .sid-revision-content {
-
     gap: 1rem;
-
   }
 
   .sid-revision-note {
-
     padding: 0.875rem;
-
   }
-
 }
 
 /* ==========================================
@@ -7462,7 +7135,6 @@
   color: var(--sid-text-primary);
 }
 
-
 /* ==========================================
    CONTENT
    ========================================== */
@@ -7471,7 +7143,6 @@
   width: 100%;
   padding: 1.5rem;
 }
-
 
 /* ==========================================
    HEADER
@@ -7505,7 +7176,6 @@
   text-transform: capitalize;
 }
 
-
 /* ==========================================
    STATISTICS GRID
    ========================================== */
@@ -7516,7 +7186,6 @@
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
-
 
 /* ==========================================
    STAT CARD
@@ -7532,10 +7201,7 @@
   background: var(--sid-surface-card);
   border: 1px solid var(--sid-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(
-    --sid-shadow-sm,
-    0 1px 3px rgba(0, 0, 0, 0.06)
-  );
+  box-shadow: var(--sid-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
 }
 
 .sid-operator-stat-content {
@@ -7571,7 +7237,6 @@
   color: #16a34a;
 }
 
-
 /* ==========================================
    STAT ICON
    ========================================== */
@@ -7601,7 +7266,6 @@
   color: #16a34a;
 }
 
-
 /* ==========================================
    GENDER CARD
    ========================================== */
@@ -7610,7 +7274,6 @@
   min-width: 0;
   height: 100%;
 }
-
 
 /* ==========================================
    CHART + FLOW GRID
@@ -7632,13 +7295,11 @@
   display: flex;
 }
 
-
 /* ==========================================
    RESPONSIVE
    ========================================== */
 
 @media (max-width: 1100px) {
-
   .sid-operator-stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -7650,12 +7311,9 @@
   .sid-operator-flow-wrapper {
     display: block;
   }
-
 }
 
-
 @media (max-width: 639px) {
-
   .sid-operator-dashboard-content {
     padding: 1rem;
   }
@@ -7690,7 +7348,6 @@
   .sid-operator-dashboard-grid {
     gap: 0.75rem;
   }
-
 }
 /* ==========================================
    SID - OPERATOR SURAT LIST
@@ -7707,7 +7364,6 @@
 .sid-operator-content {
   padding: 1.5rem;
 }
-
 
 /* ==========================================
    HEADER
@@ -7743,7 +7399,6 @@
   font-weight: 700;
   line-height: 1.5;
 }
-
 
 /* ==========================================
    EXPORT BUTTON
@@ -7787,7 +7442,6 @@
   transform: translateY(1px);
 }
 
-
 /* ==========================================
    FILTER CARD
    ========================================== */
@@ -7808,8 +7462,7 @@
 .sid-operator-filter-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 1rem;
 }
@@ -7824,7 +7477,6 @@
 
   text-transform: uppercase;
 }
-
 
 /* ==========================================
    SEARCH
@@ -7889,10 +7541,8 @@
 .sid-operator-filter-field select:focus {
   border-color: var(--sid-primary);
 
-  box-shadow:
-    0 0 0 2px rgba(24, 95, 165, 0.10);
+  box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.1);
 }
-
 
 /* ==========================================
    TABLE CARD
@@ -7980,7 +7630,6 @@
   color: var(--sid-text-muted) !important;
 }
 
-
 /* ==========================================
    STATUS BADGE
    ========================================== */
@@ -8029,7 +7678,6 @@
   color: var(--sid-text-muted);
 }
 
-
 /* ==========================================
    LETTER NUMBER
    ========================================== */
@@ -8060,7 +7708,6 @@
   font-weight: 700;
 }
 
-
 /* ==========================================
    APPLICANT
    ========================================== */
@@ -8070,7 +7717,6 @@
 
   font-weight: 500;
 }
-
 
 /* ==========================================
    RT / RW APPROVAL
@@ -8097,7 +7743,6 @@
   font-size: 0.75rem;
   font-weight: 500;
 }
-
 
 /* ==========================================
    APPROVAL CHECK
@@ -8133,7 +7778,6 @@
   background: var(--sid-status-rejected-text);
 }
 
-
 /* ==========================================
    ACTIONS
    ========================================== */
@@ -8167,7 +7811,6 @@
     transform 0.15s ease;
 }
 
-
 /* DETAIL */
 
 .sid-operator-action.detail {
@@ -8182,7 +7825,6 @@
   border-color: var(--sid-header-subtext);
 }
 
-
 /* EDIT */
 
 .sid-operator-action.edit {
@@ -8193,10 +7835,9 @@
 }
 
 .sid-operator-action.edit:hover {
-  background: #F5E1BC;
+  background: #f5e1bc;
   border-color: var(--sid-status-pending-text);
 }
-
 
 /* DELETE */
 
@@ -8208,10 +7849,9 @@
 }
 
 .sid-operator-action.delete:hover {
-  background: #F8DADA;
+  background: #f8dada;
   border-color: var(--sid-status-rejected-text);
 }
-
 
 /* ==========================================
    PAGINATION
@@ -8288,7 +7928,6 @@
   cursor: not-allowed;
 }
 
-
 /* ==========================================
    DELETE MODAL
    ========================================== */
@@ -8306,7 +7945,7 @@
 
   padding: 1rem;
 
-  background: rgba(44, 44, 42, 0.40);
+  background: rgba(44, 44, 42, 0.4);
 }
 
 .sid-operator-delete-modal {
@@ -8323,7 +7962,6 @@
 
   box-shadow: var(--sid-shadow-lg);
 }
-
 
 /* ==========================================
    DELETE HEADER
@@ -8370,7 +8008,6 @@
   line-height: 1.5;
 }
 
-
 /* ==========================================
    DELETE INFO
    ========================================== */
@@ -8412,7 +8049,6 @@
 
   font-size: 0.75rem;
 }
-
 
 /* ==========================================
    DELETE CONFIRMATION
@@ -8465,8 +8101,7 @@
 .sid-operator-delete-confirm input:focus {
   border-color: var(--sid-status-rejected-text);
 
-  box-shadow:
-    0 0 0 2px rgba(232, 15, 15, 0.10);
+  box-shadow: 0 0 0 2px rgba(232, 15, 15, 0.1);
 }
 
 .sid-operator-delete-confirm input:disabled {
@@ -8486,7 +8121,6 @@
 .sid-operator-delete-confirm p strong {
   font-weight: 700;
 }
-
 
 /* ==========================================
    DELETE ACTIONS
@@ -8550,7 +8184,6 @@
   cursor: not-allowed;
 }
 
-
 /* ==========================================
    RESPONSIVE
    ========================================== */
@@ -8576,7 +8209,6 @@
     min-width: 900px;
   }
 }
-
 
 @media (max-width: 639px) {
   .sid-operator-content {
@@ -8617,7 +8249,6 @@
    - Manajemen User
    - Data Warga
    ========================================== */
-
 
 /* ==========================================
    PRIMARY BUTTON
@@ -8663,7 +8294,6 @@
   outline-offset: 2px;
 }
 
-
 /* ==========================================
    OPERATOR PAGE
    ========================================== */
@@ -8678,7 +8308,6 @@
 .sid-operator-content {
   padding: 1.5rem;
 }
-
 
 /* ==========================================
    HEADER
@@ -8715,7 +8344,6 @@
   font-weight: 700;
   line-height: 1.5;
 }
-
 
 /* ==========================================
    LEGACY EXPORT BUTTON
@@ -8758,7 +8386,6 @@
   transform: translateY(1px);
 }
 
-
 /* ==========================================
    FILTER CARD
    ========================================== */
@@ -8779,8 +8406,7 @@
 .sid-operator-filter-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 1rem;
 }
@@ -8795,7 +8421,6 @@
 
   text-transform: uppercase;
 }
-
 
 /* ==========================================
    SEARCH
@@ -8863,10 +8488,8 @@
 .sid-operator-filter-field select:focus {
   border-color: var(--sid-primary);
 
-  box-shadow:
-    0 0 0 2px rgba(24, 95, 165, 0.10);
+  box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.1);
 }
-
 
 /* ==========================================
    TABLE CARD
@@ -8927,8 +8550,7 @@
 .sid-operator-table tbody tr {
   border-bottom: 1px solid var(--sid-border);
 
-  transition:
-    background-color 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 
 .sid-operator-table tbody tr:last-child {
@@ -8947,7 +8569,6 @@
   vertical-align: middle;
 }
 
-
 /* ==========================================
    EMPTY / LOADING
    ========================================== */
@@ -8960,7 +8581,6 @@
 
   color: var(--sid-text-muted) !important;
 }
-
 
 /* ==========================================
    LETTER NUMBER
@@ -8993,7 +8613,6 @@
   font-weight: 700;
 }
 
-
 /* ==========================================
    APPLICANT
    ========================================== */
@@ -9002,7 +8621,6 @@
   color: var(--sid-text-secondary);
   font-weight: 500;
 }
-
 
 /* ==========================================
    RT / RW APPROVAL
@@ -9060,7 +8678,6 @@
   background: var(--sid-status-rejected-text);
 }
 
-
 /* ==========================================
    ACTIONS
    ========================================== */
@@ -9091,7 +8708,6 @@
     color 0.15s ease;
 }
 
-
 /* Detail */
 
 .sid-operator-action.detail {
@@ -9103,11 +8719,10 @@
 
 .sid-operator-action.detail:hover {
   background: var(--sid-status-progress-bg);
-  border-color: #B5D4F4;
+  border-color: #b5d4f4;
 
   color: var(--sid-primary);
 }
-
 
 /* Edit */
 
@@ -9119,9 +8734,8 @@
 }
 
 .sid-operator-action.edit:hover {
-  background: #F7E4C2;
+  background: #f7e4c2;
 }
-
 
 /* Delete */
 
@@ -9133,9 +8747,8 @@
 }
 
 .sid-operator-action.delete:hover {
-  background: #F9D8D8;
+  background: #f9d8d8;
 }
-
 
 /* Toggle */
 
@@ -9149,11 +8762,10 @@
 .sid-operator-action.toggle:hover {
   background: var(--sid-status-progress-bg);
 
-  border-color: #B5D4F4;
+  border-color: #b5d4f4;
 
   color: var(--sid-primary);
 }
-
 
 /* ==========================================
    ROLE BADGE
@@ -9178,7 +8790,6 @@
   text-transform: uppercase;
 }
 
-
 /* ==========================================
    STATUS BADGE
    ========================================== */
@@ -9199,7 +8810,7 @@
 }
 
 .sid-operator-status::before {
-  content: "";
+  content: '';
 
   width: 0.375rem;
   height: 0.375rem;
@@ -9219,7 +8830,6 @@
   color: var(--sid-text-muted);
 }
 
-
 /* ==========================================
    DATA WARGA / USER TABLE
    ========================================== */
@@ -9232,7 +8842,6 @@
 .sid-operator-table .secondary-text {
   color: var(--sid-text-secondary);
 }
-
 
 /* ==========================================
    PAGINATION
@@ -9311,7 +8920,6 @@
   cursor: not-allowed;
 }
 
-
 /* ==========================================
    FILTER LAYOUT - 2 KOLOM
    ========================================== */
@@ -9321,7 +8929,6 @@
     minmax(0, 1fr)
     minmax(220px, 0.35fr);
 }
-
 
 /* ==========================================
    FILTER LAYOUT - USER
@@ -9333,7 +8940,6 @@
     220px;
 }
 
-
 /* ==========================================
    FILTER LAYOUT - WARGA
    ========================================== */
@@ -9343,7 +8949,6 @@
     minmax(0, 1fr)
     220px;
 }
-
 
 /* ==========================================
    DELETE MODAL
@@ -9420,7 +9025,6 @@
   line-height: 1.5;
 }
 
-
 /* ==========================================
    DELETE INFO
    ========================================== */
@@ -9462,7 +9066,6 @@
 
   font-size: 0.75rem;
 }
-
 
 /* ==========================================
    DELETE CONFIRMATION
@@ -9515,8 +9118,7 @@
 .sid-operator-delete-confirm input:focus {
   border-color: var(--sid-status-rejected-text);
 
-  box-shadow:
-    0 0 0 2px rgba(232, 15, 15, 0.10);
+  box-shadow: 0 0 0 2px rgba(232, 15, 15, 0.1);
 }
 
 .sid-operator-delete-confirm input:disabled {
@@ -9535,7 +9137,6 @@
 .sid-operator-delete-confirm p strong {
   font-weight: 700;
 }
-
 
 /* ==========================================
    DELETE ACTIONS
@@ -9597,7 +9198,6 @@
   cursor: not-allowed;
 }
 
-
 /* ==========================================
    RESPONSIVE
    ========================================== */
@@ -9629,7 +9229,6 @@
     min-width: 900px;
   }
 }
-
 
 @media (max-width: 639px) {
   .sid-operator-content {
@@ -9679,7 +9278,6 @@
   background: var(--sid-surface-page);
 }
 
-
 /* =========================================================
    CONTENT
    ========================================================= */
@@ -9691,7 +9289,6 @@
   margin: 0 auto;
   padding: 1.5rem;
 }
-
 
 /* =========================================================
    HEADER
@@ -9731,7 +9328,6 @@
   font-size: 0.875rem;
   line-height: 1.5;
 }
-
 
 /* =========================================================
    PRIMARY / EDIT BUTTON
@@ -9773,7 +9369,6 @@
   transform: translateY(1px);
 }
 
-
 /* =========================================================
    HERO + STATS
    ========================================================= */
@@ -9789,7 +9384,6 @@
 
   margin-bottom: 1rem;
 }
-
 
 /* =========================================================
    HERO
@@ -9826,12 +9420,7 @@
 }
 
 .sid-profil-desa-hero-placeholder {
-  background:
-    linear-gradient(
-      135deg,
-      var(--sid-primary),
-      var(--sid-vendor-accent)
-    );
+  background: linear-gradient(135deg, var(--sid-primary), var(--sid-vendor-accent));
 }
 
 .sid-profil-desa-hero-overlay {
@@ -9889,7 +9478,6 @@
   font-size: 0.875rem;
   line-height: 1.5;
 }
-
 
 /* =========================================================
    STATS
@@ -9985,7 +9573,6 @@
   color: #16a34a;
 }
 
-
 /* =========================================================
    GENERAL CARD
    Mengikuti sid-operator-table-card
@@ -10002,7 +9589,6 @@
 
   box-shadow: var(--shadow-card);
 }
-
 
 /* =========================================================
    CARD ACTION
@@ -10043,7 +9629,6 @@
   text-decoration: underline;
 }
 
-
 /* =========================================================
    SECTION HEADING
    ========================================================= */
@@ -10063,7 +9648,14 @@
   font-size: 0.875rem;
   font-weight: 600;
 }
+.sid-profil-desa-section-heading p {
+  margin: 0.15rem 0 0;
 
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
 .sid-profil-desa-section-icon {
   width: 2rem;
   height: 2rem;
@@ -10079,7 +9671,6 @@
   background: var(--sid-header-subtext);
   color: var(--sid-primary);
 }
-
 
 /* =========================================================
    VISI & MISI
@@ -10155,7 +9746,6 @@
   margin: 0;
 }
 
-
 /* =========================================================
    PERANGKAT DESA HEADER
    ========================================================= */
@@ -10169,7 +9759,6 @@
 
   margin-bottom: 1.5rem;
 }
-
 
 /* =========================================================
    AVATAR
@@ -10219,7 +9808,6 @@
   height: 2.5rem;
 }
 
-
 /* =========================================================
    KEPALA DESA
    ========================================================= */
@@ -10249,7 +9837,6 @@
   font-size: 0.75rem;
 }
 
-
 /* =========================================================
    PERANGKAT UTAMA
    ========================================================= */
@@ -10257,8 +9844,7 @@
 .sid-profil-desa-main-officials {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 1rem;
 
@@ -10298,7 +9884,6 @@
 
   font-size: 0.6875rem;
 }
-
 
 /* =========================================================
    KADUS
@@ -10344,13 +9929,11 @@
   text-align: center;
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 900px) {
-
   .sid-profil-desa-content {
     padding: 1.25rem;
   }
@@ -10362,8 +9945,7 @@
   .sid-profil-desa-stats {
     display: grid;
 
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .sid-profil-desa-visi-misi-grid {
@@ -10371,12 +9953,9 @@
 
     gap: 1.5rem;
   }
-
 }
 
-
 @media (max-width: 639px) {
-
   .sid-profil-desa-content {
     padding: 1rem;
   }
@@ -10413,13 +9992,197 @@
   .sid-profil-desa-kadus-list {
     gap: 1rem;
   }
+}
 
+/* =========================================================
+   INFORMASI DESA
+   ========================================================= */
+
+.sid-profil-desa-eyebrow {
+  margin: 0 0 0.25rem;
+
+  color: var(--sid-primary);
+
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sid-profil-desa-error {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+
+  border: 1px solid var(--sid-status-rejected-bg);
+  border-radius: var(--radius-md);
+
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.sid-profil-desa-card-heading {
+  margin-bottom: 1.5rem;
+}
+
+.sid-profil-desa-info-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 1rem;
+}
+
+.sid-profil-desa-info-item {
+  min-width: 0;
+
+  padding: 1rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+
+  background: var(--sid-surface-page);
+}
+
+.sid-profil-desa-info-item-full {
+  grid-column: 1 / -1;
+}
+
+.sid-profil-desa-info-label {
+  display: block;
+
+  margin-bottom: 0.375rem;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.sid-profil-desa-info-value {
+  display: flex;
+  align-items: center;
+
+  gap: 0.375rem;
+
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  line-height: 1.5;
+}
+
+.sid-profil-desa-info-address {
+  align-items: flex-start;
+}
+
+.sid-profil-desa-info-description {
+  margin: 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+  line-height: 1.7;
+
+  white-space: pre-line;
+}
+
+/* =========================================================
+   VISI & MISI
+   ========================================================= */
+
+.sid-profil-desa-misi-text {
+  margin: 0.75rem 0 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+  line-height: 1.7;
+
+  white-space: pre-line;
+}
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.sid-profil-desa-empty {
+  margin: 0;
+
+  padding: 1rem;
+
+  border: 1px dashed var(--sid-border);
+  border-radius: var(--radius-md);
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.sid-profil-desa-loading {
+  min-height: 320px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.75rem;
+}
+
+.sid-profil-desa-loading p {
+  margin: 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.8125rem;
+}
+
+.sid-profil-desa-loading-spinner {
+  width: 32px;
+  height: 32px;
+
+  border: 3px solid var(--sid-border);
+  border-top-color: var(--sid-primary);
+  border-radius: 50%;
+
+  animation: sid-profil-desa-spin 0.8s linear infinite;
+}
+
+@keyframes sid-profil-desa-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   RESPONSIVE INFORMASI DESA
+   ========================================================= */
+
+@media (max-width: 639px) {
+  .sid-profil-desa-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sid-profil-desa-info-item-full {
+    grid-column: auto;
+  }
 }
 
 /* =========================================================
    SID - KELOLA BERITA OPERATOR DESA
    ========================================================= */
-
 
 /* =========================================================
    PAGE
@@ -10441,7 +10204,6 @@
 
   padding: 1.5rem;
 }
-
 
 /* =========================================================
    HEADER
@@ -10494,7 +10256,6 @@
   line-height: 1.5;
 }
 
-
 /* =========================================================
    PRIMARY BUTTON
    ========================================================= */
@@ -10536,7 +10297,6 @@
   transform: translateY(1px);
 }
 
-
 /* =========================================================
    FEATURE GRID
    ========================================================= */
@@ -10552,7 +10312,6 @@
 
   margin-bottom: 2rem;
 }
-
 
 /* =========================================================
    FEATURE CARD
@@ -10637,7 +10396,6 @@
   line-height: 1.35;
 }
 
-
 /* =========================================================
    IMAGE PLACEHOLDER
    ========================================================= */
@@ -10650,16 +10408,10 @@
   align-items: center;
   justify-content: center;
 
-  background:
-    linear-gradient(
-      135deg,
-      var(--sid-primary),
-      var(--sid-vendor-accent)
-    );
+  background: linear-gradient(135deg, var(--sid-primary), var(--sid-vendor-accent));
 
   color: #fff;
 }
-
 
 /* =========================================================
    FEATURE FOOTER
@@ -10673,7 +10425,6 @@
 
   border-top: 1px solid var(--sid-border);
 }
-
 
 /* =========================================================
    CATEGORY
@@ -10709,7 +10460,6 @@
   color: #374151;
 }
 
-
 /* =========================================================
    DATE
    ========================================================= */
@@ -10726,7 +10476,6 @@
 
   font-size: 0.75rem;
 }
-
 
 /* =========================================================
    READ MORE
@@ -10754,7 +10503,6 @@
 
   text-decoration: underline;
 }
-
 
 /* =========================================================
    TERBARU
@@ -10863,8 +10611,7 @@
   -webkit-box-orient: vertical;
 }
 
-.sid-kelola-berita-latest-item:hover
-.sid-kelola-berita-latest-title {
+.sid-kelola-berita-latest-item:hover .sid-kelola-berita-latest-title {
   color: var(--sid-primary);
 }
 
@@ -10894,7 +10641,6 @@
   background: var(--sid-primary-hover);
 }
 
-
 /* =========================================================
    EMPTY TERBARU
    ========================================================= */
@@ -10908,7 +10654,6 @@
 
   font-size: 0.75rem;
 }
-
 
 /* =========================================================
    MANAGEMENT HEADER
@@ -10942,7 +10687,6 @@
   font-size: 0.8125rem;
   line-height: 1.5;
 }
-
 
 /* =========================================================
    PAGINATION BUTTON
@@ -10993,7 +10737,6 @@
   cursor: not-allowed;
 }
 
-
 /* =========================================================
    BERITA GRID
    ========================================================= */
@@ -11001,12 +10744,10 @@
 .sid-kelola-berita-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 1.25rem;
 }
-
 
 /* =========================================================
    BERITA CARD
@@ -11032,10 +10773,8 @@
 .sid-kelola-berita-card:hover {
   transform: translateY(-1px);
 
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
-
 
 /* =========================================================
    CARD IMAGE
@@ -11066,16 +10805,10 @@
   align-items: center;
   justify-content: center;
 
-  background:
-    linear-gradient(
-      135deg,
-      var(--sid-primary),
-      var(--sid-vendor-accent)
-    );
+  background: linear-gradient(135deg, var(--sid-primary), var(--sid-vendor-accent));
 
   color: #fff;
 }
-
 
 /* =========================================================
    EDIT BUTTON
@@ -11102,8 +10835,7 @@
   background: #fff;
   color: var(--sid-primary);
 
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 
   cursor: pointer;
 
@@ -11117,7 +10849,6 @@
 
   transform: scale(1.04);
 }
-
 
 /* =========================================================
    CARD CONTENT
@@ -11165,7 +10896,6 @@
   -webkit-box-orient: vertical;
 }
 
-
 /* =========================================================
    EMPTY STATE
    ========================================================= */
@@ -11198,7 +10928,6 @@
   font-size: 0.8125rem;
 }
 
-
 /* =========================================================
    PAGINATION INFO
    ========================================================= */
@@ -11214,27 +10943,21 @@
   font-size: 0.75rem;
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 1100px) {
-
   .sid-kelola-berita-feature-grid {
     grid-template-columns: 1fr;
   }
 
   .sid-kelola-berita-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
 }
 
-
 @media (max-width: 900px) {
-
   .sid-kelola-berita-content {
     padding: 1.25rem;
   }
@@ -11242,12 +10965,9 @@
   .sid-kelola-berita-feature-image {
     height: 15rem;
   }
-
 }
 
-
 @media (max-width: 639px) {
-
   .sid-kelola-berita-content {
     padding: 1rem;
   }
@@ -11305,13 +11025,11 @@
   .sid-kelola-berita-pagination-info {
     justify-content: center;
   }
-
 }
 
 /* =========================================================
    SID - OPERATOR DESA LAYOUT
    ========================================================= */
-
 
 /* =========================================================
    LAYOUT
@@ -11326,7 +11044,6 @@
   background: var(--sid-surface-page);
   color: var(--sid-text-primary);
 }
-
 
 /* =========================================================
    SIDEBAR
@@ -11346,11 +11063,8 @@
 
   z-index: 40;
 
-
-
   background: var(--sid-surface-card);
 }
-
 
 /* =========================================================
    SIDEBAR BRAND
@@ -11389,7 +11103,6 @@
   line-height: 1.4;
 }
 
-
 /* =========================================================
    SIDEBAR NAVIGATION
    ========================================================= */
@@ -11404,7 +11117,6 @@
 
   padding: 1rem 0.75rem;
 }
-
 
 /* =========================================================
    MENU ITEM
@@ -11456,7 +11168,6 @@
   color: var(--sid-on-primary);
 }
 
-
 /* =========================================================
    SIDEBAR FOOTER
    ========================================================= */
@@ -11473,7 +11184,6 @@
 
   background: var(--sid-surface-card);
 }
-
 
 /* =========================================================
    SIDEBAR ACTION
@@ -11526,7 +11236,6 @@
   color: #dc2626;
 }
 
-
 /* =========================================================
    MAIN
    ========================================================= */
@@ -11541,7 +11250,6 @@
 
   margin-left: 14rem;
 }
-
 
 /* =========================================================
    TOPBAR
@@ -11575,7 +11283,6 @@
   flex: 1;
 }
 
-
 /* =========================================================
    TOPBAR RIGHT
    ========================================================= */
@@ -11586,7 +11293,6 @@
 
   gap: 1rem;
 }
-
 
 /* =========================================================
    NOTIFICATION
@@ -11624,7 +11330,6 @@
   color: #dbeafe;
 }
 
-
 /* =========================================================
    NOTIFICATION BADGE
    ========================================================= */
@@ -11657,7 +11362,6 @@
 
   pointer-events: none;
 }
-
 
 /* =========================================================
    PROFILE
@@ -11701,7 +11405,6 @@
   white-space: nowrap;
 }
 
-
 /* =========================================================
    PROFILE AVATAR
    ========================================================= */
@@ -11726,7 +11429,6 @@
   font-weight: 700;
 }
 
-
 /* =========================================================
    MAIN CONTENT
    ========================================================= */
@@ -11740,13 +11442,11 @@
   overflow-y: auto;
 }
 
-
 /* =========================================================
    RESPONSIVE - TABLET
    ========================================================= */
 
 @media (max-width: 900px) {
-
   .sid-operator-sidebar {
     width: 13rem;
   }
@@ -11760,16 +11460,13 @@
   .sid-operator-topbar {
     left: 13rem;
   }
-
 }
-
 
 /* =========================================================
    RESPONSIVE - MOBILE
    ========================================================= */
 
 @media (max-width: 639px) {
-
   .sid-operator-sidebar {
     width: 4.25rem;
   }
@@ -11792,7 +11489,6 @@
     display: none;
   }
 
-
   /* MENU */
 
   .sid-operator-sidebar-nav {
@@ -11810,7 +11506,6 @@
   .sid-operator-menu-item span {
     display: none;
   }
-
 
   /* SIDEBAR FOOTER */
 
@@ -11830,7 +11525,6 @@
     display: none;
   }
 
-
   /* MAIN */
 
   .sid-operator-main {
@@ -11838,7 +11532,6 @@
 
     margin-left: 4.25rem;
   }
-
 
   /* TOPBAR */
 
@@ -11855,7 +11548,6 @@
   .sid-operator-profile-info {
     display: none;
   }
-
 }
 
 /* ==========================================
@@ -11869,7 +11561,6 @@
   background: var(--sid-surface-card);
   color: var(--sid-text-primary);
 }
-
 
 /* ==========================================
    HERO
@@ -11944,7 +11635,6 @@
   box-shadow: var(--shadow-card);
 }
 
-
 /* ==========================================
    SECTION GENERAL
    ========================================== */
@@ -11971,7 +11661,6 @@
 
   text-align: center;
 }
-
 
 /* ==========================================
    GALERI
@@ -12023,12 +11712,7 @@
 
   overflow: hidden;
 
-  background:
-    linear-gradient(
-      135deg,
-      var(--sid-primary-soft, #dcfce7),
-      var(--sid-primary)
-    );
+  background: linear-gradient(135deg, var(--sid-primary-soft, #dcfce7), var(--sid-primary));
 }
 
 .sid-beranda-gallery-image img {
@@ -12060,7 +11744,6 @@
   font-weight: 500;
   line-height: 1.4;
 }
-
 
 /* ==========================================
    CARA MENGAJUKAN SURAT
@@ -12135,7 +11818,6 @@
   line-height: 1.6;
 }
 
-
 /* ==========================================
    KONTAK
    ========================================== */
@@ -12206,13 +11888,11 @@
   font-weight: 600;
 }
 
-
 /* ==========================================
    RESPONSIVE
    ========================================== */
 
 @media (max-width: 900px) {
-
   .sid-beranda-hero-title {
     font-size: 2.25rem;
   }
@@ -12224,12 +11904,9 @@
   .sid-beranda-contact-list {
     flex-direction: column;
   }
-
 }
 
-
 @media (max-width: 639px) {
-
   .sid-beranda-hero {
     padding: 3rem 1rem;
   }
@@ -12294,14 +11971,12 @@
   .sid-beranda-contact-item span {
     font-size: 0.875rem;
   }
-
 }
 
 /* ==========================================
    SID - DESKTOP NAVBAR
    Navbar publik
    ========================================== */
-
 
 /* ==========================================
    NAVBAR
@@ -12329,7 +12004,6 @@
   box-shadow: var(--shadow-card);
 }
 
-
 /* ==========================================
    LOADING
    ========================================== */
@@ -12337,7 +12011,6 @@
 .sid-desktop-navbar-loading {
   display: none;
 }
-
 
 /* ==========================================
    LOGO
@@ -12352,7 +12025,6 @@
   font-weight: 700;
   line-height: 1;
 }
-
 
 /* ==========================================
    MENU
@@ -12401,7 +12073,6 @@
   color: var(--sid-on-primary);
 }
 
-
 /* ==========================================
    ACTIONS
    ========================================== */
@@ -12412,7 +12083,6 @@
 
   flex-shrink: 0;
 }
-
 
 /* ==========================================
    USER
@@ -12448,7 +12118,6 @@
   white-space: nowrap;
 }
 
-
 /* ==========================================
    USER AVATAR
    ========================================== */
@@ -12471,7 +12140,6 @@
 
   color: var(--sid-primary);
 }
-
 
 /* ==========================================
    LOGOUT
@@ -12511,7 +12179,6 @@
   color: var(--sid-status-error-hover, #dc2626);
 }
 
-
 /* ==========================================
    LOGIN
    ========================================== */
@@ -12547,7 +12214,6 @@
   transform: translateY(-1px);
 }
 
-
 /* ==========================================
    RESPONSIVE
    ========================================== */
@@ -12562,20 +12228,16 @@
  */
 
 @media (max-width: 767px) {
-
   .sid-desktop-navbar {
     display: none;
   }
-
 }
-
 
 /* ==========================================
    TABLET / SMALL DESKTOP
    ========================================== */
 
 @media (max-width: 1000px) {
-
   .sid-desktop-navbar {
     gap: 1rem;
 
@@ -12599,9 +12261,7 @@
   .sid-desktop-navbar-user-info span {
     max-width: 7rem;
   }
-
 }
-
 
 /* ==========================================
    DARK THEME SUPPORT
@@ -12621,7 +12281,6 @@
    SID - DETAIL BERITA PUBLIK
    ========================================================= */
 
-
 /* =========================================================
    PAGE
    ========================================================= */
@@ -12637,7 +12296,6 @@
   color: var(--sid-text-primary);
 }
 
-
 /* =========================================================
    CONTENT
    ========================================================= */
@@ -12650,7 +12308,6 @@
 
   padding: 2rem 2rem;
 }
-
 
 /* =========================================================
    DETAIL GRID
@@ -12669,7 +12326,6 @@
 
   align-items: start;
 }
-
 
 /* =========================================================
    NOT FOUND
@@ -12701,31 +12357,23 @@
   text-align: center;
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 1024px) {
-
   .sid-detail-berita-grid {
     grid-template-columns: 1fr;
   }
-
 }
 
-
 @media (max-width: 900px) {
-
   .sid-detail-berita-content {
     padding: 1.5rem 1.25rem;
   }
-
 }
 
-
 @media (max-width: 639px) {
-
   .sid-detail-berita-content {
     padding: 1rem;
   }
@@ -12733,13 +12381,11 @@
   .sid-detail-berita-grid {
     gap: 1rem;
   }
-
 }
 
 /* =========================================================
    SID - SIDEBAR BERITA
    ========================================================= */
-
 
 /* =========================================================
    SIDEBAR
@@ -12759,7 +12405,6 @@
   box-shadow: var(--shadow-card);
 }
 
-
 /* =========================================================
    TITLE
    ========================================================= */
@@ -12777,7 +12422,6 @@
   text-transform: uppercase;
 }
 
-
 /* =========================================================
    LIST
    ========================================================= */
@@ -12788,7 +12432,6 @@
 
   gap: 1rem;
 }
-
 
 /* =========================================================
    ITEM
@@ -12824,7 +12467,6 @@
   box-shadow: var(--shadow-card);
 }
 
-
 /* =========================================================
    IMAGE
    ========================================================= */
@@ -12843,7 +12485,6 @@
 
   background: var(--sid-surface-page);
 }
-
 
 /* =========================================================
    TITLE ITEM
@@ -12869,11 +12510,9 @@
   transition: color 0.15s ease;
 }
 
-.sid-sidebar-berita-item:hover
-.sid-sidebar-berita-item-title {
+.sid-sidebar-berita-item:hover .sid-sidebar-berita-item-title {
   color: var(--sid-primary);
 }
-
 
 /* =========================================================
    DATE
@@ -12888,22 +12527,17 @@
   line-height: 1.4;
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 1024px) {
-
   .sid-sidebar-berita {
     width: 100%;
   }
-
 }
 
-
 @media (max-width: 639px) {
-
   .sid-sidebar-berita {
     padding: 0.875rem;
 
@@ -12921,13 +12555,11 @@
   .sid-sidebar-berita-image {
     height: 8rem;
   }
-
 }
 
 /* =========================================================
    SID - PROFILE WARGA
    ========================================================= */
-
 
 /* =========================================================
    PAGE
@@ -12944,7 +12576,6 @@
   color: var(--sid-text-primary);
 }
 
-
 /* =========================================================
    CARD
    ========================================================= */
@@ -12957,12 +12588,8 @@
 
   background: var(--sid-surface-card);
 
-  box-shadow: var(
-    --sid-shadow-sm,
-    0 1px 3px rgba(0, 0, 0, 0.06)
-  );
+  box-shadow: var(--sid-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
 }
-
 
 /* =========================================================
    PROFILE HEADER
@@ -12973,7 +12600,6 @@
 
   margin-bottom: 1rem;
 }
-
 
 /* =========================================================
    USER
@@ -13030,7 +12656,6 @@
   line-height: 1.4;
 }
 
-
 /* =========================================================
    VERIFICATION BADGE
    ========================================================= */
@@ -13058,7 +12683,6 @@
 
   line-height: 1.3;
 }
-
 
 /* =========================================================
    EDIT BUTTON
@@ -13102,7 +12726,6 @@
   transform: translateY(1px);
 }
 
-
 /* =========================================================
    INFORMATION
    ========================================================= */
@@ -13115,7 +12738,6 @@
 
   padding: 1.25rem;
 }
-
 
 /* =========================================================
    FIELD
@@ -13133,7 +12755,6 @@
   font-size: 0.6875rem;
   line-height: 1.4;
 }
-
 
 /* =========================================================
    FIELD VALUE
@@ -13175,13 +12796,11 @@
   color: var(--sid-text-muted);
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 639px) {
-
   .sid-profile-page {
     padding: 1rem;
   }
@@ -13203,13 +12822,11 @@
   .sid-profile-field-value {
     font-size: 0.75rem;
   }
-
 }
 
 /* =========================================================
    SID - ADMIN PROFILE
    ========================================================= */
-
 
 /* =========================================================
    PAGE
@@ -13225,7 +12842,6 @@
   background: var(--sid-surface-page);
   color: var(--sid-text-primary);
 }
-
 
 /* =========================================================
    MAIN
@@ -13246,7 +12862,6 @@
   padding: 1.5rem;
 }
 
-
 /* =========================================================
    CARD
    ========================================================= */
@@ -13259,12 +12874,8 @@
 
   background: var(--sid-surface-card);
 
-  box-shadow: var(
-    --sid-shadow-sm,
-    0 1px 3px rgba(0, 0, 0, 0.06)
-  );
+  box-shadow: var(--sid-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
 }
-
 
 /* =========================================================
    PROFILE HEADER
@@ -13275,7 +12886,6 @@
 
   margin-bottom: 1rem;
 }
-
 
 /* =========================================================
    USER
@@ -13331,7 +12941,6 @@
   line-height: 1.4;
 }
 
-
 /* =========================================================
    VERIFICATION
    ========================================================= */
@@ -13358,7 +12967,6 @@
   font-weight: 600;
   line-height: 1.3;
 }
-
 
 /* =========================================================
    EDIT BUTTON
@@ -13403,7 +13011,6 @@
   transform: translateY(1px);
 }
 
-
 /* =========================================================
    PROFILE DETAIL
    ========================================================= */
@@ -13416,7 +13023,6 @@
 
   padding: 1.25rem;
 }
-
 
 /* =========================================================
    FIELD
@@ -13434,7 +13040,6 @@
   font-size: 0.6875rem;
   line-height: 1.4;
 }
-
 
 /* =========================================================
    FIELD VALUE
@@ -13476,13 +13081,11 @@
   color: var(--sid-text-muted);
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 639px) {
-
   .sid-admin-profile-content {
     padding: 1rem;
 
@@ -13510,10 +13113,7 @@
   .sid-admin-profile-value {
     font-size: 0.75rem;
   }
-
 }
-
-
 
 /* =========================================================
    SID - APPROVAL ACTION BAR
@@ -13527,7 +13127,6 @@
 
   width: 100%;
 }
-
 
 /* =========================================================
    BASE BUTTON
@@ -13563,7 +13162,6 @@
   transform: translateY(1px);
 }
 
-
 /* =========================================================
    SETUJU
    ========================================================= */
@@ -13581,7 +13179,6 @@
   background: var(--sid-primary-hover);
 }
 
-
 /* =========================================================
    TOLAK
    ========================================================= */
@@ -13597,7 +13194,6 @@
   background: var(--sid-status-rejected-hover);
   border-color: var(--sid-status-rejected-hover);
 }
-
 
 /* =========================================================
    KEMBALI
@@ -13616,13 +13212,11 @@
   color: var(--sid-primary-hover);
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 639px) {
-
   .sid-approval-action-bar {
     gap: 0.5rem;
   }
@@ -13634,7 +13228,6 @@
 
     font-size: 0.75rem;
   }
-
 }
 
 /* =========================================================
@@ -13698,7 +13291,6 @@
   color: var(--sid-on-primary);
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
@@ -13749,7 +13341,6 @@
    Main content halaman detail berita publik.
    ========================================================= */
 
-
 /* =========================================================
    MAIN CONTENT
    ========================================================= */
@@ -13764,7 +13355,6 @@
 
   grid-column: span 3;
 }
-
 
 /* =========================================================
    TITLE
@@ -13781,7 +13371,6 @@
   font-weight: 700;
   line-height: 1.4;
 }
-
 
 /* =========================================================
    IMAGE
@@ -13813,7 +13402,6 @@
   border-radius: var(--radius-sm);
 }
 
-
 /* =========================================================
    DESCRIPTION CARD
    ========================================================= */
@@ -13828,7 +13416,6 @@
 
   box-shadow: var(--shadow-card);
 }
-
 
 /* =========================================================
    DESCRIPTION TITLE
@@ -13845,7 +13432,6 @@
 
   text-transform: uppercase;
 }
-
 
 /* =========================================================
    DESCRIPTION CONTENT
@@ -13866,7 +13452,6 @@
 .sid-berita-detail-content p {
   margin: 0;
 }
-
 
 /* =========================================================
    RESPONSIVE
@@ -13907,7 +13492,6 @@
    Card berita horizontal untuk halaman publik.
    ========================================================= */
 
-
 /* =========================================================
    CARD
    ========================================================= */
@@ -13938,12 +13522,10 @@
 }
 
 .sid-news-row-card:hover {
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 
   transform: translateY(-1px);
 }
-
 
 /* =========================================================
    IMAGE
@@ -13970,14 +13552,12 @@
 
   object-fit: cover;
 
-  transition:
-    transform 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
 .sid-news-row-card:hover .sid-news-row-image-content {
   transform: scale(1.05);
 }
-
 
 /* =========================================================
    CONTENT
@@ -13994,7 +13574,6 @@
 
   padding: 0.25rem 0;
 }
-
 
 /* =========================================================
    TITLE
@@ -14024,7 +13603,6 @@
   color: var(--sid-primary);
 }
 
-
 /* =========================================================
    DESCRIPTION
    ========================================================= */
@@ -14046,7 +13624,6 @@
   -webkit-box-orient: vertical;
 }
 
-
 /* =========================================================
    META
    ========================================================= */
@@ -14061,7 +13638,6 @@
 
   margin-top: auto;
 }
-
 
 /* =========================================================
    CATEGORY
@@ -14085,7 +13661,6 @@
   line-height: 1.4;
 }
 
-
 /* =========================================================
    DATE
    ========================================================= */
@@ -14096,7 +13671,6 @@
   font-size: 0.625rem;
   line-height: 1.4;
 }
-
 
 /* =========================================================
    DESKTOP
@@ -14130,7 +13704,6 @@
    SID - CETAK SURAT
    ========================================================= */
 
-
 /* =========================================================
    PAGE
    ========================================================= */
@@ -14152,7 +13725,6 @@
   padding: 1.5rem;
 }
 
-
 /* =========================================================
    TITLE
    ========================================================= */
@@ -14166,7 +13738,6 @@
   font-weight: 500;
   line-height: 1.4;
 }
-
 
 /* =========================================================
    SEARCH
@@ -14213,12 +13784,7 @@
 .sid-cetak-surat-search-input:focus {
   border-color: var(--sid-primary);
 
-  box-shadow:
-    0 0 0 2px color-mix(
-      in srgb,
-      var(--sid-primary) 12%,
-      transparent
-    );
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sid-primary) 12%, transparent);
 }
 
 .sid-cetak-surat-search-button {
@@ -14250,7 +13816,6 @@
   border-color: var(--sid-primary-hover);
 }
 
-
 /* =========================================================
    TABLE WRAPPER
    ========================================================= */
@@ -14267,7 +13832,6 @@
 
   box-shadow: var(--shadow-card);
 }
-
 
 /* =========================================================
    TABLE
@@ -14315,14 +13879,12 @@
 }
 
 .sid-cetak-surat-table tbody tr {
-  transition:
-    background-color 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 
 .sid-cetak-surat-table tbody tr:hover {
   background: var(--sid-surface-page);
 }
-
 
 /* =========================================================
    EMPTY STATE
@@ -14335,7 +13897,6 @@
 
   text-align: center;
 }
-
 
 /* =========================================================
    ACTIONS
@@ -14368,7 +13929,6 @@
     color 0.15s ease;
 }
 
-
 /* VIEW */
 
 .sid-cetak-surat-action-view {
@@ -14385,7 +13945,6 @@
   color: var(--sid-primary);
 }
 
-
 /* PRINT */
 
 .sid-cetak-surat-action-print {
@@ -14400,7 +13959,6 @@
 
   background: var(--sid-primary-hover);
 }
-
 
 /* =========================================================
    MODAL OVERLAY
@@ -14422,7 +13980,6 @@
   background: rgba(0, 0, 0, 0.4);
 }
 
-
 /* =========================================================
    MODAL
    ========================================================= */
@@ -14443,10 +14000,8 @@
 
   background: var(--sid-surface-card);
 
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16);
 }
-
 
 /* =========================================================
    MODAL CLOSE
@@ -14477,7 +14032,6 @@
   color: var(--sid-text-primary);
 }
 
-
 /* =========================================================
    MODAL HEADER
    ========================================================= */
@@ -14499,7 +14053,6 @@
 
   font-size: 0.75rem;
 }
-
 
 /* =========================================================
    PRINT BUTTON
@@ -14537,7 +14090,6 @@
   background: var(--sid-primary-hover);
   border-color: var(--sid-primary-hover);
 }
-
 
 /* =========================================================
    RESPONSIVE
@@ -14586,7 +14138,6 @@
   box-shadow: var(--shadow-card);
 }
 
-
 /* =========================================================
    GRID
    ========================================================= */
@@ -14594,12 +14145,10 @@
 .sid-quick-nav-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 
   gap: 0.75rem;
 }
-
 
 /* =========================================================
    ITEM
@@ -14641,8 +14190,7 @@
 
   background: var(--sid-surface-page);
 
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
   transform: translateY(-1px);
 }
@@ -14650,7 +14198,6 @@
 .sid-quick-nav-item:active {
   transform: translateY(0);
 }
-
 
 /* =========================================================
    ICON
@@ -14669,7 +14216,6 @@
   border-radius: 50%;
 }
 
-
 /* =========================================================
    ICON - MENUNGGU
    ========================================================= */
@@ -14678,7 +14224,6 @@
   background: #fef3c7;
   color: #eab308;
 }
-
 
 /* =========================================================
    ICON - DISETUJUI
@@ -14689,7 +14234,6 @@
   color: var(--sid-primary);
 }
 
-
 /* =========================================================
    ICON - DITOLAK
    ========================================================= */
@@ -14699,7 +14243,6 @@
   color: #ef4444;
 }
 
-
 /* =========================================================
    ICON - SEMUA
    ========================================================= */
@@ -14708,7 +14251,6 @@
   background: var(--sid-header-subtext);
   color: var(--sid-text-secondary);
 }
-
 
 /* =========================================================
    LABEL
@@ -14729,7 +14271,6 @@
   color: var(--sid-primary);
 }
 
-
 /* =========================================================
    FOCUS
    ========================================================= */
@@ -14739,20 +14280,17 @@
   outline-offset: 2px;
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 639px) {
-
   .sid-quick-nav {
     padding: 0.75rem;
   }
 
   .sid-quick-nav-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 
     gap: 0.625rem;
   }
@@ -14764,13 +14302,11 @@
   .sid-quick-nav-label {
     font-size: 0.8125rem;
   }
-
 }
 
 /* =========================================================
    SID - RIWAYAT VERIFIKASI
    ========================================================= */
-
 
 /* =========================================================
    CONTAINER
@@ -14788,7 +14324,6 @@
 
   box-shadow: var(--shadow-card);
 }
-
 
 /* =========================================================
    HEADER
@@ -14814,7 +14349,6 @@
   line-height: 1.4;
 }
 
-
 /* =========================================================
    VIEW ALL
    ========================================================= */
@@ -14836,8 +14370,7 @@
 
   cursor: pointer;
 
-  transition:
-    color 0.15s ease;
+  transition: color 0.15s ease;
 }
 
 .sid-riwayat-verifikasi-view-all:hover {
@@ -14846,7 +14379,6 @@
   text-decoration: underline;
 }
 
-
 /* =========================================================
    TABLE COLUMNS
    ========================================================= */
@@ -14854,8 +14386,7 @@
 .sid-riwayat-verifikasi-columns {
   display: grid;
 
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 1rem;
 
@@ -14872,7 +14403,6 @@
   line-height: 1.4;
 }
 
-
 /* =========================================================
    LIST
    ========================================================= */
@@ -14884,7 +14414,6 @@
   gap: 0.75rem;
 }
 
-
 /* =========================================================
    ITEM
    ========================================================= */
@@ -14892,8 +14421,7 @@
 .sid-riwayat-verifikasi-item {
   display: grid;
 
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   align-items: start;
 
@@ -14901,7 +14429,6 @@
 
   color: var(--sid-text-primary);
 }
-
 
 /* =========================================================
    CITIZEN
@@ -14915,7 +14442,6 @@
 
   gap: 0.5rem;
 }
-
 
 /* =========================================================
    AVATAR
@@ -14941,7 +14467,6 @@
 
   text-transform: uppercase;
 }
-
 
 /* =========================================================
    CITIZEN INFO
@@ -14982,7 +14507,6 @@
   white-space: nowrap;
 }
 
-
 /* =========================================================
    LETTER
    ========================================================= */
@@ -15019,13 +14543,11 @@
   line-height: 1.4;
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 639px) {
-
   .sid-riwayat-verifikasi {
     padding: 1rem;
   }
@@ -15037,12 +14559,9 @@
   .sid-riwayat-verifikasi-letter {
     gap: 0.5rem;
   }
-
 }
 
-
 @media (max-width: 420px) {
-
   .sid-riwayat-verifikasi-item {
     grid-template-columns:
       minmax(0, 1.1fr)
@@ -15054,13 +14573,11 @@
 
     gap: 0.125rem;
   }
-
 }
 
 /* =========================================================
    SID - STATISTIK PENGAJUAN SURAT
    ========================================================= */
-
 
 /* =========================================================
    CONTAINER
@@ -15079,7 +14596,6 @@
   box-shadow: var(--shadow-card);
 }
 
-
 /* =========================================================
    HEADER
    ========================================================= */
@@ -15093,7 +14609,6 @@
 
   margin-bottom: 1.25rem;
 }
-
 
 /* =========================================================
    TITLE
@@ -15124,7 +14639,6 @@
   line-height: 1.5;
 }
 
-
 /* =========================================================
    FILTERS
    ========================================================= */
@@ -15141,7 +14655,6 @@
 
   flex-shrink: 0;
 }
-
 
 /* =========================================================
    DATE BUTTON
@@ -15181,7 +14694,6 @@
   color: var(--sid-primary);
 }
 
-
 /* =========================================================
    DATE INPUT
    ========================================================= */
@@ -15196,7 +14708,6 @@
 
   pointer-events: none;
 }
-
 
 /* =========================================================
    SELECT
@@ -15232,14 +14743,8 @@
 .sid-surat-stat-chart-select:focus {
   border-color: var(--sid-primary);
 
-  box-shadow:
-    0 0 0 2px color-mix(
-      in srgb,
-      var(--sid-primary) 12%,
-      transparent
-    );
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sid-primary) 12%, transparent);
 }
-
 
 /* =========================================================
    CHART AREA
@@ -15251,13 +14756,11 @@
   min-height: 180px;
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 639px) {
-
   .sid-surat-stat-chart {
     padding: 1rem;
   }
@@ -15271,14 +14774,11 @@
   .sid-surat-stat-chart-filters {
     width: 100%;
   }
-
 }
-
 
 /* =========================================================
    SID - BERITA FORM MODAL
    ========================================================= */
-
 
 /* =========================================================
    MODAL OVERLAY
@@ -15299,7 +14799,6 @@
 
   background: rgba(0, 0, 0, 0.4);
 }
-
 
 /* =========================================================
    MODAL
@@ -15325,7 +14824,6 @@
   box-shadow: var(--shadow-card);
 }
 
-
 /* =========================================================
    TITLE
    ========================================================= */
@@ -15339,7 +14837,6 @@
   font-weight: 700;
   line-height: 1.4;
 }
-
 
 /* =========================================================
    FORM GROUP
@@ -15358,7 +14855,6 @@
   margin-bottom: 1.5rem;
 }
 
-
 /* =========================================================
    LABEL
    ========================================================= */
@@ -15371,7 +14867,6 @@
 
   line-height: 1.4;
 }
-
 
 /* =========================================================
    INPUT / SELECT
@@ -15405,15 +14900,8 @@
 .sid-berita-form-input:focus {
   border-color: var(--sid-primary);
 
-  box-shadow:
-    0 0 0 2px
-    color-mix(
-      in srgb,
-      var(--sid-primary) 12%,
-      transparent
-    );
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sid-primary) 12%, transparent);
 }
-
 
 /* =========================================================
    TEXTAREA
@@ -15453,15 +14941,8 @@
 .sid-berita-form-textarea:focus {
   border-color: var(--sid-primary);
 
-  box-shadow:
-    0 0 0 2px
-    color-mix(
-      in srgb,
-      var(--sid-primary) 12%,
-      transparent
-    );
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sid-primary) 12%, transparent);
 }
-
 
 /* =========================================================
    IMAGE UPLOAD
@@ -15516,17 +14997,24 @@
   border-radius: var(--radius-sm);
 }
 
-
 /* =========================================================
    ACTION
    ========================================================= */
 
 .sid-berita-modal-actions {
   display: flex;
-
-  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
+.sid-berita-modal-actions-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-left: auto;
+}
 
 /* =========================================================
    CANCEL
@@ -15561,7 +15049,6 @@
 .sid-berita-modal-cancel:hover {
   background: var(--sid-header-subtext);
 }
-
 
 /* =========================================================
    SUBMIT
@@ -15605,13 +15092,11 @@
   transform: translateY(1px);
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 639px) {
-
   .sid-berita-modal-overlay {
     padding: 0.75rem;
   }
@@ -15636,14 +15121,11 @@
 
     width: 100%;
   }
-
 }
-
 
 /* =========================================================
    SID - TAMBAH USER MODAL
    ========================================================= */
-
 
 /* =========================================================
    MODAL OVERLAY
@@ -15664,7 +15146,6 @@
 
   background: rgba(0, 0, 0, 0.4);
 }
-
 
 /* =========================================================
    MODAL
@@ -15690,7 +15171,6 @@
   box-shadow: var(--shadow-card);
 }
 
-
 /* =========================================================
    FORM GROUP
    ========================================================= */
@@ -15712,7 +15192,6 @@
   margin-bottom: 1.5rem;
 }
 
-
 /* =========================================================
    LABEL
    ========================================================= */
@@ -15725,7 +15204,6 @@
 
   line-height: 1.4;
 }
-
 
 /* =========================================================
    INPUT / SELECT
@@ -15759,19 +15237,12 @@
 .sid-user-form-input:focus {
   border-color: var(--sid-primary);
 
-  box-shadow:
-    0 0 0 2px
-    color-mix(
-      in srgb,
-      var(--sid-primary) 12%,
-      transparent
-    );
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sid-primary) 12%, transparent);
 }
 
 .sid-user-form-input-italic {
   font-style: italic;
 }
-
 
 /* =========================================================
    HELPER TEXT
@@ -15786,7 +15257,6 @@
   line-height: 1.5;
 }
 
-
 /* =========================================================
    ACTION
    ========================================================= */
@@ -15796,7 +15266,6 @@
 
   gap: 0.75rem;
 }
-
 
 /* =========================================================
    CANCEL
@@ -15831,7 +15300,6 @@
 .sid-user-modal-cancel:hover {
   background: var(--sid-header-subtext);
 }
-
 
 /* =========================================================
    SUBMIT
@@ -15875,13 +15343,11 @@
   transform: translateY(1px);
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 
 @media (max-width: 639px) {
-
   .sid-user-modal-overlay {
     padding: 0.75rem;
   }
@@ -15902,7 +15368,6 @@
 
     width: 100%;
   }
-
 }
 
 /* ==========================================
@@ -15944,7 +15409,6 @@
   max-width: 32rem;
 }
 
-
 /* ==========================================
    FORM GROUP
    ========================================== */
@@ -15965,7 +15429,6 @@
   margin-bottom: 1.5rem;
 }
 
-
 /* ==========================================
    LABEL
    ========================================== */
@@ -15982,7 +15445,6 @@
   color: var(--sid-text-muted);
   font-weight: 400;
 }
-
 
 /* ==========================================
    INPUT
@@ -16018,8 +15480,7 @@
 .sid-form-input:focus {
   border-color: var(--sid-primary);
 
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--sid-primary) 12%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sid-primary) 12%, transparent);
 }
 
 .sid-form-input-italic {
@@ -16029,7 +15490,6 @@
 .sid-form-select {
   appearance: auto;
 }
-
 
 /* ==========================================
    HINT
@@ -16043,7 +15503,6 @@
   font-size: 0.75rem;
   line-height: 1rem;
 }
-
 
 /* ==========================================
    PASSWORD
@@ -16082,7 +15541,6 @@
 .sid-password-toggle:hover {
   color: var(--sid-text-primary);
 }
-
 
 /* ==========================================
    MODAL ACTION
@@ -16157,7 +15615,6 @@
   z-index: 40;
 }
 
-
 /* ==========================================
    POPOVER
    ========================================== */
@@ -16182,7 +15639,6 @@
 
   box-shadow: var(--sid-shadow-lg);
 }
-
 
 /* ==========================================
    HEADER
@@ -16228,7 +15684,6 @@
   text-decoration: underline;
 }
 
-
 /* ==========================================
    TABS
    ========================================== */
@@ -16271,7 +15726,6 @@
   color: #fff;
 }
 
-
 /* ==========================================
    CONTENT
    ========================================== */
@@ -16300,7 +15754,6 @@
   flex-direction: column;
   gap: 0.75rem;
 }
-
 
 /* ==========================================
    NOTIFICATION ITEM
@@ -16331,7 +15784,6 @@
   background: var(--sid-primary-soft);
 }
 
-
 /* ==========================================
    ICON
    ========================================== */
@@ -16349,14 +15801,12 @@
   border-radius: 9999px;
 }
 
-
 /* Green menggunakan SID Primary */
 
 .sid-notification-icon-green {
   background: var(--sid-primary-soft);
   color: var(--sid-primary);
 }
-
 
 /* Warna kategori lain */
 
@@ -16374,7 +15824,6 @@
   background: #f3f4f6;
   color: var(--sid-text-muted);
 }
-
 
 /* ==========================================
    ITEM CONTENT
@@ -16434,7 +15883,6 @@
   line-height: 1.125rem;
 }
 
-
 /* ==========================================
    EMPTY STATE
    ========================================== */
@@ -16450,7 +15898,6 @@
 
   text-align: center;
 }
-
 
 /* ==========================================
    RESPONSIVE
@@ -16489,7 +15936,6 @@
   box-shadow: var(--sid-shadow-sm);
   color: var(--sid-text-primary);
 }
-
 
 /* =========================================================
    HEADER
@@ -16533,7 +15979,6 @@
   border-color: var(--sid-primary);
 }
 
-
 /* =========================================================
    BODY
    ========================================================= */
@@ -16567,7 +16012,6 @@
   }
 }
 
-
 /* =========================================================
    NAVIGATION
    ========================================================= */
@@ -16599,7 +16043,6 @@
   background: var(--sid-surface-muted);
   color: var(--sid-text-primary);
 }
-
 
 /* =========================================================
    STATUS
@@ -16643,7 +16086,6 @@
   color: var(--sid-success);
 }
 
-
 /* =========================================================
    INDICATORS
    ========================================================= */
@@ -16684,7 +16126,6 @@
 .sid-dashboard-flow-indicator-inactive:hover {
   background: var(--sid-primary);
 }
-
 
 /* =========================================================
    RESPONSIVE
@@ -16761,9 +16202,7 @@
   font-weight: 700;
   user-select: none;
 
-  filter: drop-shadow(
-    0 1px 2px rgb(0 0 0 / 20%)
-  );
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 20%));
 }
 
 .gender-stat-details {
@@ -17044,7 +16483,7 @@
 
 .operator-revision-button {
   flex: none;
-  gap:0.5rem;
+  gap: 0.5rem;
 
   border: 1px solid var(--sid-warning-border);
 
@@ -17152,8 +16591,9 @@
   resize: none;
   outline: none;
 
-  transition: border-color 0.2s ease,
-              box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 
   box-sizing: border-box;
 }
@@ -17309,7 +16749,6 @@
   background: var(--sid-surface);
 }
 
-
 /* ==========================================
    MODAL HEADER
    ========================================== */
@@ -17336,7 +16775,6 @@
 
   font-size: 0.75rem;
 }
-
 
 /* ==========================================
    CATATAN
@@ -17370,7 +16808,6 @@
   font-size: 0.875rem;
   line-height: 1.5;
 }
-
 
 /* ==========================================
    PDF PREVIEW
@@ -17422,7 +16859,6 @@
   font-size: 0.875rem;
 }
 
-
 /* ==========================================
    WARNING
    ========================================== */
@@ -17440,7 +16876,6 @@
   font-size: 0.75rem;
   line-height: 1.5;
 }
-
 
 /* ==========================================
    PRIMARY BUTTON
@@ -17483,7 +16918,6 @@
   padding: 0.625rem 1rem;
 }
 
-
 /* ==========================================
    RESPONSIVE
    ========================================== */
@@ -17493,7 +16927,6 @@
     padding: 2rem;
   }
 }
-
 
 /* =========================================================
    SID — DASHBOARD CARD
@@ -17514,7 +16947,6 @@
 .sid-history-card {
   overflow: visible;
 }
-
 
 /* =========================================================
    CARD HEADER
@@ -17556,7 +16988,6 @@
   color: var(--sid-primary-hover);
   text-decoration: underline;
 }
-
 
 /* =========================================================
    TABLE
@@ -17604,7 +17035,7 @@
 }
 
 .sid-history-table tbody tr:hover {
-  background: #F7F9FC;
+  background: #f7f9fc;
 }
 
 .sid-history-table td {
@@ -17617,7 +17048,6 @@
 .sid-table-action {
   text-align: right;
 }
-
 
 /* =========================================================
    RESIDENT
@@ -17642,7 +17072,7 @@
 
   border-radius: 999px;
 
-  background: #E6F1FB;
+  background: #e6f1fb;
 
   color: var(--sid-primary);
 
@@ -17668,7 +17098,6 @@
   white-space: nowrap;
 }
 
-
 /* =========================================================
    STATUS BADGE
    ========================================================= */
@@ -17687,14 +17116,12 @@
   white-space: nowrap;
 }
 
-
 /* PENDING */
 
 .sid-status-pending {
   background: var(--sid-status-pending-bg);
   color: var(--sid-status-pending-text);
 }
-
 
 /* PROCESS */
 
@@ -17703,14 +17130,12 @@
   color: var(--sid-status-progress-text);
 }
 
-
 /* APPROVED */
 
 .sid-status-approved {
   background: var(--sid-status-done-bg);
   color: var(--sid-status-done-text);
 }
-
 
 /* REJECTED */
 
@@ -17719,14 +17144,12 @@
   color: var(--sid-status-rejected-text);
 }
 
-
 /* DEFAULT */
 
 .sid-status-default {
   background: var(--sid-surface-page);
   color: var(--sid-text-muted);
 }
-
 
 /* =========================================================
    EMPTY STATE
@@ -17739,7 +17162,6 @@
 
   text-align: center;
 }
-
 
 /* =========================================================
    ACTION BUTTON
@@ -17776,7 +17198,6 @@
 
   border-radius: var(--radius-sm);
 }
-
 
 /* =========================================================
    ACTION MENU
@@ -17842,11 +17263,10 @@
 }
 
 .sid-action-menu-item:not(:disabled):hover {
-  background: #F7F9FC;
+  background: #f7f9fc;
 
   color: var(--sid-text-primary);
 }
-
 
 /* =========================================================
    PRINT ACTION
@@ -17861,11 +17281,10 @@
 }
 
 .sid-action-print-disabled {
-  color: #B8B8B5;
+  color: #b8b8b5;
 
   cursor: not-allowed;
 }
-
 
 /* =========================================================
    RESPONSIVE
@@ -18025,7 +17444,6 @@
   gap: 24px;
 }
 
-
 /* =========================================================
    WILAYAH TITLE
    ========================================================= */
@@ -18036,7 +17454,6 @@
   font-size: 13px;
   color: var(--sid-text-secondary);
 }
-
 
 /* =========================================================
    WILAYAH STATISTICS
@@ -18059,7 +17476,7 @@
   border: 1px solid rgba(24, 95, 165, 0.12);
   border-radius: var(--radius-md);
 
-  background: #E6F1FB;
+  background: #e6f1fb;
 
   color: var(--sid-primary);
 
@@ -18074,7 +17491,6 @@
   flex-shrink: 0;
 }
 
-
 /* =========================================================
    WILAYAH DESCRIPTION
    ========================================================= */
@@ -18087,7 +17503,6 @@
   color: var(--sid-text-muted);
 }
 
-
 /* =========================================================
    WILAYAH LIST
    ========================================================= */
@@ -18098,7 +17513,6 @@
 
   gap: 12px;
 }
-
 
 /* =========================================================
    WILAYAH ITEM
@@ -18178,7 +17592,6 @@
   gap: 16px;
 }
 
-
 /* =========================================================
    VISI / MISI SECTION
    ========================================================= */
@@ -18189,7 +17602,6 @@
 
   gap: 8px;
 }
-
 
 /* =========================================================
    VISI / MISI TITLE
@@ -18208,7 +17620,6 @@
   text-transform: uppercase;
 }
 
-
 /* =========================================================
    VISI / MISI TEXT
    ========================================================= */
@@ -18222,7 +17633,6 @@
 
   line-height: 1.7;
 }
-
 
 /* =========================================================
    MISI LIST
@@ -18270,7 +17680,6 @@
   background: rgba(0, 0, 0, 0.4);
 }
 
-
 .sid-modal-card {
   position: relative;
 
@@ -18290,7 +17699,6 @@
   padding: 32px;
 }
 
-
 /* =========================================================
    MODAL TITLE
    ========================================================= */
@@ -18304,7 +17712,6 @@
   font-weight: 500;
 }
 
-
 /* =========================================================
    EDIT INFORMASI UMUM
    ========================================================= */
@@ -18315,7 +17722,6 @@
 
   gap: 0;
 }
-
 
 /* =========================================================
    MODAL ACTIONS
@@ -18328,7 +17734,6 @@
 .sid-modal-submit {
   flex: 2 1 0;
 }
-
 
 /* =========================================================
    RESPONSIVE MODAL
@@ -18365,7 +17770,7 @@
 
   padding: 16px;
 
-  background: rgba(0, 0, 0, 0.40);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .sid-modal-overlay-front {
@@ -18446,7 +17851,7 @@
 }
 
 .sid-modal-close:hover {
-  background: #F3F3F3;
+  background: #f3f3f3;
   color: var(--sid-text-primary);
 }
 
@@ -18461,7 +17866,6 @@
 
   padding: 16px 24px 24px;
 }
-
 
 /* =========================================================
    PERSON CARD
@@ -18506,7 +17910,6 @@
   gap: 8px;
 }
 
-
 /* =========================================================
    AVATAR UPLOAD
    ========================================================= */
@@ -18522,7 +17925,7 @@
 
   overflow: hidden;
 
-  background: #F3F3F3;
+  background: #f3f3f3;
 
   border-radius: 999px;
 
@@ -18534,7 +17937,7 @@
 }
 
 .sid-avatar-upload:hover {
-  background: #E6F1FB;
+  background: #e6f1fb;
   border-color: var(--sid-primary);
 }
 
@@ -18567,7 +17970,6 @@
   display: none;
 }
 
-
 /* =========================================================
    SUBSECTION
    ========================================================= */
@@ -18587,7 +17989,6 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-
 
 /* =========================================================
    KADUS
@@ -18669,7 +18070,6 @@
   text-decoration: underline;
 }
 
-
 /* =========================================================
    SAVE BUTTON
    ========================================================= */
@@ -18677,7 +18077,6 @@
 .sid-btn-save {
   flex: 2 1 0;
 }
-
 
 /* =========================================================
    RESPONSIVE
@@ -18726,7 +18125,6 @@
   margin-bottom: 24px;
 }
 
-
 /* =========================================================
    FORM SECTION
    ========================================================= */
@@ -18739,7 +18137,6 @@
   margin-bottom: 12px;
 }
 
-
 /* =========================================================
    STATISTIC FORM GRID
    ========================================================= */
@@ -18751,7 +18148,6 @@
 
   gap: 16px;
 }
-
 
 /* =========================================================
    IMAGE UPLOAD
@@ -18785,7 +18181,7 @@
 }
 
 .sid-image-upload:hover {
-  background: #F7FAFD;
+  background: #f7fafd;
   border-color: var(--sid-primary);
 }
 
@@ -18821,7 +18217,6 @@
   border-radius: var(--radius-sm);
 }
 
-
 /* =========================================================
    RESPONSIVE
    ========================================================= */
@@ -18842,7 +18237,6 @@
   }
 }
 
-
 /* =========================================================
    EDIT VISI & MISI MODAL
    ========================================================= */
@@ -18850,7 +18244,6 @@
 .sid-edit-visi-misi-modal {
   max-width: 512px;
 }
-
 
 /* =========================================================
    MODAL HEADER
@@ -18878,7 +18271,6 @@
   line-height: 1.5;
 }
 
-
 /* =========================================================
    MODAL FIELD
    ========================================================= */
@@ -18904,7 +18296,6 @@
   margin-bottom: 24px;
 }
 
-
 /* =========================================================
    MISI LIST
    ========================================================= */
@@ -18924,7 +18315,6 @@
 
   width: 100%;
 }
-
 
 /* =========================================================
    NOMOR MISI
@@ -18949,7 +18339,6 @@
   font-size: 12px;
   font-weight: 600;
 }
-
 
 /* =========================================================
    HAPUS MISI
@@ -18995,7 +18384,6 @@
   cursor: not-allowed;
 }
 
-
 /* =========================================================
    TAMBAH MISI
    ========================================================= */
@@ -19032,7 +18420,6 @@
   text-decoration: underline;
 }
 
-
 /* =========================================================
    MODAL ACTION
    ========================================================= */
@@ -19044,7 +18431,6 @@
 .sid-btn-save {
   flex: 2 1 0;
 }
-
 
 /* =========================================================
    RESPONSIVE
@@ -19074,7 +18460,6 @@
   }
 }
 
-
 /* =========================================================
    EDIT PROFIL WARGA MODAL
    ========================================================= */
@@ -19082,7 +18467,6 @@
 .sid-edit-profil-warga-modal {
   max-width: 384px;
 }
-
 
 /* =========================================================
    PROFILE FIELD
@@ -19095,7 +18479,6 @@
 .sid-profile-gender-field {
   margin-bottom: 20px;
 }
-
 
 /* =========================================================
    MODAL ERROR
@@ -19117,7 +18500,6 @@
   line-height: 1.5;
 }
 
-
 /* =========================================================
    MODAL ACTION
    ========================================================= */
@@ -19125,7 +18507,6 @@
 .sid-edit-profil-warga-modal .sid-modal-actions {
   margin-top: 0;
 }
-
 
 /* =========================================================
    RESPONSIVE
@@ -19136,7 +18517,6 @@
     max-width: none;
   }
 }
-
 
 /* =========================================================
    FILE UPLOADER
@@ -19150,7 +18530,6 @@
 
   margin-bottom: 12px;
 }
-
 
 /* =========================================================
    UPLOADED FILE CARD
@@ -19170,7 +18549,7 @@
   border: 1px solid var(--sid-border);
   border-radius: var(--radius-md);
 
-  background: #F7F6F1;
+  background: #f7f6f1;
 
   transition:
     background-color 0.15s ease,
@@ -19182,7 +18561,6 @@
 
   background: var(--sid-status-progress-bg);
 }
-
 
 /* =========================================================
    FILE INFO
@@ -19196,7 +18574,6 @@
 
   min-width: 0;
 }
-
 
 /* =========================================================
    FILE ICON
@@ -19223,7 +18600,6 @@
   width: 20px;
   height: 20px;
 }
-
 
 /* =========================================================
    FILE DETAILS
@@ -19258,7 +18634,6 @@
 
   font-size: 10px;
 }
-
 
 /* =========================================================
    REMOVE FILE
@@ -19301,7 +18676,6 @@
   height: 16px;
 }
 
-
 /* =========================================================
    UPLOAD ICON
    ========================================================= */
@@ -19312,7 +18686,6 @@
 
   color: var(--sid-text-muted);
 }
-
 
 /* =========================================================
    RESPONSIVE
@@ -19413,7 +18786,6 @@
   cursor: not-allowed;
 }
 
-
 /* =========================================================
    MODAL HEADER
    ========================================================= */
@@ -19440,7 +18812,6 @@
   font-size: 12px;
   line-height: 1.6;
 }
-
 
 /* =========================================================
    MODAL CONTENT
@@ -19487,10 +18858,8 @@
 .sid-modal-textarea:focus {
   border-color: var(--sid-primary);
 
-  box-shadow:
-    0 0 0 2px rgba(24, 95, 165, 0.10);
+  box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.1);
 }
-
 
 /* =========================================================
    MODAL ALERT
@@ -19526,7 +18895,6 @@
   font-size: 14px;
 }
 
-
 /* =========================================================
    MODAL FOOTER
    ========================================================= */
@@ -19544,7 +18912,6 @@
 .sid-modal-actions .sid-btn {
   flex: 1 1 0;
 }
-
 
 /* =========================================================
    LOADING
@@ -19569,7 +18936,6 @@
     transform: rotate(360deg);
   }
 }
-
 
 /* =========================================================
    MOBILE
@@ -19633,7 +18999,6 @@
   transform: translateY(-1px);
 }
 
-
 /* =========================================================
    CARD HEADER
    ========================================================= */
@@ -19655,7 +19020,6 @@
 
   letter-spacing: 0.025em;
 }
-
 
 /* =========================================================
    BADGE
@@ -19708,7 +19072,6 @@
   border-color: var(--sid-status-progress-text);
 }
 
-
 /* =========================================================
    FALLBACK BADGE
    ========================================================= */
@@ -19724,7 +19087,6 @@
 
   border-color: var(--sid-border);
 }
-
 
 /* =========================================================
    CARD CONTENT
@@ -19753,7 +19115,6 @@
   font-size: 10px;
   line-height: 1.6;
 }
-
 
 /* =========================================================
    RESPONSIVE
@@ -19803,7 +19164,6 @@
 
   box-shadow: var(--sid-shadow-lg);
 }
-
 
 /* =========================================================
    HEADER
@@ -19879,7 +19239,6 @@
   line-height: 1.5;
 }
 
-
 /* =========================================================
    CONTENT
    ========================================================= */
@@ -19892,7 +19251,6 @@
 
   padding: 24px;
 }
-
 
 /* =========================================================
    HELP ITEM
@@ -19946,7 +19304,6 @@
   line-height: 1.5;
 }
 
-
 /* =========================================================
    CLOSE BUTTON
    ========================================================= */
@@ -19954,7 +19311,6 @@
 .sid-help-close-button {
   margin-top: 4px;
 }
-
 
 /* =========================================================
    MOBILE
@@ -20013,6 +19369,532 @@
 .sid-input-error:focus {
   border-color: var(--sid-danger-border) !important;
 
-  box-shadow:
-    0 0 0 2px rgba(232, 15, 15, 0.10);
+  box-shadow: 0 0 0 2px rgba(232, 15, 15, 0.1);
+}
+/* =========================================================
+   +++ kelolaberita
+   ========================================================= */
+
+.sid-berita-modal-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 40px;
+  padding: 0.625rem 0.875rem;
+
+  border: 1px solid var(--sid-status-rejected-bg);
+  border-radius: var(--sid-radius-md);
+
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.sid-berita-modal-delete:hover {
+  border-color: var(--sid-status-rejected-text);
+}
+
+.sid-berita-modal-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sid-kelola-berita-feature-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sid-kelola-berita-feature-edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+
+  flex-shrink: 0;
+
+  min-height: 36px;
+  padding: 0.5rem 0.75rem;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--sid-radius-sm);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-primary);
+
+  font-size: 0.8125rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.sid-kelola-berita-feature-edit-button:hover {
+  border-color: var(--sid-primary-hover);
+  color: var(--sid-primary-hover);
+}
+
+.sid-kelola-berita-feature-edit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   SID - PROFIL DESA MODAL
+   ========================================================= */
+
+.sid-profil-desa-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+
+  background: rgba(44, 44, 42, 0.42);
+  backdrop-filter: blur(3px);
+}
+
+.sid-profil-desa-modal {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 2rem);
+
+  overflow-y: auto;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-xl);
+
+  background: var(--sid-surface-card);
+  box-shadow: var(--sid-shadow-lg);
+}
+
+.sid-profil-desa-modal-large {
+  width: min(820px, 100%);
+}
+
+.sid-profil-desa-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+
+  padding: 1.5rem;
+
+  border-bottom: 1px solid var(--sid-border);
+}
+
+.sid-profil-desa-modal-eyebrow {
+  margin: 0 0 0.25rem;
+
+  color: var(--sid-primary);
+
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.sid-profil-desa-modal-header h2 {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.sid-profil-desa-modal-header p:last-child {
+  margin: 0.375rem 0 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.sid-profil-desa-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 auto;
+
+  width: 36px;
+  height: 36px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 10px;
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-secondary);
+
+  cursor: pointer;
+}
+
+.sid-profil-desa-modal-close:hover {
+  background: var(--sid-surface-page);
+  color: var(--sid-text-primary);
+}
+
+.sid-profil-desa-modal-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sid-profil-desa-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  padding: 1.5rem;
+}
+
+.sid-profil-desa-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 1rem;
+}
+
+.sid-profil-desa-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sid-profil-desa-form-field-full {
+  grid-column: 1 / -1;
+}
+
+.sid-profil-desa-form-field label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.sid-profil-desa-form-field input,
+.sid-profil-desa-form-field textarea {
+  width: 100%;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-md);
+
+  padding: 0.75rem 0.875rem;
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+
+  font: inherit;
+  font-size: 0.875rem;
+
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.sid-profil-desa-form-field textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.sid-profil-desa-form-field input:focus,
+.sid-profil-desa-form-field textarea:focus {
+  border-color: var(--sid-primary);
+
+  box-shadow: 0 0 0 3px rgba(24, 95, 165, 0.1);
+}
+
+.sid-profil-desa-form-field input:disabled,
+.sid-profil-desa-form-field textarea:disabled {
+  background: var(--sid-surface-page);
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.sid-profil-desa-form-help {
+  color: var(--sid-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.sid-profil-desa-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+
+  padding-top: 0.25rem;
+}
+
+.sid-profil-desa-modal-secondary,
+.sid-profil-desa-modal-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+
+  min-height: 40px;
+
+  padding: 0.625rem 0.9rem;
+
+  border-radius: var(--sid-radius-md);
+
+  font-size: 0.8125rem;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.sid-profil-desa-modal-secondary {
+  border: 1px solid var(--sid-border);
+  background: var(--sid-surface-card);
+  color: var(--sid-text-secondary);
+}
+
+.sid-profil-desa-modal-secondary:hover {
+  background: var(--sid-surface-page);
+}
+
+.sid-profil-desa-modal-primary {
+  border: 1px solid var(--sid-primary);
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-profil-desa-modal-primary:hover {
+  border-color: var(--sid-primary-hover);
+  background: var(--sid-primary-hover);
+}
+
+.sid-profil-desa-modal-secondary:disabled,
+.sid-profil-desa-modal-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   DEVICE EDITOR
+   ========================================================= */
+
+.sid-profil-desa-device-notice {
+  padding: 0.75rem 0.875rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-md);
+
+  background: var(--sid-surface-page);
+  color: var(--sid-text-secondary);
+
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.sid-profil-desa-device-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 1rem;
+}
+
+.sid-profil-desa-device-form-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+
+  padding: 1rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-lg);
+
+  background: var(--sid-surface-card);
+}
+
+.sid-profil-desa-device-form-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sid-profil-desa-device-form-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+
+  flex: 0 0 auto;
+
+  border-radius: 10px;
+
+  background: var(--sid-status-progress-bg);
+  color: var(--sid-status-progress-text);
+}
+
+.sid-profil-desa-device-form-header h3 {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.sid-profil-desa-device-form-header p {
+  margin: 0.15rem 0 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.75rem;
+}
+
+.sid-profil-desa-device-readonly {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  padding-bottom: 0.625rem;
+
+  border-bottom: 1px solid var(--sid-border);
+}
+
+.sid-profil-desa-device-readonly span {
+  color: var(--sid-text-muted);
+  font-size: 0.7rem;
+}
+
+.sid-profil-desa-device-readonly strong {
+  color: var(--sid-text-primary);
+  font-size: 0.8125rem;
+}
+
+.sid-profil-desa-device-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.sid-profil-desa-device-status span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sid-profil-desa-device-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sid-profil-desa-device-group-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sid-profil-desa-device-group-heading h3 {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.sid-profil-desa-device-group-heading p {
+  margin: 0.2rem 0 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.75rem;
+}
+
+.sid-profil-desa-device-group-heading > span {
+  color: var(--sid-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sid-profil-desa-device-empty {
+  padding: 1.25rem;
+
+  border: 1px dashed var(--sid-border);
+  border-radius: var(--sid-radius-lg);
+
+  color: var(--sid-text-muted);
+  text-align: center;
+
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 760px) {
+  .sid-profil-desa-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .sid-profil-desa-modal {
+    width: 100%;
+    max-height: calc(100vh - 1rem);
+
+    border-radius: var(--sid-radius-xl) var(--sid-radius-xl) 0 0;
+  }
+
+  .sid-profil-desa-form-grid,
+  .sid-profil-desa-device-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .sid-profil-desa-form-field-full {
+    grid-column: auto;
+  }
+
+  .sid-profil-desa-modal-header,
+  .sid-profil-desa-modal-form {
+    padding: 1.25rem;
+  }
+
+  .sid-profil-desa-modal-actions {
+    justify-content: stretch;
+  }
+
+  .sid-profil-desa-modal-secondary,
+  .sid-profil-desa-modal-primary {
+    flex: 1;
+  }
 }
