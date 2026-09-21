@@ -342,22 +342,15 @@ class LetterServiceTest extends TestCase
 
     public function test_get_scoped_letters_applies_status_filter(): void
     {
-        $this->markTestSkipped(
-            'Menunggu EV5-2/EV5-4: test ini pakai status granular lama '.
-            '(kasi_approved), padahal kolom letters.status sekarang CHECK '.
-            'constraint generic sejak EV5-0-S1. Insert dengan status granular '.
-            'akan ditolak DB. Perlu ditulis ulang begitu service-nya di-rewrite '.
-            'ke status generic.'
-        );
-
         $user = User::factory()->create(['role' => 'petugas_desa']);
-        Letter::factory()->create(['status' => 'pending']);
-        Letter::factory()->create(['status' => 'kasi_approved']);
 
-        $result = $this->service->getScopedLetters($user, ['status' => 'kasi_approved']);
+        Letter::factory()->create(['status' => 'pending']);
+        Letter::factory()->create(['status' => 'approved']);
+
+        $result = $this->service->getScopedLetters($user, ['status' => 'approved']);
 
         $this->assertCount(1, $result);
-        $this->assertSame('kasi_approved', $result->first()->status->value);
+        $this->assertSame('approved', $result->first()->status->value);
     }
 
     public function test_delete_allowed_for_owner(): void
