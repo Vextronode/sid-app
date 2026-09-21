@@ -22,7 +22,7 @@ class CitizenControllerTest extends TestCase
             ->assertJsonCount(2, 'data')
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['id', 'name', 'nik', 'village', 'rt', 'rw', 'hamlet'],
+                    '*' => ['id', 'name', 'nik_masked', 'village', 'rt', 'rw', 'hamlet'],
                 ],
             ]);
     }

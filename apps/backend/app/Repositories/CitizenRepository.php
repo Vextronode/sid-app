@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Citizen;
+use App\Models\Rt;
 use Illuminate\Database\Eloquent\Collection;
 
 class CitizenRepository
@@ -28,6 +29,33 @@ class CitizenRepository
     public function findOrFail(int $id): Citizen
     {
         return Citizen::query()->findOrFail($id);
+    }
+
+    public function create(array $data): Citizen
+    {
+        return Citizen::create($data);
+    }
+
+    public function update(Citizen $citizen, array $data): Citizen
+    {
+        $citizen->update($data);
+
+        return $citizen;
+    }
+
+    public function findRwIdByRtId(int $rtId): ?int
+    {
+        return Rt::query()->whereKey($rtId)->value('rw_id');
+    }
+
+    public function existsFamilyHead(int $familyId, ?int $excludeCitizenId = null): bool
+    {
+        return Citizen::query()
+            ->where('family_id', $familyId)
+            ->where('family_role', 'kepala_keluarga')
+            ->where('is_active', true)
+            ->when($excludeCitizenId, fn ($q) => $q->where('id', '!=', $excludeCitizenId))
+            ->exists();
     }
 
     public function findByFamilyId(int $familyId): Collection
