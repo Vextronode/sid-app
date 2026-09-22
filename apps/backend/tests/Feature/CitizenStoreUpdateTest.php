@@ -41,7 +41,8 @@ class CitizenStoreUpdateTest extends TestCase
     {
         Citizen::factory()->create(['nik' => '3201012345670001']);
 
-        $this->actingAs(User::factory()->create())
+        // EV5-6-S2: /citizens eksklusif petugas_desa.
+        $this->actingAs(User::factory()->create(['role' => 'petugas_desa']))
             ->getJson('/api/citizens')
             ->assertOk()
             ->assertJsonPath('data.0.nik_masked', '************0001')

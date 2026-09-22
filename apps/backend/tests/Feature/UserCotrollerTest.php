@@ -12,7 +12,8 @@ class UserCotrollerTest extends TestCase
 
     public function test_index_returns_all_users_wrapped_in_resource_collection(): void
     {
-        $admin = User::factory()->create();
+        // EV5-6-S2: UC-14 Kelola User & Role eksklusif petugas_desa.
+        $admin = User::factory()->create(['role' => 'petugas_desa']);
         User::factory()->count(2)->create();
 
         $this->actingAs($admin)
@@ -23,7 +24,7 @@ class UserCotrollerTest extends TestCase
 
     public function test_update_status_toggles_is_active(): void
     {
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['role' => 'petugas_desa']);
         $target = User::factory()->create(['is_active' => true]);
 
         $this->actingAs($admin)

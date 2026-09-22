@@ -13,7 +13,10 @@ class CitizenControllerTest extends TestCase
 
     public function test_index_returns_citizens_wrapped_in_resource_collection(): void
     {
-        $user = User::factory()->create();
+        // EV5-6-S2: /citizens eksklusif petugas_desa (UC-09) — role-check
+        // kini ditegakkan middleware, sehingga factory user di test harus
+        // eksplisit menyertakan role yang berwenang.
+        $user = User::factory()->create(['role' => 'petugas_desa']);
         Citizen::factory()->count(2)->create();
 
         $this->actingAs($user)
@@ -29,7 +32,7 @@ class CitizenControllerTest extends TestCase
 
     public function test_destroy_deletes_citizen(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa']);
         $citizen = Citizen::factory()->create();
 
         $this->actingAs($user)
@@ -42,7 +45,7 @@ class CitizenControllerTest extends TestCase
 
     public function test_wilayah_returns_distinct_rt_rw_pairs(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa']);
         Citizen::factory()->create();
 
         $this->actingAs($user)
