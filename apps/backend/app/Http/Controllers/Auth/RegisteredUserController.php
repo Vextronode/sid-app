@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\auth\RegisterUserRequest;
+use App\Http\Requests\Auth\RegisterUserRequest;
 use App\Services\Auth\AuthService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Response;
