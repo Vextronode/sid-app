@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ImportCitizensRequest;
 use App\Http\Requests\StoreCitizenRequest;
 use App\Http\Requests\UpdateCitizenRequest;
 use App\Http\Resources\CitizenCollection;
@@ -39,6 +40,19 @@ class CitizenController extends Controller
 
         return response()->json([
             'data' => new CitizenResource($citizen),
+        ]);
+    }
+
+    public function import(ImportCitizensRequest $request)
+    {
+        $result = $this->citizenService->importFromExcel(
+            $request->file('file'),
+            $request->user()
+        );
+
+        return response()->json([
+            'message' => 'Import selesai diproses',
+            'data' => $result,
         ]);
     }
 

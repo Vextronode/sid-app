@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Imports\CitizensImport;
 use App\Models\Citizen;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CitizenService
 {
@@ -69,6 +72,27 @@ class CitizenService
 
             return $citizen->load(['family', 'rt', 'rw', 'hamlet', 'village']);
         });
+    }
+
+    /**
+     * EV5-11-S2 (UC-09 Import Excel). Setiap baris divalidasi &
+     * disimpan sendiri-sendiri lewat create() - baris gagal di-skip,
+     * bukan all-or-nothing transaction (SID-ARCH-BE-001 S5.4).
+     *
+     * @return array{total_rows: int, success_count: int, error_count: int, errors: list<array{row: int, message: string}>}
+     */
+    public function importFromExcel(UploadedFile $file, User $user): array
+    {
+        $import = new CitizensImport($this, $user);
+
+        Excel::import($import, $file);
+
+        return [
+            'total_rows' => $import->successCount() + count($import->errorList()),
+            'success_count' => $import->successCount(),
+            'error_count' => count($import->errorList()),
+            'errors' => $import->errorList(),
+        ];
     }
 
     public function delete(Citizen $citizen): bool
