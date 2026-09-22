@@ -65,7 +65,8 @@ class ApprovalFlowEndpointTest extends TestCase
     #[Test]
     public function authenticated_user_receives_only_active_flows_by_default(): void
     {
-        $user = User::factory()->create();
+        // EV5-6-S2: /approval-flows eksklusif petugas_desa.
+        $user = User::factory()->create(['role' => 'petugas_desa']);
         $category = $this->makeCategory('approval_normal');
         $this->makeFlow($category, 'Flow Aktif', true);
         $this->makeFlow($category, 'Flow Nonaktif', false);
@@ -80,7 +81,9 @@ class ApprovalFlowEndpointTest extends TestCase
     #[Test]
     public function list_can_be_filtered_by_category_id(): void
     {
-        $user = User::factory()->create();
+        // EV5-6-S2: /approval-flows kini dibatasi role 'petugas_desa' di
+        // level middleware (bukan lagi implisit lewat FormRequest saja).
+        $user = User::factory()->create(['role' => 'petugas_desa']);
         $categoryA = $this->makeCategory('approval_normal');
         $categoryB = $this->makeCategory('upload_mandiri');
         $flowA = $this->makeFlow($categoryA, 'Flow A');
@@ -97,7 +100,9 @@ class ApprovalFlowEndpointTest extends TestCase
     #[Test]
     public function show_returns_404_for_nonexistent_flow(): void
     {
-        $user = User::factory()->create();
+        // EV5-6-S2: harus role petugas_desa agar lolos middleware role
+        // sebelum sampai ke pengecekan 404 di controller/service.
+        $user = User::factory()->create(['role' => 'petugas_desa']);
 
         $response = $this->actingAs($user)->getJson('/api/approval-flows/99999');
 
@@ -107,7 +112,8 @@ class ApprovalFlowEndpointTest extends TestCase
     #[Test]
     public function show_returns_flow_with_its_steps(): void
     {
-        $user = User::factory()->create();
+        // EV5-6-S2: endpoint approval-flows eksklusif petugas_desa.
+        $user = User::factory()->create(['role' => 'petugas_desa']);
         $category = $this->makeCategory('approval_normal');
         $flow = $this->makeFlow($category, 'Flow Detail');
 
