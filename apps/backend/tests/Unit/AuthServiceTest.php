@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Models\Village;
 use App\Repositories\CitizenRepository;
 use App\Repositories\UserRepository;
-use App\Services\AuthService;
+use App\Services\Auth\AuthService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
