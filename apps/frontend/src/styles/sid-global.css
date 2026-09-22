@@ -19898,3 +19898,579 @@
     flex: 1;
   }
 }
+
+/* =========================================================
+   SID - KELOLA WILAYAH
+   ========================================================= */
+
+.sid-kelola-wilayah-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--sid-surface-page);
+  color: var(--sid-text-primary);
+}
+
+.sid-kelola-wilayah-content {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.sid-kelola-wilayah-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.sid-kelola-wilayah-eyebrow {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--sid-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sid-kelola-wilayah-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.3;
+}
+
+.sid-kelola-wilayah-header p {
+  margin: 0.35rem 0 0;
+  color: var(--sid-text-muted);
+  font-size: 0.8125rem;
+}
+
+.sid-kelola-wilayah-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sid-kelola-wilayah-error {
+  margin-bottom: 1rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid #f0b8b8;
+  border-radius: var(--radius-md);
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+  font-size: 0.8rem;
+}
+
+.sid-kelola-wilayah-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sid-kelola-wilayah-summary-card {
+  padding: 1rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+  background: var(--sid-surface-card);
+  box-shadow: var(--sid-shadow-sm);
+}
+
+.sid-kelola-wilayah-summary-card span {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--sid-text-muted);
+  font-size: 0.75rem;
+}
+
+.sid-kelola-wilayah-summary-card strong {
+  font-size: 1.35rem;
+}
+
+.sid-wilayah-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  padding: 0.3rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+  background: var(--sid-surface-card);
+}
+
+.sid-wilayah-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 100px;
+  padding: 0.65rem 0.9rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--sid-text-secondary);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.sid-wilayah-tab:hover {
+  background: var(--sid-surface-page);
+  color: var(--sid-text-primary);
+}
+
+.sid-wilayah-tab-active {
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-wilayah-table-card {
+  overflow: hidden;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+  background: var(--sid-surface-card);
+  box-shadow: var(--shadow-card);
+}
+
+.sid-wilayah-table-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--sid-border);
+}
+
+.sid-wilayah-table-toolbar h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.sid-wilayah-table-toolbar p {
+  margin: 0.2rem 0 0;
+  color: var(--sid-text-muted);
+  font-size: 0.75rem;
+}
+
+.sid-wilayah-toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sid-wilayah-search {
+  position: relative;
+  min-width: 220px;
+}
+
+.sid-wilayah-search svg {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+  color: var(--sid-text-muted);
+}
+
+.sid-wilayah-search input {
+  width: 100%;
+  height: 38px;
+  padding: 0 0.75rem 0 2.25rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  font-size: 0.78rem;
+}
+
+.sid-wilayah-search input:focus,
+.sid-wilayah-filter:focus {
+  border-color: var(--sid-primary);
+}
+
+.sid-wilayah-filter {
+  height: 38px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  font-size: 0.78rem;
+}
+
+.sid-wilayah-table-wrap {
+  overflow-x: auto;
+}
+
+.sid-wilayah-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sid-wilayah-table th {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--sid-border);
+  background: var(--sid-surface-page);
+  color: var(--sid-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sid-wilayah-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--sid-border);
+  color: var(--sid-text-secondary);
+  font-size: 0.78rem;
+  vertical-align: middle;
+}
+
+.sid-wilayah-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.sid-wilayah-name {
+  color: var(--sid-text-primary) !important;
+  font-weight: 600;
+}
+
+.sid-wilayah-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem !important;
+}
+
+.sid-wilayah-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.sid-wilayah-status-active {
+  background: var(--sid-status-done-bg);
+  color: var(--sid-status-done-text);
+}
+
+.sid-wilayah-status-inactive {
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+}
+
+.sid-wilayah-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sid-wilayah-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+  background: var(--sid-surface-card);
+  cursor: pointer;
+}
+
+.sid-wilayah-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.sid-wilayah-action-edit {
+  color: var(--sid-primary);
+}
+
+.sid-wilayah-action-edit:hover {
+  background: var(--sid-status-progress-bg);
+}
+
+.sid-wilayah-action-delete {
+  color: var(--sid-status-rejected-text);
+}
+
+.sid-wilayah-action-delete:hover {
+  background: var(--sid-status-rejected-bg);
+}
+
+.sid-wilayah-empty {
+  padding: 2.5rem 1rem;
+  color: var(--sid-text-muted);
+  text-align: center;
+}
+
+.sid-kelola-wilayah-loading {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.sid-kelola-wilayah-loading p {
+  margin: 0;
+  color: var(--sid-text-muted);
+  font-size: 0.8125rem;
+}
+
+.sid-kelola-wilayah-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--sid-border);
+  border-top-color: var(--sid-primary);
+  border-radius: 50%;
+  animation: sid-kelola-wilayah-spin 0.8s linear infinite;
+}
+
+@keyframes sid-kelola-wilayah-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+.sid-wilayah-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(44, 44, 42, 0.45);
+}
+
+.sid-wilayah-modal {
+  width: 100%;
+  max-width: 500px;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+  background: var(--sid-surface-card);
+  box-shadow: var(--sid-shadow-lg);
+}
+
+.sid-wilayah-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--sid-border);
+}
+
+.sid-wilayah-modal-eyebrow {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--sid-primary);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.sid-wilayah-modal-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.sid-wilayah-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+  background: var(--sid-surface-card);
+  color: var(--sid-text-secondary);
+  cursor: pointer;
+}
+
+.sid-wilayah-modal form {
+  padding: 1.1rem;
+}
+
+.sid-wilayah-form-group {
+  margin-bottom: 1rem;
+}
+
+.sid-wilayah-form-group label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--sid-text-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sid-wilayah-form-group input,
+.sid-wilayah-form-group select {
+  width: 100%;
+  height: 40px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  font-size: 0.8rem;
+}
+
+.sid-wilayah-form-group input:focus,
+.sid-wilayah-form-group select:focus {
+  border-color: var(--sid-primary);
+}
+
+.sid-wilayah-form-group input:disabled,
+.sid-wilayah-form-group select:disabled {
+  background: var(--sid-surface-page);
+  color: var(--sid-text-muted);
+}
+
+.sid-wilayah-form-help {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--sid-text-muted);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.sid-wilayah-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--sid-text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.sid-wilayah-checkbox input {
+  width: 15px;
+  height: 15px;
+}
+
+.sid-wilayah-form-error {
+  margin-bottom: 1rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #f0b8b8;
+  border-radius: var(--radius-sm);
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+  font-size: 0.75rem;
+}
+
+.sid-wilayah-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+.sid-wilayah-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 38px;
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sid-wilayah-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.sid-wilayah-btn-primary {
+  border: 1px solid var(--sid-primary);
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-wilayah-btn-primary:hover:not(:disabled) {
+  background: var(--sid-primary-hover);
+}
+
+.sid-wilayah-btn-secondary {
+  border: 1px solid var(--sid-border);
+  background: var(--sid-surface-card);
+  color: var(--sid-text-secondary);
+}
+
+.sid-wilayah-btn-secondary:hover:not(:disabled) {
+  background: var(--sid-surface-page);
+}
+
+@media (max-width: 900px) {
+  .sid-kelola-wilayah-header,
+  .sid-wilayah-table-toolbar {
+    flex-direction: column;
+  }
+
+  .sid-kelola-wilayah-header-actions,
+  .sid-wilayah-toolbar-controls {
+    width: 100%;
+  }
+
+  .sid-wilayah-search {
+    flex: 1;
+  }
+}
+
+@media (max-width: 639px) {
+  .sid-kelola-wilayah-content {
+    padding: 1rem;
+  }
+
+  .sid-kelola-wilayah-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .sid-wilayah-tabs {
+    overflow-x: auto;
+  }
+
+  .sid-wilayah-tab {
+    min-width: 90px;
+  }
+
+  .sid-wilayah-toolbar-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sid-wilayah-search {
+    min-width: 0;
+  }
+
+  .sid-wilayah-filter {
+    width: 100%;
+  }
+
+  .sid-wilayah-header-actions {
+    flex-wrap: wrap;
+  }
+
+  .sid-wilayah-modal {
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+}
