@@ -369,4 +369,45 @@ class LetterRepository
     {
         return (clone $query)->whereDate('submitted_at', $date)->count();
     }
+
+    public function querySubmittedBy(int $userId): Builder
+    {
+        return Letter::query()
+            ->where('submitted_by', $userId)
+            ->with([
+                'letterType',
+                'flow.steps',
+            ]);
+    }
+
+    public function countByVillageInMonth(int $villageId): int
+    {
+        return Letter::query()
+            ->where('village_id', $villageId)
+            ->whereBetween('submitted_at', [
+                now()->startOfMonth(),
+                now()->endOfMonth(),
+            ])
+            ->count();
+    }
+
+    /**
+     * @param  array<int, string>  $statuses
+     * @return array<string, int>
+     */
+    public function countByVillageAndStatuses(int $villageId, array $statuses): array
+    {
+        $counts = Letter::query()
+            ->where('village_id', $villageId)
+            ->whereIn('status', $statuses)
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status')
+            ->map(fn ($count): int => (int) $count)
+            ->all();
+
+        return collect($statuses)
+            ->mapWithKeys(fn (string $status): array => [$status => $counts[$status] ?? 0])
+            ->all();
+    }
 }

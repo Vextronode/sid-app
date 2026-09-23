@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Village;
 use App\Repositories\CitizenRepository;
 use App\Repositories\LetterRepository;
+use App\Repositories\NotificationRepository;
 use App\Services\DashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -28,6 +29,7 @@ class DashboardServiceTest extends TestCase
         $this->service = new DashboardService(
             new CitizenRepository,
             new LetterRepository,
+            new NotificationRepository,
         );
     }
 

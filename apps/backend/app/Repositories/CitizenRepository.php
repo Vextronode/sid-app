@@ -136,4 +136,12 @@ class CitizenRepository
 
         return $query->count();
     }
+
+    public function countActiveByVillage(int $villageId): int
+    {
+        return Citizen::query()
+            ->where('village_id', $villageId)
+            ->where('is_active', true)
+            ->count();
+    }
 }

@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Citizen;
+use App\Models\Official;
+use App\Models\Rw;
 use App\Models\User;
 use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -50,5 +52,51 @@ class DashboardControllerTest extends TestCase
             ->assertJsonStructure([
                 'chart' => ['labels', 'values', 'maxY'],
             ]);
+    }
+
+    public function test_generic_dashboard_returns_warga_shape(): void
+    {
+        $user = User::factory()->create(['role' => 'warga']);
+
+        $this->actingAs($user)
+            ->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonStructure([
+                'role',
+                'my_letters',
+                'unread_notifications_count',
+            ])
+            ->assertJsonPath('role', 'warga');
+    }
+
+    public function test_generic_dashboard_returns_rw_fyi_shape(): void
+    {
+        $rw = Rw::factory()->create();
+        $official = Official::factory()->create([
+            'position' => 'rw',
+            'rw_id' => $rw->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create(['role' => 'rw']);
+        $user->official()->save($official);
+
+        $this->actingAs($user->fresh())
+            ->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonStructure([
+                'role',
+                'fyi_letters',
+                'unread_notifications_count',
+            ])
+            ->assertJsonPath('role', 'rw');
+    }
+
+    public function test_generic_dashboard_forbids_kadus(): void
+    {
+        $user = User::factory()->create(['role' => 'kadus']);
+
+        $this->actingAs($user)
+            ->getJson('/api/dashboard')
+            ->assertForbidden();
     }
 }
