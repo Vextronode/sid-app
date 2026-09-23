@@ -165,6 +165,7 @@ Route::middleware('auth:sanctum')->group(function () {
     | semua 9 role berhak mengakses endpoint ini (hanya datanya beda).
     */
     Route::prefix('dashboard')->group(function () {
+        Route::get('/', [DashboardController::class, 'index']);
         Route::get('/gender-stats', [DashboardController::class, 'genderStats']);
         Route::get('/letter-stats', [DashboardController::class, 'letterStats']);
     });

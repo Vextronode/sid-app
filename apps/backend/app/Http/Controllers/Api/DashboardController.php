@@ -12,6 +12,13 @@ class DashboardController extends Controller
         protected DashboardService $dashboardService
     ) {}
 
+    public function index(Request $request)
+    {
+        return response()->json(
+            $this->dashboardService->getDashboard($request->user())
+        );
+    }
+
     public function genderStats(Request $request)
     {
         $stats = $this->dashboardService->getGenderStats($request->user());
