@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\LetterCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 class LetterCategoryFactory extends Factory
 {
@@ -16,14 +17,6 @@ class LetterCategoryFactory extends Factory
         'update_data',
     ];
 
-    /**
-     * Index penunjuk kode berikutnya yang akan dipakai. Statis, di memori,
-     * supaya tetap aman walau beberapa LetterCategory dibuat sekaligus
-     * dalam satu batch (mis. Letter::factory()->count(3)->create()) sebelum
-     * ada row yang benar-benar ter-insert ke database.
-     */
-    private static int $cursor = 0;
-
     public function definition(): array
     {
         return [
@@ -35,18 +28,30 @@ class LetterCategoryFactory extends Factory
         ];
     }
 
-    /**
-     * Kolom `code` adalah enum + unique di level database (hanya 4 nilai
-     * valid: lihat migration create_letter_categories_table). Ambil kode
-     * berikutnya secara round-robin dari cursor statis, bukan query DB,
-     * supaya aman dipanggil berkali-kali dalam satu batch factory sebelum
-     * baris sebelumnya ter-insert.
-     */
+    public function create($attributes = [], ?Model $parent = null)
+    {
+        if (empty($attributes)) {
+            $usedCodes = LetterCategory::query()->pluck('code')->all();
+            $available = array_values(array_diff(self::CODES, $usedCodes));
+
+            if (empty($available)) {
+                return LetterCategory::query()->inRandomOrder()->firstOrFail();
+            }
+        }
+
+        return parent::create($attributes, $parent);
+    }
+
     private function nextCode(): string
     {
-        $code = self::CODES[self::$cursor % count(self::CODES)];
-        self::$cursor++;
+        $usedCodes = LetterCategory::query()->pluck('code')->all();
 
-        return $code;
+        $available = array_values(array_diff(self::CODES, $usedCodes));
+
+        if (empty($available)) {
+            return self::CODES[array_rand(self::CODES)];
+        }
+
+        return $available[array_rand($available)];
     }
 }

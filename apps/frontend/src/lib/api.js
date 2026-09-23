@@ -1,119 +1,79 @@
-import axios from "axios";
+import axios from 'axios'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || window.location.origin,
   withCredentials: true,
   withXSRFToken: true,
-});
 
+  headers: {
+    Accept: 'application/json',
+  },
+})
 
 // ======================================================
 // GET LIST SURAT
 // ======================================================
 export function getSuratList(role) {
-
   switch (role) {
+    case 'rt':
+      return api.get('/api/rt/letters')
 
-    case "rt":
-      return api.get("/api/rt/letters");
+    case 'rw':
+      return api.get('/api/rw/letters')
 
+    case 'kadus':
+      return api.get('/api/kadus/letters')
 
-    case "rw":
-      return api.get("/api/rw/letters");
-
-
-    case "kadus":
-      return api.get("/api/kadus/letters");
-
-    case "kasi":
-      return api.get("/api/kasi/letters");
+    case 'kasi':
+      return api.get('/api/kasi/letters')
 
     default:
-      return api.get("/api/letters");
-
+      return api.get('/api/letters')
   }
-
 }
-
-
 
 // ======================================================
 // GET DETAIL SURAT
 // ======================================================
-export function getSuratDetail(
-  id,
-  role = "rt"
-) {
-
+export function getSuratDetail(id, role = 'rt') {
   switch (role) {
+    case 'rt':
+      return api.get(`/api/rt/letters/${id}`)
 
-    case "rt":
-      return api.get(`/api/rt/letters/${id}`);
+    case 'rw':
+      return api.get(`/api/rw/letters/${id}`)
 
+    case 'kadus':
+      return api.get(`/api/kadus/letters/${id}`)
 
-    case "rw":
-      return api.get(`/api/rw/letters/${id}`);
-
-
-    case "kadus":
-      return api.get(`/api/kadus/letters/${id}`);
-
-    case "kasi":
-      return api.get(`/api/kasi/letters/${id}`);
+    case 'kasi':
+      return api.get(`/api/kasi/letters/${id}`)
 
     default:
-      return api.get(`/api/letters/${id}`);
-
+      return api.get(`/api/letters/${id}`)
   }
-
 }
-
-
 
 // ======================================================
 // RT / Kadus
 // Endpoint : /decision
 // ======================================================
-export function submitDecision(
-  role,
-  id,
-  status,
-  notes = null
-) {
-
-  return api.patch(
-    `/api/${role}/letters/${id}/decision`,
-    {
-      status,
-      notes,
-    }
-  );
-
+export function submitDecision(role, id, status, notes = null) {
+  return api.patch(`/api/${role}/letters/${id}/decision`, {
+    status,
+    notes,
+  })
 }
-
-
 
 // ======================================================
 // RW / Kasi
 // Endpoint : /approve
 // ======================================================
-export function approveSurat(
-  role,
-  id,
-  status,
-  notes = null
-) {
-
-  return api.patch(
-    `/api/${role}/approvals/${id}/approve`,
-    {
-      status,
-      notes,
-    }
-  );
-
+export function approveSurat(role, id, status, notes = null) {
+  return api.patch(`/api/${role}/approvals/${id}/approve`, {
+    status,
+    notes,
+  })
 }
 
-
-
-export default api;
+export default api

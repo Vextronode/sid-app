@@ -1,134 +1,250 @@
-import { useState } from "react";
-import { loginSchema } from "../schemas/loginSchema";
-import api from "@/lib/api";
+import { useState } from 'react'
+import { loginSchema } from '../schemas/loginSchema'
+import api from '@/lib/api'
 
 export function useLoginForm() {
   const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-  });
+    username: '',
+    password: '',
+  })
 
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
 
   // ==========================================
-  // VALIDASI FORM
+  // VALIDATION
   // ==========================================
 
   const validateForm = () => {
-    const result = loginSchema.safeParse(formData);
+    const result = loginSchema.safeParse(formData)
 
     if (!result.success) {
-      const formattedErrors = {};
+      const formattedErrors = {}
 
       result.error.issues.forEach((issue) => {
-        const fieldName = issue.path[0];
+        const fieldName = issue.path[0]
 
         if (!formattedErrors[fieldName]) {
-          formattedErrors[fieldName] = issue.message;
+          formattedErrors[fieldName] = issue.message
         }
-      });
+      })
 
-      setErrors(formattedErrors);
+      setErrors(formattedErrors)
 
-      return false;
+      return false
     }
 
-    setErrors({});
+    setErrors({})
 
-    return true;
-  };
+    return true
+  }
 
   // ==========================================
   // HANDLE CHANGE
   // ==========================================
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
 
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }));
+    }))
 
-    // Hapus error field ketika user mulai mengetik lagi
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: null,
-      }));
-    }
-  };
+    setErrors((prev) => ({
+      ...prev,
+      [name]: null,
+      general: null,
+    }))
+  }
 
   // ==========================================
   // HANDLE SUBMIT
   // ==========================================
 
   const handleSubmit = async (e, onSuccess) => {
-    e.preventDefault();
+    e.preventDefault()
+
+    if (isLoading) {
+      return
+    }
 
     // ==========================================
-    // VALIDASI FRONTEND
+    // 1. VALIDATE FORM
     // ==========================================
 
     if (!validateForm()) {
-      return;
+      return
     }
 
     try {
-      setIsLoading(true);
-      setErrors({});
+      setIsLoading(true)
+      setErrors({})
 
       // ==========================================
-      // CSRF COOKIE
-      // Laravel Sanctum
+      // 2. CSRF COOKIE
       // ==========================================
 
-      await api.get("/sanctum/csrf-cookie");
+      await api.get('/sanctum/csrf-cookie')
 
       // ==========================================
-      // LOGIN
+      // 3. LOGIN
       // ==========================================
 
-      const response = await api.post("/login", {
-        username: formData.username,
-        password: formData.password,
-      });
+      const loginUrl = `${api.defaults.baseURL}/api/login`
+
+      console.log('REQUEST LOGIN:', loginUrl)
+
+      const response = await api.post(
+        '/api/login',
+        {
+          username: formData.username,
+          password: formData.password,
+        },
+        {
+          headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+        },
+      )
 
       // ==========================================
-      // AMBIL USER DARI RESPONSE BE
-      //
-      // BE:
-      // {
-      //   message: "Login berhasil",
-      //   user: {...}
-      // }
+      // LOGIN RESPONSE
       // ==========================================
 
-      const loggedUser =
-        response.data?.user ?? response.data;
+      // ==========================================
+      // 4. AMBIL USER
+      // ==========================================
+
+      const loggedUser = response.data?.user
 
       // ==========================================
-      // SUCCESS
+      // 5. VALIDASI RESPONSE LOGIN
+      // ==========================================
+
+      if (!loggedUser || typeof loggedUser !== 'object' || !loggedUser.role) {
+        console.error('INVALID LOGIN RESPONSE:', response.data)
+
+        setErrors({
+          general: 'Username atau password salah.',
+        })
+
+        return
+      }
+
+      // ==========================================
+      // 6. LOGIN BERHASIL
       // ==========================================
 
       if (onSuccess) {
-        onSuccess(loggedUser);
+        await onSuccess(loggedUser)
       }
     } catch (err) {
-      console.error("LOGIN ERROR:", err);
+      // ==========================================
+      // LOGIN ERROR
+      // ==========================================
+
+      console.error('=================================')
+      console.error('LOGIN ERROR:', err)
+      console.error('LOGIN STATUS:', err.response?.status)
+      console.error('LOGIN RESPONSE:', err.response?.data)
+      console.error('LOGIN URL:', err.config?.url)
+      console.error('LOGIN BASE URL:', err.config?.baseURL)
+      console.error('=================================')
 
       // ==========================================
-      // VALIDATION ERROR 422
+      // 422 VALIDATION / CREDENTIAL ERROR
       // ==========================================
 
       if (err.response?.status === 422) {
-        const backendErrors =
-          err.response.data?.errors ?? {};
+        const backendErrors = err.response.data?.errors ?? {}
 
-        setErrors(backendErrors);
+        const usernameError = backendErrors.username?.[0]
 
-        return;
+        const passwordError = backendErrors.password?.[0]
+
+        // ------------------------------------------
+        // USERNAME SALAH
+        // ------------------------------------------
+
+        if (usernameError) {
+          setErrors({
+            username: 'Username tidak ditemukan.',
+            password: null,
+            general: null,
+          })
+
+          return
+        }
+
+        // ------------------------------------------
+        // PASSWORD SALAH
+        // ------------------------------------------
+
+        if (passwordError) {
+          setErrors({
+            username: null,
+            password: 'Password salah.',
+            general: null,
+          })
+
+          return
+        }
+
+        // ------------------------------------------
+        // ERROR VALIDASI LAIN
+        // ------------------------------------------
+
+        setErrors({
+          username: null,
+          password: null,
+          general: err.response.data?.message ?? 'Username atau password salah.',
+        })
+
+        return
+      }
+
+      // ==========================================
+      // 401 UNAUTHORIZED
+      // ==========================================
+
+      if (err.response?.status === 401) {
+        setErrors({
+          username: null,
+          password: 'Password salah.',
+          general: null,
+        })
+
+        return
+      }
+
+      // ==========================================
+      // 403 ACCOUNT BLOCKED
+      // ==========================================
+
+      if (err.response?.status === 403) {
+        setErrors({
+          username: null,
+          password: null,
+          general: err.response.data?.message ?? 'Akun Anda telah diblokir.',
+        })
+
+        return
+      }
+
+      // ==========================================
+      // 404 NOT FOUND
+      // ==========================================
+
+      if (err.response?.status === 404) {
+        setErrors({
+          username: null,
+          password: null,
+          general: 'Endpoint login tidak ditemukan. Periksa konfigurasi API atau Nginx.',
+        })
+
+        return
       }
 
       // ==========================================
@@ -136,18 +252,14 @@ export function useLoginForm() {
       // ==========================================
 
       setErrors({
-        general:
-          err.response?.data?.message ??
-          "Username atau password salah.",
-      });
+        username: null,
+        password: null,
+        general: err.response?.data?.message ?? 'Terjadi kesalahan saat login.',
+      })
     } finally {
-      // ==========================================
-      // SELESAI LOADING
-      // ==========================================
-
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   // ==========================================
   // RETURN
@@ -159,5 +271,5 @@ export function useLoginForm() {
     isLoading,
     handleChange,
     handleSubmit,
-  };
+  }
 }

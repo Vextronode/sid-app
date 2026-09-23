@@ -1,4 +1,3 @@
-
 /* eslint-disable react-hooks/set-state-in-effect */
 
 // ==========================================
@@ -7,8 +6,8 @@
 // Styling menggunakan SID Global Theme.
 // ==========================================
 
-import { useState, useEffect } from 'react';
-import { Send, Image as ImageIcon } from 'lucide-react';
+import { useState, useEffect } from 'react'
+import { Send, Image as ImageIcon } from 'lucide-react'
 
 const KATEGORI_OPTIONS = [
   'Umum',
@@ -19,205 +18,230 @@ const KATEGORI_OPTIONS = [
   'Pendidikan',
   'Lingkungan',
   'Budaya',
-];
+]
+
+const INITIAL_FORM = {
+  title: '',
+  category: 'Umum',
+  content: '',
+  thumbnail: null,
+}
 
 export default function BeritaFormModal({
   open,
   onClose,
   onSubmit,
+  onDelete,
   initialData,
+  processing = false,
 }) {
-  const [form, setForm] = useState({
-    judul: '',
-    kategori: 'Umum',
-    konten: '',
-    gambar: null,
-    status: 'draft',
-  });
+  const [form, setForm] = useState(INITIAL_FORM)
+  const [imagePreview, setImagePreview] = useState(null)
 
+  // ==========================================
+  // INITIAL DATA
+  // ==========================================
   useEffect(() => {
     if (initialData) {
       setForm({
-        judul: initialData.judul ?? '',
-        kategori: initialData.kategori ?? 'Umum',
-        konten: initialData.konten ?? '',
-        gambar: initialData.gambar ?? null,
-        status: initialData.status ?? 'draft',
-      });
-    } else {
-      setForm({
-        judul: '',
-        kategori: 'Umum',
-        konten: '',
-        gambar: null,
-        status: 'draft',
-      });
+        title: initialData.title ?? '',
+        category: initialData.category ?? 'Umum',
+        content: initialData.content ?? '',
+        thumbnail: initialData.image ?? null,
+      })
+
+      setImagePreview(initialData.thumbnail ?? null)
+
+      return
     }
-  }, [initialData, open]);
 
-  if (!open) return null;
+    setForm(INITIAL_FORM)
+    setImagePreview(null)
+  }, [initialData, open])
 
-  const handleChange = (field) => (e) =>
+  if (!open) return null
+
+  // ==========================================
+  // HANDLE INPUT
+  // ==========================================
+  const handleChange = (field) => (e) => {
     setForm((prev) => ({
       ...prev,
       [field]: e.target.value,
-    }));
+    }))
+  }
 
-  const handleGambarChange = (e) => {
-    const file = e.target.files?.[0];
+  // ==========================================
+  // HANDLE IMAGE
+  // ==========================================
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0]
 
-    if (!file) return;
+    if (!file) return
 
-    const reader = new FileReader();
+    setForm((prev) => ({
+      ...prev,
+      thumbnail: file,
+    }))
 
-    reader.onload = () =>
-      setForm((prev) => ({
-        ...prev,
-        gambar: reader.result,
-      }));
+    const reader = new FileReader()
 
-    reader.readAsDataURL(file);
-  };
+    reader.onload = () => {
+      setImagePreview(reader.result)
+    }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(form);
-  };
+    reader.readAsDataURL(file)
+  }
+
+  // ==========================================
+  // HANDLE SUBMIT
+  // ==========================================
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (processing) return
+
+    await onSubmit(form)
+  }
 
   return (
     <div className="sid-berita-modal-overlay">
-      <form
-        onSubmit={handleSubmit}
-        className="sid-berita-modal"
-      >
-        {/* HEADER */}
-        <h2 className="sid-berita-modal-title">
-          {initialData ? 'Edit Berita' : 'Tambah Berita'}
-        </h2>
+      <form onSubmit={handleSubmit} className="sid-berita-modal">
+        {/* ==========================================
+            HEADER
+        ========================================== */}
+        <div className="sid-berita-modal-header">
+          <h2 className="sid-berita-modal-title">
+            {initialData ? 'Edit Berita' : 'Tambah Berita'}
+          </h2>
+        </div>
 
-        {/* JUDUL */}
+        {/* ==========================================
+            JUDUL
+        ========================================== */}
         <div className="sid-berita-form-group">
-          <label className="sid-berita-form-label">
+          <label htmlFor="berita-title" className="sid-berita-form-label">
             Judul *
           </label>
 
           <input
+            id="berita-title"
+            type="text"
             required
-            value={form.judul}
-            onChange={handleChange('judul')}
-            placeholder="Judul berita/Pengumuman"
+            value={form.title}
+            onChange={handleChange('title')}
+            placeholder="Judul berita atau pengumuman"
             className="sid-berita-form-input"
+            disabled={processing}
           />
         </div>
 
-        {/* KATEGORI */}
+        {/* ==========================================
+            KATEGORI
+        ========================================== */}
         <div className="sid-berita-form-group">
-          <label className="sid-berita-form-label">
+          <label htmlFor="berita-category" className="sid-berita-form-label">
             Kategori
           </label>
 
           <select
-            value={form.kategori}
-            onChange={handleChange('kategori')}
+            id="berita-category"
+            value={form.category}
+            onChange={handleChange('category')}
             className="sid-berita-form-input"
+            disabled={processing}
           >
-            {KATEGORI_OPTIONS.map((k) => (
-              <option key={k} value={k}>
-                {k}
+            {KATEGORI_OPTIONS.map((kategori) => (
+              <option key={kategori} value={kategori}>
+                {kategori}
               </option>
             ))}
           </select>
         </div>
 
-        {/* KONTEN */}
+        {/* ==========================================
+            KONTEN
+        ========================================== */}
         <div className="sid-berita-form-group">
-          <label className="sid-berita-form-label">
-            Konten (rich text) *
+          <label htmlFor="berita-content" className="sid-berita-form-label">
+            Konten *
           </label>
 
           <textarea
+            id="berita-content"
             required
-            rows={5}
-            value={form.konten}
-            onChange={handleChange('konten')}
-            placeholder="Tuliskan konten berita di sini..."
+            rows={7}
+            value={form.content}
+            onChange={handleChange('content')}
+            placeholder="Tuliskan isi berita atau pengumuman di sini..."
             className="sid-berita-form-textarea"
+            disabled={processing}
           />
         </div>
 
-        {/* THUMBNAIL */}
+        {/* ==========================================
+            THUMBNAIL
+        ========================================== */}
         <div className="sid-berita-form-group">
-          <label className="sid-berita-form-label">
-            Thumbnail (opsional)
-          </label>
+          <label className="sid-berita-form-label">Thumbnail (opsional)</label>
 
           <label className="sid-berita-upload">
-            {form.gambar ? (
+            {imagePreview ? (
               <img
-                src={form.gambar}
-                alt="preview"
+                src={imagePreview}
+                alt="Preview thumbnail berita"
                 className="sid-berita-upload-preview"
               />
             ) : (
               <>
                 <ImageIcon size={20} />
-                <span>upload gambar</span>
+                <span>Upload gambar</span>
               </>
             )}
 
             <input
               type="file"
               accept="image/*"
-              onChange={handleGambarChange}
+              onChange={handleImageChange}
               className="sid-berita-upload-input"
+              disabled={processing}
             />
           </label>
         </div>
 
-        {/* STATUS */}
-        <div className="sid-berita-form-group sid-berita-form-group-status">
-          <label className="sid-berita-form-label">
-            Status
-          </label>
-
-          <select
-            value={form.status}
-            onChange={handleChange('status')}
-            className="sid-berita-form-input"
-          >
-            <option value="draft">
-              Simpan sebagai draft
-            </option>
-
-            <option value="publikasi">
-              Publikasikan
-            </option>
-          </select>
-        </div>
-
-        {/* ACTION */}
+        {/* ==========================================
+            ACTION
+        ========================================== */}
         <div className="sid-berita-modal-actions">
-          <button
-            type="button"
-            onClick={onClose}
-            className="sid-berita-modal-cancel"
-          >
-            Batal
-          </button>
+          {initialData && (
+            <button
+              type="button"
+              onClick={() => onDelete?.(initialData)}
+              className="sid-berita-modal-delete"
+              disabled={processing}
+            >
+              Hapus Berita
+            </button>
+          )}
 
-          <button
-            type="submit"
-            className="sid-berita-modal-submit"
-          >
-            <Send size={16} />
+          <div className="sid-berita-modal-actions-right">
+            <button
+              type="button"
+              onClick={onClose}
+              className="sid-berita-modal-cancel"
+              disabled={processing}
+            >
+              Batal
+            </button>
 
-            {initialData
-              ? 'Simpan Perubahan'
-              : 'submit permohonan'}
-          </button>
+            <button type="submit" className="sid-berita-modal-submit" disabled={processing}>
+              <Send size={16} />
+
+              {processing ? 'Menyimpan...' : initialData ? 'Simpan Perubahan' : 'Simpan Berita'}
+            </button>
+          </div>
         </div>
       </form>
     </div>
-  );
+  )
 }
-

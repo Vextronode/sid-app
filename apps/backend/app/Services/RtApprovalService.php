@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\Letter;
+use App\Models\Official;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class RtApprovalService
@@ -17,18 +19,14 @@ class RtApprovalService
         protected OfficialRepository $officialRepository,
     ) {}
 
-    public function getPendingLetters(User $user)
+    public function getPendingLetters(User $user): Collection
     {
-        $official = $user->official;
+        $official = $this->authorizeOfficial($user);
 
-        if (! $official) {
-            abort(403, 'Data official tidak ditemukan.');
-        }
-
-        return $this->letterRepository->queryByStatusesAndCitizenRt(
-            ['pending', 'rt_approved', 'rw_approved', 'rt_rejected'],
-            $official->rt_id
-        )
+        return $this->letterRepository
+            ->queryPendingAtFlowStepPositions(['rt'], $official->village_id)
+            ->whereIn('status', ['pending', 'in_progress'])
+            ->whereHas('citizen', fn ($q) => $q->where('rt_id', $official->rt_id))
             ->latest()
             ->get();
     }
@@ -38,164 +36,172 @@ class RtApprovalService
         return $this->letterRepository->loadDetailForApproval($letter);
     }
 
-    public function decision(
-        Letter $letter,
-        User $user,
-        array $data
-    ): void {
+    /**
+     * Memutuskan (approve/reject) surat pada step 'rt'. Hanya RT yang
+     * rt_id-nya sesuai wilayah citizen pemohon yang berwenang (gate
+     * berbasis wilayah, bukan posisi murni — beda dari Kades/Sekdes).
+     */
+    public function decision(Letter $letter, User $user, array $data): void
+    {
+        $official = $this->authorizeOfficial($user);
 
-        $official = $user->official;
+        $letter = $this->letterRepository->loadDetailForApproval($letter);
 
-        if (! $official) {
-            abort(403, 'Data petugas tidak ditemukan.');
-        }
-
-        if ($letter->citizen->rt_id != $official->rt_id) {
+        if ($letter->citizen?->rt_id !== $official->rt_id) {
             abort(403, 'Anda tidak berwenang memproses surat ini.');
         }
 
-        if (! isset($data['status'])) {
-            abort(422, 'Status keputusan wajib diisi.');
+        $step = $this->letterRepository->findCurrentFlowStep($letter);
+
+        if (! $step || $step->approver_position !== 'rt') {
+            abort(409, 'Surat ini tidak sedang berada di tahap RT.');
         }
 
-        if (! in_array($data['status'], [
-            'approved',
-            'rejected',
-        ])) {
-            abort(422, 'Status keputusan tidak valid.');
-        }
+        DB::transaction(function () use ($letter, $user, $data, $step) {
 
-        // ==========================================
-        // NOTES
-        // ==========================================
+            // Lock row, lalu re-cek step SETELAH lock didapat — menutup
+            // race condition antara buka halaman & submit keputusan,
+            // pola sama seperti KadesApprovalService::decision().
+            $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
 
-        if (
-            $data['status'] === 'rejected' &&
-            (! isset($data['notes']) || trim($data['notes']) === '')
-        ) {
-            abort(422, 'Alasan penolakan wajib diisi.');
-        }
+            $currentStep = $this->letterRepository->findCurrentFlowStep($locked);
 
-        // Kalau approve:
-        // gunakan notes warga.
-        //
-        // Kalau reject:
-        // gunakan notes yang ditulis RT.
-        $decisionNotes = $data['status'] === 'rejected'
-            ? trim($data['notes'])
-            : $letter->notes;
-
-        DB::transaction(function () use (
-            $letter,
-            $user,
-            $data,
-            $official,
-            $decisionNotes
-        ) {
-
-            $oldStatus = $letter->status->value;
-
-            $newStatus = $data['status'] === 'approved'
-                ? 'rt_approved'
-                : 'rt_rejected';
-
-            // ==========================================
-            // UPDATE LETTER
-            // ==========================================
-
-            $this->letterRepository->update($letter, [
-                'status' => $newStatus,
-                'processed_at' => now(),
-
-                // APPROVED:
-                // notes warga tetap
-                //
-                // REJECTED:
-                // notes diganti alasan RT
-                'notes' => $decisionNotes,
-            ]);
-
-            // ==========================================
-            // APPROVAL RT
-            // ==========================================
-
-            $this->letterRepository->updateApprovalsByLevel($letter, 'rt', [
-                'approved_by' => $user->id,
-            ]);
-
-            // ==========================================
-            // APPROVED
-            // ==========================================
-
-            if ($data['status'] === 'approved') {
-
-                $this->letterRepository->createApprovalForLetter($letter, [
-                    'approved_by' => null,
-                    'approval_level' => 'rw',
-                    'deadline_at' => now()->addDays(2),
-                ]);
-
-                $rwOfficial = $this->officialRepository->findActiveRwByRwId($official->rw_id);
-
-                if ($rwOfficial?->user) {
-
-                    $rwOfficial->user->notify(
-                        new LetterStatusNotification(
-                            $letter,
-                            'Surat Baru',
-                            'Ada surat yang menunggu persetujuan RW.',
-                            'rt_approved'
-                        )
-                    );
-                }
-
-                $citizenUser = $this->officialService
-                    ->resolveCitizenUser($letter);
-
-                if ($citizenUser) {
-
-                    $citizenUser->notify(
-                        new LetterStatusNotification(
-                            $letter,
-                            'Permohonan Diproses',
-                            'Permohonan surat Anda telah disetujui oleh RT dan sedang diproses oleh RW.',
-                            'rt_approved'
-                        )
-                    );
-                }
-
-            } else {
-
-                // ==========================================
-                // REJECTED
-                // ==========================================
-
-                $citizenUser = $this->officialService
-                    ->resolveCitizenUser($letter);
-
-                if ($citizenUser) {
-
-                    $citizenUser->notify(
-                        new LetterStatusNotification(
-                            $letter,
-                            'Permohonan Ditolak',
-                            'Permohonan surat Anda ditolak oleh RT.',
-                            'rt_rejected'
-                        )
-                    );
-                }
+            if (! $currentStep || $currentStep->id !== $step->id) {
+                abort(409, 'Surat sudah diproses sebelumnya.');
             }
 
-            // ==========================================
-            // STATUS LOG
-            // ==========================================
+            $this->letterRepository->createApprovalForLetter($locked, [
+                'approved_by' => $user->id,
+                'approval_level' => 'rt',
+                'flow_step_id' => $step->id,
+                'action' => $data['status'],
+                'notes' => $data['notes'] ?? null,
+            ]);
 
-            $this->letterRepository->createStatusLogForLetter($letter, [
+            $oldStatus = $locked->status->value;
+
+            if ($data['status'] === 'approved') {
+                $newStatus = 'in_progress';
+
+                $this->letterRepository->update($locked, [
+                    'status' => $newStatus,
+                    'current_step_order' => $step->step_order + 1,
+                    'processed_at' => now(),
+                ]);
+            } else {
+                $newStatus = 'rejected';
+
+                $this->letterRepository->update($locked, [
+                    'status' => $newStatus,
+                    'rejected_at_step' => $step->step_order,
+                    'processed_at' => now(),
+                ]);
+            }
+
+            $this->letterRepository->createStatusLogForLetter($locked, [
                 'actor_id' => $user->id,
                 'old_status' => $oldStatus,
                 'new_status' => $newStatus,
-                'reason' => $decisionNotes,
+                'reason' => $data['notes'] ?? null,
             ]);
+
+            if ($data['status'] === 'approved') {
+                $this->notifyRwFyi($locked);
+                $this->notifyNextApprovers($locked);
+                $this->notifyApplicant($locked, 'approved');
+            } else {
+                $this->notifyApplicant($locked, 'rejected');
+            }
         });
+    }
+
+    private function authorizeOfficial(User $user): Official
+    {
+        $official = $this->officialService->getCurrentRt($user);
+
+        if (! $official->rt_id) {
+            abort(403, 'Data wilayah RT tidak ditemukan.');
+        }
+
+        if (! $official->village_id) {
+            abort(403, 'Data wilayah desa tidak ditemukan.');
+        }
+
+        return $official;
+    }
+
+    /**
+     * Side-effect NON-BLOCKING: kirim notifikasi FYI ke seluruh RW
+     * aktif di wilayah (rw_id) tempat RT ini berada. RW tidak pernah
+     * membuat row letter_approvals dan tidak pernah menjadi gate —
+     * kegagalan/absennya RW (fallback kosong) TIDAK menghentikan alur,
+     * hanya dilewati begitu saja (UC-04a Sub-flow Notifikasi RW).
+     */
+    private function notifyRwFyi(Letter $letter): void
+    {
+        $rwId = $this->letterRepository->findCitizenRwId($letter);
+
+        if (! $rwId) {
+            return;
+        }
+
+        $rwOfficials = $this->officialRepository->allActiveRwByRwId($rwId);
+
+        foreach ($rwOfficials as $rwOfficial) {
+            $rwOfficial->user?->notify(new LetterStatusNotification(
+                $letter,
+                'Surat Baru (FYI)',
+                'Surat warga di wilayah Anda telah disetujui RT dan diteruskan ke tahap berikutnya.',
+                'rt_approved_rw_fyi',
+            ));
+        }
+    }
+
+    /**
+     * Resolve & notifikasi approver berikutnya secara generik lewat
+     * FlowStep saat ini (sudah bertambah current_step_order-nya di
+     * momen pemanggilan method ini) — mencakup otomatis kasus
+     * Kepala Desa/Sekdes tanpa RtApprovalService perlu tahu detail
+     * resolusinya (OfficialService::resolveNextOfficials, EV5-4-S1/S5).
+     */
+    private function notifyNextApprovers(Letter $letter): void
+    {
+        $nextOfficials = $this->officialService->resolveNextOfficials($letter);
+
+        foreach ($nextOfficials as $nextOfficial) {
+            $nextOfficial->user?->notify(new LetterStatusNotification(
+                $letter,
+                'Surat Baru',
+                'Ada surat yang menunggu persetujuan Anda.',
+                'rt_approved',
+            ));
+        }
+    }
+
+    private function notifyApplicant(Letter $letter, string $status): void
+    {
+        $citizenUser = $this->officialService->resolveCitizenUser($letter);
+
+        if (! $citizenUser) {
+            return;
+        }
+
+        if ($status === 'approved') {
+            $citizenUser->notify(new LetterStatusNotification(
+                $letter,
+                'Permohonan Diproses',
+                'Permohonan surat Anda telah disetujui oleh RT dan sedang diproses ke tahap berikutnya.',
+                'rt_approved',
+            ));
+
+            return;
+        }
+
+        $citizenUser->notify(new LetterStatusNotification(
+            $letter,
+            'Permohonan Ditolak',
+            'Permohonan surat Anda ditolak oleh RT.',
+            'rt_rejected',
+        ));
     }
 }

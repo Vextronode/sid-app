@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\ApprovalFlow;
 use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\User;
@@ -33,11 +34,47 @@ class LetterFactory extends Factory
             'purpose' => fake()->sentence(),
             'notes' => null,
             'status' => 'pending',
-            'revision_count' => 0,
+            'flow_id' => ApprovalFlow::factory(),
+            'current_step_order' => 1,
+            'rejected_at_step' => null,
             'is_overdue' => false,
             'expires_at' => null,
             'submitted_at' => now(),
             'processed_at' => null,
         ];
+    }
+
+    /**
+     * Helper state: surat sedang berjalan (in_progress) di step tertentu.
+     */
+    public function inProgress(int $stepOrder = 2): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'in_progress',
+            'current_step_order' => $stepOrder,
+        ]);
+    }
+
+    /**
+     * Helper state: surat sudah final approved (step is_final=true sudah
+     * diputuskan) — letter_number & expires_at tetap diisi manual oleh
+     * pemanggil sesuai kebutuhan test, factory ini hanya set status.
+     */
+    public function approved(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'approved',
+        ]);
+    }
+
+    /**
+     * Helper state: surat ditolak di step tertentu (TERMINAL).
+     */
+    public function rejected(int $atStep = 1): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'rejected',
+            'rejected_at_step' => $atStep,
+        ]);
     }
 }

@@ -16,17 +16,17 @@ Panduan clone dan jalanin project di lokal. Command ditulis untuk **Windows (Pow
 
 ## Prasyarat
 
-- PHP 8.2+ dengan extension `pdo_mysql` aktif
+- PHP 8.3+ dengan extension `pdo_pgsql` aktif
 - Composer
 - Node.js 18+ (includes npm)
-- MySQL (atau XAMPP/Laragon)
+- PostgreSQL 18
 - Git
 
-Cek extension MySQL:
+Cek extension PostgreSQL:
 ```powershell
-php -m | findstr mysql
+php -m | findstr pgsql
 ```
-Harus muncul `mysqli` dan `pdo_mysql`. Kalau kosong, uncomment `extension=pdo_mysql` di `php.ini`.
+Harus muncul `pgsql` dan `pdo_pgsql`. Kalau kosong, aktifkan `extension=pgsql` dan `extension=pdo_pgsql` di `php.ini`, lalu buka ulang terminal.
 
 ---
 
@@ -56,21 +56,23 @@ copy .env.example .env
 php artisan key:generate
 ```
 
-### Bikin Database
+### Buat Database PostgreSQL
 
 ```sql
-CREATE DATABASE nama_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE sid_cibenda WITH ENCODING 'UTF8';
 ```
+
+Jalankan perintah tersebut melalui `psql` atau aplikasi administrasi PostgreSQL yang digunakan tim.
 
 ### Edit `.env`
 
 ```env
-DB_CONNECTION=mysql
+DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=nama_db
-DB_USERNAME=root
-DB_PASSWORD=
+DB_PORT=5432
+DB_DATABASE=sid_cibenda
+DB_USERNAME=postgres
+DB_PASSWORD=isi_password_postgresql_anda
 
 FRONTEND_URL=http://localhost:5173
 SANCTUM_STATEFUL_DOMAINS=localhost:5173
@@ -132,7 +134,7 @@ async function login(email, password) {
 
 | Masalah | Penyebab | Solusi |
 |---|---|---|
-| `could not find driver` | Extension PDO belum aktif | Aktifin `pdo_mysql` di `php.ini`, restart terminal |
+| `could not find driver` | Extension PDO PostgreSQL belum aktif | Aktifkan `pgsql` dan `pdo_pgsql` di `php.ini`, lalu restart terminal |
 | `419 Page Expired` saat login | CSRF token tidak sync | Panggil `GET /sanctum/csrf-cookie` dulu, pastiin axios pakai `withCredentials: true` |
 | `401 Unauthenticated` setelah login | `SANCTUM_STATEFUL_DOMAINS` tidak sesuai port frontend | Samain persis dengan port `npm run dev`, lalu `php artisan config:clear` |
 | Env baru tidak kebaca | Config di-cache | `php artisan config:clear` |

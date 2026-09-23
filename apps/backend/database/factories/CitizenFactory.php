@@ -34,7 +34,6 @@ class CitizenFactory extends Factory
             'rt_id' => Rt::factory(),
             'rw_id' => Rw::factory(),
             'hamlet_id' => Hamlet::factory(),
-            'no_kk' => fake()->numerify('################'),
             'marital_status' => fake()->randomElement(['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati']),
             'occupation' => fake()->jobTitle(),
             'religion' => fake()->randomElement(['islam', 'kristen', 'katolik', 'hindu', 'buddha', 'konghucu']),

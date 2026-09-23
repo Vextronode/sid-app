@@ -45,16 +45,39 @@ class NewsService
     {
         $news = $this->repository->findByIdOrFail($id);
 
-        $payload = array_intersect_key($data, array_flip(['title', 'content']));
+        $payload = array_intersect_key(
+            $data,
+            array_flip(['title', 'content'])
+        );
+
+        if (
+            isset($data['thumbnail']) &&
+            $data['thumbnail'] instanceof UploadedFile
+        ) {
+            $oldThumbnail = $news->thumbnail;
+
+            $payload['thumbnail'] = $data['thumbnail']->store(
+                'news',
+                'public'
+            );
+
+            if ($oldThumbnail) {
+                \Storage::disk('public')->delete($oldThumbnail);
+            }
+        }
 
         if (array_key_exists('is_published', $data)) {
             $payload['is_published'] = $data['is_published'];
+
             $payload['published_at'] = $data['is_published']
                 ? ($news->published_at ?? now())
                 : null;
         }
 
-        return $this->repository->update($news, $payload);
+        return $this->repository->update(
+            $news,
+            $payload
+        );
     }
 
     public function delete(int $id): void

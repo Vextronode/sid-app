@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LetterIndexRequest;
 use App\Http\Requests\StoreLetterRequest;
+use App\Http\Resources\LetterCollection;
+use App\Http\Resources\LetterResource;
 use App\Models\Letter;
 use App\Services\LetterService;
 
@@ -16,17 +18,21 @@ class LetterController extends Controller
 
     public function store(StoreLetterRequest $request)
     {
+        $this->authorize('create', Letter::class);
+
         $letter = $this->letterService
             ->createLetter($request->validated());
 
         return response()->json([
             'message' => 'Permohonan berhasil dibuat.',
-            'data' => $letter,
+            'data' => new LetterResource($letter),
         ], 201);
     }
 
     public function index(LetterIndexRequest $request)
     {
+        $this->authorize('viewAny', Letter::class);
+
         $letters = $this->letterService->getScopedLetters(
             auth()->user(),
             $request->validated()
@@ -34,35 +40,27 @@ class LetterController extends Controller
 
         return response()->json([
             'message' => 'Daftar surat berhasil diambil.',
-            'data' => $letters,
+            'data' => new LetterCollection($letters),
         ]);
     }
 
     public function show($id)
     {
-        $user = auth()->user();
+        $letter = $this->letterService->getForShow((int) $id);
 
-        $letter = Letter::with([
-            'letterType:id,name,code',
-            'approvals.approvedBy:id,name',
-        ])
-            ->findOrFail($id);
+        $this->authorize('view', $letter);
 
         return response()->json([
             'message' => 'Detail permohonan berhasil diambil.',
-            'data' => $letter,
+            'data' => new LetterResource($letter),
         ]);
     }
 
     public function destroy(Letter $letter)
     {
-        $user = auth()->user();
+        $this->authorize('delete', $letter);
 
-        if ($letter->submitted_by !== $user->id && ! in_array($user->role, ['admin', 'operator', 'kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa'])) {
-            abort(403, 'Anda tidak berwenang menghapus surat ini.');
-        }
-
-        $letter->delete();
+        $this->letterService->delete($letter, auth()->user());
 
         return response()->json([
             'message' => 'Surat berhasil dihapus.',

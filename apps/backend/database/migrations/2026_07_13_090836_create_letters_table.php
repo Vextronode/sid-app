@@ -24,24 +24,27 @@ return new class extends Migration
             $table->string('applicant_nik_hash', 64)->index();
             $table->text('applicant_address')->nullable();
             $table->text('purpose');
+            $table->json('payload')->nullable();
             $table->text('notes')->nullable();
             $table->enum('status', [
-                'draft',
-                'waiting_rt', 'rt_rejected',
-                'waiting_rw', 'rw_rejected',
-                'waiting_verification', 'waiting_revision_warga',
-                'rejected_revision', 'completed', 'cancelled',
                 'pending',
-                'rt_approved', 'rw_approved',
-                'kadus_approved', 'kadus_rejected',
-                'kasi_approved', 'kasi_rejected',
-            ])->default('draft');
-            $table->unsignedTinyInteger('revision_count')->default(0);
+                'in_progress',
+                'approved',
+                'rejected',
+            ])->default('pending');
+            $table->foreignId('flow_id')->constrained('approval_flows')->restrictOnDelete();
+            $table->integer('current_step_order')->default(1);
+            $table->integer('rejected_at_step')->nullable();
             $table->boolean('is_overdue')->default(false);
             $table->timestamp('expires_at')->nullable();
             $table->timestamp('submitted_at')->useCurrent();
             $table->timestamp('processed_at')->nullable();
             $table->timestamps();
+
+            $table->index(['flow_id', 'current_step_order'], 'idx_letters_flow_step');
+            $table->index(['village_id', 'status'], 'idx_letters_village_status');
+            $table->index('status', 'idx_letters_status');
+            $table->index('is_overdue', 'idx_letters_overdue');
         });
     }
 

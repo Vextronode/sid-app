@@ -18,24 +18,22 @@ return new class extends Migration
 
             $table->enum('old_status', [
                 'pending',
-                'rt_approved', 'rt_rejected',
-                'rw_approved', 'rw_rejected',
-                'kadus_approved', 'kadus_rejected',
-                'kasi_approved', 'kasi_rejected',
-                'waiting_revision_warga', 'rejected_revision',
+                'in_progress',
+                'approved',
+                'rejected',
             ])->nullable();
 
             $table->enum('new_status', [
                 'pending',
-                'rt_approved', 'rt_rejected',
-                'rw_approved', 'rw_rejected',
-                'kadus_approved', 'kadus_rejected',
-                'kasi_approved', 'kasi_rejected',
-                'waiting_revision_warga', 'rejected_revision',
+                'in_progress',
+                'approved',
+                'rejected',
             ]);
-
             $table->text('reason')->nullable();
             $table->timestamps();
+
+            $table->index('letter_id', 'idx_logs_letter');
+            $table->index('created_at', 'idx_logs_created');
         });
     }
 

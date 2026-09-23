@@ -2,10 +2,11 @@
 
 namespace App\Repositories;
 
+use App\Enums\LetterStatus;
+use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\LetterApproval;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
 class LetterRepository
@@ -18,6 +19,49 @@ class LetterRepository
     public function create(array $data): Letter
     {
         return Letter::create($data);
+    }
+
+    public function find(int $id): ?Letter
+    {
+        return Letter::query()->find($id);
+    }
+
+    public function findOrFail(int $id): Letter
+    {
+        return Letter::query()->findOrFail($id);
+    }
+
+    public function findForUpdateOrFail(int $id): Letter
+    {
+        return Letter::query()
+            ->whereKey($id)
+            ->lockForUpdate()
+            ->firstOrFail();
+    }
+
+    public function findCurrentFlowStep(Letter $letter): ?FlowStep
+    {
+        return FlowStep::query()
+            ->where('flow_id', $letter->flow_id)
+            ->where('step_order', $letter->current_step_order)
+            ->first();
+    }
+
+    public function findCitizenRtId(Letter $letter): ?int
+    {
+        return $letter->citizen()->value('rt_id');
+    }
+
+    public function findCitizenRwId(Letter $letter): ?int
+    {
+        return $letter->citizen()
+            ->join('rts', 'rts.id', '=', 'citizens.rt_id')
+            ->value('rts.rw_id');
+    }
+
+    public function loadForPdf(Letter $letter): Letter
+    {
+        return $letter->load(['letterType', 'citizen', 'village']);
     }
 
     public function update(Letter $letter, array $data): Letter
@@ -37,17 +81,6 @@ class LetterRepository
         $letter->statusLogs()->create($data);
     }
 
-    /**
-     * Update semua approval milik surat pada level tertentu (dipakai
-     * saat RT/RW/Kadus/Kasi memutuskan surat: menandai approval level
-     * mereka sebagai approved_by user yang memutuskan).
-     *
-     * @param  bool  $onlyPending  Jika true, hanya approval yang belum
-     *                             di-approve (approved_by masih null)
-     *                             yang di-update - dipakai Kadus/Kasi
-     *                             approval agar tidak menimpa approval
-     *                             sebelumnya yang sudah selesai.
-     */
     public function updateApprovalsByLevel(Letter $letter, string $level, array $data, bool $onlyPending = false): int
     {
         $query = $letter->approvals()->where('approval_level', $level);
@@ -63,34 +96,26 @@ class LetterRepository
     {
         return Letter::query()
             ->with([
-                'citizen',
+                'citizen.user',
                 'letterType',
                 'approvals.approvedBy:id,name',
             ])
             ->findOrFail($id);
     }
 
-    /**
-     * Semua surat dengan detail lengkap (citizen, letterType,
-     * approvals.approvedBy), tanpa scope tambahan - dipakai
-     * KasiApprovalService::getDashboardLetters().
-     */
-    public function allWithDetailForApproval(): Collection
-    {
-        return Letter::query()
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals.approvedBy:id,name',
-            ])
-            ->latest()
-            ->get();
-    }
-
     public function loadDetailForApproval(Letter $letter): Letter
     {
         return $letter->load([
-            'citizen',
+            'citizen.user',
+            'letterType',
+            'approvals.approvedBy:id,name',
+        ]);
+    }
+
+    public function loadDetailForRw(Letter $letter): Letter
+    {
+        return $letter->load([
+            'citizen.rt',
             'letterType',
             'approvals.approvedBy:id,name',
         ]);
@@ -146,9 +171,41 @@ class LetterRepository
     }
 
     /**
-     * Query surat yang discope ke warga dalam sebuah dusun (hamlet)
-     * tertentu (dipakai KadusApprovalService::getLetters()).
+     * Surat yang SEDANG BERADA di step approval dengan
+     * approver_position termasuk salah satu dari $positions, discope
+     * ke village tertentu. Generik terhadap posisi (bukan hardcode
+     * 'kepala_desa') supaya bisa dipakai ulang oleh service approval
+     * level manapun yang berbasis FlowStep (EV5-4-S1), termasuk
+     * KadesApprovalService (EV5-4-S5) yang perlu me-resolve surat
+     * berdasarkan DUA posisi sekaligus (kepala_desa DAN sekdes —
+     * lihat OfficialService::resolveOfficialsForStep untuk konteks
+     * "siapa cepat dia dapat").
+     *
+     * Join ke flow_steps lewat flow_id + current_step_order (bukan
+     * whereIn('status', [...])) - current_step_order sudah cukup
+     * menunjukkan "sedang aktif di step ini" TANPA perlu filter status
+     * eksplisit di sini: reject tidak pernah memajukan
+     * current_step_order (lihat KadesApprovalService::decision()),
+     * jadi surat yang sudah diputuskan di step SEBELUM ini otomatis
+     * tidak lagi match kolom current_step_order-nya sendiri.
      */
+    public function queryPendingAtFlowStepPositions(array $positions, int $villageId): Builder
+    {
+        return Letter::query()
+            ->where('village_id', $villageId)
+            ->whereHas('flow', function (Builder $flowQuery) use ($positions) {
+                $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($positions) {
+                    $stepQuery->whereColumn('step_order', 'letters.current_step_order')
+                        ->whereIn('approver_position', $positions);
+                });
+            })
+            ->with([
+                'citizen',
+                'letterType',
+                'approvals.approvedBy:id,name',
+            ]);
+    }
+
     public function queryByCitizenHamlet(int $hamletId): Builder
     {
         return Letter::query()
@@ -161,16 +218,70 @@ class LetterRepository
     }
 
     /**
-     * Query surat berstatus tertentu, discope ke letter type dengan
-     * assigned_role tertentu (dipakai
-     * KasiApprovalService::getPendingLetters() - saat ini belum ada
-     * pemanggil dari controller manapun, dipertahankan sesuai kode asli).
+     * EV5-4-S0/S7. Query generik pengganti seluruh variasi
+     * findByRtIdAndStatus/findByRwIdAndStatus/dst yang sebelumnya
+     * tersebar per Service (nama method sesuai SID-ARCH-BE-001 S2) -
+     * murni posisi+status, TANPA scope wilayah/village. Pemanggil
+     * (LetterService::getScopedLetters(), EV5-4-S7) menambahkan scope
+     * tambahan sendiri via whereHas (rt_id untuk RT, village_id untuk
+     * Kades/Sekdes/Kasi/Kaur) - pola sama seperti
+     * queryPendingAtFlowStepPositions().
      */
-    public function queryByStatusesAndLetterTypeAssignedRole(array $statuses, string $assignedRole): Builder
+    public function findByFlowStepAndStatus(string $approverPosition, array $statuses): Builder
     {
         return Letter::query()
             ->whereIn('status', $statuses)
-            ->whereHas('letterType', fn (Builder $q) => $q->where('assigned_role', $assignedRole))
+            ->whereHas('flow', function (Builder $flowQuery) use ($approverPosition) {
+                $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($approverPosition) {
+                    $stepQuery->whereColumn('step_order', 'letters.current_step_order')
+                        ->where('approver_position', $approverPosition);
+                });
+            })
+            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'user']);
+    }
+
+    /**
+     * EV5-4-S7. Semua surat (TANPA filter status) di wilayah RW
+     * tertentu, via citizens.rt.rw_id - dipakai
+     * LetterService::getScopedLetters() case 'rw': read-only histori
+     * FYI, BUKAN filter approval aktif (RW bukan approver - lihat
+     * api_spec paths/letters/letters.yaml).
+     */
+    public function queryByCitizenRw(int $rwId): Builder
+    {
+        return Letter::query()
+            ->whereHas('citizen.rt', fn (Builder $q) => $q->where('rw_id', $rwId))
+            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'user']);
+    }
+
+    /**
+     * Surat yang sedang berada di step FINAL (is_final=true) dengan
+     * approver_position sesuai posisi Kasi/Kaur yang memanggil,
+     * discope ke village, dan belum diputuskan - dipakai
+     * KasiApprovalService::getPendingLetters() (EV5-4-S6). MENGGANTIKAN
+     * filter lama yang salah membandingkan ke assigned_role='rw'
+     * (Audit §3.4).
+     *
+     * Status bisa 'pending' (flow langsung mulai di step final, tanpa
+     * RT/Kades) ATAU 'in_progress' (sudah lewat RT dan/atau Kades lebih
+     * dulu - lihat RtApprovalService::decision(), EV5-4-S4) - keduanya
+     * berarti "belum diputuskan". Step final tidak pernah maju ke step
+     * berikutnya (current_step_order tetap sama setelah diputuskan),
+     * jadi status generik 'approved'/'rejected' adalah satu-satunya
+     * penanda surat ini SUDAH diputuskan Kasi/Kaur.
+     */
+    public function queryPendingAtFinalStepPosition(string $position, int $villageId): Builder
+    {
+        return Letter::query()
+            ->where('village_id', $villageId)
+            ->whereIn('status', [LetterStatus::Pending, LetterStatus::InProgress])
+            ->whereHas('flow', function (Builder $flowQuery) use ($position) {
+                $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($position) {
+                    $stepQuery->whereColumn('step_order', 'letters.current_step_order')
+                        ->where('approver_position', $position)
+                        ->where('is_final', true);
+                });
+            })
             ->with([
                 'citizen',
                 'letterType',

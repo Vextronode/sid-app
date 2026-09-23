@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Citizen;
+use App\Models\Family;
 use App\Repositories\CitizenRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -78,5 +79,26 @@ class CitizenRepositoryTest extends TestCase
 
         $this->assertTrue($this->repository->existsByRt($citizen->rt_id));
         $this->assertTrue($this->repository->existsActiveByRt($citizen->rt_id));
+    }
+
+    public function test_it_finds_a_citizen_by_nik_hash(): void
+    {
+        $citizen = Citizen::factory()->create();
+
+        $result = (new CitizenRepository)->findByNikHash($citizen->nik_hash);
+
+        $this->assertTrue($result->is($citizen));
+    }
+
+    public function test_it_returns_only_members_of_the_requested_family(): void
+    {
+        $family = Family::factory()->create();
+        $member = Citizen::factory()->create(['family_id' => $family->id]);
+        Citizen::factory()->create();
+
+        $result = (new CitizenRepository)->findByFamilyId($family->id);
+
+        $this->assertCount(1, $result);
+        $this->assertTrue($result->first()->is($member));
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\User;
+use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Services\PdfService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -24,16 +25,16 @@ class PdfServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new PdfService(new OfficialRepository);
+        $this->service = new PdfService(new OfficialRepository, new LetterRepository);
     }
 
-    public function test_download_blocked_when_letter_not_kasi_approved(): void
+    public function test_download_blocked_when_letter_not_approved(): void
     {
         $letter = Letter::factory()->create(['status' => 'pending']);
         $user = User::factory()->create();
 
         $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Surat baru dapat diunduh setelah disetujui oleh Operator Desa.');
+        $this->expectExceptionMessage('Surat baru dapat diunduh setelah seluruh proses persetujuan selesai.');
 
         $this->service->download($letter, $user);
     }
@@ -41,7 +42,7 @@ class PdfServiceTest extends TestCase
     public function test_download_blocked_for_warga_when_letter_expired(): void
     {
         $letter = Letter::factory()->create([
-            'status' => 'kasi_approved',
+            'status' => 'approved',
             'expires_at' => now()->subDay(),
         ]);
         $user = User::factory()->create(['role' => 'warga']);
@@ -64,7 +65,7 @@ class PdfServiceTest extends TestCase
 
         $letterType = LetterType::factory()->create(['template' => 'Isi surat {{ applicant_name }}']);
         $letter = Letter::factory()->create([
-            'status' => 'kasi_approved',
+            'status' => 'approved',
             'letter_type_id' => $letterType->id,
             'expires_at' => now()->addDays(10),
         ]);
@@ -79,7 +80,7 @@ class PdfServiceTest extends TestCase
     {
         $letterType = LetterType::factory()->create(['template' => 'Isi surat']);
         $letter = Letter::factory()->create([
-            'status' => 'kasi_approved',
+            'status' => 'approved',
             'letter_type_id' => $letterType->id,
         ]);
         $user = User::factory()->create(['role' => 'petugas_desa']);

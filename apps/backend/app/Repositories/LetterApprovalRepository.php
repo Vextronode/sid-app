@@ -29,7 +29,7 @@ class LetterApprovalRepository
     {
         $approval->update([
             'approved_by' => $userId,
-            'status' => $status,
+            'action' => $status,
         ]);
 
         return $approval;

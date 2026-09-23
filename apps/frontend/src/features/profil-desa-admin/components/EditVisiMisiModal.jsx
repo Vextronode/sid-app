@@ -1,158 +1,140 @@
-
-/* eslint-disable react-hooks/set-state-in-effect */
 // ==========================================
 // EditVisiMisiModal.jsx
-// Form edit Visi & Misi. Misi berupa list dinamis — bisa tambah/hapus baris.
-// Styling menggunakan SID Global Theme.
+// Edit vision dan mission berdasarkan
+// PATCH /api/villages/profile.
 // ==========================================
 
-import { useState, useEffect } from 'react';
-import { Send, Plus, X } from 'lucide-react';
+import { useEffect, useState } from 'react'
+import { X, Save } from 'lucide-react'
 
 export default function EditVisiMisiModal({
   open,
   onClose,
   onSubmit,
   initialData,
+  processing = false,
 }) {
-  const [visi, setVisi] = useState('');
-  const [misi, setMisi] = useState(['']);
+  const [form, setForm] = useState({
+    vision: '',
+    mission: '',
+  })
 
   useEffect(() => {
-    if (open) {
-      setVisi(initialData.visi ?? '');
-      setMisi(
-        initialData.misi?.length
-          ? [...initialData.misi]
-          : ['']
-      );
-    }
-  }, [open, initialData]);
+    if (!open) return
 
-  if (!open) return null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setForm({
+      vision: initialData?.vision ?? '',
+      mission: initialData?.mission ?? '',
+    })
+  }, [open, initialData])
 
-  const handleMisiChange = (index, value) => {
-    setMisi((prev) =>
-      prev.map((m, i) =>
-        i === index ? value : m
-      )
-    );
-  };
+  if (!open) return null
 
-  const handleAddMisi = () => {
-    setMisi((prev) => [...prev, '']);
-  };
+  const handleChange = (event) => {
+    const { name, value } = event.target
 
-  const handleRemoveMisi = (index) => {
-    setMisi((prev) =>
-      prev.filter((_, i) => i !== index)
-    );
-  };
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }))
+  }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault()
 
-    onSubmit({
-      visi,
-      misi: misi.filter((m) => m.trim() !== ''),
-    });
-  };
+    await onSubmit({
+      vision: form.vision.trim(),
+      mission: form.mission.trim(),
+    })
+  }
 
   return (
-    <div className="sid-modal-overlay">
-      <form
-        onSubmit={handleSubmit}
-        className="sid-modal sid-edit-visi-misi-modal"
+    <div
+      className="sid-profil-desa-modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !processing) {
+          onClose()
+        }
+      }}
+    >
+      <div
+        className="sid-profil-desa-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-visi-misi-title"
       >
-        {/* HEADER */}
-        <div className="sid-modal-header">
-          <h2>Edit Visi &amp; Misi</h2>
+        <div className="sid-profil-desa-modal-header">
+          <div>
+            <p className="sid-profil-desa-modal-eyebrow">Arah Pembangunan</p>
 
-          <p>
-            Perbarui visi dan misi desa yang akan ditampilkan
-            pada halaman profil.
-          </p>
-        </div>
+            <h2 id="edit-visi-misi-title">Edit Visi &amp; Misi</h2>
 
-        {/* VISI */}
-        <div className="sid-modal-field sid-visi-field">
-          <label>Visi</label>
-
-          <textarea
-            rows={3}
-            value={visi}
-            onChange={(e) => setVisi(e.target.value)}
-            placeholder="Masukkan visi desa..."
-            className="sid-textarea"
-          />
-        </div>
-
-        {/* MISI */}
-        <div className="sid-modal-field sid-misi-field">
-          <label>Misi</label>
-
-          <div className="sid-misi-list">
-            {misi.map((item, index) => (
-              <div
-                key={index}
-                className="sid-misi-item"
-              >
-                <div className="sid-misi-number">
-                  {index + 1}
-                </div>
-
-                <input
-                  value={item}
-                  onChange={(e) =>
-                    handleMisiChange(index, e.target.value)
-                  }
-                  placeholder={`Misi ke-${index + 1}`}
-                  className="sid-input"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => handleRemoveMisi(index)}
-                  disabled={misi.length === 1}
-                  className="sid-misi-remove"
-                  title="Hapus misi"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
+            <p>Perbarui visi dan misi Desa yang ditampilkan pada profil.</p>
           </div>
 
           <button
             type="button"
-            onClick={handleAddMisi}
-            className="sid-misi-add"
-          >
-            <Plus size={15} />
-            Tambah misi
-          </button>
-        </div>
-
-        {/* ACTION */}
-        <div className="sid-actions sid-modal-actions">
-          <button
-            type="button"
             onClick={onClose}
-            className="sid-btn sid-btn-secondary"
+            className="sid-profil-desa-modal-close"
+            disabled={processing}
+            aria-label="Tutup"
           >
-            Batal
-          </button>
-
-          <button
-            type="submit"
-            className="sid-btn sid-btn-primary sid-btn-save"
-          >
-            <Send size={16} />
-            Simpan
+            <X size={18} />
           </button>
         </div>
-      </form>
-    </div>
-  );
-}
 
+        <form onSubmit={handleSubmit} className="sid-profil-desa-modal-form">
+          <div className="sid-profil-desa-form-field">
+            <label htmlFor="profil-vision">Visi</label>
+
+            <textarea
+              id="profil-vision"
+              name="vision"
+              value={form.vision}
+              onChange={handleChange}
+              placeholder="Tuliskan visi Desa"
+              rows={5}
+              disabled={processing}
+            />
+          </div>
+
+          <div className="sid-profil-desa-form-field">
+            <label htmlFor="profil-mission">Misi</label>
+
+            <textarea
+              id="profil-mission"
+              name="mission"
+              value={form.mission}
+              onChange={handleChange}
+              placeholder="Tuliskan misi Desa"
+              rows={8}
+              disabled={processing}
+            />
+
+            <span className="sid-profil-desa-form-help">
+              Misi disimpan sebagai satu teks sesuai format backend.
+            </span>
+          </div>
+
+          <div className="sid-profil-desa-modal-actions">
+            <button
+              type="button"
+              onClick={onClose}
+              className="sid-profil-desa-modal-secondary"
+              disabled={processing}
+            >
+              Batal
+            </button>
+
+            <button type="submit" className="sid-profil-desa-modal-primary" disabled={processing}>
+              <Save size={15} />
+
+              {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}

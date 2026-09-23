@@ -6,58 +6,44 @@ namespace App\Enums;
 
 enum LetterStatus: string
 {
+    // - Status generik v5
     case Pending = 'pending';
-    case RtApproved = 'rt_approved';
-    case RtRejected = 'rt_rejected';
-    case RwApproved = 'rw_approved';
-    case RwRejected = 'rw_rejected';
-    case KadusApproved = 'kadus_approved';
-    case KadusRejected = 'kadus_rejected';
-    case KasiApproved = 'kasi_approved';
-    case KasiRejected = 'kasi_rejected';
+    case InProgress = 'in_progress';
+    case Approved = 'approved';
+    case Rejected = 'rejected';
 
     public function label(): string
     {
         return match ($this) {
             self::Pending => 'Menunggu',
-            self::RtApproved => 'Disetujui RT',
-            self::RtRejected => 'Ditolak RT',
-            self::RwApproved => 'Disetujui RW',
-            self::RwRejected => 'Ditolak RW',
-            self::KadusApproved => 'Disetujui Kadus',
-            self::KadusRejected => 'Ditolak Kadus',
-            self::KasiApproved => 'Disetujui Kasi Pelayanan',
-            self::KasiRejected => 'Ditolak Kasi Pelayanan',
+            self::InProgress => 'Sedang Diproses',
+            self::Approved => 'Disetujui',
+            self::Rejected => 'Ditolak',
         };
     }
 
     public function isRejected(): bool
     {
-        return in_array($this, [
-            self::RtRejected,
-            self::RwRejected,
-            self::KadusRejected,
-            self::KasiRejected,
-        ], true);
+        return $this === self::Rejected;
     }
 
     public function isApproved(): bool
     {
-        return in_array($this, [
-            self::RtApproved,
-            self::RwApproved,
-            self::KadusApproved,
-            self::KasiApproved,
-        ], true);
+        return $this === self::Approved;
     }
 
     public function isFinalApproval(): bool
     {
-        return $this === self::KasiApproved;
+        return $this === self::Approved;
+    }
+
+    public function isInProgress(): bool
+    {
+        return $this === self::InProgress;
     }
 
     public function isTerminal(): bool
     {
-        return $this->isRejected() || $this === self::KasiApproved;
+        return $this->isRejected() || $this->isFinalApproval();
     }
 }
