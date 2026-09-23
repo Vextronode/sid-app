@@ -22,7 +22,7 @@ use App\Http\Controllers\Api\PublicPageController;
 use App\Http\Controllers\Api\RegulationController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RtController;
-use App\Http\Controllers\Api\RwApprovalController;
+use App\Http\Controllers\Api\RwFyiController;
 use App\Http\Controllers\Api\RwController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillageOrgMemberController;
@@ -231,9 +231,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // UC-05/UC-06/UC-08: lintas-role, scoping ada di
         // LetterService::getScopedLetters() (match per $user->role) dan
-        // LetterPolicy::view()/LetterPolicy::delete(). Role 'kadus' akan
-        // tetap ditolak 403 oleh LetterService (default => abort(403)),
-        // konsisten dengan Kadus dihapus total dari domain approval surat.
+        // LetterPolicy::view()/LetterPolicy::delete(). Kadus tidak lagi
+        // punya scope approval sama sekali sejak v5.0 (dihapus total dari
+        // domain approval surat — SID-ARCH-BE-001 S3.2). LetterService::
+        // getScopedLetters() menolak role selain warga/rt/rw/kepala_desa/
+        // sekretaris_desa/kasi_pelayanan/kaur_tu_umum/petugas_desa lewat
+        // default => abort(403), sehingga kadus otomatis ikut ditolak
+        // tanpa perlu case khusus.
         Route::get('/', [LetterController::class, 'index']);
         Route::get('/{id}', [LetterController::class, 'show']);
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
@@ -340,19 +344,26 @@ Route::middleware('auth:sanctum')->group(function () {
     | ini murni read-only riwayat notifikasi FYI, tetap dibatasi role
     | 'rw' saja (bukan lintas-role) karena datanya spesifik wilayah RW
     | yang login.
+    |
+    | Catatan: ini adalah jalur khusus histori FYI RW. GET /letters
+    | (generik, lihat section "Letters" di bawah) juga bisa diakses RW
+    | lewat LetterService::getScopedLetters() case 'rw'. Kedua jalur
+    | bersifat read-only, dibatasi ke rw_id user, dan menampilkan semua
+    | status surat. RW tidak memiliki worklist approval maupun decision.
     */
     Route::middleware(UserRole::middleware(UserRole::Rw))
         ->prefix('rw')
         ->group(function () {
-            Route::get('/letters', [RwApprovalController::class, 'index']);
-            Route::get('/letters/{letter}', [RwApprovalController::class, 'show']);
+            Route::get('/letters', [RwFyiController::class, 'index']);
+            Route::get('/letters/{letter}', [RwFyiController::class, 'show']);
         });
 
     /*
     |----------------------------------------------------------------------
     | Officials
     |----------------------------------------------------------------------
-    | Fondasi CRUD data pejabat/petugas desa (RT, RW, Kadus, Kasi, dll).
+    | Fondasi CRUD data pejabat/petugas desa (RT, RW, Kasi, dll — termasuk
+    | Kadus sebagai jabatan struktural non-approval, lihat TDD-01 §3).
     | Role-check di sini SENGAJA dilonggarkan ke seluruh role
     | authenticated - context check granular (siapa boleh apa) tetap
     | didelegasikan ke OfficialPolicy lewat $this->authorize() di

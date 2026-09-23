@@ -230,8 +230,8 @@ class LetterService
 
     /**
      * RW: BUKAN approver - read-only histori FYI, tanpa filter status
-     * aktif sama sekali (beda dari RwApprovalService::getPendingLetters()
-     * yang membatasi ke status 'pending' untuk dashboard-nya sendiri).
+     * aktif sama sekali. Jalur khusus /rw/letters memakai scope histori
+     * yang sama melalui RwFyiService.
      */
     private function scopeForRw(User $user): Builder
     {

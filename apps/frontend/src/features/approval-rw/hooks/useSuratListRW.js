@@ -1,54 +1,54 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useMemo, useState } from "react";
-import { getSuratList } from "@/features/approval/api";
-import { RELEVANT_STATUSES } from "../constants/roleConfigRW";
+import { useEffect, useMemo, useState } from 'react'
+import { getSuratList } from '@/features/approval/api'
+import { RELEVANT_STATUSES } from '../constants/roleConfigRW'
 
-export function useSuratList({ initialStatus = "" } = {}) {
-  const [letters, setLetters] = useState([]);
-  const [loading, setLoading] = useState(false);
+export function useSuratList({ initialStatus = '' } = {}) {
+  const [letters, setLetters] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const [search, setSearch] = useState("");
-  const [filterJenis, setFilterJenis] = useState("");
-  const [filterStatus, setFilterStatus] = useState(initialStatus);
+  const [search, setSearch] = useState('')
+  const [filterJenis, setFilterJenis] = useState('')
+  const [filterStatus, setFilterStatus] = useState(initialStatus)
 
   const fetchLetters = async () => {
     try {
-      setLoading(true);
-      const response = await getSuratList("rw");
-      setLetters(response.data.data ?? []);
+      setLoading(true)
+      const response = await getSuratList('rw')
+      setLetters(response.data.data ?? [])
     } catch (error) {
-      console.error("GET RW LETTER ERROR", error.response?.data ?? error);
-      setLetters([]);
+      console.error('GET RW FYI HISTORY ERROR', error.response?.data ?? error)
+      setLetters([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchLetters();
-  }, []);
+    fetchLetters()
+  }, [])
 
   const data = useMemo(() => {
-    let result = [...letters];
+    let result = [...letters]
 
-    result = result.filter((letter) => RELEVANT_STATUSES.includes(letter.status));
+    result = result.filter((letter) => RELEVANT_STATUSES.includes(letter.status))
 
     if (filterJenis) {
-      result = result.filter((letter) => letter.letter_type?.name === filterJenis);
+      result = result.filter((letter) => letter.letter_type?.name === filterJenis)
     }
 
     if (filterStatus) {
-      result = result.filter((letter) => letter.status === filterStatus);
+      result = result.filter((letter) => letter.status === filterStatus)
     }
 
     if (search) {
       result = result.filter((letter) =>
-        letter.applicant_name?.toLowerCase().includes(search.toLowerCase())
-      );
+        letter.applicant_name?.toLowerCase().includes(search.toLowerCase()),
+      )
     }
 
-    return result;
-  }, [letters, filterJenis, filterStatus, search]);
+    return result
+  }, [letters, filterJenis, filterStatus, search])
 
   return {
     data,
@@ -60,5 +60,5 @@ export function useSuratList({ initialStatus = "" } = {}) {
     filterStatus,
     setFilterStatus,
     refresh: fetchLetters,
-  };
+  }
 }
