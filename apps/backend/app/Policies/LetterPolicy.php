@@ -39,7 +39,6 @@ class LetterPolicy
     }
 
     /**
-     *
      * Aturan scope di bawah SENGAJA dibuat SEPADAN dengan
      * LetterService::getScopedLetters() (bukan aturan baru) supaya "siapa
      * boleh lihat daftar" dan "siapa boleh buka detail" konsisten:
