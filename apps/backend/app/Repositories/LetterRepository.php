@@ -139,8 +139,8 @@ class LetterRepository
 
     /**
      * Query surat berstatus tertentu yang discope ke warga dalam RW
-     * tertentu, lewat relasi citizen.rt.rw_id (dipakai
-     * RwApprovalService::getPendingLetters() dan sejenisnya).
+     * tertentu, lewat relasi citizen.rt.rw_id. Saat ini jalur RW FYI
+     * memakai queryByCitizenRw() agar seluruh histori status ikut terbaca.
      */
     public function queryByStatusesAndCitizenRw(array $statuses, int $rwId): Builder
     {

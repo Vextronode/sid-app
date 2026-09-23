@@ -1,81 +1,61 @@
 // ==========================================
 // SuratDetailModalRW.jsx
-// Popup detail surat RW
+// Popup detail histori surat RW
 //
 // STATUS:
-// - RW TIDAK memiliki kewenangan approve/reject.
+// - RW hanya penerima FYI dan tidak memiliki kewenangan approve/reject.
 // - Modal RW hanya digunakan untuk melihat detail.
 // - Tidak ada pemanggilan endpoint keputusan RW.
 // - Workflow:
 //   Submit -> RT -> Selesai
 // ==========================================
 
-import { Eye } from 'lucide-react';
+import { Eye } from 'lucide-react'
 
-import { useSuratDetail } from '../hooks/useSuratDetailRW';
-import ApprovalStepperRW from './ApprovalStepperRW';
+import { useSuratDetail } from '../hooks/useSuratDetailRW'
+import ApprovalStepperRW from './ApprovalStepperRW'
 
-import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF';
+import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 
 // ==========================================
 // FIELD MAP
 // ==========================================
 
 const FIELD_MAP = {
-  noSurat: (s) =>
-    s.letter_number ?? '-',
+  noSurat: (s) => s.letter_number ?? '-',
 
-  namaPemohon: (s) =>
-    s.applicant_name ?? '-',
+  namaPemohon: (s) => s.applicant_name ?? '-',
 
-  nik: (s) =>
-    s.applicant_nik ?? '-',
+  nik: (s) => s.applicant_nik ?? '-',
 
-  alamat: (s) =>
-    s.applicant_address ?? '-',
+  alamat: (s) => s.applicant_address ?? '-',
 
-  jenisSurat: (s) =>
-    s.letter_type?.name ?? '-',
+  jenisSurat: (s) => s.letter_type?.name ?? '-',
 
-  keperluan: (s) =>
-    s.purpose ?? '-',
+  keperluan: (s) => s.purpose ?? '-',
 
-  diajukan: (s) =>
-    s.submitted_at
-      ? new Date(s.submitted_at).toLocaleString('id-ID')
-      : '-',
+  diajukan: (s) => (s.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
 
-  terakhirDiproses: (s) =>
-    s.updated_at
-      ? new Date(s.updated_at).toLocaleString('id-ID')
-      : '-',
+  terakhirDiproses: (s) => (s.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
 
-  ipAktor: (s) =>
-    s.ip_address ?? '-',
+  ipAktor: (s) => s.ip_address ?? '-',
 
-  riwayat: (s) =>
-    s.decisions ?? [],
-};
+  riwayat: (s) => s.decisions ?? [],
+}
 
 // ==========================================
 // COMPONENT
 // ==========================================
 
-export default function SuratDetailModalRW({
-  suratId,
-  onClose,
-}) {
-  const {
-    surat,
-    notFound,
-  } = useSuratDetail(suratId);
+export default function SuratDetailModalRW({ suratId, onClose }) {
+  const { surat, notFound } = useSuratDetail(suratId)
 
   // ==========================================
   // CEK ID
   // ==========================================
 
   if (suratId === null) {
-    return null;
+    return null
   }
 
   // ==========================================
@@ -83,15 +63,10 @@ export default function SuratDetailModalRW({
   // ==========================================
 
   const keputusanRT = surat
-    ? FIELD_MAP
-        .riwayat(surat)
-        .find(
-          (r) =>
-            r.stage === 'rt' ||
-            r.tahap === 'RT' ||
-            r.approval_level === 'rt'
-        )
-    : null;
+    ? FIELD_MAP.riwayat(surat).find(
+        (r) => r.stage === 'rt' || r.tahap === 'RT' || r.approval_level === 'rt',
+      )
+    : null
 
   // ==========================================
   // INFO SURAT
@@ -128,7 +103,7 @@ export default function SuratDetailModalRW({
           value: FIELD_MAP.terakhirDiproses(surat),
         },
       ]
-    : [];
+    : []
 
   // ==========================================
   // RENDER
@@ -136,41 +111,24 @@ export default function SuratDetailModalRW({
 
   return (
     <div className="sid-modal-overlay">
-
       <div className="sid-modal">
-
         {/* CLOSE */}
-        <button
-          onClick={onClose}
-          className="sid-modal-close"
-        >
+        <button onClick={onClose} className="sid-modal-close">
           ✕
         </button>
 
         {/* NOT FOUND */}
         {notFound ? (
-
-          <p className="sid-modal-message">
-            Surat tidak ditemukan.
-          </p>
-
+          <p className="sid-modal-message">Surat tidak ditemukan.</p>
         ) : !surat ? (
-
-          <p className="sid-modal-message">
-            Memuat...
-          </p>
-
+          <p className="sid-modal-message">Memuat...</p>
         ) : (
-
           <>
-
             {/* HEADER */}
-            <h2 className="sid-modal-title">
-              Detail Permohonan Surat
-            </h2>
+            <h2 className="sid-modal-title">Detail Permohonan Surat</h2>
 
             <p className="sid-modal-subtitle">
-              #{FIELD_MAP.noSurat(surat)} · Surat saya
+              #{FIELD_MAP.noSurat(surat)} · Riwayat surat wilayah RW
             </p>
 
             {/* STEPPER */}
@@ -178,23 +136,13 @@ export default function SuratDetailModalRW({
 
             {/* DETAIL SURAT */}
             <div className="sid-modal-info">
-
               {infoFields.map((field) => (
-
                 <div key={field.label}>
+                  <p className="sid-modal-info-label">{field.label}</p>
 
-                  <p className="sid-modal-info-label">
-                    {field.label}
-                  </p>
-
-                  <p className="sid-modal-info-value">
-                    {field.value}
-                  </p>
-
+                  <p className="sid-modal-info-value">{field.value}</p>
                 </div>
-
               ))}
-
             </div>
 
             {/* ======================================
@@ -202,33 +150,21 @@ export default function SuratDetailModalRW({
                 ====================================== */}
 
             {keputusanRT && (
-
               <div
                 className={`sid-decision-box ${
-                  keputusanRT.status === 'rejected'
-                    ? 'rejected'
-                    : 'approved'
+                  keputusanRT.status === 'rejected' ? 'rejected' : 'approved'
                 }`}
               >
-
                 <div className="sid-decision-header">
-
-                  <p className="sid-decision-title">
-                    Keputusan RT
-                  </p>
+                  <p className="sid-decision-title">Keputusan RT</p>
 
                   <span
                     className={`sid-decision-badge ${
-                      keputusanRT.status === 'rejected'
-                        ? 'rejected'
-                        : 'approved'
+                      keputusanRT.status === 'rejected' ? 'rejected' : 'approved'
                     }`}
                   >
-                    {keputusanRT.status === 'rejected'
-                      ? 'RT_REJECTED'
-                      : 'RT_APPROVED'}
+                    {keputusanRT.status === 'rejected' ? 'RT_REJECTED' : 'RT_APPROVED'}
                   </span>
-
                 </div>
 
                 <div className="sid-decision-meta">
@@ -242,19 +178,13 @@ export default function SuratDetailModalRW({
                 </div>
 
                 <div className="sid-decision-meta">
-                  IP{' '}
-                  <strong>
-                    {keputusanRT.ip_address ?? '-'}
-                  </strong>
+                  IP <strong>{keputusanRT.ip_address ?? '-'}</strong>
                 </div>
 
                 {/* CATATAN PENOLAKAN */}
                 {keputusanRT.status === 'rejected' && (
-
                   <>
-                    <p className="sid-decision-comment-label">
-                      Komentar Penolakan
-                    </p>
+                    <p className="sid-decision-comment-label">Komentar Penolakan</p>
 
                     <div className="sid-decision-comment rejected">
                       {keputusanRT.notes ??
@@ -263,35 +193,22 @@ export default function SuratDetailModalRW({
                         'Tidak ada catatan.'}
                     </div>
                   </>
-
                 )}
 
                 {/* CATATAN PERSETUJUAN */}
                 {keputusanRT.status === 'approved' && (
-
                   <div className="sid-decision-comment approved">
-                    {keputusanRT.notes ??
-                      keputusanRT.reason ??
-                      surat.notes ??
-                      'Tidak ada catatan.'}
+                    {keputusanRT.notes ?? keputusanRT.reason ?? surat.notes ?? 'Tidak ada catatan.'}
                   </div>
-
                 )}
-
               </div>
-
             )}
 
             {/* ======================================
                 PREVIEW
                 ====================================== */}
 
-            <button
-              onClick={() =>
-                previewSuratPDF(surat)
-              }
-              className="sid-modal-preview"
-            >
+            <button onClick={() => previewSuratPDF(surat)} className="sid-modal-preview">
               <Eye size={16} />
               Lihat Dokumen (Preview)
             </button>
@@ -300,19 +217,12 @@ export default function SuratDetailModalRW({
                 CLOSE
                 ====================================== */}
 
-            <button
-              onClick={onClose}
-              className="sid-modal-action back"
-            >
+            <button onClick={onClose} className="sid-modal-action back">
               ✓ Kembali
             </button>
-
           </>
-
         )}
-
       </div>
-
     </div>
-  );
+  )
 }

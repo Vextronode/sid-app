@@ -17,6 +17,8 @@ class LetterDownloadController extends Controller
         Request $request,
         Letter $letter
     ) {
+        $this->authorize('view', $letter);
+
         return $this->pdfService->download(
             $letter,
             $request->user(),
@@ -28,6 +30,8 @@ class LetterDownloadController extends Controller
         Request $request,
         Letter $letter
     ) {
+        $this->authorize('view', $letter);
+
         return $this->pdfService->preview(
             $letter,
             $request->user(),

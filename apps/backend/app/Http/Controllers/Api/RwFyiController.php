@@ -6,23 +6,23 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\LetterCollection;
 use App\Http\Resources\LetterResource;
 use App\Models\Letter;
-use App\Services\RwApprovalService;
+use App\Services\RwFyiService;
 use Illuminate\Http\Request;
 
-class RwApprovalController extends Controller
+class RwFyiController extends Controller
 {
     public function __construct(
-        protected RwApprovalService $service
+        protected RwFyiService $service
     ) {}
 
     public function index(Request $request)
     {
-        $letters = $this->service->getPendingLetters(
+        $letters = $this->service->getFyiLetters(
             $request->user()
         );
 
         return response()->json([
-            'message' => 'Daftar surat RW berhasil diambil.',
+            'message' => 'Riwayat surat FYI RW berhasil diambil.',
             'data' => new LetterCollection($letters),
         ]);
     }
@@ -36,7 +36,7 @@ class RwApprovalController extends Controller
         Request $request,
         Letter $letter
     ) {
-        $detail = $this->service->getLetterDetail(
+        $detail = $this->service->getFyiLetterDetail(
             $letter,
             $request->user()
         );

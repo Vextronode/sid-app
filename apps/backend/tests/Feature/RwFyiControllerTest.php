@@ -11,7 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class RwApprovalControllerTest extends TestCase
+class RwFyiControllerTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -21,6 +21,9 @@ class RwApprovalControllerTest extends TestCase
         $rt = Rt::factory()->create(['rw_id' => $rw->id]);
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
         Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'pending']);
+        Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'in_progress']);
+        Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'approved']);
+        Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'rejected']);
 
         $official = Official::factory()->create(['position' => 'rw', 'rw_id' => $rw->id]);
         $user = User::factory()->create(['role' => 'rw']);
@@ -29,8 +32,8 @@ class RwApprovalControllerTest extends TestCase
         $this->actingAs($user->fresh())
             ->getJson('/api/rw/letters')
             ->assertOk()
-            ->assertJsonPath('message', 'Daftar surat RW berhasil diambil.')
-            ->assertJsonCount(1, 'data');
+            ->assertJsonPath('message', 'Riwayat surat FYI RW berhasil diambil.')
+            ->assertJsonCount(4, 'data');
     }
 
     public function test_index_requires_authentication(): void

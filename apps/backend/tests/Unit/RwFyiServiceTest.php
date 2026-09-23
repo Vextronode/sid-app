@@ -12,31 +12,30 @@ use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\OfficialService;
-use App\Services\RwApprovalService;
+use App\Services\RwFyiService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
-class RwApprovalServiceTest extends TestCase
+class RwFyiServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    private RwApprovalService $service;
+    private RwFyiService $service;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->service = new RwApprovalService(
+        $this->service = new RwFyiService(
             new LetterRepository,
             new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository),
         );
     }
 
     /**
-     * Pastikan RwApprovalService memang tidak lagi punya method
+     * Pastikan RwFyiService memang tidak lagi punya method
      * approve()/decision() apapun — RW murni notifier read-only, bukan
      * approver yang "sudah di-guard" tapi method-nya masih ada.
      */
@@ -46,7 +45,7 @@ class RwApprovalServiceTest extends TestCase
         $this->assertFalse(method_exists($this->service, 'decision'));
     }
 
-    public function test_get_pending_letters_returns_letters_in_same_rw(): void
+    public function test_get_history_letters_returns_letters_in_same_rw(): void
     {
         $rw = Rw::factory()->create();
         $rt = Rt::factory()->create(['rw_id' => $rw->id]);
@@ -58,13 +57,13 @@ class RwApprovalServiceTest extends TestCase
         $user = User::factory()->create(['role' => 'rw']);
         $user->official()->save($official);
 
-        $result = $this->service->getPendingLetters($user->fresh());
+        $result = $this->service->getFyiLetters($user->fresh());
 
         $this->assertCount(1, $result);
         $this->assertSame($letter->id, $result->first()->id);
     }
 
-    public function test_get_pending_letters_excludes_letters_outside_rw(): void
+    public function test_get_history_letters_excludes_letters_outside_rw(): void
     {
         $rw = Rw::factory()->create();
         $otherRw = Rw::factory()->create();
@@ -77,55 +76,48 @@ class RwApprovalServiceTest extends TestCase
         $user = User::factory()->create(['role' => 'rw']);
         $user->official()->save($official);
 
-        $result = $this->service->getPendingLetters($user->fresh());
+        $result = $this->service->getFyiLetters($user->fresh());
 
         $this->assertCount(0, $result);
     }
 
-    public function test_get_pending_letters_excludes_approved_and_rejected(): void
+    public function test_get_history_letters_includes_all_statuses(): void
     {
         $rw = Rw::factory()->create();
         $rt = Rt::factory()->create(['rw_id' => $rw->id]);
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
 
-        // Dibuat lewat factory seperti biasa (status default 'pending',
-        // supaya semua kolom computed/hashed terisi benar oleh model
-        // event), lalu kolom status di-patch langsung lewat query
-        // builder tanpa pernah menghidrasi ulang ke model. Ini
-        // menghindari App\Enums\LetterStatus (enum granular lama)
-        // melempar ValueError saat Letter->status diakses — enum itu
-        // TIDAK memiliki case 'approved'/'rejected' yang valid di sisi
-        // DB CHECK constraint. Yang diuji di sini murni perilaku query
-        // repository (filter status), bukan hydration model.
-        $approvedLetter = Letter::factory()->create(['citizen_id' => $citizen->id]);
-        DB::table('letters')
-            ->where('id', $approvedLetter->id)
-            ->update(['status' => 'approved']);
-
-        $rejectedLetter = Letter::factory()->create(['citizen_id' => $citizen->id]);
-        DB::table('letters')
-            ->where('id', $rejectedLetter->id)
-            ->update(['status' => 'rejected']);
+        $statuses = ['pending', 'in_progress', 'approved', 'rejected'];
+        $letters = collect($statuses)->map(
+            fn (string $status) => Letter::factory()->create([
+                'citizen_id' => $citizen->id,
+                'status' => $status,
+            ])
+        );
 
         $official = Official::factory()->create(['position' => 'rw', 'rw_id' => $rw->id]);
         $user = User::factory()->create(['role' => 'rw']);
         $user->official()->save($official);
 
-        $result = $this->service->getPendingLetters($user->fresh());
+        $result = $this->service->getFyiLetters($user->fresh());
 
-        $this->assertCount(0, $result);
+        $this->assertCount(4, $result);
+        $this->assertEqualsCanonicalizing(
+            $letters->pluck('id')->all(),
+            $result->pluck('id')->all()
+        );
     }
 
-    public function test_get_pending_letters_aborts_when_user_has_no_official(): void
+    public function test_get_history_letters_aborts_when_user_has_no_official(): void
     {
         $user = User::factory()->create(['role' => 'rw']);
 
         $this->expectException(ModelNotFoundException::class);
 
-        $this->service->getPendingLetters($user);
+        $this->service->getFyiLetters($user);
     }
 
-    public function test_get_pending_letters_aborts_when_official_has_no_rw(): void
+    public function test_get_history_letters_aborts_when_official_has_no_rw(): void
     {
         $official = Official::factory()->create(['position' => 'rw', 'rw_id' => null]);
         $user = User::factory()->create(['role' => 'rw']);
@@ -133,10 +125,10 @@ class RwApprovalServiceTest extends TestCase
 
         $this->expectException(HttpException::class);
 
-        $this->service->getPendingLetters($user->fresh());
+        $this->service->getFyiLetters($user->fresh());
     }
 
-    public function test_get_letter_detail_returns_letter_within_rw_scope(): void
+    public function test_get_fyi_letter_detail_returns_letter_within_rw_scope(): void
     {
         $rw = Rw::factory()->create();
         $rt = Rt::factory()->create(['rw_id' => $rw->id]);
@@ -147,12 +139,12 @@ class RwApprovalServiceTest extends TestCase
         $user = User::factory()->create(['role' => 'rw']);
         $user->official()->save($official);
 
-        $result = $this->service->getLetterDetail($letter, $user->fresh());
+        $result = $this->service->getFyiLetterDetail($letter, $user->fresh());
 
         $this->assertSame($letter->id, $result->id);
     }
 
-    public function test_get_letter_detail_forbidden_for_letter_outside_rw(): void
+    public function test_get_fyi_letter_detail_forbidden_for_letter_outside_rw(): void
     {
         $rw = Rw::factory()->create();
         $otherRw = Rw::factory()->create();
@@ -166,10 +158,10 @@ class RwApprovalServiceTest extends TestCase
 
         $this->expectException(HttpException::class);
 
-        $this->service->getLetterDetail($letter, $user->fresh());
+        $this->service->getFyiLetterDetail($letter, $user->fresh());
     }
 
-    public function test_get_letter_detail_aborts_when_user_has_no_official(): void
+    public function test_get_fyi_letter_detail_aborts_when_user_has_no_official(): void
     {
         $rw = Rw::factory()->create();
         $rt = Rt::factory()->create(['rw_id' => $rw->id]);
@@ -180,6 +172,6 @@ class RwApprovalServiceTest extends TestCase
 
         $this->expectException(ModelNotFoundException::class);
 
-        $this->service->getLetterDetail($letter, $user);
+        $this->service->getFyiLetterDetail($letter, $user);
     }
 }

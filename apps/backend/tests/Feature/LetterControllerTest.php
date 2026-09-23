@@ -56,7 +56,7 @@ class LetterControllerTest extends TestCase
     public function test_show_returns_letter_detail(): void
     {
         $user = User::factory()->create();
-        $letter = Letter::factory()->create();
+        $letter = Letter::factory()->create(['submitted_by' => $user->id]);
 
         $this->actingAs($user)
             ->getJson("/api/letters/{$letter->id}")
