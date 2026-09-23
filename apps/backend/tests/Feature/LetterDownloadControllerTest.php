@@ -60,4 +60,31 @@ class LetterDownloadControllerTest extends TestCase
         $this->getJson("/api/letters/{$letter->id}/download")
             ->assertUnauthorized();
     }
+
+    public function test_download_forbids_unrelated_warga_even_when_letter_is_approved(): void
+    {
+        $owner = User::factory()->create(['role' => 'warga']);
+        $stranger = User::factory()->create(['role' => 'warga']);
+        $letter = Letter::factory()->create([
+            'status' => 'approved',
+            'submitted_by' => $owner->id,
+        ]);
+
+        $this->actingAs($stranger)
+            ->getJson("/api/letters/{$letter->id}/download")
+            ->assertForbidden();
+    }
+
+    public function test_preview_forbids_unrelated_warga(): void
+    {
+        $owner = User::factory()->create(['role' => 'warga']);
+        $stranger = User::factory()->create(['role' => 'warga']);
+        $letter = Letter::factory()->create([
+            'submitted_by' => $owner->id,
+        ]);
+
+        $this->actingAs($stranger)
+            ->getJson("/api/letters/{$letter->id}/preview")
+            ->assertForbidden();
+    }
 }
