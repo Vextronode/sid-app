@@ -484,4 +484,59 @@ class OfficialServiceTest extends TestCase
 
         $this->assertDatabaseMissing('officials', ['id' => $official->id]);
     }
+
+    /**
+     * EV5-11-S3. rotate() sesuai paths/officials/rotate.yaml.
+     */
+    public function test_rotate_ends_old_official_and_creates_active_new_one_in_same_scope(): void
+    {
+        $rt = Rt::factory()->create();
+        $old = Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
+        $newCitizen = Citizen::factory()->create();
+        $newUser = User::factory()->create();
+
+        $result = $this->service->rotate($old, [
+            'citizen_id' => $newCitizen->id,
+            'user_id' => $newUser->id,
+            'started_at' => now()->toDateString(),
+        ]);
+
+        $this->assertFalse($result['old_official']->is_active);
+        $this->assertNotNull($result['old_official']->ended_at);
+        $this->assertTrue($result['new_official']->is_active);
+        $this->assertSame('rt', $result['new_official']->position);
+        $this->assertSame($rt->id, $result['new_official']->rt_id);
+        $this->assertSame($newCitizen->id, $result['new_official']->citizen_id);
+    }
+
+    public function test_rotate_to_sekdes_position_syncs_user_role_to_sekretaris_desa(): void
+    {
+        $old = Official::factory()->create(['position' => 'sekdes', 'is_active' => true]);
+        $newCitizen = Citizen::factory()->create();
+        $newUser = User::factory()->create(['role' => 'rt']);
+
+        $this->service->rotate($old, [
+            'citizen_id' => $newCitizen->id,
+            'user_id' => $newUser->id,
+            'started_at' => now()->toDateString(),
+        ]);
+
+        $this->assertSame('sekretaris_desa', $newUser->fresh()->role);
+    }
+
+    public function test_rotate_to_non_sekdes_position_does_not_touch_user_role(): void
+    {
+        $rt = Rt::factory()->create();
+        $old = Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
+        $newCitizen = Citizen::factory()->create();
+        $newUser = User::factory()->create(['role' => 'warga']);
+
+        $this->service->rotate($old, [
+            'citizen_id' => $newCitizen->id,
+            'user_id' => $newUser->id,
+            'started_at' => now()->toDateString(),
+        ]);
+
+        $this->assertSame('warga', $newUser->fresh()->role);
+    }
 }

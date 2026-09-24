@@ -169,4 +169,109 @@ class OfficialControllerTest extends TestCase
 
         $this->assertDatabaseHas('officials', ['id' => $official->id]);
     }
+
+    /**
+     * EV5-11-S3. POST /officials/{id}/rotate sesuai paths/officials/rotate.yaml.
+     */
+    public function test_rotate_ends_old_official_and_creates_new_one(): void
+    {
+        $manager = User::factory()->create(['role' => 'kepala_desa']);
+        $rt = Rt::factory()->create();
+        $old = Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
+        $newCitizen = Citizen::factory()->create();
+        $newUser = User::factory()->create();
+
+        $response = $this->actingAs($manager)
+            ->postJson("/api/officials/{$old->id}/rotate", [
+                'citizen_id' => $newCitizen->id,
+                'user_id' => $newUser->id,
+                'started_at' => now()->toDateString(),
+                'notes' => 'Pergantian rutin akhir periode',
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Rotasi jabatan berhasil diproses')
+            ->assertJsonPath('data.old_official.id', $old->id)
+            ->assertJsonPath('data.old_official.is_active', false)
+            ->assertJsonPath('data.new_official.citizen_id', $newCitizen->id)
+            ->assertJsonPath('data.new_official.position', 'rt')
+            ->assertJsonPath('data.new_official.rt_id', $rt->id)
+            ->assertJsonPath('data.new_official.is_active', true);
+
+        $this->assertDatabaseHas('officials', [
+            'id' => $old->id,
+            'is_active' => false,
+        ]);
+        $this->assertDatabaseHas('officials', [
+            'id' => $response->json('data.new_official.id'),
+            'citizen_id' => $newCitizen->id,
+            'user_id' => $newUser->id,
+            'position' => 'rt',
+            'rt_id' => $rt->id,
+            'is_active' => true,
+        ]);
+        $this->assertNotNull($old->fresh()->ended_at);
+    }
+
+    public function test_rotate_to_sekdes_position_syncs_user_role(): void
+    {
+        $manager = User::factory()->create(['role' => 'kepala_desa']);
+        $old = Official::factory()->create(['position' => 'sekdes', 'is_active' => true]);
+        $newCitizen = Citizen::factory()->create();
+        $newUser = User::factory()->create(['role' => 'rt']);
+
+        $this->actingAs($manager)
+            ->postJson("/api/officials/{$old->id}/rotate", [
+                'citizen_id' => $newCitizen->id,
+                'user_id' => $newUser->id,
+                'started_at' => now()->toDateString(),
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $newUser->id,
+            'role' => 'sekretaris_desa',
+        ]);
+    }
+
+    public function test_rotate_forbidden_for_non_manager_role(): void
+    {
+        $warga = User::factory()->create(['role' => 'warga']);
+        $old = Official::factory()->create();
+        $newCitizen = Citizen::factory()->create();
+        $newUser = User::factory()->create();
+
+        $this->actingAs($warga)
+            ->postJson("/api/officials/{$old->id}/rotate", [
+                'citizen_id' => $newCitizen->id,
+                'user_id' => $newUser->id,
+                'started_at' => now()->toDateString(),
+            ])
+            ->assertStatus(403);
+    }
+
+    public function test_rotate_validates_required_fields(): void
+    {
+        $manager = User::factory()->create(['role' => 'kepala_desa']);
+        $old = Official::factory()->create();
+
+        $this->actingAs($manager)
+            ->postJson("/api/officials/{$old->id}/rotate", [])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['citizen_id', 'user_id', 'started_at']);
+    }
+
+    public function test_rotate_returns_404_for_unknown_official(): void
+    {
+        $manager = User::factory()->create(['role' => 'kepala_desa']);
+        $newCitizen = Citizen::factory()->create();
+        $newUser = User::factory()->create();
+
+        $this->actingAs($manager)
+            ->postJson('/api/officials/999999/rotate', [
+                'citizen_id' => $newCitizen->id,
+                'user_id' => $newUser->id,
+                'started_at' => now()->toDateString(),
+            ])
+            ->assertNotFound();
+    }
 }

@@ -378,6 +378,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [OfficialController::class, 'store']);
         Route::get('/{official}', [OfficialController::class, 'show']);
         Route::patch('/{official}', [OfficialController::class, 'update']);
+        Route::post('/{official}/rotate', [OfficialController::class, 'rotate']);
         Route::delete('/{official}', [OfficialController::class, 'destroy']);
     });
 
@@ -391,6 +392,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->prefix('users')
         ->group(function () {
             Route::get('/', [UserController::class, 'index']);
+            Route::post('/', [UserController::class, 'store']);
+            Route::patch('/{user}', [UserController::class, 'update']);
             Route::patch('/{user}/toggle-status', [UserController::class, 'updateStatus']);
         });
 

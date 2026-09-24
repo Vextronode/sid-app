@@ -37,6 +37,35 @@ class UserRepository
         return $user;
     }
 
+    public function create(array $data): User
+    {
+        return User::create($data);
+    }
+
+    public function update(User $user, array $data): User
+    {
+        $user->update($data);
+
+        return $user;
+    }
+
+    public function updateRole(int $userId, string $role): void
+    {
+        User::query()->whereKey($userId)->update(['role' => $role]);
+    }
+
+    /**
+     * Dipakai UserService::update() untuk guard "tidak dapat
+     * menonaktifkan satu-satunya akun Petugas Desa yang masih aktif".
+     */
+    public function countActiveByRole(string $role): int
+    {
+        return User::query()
+            ->where('role', $role)
+            ->where('is_active', true)
+            ->count();
+    }
+
     /**
      * Mencerminkan query asli pada closure route GET /user:
      * eager-load profil lengkap (citizen beserta village/hamlet/rt/rw,
