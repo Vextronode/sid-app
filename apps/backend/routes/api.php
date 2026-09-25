@@ -132,7 +132,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/', [CitizenController::class, 'index']);
             Route::post('/', [CitizenController::class, 'store']);
             Route::post('/import', [CitizenController::class, 'import']);
-//            Route::put('/{citizen}', [CitizenController::class, 'update']);
+            //            Route::put('/{citizen}', [CitizenController::class, 'update']);
             Route::patch('/{citizen}', [CitizenController::class, 'update']);
             Route::delete('/{citizen}', [CitizenController::class, 'destroy']);
             Route::get('/wilayah', [CitizenController::class, 'wilayah']);
