@@ -14,21 +14,19 @@ use Illuminate\Http\Request;
 
 class RtController extends Controller
 {
-    public function __construct(
-        protected RtService $rtService
-    ) {}
+    public function __construct(protected RtService $rtService) {}
 
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Rt::class);
         $rwId = $request->filled('rw_id') ? (int) $request->query('rw_id') : null;
 
-        $rts = $this->rtService->getAllOrderedByNumber($rwId);
-
-        return (new RtCollection($rts))->response()->setStatusCode(200);
+        return (new RtCollection($this->rtService->getAllOrderedByNumber($rwId)))->response();
     }
 
     public function store(StoreRtRequest $request)
     {
+        $this->authorize('create', Rt::class);
         $rt = $this->rtService->create($request->validated());
 
         return (new RtResource($rt))->response()->setStatusCode(201);
@@ -36,17 +34,17 @@ class RtController extends Controller
 
     public function update(UpdateRtRequest $request, Rt $rt)
     {
+        $this->authorize('update', $rt);
         $rt = $this->rtService->update($rt, $request->validated());
 
-        return (new RtResource($rt))->response()->setStatusCode(200);
+        return (new RtResource($rt))->response();
     }
 
     public function destroy(DestroyRtRequest $request, Rt $rt)
     {
+        $this->authorize('delete', $rt);
         $this->rtService->delete($rt);
 
-        return response()->json([
-            'message' => 'RT berhasil dihapus.',
-        ])->setStatusCode(200);
+        return response()->json(['message' => 'RT berhasil dihapus.']);
     }
 }

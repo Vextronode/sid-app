@@ -2,7 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Hamlet;
+use App\Models\Rt;
+use App\Models\Rw;
+use App\Policies\RegionPolicy;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,6 +25,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(Hamlet::class, RegionPolicy::class);
+        Gate::policy(Rw::class, RegionPolicy::class);
+        Gate::policy(Rt::class, RegionPolicy::class);
+
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
             return config('app.frontend_url')."/password-reset/$token?email={$notifiable->getEmailForPasswordReset()}";
         });

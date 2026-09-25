@@ -272,4 +272,16 @@ class RegionEndpointsTest extends TestCase
             ->deleteJson("/api/rts/{$rt->id}")
             ->assertStatus(409);
     }
+
+    public function test_petugas_cannot_update_region_from_another_village(): void
+    {
+        $ownerVillage = Village::factory()->create();
+        $otherVillage = Village::factory()->create();
+        $user = $this->petugasDesa($ownerVillage);
+        $hamlet = Hamlet::factory()->create(['village_id' => $otherVillage->id]);
+
+        $this->actingAs($user)
+            ->patchJson("/api/hamlets/{$hamlet->id}", ['name' => 'Tidak boleh'])
+            ->assertForbidden();
+    }
 }

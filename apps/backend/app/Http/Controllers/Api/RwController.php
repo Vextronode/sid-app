@@ -14,21 +14,19 @@ use Illuminate\Http\Request;
 
 class RwController extends Controller
 {
-    public function __construct(
-        protected RwService $rwService
-    ) {}
+    public function __construct(protected RwService $rwService) {}
 
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Rw::class);
         $hamletId = $request->filled('hamlet_id') ? (int) $request->query('hamlet_id') : null;
 
-        $rws = $this->rwService->getAllOrderedByNumber($hamletId);
-
-        return (new RwCollection($rws))->response()->setStatusCode(200);
+        return (new RwCollection($this->rwService->getAllOrderedByNumber($hamletId)))->response();
     }
 
     public function store(StoreRwRequest $request)
     {
+        $this->authorize('create', Rw::class);
         $rw = $this->rwService->create($request->validated());
 
         return (new RwResource($rw))->response()->setStatusCode(201);
@@ -36,17 +34,17 @@ class RwController extends Controller
 
     public function update(UpdateRwRequest $request, Rw $rw)
     {
+        $this->authorize('update', $rw);
         $rw = $this->rwService->update($rw, $request->validated());
 
-        return (new RwResource($rw))->response()->setStatusCode(200);
+        return (new RwResource($rw))->response();
     }
 
     public function destroy(DestroyRwRequest $request, Rw $rw)
     {
+        $this->authorize('delete', $rw);
         $this->rwService->delete($rw);
 
-        return response()->json([
-            'message' => 'RW berhasil dihapus.',
-        ])->setStatusCode(200);
+        return response()->json(['message' => 'RW berhasil dihapus.']);
     }
 }
