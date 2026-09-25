@@ -17,6 +17,13 @@ class LetterTypeRepository
         return LetterType::query()->findOrFail($id);
     }
 
+    public function update(LetterType $letterType, array $data): LetterType
+    {
+        $letterType->update($data);
+
+        return $letterType->load(['category', 'flow']);
+    }
+
     public function allActiveWithTemplate(): Collection
     {
         return LetterType::query()

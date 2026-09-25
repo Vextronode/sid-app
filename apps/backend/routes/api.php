@@ -225,6 +225,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/letter-categories', [LetterCategoryController::class, 'index']);
     Route::get('/letter-types', [LetterTypeController::class, 'index']);
 
+    // UC-21: edit konfigurasi tipe surat eksklusif Petugas Desa.
+    // PUT (bukan PATCH) mengikuti backlog - beda dari api_spec yang
+    // menulis PATCH untuk endpoint ini.
+    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+        ->put('/letter-types/{letterType}', [LetterTypeController::class, 'update']);
+
     Route::prefix('letters')->group(function () {
         // UC-03: hanya Warga yang mengajukan permohonan surat self-service.
         Route::middleware(UserRole::middleware(UserRole::Warga))
