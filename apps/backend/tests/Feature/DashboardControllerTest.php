@@ -99,4 +99,14 @@ class DashboardControllerTest extends TestCase
             ->getJson('/api/dashboard')
             ->assertForbidden();
     }
+
+    public function test_letter_stats_rejects_invalid_date(): void
+    {
+        $user = User::factory()->create(['role' => 'petugas_desa']);
+
+        $this->actingAs($user)
+            ->getJson('/api/dashboard/letter-stats?date=not-a-date')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['date']);
+    }
 }

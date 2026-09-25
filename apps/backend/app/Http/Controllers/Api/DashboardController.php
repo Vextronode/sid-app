@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DashboardStatsRequest;
 use App\Services\DashboardService;
 use Illuminate\Http\Request;
 
@@ -19,21 +20,21 @@ class DashboardController extends Controller
         );
     }
 
-    public function genderStats(Request $request)
+    public function genderStats(DashboardStatsRequest $request)
     {
-        $stats = $this->dashboardService->getGenderStats($request->user());
-
-        return response()->json($stats)->setStatusCode(200);
+        return response()->json(
+            $this->dashboardService->getGenderStats($request->user())
+        );
     }
 
-    public function letterStats(Request $request)
+    public function letterStats(DashboardStatsRequest $request)
     {
-        $stats = $this->dashboardService->getLetterStats(
-            $request->user(),
-            $request->get('date'),
-            $request->get('letter_type'),
+        return response()->json(
+            $this->dashboardService->getLetterStats(
+                $request->user(),
+                $request->validated('date'),
+                $request->validated('letter_type'),
+            )
         );
-
-        return response()->json($stats)->setStatusCode(200);
     }
 }

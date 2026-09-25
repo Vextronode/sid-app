@@ -11,7 +11,7 @@ use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class RegionControllerTest extends TestCase
+class RegionEndpointsTest extends TestCase
 {
     use RefreshDatabase;
 
