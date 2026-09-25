@@ -156,7 +156,7 @@ class CitizenStoreUpdateTest extends TestCase
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
 
         $this->actingAs($this->petugas($village))
-            ->patchJson("/api/citizens/{$citizen->id}", [
+            ->putJson("/api/citizens/{$citizen->id}", [
                 'name' => 'Nama Baru',
                 'domicile_status' => 'merantau_dalam_negeri',
                 'current_domicile' => 'Jakarta Selatan',
@@ -174,7 +174,7 @@ class CitizenStoreUpdateTest extends TestCase
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
 
         $this->actingAs($this->petugas($village))
-            ->patchJson("/api/citizens/{$citizen->id}", ['nik' => '3201012345679999'])
+            ->putJson("/api/citizens/{$citizen->id}", ['nik' => '3201012345679999'])
             ->assertStatus(422)
             ->assertJsonPath('errors.nik.0', 'NIK tidak dapat diubah setelah data warga dibuat');
     }
@@ -186,7 +186,7 @@ class CitizenStoreUpdateTest extends TestCase
         $newRt = Rt::factory()->create();
 
         $this->actingAs($this->petugas($village))
-            ->patchJson("/api/citizens/{$citizen->id}", ['rt_id' => $newRt->id])
+            ->putJson("/api/citizens/{$citizen->id}", ['rt_id' => $newRt->id])
             ->assertOk()
             ->assertJsonPath('data.rw_id', $newRt->rw_id);
     }
@@ -198,7 +198,7 @@ class CitizenStoreUpdateTest extends TestCase
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
 
         $this->actingAs($this->petugas($village))
-            ->patchJson("/api/citizens/{$citizen->id}", ['family_id' => $family->id, 'family_role' => 'istri'])
+            ->putJson("/api/citizens/{$citizen->id}", ['family_id' => $family->id, 'family_role' => 'istri'])
             ->assertOk()
             ->assertJsonPath('data.family.id', $family->id)
             ->assertJsonPath('data.family_role', 'istri');
@@ -214,11 +214,11 @@ class CitizenStoreUpdateTest extends TestCase
         $petugas = $this->petugas($village);
 
         $this->actingAs($petugas)
-            ->patchJson("/api/citizens/{$head->id}", ['family_role' => 'kepala_keluarga', 'name' => 'Kepala Baru'])
+            ->putJson("/api/citizens/{$head->id}", ['family_role' => 'kepala_keluarga', 'name' => 'Kepala Baru'])
             ->assertOk();
 
         $this->actingAs($petugas)
-            ->patchJson("/api/citizens/{$other->id}", ['family_role' => 'kepala_keluarga'])
+            ->putJson("/api/citizens/{$other->id}", ['family_role' => 'kepala_keluarga'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['family_role']);
     }
@@ -229,7 +229,7 @@ class CitizenStoreUpdateTest extends TestCase
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
 
         $this->actingAs($this->petugas($village))
-            ->patchJson("/api/citizens/{$citizen->id}", ['father_id' => $citizen->id])
+            ->putJson("/api/citizens/{$citizen->id}", ['father_id' => $citizen->id])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['father_id']);
     }
@@ -239,7 +239,7 @@ class CitizenStoreUpdateTest extends TestCase
         $citizen = Citizen::factory()->create();
 
         $this->actingAs($this->petugas())
-            ->patchJson("/api/citizens/{$citizen->id}", ['name' => 'X'])
+            ->putJson("/api/citizens/{$citizen->id}", ['name' => 'X'])
             ->assertForbidden();
     }
 
@@ -248,14 +248,14 @@ class CitizenStoreUpdateTest extends TestCase
         $citizen = Citizen::factory()->create();
 
         $this->actingAs(User::factory()->create(['role' => 'rt']))
-            ->patchJson("/api/citizens/{$citizen->id}", ['name' => 'X'])
+            ->putJson("/api/citizens/{$citizen->id}", ['name' => 'X'])
             ->assertForbidden();
     }
 
     public function test_update_returns_404_for_unknown_citizen(): void
     {
         $this->actingAs($this->petugas())
-            ->patchJson('/api/citizens/999999', ['name' => 'X'])
+            ->putJson('/api/citizens/999999', ['name' => 'X'])
             ->assertNotFound();
     }
 }

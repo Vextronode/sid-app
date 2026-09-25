@@ -132,7 +132,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/', [CitizenController::class, 'index']);
             Route::post('/', [CitizenController::class, 'store']);
             Route::post('/import', [CitizenController::class, 'import']);
-            Route::patch('/{citizen}', [CitizenController::class, 'update']);
+            // PUT (bukan PATCH) mengikuti backlog - beda dari api_spec
+            // yang menulis PATCH untuk endpoint ini.
+            Route::put('/{citizen}', [CitizenController::class, 'update']);
             Route::delete('/{citizen}', [CitizenController::class, 'destroy']);
             Route::get('/wilayah', [CitizenController::class, 'wilayah']);
             Route::get('/{id}/socioeconomic', [CitizenSocioeconomicController::class, 'show']);
