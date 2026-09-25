@@ -30,7 +30,7 @@ class NotificationController extends Controller
         $this->notificationService->markAsRead($request->user(), $id);
 
         return response()->json([
-            'message' => 'Notification marked as read',
+            'message' => 'Notifikasi berhasil ditandai dibaca.'
         ]);
     }
 
@@ -42,7 +42,7 @@ class NotificationController extends Controller
         $this->notificationService->markAllAsRead($request->user());
 
         return response()->json([
-            'message' => 'All notifications marked as read',
+            'message' => 'Semua notifikasi berhasil ditandai dibaca.'
         ]);
     }
 
@@ -52,7 +52,7 @@ class NotificationController extends Controller
     public function unreadCount(Request $request)
     {
         return response()->json([
-            'count' => $this->notificationService->getUnreadCount($request->user()),
+            'count' => $this->notificationService->getUnreadCount($request->user())
         ]);
     }
 }

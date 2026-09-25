@@ -9,6 +9,7 @@ use App\Http\Resources\LetterCollection;
 use App\Http\Resources\LetterResource;
 use App\Models\Letter;
 use App\Services\LetterService;
+use Illuminate\Http\Request;
 
 class LetterController extends Controller
 {
@@ -34,7 +35,7 @@ class LetterController extends Controller
         $this->authorize('viewAny', Letter::class);
 
         $letters = $this->letterService->getScopedLetters(
-            auth()->user(),
+            $request->user(),
             $request->validated()
         );
 
@@ -51,19 +52,19 @@ class LetterController extends Controller
         $this->authorize('view', $letter);
 
         return response()->json([
-            'message' => 'Detail permohonan berhasil diambil.',
+            'message' => 'Detail surat berhasil diambil.',
             'data' => new LetterResource($letter),
         ]);
     }
 
-    public function destroy(Letter $letter)
-    {
+    public function destroy(Request $request, Letter $letter) {
         $this->authorize('delete', $letter);
 
-        $this->letterService->delete($letter, auth()->user());
+        $this->letterService->delete(
+            $letter,
+            $request->user()
+        );
 
-        return response()->json([
-            'message' => 'Surat berhasil dihapus.',
-        ]);
+        return response()->json(['message' => 'Surat berhasil dihapus.']);
     }
 }
