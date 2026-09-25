@@ -36,7 +36,7 @@ class LetterTypeControllerTest extends TestCase
         $letterType = LetterType::factory()->create(['validity_days' => 30, 'is_active' => true]);
 
         $this->actingAs($admin)
-            ->patchJson("/api/letter-types/{$letterType->id}", [
+            ->putJson("/api/letter-types/{$letterType->id}", [
                 'validity_days' => 180,
                 'is_active' => false,
             ])
@@ -56,7 +56,7 @@ class LetterTypeControllerTest extends TestCase
         $letterType = LetterType::factory()->create(['category_id' => $category->id, 'flow_id' => $oldFlow->id]);
 
         $this->actingAs($admin)
-            ->patchJson("/api/letter-types/{$letterType->id}", ['flow_id' => $newFlow->id])
+            ->putJson("/api/letter-types/{$letterType->id}", ['flow_id' => $newFlow->id])
             ->assertOk()
             ->assertJsonPath('data.flow_id', $newFlow->id);
     }
@@ -70,7 +70,7 @@ class LetterTypeControllerTest extends TestCase
         $letterType = LetterType::factory()->create(['category_id' => $category->id]);
 
         $this->actingAs($admin)
-            ->patchJson("/api/letter-types/{$letterType->id}", ['flow_id' => $flowInOtherCategory->id])
+            ->putJson("/api/letter-types/{$letterType->id}", ['flow_id' => $flowInOtherCategory->id])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['flow_id']);
     }
@@ -81,7 +81,7 @@ class LetterTypeControllerTest extends TestCase
         $letterType = LetterType::factory()->create();
 
         $this->actingAs($admin)
-            ->patchJson("/api/letter-types/{$letterType->id}", ['validity_days' => -5])
+            ->putJson("/api/letter-types/{$letterType->id}", ['validity_days' => -5])
             ->assertStatus(422)
             ->assertJsonPath('errors.validity_days.0', 'Masa berlaku harus lebih dari 0 hari');
     }
@@ -91,7 +91,7 @@ class LetterTypeControllerTest extends TestCase
         $letterType = LetterType::factory()->create();
 
         $this->actingAs(User::factory()->create(['role' => 'rt']))
-            ->patchJson("/api/letter-types/{$letterType->id}", ['validity_days' => 60])
+            ->putJson("/api/letter-types/{$letterType->id}", ['validity_days' => 60])
             ->assertStatus(403);
     }
 
@@ -99,7 +99,7 @@ class LetterTypeControllerTest extends TestCase
     {
         $letterType = LetterType::factory()->create();
 
-        $this->patchJson("/api/letter-types/{$letterType->id}", ['validity_days' => 60])
+        $this->putJson("/api/letter-types/{$letterType->id}", ['validity_days' => 60])
             ->assertUnauthorized();
     }
 
@@ -108,7 +108,7 @@ class LetterTypeControllerTest extends TestCase
         $admin = User::factory()->create(['role' => 'petugas_desa']);
 
         $this->actingAs($admin)
-            ->patchJson('/api/letter-types/999999', ['validity_days' => 60])
+            ->putJson('/api/letter-types/999999', ['validity_days' => 60])
             ->assertNotFound();
     }
 }
