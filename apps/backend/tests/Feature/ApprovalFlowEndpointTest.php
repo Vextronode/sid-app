@@ -14,9 +14,8 @@ use Tests\TestCase;
  * EV5-1-S2 — Feature test untuk GET/POST /approval-flows dan
  * GET /approval-flows/{id}.
  *
- * CATATAN: endpoint PUT /approval-flows/{id}/steps SENGAJA TIDAK dites di
- * sini — itu ditambahkan controller-nya di EV5-1-S3 (lihat
- * EV5-1-S3_FlowSteps/tests/Feature/ApprovalFlowStepsEndpointTest.php).
+ * CATATAN: endpoint PUT /approval-flows/{id}/steps diuji terpisah di
+ * ApprovalFlowStepsEndpointTest.php agar cakupan endpoint tetap terfokus.
  *
  * Asumsi role otorisasi: StoreApprovalFlowRequest::authorize() mengizinkan
  * HANYA user dengan role 'petugas_desa' (sesuai TDD Table 4 & kolom
