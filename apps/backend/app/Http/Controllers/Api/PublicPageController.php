@@ -40,15 +40,7 @@ class PublicPageController extends Controller
     {
         $paginator = $this->service->paginatedNews();
 
-        return response()->json([
-            'data' => NewsResource::collection($paginator->items()),
-            'meta' => [
-                'current_page' => $paginator->currentPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'last_page' => $paginator->lastPage(),
-            ],
-        ]);
+        return NewsResource::collection($paginator)->response();
     }
 
     public function letterTypeList(): JsonResponse

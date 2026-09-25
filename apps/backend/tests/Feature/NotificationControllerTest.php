@@ -35,7 +35,7 @@ class NotificationControllerTest extends TestCase
         $this->actingAs($user)
             ->postJson("/api/notifications/{$notification->id}/read")
             ->assertOk()
-            ->assertJsonPath('message', 'Notification marked as read');
+            ->assertJsonPath('message', 'Notifikasi berhasil ditandai dibaca.');
 
         $this->assertNotNull($notification->fresh()->read_at);
     }
@@ -49,7 +49,7 @@ class NotificationControllerTest extends TestCase
         $this->actingAs($user)
             ->postJson('/api/notifications/read-all')
             ->assertOk()
-            ->assertJsonPath('message', 'All notifications marked as read');
+            ->assertJsonPath('message', 'Semua notifikasi berhasil ditandai dibaca.');
 
         $this->actingAs($user)
             ->getJson('/api/notifications/unread-count')
