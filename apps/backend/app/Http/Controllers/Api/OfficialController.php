@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RotateOfficialRequest;
 use App\Http\Requests\StoreOfficialRequest;
 use App\Http\Requests\UpdateOfficialRequest;
 use App\Http\Resources\OfficialCollection;
@@ -50,6 +51,21 @@ class OfficialController extends Controller
         $official = $this->officialService->update($official, $request->validated());
 
         return (new OfficialResource($official))->response()->setStatusCode(200);
+    }
+
+    public function rotate(RotateOfficialRequest $request, Official $official)
+    {
+        $this->authorize('update', $official);
+
+        $result = $this->officialService->rotate($official, $request->validated());
+
+        return response()->json([
+            'message' => 'Rotasi jabatan berhasil diproses',
+            'data' => [
+                'old_official' => new OfficialResource($result['old_official']),
+                'new_official' => new OfficialResource($result['new_official']),
+            ],
+        ]);
     }
 
     public function destroy(Official $official)
