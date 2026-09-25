@@ -57,7 +57,8 @@ class LetterController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, Letter $letter) {
+    public function destroy(Request $request, Letter $letter)
+    {
         $this->authorize('delete', $letter);
 
         $this->letterService->delete(
