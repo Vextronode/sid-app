@@ -27,7 +27,7 @@ class CitizenResource extends JsonResource
             'blood_type' => $this->blood_type,
             'address' => $this->address,
             'rt_id' => $this->rt_id,
-            'rw_id' => $this->rw_id,
+            'rw_id' => $this->rt?->rw_id,
             'hamlet_id' => $this->hamlet_id,
             'family_id' => $this->family_id,
             'family' => $this->when(

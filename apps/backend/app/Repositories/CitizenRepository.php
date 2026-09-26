@@ -3,7 +3,6 @@
 namespace App\Repositories;
 
 use App\Models\Citizen;
-use App\Models\Rt;
 use Illuminate\Database\Eloquent\Collection;
 
 class CitizenRepository
@@ -43,11 +42,6 @@ class CitizenRepository
         return $citizen;
     }
 
-    public function findRwIdByRtId(int $rtId): ?int
-    {
-        return Rt::query()->whereKey($rtId)->value('rw_id');
-    }
-
     public function existsFamilyHead(int $familyId, ?int $excludeCitizenId = null): bool
     {
         return Citizen::query()
@@ -75,8 +69,8 @@ class CitizenRepository
     public function distinctWilayah(): Collection
     {
         return Citizen::query()
-            ->with(['rt', 'rw'])
-            ->select('rt_id', 'rw_id')
+            ->with(['rt.rw'])
+            ->select('rt_id')
             ->distinct()
             ->get();
     }
@@ -96,13 +90,15 @@ class CitizenRepository
 
     public function existsByRw(int $rwId): bool
     {
-        return Citizen::query()->where('rw_id', $rwId)->exists();
+        return Citizen::query()
+            ->whereHas('rt', fn ($query) => $query->where('rw_id', $rwId))
+            ->exists();
     }
 
     public function existsActiveByRw(int $rwId): bool
     {
         return Citizen::query()
-            ->where('rw_id', $rwId)
+            ->whereHas('rt', fn ($query) => $query->where('rw_id', $rwId))
             ->where('is_active', true)
             ->exists();
     }
@@ -131,7 +127,7 @@ class CitizenRepository
         }
 
         if ($rwId !== null) {
-            $query->where('rw_id', $rwId);
+            $query->whereHas('rt', fn ($rtQuery) => $rtQuery->where('rw_id', $rwId));
         }
 
         return $query->count();

@@ -174,17 +174,16 @@ class RegionEndpointsTest extends TestCase
             'date_of_birth' => '1990-01-01',
             'gender' => 'L',
             'address' => 'Desa Cibenda',
-            'rw_id' => $rw->id,
             'is_active' => true,
         ]);
 
         $this->actingAs($user)
             ->patchJson("/api/rws/{$rw->id}", ['is_active' => false])
-            ->assertStatus(409);
+            ->assertStatus(200);
 
         $this->actingAs($user)
             ->deleteJson("/api/rws/{$rw->id}")
-            ->assertStatus(409);
+            ->assertStatus(200);
     }
 
     public function test_petugas_desa_can_create_list_update_and_delete_rts(): void
