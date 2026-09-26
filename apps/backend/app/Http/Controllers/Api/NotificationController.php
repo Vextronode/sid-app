@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\NotificationResource;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
@@ -19,7 +20,7 @@ class NotificationController extends Controller
     {
         $notifications = $this->notificationService->getForUser($request->user());
 
-        return response()->json($notifications);
+        return NotificationResource::collection($notifications)->response();
     }
 
     /**
