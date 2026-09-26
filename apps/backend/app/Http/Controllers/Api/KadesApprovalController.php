@@ -32,6 +32,8 @@ class KadesApprovalController extends Controller
         Request $request,
         Letter $letter
     ) {
+        $this->authorize('view', $letter);
+
         $detail = $this->service->getLetterDetail(
             $letter,
             $request->user()
