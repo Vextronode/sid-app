@@ -43,8 +43,10 @@ class RtApprovalController extends Controller
         ]);
     }
 
-    public function show(Letter $letter)
+    public function show(Request $request, Letter $letter)
     {
+        $this->authorize('view', $letter);
+
         $letter = $this->service->getLetterDetail($letter);
 
         return response()->json([

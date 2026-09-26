@@ -36,6 +36,8 @@ class RwFyiController extends Controller
         Request $request,
         Letter $letter
     ) {
+        $this->authorize('view', $letter);
+
         $detail = $this->service->getFyiLetterDetail(
             $letter,
             $request->user()
