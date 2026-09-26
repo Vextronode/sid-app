@@ -15,19 +15,17 @@ class NotificationResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->resource['id'],
-            'title' => $this->resource['title'],
-            'message' => $this->resource['message'],
-            'category' => $this->resource['category'],
-            'icon' => $this->resource['icon'],
-            'color' => $this->resource['color'],
-            'status' => $this->resource['status'],
-            'letter_id' => $this->resource['letter_id'],
-            'letter_no' => $this->resource['letter_no'],
-            'applicant' => $this->resource['applicant'],
-            'read' => $this->resource['read'],
-            'created_at' => $this->resource['created_at'],
-            'time' => $this->resource['time'],
+            'id' => $this->resource['id'] ?? null,
+            'type' => $this->resource['type'] ?? null,
+            'title' => $this->resource['title'] ?? null,
+            'message' => $this->resource['message'] ?? null,
+            'category' => $this->resource['category'] ?? 'umum',
+            'icon' => $this->resource['icon'] ?? 'bell',
+            'color' => $this->resource['color'] ?? 'gray',
+            'read' => $this->resource['read'] ?? false,
+            'created_at' => $this->resource['created_at'] ?? null,
+            'time' => $this->resource['time'] ?? null,
+            'context' => $this->resource['context'] ?? [],
         ];
     }
 }

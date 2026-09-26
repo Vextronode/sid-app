@@ -23,28 +23,24 @@ class NotificationService
                 return [
                     'id' => $notification->id,
 
-                    'title' => $data['title'],
-                    'message' => $data['message'],
+                    'type' => class_basename($notification->type),
 
-                    'category' => $data['category'] ?? 'pelayanan',
+                    'title' => $data['title'] ?? null,
+                    'message' => $data['message'] ?? null,
 
-                    'icon' => $data['icon'] ?? 'document',
+                    'category' => $data['category'] ?? 'umum',
+
+                    'icon' => $data['icon'] ?? 'bell',
 
                     'color' => $data['color'] ?? 'gray',
-
-                    'status' => $data['status'],
-
-                    'letter_id' => $data['letter_id'],
-
-                    'letter_no' => $data['letter_no'] ?? null,
-
-                    'applicant' => $data['applicant'] ?? null,
 
                     'read' => $notification->read_at !== null,
 
                     'created_at' => $notification->created_at,
 
                     'time' => $notification->created_at->diffForHumans(),
+
+                    'context' => $data['context'] ?? [],
                 ];
             });
     }
