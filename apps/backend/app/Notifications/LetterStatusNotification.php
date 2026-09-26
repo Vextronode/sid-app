@@ -30,14 +30,6 @@ class LetterStatusNotification extends Notification
 
             'message' => $this->message,
 
-            'letter_id' => $this->letter->id,
-
-            'letter_no' => $this->letter->letter_number,
-
-            'status' => $this->status,
-
-            'applicant' => $this->letter->applicant_name,
-
             'category' => 'pelayanan',
 
             'icon' => match ($this->status) {
@@ -64,6 +56,17 @@ class LetterStatusNotification extends Notification
 
                 default => 'gray',
             },
+
+            'context' => [
+
+                'letter_id' => $this->letter->id,
+
+                'letter_no' => $this->letter->letter_number,
+
+                'status' => $this->status,
+
+                'applicant' => $this->letter->applicant_name,
+            ],
 
         ];
     }
