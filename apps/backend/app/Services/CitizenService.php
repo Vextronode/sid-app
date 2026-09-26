@@ -40,7 +40,6 @@ class CitizenService
         return DB::transaction(function () use ($data, $user) {
             $citizen = $this->citizenRepository->create(array_merge($data, [
                 'village_id' => $user->village_id,
-                'rw_id' => $this->citizenRepository->findRwIdByRtId($data['rt_id']),
                 'data_source' => 'manual_input_desa',
             ]));
 
@@ -62,10 +61,6 @@ class CitizenService
         $familyRole = array_key_exists('family_role', $data) ? $data['family_role'] : $citizen->family_role?->value;
 
         $this->guardSingleFamilyHead($familyId, $familyRole, $citizen->id);
-
-        if (isset($data['rt_id'])) {
-            $data['rw_id'] = $this->citizenRepository->findRwIdByRtId($data['rt_id']);
-        }
 
         return DB::transaction(function () use ($citizen, $data) {
             $citizen = $this->citizenRepository->update($citizen, $data);

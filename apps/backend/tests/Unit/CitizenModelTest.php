@@ -45,7 +45,6 @@ class CitizenModelTest extends TestCase
         return [
             'village_id' => $village->id,
             'hamlet_id' => $hamlet->id,
-            'rw_id' => $rw->id,
             'rt_id' => $rt->id,
         ];
     }
@@ -61,7 +60,6 @@ class CitizenModelTest extends TestCase
             'family_address' => 'Desa Cibenda',
             'family_status' => 'aktif',
             'rt_id' => $base['rt_id'],
-            'rw_id' => $base['rw_id'],
             'hamlet_id' => $base['hamlet_id'],
         ]);
 

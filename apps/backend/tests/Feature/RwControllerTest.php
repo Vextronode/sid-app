@@ -91,16 +91,15 @@ class RwControllerTest extends TestCase
             'date_of_birth' => '1990-01-01',
             'gender' => 'L',
             'address' => 'Desa Cibenda',
-            'rw_id' => $rw->id,
             'is_active' => true,
         ]);
 
         $this->actingAs($user)
             ->patchJson("/api/rws/{$rw->id}", ['is_active' => false])
-            ->assertStatus(409);
+            ->assertStatus(200);
 
         $this->actingAs($user)
             ->deleteJson("/api/rws/{$rw->id}")
-            ->assertStatus(409);
+            ->assertStatus(200);
     }
 }

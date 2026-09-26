@@ -204,7 +204,6 @@ class WilayahSeeder extends Seeder
                 'rt_id' => $targetRt
                     ? $targetRt->id
                     : $rts[str_replace('_RW_', '_RT_001_RW_', $off['rw_key'])]->id,
-                'rw_id' => $targetRw->id,
                 'hamlet_id' => $targetRw->hamlet_id,
                 'marital_status' => 'kawin',
                 'occupation' => 'Wiraswasta',
@@ -408,7 +407,6 @@ class WilayahSeeder extends Seeder
                 'gender' => 'L',
                 'address' => 'Desa Cibenda',
                 'rt_id' => $targetRt->id,
-                'rw_id' => $targetRw->id,
                 'hamlet_id' => $targetRw->hamlet_id,
                 'marital_status' => 'kawin',
                 'occupation' => match ($staff['role']) {
@@ -572,7 +570,6 @@ class WilayahSeeder extends Seeder
                 'gender' => $w['gender'],
                 'address' => 'Desa Cibenda',
                 'rt_id' => $targetRt->id,
-                'rw_id' => $targetRw->id,
                 'hamlet_id' => $targetRw->hamlet_id,
                 'marital_status' => 'kawin',
                 'occupation' => 'Karyawan Swasta',

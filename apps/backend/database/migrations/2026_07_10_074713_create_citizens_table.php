@@ -23,7 +23,6 @@ return new class extends Migration
             $table->enum('blood_type', ['A', 'B', 'AB', 'O', 'tidak_tahu'])->nullable();
             $table->text('address');
             $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
-            $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
             $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();
 
             // EV5-3-S2: no_kk dipindah ke families.no_kk (EV5-3-S1). FK
