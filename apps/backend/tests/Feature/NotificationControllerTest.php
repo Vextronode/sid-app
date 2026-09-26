@@ -21,8 +21,8 @@ class NotificationControllerTest extends TestCase
         $this->actingAs($user)
             ->getJson('/api/notifications')
             ->assertOk()
-            ->assertJsonCount(1)
-            ->assertJsonPath('0.title', 'Judul');
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', 'Judul');
     }
 
     public function test_read_marks_single_notification(): void

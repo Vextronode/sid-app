@@ -62,11 +62,9 @@ class DashboardControllerTest extends TestCase
             ->getJson('/api/dashboard')
             ->assertOk()
             ->assertJsonStructure([
-                'role',
-                'my_letters',
-                'unread_notifications_count',
+                'data' => ['role', 'my_letters', 'unread_notifications_count'],
             ])
-            ->assertJsonPath('role', 'warga');
+            ->assertJsonPath('data.role', 'warga');
     }
 
     public function test_generic_dashboard_returns_rw_fyi_shape(): void
@@ -84,11 +82,9 @@ class DashboardControllerTest extends TestCase
             ->getJson('/api/dashboard')
             ->assertOk()
             ->assertJsonStructure([
-                'role',
-                'fyi_letters',
-                'unread_notifications_count',
+                'data' => ['role', 'fyi_letters', 'unread_notifications_count'],
             ])
-            ->assertJsonPath('role', 'rw');
+            ->assertJsonPath('data.role', 'rw');
     }
 
     public function test_generic_dashboard_forbids_kadus(): void
