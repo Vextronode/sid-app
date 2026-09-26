@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\ReplaceApprovalFlowStepsRequest;
 use App\Http\Requests\StoreApprovalFlowRequest;
 use App\Http\Resources\ApprovalFlowCollection;
@@ -11,7 +12,7 @@ use App\Services\ApprovalFlowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ApprovalFlowController
+class ApprovalFlowController extends Controller
 {
     public function __construct(
         private readonly ApprovalFlowService $service,
