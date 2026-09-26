@@ -104,6 +104,110 @@ UserUpdateRequest:
       type: boolean
       example: true
 
+StoreOfficialRequest:
+  type: object
+  required: [citizen_id, position, started_at]
+  properties:
+    citizen_id:
+      type: integer
+      example: 30
+    user_id:
+      type: integer
+      nullable: true
+      example: 12
+    position:
+      type: string
+      enum: [kepala_desa, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, sekdes, kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes]
+      example: "rt"
+    village_id:
+      type: integer
+      nullable: true
+      example: 1
+    rt_id:
+      type: integer
+      nullable: true
+      example: 12
+    rw_id:
+      type: integer
+      nullable: true
+      example: null
+    hamlet_id:
+      type: integer
+      nullable: true
+      example: null
+    phone_wa:
+      type: string
+      nullable: true
+      example: "6281234567890"
+    started_at:
+      type: string
+      format: date
+      example: "2026-01-01"
+    ended_at:
+      type: string
+      format: date
+      nullable: true
+      example: null
+    is_active:
+      type: boolean
+      example: true
+    notes:
+      type: string
+      nullable: true
+      example: "Pelantikan awal periode"
+
+UpdateOfficialRequest:
+  type: object
+  description: Semua field bersifat opsional (partial update)
+  properties:
+    citizen_id:
+      type: integer
+      example: 30
+    user_id:
+      type: integer
+      nullable: true
+      example: 12
+    position:
+      type: string
+      enum: [kepala_desa, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, sekdes, kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes]
+      example: "rt"
+    village_id:
+      type: integer
+      nullable: true
+      example: 1
+    rt_id:
+      type: integer
+      nullable: true
+      example: 12
+    rw_id:
+      type: integer
+      nullable: true
+      example: null
+    hamlet_id:
+      type: integer
+      nullable: true
+      example: null
+    phone_wa:
+      type: string
+      nullable: true
+      example: "6281234567890"
+    started_at:
+      type: string
+      format: date
+      example: "2026-01-01"
+    ended_at:
+      type: string
+      format: date
+      nullable: true
+      example: null
+    is_active:
+      type: boolean
+      example: true
+    notes:
+      type: string
+      nullable: true
+      example: "Catatan tambahan"
+
 RotateOfficialRequest:
   type: object
   required: [citizen_id, user_id, started_at]

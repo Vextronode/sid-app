@@ -1,4 +1,4 @@
-patch:
+post:
   tags: [Epic 6 - Sistem Notifikasi]
   summary: Tandai notifikasi sudah dibaca
   operationId: markNotificationRead

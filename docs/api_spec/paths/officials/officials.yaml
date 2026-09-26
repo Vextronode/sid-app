@@ -1,0 +1,55 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Lihat daftar seluruh pejabat struktural
+  operationId: listOfficials
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar pejabat berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/users/users.yaml#/Official'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Tambah pejabat struktural baru
+  operationId: createOfficial
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/users/users.yaml#/StoreOfficialRequest'
+  responses:
+    '201':
+      description: Data pejabat berhasil dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/users/users.yaml#/Official'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: citizen_id/user_id/position/started_at tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'

@@ -1,0 +1,33 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Lihat daftar kombinasi wilayah (RT/RW) unik yang dipakai warga
+  description: |
+    Helper endpoint untuk keperluan dropdown/filter wilayah di frontend.
+    Mengembalikan kombinasi rt_id + rw_id unik yang benar-benar dipakai
+    minimal satu warga, beserta relasi RT/RW-nya.
+  operationId: listCitizensWilayah
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar wilayah unik berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    rt_id:
+                      type: integer
+                      nullable: true
+                      example: 12
+                    rw_id:
+                      type: integer
+                      nullable: true
+                      example: 4
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

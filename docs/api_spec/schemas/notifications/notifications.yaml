@@ -1,10 +1,14 @@
 Notification:
   type: object
   description: |
-    Struktur tabel TIDAK berubah dari v3.2/v4.2. Yang berubah di v5.0
-    adalah Event yang men-trigger-nya (FlowStepAdvanced generik,
-    menggantikan Event spesifik per posisi) - lihat SID-ARCH-BE-001 S7.
-    Payload `data` tetap JSON bebas per jenis notifikasi.
+    Bentuk response mem-flatten field UNIVERSAL milik semua jenis
+    notifikasi (title, message, icon, color, category, read, time),
+    lalu membungkus field yang SPESIFIK per jenis notifikasi di
+    dalam `context` - tidak di-flatten ke top-level. Ini supaya
+    notifikasi non-surat (mis. pengumuman) tidak punya field
+    `letter_id`/`applicant` yang tidak relevan bernilai null.
+    Gunakan `type` untuk menentukan bentuk `context` (lihat
+    discriminator pada `NotificationContext`).
   properties:
     id:
       type: string
@@ -12,21 +16,68 @@ Notification:
       example: "9c858901-8a57-4791-81fe-4c455b099bc9"
     type:
       type: string
-      example: "App\\Notifications\\LetterSubmittedNotification"
-    data:
-      type: object
-      example:
-        letter_id: 501
-        message: "Ada permohonan surat baru dari warga wilayahmu"
-    read_at:
+      description: "Nama class notifikasi (basename, tanpa namespace). Menentukan bentuk `context`."
+      example: "LetterStatusNotification"
+    title:
       type: string
-      format: date-time
       nullable: true
-      example: null
+      example: "Surat Disetujui RT"
+    message:
+      type: string
+      nullable: true
+      example: "Permohonan surat domisili Anda telah disetujui RT"
+    category:
+      type: string
+      description: "Default 'umum' jika tidak diisi oleh jenis notifikasi terkait"
+      example: "pelayanan"
+    icon:
+      type: string
+      description: "Default 'bell' jika tidak diisi oleh jenis notifikasi terkait"
+      example: "signature"
+    color:
+      type: string
+      description: "Default 'gray' jika tidak diisi oleh jenis notifikasi terkait"
+      example: "green"
+    read:
+      type: boolean
+      example: false
     created_at:
       type: string
       format: date-time
       example: "2026-07-01T09:00:00Z"
+    time:
+      type: string
+      description: "Waktu relatif human-readable (Carbon::diffForHumans())"
+      example: "5 menit yang lalu"
+    context:
+      description: |
+        Payload spesifik jenis notifikasi. Bentuknya berbeda-beda
+        tergantung `type` - lihat `NotificationContext` untuk daftar
+        varian yang didukung saat ini.
+      oneOf:
+        - $ref: '#/LetterStatusContext'
+      example:
+        letter_id: 501
+        letter_no: "470/123/VII/2026"
+        status: "rt_approved"
+        applicant: "Siti Aminah"
+
+LetterStatusContext:
+  type: object
+  description: "Bentuk `context` ketika `type` = LetterStatusNotification"
+  properties:
+    letter_id:
+      type: integer
+      example: 501
+    letter_no:
+      type: string
+      example: "470/123/VII/2026"
+    status:
+      type: string
+      example: "rt_approved"
+    applicant:
+      type: string
+      example: "Siti Aminah"
 
 MarkReadResponse:
   type: object

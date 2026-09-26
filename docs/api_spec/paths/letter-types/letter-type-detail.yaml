@@ -25,7 +25,7 @@ get:
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '404':
       $ref: '../../responses/common.yaml#/NotFound'
-patch:
+put:
   tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
   summary: Edit konfigurasi tipe surat (versi sederhana - MVP)
   description: |

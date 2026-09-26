@@ -1,0 +1,29 @@
+get:
+  tags: [Epic 8 - Dashboard & Statistik]
+  summary: Lihat statistik jumlah warga berdasarkan jenis kelamin
+  description: |
+    Ditambahkan setelah v5.0 sebagai sub-endpoint dashboard. Menyediakan
+    ringkasan jumlah warga laki-laki/perempuan untuk keperluan chart di
+    dashboard Petugas Desa.
+  operationId: getDashboardGenderStats
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Statistik gender berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 2450
+              laki:
+                type: integer
+                example: 1230
+              perempuan:
+                type: integer
+                example: 1220
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

@@ -1,0 +1,102 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Lihat detail satu pejabat struktural
+  operationId: getOfficial
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: official
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 5
+  responses:
+    '200':
+      description: Detail pejabat berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/users/users.yaml#/Official'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+
+patch:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Edit data pejabat struktural
+  operationId: updateOfficial
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: official
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 5
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/users/users.yaml#/UpdateOfficialRequest'
+  responses:
+    '200':
+      description: Data pejabat berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/users/users.yaml#/Official'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      description: Field yang diisi tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+
+delete:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Hapus data pejabat struktural
+  operationId: deleteOfficial
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: official
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 5
+  responses:
+    '200':
+      description: Data pejabat berhasil dihapus
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Data pejabat berhasil dihapus."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
