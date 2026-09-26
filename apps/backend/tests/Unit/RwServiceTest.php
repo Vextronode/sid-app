@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\Citizen;
 use App\Models\Hamlet;
+use App\Models\Rt;
 use App\Models\Rw;
 use App\Repositories\CitizenRepository;
 use App\Repositories\RwRepository;
@@ -50,7 +51,7 @@ class RwServiceTest extends TestCase
     public function test_update_blocks_deactivation_when_active_citizens_exist(): void
     {
         $rw = Rw::factory()->create(['is_active' => true]);
-        Citizen::factory()->create(['rw_id' => $rw->id, 'is_active' => true]);
+        Citizen::factory()->create(['rt_id' => Rt::factory()->create(['rw_id' => $rw->id])->id, 'is_active' => true]);
 
         $this->expectException(HttpException::class);
 
@@ -60,7 +61,7 @@ class RwServiceTest extends TestCase
     public function test_delete_is_blocked_when_citizens_still_registered(): void
     {
         $rw = Rw::factory()->create();
-        Citizen::factory()->create(['rw_id' => $rw->id]);
+        Citizen::factory()->create(['rt_id' => Rt::factory()->create(['rw_id' => $rw->id])->id]);
 
         $this->expectException(HttpException::class);
 

@@ -7,7 +7,6 @@ use App\Enums\LastEducation;
 use App\Models\Citizen;
 use App\Models\Hamlet;
 use App\Models\Rt;
-use App\Models\Rw;
 use App\Models\Village;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -32,7 +31,6 @@ class CitizenFactory extends Factory
             'gender' => fake()->randomElement(['L', 'P']),
             'address' => fake()->address(),
             'rt_id' => Rt::factory(),
-            'rw_id' => Rw::factory(),
             'hamlet_id' => Hamlet::factory(),
             'marital_status' => fake()->randomElement(['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati']),
             'occupation' => fake()->jobTitle(),

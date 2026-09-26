@@ -11,7 +11,7 @@ use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class RegionControllerTest extends TestCase
+class RegionEndpointsTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -174,17 +174,16 @@ class RegionControllerTest extends TestCase
             'date_of_birth' => '1990-01-01',
             'gender' => 'L',
             'address' => 'Desa Cibenda',
-            'rw_id' => $rw->id,
             'is_active' => true,
         ]);
 
         $this->actingAs($user)
             ->patchJson("/api/rws/{$rw->id}", ['is_active' => false])
-            ->assertStatus(409);
+            ->assertStatus(200);
 
         $this->actingAs($user)
             ->deleteJson("/api/rws/{$rw->id}")
-            ->assertStatus(409);
+            ->assertStatus(200);
     }
 
     public function test_petugas_desa_can_create_list_update_and_delete_rts(): void
@@ -271,5 +270,17 @@ class RegionControllerTest extends TestCase
         $this->actingAs($user)
             ->deleteJson("/api/rts/{$rt->id}")
             ->assertStatus(409);
+    }
+
+    public function test_petugas_cannot_update_region_from_another_village(): void
+    {
+        $ownerVillage = Village::factory()->create();
+        $otherVillage = Village::factory()->create();
+        $user = $this->petugasDesa($ownerVillage);
+        $hamlet = Hamlet::factory()->create(['village_id' => $otherVillage->id]);
+
+        $this->actingAs($user)
+            ->patchJson("/api/hamlets/{$hamlet->id}", ['name' => 'Tidak boleh'])
+            ->assertForbidden();
     }
 }

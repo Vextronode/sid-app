@@ -12,19 +12,18 @@ use App\Services\HamletService;
 
 class HamletController extends Controller
 {
-    public function __construct(
-        protected HamletService $hamletService
-    ) {}
+    public function __construct(protected HamletService $hamletService) {}
 
     public function index()
     {
-        $hamlets = $this->hamletService->getAllOrderedByName();
+        $this->authorize('viewAny', Hamlet::class);
 
-        return (new HamletCollection($hamlets))->response()->setStatusCode(200);
+        return (new HamletCollection($this->hamletService->getAllOrderedByName()))->response();
     }
 
     public function store(StoreHamletRequest $request)
     {
+        $this->authorize('create', Hamlet::class);
         $hamlet = $this->hamletService->create($request->validated(), $request->user());
 
         return (new HamletResource($hamlet))->response()->setStatusCode(201);
@@ -32,17 +31,17 @@ class HamletController extends Controller
 
     public function update(UpdateHamletRequest $request, Hamlet $hamlet)
     {
+        $this->authorize('update', $hamlet);
         $hamlet = $this->hamletService->update($hamlet, $request->validated());
 
-        return (new HamletResource($hamlet))->response()->setStatusCode(200);
+        return (new HamletResource($hamlet))->response();
     }
 
     public function destroy(Hamlet $hamlet)
     {
+        $this->authorize('delete', $hamlet);
         $this->hamletService->delete($hamlet);
 
-        return response()->json([
-            'message' => 'Dusun berhasil dihapus.',
-        ])->setStatusCode(200);
+        return response()->json(['message' => 'Dusun berhasil dihapus.']);
     }
 }

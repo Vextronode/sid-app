@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Citizen extends Model
 {
@@ -31,7 +32,6 @@ class Citizen extends Model
         'blood_type',
         'address',
         'rt_id',
-        'rw_id',
         'hamlet_id',
         'family_id',
         'family_role',
@@ -87,9 +87,16 @@ class Citizen extends Model
         return $this->belongsTo(Rt::class);
     }
 
-    public function rw(): BelongsTo
+    public function rw(): HasOneThrough
     {
-        return $this->belongsTo(Rw::class);
+        return $this->hasOneThrough(
+            Rw::class,
+            Rt::class,
+            'id',
+            'id',
+            'rt_id',
+            'rw_id',
+        );
     }
 
     public function hamlet(): BelongsTo

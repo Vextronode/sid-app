@@ -35,8 +35,8 @@ class NotificationServiceTest extends TestCase
         $item = $result->first();
         $this->assertSame('Judul Uji', $item['title']);
         $this->assertSame('Pesan Uji', $item['message']);
-        $this->assertSame('kasi_approved', $item['status']);
-        $this->assertSame($letter->id, $item['letter_id']);
+        $this->assertSame('kasi_approved', $item['context']['status']);
+        $this->assertSame($letter->id, $item['context']['letter_id']);
         $this->assertFalse($item['read']);
         $this->assertArrayHasKey('time', $item);
     }

@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DashboardStatsRequest;
+use App\Http\Resources\DashboardIndexResource;
+use App\Http\Resources\GenderStatsResource;
+use App\Http\Resources\LetterStatsResource;
 use App\Services\DashboardService;
 use Illuminate\Http\Request;
 
@@ -14,26 +18,26 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
-        return response()->json(
-            $this->dashboardService->getDashboard($request->user())
-        );
+        $data = $this->dashboardService->getDashboard($request->user());
+
+        return (new DashboardIndexResource($data))->response();
     }
 
-    public function genderStats(Request $request)
+    public function genderStats(DashboardStatsRequest $request)
     {
-        $stats = $this->dashboardService->getGenderStats($request->user());
-
-        return response()->json($stats)->setStatusCode(200);
+        return (new GenderStatsResource(
+            $this->dashboardService->getGenderStats($request->user())
+        ))->response();
     }
 
-    public function letterStats(Request $request)
+    public function letterStats(DashboardStatsRequest $request)
     {
-        $stats = $this->dashboardService->getLetterStats(
-            $request->user(),
-            $request->get('date'),
-            $request->get('letter_type'),
-        );
-
-        return response()->json($stats)->setStatusCode(200);
+        return (new LetterStatsResource(
+            $this->dashboardService->getLetterStats(
+                $request->user(),
+                $request->validated('date'),
+                $request->validated('letter_type'),
+            )
+        ))->response();
     }
 }

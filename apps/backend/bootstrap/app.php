@@ -1,10 +1,13 @@
 <?php
 
+use App\Exceptions\RegionContainsCitizensException;
+use App\Exceptions\RegionHasActiveCitizensException;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureUserHasRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
@@ -33,4 +36,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        $exceptions->render(function (
+            RegionHasActiveCitizensException|RegionContainsCitizensException $exception,
+            Request $request
+        ): JsonResponse {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], $exception->getStatusCode());
+        });
     })->create();

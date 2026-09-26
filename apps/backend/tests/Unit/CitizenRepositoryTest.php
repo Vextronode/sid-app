@@ -46,7 +46,7 @@ class CitizenRepositoryTest extends TestCase
     public function test_distinct_wilayah_returns_unique_rt_rw_pairs(): void
     {
         $citizenA = Citizen::factory()->create();
-        Citizen::factory()->create(['rt_id' => $citizenA->rt_id, 'rw_id' => $citizenA->rw_id]);
+        Citizen::factory()->create(['rt_id' => $citizenA->rt_id]);
 
         $result = $this->repository->distinctWilayah();
 
@@ -69,8 +69,10 @@ class CitizenRepositoryTest extends TestCase
     {
         $citizen = Citizen::factory()->create(['is_active' => true]);
 
-        $this->assertTrue($this->repository->existsByRw($citizen->rw_id));
-        $this->assertTrue($this->repository->existsActiveByRw($citizen->rw_id));
+        $rwId = $citizen->rt->rw_id;
+
+        $this->assertTrue($this->repository->existsByRw($rwId));
+        $this->assertTrue($this->repository->existsActiveByRw($rwId));
     }
 
     public function test_exists_by_rt_and_exists_active_by_rt(): void

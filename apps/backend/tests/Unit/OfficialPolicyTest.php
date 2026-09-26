@@ -30,9 +30,8 @@ class OfficialPolicyTest extends TestCase
 
         // Wilayah dibuat manual dengan nilai eksplisit dan dipakai
         // ulang untuk citizen/official di semua data-provider case.
-        // CitizenFactory secara default menembus tiga Hamlet::factory()
-        // terpisah sekaligus (hamlet_id langsung, rt_id -> Rw ->
-        // Hamlet, dan rw_id -> Hamlet), sementara locale id_ID hanya
+        // CitizenFactory secara default menembus beberapa wilayah
+        // terkait, sementara locale id_ID hanya
         // memiliki satu nilai unik untuk citySuffix(); memakai wilayah
         // eksplisit menghindari OverflowException dari unique
         // generator faker yang cepat habis pada CI/test run ini.
@@ -44,7 +43,6 @@ class OfficialPolicyTest extends TestCase
         $citizen = Citizen::factory()->create([
             'village_id' => $village->id,
             'hamlet_id' => $hamlet->id,
-            'rw_id' => $rw->id,
             'rt_id' => $rt->id,
         ]);
 
