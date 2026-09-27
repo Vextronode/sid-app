@@ -556,7 +556,7 @@ entity "approval_settings" as APS {
   * id : BIGINT <<PK>>
   --
   * village_id : BIGINT <<FK -> villages>>
-  * approval_level : ENUM('rt','rw',\n'kadus','kasi')
+  * approval_level : ENUM('rt','kepala_desa',\n'sekdes','kasi_pelayanan',\n'kaur_tu_umum')
   * deadline_hours : INT <<DEFAULT 24>>
   * reminder_hours : INT <<DEFAULT 12>>
   * is_active : BOOLEAN
@@ -565,17 +565,13 @@ entity "approval_settings" as APS {
 }
 
 note right of APS
-  ⚠ BELUM DI-PATCH EKSPLISIT oleh Patch
-  Guide v5.0 (dicatat sebagai technical
-  debt di TDD Section 8.3.2 & Table 70).
-  ENUM approval_level MASIH peninggalan
-  v4.2 ('rt','rw','kadus','kasi') -
-  TIDAK SELARAS lagi dengan
-  letter_approvals.approval_level yang
-  sudah berubah 5 nilai di v5.0.
-  Digambar APA ADANYA sesuai TDD saat ini
-  (bukan dikoreksi sepihak di ERD ini) -
-  perlu ditinjau ulang tim teknis.
+  SELARAS v5.0. ENUM approval_level sudah
+  diupdate ke 5 nilai v5.0 sesuai migration
+  aktual (2026_09_10_192831_create_
+  approval_settings_table.php) dan
+  letter_approvals.approval_level.
+  Technical debt di ERD sebelumnya sudah
+  diselesaikan (Finalisasi Sprint 3).
   UNIQUE(village_id, approval_level).
 end note
 
@@ -649,8 +645,7 @@ LET ||--o{ LA : "keputusan approval\n(jumlah record dinamis\nsesuai flow_steps m
 '==================================================================================
 '
 ' ENTITY BARU (5):
-'   - letter_categories  : gate awal klasifikasi surat (approval_normal/
-'                           upload_mandiri/dokumen_pendukung/update_data)
+'   - letter_categories  : gate awal klasifikasi surat (approval_normal/upload_mandiri/dokumen_pendukung/update_data)
 '   - approval_flows     : anak dari category, urutan step approval spesifik
 '   - flow_steps         : urutan approver per flow (approver_position, is_final)
 '   - families            : tabel KK (no_kk pindah dari citizens ke sini)
@@ -684,10 +679,13 @@ LET ||--o{ LA : "keputusan approval\n(jumlah record dinamis\nsesuai flow_steps m
 '   - village_assets, village_finances (Tahap 2)
 '   - citizen_aid_eligibility, citizen_aid_history, aid_programs (Next Dev/Tahap 2)
 '
-' TECHNICAL DEBT YANG SENGAJA TIDAK DIKOREKSI DI ERD INI:
-'   - approval_settings.approval_level ENUM masih peninggalan v4.2
-'     ('rt','rw','kadus','kasi'), belum di-patch eksplisit oleh Patch Guide
-'     v5.0. Digambar apa adanya sesuai TDD Table 70 & Section 8.3.2, BUKAN
-'     dikoreksi sepihak di dokumen diagram ini.
+' TECHNICAL DEBT YANG SUDAH DISELESAIKAN (sebelumnya dicatat sengaja
+' tidak dikoreksi di ERD ini):
+'   - approval_settings.approval_level ENUM SUDAH diupdate ke 5 nilai v5.0
+'     ('rt','kepala_desa','sekdes','kasi_pelayanan','kaur_tu_umum'), selaras
+'     dengan letter_approvals.approval_level dan migration aktual
+'     (create_approval_settings_table.php). Catatan technical debt versi
+'     sebelumnya sudah tidak berlaku - lihat TDD-06_Appendix.md Section A.2
+'     untuk riwayat koreksinya.
 '
 '==================================================================================

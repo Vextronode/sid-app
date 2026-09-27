@@ -222,6 +222,8 @@ paths:
     $ref: 'paths/rt/letter-decision.yaml'
   /rw/letters:
     $ref: 'paths/rw/letters.yaml'
+  /rw/letters/{id}:
+    $ref: 'paths/rw/letter-detail.yaml'
   /kades/letters:
     $ref: 'paths/kades/letters.yaml'
   /kades/letters/{id}:
@@ -294,8 +296,12 @@ paths:
   # ─────────────────────────────────────────────
   /village-org-positions:
     $ref: 'paths/village-org/positions.yaml'
+  /village-org-positions/{id}:
+    $ref: 'paths/village-org/position-detail.yaml'
   /village-org-positions/{positionId}/members:
     $ref: 'paths/village-org/members.yaml'
+  /village-org-positions/{positionId}/members/{id}:
+    $ref: 'paths/village-org/member-detail.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 0, 11, 12 - Tidak ada endpoint HTTP

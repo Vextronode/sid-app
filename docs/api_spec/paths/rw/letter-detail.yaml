@@ -1,0 +1,43 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Lihat detail surat yang sedang berjalan di wilayah RW (read-only, FYI)
+  description: |
+    BARU v5.0. Endpoint detail dari daftar `/rw/letters`. RW BUKAN
+    approver - endpoint ini murni read-only, tidak ada aksi
+    approve/reject apapun untuk role RW (lihat catatan di
+    `paths/rw/letters.yaml` dan SID-ARCH-BE-001 S3.2, S7).
+  operationId: getRwFyiLetterDetail
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 501
+  responses:
+    '200':
+      description: Detail surat berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Detail surat berhasil diambil."
+              data:
+                $ref: '../../schemas/letters/letters.yaml#/LetterDetail'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Surat tidak pernah masuk notifikasi FYI wilayah RW yang login
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+          example:
+            message: "Surat bukan wilayah Anda"
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

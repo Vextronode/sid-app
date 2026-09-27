@@ -1,0 +1,109 @@
+get:
+  tags: [Epic 10 - Organisasi Non-Struktural Desa]
+  summary: Lihat detail satu jabatan organisasi non-struktural
+  operationId: getVillageOrgPosition
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  responses:
+    '200':
+      description: Detail jabatan organisasi berhasil diambil (termasuk member aktif)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/village-org/village-org.yaml#/VillageOrgPosition'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+patch:
+  tags: [Epic 10 - Organisasi Non-Struktural Desa]
+  summary: Ubah jabatan organisasi (label, urutan tampil, status aktif, dst)
+  operationId: updateVillageOrgPosition
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            position_label:
+              type: string
+              example: "Ketua BPD"
+            is_single_occupant:
+              type: boolean
+              example: true
+            sort_order:
+              type: integer
+              example: 1
+            is_active:
+              type: boolean
+              example: true
+  responses:
+    '200':
+      description: Jabatan organisasi berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/village-org/village-org.yaml#/VillageOrgPosition'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+delete:
+  tags: [Epic 10 - Organisasi Non-Struktural Desa]
+  summary: Hapus jabatan organisasi
+  operationId: deleteVillageOrgPosition
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  responses:
+    '200':
+      description: Jabatan organisasi berhasil dihapus
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Jabatan organisasi berhasil dihapus"
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

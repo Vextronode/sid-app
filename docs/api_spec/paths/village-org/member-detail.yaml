@@ -1,0 +1,104 @@
+patch:
+  tags: [Epic 10 - Organisasi Non-Struktural Desa]
+  summary: Ubah data anggota organisasi (nama, foto, kontak, status aktif, dst)
+  description: |
+    UC-23. Untuk rotasi anggota (mengakhiri masa jabatan lama +
+    menambah anggota baru), gunakan `POST
+    /village-org-positions/{positionId}/members`, bukan endpoint ini.
+    Endpoint ini murni untuk koreksi/pembaruan data anggota yang sudah
+    tercatat.
+  operationId: updateVillageOrgMember
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: positionId
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            member_name:
+              type: string
+              example: "Budi Santoso"
+            photo_img:
+              type: string
+              nullable: true
+              example: null
+            phone_wa:
+              type: string
+              nullable: true
+              example: "6281111222333"
+            notes:
+              type: string
+              nullable: true
+              example: null
+            is_active:
+              type: boolean
+              example: true
+  responses:
+    '200':
+      description: Data anggota berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/village-org/village-org.yaml#/VillageOrgMember'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+delete:
+  tags: [Epic 10 - Organisasi Non-Struktural Desa]
+  summary: Hapus data anggota organisasi
+  operationId: deleteVillageOrgMember
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: positionId
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  responses:
+    '200':
+      description: Anggota organisasi berhasil dihapus
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Anggota organisasi berhasil dihapus"
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
