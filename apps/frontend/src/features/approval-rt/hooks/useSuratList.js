@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from 'react'
 
-import { getSuratList } from "@/features/approval/api";
-import { RELEVANT_STATUSES } from "../constants/roleConfig";
+import { getSuratList } from '@/features/approval/api'
+import { RELEVANT_STATUSES } from '@/constants/suratStatus'
 
-export function useSuratList({ initialStatus = "" } = {}) {
-  const [letters, setLetters] = useState([]);
-  const [loading, setLoading] = useState(true);
+export function useSuratList({ initialStatus = '' } = {}) {
+  const [letters, setLetters] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const [search, setSearch] = useState("");
-  const [filterJenis, setFilterJenis] = useState("");
-  const [filterStatus, setFilterStatus] = useState(initialStatus);
+  const [search, setSearch] = useState('')
+  const [filterJenis, setFilterJenis] = useState('')
+  const [filterStatus, setFilterStatus] = useState(initialStatus)
 
   // ==========================================
   // Refresh daftar surat
@@ -17,106 +17,86 @@ export function useSuratList({ initialStatus = "" } = {}) {
 
   const fetchLetters = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
 
-      const response = await getSuratList("rt");
+      const response = await getSuratList('rt')
 
-      setLetters(response.data.data ?? []);
+      setLetters(response.data.data ?? [])
     } catch (error) {
-      console.error(
-        "GET RT LETTER ERROR",
-        error.response?.data ?? error
-      );
+      console.error('GET RT LETTER ERROR', error.response?.data ?? error)
 
-      setLetters([]);
+      setLetters([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // ==========================================
   // Load awal
   // ==========================================
 
   useEffect(() => {
-    let isMounted = true;
+    let isMounted = true
 
     const loadLetters = async () => {
       try {
-        setLoading(true);
+        setLoading(true)
 
-        const response = await getSuratList("rt");
+        const response = await getSuratList('rt')
 
         if (isMounted) {
-          setLetters(response.data.data ?? []);
+          setLetters(response.data.data ?? [])
         }
       } catch (error) {
-        console.error(
-          "GET RT LETTER ERROR",
-          error.response?.data ?? error
-        );
+        console.error('GET RT LETTER ERROR', error.response?.data ?? error)
 
         if (isMounted) {
-          setLetters([]);
+          setLetters([])
         }
       } finally {
         if (isMounted) {
-          setLoading(false);
+          setLoading(false)
         }
       }
-    };
+    }
 
-    loadLetters();
+    loadLetters()
 
     return () => {
-      isMounted = false;
-    };
-  }, []);
+      isMounted = false
+    }
+  }, [])
 
   // ==========================================
   // Filter data
   // ==========================================
 
   const data = useMemo(() => {
-    let result = [...letters];
+    let result = [...letters]
 
-    result = result.filter((letter) =>
-      RELEVANT_STATUSES.includes(letter.status)
-    );
+    // Hanya tampilkan status yang digunakan
+    // oleh flow status generik.
+    result = result.filter((letter) => RELEVANT_STATUSES.includes(letter.status))
 
     // Filter jenis surat
     if (filterJenis) {
-      result = result.filter(
-        (letter) =>
-          letter.letter_type?.name === filterJenis
-      );
+      result = result.filter((letter) => letter.letter_type?.name === filterJenis)
     }
 
     // Filter status
     if (filterStatus) {
-      result = result.filter(
-        (letter) =>
-          letter.status === filterStatus
-      );
+      result = result.filter((letter) => letter.status === filterStatus)
     }
 
     // Pencarian nama pemohon
     if (search) {
-      result = result.filter(
-        (letter) =>
-          letter.applicant_name
-            ?.toLowerCase()
-            .includes(search.toLowerCase())
-      );
+      const keyword = search.toLowerCase()
+
+      result = result.filter((letter) => letter.applicant_name?.toLowerCase().includes(keyword))
     }
 
-    return result;
-  }, [
-    letters,
-    filterJenis,
-    filterStatus,
-    search,
-  ]);
+    return result
+  }, [letters, filterJenis, filterStatus, search])
 
   return {
     data,
@@ -133,5 +113,5 @@ export function useSuratList({ initialStatus = "" } = {}) {
     setFilterStatus,
 
     refresh: fetchLetters,
-  };
+  }
 }

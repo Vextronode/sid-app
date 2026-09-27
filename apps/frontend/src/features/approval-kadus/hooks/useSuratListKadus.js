@@ -19,29 +19,23 @@
 // - Refresh data
 // ==========================================
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useEffect, useMemo, useState } from 'react'
 
-import { getKadusLetters } from "../api";
-import { RELEVANT_STATUSES } from "../constants/roleConfigKadus";
+import { getKadusLetters } from '../api'
+
+import { RELEVANT_STATUSES } from '@/constants/suratStatus'
 
 // ==========================================
 // HOOK
 // ==========================================
 
-export function useSuratList({
-  initialStatus = "",
-} = {}) {
-  const [letters, setLetters] = useState([]);
-  const [loading, setLoading] = useState(false);
+export function useSuratList({ initialStatus = '' } = {}) {
+  const [letters, setLetters] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const [search, setSearch] = useState("");
-  const [filterJenis, setFilterJenis] = useState("");
-  const [filterStatus, setFilterStatus] =
-    useState(initialStatus);
+  const [search, setSearch] = useState('')
+  const [filterJenis, setFilterJenis] = useState('')
+  const [filterStatus, setFilterStatus] = useState(initialStatus)
 
   // ==========================================
   // Ambil semua surat untuk Kadus
@@ -49,59 +43,47 @@ export function useSuratList({
 
   const fetchLetters = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
 
-      const response = await getKadusLetters();
+      const response = await getKadusLetters()
 
-      setLetters(
-        Array.isArray(response.data?.data)
-          ? response.data.data
-          : []
-      );
+      setLetters(Array.isArray(response.data?.data) ? response.data.data : [])
     } catch (error) {
-      console.error(
-        "GET KADUS LETTER ERROR:",
-        error.response?.data ?? error
-      );
+      console.error('GET KADUS LETTER ERROR:', error.response?.data ?? error)
 
-      setLetters([]);
+      setLetters([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // ==========================================
   // INITIAL LOAD
   // ==========================================
 
   useEffect(() => {
-    fetchLetters();
-  }, []);
+    fetchLetters()
+  }, [])
 
   // ==========================================
   // FILTER DATA
   // ==========================================
 
   const data = useMemo(() => {
-    let result = [...letters];
+    let result = [...letters]
 
     // ========================================
-    // STATUS RELEVAN UNTUK KADUS
+    // STATUS GENERIK
     // ========================================
 
-    result = result.filter((letter) =>
-      RELEVANT_STATUSES.includes(letter.status)
-    );
+    result = result.filter((letter) => RELEVANT_STATUSES.includes(letter.status))
 
     // ========================================
     // FILTER JENIS SURAT
     // ========================================
 
     if (filterJenis) {
-      result = result.filter(
-        (letter) =>
-          letter.letter_type?.name === filterJenis
-      );
+      result = result.filter((letter) => letter.letter_type?.name === filterJenis)
     }
 
     // ========================================
@@ -109,10 +91,7 @@ export function useSuratList({
     // ========================================
 
     if (filterStatus) {
-      result = result.filter(
-        (letter) =>
-          letter.status === filterStatus
-      );
+      result = result.filter((letter) => letter.status === filterStatus)
     }
 
     // ========================================
@@ -123,34 +102,22 @@ export function useSuratList({
     // - Nama pemohon
     // ========================================
 
-    const keyword = search.trim().toLowerCase();
+    const keyword = search.trim().toLowerCase()
 
     if (keyword) {
       result = result.filter((letter) => {
-        const letterNumber = String(
-          letter.letter_number ?? ""
-        ).toLowerCase();
+        const letterNumber = String(letter.letter_number ?? '').toLowerCase()
 
         const applicantName = String(
-          letter.applicant_name ??
-          letter.citizen?.name ??
-          ""
-        ).toLowerCase();
+          letter.applicant_name ?? letter.citizen?.name ?? '',
+        ).toLowerCase()
 
-        return (
-          letterNumber.includes(keyword) ||
-          applicantName.includes(keyword)
-        );
-      });
+        return letterNumber.includes(keyword) || applicantName.includes(keyword)
+      })
     }
 
-    return result;
-  }, [
-    letters,
-    filterJenis,
-    filterStatus,
-    search,
-  ]);
+    return result
+  }, [letters, filterJenis, filterStatus, search])
 
   // ==========================================
   // RETURN
@@ -171,5 +138,5 @@ export function useSuratList({
     setFilterStatus,
 
     refresh: fetchLetters,
-  };
+  }
 }

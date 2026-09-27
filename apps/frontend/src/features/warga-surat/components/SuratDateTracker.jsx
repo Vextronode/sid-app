@@ -4,563 +4,393 @@
 // SuratDateTracker.jsx
 //
 // Tracking surat berdasarkan tanggal pengajuan.
-// Alur:
-// Submit -> RT -> Selesai / TTD
 //
-// RW tidak lagi menjadi tahap keputusan.
-// Status rw_approved / rw_rejected tetap
-// dikenali untuk data lama.
+// Status generic:
+// pending
+// in_progress
+// approved
+// rejected
 //
-// Styling menggunakan class global sid-*.
+// Workflow tampilan:
+// Pengajuan -> RT -> Kades -> Selesai
+//
+// Selesai:
+// Surat sudah menyelesaikan proses Operator.
 // ==========================================
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-import {
-  Calendar,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  FileText,
-  X,
-} from "lucide-react";
+import { Calendar, Check, ChevronLeft, ChevronRight, Clock, FileText, X } from 'lucide-react'
 
-import { previewSuratPDF } from "@/features/cetak-surat/utils/generateSuratPDF";
+import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 
-import * as pdfjsLib from "pdfjs-dist";
-import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { SURAT_STATUS } from '@/constants/suratStatus'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+import * as pdfjsLib from 'pdfjs-dist'
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
-// ==========================================
-// STATUS TRACKING
-// ==========================================
-
-function getStepState(status) {
-  const map = {
-    // ======================================
-    // PENGAJUAN
-    // ======================================
-
-    pending: {
-      step: 1,
-      state: "current",
-    },
-
-    // ======================================
-    // RT DISETUJUI
-    // ======================================
-
-    rt_approved: {
-      step: 2,
-      state: "current",
-    },
-
-    // ======================================
-    // RT DITOLAK
-    // ======================================
-
-    rt_rejected: {
-      step: 1,
-      state: "rejected_rt",
-    },
-
-    // ======================================
-    // STATUS LEGACY RW
-    //
-    // Tetap dikenali supaya data lama tidak
-    // membuat tracker kosong / rusak.
-    // ======================================
-
-    rw_approved: {
-      step: 2,
-      state: "current",
-    },
-
-    rw_rejected: {
-      step: 2,
-      state: "current",
-    },
-
-    // ======================================
-    // SELESAI
-    // ======================================
-
-    kasi_approved: {
-      step: 2,
-      state: "done",
-    },
-
-    kaur_tu_umum_approved: {
-      step: 2,
-      state: "done",
-    },
-
-    petugas_desa_approved: {
-      step: 2,
-      state: "done",
-    },
-  };
-
-  return (
-    map[status] ?? {
-      step: 0,
-      state: "waiting",
-    }
-  );
-}
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
 // ==========================================
 // TRACKING STEPS
 // ==========================================
 
-const STEPS = [
-  "Submit",
-  "RT",
-  "Selesai",
-];
+const STEPS = ['Pengajuan', 'RT', 'Kades', 'Selesai']
+
+// ==========================================
+// TRACKING STATE
+// ==========================================
+
+function getTrackingState(surat) {
+  const status = surat?.status
+
+  const currentStepOrder = Number(surat?.current_step_order)
+
+  const rejectedAtStep = Number(surat?.rejected_at_step) || null
+
+  // ==========================================
+  // REJECTED
+  // ==========================================
+
+  if (status === SURAT_STATUS.REJECTED) {
+    return {
+      currentStep: rejectedAtStep || currentStepOrder || 1,
+      rejectedStep: rejectedAtStep || currentStepOrder || 1,
+      completed: false,
+    }
+  }
+
+  // ==========================================
+  // APPROVED
+  // ==========================================
+
+  if (status === SURAT_STATUS.APPROVED) {
+    return {
+      currentStep: 4,
+      rejectedStep: null,
+      completed: true,
+    }
+  }
+
+  // ==========================================
+  // PENDING / IN PROGRESS
+  // ==========================================
+
+  const step =
+    currentStepOrder >= 1 && currentStepOrder <= 3
+      ? currentStepOrder
+      : status === SURAT_STATUS.PENDING
+        ? 1
+        : 2
+
+  return {
+    currentStep: step,
+    rejectedStep: null,
+    completed: false,
+  }
+}
 
 // ==========================================
 // TRACKING STEPPER
 // ==========================================
 
-function TrackingStepper({ status }) {
-  const { step, state } =
-    getStepState(status);
+function TrackingStepper({ surat }) {
+  const { currentStep, rejectedStep, completed } = getTrackingState(surat)
 
   return (
     <div className="sid-tracker-scroll">
       <div className="sid-tracker-stepper">
         {STEPS.map((label, index) => {
-          // ==================================
+          const stepNumber = index + 1
+
+          // =================================
           // REJECTED
-          // ==================================
+          // =================================
 
-          const isRejectedHere =
-            (index === 1 &&
-              state === "rejected_rt");
+          const isRejected = !completed && rejectedStep === stepNumber
 
-          // ==================================
+          // =================================
           // DONE
-          // ==================================
+          // =================================
 
-          const isDone =
-            index === 0 ||
-            (index === 1 &&
-              step >= 2 &&
-              state !== "rejected_rt") ||
-            (index === 2 &&
-              step >= 2 &&
-              state === "done");
+          const isDone = completed || (!isRejected && stepNumber < currentStep)
 
-          // ==================================
+          // =================================
           // CURRENT
-          // ==================================
+          // =================================
 
-          const isCurrent =
-            (index === 1 &&
-              state === "current") ||
-            (index === 2 &&
-              state === "current");
+          const isCurrent = !completed && !isRejected && stepNumber === currentStep
 
-          // ==================================
+          // =================================
           // DEFAULT
-          // ==================================
+          // =================================
 
-          let circleClass =
-            "sid-tracker-circle sid-tracker-circle-waiting";
+          let circleClass = 'sid-tracker-circle sid-tracker-circle-waiting'
 
-          let labelClass =
-            "sid-tracker-label";
+          let labelClass = 'sid-tracker-label'
 
-          let circleContent =
-            index + 1;
+          let circleContent = stepNumber
 
-          // ==================================
+          // =================================
           // REJECTED
-          // ==================================
+          // =================================
 
-          if (isRejectedHere) {
-            circleClass =
-              "sid-tracker-circle sid-tracker-circle-rejected";
+          if (isRejected) {
+            circleClass = 'sid-tracker-circle sid-tracker-circle-rejected'
 
-            labelClass =
-              "sid-tracker-label sid-tracker-label-rejected";
+            labelClass = 'sid-tracker-label sid-tracker-label-rejected'
 
-            circleContent = (
-              <X
-                size={15}
-                strokeWidth={2.5}
-              />
-            );
+            circleContent = <X size={15} strokeWidth={2.5} />
           }
 
-          // ==================================
+          // =================================
           // DONE
-          // ==================================
-
+          // =================================
           else if (isDone) {
-            circleClass =
-              "sid-tracker-circle sid-tracker-circle-done";
+            circleClass = 'sid-tracker-circle sid-tracker-circle-done'
 
-            labelClass =
-              "sid-tracker-label sid-tracker-label-done";
+            labelClass = 'sid-tracker-label sid-tracker-label-done'
 
-            circleContent = (
-              <Check
-                size={15}
-                strokeWidth={2.5}
-              />
-            );
+            circleContent = <Check size={15} strokeWidth={2.5} />
           }
 
-          // ==================================
+          // =================================
           // CURRENT
-          // ==================================
-
+          // =================================
           else if (isCurrent) {
-            circleClass =
-              "sid-tracker-circle sid-tracker-circle-current";
+            circleClass = 'sid-tracker-circle sid-tracker-circle-current'
 
-            labelClass =
-              "sid-tracker-label sid-tracker-label-current";
+            labelClass = 'sid-tracker-label sid-tracker-label-current'
 
-            circleContent = (
-              <Clock size={15} />
-            );
+            circleContent = <Clock size={15} />
           }
 
-          // ==================================
+          // =================================
           // CONNECTOR
-          // ==================================
+          // =================================
 
-          const connectorDone =
-            index < step - 1;
+          const connectorDone = completed || stepNumber < currentStep
 
           return (
-            <div
-              key={label}
-              className="sid-tracker-step"
-            >
+            <div key={label} className="sid-tracker-step">
               <div className="sid-tracker-node">
-                <div className={circleClass}>
-                  {circleContent}
-                </div>
+                <div className={circleClass}>{circleContent}</div>
 
-                {index <
-                  STEPS.length - 1 && (
+                {stepNumber < STEPS.length && (
                   <div
-                    className={`sid-tracker-line${
-                      connectorDone
-                        ? " sid-tracker-line-done"
-                        : ""
-                    }`}
+                    className={`sid-tracker-line${connectorDone ? ' sid-tracker-line-done' : ''}`}
                   />
                 )}
               </div>
 
               <div className="sid-tracker-label-wrapper">
-                <span
-                  className={labelClass}
-                >
-                  {label}
-                </span>
+                <span className={labelClass}>{label}</span>
               </div>
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
+}
+
+// ==========================================
+// REJECTION REASON
+// ==========================================
+
+function RejectionReason({ surat }) {
+  if (surat?.status !== SURAT_STATUS.REJECTED) {
+    return null
+  }
+
+  const reason =
+    surat?.notes ?? surat?.reason ?? surat?.rejection_reason ?? 'Tidak ada catatan penolakan.'
+
+  return (
+    <div className="sid-date-tracker-rejection">
+      <div className="sid-date-tracker-rejection-header">
+        <p className="sid-date-tracker-rejection-title">Surat Ditolak</p>
+
+        <span className="sid-decision-badge rejected">DITOLAK</span>
+      </div>
+
+      <p className="sid-date-tracker-rejection-label">Alasan Penolakan</p>
+
+      <div className="sid-date-tracker-rejection-content">{reason}</div>
+    </div>
+  )
 }
 
 // ==========================================
 // STATUS PREVIEW PDF
 // ==========================================
 
-const canPreviewStatuses = [
-  "kasi_approved",
-  "kaur_tu_umum_approved",
-  "petugas_desa_approved",
-];
+const canPreviewStatuses = [SURAT_STATUS.APPROVED]
 
-const canPreviewSurat = (status) =>
-  canPreviewStatuses.includes(status);
+const canPreviewSurat = (status) => canPreviewStatuses.includes(status)
 
 // ==========================================
 // TEMPLATE PDF
 // ==========================================
 
 function getPreviewTemplate(status) {
-  if (status === "kasi_approved") {
-    return "digital";
+  if (status === SURAT_STATUS.APPROVED) {
+    return 'digital'
   }
 
-  if (
-    status ===
-      "kaur_tu_umum_approved" ||
-    status ===
-      "petugas_desa_approved"
-  ) {
-    return "wet";
-  }
-
-  return null;
+  return null
 }
 
 // ==========================================
 // PREVIEW PDF
 // ==========================================
 
-function SuratPreview({
-  suratId,
-  status,
-}) {
-  const [
-    showPreview,
-    setShowPreview,
-  ] = useState(false);
+function SuratPreview({ suratId, status }) {
+  const [showPreview, setShowPreview] = useState(false)
 
-  const [
-    loadingPreview,
-    setLoadingPreview,
-  ] = useState(false);
+  const [loadingPreview, setLoadingPreview] = useState(false)
 
-  const [
-    loadError,
-    setLoadError,
-  ] = useState(false);
+  const [loadError, setLoadError] = useState(false)
 
-  const [
-    pages,
-    setPages,
-  ] = useState([]);
+  const [pages, setPages] = useState([])
 
-  const canPreview =
-    canPreviewSurat(status);
-
-  // ==========================================
-  // RESET KETIKA SURAT BERUBAH
-  // ==========================================
+  const canPreview = canPreviewSurat(status)
 
   useEffect(() => {
-    setShowPreview(false);
-    setLoadingPreview(false);
-    setLoadError(false);
-    setPages([]);
-  }, [suratId]);
-
-  // ==========================================
-  // LOAD PDF
-  // ==========================================
+    setShowPreview(false)
+    setLoadingPreview(false)
+    setLoadError(false)
+    setPages([])
+  }, [suratId])
 
   useEffect(() => {
-    if (
-      !suratId ||
-      !showPreview ||
-      !canPreview
-    ) {
-      return;
+    if (!suratId || !showPreview || !canPreview) {
+      return
     }
 
-    let cancelled = false;
-    let blobUrl = null;
+    let cancelled = false
+    let blobUrl = null
 
     const loadPDF = async () => {
       try {
-        setLoadingPreview(true);
-        setLoadError(false);
-        setPages([]);
+        setLoadingPreview(true)
+        setLoadError(false)
+        setPages([])
 
-        const template =
-          getPreviewTemplate(status);
+        const template = getPreviewTemplate(status)
 
         if (!template) {
-          throw new Error(
-            "Template PDF tidak tersedia."
-          );
+          throw new Error('Template PDF tidak tersedia.')
         }
 
-        console.log(
-          "PREVIEW SURAT:",
+        blobUrl = await previewSuratPDF(
           {
-            suratId,
-            status,
-            template,
-          }
-        );
-
-        blobUrl =
-          await previewSuratPDF(
-            {
-              id: suratId,
-            },
-            template
-          );
+            id: suratId,
+          },
+          template,
+        )
 
         if (!blobUrl) {
-          throw new Error(
-            "URL PDF tidak tersedia."
-          );
+          throw new Error('URL PDF tidak tersedia.')
         }
 
         if (cancelled) {
-          return;
+          return
         }
 
-        const response =
-          await fetch(blobUrl);
+        const response = await fetch(blobUrl)
 
         if (!response.ok) {
-          throw new Error(
-            `Gagal mengambil PDF: ${response.status}`
-          );
+          throw new Error(`Gagal mengambil PDF: ${response.status}`)
         }
 
-        const arrayBuffer =
-          await response.arrayBuffer();
+        const arrayBuffer = await response.arrayBuffer()
 
-        if (
-          !arrayBuffer ||
-          arrayBuffer.byteLength === 0
-        ) {
-          throw new Error(
-            "File PDF kosong."
-          );
+        if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+          throw new Error('File PDF kosong.')
         }
 
         if (cancelled) {
-          return;
+          return
         }
 
-        const pdf =
-          await pdfjsLib
-            .getDocument({
-              data: arrayBuffer,
-            })
-            .promise;
-
-        console.log(
-          "PDF berhasil dibuka:",
-          pdf.numPages,
-          "halaman"
-        );
+        const pdf = await pdfjsLib.getDocument({
+          data: arrayBuffer,
+        }).promise
 
         if (cancelled) {
-          return;
+          return
         }
 
-        const renderedPages = [];
+        const renderedPages = []
 
-        for (
-          let pageNumber = 1;
-          pageNumber <= pdf.numPages;
-          pageNumber++
-        ) {
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
           if (cancelled) {
-            return;
+            return
           }
 
-          const page =
-            await pdf.getPage(
-              pageNumber
-            );
+          const page = await pdf.getPage(pageNumber)
 
-          const viewport =
-            page.getViewport({
-              scale: 1.5,
-            });
+          const viewport = page.getViewport({
+            scale: 1.5,
+          })
 
-          const canvas =
-            document.createElement(
-              "canvas"
-            );
+          const canvas = document.createElement('canvas')
 
-          const context =
-            canvas.getContext(
-              "2d",
-              {
-                alpha: false,
-              }
-            );
+          const context = canvas.getContext('2d', {
+            alpha: false,
+          })
 
           if (!context) {
-            throw new Error(
-              "Browser tidak mendukung Canvas."
-            );
+            throw new Error('Browser tidak mendukung Canvas.')
           }
 
-          canvas.width =
-            Math.ceil(
-              viewport.width
-            );
+          canvas.width = Math.ceil(viewport.width)
 
-          canvas.height =
-            Math.ceil(
-              viewport.height
-            );
+          canvas.height = Math.ceil(viewport.height)
 
           await page.render({
             canvasContext: context,
             viewport,
-          }).promise;
+          }).promise
 
           if (cancelled) {
-            return;
+            return
           }
 
           renderedPages.push({
             pageNumber,
-            dataUrl:
-              canvas.toDataURL(
-                "image/jpeg",
-                0.9
-              ),
-          });
+            dataUrl: canvas.toDataURL('image/jpeg', 0.9),
+          })
         }
 
         if (!cancelled) {
-          setPages(renderedPages);
+          setPages(renderedPages)
         }
       } catch (error) {
-        console.error(
-          "GAGAL RENDER PREVIEW PDF:",
-          error
-        );
+        console.error('GAGAL RENDER PREVIEW PDF:', error)
 
         if (!cancelled) {
-          setLoadError(true);
+          setLoadError(true)
         }
       } finally {
         if (!cancelled) {
-          setLoadingPreview(false);
+          setLoadingPreview(false)
         }
       }
-    };
+    }
 
-    loadPDF();
+    loadPDF()
 
     return () => {
-      cancelled = true;
+      cancelled = true
 
       if (blobUrl) {
-        URL.revokeObjectURL(
-          blobUrl
-        );
+        URL.revokeObjectURL(blobUrl)
       }
-    };
-  }, [
-    suratId,
-    showPreview,
-    status,
-    canPreview,
-  ]);
+    }
+  }, [suratId, showPreview, status, canPreview])
 
   return (
     <div className="sid-date-tracker-preview">
@@ -569,26 +399,22 @@ function SuratPreview({
         disabled={!canPreview}
         onClick={() => {
           if (!canPreview) {
-            return;
+            return
           }
 
-          setShowPreview(
-            (prev) => !prev
-          );
+          setShowPreview((prev) => !prev)
         }}
         className={`sid-date-tracker-preview-action${
-          !canPreview
-            ? " sid-date-tracker-preview-action-disabled"
-            : ""
+          !canPreview ? ' sid-date-tracker-preview-action-disabled' : ''
         }`}
       >
         <FileText className="sid-date-tracker-preview-icon" />
 
         {canPreview
           ? showPreview
-            ? "Sembunyikan Preview Surat"
-            : "Lihat Preview Surat"
-          : "Preview tersedia setelah disetujui Kantor Desa"}
+            ? 'Sembunyikan Preview Surat'
+            : 'Lihat Preview Surat'
+          : 'Preview tersedia setelah disetujui'}
       </button>
 
       {showPreview && (
@@ -597,64 +423,52 @@ function SuratPreview({
             <div className="sid-date-preview-loading">
               <div className="sid-date-preview-spinner" />
 
-              <p>
-                Memuat preview surat...
-              </p>
+              <p>Memuat preview surat...</p>
             </div>
           )}
 
-          {!loadingPreview &&
-            loadError && (
-              <div className="sid-date-preview-error">
-                <FileText className="sid-date-preview-error-icon" />
+          {!loadingPreview && loadError && (
+            <div className="sid-date-preview-error">
+              <FileText className="sid-date-preview-error-icon" />
 
-                <p>
-                  Gagal memuat preview surat
-                </p>
+              <p>Gagal memuat preview surat</p>
 
-                <p className="sid-date-preview-error-description">
-                  Silakan coba lagi.
-                </p>
+              <p className="sid-date-preview-error-description">Silakan coba lagi.</p>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPreview(false);
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPreview(false)
 
-                    setTimeout(() => {
-                      setShowPreview(true);
-                    }, 100);
-                  }}
-                  className="sid-date-preview-retry"
-                >
-                  Coba Lagi
-                </button>
-              </div>
-            )}
+                  setTimeout(() => {
+                    setShowPreview(true)
+                  }, 100)
+                }}
+                className="sid-date-preview-retry"
+              >
+                Coba Lagi
+              </button>
+            </div>
+          )}
 
-          {!loadingPreview &&
-            !loadError &&
-            pages.length > 0 && (
-              <div className="sid-date-preview-pages">
-                {pages.map((page) => (
-                  <div
-                    key={page.pageNumber}
-                    className="sid-date-preview-page"
-                  >
-                    <img
-                      src={page.dataUrl}
-                      alt={`Preview halaman ${page.pageNumber}`}
-                      className="sid-date-preview-image"
-                      draggable={false}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+          {!loadingPreview && !loadError && pages.length > 0 && (
+            <div className="sid-date-preview-pages">
+              {pages.map((page) => (
+                <div key={page.pageNumber} className="sid-date-preview-page">
+                  <img
+                    src={page.dataUrl}
+                    alt={`Preview halaman ${page.pageNumber}`}
+                    className="sid-date-preview-image"
+                    draggable={false}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
-  );
+  )
 }
 
 // ==========================================
@@ -663,164 +477,108 @@ function SuratPreview({
 
 function getLocalDateString(rawDate) {
   if (!rawDate) {
-    return null;
+    return null
   }
 
-  const date =
-    new Date(rawDate);
+  const date = new Date(rawDate)
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return null;
+  if (Number.isNaN(date.getTime())) {
+    return null
   }
 
-  const year =
-    date.getFullYear();
+  const year = date.getFullYear()
 
-  const month =
-    String(
-      date.getMonth() + 1
-    ).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, '0')
 
-  const day =
-    String(
-      date.getDate()
-    ).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, '0')
 
-  return `${year}-${month}-${day}`;
+  return `${year}-${month}-${day}`
 }
 
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
 
-export default function SuratDateTracker({
-  letters,
-  loading,
-}) {
-  const [
-    selectedDate,
-    setSelectedDate,
-  ] = useState("");
+export default function SuratDateTracker({ letters, loading }) {
+  const [selectedDate, setSelectedDate] = useState('')
 
-  const [
-    slideIndex,
-    setSlideIndex,
-  ] = useState(0);
+  const [slideIndex, setSlideIndex] = useState(0)
 
-  const dateInputRef =
-    useRef(null);
+  const dateInputRef = useRef(null)
 
   // ==========================================
   // FILTER SURAT
   // ==========================================
 
-  const filteredLetters =
-    useMemo(() => {
-      if (!Array.isArray(letters)) {
-        return [];
-      }
+  const filteredLetters = useMemo(() => {
+    if (!Array.isArray(letters)) {
+      return []
+    }
 
-      if (!selectedDate) {
-        return letters;
-      }
+    if (!selectedDate) {
+      return letters
+    }
 
-      return letters.filter(
-        (item) => {
-          const raw =
-            item.submitted_at ??
-            item.created_at;
+    return letters.filter((item) => {
+      const raw = item.submitted_at ?? item.created_at
 
-          const localDate =
-            getLocalDateString(raw);
+      const localDate = getLocalDateString(raw)
 
-          return (
-            localDate ===
-            selectedDate
-          );
-        }
-      );
-    }, [
-      letters,
-      selectedDate,
-    ]);
+      return localDate === selectedDate
+    })
+  }, [letters, selectedDate])
 
   // ==========================================
   // JAGA SLIDE INDEX
   // ==========================================
 
   useEffect(() => {
-    if (
-      filteredLetters.length === 0
-    ) {
-      setSlideIndex(0);
-      return;
+    if (filteredLetters.length === 0) {
+      setSlideIndex(0)
+      return
     }
 
-    if (
-      slideIndex >=
-      filteredLetters.length
-    ) {
-      setSlideIndex(
-        filteredLetters.length - 1
-      );
+    if (slideIndex >= filteredLetters.length) {
+      setSlideIndex(filteredLetters.length - 1)
     }
-  }, [
-    filteredLetters.length,
-    slideIndex,
-  ]);
+  }, [filteredLetters.length, slideIndex])
 
   // ==========================================
   // FILTER TANGGAL
   // ==========================================
 
   const handleDateChange = (e) => {
-    setSelectedDate(
-      e.target.value
-    );
+    setSelectedDate(e.target.value)
 
-    setSlideIndex(0);
-  };
+    setSlideIndex(0)
+  }
 
   const clearDateFilter = () => {
-    setSelectedDate("");
-    setSlideIndex(0);
-  };
+    setSelectedDate('')
+    setSlideIndex(0)
+  }
 
   const openCalendar = () => {
-    dateInputRef.current
-      ?.showPicker?.();
-  };
+    dateInputRef.current?.showPicker?.()
+  }
 
   // ==========================================
   // SURAT AKTIF
   // ==========================================
 
-  const activeSurat =
-    filteredLetters[
-      slideIndex
-    ];
+  const activeSurat = filteredLetters[slideIndex]
 
   // ==========================================
   // FORMAT TANGGAL
   // ==========================================
 
-  const formattedSelectedDate =
-    selectedDate
-      ? new Date(
-          `${selectedDate}T00:00:00`
-        ).toLocaleDateString(
-          "id-ID",
-          {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          }
-        )
-      : null;
+  const formattedSelectedDate = selectedDate
+    ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : null
 
   // ==========================================
   // UI
@@ -831,37 +589,20 @@ export default function SuratDateTracker({
       {/* FILTER TANGGAL */}
 
       <div className="sid-date-tracker-filter">
-        <button
-          type="button"
-          onClick={openCalendar}
-          className="sid-date-tracker-calendar-button"
-        >
+        <button type="button" onClick={openCalendar} className="sid-date-tracker-calendar-button">
           <div className="sid-date-tracker-calendar-label">
-            <Calendar
-              size={16}
-              strokeWidth={1.8}
-              className="sid-date-tracker-calendar-icon"
-            />
+            <Calendar size={16} strokeWidth={1.8} className="sid-date-tracker-calendar-icon" />
 
-            <span>
-              {formattedSelectedDate ??
-                "Pilih tanggal"}
-            </span>
+            <span>{formattedSelectedDate ?? 'Pilih tanggal'}</span>
           </div>
 
           <span className="sid-date-tracker-calendar-action">
-            {selectedDate
-              ? "Ubah"
-              : "Pilih"}
+            {selectedDate ? 'Ubah' : 'Pilih'}
           </span>
         </button>
 
         {selectedDate && (
-          <button
-            type="button"
-            onClick={clearDateFilter}
-            className="sid-date-tracker-clear-button"
-          >
+          <button type="button" onClick={clearDateFilter} className="sid-date-tracker-clear-button">
             Semua
           </button>
         )}
@@ -878,134 +619,86 @@ export default function SuratDateTracker({
       {/* DATA SURAT */}
 
       {loading ? (
-        <p className="sid-date-tracker-empty">
-          Memuat data surat...
-        </p>
+        <p className="sid-date-tracker-empty">Memuat data surat...</p>
       ) : filteredLetters.length === 0 ? (
         <p className="sid-date-tracker-empty">
-          {selectedDate
-            ? "Belum ada surat pada tanggal ini."
-            : "Belum ada permohonan surat."}
+          {selectedDate ? 'Belum ada surat pada tanggal ini.' : 'Belum ada permohonan surat.'}
         </p>
       ) : (
         <>
-          {/* HEADER SURAT + NAVIGASI */}
+          {/* HEADER SURAT */}
 
           <div className="sid-date-tracker-header">
             <button
               type="button"
-              onClick={() =>
-                setSlideIndex(
-                  (i) =>
-                    Math.max(
-                      0,
-                      i - 1
-                    )
-                )
-              }
-              disabled={
-                slideIndex === 0
-              }
+              onClick={() => setSlideIndex((index) => Math.max(0, index - 1))}
+              disabled={slideIndex === 0}
               aria-label="Surat sebelumnya"
               className="sid-date-tracker-nav-button"
             >
-              <ChevronLeft
-                size={17}
-                strokeWidth={1.8}
-              />
+              <ChevronLeft size={17} strokeWidth={1.8} />
             </button>
 
             <div className="sid-date-tracker-header-info">
               <p className="sid-date-tracker-letter-type">
-                {activeSurat
-                  ?.letter_type?.name ??
-                  "-"}
+                {activeSurat?.letter_type?.name ?? '-'}
               </p>
 
               <p className="sid-date-tracker-letter-number">
-                Surat{" "}
-                {slideIndex + 1}{" "}
-                dari{" "}
-                {filteredLetters.length}
-
-                {" · "}
-
-                #
-                {activeSurat
-                  ?.letter_number ??
-                  `SKD-${activeSurat?.id}`}
+                Surat {slideIndex + 1} dari {filteredLetters.length}
+                {' · #'}
+                {activeSurat?.letter_number ?? `SKD-${activeSurat?.id}`}
               </p>
             </div>
 
             <button
               type="button"
               onClick={() =>
-                setSlideIndex(
-                  (i) =>
-                    Math.min(
-                      filteredLetters.length - 1,
-                      i + 1
-                    )
-                )
+                setSlideIndex((index) => Math.min(filteredLetters.length - 1, index + 1))
               }
-              disabled={
-                slideIndex ===
-                filteredLetters.length - 1
-              }
+              disabled={slideIndex === filteredLetters.length - 1}
               aria-label="Surat berikutnya"
               className="sid-date-tracker-nav-button"
             >
-              <ChevronRight
-                size={17}
-                strokeWidth={1.8}
-              />
+              <ChevronRight size={17} strokeWidth={1.8} />
             </button>
+          </div>
+
+          {/* STATUS */}
+
+          <div className="mb-4">
+            <StatusBadge status={activeSurat?.status} />
           </div>
 
           {/* TRACKING */}
 
-          <TrackingStepper
-            status={
-              activeSurat?.status
-            }
-          />
+          <TrackingStepper surat={activeSurat} />
+
+          {/* REJECTION */}
+
+          <RejectionReason surat={activeSurat} />
 
           {/* DOT SLIDER */}
 
           {filteredLetters.length > 1 && (
             <div className="sid-date-tracker-dots">
-              {filteredLetters.map(
-                (_, index) => (
-                  <button
-                    type="button"
-                    key={index}
-                    onClick={() =>
-                      setSlideIndex(index)
-                    }
-                    aria-label={`Pilih surat ${index + 1}`}
-                    className={`sid-date-tracker-dot${
-                      index === slideIndex
-                        ? " active"
-                        : ""
-                    }`}
-                  />
-                )
-              )}
+              {filteredLetters.map((_, index) => (
+                <button
+                  type="button"
+                  key={index}
+                  onClick={() => setSlideIndex(index)}
+                  aria-label={`Pilih surat ${index + 1}`}
+                  className={`sid-date-tracker-dot${index === slideIndex ? ' active' : ''}`}
+                />
+              ))}
             </div>
           )}
 
           {/* PREVIEW PDF */}
 
-          <SuratPreview
-            suratId={
-              activeSurat?.id
-            }
-            status={
-              activeSurat?.status
-            }
-          />
+          <SuratPreview suratId={activeSurat?.id} status={activeSurat?.status} />
         </>
       )}
     </div>
-  );
+  )
 }

@@ -1,130 +1,106 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable no-unused-vars */
 
 // ==========================================
 // RTListPage.jsx
 // Daftar Permohonan Surat RT
 //
+// STATUS:
+// - RT dapat melihat daftar surat.
+// - RT dapat memproses surat pada tahap RT.
+// - Status menggunakan status generik.
+// - UI mengikuti pola RWListPage.
+//
 // Desktop:
 // - Breadcrumb
-// - Search + filter dalam SID Card
-// - Tabel permohonan
+// - Header + description
+// - Search + filter
+// - Table
 // - Pagination
+// - Footer
 //
 // Mobile:
+// - Header
 // - Search
 // - Filter
 // - List surat
 // - Pagination
 // - Footer
-// - Bottom Navigation
+// - Bottom navigation
 //
 // Modal detail:
 // SuratDetailModalRT
 // ==========================================
 
-import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { Search } from 'lucide-react'
+import { useSuratList } from '@/features/approval-rt/hooks/useSuratList'
+import { useApprovalAction } from '@/features/approval-rt/hooks/useApprovalAction'
 
-import { useSuratList } from '@/features/approval-rt/hooks/useSuratList';
-import { useApprovalAction } from '@/features/approval-rt/hooks/useApprovalAction';
+import SuratDetailModalRT from '@/features/approval-rt/components/SuratDetailModalRT'
 
-import SuratDetailModalRT from '@/features/approval-rt/components/SuratDetailModalRT';
-import StatusBadgeRT from '@/features/approval-rt/components/StatusBadgeRT';
+import { StatusBadge } from '@/components/ui/StatusBadge'
 
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
-import { FooterDesa } from '@/components/layout/FooterDesa';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
+import { FooterDesa } from '@/components/layout/FooterDesa'
+import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
 
-import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
+import { SURAT_STATUS, SURAT_STATUS_OPTIONS } from '@/constants/suratStatus'
 
-
-// ==========================================
-// CONFIG
-// ==========================================
-
-const ITEMS_PER_PAGE = 5;
-
-
-// ==========================================
-// COMPONENT
-// ==========================================
+const ITEMS_PER_PAGE = 5
 
 export default function RTListPage() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams()
 
-  const initialStatus = searchParams.get('status') ?? '';
+  const initialStatus = searchParams.get('status') ?? ''
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedId, setSelectedId] = useState(null);
-  const [isReadOnly, setIsReadOnly] = useState(false);
-
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedId, setSelectedId] = useState(null)
+  const [isReadOnly, setIsReadOnly] = useState(false)
 
   // ==========================================
   // DATA
   // ==========================================
 
-  const {
-    data,
-    loading,
-    search,
-    setSearch,
-    filterStatus,
-    setFilterStatus,
-    refresh,
-  } = useSuratList({
-    initialStatus,
-  });
+  const { data, loading, search, setSearch, filterStatus, setFilterStatus, refresh } = useSuratList(
+    {
+      initialStatus,
+    },
+  )
 
-
-  const {
-    approve,
-    reject,
-  } = useApprovalAction();
-
+  const { approve, reject } = useApprovalAction()
 
   // ==========================================
-  // AUTO REFRESH
+  // AUTO REFRESH DATA SURAT
   // ==========================================
 
   useEffect(() => {
     const interval = setInterval(() => {
-      refresh();
-    }, 5000);
+      refresh()
+    }, 5000)
 
-    return () => clearInterval(interval);
-  }, [refresh]);
-
+    return () => clearInterval(interval)
+  }, [refresh])
 
   // ==========================================
-  // RESET PAGE
+  // RESET PAGINATION
   // ==========================================
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [search, filterStatus]);
-
+    setCurrentPage(1)
+  }, [search, filterStatus])
 
   // ==========================================
   // PAGINATION
   // ==========================================
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(data.length / ITEMS_PER_PAGE)
-  );
+  const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE))
 
   const paginatedData = useMemo(() => {
-    const start =
-      (currentPage - 1) * ITEMS_PER_PAGE;
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
 
-    return data.slice(
-      start,
-      start + ITEMS_PER_PAGE
-    );
-  }, [data, currentPage]);
-
+    return data.slice(start, start + ITEMS_PER_PAGE)
+  }, [data, currentPage])
 
   // ==========================================
   // APPROVE
@@ -132,20 +108,16 @@ export default function RTListPage() {
 
   const handleApprove = async () => {
     try {
-      await approve(selectedId);
+      await approve(selectedId)
 
-      await refresh();
+      await refresh()
 
-      setSelectedId(null);
-      setIsReadOnly(false);
+      setSelectedId(null)
+      setIsReadOnly(false)
     } catch (error) {
-      console.error(
-        'Gagal approve surat:',
-        error
-      );
+      console.error('Gagal approve surat:', error)
     }
-  };
-
+  }
 
   // ==========================================
   // REJECT
@@ -153,36 +125,26 @@ export default function RTListPage() {
 
   const handleReject = async (alasan) => {
     try {
-      await reject(
-        selectedId,
-        alasan
-      );
+      await reject(selectedId, alasan)
 
-      await refresh();
+      await refresh()
 
-      setSelectedId(null);
-      setIsReadOnly(false);
+      setSelectedId(null)
+      setIsReadOnly(false)
     } catch (error) {
-      console.error(
-        'Gagal reject surat:',
-        error
-      );
+      console.error('Gagal reject surat:', error)
     }
-  };
-
+  }
 
   // ==========================================
-  // OPEN DETAIL
+  // BUKA DETAIL
   // ==========================================
 
   const handleOpenDetail = (surat) => {
-    setSelectedId(surat.id);
+    setSelectedId(surat.id)
 
-    setIsReadOnly(
-      surat.status !== 'pending'
-    );
-  };
-
+    setIsReadOnly(surat.status !== SURAT_STATUS.PENDING)
+  }
 
   // ==========================================
   // RENDER
@@ -194,874 +156,318 @@ export default function RTListPage() {
           DESKTOP
           ======================================== */}
 
-      <div className="hidden md:block">
-
-        <div className="sid-page max-w-5xl">
-
-          {/* ======================================
-              BREADCRUMB
-              ====================================== */}
-
-          <p className="
-            text-xs
-            text-[var(--sid-text-muted)]
-            mb-1
-          ">
-            Admin /
-            <span className="
-              text-[var(--sid-text-secondary)]
-            ">
-              {' '}Daftar Permohonan Surat
-            </span>
-          </p>
-
-
-          {/* ======================================
-              TITLE
-              ====================================== */}
-
-          <h1 className="
-            sid-page-title
-            mb-6
-          ">
-            Daftar Permohonan Surat
-          </h1>
-
-
-          {/* ======================================
-              SEARCH + FILTER
-              ====================================== */}
-
-          <div className="
-            sid-card
-            mb-6
-          ">
-
-            <div className="
-              grid
-              grid-cols-2
-              gap-4
-            ">
-
-              {/* SEARCH */}
-
-              <div>
-
-                <p className="
-                  text-[10px]
-                  font-semibold
-                  text-[var(--sid-text-secondary)]
-                  uppercase
-                  mb-1.5
-                ">
-                  Pencarian Cepat
-                </p>
-
-                <div className="sid-search">
-
-                  <Search
-                    size={16}
-                    className="sid-search-icon"
-                  />
-
-                  <input
-                    defaultValue={search}
-                    onChange={(e) =>
-                      setSearch(e.target.value)
-                    }
-                    placeholder="
-                      Nomor surat atau nama pemohon...
-                    "
-                    className="sid-search-input"
-                  />
-
-                </div>
-
-              </div>
-
-
-              {/* STATUS */}
-
-              <div>
-
-                <p className="
-                  text-[10px]
-                  font-semibold
-                  text-[var(--sid-text-secondary)]
-                  uppercase
-                  mb-1.5
-                ">
-                  Status
-                </p>
-
-                <select
-                  value={filterStatus}
-                  onChange={(e) =>
-                    setFilterStatus(e.target.value)
-                  }
-                  className="sid-search-input"
-                >
-
-                  <option value="">
-                    Semua Status
-                  </option>
-
-                  <option value="pending">
-                    Menunggu
-                  </option>
-
-                  <option value="rt_approved">
-                    Disetujui RT
-                  </option>
-
-                  <option value="rt_rejected">
-                    Ditolak RT
-                  </option>
-
-                </select>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          {/* ======================================
-              TABLE
-              ====================================== */}
-
-          <div className="
-            sid-card
-            p-0
-            overflow-hidden
-          ">
-
-            <div className="overflow-x-auto">
-
-              <table className="
-                w-full
-                text-sm
-              ">
-
-                {/* HEADER */}
-
-                <thead>
-
-                  <tr className="
-                    border-b
-                    border-[var(--sid-border)]
-                  ">
-
-                    <th className="
-                      py-3
-                      px-5
-                      text-left
-                      font-semibold
-                      text-[10px]
-                      uppercase
-                      text-[var(--sid-text-secondary)]
-                    ">
-                      No. Surat
-                    </th>
-
-                    <th className="
-                      py-3
-                      px-5
-                      text-center
-                      font-semibold
-                      text-[10px]
-                      uppercase
-                      text-[var(--sid-text-secondary)]
-                    ">
-                      Pemohon
-                    </th>
-
-                    <th className="
-                      py-3
-                      px-5
-                      text-center
-                      font-semibold
-                      text-[10px]
-                      uppercase
-                      text-[var(--sid-text-secondary)]
-                    ">
-                      Jenis
-                    </th>
-
-                    <th className="
-                      py-3
-                      px-5
-                      text-center
-                      font-semibold
-                      text-[10px]
-                      uppercase
-                      text-[var(--sid-text-secondary)]
-                    ">
-                      Tanggal
-                    </th>
-
-                    <th className="
-                      py-3
-                      px-5
-                      text-center
-                      font-semibold
-                      text-[10px]
-                      uppercase
-                      text-[var(--sid-text-secondary)]
-                    ">
-                      Status
-                    </th>
-
-                    <th className="
-                      py-3
-                      px-5
-                      text-center
-                      font-semibold
-                      text-[10px]
-                      uppercase
-                      text-[var(--sid-text-secondary)]
-                    ">
-                      Aksi
-                    </th>
-
-                  </tr>
-
-                </thead>
-
-
-                {/* BODY */}
-
-                <tbody>
-
-                  {loading ? (
-
-                    <tr>
-
-                      <td
-                        colSpan={6}
-                        className="
-                          text-center
-                          py-10
-                          text-sm
-                          text-[var(--sid-text-muted)]
-                        "
-                      >
-                        Memuat data surat...
-                      </td>
-
-                    </tr>
-
-                  ) : paginatedData.length === 0 ? (
-
-                    <tr>
-
-                      <td
-                        colSpan={6}
-                        className="
-                          text-center
-                          py-10
-                          text-sm
-                          text-[var(--sid-text-muted)]
-                        "
-                      >
-                        Belum ada surat.
-                      </td>
-
-                    </tr>
-
-                  ) : (
-
-                    paginatedData.map((s) => (
-
-                      <tr
-                        key={s.id}
-                        className="
-                          border-b
-                          last:border-0
-                          border-[var(--sid-border)]
-                          hover:bg-[var(--sid-surface-page)]
-                          transition-colors
-                        "
-                      >
-
-                        {/* NO SURAT */}
-
-                        <td className="
-                          py-4
-                          px-5
-                          font-semibold
-                          text-[var(--sid-text-secondary)]
-                        ">
-                          #{s.letter_number ?? '-'}
-                        </td>
-
-
-                        {/* PEMOHON */}
-
-                        <td className="
-                          py-4
-                          px-5
-                          text-center
-                          text-[var(--sid-text-secondary)]
-                        ">
-                          {s.applicant_name ?? '-'}
-                        </td>
-
-
-                        {/* JENIS */}
-
-                        <td className="
-                          py-4
-                          px-5
-                          text-center
-                          text-[var(--sid-text-secondary)]
-                        ">
-                          {s.letter_type?.name ?? '-'}
-                        </td>
-
-
-                        {/* TANGGAL */}
-
-                        <td className="
-                          py-4
-                          px-5
-                          text-center
-                          text-[var(--sid-text-secondary)]
-                        ">
-                          {s.submitted_at
-                            ? new Date(
-                                s.submitted_at
-                              ).toLocaleDateString(
-                                'id-ID',
-                                {
-                                  day: 'numeric',
-                                  month: 'long',
-                                  year: 'numeric',
-                                }
-                              )
-                            : '-'}
-                        </td>
-
-
-                        {/* STATUS */}
-
-                        <td className="
-                          py-4
-                          px-5
-                          text-center
-                        ">
-                          <StatusBadgeRT
-                            status={s.status}
-                          />
-                        </td>
-
-
-                        {/* AKSI */}
-
-                        <td className="
-                          py-4
-                          px-5
-                          text-center
-                        ">
-
-                          <button
-                            onClick={() =>
-                              handleOpenDetail(s)
-                            }
-                            className="
-                              border
-                              border-[var(--sid-border)]
-                              rounded-[var(--radius-sm)]
-                              px-3
-                              py-1.5
-                              text-xs
-                              font-medium
-                              text-[var(--sid-text-secondary)]
-                              hover:bg-[var(--sid-surface-page)]
-                              hover:border-[var(--sid-primary)]
-                              hover:text-[var(--sid-primary)]
-                              transition-colors
-                            "
-                          >
-                            {s.status === 'pending'
-                              ? 'Proses'
-                              : 'Lihat'}
-                          </button>
-
-                        </td>
-
-                      </tr>
-
-                    ))
-
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-
-            {/* ======================================
-                PAGINATION
-                ====================================== */}
-
-            <div className="
-              flex
-              items-center
-              justify-between
-              px-5
-              py-4
-              border-t
-              border-[var(--sid-border)]
-            ">
-
-              <p className="
-                text-xs
-                text-[var(--sid-text-muted)]
-              ">
-
-                Menampilkan{' '}
-
-                {paginatedData.length === 0
-                  ? 0
-                  : (currentPage - 1) *
-                      ITEMS_PER_PAGE +
-                    1}
-
-                -
-                {(currentPage - 1) *
-                  ITEMS_PER_PAGE +
-                  paginatedData.length}{' '}
-
-                dari {data.length} data
-
-              </p>
-
-
-              <div className="
-                flex
-                items-center
-                gap-2
-              ">
-
-                <button
-                  onClick={() =>
-                    setCurrentPage(
-                      (p) => Math.max(1, p - 1)
-                    )
-                  }
-                  disabled={currentPage === 1}
-                  className="
-                    border
-                    border-[var(--sid-border)]
-                    rounded-[var(--radius-sm)]
-                    px-4
-                    py-2
-                    text-xs
-                    text-[var(--sid-text-secondary)]
-                    disabled:opacity-40
-                    disabled:cursor-not-allowed
-                    hover:bg-[var(--sid-surface-page)]
-                  "
-                >
-                  Sebelumnya
-                </button>
-
-
-                {Array.from(
-                  { length: totalPages },
-                  (_, i) => i + 1
-                ).map((page) => (
-
-                  <button
-                    key={page}
-                    onClick={() =>
-                      setCurrentPage(page)
-                    }
-                    className={`
-                      w-8
-                      h-8
-                      rounded-[var(--radius-sm)]
-                      text-xs
-                      font-medium
-                      ${
-                        page === currentPage
-                          ? 'bg-[var(--sid-primary)] text-white'
-                          : 'border border-[var(--sid-border)] text-[var(--sid-text-secondary)] hover:bg-[var(--sid-surface-page)]'
-                      }
-                    `}
-                  >
-                    {page}
-                  </button>
-
-                ))}
-
-
-                <button
-                  onClick={() =>
-                    setCurrentPage(
-                      (p) =>
-                        Math.min(
-                          totalPages,
-                          p + 1
-                        )
-                    )
-                  }
-                  disabled={
-                    currentPage === totalPages
-                  }
-                  className="
-                    border
-                    border-[var(--sid-border)]
-                    rounded-[var(--radius-sm)]
-                    px-4
-                    py-2
-                    text-xs
-                    text-[var(--sid-text-secondary)]
-                    disabled:opacity-40
-                    disabled:cursor-not-allowed
-                    hover:bg-[var(--sid-surface-page)]
-                  "
-                >
-                  Selanjutnya
-                </button>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-        {/* ======================================
-            FOOTER DESKTOP
-            ====================================== */}
-
-        <FooterDesa />
-
-      </div>
-
-
-      {/* ========================================
-          MOBILE
-          ======================================== */}
-
-      <div className="
-        md:hidden
-        flex
-        flex-col
-        min-h-screen
-        bg-[var(--sid-surface-page)]
-      ">
-
-        <div className="
-          flex-1
-          px-4
-          pt-4
-          pb-4
-        ">
-
+      <div className="rw-page-desktop">
+        <div className="sid-page rw-page-content">
           {/* ======================================
               HEADER
               ====================================== */}
 
-          <h1 className="
-            text-xl
-            font-semibold
-            text-[var(--sid-text-primary)]
-            mb-1
-          ">
-            Semua Surat
-          </h1>
-
-          <p className="
-            text-sm
-            text-[var(--sid-text-muted)]
-            mb-4
-          ">
-            Kelola permohonan surat warga secara digital
+          <p className="rw-breadcrumb">
+            Admin / <span>Daftar Permohonan Surat</span>
           </p>
 
+          <h1 className="sid-page-title">Daftar Permohonan Surat</h1>
 
-          {/* ======================================
-              SEARCH
-              ====================================== */}
-
-          <div className="
-            sid-search
-            mb-3
-          ">
-
-            <Search
-              size={16}
-              className="sid-search-icon"
-            />
-
-            <input
-              defaultValue={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-              placeholder="Cari nama pemohon..."
-              className="sid-search-input"
-            />
-
-          </div>
-
+          <p className="sid-page-description">
+            Kelola permohonan surat warga yang masuk ke wilayah RT.
+          </p>
 
           {/* ======================================
               FILTER
               ====================================== */}
 
-          <select
-            value={filterStatus}
-            onChange={(e) =>
-              setFilterStatus(e.target.value)
-            }
-            className="
-              sid-search-input
-              mb-4
-            "
-          >
+          <div className="sid-card rw-filter-card">
+            <div className="rw-filter-grid">
+              {/* PENCARIAN */}
 
-            <option value="">
-              Semua Status
-            </option>
+              <div>
+                <p className="rw-filter-label">Pencarian Cepat</p>
 
-            <option value="pending">
-              Menunggu
-            </option>
+                <div className="rw-search-wrapper">
+                  <Search size={16} className="sid-search-icon" />
 
-            <option value="rt_approved">
-              Disetujui RT
-            </option>
+                  <input
+                    type="text"
+                    defaultValue={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Nomor surat atau nama pemohon..."
+                    className="sid-search-input"
+                  />
+                </div>
+              </div>
 
-            <option value="rt_rejected">
-              Ditolak RT
-            </option>
+              {/* STATUS */}
 
-          </select>
+              <div>
+                <p className="rw-filter-label">Status</p>
 
-
-          {/* ======================================
-              LIST SURAT
-              ====================================== */}
-
-          <div className="
-            bg-[var(--sid-surface-card)]
-            rounded-[var(--radius-lg)]
-            shadow-[var(--shadow-card)]
-            overflow-hidden
-            mb-4
-          ">
-
-            {/* HEADER LIST */}
-
-            <div className="
-              grid
-              grid-cols-4
-              text-[10px]
-              font-semibold
-              text-[var(--sid-text-secondary)]
-              uppercase
-              px-4
-              py-3
-              border-b
-              border-[var(--sid-border)]
-            ">
-
-              <span>
-                No.Surat
-              </span>
-
-              <span className="text-center">
-                Pemohon
-              </span>
-
-              <span className="text-center">
-                Jenis
-              </span>
-
-              <span className="text-center">
-                Tanggal
-              </span>
-
-            </div>
-
-
-            {/* LOADING */}
-
-            {loading ? (
-
-              <p className="
-                text-center
-                text-sm
-                text-[var(--sid-text-muted)]
-                py-8
-              ">
-                Memuat...
-              </p>
-
-            ) : paginatedData.length === 0 ? (
-
-              <p className="
-                text-center
-                text-sm
-                text-[var(--sid-text-muted)]
-                py-8
-              ">
-                Belum ada surat.
-              </p>
-
-            ) : (
-
-              paginatedData.map((s) => (
-
-                <button
-                  key={s.id}
-                  onClick={() =>
-                    handleOpenDetail(s)
-                  }
-                  className="
-                    w-full
-                    grid
-                    grid-cols-4
-                    items-center
-                    text-left
-                    px-4
-                    py-3
-                    border-b
-                    last:border-0
-                    border-[var(--sid-border)]
-                    hover:bg-[var(--sid-surface-page)]
-                    transition-colors
-                  "
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="sid-select rw-status-select"
                 >
+                  <option value="">Semua Status</option>
 
-                  <span className="
-                    text-xs
-                    text-[var(--sid-text-secondary)]
-                  ">
-                    {s.letter_number ?? '-'}
-                  </span>
-
-
-                  <span className="
-                    text-xs
-                    font-medium
-                    text-[var(--sid-text-secondary)]
-                    text-center
-                  ">
-                    {s.applicant_name ?? '-'}
-                  </span>
-
-
-                  <span className="
-                    text-xs
-                    text-[var(--sid-text-secondary)]
-                    text-center
-                  ">
-                    {s.letter_type?.name ?? '-'}
-                  </span>
-
-
-                  <span className="
-                    text-xs
-                    text-[var(--sid-text-secondary)]
-                    text-center
-                  ">
-                    {s.submitted_at
-                      ? new Date(
-                          s.submitted_at
-                        ).toLocaleDateString(
-                          'id-ID'
-                        )
-                      : '-'}
-                  </span>
-
-                </button>
-
-              ))
-
-            )}
-
+                  {SURAT_STATUS_OPTIONS.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
-
           {/* ======================================
-              MOBILE PAGINATION
+              TABLE
               ====================================== */}
 
-          <div className="
-            flex
-            justify-center
-            gap-2
-            mb-4
-          ">
+          <div className="sid-card rw-table-card">
+            <table className="rw-table">
+              <thead>
+                <tr className="rw-table-header">
+                  <th>No. Surat</th>
 
-            {Array.from(
-              { length: totalPages },
-              (_, i) => i + 1
-            ).map((page) => (
+                  <th>Pemohon</th>
 
+                  <th>Jenis</th>
+
+                  <th>Tanggal</th>
+
+                  <th>Status</th>
+
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="rw-table-message">
+                      Memuat data surat...
+                    </td>
+                  </tr>
+                ) : paginatedData.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="rw-table-message">
+                      Belum ada surat.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedData.map((s) => (
+                    <tr key={s.id} className="rw-table-row">
+                      {/* NO SURAT */}
+
+                      <td className="rw-letter-number">#{s.letter_number ?? '-'}</td>
+
+                      {/* PEMOHON */}
+
+                      <td className="rw-table-center">{s.applicant_name ?? '-'}</td>
+
+                      {/* JENIS */}
+
+                      <td className="rw-table-center">{s.letter_type?.name ?? '-'}</td>
+
+                      {/* TANGGAL */}
+
+                      <td className="rw-table-date">
+                        {s.submitted_at
+                          ? new Date(s.submitted_at).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })
+                          : '-'}
+                      </td>
+
+                      {/* STATUS */}
+
+                      <td className="rw-table-center">
+                        <StatusBadge status={s.status} />
+                      </td>
+
+                      {/* AKSI */}
+
+                      <td className="rw-table-center">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDetail(s)}
+                          className="rw-action-button"
+                        >
+                          {s.status === SURAT_STATUS.PENDING ? 'Proses' : 'Lihat'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            {/* ==================================
+                PAGINATION DESKTOP
+                ================================== */}
+
+            <div className="rw-pagination">
+              <p className="rw-pagination-info">
+                Menampilkan{' '}
+                {paginatedData.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-
+                {(currentPage - 1) * ITEMS_PER_PAGE + paginatedData.length} dari {data.length} data
+              </p>
+
+              <div className="rw-pagination-buttons">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="rw-pagination-nav"
+                >
+                  Sebelumnya
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`rw-pagination-page ${
+                      page === currentPage ? 'rw-pagination-page-active' : ''
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rw-pagination-nav"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ======================================
+            FOOTER
+            ====================================== */}
+
+        <FooterDesa />
+      </div>
+
+      {/* ========================================
+          MOBILE
+          ======================================== */}
+
+      <div className="rw-page-mobile">
+        <div className="sid-page rw-mobile-content">
+          {/* HEADER */}
+
+          <h1 className="sid-page-title">Semua Surat</h1>
+
+          <p className="sid-page-description">Kelola permohonan surat warga secara digital.</p>
+
+          {/* SEARCH */}
+
+          <div className="rw-mobile-search">
+            <Search size={16} className="sid-search-icon" />
+
+            <input
+              type="text"
+              defaultValue={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari nama pemohon..."
+              className="sid-search-input"
+            />
+          </div>
+
+          {/* FILTER STATUS */}
+
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="sid-select rw-mobile-status-select"
+          >
+            <option value="">Semua Status</option>
+
+            {SURAT_STATUS_OPTIONS.map((status) => (
+              <option key={status.value} value={status.value}>
+                {status.label}
+              </option>
+            ))}
+          </select>
+
+          {/* MOBILE TABLE */}
+
+          <div className="sid-card rw-mobile-table-card">
+            <div className="rw-mobile-table-header">
+              <span>No.Surat</span>
+
+              <span>Pemohon</span>
+
+              <span>Jenis</span>
+
+              <span>Tanggal</span>
+            </div>
+
+            {loading ? (
+              <p className="rw-mobile-message">Memuat...</p>
+            ) : paginatedData.length === 0 ? (
+              <p className="rw-mobile-message">Belum ada surat.</p>
+            ) : (
+              paginatedData.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => handleOpenDetail(s)}
+                  className="rw-mobile-row"
+                >
+                  <span>{s.letter_number ?? '-'}</span>
+
+                  <span className="rw-mobile-applicant">{s.applicant_name ?? '-'}</span>
+
+                  <span>{s.letter_type?.name ?? '-'}</span>
+
+                  <span className="rw-mobile-date">
+                    {s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID') : '-'}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+
+          {/* MOBILE PAGINATION */}
+
+          <div className="rw-mobile-pagination">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
                 key={page}
-                onClick={() =>
-                  setCurrentPage(page)
-                }
-                className={`
-                  w-8
-                  h-8
-                  rounded-full
-                  text-xs
-                  font-medium
-                  ${
-                    page === currentPage
-                      ? 'bg-[var(--sid-primary)] text-white'
-                      : 'bg-[var(--sid-surface-card)] border border-[var(--sid-border)] text-[var(--sid-primary)]'
-                  }
-                `}
+                type="button"
+                onClick={() => setCurrentPage(page)}
+                className={`rw-mobile-page-button ${
+                  page === currentPage ? 'rw-mobile-page-button-active' : ''
+                }`}
               >
                 {page}
               </button>
-
             ))}
-
           </div>
-
         </div>
 
+        {/* FOOTER */}
 
-        {/* ======================================
-            FOOTER MOBILE
-            ====================================== */}
-
-        <div className="
-          sid-mobile-footer
-          pb-16
-        ">
+        <div className="sid-mobile-footer">
           <FooterDesa />
         </div>
 
-
-        {/* ======================================
-            MOBILE BOTTOM NAV
-            ====================================== */}
+        {/* MOBILE NAV */}
 
         <MobileBottomNav
-          links={ADMIN_MOBILE_LINKS(
-            '/admin/dashboard-surat-rt',
-            '/admin/list-rt'
-          )}
+          links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rt', '/admin/list-rt')}
         />
-
       </div>
-
 
       {/* ========================================
           DETAIL MODAL
@@ -1069,18 +475,14 @@ export default function RTListPage() {
 
       <SuratDetailModalRT
         suratId={selectedId}
-
         onClose={() => {
-          setSelectedId(null);
-          setIsReadOnly(false);
+          setSelectedId(null)
+          setIsReadOnly(false)
         }}
-
         onApprove={handleApprove}
         onReject={handleReject}
-
         readOnly={isReadOnly}
       />
-
     </>
-  );
+  )
 }

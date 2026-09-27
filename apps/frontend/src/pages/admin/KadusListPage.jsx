@@ -9,49 +9,46 @@
 // - Kadus tidak memiliki kewenangan approve/reject.
 // - Kadus dapat melihat daftar dan detail surat.
 //
-// Workflow monitoring:
-// Submit -> RT -> RW -> Selesai
+// Workflow monitoring menggunakan status generik.
 //
 // Styling menggunakan SID Global Theme.
 // Struktur dibuat konsisten dengan RWListPage.jsx.
 // ==========================================
 
-import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { Search } from 'lucide-react'
 
-import { useSuratList } from '@/features/approval-kadus/hooks/useSuratListKadus';
-import SuratDetailModalKadus from '@/features/approval-kadus/components/SuratDetailModalKadus';
-import StatusBadgeRT from '@/features/approval-rt/components/StatusBadgeRT';
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
-import { FooterDesa } from '@/components/layout/FooterDesa';
-import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
+import { useSuratList } from '@/features/approval-kadus/hooks/useSuratListKadus'
+import SuratDetailModalKadus from '@/features/approval-kadus/components/SuratDetailModalKadus'
 
-const ITEMS_PER_PAGE = 5;
+import { StatusBadge } from '@/components/ui/StatusBadge'
+
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
+import { FooterDesa } from '@/components/layout/FooterDesa'
+import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
+
+import { SURAT_STATUS_OPTIONS } from '@/constants/suratStatus'
+
+const ITEMS_PER_PAGE = 5
 
 export default function KadusListPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams()
 
-  const initialStatus = searchParams.get('status') ?? '';
+  const initialStatus = searchParams.get('status') ?? ''
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedId, setSelectedId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedId, setSelectedId] = useState(null)
 
   // ==========================================
   // DATA
   // ==========================================
 
-  const {
-    data,
-    loading,
-    search,
-    setSearch,
-    filterStatus,
-    setFilterStatus,
-    refresh,
-  } = useSuratList({
-    initialStatus,
-  });
+  const { data, loading, search, setSearch, filterStatus, setFilterStatus, refresh } = useSuratList(
+    {
+      initialStatus,
+    },
+  )
 
   // ==========================================
   // AUTO REFRESH DATA SURAT
@@ -59,38 +56,31 @@ export default function KadusListPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      refresh();
-    }, 5000);
+      refresh()
+    }, 5000)
 
-    return () => clearInterval(interval);
-  }, [refresh]);
+    return () => clearInterval(interval)
+  }, [refresh])
 
   // ==========================================
   // RESET PAGINATION
   // ==========================================
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [search, filterStatus]);
+    setCurrentPage(1)
+  }, [search, filterStatus])
 
   // ==========================================
   // PAGINATION
   // ==========================================
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(data.length / ITEMS_PER_PAGE)
-  );
+  const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE))
 
   const paginatedData = useMemo(() => {
-    const start =
-      (currentPage - 1) * ITEMS_PER_PAGE;
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
 
-    return data.slice(
-      start,
-      start + ITEMS_PER_PAGE
-    );
-  }, [data, currentPage]);
+    return data.slice(start, start + ITEMS_PER_PAGE)
+  }, [data, currentPage])
 
   // ==========================================
   // BUKA DETAIL
@@ -99,8 +89,8 @@ export default function KadusListPage() {
   // ==========================================
 
   const handleOpenDetail = (surat) => {
-    setSelectedId(surat.id);
-  };
+    setSelectedId(surat.id)
+  }
 
   // ==========================================
   // RENDER
@@ -113,27 +103,19 @@ export default function KadusListPage() {
           ======================================== */}
 
       <div className="rw-page-desktop">
-
         <div className="sid-page rw-page-content">
-
           {/* ======================================
               HEADER
               ====================================== */}
 
           <p className="rw-breadcrumb">
-            Admin /{' '}
-            <span>
-              Daftar Permohonan Surat
-            </span>
+            Admin / <span>Daftar Permohonan Surat</span>
           </p>
 
-          <h1 className="sid-page-title">
-            Daftar Permohonan Surat
-          </h1>
+          <h1 className="sid-page-title">Daftar Permohonan Surat</h1>
 
           <p className="sid-page-description">
-            Pantau permohonan surat warga di wilayah
-            dusun secara digital.
+            Pantau permohonan surat warga di wilayah dusun secara digital.
           </p>
 
           {/* ======================================
@@ -141,84 +123,44 @@ export default function KadusListPage() {
               ====================================== */}
 
           <div className="sid-card rw-filter-card">
-
             <div className="rw-filter-grid">
-
-              {/* ==================================
-                  PENCARIAN
-                  ================================== */}
+              {/* PENCARIAN */}
 
               <div>
-                <p className="rw-filter-label">
-                  Pencarian Cepat
-                </p>
+                <p className="rw-filter-label">Pencarian Cepat</p>
 
                 <div className="rw-search-wrapper">
-
-                  <Search
-                    size={16}
-                    className="sid-search-icon"
-                  />
+                  <Search size={16} className="sid-search-icon" />
 
                   <input
                     type="text"
                     value={search}
-                    onChange={(e) =>
-                      setSearch(e.target.value)
-                    }
+                    onChange={(e) => setSearch(e.target.value)}
                     placeholder="Nomor surat atau nama pemohon..."
                     className="sid-search-input"
                   />
-
                 </div>
               </div>
 
-              {/* ==================================
-                  STATUS
-                  ================================== */}
+              {/* STATUS */}
 
               <div>
-
-                <p className="rw-filter-label">
-                  Status
-                </p>
+                <p className="rw-filter-label">Status</p>
 
                 <select
                   value={filterStatus}
-                  onChange={(e) =>
-                    setFilterStatus(e.target.value)
-                  }
+                  onChange={(e) => setFilterStatus(e.target.value)}
                   className="sid-select rw-status-select"
                 >
+                  <option value="">Semua Status</option>
 
-                  <option value="">
-                    Semua Status
-                  </option>
-
-                  <option value="pending">
-                    Menunggu RT
-                  </option>
-
-                  <option value="rt_approved">
-                    Diproses Setelah RT
-                  </option>
-
-                  <option value="rt_rejected">
-                    Ditolak RT
-                  </option>
-
-                  <option value="rw_approved">
-                    Selesai
-                  </option>
-
-                  <option value="rw_rejected">
-                    Ditolak RW
-                  </option>
-
+                  {SURAT_STATUS_OPTIONS.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
                 </select>
-
               </div>
-
             </div>
           </div>
 
@@ -227,157 +169,84 @@ export default function KadusListPage() {
               ====================================== */}
 
           <div className="sid-card rw-table-card">
-
             <table className="rw-table">
-
               <thead>
-
                 <tr className="rw-table-header">
+                  <th>No. Surat</th>
 
-                  <th>
-                    No. Surat
-                  </th>
+                  <th>Pemohon</th>
 
-                  <th>
-                    Pemohon
-                  </th>
+                  <th>Jenis</th>
 
-                  <th>
-                    Jenis
-                  </th>
+                  <th>Tanggal</th>
 
-                  <th>
-                    Tanggal
-                  </th>
+                  <th>Status</th>
 
-                  <th>
-                    Status
-                  </th>
-
-                  <th>
-                    Aksi
-                  </th>
-
+                  <th>Aksi</th>
                 </tr>
-
               </thead>
 
               <tbody>
-
                 {loading ? (
-
                   <tr>
-
-                    <td
-                      colSpan={6}
-                      className="rw-table-message"
-                    >
+                    <td colSpan={6} className="rw-table-message">
                       Memuat data surat...
                     </td>
-
                   </tr>
-
                 ) : paginatedData.length === 0 ? (
-
                   <tr>
-
-                    <td
-                      colSpan={6}
-                      className="rw-table-message"
-                    >
+                    <td colSpan={6} className="rw-table-message">
                       Belum ada surat.
                     </td>
-
                   </tr>
-
                 ) : (
-
                   paginatedData.map((s) => (
+                    <tr key={s.id} className="rw-table-row">
+                      {/* NO SURAT */}
 
-                    <tr
-                      key={s.id}
-                      className="rw-table-row"
-                    >
+                      <td className="rw-letter-number">#{s.letter_number ?? '-'}</td>
 
-                      {/* ============================
-                          NO SURAT
-                          ============================ */}
+                      {/* PEMOHON */}
 
-                      <td className="rw-letter-number">
-                        #{s.letter_number ?? '-'}
-                      </td>
+                      <td className="rw-table-center">{s.applicant_name ?? '-'}</td>
 
-                      {/* ============================
-                          PEMOHON
-                          ============================ */}
+                      {/* JENIS */}
 
-                      <td className="rw-table-center">
-                        {s.applicant_name ?? '-'}
-                      </td>
+                      <td className="rw-table-center">{s.letter_type?.name ?? '-'}</td>
 
-                      {/* ============================
-                          JENIS
-                          ============================ */}
-
-                      <td className="rw-table-center">
-                        {s.letter_type?.name ?? '-'}
-                      </td>
-
-                      {/* ============================
-                          TANGGAL
-                          ============================ */}
+                      {/* TANGGAL */}
 
                       <td className="rw-table-date">
                         {s.submitted_at
-                          ? new Date(
-                              s.submitted_at
-                            ).toLocaleDateString(
-                              'id-ID',
-                              {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric',
-                              }
-                            )
+                          ? new Date(s.submitted_at).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })
                           : '-'}
                       </td>
 
-                      {/* ============================
-                          STATUS
-                          ============================ */}
+                      {/* STATUS */}
 
                       <td className="rw-table-center">
-                        <StatusBadgeRT
-                          status={s.status}
-                        />
+                        <StatusBadge status={s.status} />
                       </td>
 
-                      {/* ============================
-                          AKSI
-                          ============================ */}
+                      {/* AKSI */}
 
                       <td className="rw-table-center">
-
                         <button
                           type="button"
-                          onClick={() =>
-                            handleOpenDetail(s)
-                          }
+                          onClick={() => handleOpenDetail(s)}
                           className="rw-action-button"
                         >
                           Lihat
                         </button>
-
                       </td>
-
                     </tr>
-
                   ))
-
                 )}
-
               </tbody>
-
             </table>
 
             {/* ==================================
@@ -385,96 +254,51 @@ export default function KadusListPage() {
                 ================================== */}
 
             <div className="rw-pagination">
-
               <p className="rw-pagination-info">
-
                 Menampilkan{' '}
-
-                {paginatedData.length === 0
-                  ? 0
-                  : (currentPage - 1) *
-                      ITEMS_PER_PAGE +
-                    1}
-
-                -
-
-                {(currentPage - 1) *
-                  ITEMS_PER_PAGE +
-                  paginatedData.length}{' '}
-
-                dari {data.length} data
-
+                {paginatedData.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-
+                {(currentPage - 1) * ITEMS_PER_PAGE + paginatedData.length} dari {data.length} data
               </p>
 
               <div className="rw-pagination-buttons">
-
                 <button
                   type="button"
-                  onClick={() =>
-                    setCurrentPage((page) =>
-                      Math.max(1, page - 1)
-                    )
-                  }
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                   disabled={currentPage === 1}
                   className="rw-pagination-nav"
                 >
                   Sebelumnya
                 </button>
 
-                {Array.from(
-                  { length: totalPages },
-                  (_, i) => i + 1
-                ).map((page) => (
-
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
                     type="button"
-                    onClick={() =>
-                      setCurrentPage(page)
-                    }
+                    onClick={() => setCurrentPage(page)}
                     className={`rw-pagination-page ${
-                      page === currentPage
-                        ? 'rw-pagination-page-active'
-                        : ''
+                      page === currentPage ? 'rw-pagination-page-active' : ''
                     }`}
                   >
                     {page}
                   </button>
-
                 ))}
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setCurrentPage((page) =>
-                      Math.min(
-                        totalPages,
-                        page + 1
-                      )
-                    )
-                  }
-                  disabled={
-                    currentPage === totalPages
-                  }
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
                   className="rw-pagination-nav"
                 >
                   Selanjutnya
                 </button>
-
               </div>
-
             </div>
-
           </div>
-
         </div>
 
-        {/* ======================================
-            FOOTER
-            ====================================== */}
+        {/* FOOTER */}
 
         <FooterDesa />
-
       </div>
 
       {/* ========================================
@@ -482,214 +306,111 @@ export default function KadusListPage() {
           ======================================== */}
 
       <div className="rw-page-mobile">
-
         <div className="sid-page rw-mobile-content">
+          {/* HEADER */}
 
-          {/* ======================================
-              HEADER
-              ====================================== */}
+          <h1 className="sid-page-title">Semua Surat</h1>
 
-          <h1 className="sid-page-title">
-            Semua Surat
-          </h1>
+          <p className="sid-page-description">Pantau permohonan surat warga secara digital.</p>
 
-          <p className="sid-page-description">
-            Pantau permohonan surat warga secara digital.
-          </p>
-
-          {/* ======================================
-              SEARCH
-              ====================================== */}
+          {/* SEARCH */}
 
           <div className="rw-mobile-search">
-
-            <Search
-              size={16}
-              className="sid-search-icon"
-            />
+            <Search size={16} className="sid-search-icon" />
 
             <input
               type="text"
               value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama pemohon..."
               className="sid-search-input"
             />
-
           </div>
 
-          {/* ======================================
-              FILTER STATUS
-              ====================================== */}
+          {/* FILTER STATUS */}
 
           <select
             value={filterStatus}
-            onChange={(e) =>
-              setFilterStatus(e.target.value)
-            }
+            onChange={(e) => setFilterStatus(e.target.value)}
             className="sid-select rw-mobile-status-select"
           >
+            <option value="">Semua Status</option>
 
-            <option value="">
-              Semua Status
-            </option>
-
-            <option value="pending">
-              Menunggu RT
-            </option>
-
-            <option value="rt_approved">
-              Diproses Setelah RT
-            </option>
-
-            <option value="rt_rejected">
-              Ditolak RT
-            </option>
-
-            <option value="rw_approved">
-              Selesai
-            </option>
-
-            <option value="rw_rejected">
-              Ditolak RW
-            </option>
-
+            {SURAT_STATUS_OPTIONS.map((status) => (
+              <option key={status.value} value={status.value}>
+                {status.label}
+              </option>
+            ))}
           </select>
 
-          {/* ======================================
-              MOBILE TABLE
-              ====================================== */}
+          {/* MOBILE TABLE */}
 
           <div className="sid-card rw-mobile-table-card">
-
             <div className="rw-mobile-table-header">
+              <span>No.Surat</span>
 
-              <span>
-                No.Surat
-              </span>
+              <span>Pemohon</span>
 
-              <span>
-                Pemohon
-              </span>
+              <span>Jenis</span>
 
-              <span>
-                Jenis
-              </span>
-
-              <span>
-                Tanggal
-              </span>
-
+              <span>Tanggal</span>
             </div>
 
             {loading ? (
-
-              <p className="rw-mobile-message">
-                Memuat...
-              </p>
-
+              <p className="rw-mobile-message">Memuat...</p>
             ) : paginatedData.length === 0 ? (
-
-              <p className="rw-mobile-message">
-                Belum ada surat.
-              </p>
-
+              <p className="rw-mobile-message">Belum ada surat.</p>
             ) : (
-
               paginatedData.map((s) => (
-
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() =>
-                    handleOpenDetail(s)
-                  }
+                  onClick={() => handleOpenDetail(s)}
                   className="rw-mobile-row"
                 >
+                  <span>{s.letter_number ?? '-'}</span>
 
-                  <span>
-                    {s.letter_number ?? '-'}
-                  </span>
+                  <span className="rw-mobile-applicant">{s.applicant_name ?? '-'}</span>
 
-                  <span className="rw-mobile-applicant">
-                    {s.applicant_name ?? '-'}
-                  </span>
-
-                  <span>
-                    {s.letter_type?.name ?? '-'}
-                  </span>
+                  <span>{s.letter_type?.name ?? '-'}</span>
 
                   <span className="rw-mobile-date">
-                    {s.submitted_at
-                      ? new Date(
-                          s.submitted_at
-                        ).toLocaleDateString(
-                          'id-ID'
-                        )
-                      : '-'}
+                    {s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID') : '-'}
                   </span>
-
                 </button>
-
               ))
-
             )}
-
           </div>
 
-          {/* ======================================
-              MOBILE PAGINATION
-              ====================================== */}
+          {/* MOBILE PAGINATION */}
 
           <div className="rw-mobile-pagination">
-
-            {Array.from(
-              { length: totalPages },
-              (_, i) => i + 1
-            ).map((page) => (
-
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
                 key={page}
                 type="button"
-                onClick={() =>
-                  setCurrentPage(page)
-                }
+                onClick={() => setCurrentPage(page)}
                 className={`rw-mobile-page-button ${
-                  page === currentPage
-                    ? 'rw-mobile-page-button-active'
-                    : ''
+                  page === currentPage ? 'rw-mobile-page-button-active' : ''
                 }`}
               >
                 {page}
               </button>
-
             ))}
-
           </div>
-
         </div>
 
-        {/* ======================================
-            FOOTER
-            ====================================== */}
+        {/* FOOTER */}
 
         <div className="sid-mobile-footer">
           <FooterDesa />
         </div>
 
-        {/* ======================================
-            MOBILE NAV
-            ====================================== */}
+        {/* MOBILE NAV */}
 
         <MobileBottomNav
-          links={ADMIN_MOBILE_LINKS(
-            '/admin/dashboard-surat-kadus',
-            '/admin/list-kadus'
-          )}
+          links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-kadus', '/admin/list-kadus')}
         />
-
       </div>
 
       {/* ========================================
@@ -699,10 +420,9 @@ export default function KadusListPage() {
       <SuratDetailModalKadus
         suratId={selectedId}
         onClose={() => {
-          setSelectedId(null);
+          setSelectedId(null)
         }}
       />
-
     </>
-  );
+  )
 }
