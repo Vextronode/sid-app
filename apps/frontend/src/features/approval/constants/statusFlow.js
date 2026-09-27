@@ -1,41 +1,69 @@
+/* eslint-disable no-unused-vars */
 // ==========================================
-// statusFlow.js (GLOBAL)
-// Alur baru: Submit -> RT -> RW (FINAL) -> Selesai.
-// Kadus/Petugas Desa/Kasi/Kaur bukan approver lagi, cuma monitoring & cetak.
+// statusFlow.js (GLOBAL - MODEL GENERIK)
 // ==========================================
 
+// STATUS_BADGE bisa dihapus jika sudah tidak dipakai (karena sudah ada di StatusBadge.jsx)
+// Tapi jika masih dipakai di tempat lain, ubah ke generic:
 export const STATUS_BADGE = {
-  pending: { label: 'pending', className: 'bg-yellow-100 text-yellow-700' },
-  rt_approved: { label: 'rt_approved', className: 'bg-green-100 text-green-700' },
-  rt_rejected: { label: 'rt_rejected', className: 'bg-red-100 text-red-700' },
-  rw_approved: { label: 'rw_approved', className: 'bg-emerald-100 text-emerald-700' },
-  rw_rejected: { label: 'rw_rejected', className: 'bg-red-100 text-red-700' },
-};
-
-export const STEP_LABELS = ['Submit', 'RT', 'RW', 'Selesai'];
-
-export function getStepIndex(status) {
-  const map = { pending: 1, rt_approved: 2, rt_rejected: 2, rw_approved: 3, rw_rejected: 3 };
-  return map[status] ?? 0;
+  pending: { label: 'Menunggu', className: 'bg-yellow-100 text-yellow-700' },
+  in_progress: { label: 'Diproses', className: 'bg-blue-100 text-blue-700' },
+  approved: { label: 'Selesai', className: 'bg-green-100 text-green-700' },
+  rejected: { label: 'Ditolak', className: 'bg-red-100 text-red-700' },
 }
 
+/**
+ * Fungsi untuk generate Stepper UI secara generik berdasarkan flow_steps surat
+ */
 export function getStepStatuses(surat) {
-  const { status, riwayat = [], diajukan_at, terakhir_diproses_at } = surat;
-  const findRiwayat = (tahap) => riwayat.find((r) => r.tahap === tahap);
+  const {
+    status,
+    current_step_order,
+    rejected_at_step,
+    flow_steps = [],
+    approvals = [],
+    diajukan_at,
+  } = surat
 
-  const rtDone = status !== 'pending';
-  const rtRejected = status === 'rt_rejected';
-  const rtEntry = findRiwayat('RT');
+  // Tahap awal: Submit
+  let steps = [{ label: 'Submit', state: 'done', timestamp: diajukan_at }]
 
-  const rwStarted = status !== 'pending' && status !== 'rt_rejected';
-  const rwDone = status === 'rw_approved';
-  const rwRejected = status === 'rw_rejected';
-  const rwEntry = findRiwayat('RW');
+  // Loop setiap tahap approval dari database/flow_steps
+  flow_steps.forEach((step, index) => {
+    const stepOrder = step.step_order
 
-  return [
-    { label: 'Submit', state: 'done', timestamp: diajukan_at },
-    { label: 'RT', state: rtRejected ? 'rejected' : rtDone ? 'done' : 'current', timestamp: rtEntry?.waktu ?? (rtDone ? terakhir_diproses_at : null) },
-    { label: 'RW', state: rwRejected ? 'rejected' : rwDone ? 'done' : rwStarted ? 'current' : 'waiting', timestamp: rwEntry?.waktu ?? null },
-    { label: 'Selesai', state: rwDone ? 'done' : 'waiting', timestamp: null },
-  ];
+    // Cari data riwayat jika sudah di-approve/reject di tahap ini
+    const history = approvals.find((a) => a.flow_step_id === step.id)
+    const timestamp = history ? history.created_at : null
+
+    let state = 'waiting'
+
+    if (rejected_at_step === stepOrder) {
+      state = 'rejected'
+    } else if (current_step_order > stepOrder || status === 'approved') {
+      state = 'done'
+    } else if (current_step_order === stepOrder && status !== 'rejected') {
+      state = 'current'
+    }
+
+    // Nama jabatan bisa diformat agar lebih rapi (misal: 'kepala_desa' -> 'Kepala Desa')
+    const formatJabatan = step.approver_position
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (l) => l.toUpperCase())
+
+    steps.push({
+      label: formatJabatan,
+      state: state,
+      timestamp: timestamp,
+    })
+  })
+
+  // Tahap akhir: Selesai
+  steps.push({
+    label: 'Selesai',
+    state: status === 'approved' ? 'done' : 'waiting',
+    timestamp: status === 'approved' ? (approvals[approvals.length - 1]?.created_at ?? null) : null,
+  })
+
+  return steps
 }
