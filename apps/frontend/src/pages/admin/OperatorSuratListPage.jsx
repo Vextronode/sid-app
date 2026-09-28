@@ -1,229 +1,259 @@
-
 // ==========================================
 // OperatorSuratListPage.jsx
 // Halaman "Daftar Permohonan Surat" untuk Operator Desa.
-// Logic/API tidak diubah.
-// Styling dipindahkan ke Global CSS.
+// Status menggunakan status generic.
+// Logic edit/hapus/preview tetap dipertahankan.
+// Styling menggunakan Global CSS.
 // ==========================================
 
-import OperatorSuratPreviewModal from "@/features/operator-desa/components/OperatorSuratPreviewModal";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Download,
-  Search,
-  Pencil,
-  Eye,
-  Trash2,
-} from "lucide-react";
-import api from "@/lib/api";
-import { getSuratList } from "@/features/approval/api";
-import { useAuth } from "@/features/auth/contexts/AuthContext";
-import OperatorSuratActionModal from "@/features/operator-desa/components/OperatorSuratActionModal";
-import { FooterOperator } from "../../components/layout/FooterOperator";
+import OperatorSuratPreviewModal from '@/features/operator-desa/components/OperatorSuratPreviewModal'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Download, Search, Pencil, Eye, Trash2 } from 'lucide-react'
 
+import api from '@/lib/api'
+import { getSuratList } from '@/features/approval/api'
+import { useAuth } from '@/features/auth/contexts/AuthContext'
 
+import { StatusBadge } from '@/components/ui/StatusBadge'
 
-const ITEMS_PER_PAGE = 3;
+import OperatorSuratActionModal from '@/features/operator-desa/components/OperatorSuratActionModal'
+import { FooterOperator } from '../../components/layout/FooterOperator'
+
+import { SURAT_STATUS, SURAT_STATUS_ORDER } from '@/constants/suratStatus'
+
+const ITEMS_PER_PAGE = 3
 
 export default function OperatorSuratListPage() {
-  const { user } = useAuth();
-  const [letters, setLetters] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth()
 
-  const [search, setSearch] = useState("");
-  const [filterJenis, setFilterJenis] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedSurat, setSelectedSurat] = useState(null);
-  const [previewSurat, setPreviewSurat] = useState(null);
+  const [letters, setLetters] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Delete confirmation
-  const [deleteSurat, setDeleteSurat] = useState(null);
-  const [deleteConfirmation, setDeleteConfirmation] = useState("");
-  const [deleting, setDeleting] = useState(false);
+  const [search, setSearch] = useState('')
+  const [filterJenis, setFilterJenis] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const [selectedSurat, setSelectedSurat] = useState(null)
+  const [previewSurat, setPreviewSurat] = useState(null)
+
+  // ==========================================
+  // DELETE CONFIRMATION
+  // ==========================================
+
+  const [deleteSurat, setDeleteSurat] = useState(null)
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  // ==========================================
+  // ROLE ENDPOINT
+  // ==========================================
 
   const ROLE_ENDPOINT = {
-    rt: "rt",
-    kasi_pelayanan: "kasi",
-    kaur_tu_umum: "kasi",
-    petugas_desa: "kasi",
-  };
+    rt: 'rt',
+    kasi_pelayanan: 'kasi',
+    kaur_tu_umum: 'kasi',
+    petugas_desa: 'kasi',
+  }
 
-  const roleKey = ROLE_ENDPOINT[user?.role] ?? user?.role;
+  const roleKey = ROLE_ENDPOINT[user?.role] ?? user?.role
 
   // ==========================================
   // LOAD DATA
   // ==========================================
+
   const loadLetters = useCallback(
     async (showLoading = true) => {
-      if (!roleKey) return;
+      if (!roleKey) {
+        return
+      }
 
       if (showLoading) {
-        setLoading(true);
+        setLoading(true)
       }
 
       try {
-        const res = await getSuratList(roleKey);
-        setLetters(res.data);
+        const res = await getSuratList(roleKey)
+
+        const data = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+            ? res.data
+            : []
+
+        setLetters(data)
       } catch (err) {
-        console.error(
-          "Gagal mengambil data surat:",
-          err.response?.data ?? err
-        );
+        console.error('GAGAL MENGAMBIL DATA SURAT:', err.response?.data ?? err)
+
+        setLetters([])
       } finally {
         if (showLoading) {
-          setLoading(false);
+          setLoading(false)
         }
       }
     },
-    [roleKey]
-  );
+    [roleKey],
+  )
 
   // ==========================================
   // LOAD DATA PERTAMA KALI
   // ==========================================
-  useEffect(() => {
-    if (!roleKey) return;
 
-    let isMounted = true;
+  useEffect(() => {
+    if (!roleKey) {
+      return
+    }
+
+    let isMounted = true
 
     const loadInitialLetters = async () => {
-      if (!isMounted) return;
-      await loadLetters(true);
-    };
+      if (!isMounted) {
+        return
+      }
 
-    loadInitialLetters();
+      await loadLetters(true)
+    }
+
+    loadInitialLetters()
 
     return () => {
-      isMounted = false;
-    };
-  }, [roleKey, loadLetters]);
+      isMounted = false
+    }
+  }, [roleKey, loadLetters])
 
   // ==========================================
   // AUTO REFRESH DATA SETIAP 5 DETIK
   // ==========================================
+
   useEffect(() => {
-    if (!roleKey) return;
+    if (!roleKey) {
+      return
+    }
 
     const interval = setInterval(() => {
-      loadLetters(false);
-    }, 5000);
+      loadLetters(false)
+    }, 5000)
 
-    return () => clearInterval(interval);
-  }, [roleKey, loadLetters]);
+    return () => clearInterval(interval)
+  }, [roleKey, loadLetters])
 
   // ==========================================
   // FILTER + SORT
   // ==========================================
+
   const filtered = useMemo(() => {
-    let result = [...letters];
+    let result = [...letters]
+
+    // ========================================
+    // FILTER JENIS
+    // ========================================
 
     if (filterJenis) {
-      result = result.filter(
-        (s) => s.letter_type?.name === filterJenis
-      );
+      result = result.filter((letter) => letter.letter_type?.name === filterJenis)
     }
+
+    // ========================================
+    // FILTER STATUS
+    // ========================================
 
     if (filterStatus) {
       switch (filterStatus) {
-        case "verification":
-          result = result.filter((s) =>
-            ["rt_approved"].includes(s.status)
-          );
-          break;
+        case 'verification':
+          result = result.filter((letter) => letter.status === SURAT_STATUS.IN_PROGRESS)
+          break
 
-        case "completed":
-          result = result.filter(
-            (s) => s.status === "kasi_approved"
-          );
-          break;
+        case 'completed':
+          result = result.filter((letter) => letter.status === SURAT_STATUS.APPROVED)
+          break
 
-        case "rejected":
-          result = result.filter((s) =>
-            ["rt_rejected"].includes(s.status)
-          );
-          break;
+        case 'rejected':
+          result = result.filter((letter) => letter.status === SURAT_STATUS.REJECTED)
+          break
 
         default:
-          break;
+          break
       }
     }
+
+    // ========================================
+    // SEARCH
+    // ========================================
 
     if (search) {
-      const kw = search.toLowerCase();
+      const keyword = search.toLowerCase()
 
       result = result.filter(
-        (s) =>
-          s.applicant_name?.toLowerCase().includes(kw) ||
-          s.letter_number?.toLowerCase().includes(kw)
-      );
+        (letter) =>
+          letter.applicant_name?.toLowerCase().includes(keyword) ||
+          letter.letter_number?.toLowerCase().includes(keyword),
+      )
     }
 
-    // Urutkan berdasarkan selesai sampai ditolak
-    const STATUS_ORDER = {
-      kasi_approved: 1,
-      rt_approved: 2,
-      pending: 3,
-      rt_rejected: 4,
-      kasi_rejected: 5,
-    };
+    // ========================================
+    // SORT
+    //
+    // Prioritas:
+    // 1. approved
+    // 2. in_progress
+    // 3. pending
+    // 4. rejected
+    //
+    // Jika tanggal berbeda, surat terbaru
+    // tetap ditampilkan lebih dahulu.
+    // ========================================
 
     result.sort((a, b) => {
-      const dateA = new Date(a.submitted_at ?? a.created_at);
-      const dateB = new Date(b.submitted_at ?? b.created_at);
+      const dateA = new Date(a.submitted_at ?? a.created_at)
 
-      const onlyDateA = new Date(
-        dateA.getFullYear(),
-        dateA.getMonth(),
-        dateA.getDate()
-      );
+      const dateB = new Date(b.submitted_at ?? b.created_at)
 
-      const onlyDateB = new Date(
-        dateB.getFullYear(),
-        dateB.getMonth(),
-        dateB.getDate()
-      );
+      const onlyDateA = new Date(dateA.getFullYear(), dateA.getMonth(), dateA.getDate())
+
+      const onlyDateB = new Date(dateB.getFullYear(), dateB.getMonth(), dateB.getDate())
 
       if (onlyDateA.getTime() !== onlyDateB.getTime()) {
-        return onlyDateB - onlyDateA;
+        return onlyDateB - onlyDateA
       }
 
-      const orderA = STATUS_ORDER[a.status] ?? 999;
-      const orderB = STATUS_ORDER[b.status] ?? 999;
+      const orderA = SURAT_STATUS_ORDER[a.status] ?? 999
+
+      const orderB = SURAT_STATUS_ORDER[b.status] ?? 999
 
       if (orderA !== orderB) {
-        return orderA - orderB;
+        return orderA - orderB
       }
 
-      return dateB - dateA;
-    });
+      return dateB - dateA
+    })
 
-    return result;
-  }, [letters, filterJenis, filterStatus, search]);
+    return result
+  }, [letters, filterJenis, filterStatus, search])
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filtered.length / ITEMS_PER_PAGE)
-  );
+  // ==========================================
+  // PAGINATION
+  // ==========================================
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
 
   const paginated = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
 
-    return filtered.slice(
-      start,
-      start + ITEMS_PER_PAGE
-    );
-  }, [filtered, currentPage]);
+    return filtered.slice(start, start + ITEMS_PER_PAGE)
+  }, [filtered, currentPage])
+
+  // ==========================================
+  // JENIS SURAT OPTIONS
+  // ==========================================
 
   const jenisOptions = useMemo(() => {
-    const set = new Set(
-      letters
-        .map((s) => s.letter_type?.name)
-        .filter(Boolean)
-    );
+    const set = new Set(letters.map((letter) => letter.letter_type?.name).filter(Boolean))
 
-    return Array.from(set);
-  }, [letters]);
+    return Array.from(set)
+  }, [letters])
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <div className="sid-operator-page">
@@ -231,9 +261,9 @@ export default function OperatorSuratListPage() {
         {/* ==========================================
             HEADER
         ========================================== */}
+
         <div className="sid-operator-breadcrumb">
-          Admin /
-          <span> Daftar Permohonan Surat</span>
+          Admin /<span> Daftar Permohonan Surat</span>
         </div>
 
         <div className="sid-operator-header">
@@ -248,8 +278,11 @@ export default function OperatorSuratListPage() {
         {/* ==========================================
             SEARCH + FILTER
         ========================================== */}
+
         <div className="sid-operator-filter-card">
           <div className="sid-operator-filter-grid">
+            {/* SEARCH */}
+
             <div className="sid-operator-filter-field">
               <p>Pencarian Cepat</p>
 
@@ -259,13 +292,15 @@ export default function OperatorSuratListPage() {
                 <input
                   value={search}
                   onChange={(e) => {
-                    setSearch(e.target.value);
-                    setCurrentPage(1);
+                    setSearch(e.target.value)
+                    setCurrentPage(1)
                   }}
                   placeholder="Nomor surat atau nama pemohon..."
                 />
               </div>
             </div>
+
+            {/* JENIS */}
 
             <div className="sid-operator-filter-field">
               <p>Jenis Surat</p>
@@ -273,19 +308,21 @@ export default function OperatorSuratListPage() {
               <select
                 value={filterJenis}
                 onChange={(e) => {
-                  setFilterJenis(e.target.value);
-                  setCurrentPage(1);
+                  setFilterJenis(e.target.value)
+                  setCurrentPage(1)
                 }}
               >
                 <option value="">Semua Jenis</option>
 
-                {jenisOptions.map((j) => (
-                  <option key={j} value={j}>
-                    {j}
+                {jenisOptions.map((jenis) => (
+                  <option key={jenis} value={jenis}>
+                    {jenis}
                   </option>
                 ))}
               </select>
             </div>
+
+            {/* STATUS */}
 
             <div className="sid-operator-filter-field">
               <p>Status</p>
@@ -293,20 +330,17 @@ export default function OperatorSuratListPage() {
               <select
                 value={filterStatus}
                 onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  setCurrentPage(1);
+                  setFilterStatus(e.target.value)
+                  setCurrentPage(1)
                 }}
               >
                 <option value="">Semua Status</option>
-                <option value="verification">
-                  Verifikasi
-                </option>
-                <option value="completed">
-                  Selesai
-                </option>
-                <option value="rejected">
-                  Ditolak
-                </option>
+
+                <option value="verification">Sedang Diproses</option>
+
+                <option value="completed">Selesai</option>
+
+                <option value="rejected">Ditolak</option>
               </select>
             </div>
           </div>
@@ -315,6 +349,7 @@ export default function OperatorSuratListPage() {
         {/* ==========================================
             TABLE
         ========================================== */}
+
         <div className="sid-operator-table-card">
           <div className="sid-operator-table-wrapper">
             <table className="sid-operator-table">
@@ -324,7 +359,7 @@ export default function OperatorSuratListPage() {
                   <th className="center">Pemohon</th>
                   <th className="center">Jenis</th>
                   <th className="center">Tanggal</th>
-                  <th className="center">RT</th>
+                  <th className="center">Status</th>
                   <th className="center">Aksi</th>
                 </tr>
               </thead>
@@ -332,113 +367,80 @@ export default function OperatorSuratListPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="sid-operator-table-message"
-                    >
+                    <td colSpan={6} className="sid-operator-table-message">
                       Memuat data surat...
                     </td>
                   </tr>
                 ) : paginated.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="sid-operator-table-message"
-                    >
+                    <td colSpan={6} className="sid-operator-table-message">
                       Belum ada surat.
                     </td>
                   </tr>
                 ) : (
-                  paginated.map((s) => (
-                    <tr key={s.id}>
+                  paginated.map((surat) => (
+                    <tr key={surat.id}>
                       {/* NO SURAT */}
+
                       <td className="sid-operator-letter-number">
                         <div>
-                          <span>
-                            #{s.letter_number ?? "-"}
-                          </span>
+                          <span>#{surat.letter_number ?? '-'}</span>
 
-                          {s.revision_count > 0 && (
-                            <small>
-                              Hasil Revisi
-                            </small>
-                          )}
+                          {surat.revision_count > 0 && <small>Hasil Revisi</small>}
                         </div>
                       </td>
 
                       {/* PEMOHON */}
+
                       <td>
                         <span className="sid-operator-applicant">
-                          {s.applicant_name}
+                          {surat.applicant_name ?? '-'}
                         </span>
                       </td>
 
                       {/* JENIS */}
-                      <td className="center">
-                        {s.letter_type?.name ?? "-"}
-                      </td>
+
+                      <td className="center">{surat.letter_type?.name ?? '-'}</td>
 
                       {/* TANGGAL */}
+
                       <td className="center">
-                        {s.submitted_at
-                          ? new Date(
-                              s.submitted_at
-                            ).toLocaleDateString(
-                              "id-ID",
-                              {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              }
-                            )
-                          : "-"}
+                        {surat.submitted_at
+                          ? new Date(surat.submitted_at).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })
+                          : '-'}
                       </td>
 
-                      {/* RT */}
-                      <td>
-                        <div className="sid-operator-approval">
-                          <div>
-                            <span>RT</span>
+                      {/* STATUS */}
 
-                            {[
-                              "rt_approved",
-                              "kasi_approved",
-                            ].includes(s.status) ? (
-                              <div className="sid-operator-check approved">
-                                ✓
-                              </div>
-                            ) : s.status === "rt_rejected" ? (
-                              <div className="sid-operator-check rejected">
-                                ✕
-                              </div>
-                            ) : (
-                              <div className="sid-operator-check">
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                      <td className="center">
+                        <StatusBadge status={surat.status} />
                       </td>
 
                       {/* AKSI */}
+
                       <td>
                         <div className="sid-operator-actions">
-                          {/* Detail */}
+                          {/* DETAIL */}
+
                           <button
-                            onClick={() =>
-                              setPreviewSurat(s)
-                            }
+                            type="button"
+                            onClick={() => setPreviewSurat(surat)}
                             className="sid-operator-action detail"
                             title="Detail Surat"
                           >
                             <Eye size={17} />
                           </button>
 
-                          {/* Edit */}
-                          {s.status !== "kasi_approved" && (
+                          {/* EDIT */}
+
+                          {surat.status !== SURAT_STATUS.APPROVED && (
                             <button
-                              onClick={() =>
-                                setSelectedSurat(s)
-                              }
+                              type="button"
+                              onClick={() => setSelectedSurat(surat)}
                               className="sid-operator-action edit"
                               title="Edit Surat"
                             >
@@ -446,11 +448,13 @@ export default function OperatorSuratListPage() {
                             </button>
                           )}
 
-                          {/* Hapus */}
+                          {/* HAPUS */}
+
                           <button
+                            type="button"
                             onClick={() => {
-                              setDeleteSurat(s);
-                              setDeleteConfirmation("");
+                              setDeleteSurat(surat)
+                              setDeleteConfirmation('')
                             }}
                             className="sid-operator-action delete"
                             title="Hapus Surat"
@@ -469,64 +473,37 @@ export default function OperatorSuratListPage() {
           {/* ==========================================
               PAGINATION
           ========================================== */}
+
           <div className="sid-operator-pagination">
             <p>
-              Menampilkan{" "}
-              {paginated.length === 0
-                ? 0
-                : (currentPage - 1) *
-                    ITEMS_PER_PAGE +
-                  1}
-              -
-              {(currentPage - 1) *
-                ITEMS_PER_PAGE +
-                paginated.length}{" "}
-              dari {filtered.length} data
+              Menampilkan {paginated.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-
+              {(currentPage - 1) * ITEMS_PER_PAGE + paginated.length} dari {filtered.length} data
             </p>
 
             <div>
               <button
-                onClick={() =>
-                  setCurrentPage((p) =>
-                    Math.max(1, p - 1)
-                  )
-                }
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                 disabled={currentPage === 1}
               >
                 Sebelumnya
               </button>
 
-              {Array.from(
-                { length: totalPages },
-                (_, i) => i + 1
-              ).map((page) => (
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
                 <button
                   key={page}
-                  onClick={() =>
-                    setCurrentPage(page)
-                  }
-                  className={
-                    page === currentPage
-                      ? "active"
-                      : ""
-                  }
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={page === currentPage ? 'active' : ''}
                 >
                   {page}
                 </button>
               ))}
 
               <button
-                onClick={() =>
-                  setCurrentPage((p) =>
-                    Math.min(
-                      totalPages,
-                      p + 1
-                    )
-                  )
-                }
-                disabled={
-                  currentPage === totalPages
-                }
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
               >
                 Selanjutnya
               </button>
@@ -535,30 +512,30 @@ export default function OperatorSuratListPage() {
         </div>
       </main>
 
-      {/* FOOTER */}
+      {/* ==========================================
+          FOOTER
+      ========================================== */}
+
       <FooterOperator />
 
       {/* ==========================================
           PREVIEW
       ========================================== */}
+
       {previewSurat && (
-        <OperatorSuratPreviewModal
-          surat={previewSurat}
-          onClose={() =>
-            setPreviewSurat(null)
-          }
-        />
+        <OperatorSuratPreviewModal surat={previewSurat} onClose={() => setPreviewSurat(null)} />
       )}
 
       {/* ==========================================
           ACTION MODAL
       ========================================== */}
+
       {selectedSurat && (
         <OperatorSuratActionModal
           surat={selectedSurat}
           onClose={() => {
-            setSelectedSurat(null);
-            loadLetters();
+            setSelectedSurat(null)
+            loadLetters()
           }}
         />
       )}
@@ -566,10 +543,12 @@ export default function OperatorSuratListPage() {
       {/* ==========================================
           DELETE MODAL
       ========================================== */}
+
       {deleteSurat && (
         <div className="sid-operator-delete-overlay">
           <div className="sid-operator-delete-modal">
-            {/* Header */}
+            {/* HEADER */}
+
             <div className="sid-operator-delete-header">
               <div className="sid-operator-delete-icon">
                 <Trash2 size={20} />
@@ -579,31 +558,26 @@ export default function OperatorSuratListPage() {
                 <h2>Hapus Surat</h2>
 
                 <p>
-                  Tindakan ini akan menghapus surat
-                  dari sistem. Data yang sudah dihapus
-                  tidak dapat dikembalikan.
+                  Tindakan ini akan menghapus surat dari sistem. Data yang sudah dihapus tidak dapat
+                  dikembalikan.
                 </p>
               </div>
             </div>
 
-            {/* Informasi surat */}
+            {/* INFORMASI SURAT */}
+
             <div className="sid-operator-delete-info">
               <p>Surat yang akan dihapus</p>
 
-              <strong>
-                #{deleteSurat.letter_number ?? "-"}
-              </strong>
+              <strong>#{deleteSurat.letter_number ?? '-'}</strong>
 
-              <span>
-                {deleteSurat.applicant_name ?? "-"}
-              </span>
+              <span>{deleteSurat.applicant_name ?? '-'}</span>
 
-              <span>
-                {deleteSurat.letter_type?.name ?? "-"}
-              </span>
+              <span>{deleteSurat.letter_type?.name ?? '-'}</span>
             </div>
 
-            {/* Instruksi */}
+            {/* INSTRUKSI */}
+
             <div className="sid-operator-delete-confirm">
               <label>
                 Untuk melanjutkan, ketik
@@ -614,35 +588,28 @@ export default function OperatorSuratListPage() {
               <input
                 type="text"
                 value={deleteConfirmation}
-                onChange={(e) =>
-                  setDeleteConfirmation(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setDeleteConfirmation(e.target.value)}
                 placeholder="Ketik DELETE"
                 autoFocus
                 disabled={deleting}
               />
 
-              {deleteConfirmation &&
-                deleteConfirmation !==
-                  "DELETE" && (
-                  <p>
-                    Ketik{" "}
-                    <strong>DELETE</strong>{" "}
-                    persis seperti yang diminta.
-                  </p>
-                )}
+              {deleteConfirmation && deleteConfirmation !== 'DELETE' && (
+                <p>
+                  Ketik <strong>DELETE</strong> persis seperti yang diminta.
+                </p>
+              )}
             </div>
 
-            {/* Buttons */}
+            {/* BUTTONS */}
+
             <div className="sid-operator-delete-actions">
               <button
                 type="button"
                 disabled={deleting}
                 onClick={() => {
-                  setDeleteSurat(null);
-                  setDeleteConfirmation("");
+                  setDeleteSurat(null)
+                  setDeleteConfirmation('')
                 }}
                 className="cancel"
               >
@@ -651,54 +618,37 @@ export default function OperatorSuratListPage() {
 
               <button
                 type="button"
-                disabled={
-                  deleteConfirmation !==
-                    "DELETE" || deleting
-                }
+                disabled={deleteConfirmation !== 'DELETE' || deleting}
                 onClick={async () => {
-                  if (
-                    deleteConfirmation !==
-                    "DELETE"
-                  ) {
-                    return;
+                  if (deleteConfirmation !== 'DELETE') {
+                    return
                   }
 
                   try {
-                    setDeleting(true);
+                    setDeleting(true)
 
-                    await api.delete(
-                      `/api/letters/${deleteSurat.id}`
-                    );
+                    await api.delete(`/api/letters/${deleteSurat.id}`)
 
-                    setDeleteSurat(null);
-                    setDeleteConfirmation("");
+                    setDeleteSurat(null)
+                    setDeleteConfirmation('')
 
-                    await loadLetters();
+                    await loadLetters()
                   } catch (err) {
-                    console.error(
-                      "GAGAL HAPUS SURAT:",
-                      err.response?.data ?? err
-                    );
+                    console.error('GAGAL HAPUS SURAT:', err.response?.data ?? err)
 
-                    window.alert(
-                      err.response?.data?.message ??
-                        "Gagal menghapus surat."
-                    );
+                    window.alert(err.response?.data?.message ?? 'Gagal menghapus surat.')
                   } finally {
-                    setDeleting(false);
+                    setDeleting(false)
                   }
                 }}
                 className="delete"
               >
-                {deleting
-                  ? "Menghapus..."
-                  : "Hapus Surat"}
+                {deleting ? 'Menghapus...' : 'Hapus Surat'}
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
-  );
+  )
 }
-

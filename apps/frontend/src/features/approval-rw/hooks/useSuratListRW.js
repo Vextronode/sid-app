@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from 'react'
 import { getSuratList } from '@/features/approval/api'
-import { RELEVANT_STATUSES } from '../constants/roleConfigRW'
+import { RELEVANT_STATUSES } from '@/constants/suratStatus'
 
 export function useSuratList({ initialStatus = '' } = {}) {
   const [letters, setLetters] = useState([])
@@ -14,10 +14,13 @@ export function useSuratList({ initialStatus = '' } = {}) {
   const fetchLetters = async () => {
     try {
       setLoading(true)
+
       const response = await getSuratList('rw')
+
       setLetters(response.data.data ?? [])
     } catch (error) {
       console.error('GET RW FYI HISTORY ERROR', error.response?.data ?? error)
+
       setLetters([])
     } finally {
       setLoading(false)
@@ -42,9 +45,9 @@ export function useSuratList({ initialStatus = '' } = {}) {
     }
 
     if (search) {
-      result = result.filter((letter) =>
-        letter.applicant_name?.toLowerCase().includes(search.toLowerCase()),
-      )
+      const keyword = search.toLowerCase()
+
+      result = result.filter((letter) => letter.applicant_name?.toLowerCase().includes(keyword))
     }
 
     return result

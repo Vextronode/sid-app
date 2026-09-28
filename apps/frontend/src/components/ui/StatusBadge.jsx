@@ -1,26 +1,11 @@
-const STATUS_LABELS = {
-  pending: 'Menunggu RT',
-  in_progress: 'Diproses',
-  approved: 'Selesai',
-  rejected: 'Ditolak',
-}
+import { getStatusClass, getStatusLabel } from '@/constants/suratStatus'
 
 export function StatusBadge({ status }) {
-  const lowerStatus = status.toLowerCase()
+  const normalizedStatus = String(status ?? '').toLowerCase()
 
-  let bgClass = 'bg-gray-100 text-gray-800'
+  const bgClass = getStatusClass(normalizedStatus)
 
-  if (lowerStatus === 'pending') {
-    bgClass = 'bg-[#FFEFBD] text-black'
-  } else if (lowerStatus === 'in_progress') {
-    bgClass = 'bg-[#BBDEFB] text-black'
-  } else if (lowerStatus.includes('rejected')) {
-    bgClass = 'bg-[#E53835]/40 text-black'
-  } else if (lowerStatus.includes('approved')) {
-    bgClass = 'bg-[#2E7D31]/40 text-black'
-  }
-
-  const label = STATUS_LABELS[lowerStatus] ?? status
+  const label = getStatusLabel(normalizedStatus)
 
   return (
     <span

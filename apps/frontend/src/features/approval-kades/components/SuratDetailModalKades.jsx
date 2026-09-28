@@ -1,101 +1,329 @@
 // ==========================================
 // SuratDetailModalKades.jsx
-// Popup monitoring-only: stepper + info + SEMUA riwayat keputusan
-// (RT & RW), tanpa tombol approve/reject. Cuma tombol Kembali.
-// FIELD_MAP sesuaikan kalau backend LetterResource sudah final.
+// Popup detail surat Kades.
+//
+// Kades / Sekretaris Desa:
+// - Melihat detail surat
+// - Melihat riwayat keputusan
+// - Dapat approve/reject melalui ApprovalStepRenderer
+//
+// Approval:
+// - kepala_desa -> Kades
+// - sekretaris_desa -> dinormalisasi menjadi kepala_desa
+//
+// Styling mengikuti pola SuratDetailModalRT.
 // ==========================================
 
-import { Eye } from 'lucide-react';
-import { useSuratDetail } from '../hooks/useSuratDetailKades';
-import ApprovalStepperKades from './ApprovalStepperKades';
-import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF';
+import { Eye } from 'lucide-react'
+import ApprovalStepper from '@/features/approval/components/ApprovalStepper'
+import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import { SURAT_STATUS } from '@/constants/suratStatus'
+
+import { useSuratDetail } from '../hooks/useSuratDetailKades'
+import ApprovalStepRenderer from '@/features/approval/components/ApprovalStepRenderer'
+
+// ==========================================
+// FIELD MAP
+// ==========================================
 
 const FIELD_MAP = {
-  noSurat: (s) => s.letter_number ?? '-',
-  namaPemohon: (s) => s.applicant_name ?? '-',
-  nik: (s) => s.applicant_nik ?? '-',
-  alamat: (s) => s.applicant_address ?? '-',
-  jenisSurat: (s) => s.letter_type?.name ?? '-',
-  keperluan: (s) => s.purpose ?? '-',
-  diajukan: (s) => (s.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
-  terakhirDiproses: (s) => (s.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
-  riwayat: (s) => s.decisions ?? [],
-};
+  noSurat: (s) => s?.letter_number ?? '-',
+
+  namaPemohon: (s) => s?.applicant_name ?? s?.citizen?.name ?? '-',
+
+  nik: (s) => s?.applicant_nik ?? s?.citizen?.nik ?? '-',
+
+  alamat: (s) => s?.applicant_address ?? s?.citizen?.address ?? '-',
+
+  jenisSurat: (s) => s?.letter_type?.name ?? '-',
+
+  keperluan: (s) => s?.purpose ?? '-',
+
+  diajukan: (s) => (s?.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
+
+  terakhirDiproses: (s) => (s?.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
+
+  riwayat: (s) => s?.decisions ?? [],
+}
+
+// ==========================================
+// COMPONENT
+// ==========================================
 
 export default function SuratDetailModalKades({ suratId, onClose }) {
-  const { surat, notFound } = useSuratDetail(suratId);
+  const { user } = useAuth()
 
-  if (suratId === null) return null;
+  const { surat, notFound, refresh } = useSuratDetail(suratId)
+
+  // ==========================================
+  // CEK ID
+  // ==========================================
+
+  if (suratId === null) {
+    return null
+  }
+
+  // ==========================================
+  // APPROVER POSITION
+  // ==========================================
+
+  const approverPosition =
+    user?.role === 'kepala_desa' || user?.role === 'sekretaris_desa' ? 'kepala_desa' : null
+
+  // ApprovalStepRenderer menggunakan exact match
+  // antara approverPosition dan currentUserRole.
+  const currentUserRole = approverPosition
+
+  // ==========================================
+  // INFO SURAT
+  // ==========================================
 
   const infoFields = surat
     ? [
-        { label: 'Nama Pemohon', value: FIELD_MAP.namaPemohon(surat) },
-        { label: 'NIK', value: FIELD_MAP.nik(surat) },
-        { label: 'Alamat', value: FIELD_MAP.alamat(surat) },
-        { label: 'Jenis Surat', value: FIELD_MAP.jenisSurat(surat) },
-        { label: 'Keperluan', value: FIELD_MAP.keperluan(surat) },
-        { label: 'Diajukan', value: FIELD_MAP.diajukan(surat) },
-        { label: 'Terakhir diproses', value: FIELD_MAP.terakhirDiproses(surat) },
+        {
+          label: 'Nama Pemohon',
+          value: FIELD_MAP.namaPemohon(surat),
+        },
+        {
+          label: 'NIK',
+          value: FIELD_MAP.nik(surat),
+        },
+        {
+          label: 'Alamat',
+          value: FIELD_MAP.alamat(surat),
+        },
+        {
+          label: 'Jenis Surat',
+          value: FIELD_MAP.jenisSurat(surat),
+        },
+        {
+          label: 'Keperluan',
+          value: FIELD_MAP.keperluan(surat),
+        },
+        {
+          label: 'Diajukan',
+          value: FIELD_MAP.diajukan(surat),
+        },
+        {
+          label: 'Terakhir diproses',
+          value: FIELD_MAP.terakhirDiproses(surat),
+        },
       ]
-    : [];
+    : []
 
-  const riwayat = surat ? FIELD_MAP.riwayat(surat) : [];
+  // ==========================================
+  // KEPUTUSAN KADES
+  // ==========================================
+
+  const keputusanKades = surat
+    ? FIELD_MAP.riwayat(surat).find(
+        (decision) =>
+          decision.stage === 'kades' ||
+          decision.stage === 'kepala_desa' ||
+          decision.tahap === 'KADES' ||
+          decision.tahap === 'KEPALA DESA' ||
+          decision.approval_level === 'kades' ||
+          decision.approval_level === 'kepala_desa',
+      )
+    : null
+
+  // ==========================================
+  // APPROVE CALLBACK
+  // ==========================================
+
+  const handleApprove = async (response) => {
+    if (response) {
+      await refresh()
+    }
+  }
+
+  // ==========================================
+  // REJECT CALLBACK
+  // ==========================================
+
+  const handleReject = async (notes, response) => {
+    if (notes || response) {
+      await refresh()
+    }
+
+    onClose()
+  }
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">✕</button>
+    <div className="sid-modal-overlay">
+      <div className="sid-modal">
+        {/* ======================================
+            CLOSE
+        ====================================== */}
+
+        <button type="button" onClick={onClose} className="sid-modal-close" aria-label="Tutup">
+          ✕
+        </button>
+
+        {/* ======================================
+            NOT FOUND
+        ====================================== */}
 
         {notFound ? (
-          <p className="text-center text-gray-500 py-10">Surat tidak ditemukan.</p>
+          <p className="sid-modal-message">Surat tidak ditemukan.</p>
         ) : !surat ? (
-          <p className="text-center text-gray-400 py-10">Memuat...</p>
+          <p className="sid-modal-message">Memuat...</p>
         ) : (
           <>
-            <h2 className="font-bold text-gray-800 text-lg">Detail Permohonan Surat <span className="text-xs font-normal text-gray-400">(monitoring)</span></h2>
-            <p className="text-xs text-gray-400 mb-5">#{FIELD_MAP.noSurat(surat)}</p>
+            {/* ==================================
+                HEADER
+            ================================== */}
 
-            <ApprovalStepperKades surat={surat} />
+            <h2 className="sid-modal-title">Detail Permohonan Surat</h2>
 
-            <div className="flex flex-col gap-4 mb-5">
-              {infoFields.map((f) => (
-                <div key={f.label}>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">{f.label}</p>
-                  <p className="text-sm font-semibold text-gray-800">{f.value}</p>
+            <p className="sid-modal-subtitle">
+              #{FIELD_MAP.noSurat(surat)}
+              {' · Kepala Desa'}
+            </p>
+            <ApprovalStepper surat={surat} />
+            {/* ==================================
+                STATUS
+            ================================== */}
+
+            <div className="mb-4">
+              <StatusBadge status={surat.status} />
+            </div>
+
+            {/* ==================================
+                DETAIL SURAT
+            ================================== */}
+
+            <div className="sid-modal-info">
+              {infoFields.map((field) => (
+                <div key={field.label}>
+                  <p className="sid-modal-info-label">{field.label}</p>
+
+                  <p className="sid-modal-info-value">{field.value}</p>
                 </div>
               ))}
             </div>
 
-            {riwayat.length > 0 && (
-              <div className="flex flex-col gap-3 mb-5">
-                {riwayat.map((r, i) => (
-                  <div key={i} className={`rounded-xl p-4 ${r.status === 'rejected' ? 'bg-red-50' : 'bg-green-50'}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="font-semibold text-gray-800 text-sm">Keputusan {(r.stage ?? r.tahap ?? '').toUpperCase()}</p>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.status === 'rejected' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
-                        {r.status === 'rejected' ? 'REJECTED' : 'APPROVED'}
-                      </span>
+            {/* ==================================
+                KEPUTUSAN KADES
+            ================================== */}
+
+            {keputusanKades && (
+              <div
+                className={`sid-decision-box ${
+                  keputusanKades.status === 'rejected' ? 'rejected' : 'approved'
+                }`}
+              >
+                <div className="sid-decision-header">
+                  <p className="sid-decision-title">Keputusan Kepala Desa</p>
+
+                  <span
+                    className={`sid-decision-badge ${
+                      keputusanKades.status === 'rejected' ? 'rejected' : 'approved'
+                    }`}
+                  >
+                    {keputusanKades.status === 'rejected' ? 'DITOLAK' : 'DISETUJUI'}
+                  </span>
+                </div>
+
+                <div className="sid-decision-meta">
+                  diputuskan oleh{' '}
+                  <strong>
+                    {keputusanKades.actor_name ??
+                      keputusanKades.decided_by ??
+                      keputusanKades.approved_by_name ??
+                      '-'}
+                  </strong>
+                </div>
+
+                <div className="sid-decision-meta">
+                  IP <strong>{keputusanKades.ip_address ?? '-'}</strong>
+                </div>
+
+                {/* ==================================
+                    CATATAN PENOLAKAN
+                ================================== */}
+
+                {keputusanKades.status === 'rejected' && (
+                  <>
+                    <p className="sid-decision-comment-label">Komentar Penolakan</p>
+
+                    <div className="sid-decision-comment rejected">
+                      {keputusanKades.notes ??
+                        keputusanKades.reason ??
+                        surat.notes ??
+                        'Tidak ada catatan.'}
                     </div>
-                    <p className="text-xs text-gray-500">diputuskan oleh {r.actor_name ?? r.decided_by ?? '-'}</p>
-                    {r.notes && <div className="bg-white/70 text-xs rounded-lg p-2 mt-2">{r.notes}</div>}
+                  </>
+                )}
+
+                {/* ==================================
+                    CATATAN PERSETUJUAN
+                ================================== */}
+
+                {keputusanKades.status === 'approved' && (
+                  <div className="sid-decision-comment approved">
+                    {keputusanKades.notes ??
+                      keputusanKades.reason ??
+                      surat.notes ??
+                      'Tidak ada catatan.'}
                   </div>
-                ))}
+                )}
               </div>
             )}
 
-            <button
-              onClick={() => previewSuratPDF(surat)}
-              className="w-full flex items-center justify-center gap-2 border border-gray-300 text-gray-600 rounded-lg py-2.5 text-sm mb-3 hover:bg-gray-50"
-            >
-              <Eye size={16} /> Lihat Dokumen (Preview)
-            </button>
+            {/* ==================================
+                APPROVAL ACTION
+            ================================== */}
 
-            <button onClick={onClose} className="w-full border border-green-500 text-green-600 rounded-lg py-2.5 text-sm font-medium hover:bg-green-50">
+            {approverPosition &&
+              (surat.status === SURAT_STATUS.PENDING ||
+                surat.status === SURAT_STATUS.IN_PROGRESS) && (
+                <div className="mb-4">
+                  <ApprovalStepRenderer
+                    approverPosition={approverPosition}
+                    isFinal={false}
+                    letterStatus={surat.status}
+                    currentUserRole={currentUserRole}
+                    apiRole="kepala_desa"
+                    letterId={surat.id}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    onClose={onClose}
+                  />
+                </div>
+              )}
+
+            {/* ==================================
+                PREVIEW
+            ================================== */}
+
+            {surat.status === SURAT_STATUS.APPROVED && (
+              <button
+                type="button"
+                onClick={() => previewSuratPDF(surat)}
+                className="sid-modal-preview"
+              >
+                <Eye size={16} />
+                Lihat Dokumen (Preview)
+              </button>
+            )}
+
+            {/* ==================================
+                BUTTON KEMBALI
+            ================================== */}
+
+            <button type="button" onClick={onClose} className="sid-modal-action back">
               ✓ Kembali
             </button>
           </>
         )}
       </div>
     </div>
-  );
+  )
 }

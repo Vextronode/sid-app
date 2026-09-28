@@ -6,7 +6,7 @@
 // Kadus tidak melakukan approve/reject surat.
 //
 // 4 kotak:
-// Total Surat / Sedang Diproses / Selesai / Ditolak
+// Menunggu / Sedang Diproses / Selesai / Ditolak
 //
 // Desktop : 4 kolom
 // Mobile  : 2 x 2
@@ -15,82 +15,74 @@
 // sama seperti RWDashboardPage.jsx.
 // ==========================================
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Mail,
-  Eye,
-  CheckCircle2,
-  XCircle,
-} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Mail, Eye, CheckCircle2, XCircle } from 'lucide-react'
 
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { getSuratList } from '@/features/approval/api';
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
-import { FooterDesa } from '@/components/layout/FooterDesa';
-import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
-import { getGreeting } from '@/lib/utils/greeting';
+import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { getSuratList } from '@/features/approval/api'
 
-import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
+import { FooterDesa } from '@/components/layout/FooterDesa'
+import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
+import { getGreeting } from '@/lib/utils/greeting'
+
+import { SURAT_STATUS } from '@/constants/suratStatus'
+
+import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
 
 // ==========================================
 // COMPONENT
 // ==========================================
 
 export default function KadusDashboardPage() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth()
+  const navigate = useNavigate()
 
-  const [letters, setLetters] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [letters, setLetters] = useState([])
+  const [loading, setLoading] = useState(true)
 
   // ==========================================
   // LOAD DATA KADUS
   // ==========================================
 
-  const loadDashboardData = useCallback(
-    async (showLoading = true) => {
+  const loadDashboardData = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true)
+    }
+
+    try {
+      const res = await getSuratList('kadus')
+
+      setLetters(res.data?.data ?? [])
+    } catch (err) {
+      console.error('GET KADUS LIST ERROR', err.response?.data ?? err)
+    } finally {
       if (showLoading) {
-        setLoading(true);
+        setLoading(false)
       }
-
-      try {
-        const res = await getSuratList('kadus');
-
-        setLetters(res.data?.data ?? []);
-      } catch (err) {
-        console.error(
-          'GET KADUS LIST ERROR',
-          err.response?.data ?? err
-        );
-      } finally {
-        if (showLoading) {
-          setLoading(false);
-        }
-      }
-    },
-    []
-  );
+    }
+  }, [])
 
   // ==========================================
   // LOAD PERTAMA KALI
   // ==========================================
 
   useEffect(() => {
-    let isMounted = true;
+    let isMounted = true
 
     const loadInitialData = async () => {
-      if (!isMounted) return;
+      if (!isMounted) return
 
-      await loadDashboardData(true);
-    };
+      await loadDashboardData(true)
+    }
 
-    loadInitialData();
+    loadInitialData()
 
     return () => {
-      isMounted = false;
-    };
-  }, [loadDashboardData]);
+      isMounted = false
+    }
+  }, [loadDashboardData])
 
   // ==========================================
   // AUTO REFRESH SETIAP 5 DETIK
@@ -98,45 +90,34 @@ export default function KadusDashboardPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      loadDashboardData(false);
-    }, 5000);
+      loadDashboardData(false)
+    }, 5000)
 
-    return () => clearInterval(interval);
-  }, [loadDashboardData]);
+    return () => clearInterval(interval)
+  }, [loadDashboardData])
 
   // ==========================================
   // STATISTIK
   // ==========================================
 
   const stats = useMemo(() => {
-    const totalSurat = letters.length;
+    const menunggu = letters.filter((letter) => letter.status === SURAT_STATUS.PENDING).length
 
-    // Surat yang masih berada dalam proses.
-    // Tidak termasuk surat yang ditolak maupun
-    // surat yang sudah selesai di RW.
     const sedangDiproses = letters.filter(
-      (s) =>
-        !s.status?.endsWith('_rejected') &&
-        s.status !== 'rt_approved'
-    ).length;
+      (letter) => letter.status === SURAT_STATUS.IN_PROGRESS,
+    ).length
 
-    // Surat yang sudah disetujui sampai tahap RW.
-    const selesai = letters.filter(
-      (s) => s.status === 'rw_approved'
-    ).length;
+    const selesai = letters.filter((letter) => letter.status === SURAT_STATUS.APPROVED).length
 
-    // Semua surat yang memiliki status rejected.
-    const ditolak = letters.filter(
-      (s) => s.status?.endsWith('_rejected')
-    ).length;
+    const ditolak = letters.filter((letter) => letter.status === SURAT_STATUS.REJECTED).length
 
     return {
-      totalSurat,
+      menunggu,
       sedangDiproses,
       selesai,
       ditolak,
-    };
-  }, [letters]);
+    }
+  }, [letters])
 
   // ==========================================
   // STAT CARDS
@@ -144,14 +125,13 @@ export default function KadusDashboardPage() {
 
   const STAT_CARDS = [
     {
-      key: 'total',
-      label: 'Total Surat',
-      value: stats.totalSurat,
+      key: 'menunggu',
+      label: 'Menunggu',
+      value: stats.menunggu,
       icon: Mail,
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
-      onClick: () =>
-        navigate('/admin/list-kadus'),
+      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.PENDING}`),
     },
 
     {
@@ -161,8 +141,7 @@ export default function KadusDashboardPage() {
       icon: Eye,
       iconBg: 'var(--sid-status-progress-bg)',
       iconColor: 'var(--sid-status-progress-text)',
-      onClick: () =>
-        navigate('/admin/list-kadus'),
+      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.IN_PROGRESS}`),
     },
 
     {
@@ -172,8 +151,7 @@ export default function KadusDashboardPage() {
       icon: CheckCircle2,
       iconBg: 'var(--sid-status-done-bg)',
       iconColor: 'var(--sid-status-done-text)',
-      onClick: () =>
-        navigate('/admin/list-kadus?status=kasi_approved'),
+      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.APPROVED}`),
     },
 
     {
@@ -183,24 +161,20 @@ export default function KadusDashboardPage() {
       icon: XCircle,
       iconBg: 'var(--sid-status-rejected-bg)',
       iconColor: 'var(--sid-status-rejected-text)',
-      onClick: () =>
-        navigate('/admin/list-kadus?status=rejected'),
+      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.REJECTED}`),
     },
-  ];
+  ]
 
   // ==========================================
   // TANGGAL
   // ==========================================
 
-  const hariIni = new Date().toLocaleDateString(
-    'id-ID',
-    {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }
-  );
+  const hariIni = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
   // ==========================================
   // RENDER
@@ -214,7 +188,6 @@ export default function KadusDashboardPage() {
 
       <div className="sid-desktop-page">
         <div className="sid-page sid-page-dashboard">
-
           {/* ======================================
               HEADER
               ====================================== */}
@@ -226,17 +199,12 @@ export default function KadusDashboardPage() {
               </h1>
 
               <p className="sid-page-description">
-                Pantau administrasi warga{' '}
-                {user?.wilayah_label ?? 'dusun'} secara digital.
+                Pantau administrasi warga {user?.wilayah_label ?? 'dusun'} secara digital.
               </p>
             </div>
 
-            <span className="sid-dashboard-date">
-              {hariIni}
-            </span>
+            <span className="sid-dashboard-date">{hariIni}</span>
           </div>
-
-
 
           {/* ======================================
               STAT CARD
@@ -244,23 +212,15 @@ export default function KadusDashboardPage() {
 
           <div className="sid-stat-grid">
             {STAT_CARDS.map((card) => {
-              const Icon = card.icon;
+              const Icon = card.icon
 
               return (
-                <button
-                  key={card.key}
-                  onClick={card.onClick}
-                  className="sid-stat-card"
-                >
+                <button key={card.key} onClick={card.onClick} className="sid-stat-card">
                   <div className="sid-stat-card-content">
                     <div>
-                      <p className="sid-stat-label">
-                        {card.label}
-                      </p>
+                      <p className="sid-stat-label">{card.label}</p>
 
-                      <p className="sid-stat-value">
-                        {loading ? '-' : card.value}
-                      </p>
+                      <p className="sid-stat-value">{loading ? '-' : card.value}</p>
                     </div>
 
                     <div
@@ -274,7 +234,7 @@ export default function KadusDashboardPage() {
                     </div>
                   </div>
                 </button>
-              );
+              )
             })}
           </div>
 
@@ -300,7 +260,6 @@ export default function KadusDashboardPage() {
 
       <div className="sid-mobile-page">
         <div className="sid-page sid-mobile-content">
-
           {/* ======================================
               HEADER
               ====================================== */}
@@ -310,11 +269,8 @@ export default function KadusDashboardPage() {
           </h1>
 
           <p className="sid-page-description">
-            Pantau administrasi warga{' '}
-            {user?.wilayah_label ?? 'dusun'} secara digital.
+            Pantau administrasi warga {user?.wilayah_label ?? 'dusun'} secara digital.
           </p>
-
-
 
           {/* ======================================
               STAT CARD
@@ -322,7 +278,7 @@ export default function KadusDashboardPage() {
 
           <div className="sid-stat-grid-mobile">
             {STAT_CARDS.map((card) => {
-              const Icon = card.icon;
+              const Icon = card.icon
 
               return (
                 <button
@@ -340,15 +296,11 @@ export default function KadusDashboardPage() {
                     <Icon size={16} />
                   </div>
 
-                  <p className="sid-stat-label">
-                    {card.label}
-                  </p>
+                  <p className="sid-stat-label">{card.label}</p>
 
-                  <p className="sid-stat-value-mobile">
-                    {loading ? '-' : card.value}
-                  </p>
+                  <p className="sid-stat-value-mobile">{loading ? '-' : card.value}</p>
                 </button>
-              );
+              )
             })}
           </div>
 
@@ -374,12 +326,9 @@ export default function KadusDashboardPage() {
             ====================================== */}
 
         <MobileBottomNav
-          links={ADMIN_MOBILE_LINKS(
-            '/admin/dashboard-surat-kadus',
-            '/admin/list-kadus'
-          )}
+          links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-kadus', '/admin/list-kadus')}
         />
       </div>
     </>
-  );
+  )
 }

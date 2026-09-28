@@ -1,64 +1,55 @@
 // ==========================================
 // JenisSuratPage.jsx
+// Ringkasan surat milik warga.
+// Status menggunakan status generic.
 // ==========================================
 
-import { useNavigate } from 'react-router-dom';
-import {
-  FileText,
-  CheckCircle2,
-  XCircle,
-  ListChecks,
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom'
+import { FileText, CheckCircle2, XCircle, ListChecks } from 'lucide-react'
 
-import { WargaLayout } from '@/components/layout/WargaLayout';
-import { useLetters } from '@/features/surat/hooks/useLetters';
-import SuratDateTracker from '@/features/warga-surat/components/SuratDateTracker';
+import { WargaLayout } from '@/components/layout/WargaLayout'
+import { useLetters } from '@/features/surat/hooks/useLetters'
+import SuratDateTracker from '@/features/warga-surat/components/SuratDateTracker'
+
+import { SURAT_STATUS } from '@/constants/suratStatus'
 
 export default function JenisSuratPage() {
-  const navigate = useNavigate();
-  const { letters, loading } = useLetters();
+  const navigate = useNavigate()
+  const { letters, loading } = useLetters()
 
-  const total = letters.length;
+  const total = letters.length
 
-  const disetujui = letters.filter(
-    (s) => s.status === 'kasi_approved'
-  ).length;
+  const disetujui = letters.filter((letter) => letter.status === SURAT_STATUS.APPROVED).length
 
   const ditolak = letters.filter(
-    (s) => s.status?.endsWith('_rejected')
-  ).length;
+    (letter) =>
+      letter.status === SURAT_STATUS.REJECTED || letter.status === SURAT_STATUS.REJECTED_REVISION,
+  ).length
 
-  const menunggu = letters.filter(
-    (s) =>
-      !s.status?.endsWith('_rejected') &&
-      s.status !== 'kasi_approved'
-  ).length;
+  const sedangDiproses = letters.filter(
+    (letter) => letter.status === SURAT_STATUS.IN_PROGRESS,
+  ).length
 
   return (
     <WargaLayout>
       <div className="sid-page sid-surat-page">
-
         {/* ==========================================
             HEADER
-            ========================================== */}
+        ========================================== */}
 
         <div className="sid-surat-header">
-          <h1 className="sid-page-title">
-            Surat Saya
-          </h1>
+          <h1 className="sid-page-title">Surat Saya</h1>
 
           <p className="sid-page-description">
             Pantau semua permohonan surat yang pernah Anda ajukan.
           </p>
         </div>
 
-
         {/* ==========================================
             STAT CARD
-            ========================================== */}
+        ========================================== */}
 
         <div className="sid-surat-stat-grid">
-
           {/* TOTAL */}
 
           <button
@@ -67,13 +58,9 @@ export default function JenisSuratPage() {
             className="sid-surat-stat-card"
           >
             <div className="sid-surat-stat-content">
-              <p className="sid-surat-stat-label">
-                Total Pengajuan
-              </p>
+              <p className="sid-surat-stat-label">Total Pengajuan</p>
 
-              <p className="sid-surat-stat-number">
-                {loading ? '-' : total}
-              </p>
+              <p className="sid-surat-stat-number">{loading ? '-' : total}</p>
             </div>
 
             <div className="sid-surat-stat-icon sid-surat-stat-icon-total">
@@ -81,20 +68,15 @@ export default function JenisSuratPage() {
             </div>
           </button>
 
-
           {/* DISETUJUI */}
 
           <button
             type="button"
-            onClick={() =>
-              navigate('/daftar-surat-saya?status=approved')
-            }
+            onClick={() => navigate('/daftar-surat-saya?status=approved')}
             className="sid-surat-stat-card"
           >
             <div className="sid-surat-stat-content">
-              <p className="sid-surat-stat-label">
-                Permohonan Disetujui
-              </p>
+              <p className="sid-surat-stat-label">Permohonan Disetujui</p>
 
               <p className="sid-surat-stat-number sid-surat-stat-number-approved">
                 {loading ? '-' : disetujui}
@@ -106,20 +88,15 @@ export default function JenisSuratPage() {
             </div>
           </button>
 
-
           {/* DITOLAK */}
 
           <button
             type="button"
-            onClick={() =>
-              navigate('/daftar-surat-saya?status=ditolak')
-            }
+            onClick={() => navigate('/daftar-surat-saya?status=ditolak')}
             className="sid-surat-stat-card"
           >
             <div className="sid-surat-stat-content">
-              <p className="sid-surat-stat-label">
-                Permohonan Ditolak
-              </p>
+              <p className="sid-surat-stat-label">Permohonan Ditolak</p>
 
               <p className="sid-surat-stat-number sid-surat-stat-number-rejected">
                 {loading ? '-' : ditolak}
@@ -131,40 +108,27 @@ export default function JenisSuratPage() {
             </div>
           </button>
 
-
           {/* SEDANG DIPROSES */}
 
           <div className="sid-surat-stat-card sid-surat-stat-card-processing">
-
             <div className="sid-surat-stat-content">
-              <p className="sid-surat-stat-label">
-                Sedang Diproses
-              </p>
+              <p className="sid-surat-stat-label">Sedang Diproses</p>
 
-              <p className="sid-surat-stat-number">
-                {loading ? '-' : menunggu}
-              </p>
+              <p className="sid-surat-stat-number">{loading ? '-' : sedangDiproses}</p>
             </div>
 
             <div className="sid-surat-stat-icon sid-surat-stat-icon-processing">
               <ListChecks size={20} />
             </div>
-
           </div>
-
         </div>
-
 
         {/* ==========================================
             TRACKER
-            ========================================== */}
+        ========================================== */}
 
-        <SuratDateTracker
-          letters={letters}
-          loading={loading}
-        />
-
+        <SuratDateTracker letters={letters} loading={loading} />
       </div>
     </WargaLayout>
-  );
+  )
 }

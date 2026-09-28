@@ -3,44 +3,41 @@
 // Popup detail histori surat RW
 //
 // STATUS:
-// - RW hanya penerima FYI dan tidak memiliki kewenangan approve/reject.
-// - Modal RW hanya digunakan untuk melihat detail.
-// - Tidak ada pemanggilan endpoint keputusan RW.
-// - Workflow:
-//   Submit -> RT -> Selesai
+// - RW hanya penerima FYI.
+// - Tidak memiliki kewenangan approve/reject.
+// - Modal bersifat read-only.
+//
+// Tidak bergantung pada flow_steps.
 // ==========================================
 
 import { Eye } from 'lucide-react'
+import ApprovalStepper from '@/features/approval/components/ApprovalStepper'
+import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 
 import { useSuratDetail } from '../hooks/useSuratDetailRW'
-import ApprovalStepperRW from './ApprovalStepperRW'
-
-import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 
 // ==========================================
 // FIELD MAP
 // ==========================================
 
 const FIELD_MAP = {
-  noSurat: (s) => s.letter_number ?? '-',
+  noSurat: (s) => s?.letter_number ?? '-',
 
-  namaPemohon: (s) => s.applicant_name ?? '-',
+  namaPemohon: (s) => s?.applicant_name ?? s?.citizen?.name ?? '-',
 
-  nik: (s) => s.applicant_nik ?? '-',
+  nik: (s) => s?.applicant_nik ?? s?.citizen?.nik ?? '-',
 
-  alamat: (s) => s.applicant_address ?? '-',
+  alamat: (s) => s?.applicant_address ?? s?.citizen?.address ?? '-',
 
-  jenisSurat: (s) => s.letter_type?.name ?? '-',
+  jenisSurat: (s) => s?.letter_type?.name ?? '-',
 
-  keperluan: (s) => s.purpose ?? '-',
+  keperluan: (s) => s?.purpose ?? '-',
 
-  diajukan: (s) => (s.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
+  diajukan: (s) => (s?.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
 
-  terakhirDiproses: (s) => (s.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
+  terakhirDiproses: (s) => (s?.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
 
-  ipAktor: (s) => s.ip_address ?? '-',
-
-  riwayat: (s) => s.decisions ?? [],
+  riwayat: (s) => s?.decisions ?? [],
 }
 
 // ==========================================
@@ -64,7 +61,8 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
 
   const keputusanRT = surat
     ? FIELD_MAP.riwayat(surat).find(
-        (r) => r.stage === 'rt' || r.tahap === 'RT' || r.approval_level === 'rt',
+        (decision) =>
+          decision.stage === 'rt' || decision.tahap === 'RT' || decision.approval_level === 'rt',
       )
     : null
 
@@ -112,29 +110,39 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
   return (
     <div className="sid-modal-overlay">
       <div className="sid-modal">
-        {/* CLOSE */}
-        <button onClick={onClose} className="sid-modal-close">
+        {/* ======================================
+            CLOSE
+        ====================================== */}
+
+        <button type="button" onClick={onClose} className="sid-modal-close" aria-label="Tutup">
           ✕
         </button>
 
-        {/* NOT FOUND */}
+        {/* ======================================
+            NOT FOUND
+        ====================================== */}
+
         {notFound ? (
           <p className="sid-modal-message">Surat tidak ditemukan.</p>
         ) : !surat ? (
           <p className="sid-modal-message">Memuat...</p>
         ) : (
           <>
-            {/* HEADER */}
+            {/* ==================================
+                HEADER
+            ================================== */}
+
             <h2 className="sid-modal-title">Detail Permohonan Surat</h2>
 
             <p className="sid-modal-subtitle">
-              #{FIELD_MAP.noSurat(surat)} · Riwayat surat wilayah RW
+              #{FIELD_MAP.noSurat(surat)}
+              {' · Riwayat surat wilayah RW'}
             </p>
+            <ApprovalStepper surat={surat} />
+            {/* ==================================
+                DETAIL SURAT
+            ================================== */}
 
-            {/* STEPPER */}
-            <ApprovalStepperRW surat={surat} />
-
-            {/* DETAIL SURAT */}
             <div className="sid-modal-info">
               {infoFields.map((field) => (
                 <div key={field.label}>
@@ -145,9 +153,9 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
               ))}
             </div>
 
-            {/* ======================================
+            {/* ==================================
                 KEPUTUSAN RT
-                ====================================== */}
+            ================================== */}
 
             {keputusanRT && (
               <div
@@ -163,7 +171,7 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
                       keputusanRT.status === 'rejected' ? 'rejected' : 'approved'
                     }`}
                   >
-                    {keputusanRT.status === 'rejected' ? 'RT_REJECTED' : 'RT_APPROVED'}
+                    {keputusanRT.status === 'rejected' ? 'Ditolak' : 'Disetujui'}
                   </span>
                 </div>
 
@@ -181,7 +189,10 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
                   IP <strong>{keputusanRT.ip_address ?? '-'}</strong>
                 </div>
 
-                {/* CATATAN PENOLAKAN */}
+                {/* ==================================
+                    CATATAN PENOLAKAN
+                ================================== */}
+
                 {keputusanRT.status === 'rejected' && (
                   <>
                     <p className="sid-decision-comment-label">Komentar Penolakan</p>
@@ -195,7 +206,10 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
                   </>
                 )}
 
-                {/* CATATAN PERSETUJUAN */}
+                {/* ==================================
+                    CATATAN PERSETUJUAN
+                ================================== */}
+
                 {keputusanRT.status === 'approved' && (
                   <div className="sid-decision-comment approved">
                     {keputusanRT.notes ?? keputusanRT.reason ?? surat.notes ?? 'Tidak ada catatan.'}
@@ -204,20 +218,24 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
               </div>
             )}
 
-            {/* ======================================
+            {/* ==================================
                 PREVIEW
-                ====================================== */}
+            ================================== */}
 
-            <button onClick={() => previewSuratPDF(surat)} className="sid-modal-preview">
+            <button
+              type="button"
+              onClick={() => previewSuratPDF(surat)}
+              className="sid-modal-preview"
+            >
               <Eye size={16} />
               Lihat Dokumen (Preview)
             </button>
 
-            {/* ======================================
-                CLOSE
-                ====================================== */}
+            {/* ==================================
+                KEMBALI
+            ================================== */}
 
-            <button onClick={onClose} className="sid-modal-action back">
+            <button type="button" onClick={onClose} className="sid-modal-action back">
               ✓ Kembali
             </button>
           </>

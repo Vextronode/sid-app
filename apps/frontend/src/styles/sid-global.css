@@ -13184,9 +13184,9 @@
    ========================================================= */
 
 .sid-approval-action-bar__reject {
-  border: 1px solid var(--sid-status-rejected);
+  border: 1px solid var(--sid-danger-border);
 
-  background: var(--sid-status-rejected);
+  background: var(--sid-status-rejected-text);
   color: #fff;
 }
 

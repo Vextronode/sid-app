@@ -4,9 +4,8 @@
 // TANPA tombol Edit dan Hapus, karena Kades murni monitoring.
 // ==========================================
 
-import { Eye } from 'lucide-react';
-import StatusBadgeRT from '@/features/approval-rt/components/StatusBadgeRT'; // badge status global, warna sama semua role
-
+import { Eye } from 'lucide-react'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 export default function SuratTablekades({ data, onView }) {
   return (
     <table className="w-full text-sm">
@@ -34,7 +33,9 @@ export default function SuratTablekades({ data, onView }) {
               <td className="py-3 px-2">{surat.pemohon}</td>
               <td className="py-3 px-2">{surat.jenis}</td>
               <td className="py-3 px-2">{surat.tanggal}</td>
-              <td className="py-3 px-2"><StatusBadgeRT status={surat.status} /></td>
+              <td className="py-3 px-2">
+                <StatusBadge status={surat.status} />
+              </td>
               <td className="py-3 px-2">
                 <button
                   onClick={() => onView(surat.id)}
@@ -49,5 +50,5 @@ export default function SuratTablekades({ data, onView }) {
         )}
       </tbody>
     </table>
-  );
+  )
 }

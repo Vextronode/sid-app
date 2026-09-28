@@ -1,153 +1,160 @@
-
 // ==========================================
 // OperatorDesaDashboardPage.jsx
 // Halaman Ringkasan Operator Desa
 // Styling menggunakan Global CSS SID.
 // ==========================================
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
-import {
-  getSuratList,
-  getGenderStats,
-} from '@/features/approval/api';
+import { useEffect, useMemo, useState, useCallback } from 'react'
 
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { getSuratList, getGenderStats } from '@/features/approval/api'
 
-import {
-  ClipboardList,
-  ListChecks,
-  CheckCircle2,
-} from 'lucide-react';
+import { useAuth } from '@/features/auth/contexts/AuthContext'
 
-import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
-import GenderStatCard from '@/features/operator-desa/components/GenderStatCard';
-import { FooterOperator } from '@/components/layout/FooterOperator';
-import DashboardFlowCard from '@/features/operator-desa/components/DashboardFlowCard';
-import { getGreeting } from '@/lib/utils/greeting';
+import { ClipboardList, ListChecks, CheckCircle2 } from 'lucide-react'
+
+import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
+import GenderStatCard from '@/features/operator-desa/components/GenderStatCard'
+import { FooterOperator } from '@/components/layout/FooterOperator'
+import DashboardFlowCard from '@/features/operator-desa/components/DashboardFlowCard'
+import { getGreeting } from '@/lib/utils/greeting'
+
+import { SURAT_STATUS } from '@/constants/suratStatus'
 
 export default function OperatorDesaDashboardPage() {
-  const { user } = useAuth();
-  const greeting = getGreeting();
+  const { user } = useAuth()
+  const greeting = getGreeting()
 
-  const [letters, setLetters] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [letters, setLetters] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const [genderStats, setGenderStats] = useState({
     total: 0,
     laki: 0,
     perempuan: 0,
-  });
+  })
 
   const ROLE_ENDPOINT = {
     rt: 'rt',
     kasi_pelayanan: 'kasi',
     kaur_tu_umum: 'kasi',
     petugas_desa: 'kasi',
-  };
+  }
 
-  const roleKey =
-    ROLE_ENDPOINT[user?.role] ?? user?.role;
+  const roleKey = ROLE_ENDPOINT[user?.role] ?? user?.role
 
   // ==========================================
   // LOAD DATA DASHBOARD
   // ==========================================
 
-  const loadDashboardData = useCallback(async (showLoading = true) => {
-    if (!roleKey) return;
-
-    if (showLoading) {
-      setLoading(true);
-    }
-
-    try {
-      const [suratRes, genderRes] = await Promise.all([
-        getSuratList(roleKey),
-        getGenderStats(),
-      ]);
-
-      setLetters(suratRes.data);
-      setGenderStats(genderRes.data);
-    } catch (err) {
-      console.error(
-        'GET OPERATOR DASHBOARD ERROR:',
-        err.response?.data ?? err
-      );
-    } finally {
-      if (showLoading) {
-        setLoading(false);
+  const loadDashboardData = useCallback(
+    async (showLoading = true) => {
+      if (!roleKey) {
+        return
       }
-    }
-  }, [roleKey]);
+
+      if (showLoading) {
+        setLoading(true)
+      }
+
+      try {
+        const [suratRes, genderRes] = await Promise.all([getSuratList(roleKey), getGenderStats()])
+
+        const suratData = Array.isArray(suratRes.data?.data)
+          ? suratRes.data.data
+          : Array.isArray(suratRes.data)
+            ? suratRes.data
+            : []
+
+        setLetters(suratData)
+
+        setGenderStats(
+          genderRes.data ?? {
+            total: 0,
+            laki: 0,
+            perempuan: 0,
+          },
+        )
+      } catch (err) {
+        console.error('GET OPERATOR DASHBOARD ERROR:', err.response?.data ?? err)
+      } finally {
+        if (showLoading) {
+          setLoading(false)
+        }
+      }
+    },
+    [roleKey],
+  )
 
   // ==========================================
   // LOAD PERTAMA KALI
   // ==========================================
 
   useEffect(() => {
-    let isMounted = true;
+    let isMounted = true
 
     const loadInitialData = async () => {
-      if (!isMounted) return;
+      if (!isMounted) {
+        return
+      }
 
-      await loadDashboardData(true);
-    };
+      await loadDashboardData(true)
+    }
 
-    loadInitialData();
+    loadInitialData()
 
     return () => {
-      isMounted = false;
-    };
-  }, [loadDashboardData]);
+      isMounted = false
+    }
+  }, [loadDashboardData])
 
   // ==========================================
-  // AUTO REFRESH SETIAP 5 DETIK
+  // AUTO REFRESH DATA SETIAP 5 DETIK
   // ==========================================
 
   useEffect(() => {
-    if (!roleKey) return;
+    if (!roleKey) {
+      return
+    }
 
     const interval = setInterval(() => {
-      loadDashboardData(false);
-    }, 5000);
+      loadDashboardData(false)
+    }, 5000)
 
-    return () => clearInterval(interval);
-  }, [roleKey, loadDashboardData]);
+    return () => clearInterval(interval)
+  }, [roleKey, loadDashboardData])
 
   // ==========================================
   // STATISTIK
   // ==========================================
 
   const stats = useMemo(() => {
-    const permohonan = letters.length;
+    const permohonan = letters.length
 
-    const verifikasi = letters.filter(
-      (s) => s.status === 'rt_approved'
-    ).length;
+    const verifikasi = letters.filter((letter) => letter.status === SURAT_STATUS.IN_PROGRESS).length
 
-    const selesai = letters.filter(
-      (s) => s.status === 'kasi_approved'
-    ).length;
+    const selesai = letters.filter((letter) => letter.status === SURAT_STATUS.APPROVED).length
 
     return {
       permohonan,
       verifikasi,
       selesai,
-    };
-  }, [letters]);
+    }
+  }, [letters])
+
+  // ==========================================
+  // TANGGAL
+  // ==========================================
+
+  const hariIni = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
   // ==========================================
   // RENDER
   // ==========================================
-
-  const hariIni = new Date().toLocaleDateString(
-    'id-ID',
-    {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }
-  );
 
   return (
     <div className="sid-operator-dashboard">
@@ -159,14 +166,11 @@ export default function OperatorDesaDashboardPage() {
         <header className="sid-operator-header">
           <div className="sid-operator-header-info">
             <h1 className="sid-operator-greeting">
-              {greeting},{' '}
-              {user?.name ?? 'Bapak/Ibu'}
+              {greeting}, {user?.name ?? 'Bapak/Ibu'}
             </h1>
           </div>
 
-          <span className="sid-operator-date">
-            {hariIni}
-          </span>
+          <span className="sid-operator-date">{hariIni}</span>
         </header>
 
         {/* ======================================
@@ -178,13 +182,9 @@ export default function OperatorDesaDashboardPage() {
 
           <div className="sid-operator-stat-card">
             <div className="sid-operator-stat-content">
-              <p className="sid-operator-stat-label">
-                Total Permohonan
-              </p>
+              <p className="sid-operator-stat-label">Total Permohonan</p>
 
-              <p className="sid-operator-stat-value yellow">
-                {loading ? '-' : stats.permohonan}
-              </p>
+              <p className="sid-operator-stat-value yellow">{loading ? '-' : stats.permohonan}</p>
             </div>
 
             <div className="sid-operator-stat-icon yellow">
@@ -192,17 +192,13 @@ export default function OperatorDesaDashboardPage() {
             </div>
           </div>
 
-          {/* VERIFIKASI */}
+          {/* SEDANG DIPROSES */}
 
           <div className="sid-operator-stat-card">
             <div className="sid-operator-stat-content">
-              <p className="sid-operator-stat-label">
-                Verifikasi
-              </p>
+              <p className="sid-operator-stat-label">Sedang Diproses</p>
 
-              <p className="sid-operator-stat-value blue">
-                {loading ? '-' : stats.verifikasi}
-              </p>
+              <p className="sid-operator-stat-value blue">{loading ? '-' : stats.verifikasi}</p>
             </div>
 
             <div className="sid-operator-stat-icon blue">
@@ -214,13 +210,9 @@ export default function OperatorDesaDashboardPage() {
 
           <div className="sid-operator-stat-card">
             <div className="sid-operator-stat-content">
-              <p className="sid-operator-stat-label">
-                Selesai
-              </p>
+              <p className="sid-operator-stat-label">Selesai</p>
 
-              <p className="sid-operator-stat-value green">
-                {loading ? '-' : stats.selesai}
-              </p>
+              <p className="sid-operator-stat-value green">{loading ? '-' : stats.selesai}</p>
             </div>
 
             <div className="sid-operator-stat-icon green">
@@ -245,16 +237,11 @@ export default function OperatorDesaDashboardPage() {
 
         <section className="sid-operator-dashboard-grid">
           <div className="sid-operator-chart-wrapper">
-            <SuratStatChart
-              letters={letters}
-            />
+            <SuratStatChart letters={letters} />
           </div>
 
           <div className="sid-operator-flow-wrapper">
-            <DashboardFlowCard
-              letters={letters}
-              loading={loading}
-            />
+            <DashboardFlowCard letters={letters} loading={loading} />
           </div>
         </section>
       </main>
@@ -265,5 +252,5 @@ export default function OperatorDesaDashboardPage() {
 
       <FooterOperator />
     </div>
-  );
+  )
 }

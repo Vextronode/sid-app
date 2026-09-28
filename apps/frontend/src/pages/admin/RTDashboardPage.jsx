@@ -1,8 +1,8 @@
-
 // ==========================================
 // RTDashboardPage.jsx
 // Dashboard RT
 //
+// UI mengikuti pola RWDashboardPage:
 // Desktop : 4 Stat Card sejajar
 // Mobile  : 4 Stat Card dalam layout 2x2
 //
@@ -18,85 +18,76 @@
 // Tidak ada QuickNavButtons setelah grafik.
 // ==========================================
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-import {
-  Mail,
-  ShieldCheck,
-  CheckCircle2,
-  XCircle,
-} from 'lucide-react';
+import { Mail, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react'
 
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { getSuratList } from '@/features/approval/api';
+import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { getSuratList } from '@/features/approval/api'
 
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
-import { FooterDesa } from '@/components/layout/FooterDesa';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
+import { FooterDesa } from '@/components/layout/FooterDesa'
 
-import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
-import { getGreeting } from '@/lib/utils/greeting';
+import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
+import { getGreeting } from '@/lib/utils/greeting'
 
-import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
+import { SURAT_STATUS } from '@/constants/suratStatus'
+
+import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
 
 // ==========================================
 // COMPONENT
 // ==========================================
 
 export default function RTDashboardPage() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth()
+  const navigate = useNavigate()
 
-  const [letters, setLetters] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [letters, setLetters] = useState([])
+  const [loading, setLoading] = useState(true)
 
   // ==========================================
-  // LOAD DATA DASHBOARD RT
+  // LOAD DATA RT
   // ==========================================
 
-  const loadDashboardData = useCallback(
-    async (showLoading = true) => {
+  const loadDashboardData = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true)
+    }
+
+    try {
+      const res = await getSuratList('rt')
+
+      setLetters(res.data?.data ?? [])
+    } catch (err) {
+      console.error('GET RT DASHBOARD ERROR:', err.response?.data ?? err)
+    } finally {
       if (showLoading) {
-        setLoading(true);
+        setLoading(false)
       }
-
-      try {
-        const res = await getSuratList('rt');
-
-        setLetters(res.data?.data ?? []);
-      } catch (err) {
-        console.error(
-          'GET RT DASHBOARD ERROR:',
-          err.response?.data ?? err
-        );
-      } finally {
-        if (showLoading) {
-          setLoading(false);
-        }
-      }
-    },
-    []
-  );
+    }
+  }, [])
 
   // ==========================================
   // LOAD PERTAMA KALI
   // ==========================================
 
   useEffect(() => {
-    let isMounted = true;
+    let isMounted = true
 
     const loadInitialData = async () => {
-      if (!isMounted) return;
+      if (!isMounted) return
 
-      await loadDashboardData(true);
-    };
+      await loadDashboardData(true)
+    }
 
-    loadInitialData();
+    loadInitialData()
 
     return () => {
-      isMounted = false;
-    };
-  }, [loadDashboardData]);
+      isMounted = false
+    }
+  }, [loadDashboardData])
 
   // ==========================================
   // AUTO REFRESH SETIAP 5 DETIK
@@ -104,47 +95,40 @@ export default function RTDashboardPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      loadDashboardData(false);
-    }, 5000);
+      loadDashboardData(false)
+    }, 5000)
 
-    return () => clearInterval(interval);
-  }, [loadDashboardData]);
+    return () => clearInterval(interval)
+  }, [loadDashboardData])
 
   // ==========================================
   // STATISTIK
   // ==========================================
 
   const stats = useMemo(() => {
-    const permohonanBaru = letters.filter(
-      (s) => s.status === 'pending'
-    ).length;
+    const permohonanBaru = letters.filter((letter) => letter.status === SURAT_STATUS.PENDING).length
 
     const sedangDiproses = letters.filter(
-      (s) =>
-        !s.status?.endsWith('_rejected') &&
-        s.status !== 'rt_approved' &&
-        s.status !== 'pending'
-    ).length;
+      (letter) => letter.status === SURAT_STATUS.IN_PROGRESS,
+    ).length
 
     const disetujuiFinal = letters.filter(
-      (s) => s.status === 'kasi_approved'
-    ).length;
+      (letter) => letter.status === SURAT_STATUS.APPROVED,
+    ).length
 
-    const ditolak = letters.filter(
-      (s) => s.status?.endsWith('_rejected')
-    ).length;
+    const ditolak = letters.filter((letter) => letter.status === SURAT_STATUS.REJECTED).length
 
     return {
       permohonanBaru,
       sedangDiproses,
       disetujuiFinal,
       ditolak,
-    };
-  }, [letters]);
+    }
+  }, [letters])
 
   // ==========================================
   // STAT CARDS
-  // Satu sumber data untuk desktop & mobile
+  // Mengikuti struktur UI RW
   // ==========================================
 
   const STAT_CARDS = [
@@ -153,12 +137,9 @@ export default function RTDashboardPage() {
       label: 'Menunggu',
       value: stats.permohonanBaru,
       icon: Mail,
-
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
-
-      onClick: () =>
-        navigate('/admin/list-rt?status=pending'),
+      onClick: () => navigate(`/admin/list-rt?status=${SURAT_STATUS.PENDING}`),
     },
 
     {
@@ -166,12 +147,9 @@ export default function RTDashboardPage() {
       label: 'Sedang Diproses',
       value: stats.sedangDiproses,
       icon: ShieldCheck,
-
       iconBg: 'var(--sid-status-progress-bg)',
       iconColor: 'var(--sid-status-progress-text)',
-
-      onClick: () =>
-        navigate('/admin/list-rt'),
+      onClick: () => navigate(`/admin/list-rt?status=${SURAT_STATUS.IN_PROGRESS}`),
     },
 
     {
@@ -179,12 +157,9 @@ export default function RTDashboardPage() {
       label: 'Selesai',
       value: stats.disetujuiFinal,
       icon: CheckCircle2,
-
       iconBg: 'var(--sid-status-done-bg)',
       iconColor: 'var(--sid-status-done-text)',
-
-      onClick: () =>
-        navigate('/admin/list-rt?status=rw_approved'),
+      onClick: () => navigate(`/admin/list-rt?status=${SURAT_STATUS.APPROVED}`),
     },
 
     {
@@ -192,28 +167,22 @@ export default function RTDashboardPage() {
       label: 'Ditolak',
       value: stats.ditolak,
       icon: XCircle,
-
       iconBg: 'var(--sid-status-rejected-bg)',
       iconColor: 'var(--sid-status-rejected-text)',
-
-      onClick: () =>
-        navigate('/admin/list-rt?status=rt_rejected'),
+      onClick: () => navigate(`/admin/list-rt?status=${SURAT_STATUS.REJECTED}`),
     },
-  ];
+  ]
 
   // ==========================================
   // TANGGAL
   // ==========================================
 
-  const hariIni = new Date().toLocaleDateString(
-    'id-ID',
-    {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }
-  );
+  const hariIni = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
   // ==========================================
   // RENDER
@@ -225,97 +194,55 @@ export default function RTDashboardPage() {
           DESKTOP
           ======================================== */}
 
-      <div className="hidden md:block">
-        <div className="sid-page max-w-3xl">
+      <div className="sid-desktop-page">
+        <div className="sid-page sid-page-dashboard">
           {/* ======================================
               HEADER
               ====================================== */}
 
-          <div className="flex items-start justify-between mb-6">
+          <div className="sid-dashboard-header">
             <div>
               <h1 className="sid-page-title">
                 {getGreeting()}, {user?.name ?? 'Bapak/Ibu'}
               </h1>
 
               <p className="sid-page-description">
-                Kelola administrasi warga{' '}
-                {user?.wilayah_label ?? 'RT'} dengan lebih cepat.
+                Kelola administrasi warga {user?.wilayah_label ?? 'RT'} dengan lebih cepat.
               </p>
             </div>
 
-            <span className="
-              text-xs
-              text-[var(--sid-text-muted)]
-              capitalize
-              pt-1
-            ">
-              {hariIni}
-            </span>
+            <span className="sid-dashboard-date">{hariIni}</span>
           </div>
 
           {/* ======================================
-              STAT CARDS
+              STAT CARD
               ====================================== */}
 
-          <div className="
-            grid
-            grid-cols-4
-            gap-4
-            mb-6
-          ">
+          <div className="sid-stat-grid">
             {STAT_CARDS.map((card) => {
-              const Icon = card.icon;
+              const Icon = card.icon
 
               return (
-                <button
-                  key={card.key}
-                  onClick={card.onClick}
-                  className="
-                    sid-stat-card
-                    p-5
-                    flex
-                    items-center
-                    justify-between
-                  "
-                >
-                  <div>
-                    <p className="
-                      text-[10px]
-                      text-[var(--sid-text-muted)]
-                      uppercase
-                      mb-1
-                    ">
-                      {card.label}
-                    </p>
+                <button key={card.key} onClick={card.onClick} className="sid-stat-card">
+                  <div className="sid-stat-card-content">
+                    <div>
+                      <p className="sid-stat-label">{card.label}</p>
 
-                    <p className="
-                      text-3xl
-                      font-bold
-                      text-[var(--sid-text-primary)]
-                    ">
-                      {loading ? '-' : card.value}
-                    </p>
-                  </div>
+                      <p className="sid-stat-value">{loading ? '-' : card.value}</p>
+                    </div>
 
-                  <div
-                    className="
-                      w-11
-                      h-11
-                      rounded-[var(--radius-md)]
-                      flex
-                      items-center
-                      justify-center
-                      shrink-0
-                    "
-                    style={{
-                      background: card.iconBg,
-                      color: card.iconColor,
-                    }}
-                  >
-                    <Icon size={20} />
+                    <div
+                      className="sid-stat-icon"
+                      style={{
+                        background: card.iconBg,
+                        color: card.iconColor,
+                      }}
+                    >
+                      <Icon size={20} />
+                    </div>
                   </div>
                 </button>
-              );
+              )
             })}
           </div>
 
@@ -323,13 +250,13 @@ export default function RTDashboardPage() {
               GRAFIK
               ====================================== */}
 
-          <div className="mb-6">
+          <div className="sid-dashboard-chart">
             <SuratStatChart letters={letters} />
           </div>
         </div>
 
         {/* ======================================
-            FOOTER DESKTOP
+            FOOTER
             ====================================== */}
 
         <FooterDesa />
@@ -339,16 +266,8 @@ export default function RTDashboardPage() {
           MOBILE
           ======================================== */}
 
-      <div className="
-        md:hidden
-        min-h-screen
-        bg-[var(--sid-surface-page)]
-      ">
-        <div className="
-          sid-page
-          max-w-none
-          sid-mobile-content
-        ">
+      <div className="sid-mobile-page">
+        <div className="sid-page sid-mobile-content">
           {/* ======================================
               HEADER
               ====================================== */}
@@ -358,44 +277,25 @@ export default function RTDashboardPage() {
           </h1>
 
           <p className="sid-page-description">
-            Kelola administrasi warga{' '}
-            {user?.wilayah_label ?? 'RT'} dengan lebih cepat.
+            Kelola administrasi warga {user?.wilayah_label ?? 'RT'} dengan lebih cepat.
           </p>
 
           {/* ======================================
-              STAT CARDS
-              2 x 2
+              STAT CARD
               ====================================== */}
 
-          <div className="
-            grid
-            grid-cols-2
-            gap-3
-            mb-4
-          ">
+          <div className="sid-stat-grid-mobile">
             {STAT_CARDS.map((card) => {
-              const Icon = card.icon;
+              const Icon = card.icon
 
               return (
                 <button
                   key={card.key}
                   onClick={card.onClick}
-                  className="
-                    sid-stat-card
-                    p-4
-                    text-left
-                  "
+                  className="sid-stat-card sid-stat-card-mobile"
                 >
                   <div
-                    className="
-                      w-9
-                      h-9
-                      rounded-[var(--radius-sm)]
-                      flex
-                      items-center
-                      justify-center
-                      mb-2
-                    "
+                    className="sid-stat-icon-mobile"
                     style={{
                       background: card.iconBg,
                       color: card.iconColor,
@@ -404,23 +304,11 @@ export default function RTDashboardPage() {
                     <Icon size={16} />
                   </div>
 
-                  <p className="
-                    text-[10px]
-                    text-[var(--sid-text-muted)]
-                    uppercase
-                  ">
-                    {card.label}
-                  </p>
+                  <p className="sid-stat-label">{card.label}</p>
 
-                  <p className="
-                    text-2xl
-                    font-bold
-                    text-[var(--sid-text-primary)]
-                  ">
-                    {loading ? '-' : card.value}
-                  </p>
+                  <p className="sid-stat-value-mobile">{loading ? '-' : card.value}</p>
                 </button>
-              );
+              )
             })}
           </div>
 
@@ -428,13 +316,13 @@ export default function RTDashboardPage() {
               GRAFIK
               ====================================== */}
 
-          <div className="mb-4">
+          <div className="sid-dashboard-chart-mobile">
             <SuratStatChart letters={letters} />
           </div>
         </div>
 
         {/* ======================================
-            FOOTER MOBILE
+            FOOTER
             ====================================== */}
 
         <div className="sid-mobile-footer">
@@ -442,17 +330,13 @@ export default function RTDashboardPage() {
         </div>
 
         {/* ======================================
-            MOBILE BOTTOM NAVIGATION
+            MOBILE NAVIGATION
             ====================================== */}
 
         <MobileBottomNav
-          links={ADMIN_MOBILE_LINKS(
-            '/admin/dashboard-surat-rt',
-            '/admin/list-rt'
-          )}
+          links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rt', '/admin/list-rt')}
         />
       </div>
     </>
-  );
+  )
 }
-

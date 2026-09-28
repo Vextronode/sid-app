@@ -3,48 +3,40 @@
 // Styling menggunakan SID Global CSS.
 // ==========================================
 
-import { useState } from 'react';
-import { Search, Eye, Printer } from 'lucide-react';
+import { useState } from 'react'
+import { Search, Eye, Printer } from 'lucide-react'
 
-import { useSuratSiapCetak } from '../hooks/useSuratSiapCetak';
-import { generateSuratPDF } from '../utils/generateSuratPDF';
+import { useSuratSiapCetak } from '../hooks/useSuratSiapCetak'
+import { generateSuratPDF } from '../utils/generateSuratPDF'
 
-import StatusBadgeRT from '@/features/approval-rt/components/StatusBadgeRT';
-import SuratInfoGridRT from '@/features/approval-rt/components/SuratInfoGridRT';
-import ApprovalStepperRT from '@/features/approval-rt/components/ApprovalStepperRT';
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import SuratInfoGridRT from '@/features/approval-rt/components/SuratInfoGridRT'
 
 export default function CetakSuratListPage({ title }) {
-  const { data, setSearch } = useSuratSiapCetak();
+  const { data, setSearch } = useSuratSiapCetak()
 
-  const [keyword, setKeyword] = useState('');
-  const [selected, setSelected] = useState(null);
+  const [keyword, setKeyword] = useState('')
+  const [selected, setSelected] = useState(null)
 
   const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    setSearch(keyword);
-  };
+    e.preventDefault()
+    setSearch(keyword)
+  }
 
   return (
     <div className="sid-cetak-surat-page">
       <div className="sid-cetak-surat-content">
-
         {/* ==========================================
             HEADER
         ========================================== */}
 
-        <h2 className="sid-cetak-surat-title">
-          {title}
-        </h2>
-
+        <h2 className="sid-cetak-surat-title">{title}</h2>
 
         {/* ==========================================
             SEARCH
         ========================================== */}
 
-        <form
-          onSubmit={handleSearchSubmit}
-          className="sid-cetak-surat-search"
-        >
+        <form onSubmit={handleSearchSubmit} className="sid-cetak-surat-search">
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
@@ -52,15 +44,10 @@ export default function CetakSuratListPage({ title }) {
             className="sid-cetak-surat-search-input"
           />
 
-          <button
-            type="submit"
-            className="sid-cetak-surat-search-button"
-            title="Cari"
-          >
+          <button type="submit" className="sid-cetak-surat-search-button" title="Cari">
             <Search size={16} />
           </button>
         </form>
-
 
         {/* ==========================================
             TABLE
@@ -81,10 +68,7 @@ export default function CetakSuratListPage({ title }) {
             <tbody>
               {data.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="sid-cetak-surat-empty"
-                  >
+                  <td colSpan={5} className="sid-cetak-surat-empty">
                     Belum ada surat yang siap dicetak.
                   </td>
                 </tr>
@@ -98,9 +82,7 @@ export default function CetakSuratListPage({ title }) {
                     <td>{surat.jenis}</td>
 
                     <td>
-                      <StatusBadgeRT
-                        status={surat.status}
-                      />
+                      <StatusBadge status={surat.status} />
                     </td>
 
                     <td>
@@ -129,7 +111,6 @@ export default function CetakSuratListPage({ title }) {
           </table>
         </div>
 
-
         {/* ==========================================
             DETAIL MODAL
         ========================================== */}
@@ -137,7 +118,6 @@ export default function CetakSuratListPage({ title }) {
         {selected && (
           <div className="sid-cetak-surat-modal-overlay">
             <div className="sid-cetak-surat-modal">
-
               <button
                 onClick={() => setSelected(null)}
                 className="sid-cetak-surat-modal-close"
@@ -146,21 +126,11 @@ export default function CetakSuratListPage({ title }) {
                 ✕
               </button>
 
-              <h2 className="sid-cetak-surat-modal-title">
-                Detail Surat
-              </h2>
+              <h2 className="sid-cetak-surat-modal-title">Detail Surat</h2>
 
-              <p className="sid-cetak-surat-modal-number">
-                #{selected.no_surat}
-              </p>
+              <p className="sid-cetak-surat-modal-number">#{selected.no_surat}</p>
 
-              <ApprovalStepperRT
-                surat={selected}
-              />
-
-              <SuratInfoGridRT
-                surat={selected}
-              />
+              <SuratInfoGridRT surat={selected} />
 
               <button
                 onClick={() => generateSuratPDF(selected)}
@@ -169,12 +139,10 @@ export default function CetakSuratListPage({ title }) {
                 <Printer size={16} />
                 Cetak PDF
               </button>
-
             </div>
           </div>
         )}
-
       </div>
     </div>
-  );
+  )
 }

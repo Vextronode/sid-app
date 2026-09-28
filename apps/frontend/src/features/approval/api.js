@@ -6,27 +6,33 @@ export function getGenderStats() {
 
 const ROLE_TO_PREFIX = {
   rt: 'rt',
+  rw: 'rw',
+
   kepala_desa: 'kades',
   sekretaris_desa: 'kades',
+
+  kasi: 'kasi',
   kasi_pelayanan: 'kasi',
   kaur_tu_umum: 'kasi',
-  rw: 'rw',
+  petugas_desa: 'kasi',
 }
 
 function resolvePrefix(role) {
   const prefix = ROLE_TO_PREFIX[role]
+
   if (!prefix) {
     throw new Error(`Role "${role}" tidak punya endpoint approval (bukan approver di v5.0)`)
   }
+
   return prefix
 }
 
 /**
  * Mengambil daftar surat sesuai role approver.
  *   - rt    -> /api/rt/letters
- *   - kades -> /api/kades/letters   (Kepala Desa & Sekretaris Desa, saling menggantikan)
- *   - kasi  -> /api/kasi/letters    (Kasi Pelayanan & Kaur TU Umum, step final)
- *   - rw    -> /api/rw/letters      (READ-ONLY, tidak pernah approve)
+ *   - kades -> /api/kades/letters
+ *   - kasi  -> /api/kasi/letters
+ *   - rw    -> /api/rw/letters (READ-ONLY)
  */
 export const getSuratList = (role, params = {}) =>
   api.get(`/api/${resolvePrefix(role)}/letters`, { params })
@@ -38,8 +44,14 @@ export const getSuratDetail = (id, role) => api.get(`/api/${resolvePrefix(role)}
 
 /**
  * Kirim keputusan approve/reject.
+ *
+ * Backend membutuhkan field:
+ * {
+ *   status: 'approved' | 'rejected',
+ *   notes: string | null
+ * }
  */
-export const submitDecision = (role, id, action, notes = null) => {
+export const submitDecision = (role, id, status, notes = null) => {
   const prefix = resolvePrefix(role)
 
   if (prefix === 'rw') {
@@ -51,7 +63,10 @@ export const submitDecision = (role, id, action, notes = null) => {
   const url =
     prefix === 'kasi' ? `/api/kasi/letters/${id}` : `/api/${prefix}/letters/${id}/decision`
 
-  return api.patch(url, { action, notes })
+  return api.patch(url, {
+    status,
+    notes,
+  })
 }
 
 /**
@@ -63,5 +78,6 @@ export const approveSurat = (role, id, status, notes = null) => {
       `Status "${status}" tidak didukung backend v5.0. Hanya 'approved' atau 'rejected' yang valid.`,
     )
   }
+
   return submitDecision(role, id, status, notes)
 }

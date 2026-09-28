@@ -2,113 +2,214 @@
 // DetailSuratModal.jsx
 // Popup detail surat untuk Warga.
 //
-// Styling dan struktur mengikuti
-// SuratDetailModalRT.
+// Warga hanya dapat melihat:
+// - detail surat
+// - status generic
+// - progress
+// - alasan penolakan
+// - preview dokumen jika sudah approved
 //
-// Workflow:
-// Submit -> RT -> Selesai / TTD
-//
-// Warga hanya dapat melihat detail,
-// keputusan RT, progress, dan preview.
+// akan ditangani pada task
+// terpisah.
 // ==========================================
 
-import { useEffect, useRef, useState } from 'react';
-import {
-  ChevronLeft,
-  Eye,
-  FileText,
-  X,
-} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react'
+import { ChevronLeft, Eye, FileText, X, Check, Clock } from 'lucide-react'
 
-import ApprovalStepperRT from '@/features/approval-rt/components/ApprovalStepperRT';
-import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF';
+import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { SURAT_STATUS } from '@/constants/suratStatus'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+import * as pdfjsLib from 'pdfjs-dist'
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
 // ==========================================
 // FIELD MAP
 // ==========================================
 
 const FIELD_MAP = {
-  noSurat: (s) =>
-    s?.letter_number ?? '-',
+  noSurat: (s) => s?.letter_number ?? '-',
 
-  namaPemohon: (s) =>
-    s?.applicant_name ?? '-',
+  namaPemohon: (s) => s?.applicant_name ?? '-',
 
-  nik: (s) =>
-    s?.applicant_nik ?? '-',
+  nik: (s) => s?.applicant_nik ?? '-',
 
-  alamat: (s) =>
-    s?.applicant_address ?? '-',
+  alamat: (s) => s?.applicant_address ?? '-',
 
-  jenisSurat: (s) =>
-    s?.letter_type?.name ?? '-',
+  jenisSurat: (s) => s?.letter_type?.name ?? '-',
 
-  keperluan: (s) =>
-    s?.purpose ?? '-',
+  keperluan: (s) => s?.purpose ?? '-',
 
-  diajukan: (s) =>
-    s?.submitted_at
-      ? new Date(
-          s.submitted_at
-        ).toLocaleString('id-ID')
-      : '-',
+  diajukan: (s) => (s?.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
 
-  terakhirDiproses: (s) =>
-    s?.updated_at
-      ? new Date(
-          s.updated_at
-        ).toLocaleString('id-ID')
-      : '-',
+  terakhirDiproses: (s) => (s?.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
+}
 
-  riwayat: (s) =>
-    s?.decisions ?? [],
-};
+// ==========================================
+// GENERIC TRACKING STEPS
+// ==========================================
 
+const TRACKING_STEPS = ['Pengajuan', 'Diproses', 'Selesai']
+
+// ==========================================
+// GENERIC TRACKING STATE
+// ==========================================
+
+function getTrackingState(status) {
+  switch (status) {
+    case SURAT_STATUS.PENDING:
+      return {
+        step: 1,
+        state: 'current',
+      }
+
+    case SURAT_STATUS.IN_PROGRESS:
+      return {
+        step: 2,
+        state: 'current',
+      }
+
+    case SURAT_STATUS.APPROVED:
+      return {
+        step: 3,
+        state: 'done',
+      }
+
+    case SURAT_STATUS.REJECTED:
+      return {
+        step: 2,
+        state: 'rejected',
+      }
+
+    default:
+      return {
+        step: 0,
+        state: 'waiting',
+      }
+  }
+}
+
+// ==========================================
+// GENERIC TRACKER
+// ==========================================
+
+function GenericTracker({ status }) {
+  const { step, state } = getTrackingState(status)
+
+  return (
+    <div className="sid-tracker-scroll">
+      <div className="sid-tracker-stepper">
+        {TRACKING_STEPS.map((label, index) => {
+          const stepNumber = index + 1
+
+          const isRejected = state === 'rejected' && stepNumber === 2
+
+          const isDone = state === 'done' && stepNumber <= 3
+
+          const isCurrent = state === 'current' && stepNumber === step
+
+          let circleClass = 'sid-tracker-circle sid-tracker-circle-waiting'
+
+          let labelClass = 'sid-tracker-label'
+
+          let content = stepNumber
+
+          if (isRejected) {
+            circleClass = 'sid-tracker-circle sid-tracker-circle-rejected'
+
+            labelClass = 'sid-tracker-label sid-tracker-label-rejected'
+
+            content = <X size={15} strokeWidth={2.5} />
+          } else if (isDone) {
+            circleClass = 'sid-tracker-circle sid-tracker-circle-done'
+
+            labelClass = 'sid-tracker-label sid-tracker-label-done'
+
+            content = <Check size={15} strokeWidth={2.5} />
+          } else if (isCurrent) {
+            circleClass = 'sid-tracker-circle sid-tracker-circle-current'
+
+            labelClass = 'sid-tracker-label sid-tracker-label-current'
+
+            content = <Clock size={15} />
+          }
+
+          const connectorDone =
+            state === 'done' ? stepNumber < TRACKING_STEPS.length : stepNumber < step
+
+          return (
+            <div key={label} className="sid-tracker-step">
+              <div className="sid-tracker-node">
+                <div className={circleClass}>{content}</div>
+
+                {stepNumber < TRACKING_STEPS.length && (
+                  <div
+                    className={`sid-tracker-line${connectorDone ? ' sid-tracker-line-done' : ''}`}
+                  />
+                )}
+              </div>
+
+              <div className="sid-tracker-label-wrapper">
+                <span className={labelClass}>{label}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ==========================================
+// REJECTION INFORMATION
+// ==========================================
+
+function RejectionReason({ surat }) {
+  if (surat?.status !== SURAT_STATUS.REJECTED) {
+    return null
+  }
+
+  const reason =
+    surat?.notes ?? surat?.reason ?? surat?.rejection_reason ?? 'Tidak ada catatan penolakan.'
+
+  return (
+    <div className="sid-decision-box rejected">
+      <div className="sid-decision-header">
+        <p className="sid-decision-title">Alasan Penolakan</p>
+
+        <span className="sid-decision-badge rejected">DITOLAK</span>
+      </div>
+
+      <div className="sid-decision-comment rejected">{reason}</div>
+    </div>
+  )
+}
 
 // ==========================================
 // PREVIEW PDF
 // ==========================================
 
-function SuratPreview({
-  surat,
-}) {
-  const [showPreview, setShowPreview] =
-    useState(false);
+function SuratPreview({ surat }) {
+  const [showPreview, setShowPreview] = useState(false)
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false)
 
-  const [loadError, setLoadError] =
-    useState(false);
+  const [loadError, setLoadError] = useState(false)
 
-  const canvasContainerRef =
-    useRef(null);
+  const canvasContainerRef = useRef(null)
 
-  const pdfDocumentRef =
-    useRef(null);
-
+  const pdfDocumentRef = useRef(null)
 
   // ========================================
   // STATUS PREVIEW
   // ========================================
 
-  const status =
-    surat?.status;
+  const status = surat?.status
 
-  const canPreview = [
-    'kasi_approved',
-    'kaur_tu_umum_approved',
-    'petugas_desa_approved',
-    'completed',
-  ].includes(status);
-
-
+  const canPreview = status === SURAT_STATUS.APPROVED
 
   // ========================================
   // RESET
@@ -116,258 +217,157 @@ function SuratPreview({
 
   useEffect(() => {
     if (pdfDocumentRef.current) {
-      pdfDocumentRef.current.destroy();
-      pdfDocumentRef.current = null;
+      pdfDocumentRef.current.destroy()
+      pdfDocumentRef.current = null
     }
 
-    // Reset state dilakukan melalui callback async
-    // agar tidak memicu cascading render secara
-    // synchronous di dalam effect.
     const resetTimer = setTimeout(() => {
-      setShowPreview(false);
-      setLoading(false);
-      setLoadError(false);
-    }, 0);
+      setShowPreview(false)
+      setLoading(false)
+      setLoadError(false)
+    }, 0)
 
     return () => {
-      clearTimeout(resetTimer);
-    };
-  }, [surat?.id]);
-
-
-
+      clearTimeout(resetTimer)
+    }
+  }, [surat?.id])
 
   // ========================================
   // LOAD PDF
   // ========================================
 
   useEffect(() => {
-    if (
-      !showPreview ||
-      !canPreview ||
-      !surat?.id
-    ) {
-      return;
+    if (!showPreview || !canPreview || !surat?.id) {
+      return
     }
 
-    let cancelled = false;
-    let blobUrl = null;
+    let cancelled = false
+    let blobUrl = null
 
     const loadPDF = async () => {
       try {
-        setLoading(true);
-        setLoadError(false);
+        setLoading(true)
+        setLoadError(false)
 
-        const template =
-          status === 'kasi_approved'
-            ? 'digital'
-            : 'wet';
-
-        blobUrl =
-          await previewSuratPDF(
-            surat,
-            template
-          );
+        blobUrl = await previewSuratPDF(surat)
 
         if (cancelled) {
           if (blobUrl) {
-            URL.revokeObjectURL(
-              blobUrl
-            );
+            URL.revokeObjectURL(blobUrl)
           }
 
-          return;
+          return
         }
 
-        const loadingTask =
-          pdfjsLib.getDocument({
-            url: blobUrl,
-          });
+        const loadingTask = pdfjsLib.getDocument({
+          url: blobUrl,
+        })
 
-        const pdf =
-          await loadingTask.promise;
+        const pdf = await loadingTask.promise
 
         if (cancelled) {
-          await pdf.destroy();
+          await pdf.destroy()
+          URL.revokeObjectURL(blobUrl)
 
-          URL.revokeObjectURL(
-            blobUrl
-          );
-
-          return;
+          return
         }
 
-        pdfDocumentRef.current = pdf;
+        pdfDocumentRef.current = pdf
 
-        const container =
-          canvasContainerRef.current;
+        const container = canvasContainerRef.current
 
         if (!container) {
-          return;
+          return
         }
 
-        container.innerHTML = '';
+        container.innerHTML = ''
 
-        for (
-          let pageNumber = 1;
-          pageNumber <= pdf.numPages;
-          pageNumber++
-        ) {
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
           if (cancelled) {
-            break;
+            break
           }
 
-          const page =
-            await pdf.getPage(
-              pageNumber
-            );
+          const page = await pdf.getPage(pageNumber)
 
-          const baseViewport =
-            page.getViewport({
-              scale: 1,
-            });
+          const baseViewport = page.getViewport({
+            scale: 1,
+          })
 
-          const containerWidth =
-            container.clientWidth ||
-            600;
+          const containerWidth = container.clientWidth || 600
 
-          const computedStyle =
-            window.getComputedStyle(
-              container
-            );
+          const computedStyle = window.getComputedStyle(container)
 
-          const paddingLeft =
-            parseFloat(
-              computedStyle.paddingLeft
-            ) || 0;
+          const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0
 
-          const paddingRight =
-            parseFloat(
-              computedStyle.paddingRight
-            ) || 0;
+          const paddingRight = parseFloat(computedStyle.paddingRight) || 0
 
-          const availableWidth =
-            containerWidth -
-            paddingLeft -
-            paddingRight;
+          const availableWidth = containerWidth - paddingLeft - paddingRight
 
-          const scale =
-            availableWidth /
-            baseViewport.width;
+          const scale = availableWidth / baseViewport.width
 
-          const viewport =
-            page.getViewport({
-              scale: Math.max(
-                scale,
-                0.5
-              ),
-            });
+          const viewport = page.getViewport({
+            scale: Math.max(scale, 0.5),
+          })
 
-          const pageWrapper =
-            document.createElement(
-              'div'
-            );
+          const pageWrapper = document.createElement('div')
 
-          pageWrapper.className =
-            'sid-pdf-page';
+          pageWrapper.className = 'sid-pdf-page'
 
-          const canvas =
-            document.createElement(
-              'canvas'
-            );
+          const canvas = document.createElement('canvas')
 
-          const context =
-            canvas.getContext('2d');
+          const context = canvas.getContext('2d')
 
-          const pixelRatio =
-            window.devicePixelRatio || 1;
+          const pixelRatio = window.devicePixelRatio || 1
 
-          canvas.width =
-            Math.floor(
-              viewport.width *
-                pixelRatio
-            );
+          canvas.width = Math.floor(viewport.width * pixelRatio)
 
-          canvas.height =
-            Math.floor(
-              viewport.height *
-                pixelRatio
-            );
+          canvas.height = Math.floor(viewport.height * pixelRatio)
 
-          canvas.style.width =
-            `${viewport.width}px`;
+          canvas.style.width = `${viewport.width}px`
 
-          canvas.style.height =
-            `${viewport.height}px`;
+          canvas.style.height = `${viewport.height}px`
 
-          canvas.className =
-            'sid-pdf-canvas';
+          canvas.className = 'sid-pdf-canvas'
 
-          context.setTransform(
-            pixelRatio,
-            0,
-            0,
-            pixelRatio,
-            0,
-            0
-          );
+          context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
-          pageWrapper.appendChild(
-            canvas
-          );
+          pageWrapper.appendChild(canvas)
 
-          container.appendChild(
-            pageWrapper
-          );
+          container.appendChild(pageWrapper)
 
           await page.render({
             canvasContext: context,
             viewport,
-          }).promise;
+          }).promise
         }
       } catch (error) {
-        console.error(
-          'Gagal memuat preview PDF:',
-          error
-        );
+        console.error('Gagal memuat preview PDF:', error)
 
         if (!cancelled) {
-          setLoadError(true);
+          setLoadError(true)
         }
       } finally {
         if (!cancelled) {
-          setLoading(false);
+          setLoading(false)
         }
       }
-    };
+    }
 
-    loadPDF();
+    loadPDF()
 
     return () => {
-      cancelled = true;
+      cancelled = true
 
       if (pdfDocumentRef.current) {
-        pdfDocumentRef.current.destroy();
-        pdfDocumentRef.current = null;
+        pdfDocumentRef.current.destroy()
+        pdfDocumentRef.current = null
       }
 
       if (blobUrl) {
-        URL.revokeObjectURL(
-          blobUrl
-        );
+        URL.revokeObjectURL(blobUrl)
       }
-    };
-  }, [
-    showPreview,
-    canPreview,
-    surat,
-    status,
-  ]);
-
-
-  // ========================================
-  // RENDER
-  // ========================================
+    }
+  }, [showPreview, canPreview, surat])
 
   return (
     <>
@@ -375,19 +375,13 @@ function SuratPreview({
         type="button"
         onClick={() => {
           if (!canPreview) {
-            return;
+            return
           }
 
-          setShowPreview(
-            (prev) => !prev
-          );
+          setShowPreview((prev) => !prev)
         }}
         disabled={!canPreview}
-        className={`sid-modal-preview ${
-          !canPreview
-            ? 'sid-preview-disabled'
-            : ''
-        }`}
+        className={`sid-modal-preview ${!canPreview ? 'sid-preview-disabled' : ''}`}
       >
         <Eye size={16} />
 
@@ -395,7 +389,7 @@ function SuratPreview({
           ? showPreview
             ? 'Sembunyikan Preview'
             : 'Lihat Dokumen (Preview)'
-          : 'Preview tersedia setelah surat selesai'}
+          : 'Preview tersedia setelah surat disetujui'}
       </button>
 
       {showPreview && (
@@ -404,9 +398,7 @@ function SuratPreview({
             <div className="sid-preview-loading">
               <div className="sid-loading-spinner" />
 
-              <p>
-                Memuat preview...
-              </p>
+              <p>Memuat preview...</p>
             </div>
           )}
 
@@ -414,18 +406,16 @@ function SuratPreview({
             <div className="sid-preview-error">
               <FileText size={32} />
 
-              <p>
-                Gagal memuat preview surat.
-              </p>
+              <p>Gagal memuat preview surat.</p>
 
               <button
                 type="button"
                 onClick={() => {
-                  setShowPreview(false);
+                  setShowPreview(false)
 
                   setTimeout(() => {
-                    setShowPreview(true);
-                  }, 100);
+                    setShowPreview(true)
+                  }, 100)
                 }}
                 className="sid-btn sid-btn-primary"
               >
@@ -434,293 +424,118 @@ function SuratPreview({
             </div>
           )}
 
-          {!loading && !loadError && (
-            <div
-              ref={canvasContainerRef}
-              className="sid-pdf-container"
-            />
-          )}
+          {!loading && !loadError && <div ref={canvasContainerRef} className="sid-pdf-container" />}
         </div>
       )}
     </>
-  );
+  )
 }
-
 
 // ==========================================
 // DETAIL INFORMATION
 // ==========================================
 
-function DetailInfo({
-  surat,
-}) {
+function DetailInfo({ surat }) {
   const infoFields = [
     {
       label: 'Nama Pemohon',
-      value:
-        FIELD_MAP.namaPemohon(
-          surat
-        ),
+      value: FIELD_MAP.namaPemohon(surat),
     },
     {
       label: 'NIK',
-      value:
-        FIELD_MAP.nik(surat),
+      value: FIELD_MAP.nik(surat),
     },
     {
       label: 'Alamat',
-      value:
-        FIELD_MAP.alamat(surat),
+      value: FIELD_MAP.alamat(surat),
     },
     {
       label: 'Jenis Surat',
-      value:
-        FIELD_MAP.jenisSurat(
-          surat
-        ),
+      value: FIELD_MAP.jenisSurat(surat),
     },
     {
       label: 'Keperluan',
-      value:
-        FIELD_MAP.keperluan(
-          surat
-        ),
+      value: FIELD_MAP.keperluan(surat),
     },
     {
       label: 'Diajukan',
-      value:
-        FIELD_MAP.diajukan(
-          surat
-        ),
+      value: FIELD_MAP.diajukan(surat),
     },
     {
       label: 'Terakhir diproses',
-      value:
-        FIELD_MAP.terakhirDiproses(
-          surat
-        ),
+      value: FIELD_MAP.terakhirDiproses(surat),
     },
-  ];
+  ]
 
   return (
     <div className="sid-modal-info">
-      {infoFields.map(
-        (field) => (
-          <div
-            key={field.label}
-          >
-            <p className="sid-modal-info-label">
-              {field.label}
-            </p>
+      {infoFields.map((field) => (
+        <div key={field.label}>
+          <p className="sid-modal-info-label">{field.label}</p>
 
-            <p className="sid-modal-info-value">
-              {field.value}
-            </p>
-          </div>
-        )
-      )}
-    </div>
-  );
-}
-
-
-// ==========================================
-// KEPUTUSAN RT
-// ==========================================
-
-function DecisionRT({
-  surat,
-}) {
-  const keputusanRT =
-    FIELD_MAP
-      .riwayat(surat)
-      .find(
-        (r) =>
-          r.stage === 'rt' ||
-          r.tahap === 'RT' ||
-          r.approval_level === 'rt'
-      );
-
-  if (!keputusanRT) {
-    return null;
-  }
-
-  const isRejected =
-    keputusanRT.status ===
-    'rejected';
-
-  const actor =
-    keputusanRT.actor_name ??
-    keputusanRT.decided_by ??
-    keputusanRT.approved_by_name ??
-    '-';
-
-  const notes =
-    keputusanRT.notes ??
-    keputusanRT.reason ??
-    surat.notes ??
-    'Tidak ada catatan.';
-
-  return (
-    <div
-      className={`sid-decision-box ${
-        isRejected
-          ? 'rejected'
-          : 'approved'
-      }`}
-    >
-      <div className="sid-decision-header">
-        <p className="sid-decision-title">
-          Keputusan RT
-        </p>
-
-        <span
-          className={`sid-decision-badge ${
-            isRejected
-              ? 'rejected'
-              : 'approved'
-          }`}
-        >
-          {isRejected
-            ? 'RT_REJECTED'
-            : 'RT_APPROVED'}
-        </span>
-      </div>
-
-      <div className="sid-decision-meta">
-        diputuskan oleh{' '}
-
-        <strong>
-          {actor}
-        </strong>
-      </div>
-
-      <div className="sid-decision-meta">
-        IP{' '}
-
-        <strong>
-          {keputusanRT.ip_address ??
-            '-'}
-        </strong>
-      </div>
-
-      {isRejected && (
-        <>
-          <p className="sid-decision-comment-label">
-            Komentar Penolakan
-          </p>
-
-          <div className="sid-decision-comment rejected">
-            {notes}
-          </div>
-        </>
-      )}
-
-      {!isRejected && (
-        <div className="sid-decision-comment approved">
-          {notes}
+          <p className="sid-modal-info-value">{field.value}</p>
         </div>
-      )}
+      ))}
     </div>
-  );
+  )
 }
-
 
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
 
-export function DetailSuratModal({
-  data,
-  onClose,
-}) {
+export function DetailSuratModal({ data, onClose }) {
   if (!data) {
-    return null;
+    return null
   }
 
   return (
     <div className="sid-modal-overlay">
       <div className="sid-modal">
-        {/* ======================================
-            CLOSE
-        ====================================== */}
+        {/* CLOSE */}
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="sid-modal-close"
-          aria-label="Tutup"
-        >
+        <button type="button" onClick={onClose} className="sid-modal-close" aria-label="Tutup">
           <X size={18} />
         </button>
 
+        {/* HEADER */}
 
-        {/* ======================================
-            HEADER
-        ====================================== */}
-
-        <h2 className="sid-modal-title">
-          Detail Permohonan Surat
-        </h2>
+        <h2 className="sid-modal-title">Detail Permohonan Surat</h2>
 
         <p className="sid-modal-subtitle">
-          #
-          {FIELD_MAP.noSurat(
-            data
-          )}
+          #{FIELD_MAP.noSurat(data)}
           {' · Surat saya'}
         </p>
 
+        {/* STATUS */}
 
-        {/* ======================================
-            STEPPER
-        ====================================== */}
+        <div className="mb-4">
+          <StatusBadge status={data.status} />
+        </div>
 
-        <ApprovalStepperRT
-          surat={data}
-        />
+        {/* GENERIC TRACKER */}
 
+        <GenericTracker status={data.status} />
 
-        {/* ======================================
-            DETAIL SURAT
-        ====================================== */}
+        {/* DETAIL SURAT */}
 
-        <DetailInfo
-          surat={data}
-        />
+        <DetailInfo surat={data} />
 
+        {/* ALASAN PENOLAKAN */}
 
-        {/* ======================================
-            KEPUTUSAN RT
-        ====================================== */}
+        <RejectionReason surat={data} />
 
-        <DecisionRT
-          surat={data}
-        />
+        {/* PREVIEW */}
 
+        <SuratPreview surat={data} />
 
-        {/* ======================================
-            PREVIEW
-        ====================================== */}
+        {/* KEMBALI */}
 
-        <SuratPreview
-          surat={data}
-        />
-
-
-        {/* ======================================
-            BUTTON KEMBALI
-        ====================================== */}
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="sid-modal-action back"
-        >
+        <button type="button" onClick={onClose} className="sid-modal-action back">
           <ChevronLeft size={16} />
           Kembali
         </button>
       </div>
     </div>
-  );
+  )
 }
