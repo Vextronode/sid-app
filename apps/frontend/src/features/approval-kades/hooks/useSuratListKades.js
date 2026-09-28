@@ -10,7 +10,9 @@ export function useSuratList({ initialStatus = '' } = {}) {
   const [loading, setLoading] = useState(false)
 
   const [search, setSearch] = useState('')
+
   const [filterJenis, setFilterJenis] = useState('')
+
   const [filterStatus, setFilterStatus] = useState(initialStatus)
 
   // ==========================================
@@ -97,7 +99,6 @@ export function useSuratList({ initialStatus = '' } = {}) {
 
   return {
     data,
-
     loading,
 
     search,

@@ -1,4 +1,3 @@
-
 // ==========================================
 // OperatorSuratPreviewModal.jsx
 // Modal khusus untuk melihat preview surat.
@@ -8,90 +7,79 @@
 // - Tidak ada download dari iframe
 // - Tidak ada print dari iframe
 // - Tombol "Cetak Surat" hanya aktif jika status
-//   surat sudah kasi_approved
 // ==========================================
 
-import { useEffect, useState } from "react";
-import { Printer } from "lucide-react";
+import { useEffect, useState } from 'react'
+import { Printer } from 'lucide-react'
 
-import {
-  previewSuratPDF,
-  generateSuratPDF,
-} from "@/features/cetak-surat/utils/generateSuratPDF";
+import { previewSuratPDF, generateSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import { SURAT_STATUS } from '@/constants/suratStatus'
 
-export default function OperatorSuratPreviewModal({
-  surat,
-  onClose,
-}) {
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [loadingPrint, setLoadingPrint] = useState(false);
+export default function OperatorSuratPreviewModal({ surat, onClose }) {
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const [loadingPrint, setLoadingPrint] = useState(false)
 
   useEffect(() => {
-    if (!surat) return;
+    if (!surat) return
 
-    let url = null;
-    let isMounted = true;
+    let url = null
+    let isMounted = true
 
     const loadPreview = async () => {
       try {
-        const blobUrl = await previewSuratPDF(surat);
+        const blobUrl = await previewSuratPDF(surat)
 
-        url = blobUrl;
+        url = blobUrl
 
         if (isMounted) {
-          setPreviewUrl(blobUrl);
+          setPreviewUrl(blobUrl)
         }
       } catch (error) {
-        console.error("Gagal preview PDF:", error);
+        console.error('Gagal preview PDF:', error)
 
         if (isMounted) {
-          setPreviewUrl(null);
+          setPreviewUrl(null)
         }
       }
-    };
+    }
 
-    loadPreview();
+    loadPreview()
 
     return () => {
-      isMounted = false;
+      isMounted = false
 
       if (url) {
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(url)
       }
-    };
-  }, [surat]);
+    }
+  }, [surat])
 
-  if (!surat) return null;
+  if (!surat) return null
 
   // ==========================================
-  // HANYA KASI APPROVED YANG BOLEH CETAK
+  //  YANG BOLEH CETAK
   // ==========================================
 
-  const bisaCetak = surat.status === "kasi_approved";
-
+  const bisaCetak = surat.status === SURAT_STATUS.APPROVED
   // ==========================================
   // CETAK SURAT
   // ==========================================
 
   const handleCetakSurat = async () => {
-    if (!bisaCetak || loadingPrint) return;
+    if (!bisaCetak || loadingPrint) return
 
-    setLoadingPrint(true);
+    setLoadingPrint(true)
 
     try {
-      await generateSuratPDF(surat);
+      await generateSuratPDF(surat)
     } catch (error) {
-      console.error("Gagal mencetak surat:", error);
+      console.error('Gagal mencetak surat:', error)
 
-      alert(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal membuka PDF surat."
-      );
+      alert(error.response?.data?.message || error.message || 'Gagal membuka PDF surat.')
     } finally {
-      setLoadingPrint(false);
+      setLoadingPrint(false)
     }
-  };
+  }
 
   return (
     <>
@@ -101,11 +89,7 @@ export default function OperatorSuratPreviewModal({
         <div className="sid-preview-modal">
           {/* CLOSE */}
 
-          <button
-            onClick={onClose}
-            className="sid-modal-close"
-            aria-label="Tutup"
-          >
+          <button onClick={onClose} className="sid-modal-close" aria-label="Tutup">
             ✕
           </button>
 
@@ -115,8 +99,7 @@ export default function OperatorSuratPreviewModal({
             <h2>Detail Permohonan Surat</h2>
 
             <p>
-              #{surat.letter_number ?? "-"} ·{" "}
-              {surat.letter_type?.name ?? "-"}
+              #{surat.letter_number ?? '-'} · {surat.letter_type?.name ?? '-'}
             </p>
           </div>
 
@@ -124,13 +107,9 @@ export default function OperatorSuratPreviewModal({
 
           {surat.notes && (
             <div className="sid-modal-note">
-              <p className="sid-modal-note-label">
-                Catatan Warga / Revisi
-              </p>
+              <p className="sid-modal-note-label">Catatan Warga / Revisi</p>
 
-              <p className="sid-modal-note-text">
-                {surat.notes}
-              </p>
+              <p className="sid-modal-note-text">{surat.notes}</p>
             </div>
           )}
 
@@ -140,10 +119,7 @@ export default function OperatorSuratPreviewModal({
             {previewUrl ? (
               <>
                 <iframe
-                  src={
-                    previewUrl +
-                    "#toolbar=0&navpanes=0&scrollbar=0"
-                  }
+                  src={previewUrl + '#toolbar=0&navpanes=0&scrollbar=0'}
                   title="Preview Surat"
                   className="sid-pdf-frame"
                 />
@@ -151,18 +127,15 @@ export default function OperatorSuratPreviewModal({
                 <div className="sid-pdf-overlay" />
               </>
             ) : (
-              <div className="sid-pdf-loading">
-                Memuat preview...
-              </div>
+              <div className="sid-pdf-loading">Memuat preview...</div>
             )}
           </div>
 
-          {/* INFO JIKA BELUM KASI APPROVED */}
+          {/* INFO JIKA BELUM APPROVED */}
 
           {!bisaCetak && (
             <div className="sid-warning-box">
-              Surat belum dapat dicetak. Menunggu persetujuan
-              dari operator terlebih dahulu.
+              Surat belum dapat dicetak. Menunggu persetujuan dari operator terlebih dahulu.
             </div>
           )}
 
@@ -175,13 +148,10 @@ export default function OperatorSuratPreviewModal({
           >
             <Printer size={16} />
 
-            {loadingPrint
-              ? "Membuka PDF..."
-              : "Cetak Surat"}
+            {loadingPrint ? 'Membuka PDF...' : 'Cetak Surat'}
           </button>
         </div>
       </div>
     </>
-  );
+  )
 }
-

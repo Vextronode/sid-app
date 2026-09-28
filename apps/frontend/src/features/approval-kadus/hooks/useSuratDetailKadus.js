@@ -12,43 +12,40 @@
 // Tidak ada aksi approve / reject.
 // ==========================================
 
-import { useEffect, useState } from "react";
-import { getSuratDetail } from "@/features/approval/api";
+import { useEffect, useState } from 'react'
+import { getSuratDetail } from '@/lib/api'
 
 export function useSuratDetailKadus(id) {
-  const [surat, setSurat] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [surat, setSurat] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
 
   // ==========================================
   // Fetch detail surat
   // ==========================================
 
   const fetchDetail = async () => {
-    if (!id) return;
+    if (!id) return
 
     try {
-      setIsLoading(true);
+      setIsLoading(true)
 
-      const response = await getSuratDetail(id, "kadus");
+      const response = await getSuratDetail(id)
 
-      setSurat(response.data.data);
-      setNotFound(false);
+      setSurat(response.data.data)
+      setNotFound(false)
     } catch (error) {
-      console.error(
-        "GET DETAIL KADUS ERROR:",
-        error.response?.data ?? error
-      );
+      console.error('GET DETAIL KADUS ERROR:', error.response?.data ?? error)
 
-      setSurat(null);
+      setSurat(null)
 
       if (error.response?.status === 404) {
-        setNotFound(true);
+        setNotFound(true)
       }
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   // ==========================================
   // Load ketika ID berubah
@@ -56,9 +53,9 @@ export function useSuratDetailKadus(id) {
 
   useEffect(() => {
     if (id) {
-      fetchDetail();
+      fetchDetail()
     }
-  }, [id]);
+  }, [id])
 
   // ==========================================
   // Return
@@ -69,5 +66,5 @@ export function useSuratDetailKadus(id) {
     isLoading,
     notFound,
     refresh: fetchDetail,
-  };
+  }
 }
