@@ -24,7 +24,7 @@ class RtFactory extends Factory
         return [
             'rw_id' => Rw::factory(),
             'village_id' => function (array $attributes) {
-                $rw = \App\Models\Rw::with('hamlet')->find($attributes['rw_id']);
+                $rw = Rw::with('hamlet')->find($attributes['rw_id']);
 
                 return $rw?->hamlet?->village_id
                     ?? Hamlet::factory()->create()->village_id;

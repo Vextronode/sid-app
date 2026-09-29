@@ -12,7 +12,7 @@ class VillageOrgPositionRepository
         //
     }
 
-    public function allForVillage(int $villageId, ?string $orgType = null): Collection
+    public function allForVillage(string $villageId, ?string $orgType = null): Collection
     {
         return VillageOrgPosition::query()
             ->where('village_id', $villageId)
@@ -28,7 +28,7 @@ class VillageOrgPositionRepository
         return VillageOrgPosition::query()->with('members')->findOrFail($id);
     }
 
-    public function findByIdForVillageOrFail(int $id, int $villageId): VillageOrgPosition
+    public function findByIdForVillageOrFail(int $id, string $villageId): VillageOrgPosition
     {
         return VillageOrgPosition::query()
             ->with(['members' => fn ($query) => $query->orderByDesc('started_at')])

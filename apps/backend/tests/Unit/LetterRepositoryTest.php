@@ -46,7 +46,10 @@ class LetterRepositoryTest extends TestCase
 
     public function test_find_returns_null_when_not_exists(): void
     {
-        $result = $this->repository->find(999999);
+        $missingLetter = Letter::factory()->create();
+        $missingLetter->delete();
+
+        $result = $this->repository->find($missingLetter->id);
 
         $this->assertNull($result);
     }
@@ -62,9 +65,12 @@ class LetterRepositoryTest extends TestCase
 
     public function test_find_or_fail_throws_when_not_exists(): void
     {
+        $missingLetter = Letter::factory()->create();
+        $missingLetter->delete();
+
         $this->expectException(ModelNotFoundException::class);
 
-        $this->repository->findOrFail(999999);
+        $this->repository->findOrFail($missingLetter->id);
     }
 
     public function test_find_with_approval_actor_for_show_eager_loads_relations(): void

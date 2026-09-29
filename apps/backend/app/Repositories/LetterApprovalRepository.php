@@ -16,7 +16,7 @@ class LetterApprovalRepository
             ->first();
     }
 
-    public function updateApprovedBy(LetterApproval $approval, int $userId): LetterApproval
+    public function updateApprovedBy(LetterApproval $approval, string $userId): LetterApproval
     {
         $approval->update([
             'approved_by' => $userId,
@@ -25,7 +25,7 @@ class LetterApprovalRepository
         return $approval;
     }
 
-    public function updateApprovedByAndStatus(LetterApproval $approval, int $userId, string $status): LetterApproval
+    public function updateApprovedByAndStatus(LetterApproval $approval, string $userId, string $status): LetterApproval
     {
         $approval->update([
             'approved_by' => $userId,

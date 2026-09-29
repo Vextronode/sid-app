@@ -70,6 +70,9 @@ class AuthServiceTest extends TestCase
             'village_id' => $village->id,
             'nik' => '3201012345670002',
         ]);
+        $otherCitizen = Citizen::factory()->create([
+            'village_id' => $otherVillage->id,
+        ]);
 
         $user = $this->service->registerWarga([
             'nik' => '3201012345670002',
@@ -80,7 +83,7 @@ class AuthServiceTest extends TestCase
             // seandainya lolos sampai sini (array mentah), harus tetap
             // diabaikan oleh Service.
             'village_id' => $otherVillage->id,
-            'citizen_id' => 99999,
+            'citizen_id' => $otherCitizen->id,
             'role' => 'petugas_desa',
         ]);
 

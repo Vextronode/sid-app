@@ -31,8 +31,8 @@ return new class extends Migration
             // karena families dibuat setelah citizens secara kronologis.
             $table->uuid('family_id')->nullable();
             $table->enum('family_role', ['kepala_keluarga', 'istri', 'suami', 'anak', 'famili_lain'])->nullable();
-            $table->foreignUuid('father_id')->nullable()->constrained('citizens')->nullOnDelete();
-            $table->foreignUuid('mother_id')->nullable()->constrained('citizens')->nullOnDelete();
+            $table->uuid('father_id')->nullable();
+            $table->uuid('mother_id')->nullable();
             $table->string('father_name_text')->nullable();
             $table->string('mother_name_text')->nullable();
 
@@ -52,6 +52,11 @@ return new class extends Migration
 
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+        });
+
+        Schema::table('citizens', function (Blueprint $table) {
+            $table->foreign('father_id')->references('id')->on('citizens')->nullOnDelete();
+            $table->foreign('mother_id')->references('id')->on('citizens')->nullOnDelete();
         });
     }
 
