@@ -20,6 +20,7 @@ class LetterStatusLogResource extends JsonResource
             'old_status' => $this->old_status,
             'new_status' => $this->new_status,
             'notes' => $this->reason,
+            'ip_address' => $this->ip_address,
             'created_at' => $this->created_at,
         ];
     }

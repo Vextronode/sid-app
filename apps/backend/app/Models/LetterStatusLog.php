@@ -13,6 +13,8 @@ class LetterStatusLog extends Model
         'old_status',
         'new_status',
         'reason',
+        'ip_address',
+        'user_agent',
     ];
 
     protected $casts = [
@@ -34,5 +36,18 @@ class LetterStatusLog extends Model
     public function isRejection()
     {
         return $this->new_status?->isRejected() ?? false;
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (LetterStatusLog $log) {
+            if ($log->ip_address === null) {
+                $log->ip_address = request()->ip();
+            }
+
+            if ($log->user_agent === null) {
+                $log->user_agent = request()->userAgent();
+            }
+        });
     }
 }

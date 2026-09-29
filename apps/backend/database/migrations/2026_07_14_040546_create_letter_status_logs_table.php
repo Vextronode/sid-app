@@ -30,6 +30,8 @@ return new class extends Migration
                 'rejected',
             ]);
             $table->text('reason')->nullable();
+            $table->string('ip_address', 45)->nullable()->after('reason'); // IPv4 & IPv6
+            $table->text('user_agent')->nullable()->after('ip_address');
             $table->timestamps();
 
             $table->index('letter_id', 'idx_logs_letter');
