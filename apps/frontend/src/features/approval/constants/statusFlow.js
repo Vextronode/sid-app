@@ -61,7 +61,7 @@ export function getCurrentFlowStep(surat) {
 // GET APPROVAL HISTORY PER STEP
 // ==========================================
 
-function getLatestApprovalForStep(approvals, stepId) {
+export function getLatestApprovalForStep(approvals = [], stepId) {
   const histories = approvals
     .filter((approval) => Number(approval?.flow_step_id) === Number(stepId) && approval?.action)
     .sort((a, b) => new Date(a?.created_at ?? 0) - new Date(b?.created_at ?? 0))

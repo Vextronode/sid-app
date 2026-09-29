@@ -11,18 +11,24 @@
 // - kepala_desa -> Kades
 // - sekretaris_desa -> dinormalisasi menjadi kepala_desa
 //
+// Histori approval:
+// - Dibaca dari surat.approvals
+// - Kades = flow_step_id 2
+//
 // Styling mengikuti pola SuratDetailModalRT.
 // ==========================================
 
 import { Eye } from 'lucide-react'
+
 import ApprovalStepper from '@/features/approval/components/ApprovalStepper'
+import { getLatestApprovalForStep } from '@/features/approval/constants/statusFlow'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
-import { useSuratDetail } from '../hooks/useSuratDetailKades'
 import ApprovalStepRenderer from '@/features/approval/components/ApprovalStepRenderer'
+import { useSuratDetail } from '../hooks/useSuratDetailKades'
 
 // ==========================================
 // FIELD MAP
@@ -44,8 +50,18 @@ const FIELD_MAP = {
   diajukan: (s) => (s?.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
 
   terakhirDiproses: (s) => (s?.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
+}
 
-  riwayat: (s) => s?.decisions ?? [],
+// ==========================================
+// HELPER
+// ==========================================
+
+function getApproverName(approval) {
+  return approval?.approved_by_user?.name ?? approval?.approved_by ?? '-'
+}
+
+function getApprovalNotes(approval) {
+  return approval?.notes ?? 'Tidak ada catatan.'
 }
 
 // ==========================================
@@ -72,9 +88,16 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
   const approverPosition =
     user?.role === 'kepala_desa' || user?.role === 'sekretaris_desa' ? 'kepala_desa' : null
 
-  // ApprovalStepRenderer menggunakan exact match
-  // antara approverPosition dan currentUserRole.
   const currentUserRole = approverPosition
+
+  // ==========================================
+  // RIWAYAT KEPUTUSAN KADES
+  //
+  // letter_approvals:
+  // flow_step_id 2 = Kades
+  // ==========================================
+
+  const keputusanKades = surat ? getLatestApprovalForStep(surat.approvals, 2) : null
 
   // ==========================================
   // INFO SURAT
@@ -112,22 +135,6 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
         },
       ]
     : []
-
-  // ==========================================
-  // KEPUTUSAN KADES
-  // ==========================================
-
-  const keputusanKades = surat
-    ? FIELD_MAP.riwayat(surat).find(
-        (decision) =>
-          decision.stage === 'kades' ||
-          decision.stage === 'kepala_desa' ||
-          decision.tahap === 'KADES' ||
-          decision.tahap === 'KEPALA DESA' ||
-          decision.approval_level === 'kades' ||
-          decision.approval_level === 'kepala_desa',
-      )
-    : null
 
   // ==========================================
   // APPROVE CALLBACK
@@ -186,7 +193,9 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
               #{FIELD_MAP.noSurat(surat)}
               {' · Kepala Desa'}
             </p>
+
             <ApprovalStepper surat={surat} />
+
             {/* ==================================
                 STATUS
             ================================== */}
@@ -216,7 +225,7 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
             {keputusanKades && (
               <div
                 className={`sid-decision-box ${
-                  keputusanKades.status === 'rejected' ? 'rejected' : 'approved'
+                  keputusanKades.action === 'rejected' ? 'rejected' : 'approved'
                 }`}
               >
                 <div className="sid-decision-header">
@@ -224,54 +233,30 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
 
                   <span
                     className={`sid-decision-badge ${
-                      keputusanKades.status === 'rejected' ? 'rejected' : 'approved'
+                      keputusanKades.action === 'rejected' ? 'rejected' : 'approved'
                     }`}
                   >
-                    {keputusanKades.status === 'rejected' ? 'DITOLAK' : 'DISETUJUI'}
+                    {keputusanKades.action === 'rejected' ? 'DITOLAK' : 'DISETUJUI'}
                   </span>
                 </div>
 
                 <div className="sid-decision-meta">
-                  diputuskan oleh{' '}
-                  <strong>
-                    {keputusanKades.actor_name ??
-                      keputusanKades.decided_by ??
-                      keputusanKades.approved_by_name ??
-                      '-'}
-                  </strong>
+                  diputuskan oleh <strong>{getApproverName(keputusanKades)}</strong>
                 </div>
 
-                <div className="sid-decision-meta">
-                  IP <strong>{keputusanKades.ip_address ?? '-'}</strong>
-                </div>
-
-                {/* ==================================
-                    CATATAN PENOLAKAN
-                ================================== */}
-
-                {keputusanKades.status === 'rejected' && (
+                {keputusanKades.action === 'rejected' && (
                   <>
                     <p className="sid-decision-comment-label">Komentar Penolakan</p>
 
                     <div className="sid-decision-comment rejected">
-                      {keputusanKades.notes ??
-                        keputusanKades.reason ??
-                        surat.notes ??
-                        'Tidak ada catatan.'}
+                      {getApprovalNotes(keputusanKades)}
                     </div>
                   </>
                 )}
 
-                {/* ==================================
-                    CATATAN PERSETUJUAN
-                ================================== */}
-
-                {keputusanKades.status === 'approved' && (
+                {keputusanKades.action === 'approved' && (
                   <div className="sid-decision-comment approved">
-                    {keputusanKades.notes ??
-                      keputusanKades.reason ??
-                      surat.notes ??
-                      'Tidak ada catatan.'}
+                    {getApprovalNotes(keputusanKades)}
                   </div>
                 )}
               </div>
