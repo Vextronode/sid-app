@@ -6,7 +6,7 @@ use App\Models\Village;
 
 class VillageRepository
 {
-    public function findById(int $id): ?Village
+    public function findById(string $id): ?Village
     {
         return Village::query()->find($id);
     }
