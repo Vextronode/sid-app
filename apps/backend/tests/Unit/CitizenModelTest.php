@@ -39,8 +39,8 @@ class CitizenModelTest extends TestCase
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $hamlet = Hamlet::create(['village_id' => $village->id, 'name' => 'Cibenda', 'code' => 'CBD01', 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
-        $rt = Rt::create(['rw_id' => $rw->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        $rt = Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
 
         return [
             'village_id' => $village->id,

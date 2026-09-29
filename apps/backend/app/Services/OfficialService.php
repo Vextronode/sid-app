@@ -155,7 +155,7 @@ class OfficialService
      *
      * @return Collection<int, Official>
      */
-    public function resolveVillageMonitoringOfficials(int $villageId): Collection
+    public function resolveVillageMonitoringOfficials(string $villageId): Collection
     {
         return $this->officialRepository
             ->allActiveByPositionsAndVillage(['kepala_desa', 'sekdes'], $villageId)

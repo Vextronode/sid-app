@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Hamlet;
 use App\Models\Rt;
 use App\Models\Rw;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -22,6 +23,12 @@ class RtFactory extends Factory
 
         return [
             'rw_id' => Rw::factory(),
+            'village_id' => function (array $attributes) {
+                $rw = Rw::with('hamlet')->find($attributes['rw_id']);
+
+                return $rw?->hamlet?->village_id
+                    ?? Hamlet::factory()->create()->village_id;
+            },
             'number' => (string) $number,
             'full_label' => 'RT '.str_pad((string) $number, 3, '0', STR_PAD_LEFT),
             'is_active' => true,

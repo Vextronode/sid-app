@@ -12,7 +12,7 @@ class UserRepository
         //
     }
 
-    public function findByCitizenId(int $citizenId): ?User
+    public function findByCitizenId(string $citizenId): ?User
     {
         return User::query()->where('citizen_id', $citizenId)->first();
     }
@@ -49,7 +49,7 @@ class UserRepository
         return $user;
     }
 
-    public function updateRole(int $userId, string $role): void
+    public function updateRole(string $userId, string $role): void
     {
         User::query()->whereKey($userId)->update(['role' => $role]);
     }

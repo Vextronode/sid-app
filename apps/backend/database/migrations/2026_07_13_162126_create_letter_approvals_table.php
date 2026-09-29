@@ -11,11 +11,11 @@ return new class extends Migration
         Schema::create('letter_approvals', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('letter_id')
+            $table->foreignUuid('letter_id')
                 ->constrained('letters')
                 ->cascadeOnDelete();
 
-            $table->foreignId('approved_by')
+            $table->foreignUuid('approved_by')
                 ->nullable()
                 ->constrained('users')
                 ->restrictOnDelete();

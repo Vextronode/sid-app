@@ -40,7 +40,7 @@ class ApprovalSettingService
      * level & desa tertentu", menggantikan hardcode now()->addDays(n)
      * yang sebelumnya tersebar di LetterService/RtApprovalService.
      */
-    public function resolveDeadline(string $approvalLevel, int $villageId): Carbon
+    public function resolveDeadline(string $approvalLevel, string $villageId): Carbon
     {
         $setting = $this->repository->findByLevelAndVillage($approvalLevel, $villageId);
 

@@ -14,6 +14,7 @@ class Rw extends Model
     protected $fillable = [
         'number',
         'hamlet_id',
+        'village_id',
         'full_label',
         'is_active',
     ];
@@ -25,6 +26,11 @@ class Rw extends Model
     public function hamlet(): BelongsTo
     {
         return $this->belongsTo(Hamlet::class);
+    }
+
+    public function village(): BelongsTo
+    {
+        return $this->belongsTo(Village::class);
     }
 
     public function rts(): HasMany

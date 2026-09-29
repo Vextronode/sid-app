@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('village_org_positions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('village_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('village_id')->constrained()->cascadeOnDelete();
             $table->enum('org_type', [
                 'bpd',
                 'bumdes',

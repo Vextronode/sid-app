@@ -27,7 +27,7 @@ class FamilyRepository
             ->get();
     }
 
-    public function findById(int $id): ?Family
+    public function findById(string $id): ?Family
     {
         return Family::query()
             ->with(array_filter([

@@ -19,7 +19,7 @@ class FamilyService
         return $this->familyRepository->allWithWilayah();
     }
 
-    public function find(int $id): Family
+    public function find(string $id): Family
     {
         $family = $this->familyRepository->findById($id);
 

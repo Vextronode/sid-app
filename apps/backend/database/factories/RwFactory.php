@@ -22,6 +22,10 @@ class RwFactory extends Factory
 
         return [
             'hamlet_id' => Hamlet::factory(),
+            'village_id' => function (array $attributes) {
+                return Hamlet::find($attributes['hamlet_id'])?->village_id
+                    ?? Hamlet::factory()->create()->village_id;
+            },
             'number' => (string) $number,
             'full_label' => 'RW '.str_pad((string) $number, 3, '0', STR_PAD_LEFT),
             'is_active' => true,

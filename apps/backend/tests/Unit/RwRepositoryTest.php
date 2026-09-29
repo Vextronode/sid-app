@@ -50,6 +50,7 @@ class RwRepositoryTest extends TestCase
 
         $rw = $this->repository->create([
             'hamlet_id' => $hamlet->id,
+            'village_id' => $hamlet->village_id,
             'number' => '001',
             'full_label' => 'RW 001',
             'is_active' => true,

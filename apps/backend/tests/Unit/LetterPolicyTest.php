@@ -7,6 +7,7 @@ use App\Models\Letter;
 use App\Models\Official;
 use App\Models\Rt;
 use App\Models\User;
+use App\Models\Village;
 use App\Policies\LetterPolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -157,12 +158,13 @@ class LetterPolicyTest extends TestCase
     public function test_view_forbidden_for_village_scoped_role_in_different_village(string $role): void
     {
         $letter = Letter::factory()->create();
+        $otherVillage = Village::factory()->create();
 
         $user = User::factory()->create(['role' => $role]);
         Official::factory()->create([
             'user_id' => $user->id,
             'position' => $role === 'sekretaris_desa' ? 'sekdes' : $role,
-            'village_id' => $letter->village_id + 1,
+            'village_id' => $otherVillage->id,
             'is_active' => true,
         ]);
 
