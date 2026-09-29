@@ -12,6 +12,7 @@
 
 import { Eye } from 'lucide-react'
 import ApprovalStepper from '@/features/approval/components/ApprovalStepper'
+import { getLatestApprovalForStep } from '@/features/approval/constants/statusFlow'
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 
 import { useSuratDetail } from '../hooks/useSuratDetailRW'
@@ -37,7 +38,7 @@ const FIELD_MAP = {
 
   terakhirDiproses: (s) => (s?.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
 
-  riwayat: (s) => s?.decisions ?? [],
+  riwayat: (s) => s?.approvals ?? [],
 }
 
 // ==========================================
@@ -59,12 +60,7 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
   // KEPUTUSAN RT
   // ==========================================
 
-  const keputusanRT = surat
-    ? FIELD_MAP.riwayat(surat).find(
-        (decision) =>
-          decision.stage === 'rt' || decision.tahap === 'RT' || decision.approval_level === 'rt',
-      )
-    : null
+  const keputusanRT = surat ? getLatestApprovalForStep(surat.approvals, 1) : null
 
   // ==========================================
   // INFO SURAT
@@ -160,7 +156,7 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
             {keputusanRT && (
               <div
                 className={`sid-decision-box ${
-                  keputusanRT.status === 'rejected' ? 'rejected' : 'approved'
+                  keputusanRT.action === 'rejected' ? 'rejected' : 'approved'
                 }`}
               >
                 <div className="sid-decision-header">
@@ -168,10 +164,10 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
 
                   <span
                     className={`sid-decision-badge ${
-                      keputusanRT.status === 'rejected' ? 'rejected' : 'approved'
+                      keputusanRT.action === 'rejected' ? 'rejected' : 'approved'
                     }`}
                   >
-                    {keputusanRT.status === 'rejected' ? 'Ditolak' : 'Disetujui'}
+                    {keputusanRT.action === 'rejected' ? 'Ditolak' : 'Disetujui'}
                   </span>
                 </div>
 
@@ -180,20 +176,17 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
                   <strong>
                     {keputusanRT.actor_name ??
                       keputusanRT.decided_by ??
-                      keputusanRT.approved_by_name ??
+                      keputusanRT.approved_by_user?.name ??
+                      keputusanRT.approved_by ??
                       '-'}
                   </strong>
-                </div>
-
-                <div className="sid-decision-meta">
-                  IP <strong>{keputusanRT.ip_address ?? '-'}</strong>
                 </div>
 
                 {/* ==================================
                     CATATAN PENOLAKAN
                 ================================== */}
 
-                {keputusanRT.status === 'rejected' && (
+                {keputusanRT.action === 'rejected' && (
                   <>
                     <p className="sid-decision-comment-label">Komentar Penolakan</p>
 
@@ -210,7 +203,7 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
                     CATATAN PERSETUJUAN
                 ================================== */}
 
-                {keputusanRT.status === 'approved' && (
+                {keputusanRT.action === 'approved' && (
                   <div className="sid-decision-comment approved">
                     {keputusanRT.notes ?? keputusanRT.reason ?? surat.notes ?? 'Tidak ada catatan.'}
                   </div>

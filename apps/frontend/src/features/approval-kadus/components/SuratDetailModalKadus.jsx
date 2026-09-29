@@ -10,12 +10,18 @@
 // Workflow monitoring:
 // Pengajuan -> RT -> Kades -> Selesai
 //
+// Histori approval:
+// - Dibaca dari surat.approvals
+// - RT    = flow_step_id 1
+// - Kades = flow_step_id 2
+//
 // Styling menggunakan SID Global Theme.
 // ==========================================
 
 import { Eye } from 'lucide-react'
 
 import ApprovalStepper from '@/features/approval/components/ApprovalStepper'
+import { getLatestApprovalForStep } from '@/features/approval/constants/statusFlow'
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 
 import { useSuratDetailKadus } from '../hooks/useSuratDetailKadus'
@@ -40,8 +46,18 @@ const FIELD_MAP = {
   diajukan: (s) => (s?.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
 
   terakhirDiproses: (s) => (s?.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
+}
 
-  riwayat: (s) => s?.decisions ?? [],
+// ==========================================
+// HELPER
+// ==========================================
+
+function getApproverName(approval) {
+  return approval?.approved_by_user?.name ?? approval?.approved_by ?? '-'
+}
+
+function getApprovalNotes(approval) {
+  return approval?.notes ?? 'Tidak ada catatan.'
 }
 
 // ==========================================
@@ -60,45 +76,16 @@ export default function SuratDetailModalKadus({ suratId, onClose }) {
   }
 
   // ==========================================
-  // RIWAYAT KEPUTUSAN
-  // ==========================================
-
-  const riwayat = surat ? FIELD_MAP.riwayat(surat) : []
-
-  // ==========================================
-  // KEPUTUSAN RT
-  // ==========================================
-
-  const keputusanRT = surat
-    ? riwayat.find((r) => r.stage === 'rt' || r.tahap === 'RT' || r.approval_level === 'rt')
-    : null
-
-  // ==========================================
-  // KEPUTUSAN KADES
-  // ==========================================
-
-  const keputusanKades = surat
-    ? riwayat.find(
-        (r) =>
-          r.stage === 'kades' ||
-          r.stage === 'kepala_desa' ||
-          r.tahap === 'KADES' ||
-          r.tahap === 'KEPALA DESA' ||
-          r.approval_level === 'kades' ||
-          r.approval_level === 'kepala_desa',
-      )
-    : null
-
-  // ==========================================
-  // KEPUTUSAN RW
+  // RIWAYAT APPROVAL
   //
-  // Dipertahankan untuk membaca histori lama
-  // jika masih ada data approval RW.
+  // letter_approvals:
+  // flow_step_id 1 = RT
+  // flow_step_id 2 = Kades
   // ==========================================
 
-  const keputusanRW = surat
-    ? riwayat.find((r) => r.stage === 'rw' || r.tahap === 'RW' || r.approval_level === 'rw')
-    : null
+  const keputusanRT = surat ? getLatestApprovalForStep(surat.approvals, 1) : null
+
+  const keputusanKades = surat ? getLatestApprovalForStep(surat.approvals, 2) : null
 
   // ==========================================
   // INFO SURAT
@@ -200,7 +187,7 @@ export default function SuratDetailModalKadus({ suratId, onClose }) {
             {keputusanRT && (
               <div
                 className={`sid-decision-box ${
-                  keputusanRT.status === 'rejected' ? 'rejected' : 'approved'
+                  keputusanRT.action === 'rejected' ? 'rejected' : 'approved'
                 }`}
               >
                 <div className="sid-decision-header">
@@ -208,43 +195,30 @@ export default function SuratDetailModalKadus({ suratId, onClose }) {
 
                   <span
                     className={`sid-decision-badge ${
-                      keputusanRT.status === 'rejected' ? 'rejected' : 'approved'
+                      keputusanRT.action === 'rejected' ? 'rejected' : 'approved'
                     }`}
                   >
-                    {keputusanRT.status === 'rejected' ? 'Ditolak' : 'Disetujui'}
+                    {keputusanRT.action === 'rejected' ? 'Ditolak' : 'Disetujui'}
                   </span>
                 </div>
 
                 <div className="sid-decision-meta">
-                  diputuskan oleh{' '}
-                  <strong>
-                    {keputusanRT.actor_name ??
-                      keputusanRT.decided_by ??
-                      keputusanRT.approved_by_name ??
-                      '-'}
-                  </strong>
+                  diputuskan oleh <strong>{getApproverName(keputusanRT)}</strong>
                 </div>
 
-                <div className="sid-decision-meta">
-                  IP <strong>{keputusanRT.ip_address ?? '-'}</strong>
-                </div>
-
-                {keputusanRT.status === 'rejected' && (
+                {keputusanRT.action === 'rejected' && (
                   <>
                     <p className="sid-decision-comment-label">Komentar Penolakan</p>
 
                     <div className="sid-decision-comment rejected">
-                      {keputusanRT.notes ??
-                        keputusanRT.reason ??
-                        surat.notes ??
-                        'Tidak ada catatan.'}
+                      {getApprovalNotes(keputusanRT)}
                     </div>
                   </>
                 )}
 
-                {keputusanRT.status === 'approved' && (
+                {keputusanRT.action === 'approved' && (
                   <div className="sid-decision-comment approved">
-                    {keputusanRT.notes ?? keputusanRT.reason ?? surat.notes ?? 'Tidak ada catatan.'}
+                    {getApprovalNotes(keputusanRT)}
                   </div>
                 )}
               </div>
@@ -257,7 +231,7 @@ export default function SuratDetailModalKadus({ suratId, onClose }) {
             {keputusanKades && (
               <div
                 className={`sid-decision-box ${
-                  keputusanKades.status === 'rejected' ? 'rejected' : 'approved'
+                  keputusanKades.action === 'rejected' ? 'rejected' : 'approved'
                 }`}
               >
                 <div className="sid-decision-header">
@@ -265,104 +239,30 @@ export default function SuratDetailModalKadus({ suratId, onClose }) {
 
                   <span
                     className={`sid-decision-badge ${
-                      keputusanKades.status === 'rejected' ? 'rejected' : 'approved'
+                      keputusanKades.action === 'rejected' ? 'rejected' : 'approved'
                     }`}
                   >
-                    {keputusanKades.status === 'rejected' ? 'Ditolak' : 'Disetujui'}
+                    {keputusanKades.action === 'rejected' ? 'Ditolak' : 'Disetujui'}
                   </span>
                 </div>
 
                 <div className="sid-decision-meta">
-                  diputuskan oleh{' '}
-                  <strong>
-                    {keputusanKades.actor_name ??
-                      keputusanKades.decided_by ??
-                      keputusanKades.approved_by_name ??
-                      '-'}
-                  </strong>
+                  diputuskan oleh <strong>{getApproverName(keputusanKades)}</strong>
                 </div>
 
-                <div className="sid-decision-meta">
-                  IP <strong>{keputusanKades.ip_address ?? '-'}</strong>
-                </div>
-
-                {keputusanKades.status === 'rejected' && (
+                {keputusanKades.action === 'rejected' && (
                   <>
                     <p className="sid-decision-comment-label">Komentar Penolakan</p>
 
                     <div className="sid-decision-comment rejected">
-                      {keputusanKades.notes ??
-                        keputusanKades.reason ??
-                        surat.notes ??
-                        'Tidak ada catatan.'}
+                      {getApprovalNotes(keputusanKades)}
                     </div>
                   </>
                 )}
 
-                {keputusanKades.status === 'approved' && (
+                {keputusanKades.action === 'approved' && (
                   <div className="sid-decision-comment approved">
-                    {keputusanKades.notes ??
-                      keputusanKades.reason ??
-                      surat.notes ??
-                      'Tidak ada catatan.'}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ==================================
-                KEPUTUSAN RW
-                Histori lama jika tersedia
-            ================================== */}
-
-            {keputusanRW && (
-              <div
-                className={`sid-decision-box ${
-                  keputusanRW.status === 'rejected' ? 'rejected' : 'approved'
-                }`}
-              >
-                <div className="sid-decision-header">
-                  <p className="sid-decision-title">Keputusan RW</p>
-
-                  <span
-                    className={`sid-decision-badge ${
-                      keputusanRW.status === 'rejected' ? 'rejected' : 'approved'
-                    }`}
-                  >
-                    {keputusanRW.status === 'rejected' ? 'Ditolak' : 'Disetujui'}
-                  </span>
-                </div>
-
-                <div className="sid-decision-meta">
-                  diputuskan oleh{' '}
-                  <strong>
-                    {keputusanRW.actor_name ??
-                      keputusanRW.decided_by ??
-                      keputusanRW.approved_by_name ??
-                      '-'}
-                  </strong>
-                </div>
-
-                <div className="sid-decision-meta">
-                  IP <strong>{keputusanRW.ip_address ?? '-'}</strong>
-                </div>
-
-                {keputusanRW.status === 'rejected' && (
-                  <>
-                    <p className="sid-decision-comment-label">Komentar Penolakan</p>
-
-                    <div className="sid-decision-comment rejected">
-                      {keputusanRW.notes ??
-                        keputusanRW.reason ??
-                        surat.notes ??
-                        'Tidak ada catatan.'}
-                    </div>
-                  </>
-                )}
-
-                {keputusanRW.status === 'approved' && (
-                  <div className="sid-decision-comment approved">
-                    {keputusanRW.notes ?? keputusanRW.reason ?? surat.notes ?? 'Tidak ada catatan.'}
+                    {getApprovalNotes(keputusanKades)}
                   </div>
                 )}
               </div>

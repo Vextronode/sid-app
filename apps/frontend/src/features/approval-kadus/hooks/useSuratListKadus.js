@@ -21,8 +21,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
-import { getKadusLetters } from '../api'
-
+import { getSuratList } from '@/lib/api'
 import { RELEVANT_STATUSES } from '@/constants/suratStatus'
 
 // ==========================================
@@ -45,7 +44,7 @@ export function useSuratList({ initialStatus = '' } = {}) {
     try {
       setLoading(true)
 
-      const response = await getKadusLetters()
+      const response = await getSuratList()
 
       setLetters(Array.isArray(response.data?.data) ? response.data.data : [])
     } catch (error) {

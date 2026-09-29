@@ -35,7 +35,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { useSuratList } from '@/features/approval-rt/hooks/useSuratList'
-import { useApprovalAction } from '@/features/approval-rt/hooks/useApprovalAction'
 
 import SuratDetailModalRT from '@/features/approval-rt/components/SuratDetailModalRT'
 
@@ -67,8 +66,6 @@ export default function RTListPage() {
       initialStatus,
     },
   )
-
-  const { approve, reject } = useApprovalAction()
 
   // ==========================================
   // AUTO REFRESH DATA SURAT
@@ -108,14 +105,12 @@ export default function RTListPage() {
 
   const handleApprove = async () => {
     try {
-      await approve(selectedId)
-
       await refresh()
 
       setSelectedId(null)
       setIsReadOnly(false)
     } catch (error) {
-      console.error('Gagal approve surat:', error)
+      console.error('Gagal refresh daftar surat:', error)
     }
   }
 
@@ -123,16 +118,14 @@ export default function RTListPage() {
   // REJECT
   // ==========================================
 
-  const handleReject = async (alasan) => {
+  const handleReject = async () => {
     try {
-      await reject(selectedId, alasan)
-
       await refresh()
 
       setSelectedId(null)
       setIsReadOnly(false)
     } catch (error) {
-      console.error('Gagal reject surat:', error)
+      console.error('Gagal refresh daftar surat:', error)
     }
   }
 
@@ -143,7 +136,11 @@ export default function RTListPage() {
   const handleOpenDetail = (surat) => {
     setSelectedId(surat.id)
 
-    setIsReadOnly(surat.status !== SURAT_STATUS.PENDING)
+    const canProcessAtRt =
+      [SURAT_STATUS.PENDING, SURAT_STATUS.IN_PROGRESS].includes(surat.status) &&
+      surat.current_step_order === 1
+
+    setIsReadOnly(!canProcessAtRt)
   }
 
   // ==========================================
