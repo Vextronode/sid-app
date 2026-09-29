@@ -14,10 +14,11 @@ return new class extends Migration
         Schema::create('hamlets', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('code')->unique();
+            $table->string('code');
             $table->boolean('is_active')->default(true);
             $table->foreignId('village_id')->constrained('villages')->onDelete('cascade');
             $table->timestamps();
+            $table->unique(['village_id', 'code']);
         });
     }
 
