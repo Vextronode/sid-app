@@ -25,6 +25,7 @@ class LetterApprovalResource extends JsonResource
             'deadline_at' => $this->deadline_at,
             'reminded_at' => $this->reminded_at,
             'created_at' => $this->created_at,
+            'approver_name' => $this->whenLoaded('approvedBy', fn () => $this->approvedBy?->name),
             'approved_by_user' => new UserResource($this->whenLoaded('approvedBy')),
         ];
     }
