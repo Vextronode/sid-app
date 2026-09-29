@@ -81,27 +81,29 @@ class LetterRepository
         $letter->statusLogs()->create($data);
     }
 
-    public function updateApprovalsByLevel(Letter $letter, string $level, array $data, bool $onlyPending = false): int
-    {
-        $query = $letter->approvals()->where('approval_level', $level);
-
-        if ($onlyPending) {
-            $query->whereNull('approved_by');
-        }
-
-        return $query->update($data);
-    }
-
-    public function findWithDetailForApproval(int $id): Letter
-    {
-        return Letter::query()
-            ->with([
-                'citizen.user',
-                'letterType',
-                'approvals.approvedBy:id,name',
-            ])
-            ->findOrFail($id);
-    }
+//    public function updateApprovalsByLevel(Letter $letter, string $level, array $data, bool $onlyPending = false): int
+//    {
+//        $query = $letter->approvals()->where('approval_level', $level);
+//
+//        if ($onlyPending) {
+//            $query->whereNull('approved_by');
+//        }
+//
+//        return $query->update($data);
+//    }
+//
+//    public function findWithDetailForApproval(int $id): Letter
+//    {
+//        return Letter::query()
+//            ->with([
+//                'citizen.user',
+//                'letterType',
+//                'approvals.approvedBy:id,name',
+//                'flow.steps',
+//                'statusLogs.actor:id,name',
+//            ])
+//            ->findOrFail($id);
+//    }
 
     public function loadDetailForApproval(Letter $letter): Letter
     {
@@ -109,6 +111,8 @@ class LetterRepository
             'citizen.user',
             'letterType',
             'approvals.approvedBy:id,name',
+            'flow.steps',
+            'statusLogs.actor:id,name',
         ]);
     }
 
@@ -118,6 +122,8 @@ class LetterRepository
             'citizen.rt',
             'letterType',
             'approvals.approvedBy:id,name',
+            'flow.steps',
+            'statusLogs.actor:id,name',
         ]);
     }
 
@@ -142,33 +148,33 @@ class LetterRepository
      * tertentu, lewat relasi citizen.rt.rw_id. Saat ini jalur RW FYI
      * memakai queryByCitizenRw() agar seluruh histori status ikut terbaca.
      */
-    public function queryByStatusesAndCitizenRw(array $statuses, int $rwId): Builder
-    {
-        return Letter::query()
-            ->whereIn('status', $statuses)
-            ->whereHas('citizen.rt', fn (Builder $q) => $q->where('rw_id', $rwId))
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals.approvedBy:id,name',
-            ]);
-    }
-
-    /**
-     * Query surat berstatus tertentu yang discope ke sebuah village
-     * (dipakai Kadus/Kasi approval yang tidak berbasis RT/RW).
-     */
-    public function queryByStatusesAndVillage(array $statuses, int $villageId): Builder
-    {
-        return Letter::query()
-            ->whereIn('status', $statuses)
-            ->where('village_id', $villageId)
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals.approvedBy:id,name',
-            ]);
-    }
+//    public function queryByStatusesAndCitizenRw(array $statuses, int $rwId): Builder
+//    {
+//        return Letter::query()
+//            ->whereIn('status', $statuses)
+//            ->whereHas('citizen.rt', fn (Builder $q) => $q->where('rw_id', $rwId))
+//            ->with([
+//                'citizen',
+//                'letterType',
+//                'approvals.approvedBy:id,name',
+//            ]);
+//    }
+//
+//    /**
+//     * Query surat berstatus tertentu yang discope ke sebuah village
+//     * (dipakai Kadus/Kasi approval yang tidak berbasis RT/RW).
+//     */
+//    public function queryByStatusesAndVillage(array $statuses, int $villageId): Builder
+//    {
+//        return Letter::query()
+//            ->whereIn('status', $statuses)
+//            ->where('village_id', $villageId)
+//            ->with([
+//                'citizen',
+//                'letterType',
+//                'approvals.approvedBy:id,name',
+//            ]);
+//    }
 
     /**
      * Surat yang SEDANG BERADA di step approval dengan
@@ -295,6 +301,8 @@ class LetterRepository
             ->with([
                 'letterType:id,name,code',
                 'approvals.approvedBy:id,name',
+                'flow.steps',
+                'statusLogs.actor:id,name',
             ])
             ->findOrFail($id);
     }
