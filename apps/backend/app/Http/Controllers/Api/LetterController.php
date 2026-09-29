@@ -47,7 +47,7 @@ class LetterController extends Controller
 
     public function show($id)
     {
-        $letter = $this->letterService->getForShow((int) $id);
+        $letter = $this->letterService->getForShow($id);
 
         $this->authorize('view', $letter);
 

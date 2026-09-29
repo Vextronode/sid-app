@@ -15,14 +15,14 @@ class CitizenSocioeconomicController extends Controller
         private readonly CitizenSocioeconomicService $service,
     ) {}
 
-    public function show(ShowCitizenSocioeconomicRequest $request, int $id): JsonResponse
+    public function show(ShowCitizenSocioeconomicRequest $request, string $id): JsonResponse
     {
         $socioeconomic = $this->service->get($id);
 
         return (new CitizenSocioeconomicResource($socioeconomic))->response();
     }
 
-    public function upsert(UpsertCitizenSocioeconomicRequest $request, int $id): JsonResponse
+    public function upsert(UpsertCitizenSocioeconomicRequest $request, string $id): JsonResponse
     {
         $socioeconomic = $this->service->upsert($request->user(), $id, $request->validated());
 

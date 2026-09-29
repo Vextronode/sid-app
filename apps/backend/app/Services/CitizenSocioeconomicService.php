@@ -15,7 +15,7 @@ class CitizenSocioeconomicService
         private readonly CitizenRepository $citizenRepository,
     ) {}
 
-    public function get(int $citizenId): CitizenSocioeconomic
+    public function get(string $citizenId): CitizenSocioeconomic
     {
         $this->citizenRepository->findOrFail($citizenId);
 
@@ -32,7 +32,7 @@ class CitizenSocioeconomicService
      * UC-09 lanjutan. surveyed_by/surveyed_at diisi otomatis dari user
      * yang login dan waktu request (upsertCitizenSocioeconomic).
      */
-    public function upsert(User $user, int $citizenId, array $data): CitizenSocioeconomic
+    public function upsert(User $user, string $citizenId, array $data): CitizenSocioeconomic
     {
         $this->citizenRepository->findOrFail($citizenId);
 

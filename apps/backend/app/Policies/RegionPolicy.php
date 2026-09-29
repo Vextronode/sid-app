@@ -33,13 +33,13 @@ class RegionPolicy
     private function belongsToUserVillage(User $user, Hamlet|Rw|Rt $region): bool
     {
         if ($region instanceof Hamlet) {
-            return (int) $region->village_id === (int) $user->village_id;
+            return $region->village_id === $user->village_id;
         }
 
         if ($region instanceof Rw) {
-            return (int) $region->hamlet?->village_id === (int) $user->village_id;
+            return $region->hamlet?->village_id === $user->village_id;
         }
 
-        return (int) $region->rw?->hamlet?->village_id === (int) $user->village_id;
+        return $region->rw?->hamlet?->village_id === $user->village_id;
     }
 }
