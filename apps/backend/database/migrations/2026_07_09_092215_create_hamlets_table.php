@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('code');
             $table->boolean('is_active')->default(true);
-            $table->foreignId('village_id')->constrained('villages')->onDelete('cascade');
+            $table->foreignUuid('village_id')->constrained('villages')->onDelete('cascade');
             $table->timestamps();
             $table->unique(['village_id', 'code']);
         });

@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('village_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('citizen_id')->nullable()->constrained()->nullOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('village_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUuid('citizen_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
             $table->enum('role', ['warga', 'rt', 'rw', 'kadus', 'kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa', 'kepala_desa', 'sekretaris_desa'])->nullable();
             $table->string('email')->unique();
@@ -33,7 +33,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->foreignUuid('user_id')->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');

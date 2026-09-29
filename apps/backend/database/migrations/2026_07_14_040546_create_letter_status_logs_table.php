@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('letter_status_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('letter_id')->constrained('letters')->cascadeOnDelete();
-            $table->foreignId('actor_id')->constrained('users')->restrictOnDelete();
+            $table->foreignUuid('letter_id')->constrained('letters')->cascadeOnDelete();
+            $table->foreignUuid('actor_id')->constrained('users')->restrictOnDelete();
 
             $table->enum('old_status', [
                 'pending',

@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('officials', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('citizen_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUuid('citizen_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('user_id')->nullable()->constrained()->nullOnDelete();
             $table->enum('position', [
                 'kepala_desa',
                 'rt',
@@ -31,7 +31,7 @@ return new class extends Migration
                 'staf_sipades',
                 'staf_siskeudes',
             ]);
-            $table->foreignId('village_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUuid('village_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
             $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
             $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();

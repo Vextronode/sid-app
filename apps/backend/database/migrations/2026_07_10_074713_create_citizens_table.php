@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('citizens', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('village_id')->constrained()->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('village_id')->constrained()->cascadeOnDelete();
             $table->text('nik');
             $table->string('nik_hash')->unique();
             $table->string('name', 100);
@@ -29,10 +29,10 @@ return new class extends Migration
             // constraint family_id -> families.id ditambahkan di migration
             // terpisah (2026_09_12_..._add_family_id_foreign_to_citizens_table)
             // karena families dibuat setelah citizens secara kronologis.
-            $table->unsignedBigInteger('family_id')->nullable();
+            $table->uuid('family_id')->nullable();
             $table->enum('family_role', ['kepala_keluarga', 'istri', 'suami', 'anak', 'famili_lain'])->nullable();
-            $table->foreignId('father_id')->nullable()->constrained('citizens')->nullOnDelete();
-            $table->foreignId('mother_id')->nullable()->constrained('citizens')->nullOnDelete();
+            $table->foreignUuid('father_id')->nullable()->constrained('citizens')->nullOnDelete();
+            $table->foreignUuid('mother_id')->nullable()->constrained('citizens')->nullOnDelete();
             $table->string('father_name_text')->nullable();
             $table->string('mother_name_text')->nullable();
 
