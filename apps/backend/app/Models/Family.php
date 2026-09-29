@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\FamilyStatus;
 use Database\Factories\FamilyFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Family extends Model
 {
     /** @use HasFactory<FamilyFactory> */
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'village_id',

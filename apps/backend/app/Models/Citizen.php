@@ -10,6 +10,7 @@ use App\Enums\LastEducation;
 use App\Enums\Religion;
 use App\Enums\ResidencyType;
 use App\Enums\SyncStatus;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Citizen extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'village_id',

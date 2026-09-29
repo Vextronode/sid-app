@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Models\Hamlet;
+use App\Models\PersonalAccessToken;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Policies\RegionPolicy;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
+
         Gate::policy(Hamlet::class, RegionPolicy::class);
         Gate::policy(Rw::class, RegionPolicy::class);
         Gate::policy(Rt::class, RegionPolicy::class);
