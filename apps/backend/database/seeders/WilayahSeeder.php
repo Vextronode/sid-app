@@ -62,6 +62,7 @@ class WilayahSeeder extends Seeder
 
                 $rw = $hamlet->rws()->create([
                     'hamlet_id' => $hamlet->id,
+                    'village_id' => $village->id,
                     'number' => $rwPad,
                     'full_label' => "RW {$rwPad}",
                     'is_active' => true,
@@ -75,6 +76,7 @@ class WilayahSeeder extends Seeder
 
                     $rt = $rw->rts()->create([
                         'rw_id' => $rw->id,
+                        'village_id' => $village->id,
                         'number' => $rtPad,
                         'is_active' => true,
                         'full_label' => "RT {$rtPad} / RW {$rwPad}",

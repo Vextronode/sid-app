@@ -151,7 +151,7 @@ class RegionEndpointsTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = $this->petugasDesa($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        Rw::create(['hamlet_id' => $hamlet->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
 
         $this->actingAs($user)
             ->postJson('/api/rws', ['hamlet_id' => $hamlet->id, 'number' => '001'])
@@ -164,7 +164,7 @@ class RegionEndpointsTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = $this->petugasDesa($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
 
         Citizen::create([
             'village_id' => $village->id,
@@ -191,7 +191,7 @@ class RegionEndpointsTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = $this->petugasDesa($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
 
         $this->actingAs($user)
             ->postJson('/api/rts', ['rw_id' => $rw->id, 'number' => '001'])
@@ -222,7 +222,7 @@ class RegionEndpointsTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = User::factory()->create(['village_id' => $village->id, 'role' => 'rt']);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
 
         $this->actingAs($user)
             ->postJson('/api/rts', ['rw_id' => $rw->id, 'number' => '001'])
@@ -234,8 +234,8 @@ class RegionEndpointsTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = $this->petugasDesa($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
-        Rt::create(['rw_id' => $rw->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
 
         $this->actingAs($user)
             ->postJson('/api/rts', ['rw_id' => $rw->id, 'number' => '001'])
@@ -248,8 +248,8 @@ class RegionEndpointsTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = $this->petugasDesa($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
-        $rt = Rt::create(['rw_id' => $rw->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        $rt = Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
 
         Citizen::create([
             'village_id' => $village->id,

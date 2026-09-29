@@ -29,6 +29,7 @@ class RtService
 
         return $this->rtRepository->create([
             'rw_id' => $data['rw_id'],
+            'village_id' => $rw->hamlet->village_id,
             'number' => $data['number'],
             'full_label' => "RT {$data['number']} / RW {$rw->number}",
             'is_active' => true,
