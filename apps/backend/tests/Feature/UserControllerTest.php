@@ -6,13 +6,14 @@ use App\Models\Citizen;
 use App\Models\Rt;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
  * EV5-11-S3. POST /users dan PATCH /users/{id} sesuai
  * paths/users/users.yaml & user-detail.yaml.
  */
-class UserCotrollerTest extends TestCase
+class UserControllerTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -149,7 +150,7 @@ class UserCotrollerTest extends TestCase
                 'email' => 'x@cibenda.desa.id',
                 'password' => 'Password123!',
                 'role' => 'rt',
-                'citizen_id' => 999999,
+                'citizen_id' => (string) Str::uuid(),
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['citizen_id']);
