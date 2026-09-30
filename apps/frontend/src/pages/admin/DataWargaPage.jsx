@@ -1,8 +1,4 @@
-// ==========================================
-// DataWargaPage.jsx
-// Halaman Data Penduduk & Impor Excel (SID-FE-8.1)
-// ==========================================
-
+/* eslint-disable no-unused-vars */
 import { useState } from 'react'
 import {
   Search,
@@ -14,12 +10,13 @@ import {
   CheckCircle,
   AlertCircle,
   Download,
+  Edit,
+  Trash2,
 } from 'lucide-react'
 
-import { useWargaList } from '@/features/data-warga/hooks/useWargaList'
+import { useWargaList } from '../../features/data-warga/hooks/useWargaList'
 import { FooterOperator } from '../../components/layout/FooterOperator'
 
-// Helper format tipe domisili / residency_type
 const formatResidencyType = (type) => {
   if (!type) return '-'
   const lower = String(type).toLowerCase()
@@ -29,86 +26,174 @@ const formatResidencyType = (type) => {
   return type
 }
 
+const labelStyle = { display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }
+const inputStyle = {
+  width: '100%',
+  padding: '8px 12px',
+  borderRadius: '6px',
+  border: '1px solid #ccc',
+}
+
+const emptyForm = {
+  nik: '',
+  name: '',
+  date_of_birth: '',
+  place_of_birth: '',
+  gender: 'L',
+  address: '',
+  rt_id: '',
+  residency_type: 'permanent',
+}
+
+const emptyImportStatus = { loading: false, success: null, error: null, result: null }
+
 export default function DataWargaPage() {
   const {
     data,
     loading,
-
+    error,
+    totalItems,
     setSearch,
-
     filterWilayah,
     setFilterWilayah,
     wilayahOptions,
-
     currentPage,
     setCurrentPage,
-
     totalPages,
-
-    // opsional: panggil fungsi import dari hook jika ada
+    addCitizen,
+    editCitizen,
+    deleteWarga,
     importWargaExcel,
   } = useWargaList()
 
   const [keyword, setKeyword] = useState('')
 
-  // State Modal Impor Excel
+  // Modal Impor Excel
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
-  const [importStatus, setImportStatus] = useState({ loading: false, success: null, error: null })
+  const [importStatus, setImportStatus] = useState(emptyImportStatus)
+
+  // Modal Form CRUD (Tambah / Edit)
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false)
+  const [editingCitizen, setEditingCitizen] = useState(null)
+  const [formData, setFormData] = useState(emptyForm)
+  const [formSubmitting, setFormSubmitting] = useState(false)
+  const [formError, setFormError] = useState(null)
 
   const handleSearchSubmit = (e) => {
     e.preventDefault()
     setSearch(keyword)
   }
 
-  // Handler Pilih File
+  const handleOpenAddModal = () => {
+    setEditingCitizen(null)
+    setFormData({
+      ...emptyForm,
+      rt_id: wilayahOptions[0]?.rt_id ? String(wilayahOptions[0].rt_id) : '',
+    })
+    setFormError(null)
+    setIsFormModalOpen(true)
+  }
+
+  const handleOpenEditModal = (warga) => {
+    setEditingCitizen(warga)
+    setFormData({
+      nik: '',
+      name: warga.name || '',
+      date_of_birth: warga.date_of_birth ? String(warga.date_of_birth).slice(0, 10) : '',
+      place_of_birth: warga.place_of_birth || '',
+      gender: warga.gender || 'L',
+      address: warga.address || '',
+      rt_id: warga.rt_id ? String(warga.rt_id) : '',
+      residency_type: warga.residency_type || 'permanent',
+    })
+    setFormError(null)
+    setIsFormModalOpen(true)
+  }
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault()
+    setFormSubmitting(true)
+    setFormError(null)
+
+    try {
+      if (editingCitizen) {
+        // NIK tidak boleh diubah saat edit, jadi tidak dikirim.
+        const { nik, ...updatePayload } = formData
+        await editCitizen(editingCitizen.id, updatePayload)
+      } else {
+        await addCitizen(formData)
+      }
+      setIsFormModalOpen(false)
+    } catch (err) {
+      const errs = err?.response?.data?.errors
+      setFormError(
+        (errs && Object.values(errs)[0]?.[0]) ||
+          err?.response?.data?.message ||
+          'Gagal menyimpan data warga.',
+      )
+    } finally {
+      setFormSubmitting(false)
+    }
+  }
+
+  const handleDeleteWarga = async (id, name) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus data warga: ${name}?`)) {
+      try {
+        await deleteWarga(id)
+      } catch {
+        alert('Gagal menghapus data warga')
+      }
+    }
+  }
+
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (file) {
       if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
         setSelectedFile(file)
-        setImportStatus({ loading: false, success: null, error: null })
+        setImportStatus(emptyImportStatus)
       } else {
         setImportStatus({
-          loading: false,
-          success: null,
+          ...emptyImportStatus,
           error: 'Format file harus berupa Excel (.xlsx, .xls) atau CSV (.csv)',
         })
       }
     }
   }
 
-  // Handler Submit Impor Excel
+  const closeImportModal = () => {
+    setIsImportModalOpen(false)
+    setSelectedFile(null)
+    setImportStatus(emptyImportStatus)
+  }
+
   const handleImportSubmit = async (e) => {
     e.preventDefault()
     if (!selectedFile) return
 
-    setImportStatus({ loading: true, success: null, error: null })
+    setImportStatus({ ...emptyImportStatus, loading: true })
 
     try {
-      if (importWargaExcel) {
-        await importWargaExcel(selectedFile)
-      } else {
-        // Simulasi dummy proses jika API belum tersambung penuh
-        await new Promise((resolve) => setTimeout(resolve, 1200))
-      }
+      const result = await importWargaExcel(selectedFile)
+      const failed = result?.error_count ?? 0
 
       setImportStatus({
         loading: false,
-        success: 'Data warga berhasil diimpor!',
+        success: `${result?.success_count ?? 0} baris berhasil diimpor${
+          failed ? `, ${failed} baris gagal` : ''
+        }.`,
         error: null,
+        result,
       })
 
-      // Reset setelah berhasil
-      setTimeout(() => {
-        setIsImportModalOpen(false)
-        setSelectedFile(null)
-        setImportStatus({ loading: false, success: null, error: null })
-      }, 1500)
+      // Tutup otomatis hanya kalau semua baris berhasil.
+      if (!failed) {
+        setTimeout(closeImportModal, 1200)
+      }
     } catch (err) {
       setImportStatus({
-        loading: false,
-        success: null,
+        ...emptyImportStatus,
         error:
           err?.response?.data?.message || 'Gagal mengimpor data. Periksa kembali format file Anda.',
       })
@@ -118,17 +203,13 @@ export default function DataWargaPage() {
   return (
     <div className="sid-operator-page">
       <div className="sid-operator-content">
-        {/* Breadcrumb */}
         <p className="sid-operator-breadcrumb">
           Admin / <span>Data Penduduk</span>
         </p>
 
-        {/* Header */}
         <div className="sid-operator-header">
           <h1>Data Penduduk</h1>
-
           <div style={{ display: 'flex', gap: '10px' }}>
-            {/* Tombol Impor Excel */}
             <button
               type="button"
               className="sid-operator-secondary"
@@ -150,48 +231,51 @@ export default function DataWargaPage() {
               Impor Excel
             </button>
 
-            {/* Tombol Tambah Warga */}
-            <button type="button" className="sid-operator-primary">
+            <button
+              type="button"
+              className="sid-operator-primary"
+              onClick={handleOpenAddModal}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                backgroundColor: '#106D20',
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
               <UserPlus size={16} />
-              Tambah
+              Tambah Warga
             </button>
           </div>
         </div>
 
-        {/* Search & Filter */}
+        {/* Filter */}
         <div className="sid-operator-filter-card">
           <form onSubmit={handleSearchSubmit} className="sid-operator-filter-grid warga-filter">
-            {/* Search */}
             <div className="sid-operator-filter-field">
               <p>Pencarian Cepat</p>
-
               <div className="sid-operator-search">
                 <Search size={16} />
-
                 <input
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  placeholder="Cari Nama atau NIK..."
+                  placeholder="Cari nama warga..."
                 />
               </div>
             </div>
 
-            {/* Wilayah */}
             <div className="sid-operator-filter-field">
               <p>Wilayah</p>
-
-              <select
-                value={filterWilayah}
-                onChange={(e) => {
-                  setFilterWilayah(e.target.value)
-                  setCurrentPage(1)
-                }}
-              >
+              <select value={filterWilayah} onChange={(e) => setFilterWilayah(e.target.value)}>
                 <option value="">Semua RT/RW</option>
-
                 {wilayahOptions.map((item) => (
-                  <option key={`${item.rt_id}-${item.rw_id}`} value={`${item.rt_id}-${item.rw_id}`}>
-                    RT {item.rt?.number} / RW {item.rw?.number}
+                  <option key={item.rt_id} value={String(item.rt_id)}>
+                    RT {item.rt?.number ?? '-'} / RW {item.rw?.number ?? '-'}
                   </option>
                 ))}
               </select>
@@ -199,7 +283,7 @@ export default function DataWargaPage() {
           </form>
         </div>
 
-        {/* Table */}
+        {/* Tabel Data */}
         <div className="sid-operator-table-card">
           <div className="sid-operator-table-wrapper">
             <table className="sid-operator-table">
@@ -210,39 +294,36 @@ export default function DataWargaPage() {
                   <th className="center">RT/RW</th>
                   <th className="center">Jenis Kelamin</th>
                   <th className="center">Status Domisili</th>
+                  <th className="center">Aksi</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="empty">
+                    <td colSpan={6} className="empty">
                       Memuat data...
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan={6} className="empty" style={{ color: '#d32f2f' }}>
+                      {error}
                     </td>
                   </tr>
                 ) : data.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="empty">
+                    <td colSpan={6} className="empty">
                       Belum ada data warga.
                     </td>
                   </tr>
                 ) : (
                   data.map((warga) => (
                     <tr key={warga.id}>
-                      {/* Nama */}
                       <td className="primary-text">{warga.name}</td>
-
-                      {/* NIK */}
-                      <td className="center">{warga.nik}</td>
-
-                      {/* RT / RW */}
+                      <td className="center">{warga.nik_masked ?? '-'}</td>
                       <td className="center">
-                        RT {warga.rt?.number ?? '-'}
-                        {' / '}
-                        RW {warga.rw?.number ?? '-'}
+                        RT {warga.rt?.number ?? '-'} / RW {warga.rw?.number ?? '-'}
                       </td>
-
-                      {/* Gender */}
                       <td className="center">
                         {warga.gender === 'L'
                           ? 'Laki-Laki'
@@ -250,9 +331,39 @@ export default function DataWargaPage() {
                             ? 'Perempuan'
                             : '-'}
                       </td>
-
-                      {/* Status Domisili (residency_type) */}
                       <td className="center">{formatResidencyType(warga.residency_type)}</td>
+                      <td className="center">
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                          <button
+                            type="button"
+                            title="Edit"
+                            onClick={() => handleOpenEditModal(warga)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#f59e0b',
+                              padding: 0,
+                            }}
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            title="Hapus"
+                            onClick={() => handleDeleteWarga(warga.id, warga.name)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#ef4444',
+                              padding: 0,
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -263,9 +374,8 @@ export default function DataWargaPage() {
           {/* Pagination */}
           <div className="sid-operator-pagination">
             <p>
-              Menampilkan {data.length === 0 ? 0 : data.length} dari {data.length} data
+              Menampilkan {data.length} dari {totalItems} data
             </p>
-
             <div>
               <button
                 type="button"
@@ -274,7 +384,6 @@ export default function DataWargaPage() {
               >
                 Sebelumnya
               </button>
-
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   type="button"
@@ -285,7 +394,6 @@ export default function DataWargaPage() {
                   {page}
                 </button>
               ))}
-
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
@@ -298,9 +406,229 @@ export default function DataWargaPage() {
         </div>
       </div>
 
-      {/* ========================================== */}
-      {/* MODAL IMPOR EXCEL                           */}
-      {/* ========================================== */}
+      {/* Modal Tambah / Edit Warga */}
+      {isFormModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '16px',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: '12px',
+              width: '100%',
+              maxWidth: '520px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '24px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+              }}
+            >
+              <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>
+                {editingCitizen ? 'Edit Data Warga' : 'Tambah Warga Baru'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsFormModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleFormSubmit}
+              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            >
+              <div>
+                <label style={labelStyle}>NIK</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  required={!editingCitizen}
+                  disabled={!!editingCitizen}
+                  minLength={16}
+                  maxLength={16}
+                  pattern="\d{16}"
+                  title="NIK harus 16 digit angka"
+                  value={editingCitizen ? editingCitizen.nik_masked || '' : formData.nik}
+                  onChange={(e) => setFormData({ ...formData, nik: e.target.value })}
+                  placeholder="Masukkan 16 digit NIK"
+                  style={{ ...inputStyle, backgroundColor: editingCitizen ? '#f3f3f3' : '#fff' }}
+                />
+                {editingCitizen && (
+                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#888' }}>
+                    NIK tidak dapat diubah.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label style={labelStyle}>Nama Lengkap</label>
+                <input
+                  type="text"
+                  required
+                  maxLength={100}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Masukkan nama lengkap"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={labelStyle}>Tempat Lahir</label>
+                  <input
+                    type="text"
+                    maxLength={100}
+                    value={formData.place_of_birth}
+                    onChange={(e) => setFormData({ ...formData, place_of_birth: e.target.value })}
+                    placeholder="Opsional"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Tanggal Lahir</label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.date_of_birth}
+                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={labelStyle}>Jenis Kelamin</label>
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                    style={inputStyle}
+                  >
+                    <option value="L">Laki-Laki</option>
+                    <option value="P">Perempuan</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Status Domisili</label>
+                  <select
+                    value={formData.residency_type}
+                    onChange={(e) => setFormData({ ...formData, residency_type: e.target.value })}
+                    style={inputStyle}
+                  >
+                    <option value="permanent">Tetap</option>
+                    <option value="temporary">Pendatang</option>
+                    <option value="moved">Pindah</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Alamat</label>
+                <textarea
+                  required
+                  rows={2}
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Masukkan alamat lengkap"
+                  style={{ ...inputStyle, resize: 'vertical' }}
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Wilayah RT / RW</label>
+                <select
+                  required
+                  value={formData.rt_id}
+                  onChange={(e) => setFormData({ ...formData, rt_id: e.target.value })}
+                  style={inputStyle}
+                >
+                  <option value="">Pilih RT/RW</option>
+                  {wilayahOptions.map((item) => (
+                    <option key={item.rt_id} value={String(item.rt_id)}>
+                      RT {item.rt?.number ?? '-'} / RW {item.rw?.number ?? '-'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {formError && (
+                <div
+                  style={{
+                    color: '#d32f2f',
+                    backgroundColor: '#fde8e8',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                  }}
+                >
+                  {formError}
+                </div>
+              )}
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  marginTop: '10px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsFormModalOpen(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: '1px solid #ccc',
+                    backgroundColor: '#fff',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={formSubmitting}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: '#106D20',
+                    color: '#fff',
+                    fontWeight: 600,
+                    cursor: formSubmitting ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {formSubmitting ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Impor Excel */}
       {isImportModalOpen && (
         <div
           style={{
@@ -324,7 +652,6 @@ export default function DataWargaPage() {
               boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
             }}
           >
-            {/* Modal Header */}
             <div
               style={{
                 display: 'flex',
@@ -339,14 +666,13 @@ export default function DataWargaPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setIsImportModalOpen(false)}
+                onClick={closeImportModal}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}
               >
                 <X size={20} />
               </button>
             </div>
 
-            {/* Template Download Option */}
             <div
               style={{
                 backgroundColor: '#F3F8F3',
@@ -386,9 +712,7 @@ export default function DataWargaPage() {
               </a>
             </div>
 
-            {/* Upload Form */}
             <form onSubmit={handleImportSubmit}>
-              {/* Dropzone Area */}
               <div
                 style={{
                   border: '2px dashed #A7D0A6',
@@ -447,7 +771,6 @@ export default function DataWargaPage() {
                 )}
               </div>
 
-              {/* Status Alert */}
               {importStatus.error && (
                 <div
                   style={{
@@ -486,11 +809,29 @@ export default function DataWargaPage() {
                 </div>
               )}
 
-              {/* Modal Footer Buttons */}
+              {importStatus.result?.errors?.length > 0 && (
+                <ul
+                  style={{
+                    maxHeight: 120,
+                    overflowY: 'auto',
+                    fontSize: 12,
+                    color: '#d32f2f',
+                    margin: '0 0 16px',
+                    paddingLeft: 18,
+                  }}
+                >
+                  {importStatus.result.errors.map((item, i) => (
+                    <li key={i}>
+                      Baris {item.row}: {item.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                 <button
                   type="button"
-                  onClick={() => setIsImportModalOpen(false)}
+                  onClick={closeImportModal}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
@@ -500,7 +841,7 @@ export default function DataWargaPage() {
                     fontSize: '14px',
                   }}
                 >
-                  Batal
+                  {importStatus.result ? 'Tutup' : 'Batal'}
                 </button>
                 <button
                   type="submit"

@@ -1,24 +1,25 @@
-import api from "@/lib/api";
+import api from '@/lib/api'
 
-
-export function getCitizens(){
-
-    return api.get("/api/citizens");
-
+export function getCitizens() {
+  return api.get('/api/citizens')
 }
 
-
-export function getWilayah(){
-
-    return api.get("/api/citizens/wilayah");
-
+export function getWilayah() {
+  return api.get('/api/citizens/wilayah')
 }
 
+export function createCitizen(data) {
+  return api.post('/api/citizens', data)
+}
 
-export function deleteCitizen(id){
+export function updateCitizen(id, data) {
+  return api.patch(`/api/citizens/${id}`, data)
+}
 
-    return api.delete(
-        `/api/citizens/${id}`
-    );
+export function deleteCitizen(id) {
+  return api.delete(`/api/citizens/${id}`)
+}
 
+export function importCitizensExcel(formData) {
+  return api.post('/api/citizens/import', formData)
 }
