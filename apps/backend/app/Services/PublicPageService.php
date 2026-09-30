@@ -58,9 +58,9 @@ class PublicPageService
 
     public function paginatedNews(int $perPage = 10): LengthAwarePaginator
     {
-        $villageId = $this->villageRepository->findFirst()?->id ?? 0;
+        $village = $this->requireVillage();
 
-        return $this->newsRepository->paginatePublishedForVillage($villageId, $perPage);
+        return $this->newsRepository->paginatePublishedForVillage($village->id, $perPage);
     }
 
     public function letterTypeList(): Collection
@@ -76,8 +76,8 @@ class PublicPageService
 
     public function regulationList(): Collection
     {
-        $villageId = $this->villageRepository->findFirst()?->id ?? 0;
-        $regulations = $this->regulationRepository->allForVillage($villageId);
+        $village = $this->requireVillage();
+        $regulations = $this->regulationRepository->allForVillage($village->id);
 
         if ($regulations->isEmpty()) {
             throw new HttpException(404, 'Belum ada peraturan desa yang diterbitkan.');
@@ -88,10 +88,10 @@ class PublicPageService
 
     public function contactUs(): Collection
     {
-        $villageId = $this->villageRepository->findFirst()?->id ?? 0;
+        $village = $this->requireVillage();
 
         $officials = $this->officialRepository
-            ->allActiveByPositionsAndVillage(['kasi_pelayanan', 'kaur_tu_umum'], $villageId)
+            ->allActiveByPositionsAndVillage(['kasi_pelayanan', 'kaur_tu_umum'], $village->id)
             ->load('citizen');
 
         if ($officials->isEmpty()) {

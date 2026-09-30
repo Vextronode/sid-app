@@ -21,17 +21,17 @@ class LetterRepository
         return Letter::create($data);
     }
 
-    public function find(int $id): ?Letter
+    public function find(string $id): ?Letter
     {
         return Letter::query()->find($id);
     }
 
-    public function findOrFail(int $id): Letter
+    public function findOrFail(string $id): Letter
     {
         return Letter::query()->findOrFail($id);
     }
 
-    public function findForUpdateOrFail(int $id): Letter
+    public function findForUpdateOrFail(string $id): Letter
     {
         return Letter::query()
             ->whereKey($id)
@@ -92,7 +92,7 @@ class LetterRepository
     //        return $query->update($data);
     //    }
     //
-    //    public function findWithDetailForApproval(int $id): Letter
+    //    public function findWithDetailForApproval(string $id): Letter
     //    {
     //        return Letter::query()
     //            ->with([
@@ -164,7 +164,7 @@ class LetterRepository
     //     * Query surat berstatus tertentu yang discope ke sebuah village
     //     * (dipakai Kadus/Kasi approval yang tidak berbasis RT/RW).
     //     */
-    //    public function queryByStatusesAndVillage(array $statuses, int $villageId): Builder
+    //    public function queryByStatusesAndVillage(array $statuses, string $villageId): Builder
     //    {
     //        return Letter::query()
     //            ->whereIn('status', $statuses)
@@ -195,7 +195,7 @@ class LetterRepository
      * jadi surat yang sudah diputuskan di step SEBELUM ini otomatis
      * tidak lagi match kolom current_step_order-nya sendiri.
      */
-    public function queryPendingAtFlowStepPositions(array $positions, int $villageId): Builder
+    public function queryPendingAtFlowStepPositions(array $positions, string $villageId): Builder
     {
         return Letter::query()
             ->where('village_id', $villageId)
@@ -276,7 +276,7 @@ class LetterRepository
      * jadi status generik 'approved'/'rejected' adalah satu-satunya
      * penanda surat ini SUDAH diputuskan Kasi/Kaur.
      */
-    public function queryPendingAtFinalStepPosition(string $position, int $villageId): Builder
+    public function queryPendingAtFinalStepPosition(string $position, string $villageId): Builder
     {
         return Letter::query()
             ->where('village_id', $villageId)
@@ -295,7 +295,7 @@ class LetterRepository
             ]);
     }
 
-    public function findWithApprovalActorForShow(int $id): Letter
+    public function findWithApprovalActorForShow(string $id): Letter
     {
         return Letter::query()
             ->with([
@@ -315,7 +315,7 @@ class LetterRepository
     /**
      * Query dasar surat untuk sebuah desa (village).
      */
-    public function queryByVillage(int $villageId): Builder
+    public function queryByVillage(string $villageId): Builder
     {
         return Letter::query()->where('village_id', $villageId);
     }
@@ -323,7 +323,7 @@ class LetterRepository
     /**
      * Query surat milik desa, discope ke warga dalam sebuah RT.
      */
-    public function queryByVillageAndRt(int $villageId, int $rtId): Builder
+    public function queryByVillageAndRt(string $villageId, int $rtId): Builder
     {
         return Letter::query()
             ->where('village_id', $villageId)
@@ -335,7 +335,7 @@ class LetterRepository
     /**
      * Query surat milik desa, discope ke warga dalam sebuah RW.
      */
-    public function queryByVillageAndRw(int $villageId, int $rwId): Builder
+    public function queryByVillageAndRw(string $villageId, int $rwId): Builder
     {
         return Letter::query()
             ->where('village_id', $villageId)
@@ -358,7 +358,7 @@ class LetterRepository
         ]);
     }
 
-    public function whereSubmittedBy(Builder $query, int $userId): Builder
+    public function whereSubmittedBy(Builder $query, string $userId): Builder
     {
         return $query->where('submitted_by', $userId);
     }
@@ -378,7 +378,7 @@ class LetterRepository
         return (clone $query)->whereDate('submitted_at', $date)->count();
     }
 
-    public function querySubmittedBy(int $userId): Builder
+    public function querySubmittedBy(string $userId): Builder
     {
         return Letter::query()
             ->where('submitted_by', $userId)
@@ -388,7 +388,7 @@ class LetterRepository
             ]);
     }
 
-    public function countByVillageInMonth(int $villageId): int
+    public function countByVillageInMonth(string $villageId): int
     {
         return Letter::query()
             ->where('village_id', $villageId)
@@ -403,7 +403,7 @@ class LetterRepository
      * @param  array<int, string>  $statuses
      * @return array<string, int>
      */
-    public function countByVillageAndStatuses(int $villageId, array $statuses): array
+    public function countByVillageAndStatuses(string $villageId, array $statuses): array
     {
         $counts = Letter::query()
             ->where('village_id', $villageId)

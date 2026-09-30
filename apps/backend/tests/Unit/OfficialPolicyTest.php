@@ -37,8 +37,8 @@ class OfficialPolicyTest extends TestCase
         // generator faker yang cepat habis pada CI/test run ini.
         $village = Village::create(['name' => 'Desa Uji Policy', 'code' => 'DUP']);
         $hamlet = Hamlet::create(['name' => 'Dusun Uji Policy', 'code' => 'DSN-UP', 'village_id' => $village->id, 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
-        $rt = Rt::create(['rw_id' => $rw->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        $rt = Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
 
         $citizen = Citizen::factory()->create([
             'village_id' => $village->id,

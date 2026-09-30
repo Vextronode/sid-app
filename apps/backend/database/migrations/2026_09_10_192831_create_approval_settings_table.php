@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('approval_settings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('village_id')
+            $table->foreignUuid('village_id')
                 ->constrained('villages')
                 ->cascadeOnDelete();
 

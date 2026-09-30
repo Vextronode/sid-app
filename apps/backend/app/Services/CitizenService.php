@@ -112,7 +112,7 @@ class CitizenService
     /**
      * Hanya boleh ada 1 kepala_keluarga aktif per family_id.
      */
-    private function guardSingleFamilyHead(?int $familyId, ?string $familyRole, ?int $excludeCitizenId = null): void
+    private function guardSingleFamilyHead(?string $familyId, ?string $familyRole, ?string $excludeCitizenId = null): void
     {
         if (! $familyId || $familyRole !== 'kepala_keluarga') {
             return;

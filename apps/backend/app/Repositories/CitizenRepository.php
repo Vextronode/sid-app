@@ -25,7 +25,7 @@ class CitizenRepository
         return Citizen::query()->where('nik_hash', $nikHash)->first();
     }
 
-    public function findOrFail(int $id): Citizen
+    public function findOrFail(string $id): Citizen
     {
         return Citizen::query()->findOrFail($id);
     }
@@ -42,7 +42,7 @@ class CitizenRepository
         return $citizen;
     }
 
-    public function existsFamilyHead(int $familyId, ?int $excludeCitizenId = null): bool
+    public function existsFamilyHead(string $familyId, ?string $excludeCitizenId = null): bool
     {
         return Citizen::query()
             ->where('family_id', $familyId)
@@ -52,7 +52,7 @@ class CitizenRepository
             ->exists();
     }
 
-    public function findByFamilyId(int $familyId): Collection
+    public function findByFamilyId(string $familyId): Collection
     {
         return Citizen::query()
             ->with(['rt', 'rw', 'hamlet', 'village'])
@@ -116,7 +116,7 @@ class CitizenRepository
             ->exists();
     }
 
-    public function countByGender(int $villageId, string $gender, ?int $rtId = null, ?int $rwId = null): int
+    public function countByGender(string $villageId, string $gender, ?int $rtId = null, ?int $rwId = null): int
     {
         $query = Citizen::query()
             ->where('village_id', $villageId)
@@ -133,7 +133,7 @@ class CitizenRepository
         return $query->count();
     }
 
-    public function countActiveByVillage(int $villageId): int
+    public function countActiveByVillage(string $villageId): int
     {
         return Citizen::query()
             ->where('village_id', $villageId)

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class NewsRepository
 {
-    public function allForVillage(int $villageId, ?string $status): Collection
+    public function allForVillage(string $villageId, ?string $status): Collection
     {
         $query = News::query()->with('author')->where('village_id', $villageId)->latest();
 
@@ -26,7 +26,7 @@ class NewsRepository
      * dipaginasi (beda dengan allForVillage() yang dipakai admin, selalu
      * kembalikan seluruh baris tanpa pagination).
      */
-    public function paginatePublishedForVillage(int $villageId, int $perPage = 10): LengthAwarePaginator
+    public function paginatePublishedForVillage(string $villageId, int $perPage = 10): LengthAwarePaginator
     {
         return News::query()
             ->with('author')

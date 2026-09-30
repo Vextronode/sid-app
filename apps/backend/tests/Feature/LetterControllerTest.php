@@ -12,6 +12,7 @@ use App\Models\Rt;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class LetterControllerTest extends TestCase
@@ -160,7 +161,7 @@ class LetterControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->getJson('/api/letters/999999')
+            ->getJson('/api/letters/'.Str::uuid())
             ->assertNotFound();
     }
 }

@@ -30,7 +30,7 @@ class RwRepository
 
     public function findOrFail(int $id): Rw
     {
-        return Rw::query()->findOrFail($id);
+        return Rw::query()->with('hamlet')->findOrFail($id);
     }
 
     public function update(Rw $rw, array $data): Rw

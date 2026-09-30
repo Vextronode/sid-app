@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Rt extends Model
 {
@@ -12,6 +13,7 @@ class Rt extends Model
     protected $fillable = [
         'number',
         'rw_id',
+        'village_id',
         'full_label',
         'is_active',
     ];
@@ -23,5 +25,10 @@ class Rt extends Model
     public function rw()
     {
         return $this->belongsTo(Rw::class);
+    }
+
+    public function village(): BelongsTo
+    {
+        return $this->belongsTo(Village::class);
     }
 }

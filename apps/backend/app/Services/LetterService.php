@@ -326,7 +326,7 @@ class LetterService
         });
     }
 
-    public function getForShow(int $id): Letter
+    public function getForShow(string $id): Letter
     {
         return $this->letterRepository->findWithApprovalActorForShow($id);
     }

@@ -41,6 +41,7 @@ class RtRepositoryTest extends TestCase
 
         $rt = $this->repository->create([
             'rw_id' => $rw->id,
+            'village_id' => $rw->village_id,
             'number' => '001',
             'full_label' => 'RT 001 / RW 001',
             'is_active' => true,

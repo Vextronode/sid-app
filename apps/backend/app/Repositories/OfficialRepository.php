@@ -91,7 +91,7 @@ class OfficialRepository
      */
     public function existsActiveByPositionAndScope(
         string $position,
-        ?int $villageId = null,
+        ?string $villageId = null,
         ?int $rtId = null,
         ?int $rwId = null,
         ?int $hamletId = null,
@@ -175,7 +175,7 @@ class OfficialRepository
             ->get();
     }
 
-    public function findActiveByPositionAndVillage(string $position, int $villageId): ?Official
+    public function findActiveByPositionAndVillage(string $position, string $villageId): ?Official
     {
         return Official::query()
             ->where('position', $position)
@@ -184,7 +184,7 @@ class OfficialRepository
             ->first();
     }
 
-    public function allActiveByPositionsAndVillage(array $positions, ?int $villageId): Collection
+    public function allActiveByPositionsAndVillage(array $positions, ?string $villageId): Collection
     {
         return Official::query()
             ->whereIn('position', $positions)

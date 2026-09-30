@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreHamletRequest extends FormRequest
 {
@@ -24,7 +25,14 @@ class StoreHamletRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:hamlets,code',
+            'code' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('hamlets')->where(
+                    fn ($query) => $query->where('village_id', $this->user()->village_id)
+                ),
+            ],
         ];
     }
 

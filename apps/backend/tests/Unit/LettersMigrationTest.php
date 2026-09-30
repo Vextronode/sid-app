@@ -11,6 +11,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -80,7 +81,7 @@ class LettersMigrationTest extends TestCase
     {
         $flow = ApprovalFlow::factory()->create();
 
-        $id = DB::table('letters')->insertGetId($this->minimalLetterRow($flow->id));
+        $id = $this->insertLetterRow($flow->id);
 
         $row = DB::table('letters')->find($id);
 
@@ -93,10 +94,7 @@ class LettersMigrationTest extends TestCase
     {
         $flow = ApprovalFlow::factory()->create();
 
-        $id = DB::table('letters')->insertGetId(array_merge(
-            $this->minimalLetterRow($flow->id),
-            ['status' => $status],
-        ));
+        $id = $this->insertLetterRow($flow->id, ['status' => $status]);
 
         $this->assertDatabaseHas('letters', ['id' => $id, 'status' => $status]);
     }
@@ -119,10 +117,7 @@ class LettersMigrationTest extends TestCase
 
         $this->expectException(QueryException::class);
 
-        DB::table('letters')->insert(array_merge(
-            $this->minimalLetterRow($flow->id),
-            ['status' => $legacyStatus],
-        ));
+        $this->insertLetterRow($flow->id, ['status' => $legacyStatus]);
     }
 
     public static function legacyGranularStatuses(): array
@@ -145,7 +140,7 @@ class LettersMigrationTest extends TestCase
     {
         $flow = ApprovalFlow::factory()->create();
 
-        $id = DB::table('letters')->insertGetId($this->minimalLetterRow($flow->id));
+        $id = $this->insertLetterRow($flow->id);
 
         $this->assertSame(1, DB::table('letters')->find($id)->current_step_order);
     }
@@ -163,10 +158,10 @@ class LettersMigrationTest extends TestCase
     {
         $flow = ApprovalFlow::factory()->create();
 
-        $id = DB::table('letters')->insertGetId(array_merge(
-            $this->minimalLetterRow($flow->id),
-            ['status' => 'rejected', 'rejected_at_step' => 2],
-        ));
+        $id = $this->insertLetterRow($flow->id, [
+            'status' => 'rejected',
+            'rejected_at_step' => 2,
+        ]);
 
         $row = DB::table('letters')->find($id);
 
@@ -179,9 +174,7 @@ class LettersMigrationTest extends TestCase
     {
         $this->expectException(QueryException::class);
 
-        DB::table('letters')->insert(
-            array_merge($this->minimalLetterRow(null), []),
-        );
+        $this->insertLetterRow(null);
     }
 
     #[Test]
@@ -189,7 +182,7 @@ class LettersMigrationTest extends TestCase
     {
         $this->expectException(QueryException::class);
 
-        DB::table('letters')->insert($this->minimalLetterRow(999999));
+        $this->insertLetterRow(999999);
     }
 
     #[Test]
@@ -232,14 +225,14 @@ class LettersMigrationTest extends TestCase
     {
         $flow = ApprovalFlow::factory()->create();
 
-        $matchingId = DB::table('letters')->insertGetId(array_merge(
-            $this->minimalLetterRow($flow->id),
-            ['current_step_order' => 2, 'status' => 'in_progress'],
-        ));
-        DB::table('letters')->insertGetId(array_merge(
-            $this->minimalLetterRow($flow->id),
-            ['current_step_order' => 1, 'status' => 'pending'],
-        ));
+        $matchingId = $this->insertLetterRow($flow->id, [
+            'current_step_order' => 2,
+            'status' => 'in_progress',
+        ]);
+        $this->insertLetterRow($flow->id, [
+            'current_step_order' => 1,
+            'status' => 'pending',
+        ]);
 
         $result = DB::table('letters')
             ->where('flow_id', $flow->id)
@@ -268,5 +261,18 @@ class LettersMigrationTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ];
+    }
+
+    private function insertLetterRow(?int $flowId, array $overrides = []): string
+    {
+        $id = (string) Str::uuid();
+
+        DB::table('letters')->insert(array_merge(
+            $this->minimalLetterRow($flowId),
+            ['id' => $id],
+            $overrides,
+        ));
+
+        return $id;
     }
 }

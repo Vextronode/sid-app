@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ApprovalSettingRepository
 {
-    public function allForVillage(int $villageId): Collection
+    public function allForVillage(string $villageId): Collection
     {
         return ApprovalSetting::query()
             ->where('village_id', $villageId)
@@ -20,7 +20,7 @@ class ApprovalSettingRepository
         return ApprovalSetting::query()->findOrFail($id);
     }
 
-    public function findByLevelAndVillage(string $approvalLevel, int $villageId): ?ApprovalSetting
+    public function findByLevelAndVillage(string $approvalLevel, string $villageId): ?ApprovalSetting
     {
         return ApprovalSetting::query()
             ->where('village_id', $villageId)

@@ -12,12 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('letters', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('village_id')->constrained('villages')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('village_id')->constrained('villages')->cascadeOnDelete();
             $table->foreignId('letter_type_id')->constrained('letter_types')->restrictOnDelete();
-            $table->foreignId('submitted_by')->constrained('users')->restrictOnDelete();
-            $table->foreignId('on_behalf_of')->nullable()->constrained('citizens')->nullOnDelete();
-            $table->foreignId('citizen_id')->nullable()->constrained('citizens')->nullOnDelete();
+            $table->foreignUuid('submitted_by')->constrained('users')->restrictOnDelete();
+            $table->foreignUuid('on_behalf_of')->nullable()->constrained('citizens')->nullOnDelete();
+            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->nullOnDelete();
             $table->string('letter_number', 50)->unique()->nullable();
             $table->string('applicant_name', 100);
             $table->text('applicant_nik');

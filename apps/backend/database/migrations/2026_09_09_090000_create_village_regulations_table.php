@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('village_regulations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('village_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('village_id')->constrained()->cascadeOnDelete();
             $table->string('regulation_number', 100);
             $table->string('title', 200);
             $table->text('content');
             $table->date('enacted_date')->nullable();
-            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+            $table->foreignUuid('created_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
         });
     }

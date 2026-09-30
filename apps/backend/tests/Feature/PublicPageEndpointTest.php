@@ -225,7 +225,18 @@ class PublicPageEndpointTest extends TestCase
     public function contact_us_returns_404_when_none_active(): void
     {
         $response = $this->getJson('/api/public/contact-us');
-
         $response->assertStatus(404);
+    }
+
+    #[Test]
+    public function regulations_returns_404_when_village_not_set_up(): void
+    {
+        $this->getJson('/api/public/regulations')->assertStatus(404);
+    }
+
+    #[Test]
+    public function news_list_returns_404_when_village_not_set_up(): void
+    {
+        $this->getJson('/api/public/news')->assertStatus(404);
     }
 }

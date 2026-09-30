@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class RegulationRepository
 {
-    public function allForVillage(int $villageId): Collection
+    public function allForVillage(string $villageId): Collection
     {
         return VillageRegulation::query()
             ->where('village_id', $villageId)

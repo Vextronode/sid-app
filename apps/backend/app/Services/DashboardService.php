@@ -276,7 +276,7 @@ class DashboardService
         };
     }
 
-    private function villageId(User $user): int
+    private function villageId(User $user): string
     {
         if (! $user->village_id) {
             throw new HttpException(403, 'Data desa user tidak ditemukan.');

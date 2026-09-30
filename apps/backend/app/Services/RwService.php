@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\RegionContainsCitizensException;
 use App\Exceptions\RegionHasActiveCitizensException;
+use App\Models\Hamlet;
 use App\Models\Rw;
 use App\Repositories\CitizenRepository;
 use App\Repositories\RwRepository;
@@ -23,8 +24,11 @@ class RwService
 
     public function create(array $data): Rw
     {
+        $hamlet = Hamlet::findOrFail($data['hamlet_id']);
+
         return $this->rwRepository->create([
             'hamlet_id' => $data['hamlet_id'],
+            'village_id' => $hamlet->village_id,
             'number' => $data['number'],
             'full_label' => "RW {$data['number']}",
             'is_active' => true,
