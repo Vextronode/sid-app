@@ -61,8 +61,13 @@ const MENU_ITEMS = [
     icon: Newspaper,
   },
   {
-    label: 'Organisasi Non-Struktural',
-    path: '/admin/organisasi',
+    label: 'Organisasi BPD',
+    path: '/admin/organisasi/bpd',
+    icon: Network,
+  },
+  {
+    label: 'LPM / Karang Taruna / PKK',
+    path: '/admin/organisasi/lembaga',
     icon: Network,
   },
 ]
