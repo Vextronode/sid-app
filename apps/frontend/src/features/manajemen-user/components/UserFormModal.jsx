@@ -1,25 +1,23 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 // ==========================================
 // UserFormModal.jsx
-// Popup form Tambah/Edit user.
-// Styling mengikuti SID Global Theme.
-// Logic dan behavior tidak diubah.
 // ==========================================
 
-import { useState, useEffect } from 'react';
-import { Eye, EyeOff, Save, UserPlus } from 'lucide-react';
+import { useState, useEffect } from 'react'
+import { Eye, EyeOff, Save, UserPlus } from 'lucide-react'
 
 const ROLE_OPTIONS = [
   { value: 'rt', label: 'RT' },
   { value: 'rw', label: 'RW' },
   { value: 'kadus', label: 'Kadus' },
   { value: 'kepala_desa', label: 'Kepala Desa' },
+  { value: 'sekretaris_desa', label: 'Sekretaris Desa' },
   { value: 'kasi_pelayanan', label: 'Kasi Pelayanan' },
   { value: 'kaur_tu_umum', label: 'Kaur TU Umum' },
   { value: 'petugas_desa', label: 'Petugas Desa' },
-];
+]
 
-const ROLES_WITH_WILAYAH = ['rt', 'rw'];
+const ROLES_WITH_WILAYAH = ['rt', 'rw', 'kadus']
 
 const EMPTY_FORM = {
   name: '',
@@ -28,61 +26,44 @@ const EMPTY_FORM = {
   citizen_id: '',
   password: '',
   is_active: true,
-};
+}
 
-export default function UserFormModal({
-  open,
-  onClose,
-  onSubmit,
-  initialData,
-}) {
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [showPassword, setShowPassword] = useState(false);
+export default function UserFormModal({ open, onClose, onSubmit, initialData }) {
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [showPassword, setShowPassword] = useState(false)
 
-  const isEdit = !!initialData;
+  const isEdit = !!initialData
 
   useEffect(() => {
     if (open) {
-      setForm(
-        initialData
-          ? { ...EMPTY_FORM, ...initialData, password: '' }
-          : EMPTY_FORM
-      );
+      setForm(initialData ? { ...EMPTY_FORM, ...initialData, password: '' } : EMPTY_FORM)
     }
-  }, [open, initialData]);
+  }, [open, initialData])
 
-  if (!open) return null;
+  if (!open) return null
 
   const handleChange = (field) => (e) => {
-    const value =
-      field === 'is_active'
-        ? e.target.value === 'aktif'
-        : e.target.value;
+    const value = field === 'is_active' ? e.target.value === 'aktif' : e.target.value
 
     setForm((prev) => ({
       ...prev,
       [field]: value,
-    }));
-  };
+    }))
+  }
 
-  const showWilayah = ROLES_WITH_WILAYAH.includes(form.role);
+  const showWilayah = ROLES_WITH_WILAYAH.includes(form.role)
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(form);
-  };
+    e.preventDefault()
+    onSubmit(form)
+  }
 
   return (
     <div className="sid-modal-overlay">
-      <form
-        onSubmit={handleSubmit}
-        className="sid-modal sid-modal-user"
-      >
+      <form onSubmit={handleSubmit} className="sid-modal sid-modal-user">
         {/* Nama */}
         <div className="sid-form-group">
-          <label className="sid-form-label">
-            Nama lengkap *
-          </label>
+          <label className="sid-form-label">Nama lengkap *</label>
 
           <input
             required
@@ -95,9 +76,7 @@ export default function UserFormModal({
 
         {/* Email */}
         <div className="sid-form-group">
-          <label className="sid-form-label">
-            Email *
-          </label>
+          <label className="sid-form-label">Email *</label>
 
           <input
             required
@@ -111,9 +90,7 @@ export default function UserFormModal({
 
         {/* Role */}
         <div className="sid-form-group sid-form-group-compact">
-          <label className="sid-form-label">
-            Role *
-          </label>
+          <label className="sid-form-label">Role *</label>
 
           <select
             required
@@ -132,16 +109,14 @@ export default function UserFormModal({
         </div>
 
         <p className="sid-form-hint">
-          Territory label hanya muncul untuk role RT dan RW
-          (kepala_desa &amp; petugas_desa tidak perlu wilayah)
+          Territory label hanya muncul untuk role RT, RW, dan Kadus (kepala_desa, sekretaris_desa,
+          kasi_pelayanan, kaur_tu_umum, &amp; petugas_desa tidak perlu wilayah)
         </p>
 
         {/* Wilayah */}
         {showWilayah && (
           <div className="sid-form-group">
-            <label className="sid-form-label">
-              Wilayah (RT/RW)
-            </label>
+            <label className="sid-form-label">Wilayah (RT/RW/Kadus)</label>
 
             <input
               value={form.wilayah ?? ''}
@@ -154,9 +129,7 @@ export default function UserFormModal({
 
         {/* Citizen ID */}
         <div className="sid-form-group">
-          <label className="sid-form-label">
-            Link ke warga (Citizen ID)
-          </label>
+          <label className="sid-form-label">Link ke warga (Citizen ID)</label>
 
           <input
             value={form.citizen_id}
@@ -170,11 +143,7 @@ export default function UserFormModal({
         <div className="sid-form-group">
           <label className="sid-form-label">
             Password{' '}
-            {isEdit && (
-              <span className="sid-form-label-muted">
-                (kosongkan jika tidak diubah)
-              </span>
-            )}
+            {isEdit && <span className="sid-form-label-muted">(kosongkan jika tidak diubah)</span>}
           </label>
 
           <div className="sid-password-wrapper">
@@ -190,26 +159,16 @@ export default function UserFormModal({
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               className="sid-password-toggle"
-              aria-label={
-                showPassword
-                  ? 'Sembunyikan password'
-                  : 'Tampilkan password'
-              }
+              aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
             >
-              {showPassword ? (
-                <EyeOff size={16} />
-              ) : (
-                <Eye size={16} />
-              )}
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
         </div>
 
         {/* Status */}
         <div className="sid-form-group sid-form-group-last">
-          <label className="sid-form-label">
-            Status akun
-          </label>
+          <label className="sid-form-label">Status akun</label>
 
           <select
             value={form.is_active ? 'aktif' : 'nonaktif'}
@@ -223,18 +182,11 @@ export default function UserFormModal({
 
         {/* Action */}
         <div className="sid-modal-actions">
-          <button
-            type="button"
-            onClick={onClose}
-            className="sid-button sid-button-outline"
-          >
+          <button type="button" onClick={onClose} className="sid-button sid-button-outline">
             Batal
           </button>
 
-          <button
-            type="submit"
-            className="sid-button sid-button-primary sid-button-submit"
-          >
+          <button type="submit" className="sid-button sid-button-primary sid-button-submit">
             {isEdit ? (
               <>
                 <Save size={16} />
@@ -250,5 +202,5 @@ export default function UserFormModal({
         </div>
       </form>
     </div>
-  );
+  )
 }

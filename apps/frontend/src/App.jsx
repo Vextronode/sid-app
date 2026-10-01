@@ -41,6 +41,8 @@ import DataWargaPage from '@/pages/admin/DataWargaPage'
 import ManajemenUserPage from '@/pages/admin/ManajemenUserPage'
 import KelolaBeritaPage from '@/pages/admin/KelolaBeritaPage'
 import KelolaProfilDesaPage from '@/pages/admin/KelolaProfilDesaPage'
+import OrganisasiBpdPage from '@/pages/admin/OrganisasiBpdPage'
+import OrganisasiLembagaPage from '@/pages/admin/OrganisasiLembagaPage'
 import OperatorSuratListPage from '@/pages/admin/OperatorSuratListPage'
 import TestRevisionFlowPage from '@/pages/admin/TestRevisionFlowPage'
 
@@ -344,6 +346,27 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/organisasi/bpd"
+            element={
+              <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
+                <OperatorDesaLayout>
+                  <OrganisasiBpdPage />
+                </OperatorDesaLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/organisasi/lembaga"
+            element={
+              <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
+                <OperatorDesaLayout>
+                  <OrganisasiLembagaPage />
+                </OperatorDesaLayout>
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/admin/kelola-profil-desa"
             element={

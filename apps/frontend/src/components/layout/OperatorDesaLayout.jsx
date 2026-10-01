@@ -17,6 +17,7 @@ import {
   MapPinned,
   Newspaper,
   LogOut,
+  Network,
 } from 'lucide-react'
 import { WilayahMasterProvider } from '@/features/kelola-wilayah/hooks/WilayahMasterProvider'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
@@ -58,6 +59,16 @@ const MENU_ITEMS = [
     label: 'Kelola Berita',
     path: '/admin/kelola-berita',
     icon: Newspaper,
+  },
+  {
+    label: 'Organisasi BPD',
+    path: '/admin/organisasi/bpd',
+    icon: Network,
+  },
+  {
+    label: 'LPM / Karang Taruna / PKK',
+    path: '/admin/organisasi/lembaga',
+    icon: Network,
   },
 ]
 

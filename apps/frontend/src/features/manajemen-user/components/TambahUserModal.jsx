@@ -1,12 +1,9 @@
-
 // ==========================================
 // TambahUserModal.jsx
-// Popup form tambah user & role.
-// Styling menggunakan SID Global Theme.
 // ==========================================
 
-import { useState } from 'react';
-import { Send } from 'lucide-react';
+import { useState } from 'react'
+import { Send } from 'lucide-react'
 
 const ROLE_OPTIONS = [
   { value: 'rt', label: 'RT' },
@@ -14,16 +11,15 @@ const ROLE_OPTIONS = [
   { value: 'kadus', label: 'Kadus' },
   { value: 'petugas_desa', label: 'Petugas Desa' },
   { value: 'kepala_desa', label: 'Kepala Desa' },
-];
+  { value: 'sekretaris_desa', label: 'Sekretaris Desa' },
+  { value: 'kasi_pelayanan', label: 'Kasi Pelayanan' },
+  { value: 'kaur_tu_umum', label: 'Kaur TU Umum' },
+]
 
-// Role yang butuh input wilayah (RT/RW)
-const ROLES_WITH_WILAYAH = ['rt', 'rw'];
+// Role yang butuh input wilayah (RT/RW/Kadus)
+const ROLES_WITH_WILAYAH = ['rt', 'rw', 'kadus']
 
-export default function TambahUserModal({
-  open,
-  onClose,
-  onSubmit,
-}) {
+export default function TambahUserModal({ open, onClose, onSubmit }) {
   const [form, setForm] = useState({
     nama: '',
     email: '',
@@ -32,22 +28,22 @@ export default function TambahUserModal({
     citizenId: '',
     password: '',
     status: 'aktif',
-  });
+  })
 
-  if (!open) return null;
+  if (!open) return null
 
   const handleChange = (field) => (e) =>
     setForm((prev) => ({
       ...prev,
       [field]: e.target.value,
-    }));
+    }))
 
-  const showWilayah = ROLES_WITH_WILAYAH.includes(form.role);
+  const showWilayah = ROLES_WITH_WILAYAH.includes(form.role)
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
-    onSubmit(form);
+    onSubmit(form)
 
     setForm({
       nama: '',
@@ -57,20 +53,15 @@ export default function TambahUserModal({
       citizenId: '',
       password: '',
       status: 'aktif',
-    });
-  };
+    })
+  }
 
   return (
     <div className="sid-user-modal-overlay">
-      <form
-        onSubmit={handleSubmit}
-        className="sid-user-modal"
-      >
+      <form onSubmit={handleSubmit} className="sid-user-modal">
         {/* NAMA */}
         <div className="sid-user-form-group">
-          <label className="sid-user-form-label">
-            Nama lengkap *
-          </label>
+          <label className="sid-user-form-label">Nama lengkap *</label>
 
           <input
             required
@@ -83,9 +74,7 @@ export default function TambahUserModal({
 
         {/* EMAIL */}
         <div className="sid-user-form-group">
-          <label className="sid-user-form-label">
-            Email *
-          </label>
+          <label className="sid-user-form-label">Email *</label>
 
           <input
             required
@@ -99,9 +88,7 @@ export default function TambahUserModal({
 
         {/* ROLE */}
         <div className="sid-user-form-group sid-user-form-group-role">
-          <label className="sid-user-form-label">
-            Role *
-          </label>
+          <label className="sid-user-form-label">Role *</label>
 
           <select
             required
@@ -109,15 +96,10 @@ export default function TambahUserModal({
             onChange={handleChange('role')}
             className="sid-user-form-input"
           >
-            <option value="">
-              Pilih role
-            </option>
+            <option value="">Pilih role</option>
 
             {ROLE_OPTIONS.map((r) => (
-              <option
-                key={r.value}
-                value={r.value}
-              >
+              <option key={r.value} value={r.value}>
                 {r.label}
               </option>
             ))}
@@ -125,16 +107,14 @@ export default function TambahUserModal({
         </div>
 
         <p className="sid-user-form-helper">
-          Territory label hanya muncul untuk role RT dan RW
-          (kepala_desa &amp; petugas_desa tidak perlu wilayah)
+          Territory label hanya muncul untuk role RT, RW, dan Kadus (kepala_desa, sekretaris_desa,
+          kasi_pelayanan, kaur_tu_umum, &amp; petugas_desa tidak perlu wilayah)
         </p>
 
         {/* WILAYAH */}
         {showWilayah && (
           <div className="sid-user-form-group">
-            <label className="sid-user-form-label">
-              Wilayah (RT/RW)
-            </label>
+            <label className="sid-user-form-label">Wilayah (RT/RW/Kadus)</label>
 
             <input
               value={form.wilayah}
@@ -147,9 +127,7 @@ export default function TambahUserModal({
 
         {/* CITIZEN ID */}
         <div className="sid-user-form-group">
-          <label className="sid-user-form-label">
-            Link ke warga (Citizen ID)
-          </label>
+          <label className="sid-user-form-label">Link ke warga (Citizen ID)</label>
 
           <input
             value={form.citizenId}
@@ -161,9 +139,7 @@ export default function TambahUserModal({
 
         {/* PASSWORD */}
         <div className="sid-user-form-group">
-          <label className="sid-user-form-label">
-            Password
-          </label>
+          <label className="sid-user-form-label">Password</label>
 
           <input
             type="password"
@@ -176,44 +152,31 @@ export default function TambahUserModal({
 
         {/* STATUS */}
         <div className="sid-user-form-group sid-user-form-group-status">
-          <label className="sid-user-form-label">
-            Status akun
-          </label>
+          <label className="sid-user-form-label">Status akun</label>
 
           <select
             value={form.status}
             onChange={handleChange('status')}
             className="sid-user-form-input"
           >
-            <option value="aktif">
-              Aktif
-            </option>
+            <option value="aktif">Aktif</option>
 
-            <option value="nonaktif">
-              Nonaktif
-            </option>
+            <option value="nonaktif">Nonaktif</option>
           </select>
         </div>
 
         {/* ACTION */}
         <div className="sid-user-modal-actions">
-          <button
-            type="button"
-            onClick={onClose}
-            className="sid-user-modal-cancel"
-          >
+          <button type="button" onClick={onClose} className="sid-user-modal-cancel">
             Batal
           </button>
 
-          <button
-            type="submit"
-            className="sid-user-modal-submit"
-          >
+          <button type="submit" className="sid-user-modal-submit">
             <Send size={16} />
             submit permohonan
           </button>
         </div>
       </form>
     </div>
-  );
+  )
 }
