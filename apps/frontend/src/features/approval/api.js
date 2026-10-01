@@ -81,3 +81,11 @@ export const approveSurat = (role, id, status, notes = null) => {
 
   return submitDecision(role, id, status, notes)
 }
+
+export function getApprovalSettings() {
+  return api.get('/api/approval-settings')
+}
+
+export function updateApprovalSetting(id, data) {
+  return api.patch(`/api/approval-settings/${id}`, data)
+}

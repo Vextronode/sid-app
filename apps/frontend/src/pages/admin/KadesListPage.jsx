@@ -18,7 +18,7 @@ import { useSuratList } from '@/features/approval-kades/hooks/useSuratListKades'
 import SuratDetailModalKades from '@/features/approval-kades/components/SuratDetailModalKades'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
-
+import { OverdueBadge } from '@/components/ui/OverdueBadge'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FooterDesa } from '@/components/layout/FooterDesa'
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
@@ -198,7 +198,11 @@ export default function KadesListPage() {
                       {/* STATUS */}
 
                       <td className="rw-table-center">
-                        <StatusBadge status={s.status} />
+                        <div className="flex flex-col items-center gap-1.5">
+                          <StatusBadge status={s.status} />
+
+                          <OverdueBadge isOverdue={s.is_overdue} />
+                        </div>
                       </td>
 
                       {/* AKSI */}

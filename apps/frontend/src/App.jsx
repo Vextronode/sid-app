@@ -45,7 +45,7 @@ import OrganisasiBpdPage from '@/pages/admin/OrganisasiBpdPage'
 import OrganisasiLembagaPage from '@/pages/admin/OrganisasiLembagaPage'
 import OperatorSuratListPage from '@/pages/admin/OperatorSuratListPage'
 import TestRevisionFlowPage from '@/pages/admin/TestRevisionFlowPage'
-
+import ApprovalSettingPage from '@/pages/admin/ApprovalSettingPage'
 // Role yang termasuk "Operator Desa" (dipakai berulang di bawah)
 const OPERATOR_DESA_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa']
 
@@ -384,6 +384,16 @@ export default function App() {
               <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
                 <OperatorDesaLayout>
                   <OperatorSuratListPage />
+                </OperatorDesaLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/approval-settings"
+            element={
+              <ProtectedRoute allowedRoles={['petugas_desa']}>
+                <OperatorDesaLayout>
+                  <ApprovalSettingPage />
                 </OperatorDesaLayout>
               </ProtectedRoute>
             }
