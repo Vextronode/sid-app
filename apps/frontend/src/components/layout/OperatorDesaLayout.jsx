@@ -18,6 +18,7 @@ import {
   Newspaper,
   LogOut,
   Network,
+  Settings,
 } from 'lucide-react'
 import { WilayahMasterProvider } from '@/features/kelola-wilayah/hooks/WilayahMasterProvider'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
@@ -59,6 +60,11 @@ const MENU_ITEMS = [
     label: 'Kelola Berita',
     path: '/admin/kelola-berita',
     icon: Newspaper,
+  },
+  {
+    label: 'Pengaturan Deadline',
+    path: '/admin/approval-settings',
+    icon: Settings,
   },
   {
     label: 'Organisasi BPD',
