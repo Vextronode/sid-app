@@ -55,6 +55,17 @@ class LettersMigrationTest extends TestCase
     }
 
     #[Test]
+    public function letter_number_counter_table_and_columns_exist(): void
+    {
+        $this->assertTrue(Schema::hasColumns('letter_number_counters', [
+            'village_id',
+            'letter_type_id',
+            'year',
+            'last_number',
+        ]));
+    }
+
+    #[Test]
     public function payload_column_accepts_json_and_round_trips_as_array(): void
     {
         $letter = Letter::factory()->create([

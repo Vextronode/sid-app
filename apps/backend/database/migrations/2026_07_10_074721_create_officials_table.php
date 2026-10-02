@@ -41,9 +41,11 @@ return new class extends Migration
             $table->string('phone_wa')->nullable();
             $table->date('started_at');
             $table->date('ended_at')->nullable();
+            $table->date('term_ends_at')->nullable()->after('ended_at');
             $table->boolean('is_active')->default(true);
             $table->text('notes')->nullable();
             $table->timestamps();
+            $table->index(['is_active', 'term_ends_at'], 'idx_officials_term');
         });
     }
 
