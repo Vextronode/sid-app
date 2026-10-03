@@ -2,12 +2,15 @@
 
 namespace Tests\Unit;
 
+use App\Enums\LetterStatus;
 use App\Models\ApprovalFlow;
 use App\Models\Citizen;
 use App\Models\FlowStep;
 use App\Models\Letter;
+use App\Models\LetterType;
 use App\Models\Rt;
 use App\Models\Rw;
+use App\Models\User;
 use App\Models\Village;
 use App\Repositories\LetterRepository;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -225,5 +228,65 @@ class LetterRepositoryTest extends TestCase
             [$letterA->id, $letterB->id],
             $result->pluck('id')->all(),
         );
+    }
+
+    public function test_query_approved_for_assigned_role_matches_requested_role(): void
+    {
+        $village = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id]);
+
+        $approvedForKasi = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
+        $otherType = LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum']);
+
+        Letter::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'letter_type_id' => $approvedForKasi->id,
+            'status' => LetterStatus::Approved,
+        ]);
+        Letter::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'letter_type_id' => $otherType->id,
+            'status' => LetterStatus::Approved,
+        ]);
+
+        $result = $this->repository->queryApprovedForAssignedRole('kasi_pelayanan', $village->id)->get();
+
+        $this->assertCount(1, $result);
+    }
+
+    public function test_count_waiting_at_step_and_exclude_submitted_by_work_for_partial_scope(): void
+    {
+        $village = Village::factory()->create();
+        $rt = Rt::factory()->create();
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id, 'rt_id' => $rt->id]);
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'rt']);
+        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'kepala_desa']);
+
+        Letter::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'status' => LetterStatus::Pending,
+            'submitted_by' => $userA->id,
+        ]);
+        Letter::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'status' => LetterStatus::InProgress,
+            'submitted_by' => $userB->id,
+        ]);
+
+        $this->assertSame(2, $this->repository->countWaitingAtStep(['rt'], $village->id, $rt->id));
+
+        $pending = $this->repository->queryPendingAtFlowStepPositions(['rt'], $village->id, $userA->id)->get();
+        $this->assertCount(1, $pending);
     }
 }

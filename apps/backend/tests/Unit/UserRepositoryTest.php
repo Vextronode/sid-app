@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Citizen;
+use App\Models\Official;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -53,5 +54,34 @@ class UserRepositoryTest extends TestCase
         $updated = $this->repository->toggleActive($updated);
 
         $this->assertTrue($updated->is_active);
+    }
+
+    public function test_find_by_username_matches_lowercase_and_trimmed_value(): void
+    {
+        $user = User::factory()->create(['username' => '  AdminUser  ']);
+
+        $result = $this->repository->findByUsername('adminuser');
+
+        $this->assertNotNull($result);
+        $this->assertSame($user->id, $result->id);
+    }
+
+    public function test_username_exists_ignores_same_user_and_works_case_insensitive(): void
+    {
+        $user = User::factory()->create(['username' => 'bambang']);
+
+        $this->assertTrue($this->repository->usernameExists('BAMBANG'));
+        $this->assertFalse($this->repository->usernameExists('BAMBANG', $user->id));
+        $this->assertFalse($this->repository->usernameExists('other_user'));
+    }
+
+    public function test_find_with_full_profile_eager_loads_active_official(): void
+    {
+        $user = User::factory()->create();
+        Official::factory()->forUser($user)->create();
+
+        $result = $this->repository->findWithFullProfile($user);
+
+        $this->assertTrue($result->relationLoaded('official'));
     }
 }

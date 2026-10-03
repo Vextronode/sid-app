@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 
 class UserRepository
 {
@@ -15,6 +16,31 @@ class UserRepository
     public function findByCitizenId(string $citizenId): ?User
     {
         return User::query()->where('citizen_id', $citizenId)->first();
+    }
+
+    public function findByUsername(string $username): ?User
+    {
+        $normalized = Str::lower(trim($username));
+
+        return User::query()
+            ->whereRaw('LOWER(username) = ?', [$normalized])
+            ->first();
+    }
+
+    public function usernameExists(string $username, ?string $ignoreUserId = null): bool
+    {
+        $normalized = Str::lower(trim($username));
+
+        $query = User::query()
+            ->whereRaw('LOWER(username) = ?', [$normalized]);
+
+        if ($ignoreUserId !== null) {
+            $query->where(function ($innerQuery) use ($ignoreUserId) {
+                $innerQuery->where('id', '!=', $ignoreUserId);
+            });
+        }
+
+        return $query->exists();
     }
 
     public function allWithCitizenAndOfficial(): Collection
