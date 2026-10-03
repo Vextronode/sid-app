@@ -76,6 +76,13 @@ class UpdateOfficialRequest extends FormRequest
                 'date',
             ],
 
+            'term_ends_at' => [
+                'sometimes',
+                'nullable',
+                'date',
+                'after:started_at',
+            ],
+
             'ended_at' => [
                 'sometimes',
                 'nullable',

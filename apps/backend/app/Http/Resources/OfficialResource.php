@@ -29,6 +29,7 @@ class OfficialResource extends JsonResource
             'phone_wa' => $this->phone_wa,
             'started_at' => $this->started_at,
             'ended_at' => $this->ended_at,
+            'term_ends_at' => $this->term_ends_at,
             'is_active' => $this->is_active,
             'notes' => $this->notes,
             'created_at' => $this->created_at,

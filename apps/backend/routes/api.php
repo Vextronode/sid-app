@@ -375,14 +375,18 @@ Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
     | defense-in-depth kedua di belakang middleware yang lebih permisif,
     | bukan duplikasi peran.
     */
-    Route::prefix('officials')->group(function () {
-        Route::get('/', [OfficialController::class, 'index']);
-        Route::post('/', [OfficialController::class, 'store']);
-        Route::get('/{official}', [OfficialController::class, 'show']);
-        Route::patch('/{official}', [OfficialController::class, 'update']);
-        Route::post('/{official}/rotate', [OfficialController::class, 'rotate']);
-        Route::delete('/{official}', [OfficialController::class, 'destroy']);
-    });
+    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+        ->prefix('officials')
+        ->group(function () {
+            Route::post('/promote', [OfficialController::class, 'promote']);
+            Route::get('/', [OfficialController::class, 'index']);
+            Route::post('/', [OfficialController::class, 'store']);
+            Route::get('/{official}', [OfficialController::class, 'show']);
+            Route::patch('/{official}', [OfficialController::class, 'update']);
+            Route::post('/{official}/demote', [OfficialController::class, 'demote']);
+            Route::post('/{official}/rotate', [OfficialController::class, 'rotate']);
+            Route::delete('/{official}', [OfficialController::class, 'destroy']);
+        });
 
     /*
     |----------------------------------------------------------------------
@@ -394,7 +398,7 @@ Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
         ->prefix('users')
         ->group(function () {
             Route::get('/', [UserController::class, 'index']);
-            Route::post('/', [UserController::class, 'store']);
+            Route::post('/{user}/reset-password', [UserController::class, 'resetPassword']);
             Route::patch('/{user}', [UserController::class, 'update']);
             Route::patch('/{user}/toggle-status', [UserController::class, 'updateStatus']);
         });

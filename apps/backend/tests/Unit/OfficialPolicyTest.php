@@ -67,11 +67,7 @@ class OfficialPolicyTest extends TestCase
 
     public static function managerRoleProvider(): array
     {
-        return [
-            ['kepala_desa'],
-            ['sekretaris_desa'],
-            ['petugas_desa'],
-        ];
+        return [['petugas_desa']];
     }
 
     #[DataProvider('nonManagerRoleProvider')]
@@ -94,6 +90,8 @@ class OfficialPolicyTest extends TestCase
             ['rw'],
             ['kadus'],
             ['kaur_tu_umum'],
+            ['kepala_desa'],
+            ['sekretaris_desa'],
         ];
     }
 }
