@@ -23,7 +23,7 @@ class LetterTypeSeeder extends Seeder
         $category = LetterCategory::query()->where('code', 'approval_normal')->firstOrFail();
         $flow = ApprovalFlow::query()
             ->where('category_id', $category->id)
-            ->where('name', 'RT-Kades-Staff (3 Tahap)')
+            ->where('name', 'RT-Kades/Sekdes (2 Tahap)')
             ->firstOrFail();
 
         foreach ($this->letterTypes() as $type) {

@@ -118,8 +118,8 @@ class FlowStepModelTest extends TestCase
         $flow = $this->makeFlow();
 
         $step = FlowStep::query()->create([
-            'flow_id' => $flow->id, 'step_order' => 3,
-            'approver_position' => 'kasi_pelayanan', 'is_final' => 1,
+            'flow_id' => $flow->id, 'step_order' => 2,
+            'approver_position' => 'kepala_desa', 'is_final' => 1,
         ]);
 
         $this->assertIsBool($step->fresh()->is_final);
@@ -191,7 +191,7 @@ class FlowStepModelTest extends TestCase
         $this->assertSame($flow->id, $step->flow->id);
     }
 
-    private function makeFlow(string $name = 'RT-Kades-Staff (3 Tahap)'): ApprovalFlow
+    private function makeFlow(string $name = 'RT-Kades/Sekdes (2 Tahap)'): ApprovalFlow
     {
         // firstOrCreate: LetterCategory.code UNIQUE, jadi kategori yang
         // sama dipakai ulang antar pemanggilan makeFlow() dalam 1 test

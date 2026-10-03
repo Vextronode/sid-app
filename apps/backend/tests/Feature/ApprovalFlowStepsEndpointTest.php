@@ -37,12 +37,9 @@ use Tests\TestCase;
  *  - steps kosong/tidak diisi DITOLAK (422, karena min:1).
  *  - Operasi bersifat replace-all: memanggil ulang dengan payload berbeda
  *    benar-benar menghapus steps versi sebelumnya (bukan menambah).
- *  - approver_position='sekdes' TETAP diterima validasi (ENUM masih
- *    5 nilai) — validasi Form Request ini murni soal ENUM yang sah di
- *    skema. Seeder hari ini (EV5-1-S4) memang hanya memakai
- *    'kepala_desa' untuk step 2 (representasi satu-row), tapi itu bukan
- *    berarti nilai 'sekdes' sudah "final tidak dipakai" — pertanyaan
- *    bisnisnya masih terbuka, lihat EV5-1-S4_OPEN_QUESTION_SEKDES.md.
+ *  - approver_position='sekdes' tetap diterima sebagai nilai enum; flow
+ *    default menggunakan kepala_desa sebagai approver step final, dengan
+ *    Sekretaris Desa sebagai pejabat pengganti sesuai keputusan bisnis.
  */
 class ApprovalFlowStepsEndpointTest extends TestCase
 {
@@ -111,13 +108,13 @@ class ApprovalFlowStepsEndpointTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $response->assertJsonCount(3, 'data');
-        $this->assertDatabaseCount('flow_steps', 3);
+        $response->assertJsonCount(2, 'data');
+        $this->assertDatabaseCount('flow_steps', 2);
         $this->assertDatabaseHas('flow_steps', [
             'flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'rt', 'is_final' => false,
         ]);
         $this->assertDatabaseHas('flow_steps', [
-            'flow_id' => $flow->id, 'step_order' => 3, 'approver_position' => 'kasi_pelayanan', 'is_final' => true,
+            'flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'kepala_desa', 'is_final' => true,
         ]);
     }
 
@@ -127,24 +124,22 @@ class ApprovalFlowStepsEndpointTest extends TestCase
         $user = User::factory()->create(['role' => 'petugas_desa']);
         $flow = $this->makeFlow();
 
-        // Isi steps pertama (3 tahap).
+        // Isi flow default (2 tahap).
         $this->actingAs($user)->putJson("/api/approval-flows/{$flow->id}/steps", [
             'steps' => $this->validDefaultSteps(),
         ])->assertStatus(200);
-        $this->assertDatabaseCount('flow_steps', 3);
+        $this->assertDatabaseCount('flow_steps', 2);
 
-        // Ganti dengan steps baru (2 tahap saja).
+        // Ganti dengan satu tahap untuk membuktikan steps lama tergantikan.
         $response = $this->actingAs($user)->putJson("/api/approval-flows/{$flow->id}/steps", [
             'steps' => [
-                ['step_order' => 1, 'approver_position' => 'rt', 'is_final' => false],
-                ['step_order' => 2, 'approver_position' => 'kasi_pelayanan', 'is_final' => true],
+                ['step_order' => 1, 'approver_position' => 'kepala_desa', 'is_final' => true],
             ],
         ]);
 
         $response->assertStatus(200);
-        $response->assertJsonCount(2, 'data');
-        // Total di DB harus 2 (bukan 5) — membuktikan steps lama benar2 dihapus.
-        $this->assertDatabaseCount('flow_steps', 2);
+        $response->assertJsonCount(1, 'data');
+        $this->assertDatabaseCount('flow_steps', 1);
     }
 
     #[Test]
@@ -327,7 +322,7 @@ class ApprovalFlowStepsEndpointTest extends TestCase
 
         return ApprovalFlow::query()->create([
             'category_id' => $category->id,
-            'name' => 'RT-Kades-Staff (3 Tahap)',
+            'name' => 'RT-Kades/Sekdes (2 Tahap)',
             'is_active' => true,
         ]);
     }
@@ -336,8 +331,7 @@ class ApprovalFlowStepsEndpointTest extends TestCase
     {
         return [
             ['step_order' => 1, 'approver_position' => 'rt', 'is_final' => false],
-            ['step_order' => 2, 'approver_position' => 'kepala_desa', 'is_final' => false],
-            ['step_order' => 3, 'approver_position' => 'kasi_pelayanan', 'is_final' => true],
+            ['step_order' => 2, 'approver_position' => 'kepala_desa', 'is_final' => true],
         ];
     }
 }
