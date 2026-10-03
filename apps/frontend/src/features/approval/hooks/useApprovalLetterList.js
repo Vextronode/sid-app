@@ -1,9 +1,11 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useMemo, useState } from 'react'
-import { getSuratList } from '@/features/approval/api'
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getSuratList as getApprovalSuratList } from '@/features/approval/api'
+import { getSuratList as getLegacySuratList } from '@/lib/api'
 import { RELEVANT_STATUSES } from '@/constants/suratStatus'
 
-export function useSuratList({ initialStatus = '' } = {}) {
+export function useApprovalLetterList({ role, initialStatus = '' } = {}) {
   const [letters, setLetters] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -11,25 +13,25 @@ export function useSuratList({ initialStatus = '' } = {}) {
   const [filterJenis, setFilterJenis] = useState('')
   const [filterStatus, setFilterStatus] = useState(initialStatus)
 
-  const fetchLetters = async () => {
+  const fetchLetters = useCallback(async () => {
     try {
       setLoading(true)
 
-      const response = await getSuratList('rw')
+      const response =
+        role === 'kadus' ? await getLegacySuratList('kadus') : await getApprovalSuratList(role)
 
       setLetters(response.data.data ?? [])
     } catch (error) {
-      console.error('GET RW FYI HISTORY ERROR', error.response?.data ?? error)
-
+      console.error(`GET ${role?.toUpperCase()} LETTER ERROR`, error.response?.data ?? error)
       setLetters([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [role])
 
   useEffect(() => {
     fetchLetters()
-  }, [])
+  }, [fetchLetters])
 
   const data = useMemo(() => {
     let result = [...letters]
@@ -47,7 +49,12 @@ export function useSuratList({ initialStatus = '' } = {}) {
     if (search) {
       const keyword = search.toLowerCase()
 
-      result = result.filter((letter) => letter.applicant_name?.toLowerCase().includes(keyword))
+      result = result.filter(
+        (letter) =>
+          letter.applicant_name?.toLowerCase().includes(keyword) ||
+          letter.citizen?.name?.toLowerCase().includes(keyword) ||
+          letter.letter_number?.toLowerCase().includes(keyword),
+      )
     }
 
     return result
