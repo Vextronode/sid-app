@@ -1,17 +1,28 @@
-/* eslint-disable no-unused-vars */
 // ==========================================
 // ProfilDesaPage.jsx
 // Halaman publik Profil Desa.
 // Tampilan dibuat SAMA dengan KelolaProfilDesaPage,
 // tetapi tanpa tombol edit.
 // Styling menggunakan Global CSS SID.
+//
+// Data diambil dari API /api/public/village-profile.
+// Field yang belum dikirim backend ditampilkan
+// sebagai "Belum tersedia" (tanpa data dummy).
 // ==========================================
 
 import { useState, useEffect } from 'react'
 import { Users, Building2, Home, Eye, ClipboardList } from 'lucide-react'
 
 import api from '../lib/api' // Integrasi API Axios
-import { profilDesa as dummyProfilDesa } from '@/features/profil-desa-admin/data/dummyProfilDesa'
+
+// Teks untuk data yang belum dikirim backend
+const NA = 'Belum tersedia'
+
+// Tampilan seragam untuk data yang belum dikirim backend
+// (italic + abu-abu, sama seperti teks Visi)
+function NotAvailable({ text = NA }) {
+  return <p className="sid-profil-desa-visi-text">{text}</p>
+}
 
 function Avatar({ src, name, size = 'medium' }) {
   return (
@@ -25,108 +36,98 @@ function Avatar({ src, name, size = 'medium' }) {
   )
 }
 
+// ==========================================
+// PEMETAAN RESPONSE BACKEND -> DATA HALAMAN
+// Kalau backend menambah field baru (penduduk, luas,
+// dusun, perangkat, foto), cukup ubah fungsi ini.
+// ==========================================
+
+function mapProfile(raw) {
+  const missionList = Array.isArray(raw?.mission)
+    ? raw.mission
+    : typeof raw?.mission === 'string'
+      ? raw.mission
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
+
+  return {
+    name: raw?.name || 'Desa Cibenda',
+    address: raw?.address || null,
+    phone: raw?.phone || null,
+    history: raw?.history || null,
+    vision: raw?.vision || null,
+    misi: missionList,
+
+    // --- Belum dikirim backend ---
+    heroImage: null,
+    totalPenduduk: null,
+    luasWilayah: null,
+    jumlahDusun: null,
+
+    kepalaDesa: { nama: raw?.head_name || null, jabatan: 'Kepala Desa', foto: null },
+    sekretarisDesa: { nama: null, jabatan: 'Sekretaris Desa', foto: null },
+    kaur: { nama: null, jabatan: 'Kaur Umum & TU', foto: null },
+    kasi: { nama: null, jabatan: 'Kasi Pelayanan', foto: null },
+    kadusList: [],
+  }
+}
+
 export function ProfilDesaPage() {
-  const [data, setData] = useState(dummyProfilDesa)
+  const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
+    let active = true
+
     const fetchProfilData = async () => {
       try {
         setLoading(true)
+        setError(null)
 
-        const [profilRes, homeRes] = await Promise.allSettled([
-          api.get('/api/public/village-profile'),
-          api.get('/api/public/home'),
-        ])
+        const res = await api.get('/api/public/village-profile')
 
-        let backendProfile = null
-        let backendStats = null
-
-        if (profilRes.status === 'fulfilled') {
-          backendProfile = profilRes.value.data?.data || null
-        }
-
-        if (homeRes.status === 'fulfilled') {
-          backendStats = homeRes.value.data?.data?.public_stats || null
-        }
-
-        // Jika data backend tersedia, petakan ke struktur data komponen
-        if (backendProfile) {
-          setData({
-            hero: {
-              image: backendProfile.hero_image || dummyProfilDesa.hero?.image || '',
-              badge: backendProfile.badge || dummyProfilDesa.hero?.badge || 'Profil Desa',
-              title: backendProfile.title || dummyProfilDesa.hero?.title || 'Desa Cibenda',
-              description:
-                backendProfile.history ||
-                backendProfile.description ||
-                dummyProfilDesa.hero?.description ||
-                '',
-            },
-            stats: {
-              totalPenduduk:
-                backendProfile.total_population || dummyProfilDesa.stats?.totalPenduduk || 0,
-              pendudukKeterangan:
-                backendProfile.population_desc || dummyProfilDesa.stats?.pendudukKeterangan || '',
-              luasWilayah: backendProfile.area_size || dummyProfilDesa.stats?.luasWilayah || 0,
-              luasKeterangan:
-                backendProfile.area_desc || dummyProfilDesa.stats?.luasKeterangan || '',
-              jumlahDusun: backendProfile.hamlets_count || dummyProfilDesa.stats?.jumlahDusun || 0,
-              dusunKeterangan:
-                backendProfile.hamlets_desc || dummyProfilDesa.stats?.dusunKeterangan || '',
-            },
-            visiMisi: {
-              visi:
-                backendProfile.vision ||
-                backendProfile.visi ||
-                dummyProfilDesa.visiMisi?.visi ||
-                '',
-              misi: Array.isArray(backendProfile.mission)
-                ? backendProfile.mission
-                : typeof backendProfile.mission === 'string'
-                  ? backendProfile.mission.split('\n').filter(Boolean)
-                  : dummyProfilDesa.visiMisi?.misi || [],
-            },
-            perangkatUtama: {
-              kepalaDesa: {
-                nama:
-                  backendProfile.head_of_village ||
-                  dummyProfilDesa.perangkatUtama?.kepalaDesa?.nama ||
-                  '-',
-                jabatan: 'Kepala Desa',
-                foto: dummyProfilDesa.perangkatUtama?.kepalaDesa?.foto || null,
-              },
-              sekretarisDesa: {
-                nama:
-                  backendProfile.secretary ||
-                  dummyProfilDesa.perangkatUtama?.sekretarisDesa?.nama ||
-                  '-',
-                jabatan: 'Sekretaris Desa',
-                foto: dummyProfilDesa.perangkatUtama?.sekretarisDesa?.foto || null,
-              },
-              kaur: {
-                nama: dummyProfilDesa.perangkatUtama?.kaur?.nama || '-',
-                jabatan: 'Kaur Umum & TU',
-                foto: dummyProfilDesa.perangkatUtama?.kaur?.foto || null,
-              },
-              kasi: {
-                nama: dummyProfilDesa.perangkatUtama?.kasi?.nama || '-',
-                jabatan: 'Kasi Pelayanan',
-                foto: dummyProfilDesa.perangkatUtama?.kasi?.foto || null,
-              },
-            },
-            kadusList: dummyProfilDesa.kadusList || [],
-          })
-        }
+        if (active) setData(mapProfile(res.data?.data))
       } catch (err) {
         console.error('Gagal memuat profil desa dari API:', err)
+        if (active) setError(err?.response?.data?.message || 'Gagal memuat profil desa.')
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
 
     fetchProfilData()
+
+    return () => {
+      active = false
+    }
   }, [])
+
+  // ==========================================
+  // STATE LOADING & ERROR
+  // ==========================================
+
+  if (loading) {
+    return (
+      <div className="sid-profil-desa-page">
+        <div className="sid-profil-desa-content">
+          <p>Memuat profil desa...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !data) {
+    return (
+      <div className="sid-profil-desa-page">
+        <div className="sid-profil-desa-content">
+          <p style={{ color: '#d32f2f' }}>{error || 'Data profil desa tidak tersedia.'}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="sid-profil-desa-page">
@@ -137,12 +138,20 @@ export function ProfilDesaPage() {
 
         <div className="sid-profil-desa-header">
           <div className="sid-profil-desa-header-info">
-            <h1>Profil Desa Cibenda</h1>
+            <h1>Profil {data.name}</h1>
 
             <p>
-              Halaman resmi informasi tata kelola, sejarah, dan capaian strategis Desa Cibenda untuk
+              Halaman resmi informasi tata kelola, sejarah, dan capaian strategis {data.name} untuk
               transparansi publik.
             </p>
+
+            {(data.address || data.phone) && (
+              <p>
+                {data.address}
+                {data.address && data.phone ? ' · ' : ''}
+                {data.phone && `Telp. ${data.phone}`}
+              </p>
+            )}
           </div>
         </div>
 
@@ -154,10 +163,10 @@ export function ProfilDesaPage() {
           {/* HERO */}
 
           <div className="sid-profil-desa-hero">
-            {data?.hero?.image ? (
+            {data.heroImage ? (
               <img
-                src={data.hero.image}
-                alt="Profil Desa Cibenda"
+                src={data.heroImage}
+                alt={`Profil ${data.name}`}
                 className="sid-profil-desa-hero-image"
               />
             ) : (
@@ -167,11 +176,11 @@ export function ProfilDesaPage() {
             <div className="sid-profil-desa-hero-overlay" />
 
             <div className="sid-profil-desa-hero-content">
-              <span className="sid-profil-desa-hero-badge">{data?.hero?.badge}</span>
+              <span className="sid-profil-desa-hero-badge">Profil Desa</span>
 
-              <h2>{data?.hero?.title}</h2>
+              <h2>{data.name}</h2>
 
-              <p>{data?.hero?.description}</p>
+              <p>{data.history || `Sejarah desa ${NA.toLowerCase()}.`}</p>
             </div>
           </div>
 
@@ -188,13 +197,13 @@ export function ProfilDesaPage() {
               <div className="sid-profil-desa-stat-content">
                 <p className="sid-profil-desa-stat-label">Total Penduduk</p>
 
-                <p className="sid-profil-desa-stat-value">
-                  {Number(data?.stats?.totalPenduduk || 0).toLocaleString('id-ID')}
-                </p>
-
-                <p className="sid-profil-desa-stat-description success">
-                  {data?.stats?.pendudukKeterangan}
-                </p>
+                {data.totalPenduduk != null ? (
+                  <p className="sid-profil-desa-stat-value">
+                    {Number(data.totalPenduduk).toLocaleString('id-ID')}
+                  </p>
+                ) : (
+                  <NotAvailable />
+                )}
               </div>
             </div>
 
@@ -208,9 +217,11 @@ export function ProfilDesaPage() {
               <div className="sid-profil-desa-stat-content">
                 <p className="sid-profil-desa-stat-label">Luas Wilayah</p>
 
-                <p className="sid-profil-desa-stat-value">{data?.stats?.luasWilayah} ha</p>
-
-                <p className="sid-profil-desa-stat-description">{data?.stats?.luasKeterangan}</p>
+                {data.luasWilayah != null ? (
+                  <p className="sid-profil-desa-stat-value">{data.luasWilayah} ha</p>
+                ) : (
+                  <NotAvailable />
+                )}
               </div>
             </div>
 
@@ -224,11 +235,13 @@ export function ProfilDesaPage() {
               <div className="sid-profil-desa-stat-content">
                 <p className="sid-profil-desa-stat-label">Jumlah Dusun</p>
 
-                <p className="sid-profil-desa-stat-value">
-                  {String(data?.stats?.jumlahDusun || 0).padStart(2, '0')}
-                </p>
-
-                <p className="sid-profil-desa-stat-description">{data?.stats?.dusunKeterangan}</p>
+                {data.jumlahDusun != null ? (
+                  <p className="sid-profil-desa-stat-value">
+                    {String(data.jumlahDusun).padStart(2, '0')}
+                  </p>
+                ) : (
+                  <NotAvailable />
+                )}
               </div>
             </div>
           </div>
@@ -251,7 +264,11 @@ export function ProfilDesaPage() {
                 <h3>Visi</h3>
               </div>
 
-              <p className="sid-profil-desa-visi-text">"{data?.visiMisi?.visi}"</p>
+              {data.vision ? (
+                <p className="sid-profil-desa-visi-text">"{data.vision}"</p>
+              ) : (
+                <NotAvailable />
+              )}
             </div>
 
             {/* MISI */}
@@ -265,15 +282,19 @@ export function ProfilDesaPage() {
                 <h3>Misi</h3>
               </div>
 
-              <ol className="sid-profil-desa-misi-list">
-                {data?.visiMisi?.misi?.map((item, i) => (
-                  <li key={i}>
-                    <span>{i + 1}</span>
+              {data.misi.length > 0 ? (
+                <ol className="sid-profil-desa-misi-list">
+                  {data.misi.map((item, i) => (
+                    <li key={i}>
+                      <span>{i + 1}</span>
 
-                    <p>{item}</p>
-                  </li>
-                ))}
-              </ol>
+                      <p>{item}</p>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <NotAvailable />
+              )}
             </div>
           </div>
         </div>
@@ -296,37 +317,33 @@ export function ProfilDesaPage() {
           {/* KEPALA DESA */}
 
           <div className="sid-profil-desa-kepala">
-            <Avatar
-              src={data?.perangkatUtama?.kepalaDesa?.foto}
-              name={data?.perangkatUtama?.kepalaDesa?.nama}
-              size="large"
-            />
+            <Avatar src={data.kepalaDesa.foto} name={data.kepalaDesa.nama} size="large" />
 
-            <p className="sid-profil-desa-kepala-name">{data?.perangkatUtama?.kepalaDesa?.nama}</p>
+            {data.kepalaDesa.nama ? (
+              <p className="sid-profil-desa-kepala-name">{data.kepalaDesa.nama}</p>
+            ) : (
+              <NotAvailable />
+            )}
 
-            <p className="sid-profil-desa-kepala-role">
-              {data?.perangkatUtama?.kepalaDesa?.jabatan}
-            </p>
+            <p className="sid-profil-desa-kepala-role">{data.kepalaDesa.jabatan}</p>
           </div>
 
           {/* SEKRETARIS / KAUR / KASI */}
 
           <div className="sid-profil-desa-main-officials">
-            {[
-              data?.perangkatUtama?.sekretarisDesa,
-              data?.perangkatUtama?.kaur,
-              data?.perangkatUtama?.kasi,
-            ]
-              .filter(Boolean)
-              .map((p, i) => (
-                <div key={i} className="sid-profil-desa-official-card">
-                  <Avatar src={p?.foto} name={p?.nama} size="small" />
+            {[data.sekretarisDesa, data.kaur, data.kasi].map((p, i) => (
+              <div key={i} className="sid-profil-desa-official-card">
+                <Avatar src={p.foto} name={p.nama} size="small" />
 
-                  <p className="sid-profil-desa-official-name">{p?.nama}</p>
+                {p.nama ? (
+                  <p className="sid-profil-desa-official-name">{p.nama}</p>
+                ) : (
+                  <NotAvailable />
+                )}
 
-                  <p className="sid-profil-desa-official-role">{p?.jabatan}</p>
-                </div>
-              ))}
+                <p className="sid-profil-desa-official-role">{p.jabatan}</p>
+              </div>
+            ))}
           </div>
 
           {/* KADUS */}
@@ -334,13 +351,17 @@ export function ProfilDesaPage() {
           <p className="sid-profil-desa-kadus-title">Kepala Dusun (Kadus)</p>
 
           <div className="sid-profil-desa-kadus-list">
-            {data?.kadusList?.map((k) => (
-              <div key={k.id} className="sid-profil-desa-kadus">
-                <Avatar src={k.foto} name={k.nama} size="tiny" />
+            {data.kadusList.length > 0 ? (
+              data.kadusList.map((k) => (
+                <div key={k.id} className="sid-profil-desa-kadus">
+                  <Avatar src={k.foto} name={k.nama} size="tiny" />
 
-                <p>{k.nama}</p>
-              </div>
-            ))}
+                  <p>{k.nama}</p>
+                </div>
+              ))
+            ) : (
+              <NotAvailable />
+            )}
           </div>
         </div>
       </div>

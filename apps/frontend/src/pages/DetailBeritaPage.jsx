@@ -1,40 +1,57 @@
-
 // ==========================================
 // DetailBeritaPage.jsx
 // Halaman detail berita publik.
 // Styling menggunakan Global CSS SID.
 // ==========================================
 
-import { useParams } from "react-router-dom";
+import { useParams } from 'react-router-dom'
 
-import { MainContent } from "@/features/berita/components/MainContent";
-import { SidebarBerita } from "@/features/berita/components/SidebarBerita";
+import { MainContent } from '@/features/berita/components/MainContent'
+import { SidebarBerita } from '@/features/berita/components/SidebarBerita'
 
-import { FooterDesa } from "@/components/layout/FooterDesa";
+import { FooterDesa } from '@/components/layout/FooterDesa'
 
-// Data dummy berita
-import { DUMMY_NEWS } from "@/lib/constants/dummyNews";
+// Hook data berita dari API
+import { usePublicNews } from '@/features/berita/usePublicNews'
 
 export function DetailBeritaPage() {
-  const { id } = useParams();
+  const { id } = useParams()
+
+  const { news, loading, error } = usePublicNews()
+
+  // ==========================================
+  // STATE LOADING & ERROR
+  // ==========================================
+
+  if (loading) {
+    return (
+      <div className="sid-detail-berita-not-found">
+        <p>Memuat berita...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="sid-detail-berita-not-found">
+        <p>{error}</p>
+      </div>
+    )
+  }
 
   // ==========================================
   // CARI BERITA
+  // String() dipakai supaya aman untuk ID
+  // berupa angka maupun UUID.
   // ==========================================
 
-  const beritaId = Number(id);
-
-  const beritaDetail = DUMMY_NEWS.find(
-    (news) => news.id === beritaId
-  );
+  const beritaDetail = news.find((item) => String(item.id) === String(id))
 
   // ==========================================
   // BERITA LAIN
   // ==========================================
 
-  const beritaLain = DUMMY_NEWS.filter(
-    (news) => news.id !== beritaId
-  );
+  const beritaLain = news.filter((item) => String(item.id) !== String(id)).slice(0, 5)
 
   // ==========================================
   // BERITA TIDAK DITEMUKAN
@@ -43,11 +60,9 @@ export function DetailBeritaPage() {
   if (!beritaDetail) {
     return (
       <div className="sid-detail-berita-not-found">
-        <p>
-          Berita tidak ditemukan.
-        </p>
+        <p>Berita tidak ditemukan.</p>
       </div>
-    );
+    )
   }
 
   // ==========================================
@@ -56,40 +71,27 @@ export function DetailBeritaPage() {
 
   return (
     <div className="sid-detail-berita-page">
-
       <main className="sid-detail-berita-content">
-
         <div className="sid-detail-berita-grid">
-
           {/* ====================================
               KONTEN BERITA
           ==================================== */}
 
-          <MainContent
-            berita={beritaDetail}
-          />
-
+          <MainContent berita={beritaDetail} />
 
           {/* ====================================
               SIDEBAR BERITA
           ==================================== */}
 
-          <SidebarBerita
-            beritaLain={beritaLain}
-          />
-
+          <SidebarBerita beritaLain={beritaLain} />
         </div>
-
       </main>
-
 
       {/* ======================================
           FOOTER
       ====================================== */}
 
       <FooterDesa />
-
     </div>
-  );
+  )
 }
-
