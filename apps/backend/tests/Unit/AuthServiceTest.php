@@ -8,9 +8,11 @@ use App\Models\Village;
 use App\Repositories\CitizenRepository;
 use App\Repositories\UserRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Auth\UsernameGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -27,6 +29,7 @@ class AuthServiceTest extends TestCase
         $this->service = new AuthService(
             new CitizenRepository,
             new UserRepository,
+            new UsernameGenerator(new UserRepository),
         );
     }
 
@@ -41,18 +44,19 @@ class AuthServiceTest extends TestCase
 
         $user = $this->service->registerWarga([
             'nik' => '3201012345670001',
-            'name' => 'Siti Aminah',
-            'email' => 'siti.aminah@example.test',
             'password' => 'RahasiaAman123!',
         ]);
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
-            'email' => 'siti.aminah@example.test',
+            'email' => null,
+            'username' => $user->username,
+            'name' => $citizen->name,
             'role' => 'warga',
             'citizen_id' => $citizen->id,
             'village_id' => $village->id,
             'is_active' => true,
+            'must_change_password' => false,
         ]);
     }
 
@@ -76,15 +80,13 @@ class AuthServiceTest extends TestCase
 
         $user = $this->service->registerWarga([
             'nik' => '3201012345670002',
-            'name' => 'Budi Santoso',
-            'email' => 'budi.santoso@example.test',
             'password' => 'RahasiaAman123!',
-            // Field ini TIDAK ADA di rules() RegisterUserRequest, tapi
-            // seandainya lolos sampai sini (array mentah), harus tetap
-            // diabaikan oleh Service.
+            // Field ini tidak boleh memengaruhi identitas hasil register.
             'village_id' => $otherVillage->id,
             'citizen_id' => $otherCitizen->id,
             'role' => 'petugas_desa',
+            'name' => 'Nama yang tidak dipercaya',
+            'email' => 'tidak-dipakai@example.test',
         ]);
 
         $this->assertSame($village->id, $user->village_id);
@@ -100,8 +102,6 @@ class AuthServiceTest extends TestCase
         try {
             $this->service->registerWarga([
                 'nik' => '9999999999999999',
-                'name' => 'Warga Tidak Terdaftar',
-                'email' => 'tidak.terdaftar@example.test',
                 'password' => 'RahasiaAman123!',
             ]);
         } catch (ValidationException $e) {
@@ -126,8 +126,6 @@ class AuthServiceTest extends TestCase
         try {
             $this->service->registerWarga([
                 'nik' => '3201012345670003',
-                'name' => 'Siti Aminah',
-                'email' => 'akun.baru@example.test',
                 'password' => 'RahasiaAman123!',
             ]);
         } catch (ValidationException $e) {
@@ -148,12 +146,35 @@ class AuthServiceTest extends TestCase
 
         $user = $this->service->registerWarga([
             'nik' => '3201012345670004',
-            'name' => 'Siti Aminah',
-            'email' => 'siti.hash@example.test',
             'password' => 'RahasiaAman123!',
         ]);
 
         $this->assertNotSame('RahasiaAman123!', $user->password);
         $this->assertTrue(Hash::check('RahasiaAman123!', $user->password));
+    }
+
+    #[Test]
+    public function it_retries_when_a_username_unique_constraint_is_hit(): void
+    {
+        $citizen = Citizen::factory()->create([
+            'nik' => '3201012345670005',
+            'name' => 'Siti Aminah',
+        ]);
+        User::factory()->create(['username' => 'siti.1234']);
+
+        $generator = Mockery::mock(UsernameGenerator::class);
+        $generator->shouldReceive('generate')
+            ->twice()
+            ->with($citizen->name)
+            ->andReturn('siti.1234', 'siti.5678');
+
+        $service = new AuthService(new CitizenRepository, new UserRepository, $generator);
+        $user = $service->registerWarga([
+            'nik' => '3201012345670005',
+            'password' => 'RahasiaAman123!',
+        ]);
+
+        $this->assertSame('siti.5678', $user->username);
+        $this->assertSame($citizen->id, $user->citizen_id);
     }
 }

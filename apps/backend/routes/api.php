@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OfficialController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PublicPageController;
 use App\Http\Controllers\Api\RegulationController;
 use App\Http\Controllers\Api\RtApprovalController;
@@ -63,7 +64,7 @@ Route::prefix('public')->group(function () {
 | berarti lupa diproteksi.
 */
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
 
     /*
     |----------------------------------------------------------------------
@@ -79,6 +80,8 @@ Route::middleware('auth:sanctum')->group(function () {
     | Lintas-role: setiap user login berhak melihat datanya sendiri.
     */
     Route::get('/user', [CurrentUserController::class, 'show']);
+    Route::patch('/profile', [ProfileController::class, 'update']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
     /*
     |----------------------------------------------------------------------

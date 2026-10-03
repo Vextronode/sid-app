@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterUserRequest;
 use App\Services\Auth\AuthService;
 use Illuminate\Auth\Events\Registered;
-use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
 class RegisteredUserController extends Controller
@@ -15,7 +15,7 @@ class RegisteredUserController extends Controller
         protected AuthService $authService,
     ) {}
 
-    public function store(RegisterUserRequest $request): Response
+    public function store(RegisterUserRequest $request): JsonResponse
     {
         $user = $this->authService->registerWarga($request->validated());
 
@@ -23,6 +23,12 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return response()->noContent();
+        return response()->json([
+            'message' => 'Akun berhasil dibuat. Simpan username Anda.',
+            'data' => [
+                'username' => $user->username,
+                'name' => $user->name,
+            ],
+        ], 201);
     }
 }

@@ -13,6 +13,15 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $username = $this->input('username');
+
+        $this->merge([
+            'username' => is_string($username) ? Str::lower(trim($username)) : $username,
+        ]);
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -54,6 +63,13 @@ class LoginRequest extends FormRequest
             throw ValidationException::withMessages([
                 'username' => __('auth.failed'),
             ]);
+        }
+
+        if (! Auth::user()->is_active) {
+            Auth::guard('web')->logout();
+            RateLimiter::clear($this->throttleKey());
+
+            abort(403, 'Akun tidak aktif, hubungi administrator');
         }
 
         RateLimiter::clear($this->throttleKey());

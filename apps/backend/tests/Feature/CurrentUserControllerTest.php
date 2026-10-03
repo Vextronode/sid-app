@@ -23,6 +23,8 @@ class CurrentUserControllerTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.id', $user->id)
             ->assertJsonPath('data.citizen.id', $citizen->id)
-            ->assertJsonPath('data.citizen.rt.id', $rt->id);
+            ->assertJsonPath('data.citizen.rt.id', $rt->id)
+            ->assertJsonPath('data.must_change_password', false)
+            ->assertJsonMissingPath('data.password');
     }
 }

@@ -23,6 +23,7 @@ class UserResource extends JsonResource
             'role' => $this->role,
             'email' => $this->email,
             'is_active' => $this->is_active,
+            'must_change_password' => $this->must_change_password,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'citizen' => new CitizenResource($this->whenLoaded('citizen')),
