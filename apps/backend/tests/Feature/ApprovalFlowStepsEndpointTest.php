@@ -14,8 +14,8 @@ use Tests\TestCase;
  * EV5-1-S3 — Feature test untuk PUT /approval-flows/{id}/steps.
  *
  * Ini adalah endpoint paling kritis di seluruh EV5-1: pagar teknis yang
- * mencegah 'rw'/'kadus' menjadi approver_position, memastikan minimal
- * 1 step is_final=true, dan step_order unik per flow — sesuai penegasan
+ * mencegah jabatan non-approver menjadi approver_position, memastikan
+ * hanya satu step final pada step_order terbesar, dan step_order unik — sesuai penegasan
  * SID-ARCH-BE-001 S3.2 bahwa larangan ini STRUKTURAL (bukan hanya UI).
  *
  * PENTING: controller `ApprovalFlowController` di folder ini adalah
@@ -30,9 +30,10 @@ use Tests\TestCase;
  *  - Role selain petugas_desa mendapat 403.
  *  - Flow tidak ditemukan mengembalikan 404.
  *  - Replace steps sukses (200) dengan payload valid & steps lama terhapus.
- *  - approver_position='rw' DITOLAK (422) dengan pesan error spesifik.
- *  - approver_position='kadus' DITOLAK (422) dengan pesan error spesifik.
+ *  - approver_position RW, Kadus, Kasi, dan Kaur DITOLAK (422).
  *  - Payload tanpa step is_final=true DITOLAK (422).
+ *  - Lebih dari satu step final, final bukan step terakhir, atau final bukan
+ *    Kepala Desa/Sekdes DITOLAK (422).
  *  - step_order duplikat dalam satu flow DITOLAK (422).
  *  - steps kosong/tidak diisi DITOLAK (422, karena min:1).
  *  - Operasi bersifat replace-all: memanggil ulang dengan payload berbeda
@@ -143,52 +144,32 @@ class ApprovalFlowStepsEndpointTest extends TestCase
     }
 
     #[Test]
-    public function approver_position_rw_is_rejected_with_specific_message(): void
+    public function non_approver_positions_are_rejected_with_specific_message(): void
     {
         $user = User::factory()->create(['role' => 'petugas_desa']);
         $flow = $this->makeFlow();
 
-        $response = $this->actingAs($user)->putJson("/api/approval-flows/{$flow->id}/steps", [
-            'steps' => [
-                ['step_order' => 1, 'approver_position' => 'rw', 'is_final' => true],
-            ],
-        ]);
+        foreach (['rw', 'kadus', 'kasi_pelayanan', 'kaur_tu_umum'] as $position) {
+            $response = $this->actingAs($user)->putJson("/api/approval-flows/{$flow->id}/steps", [
+                'steps' => [
+                    ['step_order' => 1, 'approver_position' => $position, 'is_final' => true],
+                ],
+            ]);
 
-        $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['steps.0.approver_position']);
-        $response->assertJsonFragment([
-            'steps.0.approver_position' => ['RW dan Kadus tidak dapat menjadi approver_position sejak v5.0'],
-        ]);
+            $response->assertStatus(422);
+            $response->assertJsonValidationErrors(['steps.0.approver_position']);
+            $response->assertJsonFragment([
+                'steps.0.approver_position' => ['RW, Kadus, Kasi, dan Kaur tidak dapat menjadi approver pada alur persetujuan.'],
+            ]);
+        }
+
         $this->assertDatabaseCount('flow_steps', 0);
-    }
-
-    #[Test]
-    public function approver_position_kadus_is_rejected_with_specific_message(): void
-    {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
-        $flow = $this->makeFlow();
-
-        $response = $this->actingAs($user)->putJson("/api/approval-flows/{$flow->id}/steps", [
-            'steps' => [
-                ['step_order' => 1, 'approver_position' => 'kadus', 'is_final' => true],
-            ],
-        ]);
-
-        $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['steps.0.approver_position']);
-        $response->assertJsonFragment([
-            'steps.0.approver_position' => ['RW dan Kadus tidak dapat menjadi approver_position sejak v5.0'],
-        ]);
     }
 
     #[Test]
     public function approver_position_sekdes_is_still_a_syntactically_valid_enum_value(): void
     {
-        // Validasi Form Request murni soal "apakah nilai ini termasuk 5
-        // ENUM yang sah di skema" — bukan soal kebijakan bisnis "apakah
-        // Sekdes benar2 dipakai seeder". Keputusan bisnis (Sekdes tidak
-        // ikut approve) ada di level seeder/FlowStep::resolvablePositions(),
-        // bukan di larangan level validasi seperti rw/kadus.
+        // Sekdes dapat menjadi approver dan penanggung jawab step final.
         $user = User::factory()->create(['role' => 'petugas_desa']);
         $flow = $this->makeFlow();
 
@@ -219,7 +200,7 @@ class ApprovalFlowStepsEndpointTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['steps']);
-        $response->assertJsonFragment(['steps' => ['Minimal satu step harus is_final=true']]);
+        $response->assertJsonFragment(['steps' => ['Tepat satu step harus is_final=true']]);
     }
 
     #[Test]
@@ -238,6 +219,59 @@ class ApprovalFlowStepsEndpointTest extends TestCase
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['steps']);
         $response->assertJsonFragment(['steps' => ['step_order harus unik dalam satu flow']]);
+    }
+
+    #[Test]
+    public function more_than_one_final_step_is_rejected(): void
+    {
+        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $flow = $this->makeFlow();
+
+        $response = $this->actingAs($user)->putJson("/api/approval-flows/{$flow->id}/steps", [
+            'steps' => [
+                ['step_order' => 1, 'approver_position' => 'rt', 'is_final' => true],
+                ['step_order' => 2, 'approver_position' => 'sekdes', 'is_final' => true],
+            ],
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['steps'])
+            ->assertJsonFragment(['steps' => ['Tepat satu step harus is_final=true']]);
+    }
+
+    #[Test]
+    public function final_step_must_have_the_highest_order(): void
+    {
+        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $flow = $this->makeFlow();
+
+        $response = $this->actingAs($user)->putJson("/api/approval-flows/{$flow->id}/steps", [
+            'steps' => [
+                ['step_order' => 1, 'approver_position' => 'kepala_desa', 'is_final' => true],
+                ['step_order' => 2, 'approver_position' => 'rt', 'is_final' => false],
+            ],
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['steps'])
+            ->assertJsonFragment(['steps' => ['Step final harus memiliki step_order terbesar']]);
+    }
+
+    #[Test]
+    public function final_step_must_be_approved_by_kepala_desa_or_sekdes(): void
+    {
+        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $flow = $this->makeFlow();
+
+        $response = $this->actingAs($user)->putJson("/api/approval-flows/{$flow->id}/steps", [
+            'steps' => [
+                ['step_order' => 1, 'approver_position' => 'rt', 'is_final' => true],
+            ],
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['steps'])
+            ->assertJsonFragment(['steps' => ['Approver step final harus Kepala Desa atau Sekdes']]);
     }
 
     #[Test]
@@ -288,24 +322,17 @@ class ApprovalFlowStepsEndpointTest extends TestCase
         $user = User::factory()->create(['role' => 'petugas_desa']);
         $flow = $this->makeFlow();
 
-        // Catatan: urutan step_order di payload ini SENGAJA tidak
-        // merepresentasikan urutan bisnis yang masuk akal (kasi_pelayanan
-        // di step 1) — controller replaceSteps() tidak melakukan validasi
-        // urutan bisnis apapun di luar yang ada di Form Request (unique
-        // step_order + minimal 1 is_final). Test ini murni menguji bahwa
-        // field is_final bersifat opsional di layer validasi HTTP.
         $response = $this->actingAs($user)->putJson("/api/approval-flows/{$flow->id}/steps", [
             'steps' => [
-                ['step_order' => 1, 'approver_position' => 'kasi_pelayanan', 'is_final' => true],
-                ['step_order' => 2, 'approver_position' => 'rt'],
+                ['step_order' => 1, 'approver_position' => 'rt'],
+                ['step_order' => 2, 'approver_position' => 'sekdes', 'is_final' => true],
             ],
         ]);
 
-        // is_final bersifat 'sometimes' di rules — payload di atas tetap
-        // valid karena SALAH SATU step (index 0) sudah is_final=true.
+        // is_final bersifat 'sometimes'; omission defaults to false.
         $response->assertStatus(200);
         $this->assertDatabaseHas('flow_steps', [
-            'flow_id' => $flow->id, 'step_order' => 2, 'is_final' => false,
+            'flow_id' => $flow->id, 'step_order' => 1, 'is_final' => false,
         ]);
     }
 

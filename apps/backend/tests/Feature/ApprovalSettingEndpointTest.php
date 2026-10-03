@@ -86,7 +86,9 @@ class ApprovalSettingEndpointTest extends TestCase
 
         $response = $this->actingAs($user)->getJson('/api/approval-settings');
 
-        $response->assertOk()->assertJsonCount(2, 'data');
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.approval_level', 'rt');
     }
 
     #[Test]
@@ -109,6 +111,27 @@ class ApprovalSettingEndpointTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.deadline_hours', 48)
             ->assertJsonPath('data.reminder_hours', 24);
+    }
+
+    #[Test]
+    public function petugas_desa_cannot_update_a_non_approver_setting(): void
+    {
+        [$village, $user] = $this->petugasDesa();
+        $setting = ApprovalSetting::create([
+            'village_id' => $village->id,
+            'approval_level' => 'kasi_pelayanan',
+            'deadline_hours' => 48,
+            'reminder_hours' => 24,
+        ]);
+
+        $this->actingAs($user)
+            ->patchJson("/api/approval-settings/{$setting->id}", [
+                'deadline_hours' => 72,
+                'reminder_hours' => 36,
+            ])
+            ->assertNotFound();
+
+        $this->assertSame(48, $setting->fresh()->deadline_hours);
     }
 
     #[Test]

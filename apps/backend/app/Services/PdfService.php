@@ -36,13 +36,14 @@ class PdfService
         }
 
         if (
-            $user->role === 'warga' &&
+            $letter->submitted_by === $user->id &&
             $letter->expires_at &&
             now()->greaterThan($letter->expires_at)
         ) {
             abort(403, 'Masa berlaku surat telah habis.');
         }
 
+        // Tanda tangan dan stempel tetap milik Kepala Desa aktif, termasuk jika Sekdes yang menyetujui surat.
         $kades = $this->officialRepository->findActiveVillageHeadWithCitizenOrFail();
 
         /**

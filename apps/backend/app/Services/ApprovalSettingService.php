@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ApprovalLevel;
 use App\Models\ApprovalSetting;
 use App\Models\User;
 use App\Repositories\ApprovalSettingRepository;
@@ -31,6 +32,10 @@ class ApprovalSettingService
     public function update(int $id, array $data): ApprovalSetting
     {
         $setting = $this->repository->findByIdOrFail($id);
+
+        if (! in_array($setting->approval_level, ApprovalLevel::approverCases(), true)) {
+            abort(404, 'Pengaturan approval tidak ditemukan.');
+        }
 
         return $this->repository->update($setting, $data);
     }

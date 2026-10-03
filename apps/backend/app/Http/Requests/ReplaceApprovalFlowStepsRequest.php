@@ -13,8 +13,6 @@ class ReplaceApprovalFlowStepsRequest extends FormRequest
         'rt',
         'kepala_desa',
         'sekdes',
-        'kasi_pelayanan',
-        'kaur_tu_umum',
     ];
 
     /**
@@ -43,31 +41,47 @@ class ReplaceApprovalFlowStepsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'steps.*.approver_position.in' => 'RW dan Kadus tidak dapat menjadi approver_position sejak v5.0',
+            'steps.*.approver_position.in' => 'RW, Kadus, Kasi, dan Kaur tidak dapat menjadi approver pada alur persetujuan.',
         ];
     }
 
     public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
             $steps = $this->input('steps', []);
 
             if (! is_array($steps) || empty($steps)) {
                 return;
             }
 
-            // step_order harus unik dalam satu flow.
             $orders = array_column($steps, 'step_order');
             if (count($orders) !== count(array_unique($orders))) {
                 $validator->errors()->add('steps', 'step_order harus unik dalam satu flow');
             }
 
-            // Minimal satu step harus is_final=true.
-            $hasFinal = collect($steps)->contains(
-                fn (array $step) => ($step['is_final'] ?? false) === true,
+            $finalSteps = collect($steps)->filter(
+                fn (array $step): bool => in_array($step['is_final'] ?? false, [true, 1, '1'], true),
             );
-            if (! $hasFinal) {
-                $validator->errors()->add('steps', 'Minimal satu step harus is_final=true');
+
+            if ($finalSteps->count() !== 1) {
+                $validator->errors()->add('steps', 'Tepat satu step harus is_final=true');
+
+                return;
+            }
+
+            $finalStep = $finalSteps->first();
+            $highestOrder = max($orders);
+
+            if ((int) $finalStep['step_order'] !== (int) $highestOrder) {
+                $validator->errors()->add('steps', 'Step final harus memiliki step_order terbesar');
+            }
+
+            if (! in_array($finalStep['approver_position'], ['kepala_desa', 'sekdes'], true)) {
+                $validator->errors()->add('steps', 'Approver step final harus Kepala Desa atau Sekdes');
             }
         });
     }

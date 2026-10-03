@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Repositories\CitizenRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\NotificationRepository;
+use App\Repositories\OfficialRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -21,6 +22,7 @@ class DashboardService
         protected CitizenRepository $citizenRepository,
         protected LetterRepository $letterRepository,
         protected NotificationRepository $notificationRepository,
+        protected OfficialRepository $officialRepository,
     ) {}
 
     /**
@@ -173,20 +175,22 @@ class DashboardService
     }
 
     /**
-     * @return array{role: string, total_menunggu_final: int, pending_letters: array<int, array<string, mixed>>, unread_notifications_count: int}
+     * @return array{role: string, total_surat_selesai: int, completed_letters: array<int, array<string, mixed>>, unread_notifications_count: int}
      */
     private function forKasiKaur(User $user): array
     {
-        $official = $this->activeOfficial($user, $user->role);
-        $letters = $this->letterRepository
-            ->queryPendingAtFinalStepPosition($official->position, $official->village_id)
+        $query = $this->letterRepository
+            ->queryApprovedForAssignedRole($user->role, $this->villageId($user));
+        $total = (clone $query)->count();
+        $letters = $query
             ->latest()
+            ->limit(20)
             ->get();
 
         return [
             'role' => $user->role,
-            'total_menunggu_final' => $letters->count(),
-            'pending_letters' => $this->letterSummaries($letters),
+            'total_surat_selesai' => $total,
+            'completed_letters' => $this->letterSummaries($letters),
             'unread_notifications_count' => $this->unreadCount($user),
         ];
     }
@@ -206,6 +210,12 @@ class DashboardService
                 $villageId,
                 array_map(fn (LetterStatus $status): string => $status->value, LetterStatus::cases()),
             ),
+            'jabatan_lewat_masa' => $this->officialSummaries(
+                $this->officialRepository->allTermExpiredActive($villageId),
+            ),
+            'jabatan_segera_berakhir' => $this->officialSummaries(
+                $this->officialRepository->allTermEndingWithin($villageId, 30),
+            ),
             'unread_notifications_count' => $this->unreadCount($user),
         ];
     }
@@ -220,6 +230,7 @@ class DashboardService
             ->queryPendingAtFlowStepPositions(
                 self::VILLAGE_HEAD_POSITIONS,
                 $official->village_id,
+                $user->id,
             )
             ->whereIn('status', [
                 LetterStatus::Pending->value,
@@ -312,10 +323,22 @@ class DashboardService
         return match ($step?->approver_position) {
             'rt' => 'Menunggu RT',
             'kepala_desa', 'sekdes' => 'Menunggu Kepala Desa / Sekretaris Desa',
-            'kasi_pelayanan' => 'Menunggu Kasi Pelayanan',
-            'kaur_tu_umum' => 'Menunggu Kaur TU Umum',
             default => 'Sedang Diproses',
         };
+    }
+
+    /**
+     * @param  Collection<int, Official>  $officials
+     * @return array<int, array{id: int, position: string, name: ?string, term_ends_at: ?string}>
+     */
+    private function officialSummaries(Collection $officials): array
+    {
+        return $officials->map(fn (Official $official): array => [
+            'id' => $official->id,
+            'position' => $official->position,
+            'name' => $official->citizen?->name ?? $official->user?->name,
+            'term_ends_at' => $official->term_ends_at?->toDateString(),
+        ])->values()->all();
     }
 
     /**

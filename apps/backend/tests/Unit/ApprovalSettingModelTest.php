@@ -70,6 +70,16 @@ class ApprovalSettingModelTest extends TestCase
     }
 
     #[Test]
+    public function approver_cases_are_limited_to_rt_kepala_desa_and_sekdes(): void
+    {
+        $this->assertSame([
+            ApprovalLevel::RT,
+            ApprovalLevel::KEPALA_DESA,
+            ApprovalLevel::SEKDES,
+        ], ApprovalLevel::approverCases());
+    }
+
+    #[Test]
     public function rw_is_not_a_valid_approval_level(): void
     {
         $village = Village::factory()->create();

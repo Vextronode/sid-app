@@ -132,13 +132,13 @@ class ApprovalFlowServiceTest extends TestCase
 
         $newSteps = $this->service->replaceSteps($flow->id, [
             ['step_order' => 1, 'approver_position' => 'rt', 'is_final' => false],
-            ['step_order' => 2, 'approver_position' => 'kasi_pelayanan', 'is_final' => true],
+            ['step_order' => 2, 'approver_position' => 'sekdes', 'is_final' => true],
         ]);
 
         $this->assertCount(2, $newSteps);
         $this->assertDatabaseCount('flow_steps', 2);
         $this->assertDatabaseHas('flow_steps', [
-            'flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'kasi_pelayanan',
+            'flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'sekdes',
         ]);
     }
 

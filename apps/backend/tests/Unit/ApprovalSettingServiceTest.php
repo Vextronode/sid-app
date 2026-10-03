@@ -8,6 +8,7 @@ use App\Repositories\ApprovalSettingRepository;
 use App\Services\ApprovalSettingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tests\TestCase;
 
 /**
@@ -62,5 +63,24 @@ class ApprovalSettingServiceTest extends TestCase
             $deadline->timestamp,
             2,
         );
+    }
+
+    #[Test]
+    public function update_does_not_change_settings_for_non_approver_levels(): void
+    {
+        $village = Village::factory()->create();
+        $setting = ApprovalSetting::create([
+            'village_id' => $village->id,
+            'approval_level' => 'kasi_pelayanan',
+            'deadline_hours' => 48,
+            'reminder_hours' => 24,
+        ]);
+
+        try {
+            $this->service->update($setting->id, ['deadline_hours' => 72]);
+            $this->fail('Pengaturan non-approver seharusnya tidak dapat diubah melalui endpoint ini.');
+        } catch (NotFoundHttpException) {
+            $this->assertSame(48, $setting->fresh()->deadline_hours);
+        }
     }
 }

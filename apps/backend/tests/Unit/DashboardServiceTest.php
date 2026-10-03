@@ -2,8 +2,11 @@
 
 namespace Tests\Unit;
 
+use App\Models\ApprovalFlow;
 use App\Models\Citizen;
+use App\Models\FlowStep;
 use App\Models\Letter;
+use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\Rt;
 use App\Models\User;
@@ -11,6 +14,7 @@ use App\Models\Village;
 use App\Repositories\CitizenRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\NotificationRepository;
+use App\Repositories\OfficialRepository;
 use App\Services\DashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -30,6 +34,7 @@ class DashboardServiceTest extends TestCase
             new CitizenRepository,
             new LetterRepository,
             new NotificationRepository,
+            new OfficialRepository,
         );
     }
 
@@ -140,5 +145,120 @@ class DashboardServiceTest extends TestCase
         $this->expectException(HttpException::class);
 
         $this->service->getLetterStats($user, null, null);
+    }
+
+    public function test_kasi_dashboard_shows_only_matching_approved_letters_with_total_and_limit(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create([
+            'role' => 'kasi_pelayanan',
+            'village_id' => $village->id,
+        ]);
+        $kasiType = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
+        $unassignedType = LetterType::factory()->create(['assigned_role' => null]);
+        $kaurType = LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum']);
+
+        Letter::factory()->count(21)->create([
+            'village_id' => $village->id,
+            'letter_type_id' => $kasiType->id,
+            'status' => 'approved',
+        ]);
+        Letter::factory()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => $unassignedType->id,
+            'status' => 'approved',
+        ]);
+        $excluded = Letter::factory()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => $kaurType->id,
+            'status' => 'approved',
+        ]);
+        Letter::factory()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => $kasiType->id,
+            'status' => 'pending',
+        ]);
+
+        $dashboard = $this->service->getDashboard($user);
+
+        $this->assertSame('kasi_pelayanan', $dashboard['role']);
+        $this->assertSame(22, $dashboard['total_surat_selesai']);
+        $this->assertCount(20, $dashboard['completed_letters']);
+        $this->assertNotContains(
+            $excluded->id,
+            array_column($dashboard['completed_letters'], 'id'),
+        );
+    }
+
+    public function test_petugas_dashboard_includes_expired_and_ending_official_terms(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create([
+            'role' => 'petugas_desa',
+            'village_id' => $village->id,
+        ]);
+        $expiredCitizen = Citizen::factory()->create([
+            'village_id' => $village->id,
+            'name' => 'Pejabat Lewat Masa',
+        ]);
+        $endingCitizen = Citizen::factory()->create([
+            'village_id' => $village->id,
+            'name' => 'Pejabat Segera Berakhir',
+        ]);
+        Official::factory()->create([
+            'position' => 'rt',
+            'village_id' => $village->id,
+            'citizen_id' => $expiredCitizen->id,
+            'term_ends_at' => today()->subDay(),
+            'is_active' => true,
+        ]);
+        Official::factory()->create([
+            'position' => 'rw',
+            'village_id' => $village->id,
+            'citizen_id' => $endingCitizen->id,
+            'term_ends_at' => today()->addDays(30),
+            'is_active' => true,
+        ]);
+
+        $dashboard = $this->service->getDashboard($user);
+
+        $this->assertSame('Pejabat Lewat Masa', $dashboard['jabatan_lewat_masa'][0]['name']);
+        $this->assertSame(today()->subDay()->toDateString(), $dashboard['jabatan_lewat_masa'][0]['term_ends_at']);
+        $this->assertSame('Pejabat Segera Berakhir', $dashboard['jabatan_segera_berakhir'][0]['name']);
+        $this->assertSame(today()->addDays(30)->toDateString(), $dashboard['jabatan_segera_berakhir'][0]['term_ends_at']);
+    }
+
+    public function test_kades_dashboard_excludes_letters_submitted_by_the_current_user(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create([
+            'role' => 'kepala_desa',
+            'village_id' => $village->id,
+        ]);
+        Official::factory()->forUser($user)->position('kepala_desa')->create();
+
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'kepala_desa',
+            'is_final' => true,
+        ]);
+        $ownLetter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'flow_id' => $flow->id,
+            'submitted_by' => $user->id,
+            'status' => 'pending',
+        ]);
+        $otherLetter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'flow_id' => $flow->id,
+            'status' => 'pending',
+        ]);
+
+        $dashboard = $this->service->getDashboard($user);
+
+        $this->assertSame([$otherLetter->id], array_column($dashboard['pending_letters'], 'id'));
+        $this->assertNotContains($ownLetter->id, array_column($dashboard['pending_letters'], 'id'));
     }
 }
