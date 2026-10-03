@@ -8,6 +8,7 @@ use App\Notifications\LetterStatusNotification;
 use App\Repositories\NotificationRepository;
 use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class NotificationServiceTest extends TestCase
@@ -71,5 +72,34 @@ class NotificationServiceTest extends TestCase
         $user->notify(new LetterStatusNotification($letter, 'Judul', 'Pesan', 'pending'));
 
         $this->assertSame(1, $this->service->getUnreadCount($user));
+    }
+
+    #[DataProvider('statusIconAndColorProvider')]
+    public function test_letter_status_notifications_have_expected_icon_and_color(
+        string $status,
+        string $icon,
+        string $color,
+    ): void {
+        $notification = new LetterStatusNotification(
+            Letter::factory()->make(),
+            'Judul',
+            'Pesan',
+            $status,
+        );
+
+        $data = $notification->toArray(new User);
+
+        $this->assertSame($icon, $data['icon']);
+        $this->assertSame($color, $data['color']);
+    }
+
+    public static function statusIconAndColorProvider(): array
+    {
+        return [
+            'final approval' => ['letter_approved_final', 'signature', 'green'],
+            'ready for print' => ['letter_ready_for_print', 'document', 'blue'],
+            'legacy approved' => ['kasi_approved', 'signature', 'green'],
+            'legacy rejected' => ['kasi_rejected', 'document', 'red'],
+        ];
     }
 }

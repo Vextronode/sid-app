@@ -148,18 +148,17 @@ class OfficialService
     }
 
     /**
-     * EV5-4-S6. Kepala Desa DAN Sekretaris Desa aktif di sebuah
-     * village, dipakai untuk notifikasi monitoring saat Kasi/Kaur
-     * menyelesaikan surat (keduanya, bukan cuma Kepala Desa seperti
-     * resolveVillageHead() di atas - lihat kasi/letter-detail.yaml).
-     *
      * @return Collection<int, Official>
      */
-    public function resolveVillageMonitoringOfficials(string $villageId): Collection
+    public function resolveKasiKaurForLetter(Letter $letter): Collection
     {
+        $assignedRole = $letter->letterType->assigned_role;
+
         return $this->officialRepository
-            ->allActiveByPositionsAndVillage(['kepala_desa', 'sekdes'], $villageId)
-            ->load('user');
+            ->allActiveByPositionsAndVillage(['kasi_pelayanan', 'kaur_tu_umum'], $letter->village_id)
+            ->filter(fn (Official $official) => $assignedRole === null || $official->position === $assignedRole)
+            ->load('user')
+            ->values();
     }
 
     public function getAllWithRelations(): Collection

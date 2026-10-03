@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\KadesApprovalController;
-use App\Http\Controllers\Api\KasiApprovalController;
+use App\Http\Controllers\Api\KasiLetterController;
 use App\Http\Controllers\Api\LetterCategoryController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
@@ -197,18 +197,16 @@ Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
 
     /*
     |----------------------------------------------------------------------
-    | Kasi/Kaur Approvals (UC-04d - Tahap Final)
+    | Kasi/Kaur Completed Letters (read-only)
     |----------------------------------------------------------------------
-    | Resolusi lebih spesifik (approver_position + is_final) tetap
-    | context check di KasiApprovalService - middleware ini hanya
-    | memastikan role-nya benar kasi_pelayanan/kaur_tu_umum.
+    | Akses surat approved dan assigned_role diperiksa di
+    | KasiLetterService; middleware membatasi role Kasi/Kaur.
     */
     Route::middleware(UserRole::middleware(UserRole::KasiPelayanan, UserRole::KaurTuUmum))
         ->prefix('kasi')
         ->group(function () {
-            Route::get('/letters', [KasiApprovalController::class, 'index']);
-            Route::get('/letters/{letter}', [KasiApprovalController::class, 'show']);
-            Route::patch('/letters/{letter}', [KasiApprovalController::class, 'decision']);
+            Route::get('/letters', [KasiLetterController::class, 'index']);
+            Route::get('/letters/{letter}', [KasiLetterController::class, 'show']);
         });
 
     /*

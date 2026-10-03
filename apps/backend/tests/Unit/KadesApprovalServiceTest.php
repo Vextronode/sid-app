@@ -10,10 +10,15 @@ use App\Models\LetterApproval;
 use App\Models\Official;
 use App\Models\User;
 use App\Models\Village;
+use App\Repositories\ApprovalFlowRepository;
+use App\Repositories\LetterNumberCounterRepository;
 use App\Repositories\LetterRepository;
+use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\KadesApprovalService;
+use App\Services\LetterFlowService;
+use App\Services\LetterNumberGenerator;
 use App\Services\OfficialService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -37,9 +42,13 @@ class KadesApprovalServiceTest extends TestCase
 
         Notification::fake();
 
+        $letterRepository = new LetterRepository;
+        $officialService = new OfficialService(new OfficialRepository, new UserRepository, $letterRepository);
         $this->service = new KadesApprovalService(
-            new LetterRepository,
-            new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository),
+            $letterRepository,
+            $officialService,
+            new LetterFlowService($officialService, new ApprovalFlowRepository, new LetterStatusLogRepository),
+            new LetterNumberGenerator(new LetterNumberCounterRepository),
         );
     }
 
@@ -61,16 +70,23 @@ class KadesApprovalServiceTest extends TestCase
         FlowStep::factory()->create([
             'flow_id' => $flow->id,
             'step_order' => 2,
-            'approver_position' => 'kasi_pelayanan',
+            'approver_position' => 'sekdes',
             'is_final' => true,
         ]);
 
-        return Letter::factory()->create([
+        $letter = Letter::factory()->create([
             'flow_id' => $flow->id,
             'current_step_order' => 1,
             'village_id' => $village->id,
             'citizen_id' => $citizen->id,
         ]);
+        Official::factory()->create([
+            'position' => 'sekdes',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+
+        return $letter;
     }
 
     /**
