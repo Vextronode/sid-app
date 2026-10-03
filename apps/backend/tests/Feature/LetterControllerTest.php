@@ -10,6 +10,7 @@ use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\Rt;
 use App\Models\User;
+use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -40,6 +41,37 @@ class LetterControllerTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('message', 'Permohonan berhasil dibuat.')
             ->assertJsonPath('data.status', 'pending');
+    }
+
+    public function test_official_with_citizen_can_submit_letter(): void
+    {
+        $citizen = Citizen::factory()->create();
+        $letterType = LetterType::factory()->create();
+        $user = User::factory()->create([
+            'role' => 'petugas_desa',
+            'citizen_id' => $citizen->id,
+            'village_id' => $citizen->village_id,
+        ]);
+
+        $this->actingAs($user)
+            ->postJson('/api/letters', [
+                'letter_type_id' => $letterType->id,
+                'purpose' => 'Keperluan administrasi',
+            ])
+            ->assertCreated();
+    }
+
+    public function test_user_without_citizen_cannot_submit_letter(): void
+    {
+        $letterType = LetterType::factory()->create();
+        $user = User::factory()->create(['citizen_id' => null]);
+
+        $this->actingAs($user)
+            ->postJson('/api/letters', [
+                'letter_type_id' => $letterType->id,
+                'purpose' => 'Keperluan administrasi',
+            ])
+            ->assertForbidden();
     }
 
     public function test_index_returns_letters_scoped_to_user(): void
@@ -154,6 +186,54 @@ class LetterControllerTest extends TestCase
         $this->actingAs($user)
             ->getJson('/api/letters')
             ->assertStatus(403);
+    }
+
+    public function test_index_scope_mine_returns_owned_letters_for_rt_and_kadus(): void
+    {
+        foreach (['rt', 'kadus'] as $role) {
+            $user = User::factory()->create(['role' => $role]);
+            $own = Letter::factory()->create(['submitted_by' => $user->id]);
+            Letter::factory()->create();
+
+            $this->actingAs($user)
+                ->getJson('/api/letters?scope=mine')
+                ->assertOk()
+                ->assertJsonCount(1, 'data')
+                ->assertJsonPath('data.0.id', $own->id);
+        }
+    }
+
+    public function test_index_for_kasi_only_lists_approved_letters_for_assigned_role(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create([
+            'role' => 'kasi_pelayanan',
+            'village_id' => $village->id,
+        ]);
+        Official::factory()->create([
+            'user_id' => $user->id,
+            'position' => 'kasi_pelayanan',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+        $allowed = Letter::factory()->approved()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+        ]);
+        Letter::factory()->approved()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum'])->id,
+        ]);
+        Letter::factory()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $allowed->id);
     }
 
     public function test_show_returns_404_for_unknown_letter(): void

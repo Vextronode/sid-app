@@ -39,46 +39,25 @@ class LetterPolicy
     }
 
     /**
-     * Aturan scope di bawah SENGAJA dibuat SEPADAN dengan
-     * LetterService::getScopedLetters() (bukan aturan baru) supaya "siapa
-     * boleh lihat daftar" dan "siapa boleh buka detail" konsisten:
-     *  - warga         : hanya submitted_by miliknya sendiri (TDD-01 Table 3)
-     *  - rt             : hanya surat di rt_id wilayahnya (TDD-01 Table 3)
-     *  - rw             : hanya surat di rw_id wilayahnya (read-only FYI,
-     *                     TDD-01 Table 3 — tanpa filter status, sama
-     *                     seperti scopeForRw())
-     *  - kepala_desa,
-     *    sekretaris_desa,
-     *    kasi_pelayanan,
-     *    kaur_tu_umum   : hanya surat di village_id yang sama (sepadan
-     *                     scopeForKadesSekdes()/scopeForKasiKaur() — TIDAK
-     *                     dibatasi ketat ke current_step_order dirinya
-     *                     sendiri, karena UC-04c/UC-04d Main Flow poin 2
-     *                     memang meminta mereka bisa melihat "seluruh
-     *                     riwayat keputusan sebelumnya" satu desa, bukan
-     *                     cuma surat yang sedang di step-nya)
-     *  - petugas_desa   : full visibility (TDD-01 Table 3 — semua surat,
-     *                     termasuk rejected di step manapun)
-     *  - kadus          : selalu ditolak (dihapus total dari domain
-     *                     approval surat, SID-ARCH-BE-001 S3.2) — TIDAK
-     *                     memicu exception seperti abort(403) di
-     *                     LetterService, cukup return false karena Policy
-     *                     memang mengharapkan boolean.
-     *
-     * CATATAN KOMPATIBILITAS: perubahan ini mengubah kontrak
-     * `test_view_allows_any_authenticated_user` di LetterPolicyTest, yang
-     * SEBELUMNYA sengaja menguji bahwa warga sembarang boleh melihat
-     * surat siapa pun. Test itu perlu diupdate mengikuti aturan baru di
-     * atas (lihat catatan test terpisah) — bukan kelalaian, melainkan
-     * bagian yang wajib disesuaikan bersamaan dengan patch ini.
+     * Pemohon selalu dapat melihat suratnya. Kasi/Kaur hanya dapat
+     * melihat surat approved di desanya yang ditugaskan ke role mereka
+     * (atau belum ditugaskan); akses role lain tetap sesuai scope lama.
      */
     public function view(User $user, Letter $letter): bool
     {
+        if ($letter->submitted_by === $user->id) {
+            return true;
+        }
+
         return match ($user->role) {
-            'warga' => $letter->submitted_by === $user->id,
+            'warga' => false,
             'rt' => $this->isSameRt($user, $letter),
             'rw' => $this->isSameRw($user, $letter),
             'petugas_desa' => true,
+            'kasi_pelayanan', 'kaur_tu_umum' => $letter->status->value === 'approved'
+                && $this->isSameVillage($user, $letter)
+                && ($letter->letterType?->assigned_role === null
+                    || $letter->letterType->assigned_role === $user->role),
             default => in_array($user->role, self::VILLAGE_SCOPED_ROLES, true)
                 && $this->isSameVillage($user, $letter),
         };
@@ -86,7 +65,30 @@ class LetterPolicy
 
     public function create(User $user): bool
     {
-        return true;
+        return $user->is_active && $user->citizen_id !== null;
+    }
+
+    public function download(User $user, Letter $letter): bool
+    {
+        if ($letter->status->value !== 'approved') {
+            return false;
+        }
+
+        if ($letter->submitted_by === $user->id || $user->role === 'petugas_desa') {
+            return true;
+        }
+
+        if (in_array($user->role, ['kepala_desa', 'sekretaris_desa'], true)) {
+            return $this->isSameVillage($user, $letter);
+        }
+
+        if (in_array($user->role, ['kasi_pelayanan', 'kaur_tu_umum'], true)) {
+            return $this->isSameVillage($user, $letter)
+                && ($letter->letterType?->assigned_role === null
+                    || $letter->letterType->assigned_role === $user->role);
+        }
+
+        return false;
     }
 
     public function delete(User $user, Letter $letter): bool

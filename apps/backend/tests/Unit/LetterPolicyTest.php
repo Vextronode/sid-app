@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\Citizen;
 use App\Models\Letter;
+use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\Rt;
 use App\Models\User;
@@ -33,11 +34,29 @@ class LetterPolicyTest extends TestCase
         $this->assertTrue($this->policy->viewAny($user));
     }
 
-    public function test_create_allows_any_authenticated_user(): void
+    public function test_create_allows_active_user_linked_to_citizen(): void
     {
-        $user = User::factory()->create(['role' => 'warga']);
+        $citizen = Citizen::factory()->create();
+        $user = User::factory()->create([
+            'role' => 'warga',
+            'citizen_id' => $citizen->id,
+            'is_active' => true,
+        ]);
 
         $this->assertTrue($this->policy->create($user));
+    }
+
+    public function test_create_forbidden_for_inactive_or_unlinked_user(): void
+    {
+        $citizen = Citizen::factory()->create();
+        $inactive = User::factory()->create([
+            'citizen_id' => $citizen->id,
+            'is_active' => false,
+        ]);
+        $unlinked = User::factory()->create(['citizen_id' => null]);
+
+        $this->assertFalse($this->policy->create($inactive));
+        $this->assertFalse($this->policy->create($unlinked));
     }
 
     /**
@@ -65,6 +84,14 @@ class LetterPolicyTest extends TestCase
         $letter = Letter::factory()->create(['submitted_by' => $owner->id]);
 
         $this->assertFalse($this->policy->view($stranger, $letter));
+    }
+
+    public function test_kadus_can_view_own_letter(): void
+    {
+        $user = User::factory()->create(['role' => 'kadus']);
+        $letter = Letter::factory()->create(['submitted_by' => $user->id]);
+
+        $this->assertTrue($this->policy->view($user, $letter));
     }
 
     public function test_view_allowed_for_rt_in_same_region(): void
@@ -141,7 +168,11 @@ class LetterPolicyTest extends TestCase
     #[DataProvider('villageScopedRoleProvider')]
     public function test_view_allowed_for_village_scoped_role_in_same_village(string $role): void
     {
-        $letter = Letter::factory()->create();
+        $letter = in_array($role, ['kasi_pelayanan', 'kaur_tu_umum'], true)
+            ? Letter::factory()->approved()->create([
+                'letter_type_id' => LetterType::factory()->create(['assigned_role' => $role])->id,
+            ])
+            : Letter::factory()->create();
 
         $user = User::factory()->create(['role' => $role]);
         Official::factory()->create([
@@ -195,6 +226,110 @@ class LetterPolicyTest extends TestCase
         $user = User::factory()->create(['role' => 'kadus']);
 
         $this->assertFalse($this->policy->view($user, $letter));
+    }
+
+    public function test_kasi_can_view_only_approved_letters_assigned_to_them_or_unassigned(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create([
+            'role' => 'kasi_pelayanan',
+            'village_id' => $village->id,
+        ]);
+        Official::factory()->create([
+            'user_id' => $user->id,
+            'position' => 'kasi_pelayanan',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+
+        $matching = Letter::factory()->approved()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+        ]);
+        $unassigned = Letter::factory()->approved()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => null])->id,
+        ]);
+        $wrongRole = Letter::factory()->approved()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum'])->id,
+        ]);
+        $pending = Letter::factory()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => $matching->letter_type_id,
+        ]);
+
+        $this->assertTrue($this->policy->view($user, $matching));
+        $this->assertTrue($this->policy->view($user, $unassigned));
+        $this->assertFalse($this->policy->view($user, $wrongRole));
+        $this->assertFalse($this->policy->view($user, $pending));
+    }
+
+    public function test_download_requires_approved_status_and_allows_owner(): void
+    {
+        $owner = User::factory()->create(['role' => 'warga']);
+        $pending = Letter::factory()->create(['submitted_by' => $owner->id]);
+        $approved = Letter::factory()->approved()->create(['submitted_by' => $owner->id]);
+
+        $this->assertFalse($this->policy->download($owner, $pending));
+        $this->assertTrue($this->policy->download($owner, $approved));
+    }
+
+    public function test_download_allows_petugas_desa_for_approved_letter(): void
+    {
+        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $letter = Letter::factory()->approved()->create();
+
+        $this->assertTrue($this->policy->download($user, $letter));
+    }
+
+    public function test_download_allows_same_village_kades_and_sekdes(): void
+    {
+        $letter = Letter::factory()->approved()->create();
+
+        foreach (['kepala_desa', 'sekretaris_desa'] as $role) {
+            $user = User::factory()->create([
+                'role' => $role,
+                'village_id' => $letter->village_id,
+            ]);
+            Official::factory()->create([
+                'user_id' => $user->id,
+                'position' => $role === 'sekretaris_desa' ? 'sekdes' : $role,
+                'village_id' => $letter->village_id,
+                'is_active' => true,
+            ]);
+
+            $this->assertTrue($this->policy->download($user, $letter));
+        }
+    }
+
+    public function test_download_for_kasi_and_kaur_obeys_assigned_role_and_village(): void
+    {
+        $village = Village::factory()->create();
+        $letter = Letter::factory()->approved()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+        ]);
+        $kasi = User::factory()->create(['role' => 'kasi_pelayanan', 'village_id' => $village->id]);
+        Official::factory()->create([
+            'user_id' => $kasi->id,
+            'position' => 'kasi_pelayanan',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+        $kaur = User::factory()->create(['role' => 'kaur_tu_umum', 'village_id' => $village->id]);
+        Official::factory()->create([
+            'user_id' => $kaur->id,
+            'position' => 'kaur_tu_umum',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+
+        $this->assertTrue($this->policy->download($kasi, $letter));
+        $this->assertFalse($this->policy->download($kaur, $letter));
+
+        $letter->letterType->update(['assigned_role' => null]);
+        $this->assertTrue($this->policy->download($kaur, $letter->fresh()));
     }
 
     public function test_delete_allowed_for_owner(): void

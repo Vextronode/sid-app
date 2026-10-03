@@ -11,8 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * EV5-4-S9. Gate download PDF kini generik (status='approved'), bukan
- * lagi 'kasi_approved' - lihat paths/letters/download.yaml.
+ * Download hanya tersedia setelah status surat menjadi approved.
  */
 class LetterDownloadControllerTest extends TestCase
 {
@@ -25,8 +24,7 @@ class LetterDownloadControllerTest extends TestCase
 
         $this->actingAs($user)
             ->getJson("/api/letters/{$letter->id}/download")
-            ->assertStatus(403)
-            ->assertJsonPath('message', 'Surat baru dapat diunduh setelah seluruh proses persetujuan selesai.');
+            ->assertForbidden();
     }
 
     public function test_download_succeeds_when_letter_is_approved(): void

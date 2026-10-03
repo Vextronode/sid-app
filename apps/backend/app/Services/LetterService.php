@@ -7,7 +7,6 @@ use App\Models\Letter;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Policies\LetterPolicy;
-use App\Repositories\ApprovalFlowRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\LetterTypeRepository;
@@ -22,8 +21,8 @@ class LetterService
         protected LetterRepository $letterRepository,
         protected LetterStatusLogRepository $letterStatusLogRepository,
         protected LetterTypeRepository $letterTypeRepository,
-        protected ApprovalFlowRepository $approvalFlowRepository,
         protected ApprovalSettingService $approvalSettingService,
+        protected LetterFlowService $letterFlowService,
     ) {}
 
     public function createLetter(array $data): Letter
@@ -33,6 +32,10 @@ class LetterService
             $user = auth()->user();
 
             $citizen = $user->citizen;
+
+            if ($citizen === null) {
+                abort(422, 'Akun Anda belum terhubung ke data kependudukan.');
+            }
 
             $letterType = $this->letterTypeRepository->findOrFail(
                 $data['letter_type_id']
@@ -64,6 +67,8 @@ class LetterService
 
                 'status' => 'pending',
 
+                'current_step_order' => 1,
+
                 // Snapshot flow_id dari letter type saat submit — dikunci,
                 // tidak boleh ikut berubah walau letter_types.flow_id
                 // berubah di kemudian hari (lihat LettersMigrationTest).
@@ -87,19 +92,26 @@ class LetterService
 
             ]);
 
-            $this->createFirstApproval($letter);
+            $start = $this->letterFlowService->resolveStartStep($letter);
+            $step = $start['step'];
 
-            $this->notifyFirstApprovers($letter);
+            if ($step !== null) {
+                $letter = $this->letterRepository->update($letter, [
+                    'current_step_order' => $step->step_order,
+                ]);
+            }
+
+            $this->letterFlowService->logSkipped($letter, $start['skipped'], $user);
+            $this->createFirstApproval($letter, $step);
+            $this->notifyFirstApprovers($letter, $step);
 
             return $letter;
 
         });
     }
 
-    private function createFirstApproval(Letter $letter): void
+    private function createFirstApproval(Letter $letter, ?FlowStep $step): void
     {
-        $step = $this->firstStepOf($letter);
-
         if (! $step) {
             return;
         }
@@ -122,15 +134,13 @@ class LetterService
      * OfficialService::resolveOfficialsForStep), bukan hardcode "RT"
      * seperti implementasi lama (notifyRt()).
      */
-    private function notifyFirstApprovers(Letter $letter): void
+    private function notifyFirstApprovers(Letter $letter, ?FlowStep $step): void
     {
-        $step = $this->firstStepOf($letter);
-
         if (! $step) {
             return;
         }
 
-        $officials = $this->officialService->resolveOfficialsForStep($step, $letter);
+        $officials = $this->letterFlowService->eligibleApprovers($step, $letter);
 
         foreach ($officials as $official) {
             if (! $official->user) {
@@ -149,50 +159,31 @@ class LetterService
     }
 
     /**
-     * Titik tunggal "step pertama dari flow yang sudah di-snapshot ke
-     * surat ini". Dipakai oleh createFirstApproval() dan
-     * notifyFirstApprovers() supaya keduanya selalu membaca step yang
-     * persis sama, bukan dua query terpisah yang bisa drift.
-     *
-     * findWithSteps() (bukan $letter->flow lazy-load) dipakai sesuai
-     * arahan docblock ApprovalFlow::steps(): "dipakai LetterService
-     * saat submit surat (snapshot flow_id)".
-     */
-    private function firstStepOf(Letter $letter): ?FlowStep
-    {
-        if (! $letter->flow_id) {
-            return null;
-        }
-
-        $flow = $this->approvalFlowRepository->findWithSteps($letter->flow_id);
-
-        return $flow?->steps->first();
-    }
-
-    /**
      * EV5-4-S7. Rewrite total dari switch lama yang salah menggabungkan
      * kasi_pelayanan/kaur_tu_umum/petugas_desa/sekretaris_desa/
      * kepala_desa jadi satu case "lihat semua surat" (TDD-01 Table 3 -
      * Scope Monitoring Surat per Role, paths/letters/letters.yaml).
-     * Setiap role berbasis posisi kini di-scope KE STEP AKTIF mereka
-     * sendiri lewat LetterRepository::findByFlowStepAndStatus(), bukan
-     * full visibility - kecuali petugas_desa yang memang tetap full
-     * visibility, dan kadus yang tidak lagi punya scope approval sama
-     * sekali (dihapus total, lihat paths/letters/letters.yaml).
+     * Role approval dibatasi sesuai tahap/penugasan, pemohon dapat
+     * memilih scope=mine lintas-role, dan petugas_desa tetap full
+     * visibility.
      */
     public function getScopedLetters(
         User $user,
         array $filters = []
     ): Collection {
-        $query = match ($user->role) {
-            'warga' => $this->scopeForWarga($user),
-            'rt' => $this->scopeForRt($user),
-            'rw' => $this->scopeForRw($user),
-            'kepala_desa', 'sekretaris_desa' => $this->scopeForKadesSekdes($user),
-            'kasi_pelayanan', 'kaur_tu_umum' => $this->scopeForKasiKaur($user),
-            'petugas_desa' => $this->letterRepository->queryForList(),
-            default => abort(403, 'Anda tidak berwenang mengakses daftar surat ini.'),
-        };
+        if (($filters['scope'] ?? null) === 'mine') {
+            $query = $this->scopeForWarga($user);
+        } else {
+            $query = match ($user->role) {
+                'warga' => $this->scopeForWarga($user),
+                'rt' => $this->scopeForRt($user),
+                'rw' => $this->scopeForRw($user),
+                'kepala_desa', 'sekretaris_desa' => $this->scopeForKadesSekdes($user),
+                'kasi_pelayanan', 'kaur_tu_umum' => $this->scopeForKasiKaur($user),
+                'petugas_desa' => $this->letterRepository->queryForList(),
+                default => abort(403, 'Anda tidak berwenang mengakses daftar surat ini.'),
+            };
+        }
 
         $this->applyFilters($query, $filters);
 
@@ -245,7 +236,7 @@ class LetterService
         $official = $this->officialService->getCurrentOfficial($user);
 
         return $this->letterRepository
-            ->findByFlowStepAndStatus('kepala_desa', ['pending', 'in_progress'])
+            ->findByFlowStepAndStatus('kepala_desa', ['pending', 'in_progress'], $user->id)
             ->where('village_id', $official->village_id);
     }
 
@@ -254,8 +245,7 @@ class LetterService
         $official = $this->officialService->getCurrentOfficial($user);
 
         return $this->letterRepository
-            ->findByFlowStepAndStatus($official->position, ['pending', 'in_progress'])
-            ->where('village_id', $official->village_id);
+            ->queryApprovedForAssignedRole($user->role, $official->village_id);
     }
 
     private function applyFilters(Builder $query, array $filters): void

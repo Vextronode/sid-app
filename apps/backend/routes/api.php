@@ -228,19 +228,12 @@ Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
         ->put('/letter-types/{letterType}', [LetterTypeController::class, 'update']);
 
     Route::prefix('letters')->group(function () {
-        // UC-03: hanya Warga yang mengajukan permohonan surat self-service.
-        Route::middleware(UserRole::middleware(UserRole::Warga))
-            ->post('/', [LetterController::class, 'store']);
+        // Authorization to submit is handled by LetterPolicy::create.
+        Route::post('/', [LetterController::class, 'store']);
 
         // UC-05/UC-06/UC-08: lintas-role, scoping ada di
-        // LetterService::getScopedLetters() (match per $user->role) dan
-        // LetterPolicy::view()/LetterPolicy::delete(). Kadus tidak lagi
-        // punya scope approval sama sekali sejak v5.0 (dihapus total dari
-        // domain approval surat — SID-ARCH-BE-001 S3.2). LetterService::
-        // getScopedLetters() menolak role selain warga/rt/rw/kepala_desa/
-        // sekretaris_desa/kasi_pelayanan/kaur_tu_umum/petugas_desa lewat
-        // default => abort(403), sehingga kadus otomatis ikut ditolak
-        // tanpa perlu case khusus.
+        // LetterService::getScopedLetters() dan LetterPolicy. Kadus
+        // hanya dapat mengakses daftar suratnya sendiri dengan scope=mine.
         Route::get('/', [LetterController::class, 'index']);
         Route::get('/{id}', [LetterController::class, 'show']);
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
