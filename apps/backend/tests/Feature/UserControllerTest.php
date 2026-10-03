@@ -52,6 +52,28 @@ class UserControllerTest extends TestCase
             ->assertJsonPath('message', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
     }
 
+    public function test_toggle_status_cannot_deactivate_the_last_active_petugas_desa(): void
+    {
+        $actor = User::factory()->create([
+            'role' => 'petugas_desa',
+            'is_active' => false,
+        ]);
+        $lastActivePetugas = User::factory()->create([
+            'role' => 'petugas_desa',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($actor)
+            ->patchJson("/api/users/{$lastActivePetugas->id}/toggle-status")
+            ->assertForbidden()
+            ->assertJsonPath(
+                'message',
+                'Tidak dapat menonaktifkan satu-satunya akun Petugas Desa yang masih aktif.',
+            );
+
+        $this->assertTrue($lastActivePetugas->fresh()->is_active);
+    }
+
     public function test_petugas_can_reset_non_petugas_password_and_user_must_change_it(): void
     {
         $admin = User::factory()->create(['role' => 'petugas_desa']);

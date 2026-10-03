@@ -31,7 +31,7 @@ use Tests\TestCase;
  * TIDAK termasuk di scope ini (lihat EV5-9-S2): Controller/Service CRUD,
  * validasi request (deadline_hours>0, reminder_hours<deadline_hours),
  * dan penggantian hardcode now()->addDays(3)/addDays(2) di
- * LetterService/RtApprovalService/KasiApprovalService menjadi baca dari
+ *    LetterService/RtApprovalService/KasiLetterService menjadi baca dari
  * tabel ini.
  */
 class ApprovalSettingModelTest extends TestCase

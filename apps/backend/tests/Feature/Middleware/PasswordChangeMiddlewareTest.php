@@ -24,6 +24,11 @@ class PasswordChangeMiddlewareTest extends TestCase
                 'code' => 'password_change_required',
             ]);
 
+        $this->actingAs($user)
+            ->getJson('/api/dashboard')
+            ->assertForbidden()
+            ->assertJsonPath('code', 'password_change_required');
+
         $this->actingAs($user)->getJson('/api/user')->assertOk();
 
         $this->actingAs($user)->putJson('/api/profile/password', [

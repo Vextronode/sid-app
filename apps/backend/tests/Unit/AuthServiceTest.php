@@ -154,6 +154,21 @@ class AuthServiceTest extends TestCase
     }
 
     #[Test]
+    public function registered_password_is_validated_by_the_argon2id_hash_driver(): void
+    {
+        config(['hashing.driver' => 'argon2id']);
+        $citizen = Citizen::factory()->create(['nik' => '3201012345670010']);
+        $password = 'RahasiaAman123!';
+
+        $user = $this->service->registerWarga([
+            'nik' => '3201012345670010',
+            'password' => $password,
+        ]);
+
+        $this->assertTrue(Hash::driver('argon2id')->check($password, $user->password));
+    }
+
+    #[Test]
     public function it_retries_when_a_username_unique_constraint_is_hit(): void
     {
         $citizen = Citizen::factory()->create([
