@@ -1,27 +1,24 @@
 // ==========================================
 // BeritaPage.jsx
 // Halaman publik Berita.
-//
-// Tampilan mengikuti Global CSS SID yang sama dengan
-// KelolaBeritaPage Operator Desa.
-//
-// Perbedaan:
-// - Tidak ada tombol tambah
-// - Tidak ada tombol edit
-// - Hanya berita yang berstatus publikasi
-// - Data tetap mengambil dari sumber dummyBerita yang sama
 // ==========================================
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Newspaper } from 'lucide-react'
 
-import { dummyBerita } from '@/features/kelola-berita/data/dummyBerita'
+import { usePublicNews } from '@/features/berita/usePublicNews'
 
 const ITEMS_PER_PAGE = 6
 
 export function BeritaPage() {
   const navigate = useNavigate()
+
+  // ==========================================
+  // DATA DARI API
+  // ==========================================
+
+  const { news, loading, error } = usePublicNews()
 
   const [safeCurrentPage, setCurrentPage] = useState(1)
 
@@ -29,22 +26,21 @@ export function BeritaPage() {
   // BERITA UTAMA
   // ==========================================
 
-  const beritaUtama = dummyBerita.find((b) => b.utama) ?? dummyBerita[0]
+  const beritaUtama = news.find((b) => b.isFeatured) ?? news[0] ?? null
+
+  // ==========================================
+  // SEMUA BERITA PUBLIK (di luar berita utama)
+  // Endpoint /public hanya mengirim berita
+  // yang sudah terbit, jadi tidak perlu filter status.
+  // ==========================================
+
+  const kelolaList = news.filter((b) => b.id !== beritaUtama?.id)
 
   // ==========================================
   // BERITA TERBARU
   // ==========================================
 
-  const beritaTerbaru = dummyBerita
-    .filter((b) => b.id !== beritaUtama?.id)
-    .filter((b) => b.status === 'publikasi')
-    .slice(0, 3)
-
-  // ==========================================
-  // SEMUA BERITA PUBLIK
-  // ==========================================
-
-  const kelolaList = dummyBerita.filter((b) => b.id !== beritaUtama?.id && b.status === 'publikasi')
+  const beritaTerbaru = kelolaList.slice(0, 3)
 
   // ==========================================
   // PAGINATION
@@ -62,6 +58,30 @@ export function BeritaPage() {
 
   const handleDetail = (id) => {
     navigate(`/berita/${id}`)
+  }
+
+  // ==========================================
+  // STATE LOADING & ERROR
+  // ==========================================
+
+  if (loading) {
+    return (
+      <div className="sid-kelola-berita-page">
+        <main className="sid-kelola-berita-content">
+          <p>Memuat berita...</p>
+        </main>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="sid-kelola-berita-page">
+        <main className="sid-kelola-berita-content">
+          <p style={{ color: '#d32f2f' }}>{error}</p>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -90,8 +110,8 @@ export function BeritaPage() {
 
           <article className="sid-kelola-berita-feature-card">
             <div className="sid-kelola-berita-feature-image">
-              {beritaUtama?.gambar ? (
-                <img src={beritaUtama.gambar} alt={beritaUtama.judul} />
+              {beritaUtama?.imageUrl ? (
+                <img src={beritaUtama.imageUrl} alt={beritaUtama.title} />
               ) : (
                 <div className="sid-kelola-berita-image-placeholder">
                   <Newspaper size={48} />
@@ -102,18 +122,18 @@ export function BeritaPage() {
 
               <div className="sid-kelola-berita-feature-content">
                 <div className="sid-kelola-berita-feature-meta">
-                  {beritaUtama?.kategori && (
+                  {beritaUtama?.category && (
                     <span className="sid-kelola-berita-category featured">
-                      {beritaUtama.kategori}
+                      {beritaUtama.category}
                     </span>
                   )}
 
-                  {beritaUtama?.tanggal && (
-                    <span className="sid-kelola-berita-date featured">{beritaUtama.tanggal}</span>
+                  {beritaUtama?.date && (
+                    <span className="sid-kelola-berita-date featured">{beritaUtama.date}</span>
                   )}
                 </div>
 
-                <h2>{beritaUtama?.judul ?? 'Belum ada berita utama'}</h2>
+                <h2>{beritaUtama?.title ?? 'Belum ada berita utama'}</h2>
               </div>
             </div>
 
@@ -151,8 +171,8 @@ export function BeritaPage() {
                     className="sid-kelola-berita-latest-item"
                   >
                     <div className="sid-kelola-berita-latest-image">
-                      {b.gambar ? (
-                        <img src={b.gambar} alt={b.judul} />
+                      {b.imageUrl ? (
+                        <img src={b.imageUrl} alt={b.title} />
                       ) : (
                         <div className="sid-kelola-berita-latest-placeholder">
                           <Newspaper size={20} />
@@ -161,11 +181,11 @@ export function BeritaPage() {
                     </div>
 
                     <div className="sid-kelola-berita-latest-content">
-                      <p className="sid-kelola-berita-category">{b.kategori}</p>
+                      <p className="sid-kelola-berita-category">{b.category}</p>
 
-                      <p className="sid-kelola-berita-latest-title">{b.judul}</p>
+                      <p className="sid-kelola-berita-latest-title">{b.title}</p>
 
-                      <span className="sid-kelola-berita-date">{b.tanggal}</span>
+                      <span className="sid-kelola-berita-date">{b.date}</span>
                     </div>
                   </button>
                 ))
@@ -231,8 +251,8 @@ export function BeritaPage() {
                   {/* IMAGE */}
 
                   <div className="sid-kelola-berita-card-image">
-                    {b.gambar ? (
-                      <img src={b.gambar} alt={b.judul} />
+                    {b.imageUrl ? (
+                      <img src={b.imageUrl} alt={b.title} />
                     ) : (
                       <div className="sid-kelola-berita-card-placeholder">
                         <Newspaper size={28} />
@@ -244,14 +264,14 @@ export function BeritaPage() {
 
                   <div className="sid-kelola-berita-card-content">
                     <div className="sid-kelola-berita-card-meta">
-                      <span className="sid-kelola-berita-category">{b.kategori}</span>
+                      <span className="sid-kelola-berita-category">{b.category}</span>
 
-                      <span className="sid-kelola-berita-date">{b.tanggal}</span>
+                      <span className="sid-kelola-berita-date">{b.date}</span>
                     </div>
 
-                    <h3>{b.judul}</h3>
+                    <h3>{b.title}</h3>
 
-                    <p>{b.ringkasan}</p>
+                    <p>{b.excerpt}</p>
 
                     <span className="sid-kelola-berita-read-more">Baca Selengkapnya</span>
                   </div>
