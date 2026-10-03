@@ -21,6 +21,8 @@ export function useSuratDetail(id) {
 
       const response = await getSuratDetail(id, ROLE_KEY)
 
+      console.log('KADES DETAIL SURAT:', response.data?.data)
+      console.log('KADES APPROVALS:', response.data?.data?.approvals)
       setSurat(response.data?.data ?? null)
       setNotFound(false)
     } catch (error) {

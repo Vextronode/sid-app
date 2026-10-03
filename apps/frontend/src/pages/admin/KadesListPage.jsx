@@ -14,7 +14,7 @@ import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 
-import { useSuratList } from '@/features/approval-kades/hooks/useSuratListKades'
+import { useApprovalLetterList } from '@/features/approval/hooks/useApprovalLetterList'
 import SuratDetailModalKades from '@/features/approval-kades/components/SuratDetailModalKades'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -35,9 +35,12 @@ export default function KadesListPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedId, setSelectedId] = useState(null)
 
-  const { data, loading, search, setSearch, filterStatus, setFilterStatus } = useSuratList({
-    initialStatus,
-  })
+  const { data, loading, search, setSearch, filterStatus, setFilterStatus } = useApprovalLetterList(
+    {
+      role: 'kepala_desa',
+      initialStatus,
+    },
+  )
 
   // ==========================================
   // RESET PAGINATION

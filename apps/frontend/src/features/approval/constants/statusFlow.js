@@ -137,3 +137,16 @@ export function getStepStatuses(surat) {
 
   return steps
 }
+
+export function getLatestApprovalForLevel(approvals = [], levels = []) {
+  const targetLevels = Array.isArray(levels) ? levels : [levels]
+
+  return (
+    approvals
+      .filter((approval) => targetLevels.includes(approval?.approval_level) && approval?.action)
+      .sort(
+        (a, b) => new Date(a?.created_at ?? 0).getTime() - new Date(b?.created_at ?? 0).getTime(),
+      )
+      .at(-1) ?? null
+  )
+}
