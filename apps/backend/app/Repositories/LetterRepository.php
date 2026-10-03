@@ -222,18 +222,18 @@ class LetterRepository
      * lihat OfficialService::resolveOfficialsForStep untuk konteks
      * "siapa cepat dia dapat").
      *
-     * Join ke flow_steps lewat flow_id + current_step_order (bukan
-     * whereIn('status', [...])) - current_step_order sudah cukup
-     * menunjukkan "sedang aktif di step ini" TANPA perlu filter status
-     * eksplisit di sini: reject tidak pernah memajukan
-     * current_step_order (lihat KadesApprovalService::decision()),
-     * jadi surat yang sudah diputuskan di step SEBELUM ini otomatis
-     * tidak lagi match kolom current_step_order-nya sendiri.
+     * Hanya surat berstatus pending atau in_progress yang merupakan
+     * pekerjaan approval aktif. Posisi step aktif saja tidak cukup,
+     * karena surat rejected mempertahankan current_step_order.
      */
     public function queryPendingAtFlowStepPositions(array $positions, string $villageId, ?string $excludeSubmittedBy = null): Builder
     {
         $query = Letter::query()
             ->where('village_id', $villageId)
+            ->whereIn('status', [
+                LetterStatus::Pending->value,
+                LetterStatus::InProgress->value,
+            ])
             ->whereHas('flow', function (Builder $flowQuery) use ($positions) {
                 $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($positions) {
                     $stepQuery->whereColumn('step_order', 'letters.current_step_order')

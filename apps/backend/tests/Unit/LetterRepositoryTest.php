@@ -196,6 +196,57 @@ class LetterRepositoryTest extends TestCase
         $this->assertCount(0, $result);
     }
 
+    public function test_query_pending_at_flow_step_positions_excludes_terminal_letters(): void
+    {
+        $village = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id]);
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'kepala_desa',
+            'is_final' => true,
+        ]);
+
+        $pendingLetter = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'status' => 'pending',
+        ]);
+        $inProgressLetter = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'status' => 'in_progress',
+        ]);
+        Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'status' => 'rejected',
+        ]);
+        Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'status' => 'approved',
+        ]);
+
+        $result = $this->repository
+            ->queryPendingAtFlowStepPositions(['kepala_desa'], $village->id)
+            ->get();
+
+        $this->assertEqualsCanonicalizing(
+            [$pendingLetter->id, $inProgressLetter->id],
+            $result->pluck('id')->all(),
+        );
+    }
+
     public function test_query_pending_at_flow_step_positions_accepts_multiple_positions(): void
     {
         $village = Village::factory()->create();

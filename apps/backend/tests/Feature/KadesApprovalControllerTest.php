@@ -97,6 +97,20 @@ class KadesApprovalControllerTest extends TestCase
             ->assertJsonCount(1, 'data');
     }
 
+    public function test_index_includes_letters_at_sekdes_position_step(): void
+    {
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesStep($village);
+        $letter->update(['current_step_order' => 2]);
+        $sekdes = $this->makeUserWithPosition('sekdes', $village);
+
+        $this->actingAs($sekdes)
+            ->getJson('/api/kades/letters')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $letter->id);
+    }
+
     public function test_index_excludes_letters_submitted_by_current_kades(): void
     {
         $village = Village::factory()->create();
@@ -164,6 +178,26 @@ class KadesApprovalControllerTest extends TestCase
         $this->assertSame(2, $letter->fresh()->current_step_order);
     }
 
+    public function test_decision_accepts_sekdes_position_as_final_step(): void
+    {
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesStep($village);
+        $letter->update(['current_step_order' => 2]);
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+
+        $this->actingAs($kades)
+            ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertOk();
+
+        $this->assertSame('approved', $letter->fresh()->status->value);
+        $this->assertDatabaseHas('letter_approvals', [
+            'letter_id' => $letter->id,
+            'approved_by' => $kades->id,
+            'approval_level' => 'kepala_desa',
+            'action' => 'approved',
+        ]);
+    }
+
     /**
      * Bukti end-to-end aturan "siapa cepat dia dapat": setelah Kades
      * approve lewat HTTP, percobaan Sekdes approve surat yang sama
@@ -172,7 +206,7 @@ class KadesApprovalControllerTest extends TestCase
     public function test_second_http_decision_by_the_other_official_is_rejected(): void
     {
         $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
+        $letter = $this->makeFinalLetter($village, LetterType::factory()->create());
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
         $sekdes = $this->makeUserWithPosition('sekdes', $village);
 
@@ -212,6 +246,33 @@ class KadesApprovalControllerTest extends TestCase
 
         $fresh = $letter->fresh();
         $this->assertSame(1, $fresh->rejected_at_step);
+    }
+
+    public function test_rejected_letter_is_hidden_and_cannot_be_decided_again(): void
+    {
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesStep($village);
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+
+        $this->actingAs($kades)
+            ->patchJson("/api/kades/letters/{$letter->id}/decision", [
+                'status' => 'rejected',
+                'notes' => 'Berkas tidak sesuai',
+            ])
+            ->assertOk();
+
+        $this->actingAs($kades)
+            ->getJson('/api/kades/letters')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs($kades)
+            ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'Surat sudah diproses sebelumnya.');
+
+        $this->assertDatabaseHas('letters', ['id' => $letter->id, 'status' => 'rejected']);
+        $this->assertDatabaseCount('letter_approvals', 1);
     }
 
     public function test_decision_forbidden_for_non_kades_role(): void

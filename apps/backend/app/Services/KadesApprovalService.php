@@ -33,7 +33,7 @@ class KadesApprovalService
         $official = $this->authorizeOfficial($user);
 
         return $this->letterRepository
-            ->queryPendingAtFlowStepPositions(['kepala_desa'], $official->village_id, $user->id)
+            ->queryPendingAtFlowStepPositions(self::AUTHORIZED_POSITIONS, $official->village_id, $user->id)
             ->latest()
             ->get();
     }
@@ -72,7 +72,7 @@ class KadesApprovalService
 
         $step = $this->letterRepository->findCurrentFlowStep($letter);
 
-        if (! $step || $step->approver_position !== 'kepala_desa') {
+        if (! $step || ! in_array($step->approver_position, self::AUTHORIZED_POSITIONS, true)) {
             abort(409, 'Surat ini tidak sedang berada di tahap Kepala Desa/Sekdes.');
         }
 
@@ -87,6 +87,13 @@ class KadesApprovalService
             // request kedua akan melihat step sudah maju (atau surat
             // sudah reject) dan gagal di guard ini.
             $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
+
+            if (! in_array($locked->status->value, [
+                LetterStatus::Pending->value,
+                LetterStatus::InProgress->value,
+            ], true)) {
+                abort(409, 'Surat sudah diproses sebelumnya.');
+            }
 
             $currentStep = $this->letterRepository->findCurrentFlowStep($locked);
 
