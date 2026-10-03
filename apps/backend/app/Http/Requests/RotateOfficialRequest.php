@@ -22,9 +22,9 @@ class RotateOfficialRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'citizen_id' => ['required', 'exists:citizens,id'],
             'user_id' => ['required', 'exists:users,id'],
             'started_at' => ['required', 'date'],
+            'term_ends_at' => ['nullable', 'date', 'after:started_at'],
             'notes' => ['nullable', 'string'],
         ];
     }
@@ -35,8 +35,10 @@ class RotateOfficialRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'citizen_id.exists' => 'Data kependudukan tidak ditemukan',
+            'user_id.required' => 'Akun target wajib dipilih.',
             'user_id.exists' => 'Akun sistem tidak ditemukan',
+            'started_at.required' => 'Tanggal mulai wajib diisi.',
+            'term_ends_at.after' => 'Akhir masa jabatan harus setelah tanggal mulai.',
         ];
     }
 }

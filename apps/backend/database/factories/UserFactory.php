@@ -30,6 +30,8 @@ class UserFactory extends Factory
 
             'name' => fake()->name(),
 
+            'username' => strtolower(fake()->unique()->bothify('usr_????####')),
+
             'role' => 'warga',
 
             'email' => fake()->unique()->safeEmail(),
@@ -40,8 +42,39 @@ class UserFactory extends Factory
 
             'is_active' => true,
 
+            'must_change_password' => false,
+
             'remember_token' => Str::random(10),
         ];
+    }
+
+    public function withoutEmail(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email' => null,
+            'email_verified_at' => null,
+        ]);
+    }
+
+    public function role(string $role): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => $role,
+        ]);
+    }
+
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+        ]);
+    }
+
+    public function mustChangePassword(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'must_change_password' => true,
+        ]);
     }
 
     /**

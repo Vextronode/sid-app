@@ -7,12 +7,12 @@ use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\User;
+use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * EV5-4-S9. Gate download PDF kini generik (status='approved'), bukan
- * lagi 'kasi_approved' - lihat paths/letters/download.yaml.
+ * Download hanya tersedia setelah status surat menjadi approved.
  */
 class LetterDownloadControllerTest extends TestCase
 {
@@ -25,8 +25,7 @@ class LetterDownloadControllerTest extends TestCase
 
         $this->actingAs($user)
             ->getJson("/api/letters/{$letter->id}/download")
-            ->assertStatus(403)
-            ->assertJsonPath('message', 'Surat baru dapat diunduh setelah seluruh proses persetujuan selesai.');
+            ->assertForbidden();
     }
 
     public function test_download_succeeds_when_letter_is_approved(): void
@@ -71,6 +70,95 @@ class LetterDownloadControllerTest extends TestCase
         ]);
 
         $this->actingAs($stranger)
+            ->getJson("/api/letters/{$letter->id}/download")
+            ->assertForbidden();
+    }
+
+    public function test_kasi_can_download_approved_letter_assigned_to_her_role(): void
+    {
+        $village = Village::factory()->create();
+        $kadesCitizen = Citizen::factory()->create(['village_id' => $village->id]);
+        Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'citizen_id' => $kadesCitizen->id,
+            'is_active' => true,
+            'ended_at' => null,
+        ]);
+        $kasi = User::factory()->create([
+            'role' => 'kasi_pelayanan',
+            'village_id' => $village->id,
+        ]);
+        Official::factory()->forUser($kasi)->position('kasi_pelayanan')->create();
+        $letterType = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
+        $letter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => $letterType->id,
+            'status' => 'approved',
+        ]);
+
+        $this->actingAs($kasi)
+            ->get("/api/letters/{$letter->id}/download")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_kasi_cannot_download_letter_assigned_to_another_role(): void
+    {
+        $village = Village::factory()->create();
+        $kasi = User::factory()->create([
+            'role' => 'kasi_pelayanan',
+            'village_id' => $village->id,
+        ]);
+        Official::factory()->forUser($kasi)->position('kasi_pelayanan')->create();
+        $letterType = LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum']);
+        $letter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => $letterType->id,
+            'status' => 'approved',
+        ]);
+
+        $this->actingAs($kasi)
+            ->getJson("/api/letters/{$letter->id}/download")
+            ->assertForbidden();
+    }
+
+    public function test_applicant_can_download_approved_letter_regardless_of_role(): void
+    {
+        $village = Village::factory()->create();
+        $kadesCitizen = Citizen::factory()->create(['village_id' => $village->id]);
+        Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'citizen_id' => $kadesCitizen->id,
+            'is_active' => true,
+            'ended_at' => null,
+        ]);
+        $applicant = User::factory()->create([
+            'role' => 'rt',
+            'village_id' => $village->id,
+        ]);
+        $letter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'submitted_by' => $applicant->id,
+            'status' => 'approved',
+        ]);
+
+        $this->actingAs($applicant)
+            ->get("/api/letters/{$letter->id}/download")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_applicant_cannot_download_letter_that_is_not_approved(): void
+    {
+        $applicant = User::factory()->create(['role' => 'petugas_desa']);
+        $letter = Letter::factory()->create([
+            'submitted_by' => $applicant->id,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($applicant)
             ->getJson("/api/letters/{$letter->id}/download")
             ->assertForbidden();
     }

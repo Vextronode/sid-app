@@ -4,14 +4,20 @@ namespace Tests\Unit;
 
 use App\Models\Citizen;
 use App\Models\Letter;
+use App\Models\LetterApproval;
 use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\User;
+use App\Models\Village;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Services\PdfService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Response as LaravelResponse;
+use Mockery;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
@@ -41,11 +47,27 @@ class PdfServiceTest extends TestCase
 
     public function test_download_blocked_for_warga_when_letter_expired(): void
     {
+        $user = User::factory()->create(['role' => 'warga']);
         $letter = Letter::factory()->create([
             'status' => 'approved',
+            'submitted_by' => $user->id,
             'expires_at' => now()->subDay(),
         ]);
-        $user = User::factory()->create(['role' => 'warga']);
+
+        $this->expectException(HttpException::class);
+        $this->expectExceptionMessage('Masa berlaku surat telah habis.');
+
+        $this->service->download($letter, $user);
+    }
+
+    public function test_download_blocked_for_any_applicant_role_when_letter_expired(): void
+    {
+        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $letter = Letter::factory()->create([
+            'status' => 'approved',
+            'submitted_by' => $user->id,
+            'expires_at' => now()->subDay(),
+        ]);
 
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage('Masa berlaku surat telah habis.');
@@ -88,5 +110,42 @@ class PdfServiceTest extends TestCase
         $this->expectException(ModelNotFoundException::class);
 
         $this->service->download($letter, $user);
+    }
+
+    public function test_sekdes_approved_letter_still_uses_active_kades_for_signature(): void
+    {
+        $village = Village::factory()->create();
+        $kadesCitizen = Citizen::factory()->create(['village_id' => $village->id]);
+        $kades = Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'citizen_id' => $kadesCitizen->id,
+            'is_active' => true,
+            'ended_at' => null,
+        ]);
+        $sekdes = User::factory()->create(['role' => 'sekretaris_desa', 'village_id' => $village->id]);
+        $letterType = LetterType::factory()->create(['template' => 'Isi surat']);
+        $letter = Letter::factory()->create([
+            'status' => 'approved',
+            'village_id' => $village->id,
+            'letter_type_id' => $letterType->id,
+        ]);
+        LetterApproval::query()->create([
+            'letter_id' => $letter->id,
+            'approved_by' => $sekdes->id,
+            'approval_level' => 'sekdes',
+            'action' => 'approved',
+        ]);
+
+        $pdf = Mockery::mock(DomPdf::class);
+        $pdf->shouldReceive('download')->once()->andReturn(new LaravelResponse);
+        Pdf::shouldReceive('loadView')
+            ->once()
+            ->with('pdf.templates.wet', Mockery::on(
+                fn (array $data): bool => $data['kades']->is($kades),
+            ))
+            ->andReturn($pdf);
+
+        $this->service->download($letter, User::factory()->create(['role' => 'petugas_desa']));
     }
 }

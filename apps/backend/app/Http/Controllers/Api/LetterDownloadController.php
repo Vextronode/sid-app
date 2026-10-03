@@ -17,7 +17,7 @@ class LetterDownloadController extends Controller
         Request $request,
         Letter $letter
     ) {
-        $this->authorize('view', $letter);
+        $this->authorize('download', $letter);
 
         return $this->pdfService->download(
             $letter,

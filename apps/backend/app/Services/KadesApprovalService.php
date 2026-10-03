@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\LetterStatus;
+use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
@@ -17,6 +19,8 @@ class KadesApprovalService
     public function __construct(
         protected LetterRepository $letterRepository,
         protected OfficialService $officialService,
+        protected LetterFlowService $letterFlowService,
+        protected LetterNumberGenerator $letterNumberGenerator,
     ) {}
 
     /**
@@ -29,7 +33,7 @@ class KadesApprovalService
         $official = $this->authorizeOfficial($user);
 
         return $this->letterRepository
-            ->queryPendingAtFlowStepPositions(['kepala_desa'], $official->village_id)
+            ->queryPendingAtFlowStepPositions(self::AUTHORIZED_POSITIONS, $official->village_id, $user->id)
             ->latest()
             ->get();
     }
@@ -62,9 +66,13 @@ class KadesApprovalService
             abort(403, 'Anda tidak berwenang memproses surat ini.');
         }
 
+        if ($this->letterFlowService->isApplicantOfficial($letter, $official)) {
+            abort(403, 'Anda tidak dapat memutuskan surat milik Anda sendiri.');
+        }
+
         $step = $this->letterRepository->findCurrentFlowStep($letter);
 
-        if (! $step || $step->approver_position !== 'kepala_desa') {
+        if (! $step || ! in_array($step->approver_position, self::AUTHORIZED_POSITIONS, true)) {
             abort(409, 'Surat ini tidak sedang berada di tahap Kepala Desa/Sekdes.');
         }
 
@@ -79,6 +87,13 @@ class KadesApprovalService
             // request kedua akan melihat step sudah maju (atau surat
             // sudah reject) dan gagal di guard ini.
             $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
+
+            if (! in_array($locked->status->value, [
+                LetterStatus::Pending->value,
+                LetterStatus::InProgress->value,
+            ], true)) {
+                abort(409, 'Surat sudah diproses sebelumnya.');
+            }
 
             $currentStep = $this->letterRepository->findCurrentFlowStep($locked);
 
@@ -99,16 +114,21 @@ class KadesApprovalService
             $oldStatus = $locked->status->value;
 
             if ($data['status'] === 'approved') {
-                // Jika step ini is_final (flow 1-step langsung ke Kades),
-                // status langsung 'approved'. Jika tidak (ada step lanjutan
-                // misal Kasi), status menjadi 'in_progress'.
-                $newStatus = $step->is_final ? 'approved' : 'in_progress';
+                if ($step->is_final) {
+                    $this->finalizeApproval($locked);
+                    $newStatus = LetterStatus::Approved->value;
+                } else {
+                    $next = $this->letterFlowService->nextActionable($locked, $step->step_order);
+                    $newStatus = LetterStatus::InProgress->value;
 
-                $this->letterRepository->update($locked, [
-                    'status' => $newStatus,
-                    'current_step_order' => $step->step_order + 1,
-                    'processed_at' => now(),
-                ]);
+                    $this->letterRepository->update($locked, [
+                        'status' => $newStatus,
+                        'current_step_order' => $next['step']->step_order,
+                        'processed_at' => now(),
+                    ]);
+                    $this->letterFlowService->logSkipped($locked, $next['skipped'], $user);
+                    $this->notifyNextApprovers($locked, $next['step']);
+                }
             } else {
                 $newStatus = 'rejected';
 
@@ -127,7 +147,11 @@ class KadesApprovalService
                 'reason' => $data['notes'] ?? null,
             ]);
 
-            $this->notifyApplicant($locked, $data['status'], $approvalLevel);
+            if ($data['status'] === 'rejected') {
+                $this->notifyApplicantRejected($locked, $approvalLevel);
+            } elseif ($step->is_final) {
+                $this->notifyFinalApproval($locked);
+            }
         });
     }
 
@@ -146,7 +170,22 @@ class KadesApprovalService
         return $official;
     }
 
-    private function notifyApplicant(Letter $letter, string $status, string $approvalLevel): void
+    private function finalizeApproval(Letter $letter): void
+    {
+        $letterType = $letter->letterType;
+        $expiresAt = $letterType->validity_days
+            ? now()->addDays($letterType->validity_days)
+            : null;
+
+        $this->letterRepository->update($letter, [
+            'status' => LetterStatus::Approved,
+            'letter_number' => $this->letterNumberGenerator->next($letter),
+            'expires_at' => $expiresAt,
+            'processed_at' => now(),
+        ]);
+    }
+
+    private function notifyApplicantRejected(Letter $letter, string $approvalLevel): void
     {
         $citizenUser = $this->officialService->resolveCitizenUser($letter);
 
@@ -156,22 +195,43 @@ class KadesApprovalService
 
         $actorLabel = $approvalLevel === 'sekdes' ? 'Sekretaris Desa' : 'Kepala Desa';
 
-        if ($status === 'approved') {
-            $citizenUser->notify(new LetterStatusNotification(
-                $letter,
-                'Permohonan Diproses',
-                "Permohonan surat Anda telah disetujui oleh {$actorLabel} dan sedang diproses ke tahap berikutnya.",
-                'kepala_desa_approved',
-            ));
-
-            return;
-        }
-
         $citizenUser->notify(new LetterStatusNotification(
             $letter,
             'Permohonan Ditolak',
             "Permohonan surat Anda ditolak oleh {$actorLabel}.",
             'kepala_desa_rejected',
         ));
+    }
+
+    private function notifyFinalApproval(Letter $letter): void
+    {
+        $citizenUser = $this->officialService->resolveCitizenUser($letter);
+        $citizenUser?->notify(new LetterStatusNotification(
+            $letter,
+            'Permohonan Disetujui',
+            'Permohonan surat Anda telah disetujui. Silakan unduh surat atau ambil di kantor desa.',
+            'letter_approved_final',
+        ));
+
+        foreach ($this->officialService->resolveKasiKaurForLetter($letter) as $official) {
+            $official->user?->notify(new LetterStatusNotification(
+                $letter,
+                'Surat siap diunduh/dicetak untuk warga',
+                'Surat telah disetujui dan siap diunduh atau dicetak untuk warga.',
+                'letter_ready_for_print',
+            ));
+        }
+    }
+
+    private function notifyNextApprovers(Letter $letter, FlowStep $step): void
+    {
+        foreach ($this->letterFlowService->eligibleApprovers($step, $letter) as $official) {
+            $official->user?->notify(new LetterStatusNotification(
+                $letter,
+                'Surat Baru',
+                'Ada surat yang menunggu persetujuan Anda.',
+                'kepala_desa_approved',
+            ));
+        }
     }
 }

@@ -49,7 +49,7 @@ class ApprovalFlowRepositoryTest extends TestCase
     public function find_by_id_returns_existing_flow(): void
     {
         $category = $this->makeCategory('approval_normal');
-        $flow = $this->makeFlow($category, 'RT-Kades-Staff (3 Tahap)');
+        $flow = $this->makeFlow($category, 'RT-Kades/Sekdes (2 Tahap)');
 
         $found = $this->repository->findById($flow->id);
 
@@ -69,13 +69,13 @@ class ApprovalFlowRepositoryTest extends TestCase
     public function find_with_steps_eager_loads_steps_ordered_by_step_order(): void
     {
         $category = $this->makeCategory('approval_normal');
-        $flow = $this->makeFlow($category, 'RT-Kades-Staff (3 Tahap)');
+        $flow = $this->makeFlow($category, 'RT-Kades/Sekdes (2 Tahap)');
 
-        // Sengaja insert TIDAK berurutan untuk membuktikan hasil tetap
-        // di-order oleh step_order, bukan oleh urutan insert.
+        // Gunakan nomor unik sesuai constraint flow_steps dan insert
+        // tidak berurutan untuk membuktikan hasil tetap di-order.
         FlowStep::query()->create([
             'flow_id' => $flow->id, 'step_order' => 3,
-            'approver_position' => 'kasi_pelayanan', 'is_final' => true,
+            'approver_position' => 'sekdes', 'is_final' => true,
         ]);
         FlowStep::query()->create([
             'flow_id' => $flow->id, 'step_order' => 1,
@@ -94,6 +94,7 @@ class ApprovalFlowRepositoryTest extends TestCase
         $this->assertSame([1, 2, 3], $found->steps->pluck('step_order')->all());
         $this->assertSame('rt', $found->steps->first()->approver_position);
         $this->assertTrue($found->steps->last()->is_final);
+        $this->assertSame('sekdes', $found->steps->last()->approver_position);
     }
 
     #[Test]
@@ -122,7 +123,7 @@ class ApprovalFlowRepositoryTest extends TestCase
         $categoryA = $this->makeCategory('approval_normal');
         $categoryB = $this->makeCategory('upload_mandiri');
 
-        $flowA = $this->makeFlow($categoryA, 'RT-Kades-Staff (3 Tahap)');
+        $flowA = $this->makeFlow($categoryA, 'RT-Kades/Sekdes (2 Tahap)');
         $this->makeFlow($categoryB, 'Direct - Tanpa Approval Bertingkat');
 
         $result = $this->repository->findByCategoryId($categoryA->id);
@@ -202,13 +203,13 @@ class ApprovalFlowRepositoryTest extends TestCase
 
         $newSteps = $this->repository->replaceSteps($flow, [
             ['step_order' => 1, 'approver_position' => 'rt', 'is_final' => false],
-            ['step_order' => 2, 'approver_position' => 'kasi_pelayanan', 'is_final' => true],
+            ['step_order' => 2, 'approver_position' => 'kepala_desa', 'is_final' => true],
         ]);
 
         $this->assertCount(2, $newSteps);
         $this->assertDatabaseCount('flow_steps', 2);
         $this->assertDatabaseHas('flow_steps', [
-            'flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'kasi_pelayanan',
+            'flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'kepala_desa',
         ]);
     }
 

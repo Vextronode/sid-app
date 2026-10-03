@@ -46,6 +46,11 @@ class RtApprovalControllerTest extends TestCase
             'citizen_id' => $citizen->id,
             'status' => 'pending',
         ]);
+        Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
 
         return compact('letter', 'rt', 'rw', 'citizen');
     }
@@ -147,6 +152,20 @@ class RtApprovalControllerTest extends TestCase
         $this->actingAs($user)
             ->patchJson("/api/rt/letters/{$letter->id}/decision", ['status' => 'approved'])
             ->assertForbidden();
+    }
+
+    public function test_rt_cannot_decide_own_letter(): void
+    {
+        $village = Village::factory()->create();
+        ['letter' => $letter, 'rt' => $rt, 'citizen' => $citizen] = $this->makeLetterAtRtStep($village);
+        $user = $this->makeRtUser($village, $rt);
+        $letter->update(['submitted_by' => $user->id]);
+        $user->update(['citizen_id' => $citizen->id]);
+
+        $this->actingAs($user)
+            ->patchJson("/api/rt/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Anda tidak dapat memutuskan surat milik Anda sendiri.');
     }
 
     public function test_show_returns_letter_detail_with_relations(): void

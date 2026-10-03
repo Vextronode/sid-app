@@ -34,9 +34,12 @@ class LetterStatusNotification extends Notification
 
             'icon' => match ($this->status) {
 
-                'kasi_approved' => 'signature',
+                'kasi_approved',
+                'letter_approved_final' => 'signature',
 
                 'waiting_revision_warga' => 'edit',
+
+                'letter_ready_for_print' => 'document',
 
                 default => 'document',
             },
@@ -46,7 +49,10 @@ class LetterStatusNotification extends Notification
                 'rt_approved',
                 'rw_approved' => 'blue',
 
-                'kasi_approved' => 'green',
+                'kasi_approved',
+                'letter_approved_final' => 'green',
+
+                'letter_ready_for_print' => 'blue',
 
                 'waiting_revision_warga' => 'amber',
 

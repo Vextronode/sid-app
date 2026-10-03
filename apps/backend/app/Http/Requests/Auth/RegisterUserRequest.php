@@ -24,9 +24,7 @@ class RegisterUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nik' => ['required', 'digits:16'],
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'nik' => ['required', 'string', 'digits:16'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ];
     }
@@ -35,7 +33,11 @@ class RegisterUserRequest extends FormRequest
     {
         return [
             'nik.digits' => 'NIK harus 16 digit angka.',
-            'email.unique' => 'Email sudah terdaftar.',
+            'nik.required' => 'NIK wajib diisi.',
+            'nik.string' => 'NIK harus berupa teks.',
+            'password.required' => 'Kata sandi wajib diisi.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+            'password' => 'Kata sandi tidak memenuhi persyaratan keamanan.',
         ];
     }
 }

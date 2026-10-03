@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\KadesApprovalController;
-use App\Http\Controllers\Api\KasiApprovalController;
+use App\Http\Controllers\Api\KasiLetterController;
 use App\Http\Controllers\Api\LetterCategoryController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OfficialController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PublicPageController;
 use App\Http\Controllers\Api\RegulationController;
 use App\Http\Controllers\Api\RtApprovalController;
@@ -30,14 +31,6 @@ use App\Http\Controllers\Api\VillageOrgPositionController;
 use App\Http\Controllers\Api\VillageProfileController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
-
-/*
-|--------------------------------------------------------------------------
-| Auth Routes
-|--------------------------------------------------------------------------
-*/
-
-require __DIR__.'/auth.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -71,7 +64,7 @@ Route::prefix('public')->group(function () {
 | berarti lupa diproteksi.
 */
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
 
     /*
     |----------------------------------------------------------------------
@@ -87,6 +80,8 @@ Route::middleware('auth:sanctum')->group(function () {
     | Lintas-role: setiap user login berhak melihat datanya sendiri.
     */
     Route::get('/user', [CurrentUserController::class, 'show']);
+    Route::patch('/profile', [ProfileController::class, 'update']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
     /*
     |----------------------------------------------------------------------
@@ -202,18 +197,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |----------------------------------------------------------------------
-    | Kasi/Kaur Approvals (UC-04d - Tahap Final)
+    | Kasi/Kaur Completed Letters (read-only)
     |----------------------------------------------------------------------
-    | Resolusi lebih spesifik (approver_position + is_final) tetap
-    | context check di KasiApprovalService - middleware ini hanya
-    | memastikan role-nya benar kasi_pelayanan/kaur_tu_umum.
+    | Akses surat approved dan assigned_role diperiksa di
+    | KasiLetterService; middleware membatasi role Kasi/Kaur.
     */
     Route::middleware(UserRole::middleware(UserRole::KasiPelayanan, UserRole::KaurTuUmum))
         ->prefix('kasi')
         ->group(function () {
-            Route::get('/letters', [KasiApprovalController::class, 'index']);
-            Route::get('/letters/{letter}', [KasiApprovalController::class, 'show']);
-            Route::patch('/letters/{letter}', [KasiApprovalController::class, 'decision']);
+            Route::get('/letters', [KasiLetterController::class, 'index']);
+            Route::get('/letters/{letter}', [KasiLetterController::class, 'show']);
         });
 
     /*
@@ -233,19 +226,12 @@ Route::middleware('auth:sanctum')->group(function () {
         ->put('/letter-types/{letterType}', [LetterTypeController::class, 'update']);
 
     Route::prefix('letters')->group(function () {
-        // UC-03: hanya Warga yang mengajukan permohonan surat self-service.
-        Route::middleware(UserRole::middleware(UserRole::Warga))
-            ->post('/', [LetterController::class, 'store']);
+        // Authorization to submit is handled by LetterPolicy::create.
+        Route::post('/', [LetterController::class, 'store']);
 
         // UC-05/UC-06/UC-08: lintas-role, scoping ada di
-        // LetterService::getScopedLetters() (match per $user->role) dan
-        // LetterPolicy::view()/LetterPolicy::delete(). Kadus tidak lagi
-        // punya scope approval sama sekali sejak v5.0 (dihapus total dari
-        // domain approval surat — SID-ARCH-BE-001 S3.2). LetterService::
-        // getScopedLetters() menolak role selain warga/rt/rw/kepala_desa/
-        // sekretaris_desa/kasi_pelayanan/kaur_tu_umum/petugas_desa lewat
-        // default => abort(403), sehingga kadus otomatis ikut ditolak
-        // tanpa perlu case khusus.
+        // LetterService::getScopedLetters() dan LetterPolicy. Kadus
+        // hanya dapat mengakses daftar suratnya sendiri dengan scope=mine.
         Route::get('/', [LetterController::class, 'index']);
         Route::get('/{id}', [LetterController::class, 'show']);
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
@@ -380,14 +366,18 @@ Route::middleware('auth:sanctum')->group(function () {
     | defense-in-depth kedua di belakang middleware yang lebih permisif,
     | bukan duplikasi peran.
     */
-    Route::prefix('officials')->group(function () {
-        Route::get('/', [OfficialController::class, 'index']);
-        Route::post('/', [OfficialController::class, 'store']);
-        Route::get('/{official}', [OfficialController::class, 'show']);
-        Route::patch('/{official}', [OfficialController::class, 'update']);
-        Route::post('/{official}/rotate', [OfficialController::class, 'rotate']);
-        Route::delete('/{official}', [OfficialController::class, 'destroy']);
-    });
+    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+        ->prefix('officials')
+        ->group(function () {
+            Route::post('/promote', [OfficialController::class, 'promote']);
+            Route::get('/', [OfficialController::class, 'index']);
+            Route::post('/', [OfficialController::class, 'store']);
+            Route::get('/{official}', [OfficialController::class, 'show']);
+            Route::patch('/{official}', [OfficialController::class, 'update']);
+            Route::post('/{official}/demote', [OfficialController::class, 'demote']);
+            Route::post('/{official}/rotate', [OfficialController::class, 'rotate']);
+            Route::delete('/{official}', [OfficialController::class, 'destroy']);
+        });
 
     /*
     |----------------------------------------------------------------------
@@ -399,7 +389,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->prefix('users')
         ->group(function () {
             Route::get('/', [UserController::class, 'index']);
-            Route::post('/', [UserController::class, 'store']);
+            Route::post('/{user}/reset-password', [UserController::class, 'resetPassword']);
             Route::patch('/{user}', [UserController::class, 'update']);
             Route::patch('/{user}/toggle-status', [UserController::class, 'updateStatus']);
         });

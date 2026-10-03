@@ -3,16 +3,16 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -23,6 +23,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
         ];
     }
 
@@ -35,7 +37,13 @@ class User extends Authenticatable
         'email',
         'password',
         'is_active',
+        'must_change_password',
     ];
+
+    public function setUsernameAttribute(string $value): void
+    {
+        $this->attributes['username'] = Str::lower(trim($value));
+    }
 
     public function village()
     {
@@ -57,9 +65,14 @@ class User extends Authenticatable
         return $this->hasMany(LetterApproval::class, 'approved_by');
     }
 
-    public function official()
+    public function official(): HasOne
     {
-        return $this->hasOne(Official::class);
+        return $this->hasOne(Official::class)->where('is_active', true);
+    }
+
+    public function officials(): HasMany
+    {
+        return $this->hasMany(Official::class);
     }
 
     public function news()

@@ -406,6 +406,20 @@ class OfficialServiceTest extends TestCase
         $this->assertDatabaseHas('officials', ['id' => $official->id, 'position' => 'petugas_desa']);
     }
 
+    public function test_create_rejects_account_position_with_user_id(): void
+    {
+        $user = User::factory()->create();
+
+        $this->expectException(HttpException::class);
+
+        $this->service->create([
+            'user_id' => $user->id,
+            'citizen_id' => $user->citizen_id,
+            'position' => 'rt',
+            'started_at' => today(),
+        ]);
+    }
+
     public function test_create_rejects_duplicate_active_position_in_same_scope(): void
     {
         $rt = Rt::factory()->create();
@@ -476,6 +490,16 @@ class OfficialServiceTest extends TestCase
         $this->assertSame('0812', $updated->phone_wa);
     }
 
+    public function test_update_rejects_assignment_fields_for_official_linked_to_user(): void
+    {
+        $user = User::factory()->create();
+        $official = Official::factory()->forUser($user)->create();
+
+        $this->expectException(HttpException::class);
+
+        $this->service->update($official, ['position' => 'rw']);
+    }
+
     public function test_delete_removes_official(): void
     {
         $official = Official::factory()->create();
@@ -485,58 +509,31 @@ class OfficialServiceTest extends TestCase
         $this->assertDatabaseMissing('officials', ['id' => $official->id]);
     }
 
-    /**
-     * EV5-11-S3. rotate() sesuai paths/officials/rotate.yaml.
-     */
-    public function test_rotate_ends_old_official_and_creates_active_new_one_in_same_scope(): void
+    public function test_delete_rejects_active_official_linked_to_user(): void
     {
-        $rt = Rt::factory()->create();
-        $old = Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
-        $newCitizen = Citizen::factory()->create();
-        $newUser = User::factory()->create();
+        $user = User::factory()->create();
+        $official = Official::factory()->forUser($user)->create();
 
-        $result = $this->service->rotate($old, [
-            'citizen_id' => $newCitizen->id,
-            'user_id' => $newUser->id,
-            'started_at' => now()->toDateString(),
-        ]);
+        $this->expectException(HttpException::class);
 
-        $this->assertFalse($result['old_official']->is_active);
-        $this->assertNotNull($result['old_official']->ended_at);
-        $this->assertTrue($result['new_official']->is_active);
-        $this->assertSame('rt', $result['new_official']->position);
-        $this->assertSame($rt->id, $result['new_official']->rt_id);
-        $this->assertSame($newCitizen->id, $result['new_official']->citizen_id);
+        $this->service->delete($official);
     }
 
-    public function test_rotate_to_sekdes_position_syncs_user_role_to_sekretaris_desa(): void
+    public function test_assert_position_available_allows_multiple_petugas_desa_officials(): void
     {
-        $old = Official::factory()->create(['position' => 'sekdes', 'is_active' => true]);
-        $newCitizen = Citizen::factory()->create();
-        $newUser = User::factory()->create(['role' => 'rt']);
-
-        $this->service->rotate($old, [
-            'citizen_id' => $newCitizen->id,
-            'user_id' => $newUser->id,
-            'started_at' => now()->toDateString(),
+        $village = Village::factory()->create();
+        Official::factory()->count(2)->create([
+            'position' => 'petugas_desa',
+            'village_id' => $village->id,
+            'is_active' => true,
         ]);
 
-        $this->assertSame('sekretaris_desa', $newUser->fresh()->role);
-    }
-
-    public function test_rotate_to_non_sekdes_position_does_not_touch_user_role(): void
-    {
-        $rt = Rt::factory()->create();
-        $old = Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
-        $newCitizen = Citizen::factory()->create();
-        $newUser = User::factory()->create(['role' => 'warga']);
-
-        $this->service->rotate($old, [
-            'citizen_id' => $newCitizen->id,
-            'user_id' => $newUser->id,
-            'started_at' => now()->toDateString(),
+        $this->service->assertPositionAvailable([
+            'position' => 'petugas_desa',
+            'village_id' => $village->id,
+            'is_active' => true,
         ]);
 
-        $this->assertSame('warga', $newUser->fresh()->role);
+        $this->assertTrue(true);
     }
 }

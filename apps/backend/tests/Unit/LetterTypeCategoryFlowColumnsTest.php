@@ -91,7 +91,7 @@ class LetterTypeCategoryFlowColumnsTest extends TestCase
         $this->assertSame(1, $categoryCount, 'Seeder harus idempotent, tidak boleh duplikat kategori.');
 
         $flowCount = ApprovalFlow::query()
-            ->where('name', 'RT-Kades-Staff (3 Tahap)')
+            ->where('name', 'RT-Kades/Sekdes (2 Tahap)')
             ->count();
         $this->assertSame(1, $flowCount, 'Seeder harus idempotent, tidak boleh duplikat flow.');
     }
@@ -106,9 +106,16 @@ class LetterTypeCategoryFlowColumnsTest extends TestCase
 
         $positions = DB::table('flow_steps')
             ->where('flow_id', $flow->id)
+            ->orderBy('step_order')
             ->pluck('approver_position')
             ->all();
 
+        $this->assertSame(['rt', 'kepala_desa'], $positions);
+        $this->assertDatabaseHas('flow_steps', [
+            'flow_id' => $flow->id,
+            'step_order' => 2,
+            'is_final' => true,
+        ]);
         $this->assertNotContains('sekdes', $positions);
         $this->assertNotContains('rw', $positions);
         $this->assertNotContains('kadus', $positions);

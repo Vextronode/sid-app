@@ -70,6 +70,12 @@ class StoreOfficialRequest extends FormRequest
                 'date',
             ],
 
+            'term_ends_at' => [
+                'nullable',
+                'date',
+                'after:started_at',
+            ],
+
             'ended_at' => [
                 'nullable',
                 'date',

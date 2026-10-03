@@ -38,6 +38,59 @@ class OfficialRepository
         return Official::query()->findOrFail($id);
     }
 
+    public function findActiveByUserId(string $userId): ?Official
+    {
+        return Official::query()
+            ->where('user_id', $userId)
+            ->where('is_active', true)
+            ->first();
+    }
+
+    public function existsActiveForUser(string $userId): bool
+    {
+        return Official::query()
+            ->where('user_id', $userId)
+            ->where('is_active', true)
+            ->exists();
+    }
+
+    public function findActiveByCitizenId(string $citizenId): ?Official
+    {
+        return Official::query()
+            ->where('citizen_id', $citizenId)
+            ->where('is_active', true)
+            ->first();
+    }
+
+    public function countActiveByPositionAndVillage(string $position, string $villageId): int
+    {
+        return Official::query()
+            ->where('position', $position)
+            ->where('village_id', $villageId)
+            ->where('is_active', true)
+            ->count();
+    }
+
+    public function allTermExpiredActive(string $villageId): Collection
+    {
+        return Official::query()
+            ->with(['citizen', 'user'])
+            ->where('village_id', $villageId)
+            ->active()
+            ->termExpired()
+            ->get();
+    }
+
+    public function allTermEndingWithin(string $villageId, int $days): Collection
+    {
+        return Official::query()
+            ->with(['citizen', 'user'])
+            ->where('village_id', $villageId)
+            ->active()
+            ->termEndingWithin($days)
+            ->get();
+    }
+
     public function findActiveForUserOrFail(User $user, ?string $position = null): Official
     {
         $query = Official::query()

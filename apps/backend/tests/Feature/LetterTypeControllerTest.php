@@ -47,6 +47,22 @@ class LetterTypeControllerTest extends TestCase
         $this->assertDatabaseHas('letter_types', ['id' => $letterType->id, 'validity_days' => 180, 'is_active' => false]);
     }
 
+    public function test_update_accepts_null_assigned_role_for_letters_available_to_both_roles(): void
+    {
+        $admin = User::factory()->create(['role' => 'petugas_desa']);
+        $letterType = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
+
+        $this->actingAs($admin)
+            ->putJson("/api/letter-types/{$letterType->id}", ['assigned_role' => null])
+            ->assertOk()
+            ->assertJsonPath('data.assigned_role', null);
+
+        $this->assertDatabaseHas('letter_types', [
+            'id' => $letterType->id,
+            'assigned_role' => null,
+        ]);
+    }
+
     public function test_update_moves_letter_type_to_another_flow_in_the_same_category(): void
     {
         $admin = User::factory()->create(['role' => 'petugas_desa']);

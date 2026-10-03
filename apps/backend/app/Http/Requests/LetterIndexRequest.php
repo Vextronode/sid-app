@@ -14,6 +14,7 @@ class LetterIndexRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'scope' => ['nullable', 'in:mine'],
             'status' => ['nullable', 'string'],
 
             'letter_type_id' => [

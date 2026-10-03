@@ -46,4 +46,13 @@ class PasswordResetTest extends TestCase
             return true;
         });
     }
+
+    public function test_unknown_email_is_handled_as_a_validation_response_without_server_error(): void
+    {
+        User::factory()->withoutEmail()->create();
+
+        $this->post('/forgot-password', ['email' => 'unknown@example.test'])
+            ->assertRedirect()
+            ->assertSessionHasErrors('email');
+    }
 }

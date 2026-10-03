@@ -156,7 +156,7 @@ class EnsureUserHasRoleTest extends TestCase
     }
 
     #[Test]
-    public function rw_role_is_rejected_from_kasi_approval_route(): void
+    public function rw_role_is_rejected_from_kasi_completed_letters_route(): void
     {
         $request = Request::create('/api/kasi/letters', 'GET');
         $request->setUserResolver(fn () => $this->userWithRole('rw'));

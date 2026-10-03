@@ -17,9 +17,11 @@ return new class extends Migration
             $table->foreignUuid('citizen_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
             $table->enum('role', ['warga', 'rt', 'rw', 'kadus', 'kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa', 'kepala_desa', 'sekretaris_desa'])->nullable();
-            $table->string('email')->unique();
+            $table->string('username', 30)->unique()->after('name');
+            $table->string('email')->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->boolean('must_change_password')->default(false);
             $table->boolean('is_active');
             $table->rememberToken();
             $table->timestamps();

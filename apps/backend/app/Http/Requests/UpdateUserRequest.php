@@ -4,7 +4,6 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -26,7 +25,6 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'string', 'max:255'],
-            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }
@@ -36,8 +34,6 @@ class UpdateUserRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
-            'email.unique' => 'Email sudah digunakan',
-        ];
+        return [];
     }
 }

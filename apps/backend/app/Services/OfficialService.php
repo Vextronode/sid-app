@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\OfficialPosition;
 use App\Models\Citizen;
 use App\Models\FlowStep;
 use App\Models\Letter;
@@ -11,7 +12,6 @@ use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 
 class OfficialService
 {
@@ -148,18 +148,17 @@ class OfficialService
     }
 
     /**
-     * EV5-4-S6. Kepala Desa DAN Sekretaris Desa aktif di sebuah
-     * village, dipakai untuk notifikasi monitoring saat Kasi/Kaur
-     * menyelesaikan surat (keduanya, bukan cuma Kepala Desa seperti
-     * resolveVillageHead() di atas - lihat kasi/letter-detail.yaml).
-     *
      * @return Collection<int, Official>
      */
-    public function resolveVillageMonitoringOfficials(string $villageId): Collection
+    public function resolveKasiKaurForLetter(Letter $letter): Collection
     {
+        $assignedRole = $letter->letterType->assigned_role;
+
         return $this->officialRepository
-            ->allActiveByPositionsAndVillage(['kepala_desa', 'sekdes'], $villageId)
-            ->load('user');
+            ->allActiveByPositionsAndVillage(['kasi_pelayanan', 'kaur_tu_umum'], $letter->village_id)
+            ->filter(fn (Official $official) => $assignedRole === null || $official->position === $assignedRole)
+            ->load('user')
+            ->values();
     }
 
     public function getAllWithRelations(): Collection
@@ -174,13 +173,26 @@ class OfficialService
 
     public function create(array $data): Official
     {
-        $this->guardSinglePositionPerScope($data);
+        $position = OfficialPosition::tryFrom($data['position'] ?? '');
+
+        if ($position?->hasAccount() && ! empty($data['user_id'])) {
+            abort(422, 'Gunakan endpoint promote untuk menetapkan jabatan pada akun.');
+        }
+
+        $this->assertPositionAvailable($data);
 
         return $this->officialRepository->create($data);
     }
 
     public function update(Official $official, array $data): Official
     {
+        if (
+            $official->user_id !== null &&
+            array_intersect(['position', 'user_id', 'citizen_id', 'is_active', 'ended_at'], array_keys($data)) !== []
+        ) {
+            abort(422, 'Gunakan endpoint promote/demote/rotate untuk mengubah jabatan akun.');
+        }
+
         $merged = array_merge([
             'position' => $official->position,
             'village_id' => $official->village_id,
@@ -190,67 +202,18 @@ class OfficialService
             'is_active' => $official->is_active,
         ], $data);
 
-        $this->guardSinglePositionPerScope($merged, excludeId: $official->id);
+        $this->assertPositionAvailable($merged, excludeId: $official->id);
 
         return $this->officialRepository->update($official, $data);
     }
 
     public function delete(Official $official): bool
     {
-        return $this->officialRepository->delete($official);
-    }
-
-    /**
-     * EV5-11-S3 (UC-14 Rotasi Jabatan, paths/officials/rotate.yaml).
-     * Dijalankan dalam satu transaksi:
-     *  1. UPDATE official lama: ended_at=hari ini, is_active=false.
-     *  2. INSERT official baru di posisi & wilayah yang sama.
-     *  3. Jika position='sekdes', sync users.role jadi 'sekretaris_desa'
-     *     untuk akun baru (logic tidak berubah dari v4.2).
-     *
-     * Official lama di-nonaktifkan LEBIH DULU supaya
-     * guardSinglePositionPerScope() di create() tidak menganggapnya
-     * konflik dengan official baru yang menempati posisi sama.
-     *
-     * @return array{old_official: Official, new_official: Official}
-     */
-    public function rotate(Official $old, array $data): array
-    {
-        return DB::transaction(function () use ($old, $data) {
-            $this->officialRepository->update($old, [
-                'ended_at' => now()->toDateString(),
-                'is_active' => false,
-            ]);
-
-            $new = $this->create([
-                'citizen_id' => $data['citizen_id'],
-                'user_id' => $data['user_id'],
-                'position' => $old->position,
-                'village_id' => $old->village_id,
-                'rt_id' => $old->rt_id,
-                'rw_id' => $old->rw_id,
-                'hamlet_id' => $old->hamlet_id,
-                'started_at' => $data['started_at'],
-                'notes' => $data['notes'] ?? null,
-                'is_active' => true,
-            ]);
-
-            $this->syncSekdesRole($new);
-
-            return [
-                'old_official' => $old->fresh(),
-                'new_official' => $new,
-            ];
-        });
-    }
-
-    private function syncSekdesRole(Official $official): void
-    {
-        if ($official->position !== 'sekdes' || ! $official->user_id) {
-            return;
+        if ($official->is_active && $official->user_id !== null) {
+            abort(409, 'Jabatan aktif tidak dapat dihapus. Turunkan (demote) terlebih dahulu.');
         }
 
-        $this->userRepository->updateRole($official->user_id, 'sekretaris_desa');
+        return $this->officialRepository->delete($official);
     }
 
     /**
@@ -259,8 +222,14 @@ class OfficialService
      * yang sama, atau dua Kepala Desa aktif dalam satu village).
      * Hanya diperiksa ketika data yang disimpan berstatus aktif.
      */
-    private function guardSinglePositionPerScope(array $data, ?int $excludeId = null): void
+    public function assertPositionAvailable(array $data, ?int $excludeId = null): void
     {
+        $position = OfficialPosition::tryFrom($data['position'] ?? '');
+
+        if ($position === null || ! $position->isSingleHolderPerScope()) {
+            return;
+        }
+
         $isActive = $data['is_active'] ?? true;
 
         if (! $isActive) {
@@ -268,7 +237,7 @@ class OfficialService
         }
 
         $exists = $this->officialRepository->existsActiveByPositionAndScope(
-            position: $data['position'],
+            position: $position->value,
             villageId: $data['village_id'] ?? null,
             rtId: $data['rt_id'] ?? null,
             rwId: $data['rw_id'] ?? null,

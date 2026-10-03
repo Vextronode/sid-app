@@ -143,6 +143,41 @@ class LetterRepository
             ]);
     }
 
+    public function queryApprovedForAssignedRole(?string $assignedRole, string $villageId): Builder
+    {
+        return Letter::query()
+            ->where('village_id', $villageId)
+            ->where('status', LetterStatus::Approved)
+            ->whereHas('letterType', function (Builder $query) use ($assignedRole) {
+                $query->where('assigned_role', $assignedRole)
+                    ->orWhereNull('assigned_role');
+            })
+            ->with([
+                'citizen',
+                'letterType',
+                'approvals.approvedBy:id,name',
+            ]);
+    }
+
+    public function countWaitingAtStep(array $positions, string $villageId, ?int $rtId = null): int
+    {
+        $query = Letter::query()
+            ->where('village_id', $villageId)
+            ->whereIn('status', [LetterStatus::Pending, LetterStatus::InProgress])
+            ->whereHas('flow', function (Builder $flowQuery) use ($positions) {
+                $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($positions) {
+                    $stepQuery->whereColumn('step_order', 'letters.current_step_order')
+                        ->whereIn('approver_position', $positions);
+                });
+            });
+
+        if ($rtId !== null) {
+            $query->whereHas('citizen', fn (Builder $citizenQuery) => $citizenQuery->where('rt_id', $rtId));
+        }
+
+        return $query->count();
+    }
+
     /**
      * Query surat berstatus tertentu yang discope ke warga dalam RW
      * tertentu, lewat relasi citizen.rt.rw_id. Saat ini jalur RW FYI
@@ -187,18 +222,18 @@ class LetterRepository
      * lihat OfficialService::resolveOfficialsForStep untuk konteks
      * "siapa cepat dia dapat").
      *
-     * Join ke flow_steps lewat flow_id + current_step_order (bukan
-     * whereIn('status', [...])) - current_step_order sudah cukup
-     * menunjukkan "sedang aktif di step ini" TANPA perlu filter status
-     * eksplisit di sini: reject tidak pernah memajukan
-     * current_step_order (lihat KadesApprovalService::decision()),
-     * jadi surat yang sudah diputuskan di step SEBELUM ini otomatis
-     * tidak lagi match kolom current_step_order-nya sendiri.
+     * Hanya surat berstatus pending atau in_progress yang merupakan
+     * pekerjaan approval aktif. Posisi step aktif saja tidak cukup,
+     * karena surat rejected mempertahankan current_step_order.
      */
-    public function queryPendingAtFlowStepPositions(array $positions, string $villageId): Builder
+    public function queryPendingAtFlowStepPositions(array $positions, string $villageId, ?string $excludeSubmittedBy = null): Builder
     {
-        return Letter::query()
+        $query = Letter::query()
             ->where('village_id', $villageId)
+            ->whereIn('status', [
+                LetterStatus::Pending->value,
+                LetterStatus::InProgress->value,
+            ])
             ->whereHas('flow', function (Builder $flowQuery) use ($positions) {
                 $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($positions) {
                     $stepQuery->whereColumn('step_order', 'letters.current_step_order')
@@ -210,6 +245,12 @@ class LetterRepository
                 'letterType',
                 'approvals.approvedBy:id,name',
             ]);
+
+        if ($excludeSubmittedBy !== null) {
+            $query->where('submitted_by', '!=', $excludeSubmittedBy);
+        }
+
+        return $query;
     }
 
     public function queryByCitizenHamlet(int $hamletId): Builder
@@ -233,9 +274,9 @@ class LetterRepository
      * Kades/Sekdes/Kasi/Kaur) - pola sama seperti
      * queryPendingAtFlowStepPositions().
      */
-    public function findByFlowStepAndStatus(string $approverPosition, array $statuses): Builder
+    public function findByFlowStepAndStatus(string $approverPosition, array $statuses, ?string $excludeSubmittedBy = null): Builder
     {
-        return Letter::query()
+        $query = Letter::query()
             ->whereIn('status', $statuses)
             ->whereHas('flow', function (Builder $flowQuery) use ($approverPosition) {
                 $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($approverPosition) {
@@ -244,6 +285,12 @@ class LetterRepository
                 });
             })
             ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'user']);
+
+        if ($excludeSubmittedBy !== null) {
+            $query->where('submitted_by', '!=', $excludeSubmittedBy);
+        }
+
+        return $query;
     }
 
     /**
@@ -258,41 +305,6 @@ class LetterRepository
         return Letter::query()
             ->whereHas('citizen.rt', fn (Builder $q) => $q->where('rw_id', $rwId))
             ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'user']);
-    }
-
-    /**
-     * Surat yang sedang berada di step FINAL (is_final=true) dengan
-     * approver_position sesuai posisi Kasi/Kaur yang memanggil,
-     * discope ke village, dan belum diputuskan - dipakai
-     * KasiApprovalService::getPendingLetters() (EV5-4-S6). MENGGANTIKAN
-     * filter lama yang salah membandingkan ke assigned_role='rw'
-     * (Audit §3.4).
-     *
-     * Status bisa 'pending' (flow langsung mulai di step final, tanpa
-     * RT/Kades) ATAU 'in_progress' (sudah lewat RT dan/atau Kades lebih
-     * dulu - lihat RtApprovalService::decision(), EV5-4-S4) - keduanya
-     * berarti "belum diputuskan". Step final tidak pernah maju ke step
-     * berikutnya (current_step_order tetap sama setelah diputuskan),
-     * jadi status generik 'approved'/'rejected' adalah satu-satunya
-     * penanda surat ini SUDAH diputuskan Kasi/Kaur.
-     */
-    public function queryPendingAtFinalStepPosition(string $position, string $villageId): Builder
-    {
-        return Letter::query()
-            ->where('village_id', $villageId)
-            ->whereIn('status', [LetterStatus::Pending, LetterStatus::InProgress])
-            ->whereHas('flow', function (Builder $flowQuery) use ($position) {
-                $flowQuery->whereHas('steps', function (Builder $stepQuery) use ($position) {
-                    $stepQuery->whereColumn('step_order', 'letters.current_step_order')
-                        ->where('approver_position', $position)
-                        ->where('is_final', true);
-                });
-            })
-            ->with([
-                'citizen',
-                'letterType',
-                'approvals.approvedBy:id,name',
-            ]);
     }
 
     public function findWithApprovalActorForShow(string $id): Letter

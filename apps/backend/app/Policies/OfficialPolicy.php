@@ -13,8 +13,6 @@ class OfficialPolicy
     }
 
     private const MANAGER_ROLES = [
-        'kepala_desa',
-        'sekretaris_desa',
         'petugas_desa',
     ];
 

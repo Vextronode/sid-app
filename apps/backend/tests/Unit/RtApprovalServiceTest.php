@@ -12,9 +12,12 @@ use App\Models\Rw;
 use App\Models\User;
 use App\Models\Village;
 use App\Notifications\LetterStatusNotification;
+use App\Repositories\ApprovalFlowRepository;
 use App\Repositories\LetterRepository;
+use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
+use App\Services\LetterFlowService;
 use App\Services\OfficialService;
 use App\Services\RtApprovalService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -35,10 +38,12 @@ class RtApprovalServiceTest extends TestCase
 
         Notification::fake();
 
+        $officialService = new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository);
         $this->service = new RtApprovalService(
-            new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository),
+            $officialService,
             new LetterRepository,
             new OfficialRepository,
+            new LetterFlowService($officialService, new ApprovalFlowRepository, new LetterStatusLogRepository),
         );
     }
 
@@ -73,6 +78,11 @@ class RtApprovalServiceTest extends TestCase
             'village_id' => $village->id,
             'citizen_id' => $citizen->id,
             'status' => 'pending',
+        ]);
+        Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'is_active' => true,
         ]);
 
         return compact('letter', 'rt', 'rw', 'citizen');

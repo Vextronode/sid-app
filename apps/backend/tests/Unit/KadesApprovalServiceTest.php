@@ -10,10 +10,15 @@ use App\Models\LetterApproval;
 use App\Models\Official;
 use App\Models\User;
 use App\Models\Village;
+use App\Repositories\ApprovalFlowRepository;
+use App\Repositories\LetterNumberCounterRepository;
 use App\Repositories\LetterRepository;
+use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\KadesApprovalService;
+use App\Services\LetterFlowService;
+use App\Services\LetterNumberGenerator;
 use App\Services\OfficialService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -37,9 +42,13 @@ class KadesApprovalServiceTest extends TestCase
 
         Notification::fake();
 
+        $letterRepository = new LetterRepository;
+        $officialService = new OfficialService(new OfficialRepository, new UserRepository, $letterRepository);
         $this->service = new KadesApprovalService(
-            new LetterRepository,
-            new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository),
+            $letterRepository,
+            $officialService,
+            new LetterFlowService($officialService, new ApprovalFlowRepository, new LetterStatusLogRepository),
+            new LetterNumberGenerator(new LetterNumberCounterRepository),
         );
     }
 
@@ -61,16 +70,23 @@ class KadesApprovalServiceTest extends TestCase
         FlowStep::factory()->create([
             'flow_id' => $flow->id,
             'step_order' => 2,
-            'approver_position' => 'kasi_pelayanan',
+            'approver_position' => 'sekdes',
             'is_final' => true,
         ]);
 
-        return Letter::factory()->create([
+        $letter = Letter::factory()->create([
             'flow_id' => $flow->id,
             'current_step_order' => 1,
             'village_id' => $village->id,
             'citizen_id' => $citizen->id,
         ]);
+        Official::factory()->create([
+            'position' => 'sekdes',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+
+        return $letter;
     }
 
     /**
@@ -136,6 +152,37 @@ class KadesApprovalServiceTest extends TestCase
 
         $this->assertCount(1, $result);
         $this->assertSame($letter->id, $result->first()->id);
+    }
+
+    public function test_get_pending_letters_includes_letters_at_sekdes_step(): void
+    {
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesStep($village);
+        $letter->update(['current_step_order' => 2]);
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+
+        $result = $this->service->getPendingLetters($kades);
+
+        $this->assertCount(1, $result);
+        $this->assertSame($letter->id, $result->first()->id);
+    }
+
+    public function test_decision_can_finalize_a_sekdes_position_step(): void
+    {
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesStep($village);
+        $letter->update(['current_step_order' => 2]);
+        $sekdes = $this->makeUserWithPosition('sekdes', $village);
+
+        $this->service->decision($letter, $sekdes, ['status' => 'approved']);
+
+        $this->assertSame('approved', $letter->fresh()->status->value);
+        $this->assertDatabaseHas('letter_approvals', [
+            'letter_id' => $letter->id,
+            'approval_level' => 'sekdes',
+            'action' => 'approved',
+            'approved_by' => $sekdes->id,
+        ]);
     }
 
     public function test_get_pending_letters_excludes_letters_not_at_kades_step(): void
@@ -284,6 +331,41 @@ class KadesApprovalServiceTest extends TestCase
         ]);
     }
 
+    public function test_rejected_letter_is_not_returned_to_the_pending_worklist(): void
+    {
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesStep($village);
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+
+        $this->service->decision($letter, $kades, [
+            'status' => 'rejected',
+            'notes' => 'Dokumen tidak lengkap',
+        ]);
+
+        $this->assertCount(0, $this->service->getPendingLetters($kades));
+    }
+
+    public function test_rejected_letter_cannot_be_decided_again(): void
+    {
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesStep($village);
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+        $this->service->decision($letter, $kades, [
+            'status' => 'rejected',
+            'notes' => 'Dokumen tidak lengkap',
+        ]);
+
+        try {
+            $this->service->decision($letter->fresh(), $kades, ['status' => 'approved']);
+            $this->fail('Surat rejected seharusnya tidak dapat diproses ulang.');
+        } catch (HttpException $exception) {
+            $this->assertSame(409, $exception->getStatusCode());
+        }
+
+        $this->assertSame('rejected', $letter->fresh()->status->value);
+        $this->assertSame(1, LetterApproval::query()->where('letter_id', $letter->id)->count());
+    }
+
     /**
      * FIX BUG: status harus diupdate menjadi 'in_progress' saat Kades
      * approve dan step bukan is_final. Versi lama TIDAK mengupdate status
@@ -363,7 +445,7 @@ class KadesApprovalServiceTest extends TestCase
     public function test_second_decision_by_the_other_official_is_rejected(): void
     {
         $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
+        $letter = $this->makeLetterAtKadesFinalStep($village);
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
         $sekdes = $this->makeUserWithPosition('sekdes', $village);
 
@@ -377,7 +459,7 @@ class KadesApprovalServiceTest extends TestCase
     public function test_second_decision_does_not_create_a_duplicate_approval_row(): void
     {
         $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
+        $letter = $this->makeLetterAtKadesFinalStep($village);
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
         $sekdes = $this->makeUserWithPosition('sekdes', $village);
 

@@ -261,7 +261,7 @@ class WilayahSeeder extends Seeder
             [
                 'nik' => '3218030101010010',
                 'name' => 'Desa Rusliana',
-                'username' => 'Desa Rusliana',
+                'username' => 'desa_rusliana',
                 'email' => 'Desa_Rusliana@example.com',
                 'role' => 'kepala_desa',
                 'position' => 'kepala_desa',
@@ -276,7 +276,7 @@ class WilayahSeeder extends Seeder
             [
                 'nik' => '3218030101010011',
                 'name' => 'Sakim Hidayat',
-                'username' => 'Sakim Hidayat',
+                'username' => 'sakim_hidayat',
                 'email' => 'Sakim_hidayat@example.com',
                 'role' => 'kasi_pelayanan',
                 'position' => 'kasi_pelayanan',
@@ -291,7 +291,7 @@ class WilayahSeeder extends Seeder
             [
                 'nik' => '3218030101010012',
                 'name' => 'Mamang Saepul',
-                'username' => 'Mamang Saepul',
+                'username' => 'mamang_saepul',
                 'email' => 'kadus.cibenda@example.com',
                 'role' => 'kadus',
                 'position' => 'kadus',
@@ -306,9 +306,20 @@ class WilayahSeeder extends Seeder
             [
                 'nik' => '3218030101010013',
                 'name' => 'Rudi Hartono',
-                'username' => 'Rudi Hartono',
+                'username' => 'rudi_hartono',
                 'email' => 'rudi.hartono@example.com',
                 'role' => 'petugas_desa',
+                'position' => 'petugas_desa',
+                'rw_key' => 'CIBENDA_RW_001',
+                'rt_key' => 'CIBENDA_RT_001_RW_001',
+            ],
+
+            [
+                'nik' => '3218030101010019',
+                'name' => 'Dedi Kusnadi',
+                'username' => 'dedi_kusnadi',
+                'email' => 'dedi.kusnadi@example.com',
+                'role' => 'sekretaris_desa',
                 'position' => 'sekdes',
                 'rw_key' => 'CIBENDA_RW_001',
                 'rt_key' => 'CIBENDA_RT_001_RW_001',
@@ -321,7 +332,7 @@ class WilayahSeeder extends Seeder
             [
                 'nik' => '3218030101010014',
                 'name' => 'Rahmat Hidayat',
-                'username' => 'Rahmat Hidayat',
+                'username' => 'rahmat_hidayat',
                 'email' => 'rahmat.hidayat@example.com',
                 'role' => 'petugas_desa',
                 'position' => 'kasi_kesejahteraan',
@@ -336,7 +347,7 @@ class WilayahSeeder extends Seeder
             [
                 'nik' => '3218030101010015',
                 'name' => 'Deni Firmansyah',
-                'username' => 'Deni Firmansyah',
+                'username' => 'deni_firmansyah',
                 'email' => 'deni.firmansyah@example.com',
                 'role' => 'petugas_desa',
                 'position' => 'kasi_pemerintahan',
@@ -351,7 +362,7 @@ class WilayahSeeder extends Seeder
             [
                 'nik' => '3218030101010016',
                 'name' => 'Andi Setiawan',
-                'username' => 'Andi Setiawan',
+                'username' => 'andi_setiawan',
                 'email' => 'andi.setiawan@example.com',
                 'role' => 'petugas_desa',
                 'position' => 'kaur_perencanaan',
@@ -366,7 +377,7 @@ class WilayahSeeder extends Seeder
             [
                 'nik' => '3218030101010017',
                 'name' => 'Fajar Nugraha',
-                'username' => 'Fajar Nugraha',
+                'username' => 'fajar_nugraha',
                 'email' => 'fajar.nugraha@example.com',
                 'role' => 'petugas_desa',
                 'position' => 'kaur_keuangan',
@@ -381,7 +392,7 @@ class WilayahSeeder extends Seeder
             [
                 'nik' => '3218030101010018',
                 'name' => 'Agus Setiawan',
-                'username' => 'Agus Setiawan',
+                'username' => 'agus_setiawan',
                 'email' => 'agus.setiawan@example.com',
                 'role' => 'kaur_tu_umum',
                 'position' => 'kaur_tu_umum',

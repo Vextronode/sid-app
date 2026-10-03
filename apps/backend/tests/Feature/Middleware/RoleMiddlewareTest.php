@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Middleware;
 
+use App\Models\Citizen;
+use App\Models\Letter;
+use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\Rt;
 use App\Models\Rw;
@@ -222,27 +225,60 @@ class RoleMiddlewareTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | Letters store — hanya role 'warga' (UC-03 self-service)
+    | Letters store — akses submit ditentukan kepemilikan citizen, bukan role
     |--------------------------------------------------------------------------
     */
-
-    #[DataProvider('nonWargaRoles')]
     #[Test]
-    public function non_warga_roles_cannot_submit_letter(string $role): void
+    public function account_without_citizen_cannot_submit_letter(): void
     {
-        $user = $this->userWithRole($role);
+        $letterType = LetterType::factory()->create();
+        $user = User::factory()->create(['citizen_id' => null]);
 
         $this->actingAs($user)
-            ->postJson('/api/letters', [])
+            ->postJson('/api/letters', [
+                'letter_type_id' => $letterType->id,
+                'purpose' => 'Keperluan administrasi',
+            ])
             ->assertForbidden();
     }
 
-    public static function nonWargaRoles(): array
+    #[DataProvider('officialRolesAllowedToSubmit')]
+    #[Test]
+    public function official_with_citizen_can_reach_letter_submission_authorization(string $role): void
+    {
+        $citizen = Citizen::factory()->create();
+        $letterType = LetterType::factory()->create();
+        $user = User::factory()->create([
+            'role' => $role,
+            'citizen_id' => $citizen->id,
+            'village_id' => $citizen->village_id,
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/letters', [
+            'letter_type_id' => $letterType->id,
+            'purpose' => 'Keperluan administrasi',
+        ]);
+
+        $this->assertNotSame(403, $response->getStatusCode());
+    }
+
+    public static function officialRolesAllowedToSubmit(): array
     {
         return [
             ['rt'], ['rw'], ['kadus'], ['kasi_pelayanan'],
             ['kaur_tu_umum'], ['petugas_desa'], ['kepala_desa'], ['sekretaris_desa'],
         ];
+    }
+
+    #[Test]
+    public function kasi_letters_endpoint_is_read_only(): void
+    {
+        $user = $this->userWithRole('kasi_pelayanan');
+        $letter = Letter::factory()->create();
+
+        $this->actingAs($user)
+            ->patchJson("/api/kasi/letters/{$letter->id}", ['status' => 'approved'])
+            ->assertMethodNotAllowed();
     }
 
     /*
@@ -276,18 +312,19 @@ class RoleMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function kadus_reaches_letter_service_and_is_rejected_there_not_by_middleware(): void
+    public function kadus_can_only_list_own_letters_with_scope_mine(): void
     {
-        // LetterService::getScopedLetters() punya default => abort(403)
-        // untuk role yang tidak match manapun (termasuk kadus). Middleware
-        // TIDAK memasang guard di grup ini, jadi 403 yang terjadi berasal
-        // dari Service, bukan middleware - konsisten dengan Kadus dihapus
-        // total dari domain approval (SID-ARCH-BE-001 S3.2).
         $user = $this->userWithRole('kadus');
+        $ownLetter = Letter::factory()->create(['submitted_by' => $user->id]);
+        Letter::factory()->create();
 
-        $response = $this->actingAs($user)->getJson('/api/letters');
+        $this->actingAs($user)->getJson('/api/letters')->assertForbidden();
 
-        $response->assertForbidden();
+        $this->actingAs($user)
+            ->getJson('/api/letters?scope=mine')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $ownLetter->id);
     }
 
     /*

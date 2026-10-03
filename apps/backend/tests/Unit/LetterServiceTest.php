@@ -21,6 +21,7 @@ use App\Repositories\LetterTypeRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\ApprovalSettingService;
+use App\Services\LetterFlowService;
 use App\Services\LetterService;
 use App\Services\OfficialService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,13 +39,17 @@ class LetterServiceTest extends TestCase
     {
         parent::setUp();
 
+        $officialService = new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository);
+        $letterRepository = new LetterRepository;
+        $statusLogRepository = new LetterStatusLogRepository;
+
         $this->service = new LetterService(
-            new OfficialService(new OfficialRepository, new UserRepository, new LetterRepository),
-            new LetterRepository,
-            new LetterStatusLogRepository,
+            $officialService,
+            $letterRepository,
+            $statusLogRepository,
             new LetterTypeRepository,
-            new ApprovalFlowRepository,
             new ApprovalSettingService(new ApprovalSettingRepository),
+            new LetterFlowService($officialService, new ApprovalFlowRepository, $statusLogRepository),
         );
     }
 
@@ -171,6 +176,109 @@ class LetterServiceTest extends TestCase
 
         $this->assertDatabaseHas('letters', ['id' => $letter->id]);
         $this->assertDatabaseMissing('letter_approvals', ['letter_id' => $letter->id]);
+    }
+
+    public function test_create_letter_skips_applicant_rt_and_starts_at_next_step(): void
+    {
+        Notification::fake();
+
+        $rt = Rt::factory()->create();
+        $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'rt',
+            'is_final' => false,
+        ]);
+        $finalStep = FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 2,
+            'approver_position' => 'kepala_desa',
+            'is_final' => true,
+        ]);
+        $letterType = LetterType::factory()->create(['flow_id' => $flow->id]);
+        $user = User::factory()->create([
+            'citizen_id' => $citizen->id,
+            'village_id' => $citizen->village_id,
+        ]);
+        Official::factory()->forUser($user)->position('rt')->create([
+            'rt_id' => $rt->id,
+        ]);
+        $sekdesUser = User::factory()->create(['village_id' => $citizen->village_id]);
+        Official::factory()->forUser($sekdesUser)->position('sekdes')->create();
+
+        $this->actingAs($user);
+
+        $letter = $this->service->createLetter([
+            'letter_type_id' => $letterType->id,
+            'purpose' => 'Keperluan administrasi',
+        ]);
+
+        $this->assertSame(2, $letter->current_step_order);
+        $this->assertDatabaseHas('letter_approvals', [
+            'letter_id' => $letter->id,
+            'flow_step_id' => $finalStep->id,
+        ]);
+        $this->assertDatabaseHas('letter_status_logs', [
+            'letter_id' => $letter->id,
+            'actor_id' => $user->id,
+            'old_status' => 'pending',
+            'new_status' => 'pending',
+            'reason' => 'Tahap RT dilewati: pemohon adalah pejabat pada tahap tersebut',
+        ]);
+        Notification::assertNotSentTo($user, LetterStatusNotification::class);
+        Notification::assertSentTo($sekdesUser, LetterStatusNotification::class);
+    }
+
+    public function test_create_letter_rolls_back_when_final_step_has_no_eligible_approver(): void
+    {
+        $rt = Rt::factory()->create();
+        $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'rt',
+            'is_final' => false,
+        ]);
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 2,
+            'approver_position' => 'kepala_desa',
+            'is_final' => true,
+        ]);
+        $letterType = LetterType::factory()->create(['flow_id' => $flow->id]);
+        $user = User::factory()->create([
+            'citizen_id' => $citizen->id,
+            'village_id' => $citizen->village_id,
+        ]);
+        Official::factory()->forUser($user)->position('rt')->create(['rt_id' => $rt->id]);
+        $this->actingAs($user);
+
+        try {
+            $this->service->createLetter([
+                'letter_type_id' => $letterType->id,
+                'purpose' => 'Keperluan administrasi',
+            ]);
+            $this->fail('The final-step guard must roll back letter creation.');
+        } catch (HttpException $exception) {
+            $this->assertSame(422, $exception->getStatusCode());
+        }
+
+        $this->assertDatabaseCount('letters', 0);
+        $this->assertDatabaseCount('letter_status_logs', 0);
+    }
+
+    public function test_create_letter_rejects_user_without_citizen(): void
+    {
+        $user = User::factory()->create(['citizen_id' => null]);
+        $this->actingAs($user);
+
+        $this->expectException(HttpException::class);
+        $this->expectExceptionMessage('Akun Anda belum terhubung ke data kependudukan.');
+
+        $this->service->createLetter(['letter_type_id' => 1, 'purpose' => 'Test']);
     }
 
     public function test_get_scoped_letters_for_warga_only_returns_own_letters(): void
@@ -305,7 +413,10 @@ class LetterServiceTest extends TestCase
     public function test_get_scoped_letters_for_kasi_pelayanan_scopes_to_own_position_and_village(): void
     {
         $village = Village::factory()->create();
-        [$letter] = $this->makeLetterAtStep('kasi_pelayanan', 1, ['village_id' => $village->id]);
+        [$letter] = $this->makeLetterAtStep('kasi_pelayanan', 1, [
+            'village_id' => $village->id,
+            'status' => 'approved',
+        ]);
 
         // step final untuk posisi LAIN (kaur_tu_umum) tidak boleh ikut.
         $this->makeLetterAtStep('kaur_tu_umum', 1, ['village_id' => $village->id]);
@@ -338,6 +449,76 @@ class LetterServiceTest extends TestCase
         $this->expectException(HttpException::class);
 
         $this->service->getScopedLetters($user);
+    }
+
+    public function test_scope_mine_is_available_to_rt_and_kadus(): void
+    {
+        $ownLetter = Letter::factory()->create();
+        Letter::factory()->create();
+
+        foreach (['rt', 'kadus'] as $role) {
+            $user = User::factory()->create(['role' => $role]);
+            $ownLetter->update(['submitted_by' => $user->id]);
+
+            $result = $this->service->getScopedLetters($user, ['scope' => 'mine']);
+
+            $this->assertCount(1, $result);
+            $this->assertSame($ownLetter->id, $result->first()->id);
+        }
+    }
+
+    public function test_kades_scope_excludes_own_submissions(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'kepala_desa', 'village_id' => $village->id]);
+        $official = Official::factory()->forUser($user)->position('kepala_desa')->create();
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'kepala_desa',
+        ]);
+        $own = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'village_id' => $village->id,
+            'submitted_by' => $user->id,
+        ]);
+        Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'village_id' => $village->id,
+        ]);
+
+        $result = $this->service->getScopedLetters($user);
+
+        $this->assertCount(1, $result);
+        $this->assertNotSame($own->id, $result->first()->id);
+        $this->assertTrue($official->is_active);
+    }
+
+    public function test_kasi_scope_only_returns_approved_letters_matching_assigned_role(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'kasi_pelayanan', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('kasi_pelayanan')->create();
+        $allowed = Letter::factory()->approved()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+        ]);
+        Letter::factory()->approved()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum'])->id,
+        ]);
+        Letter::factory()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+        ]);
+
+        $result = $this->service->getScopedLetters($user);
+
+        $this->assertCount(1, $result);
+        $this->assertSame($allowed->id, $result->first()->id);
     }
 
     public function test_get_scoped_letters_applies_status_filter(): void

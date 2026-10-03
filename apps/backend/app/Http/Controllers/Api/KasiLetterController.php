@@ -3,22 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\KasiDecisionRequest;
 use App\Http\Resources\LetterCollection;
 use App\Http\Resources\LetterResource;
 use App\Models\Letter;
-use App\Services\KasiApprovalService;
+use App\Services\KasiLetterService;
 use Illuminate\Http\Request;
 
-class KasiApprovalController extends Controller
+class KasiLetterController extends Controller
 {
     public function __construct(
-        protected KasiApprovalService $service
+        protected KasiLetterService $service
     ) {}
 
     public function index(Request $request)
     {
-        $letters = $this->service->getPendingLetters(
+        $letters = $this->service->getCompletedLetters(
             $request->user()
         );
 
@@ -42,21 +41,6 @@ class KasiApprovalController extends Controller
         return response()->json([
             'message' => 'Detail surat berhasil diambil.',
             'data' => new LetterResource($detail),
-        ]);
-    }
-
-    public function decision(
-        KasiDecisionRequest $request,
-        Letter $letter
-    ) {
-        $this->service->decision(
-            $letter,
-            $request->user(),
-            $request->validated()
-        );
-
-        return response()->json([
-            'message' => 'Surat berhasil diproses.',
         ]);
     }
 }

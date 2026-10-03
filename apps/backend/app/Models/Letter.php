@@ -107,4 +107,9 @@ class Letter extends Model
     {
         return $this->belongsTo(Citizen::class);
     }
+
+    public function isSubmittedBy(User $user): bool
+    {
+        return (string) $this->submitted_by === (string) $user->getKey();
+    }
 }

@@ -79,18 +79,17 @@ class ApprovalFlowSeeder extends Seeder
         $flow = ApprovalFlow::query()->updateOrCreate(
             [
                 'category_id' => $category->id,
-                'name' => 'RT-Kades-Staff (3 Tahap)',
+                'name' => 'RT-Kades/Sekdes (2 Tahap)',
             ],
             [
-                'description' => 'Flow default 3 tahap: RT -> Kepala Desa -> Staff (Kasi/Kaur). RW menerima notifikasi FYI non-blocking sebagai side-effect (bukan approver, tidak muncul di sini). Representasi step 2 (lihat EV5-1-S4_OPEN_QUESTION_SEKDES.md untuk status pertanyaan Sekdes yang masih terbuka).',
+                'description' => 'Flow default 2 tahap: RT -> Kepala Desa. Sekretaris Desa saling menggantikan Kepala Desa bila berhalangan. RW menerima notifikasi FYI non-blocking sebagai side-effect, bukan approver.',
                 'is_active' => true,
             ],
         );
 
         $steps = [
             ['step_order' => 1, 'approver_position' => 'rt', 'is_final' => false],
-            ['step_order' => 2, 'approver_position' => 'kepala_desa', 'is_final' => false],
-            ['step_order' => 3, 'approver_position' => 'kasi_pelayanan', 'is_final' => true],
+            ['step_order' => 2, 'approver_position' => 'kepala_desa', 'is_final' => true],
         ];
 
         foreach ($steps as $step) {

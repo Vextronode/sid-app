@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
@@ -17,6 +18,7 @@ class RtApprovalService
         protected OfficialService $officialService,
         protected LetterRepository $letterRepository,
         protected OfficialRepository $officialRepository,
+        protected LetterFlowService $letterFlowService,
     ) {}
 
     public function getPendingLetters(User $user): Collection
@@ -44,6 +46,10 @@ class RtApprovalService
     public function decision(Letter $letter, User $user, array $data): void
     {
         $official = $this->authorizeOfficial($user);
+
+        if ($this->letterFlowService->isApplicantOfficial($letter, $official)) {
+            abort(403, 'Anda tidak dapat memutuskan surat milik Anda sendiri.');
+        }
 
         $letter = $this->letterRepository->loadDetailForApproval($letter);
 
@@ -82,12 +88,14 @@ class RtApprovalService
 
             if ($data['status'] === 'approved') {
                 $newStatus = 'in_progress';
+                $next = $this->letterFlowService->nextActionable($locked, $step->step_order);
 
                 $this->letterRepository->update($locked, [
                     'status' => $newStatus,
-                    'current_step_order' => $step->step_order + 1,
+                    'current_step_order' => $next['step']->step_order,
                     'processed_at' => now(),
                 ]);
+                $this->letterFlowService->logSkipped($locked, $next['skipped'], $user);
             } else {
                 $newStatus = 'rejected';
 
@@ -107,7 +115,7 @@ class RtApprovalService
 
             if ($data['status'] === 'approved') {
                 $this->notifyRwFyi($locked);
-                $this->notifyNextApprovers($locked);
+                $this->notifyNextApprovers($locked, $next['step']);
                 $this->notifyApplicant($locked, 'approved');
             } else {
                 $this->notifyApplicant($locked, 'rejected');
@@ -164,9 +172,9 @@ class RtApprovalService
      * Kepala Desa/Sekdes tanpa RtApprovalService perlu tahu detail
      * resolusinya (OfficialService::resolveNextOfficials, EV5-4-S1/S5).
      */
-    private function notifyNextApprovers(Letter $letter): void
+    private function notifyNextApprovers(Letter $letter, FlowStep $step): void
     {
-        $nextOfficials = $this->officialService->resolveNextOfficials($letter);
+        $nextOfficials = $this->letterFlowService->eligibleApprovers($step, $letter);
 
         foreach ($nextOfficials as $nextOfficial) {
             $nextOfficial->user?->notify(new LetterStatusNotification(
