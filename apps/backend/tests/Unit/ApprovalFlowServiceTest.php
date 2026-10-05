@@ -47,7 +47,7 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function list_returns_only_active_flows_when_no_category_given(): void
     {
-        $user = $this->testPetugasActor();
+        $user = $this->makePetugasDesaActor();
         $category = $this->makeCategory('approval_normal');
         $this->makeFlow($category, 'Flow Aktif', true, $user->village_id);
         $this->makeFlow($category, 'Flow Nonaktif', false, $user->village_id);
@@ -61,7 +61,7 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function list_filters_by_category_id_when_given(): void
     {
-        $user = $this->testPetugasActor();
+        $user = $this->makePetugasDesaActor();
         $categoryA = $this->makeCategory('approval_normal');
         $categoryB = $this->makeCategory('upload_mandiri');
         $flowA = $this->makeFlow($categoryA, 'Flow A', true, $user->village_id);
@@ -76,7 +76,7 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function find_with_steps_or_fail_returns_flow_with_steps(): void
     {
-        $user = $this->testPetugasActor();
+        $user = $this->makePetugasDesaActor();
         $category = $this->makeCategory('approval_normal');
         $flow = $this->makeFlow($category, 'Flow Detail', true, $user->village_id);
 
@@ -89,7 +89,7 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function find_with_steps_or_fail_aborts_404_for_nonexistent_flow(): void
     {
-        $user = $this->testPetugasActor();
+        $user = $this->makePetugasDesaActor();
         $this->expectException(NotFoundHttpException::class);
 
         $this->service->findWithStepsOrFail(99999, $user);
@@ -98,7 +98,7 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function create_persists_new_flow_via_repository(): void
     {
-        $user = $this->testPetugasActor();
+        $user = $this->makePetugasDesaActor();
         $category = $this->makeCategory('approval_normal');
 
         $flow = $this->service->create([
@@ -117,7 +117,7 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function replace_steps_aborts_404_for_nonexistent_flow(): void
     {
-        $user = $this->testPetugasActor();
+        $user = $this->makePetugasDesaActor();
         $this->expectException(NotFoundHttpException::class);
 
         $this->service->replaceSteps(99999, [
@@ -128,7 +128,7 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function replace_steps_delegates_replace_all_to_repository_for_existing_flow(): void
     {
-        $user = $this->testPetugasActor();
+        $user = $this->makePetugasDesaActor();
         $category = $this->makeCategory('approval_normal');
         $flow = $this->makeFlow($category, 'Flow Dengan Steps', true, $user->village_id);
 
@@ -162,7 +162,7 @@ class ApprovalFlowServiceTest extends TestCase
     private function makeFlow(LetterCategory $category, string $name, bool $isActive = true, ?string $villageId = null): ApprovalFlow
     {
         return ApprovalFlow::query()->create([
-            'village_id' => $villageId ?? $this->testPetugasActor()->village_id,
+            'village_id' => $villageId ?? $this->makePetugasDesaActor()->village_id,
             'category_id' => $category->id,
             'name' => $name,
             'description' => null,

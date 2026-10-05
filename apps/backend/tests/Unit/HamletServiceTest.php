@@ -44,7 +44,7 @@ class HamletServiceTest extends TestCase
     public function test_update_allows_change_when_no_active_citizens(): void
     {
         $hamlet = Hamlet::factory()->create(['is_active' => true]);
-        $user = $this->testPetugasActor($hamlet->village_id);
+        $user = $this->makePetugasDesaActor($hamlet->village_id);
 
         $updated = $this->service->update($hamlet, ['is_active' => false], $user);
 
@@ -55,7 +55,7 @@ class HamletServiceTest extends TestCase
     {
         $hamlet = Hamlet::factory()->create(['is_active' => true]);
         Citizen::factory()->create(['hamlet_id' => $hamlet->id, 'is_active' => true]);
-        $user = $this->testPetugasActor($hamlet->village_id);
+        $user = $this->makePetugasDesaActor($hamlet->village_id);
 
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage('Dusun tidak bisa dinonaktifkan karena masih ada warga aktif terdaftar di wilayah ini.');
@@ -67,7 +67,7 @@ class HamletServiceTest extends TestCase
     {
         $hamlet = Hamlet::factory()->create(['is_active' => true]);
         Citizen::factory()->create(['hamlet_id' => $hamlet->id, 'is_active' => false]);
-        $user = $this->testPetugasActor($hamlet->village_id);
+        $user = $this->makePetugasDesaActor($hamlet->village_id);
 
         $updated = $this->service->update($hamlet, ['is_active' => false], $user);
 
@@ -77,7 +77,7 @@ class HamletServiceTest extends TestCase
     public function test_delete_removes_hamlet_without_citizens(): void
     {
         $hamlet = Hamlet::factory()->create();
-        $user = $this->testPetugasActor($hamlet->village_id);
+        $user = $this->makePetugasDesaActor($hamlet->village_id);
 
         $result = $this->service->delete($hamlet, $user);
 
@@ -89,7 +89,7 @@ class HamletServiceTest extends TestCase
     {
         $hamlet = Hamlet::factory()->create();
         Citizen::factory()->create(['hamlet_id' => $hamlet->id]);
-        $user = $this->testPetugasActor($hamlet->village_id);
+        $user = $this->makePetugasDesaActor($hamlet->village_id);
 
         $this->expectException(HttpException::class);
         $this->service->delete($hamlet, $user);

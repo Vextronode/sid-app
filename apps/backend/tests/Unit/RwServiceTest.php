@@ -33,7 +33,7 @@ class RwServiceTest extends TestCase
     {
         $hamlet = Hamlet::factory()->create();
 
-        $rw = $this->service->create(['hamlet_id' => $hamlet->id, 'number' => '005'], $this->testPetugasActor($hamlet->village_id));
+        $rw = $this->service->create(['hamlet_id' => $hamlet->id, 'number' => '005'], $this->makePetugasDesaActor($hamlet->village_id));
 
         $this->assertSame('RW 005', $rw->full_label);
         $this->assertTrue($rw->is_active);
@@ -43,7 +43,7 @@ class RwServiceTest extends TestCase
     {
         $rw = Rw::factory()->create(['number' => '001', 'full_label' => 'RW 001']);
 
-        $updated = $this->service->update($rw, ['number' => '009'], $this->testPetugasActor($rw->village_id));
+        $updated = $this->service->update($rw, ['number' => '009'], $this->makePetugasDesaActor($rw->village_id));
 
         $this->assertSame('RW 009', $updated->full_label);
     }
@@ -55,7 +55,7 @@ class RwServiceTest extends TestCase
 
         $this->expectException(HttpException::class);
 
-        $this->service->update($rw, ['is_active' => false], $this->testPetugasActor($rw->village_id));
+        $this->service->update($rw, ['is_active' => false], $this->makePetugasDesaActor($rw->village_id));
     }
 
     public function test_delete_is_blocked_when_citizens_still_registered(): void
@@ -65,14 +65,14 @@ class RwServiceTest extends TestCase
 
         $this->expectException(HttpException::class);
 
-        $this->service->delete($rw, $this->testPetugasActor($rw->village_id));
+        $this->service->delete($rw, $this->makePetugasDesaActor($rw->village_id));
     }
 
     public function test_delete_removes_rw_without_citizens(): void
     {
         $rw = Rw::factory()->create();
 
-        $result = $this->service->delete($rw, $this->testPetugasActor($rw->village_id));
+        $result = $this->service->delete($rw, $this->makePetugasDesaActor($rw->village_id));
 
         $this->assertTrue($result);
         $this->assertDatabaseMissing('rws', ['id' => $rw->id]);

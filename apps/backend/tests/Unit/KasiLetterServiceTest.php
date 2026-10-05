@@ -28,7 +28,7 @@ class KasiLetterServiceTest extends TestCase
     public function test_completed_letters_only_returns_approved_and_assigned_to_user_role(): void
     {
         $village = Village::factory()->create();
-        $user = $this->testOfficialUser('kasi_pelayanan', 'kasi_pelayanan', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('kasi_pelayanan', 'kasi_pelayanan', $village->id);
         $expected = $this->makeLetter($village, 'approved', 'kasi_pelayanan');
         $this->makeLetter($village, 'approved', 'kaur_tu_umum');
         $this->makeLetter($village, 'pending', 'kasi_pelayanan');
@@ -46,7 +46,7 @@ class KasiLetterServiceTest extends TestCase
         $letter = $this->makeLetter($village, 'approved', null);
 
         foreach (['kasi_pelayanan', 'kaur_tu_umum'] as $role) {
-            $user = $this->testOfficialUser($role, $role, $village->id);
+            $user = $this->makeUserWithOfficialAssignment($role, $role, $village->id);
 
             $this->assertSame(
                 [$letter->id],
@@ -59,7 +59,7 @@ class KasiLetterServiceTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetter($village, 'approved', 'kasi_pelayanan');
-        $user = $this->testOfficialUser('kasi_pelayanan', 'kasi_pelayanan', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('kasi_pelayanan', 'kasi_pelayanan', $village->id);
 
         $this->assertSame($letter->id, $this->service->getLetterDetail($letter, $user)->id);
     }
@@ -81,7 +81,7 @@ class KasiLetterServiceTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetter($village, 'approved', 'kaur_tu_umum');
-        $kasi = $this->testOfficialUser('kasi_pelayanan', 'kasi_pelayanan', $village->id);
+        $kasi = $this->makeUserWithOfficialAssignment('kasi_pelayanan', 'kasi_pelayanan', $village->id);
 
         try {
             $this->service->getLetterDetail($letter, $kasi);
@@ -91,7 +91,7 @@ class KasiLetterServiceTest extends TestCase
         }
 
         $otherVillage = Village::factory()->create();
-        $otherVillageUser = $this->testOfficialUser('kaur_tu_umum', 'kaur_tu_umum', $otherVillage->id);
+        $otherVillageUser = $this->makeUserWithOfficialAssignment('kaur_tu_umum', 'kaur_tu_umum', $otherVillage->id);
         $letter->letterType->update(['assigned_role' => null]);
 
         $this->expectException(HttpException::class);

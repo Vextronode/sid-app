@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
-    protected function test_petugas_actor(?string $villageId = null): User
+    protected function makePetugasDesaActor(?string $villageId = null): User
     {
         return User::factory()->create([
             'role' => 'petugas_desa',
@@ -18,7 +18,7 @@ abstract class TestCase extends BaseTestCase
         ]);
     }
 
-    protected function test_official_user(string $role, string $position, ?string $villageId = null, array $officialData = []): User
+    protected function makeUserWithOfficialAssignment(string $role, string $position, ?string $villageId = null, array $officialData = []): User
     {
         $villageId ??= Village::query()->value('id') ?? Village::factory()->create()->id;
         $citizen = Citizen::factory()->create(['village_id' => $villageId]);

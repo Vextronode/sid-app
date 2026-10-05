@@ -77,7 +77,7 @@ class LetterControllerTest extends TestCase
 
     public function test_index_returns_letters_scoped_to_user(): void
     {
-        $user = $this->testOfficialUser('petugas_desa', 'petugas_desa');
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa');
         Letter::factory()->count(2)->create();
 
         $this->actingAs($user)
@@ -125,7 +125,7 @@ class LetterControllerTest extends TestCase
     public function test_destroy_allowed_for_authorized_staff_role(): void
     {
         $owner = User::factory()->create();
-        $staff = $this->testOfficialUser('kasi_pelayanan', 'kasi_pelayanan');
+        $staff = $this->makeUserWithOfficialAssignment('kasi_pelayanan', 'kasi_pelayanan');
         $letter = Letter::factory()->create(['submitted_by' => $owner->id]);
 
         $this->actingAs($staff)
@@ -178,7 +178,7 @@ class LetterControllerTest extends TestCase
     public function test_index_for_kadus_is_available_with_own_hamlet_scope(): void
     {
         Letter::factory()->count(2)->create();
-        $user = $this->testOfficialUser('kadus', 'kadus', null, ['hamlet_id' => Hamlet::factory()->create()->id]);
+        $user = $this->makeUserWithOfficialAssignment('kadus', 'kadus', null, ['hamlet_id' => Hamlet::factory()->create()->id]);
 
         $this->actingAs($user)
             ->getJson('/api/letters')

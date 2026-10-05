@@ -41,7 +41,7 @@ class DashboardServiceTest extends TestCase
     public function test_gender_stats_for_petugas_desa_counts_all_citizens_in_village(): void
     {
         $village = Village::factory()->create();
-        $user = $this->testOfficialUser('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
         $user->citizen->update(['gender' => 'L']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'L']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'P']);
@@ -110,7 +110,7 @@ class DashboardServiceTest extends TestCase
     public function test_letter_stats_returns_chart_with_seven_days_and_min_max_y_of_50(): void
     {
         $village = Village::factory()->create();
-        $user = $this->testOfficialUser('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
         Letter::factory()->create([
             'village_id' => $user->village_id,
             'submitted_at' => now(),
@@ -127,7 +127,7 @@ class DashboardServiceTest extends TestCase
     public function test_letter_stats_filters_by_letter_type_when_given(): void
     {
         $village = Village::factory()->create();
-        $user = $this->testOfficialUser('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
         $letter = Letter::factory()->create([
             'village_id' => $user->village_id,
             'submitted_at' => now(),
@@ -151,7 +151,7 @@ class DashboardServiceTest extends TestCase
     public function test_kasi_dashboard_shows_only_matching_approved_letters_with_total_and_limit(): void
     {
         $village = Village::factory()->create();
-        $user = $this->testOfficialUser('kasi_pelayanan', 'kasi_pelayanan', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('kasi_pelayanan', 'kasi_pelayanan', $village->id);
         $kasiType = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
         $unassignedType = LetterType::factory()->create(['assigned_role' => null]);
         $kaurType = LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum']);
@@ -191,7 +191,7 @@ class DashboardServiceTest extends TestCase
     public function test_petugas_dashboard_includes_expired_and_ending_official_terms(): void
     {
         $village = Village::factory()->create();
-        $user = $this->testOfficialUser('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
         $expiredCitizen = Citizen::factory()->create([
             'village_id' => $village->id,
             'name' => 'Pejabat Lewat Masa',
