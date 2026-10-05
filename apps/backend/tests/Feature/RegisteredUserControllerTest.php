@@ -28,6 +28,8 @@ class RegisteredUserControllerTest extends TestCase
             ->assertJsonPath('message', 'Akun berhasil dibuat. Simpan username Anda.')
             ->assertJsonPath('data.name', $citizen->name);
 
+        $this->assertSame(['name', 'username'], array_keys($response->json('data')));
+
         $username = $response->json('data.username');
         $this->assertMatchesRegularExpression('/^[a-z]+\.\d{4}$/', $username);
         $this->assertAuthenticated();
