@@ -85,8 +85,16 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
   // APPROVER POSITION
   // ==========================================
 
+  const isApplicantOfficial =
+    surat &&
+    (String(surat.submitted_by) === String(user?.id) ||
+      (surat.citizen_id && String(surat.citizen_id) === String(user?.citizen_id)))
   const approverPosition =
-    user?.role === 'kepala_desa' || user?.role === 'sekretaris_desa' ? 'kepala_desa' : null
+    !isApplicantOfficial &&
+    surat?.current_step?.approver_position === 'kepala_desa' &&
+    (user?.role === 'kepala_desa' || user?.role === 'sekretaris_desa')
+      ? 'kepala_desa'
+      : null
 
   const currentUserRole = approverPosition
 

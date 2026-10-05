@@ -74,7 +74,17 @@ export default function SuratDetailModalRT({
   // APPROVER POSITION
   // ==========================================
 
-  const approverPosition = !readOnly && user?.role === 'rt' ? 'rt' : null
+  const isApplicantOfficial =
+    surat &&
+    (String(surat.submitted_by) === String(user?.id) ||
+      (surat.citizen_id && String(surat.citizen_id) === String(user?.citizen_id)))
+  const approverPosition =
+    !readOnly &&
+    !isApplicantOfficial &&
+    user?.role === 'rt' &&
+    surat?.current_step?.approver_position === 'rt'
+      ? 'rt'
+      : null
 
   // ==========================================
   // KEPUTUSAN RT

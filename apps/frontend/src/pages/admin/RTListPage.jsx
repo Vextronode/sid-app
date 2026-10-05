@@ -138,7 +138,7 @@ export default function RTListPage() {
 
     const canProcessAtRt =
       [SURAT_STATUS.PENDING, SURAT_STATUS.IN_PROGRESS].includes(surat.status) &&
-      surat.current_step_order === 1
+      surat.current_step?.approver_position === 'rt'
 
     setIsReadOnly(!canProcessAtRt)
   }
@@ -295,7 +295,10 @@ export default function RTListPage() {
                           onClick={() => handleOpenDetail(s)}
                           className="rw-action-button"
                         >
-                          {s.status === SURAT_STATUS.PENDING ? 'Proses' : 'Lihat'}
+                          {['pending', 'in_progress'].includes(s.status) &&
+                          s.current_step?.approver_position === 'rt'
+                            ? 'Proses'
+                            : 'Lihat'}
                         </button>
                       </td>
                     </tr>
