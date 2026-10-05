@@ -5,6 +5,7 @@ use App\Exceptions\RegionHasActiveCitizensException;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
+            'account.active' => EnsureUserIsActive::class,
             'verified' => EnsureEmailIsVerified::class,
             'password.changed' => EnsurePasswordIsChanged::class,
             'role' => EnsureUserHasRole::class,

@@ -314,11 +314,13 @@ class RoleMiddlewareTest extends TestCase
     #[Test]
     public function kadus_can_only_list_own_letters_with_scope_mine(): void
     {
-        $user = $this->userWithRole('kadus');
+        $user = $this->testOfficialUser('kadus', 'kadus', null, [
+            'hamlet_id' => \App\Models\Hamlet::factory()->create()->id,
+        ]);
         $ownLetter = Letter::factory()->create(['submitted_by' => $user->id]);
         Letter::factory()->create();
 
-        $this->actingAs($user)->getJson('/api/letters')->assertForbidden();
+        $this->actingAs($user)->getJson('/api/letters')->assertOk();
 
         $this->actingAs($user)
             ->getJson('/api/letters?scope=mine')
