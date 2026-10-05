@@ -29,7 +29,7 @@ class RtRepositoryTest extends TestCase
         Rt::factory()->create(['rw_id' => $rwA->id, 'number' => '001']);
         Rt::factory()->create(['rw_id' => $rwB->id, 'number' => '001']);
 
-        $result = $this->repository->allOrderedByNumber($rwA->id);
+        $result = $this->repository->allOrderedByNumber($rwA->village_id, $rwA->id);
 
         $this->assertCount(2, $result);
         $this->assertSame('001', $result->first()->number);

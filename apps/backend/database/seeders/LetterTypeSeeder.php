@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Models\ApprovalFlow;
 use App\Models\LetterCategory;
 use App\Models\LetterType;
+use App\Models\Village;
 use Illuminate\Database\Seeder;
 
 class LetterTypeSeeder extends Seeder
@@ -21,24 +22,29 @@ class LetterTypeSeeder extends Seeder
     public function run(): void
     {
         $category = LetterCategory::query()->where('code', 'approval_normal')->firstOrFail();
-        $flow = ApprovalFlow::query()
-            ->where('category_id', $category->id)
-            ->where('name', 'RT-Kades/Sekdes (2 Tahap)')
-            ->firstOrFail();
 
-        foreach ($this->letterTypes() as $type) {
+        foreach (Village::query()->get() as $village) {
+            $flow = ApprovalFlow::query()
+                ->where('village_id', $village->id)
+                ->where('category_id', $category->id)
+                ->where('name', 'RT-Kades/Sekdes (2 Tahap)')
+                ->firstOrFail();
+
+          foreach ($this->letterTypes() as $type) {
             $body = $type['body'];
             unset($type['body']);
 
             LetterType::updateOrCreate(
-                ['code' => $type['code']],
+                ['village_id' => $village->id, 'code' => $type['code']],
                 array_merge($type, [
+                    'village_id' => $village->id,
                     'template' => $this->baseTemplate($type['code'], $type['name'], $body),
                     'is_active' => true,
                     'category_id' => $category->id,
                     'flow_id' => $flow->id,
                 ])
             );
+          }
         }
     }
 

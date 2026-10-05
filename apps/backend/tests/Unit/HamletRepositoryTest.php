@@ -27,7 +27,7 @@ class HamletRepositoryTest extends TestCase
         Hamlet::factory()->create(['name' => 'Dusun Ciseureuh', 'village_id' => $village->id]);
         Hamlet::factory()->create(['name' => 'Dusun Ancol', 'village_id' => $village->id]);
 
-        $result = $this->repository->allOrderedByName();
+        $result = $this->repository->allOrderedByName($village->id);
 
         $this->assertCount(2, $result);
         $this->assertSame('Dusun Ancol', $result->first()->name);

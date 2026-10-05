@@ -13,9 +13,10 @@ class FamilyRepository
         //
     }
 
-    public function allWithWilayah(): Collection
+    public function allWithWilayah(string $villageId): Collection
     {
         return Family::query()
+            ->where('village_id', $villageId)
             ->with([
                 'rt',
                 'rw',
@@ -27,7 +28,7 @@ class FamilyRepository
             ->get();
     }
 
-    public function findById(string $id): ?Family
+    public function findById(string $id, string $villageId): ?Family
     {
         return Family::query()
             ->with(array_filter([
@@ -38,6 +39,7 @@ class FamilyRepository
                 'headOfFamily',
                 Schema::hasColumn('citizens', 'family_id') ? 'members' : null,
             ]))
+            ->where('village_id', $villageId)
             ->find($id);
     }
 

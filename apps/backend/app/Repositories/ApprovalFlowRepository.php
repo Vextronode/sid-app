@@ -40,6 +40,26 @@ class ApprovalFlowRepository
             ->get();
     }
 
+    public function allForVillage(string $villageId, ?int $categoryId = null): Collection
+    {
+        return ApprovalFlow::query()
+            ->where('village_id', $villageId)
+            ->when($categoryId !== null, fn ($query) => $query->where('category_id', $categoryId))
+            ->when($categoryId === null, fn ($query) => $query->where('is_active', true))
+            ->with('steps')
+            ->get();
+    }
+
+    public function findWithStepsForVillage(int $id, string $villageId): ?ApprovalFlow
+    {
+        return ApprovalFlow::query()->where('village_id', $villageId)->with('steps')->find($id);
+    }
+
+    public function findByIdForVillage(int $id, string $villageId): ?ApprovalFlow
+    {
+        return ApprovalFlow::query()->where('village_id', $villageId)->find($id);
+    }
+
     /**
      * EV5-1-S2 (dipindah dari Controller ke Repository). Query eloquent
      * create() untuk entity ApprovalFlow HARUS lewat sini, bukan

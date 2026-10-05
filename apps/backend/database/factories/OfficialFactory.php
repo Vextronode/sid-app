@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Citizen;
 use App\Models\Official;
 use App\Models\User;
+use App\Models\Village;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -23,7 +24,7 @@ class OfficialFactory extends Factory
             'citizen_id' => Citizen::factory(),
             'user_id' => null,
             'position' => 'petugas_desa',
-            'village_id' => null,
+            'village_id' => fn () => Village::query()->value('id') ?? Village::factory()->create()->id,
             'rt_id' => null,
             'rw_id' => null,
             'hamlet_id' => null,
@@ -37,7 +38,7 @@ class OfficialFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'user_id' => $user->id,
-            'citizen_id' => $user->citizen_id ?? Citizen::factory(),
+            'citizen_id' => $user->citizen_id ?? Citizen::factory()->state(['village_id' => $user->village_id]),
             'village_id' => $user->village_id,
         ]);
     }

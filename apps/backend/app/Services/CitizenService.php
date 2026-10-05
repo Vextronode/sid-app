@@ -18,9 +18,9 @@ class CitizenService
         protected CitizenRepository $citizenRepository
     ) {}
 
-    public function getAllWithWilayah(): Collection
+    public function getAllWithWilayah(User $user): Collection
     {
-        return $this->citizenRepository->allWithWilayah();
+        return $this->citizenRepository->allWithWilayah($this->villageId($user));
     }
 
     /**
@@ -36,6 +36,7 @@ class CitizenService
 
         $this->guardDuplicateNik($data['nik']);
         $this->guardSingleFamilyHead($data['family_id'] ?? null, $data['family_role'] ?? null);
+        $this->guardRelatedRecords($data, $user);
 
         return DB::transaction(function () use ($data, $user) {
             $citizen = $this->citizenRepository->create(array_merge($data, [
@@ -56,6 +57,8 @@ class CitizenService
         if ($citizen->village_id !== $user->village_id) {
             abort(403, 'Anda tidak berwenang mengubah data warga ini.');
         }
+
+        $this->guardRelatedRecords($data, $user, $citizen);
 
         $familyId = array_key_exists('family_id', $data) ? $data['family_id'] : $citizen->family_id;
         $familyRole = array_key_exists('family_role', $data) ? $data['family_role'] : $citizen->family_role?->value;
@@ -90,14 +93,57 @@ class CitizenService
         ];
     }
 
-    public function delete(Citizen $citizen): bool
+    public function delete(Citizen $citizen, User $user): bool
     {
+        $this->guardCitizenVillage($citizen, $user);
+
         return $this->citizenRepository->delete($citizen);
     }
 
-    public function getDistinctWilayah(): Collection
+    public function getDistinctWilayah(User $user): Collection
     {
-        return $this->citizenRepository->distinctWilayah();
+        return $this->citizenRepository->distinctWilayah($this->villageId($user));
+    }
+
+    private function villageId(User $user): string
+    {
+        if (! $user->village_id) {
+            abort(403, 'Data wilayah desa tidak ditemukan.');
+        }
+
+        return $user->village_id;
+    }
+
+    private function guardCitizenVillage(Citizen $citizen, User $user): void
+    {
+        if ($citizen->village_id !== $this->villageId($user)) {
+            abort(404, 'Data warga tidak ditemukan.');
+        }
+    }
+
+    /** Ensure linked family, region, and parent records belong to this village. */
+    private function guardRelatedRecords(array $data, User $user, ?Citizen $citizen = null): void
+    {
+        $villageId = $this->villageId($user);
+        $rtId = $data['rt_id'] ?? $citizen?->rt_id;
+
+        if ($rtId !== null && ! \App\Models\Rt::query()->whereKey($rtId)->where('village_id', $villageId)->exists()) {
+            abort(422, 'RT harus berasal dari desa Anda.');
+        }
+
+        foreach (['hamlet_id' => \App\Models\Hamlet::class, 'family_id' => \App\Models\Family::class] as $field => $model) {
+            $id = $data[$field] ?? $citizen?->{$field};
+            if ($id !== null && ! $model::query()->whereKey($id)->where('village_id', $villageId)->exists()) {
+                abort(422, 'Data wilayah atau keluarga harus berasal dari desa Anda.');
+            }
+        }
+
+        foreach (['father_id', 'mother_id'] as $field) {
+            $id = $data[$field] ?? null;
+            if ($id !== null && ! \App\Models\Citizen::query()->whereKey($id)->where('village_id', $villageId)->exists()) {
+                abort(422, 'Data orang tua harus berasal dari desa Anda.');
+            }
+        }
     }
 
     private function guardDuplicateNik(string $nik): void

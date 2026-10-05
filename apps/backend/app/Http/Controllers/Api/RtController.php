@@ -21,13 +21,13 @@ class RtController extends Controller
         $this->authorize('viewAny', Rt::class);
         $rwId = $request->filled('rw_id') ? (int) $request->query('rw_id') : null;
 
-        return (new RtCollection($this->rtService->getAllOrderedByNumber($rwId)))->response();
+        return (new RtCollection($this->rtService->getAllOrderedByNumber($request->user(), $rwId)))->response();
     }
 
     public function store(StoreRtRequest $request)
     {
         $this->authorize('create', Rt::class);
-        $rt = $this->rtService->create($request->validated());
+        $rt = $this->rtService->create($request->validated(), $request->user());
 
         return (new RtResource($rt))->response()->setStatusCode(201);
     }
@@ -35,7 +35,7 @@ class RtController extends Controller
     public function update(UpdateRtRequest $request, Rt $rt)
     {
         $this->authorize('update', $rt);
-        $rt = $this->rtService->update($rt, $request->validated());
+        $rt = $this->rtService->update($rt, $request->validated(), $request->user());
 
         return (new RtResource($rt))->response();
     }
@@ -43,7 +43,7 @@ class RtController extends Controller
     public function destroy(DestroyRtRequest $request, Rt $rt)
     {
         $this->authorize('delete', $rt);
-        $this->rtService->delete($rt);
+        $this->rtService->delete($rt, $request->user());
 
         return response()->json(['message' => 'RT berhasil dihapus.']);
     }

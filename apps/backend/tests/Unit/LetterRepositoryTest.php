@@ -98,7 +98,7 @@ class LetterRepositoryTest extends TestCase
     public function test_query_by_village_filters_correctly(): void
     {
         $letterA = Letter::factory()->create();
-        Letter::factory()->create();
+        Letter::factory()->create(['village_id' => Village::factory()->create()->id]);
 
         $result = $this->repository->queryByVillage($letterA->village_id)->get();
 

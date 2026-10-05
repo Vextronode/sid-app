@@ -23,7 +23,7 @@ class CitizenFactory extends Factory
     public function definition(): array
     {
         return [
-            'village_id' => Village::factory(),
+            'village_id' => fn () => Village::query()->value('id') ?? Village::factory()->create()->id,
             'nik' => fake()->unique()->numerify('################'),
             'name' => fake()->name(),
             'date_of_birth' => fake()->date(),
@@ -31,7 +31,7 @@ class CitizenFactory extends Factory
             'gender' => fake()->randomElement(['L', 'P']),
             'address' => fake()->address(),
             'rt_id' => Rt::factory(),
-            'hamlet_id' => Hamlet::factory(),
+            'hamlet_id' => fn () => Hamlet::query()->value('id') ?? Hamlet::factory()->create()->id,
             'marital_status' => fake()->randomElement(['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati']),
             'occupation' => fake()->jobTitle(),
             'religion' => fake()->randomElement(['islam', 'kristen', 'katolik', 'hindu', 'buddha', 'konghucu']),

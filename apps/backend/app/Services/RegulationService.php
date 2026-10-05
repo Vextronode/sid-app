@@ -30,17 +30,23 @@ class RegulationService
         ]);
     }
 
-    public function update(int $id, array $data): VillageRegulation
+    public function update(int $id, array $data, User $user): VillageRegulation
     {
-        $regulation = $this->repository->findByIdOrFail($id);
+        $regulation = $this->repository->findByIdForVillageOrFail($id, $this->villageId($user));
 
         return $this->repository->update($regulation, $data);
     }
 
-    public function delete(int $id): void
+    public function delete(int $id, User $user): void
     {
-        $regulation = $this->repository->findByIdOrFail($id);
+        $regulation = $this->repository->findByIdForVillageOrFail($id, $this->villageId($user));
 
         $this->repository->delete($regulation);
+    }
+
+    private function villageId(User $user): string
+    {
+        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        return $user->village_id;
     }
 }

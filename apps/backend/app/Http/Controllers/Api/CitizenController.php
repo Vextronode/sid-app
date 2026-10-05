@@ -19,7 +19,7 @@ class CitizenController extends Controller
 
     public function index()
     {
-        $citizens = $this->citizenService->getAllWithWilayah();
+        $citizens = $this->citizenService->getAllWithWilayah(request()->user());
 
         return (new CitizenCollection($citizens))->response()->setStatusCode(200);
     }
@@ -56,18 +56,18 @@ class CitizenController extends Controller
         ]);
     }
 
-    public function destroy(Citizen $citizen)
+    public function destroy(\Illuminate\Http\Request $request, Citizen $citizen)
     {
-        $this->citizenService->delete($citizen);
+        $this->citizenService->delete($citizen, $request->user());
 
         return response()->json([
             'message' => 'Data warga berhasil dihapus.',
         ])->setStatusCode(200);
     }
 
-    public function wilayah()
+    public function wilayah(\Illuminate\Http\Request $request)
     {
-        $citizens = $this->citizenService->getDistinctWilayah();
+        $citizens = $this->citizenService->getDistinctWilayah($request->user());
 
         return (new CitizenCollection($citizens))->response()->setStatusCode(200);
     }

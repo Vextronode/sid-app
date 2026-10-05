@@ -33,7 +33,7 @@ class LetterTypeServiceTest extends TestCase
         LetterType::factory()->create(['is_active' => true, 'template' => 'tpl']);
         LetterType::factory()->create(['is_active' => false, 'template' => 'tpl']);
 
-        $result = $this->service->getActiveWithTemplate();
+        $result = $this->service->getActiveWithTemplate($this->testPetugasActor());
 
         $this->assertCount(1, $result);
     }
@@ -45,7 +45,7 @@ class LetterTypeServiceTest extends TestCase
         $result = $this->service->update($letterType, [
             'validity_days' => 90,
             'is_active' => false,
-        ]);
+        ], $this->testPetugasActor($letterType->village_id));
 
         $this->assertSame(90, $result->validity_days);
         $this->assertFalse($result->is_active);
@@ -58,7 +58,7 @@ class LetterTypeServiceTest extends TestCase
         $newFlow = ApprovalFlow::factory()->create(['category_id' => $category->id]);
         $letterType = LetterType::factory()->create(['category_id' => $category->id, 'flow_id' => $oldFlow->id]);
 
-        $result = $this->service->update($letterType, ['flow_id' => $newFlow->id]);
+        $result = $this->service->update($letterType, ['flow_id' => $newFlow->id], $this->testPetugasActor($letterType->village_id));
 
         $this->assertSame($newFlow->id, $result->flow_id);
     }
@@ -72,7 +72,7 @@ class LetterTypeServiceTest extends TestCase
 
         $this->expectException(ValidationException::class);
 
-        $this->service->update($letterType, ['flow_id' => $flowInOtherCategory->id]);
+        $this->service->update($letterType, ['flow_id' => $flowInOtherCategory->id], $this->testPetugasActor($letterType->village_id));
     }
 
     public function test_update_validates_flow_against_new_category_when_both_change_together(): void
@@ -84,7 +84,7 @@ class LetterTypeServiceTest extends TestCase
         $result = $this->service->update($letterType, [
             'category_id' => $newCategory->id,
             'flow_id' => $matchingFlow->id,
-        ]);
+        ], $this->testPetugasActor($letterType->village_id));
 
         $this->assertSame($newCategory->id, $result->category_id);
         $this->assertSame($matchingFlow->id, $result->flow_id);

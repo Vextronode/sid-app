@@ -41,9 +41,9 @@ class NewsService
         return $this->repository->create($payload);
     }
 
-    public function update(int $id, array $data): News
+    public function update(int $id, array $data, User $user): News
     {
-        $news = $this->repository->findByIdOrFail($id);
+        $news = $this->repository->findByIdForVillageOrFail($id, $this->villageId($user));
 
         $payload = array_intersect_key(
             $data,
@@ -80,9 +80,9 @@ class NewsService
         );
     }
 
-    public function delete(int $id): void
+    public function delete(int $id, User $user): void
     {
-        $news = $this->repository->findByIdOrFail($id);
+        $news = $this->repository->findByIdForVillageOrFail($id, $this->villageId($user));
 
         $this->repository->delete($news);
     }
@@ -99,5 +99,11 @@ class NewsService
         }
 
         return $slug;
+    }
+
+    private function villageId(User $user): string
+    {
+        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        return $user->village_id;
     }
 }

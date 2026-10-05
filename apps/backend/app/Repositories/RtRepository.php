@@ -12,9 +12,9 @@ class RtRepository
         //
     }
 
-    public function allOrderedByNumber(?int $rwId = null): Collection
+    public function allOrderedByNumber(string $villageId, ?int $rwId = null): Collection
     {
-        $query = Rt::query();
+        $query = Rt::query()->where('village_id', $villageId);
 
         if ($rwId !== null) {
             $query->where('rw_id', $rwId);

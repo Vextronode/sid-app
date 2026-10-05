@@ -13,13 +13,16 @@ class UserService
         protected UserRepository $userRepository,
     ) {}
 
-    public function getAllWithCitizenAndOfficial(): Collection
+    public function getAllWithCitizenAndOfficial(User $actor): Collection
     {
-        return $this->userRepository->allWithCitizenAndOfficial();
+        $this->assertPetugas($actor);
+
+        return $this->userRepository->allWithCitizenAndOfficial($actor->village_id);
     }
 
     public function toggleActive(User $user, User $actingUser): User
     {
+        $this->assertSameVillage($user, $actingUser);
         $this->guardDeactivation($user, $actingUser, $user->is_active);
 
         return $this->userRepository->toggleActive($user);
@@ -38,6 +41,7 @@ class UserService
      */
     public function update(User $user, array $data, User $actingUser): User
     {
+        $this->assertSameVillage($user, $actingUser);
         $deactivating = array_key_exists('is_active', $data) && ! $data['is_active'] && $user->is_active;
 
         $this->guardDeactivation($user, $actingUser, $deactivating);
@@ -47,9 +51,7 @@ class UserService
 
     public function resetPassword(User $target, User $actor): string
     {
-        if ($actor->role !== 'petugas_desa' || ! $actor->is_active) {
-            abort(403, 'Aksi ini hanya dapat dilakukan oleh Petugas Desa aktif.');
-        }
+        $this->assertSameVillage($target, $actor);
 
         if ($target->is($actor)) {
             abort(403, 'Petugas Desa tidak dapat mengatur ulang kata sandi akunnya sendiri.');
@@ -59,11 +61,6 @@ class UserService
             abort(403, 'Petugas Desa tidak dapat mengatur ulang kata sandi Petugas Desa lain.');
         }
 
-        return $this->setTemporaryPassword($target);
-    }
-
-    public function resetPasswordForCommand(User $target): string
-    {
         return $this->setTemporaryPassword($target);
     }
 
@@ -88,8 +85,23 @@ class UserService
             abort(403, 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
         }
 
-        if ($target->role === 'petugas_desa' && $this->userRepository->countActiveByRole('petugas_desa') <= 1) {
+        if ($target->role === 'petugas_desa' && $this->userRepository->countActiveByRole('petugas_desa', $actingUser->village_id) <= 1) {
             abort(403, 'Tidak dapat menonaktifkan satu-satunya akun Petugas Desa yang masih aktif.');
+        }
+    }
+
+    private function assertPetugas(User $actor): void
+    {
+        if ($actor->role !== 'petugas_desa' || ! $actor->is_active || ! $actor->village_id) {
+            abort(403, 'Aksi ini hanya dapat dilakukan oleh Petugas Desa aktif.');
+        }
+    }
+
+    private function assertSameVillage(User $target, User $actor): void
+    {
+        $this->assertPetugas($actor);
+        if ($target->village_id !== $actor->village_id) {
+            abort(404, 'Akun tidak ditemukan.');
         }
     }
 }

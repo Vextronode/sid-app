@@ -77,9 +77,11 @@ class PdfServiceTest extends TestCase
 
     public function test_download_succeeds_and_returns_pdf_response(): void
     {
-        $kadesCitizen = Citizen::factory()->create();
+        $village = Village::factory()->create();
+        $kadesCitizen = Citizen::factory()->create(['village_id' => $village->id]);
         Official::factory()->create([
             'position' => 'kepala_desa',
+            'village_id' => $village->id,
             'citizen_id' => $kadesCitizen->id,
             'is_active' => true,
             'ended_at' => null,
@@ -88,6 +90,7 @@ class PdfServiceTest extends TestCase
         $letterType = LetterType::factory()->create(['template' => 'Isi surat {{ applicant_name }}']);
         $letter = Letter::factory()->create([
             'status' => 'approved',
+            'village_id' => $village->id,
             'letter_type_id' => $letterType->id,
             'expires_at' => now()->addDays(10),
         ]);
@@ -114,6 +117,16 @@ class PdfServiceTest extends TestCase
 
     public function test_sekdes_approved_letter_still_uses_active_kades_for_signature(): void
     {
+        $otherVillage = Village::factory()->create();
+        $otherKadesCitizen = Citizen::factory()->create(['village_id' => $otherVillage->id]);
+        Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $otherVillage->id,
+            'citizen_id' => $otherKadesCitizen->id,
+            'is_active' => true,
+            'ended_at' => null,
+        ]);
+
         $village = Village::factory()->create();
         $kadesCitizen = Citizen::factory()->create(['village_id' => $village->id]);
         $kades = Official::factory()->create([

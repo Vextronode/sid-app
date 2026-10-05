@@ -23,7 +23,7 @@ class CitizenImportTest extends TestCase
 
     private function petugas(?Village $village = null): User
     {
-        $village ??= Village::factory()->create();
+        $village ??= Village::query()->first() ?? Village::factory()->create();
 
         return User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
     }

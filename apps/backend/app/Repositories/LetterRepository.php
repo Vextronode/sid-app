@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Enums\LetterFlowLogReason;
 use App\Enums\LetterStatus;
 use App\Models\FlowStep;
 use App\Models\Letter;
@@ -59,6 +60,11 @@ class LetterRepository
             ->value('rts.rw_id');
     }
 
+    public function findCitizenHamletId(Letter $letter): ?int
+    {
+        return $letter->citizen()->value('hamlet_id');
+    }
+
     public function loadForPdf(Letter $letter): Letter
     {
         return $letter->load(['letterType', 'citizen', 'village']);
@@ -74,6 +80,26 @@ class LetterRepository
     public function createApprovalForLetter(Letter $letter, array $data): LetterApproval
     {
         return $letter->approvals()->create($data);
+    }
+
+    public function recordDecisionForLetter(Letter $letter, array $data): LetterApproval
+    {
+        $pending = $letter->approvals()
+            ->where('flow_step_id', $data['flow_step_id'])
+            ->whereNull('approved_by')
+            ->whereNull('action')
+            ->latest('id')
+            ->first();
+
+        if ($pending) {
+            $pending->update($data);
+
+            return $pending;
+        }
+
+        // Compatibility for letters created before each active step had
+        // its own pending approval row.
+        return $this->createApprovalForLetter($letter, $data);
     }
 
     public function createStatusLogForLetter(Letter $letter, array $data): void
@@ -111,6 +137,7 @@ class LetterRepository
             'citizen.user',
             'letterType',
             'approvals.approvedBy:id,name',
+            'approvals.flowStep',
             'flow.steps',
             'statusLogs.actor:id,name',
         ]);
@@ -140,6 +167,8 @@ class LetterRepository
                 'citizen',
                 'letterType',
                 'approvals.approvedBy:id,name',
+                'approvals.flowStep',
+                'flow.steps',
             ]);
     }
 
@@ -156,6 +185,7 @@ class LetterRepository
                 'citizen',
                 'letterType',
                 'approvals.approvedBy:id,name',
+                'approvals.flowStep',
             ]);
     }
 
@@ -226,8 +256,12 @@ class LetterRepository
      * pekerjaan approval aktif. Posisi step aktif saja tidak cukup,
      * karena surat rejected mempertahankan current_step_order.
      */
-    public function queryPendingAtFlowStepPositions(array $positions, string $villageId, ?string $excludeSubmittedBy = null): Builder
-    {
+    public function queryPendingAtFlowStepPositions(
+        array $positions,
+        string $villageId,
+        ?string $excludeSubmittedBy = null,
+        ?string $excludeCitizenId = null,
+    ): Builder {
         $query = Letter::query()
             ->where('village_id', $villageId)
             ->whereIn('status', [
@@ -244,10 +278,18 @@ class LetterRepository
                 'citizen',
                 'letterType',
                 'approvals.approvedBy:id,name',
+                'approvals.flowStep',
             ]);
 
         if ($excludeSubmittedBy !== null) {
             $query->where('submitted_by', '!=', $excludeSubmittedBy);
+        }
+
+        if ($excludeCitizenId !== null) {
+            $query->where(function (Builder $citizenQuery) use ($excludeCitizenId) {
+                $citizenQuery->whereNull('citizen_id')
+                    ->orWhere('citizen_id', '!=', $excludeCitizenId);
+            });
         }
 
         return $query;
@@ -257,10 +299,15 @@ class LetterRepository
     {
         return Letter::query()
             ->whereHas('citizen', fn (Builder $q) => $q->where('hamlet_id', $hamletId))
+            ->whereHas('approvals', fn (Builder $q) => $q
+                ->where('approval_level', 'rt')
+                ->where('action', 'approved'))
             ->with([
                 'citizen',
                 'letterType',
                 'approvals.approvedBy:id,name',
+                'approvals.flowStep',
+                'flow.steps',
             ]);
     }
 
@@ -274,8 +321,12 @@ class LetterRepository
      * Kades/Sekdes/Kasi/Kaur) - pola sama seperti
      * queryPendingAtFlowStepPositions().
      */
-    public function findByFlowStepAndStatus(string $approverPosition, array $statuses, ?string $excludeSubmittedBy = null): Builder
-    {
+    public function findByFlowStepAndStatus(
+        string $approverPosition,
+        array $statuses,
+        ?string $excludeSubmittedBy = null,
+        ?string $excludeCitizenId = null,
+    ): Builder {
         $query = Letter::query()
             ->whereIn('status', $statuses)
             ->whereHas('flow', function (Builder $flowQuery) use ($approverPosition) {
@@ -284,10 +335,17 @@ class LetterRepository
                         ->where('approver_position', $approverPosition);
                 });
             })
-            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'user']);
+            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
 
         if ($excludeSubmittedBy !== null) {
             $query->where('submitted_by', '!=', $excludeSubmittedBy);
+        }
+
+        if ($excludeCitizenId !== null) {
+            $query->where(function (Builder $citizenQuery) use ($excludeCitizenId) {
+                $citizenQuery->whereNull('citizen_id')
+                    ->orWhere('citizen_id', '!=', $excludeCitizenId);
+            });
         }
 
         return $query;
@@ -304,7 +362,46 @@ class LetterRepository
     {
         return Letter::query()
             ->whereHas('citizen.rt', fn (Builder $q) => $q->where('rw_id', $rwId))
-            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'user']);
+            ->whereHas('approvals', fn (Builder $q) => $q
+                ->where('approval_level', 'rt')
+                ->where('action', 'approved'))
+            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
+    }
+
+    /**
+     * All letters in an RT's territory, including pending, processed, and
+     * rejected history.
+     */
+    public function queryByCitizenRt(int $rtId): Builder
+    {
+        return Letter::query()
+            ->whereHas('citizen', fn (Builder $q) => $q->where('rt_id', $rtId))
+            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
+    }
+
+    /** Letters that passed RT approval or have a recorded RT skip, in one village. */
+    public function queryRtApprovedInVillage(string $villageId): Builder
+    {
+        return Letter::query()
+            ->where('village_id', $villageId)
+            ->where(function (Builder $query) {
+                $query->whereHas('approvals', fn (Builder $q) => $q
+                    ->where('approval_level', 'rt')
+                    ->where('action', 'approved'))
+                    ->orWhereHas('statusLogs', fn (Builder $q) => $q->where(
+                        'reason',
+                        LetterFlowLogReason::RtStageSkippedForOfficialApplicant->value,
+                    ));
+            })
+            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
+    }
+
+    public function wasApprovedByRt(Letter $letter): bool
+    {
+        return $letter->approvals()
+            ->where('approval_level', 'rt')
+            ->where('action', 'approved')
+            ->exists();
     }
 
     public function findWithApprovalActorForShow(string $id): Letter
@@ -351,7 +448,7 @@ class LetterRepository
     {
         return Letter::query()
             ->where('village_id', $villageId)
-            ->whereHas('citizen', function (Builder $query) use ($rwId) {
+            ->whereHas('citizen.rt', function (Builder $query) use ($rwId) {
                 $query->where('rw_id', $rwId);
             });
     }
@@ -366,6 +463,7 @@ class LetterRepository
             'citizen',
             'letterType',
             'approvals',
+            'approvals.flowStep',
             'user',
         ]);
     }

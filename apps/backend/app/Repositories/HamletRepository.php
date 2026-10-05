@@ -12,9 +12,9 @@ class HamletRepository
         //
     }
 
-    public function allOrderedByName(): Collection
+    public function allOrderedByName(string $villageId): Collection
     {
-        return Hamlet::query()->orderBy('name')->get();
+        return Hamlet::query()->where('village_id', $villageId)->orderBy('name')->get();
     }
 
     public function create(array $data): Hamlet

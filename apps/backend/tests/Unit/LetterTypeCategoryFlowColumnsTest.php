@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\ApprovalFlow;
 use App\Models\LetterCategory;
 use App\Models\LetterType;
+use App\Models\Village;
 use Database\Seeders\ApprovalFlowSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -42,6 +43,7 @@ class LetterTypeCategoryFlowColumnsTest extends TestCase
     #[Test]
     public function foreign_key_constraint_prevents_invalid_category_id(): void
     {
+        Village::factory()->create();
         $this->seed(ApprovalFlowSeeder::class);
         $flow = ApprovalFlow::query()->first();
 
@@ -49,6 +51,7 @@ class LetterTypeCategoryFlowColumnsTest extends TestCase
 
         DB::table('letter_types')->insert([
             'code' => 'SKX',
+            'village_id' => $flow->village_id,
             'name' => 'Surat Tidak Valid',
             'verification_type' => 'auto',
             'requirement_info' => 'KTP, KK.',
@@ -63,6 +66,7 @@ class LetterTypeCategoryFlowColumnsTest extends TestCase
     #[Test]
     public function foreign_key_constraint_prevents_invalid_flow_id(): void
     {
+        Village::factory()->create();
         $this->seed(ApprovalFlowSeeder::class);
         $category = LetterCategory::query()->first();
 
@@ -70,6 +74,7 @@ class LetterTypeCategoryFlowColumnsTest extends TestCase
 
         DB::table('letter_types')->insert([
             'code' => 'SKY',
+            'village_id' => ApprovalFlow::query()->where('category_id', $category->id)->value('village_id'),
             'name' => 'Surat Tidak Valid 2',
             'verification_type' => 'auto',
             'requirement_info' => 'KTP, KK.',
@@ -84,6 +89,7 @@ class LetterTypeCategoryFlowColumnsTest extends TestCase
     #[Test]
     public function seeder_does_not_create_duplicate_category_or_flow_when_run_twice(): void
     {
+        Village::factory()->create();
         $this->seed(ApprovalFlowSeeder::class);
         $this->seed(ApprovalFlowSeeder::class);
 
@@ -99,6 +105,7 @@ class LetterTypeCategoryFlowColumnsTest extends TestCase
     #[Test]
     public function seeded_flow_steps_never_contain_sekdes_rw_or_kadus(): void
     {
+        Village::factory()->create();
         $this->seed(ApprovalFlowSeeder::class);
 
         $category = LetterCategory::query()->where('code', 'approval_normal')->first();
@@ -124,6 +131,7 @@ class LetterTypeCategoryFlowColumnsTest extends TestCase
     #[Test]
     public function letter_type_belongs_to_correct_category_and_flow_relations(): void
     {
+        Village::factory()->create();
         $this->seed(ApprovalFlowSeeder::class);
 
         $category = LetterCategory::query()->where('code', 'approval_normal')->first();
@@ -131,6 +139,7 @@ class LetterTypeCategoryFlowColumnsTest extends TestCase
 
         $letterType = LetterType::query()->create([
             'code' => 'SKTM',
+            'village_id' => $flow->village_id,
             'name' => 'Surat Keterangan Tidak Mampu',
             'verification_type' => 'manual',
             'requirement_info' => 'KTP, KK.',

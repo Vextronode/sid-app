@@ -34,9 +34,9 @@ class UserRepositoryTest extends TestCase
 
     public function test_all_with_citizen_and_official_eager_loads_relations(): void
     {
-        User::factory()->create();
+        $users = User::factory()->count(1)->create();
 
-        $result = $this->repository->allWithCitizenAndOfficial();
+        $result = $this->repository->allWithCitizenAndOfficial($users->first()->village_id);
 
         $this->assertCount(1, $result);
         $this->assertTrue($result->first()->relationLoaded('citizen'));

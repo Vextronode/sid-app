@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\ApprovalFlow;
 use App\Models\LetterCategory;
+use App\Models\Village;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -21,6 +22,7 @@ class ApprovalFlowFactory extends Factory
     public function definition(): array
     {
         return [
+            'village_id' => fn () => Village::query()->value('id') ?? Village::factory()->create()->id,
             'category_id' => LetterCategory::factory(),
             'name' => fake()->words(3, true),
             'description' => fake()->sentence(),

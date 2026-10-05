@@ -18,14 +18,14 @@ class FamilyController extends Controller
 
     public function index()
     {
-        $families = $this->familyService->getAllWithWilayah();
+        $families = $this->familyService->getAllWithWilayah(request()->user());
 
         return (new FamilyCollection($families))->response()->setStatusCode(200);
     }
 
     public function show(Family $family)
     {
-        $family = $this->familyService->find($family->id);
+        $family = $this->familyService->find($family->id, request()->user());
 
         return (new FamilyResource($family))->response()->setStatusCode(200);
     }
@@ -39,14 +39,14 @@ class FamilyController extends Controller
 
     public function update(UpdateFamilyRequest $request, Family $family)
     {
-        $family = $this->familyService->update($family, $request->validated());
+        $family = $this->familyService->update($family, $request->validated(), $request->user());
 
         return (new FamilyResource($family))->response()->setStatusCode(200);
     }
 
-    public function destroy(Family $family)
+    public function destroy(\Illuminate\Http\Request $request, Family $family)
     {
-        $this->familyService->delete($family);
+        $this->familyService->delete($family, $request->user());
 
         return response()->json([
             'message' => 'Kartu Keluarga berhasil dihapus.',

@@ -18,6 +18,7 @@ class ApprovalFlow extends Model
     use HasFactory;
 
     protected $fillable = [
+        'village_id',
         'category_id',
         'name',
         'description',

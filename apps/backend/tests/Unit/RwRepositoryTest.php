@@ -29,7 +29,7 @@ class RwRepositoryTest extends TestCase
         Rw::factory()->create(['hamlet_id' => $hamletA->id, 'number' => '001']);
         Rw::factory()->create(['hamlet_id' => $hamletB->id, 'number' => '001']);
 
-        $result = $this->repository->allOrderedByNumber($hamletA->id);
+        $result = $this->repository->allOrderedByNumber($hamletA->village_id, $hamletA->id);
 
         $this->assertCount(2, $result);
         $this->assertSame('001', $result->first()->number);
@@ -37,9 +37,9 @@ class RwRepositoryTest extends TestCase
 
     public function test_all_ordered_by_number_returns_all_when_no_filter(): void
     {
-        Rw::factory()->count(3)->create();
+        $rws = Rw::factory()->count(3)->create();
 
-        $result = $this->repository->allOrderedByNumber();
+        $result = $this->repository->allOrderedByNumber($rws->first()->village_id);
 
         $this->assertCount(3, $result);
     }

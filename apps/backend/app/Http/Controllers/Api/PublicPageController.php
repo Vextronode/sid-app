@@ -11,6 +11,7 @@ use App\Http\Resources\RegulationResource;
 use App\Http\Resources\VillageResource;
 use App\Services\PublicPageService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class PublicPageController extends Controller
 {
@@ -18,9 +19,9 @@ class PublicPageController extends Controller
         private readonly PublicPageService $service,
     ) {}
 
-    public function home(): JsonResponse
+    public function home(Request $request): JsonResponse
     {
-        $home = $this->service->home();
+        $home = $this->service->home($request->query('village_code'));
 
         return response()->json([
             'data' => [
@@ -31,36 +32,36 @@ class PublicPageController extends Controller
         ]);
     }
 
-    public function villageProfile(): JsonResponse
+    public function villageProfile(Request $request): JsonResponse
     {
-        return (new VillageResource($this->service->villageProfile()))->response();
+        return (new VillageResource($this->service->villageProfile($request->query('village_code'))))->response();
     }
 
     public function newsList(PublicNewsListRequest $request): JsonResponse
     {
-        $paginator = $this->service->paginatedNews();
+        $paginator = $this->service->paginatedNews($request->query('village_code'));
 
         return NewsResource::collection($paginator)->response();
     }
 
-    public function letterTypeList(): JsonResponse
+    public function letterTypeList(Request $request): JsonResponse
     {
         return response()->json([
-            'data' => PublicLetterTypeResource::collection($this->service->letterTypeList()),
+            'data' => PublicLetterTypeResource::collection($this->service->letterTypeList($request->query('village_code'))),
         ]);
     }
 
-    public function regulationList(): JsonResponse
+    public function regulationList(Request $request): JsonResponse
     {
         return response()->json([
-            'data' => RegulationResource::collection($this->service->regulationList()),
+            'data' => RegulationResource::collection($this->service->regulationList($request->query('village_code'))),
         ]);
     }
 
-    public function contactUs(): JsonResponse
+    public function contactUs(Request $request): JsonResponse
     {
         return response()->json([
-            'data' => PublicContactResource::collection($this->service->contactUs()),
+            'data' => PublicContactResource::collection($this->service->contactUs($request->query('village_code'))),
         ]);
     }
 }

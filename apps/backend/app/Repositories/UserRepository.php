@@ -43,13 +43,14 @@ class UserRepository
         return $query->exists();
     }
 
-    public function allWithCitizenAndOfficial(): Collection
+    public function allWithCitizenAndOfficial(string $villageId): Collection
     {
         return User::with([
             'citizen.rt',
             'citizen.rw',
             'official',
         ])
+            ->where('village_id', $villageId)
             ->latest()
             ->get();
     }
@@ -84,11 +85,12 @@ class UserRepository
      * Dipakai UserService::update() untuk guard "tidak dapat
      * menonaktifkan satu-satunya akun Petugas Desa yang masih aktif".
      */
-    public function countActiveByRole(string $role): int
+    public function countActiveByRole(string $role, ?string $villageId = null): int
     {
         return User::query()
             ->where('role', $role)
             ->where('is_active', true)
+            ->when($villageId !== null, fn ($query) => $query->where('village_id', $villageId))
             ->count();
     }
 

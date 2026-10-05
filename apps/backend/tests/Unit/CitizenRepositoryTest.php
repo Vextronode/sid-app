@@ -26,7 +26,7 @@ class CitizenRepositoryTest extends TestCase
         Citizen::factory()->create(['name' => 'Zainal']);
         Citizen::factory()->create(['name' => 'Anisa']);
 
-        $result = $this->repository->allWithWilayah();
+        $result = $this->repository->allWithWilayah($citizenVillage = Citizen::query()->firstOrFail()->village_id);
 
         $this->assertCount(2, $result);
         $this->assertSame('Anisa', $result->first()->name);
@@ -48,7 +48,7 @@ class CitizenRepositoryTest extends TestCase
         $citizenA = Citizen::factory()->create();
         Citizen::factory()->create(['rt_id' => $citizenA->rt_id]);
 
-        $result = $this->repository->distinctWilayah();
+        $result = $this->repository->distinctWilayah($citizenA->village_id);
 
         $this->assertCount(1, $result);
     }

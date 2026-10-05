@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('approval_flows', function (Blueprint $table) {
             $table->id();
+            $table->foreignUuid('village_id')
+                ->constrained('villages')
+                ->cascadeOnDelete();
             $table->foreignId('category_id')
                 ->constrained('letter_categories')
                 ->cascadeOnDelete();

@@ -44,7 +44,7 @@ class PdfService
         }
 
         // Tanda tangan dan stempel tetap milik Kepala Desa aktif, termasuk jika Sekdes yang menyetujui surat.
-        $kades = $this->officialRepository->findActiveVillageHeadWithCitizenOrFail();
+        $kades = $this->officialRepository->findActiveVillageHeadWithCitizenOrFail($letter->village_id);
 
         /**
          * Check if letterType exists
@@ -80,7 +80,7 @@ class PdfService
 
         $letter = $this->letterRepository->loadForPdf($letter);
 
-        $kades = $this->officialRepository->findActiveVillageHeadWithCitizenOrFail();
+        $kades = $this->officialRepository->findActiveVillageHeadWithCitizenOrFail($letter->village_id);
 
         /**
          * Check if letterType exists

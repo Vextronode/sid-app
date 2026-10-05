@@ -8,6 +8,7 @@ use App\Http\Resources\LetterTypeCollection;
 use App\Http\Resources\LetterTypeResource;
 use App\Models\LetterType;
 use App\Services\LetterTypeService;
+use Illuminate\Http\Request;
 
 class LetterTypeController extends Controller
 {
@@ -15,9 +16,9 @@ class LetterTypeController extends Controller
         protected LetterTypeService $letterTypeService
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $letterTypes = $this->letterTypeService->getActiveWithTemplate();
+        $letterTypes = $this->letterTypeService->getActiveWithTemplate($request->user());
 
         return response()->json([
             'message' => 'Daftar jenis surat berhasil diambil.',
@@ -27,7 +28,7 @@ class LetterTypeController extends Controller
 
     public function update(UpdateLetterTypeRequest $request, LetterType $letterType)
     {
-        $letterType = $this->letterTypeService->update($letterType, $request->validated());
+        $letterType = $this->letterTypeService->update($letterType, $request->validated(), $request->user());
 
         return response()->json([
             'data' => new LetterTypeResource($letterType),

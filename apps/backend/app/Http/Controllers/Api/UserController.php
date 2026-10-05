@@ -16,9 +16,9 @@ class UserController extends Controller
         protected UserService $userService
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $users = $this->userService->getAllWithCitizenAndOfficial();
+        $users = $this->userService->getAllWithCitizenAndOfficial($request->user());
 
         return (new UserCollection($users))->response()->setStatusCode(200);
     }

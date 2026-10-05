@@ -25,7 +25,7 @@ class OfficialController extends Controller
     {
         $this->authorize('viewAny', Official::class);
 
-        $officials = $this->officialService->getAllWithRelations();
+        $officials = $this->officialService->getAllWithRelations(request()->user());
 
         return (new OfficialCollection($officials))->response()->setStatusCode(200);
     }
@@ -34,7 +34,7 @@ class OfficialController extends Controller
     {
         $this->authorize('view', $official);
 
-        $official = $this->officialService->getForShow($official->id);
+        $official = $this->officialService->getForShow($official->id, request()->user());
 
         return (new OfficialResource($official))->response()->setStatusCode(200);
     }
@@ -43,7 +43,7 @@ class OfficialController extends Controller
     {
         $this->authorize('create', Official::class);
 
-        $official = $this->officialService->create($request->validated());
+        $official = $this->officialService->create($request->validated(), $request->user());
 
         return (new OfficialResource($official))->response()->setStatusCode(201);
     }
@@ -52,7 +52,7 @@ class OfficialController extends Controller
     {
         $this->authorize('update', $official);
 
-        $official = $this->officialService->update($official, $request->validated());
+        $official = $this->officialService->update($official, $request->validated(), $request->user());
 
         return (new OfficialResource($official))->response()->setStatusCode(200);
     }

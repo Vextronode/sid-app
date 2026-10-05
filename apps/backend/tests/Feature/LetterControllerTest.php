@@ -76,7 +76,7 @@ class LetterControllerTest extends TestCase
 
     public function test_index_returns_letters_scoped_to_user(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = $this->testOfficialUser('petugas_desa', 'petugas_desa');
         Letter::factory()->count(2)->create();
 
         $this->actingAs($user)
@@ -124,7 +124,7 @@ class LetterControllerTest extends TestCase
     public function test_destroy_allowed_for_authorized_staff_role(): void
     {
         $owner = User::factory()->create();
-        $staff = User::factory()->create(['role' => 'kasi_pelayanan']);
+        $staff = $this->testOfficialUser('kasi_pelayanan', 'kasi_pelayanan');
         $letter = Letter::factory()->create(['submitted_by' => $owner->id]);
 
         $this->actingAs($staff)
@@ -139,12 +139,8 @@ class LetterControllerTest extends TestCase
         $this->getJson('/api/letters')->assertUnauthorized();
     }
 
-    /**
-     * EV5-4-S7. RT sekarang hanya melihat surat yang SEDANG berada di
-     * step 'rt' miliknya - bukan seluruh riwayat surat warga di RT-nya
-     * seperti implementasi lama.
-     */
-    public function test_index_for_rt_only_shows_letters_currently_at_rt_step(): void
+    /** RT sees the territory's full letter history, including non-flow letters. */
+    public function test_index_for_rt_shows_letters_from_own_rt_history(): void
     {
         $rt = Rt::factory()->create();
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
@@ -174,18 +170,19 @@ class LetterControllerTest extends TestCase
         $this->actingAs($user->fresh())
             ->getJson('/api/letters')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $letter->id);
+            ->assertJsonCount(2, 'data')
+            ->assertJsonFragment(['id' => $letter->id]);
     }
 
-    public function test_index_forbidden_for_kadus_role(): void
+    public function test_index_for_kadus_is_available_with_own_hamlet_scope(): void
     {
         Letter::factory()->count(2)->create();
-        $user = User::factory()->create(['role' => 'kadus']);
+        $user = $this->testOfficialUser('kadus', 'kadus', null, ['hamlet_id' => \App\Models\Hamlet::factory()->create()->id]);
 
         $this->actingAs($user)
             ->getJson('/api/letters')
-            ->assertStatus(403);
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
     }
 
     public function test_index_scope_mine_returns_owned_letters_for_rt_and_kadus(): void

@@ -12,9 +12,9 @@ class LetterTypeRepository
         //
     }
 
-    public function findOrFail(int $id): LetterType
+    public function findOrFail(int $id, ?string $villageId = null): LetterType
     {
-        return LetterType::query()->findOrFail($id);
+        return LetterType::query()->when($villageId !== null, fn ($query) => $query->where('village_id', $villageId))->findOrFail($id);
     }
 
     public function update(LetterType $letterType, array $data): LetterType
@@ -24,9 +24,10 @@ class LetterTypeRepository
         return $letterType->load(['category', 'flow']);
     }
 
-    public function allActiveWithTemplate(): Collection
+    public function allActiveWithTemplate(?string $villageId = null): Collection
     {
         return LetterType::query()
+            ->when($villageId !== null, fn ($query) => $query->where('village_id', $villageId))
             ->whereNotNull('template')
             ->where('is_active', true)
             ->orderBy('name')

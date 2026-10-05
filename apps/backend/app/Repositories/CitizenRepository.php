@@ -12,9 +12,10 @@ class CitizenRepository
         //
     }
 
-    public function allWithWilayah(): Collection
+    public function allWithWilayah(string $villageId): Collection
     {
         return Citizen::query()
+            ->where('village_id', $villageId)
             ->with(['rt', 'rw', 'hamlet', 'village'])
             ->orderBy('name')
             ->get();
@@ -28,6 +29,11 @@ class CitizenRepository
     public function findOrFail(string $id): Citizen
     {
         return Citizen::query()->findOrFail($id);
+    }
+
+    public function findForVillageOrFail(string $id, string $villageId): Citizen
+    {
+        return Citizen::query()->where('village_id', $villageId)->findOrFail($id);
     }
 
     public function create(array $data): Citizen
@@ -66,10 +72,11 @@ class CitizenRepository
         return $citizen->delete();
     }
 
-    public function distinctWilayah(): Collection
+    public function distinctWilayah(string $villageId): Collection
     {
         return Citizen::query()
             ->with(['rt.rw'])
+            ->where('village_id', $villageId)
             ->select('rt_id')
             ->distinct()
             ->get();
