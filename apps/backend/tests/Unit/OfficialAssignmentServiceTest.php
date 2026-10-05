@@ -10,7 +10,6 @@ use App\Models\Official;
 use App\Models\Rt;
 use App\Models\User;
 use App\Models\Village;
-use App\Repositories\CitizenRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
@@ -35,7 +34,6 @@ class OfficialAssignmentServiceTest extends TestCase
             $userRepository,
             new LetterRepository,
             new OfficialService($officialRepository, $userRepository, new LetterRepository),
-            new CitizenRepository,
             new UsernameGenerator($userRepository),
         );
     }
@@ -231,6 +229,8 @@ class OfficialAssignmentServiceTest extends TestCase
             'started_at' => today()->toDateString(),
             'rt_id' => $rt->id,
         ]);
+
+        $this->assertSame([], $result['warnings']);
 
         $this->assertFalse($result['old_official']->is_active);
         $this->assertSame($newUser->id, $result['new_official']->user_id);

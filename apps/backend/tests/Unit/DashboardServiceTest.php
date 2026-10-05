@@ -41,15 +41,16 @@ class DashboardServiceTest extends TestCase
     public function test_gender_stats_for_petugas_desa_counts_all_citizens_in_village(): void
     {
         $village = Village::factory()->create();
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
+        $user->citizen->update(['gender' => 'L']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'L']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'P']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'P']);
 
         $stats = $this->service->getGenderStats($user);
 
-        $this->assertSame(3, $stats['total']);
-        $this->assertSame(1, $stats['laki']);
+        $this->assertSame(4, $stats['total']);
+        $this->assertSame(2, $stats['laki']);
         $this->assertSame(2, $stats['perempuan']);
     }
 
@@ -109,7 +110,7 @@ class DashboardServiceTest extends TestCase
     public function test_letter_stats_returns_chart_with_seven_days_and_min_max_y_of_50(): void
     {
         $village = Village::factory()->create();
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
         Letter::factory()->create([
             'village_id' => $user->village_id,
             'submitted_at' => now(),
@@ -126,7 +127,7 @@ class DashboardServiceTest extends TestCase
     public function test_letter_stats_filters_by_letter_type_when_given(): void
     {
         $village = Village::factory()->create();
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
         $letter = Letter::factory()->create([
             'village_id' => $user->village_id,
             'submitted_at' => now(),
@@ -150,10 +151,7 @@ class DashboardServiceTest extends TestCase
     public function test_kasi_dashboard_shows_only_matching_approved_letters_with_total_and_limit(): void
     {
         $village = Village::factory()->create();
-        $user = User::factory()->create([
-            'role' => 'kasi_pelayanan',
-            'village_id' => $village->id,
-        ]);
+        $user = $this->makeUserWithOfficialAssignment('kasi_pelayanan', 'kasi_pelayanan', $village->id);
         $kasiType = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
         $unassignedType = LetterType::factory()->create(['assigned_role' => null]);
         $kaurType = LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum']);
@@ -193,10 +191,7 @@ class DashboardServiceTest extends TestCase
     public function test_petugas_dashboard_includes_expired_and_ending_official_terms(): void
     {
         $village = Village::factory()->create();
-        $user = User::factory()->create([
-            'role' => 'petugas_desa',
-            'village_id' => $village->id,
-        ]);
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
         $expiredCitizen = Citizen::factory()->create([
             'village_id' => $village->id,
             'name' => 'Pejabat Lewat Masa',
@@ -228,14 +223,14 @@ class DashboardServiceTest extends TestCase
         $this->assertSame(today()->addDays(30)->toDateString(), $dashboard['jabatan_segera_berakhir'][0]['term_ends_at']);
     }
 
-    public function test_kades_dashboard_excludes_letters_submitted_by_the_current_user(): void
+    public function test_kades_dashboard_excludes_letters_submitted_by_user_or_for_own_citizen(): void
     {
         $village = Village::factory()->create();
         $user = User::factory()->create([
             'role' => 'kepala_desa',
             'village_id' => $village->id,
         ]);
-        Official::factory()->forUser($user)->position('kepala_desa')->create();
+        $official = Official::factory()->forUser($user)->position('kepala_desa')->create();
 
         $flow = ApprovalFlow::factory()->create();
         FlowStep::factory()->create([
@@ -255,10 +250,46 @@ class DashboardServiceTest extends TestCase
             'flow_id' => $flow->id,
             'status' => 'pending',
         ]);
+        $citizenLetter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'flow_id' => $flow->id,
+            'citizen_id' => $official->citizen_id,
+            'status' => 'pending',
+        ]);
 
         $dashboard = $this->service->getDashboard($user);
 
         $this->assertSame([$otherLetter->id], array_column($dashboard['pending_letters'], 'id'));
         $this->assertNotContains($ownLetter->id, array_column($dashboard['pending_letters'], 'id'));
+        $this->assertNotContains($citizenLetter->id, array_column($dashboard['pending_letters'], 'id'));
+    }
+
+    public function test_kades_dashboard_excludes_letter_submitted_for_the_officials_citizen(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create([
+            'role' => 'kepala_desa',
+            'village_id' => $village->id,
+        ]);
+        $official = Official::factory()->forUser($user)->position('kepala_desa')->create();
+
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'kepala_desa',
+            'is_final' => true,
+        ]);
+        $letter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'flow_id' => $flow->id,
+            'citizen_id' => $official->citizen_id,
+            'status' => 'pending',
+        ]);
+
+        $dashboard = $this->service->getDashboard($user);
+
+        $this->assertSame(0, $dashboard['total_menunggu_approval']);
+        $this->assertNotContains($letter->id, array_column($dashboard['pending_letters'], 'id'));
     }
 }

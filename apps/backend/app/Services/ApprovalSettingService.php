@@ -14,7 +14,7 @@ class ApprovalSettingService
     /**
      * Dipakai hanya kalau baris approval_settings untuk level+desa
      * terkait belum ke-seed (seharusnya tidak pernah terjadi - lihat
-     * ApprovalSettingSeeder yang selalu mengisi kelima approval_level
+     * ApprovalSettingSeeder yang mengisi level RT dan kepala_desa
      * saat instalasi). Murni jaring pengaman supaya alur submit/approve
      * surat tidak ikut gagal hanya karena baris config hilang.
      */
@@ -29,9 +29,13 @@ class ApprovalSettingService
         return $this->repository->allForVillage($user->village_id);
     }
 
-    public function update(int $id, array $data): ApprovalSetting
+    public function update(int $id, array $data, User $user): ApprovalSetting
     {
         $setting = $this->repository->findByIdOrFail($id);
+
+        if (! $user->is_active || $user->role !== 'petugas_desa' || ! $user->village_id || $setting->village_id !== $user->village_id) {
+            abort(404, 'Pengaturan approval tidak ditemukan.');
+        }
 
         if (! in_array($setting->approval_level, ApprovalLevel::approverCases(), true)) {
             abort(404, 'Pengaturan approval tidak ditemukan.');

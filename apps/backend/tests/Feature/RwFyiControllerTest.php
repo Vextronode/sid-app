@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Citizen;
 use App\Models\Letter;
+use App\Models\LetterApproval;
 use App\Models\Official;
 use App\Models\Rt;
 use App\Models\Rw;
@@ -20,10 +21,10 @@ class RwFyiControllerTest extends TestCase
         $rw = Rw::factory()->create();
         $rt = Rt::factory()->create(['rw_id' => $rw->id]);
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
-        Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'pending']);
-        Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'in_progress']);
-        Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'approved']);
-        Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'rejected']);
+        $letters = collect(['pending', 'in_progress', 'approved', 'rejected'])->map(
+            fn (string $status) => Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => $status])
+        );
+        $letters->each(fn (Letter $letter) => $this->markRtApproved($letter));
 
         $official = Official::factory()->create(['position' => 'rw', 'rw_id' => $rw->id]);
         $user = User::factory()->create(['role' => 'rw']);
@@ -65,6 +66,7 @@ class RwFyiControllerTest extends TestCase
         $rt = Rt::factory()->create(['rw_id' => $rw->id]);
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
         $letter = Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'pending']);
+        $this->markRtApproved($letter);
 
         $official = Official::factory()->create(['position' => 'rw', 'rw_id' => $rw->id]);
         $user = User::factory()->create(['role' => 'rw']);
@@ -118,5 +120,16 @@ class RwFyiControllerTest extends TestCase
         $this->actingAs($user->fresh())
             ->patchJson("/api/rw/approvals/{$letter->id}/approve", ['status' => 'approved'])
             ->assertNotFound();
+    }
+
+    private function markRtApproved(Letter $letter): void
+    {
+        $approver = User::factory()->create(['village_id' => $letter->village_id]);
+        LetterApproval::query()->create([
+            'letter_id' => $letter->id,
+            'approved_by' => $approver->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
     }
 }

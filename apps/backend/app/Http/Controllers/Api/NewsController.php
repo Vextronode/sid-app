@@ -34,14 +34,14 @@ class NewsController extends Controller
 
     public function update(UpdateNewsRequest $request, int $id): JsonResponse
     {
-        $news = $this->service->update($id, $request->validated());
+        $news = $this->service->update($id, $request->validated(), $request->user());
 
         return (new NewsResource($news))->response();
     }
 
     public function destroy(DestroyNewsRequest $request, int $id): JsonResponse
     {
-        $this->service->delete($id);
+        $this->service->delete($id, $request->user());
 
         return response()->json(['message' => 'Berita berhasil dihapus']);
     }

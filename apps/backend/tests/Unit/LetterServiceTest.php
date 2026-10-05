@@ -5,7 +5,9 @@ namespace Tests\Unit;
 use App\Models\ApprovalFlow;
 use App\Models\Citizen;
 use App\Models\FlowStep;
+use App\Models\Hamlet;
 use App\Models\Letter;
+use App\Models\LetterApproval;
 use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\Rt;
@@ -110,6 +112,63 @@ class LetterServiceTest extends TestCase
             'flow_step_id' => $firstStep->id,
             'approved_by' => null,
         ]);
+    }
+
+    public function test_overdue_flag_uses_only_pending_approval_for_current_active_step(): void
+    {
+        $village = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id]);
+        $flow = ApprovalFlow::factory()->create();
+        $firstStep = FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'rt',
+        ]);
+        $currentStep = FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 2,
+            'approver_position' => 'kepala_desa',
+            'is_final' => true,
+        ]);
+        $activeLetter = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 2,
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'status' => 'in_progress',
+        ]);
+        $activeLetter->approvals()->create([
+            'approval_level' => 'rt',
+            'flow_step_id' => $firstStep->id,
+            'deadline_at' => now()->subDay(),
+        ]);
+        $activeLetter->approvals()->create([
+            'approval_level' => 'kepala_desa',
+            'flow_step_id' => $currentStep->id,
+            'deadline_at' => now()->addDay(),
+        ]);
+
+        $rejectedLetter = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'status' => 'rejected',
+        ]);
+        $rejectedLetter->approvals()->create([
+            'approval_level' => 'rt',
+            'flow_step_id' => $firstStep->id,
+            'deadline_at' => now()->subDay(),
+        ]);
+
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('petugas_desa')->create([
+            'village_id' => $village->id,
+        ]);
+        $letters = $this->service->getScopedLetters($user)->keyBy('id');
+
+        $this->assertFalse($letters[$activeLetter->id]->is_overdue);
+        $this->assertFalse($letters[$rejectedLetter->id]->is_overdue);
     }
 
     public function test_create_letter_notifies_all_officials_resolved_for_first_step(): void
@@ -323,6 +382,16 @@ class LetterServiceTest extends TestCase
             'current_step_order' => $stepOrder,
         ], $letterAttributes));
 
+        if ($position !== 'rt') {
+            $approver = User::factory()->create(['village_id' => $letter->village_id]);
+            LetterApproval::query()->create([
+                'letter_id' => $letter->id,
+                'approved_by' => $approver->id,
+                'approval_level' => 'rt',
+                'action' => 'approved',
+            ]);
+        }
+
         return [$letter, $flow];
     }
 
@@ -332,10 +401,7 @@ class LetterServiceTest extends TestCase
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
         [$letter] = $this->makeLetterAtStep('rt', 1, ['citizen_id' => $citizen->id]);
 
-        // surat lain di RT yang sama tapi SUDAH lewat step RT (tidak
-        // boleh ikut muncul - beda dari implementasi lama yang
-        // menampilkan seluruh riwayat surat warga di RT tanpa peduli
-        // step aktifnya).
+        // Surat dari wilayah RT tetap muncul setelah melewati step RT.
         $this->makeLetterAtStep('kepala_desa', 2, ['citizen_id' => $citizen->id]);
 
         // surat di RT lain, tetap di step RT (harus tidak ikut muncul).
@@ -348,8 +414,8 @@ class LetterServiceTest extends TestCase
 
         $result = $this->service->getScopedLetters($user->fresh());
 
-        $this->assertCount(1, $result);
-        $this->assertSame($letter->id, $result->first()->id);
+        $this->assertCount(2, $result);
+        $this->assertContains($letter->id, $result->modelKeys());
     }
 
     public function test_get_scoped_letters_for_rw_returns_full_history_without_status_filter(): void
@@ -362,6 +428,15 @@ class LetterServiceTest extends TestCase
         // yang sudah approved/rejected, bukan cuma yang masih aktif.
         $approvedLetter = Letter::factory()->approved()->create(['citizen_id' => $citizen->id]);
         $rejectedLetter = Letter::factory()->rejected()->create(['citizen_id' => $citizen->id]);
+        foreach ([$approvedLetter, $rejectedLetter] as $rwLetter) {
+            $approver = User::factory()->create(['village_id' => $rwLetter->village_id]);
+            LetterApproval::query()->create([
+                'letter_id' => $rwLetter->id,
+                'approved_by' => $approver->id,
+                'approval_level' => 'rt',
+                'action' => 'approved',
+            ]);
+        }
 
         $otherCitizen = Citizen::factory()->create();
         Letter::factory()->create(['citizen_id' => $otherCitizen->id]);
@@ -386,7 +461,7 @@ class LetterServiceTest extends TestCase
         $this->makeLetterAtStep('kepala_desa', 1, ['village_id' => $otherVillage->id, 'status' => 'in_progress']);
 
         $official = Official::factory()->create(['position' => 'kepala_desa', 'village_id' => $village->id]);
-        $user = User::factory()->create(['role' => 'kepala_desa']);
+        $user = User::factory()->create(['role' => 'kepala_desa', 'village_id' => $village->id]);
         $user->official()->save($official);
 
         $result = $this->service->getScopedLetters($user->fresh());
@@ -401,7 +476,7 @@ class LetterServiceTest extends TestCase
         [$letter] = $this->makeLetterAtStep('kepala_desa', 1, ['village_id' => $village->id, 'status' => 'in_progress']);
 
         $official = Official::factory()->create(['position' => 'sekdes', 'village_id' => $village->id]);
-        $user = User::factory()->create(['role' => 'sekretaris_desa']);
+        $user = User::factory()->create(['role' => 'sekretaris_desa', 'village_id' => $village->id]);
         $user->official()->save($official);
 
         $result = $this->service->getScopedLetters($user->fresh());
@@ -431,24 +506,39 @@ class LetterServiceTest extends TestCase
         $this->assertSame($letter->id, $result->first()->id);
     }
 
-    public function test_get_scoped_letters_for_petugas_desa_sees_all(): void
+    public function test_get_scoped_letters_for_petugas_desa_is_limited_to_own_village(): void
     {
-        Letter::factory()->count(3)->create();
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $village = Village::factory()->create();
+        $otherVillage = Village::factory()->create();
+        $ownLetter = Letter::factory()->create(['village_id' => $village->id]);
+        Letter::factory()->create(['village_id' => $otherVillage->id]);
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('petugas_desa')->create([
+            'village_id' => $village->id,
+        ]);
 
         $result = $this->service->getScopedLetters($user);
 
-        $this->assertCount(3, $result);
+        $this->assertCount(1, $result);
+        $this->assertSame($ownLetter->id, $result->first()->id);
     }
 
-    public function test_get_scoped_letters_forbidden_for_kadus_role(): void
+    public function test_get_scoped_letters_for_kadus_is_scoped_to_own_hamlet(): void
     {
-        Letter::factory()->count(2)->create();
-        $user = User::factory()->create(['role' => 'kadus']);
+        $hamlet = Hamlet::factory()->create();
+        $ownCitizen = Citizen::factory()->create(['hamlet_id' => $hamlet->id]);
+        $otherHamlet = Hamlet::factory()->create();
+        $otherCitizen = Citizen::factory()->create(['hamlet_id' => $otherHamlet->id]);
+        [$ownLetter] = $this->makeLetterAtStep('kepala_desa', 2, ['citizen_id' => $ownCitizen->id]);
+        [$otherLetter] = $this->makeLetterAtStep('kepala_desa', 2, ['citizen_id' => $otherCitizen->id]);
+        $official = Official::factory()->create(['position' => 'kadus', 'hamlet_id' => $hamlet->id]);
+        $user = User::factory()->create(['role' => 'kadus', 'village_id' => $official->village_id]);
+        $user->official()->save($official);
 
-        $this->expectException(HttpException::class);
+        $result = $this->service->getScopedLetters($user->fresh());
 
-        $this->service->getScopedLetters($user);
+        $this->assertSame([$ownLetter->id], $result->modelKeys());
+        $this->assertNotContains($otherLetter->id, $result->modelKeys());
     }
 
     public function test_scope_mine_is_available_to_rt_and_kadus(): void
@@ -489,11 +579,20 @@ class LetterServiceTest extends TestCase
             'current_step_order' => 1,
             'village_id' => $village->id,
         ]);
+        foreach (Letter::query()->where('village_id', $village->id)->get() as $villageLetter) {
+            $approver = User::factory()->create(['village_id' => $village->id]);
+            LetterApproval::query()->create([
+                'letter_id' => $villageLetter->id,
+                'approved_by' => $approver->id,
+                'approval_level' => 'rt',
+                'action' => 'approved',
+            ]);
+        }
 
         $result = $this->service->getScopedLetters($user);
 
-        $this->assertCount(1, $result);
-        $this->assertNotSame($own->id, $result->first()->id);
+        $this->assertCount(2, $result);
+        $this->assertContains($own->id, $result->modelKeys());
         $this->assertTrue($official->is_active);
     }
 
@@ -523,10 +622,14 @@ class LetterServiceTest extends TestCase
 
     public function test_get_scoped_letters_applies_status_filter(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('petugas_desa')->create([
+            'village_id' => $village->id,
+        ]);
 
-        Letter::factory()->create(['status' => 'pending']);
-        Letter::factory()->create(['status' => 'approved']);
+        Letter::factory()->create(['status' => 'pending', 'village_id' => $village->id]);
+        Letter::factory()->create(['status' => 'approved', 'village_id' => $village->id]);
 
         $result = $this->service->getScopedLetters($user, ['status' => 'approved']);
 
@@ -548,8 +651,12 @@ class LetterServiceTest extends TestCase
     public function test_delete_allowed_for_authorized_staff_role(): void
     {
         $owner = User::factory()->create();
-        $staff = User::factory()->create(['role' => 'petugas_desa']);
-        $letter = Letter::factory()->create(['submitted_by' => $owner->id]);
+        $village = Village::factory()->create();
+        $staff = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        Official::factory()->forUser($staff)->position('petugas_desa')->create([
+            'village_id' => $village->id,
+        ]);
+        $letter = Letter::factory()->create(['submitted_by' => $owner->id, 'village_id' => $village->id]);
 
         $result = $this->service->delete($letter, $staff);
 

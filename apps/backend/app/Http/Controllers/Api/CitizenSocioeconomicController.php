@@ -17,7 +17,7 @@ class CitizenSocioeconomicController extends Controller
 
     public function show(ShowCitizenSocioeconomicRequest $request, string $id): JsonResponse
     {
-        $socioeconomic = $this->service->get($id);
+        $socioeconomic = $this->service->get($request->user(), $id);
 
         return (new CitizenSocioeconomicResource($socioeconomic))->response();
     }

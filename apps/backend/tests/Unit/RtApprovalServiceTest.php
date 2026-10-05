@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\ApprovalFlow;
 use App\Models\Citizen;
 use App\Models\FlowStep;
+use App\Models\Hamlet;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\Rt;
@@ -13,10 +14,12 @@ use App\Models\User;
 use App\Models\Village;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\ApprovalFlowRepository;
+use App\Repositories\ApprovalSettingRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
+use App\Services\ApprovalSettingService;
 use App\Services\LetterFlowService;
 use App\Services\OfficialService;
 use App\Services\RtApprovalService;
@@ -44,6 +47,7 @@ class RtApprovalServiceTest extends TestCase
             new LetterRepository,
             new OfficialRepository,
             new LetterFlowService($officialService, new ApprovalFlowRepository, new LetterStatusLogRepository),
+            new ApprovalSettingService(new ApprovalSettingRepository),
         );
     }
 
@@ -154,7 +158,7 @@ class RtApprovalServiceTest extends TestCase
      * sudah diputuskan rejected akan tetap "nyangkut" selamanya di
      * daftar pending karena masih match current_step_order + posisi.
      */
-    public function test_get_pending_letters_excludes_already_rejected_letters(): void
+    public function test_rt_letter_history_keeps_already_rejected_letters_visible(): void
     {
         $village = Village::factory()->create();
         ['letter' => $letter, 'rt' => $rt] = $this->makeLetterAtRtStep($village);
@@ -164,7 +168,8 @@ class RtApprovalServiceTest extends TestCase
 
         $result = $this->service->getPendingLetters($rtUser);
 
-        $this->assertCount(0, $result);
+        $this->assertCount(1, $result);
+        $this->assertSame($letter->id, $result->first()->id);
     }
 
     // ==========================================
@@ -200,6 +205,39 @@ class RtApprovalServiceTest extends TestCase
             'action' => 'approved',
             'approved_by' => $rtUser->id,
         ]);
+    }
+
+    public function test_decision_approve_resolves_current_approval_and_starts_next_deadline(): void
+    {
+        $village = Village::factory()->create();
+        ['letter' => $letter, 'rt' => $rt] = $this->makeLetterAtRtStep($village);
+        $rtUser = $this->makeRtUser($village, $rt);
+        $steps = FlowStep::query()->where('flow_id', $letter->flow_id)->orderBy('step_order')->get();
+        $expiredDeadline = now()->subHour();
+        $letter->approvals()->create([
+            'approval_level' => 'rt',
+            'flow_step_id' => $steps[0]->id,
+            'deadline_at' => $expiredDeadline,
+        ]);
+
+        $this->service->decision($letter, $rtUser, ['status' => 'approved']);
+
+        $this->assertDatabaseCount('letter_approvals', 2);
+        $this->assertDatabaseHas('letter_approvals', [
+            'letter_id' => $letter->id,
+            'flow_step_id' => $steps[0]->id,
+            'approved_by' => $rtUser->id,
+            'action' => 'approved',
+        ]);
+        $this->assertDatabaseHas('letter_approvals', [
+            'letter_id' => $letter->id,
+            'flow_step_id' => $steps[1]->id,
+            'approved_by' => null,
+            'action' => null,
+        ]);
+        $nextApproval = $letter->approvals()->where('flow_step_id', $steps[1]->id)->firstOrFail();
+        $this->assertNotNull($nextApproval->deadline_at);
+        $this->assertTrue($nextApproval->deadline_at->isFuture());
     }
 
     public function test_decision_approve_writes_status_log(): void
@@ -252,6 +290,43 @@ class RtApprovalServiceTest extends TestCase
         $this->service->decision($letter, $rtUser, ['status' => 'approved']);
 
         Notification::assertSentTo($rwUser->fresh(), LetterStatusNotification::class);
+    }
+
+    public function test_decision_approve_notifies_only_kadus_for_citizens_hamlet_as_fyi(): void
+    {
+        $village = Village::factory()->create();
+        ['letter' => $letter, 'rt' => $rt, 'citizen' => $citizen] = $this->makeLetterAtRtStep($village);
+        $rtUser = $this->makeRtUser($village, $rt);
+        $ownHamlet = Hamlet::findOrFail($citizen->hamlet_id);
+        $otherHamlet = Hamlet::factory()->create(['village_id' => $village->id]);
+
+        $ownKadus = User::factory()->create(['role' => 'kadus']);
+        Official::factory()->create([
+            'position' => 'kadus',
+            'hamlet_id' => $ownHamlet->id,
+            'village_id' => $village->id,
+            'user_id' => $ownKadus->id,
+            'is_active' => true,
+        ]);
+        $otherKadus = User::factory()->create(['role' => 'kadus']);
+        Official::factory()->create([
+            'position' => 'kadus',
+            'hamlet_id' => $otherHamlet->id,
+            'village_id' => $village->id,
+            'user_id' => $otherKadus->id,
+            'is_active' => true,
+        ]);
+
+        $this->service->decision($letter, $rtUser, ['status' => 'approved']);
+
+        Notification::assertSentTo($ownKadus, LetterStatusNotification::class, function (LetterStatusNotification $notification) use ($ownKadus): bool {
+            return $notification->toArray($ownKadus)['context']['status'] === 'rt_approved_kadus_fyi';
+        });
+        Notification::assertNotSentTo($otherKadus, LetterStatusNotification::class);
+        $this->assertDatabaseMissing('letter_approvals', [
+            'letter_id' => $letter->id,
+            'approval_level' => 'kadus',
+        ]);
     }
 
     /**
@@ -317,19 +392,46 @@ class RtApprovalServiceTest extends TestCase
         ]);
     }
 
+    public function test_decision_cannot_process_letter_again_after_rt_rejects_it(): void
+    {
+        $village = Village::factory()->create();
+        ['letter' => $letter, 'rt' => $rt] = $this->makeLetterAtRtStep($village);
+        $rtUser = $this->makeRtUser($village, $rt);
+
+        $this->service->decision($letter, $rtUser, ['status' => 'rejected', 'notes' => 'Ditolak']);
+
+        try {
+            $this->service->decision($letter->fresh(), $rtUser, ['status' => 'approved']);
+            $this->fail('A rejected letter must not be processed again.');
+        } catch (HttpException $exception) {
+            $this->assertSame(409, $exception->getStatusCode());
+            $this->assertSame('Surat sudah diproses sebelumnya.', $exception->getMessage());
+        }
+
+        $this->assertDatabaseHas('letters', ['id' => $letter->id, 'status' => 'rejected']);
+        $this->assertDatabaseCount('letter_approvals', 1);
+    }
+
     public function test_decision_reject_does_not_notify_rw_or_next_approver(): void
     {
         $village = Village::factory()->create();
-        ['letter' => $letter, 'rt' => $rt, 'rw' => $rw] = $this->makeLetterAtRtStep($village);
+        ['letter' => $letter, 'rt' => $rt, 'rw' => $rw, 'citizen' => $citizen] = $this->makeLetterAtRtStep($village);
         $rtUser = $this->makeRtUser($village, $rt);
 
         $rwOfficial = Official::factory()->create(['position' => 'rw', 'rw_id' => $rw->id, 'village_id' => $village->id]);
         $rwUser = User::factory()->create(['role' => 'rw']);
         $rwUser->official()->save($rwOfficial);
+        $kadusUser = User::factory()->create(['role' => 'kadus']);
+        $kadusUser->official()->save(Official::factory()->create([
+            'position' => 'kadus',
+            'hamlet_id' => $citizen->hamlet_id,
+            'village_id' => $village->id,
+        ]));
 
         $this->service->decision($letter, $rtUser, ['status' => 'rejected', 'notes' => 'Tidak sesuai']);
 
         Notification::assertNotSentTo($rwUser->fresh(), LetterStatusNotification::class);
+        Notification::assertNotSentTo($kadusUser->fresh(), LetterStatusNotification::class);
     }
 
     /**

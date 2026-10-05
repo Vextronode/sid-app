@@ -13,9 +13,10 @@ class OfficialRepository
         //
     }
 
-    public function allWithRelations(): Collection
+    public function allWithRelations(string $villageId): Collection
     {
         return Official::query()
+            ->where('village_id', $villageId)
             ->with([
                 'citizen',
                 'user',
@@ -104,7 +105,7 @@ class OfficialRepository
         return $query->firstOrFail();
     }
 
-    public function findWithRelationsOrFail(int $id): Official
+    public function findWithRelationsOrFail(int $id, string $villageId): Official
     {
         return Official::query()
             ->with([
@@ -115,6 +116,7 @@ class OfficialRepository
                 'rt',
                 'rw',
             ])
+            ->where('village_id', $villageId)
             ->findOrFail($id);
     }
 
@@ -210,6 +212,21 @@ class OfficialRepository
     }
 
     /**
+     * Resolve seluruh Kadus aktif pada dusun tertentu untuk notifikasi FYI.
+     * Kadus tidak menjadi approver dan tidak membuat row approval.
+     *
+     * @return Collection<int, Official>
+     */
+    public function allActiveKadusByHamletId(int $hamletId): Collection
+    {
+        return Official::query()
+            ->where('hamlet_id', $hamletId)
+            ->where('position', 'kadus')
+            ->where('is_active', true)
+            ->get();
+    }
+
+    /**
      * Resolve generik untuk step approval berbasis wilayah (RT). Tidak
      * hardcode ke position 'rt' secara implisit di caller — position
      * tetap diteruskan sebagai parameter agar method ini bisa dipakai
@@ -261,11 +278,12 @@ class OfficialRepository
      * berakhir masa jabatannya (ended_at masih null). Dipakai firstOrFail
      * karena kode asli mengharapkan pasti ada kepala desa aktif.
      */
-    public function findActiveVillageHeadWithCitizenOrFail(): Official
+    public function findActiveVillageHeadWithCitizenOrFail(string $villageId): Official
     {
         return Official::query()
             ->with('citizen')
             ->where('position', 'kepala_desa')
+            ->where('village_id', $villageId)
             ->where('is_active', true)
             ->whereNull('ended_at')
             ->firstOrFail();

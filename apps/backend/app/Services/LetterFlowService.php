@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LetterFlowLogReason;
 use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\Official;
@@ -75,13 +76,16 @@ class LetterFlowService
 
         foreach ($skipped as $step) {
             $label = $labels[$step->approver_position] ?? $step->approver_position;
+            $reason = $step->approver_position === 'rt'
+                ? LetterFlowLogReason::RtStageSkippedForOfficialApplicant->value
+                : "Tahap {$label} dilewati: pemohon adalah pejabat pada tahap tersebut";
 
             $this->letterStatusLogRepository->create([
                 'letter_id' => $letter->id,
                 'actor_id' => $actor->id,
                 'old_status' => $status,
                 'new_status' => $status,
-                'reason' => "Tahap {$label} dilewati: pemohon adalah pejabat pada tahap tersebut",
+                'reason' => $reason,
             ]);
         }
     }

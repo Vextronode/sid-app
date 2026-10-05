@@ -39,9 +39,9 @@ class LetterPolicy
     }
 
     /**
-     * Pemohon selalu dapat melihat suratnya. Kasi/Kaur hanya dapat
-     * melihat surat approved di desanya yang ditugaskan ke role mereka
-     * (atau belum ditugaskan); akses role lain tetap sesuai scope lama.
+     * Pemohon selalu dapat melihat suratnya. RW/Kadus/Kades/Sekdes hanya
+     * melihat surat yang sudah melewati tahap RT dalam wilayahnya.
+     * Kasi/Kaur hanya melihat surat final-approved sesuai penugasan.
      */
     public function view(User $user, Letter $letter): bool
     {
@@ -52,14 +52,19 @@ class LetterPolicy
         return match ($user->role) {
             'warga' => false,
             'rt' => $this->isSameRt($user, $letter),
-            'rw' => $this->isSameRw($user, $letter),
-            'petugas_desa' => true,
+            'rw' => $this->isSameRw($user, $letter) && $this->wasApprovedByRt($letter),
+            'kadus' => $this->isSameHamlet($user, $letter) && $this->wasApprovedByRt($letter),
+            'petugas_desa' => $this->isSameVillage($user, $letter),
             'kasi_pelayanan', 'kaur_tu_umum' => $letter->status->value === 'approved'
                 && $this->isSameVillage($user, $letter)
                 && ($letter->letterType?->assigned_role === null
                     || $letter->letterType->assigned_role === $user->role),
             default => in_array($user->role, self::VILLAGE_SCOPED_ROLES, true)
-                && $this->isSameVillage($user, $letter),
+                && $this->isSameVillage($user, $letter)
+                && (
+                    $this->wasApprovedByRt($letter)
+                    || ($letter->currentFlowStep() !== null && $letter->currentFlowStep()->approver_position !== 'rt')
+                ),
         };
     }
 
@@ -74,8 +79,12 @@ class LetterPolicy
             return false;
         }
 
-        if ($letter->submitted_by === $user->id || $user->role === 'petugas_desa') {
+        if ($letter->submitted_by === $user->id) {
             return true;
+        }
+
+        if ($user->role === 'petugas_desa') {
+            return $this->isSameVillage($user, $letter);
         }
 
         if (in_array($user->role, ['kepala_desa', 'sekretaris_desa'], true)) {
@@ -95,9 +104,12 @@ class LetterPolicy
     {
         $isOwner = $letter->submitted_by === $user->id;
 
-        $isAuthorizedStaff = in_array($user->role, self::STAFF_ROLES, true);
+        if ($isOwner) {
+            return true;
+        }
 
-        return $isOwner || $isAuthorizedStaff;
+        return in_array($user->role, self::STAFF_ROLES, true)
+            && $this->isSameVillage($user, $letter);
     }
 
     /**
@@ -153,5 +165,21 @@ class LetterPolicy
         }
 
         return $letter->village_id === $official->village_id;
+    }
+
+    private function isSameHamlet(User $user, Letter $letter): bool
+    {
+        $official = $this->currentOfficial($user, 'kadus');
+
+        return $official?->hamlet_id !== null
+            && $letter->citizen?->hamlet_id === $official->hamlet_id;
+    }
+
+    private function wasApprovedByRt(Letter $letter): bool
+    {
+        return $letter->approvals()
+            ->where('approval_level', 'rt')
+            ->where('action', 'approved')
+            ->exists();
     }
 }

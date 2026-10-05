@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ApprovalFlow;
 use App\Models\LetterCategory;
 use App\Models\User;
+use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
@@ -33,14 +34,14 @@ use Tests\TestCase;
  *  - approver_position RW, Kadus, Kasi, dan Kaur DITOLAK (422).
  *  - Payload tanpa step is_final=true DITOLAK (422).
  *  - Lebih dari satu step final, final bukan step terakhir, atau final bukan
- *    Kepala Desa/Sekdes DITOLAK (422).
+ *    Kepala Desa DITOLAK (422).
  *  - step_order duplikat dalam satu flow DITOLAK (422).
  *  - steps kosong/tidak diisi DITOLAK (422, karena min:1).
  *  - Operasi bersifat replace-all: memanggil ulang dengan payload berbeda
  *    benar-benar menghapus steps versi sebelumnya (bukan menambah).
- *  - approver_position='sekdes' tetap diterima sebagai nilai enum; flow
- *    default menggunakan kepala_desa sebagai approver step final, dengan
- *    Sekretaris Desa sebagai pejabat pengganti sesuai keputusan bisnis.
+ *  - approver_position='sekdes' ditolak oleh validasi meski masih ada di
+ *    enum database; Sekretaris Desa bertindak sebagai pengganti pada step
+ *    kepala_desa sesuai keputusan bisnis.
  */
 class ApprovalFlowStepsEndpointTest extends TestCase
 {
@@ -159,7 +160,7 @@ class ApprovalFlowStepsEndpointTest extends TestCase
             $response->assertStatus(422);
             $response->assertJsonValidationErrors(['steps.0.approver_position']);
             $response->assertJsonFragment([
-                'steps.0.approver_position' => ['RW, Kadus, Kasi, dan Kaur tidak dapat menjadi approver pada alur persetujuan.'],
+                'steps.0.approver_position' => ['Posisi approver hanya RT atau Kepala Desa; Sekdes diproses melalui tahap Kepala Desa.'],
             ]);
         }
 
@@ -167,9 +168,8 @@ class ApprovalFlowStepsEndpointTest extends TestCase
     }
 
     #[Test]
-    public function approver_position_sekdes_is_still_a_syntactically_valid_enum_value(): void
+    public function approver_position_sekdes_is_rejected(): void
     {
-        // Sekdes dapat menjadi approver dan penanggung jawab step final.
         $user = User::factory()->create(['role' => 'petugas_desa']);
         $flow = $this->makeFlow();
 
@@ -179,10 +179,8 @@ class ApprovalFlowStepsEndpointTest extends TestCase
             ],
         ]);
 
-        $response->assertStatus(200);
-        $this->assertDatabaseHas('flow_steps', [
-            'flow_id' => $flow->id, 'approver_position' => 'sekdes',
-        ]);
+        $response->assertUnprocessable()->assertJsonValidationErrors(['steps.0.approver_position']);
+        $this->assertDatabaseCount('flow_steps', 0);
     }
 
     #[Test]
@@ -230,7 +228,7 @@ class ApprovalFlowStepsEndpointTest extends TestCase
         $response = $this->actingAs($user)->putJson("/api/approval-flows/{$flow->id}/steps", [
             'steps' => [
                 ['step_order' => 1, 'approver_position' => 'rt', 'is_final' => true],
-                ['step_order' => 2, 'approver_position' => 'sekdes', 'is_final' => true],
+                ['step_order' => 2, 'approver_position' => 'kepala_desa', 'is_final' => true],
             ],
         ]);
 
@@ -258,7 +256,7 @@ class ApprovalFlowStepsEndpointTest extends TestCase
     }
 
     #[Test]
-    public function final_step_must_be_approved_by_kepala_desa_or_sekdes(): void
+    public function final_step_must_be_approved_by_kepala_desa(): void
     {
         $user = User::factory()->create(['role' => 'petugas_desa']);
         $flow = $this->makeFlow();
@@ -271,7 +269,7 @@ class ApprovalFlowStepsEndpointTest extends TestCase
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['steps'])
-            ->assertJsonFragment(['steps' => ['Approver step final harus Kepala Desa atau Sekdes']]);
+            ->assertJsonFragment(['steps' => ['Approver step final harus Kepala Desa']]);
     }
 
     #[Test]
@@ -325,7 +323,7 @@ class ApprovalFlowStepsEndpointTest extends TestCase
         $response = $this->actingAs($user)->putJson("/api/approval-flows/{$flow->id}/steps", [
             'steps' => [
                 ['step_order' => 1, 'approver_position' => 'rt'],
-                ['step_order' => 2, 'approver_position' => 'sekdes', 'is_final' => true],
+                ['step_order' => 2, 'approver_position' => 'kepala_desa', 'is_final' => true],
             ],
         ]);
 
@@ -348,6 +346,7 @@ class ApprovalFlowStepsEndpointTest extends TestCase
         );
 
         return ApprovalFlow::query()->create([
+            'village_id' => Village::query()->value('id') ?? Village::factory()->create()->id,
             'category_id' => $category->id,
             'name' => 'RT-Kades/Sekdes (2 Tahap)',
             'is_active' => true,

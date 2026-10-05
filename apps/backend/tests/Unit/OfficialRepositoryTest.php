@@ -107,7 +107,7 @@ class OfficialRepositoryTest extends TestCase
     {
         $official = Official::factory()->create();
 
-        $result = $this->repository->findWithRelationsOrFail($official->id);
+        $result = $this->repository->findWithRelationsOrFail($official->id, $official->village_id);
 
         $this->assertTrue($result->relationLoaded('citizen'));
         $this->assertTrue($result->relationLoaded('village'));

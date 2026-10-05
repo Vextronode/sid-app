@@ -8,6 +8,7 @@ use App\Models\ApprovalFlow;
 use App\Models\FlowStep;
 use App\Models\LetterCategory;
 use App\Models\LetterType;
+use App\Models\Village;
 use Illuminate\Database\Seeder;
 
 class ApprovalFlowSeeder extends Seeder
@@ -16,13 +17,15 @@ class ApprovalFlowSeeder extends Seeder
     {
         $categories = $this->seedCategories();
 
-        $flow = $this->seedApprovalNormalFlow($categories['approval_normal']);
+        foreach (Village::query()->get() as $village) {
+            $flow = $this->seedApprovalNormalFlow($categories['approval_normal'], $village->id);
 
-        $this->seedDirectFlow($categories['upload_mandiri']);
-        $this->seedDirectFlow($categories['dokumen_pendukung']);
-        $this->seedDirectFlow($categories['update_data']);
+            $this->seedDirectFlow($categories['upload_mandiri'], $village->id);
+            $this->seedDirectFlow($categories['dokumen_pendukung'], $village->id);
+            $this->seedDirectFlow($categories['update_data'], $village->id);
 
-        $this->backfillLetterTypesWithoutFlow($categories['approval_normal'], $flow);
+            $this->backfillLetterTypesWithoutFlow($categories['approval_normal'], $flow, $village->id);
+        }
     }
 
     /**
@@ -74,11 +77,12 @@ class ApprovalFlowSeeder extends Seeder
         return $categories;
     }
 
-    private function seedApprovalNormalFlow(LetterCategory $category): ApprovalFlow
+    private function seedApprovalNormalFlow(LetterCategory $category, string $villageId): ApprovalFlow
     {
         $flow = ApprovalFlow::query()->updateOrCreate(
             [
                 'category_id' => $category->id,
+                'village_id' => $villageId,
                 'name' => 'RT-Kades/Sekdes (2 Tahap)',
             ],
             [
@@ -108,7 +112,7 @@ class ApprovalFlowSeeder extends Seeder
         return $flow;
     }
 
-    private function seedDirectFlow(LetterCategory $category): void
+    private function seedDirectFlow(LetterCategory $category, string $villageId): void
     {
         // Wajib tetap punya row approval_flows meski flow_steps kosong,
         // demi konsistensi 1 pola query generik di seluruh sistem
@@ -116,6 +120,7 @@ class ApprovalFlowSeeder extends Seeder
         ApprovalFlow::query()->updateOrCreate(
             [
                 'category_id' => $category->id,
+                'village_id' => $villageId,
                 'name' => 'Direct - Tanpa Approval Bertingkat',
             ],
             [
@@ -138,11 +143,13 @@ class ApprovalFlowSeeder extends Seeder
      * whereNull() supaya idempotent dan tidak menimpa letter_types yang
      * memang sudah eksplisit diberi category_id/flow_id lain.
      */
-    private function backfillLetterTypesWithoutFlow(LetterCategory $category, ApprovalFlow $flow): void
+    private function backfillLetterTypesWithoutFlow(LetterCategory $category, ApprovalFlow $flow, string $villageId): void
     {
         LetterType::query()
-            ->whereNull('category_id')
-            ->orWhereNull('flow_id')
+            ->where('village_id', $villageId)
+            ->where(function ($query) {
+                $query->whereNull('category_id')->orWhereNull('flow_id');
+            })
             ->update([
                 'category_id' => $category->id,
                 'flow_id' => $flow->id,

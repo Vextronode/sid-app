@@ -11,7 +11,7 @@ class ApprovalSettingRepository
     {
         return ApprovalSetting::query()
             ->where('village_id', $villageId)
-            ->whereIn('approval_level', ['rt', 'kepala_desa', 'sekdes'])
+            ->whereIn('approval_level', ['rt', 'kepala_desa'])
             ->orderBy('id')
             ->get();
     }

@@ -22,7 +22,7 @@ class HamletFactory extends Factory
             'name' => 'Dusun '.ucfirst(fake()->unique()->word()),
             'code' => fake()->unique()->numerify('DSN-####'),
             'is_active' => true,
-            'village_id' => Village::factory(),
+            'village_id' => fn () => Village::query()->value('id') ?? Village::factory()->create()->id,
         ];
     }
 }

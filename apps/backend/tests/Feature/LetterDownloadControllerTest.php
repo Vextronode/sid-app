@@ -21,7 +21,7 @@ class LetterDownloadControllerTest extends TestCase
     public function test_download_blocked_when_letter_not_yet_approved(): void
     {
         $letter = Letter::factory()->create(['status' => 'pending']);
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $letter->village_id);
 
         $this->actingAs($user)
             ->getJson("/api/letters/{$letter->id}/download")
@@ -44,7 +44,7 @@ class LetterDownloadControllerTest extends TestCase
             'letter_type_id' => $letterType->id,
             'expires_at' => now()->addDays(10),
         ]);
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $letter->village_id);
 
         $this->actingAs($user)
             ->get("/api/letters/{$letter->id}/download")

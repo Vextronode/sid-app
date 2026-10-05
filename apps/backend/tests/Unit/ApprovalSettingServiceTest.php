@@ -77,7 +77,7 @@ class ApprovalSettingServiceTest extends TestCase
         ]);
 
         try {
-            $this->service->update($setting->id, ['deadline_hours' => 72]);
+            $this->service->update($setting->id, ['deadline_hours' => 72], $this->makePetugasDesaActor($village->id));
             $this->fail('Pengaturan non-approver seharusnya tidak dapat diubah melalui endpoint ini.');
         } catch (NotFoundHttpException) {
             $this->assertSame(48, $setting->fresh()->deadline_hours);

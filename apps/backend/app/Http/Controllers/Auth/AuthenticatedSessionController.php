@@ -8,6 +8,7 @@ use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -32,11 +33,18 @@ class AuthenticatedSessionController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        Auth::guard('web')->logout();
+        $user = $request->user();
+        $accessToken = $user?->currentAccessToken();
 
-        $request->session()->invalidate();
+        if ($accessToken instanceof PersonalAccessToken) {
+            $accessToken->delete();
+        }
 
-        $request->session()->regenerateToken();
+        if ($request->hasSession()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return response()->json([
             'message' => 'Logout berhasil',

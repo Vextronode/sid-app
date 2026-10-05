@@ -16,7 +16,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class DashboardService
 {
-    private const VILLAGE_HEAD_POSITIONS = ['kepala_desa', 'sekdes'];
+    private const VILLAGE_HEAD_POSITIONS = ['kepala_desa'];
 
     public function __construct(
         protected CitizenRepository $citizenRepository,
@@ -46,10 +46,10 @@ class DashboardService
      */
     public function getGenderStats(User $user): array
     {
-        [$rtId, $rwId] = $this->resolveLegacyScope($user);
+        [$villageId, $rtId, $rwId] = $this->resolveLegacyScope($user);
 
-        $laki = $this->citizenRepository->countByGender($user->village_id, 'L', $rtId, $rwId);
-        $perempuan = $this->citizenRepository->countByGender($user->village_id, 'P', $rtId, $rwId);
+        $laki = $this->citizenRepository->countByGender($villageId, 'L', $rtId, $rwId);
+        $perempuan = $this->citizenRepository->countByGender($villageId, 'P', $rtId, $rwId);
 
         return [
             'total' => $laki + $perempuan,
@@ -63,15 +63,15 @@ class DashboardService
      */
     public function getLetterStats(User $user, ?string $date, ?string $letterType): array
     {
-        [$rtId, $rwId] = $this->resolveLegacyScope($user);
+        [$villageId, $rtId, $rwId] = $this->resolveLegacyScope($user);
         $parsedDate = Carbon::parse($date ?: now()->toDateString());
 
         if ($rtId !== null) {
-            $query = $this->letterRepository->queryByVillageAndRt($user->village_id, $rtId);
+            $query = $this->letterRepository->queryByVillageAndRt($villageId, $rtId);
         } elseif ($rwId !== null) {
-            $query = $this->letterRepository->queryByVillageAndRw($user->village_id, $rwId);
+            $query = $this->letterRepository->queryByVillageAndRw($villageId, $rwId);
         } else {
-            $query = $this->letterRepository->queryByVillage($user->village_id);
+            $query = $this->letterRepository->queryByVillage($villageId);
         }
 
         if ($letterType && $letterType !== 'all') {
@@ -180,7 +180,7 @@ class DashboardService
     private function forKasiKaur(User $user): array
     {
         $query = $this->letterRepository
-            ->queryApprovedForAssignedRole($user->role, $this->villageId($user));
+            ->queryApprovedForAssignedRole($user->role, $this->officialVillageId($user));
         $total = (clone $query)->count();
         $letters = $query
             ->latest()
@@ -200,7 +200,7 @@ class DashboardService
      */
     private function forPetugasDesa(User $user): array
     {
-        $villageId = $this->villageId($user);
+        $villageId = $this->officialVillageId($user);
 
         return [
             'role' => 'petugas_desa',
@@ -231,6 +231,7 @@ class DashboardService
                 self::VILLAGE_HEAD_POSITIONS,
                 $official->village_id,
                 $user->id,
+                $official->citizen_id,
             )
             ->whereIn('status', [
                 LetterStatus::Pending->value,
@@ -263,6 +264,10 @@ class DashboardService
             throw new HttpException(403, "Data official {$positionLabel} tidak ditemukan.");
         }
 
+        if (! $official->village_id) {
+            throw new HttpException(403, 'Data desa pejabat tidak ditemukan.');
+        }
+
         return $official;
     }
 
@@ -275,25 +280,27 @@ class DashboardService
      * Legacy statistics endpoint scope. The generic dashboard uses explicit
      * role builders above and rejects kadus.
      *
-     * @return array{0: int|null, 1: int|null}
+     * @return array{0: string, 1: int|null, 2: int|null}
      */
     private function resolveLegacyScope(User $user): array
     {
         return match ($user->role) {
-            'rt' => [$this->activeOfficial($user, 'rt')->rt_id, null],
-            'rw' => [null, $this->activeOfficial($user, 'rw')->rw_id],
-            'kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa' => [null, null],
+            'rt' => [$this->activeOfficial($user, 'rt')->village_id, $this->activeOfficial($user, 'rt')->rt_id, null],
+            'rw' => [$this->activeOfficial($user, 'rw')->village_id, null, $this->activeOfficial($user, 'rw')->rw_id],
+            'kasi_pelayanan', 'kaur_tu_umum' => [$this->officialVillageId($user), null, null],
+            'petugas_desa' => [$this->officialVillageId($user), null, null],
             default => throw new HttpException(403, 'Tidak memiliki akses.'),
         };
     }
 
-    private function villageId(User $user): string
+    private function officialVillageId(User $user): string
     {
-        if (! $user->village_id) {
-            throw new HttpException(403, 'Data desa user tidak ditemukan.');
+        $official = $user->official()->where('is_active', true)->first();
+        if (! $user->is_active || ! $official?->village_id || $official->position !== $this->officialPositionForRole($user->role)) {
+            throw new HttpException(403, 'Data desa pejabat tidak valid.');
         }
 
-        return $user->village_id;
+        return $official->village_id;
     }
 
     private function unreadCount(User $user): int

@@ -24,28 +24,28 @@ class ApprovalFlowController extends Controller
     {
         $categoryId = $request->integer('category_id') ?: null;
 
-        $flows = $this->service->list($categoryId);
+        $flows = $this->service->list($request->user(), $categoryId);
 
         return (new ApprovalFlowCollection($flows))->response();
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
-        $flow = $this->service->findWithStepsOrFail($id);
+        $flow = $this->service->findWithStepsOrFail($id, $request->user());
 
         return (new ApprovalFlowResource($flow))->response();
     }
 
     public function store(StoreApprovalFlowRequest $request): JsonResponse
     {
-        $flow = $this->service->create($request->validated());
+        $flow = $this->service->create($request->validated(), $request->user());
 
         return (new ApprovalFlowResource($flow))->response()->setStatusCode(201);
     }
 
     public function replaceSteps(ReplaceApprovalFlowStepsRequest $request, int $id): JsonResponse
     {
-        $steps = $this->service->replaceSteps($id, $request->validated('steps'));
+        $steps = $this->service->replaceSteps($id, $request->validated('steps'), $request->user());
 
         return response()->json([
             'message' => 'Urutan approval berhasil diperbarui',

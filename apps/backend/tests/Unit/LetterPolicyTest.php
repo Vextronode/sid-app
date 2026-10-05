@@ -2,8 +2,13 @@
 
 namespace Tests\Unit;
 
+use App\Enums\LetterFlowLogReason;
+use App\Models\ApprovalFlow;
 use App\Models\Citizen;
+use App\Models\FlowStep;
 use App\Models\Letter;
+use App\Models\LetterApproval;
+use App\Models\LetterStatusLog;
 use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\Rt;
@@ -99,6 +104,7 @@ class LetterPolicyTest extends TestCase
         $rt = Rt::factory()->create();
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
         $letter = Letter::factory()->create(['citizen_id' => $citizen->id]);
+        $this->markRtApproved($letter);
 
         $rtUser = User::factory()->create(['role' => 'rt']);
         Official::factory()->create([
@@ -134,6 +140,7 @@ class LetterPolicyTest extends TestCase
         $rt = Rt::factory()->create();
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
         $letter = Letter::factory()->create(['citizen_id' => $citizen->id]);
+        $this->markRtApproved($letter);
 
         $rwUser = User::factory()->create(['role' => 'rw']);
         Official::factory()->create([
@@ -173,6 +180,7 @@ class LetterPolicyTest extends TestCase
                 'letter_type_id' => LetterType::factory()->create(['assigned_role' => $role])->id,
             ])
             : Letter::factory()->create();
+        $this->markRtApproved($letter);
 
         $user = User::factory()->create(['role' => $role]);
         Official::factory()->create([
@@ -183,6 +191,44 @@ class LetterPolicyTest extends TestCase
         ]);
 
         $this->assertTrue($this->policy->view($user, $letter));
+    }
+
+    public function test_kades_can_view_rt_applicant_letter_after_rt_step_was_skipped(): void
+    {
+        $village = Village::factory()->create();
+        $applicant = User::factory()->create(['role' => 'rt', 'village_id' => $village->id]);
+        $kades = User::factory()->create(['role' => 'kepala_desa', 'village_id' => $village->id]);
+        Official::factory()->forUser($kades)->position('kepala_desa')->create();
+
+        $flow = ApprovalFlow::factory()->create(['village_id' => $village->id]);
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'rt',
+            'is_final' => false,
+        ]);
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 2,
+            'approver_position' => 'kepala_desa',
+            'is_final' => true,
+        ]);
+        $letter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'flow_id' => $flow->id,
+            'current_step_order' => 2,
+            'submitted_by' => $applicant->id,
+        ]);
+        LetterStatusLog::query()->create([
+            'letter_id' => $letter->id,
+            'actor_id' => $applicant->id,
+            'old_status' => 'pending',
+            'new_status' => 'pending',
+            'reason' => LetterFlowLogReason::RtStageSkippedForOfficialApplicant->value,
+        ]);
+
+        $this->assertFalse($letter->approvals()->where('approval_level', 'rt')->exists());
+        $this->assertTrue($this->policy->view($kades, $letter));
     }
 
     #[DataProvider('villageScopedRoleProvider')]
@@ -212,12 +258,35 @@ class LetterPolicyTest extends TestCase
         ];
     }
 
-    public function test_view_allowed_for_petugas_desa_full_visibility(): void
+    private function markRtApproved(Letter $letter): void
     {
-        $letter = Letter::factory()->create();
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $approver = User::factory()->create(['village_id' => $letter->village_id]);
+        LetterApproval::query()->create([
+            'letter_id' => $letter->id,
+            'approved_by' => $approver->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
+    }
+
+    public function test_view_allowed_for_petugas_desa_in_own_village(): void
+    {
+        $village = Village::factory()->create();
+        $letter = Letter::factory()->create(['village_id' => $village->id]);
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('petugas_desa')->create();
 
         $this->assertTrue($this->policy->view($user, $letter));
+    }
+
+    public function test_view_forbidden_for_petugas_desa_in_another_village(): void
+    {
+        $letter = Letter::factory()->create(['village_id' => Village::factory()->create()->id]);
+        $otherVillage = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $otherVillage->id]);
+        Official::factory()->forUser($user)->position('petugas_desa')->create();
+
+        $this->assertFalse($this->policy->view($user, $letter));
     }
 
     public function test_view_forbidden_for_kadus(): void
@@ -277,10 +346,24 @@ class LetterPolicyTest extends TestCase
 
     public function test_download_allows_petugas_desa_for_approved_letter(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
-        $letter = Letter::factory()->approved()->create();
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('petugas_desa')->create();
+        $letter = Letter::factory()->approved()->create(['village_id' => $village->id]);
 
         $this->assertTrue($this->policy->download($user, $letter));
+    }
+
+    public function test_download_forbidden_for_petugas_desa_in_another_village(): void
+    {
+        $letter = Letter::factory()->approved()->create([
+            'village_id' => Village::factory()->create()->id,
+        ]);
+        $otherVillage = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $otherVillage->id]);
+        Official::factory()->forUser($user)->position('petugas_desa')->create();
+
+        $this->assertFalse($this->policy->download($user, $letter));
     }
 
     public function test_download_allows_same_village_kades_and_sekdes(): void
@@ -343,11 +426,32 @@ class LetterPolicyTest extends TestCase
     #[DataProvider('staffRoleProvider')]
     public function test_delete_allowed_for_staff_roles(string $role): void
     {
+        $village = Village::factory()->create();
         $owner = User::factory()->create();
-        $staff = User::factory()->create(['role' => $role]);
-        $letter = Letter::factory()->create(['submitted_by' => $owner->id]);
+        $staff = User::factory()->create(['role' => $role, 'village_id' => $village->id]);
+        Official::factory()->forUser($staff)
+            ->position($role === 'sekretaris_desa' ? 'sekdes' : $role)
+            ->create();
+        $letter = Letter::factory()->create([
+            'submitted_by' => $owner->id,
+            'village_id' => $village->id,
+        ]);
 
         $this->assertTrue($this->policy->delete($staff, $letter));
+    }
+
+    public function test_delete_forbidden_for_petugas_desa_in_another_village(): void
+    {
+        $owner = User::factory()->create();
+        $letter = Letter::factory()->create([
+            'submitted_by' => $owner->id,
+            'village_id' => Village::factory()->create()->id,
+        ]);
+        $otherVillage = Village::factory()->create();
+        $staff = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $otherVillage->id]);
+        Official::factory()->forUser($staff)->position('petugas_desa')->create();
+
+        $this->assertFalse($this->policy->delete($staff, $letter));
     }
 
     public static function staffRoleProvider(): array

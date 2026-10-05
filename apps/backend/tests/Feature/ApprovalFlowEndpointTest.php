@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ApprovalFlow;
 use App\Models\LetterCategory;
 use App\Models\User;
+use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
@@ -234,6 +235,7 @@ class ApprovalFlowEndpointTest extends TestCase
     private function makeFlow(LetterCategory $category, string $name, bool $isActive = true): ApprovalFlow
     {
         return ApprovalFlow::query()->create([
+            'village_id' => Village::query()->value('id') ?? Village::factory()->create()->id,
             'category_id' => $category->id,
             'name' => $name,
             'is_active' => $isActive,

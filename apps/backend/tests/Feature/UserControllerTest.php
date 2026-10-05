@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -52,26 +53,22 @@ class UserControllerTest extends TestCase
             ->assertJsonPath('message', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
     }
 
-    public function test_toggle_status_cannot_deactivate_the_last_active_petugas_desa(): void
+    public function test_toggle_status_allows_deactivating_another_petugas_while_actor_remains_active(): void
     {
-        $actor = User::factory()->create([
-            'role' => 'petugas_desa',
-            'is_active' => false,
-        ]);
+        $village = Village::factory()->create();
+        $actor = User::factory()->create(['role' => 'petugas_desa', 'is_active' => true, 'village_id' => $village->id]);
         $lastActivePetugas = User::factory()->create([
             'role' => 'petugas_desa',
             'is_active' => true,
+            'village_id' => $village->id,
         ]);
 
         $this->actingAs($actor)
             ->patchJson("/api/users/{$lastActivePetugas->id}/toggle-status")
-            ->assertForbidden()
-            ->assertJsonPath(
-                'message',
-                'Tidak dapat menonaktifkan satu-satunya akun Petugas Desa yang masih aktif.',
-            );
+            ->assertOk()
+            ->assertJsonPath('data.is_active', false);
 
-        $this->assertTrue($lastActivePetugas->fresh()->is_active);
+        $this->assertTrue($actor->fresh()->is_active);
     }
 
     public function test_petugas_can_reset_non_petugas_password_and_user_must_change_it(): void

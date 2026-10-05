@@ -21,13 +21,13 @@ class RwController extends Controller
         $this->authorize('viewAny', Rw::class);
         $hamletId = $request->filled('hamlet_id') ? (int) $request->query('hamlet_id') : null;
 
-        return (new RwCollection($this->rwService->getAllOrderedByNumber($hamletId)))->response();
+        return (new RwCollection($this->rwService->getAllOrderedByNumber($request->user(), $hamletId)))->response();
     }
 
     public function store(StoreRwRequest $request)
     {
         $this->authorize('create', Rw::class);
-        $rw = $this->rwService->create($request->validated());
+        $rw = $this->rwService->create($request->validated(), $request->user());
 
         return (new RwResource($rw))->response()->setStatusCode(201);
     }
@@ -35,7 +35,7 @@ class RwController extends Controller
     public function update(UpdateRwRequest $request, Rw $rw)
     {
         $this->authorize('update', $rw);
-        $rw = $this->rwService->update($rw, $request->validated());
+        $rw = $this->rwService->update($rw, $request->validated(), $request->user());
 
         return (new RwResource($rw))->response();
     }
@@ -43,7 +43,7 @@ class RwController extends Controller
     public function destroy(DestroyRwRequest $request, Rw $rw)
     {
         $this->authorize('delete', $rw);
-        $this->rwService->delete($rw);
+        $this->rwService->delete($rw, $request->user());
 
         return response()->json(['message' => 'RW berhasil dihapus.']);
     }

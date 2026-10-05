@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\LetterFlowLogReason;
 use App\Models\ApprovalFlow;
 use App\Models\Citizen;
 use App\Models\FlowStep;
@@ -134,8 +135,18 @@ class EndToEndApprovalFlowTest extends TestCase
         $this->assertDatabaseHas('letter_status_logs', [
             'letter_id' => $letter->id,
             'actor_id' => $applicant['user']->id,
-            'reason' => 'Tahap RT dilewati: pemohon adalah pejabat pada tahap tersebut',
+            'reason' => LetterFlowLogReason::RtStageSkippedForOfficialApplicant->value,
         ]);
+
+        $this->actingAs($kades['user'])
+            ->getJson('/api/kades/letters')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $letter->id]);
+
+        $this->actingAs($kades['user'])
+            ->getJson("/api/kades/letters/{$letter->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $letter->id);
 
         $this->actingAs($kades['user'])
             ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
@@ -191,14 +202,14 @@ class EndToEndApprovalFlowTest extends TestCase
         );
     }
 
-    public function test_sekdes_final_approval_is_recorded_and_pdf_keeps_kades_signature(): void
+    public function test_sekdes_can_approve_kepala_desa_final_step_and_pdf_keeps_kades_signature(): void
     {
         $village = Village::factory()->create();
         $applicant = $this->makeCitizenAccount($village, null, 'warga');
         $kades = $this->makeOfficialUser('kepala_desa', $village);
         $sekdes = $this->makeOfficialUser('sekdes', $village);
         $flow = $this->makeFlow([
-            ['position' => 'sekdes', 'final' => true],
+            ['position' => 'kepala_desa', 'final' => true],
         ]);
         $letterType = LetterType::factory()->create([
             'flow_id' => $flow->id,

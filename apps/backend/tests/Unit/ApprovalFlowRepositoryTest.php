@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\ApprovalFlow;
 use App\Models\FlowStep;
 use App\Models\LetterCategory;
+use App\Models\Village;
 use App\Repositories\ApprovalFlowRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -75,7 +76,7 @@ class ApprovalFlowRepositoryTest extends TestCase
         // tidak berurutan untuk membuktikan hasil tetap di-order.
         FlowStep::query()->create([
             'flow_id' => $flow->id, 'step_order' => 3,
-            'approver_position' => 'sekdes', 'is_final' => true,
+            'approver_position' => 'kepala_desa', 'is_final' => true,
         ]);
         FlowStep::query()->create([
             'flow_id' => $flow->id, 'step_order' => 1,
@@ -94,7 +95,7 @@ class ApprovalFlowRepositoryTest extends TestCase
         $this->assertSame([1, 2, 3], $found->steps->pluck('step_order')->all());
         $this->assertSame('rt', $found->steps->first()->approver_position);
         $this->assertTrue($found->steps->last()->is_final);
-        $this->assertSame('sekdes', $found->steps->last()->approver_position);
+        $this->assertSame('kepala_desa', $found->steps->last()->approver_position);
     }
 
     #[Test]
@@ -173,8 +174,10 @@ class ApprovalFlowRepositoryTest extends TestCase
     public function create_persists_new_flow_with_given_attributes(): void
     {
         $category = $this->makeCategory('approval_normal');
+        $villageId = Village::factory()->create()->id;
 
         $flow = $this->repository->create([
+            'village_id' => $villageId,
             'category_id' => $category->id,
             'name' => 'Flow Baru Dari Repository',
             'description' => 'Dibuat via repository',
@@ -185,6 +188,7 @@ class ApprovalFlowRepositoryTest extends TestCase
         $this->assertSame('Flow Baru Dari Repository', $flow->name);
         $this->assertDatabaseHas('approval_flows', [
             'id' => $flow->id,
+            'village_id' => $villageId,
             'category_id' => $category->id,
             'name' => 'Flow Baru Dari Repository',
         ]);
@@ -226,6 +230,7 @@ class ApprovalFlowRepositoryTest extends TestCase
     private function makeFlow(LetterCategory $category, string $name, bool $isActive = true): ApprovalFlow
     {
         return ApprovalFlow::query()->create([
+            'village_id' => Village::query()->value('id') ?? Village::factory()->create()->id,
             'category_id' => $category->id,
             'name' => $name,
             'description' => null,

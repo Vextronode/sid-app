@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('letter_types', function (Blueprint $table) {
             $table->id();
-            $table->string('code', 20)->unique();
+            $table->foreignUuid('village_id')
+                ->constrained('villages')
+                ->cascadeOnDelete();
+            $table->string('code', 20);
             $table->string('name');
             $table->text('description')->nullable();
             $table->text('template')->nullable();
@@ -25,6 +28,8 @@ return new class extends Migration
             $table->unsignedInteger('validity_days')->nullable();
             $table->boolean('is_active');
             $table->timestamps();
+
+            $table->unique(['village_id', 'code']);
         });
     }
 

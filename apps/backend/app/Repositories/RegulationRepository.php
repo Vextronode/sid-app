@@ -20,6 +20,11 @@ class RegulationRepository
         return VillageRegulation::query()->findOrFail($id);
     }
 
+    public function findByIdForVillageOrFail(int $id, string $villageId): VillageRegulation
+    {
+        return VillageRegulation::query()->where('village_id', $villageId)->findOrFail($id);
+    }
+
     public function create(array $data): VillageRegulation
     {
         return VillageRegulation::create($data);

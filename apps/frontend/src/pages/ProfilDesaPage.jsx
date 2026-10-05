@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react'
 import { Users, Building2, Home, Eye, ClipboardList } from 'lucide-react'
 
 import api from '../lib/api' // Integrasi API Axios
+import { publicVillageParams } from '../shared/lib/api/publicVillageParams'
 
 // Teks untuk data yang belum dikirim backend
 const NA = 'Belum tersedia'
@@ -87,7 +88,7 @@ export function ProfilDesaPage() {
         setLoading(true)
         setError(null)
 
-        const res = await api.get('/api/public/village-profile')
+        const res = await api.get('/api/public/village-profile', { params: publicVillageParams() })
 
         if (active) setData(mapProfile(res.data?.data))
       } catch (err) {

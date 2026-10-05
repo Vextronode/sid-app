@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\Citizen;
 use App\Models\Letter;
+use App\Models\LetterApproval;
 use App\Models\Official;
 use App\Models\Rt;
 use App\Models\Rw;
@@ -52,6 +53,7 @@ class RwFyiServiceTest extends TestCase
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
 
         $letter = Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'pending']);
+        $this->markRtApproved($letter);
 
         $official = Official::factory()->create(['position' => 'rw', 'rw_id' => $rw->id]);
         $user = User::factory()->create(['role' => 'rw']);
@@ -94,6 +96,7 @@ class RwFyiServiceTest extends TestCase
                 'status' => $status,
             ])
         );
+        $letters->each(fn (Letter $letter) => $this->markRtApproved($letter));
 
         $official = Official::factory()->create(['position' => 'rw', 'rw_id' => $rw->id]);
         $user = User::factory()->create(['role' => 'rw']);
@@ -134,6 +137,7 @@ class RwFyiServiceTest extends TestCase
         $rt = Rt::factory()->create(['rw_id' => $rw->id]);
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
         $letter = Letter::factory()->create(['citizen_id' => $citizen->id, 'status' => 'pending']);
+        $this->markRtApproved($letter);
 
         $official = Official::factory()->create(['position' => 'rw', 'rw_id' => $rw->id]);
         $user = User::factory()->create(['role' => 'rw']);
@@ -173,5 +177,16 @@ class RwFyiServiceTest extends TestCase
         $this->expectException(ModelNotFoundException::class);
 
         $this->service->getFyiLetterDetail($letter, $user);
+    }
+
+    private function markRtApproved(Letter $letter): void
+    {
+        $approver = User::factory()->create(['village_id' => $letter->village_id]);
+        LetterApproval::query()->create([
+            'letter_id' => $letter->id,
+            'approved_by' => $approver->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
     }
 }

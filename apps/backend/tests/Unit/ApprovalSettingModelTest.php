@@ -70,12 +70,11 @@ class ApprovalSettingModelTest extends TestCase
     }
 
     #[Test]
-    public function approver_cases_are_limited_to_rt_kepala_desa_and_sekdes(): void
+    public function approver_cases_are_limited_to_active_flow_steps(): void
     {
         $this->assertSame([
             ApprovalLevel::RT,
             ApprovalLevel::KEPALA_DESA,
-            ApprovalLevel::SEKDES,
         ], ApprovalLevel::approverCases());
     }
 

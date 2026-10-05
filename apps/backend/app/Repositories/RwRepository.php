@@ -12,9 +12,9 @@ class RwRepository
         //
     }
 
-    public function allOrderedByNumber(?int $hamletId = null): Collection
+    public function allOrderedByNumber(string $villageId, ?int $hamletId = null): Collection
     {
-        $query = Rw::query();
+        $query = Rw::query()->where('village_id', $villageId);
 
         if ($hamletId !== null) {
             $query->where('hamlet_id', $hamletId);
@@ -28,9 +28,9 @@ class RwRepository
         return Rw::create($data);
     }
 
-    public function findOrFail(int $id): Rw
+    public function findOrFail(int $id, ?string $villageId = null): Rw
     {
-        return Rw::query()->with('hamlet')->findOrFail($id);
+        return Rw::query()->with('hamlet')->when($villageId, fn ($query) => $query->where('village_id', $villageId))->findOrFail($id);
     }
 
     public function update(Rw $rw, array $data): Rw

@@ -21,19 +21,16 @@ class KadesApprovalService
         protected OfficialService $officialService,
         protected LetterFlowService $letterFlowService,
         protected LetterNumberGenerator $letterNumberGenerator,
+        protected ApprovalSettingService $approvalSettingService,
     ) {}
 
-    /**
-     * Daftar surat yang sedang menunggu keputusan Kades/Sekdes di
-     * village milik user — dilihat oleh SIAPAPUN dari kedua posisi
-     * (kepala_desa atau sekdes), sesuai aturan saling-menggantikan.
-     */
+    /** All letters in the official's village that have been approved by RT. */
     public function getPendingLetters(User $user): Collection
     {
         $official = $this->authorizeOfficial($user);
 
         return $this->letterRepository
-            ->queryPendingAtFlowStepPositions(self::AUTHORIZED_POSITIONS, $official->village_id, $user->id)
+            ->queryRtApprovedInVillage($official->village_id)
             ->latest()
             ->get();
     }
@@ -52,7 +49,7 @@ class KadesApprovalService
     }
 
     /**
-     * Memutuskan (approve/reject) surat pada step 'kepala_desa'.
+     * Memutuskan (approve/reject) surat pada tahap Kepala Desa.
      * Boleh dipanggil oleh official kepala_desa ATAU sekdes di village
      * yang sama — siapapun yang lebih dulu, menang; percobaan kedua
      * (dari posisi manapun) akan ditolak karena step sudah tidak lagi
@@ -72,8 +69,8 @@ class KadesApprovalService
 
         $step = $this->letterRepository->findCurrentFlowStep($letter);
 
-        if (! $step || ! in_array($step->approver_position, self::AUTHORIZED_POSITIONS, true)) {
-            abort(409, 'Surat ini tidak sedang berada di tahap Kepala Desa/Sekdes.');
+        if (! $step || $step->approver_position !== 'kepala_desa') {
+            abort(409, 'Surat ini tidak sedang berada di tahap Kepala Desa.');
         }
 
         DB::transaction(function () use ($letter, $user, $official, $data, $step) {
@@ -103,7 +100,7 @@ class KadesApprovalService
 
             $approvalLevel = $official->position === 'sekdes' ? 'sekdes' : 'kepala_desa';
 
-            $this->letterRepository->createApprovalForLetter($locked, [
+            $this->letterRepository->recordDecisionForLetter($locked, [
                 'approved_by' => $user->id,
                 'approval_level' => $approvalLevel,
                 'flow_step_id' => $step->id,
@@ -127,6 +124,7 @@ class KadesApprovalService
                         'processed_at' => now(),
                     ]);
                     $this->letterFlowService->logSkipped($locked, $next['skipped'], $user);
+                    $this->createPendingApproval($locked, $next['step']);
                     $this->notifyNextApprovers($locked, $next['step']);
                 }
             } else {
@@ -153,6 +151,19 @@ class KadesApprovalService
                 $this->notifyFinalApproval($locked);
             }
         });
+    }
+
+    private function createPendingApproval(Letter $letter, FlowStep $step): void
+    {
+        $this->letterRepository->createApprovalForLetter($letter, [
+            'approved_by' => null,
+            'approval_level' => $step->approver_position,
+            'flow_step_id' => $step->id,
+            'deadline_at' => $this->approvalSettingService->resolveDeadline(
+                $step->approver_position,
+                $letter->village_id,
+            ),
+        ]);
     }
 
     private function authorizeOfficial(User $user): Official

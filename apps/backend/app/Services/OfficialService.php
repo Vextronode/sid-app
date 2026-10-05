@@ -5,8 +5,11 @@ namespace App\Services;
 use App\Enums\OfficialPosition;
 use App\Models\Citizen;
 use App\Models\FlowStep;
+use App\Models\Hamlet;
 use App\Models\Letter;
 use App\Models\Official;
+use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\User;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
@@ -116,13 +119,8 @@ class OfficialService
     }
 
     /**
-     * EV5-4-S5. Posisi Official mana saja yang relevan untuk satu
-     * FlowStep, TERMASUK perluasan bisnis "Kepala Desa dan Sekdes
-     * saling menggantikan" — bukan sekadar FlowStep::resolvablePositions()
-     * apa adanya. Dipisah jadi method sendiri (bukan inline di
-     * resolveOfficialsForStep) supaya titik perluasan ini gampang
-     * ditemukan bila suatu saat ada posisi lain yang perlu perlakuan
-     * serupa.
+     * Tahap kepala_desa mencakup pejabat Kepala Desa dan Sekdes, yang
+     * dapat saling menggantikan. Dipisah agar aturan resolusi mudah ditemukan.
      *
      * @return array<int, string>
      */
@@ -161,18 +159,24 @@ class OfficialService
             ->values();
     }
 
-    public function getAllWithRelations(): Collection
+    public function getAllWithRelations(User $user): Collection
     {
-        return $this->officialRepository->allWithRelations();
+        return $this->officialRepository->allWithRelations($this->villageId($user));
     }
 
-    public function getForShow(int $id): Official
+    public function getForShow(int $id, User $user): Official
     {
-        return $this->officialRepository->findWithRelationsOrFail($id);
+        return $this->officialRepository->findWithRelationsOrFail($id, $this->villageId($user));
     }
 
-    public function create(array $data): Official
+    public function create(array $data, User $user): Official
     {
+        $villageId = $this->villageId($user);
+        if (isset($data['village_id']) && $data['village_id'] !== $villageId) {
+            abort(422, 'Pejabat harus berasal dari desa Anda.');
+        }
+        $data['village_id'] = $villageId;
+        $this->assertRelatedRecordsInVillage($data, $villageId);
         $position = OfficialPosition::tryFrom($data['position'] ?? '');
 
         if ($position?->hasAccount() && ! empty($data['user_id'])) {
@@ -184,8 +188,14 @@ class OfficialService
         return $this->officialRepository->create($data);
     }
 
-    public function update(Official $official, array $data): Official
+    public function update(Official $official, array $data, User $user): Official
     {
+        $villageId = $this->villageId($user);
+        if ($official->village_id !== $villageId || (isset($data['village_id']) && $data['village_id'] !== $villageId)) {
+            abort(404, 'Data pejabat tidak ditemukan.');
+        }
+        $data['village_id'] = $villageId;
+        $this->assertRelatedRecordsInVillage(array_merge($official->only(['citizen_id', 'rt_id', 'rw_id', 'hamlet_id']), $data), $villageId);
         if (
             $official->user_id !== null &&
             array_intersect(['position', 'user_id', 'citizen_id', 'is_active', 'ended_at'], array_keys($data)) !== []
@@ -205,6 +215,34 @@ class OfficialService
         $this->assertPositionAvailable($merged, excludeId: $official->id);
 
         return $this->officialRepository->update($official, $data);
+    }
+
+    private function villageId(User $user): string
+    {
+        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) {
+            abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        }
+
+        return $user->village_id;
+    }
+
+    private function assertRelatedRecordsInVillage(array $data, string $villageId): void
+    {
+        if (isset($data['citizen_id']) && ! Citizen::query()->whereKey($data['citizen_id'])->where('village_id', $villageId)->exists()) {
+            abort(422, 'Data warga pejabat harus berasal dari desa Anda.');
+        }
+        if (isset($data['user_id']) && ! User::query()->whereKey($data['user_id'])->where('village_id', $villageId)->exists()) {
+            abort(422, 'Akun pejabat harus berasal dari desa Anda.');
+        }
+        foreach ([
+            'rt_id' => Rt::class,
+            'rw_id' => Rw::class,
+            'hamlet_id' => Hamlet::class,
+        ] as $field => $model) {
+            if (isset($data[$field]) && ! $model::query()->whereKey($data[$field])->where('village_id', $villageId)->exists()) {
+                abort(422, 'Wilayah jabatan harus berasal dari desa Anda.');
+            }
+        }
     }
 
     public function delete(Official $official): bool

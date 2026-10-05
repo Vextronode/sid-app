@@ -11,6 +11,7 @@ class LetterType extends Model
     use HasFactory;
 
     protected $fillable = [
+        'village_id',
         'code',
         'name',
         'description',

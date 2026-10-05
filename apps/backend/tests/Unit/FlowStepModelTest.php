@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\ApprovalFlow;
 use App\Models\FlowStep;
 use App\Models\LetterCategory;
+use App\Models\Village;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -206,6 +207,7 @@ class FlowStepModelTest extends TestCase
         );
 
         return ApprovalFlow::query()->create([
+            'village_id' => Village::query()->value('id') ?? Village::factory()->create()->id,
             'category_id' => $category->id,
             'name' => $name,
             'is_active' => true,

@@ -34,14 +34,14 @@ class RegulationController extends Controller
 
     public function update(UpdateRegulationRequest $request, int $id): JsonResponse
     {
-        $regulation = $this->service->update($id, $request->validated());
+        $regulation = $this->service->update($id, $request->validated(), $request->user());
 
         return (new RegulationResource($regulation))->response();
     }
 
     public function destroy(DestroyRegulationRequest $request, int $id): JsonResponse
     {
-        $this->service->delete($id);
+        $this->service->delete($id, $request->user());
 
         return response()->json(['message' => 'Peraturan desa berhasil dihapus']);
     }

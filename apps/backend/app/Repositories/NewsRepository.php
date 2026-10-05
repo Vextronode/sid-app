@@ -41,6 +41,11 @@ class NewsRepository
         return News::query()->with('author')->findOrFail($id);
     }
 
+    public function findByIdForVillageOrFail(int $id, string $villageId): News
+    {
+        return News::query()->with('author')->where('village_id', $villageId)->findOrFail($id);
+    }
+
     public function slugExists(string $slug): bool
     {
         return News::query()->where('slug', $slug)->exists();

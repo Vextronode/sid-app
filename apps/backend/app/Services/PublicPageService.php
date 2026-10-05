@@ -33,9 +33,9 @@ class PublicPageService
     /**
      * @return array{village: Village, latest_news: Collection, public_stats: array{total_letter_types: int}}
      */
-    public function home(): array
+    public function home(?string $villageCode = null): array
     {
-        $village = $this->requireVillage();
+        $village = $this->requireVillage($villageCode);
 
         $latestNews = $this->newsRepository
             ->allForVillage($village->id, 'published')
@@ -46,26 +46,27 @@ class PublicPageService
             'village' => $village,
             'latest_news' => $latestNews,
             'public_stats' => [
-                'total_letter_types' => $this->letterTypeRepository->allActiveWithTemplate()->count(),
+                'total_letter_types' => $this->letterTypeRepository->allActiveWithTemplate($village->id)->count(),
             ],
         ];
     }
 
-    public function villageProfile(): Village
+    public function villageProfile(?string $villageCode = null): Village
     {
-        return $this->requireVillage();
+        return $this->requireVillage($villageCode);
     }
 
-    public function paginatedNews(int $perPage = 10): LengthAwarePaginator
+    public function paginatedNews(?string $villageCode = null, int $perPage = 10): LengthAwarePaginator
     {
-        $village = $this->requireVillage();
+        $village = $this->requireVillage($villageCode);
 
         return $this->newsRepository->paginatePublishedForVillage($village->id, $perPage);
     }
 
-    public function letterTypeList(): Collection
+    public function letterTypeList(?string $villageCode = null): Collection
     {
-        $types = $this->letterTypeRepository->allActiveWithTemplate();
+        $village = $this->requireVillage($villageCode);
+        $types = $this->letterTypeRepository->allActiveWithTemplate($village->id);
 
         if ($types->isEmpty()) {
             throw new HttpException(404, 'Belum ada tipe surat aktif yang tersedia.');
@@ -74,9 +75,9 @@ class PublicPageService
         return $types;
     }
 
-    public function regulationList(): Collection
+    public function regulationList(?string $villageCode = null): Collection
     {
-        $village = $this->requireVillage();
+        $village = $this->requireVillage($villageCode);
         $regulations = $this->regulationRepository->allForVillage($village->id);
 
         if ($regulations->isEmpty()) {
@@ -86,9 +87,9 @@ class PublicPageService
         return $regulations;
     }
 
-    public function contactUs(): Collection
+    public function contactUs(?string $villageCode = null): Collection
     {
-        $village = $this->requireVillage();
+        $village = $this->requireVillage($villageCode);
 
         $officials = $this->officialRepository
             ->allActiveByPositionsAndVillage(['kasi_pelayanan', 'kaur_tu_umum'], $village->id)
@@ -101,9 +102,16 @@ class PublicPageService
         return $officials;
     }
 
-    private function requireVillage(): Village
+    private function requireVillage(?string $villageCode = null): Village
     {
-        $village = $this->villageRepository->findFirst();
+        if ($villageCode !== null) {
+            $village = $this->villageRepository->findByCode($villageCode);
+        } else {
+            if ($this->villageRepository->count() > 1) {
+                throw new HttpException(422, 'Parameter village_code wajib diisi pada instalasi multi-desa.');
+            }
+            $village = $this->villageRepository->findFirst();
+        }
 
         if (! $village) {
             throw new HttpException(404, 'Profil desa belum tersedia.');

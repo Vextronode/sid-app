@@ -39,7 +39,10 @@ class RwFyiService
 
         $letter = $this->letterRepository->loadDetailForRw($letter);
 
-        if ($letter->citizen?->rt?->rw_id !== $official->rw_id) {
+        if (
+            $letter->citizen?->rt?->rw_id !== $official->rw_id
+            || ! $this->letterRepository->wasApprovedByRt($letter)
+        ) {
             abort(403, 'Anda tidak berwenang melihat surat ini.');
         }
 

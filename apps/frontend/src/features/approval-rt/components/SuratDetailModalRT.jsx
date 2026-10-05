@@ -13,7 +13,29 @@ export default function SuratDetailModalRT({
   const { user } = useAuth()
   const { surat, notFound } = useSuratDetail(suratId)
 
-  const approverPosition = !readOnly && user?.role === 'rt' ? 'rt' : null
+  // ==========================================
+  // CEK ID
+  // ==========================================
+
+  if (suratId === null) {
+    return null
+  }
+
+  // ==========================================
+  // APPROVER POSITION
+  // ==========================================
+
+  const isApplicantOfficial =
+    surat &&
+    (String(surat.submitted_by) === String(user?.id) ||
+      (surat.citizen_id && String(surat.citizen_id) === String(user?.citizen_id)))
+  const approverPosition =
+    !readOnly &&
+    !isApplicantOfficial &&
+    user?.role === 'rt' &&
+    surat?.current_step?.approver_position === 'rt'
+      ? 'rt'
+      : null
 
   return (
     <SuratDetailModal

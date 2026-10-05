@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LetterStatus;
 use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\Official;
@@ -19,16 +20,16 @@ class RtApprovalService
         protected LetterRepository $letterRepository,
         protected OfficialRepository $officialRepository,
         protected LetterFlowService $letterFlowService,
+        protected ApprovalSettingService $approvalSettingService,
     ) {}
 
+    /** All letters for this RT's territory, including its processed history. */
     public function getPendingLetters(User $user): Collection
     {
         $official = $this->authorizeOfficial($user);
 
         return $this->letterRepository
-            ->queryPendingAtFlowStepPositions(['rt'], $official->village_id)
-            ->whereIn('status', ['pending', 'in_progress'])
-            ->whereHas('citizen', fn ($q) => $q->where('rt_id', $official->rt_id))
+            ->queryByCitizenRt($official->rt_id)
             ->latest()
             ->get();
     }
@@ -70,13 +71,20 @@ class RtApprovalService
             // pola sama seperti KadesApprovalService::decision().
             $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
 
+            if (! in_array($locked->status->value, [
+                LetterStatus::Pending->value,
+                LetterStatus::InProgress->value,
+            ], true)) {
+                abort(409, 'Surat sudah diproses sebelumnya.');
+            }
+
             $currentStep = $this->letterRepository->findCurrentFlowStep($locked);
 
             if (! $currentStep || $currentStep->id !== $step->id) {
                 abort(409, 'Surat sudah diproses sebelumnya.');
             }
 
-            $this->letterRepository->createApprovalForLetter($locked, [
+            $this->letterRepository->recordDecisionForLetter($locked, [
                 'approved_by' => $user->id,
                 'approval_level' => 'rt',
                 'flow_step_id' => $step->id,
@@ -96,6 +104,7 @@ class RtApprovalService
                     'processed_at' => now(),
                 ]);
                 $this->letterFlowService->logSkipped($locked, $next['skipped'], $user);
+                $this->createPendingApproval($locked, $next['step']);
             } else {
                 $newStatus = 'rejected';
 
@@ -115,12 +124,26 @@ class RtApprovalService
 
             if ($data['status'] === 'approved') {
                 $this->notifyRwFyi($locked);
+                $this->notifyKadusFyi($locked);
                 $this->notifyNextApprovers($locked, $next['step']);
                 $this->notifyApplicant($locked, 'approved');
             } else {
                 $this->notifyApplicant($locked, 'rejected');
             }
         });
+    }
+
+    private function createPendingApproval(Letter $letter, FlowStep $step): void
+    {
+        $this->letterRepository->createApprovalForLetter($letter, [
+            'approved_by' => null,
+            'approval_level' => $step->approver_position,
+            'flow_step_id' => $step->id,
+            'deadline_at' => $this->approvalSettingService->resolveDeadline(
+                $step->approver_position,
+                $letter->village_id,
+            ),
+        ]);
     }
 
     private function authorizeOfficial(User $user): Official
@@ -161,6 +184,30 @@ class RtApprovalService
                 'Surat Baru (FYI)',
                 'Surat warga di wilayah Anda telah disetujui RT dan diteruskan ke tahap berikutnya.',
                 'rt_approved_rw_fyi',
+            ));
+        }
+    }
+
+    /**
+     * Side-effect FYI non-blocking: setelah RT menyetujui, notifikasi hanya
+     * dikirim ke Kadus aktif pada dusun citizen pemohon. Kadus bukan approver.
+     */
+    private function notifyKadusFyi(Letter $letter): void
+    {
+        $hamletId = $this->letterRepository->findCitizenHamletId($letter);
+
+        if (! $hamletId) {
+            return;
+        }
+
+        $kadusOfficials = $this->officialRepository->allActiveKadusByHamletId($hamletId);
+
+        foreach ($kadusOfficials as $kadusOfficial) {
+            $kadusOfficial->user?->notify(new LetterStatusNotification(
+                $letter,
+                'Surat Baru (FYI)',
+                'Surat warga di dusun Anda telah disetujui RT dan diteruskan ke tahap berikutnya.',
+                'rt_approved_kadus_fyi',
             ));
         }
     }

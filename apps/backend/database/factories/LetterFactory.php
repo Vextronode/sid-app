@@ -22,7 +22,7 @@ class LetterFactory extends Factory
     public function definition(): array
     {
         return [
-            'village_id' => Village::factory(),
+            'village_id' => fn () => Village::query()->value('id') ?? Village::factory()->create()->id,
             'letter_type_id' => LetterType::factory(),
             'submitted_by' => User::factory(),
             'on_behalf_of' => null,

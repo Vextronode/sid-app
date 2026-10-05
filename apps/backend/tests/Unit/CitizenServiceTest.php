@@ -23,9 +23,10 @@ class CitizenServiceTest extends TestCase
 
     public function test_get_all_with_wilayah_returns_all_citizens(): void
     {
-        Citizen::factory()->count(2)->create();
+        $citizens = Citizen::factory()->count(2)->create();
+        $user = $this->makePetugasDesaActor($citizens->first()->village_id);
 
-        $result = $this->service->getAllWithWilayah();
+        $result = $this->service->getAllWithWilayah($user);
 
         $this->assertCount(2, $result);
     }
@@ -33,8 +34,9 @@ class CitizenServiceTest extends TestCase
     public function test_delete_removes_citizen(): void
     {
         $citizen = Citizen::factory()->create();
+        $user = $this->makePetugasDesaActor($citizen->village_id);
 
-        $result = $this->service->delete($citizen);
+        $result = $this->service->delete($citizen, $user);
 
         $this->assertTrue($result);
         $this->assertDatabaseMissing('citizens', ['id' => $citizen->id]);
@@ -42,9 +44,10 @@ class CitizenServiceTest extends TestCase
 
     public function test_get_distinct_wilayah_returns_collection(): void
     {
-        Citizen::factory()->create();
+        $citizen = Citizen::factory()->create();
+        $user = $this->makePetugasDesaActor($citizen->village_id);
 
-        $result = $this->service->getDistinctWilayah();
+        $result = $this->service->getDistinctWilayah($user);
 
         $this->assertCount(1, $result);
     }
