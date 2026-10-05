@@ -12,7 +12,6 @@ class ReplaceApprovalFlowStepsRequest extends FormRequest
     private const VALID_POSITIONS = [
         'rt',
         'kepala_desa',
-        'sekdes',
     ];
 
     /**
@@ -41,7 +40,7 @@ class ReplaceApprovalFlowStepsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'steps.*.approver_position.in' => 'RW, Kadus, Kasi, dan Kaur tidak dapat menjadi approver pada alur persetujuan.',
+            'steps.*.approver_position.in' => 'Posisi approver hanya RT atau Kepala Desa; Sekdes diproses melalui tahap Kepala Desa.',
         ];
     }
 
@@ -80,8 +79,8 @@ class ReplaceApprovalFlowStepsRequest extends FormRequest
                 $validator->errors()->add('steps', 'Step final harus memiliki step_order terbesar');
             }
 
-            if (! in_array($finalStep['approver_position'], ['kepala_desa', 'sekdes'], true)) {
-                $validator->errors()->add('steps', 'Approver step final harus Kepala Desa atau Sekdes');
+            if ($finalStep['approver_position'] !== 'kepala_desa') {
+                $validator->errors()->add('steps', 'Approver step final harus Kepala Desa');
             }
         });
     }

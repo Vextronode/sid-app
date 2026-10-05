@@ -18,7 +18,6 @@ enum ApprovalLevel: string
         return [
             self::RT,
             self::KEPALA_DESA,
-            self::SEKDES,
         ];
     }
 }

@@ -28,10 +28,7 @@ class KasiLetterServiceTest extends TestCase
     public function test_completed_letters_only_returns_approved_and_assigned_to_user_role(): void
     {
         $village = Village::factory()->create();
-        $user = User::factory()->create([
-            'role' => 'kasi_pelayanan',
-            'village_id' => $village->id,
-        ]);
+        $user = $this->testOfficialUser('kasi_pelayanan', 'kasi_pelayanan', $village->id);
         $expected = $this->makeLetter($village, 'approved', 'kasi_pelayanan');
         $this->makeLetter($village, 'approved', 'kaur_tu_umum');
         $this->makeLetter($village, 'pending', 'kasi_pelayanan');
@@ -49,10 +46,7 @@ class KasiLetterServiceTest extends TestCase
         $letter = $this->makeLetter($village, 'approved', null);
 
         foreach (['kasi_pelayanan', 'kaur_tu_umum'] as $role) {
-            $user = User::factory()->create([
-                'role' => $role,
-                'village_id' => $village->id,
-            ]);
+            $user = $this->testOfficialUser($role, $role, $village->id);
 
             $this->assertSame(
                 [$letter->id],
@@ -65,10 +59,7 @@ class KasiLetterServiceTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetter($village, 'approved', 'kasi_pelayanan');
-        $user = User::factory()->create([
-            'role' => 'kasi_pelayanan',
-            'village_id' => $village->id,
-        ]);
+        $user = $this->testOfficialUser('kasi_pelayanan', 'kasi_pelayanan', $village->id);
 
         $this->assertSame($letter->id, $this->service->getLetterDetail($letter, $user)->id);
     }
@@ -90,10 +81,7 @@ class KasiLetterServiceTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetter($village, 'approved', 'kaur_tu_umum');
-        $kasi = User::factory()->create([
-            'role' => 'kasi_pelayanan',
-            'village_id' => $village->id,
-        ]);
+        $kasi = $this->testOfficialUser('kasi_pelayanan', 'kasi_pelayanan', $village->id);
 
         try {
             $this->service->getLetterDetail($letter, $kasi);
@@ -102,10 +90,8 @@ class KasiLetterServiceTest extends TestCase
             $this->assertSame(403, $exception->getStatusCode());
         }
 
-        $otherVillageUser = User::factory()->create([
-            'role' => 'kaur_tu_umum',
-            'village_id' => Village::factory()->create()->id,
-        ]);
+        $otherVillage = Village::factory()->create();
+        $otherVillageUser = $this->testOfficialUser('kaur_tu_umum', 'kaur_tu_umum', $otherVillage->id);
         $letter->letterType->update(['assigned_role' => null]);
 
         $this->expectException(HttpException::class);

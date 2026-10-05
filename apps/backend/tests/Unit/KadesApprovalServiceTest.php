@@ -11,11 +11,13 @@ use App\Models\Official;
 use App\Models\User;
 use App\Models\Village;
 use App\Repositories\ApprovalFlowRepository;
+use App\Repositories\ApprovalSettingRepository;
 use App\Repositories\LetterNumberCounterRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
+use App\Services\ApprovalSettingService;
 use App\Services\KadesApprovalService;
 use App\Services\LetterFlowService;
 use App\Services\LetterNumberGenerator;
@@ -49,6 +51,7 @@ class KadesApprovalServiceTest extends TestCase
             $officialService,
             new LetterFlowService($officialService, new ApprovalFlowRepository, new LetterStatusLogRepository),
             new LetterNumberGenerator(new LetterNumberCounterRepository),
+            new ApprovalSettingService(new ApprovalSettingRepository),
         );
     }
 
@@ -60,7 +63,7 @@ class KadesApprovalServiceTest extends TestCase
     {
         $citizen ??= Citizen::factory()->create(['village_id' => $village->id]);
 
-        $flow = ApprovalFlow::factory()->create();
+        $flow = ApprovalFlow::factory()->create(['village_id' => $village->id]);
         FlowStep::factory()->create([
             'flow_id' => $flow->id,
             'step_order' => 1,
@@ -70,7 +73,7 @@ class KadesApprovalServiceTest extends TestCase
         FlowStep::factory()->create([
             'flow_id' => $flow->id,
             'step_order' => 2,
-            'approver_position' => 'sekdes',
+            'approver_position' => 'kepala_desa',
             'is_final' => true,
         ]);
 
@@ -97,7 +100,7 @@ class KadesApprovalServiceTest extends TestCase
     {
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
 
-        $flow = ApprovalFlow::factory()->create();
+        $flow = ApprovalFlow::factory()->create(['village_id' => $village->id]);
         FlowStep::factory()->create([
             'flow_id' => $flow->id,
             'step_order' => 1,
@@ -120,10 +123,24 @@ class KadesApprovalServiceTest extends TestCase
             'village_id' => $village->id,
             'is_active' => true,
         ]);
-        $user = User::factory()->create(['role' => $position === 'sekdes' ? 'sekretaris_desa' : 'kepala_desa']);
+        $user = User::factory()->create([
+            'role' => $position === 'sekdes' ? 'sekretaris_desa' : 'kepala_desa',
+            'village_id' => $village->id,
+        ]);
         $user->official()->save($official);
 
         return $user->fresh();
+    }
+
+    private function recordRtApproval(Letter $letter, Village $village): void
+    {
+        $user = User::factory()->create(['village_id' => $village->id]);
+        LetterApproval::query()->create([
+            'letter_id' => $letter->id,
+            'approved_by' => $user->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
     }
 
     // ==========================================
@@ -134,6 +151,7 @@ class KadesApprovalServiceTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesStep($village);
+        $this->recordRtApproval($letter, $village);
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
 
         $result = $this->service->getPendingLetters($kades);
@@ -146,6 +164,7 @@ class KadesApprovalServiceTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesStep($village);
+        $this->recordRtApproval($letter, $village);
         $sekdes = $this->makeUserWithPosition('sekdes', $village);
 
         $result = $this->service->getPendingLetters($sekdes);
@@ -154,10 +173,11 @@ class KadesApprovalServiceTest extends TestCase
         $this->assertSame($letter->id, $result->first()->id);
     }
 
-    public function test_get_pending_letters_includes_letters_at_sekdes_step(): void
+    public function test_get_pending_letters_includes_letters_at_second_kepala_desa_step(): void
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesStep($village);
+        $this->recordRtApproval($letter, $village);
         $letter->update(['current_step_order' => 2]);
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
 
@@ -167,7 +187,7 @@ class KadesApprovalServiceTest extends TestCase
         $this->assertSame($letter->id, $result->first()->id);
     }
 
-    public function test_decision_can_finalize_a_sekdes_position_step(): void
+    public function test_decision_by_sekdes_can_finalize_a_kepala_desa_step(): void
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesStep($village);
@@ -383,6 +403,33 @@ class KadesApprovalServiceTest extends TestCase
             'id' => $letter->id,
             'status' => 'in_progress',
         ]);
+    }
+
+    public function test_decision_resolves_current_approval_and_starts_next_deadline(): void
+    {
+        $village = Village::factory()->create();
+        $letter = $this->makeLetterAtKadesStep($village);
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+        $steps = FlowStep::query()->where('flow_id', $letter->flow_id)->orderBy('step_order')->get();
+        $letter->approvals()->create([
+            'approval_level' => 'kepala_desa',
+            'flow_step_id' => $steps[0]->id,
+            'deadline_at' => now()->subHour(),
+        ]);
+
+        $this->service->decision($letter, $kades, ['status' => 'approved']);
+
+        $this->assertDatabaseHas('letter_approvals', [
+            'letter_id' => $letter->id,
+            'flow_step_id' => $steps[0]->id,
+            'approved_by' => $kades->id,
+            'action' => 'approved',
+        ]);
+        $this->assertDatabaseCount('letter_approvals', 2);
+        $nextApproval = $letter->approvals()->where('flow_step_id', $steps[1]->id)->firstOrFail();
+        $this->assertNull($nextApproval->approved_by);
+        $this->assertNotNull($nextApproval->deadline_at);
+        $this->assertTrue($nextApproval->deadline_at->isFuture());
     }
 
     /**

@@ -47,11 +47,12 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function list_returns_only_active_flows_when_no_category_given(): void
     {
+        $user = $this->testPetugasActor();
         $category = $this->makeCategory('approval_normal');
-        $this->makeFlow($category, 'Flow Aktif', true);
-        $this->makeFlow($category, 'Flow Nonaktif', false);
+        $this->makeFlow($category, 'Flow Aktif', true, $user->village_id);
+        $this->makeFlow($category, 'Flow Nonaktif', false, $user->village_id);
 
-        $result = $this->service->list(null);
+        $result = $this->service->list($user, null);
 
         $this->assertCount(1, $result);
         $this->assertSame('Flow Aktif', $result->first()->name);
@@ -60,12 +61,13 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function list_filters_by_category_id_when_given(): void
     {
+        $user = $this->testPetugasActor();
         $categoryA = $this->makeCategory('approval_normal');
         $categoryB = $this->makeCategory('upload_mandiri');
-        $flowA = $this->makeFlow($categoryA, 'Flow A');
-        $this->makeFlow($categoryB, 'Flow B');
+        $flowA = $this->makeFlow($categoryA, 'Flow A', true, $user->village_id);
+        $this->makeFlow($categoryB, 'Flow B', true, $user->village_id);
 
-        $result = $this->service->list($categoryA->id);
+        $result = $this->service->list($user, $categoryA->id);
 
         $this->assertCount(1, $result);
         $this->assertSame($flowA->id, $result->first()->id);
@@ -74,10 +76,11 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function find_with_steps_or_fail_returns_flow_with_steps(): void
     {
+        $user = $this->testPetugasActor();
         $category = $this->makeCategory('approval_normal');
-        $flow = $this->makeFlow($category, 'Flow Detail');
+        $flow = $this->makeFlow($category, 'Flow Detail', true, $user->village_id);
 
-        $found = $this->service->findWithStepsOrFail($flow->id);
+        $found = $this->service->findWithStepsOrFail($flow->id, $user);
 
         $this->assertSame($flow->id, $found->id);
         $this->assertTrue($found->relationLoaded('steps'));
@@ -86,21 +89,23 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function find_with_steps_or_fail_aborts_404_for_nonexistent_flow(): void
     {
+        $user = $this->testPetugasActor();
         $this->expectException(NotFoundHttpException::class);
 
-        $this->service->findWithStepsOrFail(99999);
+        $this->service->findWithStepsOrFail(99999, $user);
     }
 
     #[Test]
     public function create_persists_new_flow_via_repository(): void
     {
+        $user = $this->testPetugasActor();
         $category = $this->makeCategory('approval_normal');
 
         $flow = $this->service->create([
             'category_id' => $category->id,
             'name' => 'Flow Baru Dari Service',
             'is_active' => true,
-        ]);
+        ], $user);
 
         $this->assertNotNull($flow->id);
         $this->assertDatabaseHas('approval_flows', [
@@ -112,18 +117,20 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function replace_steps_aborts_404_for_nonexistent_flow(): void
     {
+        $user = $this->testPetugasActor();
         $this->expectException(NotFoundHttpException::class);
 
         $this->service->replaceSteps(99999, [
             ['step_order' => 1, 'approver_position' => 'rt', 'is_final' => true],
-        ]);
+        ], $user);
     }
 
     #[Test]
     public function replace_steps_delegates_replace_all_to_repository_for_existing_flow(): void
     {
+        $user = $this->testPetugasActor();
         $category = $this->makeCategory('approval_normal');
-        $flow = $this->makeFlow($category, 'Flow Dengan Steps');
+        $flow = $this->makeFlow($category, 'Flow Dengan Steps', true, $user->village_id);
 
         FlowStep::query()->create([
             'flow_id' => $flow->id, 'step_order' => 1,
@@ -132,13 +139,13 @@ class ApprovalFlowServiceTest extends TestCase
 
         $newSteps = $this->service->replaceSteps($flow->id, [
             ['step_order' => 1, 'approver_position' => 'rt', 'is_final' => false],
-            ['step_order' => 2, 'approver_position' => 'sekdes', 'is_final' => true],
-        ]);
+            ['step_order' => 2, 'approver_position' => 'kepala_desa', 'is_final' => true],
+        ], $user);
 
         $this->assertCount(2, $newSteps);
         $this->assertDatabaseCount('flow_steps', 2);
         $this->assertDatabaseHas('flow_steps', [
-            'flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'sekdes',
+            'flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'kepala_desa',
         ]);
     }
 
@@ -152,9 +159,10 @@ class ApprovalFlowServiceTest extends TestCase
         ]);
     }
 
-    private function makeFlow(LetterCategory $category, string $name, bool $isActive = true): ApprovalFlow
+    private function makeFlow(LetterCategory $category, string $name, bool $isActive = true, ?string $villageId = null): ApprovalFlow
     {
         return ApprovalFlow::query()->create([
+            'village_id' => $villageId ?? $this->testPetugasActor()->village_id,
             'category_id' => $category->id,
             'name' => $name,
             'description' => null,

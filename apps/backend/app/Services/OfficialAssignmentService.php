@@ -3,14 +3,21 @@
 namespace App\Services;
 
 use App\Enums\OfficialPosition;
+use App\Models\Citizen;
+use App\Models\Hamlet;
 use App\Models\Official;
+use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\User;
-use App\Repositories\CitizenRepository;
+use App\Models\Village;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\Auth\UsernameGenerator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use RuntimeException;
 
 class OfficialAssignmentService
@@ -20,7 +27,6 @@ class OfficialAssignmentService
         protected UserRepository $userRepository,
         protected LetterRepository $letterRepository,
         protected OfficialService $officialService,
-        protected CitizenRepository $citizenRepository,
         protected UsernameGenerator $usernameGenerator,
     ) {}
 
@@ -40,6 +46,7 @@ class OfficialAssignmentService
     {
         return DB::transaction(function () use ($actor, $official, $notes): array {
             $this->assertActivePetugas($actor);
+            $this->assertOfficialInActorVillage($actor, $official);
 
             return $this->demoteInTransaction($actor, $official, $notes);
         });
@@ -56,6 +63,7 @@ class OfficialAssignmentService
 
         return DB::transaction(function () use ($actor, $old, $data): array {
             $this->assertActivePetugas($actor);
+            $this->assertOfficialInActorVillage($actor, $old);
             $demotion = $this->demoteInTransaction($actor, $old, $data['notes'] ?? null);
 
             $newOfficial = $this->promoteInTransaction($actor, array_merge($data, [
@@ -74,91 +82,113 @@ class OfficialAssignmentService
             return [
                 'old_official' => $demotion['official'],
                 'new_official' => $newOfficial,
-                'warnings' => $demotion['warnings'],
+                // The replacement is promoted in this transaction, so
+                // demotion warnings about a vacant position no longer apply.
+                'warnings' => [],
             ];
         });
     }
 
-    /**
-     * Used by the petugas:demote console command, which has no authenticated actor.
-     */
-    public function demoteFromCommand(Official $official, bool $force = false): array
+    /** Create or reuse a citizen and account, then make the first Petugas Desa. */
+    public function bootstrapFirstPetugas(array $data): array
     {
-        return DB::transaction(function () use ($official, $force): array {
-            if (! $official->is_active || $official->user_id === null) {
-                abort(422, 'Hanya jabatan aktif yang terhubung ke akun yang dapat diturunkan.');
-            }
+        return DB::transaction(function () use ($data): array {
+            // Lock the village rows so concurrent bootstrap invocations serialize,
+            // including when no Petugas Desa row exists yet.
+            Village::query()->orderBy('id')->lockForUpdate()->get(['id']);
 
-            if (
-                $official->position === OfficialPosition::PetugasDesa->value &&
-                ! $force &&
-                $this->userRepository->countActiveByRole(OfficialPosition::PetugasDesa->userRole()->value) <= 1
-            ) {
-                abort(409, 'Aksi gagal karena petugas desa tidak boleh kosong.');
-            }
-
-            return $this->demoteInTransaction(null, $official, null, true, $force);
-        });
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public function bootstrapFirstPetugas(array $data): User
-    {
-        return DB::transaction(function () use ($data): User {
             if ($this->userRepository->countActiveByRole(OfficialPosition::PetugasDesa->userRole()->value) > 0) {
                 throw new RuntimeException('Petugas Desa aktif sudah tersedia.');
             }
 
-            $villageId = $data['village_id'];
-            $citizen = $this->citizenRepository->findByNikHash(hash('sha256', $data['nik']));
+            $citizen = Citizen::query()
+                ->where('nik_hash', hash('sha256', $data['nik']))
+                ->lockForUpdate()
+                ->first();
 
-            if ($citizen === null) {
-                $citizen = $this->citizenRepository->create([
-                    'village_id' => $villageId,
+            if (! $citizen) {
+                $validator = Validator::make($data, [
+                    'name' => ['required', 'string', 'max:100'],
+                    'date_of_birth' => ['required', 'date'],
+                    'gender' => ['required', Rule::in(['L', 'P'])],
+                    'address' => ['required', 'string'],
+                    'village_id' => ['required', 'uuid', 'exists:villages,id'],
+                    'rt_id' => ['required', 'integer', 'exists:rts,id'],
+                    'hamlet_id' => ['nullable', 'integer', 'exists:hamlets,id'],
+                ]);
+                $validator->validate();
+
+                $rt = Rt::query()->whereKey($data['rt_id'])->first();
+                if (! $rt || $rt->village_id !== $data['village_id']) {
+                    throw new RuntimeException('RT harus berasal dari desa yang dipilih.');
+                }
+
+                if (! empty($data['hamlet_id']) && ! Hamlet::query()->whereKey($data['hamlet_id'])->where('village_id', $data['village_id'])->exists()) {
+                    throw new RuntimeException('Dusun harus berasal dari desa yang dipilih.');
+                }
+
+                $citizen = Citizen::create([
                     'nik' => $data['nik'],
                     'name' => $data['name'],
                     'date_of_birth' => $data['date_of_birth'],
                     'gender' => $data['gender'],
                     'address' => $data['address'],
+                    'village_id' => $data['village_id'],
+                    'rt_id' => $data['rt_id'],
+                    'hamlet_id' => $data['hamlet_id'] ?: null,
+                    'data_source' => 'manual_input_desa',
                     'is_active' => true,
                 ]);
             }
 
-            if ($citizen->village_id !== $villageId || $this->userRepository->findByCitizenId($citizen->id)) {
-                throw new RuntimeException('Data kependudukan sudah terhubung ke akun atau desa lain.');
+            if (! $citizen->is_active) {
+                throw new RuntimeException('Data citizen tidak aktif.');
             }
 
-            $username = $data['username'] ?? $this->usernameGenerator->generate($citizen->name);
-            $user = $this->userRepository->create([
-                'village_id' => $villageId,
-                'citizen_id' => $citizen->id,
-                'name' => $citizen->name,
-                'username' => $username,
-                'role' => OfficialPosition::PetugasDesa->userRole()->value,
-                'email' => null,
-                'password' => $data['password'],
-                'is_active' => true,
-                'must_change_password' => false,
-            ]);
+            $target = User::query()->where('citizen_id', $citizen->id)->lockForUpdate()->first();
+            if ($target && (! $target->is_active || $target->role !== 'warga' || $target->village_id !== $citizen->village_id)) {
+                throw new RuntimeException('Akun yang terhubung harus akun warga aktif dari desa yang sama.');
+            }
+            if ($target && $this->officialRepository->existsActiveForUser($target->id)) {
+                throw new RuntimeException('Akun ini sudah memiliki jabatan aktif.');
+            }
+
+            $temporaryPassword = Str::password(32);
+            if (! $target) {
+                $target = $this->userRepository->create([
+                    'citizen_id' => $citizen->id,
+                    'village_id' => $citizen->village_id,
+                    'name' => $citizen->name,
+                    'username' => $this->usernameGenerator->generate($citizen->name),
+                    'role' => 'warga',
+                    'is_active' => true,
+                    'password' => $temporaryPassword,
+                    'must_change_password' => true,
+                ]);
+            } else {
+                $target->update([
+                    'password' => $temporaryPassword,
+                    'must_change_password' => true,
+                ]);
+            }
 
             $official = $this->officialRepository->create([
-                'citizen_id' => $citizen->id,
-                'user_id' => $user->id,
+                'citizen_id' => $target->citizen_id,
+                'user_id' => $target->id,
                 'position' => OfficialPosition::PetugasDesa->value,
-                'village_id' => $villageId,
+                'village_id' => $citizen->village_id,
                 'started_at' => today(),
                 'is_active' => true,
             ]);
 
+            $this->userRepository->updateRole($target->id, OfficialPosition::PetugasDesa->userRole()->value);
             $this->logActivity(null, $official, 'promoted', [
-                'user_id' => $user->id,
+                'user_id' => $target->id,
                 'position' => OfficialPosition::PetugasDesa->value,
                 'bootstrap' => true,
             ]);
 
-            return $user;
+            return ['user' => $target->fresh(), 'temporary_password' => $temporaryPassword];
         });
     }
 
@@ -198,6 +228,15 @@ class OfficialAssignmentService
             'notes' => $data['notes'] ?? null,
             'is_active' => true,
         ];
+        foreach ([
+            'rt_id' => Rt::class,
+            'rw_id' => Rw::class,
+            'hamlet_id' => Hamlet::class,
+        ] as $field => $model) {
+            if ($officialData[$field] !== null && ! $model::query()->whereKey($officialData[$field])->where('village_id', $target->village_id)->exists()) {
+                abort(422, 'Wilayah jabatan harus berasal dari desa akun target.');
+            }
+        }
         $this->officialService->assertPositionAvailable($officialData);
 
         $official = $this->officialRepository->create($officialData);
@@ -227,8 +266,12 @@ class OfficialAssignmentService
 
         $target = User::query()->findOrFail($official->user_id);
 
+        if ($target->village_id !== $official->village_id) {
+            abort(409, 'Akun pejabat tidak sesuai dengan desa jabatannya.');
+        }
+
         if ($official->position === OfficialPosition::PetugasDesa->value) {
-            $activePetugasCount = $this->userRepository->countActiveByRole(OfficialPosition::PetugasDesa->userRole()->value);
+            $activePetugasCount = $this->userRepository->countActiveByRole(OfficialPosition::PetugasDesa->userRole()->value, $target->village_id);
 
             if (! $skipSelfGuard && $actor?->is($target)) {
                 if ($activePetugasCount <= 1 && ! $skipLastPetugasGuard) {
@@ -296,8 +339,15 @@ class OfficialAssignmentService
 
     private function assertActivePetugas(User $actor): void
     {
-        if ($actor->role !== OfficialPosition::PetugasDesa->userRole()->value || ! $actor->is_active) {
+        if ($actor->role !== OfficialPosition::PetugasDesa->userRole()->value || ! $actor->is_active || ! $actor->village_id) {
             abort(403, 'Aksi ini hanya dapat dilakukan oleh Petugas Desa aktif.');
+        }
+    }
+
+    private function assertOfficialInActorVillage(User $actor, Official $official): void
+    {
+        if ($official->village_id !== $actor->village_id) {
+            abort(404, 'Data pejabat tidak ditemukan.');
         }
     }
 

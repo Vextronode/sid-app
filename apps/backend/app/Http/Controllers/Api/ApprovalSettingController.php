@@ -25,7 +25,7 @@ class ApprovalSettingController extends Controller
 
     public function update(UpdateApprovalSettingRequest $request, int $id): JsonResponse
     {
-        $setting = $this->service->update($id, $request->validated());
+        $setting = $this->service->update($id, $request->validated(), $request->user());
 
         return (new ApprovalSettingResource($setting))->response();
     }

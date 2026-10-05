@@ -64,7 +64,7 @@ Route::prefix('public')->group(function () {
 | berarti lupa diproteksi.
 */
 
-Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
+Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group(function () {
 
     /*
     |----------------------------------------------------------------------
@@ -361,8 +361,8 @@ Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
     | Role-check di sini SENGAJA dilonggarkan ke seluruh role
     | authenticated - context check granular (siapa boleh apa) tetap
     | didelegasikan ke OfficialPolicy lewat $this->authorize() di
-    | OfficialController (MANAGER_ROLES: kepala_desa, sekretaris_desa,
-    | petugas_desa). Ini contoh sah: Policy tetap dipertahankan sebagai
+    | OfficialController (MANAGER_ROLES: petugas_desa). Ini contoh sah:
+    | Policy tetap dipertahankan sebagai
     | defense-in-depth kedua di belakang middleware yang lebih permisif,
     | bukan duplikasi peran.
     */
