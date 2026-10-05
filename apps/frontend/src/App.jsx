@@ -19,7 +19,8 @@ import { OperatorDesaLayout } from '@/components/layout/OperatorDesaLayout'
 import DaftarSuratSayaPage from '@/pages/DaftarSuratSayaPage'
 import KelolaWilayahPage from '@/pages/admin/KelolaWilayahPage'
 
-// RT & RW — approver (RT tahap 1, RW tahap final)
+// RT — approver tahap 1
+// RW — monitoring
 import RTDashboardPage from '@/pages/admin/RTDashboardPage'
 import RTListPage from '@/pages/admin/RTListPage'
 import RWDashboardPage from '@/pages/admin/RWDashboardPage'
@@ -30,12 +31,12 @@ import AdminProfilePage from '@/pages/admin/AdminProfilePage'
 import KadusDashboardPage from '@/pages/admin/KadusDashboardPage'
 import KadusListPage from '@/pages/admin/KadusListPage'
 
-// Kades — monitoring saja
+// Kades — approver tahap 2
 import KadesDashboardPage from '@/pages/admin/KadesDashboardPage'
 import KadesListPage from '@/pages/admin/KadesListPage'
 
 // Operator Desa — Kasi Pelayanan, Kaur TU Umum, Petugas Desa
-// (1 role gabungan, 1 tampilan yang sama, cuma print surat rw_approved)
+// 1 role gabungan, 1 tampilan yang sama untuk ketiganya.
 import OperatorDesaDashboardPage from '@/pages/admin/OperatorDesaDashboardPage'
 import DataWargaPage from '@/pages/admin/DataWargaPage'
 import ManajemenUserPage from '@/pages/admin/ManajemenUserPage'
@@ -44,7 +45,7 @@ import KelolaProfilDesaPage from '@/pages/admin/KelolaProfilDesaPage'
 import OrganisasiBpdPage from '@/pages/admin/OrganisasiBpdPage'
 import OrganisasiLembagaPage from '@/pages/admin/OrganisasiLembagaPage'
 import OperatorSuratListPage from '@/pages/admin/OperatorSuratListPage'
-import TestRevisionFlowPage from '@/pages/admin/TestRevisionFlowPage'
+
 import ApprovalSettingPage from '@/pages/admin/ApprovalSettingPage'
 // Role yang termasuk "Operator Desa" (dipakai berulang di bawah)
 const OPERATOR_DESA_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa']
@@ -227,7 +228,7 @@ export default function App() {
             }
           />
 
-          {/* ===== RW — approve tahap final ===== */}
+          {/* ===== RW — monitoring  ===== */}
           <Route
             path="/admin/dashboard-surat-rw"
             element={
@@ -271,7 +272,7 @@ export default function App() {
             }
           />
 
-          {/* ===== Kepala Desa — monitoring saja ===== */}
+          {/* ===== Kepala Desa — approve ===== */}
           <Route
             path="/admin/dashboard-surat-kades"
             element={
@@ -295,7 +296,7 @@ export default function App() {
 
           {/* ===== OPERATOR DESA — Kasi Pelayanan, Kaur TU Umum, Petugas Desa =====
               1 role gabungan, 1 tampilan yang sama untuk ketiganya.
-              Hanya bisa print surat yang sudah rw_approved. */}
+              Hanya bisa print surat yang sudah kades_approved. */}
           <Route
             path="/admin/operator-desa"
             element={
@@ -395,26 +396,6 @@ export default function App() {
                 <OperatorDesaLayout>
                   <ApprovalSettingPage />
                 </OperatorDesaLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin/test-revision-flow"
-            element={
-              <ProtectedRoute
-                allowedRoles={[
-                  'rt',
-                  'rw',
-                  'kasi_pelayanan',
-                  'kaur_tu_umum',
-                  'petugas_desa',
-                  'warga',
-                ]}
-              >
-                <AdminLayout>
-                  <TestRevisionFlowPage />
-                </AdminLayout>
               </ProtectedRoute>
             }
           />

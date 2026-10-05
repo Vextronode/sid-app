@@ -1,4 +1,3 @@
-
 // ==========================================
 // RWDashboardPage.jsx
 // Dashboard RW
@@ -7,82 +6,71 @@
 // Styling menggunakan SID Global Theme.
 // ==========================================
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Mail,
-  ShieldCheck,
-  CheckCircle2,
-  XCircle,
-} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Mail, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react'
 
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { getSuratList } from '@/features/approval/api';
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
-import { FooterDesa } from '@/components/layout/FooterDesa';
-import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation';
-import { getGreeting } from '@/lib/utils/greeting';
+import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { getSuratList } from '@/features/approval/api'
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
+import { FooterDesa } from '@/components/layout/FooterDesa'
+import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
+import { getGreeting } from '@/lib/utils/greeting'
 
-import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart';
+import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
 
 // ==========================================
 // COMPONENT
 // ==========================================
 
 export default function RWDashboardPage() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth()
+  const navigate = useNavigate()
 
-  const [letters, setLetters] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [letters, setLetters] = useState([])
+  const [loading, setLoading] = useState(true)
 
   // ==========================================
   // LOAD DATA RW
   // ==========================================
 
-  const loadDashboardData = useCallback(
-    async (showLoading = true) => {
+  const loadDashboardData = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true)
+    }
+
+    try {
+      const res = await getSuratList('rw')
+
+      setLetters(res.data?.data ?? [])
+    } catch (err) {
+      console.error('GET RW LIST ERROR', err.response?.data ?? err)
+    } finally {
       if (showLoading) {
-        setLoading(true);
+        setLoading(false)
       }
-
-      try {
-        const res = await getSuratList('rw');
-
-        setLetters(res.data?.data ?? []);
-      } catch (err) {
-        console.error(
-          'GET RW LIST ERROR',
-          err.response?.data ?? err
-        );
-      } finally {
-        if (showLoading) {
-          setLoading(false);
-        }
-      }
-    },
-    []
-  );
+    }
+  }, [])
 
   // ==========================================
   // LOAD PERTAMA KALI
   // ==========================================
 
   useEffect(() => {
-    let isMounted = true;
+    let isMounted = true
 
     const loadInitialData = async () => {
-      if (!isMounted) return;
+      if (!isMounted) return
 
-      await loadDashboardData(true);
-    };
+      await loadDashboardData(true)
+    }
 
-    loadInitialData();
+    loadInitialData()
 
     return () => {
-      isMounted = false;
-    };
-  }, [loadDashboardData]);
+      isMounted = false
+    }
+  }, [loadDashboardData])
 
   // ==========================================
   // AUTO REFRESH SETIAP 5 DETIK
@@ -90,41 +78,34 @@ export default function RWDashboardPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      loadDashboardData(false);
-    }, 5000);
+      loadDashboardData(false)
+    }, 5000)
 
-    return () => clearInterval(interval);
-  }, [loadDashboardData]);
+    return () => clearInterval(interval)
+  }, [loadDashboardData])
 
   // ==========================================
   // STATISTIK
   // ==========================================
 
   const stats = useMemo(() => {
-    const permohonanBaru = letters.length;
+    const permohonanBaru = letters.length
 
-    const sedangDiproses = letters.filter(
-      (s) =>
-        !s.status?.endsWith('_rejected') &&
-        s.status !== '_approved' &&
-        s.status !== '_approved'
-    ).length;
+    const sedangDiproses = letters.filter((s) =>
+      ['pending', 'in_progress'].includes(s.status),
+    ).length
 
-    const disetujuiFinal = letters.filter(
-      (s) => s.status === 'kasi_approved'
-    ).length;
+    const disetujuiFinal = letters.filter((s) => s.status === 'approved').length
 
-    const ditolak = letters.filter(
-      (s) => s.status?.endsWith('_rejected')
-    ).length;
+    const ditolak = letters.filter((s) => s.status === 'rejected').length
 
     return {
       permohonanBaru,
       sedangDiproses,
       disetujuiFinal,
       ditolak,
-    };
-  }, [letters]);
+    }
+  }, [letters])
 
   // ==========================================
   // STAT CARDS
@@ -138,8 +119,7 @@ export default function RWDashboardPage() {
       icon: Mail,
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
-      onClick: () =>
-        navigate('/admin/list-rw'),
+      onClick: () => navigate('/admin/list-rw'),
     },
 
     {
@@ -149,8 +129,7 @@ export default function RWDashboardPage() {
       icon: ShieldCheck,
       iconBg: 'var(--sid-status-progress-bg)',
       iconColor: 'var(--sid-status-progress-text)',
-      onClick: () =>
-        navigate('/admin/list-rw'),
+      onClick: () => navigate('/admin/list-rw?status=in_progress'),
     },
 
     {
@@ -160,8 +139,7 @@ export default function RWDashboardPage() {
       icon: CheckCircle2,
       iconBg: 'var(--sid-status-done-bg)',
       iconColor: 'var(--sid-status-done-text)',
-      onClick: () =>
-        navigate('/admin/list-rw?status=rw_approved'),
+      onClick: () => navigate('/admin/list-rw?status=approved'),
     },
 
     {
@@ -171,24 +149,20 @@ export default function RWDashboardPage() {
       icon: XCircle,
       iconBg: 'var(--sid-status-rejected-bg)',
       iconColor: 'var(--sid-status-rejected-text)',
-      onClick: () =>
-        navigate('/admin/list-rw?status=rw_rejected'),
+      onClick: () => navigate('/admin/list-rw?status=rejected'),
     },
-  ];
+  ]
 
   // ==========================================
   // TANGGAL
   // ==========================================
 
-  const hariIni = new Date().toLocaleDateString(
-    'id-ID',
-    {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }
-  );
+  const hariIni = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
   // ==========================================
   // RENDER
@@ -213,14 +187,11 @@ export default function RWDashboardPage() {
               </h1>
 
               <p className="sid-page-description">
-                Kelola administrasi warga{' '}
-                {user?.wilayah_label ?? 'RW'} dengan lebih cepat.
+                Kelola administrasi warga {user?.wilayah_label ?? 'RW'} dengan lebih cepat.
               </p>
             </div>
 
-            <span className="sid-dashboard-date">
-              {hariIni}
-            </span>
+            <span className="sid-dashboard-date">{hariIni}</span>
           </div>
 
           {/* ======================================
@@ -229,23 +200,15 @@ export default function RWDashboardPage() {
 
           <div className="sid-stat-grid">
             {STAT_CARDS.map((card) => {
-              const Icon = card.icon;
+              const Icon = card.icon
 
               return (
-                <button
-                  key={card.key}
-                  onClick={card.onClick}
-                  className="sid-stat-card"
-                >
+                <button key={card.key} onClick={card.onClick} className="sid-stat-card">
                   <div className="sid-stat-card-content">
                     <div>
-                      <p className="sid-stat-label">
-                        {card.label}
-                      </p>
+                      <p className="sid-stat-label">{card.label}</p>
 
-                      <p className="sid-stat-value">
-                        {loading ? '-' : card.value}
-                      </p>
+                      <p className="sid-stat-value">{loading ? '-' : card.value}</p>
                     </div>
 
                     <div
@@ -259,7 +222,7 @@ export default function RWDashboardPage() {
                     </div>
                   </div>
                 </button>
-              );
+              )
             })}
           </div>
 
@@ -294,8 +257,7 @@ export default function RWDashboardPage() {
           </h1>
 
           <p className="sid-page-description">
-            Kelola administrasi warga{' '}
-            {user?.wilayah_label ?? 'RW'} dengan lebih cepat.
+            Kelola administrasi warga {user?.wilayah_label ?? 'RW'} dengan lebih cepat.
           </p>
 
           {/* ======================================
@@ -304,7 +266,7 @@ export default function RWDashboardPage() {
 
           <div className="sid-stat-grid-mobile">
             {STAT_CARDS.map((card) => {
-              const Icon = card.icon;
+              const Icon = card.icon
 
               return (
                 <button
@@ -322,15 +284,11 @@ export default function RWDashboardPage() {
                     <Icon size={16} />
                   </div>
 
-                  <p className="sid-stat-label">
-                    {card.label}
-                  </p>
+                  <p className="sid-stat-label">{card.label}</p>
 
-                  <p className="sid-stat-value-mobile">
-                    {loading ? '-' : card.value}
-                  </p>
+                  <p className="sid-stat-value-mobile">{loading ? '-' : card.value}</p>
                 </button>
-              );
+              )
             })}
           </div>
 
@@ -356,13 +314,9 @@ export default function RWDashboardPage() {
             ====================================== */}
 
         <MobileBottomNav
-          links={ADMIN_MOBILE_LINKS(
-            '/admin/dashboard-surat-rw',
-            '/admin/list-rw'
-          )}
+          links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rw', '/admin/list-rw')}
         />
       </div>
     </>
-  );
+  )
 }
-

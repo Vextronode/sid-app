@@ -34,8 +34,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
-import { useSuratList } from '@/features/approval-rt/hooks/useSuratList'
-
+import { useApprovalLetterList } from '@/features/approval/hooks/useApprovalLetterList'
 import SuratDetailModalRT from '@/features/approval-rt/components/SuratDetailModalRT'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -61,11 +60,11 @@ export default function RTListPage() {
   // DATA
   // ==========================================
 
-  const { data, loading, search, setSearch, filterStatus, setFilterStatus, refresh } = useSuratList(
-    {
+  const { data, loading, search, setSearch, filterStatus, setFilterStatus, refresh } =
+    useApprovalLetterList({
+      role: 'rt',
       initialStatus,
-    },
-  )
+    })
 
   // ==========================================
   // AUTO REFRESH DATA SURAT
