@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterUserRequest;
+use App\Http\Resources\RegisteredUserResource;
 use App\Services\Auth\AuthService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
@@ -23,12 +24,9 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return response()->json([
-            'message' => 'Akun berhasil dibuat. Simpan username Anda.',
-            'data' => [
-                'username' => $user->username,
-                'name' => $user->name,
-            ],
-        ], 201);
+        return (new RegisteredUserResource($user))
+            ->additional(['message' => 'Akun berhasil dibuat. Simpan username Anda.'])
+            ->response()
+            ->setStatusCode(201);
     }
 }
