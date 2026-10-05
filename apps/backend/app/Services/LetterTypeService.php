@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Models\LetterType;
+use App\Models\User;
 use App\Repositories\ApprovalFlowRepository;
 use App\Repositories\LetterTypeRepository;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -55,7 +55,10 @@ class LetterTypeService
 
     private function villageId(User $user): string
     {
-        if (! $user->is_active || ! $user->village_id) abort(403, 'Akun aktif dengan desa yang valid diperlukan.');
+        if (! $user->is_active || ! $user->village_id) {
+            abort(403, 'Akun aktif dengan desa yang valid diperlukan.');
+        }
+
         return $user->village_id;
     }
 }

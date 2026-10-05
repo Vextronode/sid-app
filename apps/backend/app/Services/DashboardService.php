@@ -299,6 +299,7 @@ class DashboardService
         if (! $user->is_active || ! $official?->village_id || $official->position !== $this->officialPositionForRole($user->role)) {
             throw new HttpException(403, 'Data desa pejabat tidak valid.');
         }
+
         return $official->village_id;
     }
 

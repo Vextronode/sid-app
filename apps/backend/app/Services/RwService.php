@@ -26,7 +26,9 @@ class RwService
     public function create(array $data, User $user): Rw
     {
         $hamlet = Hamlet::findOrFail($data['hamlet_id']);
-        if ($hamlet->village_id !== $this->villageId($user)) abort(422, 'Dusun harus berasal dari desa Anda.');
+        if ($hamlet->village_id !== $this->villageId($user)) {
+            abort(422, 'Dusun harus berasal dari desa Anda.');
+        }
 
         return $this->rwRepository->create([
             'hamlet_id' => $data['hamlet_id'],
@@ -39,7 +41,9 @@ class RwService
 
     public function update(Rw $rw, array $data, User $user): Rw
     {
-        if ($rw->village_id !== $this->villageId($user)) abort(404, 'RW tidak ditemukan.');
+        if ($rw->village_id !== $this->villageId($user)) {
+            abort(404, 'RW tidak ditemukan.');
+        }
         $isDeactivating = array_key_exists('is_active', $data)
             && ! $data['is_active']
             && $rw->is_active;
@@ -57,7 +61,9 @@ class RwService
 
     public function delete(Rw $rw, User $user): bool
     {
-        if ($rw->village_id !== $this->villageId($user)) abort(404, 'RW tidak ditemukan.');
+        if ($rw->village_id !== $this->villageId($user)) {
+            abort(404, 'RW tidak ditemukan.');
+        }
         if ($this->citizenRepository->existsByRw($rw->id)) {
             throw new RegionContainsCitizensException('RW');
         }
@@ -67,7 +73,10 @@ class RwService
 
     private function villageId(User $user): string
     {
-        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) {
+            abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        }
+
         return $user->village_id;
     }
 }

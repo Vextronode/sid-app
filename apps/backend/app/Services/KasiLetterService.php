@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\LetterStatus;
 use App\Models\Letter;
+use App\Models\Official;
 use App\Models\User;
 use App\Repositories\LetterRepository;
 use Illuminate\Database\Eloquent\Collection;
@@ -41,7 +42,7 @@ class KasiLetterService
         return $letter;
     }
 
-    private function authorizeUser(User $user): \App\Models\Official
+    private function authorizeUser(User $user): Official
     {
         if (! in_array($user->role, self::AUTHORIZED_POSITIONS, true)) {
             abort(403, 'Anda tidak berwenang mengakses approval Kasi/Kaur.');

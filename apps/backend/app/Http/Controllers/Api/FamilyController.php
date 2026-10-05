@@ -9,6 +9,7 @@ use App\Http\Resources\FamilyCollection;
 use App\Http\Resources\FamilyResource;
 use App\Models\Family;
 use App\Services\FamilyService;
+use Illuminate\Http\Request;
 
 class FamilyController extends Controller
 {
@@ -44,7 +45,7 @@ class FamilyController extends Controller
         return (new FamilyResource($family))->response()->setStatusCode(200);
     }
 
-    public function destroy(\Illuminate\Http\Request $request, Family $family)
+    public function destroy(Request $request, Family $family)
     {
         $this->familyService->delete($family, $request->user());
 

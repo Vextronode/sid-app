@@ -25,6 +25,7 @@ class HamletService
     public function create(array $data, User $user): Hamlet
     {
         $villageId = $this->villageId($user);
+
         return $this->hamletRepository->create([
             'name' => $data['name'],
             'code' => $data['code'],
@@ -35,7 +36,9 @@ class HamletService
 
     public function update(Hamlet $hamlet, array $data, User $user): Hamlet
     {
-        if ($hamlet->village_id !== $this->villageId($user)) abort(404, 'Dusun tidak ditemukan.');
+        if ($hamlet->village_id !== $this->villageId($user)) {
+            abort(404, 'Dusun tidak ditemukan.');
+        }
         $isDeactivating = array_key_exists('is_active', $data)
             && ! $data['is_active']
             && $hamlet->is_active;
@@ -49,7 +52,9 @@ class HamletService
 
     public function delete(Hamlet $hamlet, User $user): bool
     {
-        if ($hamlet->village_id !== $this->villageId($user)) abort(404, 'Dusun tidak ditemukan.');
+        if ($hamlet->village_id !== $this->villageId($user)) {
+            abort(404, 'Dusun tidak ditemukan.');
+        }
         if ($this->citizenRepository->existsByHamlet($hamlet->id)) {
             throw new RegionContainsCitizensException('dusun');
         }
@@ -59,7 +64,10 @@ class HamletService
 
     private function villageId(User $user): string
     {
-        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) {
+            abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        }
+
         return $user->village_id;
     }
 }

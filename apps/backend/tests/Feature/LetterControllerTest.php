@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ApprovalFlow;
 use App\Models\Citizen;
 use App\Models\FlowStep;
+use App\Models\Hamlet;
 use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\Official;
@@ -177,7 +178,7 @@ class LetterControllerTest extends TestCase
     public function test_index_for_kadus_is_available_with_own_hamlet_scope(): void
     {
         Letter::factory()->count(2)->create();
-        $user = $this->testOfficialUser('kadus', 'kadus', null, ['hamlet_id' => \App\Models\Hamlet::factory()->create()->id]);
+        $user = $this->testOfficialUser('kadus', 'kadus', null, ['hamlet_id' => Hamlet::factory()->create()->id]);
 
         $this->actingAs($user)
             ->getJson('/api/letters')

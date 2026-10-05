@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Models\Family;
+use App\Models\Hamlet;
+use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\User;
 use App\Repositories\FamilyRepository;
 use Illuminate\Database\Eloquent\Collection;
@@ -72,6 +75,7 @@ class FamilyService
         if (! $user->village_id) {
             abort(403, 'Data wilayah desa tidak ditemukan.');
         }
+
         return $user->village_id;
     }
 
@@ -85,7 +89,7 @@ class FamilyService
     private function guardRelatedRegions(array $data, User $user, ?Family $family = null): void
     {
         $villageId = $this->villageId($user);
-        foreach (['rt_id' => \App\Models\Rt::class, 'rw_id' => \App\Models\Rw::class, 'hamlet_id' => \App\Models\Hamlet::class] as $field => $model) {
+        foreach (['rt_id' => Rt::class, 'rw_id' => Rw::class, 'hamlet_id' => Hamlet::class] as $field => $model) {
             $id = $data[$field] ?? $family?->{$field};
             if ($id !== null && ! $model::query()->whereKey($id)->where('village_id', $villageId)->exists()) {
                 abort(422, 'Wilayah keluarga harus berasal dari desa Anda.');

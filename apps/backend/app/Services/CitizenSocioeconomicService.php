@@ -48,6 +48,7 @@ class CitizenSocioeconomicService
         if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) {
             throw new HttpException(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
         }
+
         return $user->village_id;
     }
 }

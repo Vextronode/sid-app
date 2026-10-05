@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\ApprovalFlow;
 use App\Models\Citizen;
 use App\Models\FlowStep;
+use App\Models\Hamlet;
 use App\Models\Letter;
 use App\Models\LetterApproval;
 use App\Models\LetterType;
@@ -524,9 +525,9 @@ class LetterServiceTest extends TestCase
 
     public function test_get_scoped_letters_for_kadus_is_scoped_to_own_hamlet(): void
     {
-        $hamlet = \App\Models\Hamlet::factory()->create();
+        $hamlet = Hamlet::factory()->create();
         $ownCitizen = Citizen::factory()->create(['hamlet_id' => $hamlet->id]);
-        $otherHamlet = \App\Models\Hamlet::factory()->create();
+        $otherHamlet = Hamlet::factory()->create();
         $otherCitizen = Citizen::factory()->create(['hamlet_id' => $otherHamlet->id]);
         [$ownLetter] = $this->makeLetterAtStep('kepala_desa', 2, ['citizen_id' => $ownCitizen->id]);
         [$otherLetter] = $this->makeLetterAtStep('kepala_desa', 2, ['citizen_id' => $otherCitizen->id]);

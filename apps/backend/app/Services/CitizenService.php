@@ -4,6 +4,9 @@ namespace App\Services;
 
 use App\Imports\CitizensImport;
 use App\Models\Citizen;
+use App\Models\Family;
+use App\Models\Hamlet;
+use App\Models\Rt;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
 use Illuminate\Database\Eloquent\Collection;
@@ -127,11 +130,11 @@ class CitizenService
         $villageId = $this->villageId($user);
         $rtId = $data['rt_id'] ?? $citizen?->rt_id;
 
-        if ($rtId !== null && ! \App\Models\Rt::query()->whereKey($rtId)->where('village_id', $villageId)->exists()) {
+        if ($rtId !== null && ! Rt::query()->whereKey($rtId)->where('village_id', $villageId)->exists()) {
             abort(422, 'RT harus berasal dari desa Anda.');
         }
 
-        foreach (['hamlet_id' => \App\Models\Hamlet::class, 'family_id' => \App\Models\Family::class] as $field => $model) {
+        foreach (['hamlet_id' => Hamlet::class, 'family_id' => Family::class] as $field => $model) {
             $id = $data[$field] ?? $citizen?->{$field};
             if ($id !== null && ! $model::query()->whereKey($id)->where('village_id', $villageId)->exists()) {
                 abort(422, 'Data wilayah atau keluarga harus berasal dari desa Anda.');
@@ -140,7 +143,7 @@ class CitizenService
 
         foreach (['father_id', 'mother_id'] as $field) {
             $id = $data[$field] ?? null;
-            if ($id !== null && ! \App\Models\Citizen::query()->whereKey($id)->where('village_id', $villageId)->exists()) {
+            if ($id !== null && ! Citizen::query()->whereKey($id)->where('village_id', $villageId)->exists()) {
                 abort(422, 'Data orang tua harus berasal dari desa Anda.');
             }
         }

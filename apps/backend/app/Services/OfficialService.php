@@ -5,8 +5,11 @@ namespace App\Services;
 use App\Enums\OfficialPosition;
 use App\Models\Citizen;
 use App\Models\FlowStep;
+use App\Models\Hamlet;
 use App\Models\Letter;
 use App\Models\Official;
+use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\User;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
@@ -219,6 +222,7 @@ class OfficialService
         if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) {
             abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
         }
+
         return $user->village_id;
     }
 
@@ -231,9 +235,9 @@ class OfficialService
             abort(422, 'Akun pejabat harus berasal dari desa Anda.');
         }
         foreach ([
-            'rt_id' => \App\Models\Rt::class,
-            'rw_id' => \App\Models\Rw::class,
-            'hamlet_id' => \App\Models\Hamlet::class,
+            'rt_id' => Rt::class,
+            'rw_id' => Rw::class,
+            'hamlet_id' => Hamlet::class,
         ] as $field => $model) {
             if (isset($data[$field]) && ! $model::query()->whereKey($data[$field])->where('village_id', $villageId)->exists()) {
                 abort(422, 'Wilayah jabatan harus berasal dari desa Anda.');

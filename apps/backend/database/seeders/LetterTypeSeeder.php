@@ -30,21 +30,21 @@ class LetterTypeSeeder extends Seeder
                 ->where('name', 'RT-Kades/Sekdes (2 Tahap)')
                 ->firstOrFail();
 
-          foreach ($this->letterTypes() as $type) {
-            $body = $type['body'];
-            unset($type['body']);
+            foreach ($this->letterTypes() as $type) {
+                $body = $type['body'];
+                unset($type['body']);
 
-            LetterType::updateOrCreate(
-                ['village_id' => $village->id, 'code' => $type['code']],
-                array_merge($type, [
-                    'village_id' => $village->id,
-                    'template' => $this->baseTemplate($type['code'], $type['name'], $body),
-                    'is_active' => true,
-                    'category_id' => $category->id,
-                    'flow_id' => $flow->id,
-                ])
-            );
-          }
+                LetterType::updateOrCreate(
+                    ['village_id' => $village->id, 'code' => $type['code']],
+                    array_merge($type, [
+                        'village_id' => $village->id,
+                        'template' => $this->baseTemplate($type['code'], $type['name'], $body),
+                        'is_active' => true,
+                        'category_id' => $category->id,
+                        'flow_id' => $flow->id,
+                    ])
+                );
+            }
         }
     }
 

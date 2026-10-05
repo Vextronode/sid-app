@@ -3,6 +3,7 @@
 namespace Tests\Feature\Middleware;
 
 use App\Models\Citizen;
+use App\Models\Hamlet;
 use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\Official;
@@ -315,7 +316,7 @@ class RoleMiddlewareTest extends TestCase
     public function kadus_can_only_list_own_letters_with_scope_mine(): void
     {
         $user = $this->testOfficialUser('kadus', 'kadus', null, [
-            'hamlet_id' => \App\Models\Hamlet::factory()->create()->id,
+            'hamlet_id' => Hamlet::factory()->create()->id,
         ]);
         $ownLetter = Letter::factory()->create(['submitted_by' => $user->id]);
         Letter::factory()->create();

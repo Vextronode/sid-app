@@ -40,7 +40,9 @@ class RtService
 
     public function update(Rt $rt, array $data, User $user): Rt
     {
-        if ($rt->village_id !== $this->villageId($user)) abort(404, 'RT tidak ditemukan.');
+        if ($rt->village_id !== $this->villageId($user)) {
+            abort(404, 'RT tidak ditemukan.');
+        }
         $isDeactivating = array_key_exists('is_active', $data)
             && ! $data['is_active']
             && $rt->is_active;
@@ -59,7 +61,9 @@ class RtService
 
     public function delete(Rt $rt, User $user): bool
     {
-        if ($rt->village_id !== $this->villageId($user)) abort(404, 'RT tidak ditemukan.');
+        if ($rt->village_id !== $this->villageId($user)) {
+            abort(404, 'RT tidak ditemukan.');
+        }
         if ($this->citizenRepository->existsByRt($rt->id)) {
             throw new RegionContainsCitizensException('RT');
         }
@@ -69,7 +73,10 @@ class RtService
 
     private function villageId(User $user): string
     {
-        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) {
+            abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        }
+
         return $user->village_id;
     }
 }
