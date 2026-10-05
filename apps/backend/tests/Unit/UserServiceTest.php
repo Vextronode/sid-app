@@ -25,31 +25,32 @@ class UserServiceTest extends TestCase
 
     public function test_get_all_with_citizen_and_official_returns_users(): void
     {
-        User::factory()->count(2)->create();
+        $users = User::factory()->count(2)->create();
 
-        $this->assertCount(2, $this->service->getAllWithCitizenAndOfficial());
+        $actor = $this->testPetugasActor($users->first()->village_id);
+        $this->assertCount(3, $this->service->getAllWithCitizenAndOfficial($actor));
     }
 
     public function test_toggle_active_flips_status_for_another_user(): void
     {
-        $actor = User::factory()->create(['role' => 'rt']);
-        $target = User::factory()->create(['is_active' => true]);
+        $actor = $this->testPetugasActor();
+        $target = User::factory()->create(['is_active' => true, 'village_id' => $actor->village_id]);
 
         $this->assertFalse($this->service->toggleActive($target, $actor)->is_active);
     }
 
     public function test_toggle_active_rejects_self_deactivation(): void
     {
-        $actor = User::factory()->create(['role' => 'rt']);
+        $actor = $this->testPetugasActor();
 
         $this->expectException(HttpException::class);
 
         $this->service->toggleActive($actor, $actor);
     }
 
-    public function test_update_rejects_self_deactivation_and_last_petugas_deactivation(): void
+    public function test_update_rejects_self_deactivation_and_allows_deactivating_another_petugas_while_actor_remains(): void
     {
-        $actor = User::factory()->create(['role' => 'rt']);
+        $actor = $this->testPetugasActor();
         try {
             $this->service->update($actor, ['is_active' => false], $actor);
             $this->fail('Self-deactivation should be rejected.');
@@ -57,20 +58,15 @@ class UserServiceTest extends TestCase
             $this->assertSame(403, $exception->getStatusCode());
         }
 
-        $lastPetugas = User::factory()->create(['role' => 'petugas_desa']);
-
-        try {
-            $this->service->update($lastPetugas, ['is_active' => false], $actor);
-            $this->fail('The last active Petugas Desa should be protected.');
-        } catch (HttpException $exception) {
-            $this->assertSame(403, $exception->getStatusCode());
-        }
+        $otherPetugas = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $actor->village_id]);
+        $this->assertFalse($this->service->update($otherPetugas, ['is_active' => false], $actor)->is_active);
+        $this->assertTrue($actor->fresh()->is_active);
     }
 
     public function test_update_accepts_name_and_status_changes_when_guards_pass(): void
     {
-        $actor = User::factory()->create(['role' => 'petugas_desa']);
-        $target = User::factory()->create(['name' => 'Lama']);
+        $actor = $this->testPetugasActor();
+        $target = User::factory()->create(['name' => 'Lama', 'village_id' => $actor->village_id]);
 
         $updated = $this->service->update($target, ['name' => 'Baru'], $actor);
 
@@ -80,8 +76,8 @@ class UserServiceTest extends TestCase
 
     public function test_petugas_can_reset_password_for_non_petugas_but_not_self_or_another_petugas(): void
     {
-        $actor = User::factory()->create(['role' => 'petugas_desa']);
-        $target = User::factory()->create(['role' => 'warga']);
+        $actor = $this->testPetugasActor();
+        $target = User::factory()->create(['role' => 'warga', 'village_id' => $actor->village_id]);
 
         $temporaryPassword = $this->service->resetPassword($target, $actor);
 
@@ -92,7 +88,7 @@ class UserServiceTest extends TestCase
 
         foreach ([
             [$actor, $actor],
-            [User::factory()->create(['role' => 'petugas_desa']), $actor],
+            [User::factory()->create(['role' => 'petugas_desa', 'village_id' => $actor->village_id]), $actor],
         ] as [$resetTarget, $resetActor]) {
             try {
                 $this->service->resetPassword($resetTarget, $resetActor);
