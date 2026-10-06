@@ -91,13 +91,31 @@ php artisan migrate:fresh --seed
 
 > `migrate:fresh` menghapus seluruh tabel beserta datanya. Jangan jalankan pada database yang berisi data yang ingin dipertahankan.
 
-Petugas pertama dapat diinisialisasi langsung. Untuk citizen baru, berikan data wajib citizen sesuai form dashboard, UUID desa, dan ID RT:
+Seeder development membuat satu Desa Cibenda dengan 5 dusun, masing-masing 5 RW dan setiap RW 5 RT, serta satu akun untuk setiap role yang didukung. Setiap akun terhubung ke satu citizen dan menggunakan password demo yang sama:
+
+| Role | Username |
+|---|---|
+| Warga | `demo_warga` |
+| RT | `demo_rt` |
+| RW | `demo_rw` |
+| Kepala Dusun | `demo_kadus` |
+| Kasi Pelayanan | `demo_kasi` |
+| Kaur TU Umum | `demo_kaur` |
+| Petugas Desa (admin) | `demo_admin` |
+| Kepala Desa | `demo_kades` |
+| Sekretaris Desa | `demo_sekdes` |
+
+**Password semua akun:** `Password123!`
+
+Akun dan identitas tersebut hanya untuk development/testing. Seeder demo menolak berjalan di environment `production`. Untuk mengganti data demo lama, gunakan `migrate:fresh --seed` hanya pada database yang boleh dihapus; menjalankan `db:seed` sendiri tidak menghapus data lama.
+
+Petugas pertama yang sebenarnya dapat diinisialisasi langsung pada database yang belum memiliki Petugas Desa aktif. Untuk citizen baru, berikan data wajib citizen sesuai form dashboard, UUID desa, dan ID RT:
 
 ```powershell
 php artisan petugas:first --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas" --village="<UUID_DESA>" --rt=1
 ```
 
-Ganti `--rt=1` dengan ID RT yang benar-benar ada di desa tersebut. Jika citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Username dibuat otomatis dan password sementara acak hanya ditampilkan sekali. Akun wajib menggantinya saat login pertama. Command menolak jika Petugas Desa aktif sudah ada. Petugas selanjutnya dipromosikan dari dashboard.
+Ganti `--rt=1` dengan ID RT yang benar-benar ada di desa tersebut. Jika citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Username dibuat otomatis dan password sementara acak hanya ditampilkan sekali. Akun wajib menggantinya saat login pertama. Command menolak jika Petugas Desa aktif sudah ada. Pada database demo hasil `migrate:fresh --seed`, gunakan `demo_admin` untuk login atau reset database tanpa seeder demo sebelum menggunakan `petugas:first`. Petugas selanjutnya dipromosikan dari dashboard.
 
 `petugas:first` hanya untuk bootstrap pertama, bukan command pemulihan akun Petugas yang sudah ada. Belum ada command pemulihan darurat bawaan jika tidak ada Petugas Desa yang dapat login; siapkan prosedur operasional terkontrol sebelum production dan jangan mengatasi kondisi tersebut dengan menjalankan ulang command pada akun Petugas.
 
