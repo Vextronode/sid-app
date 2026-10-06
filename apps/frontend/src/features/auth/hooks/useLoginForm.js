@@ -14,17 +14,23 @@ const INITIAL_ERRORS = {
 }
 
 const getBackendMessage = (error) => {
-  const data = error.response?.data
-
-  if (data?.message) {
-    return data.message
-  }
-
-  return null
+  return error.response?.data?.message ?? null
 }
 
 const getValidationErrors = (error) => {
   return error.response?.data?.errors ?? {}
+}
+
+const isNetworkError = (error) => {
+  return (
+    error.code === 'ERR_NETWORK' ||
+    error.code === 'ECONNABORTED' ||
+    error.message === 'Network Error'
+  )
+}
+
+const isServerError = (status) => {
+  return typeof status === 'number' && status >= 500
 }
 
 export function useLoginForm() {
@@ -63,7 +69,6 @@ export function useLoginForm() {
     }
 
     setErrors(INITIAL_ERRORS)
-
     setIsLoading(true)
 
     try {
@@ -91,9 +96,7 @@ export function useLoginForm() {
       const loggedUser = response.data?.user
 
       if (!loggedUser?.role) {
-        throw new Error(
-          'Login berhasil, tetapi data user tidak lengkap.',
-        )
+        throw new Error('Login berhasil, tetapi data user tidak lengkap.')
       }
 
       // ==========================================
@@ -112,15 +115,23 @@ export function useLoginForm() {
       const backendMessage = getBackendMessage(error)
 
       // ==========================================
-      // VALIDATION
+      // VALIDATION / CREDENTIAL / LOCKOUT
+      // Backend:
+      // 422 ValidationException
+      // errors.username
       // ==========================================
 
       if (status === 422) {
+        const usernameError = backendErrors.username?.[0] ?? ''
+        const passwordError = backendErrors.password?.[0] ?? ''
+
         setErrors({
-          username: backendErrors.username?.[0] ?? '',
-          password: backendErrors.password?.[0] ?? '',
+          username: usernameError,
+          password: passwordError,
           general:
-            backendMessage ??
+            usernameError ||
+            passwordError ||
+            backendMessage ||
             'Username atau password belum sesuai.',
         })
 
@@ -128,28 +139,32 @@ export function useLoginForm() {
       }
 
       // ==========================================
-      // UNAUTHORIZED
+      // ACCOUNT INACTIVE
+      // Backend:
+      // abort(403, 'Akun tidak aktif, hubungi administrator')
       // ==========================================
 
-      if (status === 401) {
+      if (status === 403) {
         setErrors({
           ...INITIAL_ERRORS,
-          general: backendMessage ?? 'Username atau password salah.',
+          general:
+            backendMessage ||
+            'Akun tidak dapat digunakan. Silakan hubungi administrator.',
         })
 
         return null
       }
 
       // ==========================================
-      // TOO MANY REQUESTS / LOCKOUT
+      // CSRF / SESSION ERROR
       // ==========================================
 
-      if (status === 429) {
+      if (status === 419) {
         setErrors({
           ...INITIAL_ERRORS,
           general:
-            backendMessage ??
-            'Terlalu banyak percobaan login. Silakan coba lagi beberapa saat.',
+            backendMessage ||
+            'Sesi keamanan tidak valid. Silakan coba login kembali.',
         })
 
         return null
@@ -169,29 +184,42 @@ export function useLoginForm() {
       }
 
       // ==========================================
-      // CSRF
+      // SERVER ERROR
       // ==========================================
 
-      if (status === 419) {
+      if (isServerError(status)) {
         setErrors({
           ...INITIAL_ERRORS,
           general:
-            'Sesi keamanan tidak valid. Silakan coba login kembali.',
+            'Terjadi gangguan pada server. Silakan coba lagi beberapa saat.',
         })
 
         return null
       }
 
       // ==========================================
-      // DEFAULT ERROR
+      // NETWORK ERROR
+      // ==========================================
+
+      if (isNetworkError(error)) {
+        setErrors({
+          ...INITIAL_ERRORS,
+          general:
+            'Tidak dapat terhubung ke server. Periksa koneksi Anda lalu coba lagi.',
+        })
+
+        return null
+      }
+
+      // ==========================================
+      // UNKNOWN ERROR
       // ==========================================
 
       setErrors({
         ...INITIAL_ERRORS,
         general:
-          backendMessage ??
-          error.message ??
-          'Terjadi kesalahan saat login.',
+          backendMessage ||
+          'Terjadi kesalahan saat login. Silakan coba lagi.',
       })
 
       return null
