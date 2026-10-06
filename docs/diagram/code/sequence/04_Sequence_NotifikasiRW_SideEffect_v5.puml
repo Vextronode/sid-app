@@ -36,10 +36,9 @@ title Sequence Diagram - Notifikasi RW (Side-Effect, Non-Blocking) [BARU - v5.0]
 participant "LetterService\n(dipanggil dari dalam\nUC-04a RT Approval)" as SVC
 participant "OfficialService" as OSVC
 participant "OfficialRepository" as OREPO
-participant "Queue\n(Jobs)" as Q
+participant "Notification database channel" as Q
 participant "PostgreSQL" as DB
 actor "RW\n(Wilayah Terkait)" as RW
-actor "Petugas Desa\n(Fallback)" as PD
 
 note over SVC, PD
   *** KONTEKS PENTING ***
@@ -85,11 +84,11 @@ alt RW wilayah ditemukan
 
   == Dispatch Notifikasi FYI ==
 
-  SVC -> Q : dispatch(SendNotificationJob -> RW,\ntype: 'fyi_rt_approved')
-  Q -> OREPO : createNotification({\n  notifiable_id: RW.user_id,\n  notifiable_type: 'App\\Models\\User',\n  type: 'FyiRtApprovedNotification',\n  data: {\n    letter_id,\n    applicant_name,\n    letter_type_name,\n    message: "Surat di wilayah Anda\ntelah disetujui RT"\n  }\n})
+  SVC -> Q : notify(new LetterStatusNotification(...))
+  Q -> OREPO : createNotification({\n  notifiable_id: RW.user_id,\n  notifiable_type: 'App\\Models\\User',\n  type: 'LetterStatusNotification',\n  data: {\n    letter_id,\n    applicant_name,\n    letter_type_name,\n    message: "Surat di wilayah Anda\ntelah disetujui RT"\n  }\n})
   OREPO -> DB : INSERT INTO notifications\n(polymorphic notifiable)
   DB --> OREPO : notification created
-  Q --> RW : Notifikasi in-app + email:\n"FYI: Surat [nomor/jenis] dari\nwilayah Anda telah disetujui RT"
+  Q --> RW : Notifikasi database:\n"FYI: Surat [nomor/jenis] dari\nwilayah Anda telah disetujui RT"
 
   note right of RW
     RW dapat MELIHAT notifikasi ini
@@ -109,23 +108,11 @@ alt RW wilayah ditemukan
 
 else RW wilayah tidak ditemukan / jabatan kosong
   OSVC --> SVC : null
-
-  SVC -> Q : dispatch(SendNotificationJob -> Semua Petugas Desa,\ntype: 'fyi_broadcast_fallback')
-  note right of Q
-    Fallback broadcast: pola SAMA dengan
-    fallback RT (jika RT wilayah tidak
-    ditemukan). Karena notifikasi ini
-    murni FYI (bukan gate), fallback
-    di sini TIDAK memblokir proses -
-    surat tetap lanjut ke approver
-    berikutnya (Kepala Desa/Sekdes)
-    terlepas dari berhasil/tidaknya
-    notifikasi FYI RW terkirim.
+  note over SVC
+    Tidak ada fallback broadcast ke Petugas Desa.
+    Proses approval tetap berjalan; FYI RW tidak
+    dikirim jika pejabat RW aktif tidak ditemukan.
   end note
-  Q -> OREPO : createNotificationBroadcast({\n  notifiable: semua petugas_desa aktif,\n  data: {letter_id, alasan: "RW tidak ditemukan"}\n})
-  OREPO -> DB : INSERT INTO notifications\n(multiple rows)
-  DB --> OREPO : notifications created
-  Q --> PD : Notifikasi in-app:\n"FYI RW gagal dikirim -\nRW wilayah tidak ditemukan\nuntuk surat [id]"
 end
 
 == Kembali ke Alur Utama UC-04a ==
@@ -168,12 +155,13 @@ end note
 '     granular itu lagi).
 '   - TIDAK ADA INSERT ke letter_approvals dengan approval_level='rw'
 '     (ENUM approval_level di v5.0 bahkan sudah tidak punya nilai 'rw').
-'   - TIDAK ADA notifikasi ke Kadus (karena Kadus juga bukan approver).
+'   - Notifikasi keluar dari aksi RW ke Kadus dihapus. Kadus tetap menerima
+'     FYI terpisah setelah RT approve, hanya untuk surat dari dusunnya
+'     (lihat sequence 03); FYI tersebut tidak menjadikan Kadus approver.
 '
-' Yang tersisa dan digambarkan di file baru ini HANYALAH mekanisme
-' notifikasi FYI: resolve RW berbasis wilayah (pola query sama dengan
-' v4.2), lalu dispatch notifikasi read-only, dengan fallback broadcast
-' jika RW tidak ditemukan. Sequence ini dipanggil sebagai SUB-ROUTINE dari
-' dalam UC-04a (RT Approval), bukan dipicu independen oleh aksi RW.
+' Versi v5.1: notifikasi FYI dikirim ke RW aktif yang ditemukan berdasarkan
+' wilayah. Jika tidak ada pejabat RW aktif, notifikasi dilewati tanpa
+' fallback broadcast. Sequence ini dipanggil sebagai side-effect oleh
+' UC-04a (RT Approval), bukan dipicu oleh aksi RW.
 '
 '==================================================================================

@@ -10,11 +10,13 @@ Citizen:
     kategori "warga Non-NIK" (SID-ARCH-BE-001 S5.2).
   properties:
     id:
-      type: integer
-      example: 55
+      type: string
+      format: uuid
+      example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
     village_id:
-      type: integer
-      example: 1
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     nik_masked:
       type: string
       example: "************0001"
@@ -54,17 +56,19 @@ Citizen:
       nullable: true
       example: 1
     family_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 20
+      example: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
       description: "BARU v5.0 - FK ke families.id. NULL = belum/tidak tergabung KK manapun di sistem"
     family:
       type: object
       nullable: true
       properties:
         id:
-          type: integer
-          example: 20
+          type: string
+          format: uuid
+          example: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
         no_kk_masked:
           type: string
           example: "************0001"
@@ -75,14 +79,16 @@ Citizen:
       example: "istri"
       description: "BARU v5.0"
     father_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 40
+      example: "a1c4e7b2-8d35-4f96-b072-3e5a9c1d4f68"
       description: "BARU v5.0 - self-reference ke citizens.id, untuk fitur pohon keluarga"
     mother_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 41
+      example: "c9e2b5d8-1f47-4a03-8d6c-7b4e0a2f5913"
       description: "BARU v5.0 - self-reference"
     father_name_text:
       type: string
@@ -157,6 +163,24 @@ Citizen:
     is_active:
       type: boolean
       example: true
+    village:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../villages/villages.yaml#/Village'
+    rt:
+      nullable: true
+      $ref: '../wilayah/wilayah.yaml#/Rt'
+    rw:
+      nullable: true
+      $ref: '../wilayah/wilayah.yaml#/Rw'
+    hamlet:
+      nullable: true
+      $ref: '../wilayah/wilayah.yaml#/Hamlet'
+    rw_id:
+      type: integer
+      nullable: true
+      example: 5
+      description: "Derived dari rt.rw_id"
 
 CitizenCreateRequest:
   type: object
@@ -198,9 +222,10 @@ CitizenCreateRequest:
       type: integer
       example: 1
     family_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 20
+      example: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
       description: "Pilih dari dropdown KK yang sudah ada, atau buat KK baru dulu via POST /families"
     family_role:
       type: string
@@ -208,13 +233,15 @@ CitizenCreateRequest:
       nullable: true
       example: "istri"
     father_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 40
+      example: "a1c4e7b2-8d35-4f96-b072-3e5a9c1d4f68"
     mother_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 41
+      example: "c9e2b5d8-1f47-4a03-8d6c-7b4e0a2f5913"
     father_name_text:
       type: string
       nullable: true
@@ -295,8 +322,9 @@ CitizenSocioeconomic:
       type: integer
       example: 1
     citizen_id:
-      type: integer
-      example: 55
+      type: string
+      format: uuid
+      example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
     income_range:
       type: string
       enum: ["<1jt", "1-3jt", "3-5jt", "5-10jt", ">10jt"]
@@ -332,9 +360,10 @@ CitizenSocioeconomic:
       nullable: true
       example: "2026-05-01T09:00:00Z"
     surveyed_by:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 5
+      example: "e8aaa421-7fdd-42cf-8c30-993264820afd"
 
 CitizenSocioeconomicUpsertRequest:
   type: object

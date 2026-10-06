@@ -6,19 +6,19 @@ get:
     indikator tahap aktif (derived dari current_step_order + JOIN
     flow_steps, bukan lagi status granular RT/RW/Kadus/Kasi terpisah),
     informasi approval per tahap, dan timeline riwayat lengkap
-    (letter_status_logs). Menyertakan `rw_fyi_notified` sebagai indikator
-    apakah notifikasi FYI ke RW sudah terkirim (RW tidak pernah punya
-    row di approvals).
+    (letter_status_logs). `rw_fyi_notified` bernilai true jika surat memiliki
+    keputusan approve RT; field ini bukan bukti bahwa notifikasi berhasil
+    terkirim. RW tidak pernah punya row di approvals.
   operationId: getLetterDetail
   security:
     - sanctumCookie: []
   parameters:
-    - name: id
+    - name: letter
       in: path
       required: true
       schema:
-        type: integer
-      example: 501
+        type: string
+        format: uuid
   responses:
     '200':
       description: Detail surat berhasil diambil
@@ -27,11 +27,15 @@ get:
           schema:
             type: object
             properties:
+              message:
+                type: string
+                example: "Detail surat berhasil diambil."
               data:
                 $ref: '../../schemas/letters/letters.yaml#/LetterDetail'
           example:
+            message: "Detail surat berhasil diambil."
             data:
-              id: 501
+              id: "550e8400-e29b-41d4-a716-446655440501"
               status: "in_progress"
               current_step_order: 2
               current_step: { step_order: 2, approver_position: "kepala_desa", is_final: false }
@@ -59,5 +63,31 @@ get:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+delete:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Hapus surat sesuai policy
+  operationId: deleteLetter
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letter
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Surat dihapus
+      content:
+        application/json:
+          example:
+            message: "Surat berhasil dihapus."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: User tidak berwenang menghapus surat
     '404':
       $ref: '../../responses/common.yaml#/NotFound'

@@ -1,0 +1,40 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Menurunkan pejabat aktif
+  description: "Aktor: Petugas Desa."
+  operationId: demoteOfficial
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: official
+      in: path
+      required: true
+      schema:
+        type: integer
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            notes:
+              type: string
+              nullable: true
+  responses:
+    '200':
+      description: Jabatan diturunkan
+      content:
+        application/json:
+          example:
+            message: "Jabatan berhasil diturunkan."
+            data: { id: 8, position: rt, is_active: false }
+            warnings:
+              - code: letters_without_approver
+                position: rt
+                count: 2
+                message: "Ada surat yang menunggu pejabat pengganti."
+    '403':
+      description: Aksi dilarang, termasuk self-demote atau menurunkan Petugas Desa terakhir
+    '409':
+      description: Petugas Desa aktif terakhir tidak dapat diturunkan

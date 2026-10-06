@@ -1,0 +1,53 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Promote akun warga menjadi pejabat
+  description: "Aktor: Petugas Desa."
+  operationId: promoteOfficial
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [user_id, position, started_at]
+          properties:
+            user_id:
+              type: string
+              format: uuid
+            position:
+              type: string
+              enum: [rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, kepala_desa, sekretaris_desa, petugas_desa]
+            rt_id:
+              type: integer
+              nullable: true
+            rw_id:
+              type: integer
+              nullable: true
+            hamlet_id:
+              type: integer
+              nullable: true
+            started_at:
+              type: string
+              format: date
+            term_ends_at:
+              type: string
+              format: date
+              nullable: true
+            phone_wa:
+              type: string
+              maxLength: 20
+              nullable: true
+            notes:
+              type: string
+              nullable: true
+  responses:
+    '201':
+      description: Jabatan dibuat; response berupa OfficialResource
+    '403':
+      description: Hanya Petugas Desa yang dapat melakukan promote
+    '409':
+      description: Posisi tunggal pada wilayah tersebut sudah terisi
+    '422':
+      description: Target harus akun warga aktif, memiliki citizen, dan belum menjabat

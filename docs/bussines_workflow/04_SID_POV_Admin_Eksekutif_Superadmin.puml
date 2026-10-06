@@ -34,25 +34,21 @@ elseif (Konfigurasi Sistem) then
   :Edit Konfigurasi Tipe Surat\n(versi sederhana: validity_days,\nassigned_role, is_active);
   stop
 else (Monitoring Surat)
-  :Lihat SELURUH Surat\n(full visibility, semua status\ntermasuk rejected di step manapun);
+  :Lihat SELURUH Surat di desa sendiri\n(full visibility, semua status\ntermasuk rejected di step manapun);
   stop
 endif
 
 |#Thistle|Eksekutif (role: kepala_desa / sekretaris_desa)|
 :Login;
-:Buka Daftar Surat dengan\ncurrent_step_order menunjuk posisi ini\n(approver_position IN kepala_desa, sekdes);
+:Buka Daftar Surat dengan\ncurrent_step_order menunjuk posisi ini\n(approver_position = kepala_desa);
 note right
   BERBEDA dari asumsi sebelumnya:
   Kepala Desa & Sekretaris Desa adalah
   APPROVER AKTIF sejak v5.0 (bukan
   monitoring-only), menggantikan posisi
   Kadus lama. Keduanya saling
-  menggantikan pada step yang sama
-  (first-action-wins, disederhanakan di
-  application layer - lihat disclaimer
-  status keputusan di SID-ARCH-BE-001 S3.3:
-  ini masih berstatus rekomendasi/asumsi
-  default, BELUM keputusan final eksplisit).
+  pada step `kepala_desa` dengan mekanisme
+  first-action-wins dan row lock.
 end note
 :Lihat Detail + Riwayat Keputusan (RT, FYI RW);
 :Putuskan Setuju / Tolak;
@@ -64,12 +60,13 @@ if (Keputusan?) then (Tolak)
   stop
 else (Setuju)
   |#LightYellow|Database & Backend|
-  :current_step_order += 1;
-  :Resolve approver step berikutnya\n(kasi_pelayanan/kaur_tu_umum);
-  :Notifikasi ke Staff Desa;
+  :letters.status = approved (terminal);
+  :Finalisasi nomor surat dan masa berlaku;
+  :Kirim notifikasi ke pemohon;
+  :Kirim notifikasi ke Kasi/Kaur sesuai assigned_role;
   note right
-    Lihat 03_BWF_PovRtRwStaffDesa_v2.puml
-    (segmen Staff Desa) untuk step final.
+    Kasi/Kaur adalah penerima notifikasi dan pemroses
+    surat selesai, bukan approver flow.
   end note
   stop
 endif

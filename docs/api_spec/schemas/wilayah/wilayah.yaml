@@ -5,8 +5,9 @@ Hamlet:
       type: integer
       example: 1
     village_id:
-      type: integer
-      example: 1
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     name:
       type: string
       example: "Dusun Patrol"
@@ -17,6 +18,10 @@ Hamlet:
       type: boolean
       example: true
     created_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+    updated_at:
       type: string
       format: date-time
       example: "2026-06-01T08:00:00Z"
@@ -50,6 +55,14 @@ Rw:
     is_active:
       type: boolean
       example: true
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+    updated_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
 
 RwCreateRequest:
   type: object
@@ -80,6 +93,14 @@ Rt:
     is_active:
       type: boolean
       example: true
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+    updated_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
 
 RtCreateRequest:
   type: object

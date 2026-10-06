@@ -33,10 +33,8 @@ LetterType:
       nullable: true
       example: "kasi_pelayanan"
       description: |
-        Dipertahankan sebagai derived/cache column (keputusan final
-        SID-ARCH-BE-001 S4.2). Source of truth resmi approver tetap
-        flow_steps - kolom ini TIDAK dipakai Policy untuk validasi,
-        murni kompatibilitas mundur & query cepat.
+        Menentukan Kasi/Kaur yang dapat melihat dan mengunduh surat
+        approved. NULL memberikan akses kepada kedua role; bukan approver flow.
     validity_days:
       type: integer
       nullable: true
@@ -72,7 +70,7 @@ LetterType:
           example: 3
         name:
           type: string
-          example: "RT-Kades/Sekdes-Staff (3 Tahap)"
+          example: "RT-Kades (2 Tahap)"
     is_active:
       type: boolean
       example: true
@@ -86,10 +84,8 @@ LetterTypeUpdateRequest:
   type: object
   description: |
     MVP (UC-21 versi sederhana): field yang bisa diedit Petugas Desa.
-    category_id/flow_id ditambahkan di v5.0 agar Petugas Desa bisa
-    mengganti flow approval suatu tipe surat tanpa developer, sesuai
-    prinsip Config over Code. Template & field requirement developer-only
-    via seeder (full CRUD = Next Dev Paket 1).
+    assigned_role NULL diterima dan memberikan akses surat selesai kepada
+    kedua role Kasi/Kaur. Flow aktif hanya menggunakan RT dan Kades/Sekdes.
   properties:
     validity_days:
       type: integer

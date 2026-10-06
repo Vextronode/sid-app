@@ -28,7 +28,7 @@ SIDUTama Cibenda dibangun di atas empat prinsip arsitektur yang bersifat final d
 SIDUTama melayani empat domain bisnis utama. Setiap domain memiliki dokumen arsitektur/skema detail tersendiri - bagian ini hanya memberi orientasi.
 
 ### 2.1 Pelayanan Surat-Menyurat & Pipeline Dinamis
-Domain inti SIDUTama. Setiap jenis surat (`letter_types`) dikelompokkan ke dalam empat kategori perilaku (`letter_categories.code`): Approval Normal, Upload Mandiri, Dokumen Pendukung, dan Update Data Kependudukan. Di dalam kategori Approval Normal, alur persetujuan konkret ditentukan oleh `approval_flows` beserta urutan penyetujunya (`flow_steps.approver_position`, `flow_steps.is_final`) - satu kategori bisa memiliki banyak flow berbeda, dan flow baru ditambahkan sebagai data, bukan perubahan kode. Domain ini juga mencakup mekanisme operasional pendukung yang **sudah** memiliki desain (overdue/reminder, fallback broadcast), serta dua mekanisme (void/cancel, verifikasi surat berbasis QR) yang **baru sebatas disebut sebagai wacana** - belum punya skema atau keputusan teknis, lihat `SID-ARCH-BE-001` S10.
+Domain inti SIDUTama. Setiap jenis surat (`letter_types`) dikelompokkan ke dalam empat kategori perilaku (`letter_categories.code`): Approval Normal, Upload Mandiri, Dokumen Pendukung, dan Update Data Kependudukan. Di dalam kategori Approval Normal, alur persetujuan konkret ditentukan oleh `approval_flows` beserta urutan penyetujunya (`flow_steps.approver_position`, `flow_steps.is_final`) - satu kategori bisa memiliki banyak flow berbeda, dan flow baru ditambahkan sebagai data, bukan perubahan kode. Source saat ini menghitung overdue dari deadline approval. **Status: Belum diimplementasi (Planned)** ??? pengiriman reminder otomatis melalui scheduler belum tersedia. Fallback broadcast ke Petugas Desa tidak tersedia pada alur aktif.
 
 ### 2.2 Manajemen Kependudukan
 Mengelola data warga (master data 4 lapis: identitas inti, sosio-demografi, indikator sosio-ekonomi, klasifikasi kesejahteraan). Seluruh warga tercatat - baik berstatus lokal maupun pendatang - selalu memiliki NIK terverifikasi pada satu tabel yang sama; pembedaan lokal/pendatang murni status (`residency_type`), bukan struktur data terpisah (lihat `SID-ARCH-BE-001` S5.2). Mencakup mekanisme impor massal (Excel) yang sudah didesain (UC-09). Kapabilitas warga mengajukan perubahan data secara self-service (staging) **masih sebatas wacana** - bertentangan dengan UC-09 saat ini yang aktornya hanya Petugas Desa, lihat `SID-ARCH-BE-001` S10.
@@ -38,6 +38,8 @@ Pengelolaan Profil Desa, Berita & Pengumuman, dan Peraturan Desa yang tampil di 
 
 ### 2.4 Governance & RBAC
 Mengatur struktur RBAC (lihat S4), segmentasi Bidang/Jabatan untuk Staff Desa, serta struktur wilayah administratif (Dusun/RW/RT) yang menjadi dasar gating pada domain Surat-Menyurat dan Kependudukan.
+
+Data operasional dan konfigurasi yang dimiliki desa menggunakan `village_id` sebagai scope. Approval flow dan tipe surat dikelola per desa; API publik memilih profil/konten desa melalui `village_code`. Detail batas scope dan respons lintas desa dijelaskan di `SID-ARCH-BE-001` dan OpenAPI.
 
 ---
 
@@ -72,8 +74,8 @@ Bagian ini secara khusus mengklarifikasi hubungan antara **5 Tier** yang disebut
 | Tier | Label Navigasi | `users.role` yang termasuk | Catatan |
 |---|---|---|---|
 | 1 | Superadmin | *(belum ada)* | Slot dicadangkan untuk kebutuhan masa depan (misal admin lintas-desa jika sistem berkembang multi-desa). **Tidak diimplementasikan** - tidak ada role, middleware, atau halaman untuk tier ini saat ini. |
-| 2 | Admin Desa / Eksekutif | `petugas_desa`, `kepala_desa`, `sekretaris_desa` | Satu label navigasi untuk dua kelompok dengan scope otorisasi **berbeda tegas**: `petugas_desa` adalah operator dengan full visibility pipeline surat + akses konfigurasi (wilayah, jabatan, tipe surat, CMS); `kepala_desa`/`sekretaris_desa` adalah approver aktif di step tertentu pipeline surat (sejak v5.0), tanpa akses konfigurasi. Pengelompokan tier ini **tidak menghapus** perbedaan scope ini di backend. |
-| 3 | Staff Desa | `kasi_pelayanan`, `kaur_tu_umum` | Approver final di pipeline surat, resolusi kewenangan berbasis posisi (bukan wilayah) |
+| 2 | Admin Desa / Eksekutif | `petugas_desa`, `kepala_desa`, `sekretaris_desa` | Satu label navigasi untuk dua kelompok dengan scope otorisasi **berbeda tegas**: `petugas_desa` adalah operator dengan full visibility pipeline surat **di desanya sendiri** + akses konfigurasi (wilayah, jabatan, tipe surat, CMS); `kepala_desa`/`sekretaris_desa` adalah approver aktif di step tertentu pipeline surat **di desanya sendiri** (sejak v5.0), tanpa akses konfigurasi. Pengelompokan tier ini **tidak menghapus** perbedaan scope ini di backend. |
+| 3 | Staff Desa | `kasi_pelayanan`, `kaur_tu_umum` | Penerima notifikasi setelah persetujuan final dan petugas pemroses surat sesuai penugasan; bukan approver flow |
 | 4 | RT/RW | `rt`, `rw` | RT tetap approver bergerbang wilayah; RW sejak v5.0 **bukan approver**, murni penerima notifikasi FYI - lihat `SID-ARCH-BE-001` S3.2 |
 | 5 | Warga | `warga` | Self-service: submit surat, lihat status, download surat sendiri |
 

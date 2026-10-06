@@ -1,6 +1,7 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Beranda publik (landing page, tanpa login)
+  security: []
   description: |
     UC-16. Aktor Pengunjung tanpa login. Menampilkan sambutan kepala
     desa, info singkat desa, statistik publik. Read-only, tidak ada

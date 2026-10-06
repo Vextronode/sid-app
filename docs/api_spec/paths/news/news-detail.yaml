@@ -1,6 +1,7 @@
 patch:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Edit berita (termasuk toggle Draft <-> Publikasikan)
+  description: "Aktor: Petugas Desa."
   operationId: updateNews
   security:
     - sanctumCookie: []
@@ -38,7 +39,7 @@ patch:
 delete:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Hapus berita (soft delete)
-  description: Berita tidak lagi tampil di halaman publik setelah dihapus.
+  description: "Berita tidak lagi tampil di halaman publik setelah dihapus. Aktor: Petugas Desa."
   operationId: deleteNews
   security:
     - sanctumCookie: []

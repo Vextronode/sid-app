@@ -2,6 +2,7 @@ patch:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Ubah data anggota organisasi (nama, foto, kontak, status aktif, dst)
   description: |
+    Aktor: Petugas Desa.
     UC-23. Untuk rotasi anggota (mengakhiri masa jabatan lama +
     menambah anggota baru), gunakan `POST
     /village-org-positions/{positionId}/members`, bukan endpoint ini.
@@ -69,6 +70,7 @@ patch:
 delete:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Hapus data anggota organisasi
+  description: "Aktor: Petugas Desa."
   operationId: deleteVillageOrgMember
   security:
     - sanctumCookie: []

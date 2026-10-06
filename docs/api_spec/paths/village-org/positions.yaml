@@ -48,6 +48,7 @@ get:
 post:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Tambah jabatan organisasi baru
+  description: "Aktor: Petugas Desa."
   operationId: createVillageOrgPosition
   security:
     - sanctumCookie: []

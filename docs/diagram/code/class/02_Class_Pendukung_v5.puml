@@ -87,9 +87,7 @@ end note
 note bottom of FlowStep
   ENTITY BAYANGAN (shadow/ghost).
   BARU ditampilkan di file ini (v5.0) -
-  diperlukan agar EventListener generik
-  (FlowStepAdvanced) terlihat jelas
-  sumber approverPosition-nya.
+  entity referensi skema `flow_steps`; source tidak memiliki EventListener `FlowStepAdvanced`.
 end note
 
 ' ═══════════════════════════════════════════════════
@@ -98,11 +96,17 @@ end note
 
 package "Controller Layer" #F0F4FF {
 
-  class VillageOrgController {
-    +index() : JsonResponse
-    +storePosition(StorePositionRequest) : JsonResponse
-    +storeMember(id, StoreMemberRequest) : JsonResponse
-    +rotateMember(memberId, RotateRequest) : JsonResponse
+  class VillageOrgPositionController {
+    +index(IndexVillageOrgPositionRequest) : JsonResponse
+    +show(id) : JsonResponse
+    +store(StoreVillageOrgPositionRequest) : JsonResponse
+    +update(id, UpdateVillageOrgPositionRequest) : JsonResponse
+    +destroy(id) : JsonResponse
+  }
+  class VillageOrgMemberController {
+    +store(position, AddVillageOrgMemberRequest) : JsonResponse
+    +update(position, id, UpdateVillageOrgMemberRequest) : JsonResponse
+    +destroy(position, id) : JsonResponse
   }
 
   class VillageProfileController {
@@ -159,16 +163,8 @@ package "Controller Layer" #F0F4FF {
 
 package "Service Layer" #D5EAD0 {
 
-  class VillageOrgService {
-    +createPosition(data) : VillageOrgPosition
-    +assignMember(positionId, data) : VillageOrgMember
-    +rotateMember(memberId, newData) : VillageOrgMember
-    note right
-      STATUS: fitur rotasi PENDING
-      konfirmasi desa (statis vs dinamis).
-      TIDAK BERUBAH dari v4.2 (TDD Table 69).
-    end note
-  }
+  class VillageOrgPositionService { +list(user, orgType) : Collection; +create(user, data) : VillageOrgPosition }
+  class VillageOrgMemberService { +addOrRotate(user, position, data) : VillageOrgMember; +update(user, position, id, data) : VillageOrgMember }
 
   class VillageProfileService {
     +getProfile(villageId) : Village
@@ -190,36 +186,18 @@ package "Service Layer" #D5EAD0 {
     end note
   }
 
-  class ContactService {
-    +getActiveKasiKaurContacts(villageId) : Collection
-  }
+  class PublicPageService { +home(user) : array; +contactUs(data) : PublicContactResource }
 
   class NotificationService {
-    +getUnreadForUser(userId) : Collection
-    +markAsRead(notificationId) : bool
-    +broadcastToRole(role, data) : void
-    +notifyFlowStepAdvanced(letter, nextStep) : void
-    +notifyRwFyi(letter) : void
+    +getForUser(user) : Collection
+    +markAsRead(user, id) : void
+    +markAllAsRead(user) : void
+    +getUnreadCount(user) : int
     note right
-      *** PERUBAHAN v5.0 (SID-ARCH-BE-001 S7) ***
-      TAMBAH notifyFlowStepAdvanced() - dipicu
-      SATU kali oleh Event generik
-      FlowStepAdvanced setiap kali
-      current_step_order berpindah (approve),
-      MENGGANTIKAN kebutuhan listener terpisah
-      per posisi (RtApproved/RwApproved/dst
-      seperti v4.2). Method ini resolve
-      approver di step berikutnya lewat
-      OfficialService sesuai approverPosition
-      pada FlowStep aktif.
-      TAMBAH notifyRwFyi() - dipanggil SECARA
-      PARALEL/BERSAMAAN dengan
-      notifyFlowStepAdvanced() (bukan
-      berurutan menunggu), karena RW TIDAK
-      PERNAH berada di jalur kritis proses -
-      murni side-effect non-blocking.
-      broadcastToRole() TETAP dipakai untuk
-      fallback RT/RW kosong, TIDAK BERUBAH.
+      Service ini mengelola pembacaan notifikasi.
+      Pengiriman LetterStatusNotification dilakukan
+      oleh LetterService, RtApprovalService, dan
+      KadesApprovalService.
     end note
   }
 }
@@ -230,12 +208,8 @@ package "Service Layer" #D5EAD0 {
 
 package "Repository Layer" #C8E6C9 {
 
-  class VillageOrgRepository {
-    +findPositionsByType(villageId, orgType) : Collection
-    +createPosition(data) : VillageOrgPosition
-    +createMember(data) : VillageOrgMember
-    +deactivateMember(memberId) : bool
-  }
+  class VillageOrgPositionRepository { }
+  class VillageOrgMemberRepository { }
 
   class VillageRepository {
     +findById(id) : Village
@@ -257,12 +231,7 @@ package "Repository Layer" #C8E6C9 {
     +delete(id) : bool
   }
 
-  class NotificationRepository {
-    +findUnreadByUser(userId) : Collection
-    +create(data) : Notification
-    +createBulk(dataList) : void
-    +markRead(id) : bool
-  }
+  class NotificationRepository { +allForUserLatestFirst(user) : Collection; +markAsRead(notification) : void; +markAllAsReadForUser(user) : void }
 }
 
 ' ═══════════════════════════════════════════════════
@@ -300,7 +269,7 @@ package "Eloquent Model Layer" #FDE8D8 {
     +isCurrentlyActive() : bool
   }
 
-  class Notification {
+  class Notification <<Laravel framework>> {
     +id : uuid
     +type : string
     +notifiableType : string
@@ -317,7 +286,7 @@ package "Eloquent Model Layer" #FDE8D8 {
       data (json) kini bisa berisi payload
       generik berbeda tergantung event
       pemicu (FlowStepAdvanced vs RwFyi vs
-      broadcast fallback), tapi struktur
+      notifikasi FYI RW), tapi struktur
       kolom Model ini sendiri sama sekali
       tidak berubah.
     end note
@@ -365,82 +334,41 @@ package "Eloquent Model Layer" #FDE8D8 {
 }
 
 ' ═══════════════════════════════════════════════════
-' EVENT / LISTENER (Ilustrasi Alur Notifikasi Generik v5.0)
-' ═══════════════════════════════════════════════════
+' Notifikasi dikirim langsung oleh service melalui kanal database. Event/Listener aplikasi tidak ada pada source.
 
-package "Event & Listener Layer (Ilustrasi Alur v5.0)" #FFF3E0 {
-
-  class "FlowStepAdvanced\n<<Event>>" as EvtFlowStep {
-    +letter : Letter
-    +previousStep : FlowStep?
-    +nextStep : FlowStep?
-  }
-
-  class "FlowStepNotificationListener\n<<Listener>>" as ListenerFlowStep {
-    +handle(FlowStepAdvanced) : void
-  }
-
-  note bottom of EvtFlowStep
-    *** BARU v5.0 (SID-ARCH-BE-001 S7) ***
-    Event GENERIK - dipicu SETIAP kali
-    current_step_order berpindah (approve),
-    MENGGANTIKAN Event spesifik per posisi
-    (RtApproved, RwApproved, dst - v4.2).
-    Dipicu oleh LetterService (lihat Class
-    Core [1/2]) setelah advanceToNextStep().
-  end note
-
-  note bottom of ListenerFlowStep
-    SATU Listener generik menggantikan
-    kebutuhan Listener terpisah per tahap.
-    Membaca nextStep.approverPosition,
-    resolve approver lewat OfficialService
-    (lihat Class Core [1/2]:
-    resolveByPositionOnly() atau
-    resolveRtForCitizen() tergantung
-    posisi), lalu memanggil
-    NotificationService.notifyFlowStepAdvanced().
-    SECARA TERPISAH/PARALEL (dalam handler
-    yang sama, non-blocking terhadap
-    resolve approver berikutnya), listener
-    ini juga memicu
-    NotificationService.notifyRwFyi() jika
-    previousStep.approverPosition = 'rt'
-    (RT baru saja approve).
-  end note
-}
-
-' ═══════════════════════════════════════════════════
 ' RELATIONSHIPS: Controller -> Service
 ' ═══════════════════════════════════════════════════
 
-VillageOrgController ..> VillageOrgService : uses
+VillageOrgMemberController ..> VillageOrgMemberService : uses
 VillageProfileController ..> VillageProfileService : uses
 NewsController ..> NewsService : uses
 RegulationController ..> RegulationService : uses
 PublicPageController ..> VillageProfileService : uses
 PublicPageController ..> NewsService : uses
 PublicPageController ..> RegulationService : uses
-PublicPageController ..> ContactService : uses
+PublicPageController ..> PublicPageService : uses
 NotificationController ..> NotificationService : uses
 
 ' ═══════════════════════════════════════════════════
 ' RELATIONSHIPS: Service -> Repository
 ' ═══════════════════════════════════════════════════
 
-VillageOrgService ..> VillageOrgRepository : uses
+VillageOrgPositionController ..> VillageOrgPositionService : uses
+VillageOrgMemberController ..> VillageOrgMemberService : uses
+VillageOrgPositionService ..> VillageOrgPositionRepository : uses
+VillageOrgMemberService ..> VillageOrgMemberRepository : uses
 VillageProfileService ..> VillageRepository : uses
 NewsService ..> NewsRepository : uses
 RegulationService ..> RegulationRepository : uses
-ContactService ..> "OfficialRepository\n(lihat Class Core)" : uses
+PublicPageService ..> "OfficialRepository\n(lihat Class Core)" : uses
 NotificationService ..> NotificationRepository : uses
 
 ' ═══════════════════════════════════════════════════
 ' RELATIONSHIPS: Repository -> Eloquent Model
 ' ═══════════════════════════════════════════════════
 
-VillageOrgRepository ..> VillageOrgPosition : queries
-VillageOrgRepository ..> VillageOrgMember : queries
+VillageOrgPositionRepository ..> VillageOrgPosition : queries
+VillageOrgMemberRepository ..> VillageOrgMember : queries
 VillageRepository ..> Village : queries
 NewsRepository ..> News : queries
 RegulationRepository ..> VillageRegulation : queries
@@ -467,8 +395,16 @@ User "1" -- "many" VillageRegulation : createdBy
 
 Letter ..> EvtFlowStep : dispatched by\nLetterService
 FlowStep ..> EvtFlowStep : nextStep/\npreviousStep
-EvtFlowStep ..> ListenerFlowStep : handled by
-ListenerFlowStep ..> NotificationService : calls\nnotifyFlowStepAdvanced()\n+ notifyRwFyi()
+
+package "Komponen konten publik dan organisasi yang terverifikasi" #E8EAF6 {
+  class PublicLetterTypeResource
+  class PublicContactResource
+  note right
+    Resource ini adalah response source aktif;
+    operasi publik ditangani PublicPageController
+    dan PublicPageService.
+  end note
+}
 
 @enduml
 
@@ -479,20 +415,16 @@ ListenerFlowStep ..> NotificationService : calls\nnotifyFlowStepAdvanced()\n+ no
 ' TIDAK BERUBAH (struktur Model & Repository & Controller CMS):
 '   - VillageOrgPosition, VillageOrgMember, Notification, News,
 '     VillageRegulation: TIDAK ADA perubahan kolom/atribut sama sekali.
-'   - VillageOrgController/Service/Repository, VillageProfileController/
+'   - VillageOrgMemberController/VillageOrgMemberService/VillageOrgMemberRepository, VillageProfileController/
 '     Service/Repository, NewsController/Service/Repository,
 '     RegulationController/Service/Repository, PublicPageController,
-'     ContactService: seluruhnya identik dengan v4.2.
+'     PublicPageService: nama sesuai source aktif.
 '
-' PERUBAHAN:
-'   1. NotificationService: TAMBAH 2 method baru -
-'      notifyFlowStepAdvanced() dan notifyRwFyi() - menggantikan asumsi
-'      lama bahwa notifikasi dipicu per Event granular per posisi
-'      (RtApproved/RwApproved/KadusApproved/dst di v4.2, yang sudah
-'      tidak ada). Method generik ini merefleksikan filosofi Config
-'      over Code: satu handler melayani semua posisi approver.
+' Dikoreksi Batch 14: NotificationService hanya membaca/menandai notifikasi.
+' LetterStatusNotification dikirim langsung oleh service surat/approval;
+' tidak ada FlowStepAdvanced atau listener aplikasi di source aktif.
 '   2. TAMBAH package baru "Event & Listener Layer (Ilustrasi Alur v5.0)"
-'      berisi FlowStepAdvanced (Event) dan FlowStepNotificationListener
+'      historis, tidak aktif: FlowStepAdvanced (Event) dan FlowStepNotificationListener
 '      (Listener) - digambar sebagai ILUSTRASI untuk memperjelas
 '      bagaimana SID-ARCH-BE-001 S7 (perubahan struktural notifikasi
 '      v5.0) terhubung ke NotificationService di file ini. Sebelumnya
@@ -505,10 +437,7 @@ ListenerFlowStep ..> NotificationService : calls\nnotifyFlowStepAdvanced()\n+ no
 '      relasi Event/Listener ke pipeline approval generik tidak ambigu
 '      tanpa membuka file Class Core [1/2].
 '
-' CATATAN PENTING: package Event/Listener bersifat ILUSTRATIF untuk
-' memperjelas alur - bukan berarti v4.2 tidak punya Event/Listener sama
-' sekali (Laravel Events & Listeners memang sudah dipakai sejak v3.2 sesuai
-' TDD Table 7 Tech Stack). Yang BARU di v5.0 adalah SIFAT GENERIK dari
-' Event tersebut (satu Event untuk semua posisi, bukan Event per-posisi).
+' Koreksi Batch 14: class Event/Listener pada versi terdahulu hanya ilustrasi
+' dan tidak merepresentasikan source aktif; bagian itu dihapus dari diagram.
 '
 '==================================================================================

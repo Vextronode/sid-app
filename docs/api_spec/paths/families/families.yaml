@@ -46,6 +46,7 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Tambah Kartu Keluarga (KK) baru
   description: |
+    Aktor: Petugas Desa.
     BARU v5.0. no_kk dienkripsi AES-256 + di-hash SHA-256 (no_kk_hash),
     pola dual-column sama seperti NIK. Setelah KK dibuat, tautkan anggota
     lewat POST /families/{id}/members atau isi family_id saat create/update

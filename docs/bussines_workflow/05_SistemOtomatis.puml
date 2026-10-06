@@ -1,6 +1,9 @@
 @startuml
+note top
+**Status: Belum diimplementasi (Planned)** ??? scheduler/job pengiriman reminder otomatis belum ada pada source backend; alur diagram ini adalah rancangan target.
+end note
 
-title SID - Sistem (Otomatis): Overdue/Reminder & Fallback Broadcast [Business Workflow]
+title SID - Rancangan Target: Overdue/Reminder [Belum Diimplementasikan]
 
 skinparam activity {
   BackgroundColor #EBF3FB
@@ -14,7 +17,7 @@ skinparam note {
   BorderColor #C0A000
 }
 
-|#LightYellow|Sistem (Scheduler)|
+|#LightYellow|Rencana Scheduler (belum ada di source)|
 
 start
 
@@ -44,38 +47,6 @@ fork
   endif
 
 
-fork again
-
-  |#LightYellow|Sistem (Scheduler)|
-
-  :Warga submit surat baru,\nsistem resolve RT wilayah;
-
-  if (RT wilayah ditemukan?\n(via citizens.rt_id -> officials aktif)) then (tidak)
-
-    :Surat tetap tersimpan PENDING;
-
-    |#Wheat|Seluruh petugas_desa aktif|
-
-    :Terima Notifikasi Broadcast Fallback;
-
-    note right
-      Cakupan fallback ini SPESIFIK
-      untuk RT wilayah tidak
-      ditemukan/kosong
-      (UC-03 alt flow 9a).
-
-      Bukan konsep umum
-      "Bidang kosong".
-    end note
-
-  else (ya)
-
-    |#LightYellow|Sistem (Scheduler)|
-
-    :Lanjut proses normal;
-
-  endif
-
 end fork
 
 
@@ -83,6 +54,10 @@ stop
 
 
 floating note right
+  Diagram ini rancangan target. Source saat ini
+  menghitung overdue saat daftar surat dimuat,
+  tetapi belum memiliki scheduler/job reminder.
+
   Void/Cancel Surat dan Verifikasi QR
   SENGAJA TIDAK digambarkan di sini.
 

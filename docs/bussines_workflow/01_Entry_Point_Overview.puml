@@ -25,7 +25,7 @@ elseif (rt / rw) then
   stop
 
 elseif (kasi_pelayanan / kaur_tu_umum) then
-  :Lihat detail -> **03_BWF_PovRtRwStaffDesa_v2.puml**\n(Approval final surat sesuai\nflow_steps.approver_position);
+  :Lihat detail -> **03_BWF_PovRtRwStaffDesa_v2.puml**\n(Penerima notifikasi setelah\npersetujuan final; bukan approver);
   stop
 
 elseif (petugas_desa) then

@@ -2,6 +2,7 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Import data warga massal via Excel
   description: |
+    Aktor: Petugas Desa.
     UC-09 (Main Flow - Import Excel). Library `maatwebsite/excel`.
     Validasi per baris (format NIK, duplikat), baris error di-skip,
     ringkasan hasil ditampilkan. Template Excel v5.0 disesuaikan untuk

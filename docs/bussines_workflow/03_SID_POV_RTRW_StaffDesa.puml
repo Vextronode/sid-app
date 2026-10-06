@@ -49,33 +49,18 @@ fork again
   |#LightYellow|Database & Backend|
   :Resolve approver step berikutnya\nsesuai approval_flows/flow_steps;
 
-  if (approver_position step berikutnya?) then (kepala_desa / sekdes)
+  if (approver_position step berikutnya?) then (kepala_desa)
     :Kirim notifikasi ke Eksekutif;
-    note right
-      Step ini diproses di
-      04_BWF_PovAdminEksekutifSuperadmin_v2.puml
-      (segmen Eksekutif).
-    end note
+  else (step berikutnya tidak ada)
+    :Finalisasi sesuai flow tanpa tahap tambahan;
     stop
-  else (kasi_pelayanan / kaur_tu_umum - langsung final)
-    :Kirim notifikasi ke Staff Desa;
   endif
 end fork
 
-|#LightGreen|Staff Desa (Kasi Pelayanan / Kaur TU Umum)|
-:Terima Notifikasi;
-note right
-  Resolusi murni berbasis posisi
-  (flow_steps.approver_position IN
-  ('kasi_pelayanan','kaur_tu_umum')),
-  BUKAN berbasis wilayah. Kolom
-  letter_types.assigned_role hanya
-  derived cache - source of truth
-  tetap flow_steps.
-end note
-:Buka Daftar Surat sesuai posisinya\n(current_step_order menunjuk step ini);
-:Lihat Detail + Riwayat Keputusan Sebelumnya;
-:Putuskan Setuju / Tolak (step is_final = true);
+|#Thistle|Kepala Desa / Sekretaris Desa|
+:Terima notifikasi tahap final;
+:Buka worklist dan detail surat;
+:Setujui atau tolak pada step kepala_desa;
 
 if (Keputusan?) then (Tolak)
   |#LightYellow|Database & Backend|
@@ -83,17 +68,25 @@ if (Keputusan?) then (Tolak)
   :Notifikasi ke Warga;
   stop
 else (Setuju)
-
   |#LightYellow|Database & Backend|
-
-  :Generate letter_number;
-  :Hitung expires_at;
+  :Generate letter_number dan expires_at;
   :letters.status = approved;
-  :Notifikasi ke Warga + Kades/Sekdes (monitoring);
-
-  stop
-
+  :Notifikasi hasil ke Warga;
+  :Notifikasi selesai ke Kasi/Kaur sesuai assigned_role;
 endif
+
+|#LightGreen|Staff Desa (Kasi Pelayanan / Kaur TU Umum)|
+:Terima notifikasi surat selesai;
+note right
+  Kasi/Kaur bukan approver dan tidak
+  menjadi posisi pada flow_steps.
+  Penerima ditentukan oleh
+  letter_types.assigned_role; NULL
+  mengirim notifikasi kepada keduanya.
+end note
+:Buka daftar surat selesai sesuai assignment;
+:Lihat detail dan unduh surat;
+stop
 
 note right
   Pengelolaan data warga (CRUD manual,

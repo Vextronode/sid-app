@@ -1,16 +1,18 @@
 get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat detail KK beserta anggota
+  description: "Aktor: Petugas Desa."
   operationId: getFamily
   security:
     - sanctumCookie: []
   parameters:
-    - name: id
+    - name: family
       in: path
       required: true
       schema:
-        type: integer
-      example: 20
+        type: string
+        format: uuid
+      example: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
   responses:
     '200':
       description: Detail KK berhasil diambil
@@ -37,16 +39,18 @@ get:
 patch:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Edit KK (No KK tidak bisa diubah setelah dibuat)
+  description: "Aktor: Petugas Desa."
   operationId: updateFamily
   security:
     - sanctumCookie: []
   parameters:
-    - name: id
+    - name: family
       in: path
       required: true
       schema:
-        type: integer
-      example: 20
+        type: string
+        format: uuid
+      example: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
   requestBody:
     required: true
     content:
@@ -71,3 +75,31 @@ patch:
       $ref: '../../responses/common.yaml#/NotFound'
     '422':
       $ref: '../../responses/common.yaml#/ValidationError'
+delete:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Hapus data KK
+  description: Hanya Petugas Desa yang dapat mengelola data kependudukan.
+  operationId: deleteFamily
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: family
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
+  responses:
+    '200':
+      description: Kartu Keluarga berhasil dihapus
+      content:
+        application/json:
+          example:
+            message: "Kartu Keluarga berhasil dihapus."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

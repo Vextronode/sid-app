@@ -1,6 +1,7 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Daftar berita & pengumuman publik (tanpa login)
+  security: []
   description: |
     UC-16. Hanya menampilkan news dengan is_published = true. Tidak
     berubah dari v4.2.

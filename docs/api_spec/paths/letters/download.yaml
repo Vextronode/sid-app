@@ -9,19 +9,19 @@ get:
     storage, tapi menghindari PDF stale jika data surat berubah setelah
     digenerate). TTD & stempel diambil dari officials (Kades aktif:
     is_active=true AND ended_at IS NULL). Untuk role warga, dicek
-    expires_at - jika sudah lewat, akses ditolak (403). Role lain
-    (petugas_desa, kasi_pelayanan, kaur_tu_umum, kepala_desa,
-    sekretaris_desa) selalu bisa download tanpa cek expires_at.
+    expires_at bagi pemohon (`submitted_by = user.id`) tanpa membedakan
+    role. Kasi/Kaur juga wajib sesuai assigned_role. TTD dan stempel selalu
+    berasal dari Kepala Desa aktif, termasuk bila Sekdes yang menyetujui.
   operationId: downloadLetterPdf
   security:
     - sanctumCookie: []
   parameters:
-    - name: id
+    - name: letter
       in: path
       required: true
       schema:
-        type: integer
-      example: 501
+        type: string
+        format: uuid
   responses:
     '200':
       description: File PDF berhasil digenerate dan di-stream sebagai response
@@ -33,7 +33,7 @@ get:
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: Status belum approved, atau (khusus warga) expires_at sudah lewat
+      description: Status belum approved, pemohon telah melewati expires_at, atau Policy menolak
       content:
         application/json:
           schema:
@@ -43,8 +43,8 @@ get:
               summary: Surat belum berstatus approved
               value:
                 message: "Surat baru dapat diunduh setelah seluruh proses persetujuan selesai."
-            expired_for_warga:
-              summary: Warga mencoba download setelah masa berlaku habis
+            expired_for_applicant:
+              summary: Pemohon mencoba download setelah masa berlaku habis
               value:
                 message: "Masa berlaku surat telah habis."
     '404':

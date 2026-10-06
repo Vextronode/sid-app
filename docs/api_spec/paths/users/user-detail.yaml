@@ -2,19 +2,20 @@ patch:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Edit / nonaktifkan akun user
   description: |
-    UC-14. Guard (tidak berubah dari v4.2): tidak bisa nonaktifkan diri
+    Aktor: Petugas Desa.
+    UC-14. Guard: tidak bisa nonaktifkan diri
     sendiri, dan tidak bisa nonaktifkan satu-satunya akun petugas_desa
     aktif yang tersisa.
   operationId: updateUser
   security:
     - sanctumCookie: []
   parameters:
-    - name: id
+    - name: user
       in: path
       required: true
       schema:
-        type: integer
-      example: 12
+        type: string
+        format: uuid
   requestBody:
     required: true
     content:

@@ -1,23 +1,14 @@
 RegisterRequest:
   type: object
-  required: [nik, name, email, password, password_confirmation]
+  required: [nik, password, password_confirmation]
   description: |
-    UC-17. Tidak berubah secara struktural dari v4.2 - validasi tetap
-    berbasis nik_hash lookup ke citizens. v5.0 hanya memastikan citizen
-    yang ditemukan sudah mengikuti skema baru (family_id/residency_type/dst),
-    tidak menambah field baru ke request registrasi ini.
+    UC-17. Register dengan NIK dan password; nama diambil dari citizen dan
+    username dibuat otomatis dengan pola nama-depan.NNNN.
   properties:
     nik:
       type: string
       example: "3201012345670001"
       description: NIK 16 digit, harus sudah terdaftar di tabel citizens
-    name:
-      type: string
-      example: "Siti Aminah"
-    email:
-      type: string
-      format: email
-      example: "siti.aminah@gmail.com"
     password:
       type: string
       format: password
@@ -32,31 +23,24 @@ RegisterResponse:
   properties:
     message:
       type: string
-      example: "Akun berhasil dibuat, silakan login"
+      example: "Akun berhasil dibuat. Simpan username Anda."
     data:
       type: object
       properties:
-        id:
-          type: integer
-          example: 101
+        username:
+          type: string
+          example: "siti.4821"
         name:
           type: string
           example: "Siti Aminah"
-        email:
-          type: string
-          example: "siti.aminah@gmail.com"
-        role:
-          type: string
-          example: "warga"
 
 LoginRequest:
   type: object
-  required: [email, password]
+  required: [username, password]
   properties:
-    email:
+    username:
       type: string
-      format: email
-      example: "siti.aminah@gmail.com"
+      example: "siti.4821"
     password:
       type: string
       format: password
@@ -68,18 +52,22 @@ LoginResponse:
     message:
       type: string
       example: "Login berhasil"
-    data:
+    user:
       $ref: '#/CurrentUser'
 
 CurrentUser:
   type: object
   properties:
     id:
-      type: integer
-      example: 101
+      type: string
+      format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
     name:
       type: string
       example: "Siti Aminah"
+    username:
+      type: string
+      example: "siti.4821"
     email:
       type: string
       example: "siti.aminah@gmail.com"
@@ -87,16 +75,24 @@ CurrentUser:
       type: string
       enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, kepala_desa, sekretaris_desa]
       example: "warga"
+    must_change_password:
+      type: boolean
+      example: false
+    official:
+      type: object
+      nullable: true
     village_id:
-      type: integer
-      example: 1
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     citizen:
       type: object
       nullable: true
       properties:
         id:
-          type: integer
-          example: 55
+          type: string
+          format: uuid
+          example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
         name:
           type: string
           example: "Siti Aminah"
@@ -112,9 +108,10 @@ CurrentUser:
           nullable: true
           example: 2
         family_id:
-          type: integer
+          type: string
+          format: uuid
           nullable: true
-          example: 20
+          example: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
           description: "BARU v5.0"
         residency_type:
           type: string

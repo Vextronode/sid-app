@@ -2,6 +2,7 @@ post:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Tambah / rotasi anggota untuk suatu jabatan organisasi
   description: |
+    Aktor: Petugas Desa.
     UC-23. Jika is_single_occupant=true dan sudah ada anggota aktif,
     sistem otomatis UPDATE ended_at anggota lama + INSERT baru (pola
     rotasi sama seperti tabel officials). Jika is_single_occupant=false
@@ -11,7 +12,7 @@ post:
   security:
     - sanctumCookie: []
   parameters:
-    - name: positionId
+    - name: position
       in: path
       required: true
       schema:

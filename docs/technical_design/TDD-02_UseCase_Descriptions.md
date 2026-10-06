@@ -5,12 +5,13 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 2 dari 5 (+ Appendix) |
-| Status | v5.0 — mencerminkan state final saat ini |
+| Status | v5.1 — Auth & Approval Flow |
 | Cakupan | Deskripsi seluruh Use Case aktif MVP (UC-01 s/d UC-24, kecuali yang dipindah ke Appendix) |
 | UC Next Dev / Tahap 2 (UC-07, UC-11, UC-12, UC-13) | Lihat `TDD-06_Appendix.md` |
 | Dokumen terkait | `TDD-01_Overview_Scope_Roles.md`, `TDD-03_Database_Schema.md`, OpenAPI Spec v5.0 |
 
-> Referensi kontrak endpoint (request/response, error handling) untuk setiap UC ada di OpenAPI Spec v5.0 — dokumen ini fokus pada alur bisnis dan aturan, bukan kontrak HTTP detail.
+> **v5.1 — Auth & Approval Flow:** UC-01, UC-03, UC-04c/d, UC-08, UC-14/15/17/22 diperbarui mengikuti plan dan perilaku backend saat ini.
+> Referensi kontrak endpoint (request/response, error handling) untuk setiap UC ada di OpenAPI Spec v5.1 — dokumen ini fokus pada alur bisnis.
 
 ---
 
@@ -34,17 +35,18 @@ Sistem ini mendefinisikan **22 Use Case aktif di MVP**. Total keseluruhan UC yan
 |---|---|
 | Use Case ID | UC-01 |
 | Nama | Login |
-| Aktor | Warga, RT, RW, Kadus (akun tetap ada, tanpa hak approval), Kasi Pelayanan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
+| Aktor | Seluruh pengguna terdaftar |
 | Pre-condition | User belum terautentikasi, memiliki akun aktif di sistem |
 | Post-condition | User berhasil masuk; session aktif via HttpOnly cookie (Sanctum) |
 
 Main Flow:
 1. User membuka halaman login
-2. User memasukkan email dan password
+2. User memasukkan username dan password
 3. Sistem memvalidasi format input
 4. Sistem memverifikasi kredensial ke database
 5. Sistem membuat session token (Sanctum cookie)
-6. Sistem mengarahkan user ke dashboard sesuai role masing-masing
+6. Sistem membuat sesi cookie Sanctum dan mengembalikan profil user termasuk role, official aktif, dan `must_change_password`
+7. Jika `must_change_password=true`, endpoint yang dilindungi mengembalikan 403 berkode `password_change_required` sampai password diganti
 
 Alternative Flow:
 - 3a. Terlalu banyak percobaan gagal → sistem terapkan rate limiting (throttle)
@@ -78,39 +80,43 @@ Main Flow:
 |---|---|
 | Use Case ID | UC-03 |
 | Nama | Input Permohonan Surat |
-| Aktor | Warga |
-| Pre-condition | Warga sudah login dengan akun terdaftar, jenis surat tersedia (`template != NULL` + `is_active = true`) |
-| Post-condition | Permohonan tersimpan dengan status `pending`, `flow_id` di-snapshot, `current_step_order = 1`, notifikasi terkirim ke RT wilayah warga |
+| Aktor | Pengguna aktif dengan `citizen_id`, termasuk pejabat yang mengajukan untuk dirinya |
+| Pre-condition | User sudah login, akun aktif dan terhubung ke citizen; jenis surat tersedia (`template != NULL` + `is_active = true`) |
+| Post-condition | Permohonan tersimpan dengan status `pending`, `flow_id` di-snapshot, dan `current_step_order` menunjuk tahap actionable pertama |
 
 Main Flow:
-1. Warga membuka menu "Ajukan Permohonan Surat"
-2. Warga memilih jenis surat (hanya tampil yang `template != NULL AND is_active = true`)
+1. Pemohon membuka menu "Ajukan Permohonan Surat"
+2. Pemohon memilih jenis surat (hanya tampil yang `template != NULL AND is_active = true`)
 3. Sistem menampilkan persyaratan berdasarkan `verification_type` jenis surat:
    - `auto` → sistem otomatis validasi jika NIK warga terdaftar, lanjut submit
    - `manual` → sistem tampilkan checklist persyaratan, warga wajib konfirmasi kelengkapan
    - `document` → sistem tampilkan form upload dokumen pendukung; wajib diisi sebelum submit
-4. Sistem mengambil data warga dari `auth()->user()->citizen` secara otomatis (nama, NIK, alamat sudah terisi dari akun yang login)
-5. Warga melengkapi form (keperluan, catatan tambahan)
-6. Jika `verification_type = document` → warga upload dokumen pendukung
+4. Sistem mengambil data pemohon dari `auth()->user()->citizen` secara otomatis
+5. Pemohon melengkapi form (keperluan, catatan tambahan)
+6. Jika `verification_type = document` → pemohon upload dokumen pendukung
 7. Warga submit permohonan
 8. Sistem memvalidasi semua input (field wajib, format)
-9. Sistem resolve RT wilayah warga via OfficialService (berdasarkan `citizens.rt_id`)
+
+> **Catatan (diverifikasi terhadap source 2026-10-06):** `letter_types.verification_type` hanya disimpan sebagai atribut (`LetterType::$fillable`); `StoreLetterRequest`/`LetterService` tidak memberlakukan perilaku `auto`/`manual`/`document` di server, dan `attachments` hanya divalidasi (pdf/jpg/jpeg/png, maks 2048 KB) tanpa disimpan. Langkah 3 dan 6 di atas adalah perilaku yang diharapkan dari sisi klien dan **belum ditegakkan backend** (Planned).
+9. Sistem memilih tahap awal: tahap non-final dilewati hanya bila approver aktif tersedia dan seluruh approver eligible adalah pemohon; tahap kosong tidak dilewati. Tahap final tidak pernah dilewati dan harus memiliki approver eligible selain pemohon.
 10. Sistem mengambil `letter_types.flow_id` dan meng-*snapshot*-nya ke `letters.flow_id` (dikunci, bukan live-reference — lihat `TDD-03_Database_Schema.md` Section 3)
 11. Sistem menyimpan data dalam `DB::transaction()`:
     - `citizen_id` = `auth()->user()->citizen_id`
-    - `submitted_by` = `auth()->user()->id` (role: warga)
+    - `submitted_by` = `auth()->user()->id` (role apa pun yang memenuhi syarat)
     - NIK dienkripsi AES-256 → `applicant_nik`
     - SHA-256 dari NIK plaintext → `applicant_nik_hash`
     - `status = pending`, `submitted_at = now()`
-    - `flow_id` = snapshot, `current_step_order = 1`
+    - `flow_id` = snapshot, `current_step_order` = tahap actionable pertama
+    - Membuat placeholder `letter_approvals` untuk step aktif dengan `approved_by = NULL`, `action = NULL`, dan deadline sesuai setting level
     - INSERT ke `letter_status_logs` (status: pending, actor_id, IP)
-12. Sistem men-dispatch `SendNotificationJob` ke RT yang berwenang
-13. Sistem menampilkan konfirmasi sukses ke Warga
+12. Sistem men-dispatch notifikasi ke approver tahap awal
+13. Sistem menampilkan konfirmasi sukses kepada pemohon
 
 Alternative Flow:
 - 6a. Ukuran file dokumen melebihi batas → error "File terlalu besar"
 - 8a. Validasi gagal → tampilkan pesan error per field; tidak menyimpan data
-- 9a. RT wilayah tidak ditemukan / jabatan kosong → surat tetap tersimpan `pending`, notifikasi dikirim ke semua `petugas_desa` aktif (broadcast fallback)
+- 9a. Tidak ada approver eligible pada tahap final → submit ditolak; pemohon tidak boleh menyetujui suratnya sendiri
+- 9b. Jika tahap RT dilewati, RW dan Kadus tidak menerima FYI
 
 ---
 
@@ -121,22 +127,21 @@ Alternative Flow:
 | Use Case ID | UC-04a |
 | Nama | RT Approval / Rejection Surat |
 | Aktor | RT |
-| Pre-condition | RT sudah login; ada surat dengan status `pending` di wilayahnya, `current_step_order = 1` |
+| Pre-condition | RT sudah login; ada surat di wilayahnya yang menunggu tahap RT (`pending` atau `in_progress`) |
 | Post-condition | Status surat berubah (`in_progress` / `rejected`), log tercatat, notifikasi terkirim |
 
 Main Flow:
-1. RT membuka daftar surat wilayahnya berstatus `pending`
+1. RT membuka daftar seluruh surat dari wilayahnya; keputusan hanya tersedia untuk surat yang step aktifnya masih RT
 2. RT membuka detail permohonan
 3. RT memeriksa data pemohon dan keperluan surat
 4. RT memilih tindakan: Setujui atau Tolak
 5. RT mengisi catatan keputusan (wajib jika menolak)
 6. Sistem memvalidasi bahwa RT berwenang atas wilayah surat ini (via OfficialService, cek `rt_id`)
 7. Sistem memproses dalam `DB::transaction()`:
-   - Jika SETUJUI: `current_step_order += 1`, `status = in_progress`, isi `processed_at`
-   - Jika TOLAK: `status = rejected`, `rejected_at_step` = step RT, isi `processed_at`
-   - INSERT ke `letter_approvals` (`approval_level: 'rt'`, action, notes, `approved_by`, `flow_step_id`, `deadline_at`)
+   - Jika SETUJUI: perbarui placeholder approval step RT dengan aktor/aksi; pindahkan `current_step_order` ke step berikutnya, set `status = in_progress`, dan buat placeholder approval berikutnya beserta deadline
+   - Jika TOLAK: perbarui placeholder approval RT; set `status = rejected`, `rejected_at_step` = step RT, isi `processed_at` (terminal)
    - INSERT ke `letter_status_logs` (old: pending, new: in_progress/rejected, actor_id, IP)
-8. Jika approve: sistem resolve RW wilayah (FYI, non-blocking) + resolve Kades/Sekdes (approver berikutnya) → dispatch notifikasi ke keduanya **secara paralel**
+8. Jika approve pada tahap RT: sistem mengirim FYI ke RW dan Kadus sesuai wilayah surat, serta notifikasi ke tahap berikutnya; tidak ada FYI jika tahap RT dilewati
 9. Jika reject: sistem dispatch notifikasi ke Warga (TERMINAL)
 10. Sistem menampilkan konfirmasi keputusan ke RT
 
@@ -157,7 +162,8 @@ RW tidak memiliki use case approval sendiri. Sub-flow berikut adalah bagian dari
 Catatan Penting:
 - RW **tidak pernah** tercatat sebagai `approval_level` di tabel `letter_approvals`
 - RW **tidak memblokir** alur surat — surat langsung lanjut ke step berikutnya begitu RT approve
-- Fallback notifikasi RW kosong/tidak ditemukan: broadcast ke semua `petugas_desa` aktif (pola sama dengan fallback RT)
+- Jika pejabat RW aktif tidak ditemukan, notifikasi FYI dilewati; tidak ada fallback broadcast dan proses approval tetap berjalan.
+- Kadus aktif pada `citizen.hamlet_id` menerima FYI non-blocking untuk surat dari dusunnya; Kadus tidak menjadi approver dan tidak dibuatkan row `letter_approvals`. Jika Kadus aktif tidak ditemukan, notifikasi dilewati.
 
 ---
 
@@ -166,54 +172,47 @@ Catatan Penting:
 | Field | Keterangan |
 |---|---|
 | Use Case ID | UC-04c |
-| Nama | Kepala Desa / Sekretaris Desa Approval / Rejection Surat |
+| Nama | Keputusan Final Kepala Desa / Sekretaris Desa |
 | Aktor | Kepala Desa ATAU Sekretaris Desa (saling menggantikan, first-action-wins) |
-| Pre-condition | User sudah login sebagai `kepala_desa` atau `sekretaris_desa`; ada surat dengan `current_step_order` menunjuk ke step `approver_position IN ('kepala_desa','sekdes')` |
-| Post-condition | `letters.status` berubah jadi `in_progress` (jika masih ada step berikut) atau `approved`/`rejected` (jika step ini `is_final`); `current_step_order` bertambah jika approve |
+| Pre-condition | User sudah login sebagai `kepala_desa` atau `sekretaris_desa`; ada surat berstatus `pending`/`in_progress` dengan `current_step_order` menunjuk ke step `approver_position = 'kepala_desa'` |
+| Post-condition | Tahap final mengubah `letters.status` menjadi `approved` atau `rejected`; approval mencatat aktor sebenarnya |
 
 Main Flow:
-1. User membuka daftar surat dengan step aktif = posisi dirinya (query generik: JOIN `flow_steps` ON `flow_id` & `current_step_order`, WHERE `approver_position` = posisi user)
-2. User membuka detail, memeriksa riwayat approval sebelumnya (RT + FYI RW)
+1. Kades/Sekdes membuka daftar surat yang menunggu keputusan tahap final
+2. User membuka detail dan memeriksa riwayat keputusan sebelumnya
 3. User memilih Setujui/Tolak, isi catatan jika menolak
-4. Sistem cek: apakah surat masih di step yang sesuai (gate logic, re-validasi race condition disederhanakan di application layer)
-5. Jika SETUJUI: INSERT ke `letter_approvals` (`approval_level` sesuai role aktor, `flow_step_id` terisi), `current_step_order += 1`, status jadi `in_progress` atau `approved` jika step berikutnya `is_final`
-6. Jika TOLAK: status jadi `rejected`, `rejected_at_step` dicatat (TERMINAL)
-7. Notifikasi ke step berikutnya (jika approve) atau ke Warga (jika reject/final approve)
+4. Sistem mengunci row surat di dalam transaksi dan memeriksa ulang status serta step aktif `kepala_desa`; keputusan kedua ditolak dengan 409.
+5. Sistem memperbarui placeholder `letter_approvals` untuk step aktif dengan aktor, level, aksi, dan catatan keputusan.
+6. Jika SETUJUI pada step final: tetapkan `letter_number`, hitung `expires_at` dari `validity_days`, lalu status `approved`.
+7. Jika TOLAK: status jadi `rejected`, `rejected_at_step` dicatat (TERMINAL).
+8. Notifikasi hasil akhir kepada pemohon serta notifikasi siap cetak kepada Kasi/Kaur terkait
 
 Catatan:
-1. Tidak ada DB-level lock untuk mencegah Kades & Sekdes approve bersamaan — disederhanakan sebagai app-layer check (first-action-wins)
-2. ⚠ Status Sekdes ikut approve di step sama dengan Kades adalah rekomendasi/asumsi default, **belum keputusan final eksplisit** — lihat `TDD-05_Roadmap_Risks_OpenQuestions.md`
+1. Keputusan Kades/Sekdes memakai row lock (`lockForUpdate`) di dalam transaksi; keputusan pertama yang berhasil diproses menang dan request berikutnya ditolak dengan 409.
+2. Step flow baru hanya memakai posisi `rt` dan `kepala_desa`; Sekdes bertindak sebagai pengganti Kades pada step `kepala_desa` yang sama (first-action-wins).
 
 ---
 
-## UC-04d: Kasi / Kaur Approval / Rejection Surat (Final Step)
+## UC-04d: Notifikasi dan Unduh Surat oleh Kasi/Kaur
+
+Kasi/Kaur bukan approver. Setelah tahap final disetujui, role Kasi/Kaur terkait menerima notifikasi dan dapat membaca/mengunduh surat selesai melalui endpoint daftar/detail surat bersama. Tidak ada endpoint keputusan untuk Kasi/Kaur.
 
 | Field | Keterangan |
 |---|---|
 | Use Case ID | UC-04d |
-| Nama | Kasi / Kaur Approval / Rejection Surat (Final Step) |
-| Aktor | Kasi Pelayanan atau Kaur TU & Umum (sesuai `flow_steps.approver_position` pada step `is_final=true`) |
-| Pre-condition | Kasi/Kaur sudah login; ada surat dengan `current_step_order` menunjuk ke step `approver_position` sesuai role-nya dan `is_final=true` |
-| Post-condition | Status surat berubah (`approved` / `rejected`). Jika approved: `letter_number` digenerate, `expires_at` dihitung, PDF siap didownload, notifikasi ke Warga + Kepala Desa & Sekretaris Desa (monitoring) |
+| Nama | Notifikasi dan Unduh Surat oleh Kasi/Kaur |
+| Aktor | Kasi Pelayanan atau Kaur TU & Umum sesuai `letter_types.assigned_role` |
+| Pre-condition | Kasi/Kaur sudah login; surat berstatus `approved` dan role sesuai assignment (NULL berlaku bagi keduanya) |
+| Post-condition | Surat dapat dibaca/diunduh tanpa mengubah approval atau statusnya |
 
 Main Flow:
-1. Kasi/Kaur membuka daftar surat dengan `current_step_order` menunjuk ke posisinya (query generik: JOIN `flow_steps` ON `flow_id` & `current_step_order`)
-2. Kasi/Kaur membuka detail permohonan beserta seluruh riwayat keputusan sebelumnya (RT, FYI RW, Kades/Sekdes)
-3. Kasi/Kaur memilih tindakan: Setujui atau Tolak
-4. Kasi/Kaur mengisi catatan keputusan (wajib jika menolak)
-5. Sistem memvalidasi: step saat ini adalah step `is_final=true` dan `approver_position` sesuai role user
-6. Sistem memproses dalam `DB::transaction()`:
-   - Jika SETUJUI: `status = 'approved'`, generate `letter_number`, hitung `expires_at` (jika `validity_days` tidak NULL)
-   - Jika TOLAK: `status = 'rejected'`, `rejected_at_step` dicatat (TERMINAL)
-   - INSERT ke `letter_approvals` (`approval_level` sesuai role aktor, `flow_step_id` terisi, action, notes, `approved_by`)
-   - INSERT ke `letter_status_logs` (old: in_progress, new: approved/rejected, actor_id, IP)
-7. Jika approved: dispatch notifikasi ke Warga + Kepala Desa & Sekretaris Desa (monitoring, keduanya)
-8. Jika rejected: dispatch notifikasi ke Warga (TERMINAL)
+1. Setelah final approve, sistem memilih penerima Kasi/Kaur dari `letter_types.assigned_role`; nilai NULL berarti kedua role.
+2. Kasi/Kaur membuka daftar surat selesai sesuai assignment.
+3. Kasi/Kaur membaca detail dan mengunduh PDF bila diperlukan.
 
 Authorization:
-- Hanya user dengan role sesuai `flow_steps.approver_position` pada step aktif yang bisa approve
-- Surat dengan `current_step_order` yang tidak sesuai tidak bisa diakses (403)
-- 4a. Kasi/Kaur memilih Tolak tanpa catatan → sistem meminta catatan wajib diisi
+- Hanya surat approved sesuai assignment dapat diakses Kasi/Kaur
+- Tidak tersedia aksi approve/reject bagi Kasi/Kaur
 
 ---
 
@@ -233,8 +232,8 @@ Main Flow:
 3. Filter tampilan berdasarkan role:
     - RT: surat wilayahnya, status `pending` (step aktif = rt)
     - RW: surat yang lewat FYI (read-only, tidak ada filter status aktif — RW bukan approver)
-    - Kepala Desa / Sekretaris Desa: surat dengan `current_step_order` menunjuk ke posisi `kepala_desa`/`sekdes`, status `in_progress`
-    - Kasi/Kaur: surat dengan `current_step_order` menunjuk ke posisinya (step final), status `in_progress`
+    - Kepala Desa / Sekretaris Desa: surat yang menunggu tahap final; surat milik user dikecualikan dari dashboard
+    - Kasi/Kaur: surat `approved` sesuai `letter_types.assigned_role`; NULL memberi akses ke kedua role
     - Petugas Desa: SEMUA surat tanpa filter status (full visibility pipeline)
     - Kadus: tidak memiliki filter approval khusus; jika ditampilkan sama sekali, hanya sebagai referensi struktur wilayah non-approval
 4. User dapat memfilter berdasarkan: status (sesuai role), jenis surat, periode, nama pemohon
@@ -259,14 +258,13 @@ Main Flow:
 3. Sistem menampilkan:
    - Detail data pemohon (nama, NIK ter-mask, keperluan)
    - Status terkini dengan badge warna (`pending` / `in_progress` / `approved` / `rejected`) — detail "sedang di step mana" dilihat dari `current_step_order` + JOIN ke `flow_steps`
-   - Indikator di tahap mana surat berada (RT / RW-FYI / Kades-Sekdes / Kasi-Kaur)
+   - Indikator tahap RT / Kades-Sekdes / selesai (RW hanya FYI; Kasi/Kaur bukan tahap flow)
    - Informasi approval RT (jika sudah diproses RT)
    - Informasi notifikasi FYI RW (jika sudah dikirim)
    - Timeline riwayat: setiap perubahan status + timestamp + aktor + catatan + IP
    - Badge 'overdue' jika deadline terlewati
    - Informasi approval Kades/Sekdes (jika sudah diproses)
-   - Informasi approval Kasi/Kaur (jika sudah diproses)
-4. Tombol Download PDF muncul jika status = `approved` (step final). Untuk warga: disabled jika `expires_at` sudah lewat. Untuk petugas/kasi/kades/sekdes: selalu aktif
+4. Tombol Download PDF muncul jika status = `approved`. Pemohon (role apa pun) ditolak jika `expires_at` telah lewat; role lain tetap mengikuti Policy.
 
 ---
 
@@ -276,7 +274,7 @@ Main Flow:
 |---|---|
 | Use Case ID | UC-08 |
 | Nama | Download Surat (PDF On-Demand) |
-| Aktor | Warga (dengan cek `expires_at`), Petugas Desa, Kasi Pelayanan, Kaur TU & Umum, Kepala Desa, Sekretaris Desa |
+| Aktor | Pemohon surat (role apa pun), Petugas Desa, approver berwenang, Kasi/Kaur sesuai assignment |
 | Pre-condition | User sudah login, surat sudah berstatus `approved` |
 | Post-condition | File PDF ter-download (digenerate on-demand, tidak disimpan di server) |
 
@@ -284,17 +282,17 @@ Main Flow:
 1. User membuka detail surat berstatus `approved`
 2. User menekan tombol "Download Surat PDF"
 3. Backend melakukan pengecekan:
-   - Jika role = warga: cek `expires_at` → jika sudah lewat → 403 "Masa berlaku surat telah habis"
-   - Role lain (`petugas_desa`, `kasi_pelayanan`, `kaur_tu_umum`, `kepala_desa`, `sekretaris_desa`) → tidak cek `expires_at`
+   - Jika user adalah pemohon (`submitted_by = user.id`): cek `expires_at` tanpa membedakan role
+   - Kasi/Kaur hanya dapat mengakses surat approved yang sesuai `assigned_role`
 4. Sistem mengambil template dari `letter_types.template` (HTML Blade)
 5. Sistem inject data: nomor surat, data pemohon, keperluan, tanggal
-6. Sistem mengambil TTD dan stempel dari `officials` (Kepala Desa aktif: `is_active=true AND ended_at IS NULL`)
+6. Sistem mengambil TTD dan stempel dari Kepala Desa aktif, termasuk jika Sekdes yang menyetujui surat.
 7. `barryvdh/laravel-dompdf` generate PDF dari template yang sudah diisi data
 8. Sistem mengembalikan binary PDF langsung (tidak disimpan file di server)
 
 Alternative Flow:
 - 3a. Status bukan `approved` → tombol Download tidak muncul
-- 3b. Warga + `expires_at` sudah lewat → 403, tombol disabled di UI
+- 3b. Pemohon dengan `expires_at` sudah lewat → 403, apa pun role pemohon
 
 **Alasan struktural (bukan sekadar hemat storage):** PDF yang persisten berisiko menjadi *stale* jika data surat berubah setelah digenerate (misal koreksi nama pemohon), dan menambah kompleksitas manajemen storage/cleanup yang tidak sepadan untuk traffic desa kecil.
 
@@ -321,7 +319,7 @@ Alternative Flow:
    - `father_id`/`father_name_text` (pilih dari data warga terdaftar atau isi teks bebas jika tidak terdaftar), `mother_id`/`mother_name_text` (sama)
    - `family_id` (pilih dari dropdown KK yang sudah ada, atau buat KK baru via sub-flow Kelola Data Keluarga), `family_role`
 4. Sistem memvalidasi: format NIK 16 digit numerik wajib, keunikan NIK (generate SHA-256 dari NIK → cek `nik_hash`)
-5. Sistem menyimpan: `nik` (dienkripsi AES-256), `nik_hash` (SHA-256 plaintext, untuk indexing), `address` (dienkripsi AES-256)
+5. Sistem menyimpan: `nik` (dienkripsi AES-256), `nik_hash` (SHA-256 plaintext, untuk indexing), `address` (disimpan sebagai teks; model tidak memberi cast enkripsi)
 6. Sistem menampilkan konfirmasi "Data warga berhasil disimpan"
 
 **Main Flow - Edit Warga:**
@@ -364,21 +362,14 @@ Alternative Flow:
 | Nama | Kelola User & Role |
 | Aktor | Petugas Desa |
 | Pre-condition | Petugas Desa sudah login |
-| Post-condition | Akun user berhasil dibuat / diubah / dinonaktifkan |
+| Post-condition | Akun/jabatan diperbarui atau password sementara diterbitkan sesuai operasi |
 
 Main Flow:
-1. Petugas Desa membuka menu "Manajemen User"
-2. Petugas memilih: Tambah / Edit / Nonaktifkan akun
-3. Petugas mengisi/mengubah data:
-    - Untuk akun RT/RW/Kadus/Kades/Kasi/Kaur: nama, email, role, `rt_id`/`rw_id`/`hamlet_id` (sesuai jabatan), `citizen_id`, `started_at`, status aktif
-    - Untuk akun Petugas Desa: nama, email, role, status aktif
-    - Untuk jabatan Sekretaris Desa: saat Petugas Desa assign/update jabatan Sekdes, sistem otomatis set `users.role = 'sekretaris_desa'` pada akun yang bersangkutan
-4. Sistem memvalidasi: email unik, role valid (9 nilai ENUM), `citizen_id` valid
-5. Untuk pembuatan akun jabatan baru: sistem INSERT ke tabel `officials` (`citizen_id`, `user_id`, `position`, `rt_id`/`rw_id`/`hamlet_id`, `started_at`)
-6. Untuk rotasi jabatan: sistem UPDATE `officials` SET `ended_at = today`, `is_active = false`
-7. Jika posisi yang dirotasi adalah `sekdes`: sistem UPDATE `users` SET `role = 'sekretaris_desa'` pada akun baru
-8. Sistem menyimpan perubahan ke tabel `users`
-9. Sistem mencatat aktivitas di log audit (`spatie/activitylog`)
+1. CLI `petugas:first --nik=...` mencari citizen; jika belum ada, Petugas awal memasukkan data wajib citizen beserta desa dan RT. Command membuat atau menggunakan citizen, membuat atau mempromosikan akun, lalu membuat jabatan Petugas Desa dalam satu transaksi. Username otomatis dan password sementara acak ditampilkan sekali; akun wajib menggantinya saat login pertama. Demote dan reset password selanjutnya dilakukan Petugas melalui dashboard.
+2. Petugas Desa menjalankan promote, demote, rotate, update non-sensitif, toggle status, atau reset password melalui endpoint yang sesuai.
+3. Promote menghubungkan akun warga aktif dengan citizen ke jabatan/wilayah valid; demote dan rotate mengubah akun serta official secara transaksional.
+4. Reset password hanya untuk akun non-Petugas Desa selain diri sendiri; password acak 12 karakter ditandai `must_change_password=true` dan hanya ditampilkan sekali.
+5. Perubahan jabatan dicatat pada audit activitylog.
 
 Alternative Flow:
 - Email sudah terdaftar → error "Email sudah digunakan"
@@ -395,7 +386,7 @@ Alternative Flow:
 |---|---|
 | Use Case ID | UC-15 |
 | Nama | Lihat Dashboard & Statistik |
-| Aktor | Warga, RT, RW, Kasi Pelayanan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
+| Aktor | Warga, RT, RW, Kadus, Kasi Pelayanan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
 | Pre-condition | User sudah login |
 | Post-condition | Sistem menampilkan dashboard sesuai role |
 
@@ -403,19 +394,21 @@ Main Flow:
 1. User login → sistem otomatis menampilkan dashboard
 2. Sistem mengambil dan menampilkan data sesuai role:
 
-**Dashboard Warga:** Daftar surat yang pernah diajukan beserta status terkini, indikator visual tahap (RT / RW-FYI / Kades-Sekdes / Kasi-Kaur / selesai), notifikasi belum dibaca.
+**Dashboard Warga:** Daftar surat yang pernah diajukan beserta status terkini, indikator visual tahap (RT / Kades-Sekdes / selesai; RW hanya FYI dan Kasi/Kaur bukan tahap approval), notifikasi belum dibaca.
 
 **Dashboard RT:** Jumlah surat wilayah (total pending, sudah diproses), daftar surat yang menunggu keputusan RT, notifikasi belum dibaca.
 
 **Dashboard RW:** Bukan "daftar surat menunggu approval" — melainkan "daftar surat yang lewat FYI", read-only, tanpa tombol approve/reject. RW hanya melihat riwayat notifikasi yang pernah diterima.
 
-**Dashboard Petugas Desa:** Jumlah warga terdaftar, full visibility semua surat (semua status, termasuk rejected), notifikasi belum dibaca. Widget aset & keuangan tidak ada di MVP.
+**Dashboard Kadus:** Daftar read-only surat di dusunnya yang telah disetujui RT (`fyi_letters`) dan jumlah notifikasi belum dibaca; Kadus bukan approver.
 
-**Dashboard Kasi/Kaur:** Jumlah surat dengan `current_step_order` yang diassign ke role-nya (step final), daftar surat menunggu keputusan final, notifikasi belum dibaca, badge overdue.
+**Dashboard Petugas Desa:** Jumlah warga terdaftar, full visibility semua surat (termasuk rejected), jabatan lewat masa dan jabatan berakhir dalam 30 hari (`id`, posisi, nama pejabat, `term_ends_at`), notifikasi belum dibaca.
 
-**Dashboard Kepala Desa / Sekretaris Desa:** Approver aktif — dashboard menampilkan daftar surat yang menunggu approval mereka (query generik berbasis `current_step_order`), bukan murni read-only. Daftar surat dengan `current_step_order` menunjuk ke posisi `kepala_desa`/`sekdes`, status `in_progress`. Filter status surat. Notifikasi belum dibaca. Dashboard Kepala Desa dan Sekretaris Desa identik.
+**Dashboard Kasi/Kaur:** `{role, total_surat_selesai, completed_letters, unread_notifications_count}`; maksimum 20 surat approved terbaru sesuai `assigned_role`, tanpa aksi keputusan.
 
-> Kadus tidak dicantumkan sebagai aktor dashboard aktif di UC-15 — hanya tetap muncul sebagai aktor UC-01/02/05/06 (login & lihat-saja).
+**Dashboard Kepala Desa / Sekretaris Desa:** Menampilkan surat yang menunggu tahap final, dengan surat milik user dikecualikan.
+
+> Daftar dan detail surat Kadus memakai endpoint bersama. Scope wilayah dibatasi ke dusun pejabat aktif dan hanya mencakup surat yang sudah disetujui RT; `scope=mine` juga tersedia.
 
 ---
 
@@ -454,23 +447,23 @@ Notes:
 | Use Case ID | UC-17 |
 | Nama | Register Akun Warga |
 | Aktor | Calon pengguna (Warga Cibenda) |
-| Pre-condition | Warga belum memiliki akun, NIK sudah terdaftar di tabel `citizens` |
-| Post-condition | Akun warga berhasil dibuat, langsung aktif, warga dapat login |
+| Pre-condition | Calon pengguna belum memiliki akun; NIK aktif terdaftar di tabel `citizens` |
+| Post-condition | Akun aktif tercipta dan sesi dimulai; respons 201 menampilkan username otomatis |
 
 Main Flow:
 1. Warga membuka halaman registrasi
-2. Warga mengisi form: NIK (16 digit), nama lengkap, email, password
-3. Sistem memvalidasi format NIK (16 digit numerik) dan format email
+2. Warga mengisi NIK (16 digit), password, dan konfirmasi password
+3. Sistem memvalidasi NIK, password, dan rate limit registrasi
 4. Sistem generate SHA-256 dari NIK → cari di `citizens.nik_hash`
 5. Jika NIK tidak ditemukan → error "NIK tidak terdaftar sebagai warga Desa Cibenda"
 6. Jika NIK ditemukan tapi sudah punya akun → error "NIK sudah terdaftar, silakan login"
-7. Jika NIK ditemukan dan belum punya akun: INSERT ke `users` (`citizen_id`, `role = 'warga'`, `is_active = true`)
-8. Sistem mengarahkan warga ke halaman login
-9. Warga login dan mengakses dashboard
+7. Jika NIK ditemukan dan belum punya akun: INSERT user dengan nama dari citizen, role `warga`, username otomatis unik `namadepan.NNNN`, dan aktif
+8. Sistem membuat sesi dan mengembalikan 201 berisi `username` dan `name`
+9. User dapat mengganti username melalui `PATCH /api/profile`; email bersifat opsional. Password dapat diganti melalui `PUT /api/profile/password`.
 
 Alternatif Flow:
 - Format NIK salah → error "NIK harus 16 digit angka"
-- Email sudah digunakan akun lain → error "Email sudah terdaftar"
+- Benturan username otomatis → suffix acak dibuat ulang
 - Password terlalu lemah → error dengan panduan password
 
 > **Catatan penting:** Tidak ada kategori "warga Non-NIK". Setiap warga tercatat (baik lokal maupun pendatang) selalu punya NIK terverifikasi di `citizens` — pembeda lokal/pendatang murni kolom `residency_type`, bukan tabel/jalur terpisah. Warga yang belum tercatat di `citizens` (baik lokal maupun pendatang) harus dicatat lebih dulu oleh Petugas Desa (UC-09) sebelum bisa register.
@@ -581,19 +574,19 @@ Main Flow:
 | Field | Keterangan |
 |---|---|
 | Use Case ID | UC-22 |
-| Nama | Kelola Setting Deadline Approval |
+| Nama | Kelola Setting Deadline Approver |
 | Aktor | Petugas Desa |
 | Pre-condition | Petugas Desa sudah login |
 | Post-condition | Setting deadline approval per tahap berhasil diperbarui |
 
 Main Flow:
 - Petugas membuka menu "Pengaturan Sistem" → "Deadline Approval"
-- Sistem menampilkan setting per tahap approval yang berlaku (`rt`, `kepala_desa`, `sekdes`, `kasi_pelayanan`, `kaur_tu_umum`)
+- Sistem menampilkan setting untuk level approver (`rt`, `kepala_desa`); Sekdes dapat memutuskan pada tahap `kepala_desa`, sedangkan Kasi/Kaur bukan approver dan tidak memiliki setting tahap
 - Petugas mengubah `deadline_hours` dan/atau `reminder_hours` per tahap
 - Sistem memvalidasi: `deadline_hours > 0`, `reminder_hours < deadline_hours`
 - Sistem menyimpan ke `approval_settings` (UNIQUE per `village_id` + `approval_level`)
 
-Catatan: Jika deadline terlewat, surat **tidak** auto-reject — hanya `is_overdue = true` + notifikasi reminder.
+Catatan: Jika deadline terlewat, surat **tidak** auto-reject — hanya `is_overdue = true` (dihitung saat daftar surat dimuat). Notifikasi reminder otomatis **Belum diimplementasi (Planned)**: tidak ada scheduler/job yang memakai `reminder_hours`/`reminded_at`.
 
 ---
 

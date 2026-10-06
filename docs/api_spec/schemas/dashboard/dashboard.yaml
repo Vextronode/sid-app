@@ -12,8 +12,9 @@ DashboardWarga:
         type: object
         properties:
           id:
-            type: integer
-            example: 501
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440501"
           letter_type_name:
             type: string
             example: "Surat Keterangan Domisili"
@@ -46,7 +47,7 @@ DashboardRt:
     pending_letters:
       type: array
       items:
-        $ref: '../letters/letters.yaml#/Letter'
+        $ref: '#/DashboardLetterSummary'
     unread_notifications_count:
       type: integer
       example: 1
@@ -66,7 +67,7 @@ DashboardRw:
     fyi_letters:
       type: array
       items:
-        $ref: '../letters/letters.yaml#/Letter'
+        $ref: '#/DashboardLetterSummary'
       description: "Riwayat notifikasi FYI yang pernah diterima, bukan filter status aktif"
     unread_notifications_count:
       type: integer
@@ -75,10 +76,8 @@ DashboardRw:
 DashboardKadesSekdes:
   type: object
   description: |
-    BARU v5.0 (BERUBAH TOTAL dari v4.2 monitoring-only). Kepala Desa /
-    Sekretaris Desa sekarang approver aktif - dashboard menampilkan
-    daftar surat yang MENUNGGU approval mereka (action item), bukan lagi
-    murni read-only monitoring. Dashboard keduanya identik.
+    Dashboard tahap final Kades/Sekdes. Surat yang diajukan user sendiri
+    dikecualikan; pemohon hanya dapat diputuskan pejabat pasangan.
   required: [role]
   properties:
     role:
@@ -91,8 +90,8 @@ DashboardKadesSekdes:
     pending_letters:
       type: array
       items:
-        $ref: '../letters/letters.yaml#/Letter'
-      description: "Surat dengan current_step_order menunjuk ke posisi kepala_desa/sekdes, status in_progress"
+        $ref: '#/DashboardLetterSummary'
+      description: "Surat dengan current_step_order menunjuk ke step kepala_desa dan status pending atau in_progress; Kades dan Sekdes dapat memutuskan tahap yang sama"
     unread_notifications_count:
       type: integer
       example: 5
@@ -105,13 +104,15 @@ DashboardKasi:
       type: string
       enum: [kasi_pelayanan, kaur_tu_umum]
       example: "kasi_pelayanan"
-    total_menunggu_final:
+    total_surat_selesai:
       type: integer
       example: 4
-    pending_letters:
+    completed_letters:
       type: array
       items:
-        $ref: '../letters/letters.yaml#/Letter'
+        $ref: '#/DashboardLetterSummary'
+      maxItems: 20
+      description: Surat approved terbaru sesuai assigned_role
     unread_notifications_count:
       type: integer
       example: 3
@@ -140,19 +141,67 @@ DashboardPetugasDesa:
         in_progress: 12
         approved: 70
         rejected: 3
+    jabatan_lewat_masa:
+      type: array
+      items:
+        $ref: '#/OfficialTermSummary'
+    jabatan_segera_berakhir:
+      type: array
+      items:
+        $ref: '#/OfficialTermSummary'
     unread_notifications_count:
       type: integer
       example: 0
 
+OfficialTermSummary:
+  type: object
+  properties:
+    id:
+      type: integer
+    position:
+      type: string
+    name:
+      type: string
+      nullable: true
+    term_ends_at:
+      type: string
+      format: date
+      nullable: true
+
 DashboardKadus:
   type: object
-  deprecated: true
   description: |
-    DIHAPUS TOTAL sejak v5.0 (Patch 39) - Kadus tidak lagi punya action
-    item approval apapun, tidak ada dashboard aktif untuk role ini.
-    Skema dipertahankan di sini HANYA sebagai catatan historis migrasi;
-    JANGAN diimplementasikan atau direferensikan di /dashboard v5.
+    Dashboard Kadus aktif, read-only. Menampilkan surat di dusunnya yang
+    sudah melewati tahap RT; Kadus bukan approver dan tidak memiliki aksi
+    keputusan surat.
+  required: [role]
   properties:
     role:
       type: string
+      enum: [kadus]
       example: "kadus"
+    fyi_letters:
+      type: array
+      items:
+        $ref: '#/DashboardLetterSummary'
+    unread_notifications_count:
+      type: integer
+      example: 0
+
+DashboardLetterSummary:
+  type: object
+  required: [id, letter_type_name, status, current_step_order, is_overdue]
+  properties:
+    id:
+      type: string
+      format: uuid
+    letter_type_name:
+      type: string
+      nullable: true
+    status:
+      type: string
+      enum: [pending, in_progress, approved, rejected]
+    current_step_order:
+      type: integer
+    is_overdue:
+      type: boolean

@@ -57,7 +57,7 @@ Notification:
       oneOf:
         - $ref: '#/LetterStatusContext'
       example:
-        letter_id: 501
+        letter_id: "550e8400-e29b-41d4-a716-446655440501"
         letter_no: "470/123/VII/2026"
         status: "rt_approved"
         applicant: "Siti Aminah"
@@ -67,8 +67,9 @@ LetterStatusContext:
   description: "Bentuk `context` ketika `type` = LetterStatusNotification"
   properties:
     letter_id:
-      type: integer
-      example: 501
+      type: string
+      format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440501"
     letter_no:
       type: string
       example: "470/123/VII/2026"

@@ -2,19 +2,14 @@ put:
   tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
   summary: Ganti seluruh urutan step approval untuk 1 flow
   description: |
-    BARU v5.0. Replace-all (bukan partial patch) karena step_order antar
-    step saling bergantung - mengganti satu tanpa yang lain berisiko
-    membuat urutan tidak konsisten. `approver_position` HANYA boleh salah
-    satu dari 5 nilai (rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum) -
-    'rw' dan 'kadus' akan ditolak validasi karena keduanya tidak pernah
-    menjadi approver_position yang valid sejak v5.0 (SID-ARCH-BE-001 S3.2).
-
-    Catatan step Kades/Sekdes (⚠ status asumsi, lihat SID-ARCH-BE-001 S3.3):
-    karena kolom approver_position adalah ENUM tunggal, "saling menggantikan"
-    Kades/Sekdes direpresentasikan sebagai SATU row dengan approver_position
-    salah satu saja (backend resolve tetap query WHERE position IN
-    ('kepala_desa','sekdes') untuk step tersebut). Field ini tidak mendukung
-    multi-value per step - desain resmi BE mengasumsikan representasi 1 row.
+    Replace-all (bukan partial patch) karena step_order antar step saling
+    bergantung. Validasi aplikasi hanya menerima `rt` dan `kepala_desa`;
+    Sekdes bertindak sebagai approver pengganti pada step `kepala_desa`.
+    Database masih menyimpan nilai enum legacy `sekdes`, tetapi nilai itu
+    tidak dapat dipakai untuk membuat atau mengganti step melalui endpoint.
+    Harus ada tepat satu `is_final=true`, step final harus memiliki
+    step_order terbesar dan posisi `kepala_desa`. Flow dicari dalam desa
+    akun Petugas Desa yang login; flow milik desa lain menghasilkan 404.
   operationId: replaceApprovalFlowSteps
   security:
     - sanctumCookie: []
@@ -67,7 +62,7 @@ put:
           example:
             message: "Ada 5 surat sedang berjalan dengan flow ini. Perubahan hanya berlaku untuk surat baru."
     '422':
-      description: step_order duplikat, approver_position tidak valid (misal 'rw'/'kadus'), atau tidak ada step is_final=true
+      description: Posisi bukan RT/Kepala Desa, bukan tepat satu step final, posisi final bukan Kepala Desa, atau final bukan step terakhir
       content:
         application/json:
           schema:
@@ -78,13 +73,31 @@ put:
               value:
                 message: "The given data was invalid."
                 errors:
-                  "steps.1.approver_position": ["RW dan Kadus tidak dapat menjadi approver_position sejak v5.0"]
+                  "steps.1.approver_position": ["Posisi approver hanya RT atau Kepala Desa; Sekdes diproses melalui tahap Kepala Desa."]
             no_final_step:
               summary: Tidak ada step final
               value:
                 message: "The given data was invalid."
                 errors:
                   steps: ["Minimal satu step harus is_final=true"]
+            multiple_final_steps:
+              summary: Lebih dari satu step final
+              value:
+                message: "The given data was invalid."
+                errors:
+                  steps: ["Tepat satu step harus is_final=true."]
+            final_not_last:
+              summary: Step final bukan urutan terakhir
+              value:
+                message: "The given data was invalid."
+                errors:
+                  steps: ["Step final harus memiliki step_order terbesar."]
+            invalid_final_position:
+              summary: Approver step final tidak valid
+              value:
+                message: "The given data was invalid."
+                errors:
+                  steps: ["Approver step final harus Kepala Desa"]
             duplicate_order:
               summary: step_order duplikat
               value:

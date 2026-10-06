@@ -1,6 +1,7 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Info jenis surat & persyaratan (tanpa login)
+  security: []
   description: |
     UC-16. Hanya menampilkan letter_types dengan is_active = true.
     Berbeda dengan endpoint /letter-types (Epic 4) yang butuh auth dan

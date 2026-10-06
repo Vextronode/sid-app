@@ -1,30 +1,3 @@
-get:
-  tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
-  summary: Lihat detail tipe surat
-  operationId: getLetterType
-  security:
-    - sanctumCookie: []
-  parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-      example: 1
-  responses:
-    '200':
-      description: Detail tipe surat berhasil diambil
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              data:
-                $ref: '../../schemas/letter-types/letter-types.yaml#/LetterType'
-    '401':
-      $ref: '../../responses/common.yaml#/Unauthenticated'
-    '404':
-      $ref: '../../responses/common.yaml#/NotFound'
 put:
   tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
   summary: Edit konfigurasi tipe surat (versi sederhana - MVP)
@@ -34,12 +7,13 @@ put:
     dan flow_id ditambahkan agar Petugas Desa bisa memindahkan suatu tipe
     surat ke flow approval lain tanpa developer (Config over Code).
     Template & field requirement developer-only via seeder (full CRUD =
-    Next Dev Paket 1).
+    Next Dev Paket 1). ID tipe surat dicari dalam desa Petugas yang login;
+    record milik desa lain menghasilkan 404.
   operationId: updateLetterType
   security:
     - sanctumCookie: []
   parameters:
-    - name: id
+    - name: letterType
       in: path
       required: true
       schema:

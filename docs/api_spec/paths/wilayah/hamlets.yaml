@@ -1,6 +1,7 @@
 get:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Lihat daftar dusun (hamlets)
+  description: "Aktor: Petugas Desa."
   operationId: listHamlets
   security:
     - sanctumCookie: []
@@ -19,12 +20,12 @@ get:
           example:
             data:
               - id: 1
-                village_id: 1
+                village_id: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
                 name: "Dusun Patrol"
                 code: "PTR"
                 is_active: true
               - id: 2
-                village_id: 1
+                village_id: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
                 name: "Dusun Sinargalih"
                 code: "SNG"
                 is_active: true

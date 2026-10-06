@@ -5,8 +5,9 @@ VillageOrgPosition:
       type: integer
       example: 1
     village_id:
-      type: integer
-      example: 1
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     org_type:
       type: string
       enum: [bpd, bumdes, lpm, karang_taruna, pkk]
@@ -60,6 +61,10 @@ VillageOrgMember:
     is_active:
       type: boolean
       example: true
+    notes:
+      type: string
+      nullable: true
+      example: null
 
 VillageOrgPositionCreateRequest:
   type: object

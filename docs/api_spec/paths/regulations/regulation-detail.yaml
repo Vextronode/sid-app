@@ -1,6 +1,7 @@
 patch:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Edit peraturan desa
+  description: "Aktor: Petugas Desa."
   operationId: updateRegulation
   security:
     - sanctumCookie: []
@@ -38,6 +39,7 @@ patch:
 delete:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Hapus peraturan desa
+  description: "Aktor: Petugas Desa."
   operationId: deleteRegulation
   security:
     - sanctumCookie: []

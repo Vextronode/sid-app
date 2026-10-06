@@ -29,7 +29,7 @@ skinparam note {
   FontSize 11
 }
 
-title Diagram Alur Sistem - SID Desa Cibenda (v5.0 - Category + Flow Dinamis, Default 3-Tahap-Approve)
+title Diagram Alur Sistem - SID Desa Cibenda (v5.1 - Flow Dinamis, Default 2 Tahap: RT → Kades/Sekdes)
 
 |#D6E4F7|Warga|
 |#D5F5E3|Sistem|
@@ -59,10 +59,9 @@ start
 :Kirim notifikasi ke RT wilayah warga;
 
 note right
-  Jika RT tidak ditemukan / jabatan kosong:
-  fallback broadcast notifikasi ke
-  SEMUA petugas_desa aktif.
-  TIDAK BERUBAH dari v4.2.
+  Jika RT tidak ditemukan / jabatan kosong,
+  penerima notifikasi kosong; tidak ada
+  fallback broadcast ke Petugas Desa.
 end note
 
 |RT|
@@ -95,19 +94,15 @@ fork
   :Resolve RW wilayah\n(via rts.rw_id);
   :Kirim notifikasi FYI ke RW\n(non-blocking, paralel);
 fork again
-  :Resolve Kepala Desa/Sekdes\n(BERBASIS POSISI, BUKAN wilayah -\nofficials.position IN\n('kepala_desa','sekdes'));
+  :Resolve pejabat untuk step kepala_desa\n(BERBASIS POSISI, BUKAN wilayah -\nofficials.position IN\n('kepala_desa','sekdes'));
   :Kirim notifikasi ke\nKepala Desa & Sekretaris Desa\n(approver berikutnya);
 end fork
 
-note right
-  *** PERUBAHAN UTAMA v5.0 ***
-  DUA proses di atas berjalan PARALEL
-  (fork/end fork), BUKAN berurutan
-  seperti v4.2 (RT->RW->Kadus->Kasi).
-  Sistem TIDAK PERNAH menunggu aksi RW
-  sebelum lanjut ke approver berikutnya -
-  RW BUKAN gate sejak v5.0.
-end note
+  note right
+    Kades dan Sekdes dapat memutuskan pada step
+    kepala_desa yang sama; keputusan pertama
+    yang berhasil diproses menjadi keputusan resmi.
+  end note
 
 |RW (Notifier)|
 :Menerima notifikasi FYI\n(read-only, tanpa aksi apapun);
@@ -122,27 +117,22 @@ end note
 
 |Kepala Desa / Sekdes|
 :Menerima notifikasi\nsurat lolos RT\n(sebagai approver berikutnya);
-:Membuka daftar surat dengan\ncurrent_step_order menunjuk\nposisi kepala_desa/sekdes;
+:Membuka daftar surat dengan\ncurrent_step_order menunjuk step\napprover_position = kepala_desa;
 
 if (Gate: current_step_order\nmenunjuk step ini?) then (Ya)
   :Memeriksa data permohonan\n& keputusan RT sebelumnya\n(+ catatan FYI RW jika relevan);
   :Memberikan keputusan\n(approve / reject);
 
   note right
-    *** PERUBAHAN UTAMA v5.0 ***
-    Kepala Desa & Sekretaris Desa kini
-    APPROVER AKTIF (bukan lagi monitoring
-    only seperti v4.2). Keduanya SALING
-    MENGGANTIKAN di step yang sama
-    (first-action-wins) - ⚠ status ini
-    masih asumsi/rekomendasi default,
-    belum keputusan final eksplisit.
+    Kades dan Sekdes dapat memutuskan pada step
+    kepala_desa yang sama; keputusan pertama
+    yang berhasil diproses menjadi keputusan resmi.
   end note
 
   if (Keputusan Kades/Sekdes?) then (Setujui)
-    :Status = **in_progress**\n(atau **approved** jika step\nberikutnya is_final=true);
-    :current_step_order += 1;
-    note right: Diteruskan ke Kasi / Kaur\nsesuai flow_steps.approver_position
+    :Status = **approved** (step Kepala Desa/Sekdes adalah final pada flow baru);
+    :Generate letter_number dan hitung expires_at bila berlaku;
+
   else (Tolak)
     :Status = **rejected**;
     :rejected_at_step = step\nKades/Sekdes saat ini;
@@ -162,53 +152,14 @@ else (Tidak - 403 Forbidden /\nFirst-Action-Wins gagal)
 endif
 
 |Sistem|
-:Catat keputusan Kades/Sekdes\n+ timestamp + identitas + IP;
-:Resolve Kasi / Kaur\n(via flow_steps.approver_position\nstep berikutnya, is_final=true);
-:Kirim notifikasi ke Kasi / Kaur;
+:Catat keputusan final + timestamp + identitas;
+:Kirim notifikasi final ke Warga;
+:Kirim notifikasi siap cetak ke Kasi/Kaur sesuai assigned_role;
 
 |Kasi / Kaur|
-:Menerima notifikasi\nsurat lolos Kades/Sekdes;
-:Membuka daftar surat dengan\ncurrent_step_order menunjuk\nposisinya (step final);
-
-if (Gate: current_step_order\nmenunjuk step is_final=true?) then (Ya)
-  :Memeriksa seluruh riwayat\nkeputusan RT + Kades/Sekdes;
-  :Memberikan keputusan final\n(approve / reject);
-  if (Keputusan Kasi/Kaur?) then (Setujui)
-    :Status = **approved**;
-    :Generate letter_number resmi;
-    :Hitung expires_at\n(jika validity_days != NULL);
-    note right: Surat FINAL.\nSiap didownload sebagai PDF\n(on-demand, tidak disimpan)
-  else (Tolak)
-    :Status = **rejected**;
-    :rejected_at_step = step final;
-    note right: Catatan alasan\npenolakan dicatat, TERMINAL
-
-    |Sistem|
-    :Catat keputusan + timestamp + IP;
-    :Kirim notifikasi ke Warga;
-
-    |Warga|
-    :Menerima notifikasi\nsurat ditolak Kasi/Kaur;
-    stop
-  endif
-else (Tidak - 403 Forbidden)
-  :Akses ditolak\n(surat belum sampai step final);
-  stop
-endif
-
-|Sistem|
-:Catat keputusan final\n+ timestamp + identitas + IP;
-:Kirim notifikasi hasil akhir\nke Warga;
-:Kirim notifikasi monitoring\nke Kepala Desa & Sekretaris Desa;
-
-note right
-  Di step FINAL ini, Kepala Desa &
-  Sekretaris Desa HANYA dimonitoring
-  (bukan approve) - berbeda dari peran
-  mereka di step SEBELUMNYA (di atas)
-  di mana mereka benar-benar approver
-  aktif.
-end note
+:Menerima notifikasi surat approved;
+:Melihat dan mengunduh surat sesuai assigned_role;
+note right: Kasi/Kaur bukan approver dan tidak mengubah status surat
 
 |Warga|
 :Menerima notifikasi\nhasil akhir permohonan;
@@ -257,16 +208,15 @@ stop
 '     Sekdes - konsep yang sama sekali tidak ada di v4.2 karena approver
 '     tahap itu (Kadus) adalah individu tunggal per dusun, bukan dua role
 '     yang saling menggantikan di step yang sama.
-'   - Judul diagram diubah untuk mencerminkan filosofi "Category + Flow
-'     Dinamis, Default 3-Tahap-Approve" (bukan lagi hardcode "Approval
-'     4 Tahap" seperti v4.2) - jumlah tahap kini bisa berbeda per jenis
-'     surat, diagram ini menggambarkan FLOW DEFAULT saja.
+'   - Judul diagram v5.1 dikoreksi: flow default terdiri dari RT dan
+'     Kades/Sekdes sebagai tahap final. Flow dikonfigurasi per jenis surat;
+'     Kasi/Kaur menerima notifikasi setelah final approve, bukan tahap flow.
 '
 ' YANG TETAP SAMA:
 '   - Swimlane Warga, RT, Sistem: aktivitas dasarnya (login, pilih surat,
 '     submit, approve/reject RT, generate letter_number, download PDF)
 '     tidak berubah strukturnya.
-'   - Fallback broadcast RT kosong tetap dipertahankan.
+'   - Fallback broadcast saat RT kosong dihapus; notifikasi hanya ke RT aktif yang ditemukan.
 '   - Sifat TERMINAL dari reject di step manapun tetap sama.
 '
 '==================================================================================

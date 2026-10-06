@@ -90,74 +90,34 @@ Lalu daftarkan route di `src/routes/` dan buat halaman di `src/pages/ProfilePage
 
 ## Struktur Backend (`apps/backend`)
 
-Murni **REST API** - tidak ada Blade view. Semua response JSON, dikonsumsi frontend React.
+Struktur berikut merangkum lapisan yang benar-benar ada di source. Route API berada di `routes/api.php`; autentikasi web berada di `routes/auth.php`, sedangkan endpoint root berada di `routes/web.php`.
 
-```
+```text
 apps/backend/
-├── app/
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   │   ├── Api/              # controller REST API per domain
-│   │   │   │   ├── ProductController.php
-│   │   │   │   └── OrderController.php
-│   │   │   └── Auth/             # controller auth bawaan Breeze
-│   │   ├── Requests/
-│   │   │   └── Api/              # Form Request untuk validasi input
-│   │   │       ├── StoreProductRequest.php
-│   │   │       └── UpdateProductRequest.php
-│   │   ├── Resources/            # transform model -> JSON
-│   │   │   └── ProductResource.php
-│   │   └── Middleware/
-│   ├── Models/
-│   ├── Services/                 # business logic
-│   │   └── ProductService.php
-│   └── Policies/                 # authorization logic per model
-├── database/
-│   ├── migrations/
-│   ├── factories/
-│   └── seeders/
-├── routes/
-│   ├── api.php                   # semua route REST API (/api prefix otomatis)
-│   ├── auth.php                  # route login/register/logout bawaan Breeze
-│   └── web.php                   # cuma require auth.php, tidak ada route web lain
-├── tests/
-│   ├── Feature/
-│   │   └── Api/
-│   └── Unit/
-├── .env.example
-└── composer.json
+??? app/
+?   ??? Console/Commands/
+?   ??? Enums/
+?   ??? Exceptions/
+?   ??? Http/
+?   ?   ??? Controllers/{Api,Auth}/
+?   ?   ??? Middleware/
+?   ?   ??? Requests/
+?   ?   ??? Resources/
+?   ??? Imports/
+?   ??? Models/
+?   ??? Notifications/
+?   ??? Policies/
+?   ??? Repositories/
+?   ??? Services/
+??? database/{factories,migrations,seeders}/
+??? resources/views/pdf/templates/
+??? routes/{api,auth,console,web}.php
+??? tests/{Feature,Unit}/
+??? composer.json
+??? .env.example
 ```
 
-### Aturan Main
-
-- Semua endpoint API di `routes/api.php`, pakai `Route::apiResource()` untuk CRUD standar:
-```php
-Route::apiResource('products', ProductController::class);
-```
-
-- Controller di `Controllers/Api/` hanya ngurusin HTTP layer — logic bisnis kompleks ke `Services/`
-- Validasi input pakai Form Request (`Requests/Api/`), jangan validasi manual di controller
-- Response pakai API Resource (`Http/Resources/`) — jangan `return $model` mentah
-- `routes/auth.php` tetap di grup `web` (bukan `api.php`) karena butuh session/cookie untuk bekerja
-
-### Nambah Resource Baru
-
-Contoh resource "product":
-```bash
-php artisan make:model Product -mfs
-php artisan make:controller Api/ProductController --api
-php artisan make:request Api/StoreProductRequest
-php artisan make:request Api/UpdateProductRequest
-php artisan make:resource ProductResource
-```
-
-Daftarkan di `routes/api.php`:
-```php
-use App\Http\Controllers\Api\ProductController;
-
-Route::apiResource('products', ProductController::class)
-    ->middleware('auth:sanctum');
-```
+Nama class dan file konkret tercantum pada `apps/backend/app`; contoh resource generik tidak digunakan sebagai struktur proyek.
 
 ---
 

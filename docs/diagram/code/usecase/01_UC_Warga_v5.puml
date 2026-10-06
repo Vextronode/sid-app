@@ -2,7 +2,7 @@
 ' SECTION: USE CASE DIAGRAM
 ' FILE: 01_UC_Warga_v5.puml
 ' JUDUL: Use Case - Warga
-' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.1, 5.3.2 UC-01/02/03/05/06/08/16/17)
+' SUMBER: TDD SID Desa Cibenda v5.1 (Section 5.3.1, 5.3.2 UC-01/02/03/05/06/08/16/17)
 ' CATATAN: Menggantikan 01_UC_Warga_v4.puml. Perubahan v4->v5 didokumentasikan
 '          di catatan revisi bawah file ini.
 '==================================================================================
@@ -24,7 +24,7 @@ skinparam actor {
   FontSize 12
 }
 
-title Use Case Diagram - Warga (Self-Service) [v5.0]
+title Use Case Diagram - Warga (Self-Service) [v5.1]
 
 actor "Warga\n(Self-Service)" as WRG
 actor "Pengunjung\n(Publik)" as PUB
@@ -87,35 +87,40 @@ UC_MY_LIST ..> UC_MY_STATUS : <<include>>
 UC_MY_STATUS ..> UC_DOWNLOAD : <<extend>>
 
 note right of UC_DOWNLOAD
-  v5.0: Trigger = status letter 'approved'
-  DENGAN step is_final=true sudah approve
-  (BUKAN lagi status granular 'kasi_approved'
-  seperti v4.2 - status kini generik,
-  dibaca via current_step_order JOIN
-  flow_steps WHERE is_final=true).
-  Gate tambahan: expires_at belum lewat
-  (khusus role warga).
+  Surat harus berstatus 'approved'. Masa
+  berlaku expires_at ditegakkan untuk
+  pemohon tanpa memandang role; pejabat
+  yang mengunduh sebagai pemohon tetap
+  terkena batas masa berlaku.
+  PDF tetap memakai tanda tangan/stempel
+  Kades aktif, meski Sekdes menyetujui.
 end note
 
 note bottom of UC_SUBMIT
   Hanya tipe surat dengan
   template != NULL AND is_active = true
   yang tampil untuk dipilih warga.
-  TIDAK BERUBAH dari v4.2.
+  Aktor submit adalah akun aktif dengan
+  citizen_id; pejabat dapat mengajukan
+  untuk dirinya sendiri.
 end note
 
 note bottom of UC_MY_STATUS
-  v5.0: Detail status kini menampilkan
-  indikator step generik (RT / RW-FYI /
-  Kades-Sekdes / Kasi-Kaur) berdasarkan
-  current_step_order JOIN flow_steps,
-  BUKAN lagi status granular per posisi
-  seperti 'rw_approved'/'kadus_approved'
-  (sudah tidak ada sejak v5.0).
+  Status surat generik; posisi tahap aktif
+  dibaca dari current_step_order dan
+  flow_steps. Tahap non-final milik pemohon
+  dapat dilewati bila approver tersedia;
+  tahap kosong tidak dilewati dan tahap
+  final Kades/Sekdes tidak pernah dilewati.
 end note
 
 @enduml
 
+'==================================================================================
+' SINKRONISASI v5.1 — AUTH & APPROVAL FLOW:
+' - Pemohon adalah seluruh akun aktif yang memiliki citizen_id, termasuk pejabat.
+' - Masa berlaku download berlaku untuk pemohon pada semua role, bukan hanya warga.
+' - Tahap final dan TTD/stempel PDF tetap milik Kades/Sekdes dan Kades aktif.
 '==================================================================================
 ' CATATAN REVISI: 01_UC_Warga_v4.puml -> 01_UC_Warga_v5.puml
 '==================================================================================

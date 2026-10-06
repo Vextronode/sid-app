@@ -1,0 +1,33 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Preview PDF surat sesuai kewenangan view
+  operationId: previewLetterPdf
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letter
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    - name: template
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [wet, dry]
+  responses:
+    '200':
+      description: PDF preview berhasil digenerate
+      content:
+        application/pdf:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: User tidak berwenang melihat surat
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

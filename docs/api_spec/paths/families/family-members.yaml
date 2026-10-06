@@ -14,8 +14,9 @@ post:
       required: true
       description: family_id
       schema:
-        type: integer
-      example: 20
+        type: string
+        format: uuid
+      example: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
   requestBody:
     required: true
     content:

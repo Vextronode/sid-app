@@ -2,15 +2,9 @@ get:
   tags: [Epic 8 - Dashboard & Statistik]
   summary: Lihat dashboard sesuai role user yang login
   description: |
-    UC-15. Response bentuknya adaptif tergantung role user yang
-    terautentikasi. BARU v5.0:
-    - Dashboard Kadus DIHAPUS TOTAL (Patch 39) - tidak ada action item
-      approval apapun untuk role ini lagi.
-    - Dashboard RW berubah total: dari daftar menunggu approval menjadi
-      daftar riwayat FYI read-only.
-    - Dashboard Kepala Desa/Sekretaris Desa berubah total: dari
-      monitoring-only menjadi approver aktif dengan daftar surat yang
-      menunggu keputusan mereka (action item), identik satu sama lain.
+    UC-15. Respons disesuaikan dengan role. Kasi/Kaur melihat maksimum
+    20 surat approved sesuai assigned_role; Petugas mendapat widget masa
+    jabatan; Kades/Sekdes tidak melihat surat yang diajukan sendiri.
   operationId: getDashboard
   security:
     - sanctumCookie: []
@@ -24,6 +18,7 @@ get:
               - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardWarga'
               - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardRt'
               - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardRw'
+              - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardKadus'
               - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardKasi'
               - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardPetugasDesa'
               - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardKadesSekdes'
@@ -33,6 +28,7 @@ get:
                 warga: '../../schemas/dashboard/dashboard.yaml#/DashboardWarga'
                 rt: '../../schemas/dashboard/dashboard.yaml#/DashboardRt'
                 rw: '../../schemas/dashboard/dashboard.yaml#/DashboardRw'
+                kadus: '../../schemas/dashboard/dashboard.yaml#/DashboardKadus'
                 kasi_pelayanan: '../../schemas/dashboard/dashboard.yaml#/DashboardKasi'
                 kaur_tu_umum: '../../schemas/dashboard/dashboard.yaml#/DashboardKasi'
                 petugas_desa: '../../schemas/dashboard/dashboard.yaml#/DashboardPetugasDesa'
@@ -44,7 +40,7 @@ get:
               value:
                 role: "warga"
                 my_letters:
-                  - id: 501
+                  - id: "550e8400-e29b-41d4-a716-446655440501"
                     letter_type_name: "Surat Keterangan Domisili"
                     status: "in_progress"
                     current_stage_label: "Menunggu Kepala Desa / Sekretaris Desa"
@@ -63,12 +59,18 @@ get:
                 role: "rw"
                 fyi_letters: []
                 unread_notifications_count: 1
+            kadus:
+              summary: Dashboard Kadus (read-only surat dusun setelah tahap RT)
+              value:
+                role: "kadus"
+                fyi_letters: []
+                unread_notifications_count: 0
             kasi_kaur:
               summary: Dashboard Kasi Pelayanan / Kaur TU Umum
               value:
                 role: "kasi_pelayanan"
-                total_menunggu_final: 4
-                pending_letters: []
+                total_surat_selesai: 4
+                completed_letters: []
                 unread_notifications_count: 3
             petugas_desa:
               summary: Dashboard Petugas Desa (full visibility)
@@ -81,9 +83,11 @@ get:
                   in_progress: 12
                   approved: 70
                   rejected: 3
+                jabatan_lewat_masa: []
+                jabatan_segera_berakhir: []
                 unread_notifications_count: 0
             kades_sekdes:
-              summary: Dashboard Kepala Desa / Sekretaris Desa (BARU v5.0 - approver aktif, identik)
+              summary: Dashboard Kepala Desa / Sekretaris Desa (tahap final; tanpa surat sendiri)
               value:
                 role: "kepala_desa"
                 total_menunggu_approval: 4

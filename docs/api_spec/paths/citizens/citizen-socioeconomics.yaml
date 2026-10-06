@@ -2,6 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat data sosio-ekonomi warga (jika sudah disurvei)
   description: |
+    Aktor: Petugas Desa.
     BARU v5.0. Relasi 1:1 dengan citizens. Bisa kosong jika warga belum
     pernah disurvei - lihat 404.
   operationId: getCitizenSocioeconomic
@@ -13,8 +14,9 @@ get:
       required: true
       description: citizen_id
       schema:
-        type: integer
-      example: 55
+        type: string
+        format: uuid
+      example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
   responses:
     '200':
       description: Data sosio-ekonomi berhasil diambil
@@ -41,6 +43,7 @@ put:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Buat atau perbarui data sosio-ekonomi warga (upsert)
   description: |
+    Aktor: Petugas Desa.
     BARU v5.0. `surveyed_by` dan `surveyed_at` diisi otomatis oleh server
     dari user yang login dan waktu request.
   operationId: upsertCitizenSocioeconomic
@@ -52,8 +55,9 @@ put:
       required: true
       description: citizen_id
       schema:
-        type: integer
-      example: 55
+        type: string
+        format: uuid
+      example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
   requestBody:
     required: true
     content:

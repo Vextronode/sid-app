@@ -31,7 +31,7 @@ skinparam arrow {
   FontSize 9
 }
 
-title Class Diagram [1/2: CORE] - SID Desa Cibenda (v5.0)\nLayer: Controller -> Form Request -> Service -> Repository -> Eloquent Model -> DB (Policy di sisi Service, lihat SID-ARCH-BE-001 S2)\nScope: Wilayah, Pengguna & Jabatan Struktural, Kependudukan (Citizens+Families+Socioeconomics), Pipeline Approval Dinamis, Surat\nLihat file Class Diagram Pendukung [2/2] untuk: Organisasi Non-Struktural, Notifikasi, Berita, Peraturan Desa
+title Class Diagram [1/2: CORE] - SID Desa Cibenda (v5.1)\nLayer: Controller -> Form Request -> Service -> Repository -> Eloquent Model -> DB (Policy per-resource)\nScope: Auth, penugasan jabatan, kependudukan, approval dua tahap, surat\nLihat file Class Diagram Pendukung [2/2] untuk: Organisasi Non-Struktural, Notifikasi, Berita, Peraturan Desa
 
 ' ═══════════════════════════════════════════════════
 ' LAYER 1: CONTROLLER
@@ -39,55 +39,46 @@ title Class Diagram [1/2: CORE] - SID Desa Cibenda (v5.0)\nLayer: Controller -> 
 
 package "Controller Layer" #F0F4FF {
 
-  class AuthController {
-    +register(RegisterRequest) : JsonResponse
-    +login(LoginRequest) : JsonResponse
-    +logout() : JsonResponse
-    +me() : JsonResponse
+  class CurrentUserController {
+    +show() : JsonResponse
   }
 
   class LetterController {
     +index() : JsonResponse
     +show(id) : JsonResponse
     +store(StoreLetterRequest) : JsonResponse
-    +downloadPdf(id) : BinaryFileResponse
+    +destroy(letter) : JsonResponse
     note right
-      index()/show(): dipakai Warga
-      (scope: citizen_id miliknya) dan
-      Petugas Desa (scope: full visibility,
-      SEMUA status termasuk rejected
-      di step manapun).
+      Daftar/detail bersama untuk seluruh role.
+      LetterService menentukan scope daftar;
+      LetterPolicy mengotorisasi detail.
     end note
   }
 
   class RtApprovalController {
-    +index() : JsonResponse
-    +show(id) : JsonResponse
-    +decision(id, DecisionRequest) : JsonResponse
+    +decision(letter, RtDecisionRequest) : JsonResponse
     note right
       TETAP TERPISAH (tidak digabung ke
-      FlowStepApprovalController) karena
+      KadesApprovalController) karena
       RT resolve BERBASIS WILAYAH (rt_id),
       pola query & otorisasi beda dengan
       approver berbasis posisi murni.
     end note
   }
 
-  class FlowStepApprovalController {
-    +index() : JsonResponse
-    +show(id) : JsonResponse
-    +decision(id, DecisionRequest) : JsonResponse
+  class KadesApprovalController {
+    +decision(letter, KadesDecisionRequest) : JsonResponse
     note right
-      *** BARU v5.0 - PENGGANTI GENERIK ***
-      Menggantikan RwApprovalController
+      Controller keputusan final aktif (source).
+      Catatan historis: RwApprovalController
       (DIHAPUS - RW bukan approver),
       KadusApprovalController (DIHAPUS -
       Kadus bukan approver), dan
-      KasiApprovalController (DIGABUNG ke
-      sini). SATU controller melayani
-      SEMUA approver berbasis posisi murni:
-      kepala_desa, sekdes, kasi_pelayanan,
-      kaur_tu_umum. Route/middleware
+      tidak ada controller keputusan
+      terpisah untuk Kasi/Kaur.
+      Controller ini melayani approver
+      berbasis posisi murni: kepala_desa
+      dan sekdes. Route/middleware
       menyaring role di layer otorisasi,
       bukan class Controller terpisah
       per role (Config over Code,
@@ -99,14 +90,15 @@ package "Controller Layer" #F0F4FF {
     +index() : JsonResponse
     +store(StoreCitizenRequest) : JsonResponse
     +update(id, UpdateCitizenRequest) : JsonResponse
-    +importExcel(ImportExcelRequest) : JsonResponse
+    +import(file, ImportCitizensRequest) : JsonResponse
   }
 
   class FamilyController {
     +index() : JsonResponse
     +store(StoreFamilyRequest) : JsonResponse
     +update(id, UpdateFamilyRequest) : JsonResponse
-    +addMember(id, AddFamilyMemberRequest) : JsonResponse
+    +show(family) : JsonResponse
+    +destroy(family) : JsonResponse
     note right
       BARU v5.0. Kelola Kartu Keluarga
       (families) - terpisah dari
@@ -116,15 +108,19 @@ package "Controller Layer" #F0F4FF {
     end note
   }
 
-  class UserManagementController {
+  class UserController {
     +index() : JsonResponse
-    +store(StoreUserRequest) : JsonResponse
     +update(id, UpdateUserRequest) : JsonResponse
-    +rotateOfficial(id, RotateOfficialRequest) : JsonResponse
-    +deactivate(id) : JsonResponse
+    +resetPassword(id) : JsonResponse
   }
 
-  class RegionController {
+  class OfficialController {
+    +promote(PromoteOfficialRequest) : JsonResponse
+    +demote(id, DemoteOfficialRequest) : JsonResponse
+    +rotate(id, RotateOfficialRequest) : JsonResponse
+  }
+
+  class HamletController {
     +manageHamlets() : JsonResponse
     +manageRws() : JsonResponse
     +manageRts() : JsonResponse
@@ -132,7 +128,7 @@ package "Controller Layer" #F0F4FF {
 
   class ApprovalSettingController {
     +index() : JsonResponse
-    +update(id, UpdateSettingRequest) : JsonResponse
+    +update(id, UpdateApprovalSettingRequest) : JsonResponse
   }
 
   class LetterTypeController {
@@ -177,31 +173,51 @@ package "Service Layer" #D5EAD0 {
   }
 
   class LetterService {
-    +getActiveLetterTypes() : Collection
-    +createLetter(data, user) : Letter
-    +processRtDecision(id, action, notes, actorId) : Letter
-    +processStepDecision(id, action, notes, actorId, approverPosition) : Letter
-    +validateStepAccess(id, approverPosition) : bool
-    +generateLetterNumber(typeCode) : string
-    +calculateExpiresAt(from, validityDays) : Carbon
-    +getLetterDetailWithFullHistory(id) : Letter
-    -advanceToNextStep(letter) : void
-    -isCurrentStepFinal(letter) : bool
+    +createLetter(data) : Letter
+    +getScopedLetters(user, filters) : Collection
+    +getForShow(id) : Letter
+    +delete(letter, user) : bool
     note right
-      *** PERUBAHAN UTAMA v5.0 ***
-      processRwDecision(), processKadusDecision(),
-      processKasiDecision(), validateRwAccess(),
-      validateKadusAccess() SEMUA DIHAPUS.
-      Digantikan SATU method generik
-      processStepDecision() yang menerima
-      approverPosition sbg parameter - dipakai
-      untuk Kepala Desa/Sekdes/Kasi/Kaur
-      sekaligus. RT tetap method terpisah
-      (processRtDecision) karena basis
-      otorisasinya wilayah, bukan posisi.
-      advanceToNextStep(): increment
-      current_step_order + cek is_final untuk
-      tentukan status jadi in_progress/approved.
+      Daftar bersama menerapkan scope role:
+      RT, RW, Kadus, Kades/Sekdes, Kasi/Kaur,
+      Petugas Desa, dan scope=mine.
+      Keputusan tidak diproses di sini.
+    end note
+  }
+
+  class RtApprovalService {
+    +decision(letter, user, data) : void
+  }
+
+  class KadesApprovalService {
+    +decision(letter, user, data) : void
+  }
+
+  class LetterFlowService {
+    +submit(data, user) : Letter
+    +processRtDecision(letter, action, actor) : Letter
+    +processFinalDecision(letter, action, actor) : Letter
+    +resolveInitialStep(flow, applicant) : int
+  }
+
+  class LetterNumberGenerator {
+    +generate(letter) : string
+    +nextNumber(villageId, letterTypeId, year) : int
+  }
+
+  class ProfileService {
+    +update(user, data) : User
+    +changePassword(user, data) : User
+  }
+
+  class OfficialAssignmentService {
+    +promote(actor, data) : Official
+    +demote(actor, official, notes) : array
+    +rotate(actor, official, data) : array
+    +bootstrapFirstPetugas(target: User) : User
+    note right
+      Promosikan akun warga aktif yang sudah ada secara transaksional;
+      buat official Petugas Desa dan catat activitylog.
     end note
   }
 
@@ -225,7 +241,7 @@ package "Service Layer" #D5EAD0 {
       tidak pernah memanggil endpoint
       decision/approval.
       resolveByPositionOnly() BARU - generik
-      untuk Kepala Desa/Sekdes/Kasi/Kaur,
+      untuk Kepala Desa/Sekdes,
       resolve via officials.position IN (...)
       + is_active=true, TANPA join wilayah
       sama sekali (SID-ARCH-BE-001 S3.2).
@@ -263,26 +279,9 @@ package "Service Layer" #D5EAD0 {
     end note
   }
 
-  class UserManagementService {
-    +createOfficialAccount(data) : User
-    +rotateOfficial(officialId, newData) : Official
-    +deactivateUser(userId) : bool
-    -guardLastActivePetugasDesa(userId) : void
-    -syncSekdesRole(official) : void
-    note right
-      syncSekdesRole(): saat rotasi jabatan
-      'sekdes', otomatis update
-      users.role = 'sekretaris_desa'.
-      TIDAK BERUBAH dari v4.2.
-    end note
-  }
-
-  class RegionService {
-    +createHamlet(data) : Hamlet
-    +createRw(hamletId, data) : Rw
-    +createRt(rwId, data) : Rt
-    +deactivateRegion(id) : bool
-  }
+  class HamletService { +create(data, user) : Hamlet }
+  class RtService { +create(data, user) : Rt }
+  class RwService { +create(data, user) : Rw }
 
   class PdfService {
     +generateLetterPdf(letterId) : string
@@ -297,20 +296,6 @@ package "Service Layer" #D5EAD0 {
     end note
   }
 
-  class ApprovalDeadlineService {
-    +calculateDeadline(villageId, level) : Carbon
-    +checkOverdueLetters() : Collection
-    +sendReminders() : void
-    note right
-      ⚠ approvalLevel parameter di sini
-      MASIH mengacu ENUM lama
-      approval_settings.approval_level
-      ('rt','rw','kadus','kasi') - BELUM
-      diselaraskan dengan
-      letter_approvals.approval_level v5.0
-      (technical debt, TDD Table 70).
-    end note
-  }
 }
 
 ' ═══════════════════════════════════════════════════
@@ -320,7 +305,7 @@ package "Service Layer" #D5EAD0 {
 package "Repository Layer" #C8E6C9 {
 
   class UserRepository {
-    +findByEmail(email) : User
+    +findByUsername(username) : User
     +findByIdWithCitizen(id) : User
     +findByCitizenId(citizenId) : User
     +create(data) : User
@@ -367,10 +352,11 @@ package "Repository Layer" #C8E6C9 {
     +findByIdWithRelations(id) : Letter
     +findByIdWithApprovals(id) : Letter
     +findByRtIdAndStatus(rtId, status) : Collection
-    +findByFlowStepAndStatus(approverPosition, status) : Collection
+    +queryPendingAtFlowStepPositions(positions, villageId, exceptUserId) : Builder
     +create(data) : Letter
     +update(letter, data) : Letter
-    +createApproval(data) : LetterApproval
+    +createApprovalForLetter(letter, data) : LetterApproval
+    +recordDecisionForLetter(letter, data) : LetterApproval
     +createStatusLog(data) : LetterStatusLog
     note right
       *** PERUBAHAN UTAMA v5.0 ***
@@ -384,7 +370,7 @@ package "Repository Layer" #C8E6C9 {
         WHERE fs.approver_position = ?
           AND l.status IN ('pending','in_progress')
       Method ini dipakai LINTAS Service (dashboard,
-      notifikasi, reminder scheduler) - inilah alasan
+      notifikasi; reminder scheduler masih rancangan target) - inilah alasan
       Repository dipertahankan meski proyek capstone
       (SID-ARCH-BE-001 S2), untuk mencegah query
       terduplikasi di banyak Service.
@@ -419,11 +405,9 @@ package "Repository Layer" #C8E6C9 {
     end note
   }
 
-  class RegionRepository {
-    +findHamletById(id) : Hamlet
-    +findRwById(id) : Rw
-    +findRtById(id) : Rt
-  }
+  class HamletRepository { }
+  class RtRepository { }
+  class RwRepository { }
 
   class ApprovalSettingRepository {
     +findByVillageAndLevel(villageId, level) : ApprovalSetting
@@ -488,14 +472,16 @@ package "Eloquent Model Layer" #FDE8D8 {
   }
 
   class User {
-    +id : bigint
-    +villageId : bigint
-    +citizenId : bigint?
+    +id : uuid
+    +villageId : uuid
+    +citizenId : uuid?
     +name : string
+    +username : string
     +email : string
     -password : string
     +role : enum
     +isActive : bool
+    +mustChangePassword : bool
     --
     +village() : BelongsTo
     +citizen() : BelongsTo
@@ -512,7 +498,7 @@ package "Eloquent Model Layer" #FDE8D8 {
   }
 
   class Citizen {
-    +id : bigint
+    +id : uuid
     +villageId : bigint
     -nik : string <<encrypted>>
     +nikHash : string
@@ -631,8 +617,8 @@ package "Eloquent Model Layer" #FDE8D8 {
 
   class Official {
     +id : bigint
-    +citizenId : bigint
-    +userId : bigint?
+    +citizenId : uuid
+    +userId : uuid?
     +position : enum
     +villageId : bigint
     +rtId : bigint?
@@ -644,6 +630,7 @@ package "Eloquent Model Layer" #FDE8D8 {
     +phoneWa : string?
     +startedAt : date
     +endedAt : date?
+    +termEndsAt : date?
     +isActive : bool
     --
     +citizen() : BelongsTo
@@ -766,12 +753,12 @@ package "Eloquent Model Layer" #FDE8D8 {
   }
 
   class Letter {
-    +id : bigint
+    +id : uuid
     +villageId : bigint
     +letterTypeId : bigint
-    +submittedBy : bigint
-    +onBehalfOf : bigint?
-    +citizenId : bigint?
+    +submittedBy : uuid
+    +onBehalfOf : uuid?
+    +citizenId : uuid?
     +letterNumber : string?
     +applicantName : string
     -applicantNik : string <<encrypted>>
@@ -899,19 +886,21 @@ package "Eloquent Model Layer" #FDE8D8 {
 ' RELATIONSHIPS: Controller -> Service
 ' ═══════════════════════════════════════════════════
 
-AuthController ..> AuthService : uses
+RegisteredUserController ..> AuthService : uses
 LetterController ..> LetterService : uses
-LetterController ..> PdfService : uses
-RtApprovalController ..> LetterService : uses
-RtApprovalController ..> OfficialService : uses
-FlowStepApprovalController ..> LetterService : uses
-FlowStepApprovalController ..> OfficialService : uses
+LetterController ..> LetterPolicy : authorizes
+RtApprovalController ..> RtApprovalService : uses
+KadesApprovalController ..> KadesApprovalService : uses
 CitizenController ..> CitizenService : uses
 FamilyController ..> FamilyService : uses
-UserManagementController ..> UserManagementService : uses
-RegionController ..> RegionService : uses
-ApprovalSettingController ..> ApprovalDeadlineService : uses
+UserController ..> UserService : uses
+HamletController ..> HamletService : uses
 ApprovalFlowController ..> ApprovalFlowRepository : uses (read-only)
+DashboardController ..> DashboardService : uses
+LetterDownloadController ..> PdfService : uses
+ProfileController ..> ProfileService : uses
+ApprovalSettingController ..> ApprovalSettingService : uses
+OfficialController ..> OfficialAssignmentService : uses
 
 ' ═══════════════════════════════════════════════════
 ' RELATIONSHIPS: Service -> Repository
@@ -927,13 +916,33 @@ OfficialService ..> LetterRepository : uses
 CitizenService ..> CitizenRepository : uses
 FamilyService ..> FamilyRepository : uses
 FamilyService ..> CitizenRepository : uses
-UserManagementService ..> UserRepository : uses
-UserManagementService ..> OfficialRepository : uses
-RegionService ..> RegionRepository : uses
+UserService ..> UserRepository : uses
+
+HamletService ..> HamletRepository : uses
+RtService ..> RtRepository : uses
+RwService ..> RwRepository : uses
 PdfService ..> LetterRepository : uses
 PdfService ..> OfficialRepository : uses
-ApprovalDeadlineService ..> ApprovalSettingRepository : uses
-ApprovalDeadlineService ..> LetterRepository : uses
+DashboardService ..> CitizenRepository : uses
+DashboardService ..> LetterRepository : uses
+DashboardService ..> OfficialRepository : uses
+DashboardService ..> NotificationRepository : uses
+ApprovalSettingService ..> ApprovalSettingRepository : uses
+ApprovalFlowService ..> ApprovalFlowRepository : uses
+RtApprovalService ..> LetterRepository : uses
+RtApprovalService ..> OfficialService : uses
+RtApprovalService ..> OfficialRepository : resolves RT officials
+RtApprovalService ..> LetterFlowService : uses
+RtApprovalService ..> ApprovalSettingService : resolves deadline
+KadesApprovalService ..> LetterRepository : uses
+KadesApprovalService ..> OfficialService : uses
+KadesApprovalService ..> LetterFlowService : uses
+KadesApprovalService ..> LetterNumberGenerator : uses
+KadesApprovalService ..> ApprovalSettingService : uses
+LetterNumberGenerator ..> LetterNumberCounterRepository : uses
+UsernameGenerator ..> UserRepository : uses
+
+
 
 ' ═══════════════════════════════════════════════════
 ' RELATIONSHIPS: Repository -> Eloquent Model
@@ -950,9 +959,9 @@ LetterTypeRepository ..> LetterType : queries
 LetterCategoryRepository ..> LetterCategory : queries
 ApprovalFlowRepository ..> ApprovalFlow : queries
 ApprovalFlowRepository ..> FlowStep : queries
-RegionRepository ..> Hamlet : queries
-RegionRepository ..> Rw : queries
-RegionRepository ..> Rt : queries
+HamletRepository ..> Hamlet : queries
+RwRepository ..> Rw : queries
+RtRepository ..> Rt : queries
 ApprovalSettingRepository ..> ApprovalSetting : queries
 
 ' ═══════════════════════════════════════════════════
@@ -1000,19 +1009,117 @@ Letter "1" *-- "many" LetterStatusLog
 User "1" -- "many" Letter : submittedBy
 Citizen "0..1" -- "many" Letter : citizenId
 
+package "Komponen backend aktif yang belum ditampilkan di layer utama" #E8EAF6 {
+  ' --- Controller Layer ---
+  class DashboardController {
+    +index(Request) : JsonResponse
+    +genderStats(DashboardStatsRequest) : JsonResponse
+    +letterStats(DashboardStatsRequest) : JsonResponse
+  }
+  class LetterDownloadController {
+    +download(Request, Letter) : Response
+    +preview(Request, Letter) : Response
+  }
+  class ProfileController {
+    +update(UpdateProfileRequest) : JsonResponse
+    +updatePassword(UpdatePasswordRequest) : JsonResponse
+  }
+  class CitizenSocioeconomicController
+  class LetterCategoryController
+  class RtController
+  class RwController
+
+  ' --- Auth Controllers ---
+  class AuthenticatedSessionController
+  class RegisteredUserController
+  class NewPasswordController
+  class PasswordResetLinkController
+  class EmailVerificationNotificationController
+  class VerifyEmailController
+
+  ' --- Service Layer ---
+  class ApprovalFlowService {
+    +list(user, categoryId) : Collection
+    +findWithStepsOrFail(id, user) : ApprovalFlow
+    +create(attributes, user) : ApprovalFlow
+    +replaceSteps(flowId, stepsData, user) : Collection
+  }
+  class ApprovalSettingService {
+    +list(user) : Collection
+    +update(id, data, user) : ApprovalSetting
+    +resolveDeadline(approvalLevel, villageId) : Carbon
+  }
+  class DashboardService {
+    +getDashboard(user) : array
+    +getGenderStats(user) : array
+    +getLetterStats(user, date, type) : array
+  }
+  class CitizenSocioeconomicService
+  class LetterCategoryService
+  class LetterTypeService
+  class UsernameGenerator {
+    +generate(fullName) : string
+  }
+
+  ' --- Repository Layer ---
+  class CitizenSocioeconomicRepository
+  class LetterApprovalRepository
+  class LetterStatusLogRepository
+  class LetterNumberCounterRepository {
+    +nextNumber(villageId, letterTypeId, year) : int
+  }
+  class NotificationRepository
+
+  ' --- Policy Layer ---
+  class LetterPolicy
+  class OfficialPolicy
+  class RegionPolicy
+
+  ' --- Middleware Layer ---
+  class EnsureUserIsActive
+  class EnsureEmailIsVerified
+  class EnsurePasswordIsChanged {
+    +handle(request, next) : Response
+  }
+  class EnsureUserHasRole {
+    +handle(request, next, ...roles) : Response
+  }
+
+  ' --- Support ---
+  class CitizensImport
+  class PetugasFirstCommand
+  class RegionContainsCitizensException
+  class RegionHasActiveCitizensException
+
+  note right
+    Semua class tercantum di atas terverifikasi
+    dari source code aktif (Batch 16 audit).
+    Method dan dependency rinci ada di source;
+    package ini melengkapi diagram overview.
+  end note
+}
+
 @enduml
 
 '==================================================================================
 ' CATATAN REVISI: 01_Class_Core_v4.puml -> 01_Class_Core_v5.puml
 '==================================================================================
 '
+' Catatan historis v5.0 di bawah ini mendeskripsikan versi sebelum v5.1.
+' Daftar/detail surat lintas role kini memakai LetterController/LetterService;
+' keputusan RT dan Kades/Sekdes memakai service keputusan masing-masing.
+'
 ' *** PERUBAHAN PALING BESAR DI SELURUH BATCH CLASS DIAGRAM ***
 '
 ' CONTROLLER LAYER:
 '   - RwApprovalController DIHAPUS TOTAL (RW bukan approver).
 '   - KadusApprovalController DIHAPUS TOTAL (Kadus bukan approver).
-'   - KasiApprovalController DIGABUNG ke controller generik baru.
-'   - TAMBAH FlowStepApprovalController (BARU) - satu controller generik
+'   - Catatan historis (bukan source aktif): KasiApprovalController tidak ada; keputusan sekarang memakai KadesApprovalController untuk step final.
+'   - Catatan historis: FlowStepApprovalController bukan class source; keputusan final memakai KadesApprovalController.
+'     [Historis v5.0, tidak berlaku] Kalimat berikut dulu mendeskripsikan
+'     controller generik untuk empat posisi. Source v5.1: KadesApprovalController
+'     hanya melayani kepala_desa/sekretaris_desa. Kasi/Kaur membaca surat
+'     approved melalui endpoint bersama LetterController.
 '     melayani Kepala Desa, Sekretaris Desa, Kasi Pelayanan, Kaur TU Umum
 '     sekaligus, karena keempatnya resolve BERBASIS POSISI MURNI (bukan
 '     wilayah). RtApprovalController TETAP TERPISAH karena basis wilayah.
@@ -1037,7 +1144,7 @@ Citizen "0..1" -- "many" Letter : citizenId
 '   - LetterRepository: findByRwIdAndStatus(), findByHamletIdAndStatus(),
 '     findByAssignedRoleAndStatus() SEMUA DIHAPUS. Digantikan SATU method
 '     generik findByFlowStepAndStatus(approverPosition, status) yang
-'     dipakai lintas Service (dashboard, notifikasi, reminder scheduler) -
+'     dipakai lintas Service (dashboard dan notifikasi) -
 '     ini alasan utama Repository layer dipertahankan (SID-ARCH-BE-001 S2).
 '     findByRtIdAndStatus() TETAP TERPISAH (basis wilayah, butuh JOIN
 '     citizens.rt_id tambahan).
@@ -1068,9 +1175,9 @@ Citizen "0..1" -- "many" Letter : citizenId
 '     (hamletId utk kadus tetap tersimpan tapi tidak dipakai approval).
 '
 ' TIDAK BERUBAH: Village, Hamlet, Rw, Rt, User (struktur & role ENUM),
-'   AuthController/AuthService, RtApprovalController (TETAP terpisah),
-'   CitizenController/CitizenService dasar, UserManagementController/
-'   Service, RegionController/Service, PdfService, ApprovalSetting model
+'   AuthenticatedSessionController/RegisteredUserController + AuthService, RtApprovalController (TETAP terpisah),
+'   CitizenController/CitizenService dasar, UserController/
+'   Service, HamletController/Service, PdfService, ApprovalSetting model
 '   (ENUM technical debt sengaja tidak dikoreksi).
 '
 '==================================================================================

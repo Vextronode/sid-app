@@ -7,21 +7,25 @@ User:
     lagi read-only), bukan daftar nilai ENUM itu sendiri.
   properties:
     id:
-      type: integer
-      example: 12
+      type: string
+      format: uuid
     village_id:
-      type: integer
-      example: 1
+      type: string
+      format: uuid
     citizen_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 30
       description: "NULL diizinkan untuk akun teknis tanpa data kependudukan"
     name:
       type: string
       example: "Ahmad Budiman"
+    username:
+      type: string
+      example: "ahmad.1937"
     email:
       type: string
+      nullable: true
       example: "ahmad.budiman@cibenda.desa.id"
     role:
       type: string
@@ -30,66 +34,25 @@ User:
     is_active:
       type: boolean
       example: true
+    must_change_password:
+      type: boolean
+      example: false
     created_at:
       type: string
       format: date-time
       example: "2026-06-01T08:00:00Z"
-
-UserCreateRequest:
-  type: object
-  required: [name, email, password, role, citizen_id]
-  properties:
-    name:
+    updated_at:
       type: string
-      example: "Ahmad Budiman"
-    email:
-      type: string
-      example: "ahmad.budiman@cibenda.desa.id"
-    password:
-      type: string
-      format: password
-      example: "Password123!"
-    role:
-      type: string
-      enum: [rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, kepala_desa, sekretaris_desa]
-      example: "rt"
-      description: |
-        Tidak termasuk 'warga' - warga register sendiri via UC-17.
-        Catatan: jika position_data.position='sekdes', sistem OTOMATIS
-        override role jadi 'sekretaris_desa' terlepas dari nilai field
-        ini (logic tidak berubah dari v4.2).
-    citizen_id:
-      type: integer
-      example: 30
-      description: Link ke data kependudukan warga yang menjabat
-    position_data:
-      type: object
-      description: Data tambahan untuk INSERT ke tabel officials
-      properties:
-        position:
-          type: string
-          enum: [kepala_desa, kasi_pelayanan, kaur_tu_umum, kadus, petugas_desa, rw, rt, sekdes, kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes]
-          example: "rt"
-          description: |
-            14 nilai - tidak berubah dari v4.2. 'kadus' tetap valid untuk
-            keperluan struktural non-approval (SID-ARCH-BE-001 S3.2) -
-            hanya tidak lagi direferensikan flow_steps.approver_position.
-        rt_id:
-          type: integer
-          nullable: true
-          example: 12
-        rw_id:
-          type: integer
-          nullable: true
-          example: null
-        hamlet_id:
-          type: integer
-          nullable: true
-          example: null
-        started_at:
-          type: string
-          format: date
-          example: "2026-07-01"
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+    citizen:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../citizens/citizens.yaml#/Citizen'
+    official:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '#/Official'
 
 UserUpdateRequest:
   type: object
@@ -97,9 +60,6 @@ UserUpdateRequest:
     name:
       type: string
       example: "Ahmad Budiman"
-    email:
-      type: string
-      example: "ahmad.budiman@cibenda.desa.id"
     is_active:
       type: boolean
       example: true
@@ -109,20 +69,21 @@ StoreOfficialRequest:
   required: [citizen_id, position, started_at]
   properties:
     citizen_id:
-      type: integer
-      example: 30
+      type: string
+      format: uuid
     user_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 12
     position:
       type: string
       enum: [kepala_desa, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, sekdes, kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes]
       example: "rt"
     village_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 1
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     rt_id:
       type: integer
       nullable: true
@@ -143,6 +104,10 @@ StoreOfficialRequest:
       type: string
       format: date
       example: "2026-01-01"
+    term_ends_at:
+      type: string
+      format: date
+      nullable: true
     ended_at:
       type: string
       format: date
@@ -158,23 +123,27 @@ StoreOfficialRequest:
 
 UpdateOfficialRequest:
   type: object
-  description: Semua field bersifat opsional (partial update)
+  description: |
+    Semua field bersifat opsional. Pada official yang terhubung ke user,
+    position/user_id/citizen_id/is_active/ended_at hanya dapat diubah
+    melalui promote, demote, atau rotate.
   properties:
     citizen_id:
-      type: integer
-      example: 30
+      type: string
+      format: uuid
     user_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 12
     position:
       type: string
       enum: [kepala_desa, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, sekdes, kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes]
       example: "rt"
     village_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 1
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     rt_id:
       type: integer
       nullable: true
@@ -195,6 +164,10 @@ UpdateOfficialRequest:
       type: string
       format: date
       example: "2026-01-01"
+    term_ends_at:
+      type: string
+      format: date
+      nullable: true
     ended_at:
       type: string
       format: date
@@ -210,20 +183,21 @@ UpdateOfficialRequest:
 
 RotateOfficialRequest:
   type: object
-  required: [citizen_id, user_id, started_at]
+  required: [user_id, started_at]
   properties:
-    citizen_id:
-      type: integer
-      example: 45
-      description: Warga baru yang akan menjabat
     user_id:
-      type: integer
-      example: 78
+      type: string
+      format: uuid
+      example: "e8aaa421-7fdd-42cf-8c30-993264820afd"
       description: Akun sistem baru untuk pejabat pengganti
     started_at:
       type: string
       format: date
       example: "2026-08-01"
+    term_ends_at:
+      type: string
+      format: date
+      nullable: true
     notes:
       type: string
       nullable: true
@@ -236,19 +210,20 @@ Official:
       type: integer
       example: 5
     citizen_id:
-      type: integer
-      example: 30
+      type: string
+      format: uuid
     user_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 12
     position:
       type: string
       enum: [kepala_desa, kasi_pelayanan, kaur_tu_umum, kadus, petugas_desa, rw, rt, sekdes, kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes]
       example: "rt"
     village_id:
-      type: integer
-      example: 1
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     rt_id:
       type: integer
       nullable: true
@@ -269,6 +244,10 @@ Official:
       type: string
       format: date
       example: "2024-01-01"
+    term_ends_at:
+      type: string
+      format: date
+      nullable: true
     ended_at:
       type: string
       format: date
@@ -277,6 +256,53 @@ Official:
     is_active:
       type: boolean
       example: true
+    signature_img:
+      type: string
+      nullable: true
+      example: null
+      description: "Nilai kolom signature_img apa adanya (tidak ditransformasi Resource)"
+    stamp_img:
+      type: string
+      nullable: true
+      example: null
+      description: "Nilai kolom stamp_img apa adanya (tidak ditransformasi Resource)"
+    photo_img:
+      type: string
+      nullable: true
+      example: null
+      description: "Nilai kolom photo_img apa adanya (tidak ditransformasi Resource)"
+    notes:
+      type: string
+      nullable: true
+      example: "Pelantikan awal periode"
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+    updated_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+    citizen:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../citizens/citizens.yaml#/Citizen'
+    village:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../villages/villages.yaml#/Village'
+    hamlet:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../wilayah/wilayah.yaml#/Hamlet'
+    rt:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../wilayah/wilayah.yaml#/Rt'
+    rw:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../wilayah/wilayah.yaml#/Rw'
 
 RotateOfficialResponse:
   type: object
@@ -291,3 +317,16 @@ RotateOfficialResponse:
           $ref: '#/Official'
         new_official:
           $ref: '#/Official'
+    warnings:
+      type: array
+      items:
+        type: object
+        properties:
+          code:
+            type: string
+          position:
+            type: string
+          count:
+            type: integer
+          message:
+            type: string

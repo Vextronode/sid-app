@@ -2,7 +2,7 @@
 ' SECTION: USE CASE DIAGRAM
 ' FILE: 04_UC_PetugasDesa_KontenKonfigurasi_v5.puml
 ' JUDUL: Use Case - Petugas Desa (Konten Publik & Konfigurasi Surat)
-' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-18/19/21/24)
+' SUMBER: TDD SID Desa Cibenda v5.1 (Section 5.3.2 UC-18/19/21/24)
 ' CATATAN: Menggantikan 04_UC_PetugasDesa_KontenKonfigurasi_v4.puml.
 '==================================================================================
 
@@ -23,7 +23,7 @@ skinparam actor {
   FontSize 12
 }
 
-title Use Case Diagram - Petugas Desa (3/3: Konten Publik & Konfigurasi Surat) [v5.0]
+title Use Case Diagram - Petugas Desa (3/3: Konten Publik & Konfigurasi Surat) [v5.1]
 
 actor "Petugas Desa" as PD
 
@@ -97,9 +97,12 @@ note bottom of UC_LT_ROLE
   category/flow ke tipe surat baru masih
   developer-only via seeder di MVP,
   konsisten dengan template surat.
-  assigned_role tetap bisa diedit Petugas
-  Desa sebagai kolom cache/derived
-  (source of truth resmi = flow_steps).
+  assigned_role tetap dapat diubah Petugas
+  Desa (termasuk NULL). Nilai ini membatasi
+  akses baca/unduh Kasi/Kaur untuk surat
+  yang approved; bukan approver flow.
+  flow_steps menentukan alur approval dan
+  final hanya Kades/Sekdes.
 end note
 
 note bottom of UC_REG
@@ -111,6 +114,10 @@ end note
 
 @enduml
 
+'==================================================================================
+' SINKRONISASI v5.1 — Auth & Approval Flow:
+' assigned_role nullable diterima dan tetap menjadi penentu akses baca/unduh Kasi/Kaur,
+' sementara alur persetujuan berakhir pada step final Kades/Sekdes.
 '==================================================================================
 ' CATATAN REVISI: 04_UC_PetugasDesa_KontenKonfigurasi_v4.puml -> ..._v5.puml
 '==================================================================================

@@ -67,7 +67,7 @@ note "RW TIDAK MEMBLOKIR alur surat - surat langsung\nlanjut ke approver berikut
 
 note "Konsekuensi STRUKTURAL (bukan hanya UI):\nEndpoint decision/approval TIDAK PERNAH dibuka\nuntuk role RW di level route backend.\nDi Frontend, komponen ApprovalStepRenderer\nTIDAK PERNAH merender tombol Setujui/Tolak\nuntuk RW - dilayani komponen tampilan\nterpisah (read-only), karena secara struktural\nRW tidak pernah menjadi target endpoint decision\n(SID-ARCH-FE-001 S6)." as NOTE3
 
-note "Fallback notifikasi RW kosong/tidak ditemukan:\nbroadcast ke semua petugas_desa aktif\n(pola sama dengan fallback RT).\nGate/resolve RW: via rts.rw_id (masih berbasis\nwilayah, sama seperti resolve RT), TAPI\nhasilnya HANYA dipakai untuk notifikasi FYI,\nBUKAN untuk validasi otorisasi approve\n(karena RW tidak pernah approve apapun)." as NOTE4
+note "Resolve RW menggunakan wilayah rw_id dan\nhasilnya hanya untuk notifikasi FYI.\nJika RW aktif tidak ditemukan, notifikasi\nFYI dilewati tanpa fallback broadcast ke\nPetugas Desa. Proses approval tidak terhambat." as NOTE4
 
 @enduml
 
@@ -96,9 +96,9 @@ note "Fallback notifikasi RW kosong/tidak ditemukan:\nbroadcast ke semua petugas
 '      sendiri" (karena RW dulu punya deadline approval sendiri) menjadi
 '      "riwayat notifikasi yang pernah diterima, murni read-only" - RW
 '      tidak lagi punya deadline/overdue karena tidak pernah jadi gate.
-'   5. Notifikasi keluar ke Kadus (v4.2) DIHAPUS - karena Kadus juga sudah
-'      bukan approver, dan RW toh tidak pernah memicu notifikasi keluar
-'      (RW murni penerima, bukan pemicu langkah berikutnya).
+'   5. Notifikasi keluar dari aksi RW ke Kadus (v4.2) DIHAPUS karena RW
+'      bukan pemicu langkah berikutnya. Kadus menerima FYI terpisah setelah
+'      RT approve, hanya untuk surat dari dusunnya (lihat sequence 03).
 '
 ' KONSEKUENSI STRUKTURAL yang ditekankan di catatan diagram ini (mengacu
 ' SID-ARCH-BE-001 S3.2 & SID-ARCH-FE-001 S6):
@@ -112,7 +112,7 @@ note "Fallback notifikasi RW kosong/tidak ditemukan:\nbroadcast ke semua petugas
 '     wilayahnya (resolve via rts.rw_id, pola resolve wilayah sama seperti
 '     sebelumnya - hanya PENGGUNAAN hasil resolve-nya yang berubah, dari
 '     "otorisasi approve" menjadi "murni pemicu notifikasi").
-'   - Fallback broadcast ke petugas_desa aktif jika RW tidak ditemukan
-'     tetap dipertahankan.
+'   - Jika RW aktif tidak ditemukan, notifikasi FYI dilewati tanpa
+'     fallback broadcast; proses approval tetap berjalan.
 '
 '==================================================================================

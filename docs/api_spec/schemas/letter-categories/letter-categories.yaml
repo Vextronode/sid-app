@@ -37,19 +37,9 @@ ApprovalFlow:
     category_id:
       type: integer
       example: 1
-    category:
-      type: object
-      nullable: true
-      properties:
-        code:
-          type: string
-          example: "approval_normal"
-        name:
-          type: string
-          example: "Approval Normal"
     name:
       type: string
-      example: "RT-Kades/Sekdes-Staff (3 Tahap)"
+      example: "RT-Kades/Sekdes (2 Tahap)"
     description:
       type: string
       nullable: true
@@ -71,7 +61,7 @@ ApprovalFlowCreateRequest:
       example: 1
     name:
       type: string
-      example: "RT-Kades/Sekdes-Staff (3 Tahap)"
+      example: "RT-Kades (2 Tahap)"
     description:
       type: string
       nullable: true
@@ -84,9 +74,9 @@ FlowStep:
   type: object
   description: |
     BARU v5.0. Urutan approver per flow. UNIQUE(flow_id, step_order).
-    'rw' dan 'kadus' TIDAK PERNAH muncul sebagai approver_position -
-    RW ditangani sebagai side-effect notifikasi, Kadus dihapus total
-    dari domain approval (SID-ARCH-BE-001 S3.2).
+    'rw' dan 'kadus' TIDAK PERNAH muncul sebagai approver_position.
+    Keduanya menerima FYI non-blocking setelah RT approve: RW untuk wilayah
+    RW citizen, Kadus hanya untuk dusun (`citizen.hamlet_id`) miliknya.
   properties:
     id:
       type: integer
@@ -99,7 +89,8 @@ FlowStep:
       example: 1
     approver_position:
       type: string
-      enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+      enum: [rt, kepala_desa, sekdes]
+      description: "Nilai response mengikuti enum database; `sekdes` hanya mungkin pada data legacy. Request penggantian flow menerima `rt` atau `kepala_desa`."
       example: "rt"
     is_final:
       type: boolean
@@ -114,7 +105,7 @@ FlowStepUpsertRequest:
       example: 1
     approver_position:
       type: string
-      enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+      enum: [rt, kepala_desa]
       example: "rt"
     is_final:
       type: boolean
@@ -124,9 +115,9 @@ ApprovalFlowStepsReplaceRequest:
   type: object
   required: [steps]
   description: |
-    Replace seluruh flow_steps milik satu flow sekaligus (idiomatik untuk
-    urutan step yang saling bergantung). Konsisten dengan prinsip
-    Config over Code - flow baru/berubah cukup lewat data, bukan kode.
+    Replace seluruh flow_steps. Posisi request hanya `rt` dan `kepala_desa`.
+    Harus tepat satu final; final adalah step_order terbesar dan harus
+    memakai `kepala_desa`. Sekdes bertindak pada tahap `kepala_desa`.
   properties:
     steps:
       type: array
@@ -139,7 +130,4 @@ ApprovalFlowStepsReplaceRequest:
           is_final: false
         - step_order: 2
           approver_position: "kepala_desa"
-          is_final: false
-        - step_order: 3
-          approver_position: "kasi_pelayanan"
           is_final: true

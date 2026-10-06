@@ -1,20 +1,15 @@
 post:
   tags: [Epic 2 - Users, Citizens, Officials]
-  summary: Rotasi jabatan pejabat struktural (RT/RW/Kadus/dst)
+  summary: Rotasi pejabat struktural ke akun warga pengganti
   description: |
-    UC-14. Dijalankan dalam `DB::transaction()`:
-    1. UPDATE officials lama SET ended_at=today, is_active=false
-    2. INSERT officials baru
-    3. Jika position='sekdes' -> UPDATE users SET role='sekretaris_desa'
-
-    Tidak berubah dari v4.2. Rotasi Kadus tetap didukung (jabatan
-    struktural tetap eksis), meski hasil rotasi tidak lagi berdampak ke
-    `flow_steps` manapun sejak v5.0.
+    Hanya Petugas Desa. Demote pejabat lama lalu promote akun warga baru
+    dalam satu transaksi dengan posisi dan wilayah yang sama. Tidak berlaku
+    untuk petugas_desa. Respons memuat old_official, new_official, warnings.
   operationId: rotateOfficial
   security:
     - sanctumCookie: []
   parameters:
-    - name: id
+    - name: official
       in: path
       required: true
       description: ID record official yang sedang aktif (akan diakhiri jabatannya)
@@ -45,7 +40,7 @@ post:
           schema:
             $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
     '422':
-      description: citizen_id/user_id baru tidak valid
+      description: Akun pengganti atau tanggal jabatan tidak valid
       content:
         application/json:
           schema:
@@ -53,4 +48,4 @@ post:
           example:
             message: "The given data was invalid."
             errors:
-              citizen_id: ["Data kependudukan tidak ditemukan"]
+              user_id: ["Akun target harus warga aktif yang belum menjabat dan terhubung ke data kependudukan."]

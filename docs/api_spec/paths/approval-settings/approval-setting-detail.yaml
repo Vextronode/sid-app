@@ -2,10 +2,11 @@ patch:
   tags: [Epic 7 - Deadline & Reminder Approval]
   summary: Edit setting deadline approval untuk 1 tahap
   description: |
-    UC-22. Validasi: deadline_hours > 0, reminder_hours < deadline_hours.
-    Jika deadline terlewat: surat TIDAK auto-reject, hanya is_overdue=true
-    + notifikasi reminder via scheduler (SendApprovalReminderJob, tidak
-    berubah dari v4.2 - SID-ARCH-BE-001 S9).
+    Aktor: Petugas Desa.
+    UC-22. Hanya record tahap approval aktif (rt, kepala_desa)
+    dapat diubah. Validasi: deadline_hours > 0, reminder_hours < deadline_hours.
+    Jika deadline terlewat: surat TIDAK auto-reject; flag overdue dihitung
+    saat daftar dimuat. Pengiriman reminder otomatis belum diimplementasikan.
   operationId: updateApprovalSetting
   security:
     - sanctumCookie: []

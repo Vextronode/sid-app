@@ -1,13 +1,13 @@
-# Index API Spec (OpenAPI 3.0.3) — SIDUTama Cibenda v5.0
+# Index API Spec (OpenAPI 3.0.3) — SIDUTama Cibenda v5.1
 
-**Status:** Draft spec hasil migrasi dari v4.2, mengikuti TDD v5.0, Patch Guide v4.2→v5.0,
-Rencana Migrasi v4→v5, hasil Audit Progress, dan dokumen arsitektur
-`SID-ARCH-SYS-001` v1.1 / `SID-ARCH-BE-001` v1.2 / `SID-ARCH-FE-001` v1.1.
+**Status:** Kontrak API mengikuti route dan perilaku backend aktif v5.1.
+Untuk endpoint dan bentuk data, `openapi.yaml` beserta path/schema yang
+direferensikan menjadi acuan.
 
 **Basis referensi:**
-1. `api_spec_v4/` (struktur & konvensi dasar, endpoint yang tidak berubah)
-2. `AUDIT_PROGRESS_SID_CIBENDA.md` (fitur mana yang sudah ada, bug yang harus diperbaiki di kontrak API, gap yang belum dikerjakan)
-3. `RENCANA_MIGRASI_v4_ke_v5_SID_CIBENDA.md` (urutan & keputusan teknis migrasi skema)
+1. Route aktif `apps/backend/routes/api.php`
+2. Controller, request, resource, policy, dan service backend aktif
+3. Migration dan model backend untuk kontrak data
 
 ## Struktur Folder
 
@@ -17,10 +17,11 @@ Identik dengan v4 — hanya isi yang berubah:
 api_spec_v5/
 ├── openapi.yaml          <- SATU PINTU.
 ├── paths/
-│   ├── auth/, wilayah/, citizens/, users/, officials/            (tidak berubah struktural)
-│   ├── families/                                                  BARU — KK terpisah dari citizens
-│   ├── letter-types/, letter-categories/, approval-flows/         letter-categories & approval-flows BARU
-│   ├── letters/, rt/, rw/, kades/, kasi/                           kadus/ DIHAPUS, kades/ BARU, rw/ dirombak jadi read-only
+│   ├── auth/, wilayah/, citizens/, users/, officials/
+│   ├── families/
+│   ├── letter-types/, letter-categories/, approval-flows/
+│   ├── letters/                                                    daftar/detail surat bersama semua role
+│   ├── rt/, kades/                                                  operasi keputusan saja
 │   ├── notifications/, approval-settings/, dashboard/
 │   ├── public/, villages/, news/, regulations/
 │   └── village-org/
@@ -30,45 +31,30 @@ api_spec_v5/
 └── responses/
 ```
 
-## Ringkasan Perubahan Endpoint v4.2 → v5.0
+## Perilaku Endpoint Surat Aktif
 
-| Endpoint v4.2 | Status di v5.0 | Alasan |
+| Operasi | Implementasi aktif | Scope/perilaku |
 |---|---|---|
-| `GET /kadus/letters` | ❌ **DIHAPUS TOTAL** | Kadus dihapus total dari domain approval surat (Patch 37, SID-ARCH-BE-001 S3.2) |
-| `GET/PATCH /kadus/letters/{id}` | ❌ **DIHAPUS TOTAL** | idem |
-| `PATCH /rw/letters/{id}/decision` | ❌ **DIHAPUS TOTAL, tanpa pengganti** | RW bukan approver sejak v5.0 — endpoint decision untuk RW secara struktural tidak pernah dibuka lagi, bukan hanya disembunyikan di UI |
-| `GET /rw/letters` | 🔄 **DIROMBAK** — jadi read-only riwayat FYI | RW murni penerima notifikasi non-blocking |
-| — | ✅ **BARU**: `GET /kades/letters`, `GET/PATCH /kades/letters/{id}`, `PATCH /kades/letters/{id}/decision` | Kepala Desa/Sekretaris Desa jadi approver aktif menggantikan posisi gate Kadus lama |
-| — | ✅ **BARU**: `GET/POST /letter-categories`, `/approval-flows`, `/approval-flows/{id}/steps` | Domain Config over Code (letter_categories → approval_flows → flow_steps) |
-| — | ✅ **BARU**: `GET/POST /families`, `/families/{id}`, `/families/{id}/members` | KK dipisah dari citizens (Patch 41) |
-| — | ✅ **BARU**: `GET/PUT /citizens/{id}/socioeconomic` | Tabel baru citizen_socioeconomics (1:1 dengan citizens) |
-| `POST /citizens` (dengan field `no_kk`) | 🔄 **field `no_kk` DIHAPUS** dari request/response | No KK pindah ke `families`, citizens pakai `family_id` |
-| Semua endpoint approval (`/rt/*`, `/kasi/*`) | 🔄 **status generik** (`pending/in_progress/approved/rejected`) menggantikan ENUM granular (`rt_approved`, `kadus_approved`, `kasi_approved`, dst) | Skema `letters.status` dirombak total (Section 3.2 SID-ARCH-BE-001) |
-| `GET /dashboard` (oneOf 6 varian termasuk DashboardKadus) | 🔄 **oneOf 6 varian baru** — DashboardKadus dihapus, DashboardRw dirombak, DashboardKadesSekdes baru | Sesuai perubahan role di atas |
+| `GET /letters` | Daftar dan filter surat | Scope otomatis berdasarkan role; `scope=mine` memilih surat yang diajukan user login. |
+| `GET /letters/{id}` | Detail surat | Diotorisasi oleh policy berdasarkan pemohon, role, desa, dan wilayah surat. |
+| `PATCH /rt/letters/{letter}/decision` | Keputusan RT | Hanya untuk step aktif RT dan wilayah RT terkait. |
+| `PATCH /kades/letters/{letter}/decision` | Keputusan Kades/Sekdes | Keduanya dapat memutuskan step aktif `kepala_desa`; first-action-wins. |
+
+Tidak ada operasi GET khusus `/rt/letters`, `/rw/letters`, `/kades/letters`,
+atau `/kasi/letters`. RW dan Kadus membaca melalui endpoint bersama sesuai
+scope wilayah, tanpa hak keputusan. Kasi/Kaur membaca surat approved sesuai
+`assigned_role` melalui endpoint bersama.
 
 ## Audit Bug Fix yang Tercermin di Kontrak v5.0
 
-Sesuai `AUDIT_PROGRESS_SID_CIBENDA.md` §3.4, implementasi v4.2 sebelumnya salah
-memfilter endpoint Kasi berdasarkan `letter_types.assigned_role == 'rw'`
-(seharusnya `kasi_pelayanan`/`kaur_tu_umum`). Spec v5.0 di `paths/kasi/letters.yaml`
-secara eksplisit mendefinisikan kontrak yang BENAR: filter generik berbasis
-`flow_steps.approver_position`, dengan `assigned_role` dipertahankan hanya
-sebagai derived cache (bukan source of truth untuk Policy).
+Filter Kasi/Kaur aktif memakai `letter_types.assigned_role`; nilai `NULL`
+berlaku untuk kedua role. Filter tersebut berjalan di dalam scope daftar
+bersama `GET /letters`, bukan endpoint Kasi/Kaur tersendiri.
 
-## Keputusan yang MASIH TERBUKA (jangan anggap final)
+## Keputusan approval yang sudah diterapkan
 
-Ditandai eksplisit di dalam file terkait dengan blok "⚠ Catatan status keputusan":
-
-1. **Sekretaris Desa saling menggantikan dengan Kepala Desa di step yang sama
-   (first-action-wins)** — `paths/kades/letter-decision.yaml`. Ini rekomendasi/asumsi
-   default (SID-ARCH-BE-001 S3.3), BUKAN keputusan final. Desain teknis endpoint
-   (siapa saja yang boleh memanggil, mekanisme re-validasi) sudah dituliskan
-   mengikuti asumsi ini, tapi kontraknya perlu ditinjau ulang jika keputusan
-   bisnisnya berubah.
-2. **Konsistensi ENUM `approval_settings.approval_level`** — `schemas/approval-settings/approval-settings.yaml`.
-   TDD v5.0 mencatat ini sebagai technical debt yang belum di-patch eksplisit.
-   Spec ini mengikuti rekomendasi Rencana Migrasi Fase 6.1 (enum diselaraskan
-   ke 5 nilai baru), BUKAN keputusan final TDD.
+- Kades dan Sekdes dapat memutuskan pada step `kepala_desa` yang sama dengan first-action-wins. Flow baru hanya menerima posisi step `rt` dan `kepala_desa`, dengan step final wajib `kepala_desa`.
+- ENUM database `approval_settings.approval_level` tetap lima nilai untuk kompatibilitas; API hanya mengekspos setting level approver aktif (`rt`, `kepala_desa`). Sekdes memutuskan pada step `kepala_desa`; Kasi/Kaur bukan approver.
 
 ## Scope Eksklusi Eksplisit (TIDAK ada di spec ini)
 
@@ -106,9 +92,9 @@ redocly preview-docs openapi.yaml
 | E3 | Autentikasi | Tidak berubah struktural | UC-01, UC-02, UC-17 |
 | E4 | Konfigurasi Tipe Surat & Pipeline Approval | +letter_categories, +approval_flows, +flow_steps | UC-21 |
 | E5 | Alur Pengajuan & Approval Surat | Dirombak total (lihat tabel di atas) | UC-03, UC-04a, UC-04c(baru), UC-04d, UC-05, UC-06, UC-08 |
-| E6 | Sistem Notifikasi | Event generik FlowStepAdvanced | - |
+| E6 | Sistem Notifikasi | `LetterStatusNotification` dikirim langsung dari service melalui kanal database | - |
 | E7 | Deadline & Reminder Approval | Enum approval_level diselaraskan (belum final) | UC-22 |
-| E8 | Dashboard & Statistik | oneOf dirombak (hapus Kadus, RW read-only, Kades/Sekdes aktif) | UC-15 |
+| E8 | Dashboard & Statistik | Dashboard tetap menyediakan scope role Kadus dan RW read-only; Kades/Sekdes aktif pada tahap final | UC-15 |
 | E9 | Halaman Publik & Konten | Tidak berubah, guard petugas_desa ditegaskan ulang | UC-16, UC-18, UC-19, UC-24 |
 | E10 | Organisasi Non-Struktural Desa | Tidak berubah | UC-23 |
 | E11 | Security, Audit & Compliance | Dual-column enkripsi meluas ke families.no_kk | - |

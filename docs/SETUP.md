@@ -19,7 +19,7 @@ Panduan clone dan jalanin project di lokal. Command ditulis untuk **Windows (Pow
 - PHP 8.3+ dengan extension `pdo_pgsql` aktif
 - Composer
 - Node.js 18+ (includes npm)
-- PostgreSQL 18
+- PostgreSQL (versi tidak ditetapkan oleh source backend; `DB_CONNECTION=pgsql` saja yang dapat diverifikasi)
 - Git
 
 Cek extension PostgreSQL:
@@ -83,8 +83,27 @@ SESSION_DOMAIN=localhost
 
 ### Migrate & Jalanin
 
+Untuk database lokal kosong yang boleh di-reset, jalankan migration dan seeder:
+
 ```powershell
-php artisan migrate
+php artisan migrate:fresh --seed
+```
+
+> `migrate:fresh` menghapus seluruh tabel beserta datanya. Jangan jalankan pada database yang berisi data yang ingin dipertahankan.
+
+Petugas pertama dapat diinisialisasi langsung. Untuk citizen baru, berikan data wajib citizen sesuai form dashboard, UUID desa, dan ID RT:
+
+```powershell
+php artisan petugas:first --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas" --village="<UUID_DESA>" --rt=1
+```
+
+Ganti `--rt=1` dengan ID RT yang benar-benar ada di desa tersebut. Jika citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Username dibuat otomatis dan password sementara acak hanya ditampilkan sekali. Akun wajib menggantinya saat login pertama. Command menolak jika Petugas Desa aktif sudah ada. Petugas selanjutnya dipromosikan dari dashboard.
+
+`petugas:first` hanya untuk bootstrap pertama, bukan command pemulihan akun Petugas yang sudah ada. Belum ada command pemulihan darurat bawaan jika tidak ada Petugas Desa yang dapat login; siapkan prosedur operasional terkontrol sebelum production dan jangan mengatasi kondisi tersebut dengan menjalankan ulang command pada akun Petugas.
+
+Jalankan backend:
+
+```powershell
 php artisan serve
 ```
 
@@ -120,10 +139,10 @@ Contoh flow login:
 ```js
 import api from '@/lib/api';
 
-async function login(email, password) {
+async function login(username, password) {
   await api.get('/sanctum/csrf-cookie');
-  await api.post('/login', { email, password });
-  const { data: user } = await api.get('/api/user');
+  const { data } = await api.post('/api/login', { username, password });
+  const user = data.user;
   return user;
 }
 ```

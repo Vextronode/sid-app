@@ -2,10 +2,9 @@
     ' SECTION: ERD (ENTITY RELATIONSHIP DIAGRAM)
     ' FILE: 02_ERD_Pendukung_v7.puml
     ' JUDUL: ERD - Pendukung [2/2]
-    ' SUMBER: TECHNICAL DESIGN DOCUMENT SID Desa Cibenda v5.0 (Section 5.4.1, 5.4.2)
-    ' CATATAN: Menggantikan 02_ERD_Pendukung_v6.puml (v4.2). Struktur 5 tabel di
-    '          file ini TIDAK BERUBAH dari v6 - hanya shadow entities yang
-    '          disinkronkan ke skema Core v7. Lihat catatan revisi di akhir file.
+    ' SUMBER: TECHNICAL DESIGN DOCUMENT SID Desa Cibenda v5.1 (Section 5.4.1, 5.4.2)
+    ' CATATAN: Menggantikan 02_ERD_Pendukung_v6.puml (v4.2). Tabel pendukung
+    '          tetap, shadow entities/FK diselaraskan dengan UUID users/villages.
     '==================================================================================
 
     @startuml 5.4.1b_v7 ERD Pendukung
@@ -25,7 +24,7 @@
     }
     skinparam linetype ortho
 
-    title Entity Relationship Diagram (ERD) v7 - PENDUKUNG [2/2] - SID Desa Cibenda\n(Organisasi Non-Struktural, Notifikasi, Berita, Peraturan Desa)\nLihat file ERD Core [1/2] untuk struktur lengkap: Wilayah, Users, Citizens/Families/Socioeconomics, Officials, Pipeline Surat\nSelaras TDD v5.0 Section 5.4
+    title Entity Relationship Diagram (ERD) v7 - PENDUKUNG [2/2] - SID Desa Cibenda\n(Organisasi Non-Struktural, Notifikasi, Berita, Peraturan Desa)\nLihat file ERD Core [1/2] untuk struktur lengkap: Wilayah, Users, Citizens/Families/Socioeconomics, Officials, Pipeline Surat\nDiselaraskan v5.1 — Auth & Approval Flow
 
     ' ─────────────────────────────────────────────
     ' SHADOW / GHOST ENTITIES
@@ -38,15 +37,15 @@
     ' ─────────────────────────────────────────────
 
     entity "villages\n(bayangan - lihat ERD Core)" as VIL <<shadow>> #F5F5F5 {
-      * id : BIGINT <<PK>>
+      * id : UUID <<PK>>
       --
       ..lihat 01_ERD_Core_v7.puml\nuntuk kolom lengkap..
     }
 
     entity "users\n(bayangan - lihat ERD Core)" as USR <<shadow>> #F5F5F5 {
-      * id : BIGINT <<PK>>
+      * id : UUID <<PK>>
       --
-      * village_id : BIGINT <<FK -> villages>>
+      village_id : UUID <<FK -> villages, NULL>>
       * role : ENUM(9 nilai)
       ..lihat 01_ERD_Core_v7.puml\nuntuk kolom lengkap..
     }
@@ -65,9 +64,8 @@
       ENTITY BAYANGAN (shadow/ghost).
       Struktur lengkap ada di file
       ERD Core [1/2].
-      role ENUM TETAP 9 nilai flat sejak
-      v4.2 (TIDAK BERUBAH di v5.0) - lihat
-      SID-ARCH-BE-001 S4.1.
+      Role ENUM tetap 9 nilai flat. Login
+      menggunakan username; email opsional.
     end note
 
     ' ─────────────────────────────────────────────
@@ -78,7 +76,7 @@
     entity "village_org_positions" as VOP {
       * id : BIGINT <<PK>>
       --
-      * village_id : BIGINT <<FK -> villages>>
+      * village_id : UUID <<FK -> villages>>
       * org_type : ENUM('bpd','bumdes','lpm',\n'karang_taruna','pkk')
       * position_label : VARCHAR(100)
       * is_single_occupant : BOOLEAN <<DEFAULT true>>
@@ -131,8 +129,8 @@
       --
       * type : VARCHAR(255)
       * notifiable_type : VARCHAR(255) <<INDEX>>
-      * notifiable_id : BIGINT <<INDEX>>
-      * data : JSON
+      * notifiable_id : UUID <<INDEX>>
+      * data : TEXT
       read_at : TIMESTAMP <<INDEX>>
       created_at : TIMESTAMP
       updated_at : TIMESTAMP
@@ -141,29 +139,22 @@
     note right of NOTIF
       STRUKTUR TABEL TIDAK BERUBAH dari v4.2/v6.
       notifiable_type/notifiable_id = polymorphic
-      relation ke users (biasanya App\\Models\\User).
+      relation ke UUID users; migration menggunakan
+      uuidMorphs('notifiable'). data disimpan sebagai
+      TEXT JSON-serialized.
       --
-      PERUBAHAN v5.0 murni di level EVENT
-      ARCHITECTURE (bukan struktur tabel ini) -
-      lihat SID-ARCH-BE-001 S7:
-      - Setiap perpindahan current_step_order
-        memicu Event GENERIK (FlowStepAdvanced),
-        BUKAN lagi Event spesifik per posisi
-        (RtApproved/RwApproved/dst seperti v4.2).
-      - Notifikasi ke RW tetap ada, tapi levelnya
-        side-effect non-blocking yang dipicu
-        BERSAMAAN (bukan berurutan) dengan
-        resolusi approver berikutnya.
-      - Fallback broadcast (RT wilayah tidak
-        ditemukan -> semua petugas_desa aktif)
-        tetap dipertahankan.
+      Notifikasi approval dikirim oleh service sesuai
+      hasil resolve step aktif. RW hanya menerima FYI
+      setelah RT menyetujui surat. Jika pejabat RW
+      aktif tidak ditemukan, tidak ada fallback
+      broadcast ke Petugas Desa.
     end note
 
     entity "news" as NEWS {
       * id : BIGINT <<PK>>
       --
-      * village_id : BIGINT <<FK -> villages>>
-      * author_id : BIGINT <<FK -> users>>
+      * village_id : UUID <<FK -> villages>>
+      * author_id : UUID <<FK -> users>>
       * title : VARCHAR(200)
       * slug : VARCHAR(200) <<UNIQUE>>
       * content : TEXT
@@ -187,12 +178,12 @@
     entity "village_regulations" as REG {
       * id : BIGINT <<PK>>
       --
-      * village_id : BIGINT <<FK -> villages>>
+      * village_id : UUID <<FK -> villages>>
       * regulation_number : VARCHAR(100)
       * title : VARCHAR(200)
       * content : TEXT
       enacted_date : DATE <<NULL>>
-      * created_by : BIGINT <<FK -> users>>
+      * created_by : UUID <<FK -> users>>
       created_at : TIMESTAMP
       updated_at : TIMESTAMP
     }
@@ -237,7 +228,7 @@
     '      01_ERD_Core_v7.puml (bukan lagi v6).
     '   2. Catatan/note diperbarui untuk mengklarifikasi bahwa perubahan
     '      arsitektural terkait notifications terjadi di level EVENT SYSTEM
-    '      (lihat SID-ARCH-BE-001 S7 - FlowStepAdvanced generik menggantikan
+    '      (lihat SID-ARCH-BE-001 S7 - pemanggilan notifikasi langsung dari service menggantikan
     '      Event granular per posisi), BUKAN di level struktur tabel.
     '   3. Catatan pada NEWS diperkuat dengan rujukan SID-ARCH-SYS-001 S2.3
     '      yang secara eksplisit menegaskan CMS eksklusif milik petugas_desa,

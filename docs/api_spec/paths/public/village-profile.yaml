@@ -1,6 +1,7 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Profil desa publik (tanpa login)
+  security: []
   description: UC-16. Sejarah, visi misi, struktur pemerintahan desa. Tidak berubah dari v4.2.
   operationId: getPublicVillageProfile
   responses:

@@ -87,13 +87,13 @@ node "VPS - Single Server\n(Minimum: 2 vCPU, 2GB RAM, 20GB SSD)" as VPS {
 
   component "Laravel REST API\n(PHP-FPM)\nPipeline Approval Dinamis" as LARAVEL
 
-  component "Queue Worker\n(Supervisor - database driver)" as WORKER
+  component "Queue Worker\n(Tidak diverifikasi terhadap source backend)" as WORKER
 
   component "Laravel Scheduler\n(Cron)" as SCHED
 
   database "PostgreSQL" as DB
 
-  component "Local Storage\n(Backup terenkripsi)" as BACKUP
+  component "Backup\n(Tidak diverifikasi terhadap source backend)" as BACKUP
 }
 
 cloud "Mail Server (SMTP)\n- Eksternal" as MAIL
@@ -105,11 +105,11 @@ NGINX --> REACT : Serve static assets
 NGINX --> LARAVEL : Reverse proxy\n/api/*
 
 LARAVEL --> DB : Query\n(Eloquent ORM)
-LARAVEL --> WORKER : Dispatch Job\n(queue: database,\nSendNotificationJob generik)
+LARAVEL --> WORKER : Dispatch Job\n(queue: database,\nnotifikasi database langsung)
 WORKER --> DB : Ambil & proses job
-SCHED --> DB : Cron job\n(reminder, backup)
+SCHED --> DB : Target cron\n(Tidak diverifikasi terhadap source backend)
 LARAVEL ..> MAIL : Kirim notifikasi email\n(opsional)
-SCHED --> BACKUP : Backup terjadwal\n(dienkripsi)
+SCHED --> BACKUP : Backup (Tidak diverifikasi)
 
 note bottom of VPS
   Seluruh komponen berjalan pada 1 server yang sama.
@@ -183,7 +183,7 @@ end note
 '      relevan sebagai pengguna login, hanya bukan approver lagi).
 '   2. Komponen LARAVEL diberi label tambahan "Pipeline Approval Dinamis"
 '      dan catatan singkat di bagian bawah VPS - murni kontekstual.
-'   3. Panah LARAVEL -> WORKER diberi keterangan "SendNotificationJob
+'   3. Panah LARAVEL -> WORKER diberi keterangan "LetterStatusNotification
 '      generik" untuk konsistensi dengan versi detail.
 '   4. TAMBAH note baru "TOPOLOGY" yang merangkum informasi Staging/
 '      Production dari SID-ARCH-SYS-001 S5 - informasi ini tidak ada

@@ -2,8 +2,9 @@ Village:
   type: object
   properties:
     id:
-      type: integer
-      example: 1
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     name:
       type: string
       example: "Desa Cibenda"

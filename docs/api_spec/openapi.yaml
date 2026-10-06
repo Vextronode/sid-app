@@ -2,26 +2,39 @@ openapi: 3.0.3
 
 info:
   title: Sistem Informasi Desa (SID) Desa Cibenda - REST API
-  version: "5.0.0"
+  version: "5.1.0"
   description: |
-    Spesifikasi API untuk SIDUTama Cibenda, basis TDD v5.0. Dikelompokkan
+    Spesifikasi API untuk SIDUTama Cibenda, diselaraskan ke backend v5.1.
     per Epic (E0 s/d E12, disesuaikan penomoran/judul untuk domain baru
     v5.0). Epic 0, 11, dan 12 bersifat cross-cutting/infrastruktur dan
     tidak menghasilkan endpoint HTTP baru.
+
+    ## Perubahan besar v5.1 — Auth & Approval Flow
+
+    Login memakai username; registrasi menggunakan NIK + password dan
+    menghasilkan username otomatis. Pejabat dengan citizen dapat submit
+    surat untuk dirinya sendiri. Tahap final adalah Kepala Desa/Sekdes;
+    Kasi/Kaur hanya menerima notifikasi dan membaca/mengunduh surat
+    selesai sesuai assigned_role. Detail breaking changes dan contoh
+    request/response ada di `../frontend-changelog-auth-approval-flow.md`.
+
+    Endpoint web auth (/login, /register, /forgot-password, /reset-password)
+    tidak memakai prefix `/api`; endpoint bisnis memakai prefix `/api`.
+    OpenAPI menggunakan server `/api` untuk endpoint bisnis dan override
+    server di operasi autentikasi yang berada di root.
 
     ## Perubahan besar dari v4.2 -> v5.0
 
     Rombakan sistem approval surat (Category + Flow dinamis) menggantikan
     hardcode 4-tahap RT->RW->Kadus->Kasi:
-    - **Kadus dihapus total** dari domain approval surat. Endpoint
-      `/kadus/*` v4.2 TIDAK ADA lagi di spec ini.
-    - **RW jadi notif-only.** Endpoint approval `/rw/letters/{id}/decision`
-      v4.2 DIHAPUS TOTAL - tidak ada penggantinya, karena RW memang tidak
-      lagi diberi kewenangan approve/reject apapun. `/rw/letters` yang
-      tersisa murni read-only riwayat FYI.
-    - **Kepala Desa & Sekretaris Desa jadi approver aktif** (bukan lagi
-      read-only monitoring) - endpoint baru `/kades/letters` dan
-      `/kades/letters/{id}/decision` menggantikan posisi gate lama Kadus.
+    - **RT, RW, Kadus, Kades/Sekdes, dan Kasi/Kaur membaca lewat**
+      `/letters` dan `/letters/{id}`. Scope daftar/detail ditentukan oleh role
+      dan wilayah user; tidak ada lagi endpoint GET terpisah per-role.
+    - **RW dan Kadus bukan approver.** Keduanya dapat menerima notifikasi FYI;
+      tidak ada endpoint keputusan untuk RW atau Kadus.
+    - **RT dan Kades/Sekdes adalah approver aktif.** Endpoint keputusan tetap
+      tersedia di `/rt/letters/{letter}/decision` dan
+      `/kades/letters/{letter}/decision`.
     - **`letters.status` jadi generik** (pending/in_progress/approved/
       rejected) + `flow_id` (snapshot) + `current_step_order` +
       `rejected_at_step`, menggantikan ENUM granular per posisi.
@@ -31,11 +44,8 @@ info:
       dan `citizen_socioeconomics`; `citizens.no_kk` dihapus total,
       ditambah 11 kolom baru (family_id, residency_type, blood_type, dst).
 
-    ⚠ **Status keputusan terbuka**: apakah Sekretaris Desa benar-benar
-    ikut approve di step yang sama dengan Kepala Desa (first-action-wins)
-    masih berstatus rekomendasi/asumsi, BUKAN keputusan final eksplisit -
-    lihat catatan detail di `paths/kades/letter-decision.yaml` dan
-    SID-ARCH-BE-001 S3.3.
+    Keputusan v5.1: Sekdes dapat menggantikan Kades pada tahap final
+    (first-action-wins); aktor aktual tercatat di approval.
 
     ⚠ **Scope eksklusi eksplisit**: QR Verification, Void/Cancel Surat,
     dan Staging Perubahan Data Self-Service TIDAK ada di spec ini - status
@@ -44,6 +54,10 @@ info:
 
     Autentikasi: Laravel Sanctum SPA cookie-based (HttpOnly, bukan
     Bearer token/localStorage) - tidak berubah dari v4.2.
+
+    Route protected memakai middleware `account.active`. Jika akun yang
+    sudah memiliki sesi dinonaktifkan, request ditolak dengan HTTP 403,
+    `code: account_inactive`; endpoint logout tetap dapat dipakai.
 
     Referensi arsitektur: Controller -> Form Request -> Service ->
     Repository -> Eloquent -> DB, dengan Policy untuk otorisasi context
@@ -57,15 +71,17 @@ info:
     url: https://sid-cibenda.id/license
 
 servers:
-  - url: https://api.sid-cibenda.id/v1
+  - url: https://api.sid-cibenda.id/api
     description: Production
-  - url: https://staging-api.sid-cibenda.id/v1
+  - url: https://staging-api.sid-cibenda.id/api
     description: Staging
 
 security:
   - sanctumCookie: []
 
 tags:
+  - name: Infrastruktur
+    description: Endpoint kesehatan, CSRF, storage, dan root aplikasi.
   - name: Epic 0 - Fondasi Proyek
     description: |
       Setup repo, auth dasar, RBAC, migrasi skema 22 tabel MVP v5.0,
@@ -76,8 +92,8 @@ tags:
   - name: Epic 2 - Users, Citizens, Officials
     description: |
       CRUD Data Warga (skema v5.0: families, citizen_socioeconomics,
-      residency_type, dst), Import Excel, Kelola User & Role, Rotasi
-      Jabatan Struktural, Register Warga. UC-09, UC-14, UC-17.
+      residency_type, dst), Import Excel, promote/demote/rotate jabatan,
+      reset password, Register Warga. UC-09, UC-14, UC-17.
   - name: Epic 3 - Autentikasi
     description: Login, Logout, Register. UC-01, UC-02, UC-17.
   - name: Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval
@@ -87,17 +103,17 @@ tags:
       flow_steps - menggantikan hardcode 4-tahap approval v4.2.
   - name: Epic 5 - Alur Pengajuan & Approval Surat
     description: |
-      Inti sistem, DIROMBAK TOTAL v5.0. Input Permohonan Surat, approval
-      dinamis berbasis flow (RT -> RW FYI non-blocking -> Kepala Desa/
-      Sekretaris Desa -> Kasi/Kaur final), daftar & detail surat generik,
+      Inti sistem, DIROMBAK TOTAL v5.0. Input surat oleh warga/pejabat,
+      approval flow RT -> Kades/Sekdes final (RW FYI hanya setelah RT
+      approve), notifikasi dan baca/unduh oleh Kasi/Kaur,
+      daftar & detail surat generik,
       download PDF. UC-03, UC-04a, UC-04c (baru), UC-04d, UC-05, UC-06,
       UC-08. UC-04b (RW Approval) dan UC-04c versi lama (Kadus Approval)
       DIHAPUS TOTAL.
   - name: Epic 6 - Sistem Notifikasi
     description: |
       Notifikasi in-app, chain approval dinamis, FYI RW non-blocking,
-      fallback broadcast. Event generik (FlowStepAdvanced) menggantikan
-      Event per posisi.
+      resolver mengirim notifikasi hanya kepada approver aktif yang ditemukan. Service mengirim notifikasi database secara langsung; tidak ada Event/Listener aplikasi.
   - name: Epic 7 - Deadline & Reminder Approval
     description: Setting deadline per tahap approval. UC-22.
   - name: Epic 8 - Dashboard & Statistik
@@ -135,16 +151,36 @@ components:
         PUT/DELETE) sesuai konvensi Sanctum SPA. Tidak berubah dari v4.2.
 
 paths:
+  /:
+    $ref: 'paths/infrastructure/root.yaml'
   # ─────────────────────────────────────────────
   # EPIC 3 - Autentikasi
   # ─────────────────────────────────────────────
-  /auth/register:
+  /register:
     $ref: 'paths/auth/register.yaml'
-  /auth/login:
+  /login:
     $ref: 'paths/auth/login.yaml'
-  /auth/logout:
+  /logout:
     $ref: 'paths/auth/logout.yaml'
-  /auth/me:
+  /forgot-password:
+    $ref: 'paths/auth/forgot-password-v51.yaml'
+  /reset-password:
+    $ref: 'paths/auth/reset-password-v51.yaml'
+  /email/verification-notification:
+    $ref: 'paths/auth/verification-notification.yaml'
+  /verify-email/{id}/{hash}:
+    $ref: 'paths/auth/verify-email.yaml'
+  /sanctum/csrf-cookie:
+    $ref: 'paths/infrastructure/csrf-cookie.yaml'
+  /storage/{path}:
+    $ref: 'paths/infrastructure/storage.yaml'
+  /up:
+    $ref: 'paths/infrastructure/health.yaml'
+  /profile:
+    $ref: 'paths/auth/profile-v51.yaml'
+  /profile/password:
+    $ref: 'paths/auth/profile-password-v51.yaml'
+  /user:
     $ref: 'paths/auth/me.yaml'
 
   # ─────────────────────────────────────────────
@@ -152,19 +188,23 @@ paths:
   # ─────────────────────────────────────────────
   /hamlets:
     $ref: 'paths/wilayah/hamlets.yaml'
-  /hamlets/{id}:
+  /hamlets/{hamlet}:
     $ref: 'paths/wilayah/hamlet-detail.yaml'
   /rws:
     $ref: 'paths/wilayah/rws.yaml'
+  /rws/{rw}:
+    $ref: 'paths/wilayah/rw-detail.yaml'
   /rts:
     $ref: 'paths/wilayah/rts.yaml'
+  /rts/{rt}:
+    $ref: 'paths/wilayah/rt-detail.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 2 - Users, Citizens, Officials, Families (BARU)
   # ─────────────────────────────────────────────
   /citizens:
     $ref: 'paths/citizens/citizens.yaml'
-  /citizens/{id}:
+  /citizens/{citizen}:
     $ref: 'paths/citizens/citizen-detail.yaml'
   /citizens/{id}/socioeconomic:
     $ref: 'paths/citizens/citizen-socioeconomics.yaml'
@@ -174,27 +214,33 @@ paths:
     $ref: 'paths/citizens/citizens-wilayah.yaml'
   /families:
     $ref: 'paths/families/families.yaml'
-  /families/{id}:
+  /families/{family}:
     $ref: 'paths/families/family-detail.yaml'
-  /families/{id}/members:
-    $ref: 'paths/families/family-members.yaml'
   /users:
     $ref: 'paths/users/users.yaml'
-  /users/{id}:
+  /users/{user}:
     $ref: 'paths/users/user-detail.yaml'
+  /users/{user}/toggle-status:
+    $ref: 'paths/users/toggle-status-v51.yaml'
   /officials:
     $ref: 'paths/officials/officials.yaml'
-  /officials/{id}:
+  /officials/promote:
+    $ref: 'paths/officials/promote-v51.yaml'
+  /officials/{official}:
     $ref: 'paths/officials/official-detail.yaml'
-  /officials/{id}/rotate:
+  /officials/{official}/rotate:
     $ref: 'paths/officials/rotate.yaml'
+  /officials/{official}/demote:
+    $ref: 'paths/officials/demote-v51.yaml'
+  /users/{user}/reset-password:
+    $ref: 'paths/users/reset-password-v51.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 4 - Konfigurasi Tipe Surat & Pipeline Approval (BARU domain)
   # ─────────────────────────────────────────────
   /letter-types:
     $ref: 'paths/letter-types/letter-types.yaml'
-  /letter-types/{id}:
+  /letter-types/{letterType}:
     $ref: 'paths/letter-types/letter-type-detail.yaml'
   /letter-categories:
     $ref: 'paths/letter-categories/letter-categories.yaml'
@@ -210,30 +256,16 @@ paths:
   # ─────────────────────────────────────────────
   /letters:
     $ref: 'paths/letters/letters.yaml'
-  /letters/{id}:
+  /letters/{letter}:
     $ref: 'paths/letters/letter-detail.yaml'
-  /letters/{id}/download:
+  /letters/{letter}/download:
     $ref: 'paths/letters/download.yaml'
-  /rt/letters:
-    $ref: 'paths/rt/letters.yaml'
-  /rt/letters/{id}:
-    $ref: 'paths/rt/letter-detail.yaml'
-  /rt/letters/{id}/decision:
+  /letters/{letter}/preview:
+    $ref: 'paths/letters/preview-v51.yaml'
+  /rt/letters/{letter}/decision:
     $ref: 'paths/rt/letter-decision.yaml'
-  /rw/letters:
-    $ref: 'paths/rw/letters.yaml'
-  /rw/letters/{id}:
-    $ref: 'paths/rw/letter-detail.yaml'
-  /kades/letters:
-    $ref: 'paths/kades/letters.yaml'
-  /kades/letters/{id}:
-    $ref: 'paths/kades/letter-detail.yaml'
-  /kades/letters/{id}/decision:
+  /kades/letters/{letter}/decision:
     $ref: 'paths/kades/letter-decision.yaml'
-  /kasi/letters:
-    $ref: 'paths/kasi/letters.yaml'
-  /kasi/letters/{id}:
-    $ref: 'paths/kasi/letter-detail.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 6 - Sistem Notifikasi
@@ -298,9 +330,9 @@ paths:
     $ref: 'paths/village-org/positions.yaml'
   /village-org-positions/{id}:
     $ref: 'paths/village-org/position-detail.yaml'
-  /village-org-positions/{positionId}/members:
+  /village-org-positions/{position}/members:
     $ref: 'paths/village-org/members.yaml'
-  /village-org-positions/{positionId}/members/{id}:
+  /village-org-positions/{position}/members/{id}:
     $ref: 'paths/village-org/member-detail.yaml'
 
   # ─────────────────────────────────────────────

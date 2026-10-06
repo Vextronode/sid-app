@@ -1,13 +1,16 @@
+servers:
+  - url: https://api.sid-cibenda.id
+    description: Endpoint web autentikasi (tanpa prefix /api)
+security: []
 post:
   tags: [Epic 3 - Autentikasi]
   summary: Register akun warga (self-service)
+  security:
+    - sanctumCookie: []
   description: |
-    UC-17. Validasi NIK terhadap tabel `citizens` via `nik_hash` (SHA-256).
-    Akun langsung aktif tanpa approval manual jika NIK ditemukan dan belum
-    punya akun. Gate logic hanya cek `citizens.is_active` - `domicile_status`
-    murni informatif, tidak mempengaruhi kelayakan registrasi. Skema
-    `citizens` v5.0 (family_id, residency_type, dst) tidak menambah field
-    baru ke alur registrasi ini - lookup tetap murni via nik_hash.
+    UC-17. Request hanya NIK, password, dan konfirmasi password. Sistem
+    memeriksa NIK aktif melalui nik_hash, menghasilkan username otomatis,
+    membuat sesi login, dan mengembalikan username serta nama.
   operationId: registerWarga
   requestBody:
     required: true
@@ -41,12 +44,6 @@ post:
                 message: "The given data was invalid."
                 errors:
                   nik: ["NIK sudah terdaftar, silakan login"]
-            email_taken:
-              summary: Email sudah digunakan akun lain
-              value:
-                message: "The given data was invalid."
-                errors:
-                  email: ["Email sudah terdaftar"]
             weak_password:
               summary: Password terlalu lemah
               value:

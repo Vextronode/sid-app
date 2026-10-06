@@ -1,6 +1,7 @@
 get:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Lihat daftar RW (opsional filter per dusun)
+  description: "Aktor: Petugas Desa."
   operationId: listRws
   security:
     - sanctumCookie: []
@@ -35,6 +36,7 @@ get:
 post:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Tambah RW baru
+  description: "Aktor: Petugas Desa."
   operationId: createRw
   security:
     - sanctumCookie: []

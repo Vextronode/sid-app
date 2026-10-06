@@ -5,8 +5,9 @@ VillageRegulation:
       type: integer
       example: 3
     village_id:
-      type: integer
-      example: 1
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     regulation_number:
       type: string
       example: "01/PERDES/2026"
@@ -22,8 +23,9 @@ VillageRegulation:
       nullable: true
       example: "2026-01-15"
     created_by:
-      type: integer
-      example: 5
+      type: string
+      format: uuid
+      example: "e8aaa421-7fdd-42cf-8c30-993264820afd"
 
 VillageRegulationCreateRequest:
   type: object

@@ -2,6 +2,8 @@
 ## SISTEM INFORMASI DESA - DESA CIBENDA
 ### Overview, Ruang Lingkup, dan Pengguna Sistem
 
+> **v5.1 — Auth & Approval Flow:** catatan revisi menyesuaikan role, alur dua tahap, submit oleh pejabat, serta akses Kasi/Kaur sebagai pembaca surat selesai.
+
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 1 dari 5 (+ Appendix) |
@@ -46,9 +48,9 @@ Fokus utama MVP adalah fitur inti yang membentuk alur kerja administrasi surat.
 | Fitur | Deskripsi | Output |
 |---|---|---|
 | Input Surat | Warga mengajukan permohonan surat secara mandiri (self-service) melalui akun yang telah terdaftar. Data pemohon diambil otomatis dari data akun warga yang login. | Surat diteruskan ke RT untuk approval tahap 1 |
-| Approval Surat (Category + Flow Dinamis) | Proses persetujuan berjalan berbasis flow dinamis (bukan hardcode jumlah tahap). Untuk kategori Approval Normal dengan flow default 3-tahap-approve: (1) RT memeriksa dan memberikan keputusan pertama (approve/reject), (2) RW menerima notifikasi FYI otomatis (bukan approver, tidak bisa approve/reject/block, murni pemberitahuan pasif), (3) Kepala Desa atau Sekretaris Desa memeriksa dan memberikan keputusan lanjutan (saling menggantikan, siapa lebih dulu action itu yang tercatat — lihat catatan status di Section 3 dokumen ini), (4) Kasi Pelayanan / Kaur TU Umum memeriksa dan memberikan keputusan Final. Surat yang ditolak di tahap manapun langsung berstatus ditolak (terminal). Flow lain untuk kategori/jenis surat berbeda bisa memiliki jumlah dan urutan tahap yang berbeda (misal 2 tahap saja, skip Kades/Sekdes). | Status berubah sesuai keputusan per-tahap. Tercatat di log sistem |
+| Approval Surat (Category + Flow Dinamis) | Flow aktif dikonfigurasi lewat data. Alur bawaan: RT lalu Kepala Desa/Sekdes pada step final yang sama; Sekdes dapat memutuskan step `kepala_desa`. RW hanya menerima FYI setelah RT approve. Kasi/Kaur menerima notifikasi setelah final approval dan membaca/mengunduh surat sesuai `assigned_role`; bukan approver. Flow baru hanya menerima posisi `rt` dan `kepala_desa`, step final wajib `kepala_desa`. Penolakan di tahap mana pun terminal. | Status dan aktor aktual tercatat di approval serta log sistem |
 | Status Tracking | Melihat perkembangan status surat secara real-time | - |
-| Validasi Kelayakan Surat | Setiap jenis surat memiliki flag `verification_type` yang menentukan alur verifikasi kelayakan:<br>• **Auto**: lolos otomatis jika NIK pemohon terdaftar di database warga<br>• **Manual**: sistem menampilkan checklist persyaratan, warga wajib konfirmasi saat mengisi form<br>• **Document**: warga wajib upload dokumen pendukung sebelum permohonan dapat disubmit | - |
+| Validasi Kelayakan Surat | Setiap jenis surat memiliki flag `verification_type` yang menentukan alur verifikasi kelayakan:<br>• **Auto**: lolos otomatis jika NIK pemohon terdaftar di database warga<br>• **Manual**: sistem menampilkan checklist persyaratan, warga wajib konfirmasi saat mengisi form<br>• **Document**: warga wajib upload dokumen pendukung sebelum permohonan dapat disubmit<br>**Status: Belum diimplementasi (Planned)** — backend hanya menyimpan `verification_type`; belum ada penegakan di `LetterService` | - |
 | Download Surat | Surat yang sudah disetujui di step final dapat didownload sebagai PDF, digenerate on-demand saat klik tombol download (tidak tersimpan di server) | File PDF |
 
 ### 2.2. Fitur Pendukung SID
@@ -65,13 +67,13 @@ Fokus utama MVP adalah fitur inti yang membentuk alur kerja administrasi surat.
     - Kelola Setting Deadline Approval per tahap
     - Kelola Data Organisasi Desa (BPD, BUMDES, LPM, Karang Taruna, PKK)
   - RW: daftar surat yang lewat FYI (read-only — RW bukan approver)
-  - Kepala Desa / Sekretaris Desa: daftar surat yang menunggu approval mereka (approver aktif), query generik berbasis `current_step_order`
-  - Kasi Pelayanan / Kaur TU & Umum: daftar surat dengan `current_step_order` yang menunjuk ke posisi ini, menunggu keputusan final
+  - Kepala Desa / Sekretaris Desa: daftar surat di step aktif `kepala_desa` dengan status `pending`/`in_progress`; keduanya dapat memutuskan dengan first-action-wins
+  - Kasi Pelayanan / Kaur TU & Umum: daftar surat yang sudah `approved` sesuai `assigned_role`; hanya baca dan unduh, bukan approver
 - Halaman Publik (beranda, profil desa, berita, info surat, peraturan desa, hubungi kami)
 - Registrasi Akun Warga (self-service, validasi NIK warga Cibenda)
-- Sistem Notifikasi (in-app & email) dengan chain approval dinamis + reminder deadline
+- Sistem Notifikasi (in-app & email) dengan chain approval dinamis; penandaan overdue berdasarkan deadline aktif. Pengiriman reminder otomatis: **Belum diimplementasi (Planned)**
 
-> Jabatan struktural Kadus tetap ada di `officials.position` untuk keperluan non-approval (misal struktur wilayah di halaman publik), namun tidak memiliki dashboard approval.
+> Jabatan struktural Kadus tetap ada di `officials.position`. Kadus tidak memiliki dashboard approval, tetapi dashboard read-only menampilkan surat di dusunnya yang sudah melewati tahap RT.
 
 ### 2.3. Out of Scope (MVP)
 
@@ -95,60 +97,59 @@ Sistem mendefinisikan sembilan role dengan hak akses yang berbeda. Seluruh role 
 
 | Role | Akses & Kewenangan | Status |
 |---|---|---|
-| Petugas Desa (Operator) | 1. Login<br>2. CRUD data warga (citizens) manual + excel<br>3. Kelola user & jabatan<br>4. Kelola profil desa & berita<br>5. Kelola struktur wilayah<br>6. Setting deadline approval<br>7. Kelola peraturan desa<br>8. Kelola organisasi desa<br>9. Bisa lebih dari 1 akun aktif bersamaan<br>10. Full visibility ke seluruh surat dari semua status (baik desa maupun masih di tahap awal, termasuk yang rejected di step manapun) | ✅ MVP |
-| Kepala Desa | 1. Login<br>2. **Approver aktif** — gate menggantikan posisi Kadus lama, resolve berbasis posisi (`kepala_desa`), bukan wilayah<br>3. Dashboard menampilkan daftar surat yang menunggu approval-nya (action item), bukan read-only<br>4. Validasi integritas data (Next Dev, lihat Appendix) | ✅ MVP |
-| Sekretaris Desa | 1. Login<br>2. **Approver aktif**, step sama dengan Kepala Desa — keduanya saling menggantikan, siapa lebih dulu action itu yang tercatat (first-action-wins, disederhanakan di application layer, bukan DB constraint) — ⚠ **lihat catatan status di bawah**<br>3. Dashboard sama persis dengan Kepala Desa<br>4. Role dipisah agar tidak ambigu saat manajemen jabatan | ✅ MVP |
-| Kasi Pelayanan | 1. Login<br>2. Memproses surat yang `current_step_order`-nya menunjuk ke posisi ini (sesuai `flow_steps.approver_position`), step final<br>3. Approve/reject (tahap final)<br>4. Generate nomor surat<br>5. Terima notifikasi | ✅ MVP |
-| Kaur TU dan Umum | Sama seperti Kasi Pelayanan, posisi berbeda | ✅ MVP |
-| Kepala Dusun (Kadus) | 1. Login<br>2. **Dihapus total dari alur approval surat** — posisi digantikan Kepala Desa/Sekretaris Desa. Jabatan struktural tetap ada (`officials.position='kadus'`) untuk keperluan non-approval, misal halaman publik struktur desa, dan sebagai aktor pasif pada UC login/lihat status<br>3. Terima notifikasi (non-approval) | ✅ MVP |
+| Petugas Desa (Operator) | 1. Login dengan username<br>2. CRUD data warga (citizens) manual + excel<br>3. Promote/demote/rotate jabatan melalui manajemen officials<br>4. Reset password sementara untuk non-Petugas Desa<br>5. Kelola profil desa & berita<br>6. Kelola struktur wilayah, setting deadline, peraturan, dan organisasi desa<br>7. Dapat lebih dari satu akun aktif<br>8. Full visibility seluruh surat di desanya; dashboard juga menampilkan jabatan lewat masa dan segera berakhir | ✅ MVP |
+| Kepala Desa | 1. Login<br>2. Approver aktif pada tahap final; resolve berbasis posisi dalam desanya<br>3. Dashboard surat menunggu keputusan, kecuali surat yang diajukan sendiri<br>4. Tanda tangan dan stempel PDF tetap milik Kepala Desa aktif | ✅ MVP |
+| Sekretaris Desa | 1. Login<br>2. Dapat memutuskan tahap final yang sama dengan Kepala Desa (first-action-wins)<br>3. Dashboard seperti Kades, tanpa surat miliknya sendiri<br>4. `approval_level` mencatat aktor sebenarnya (`sekdes`) | ✅ MVP |
+| Kasi Pelayanan | 1. Login<br>2. Menerima notifikasi setelah surat final disetujui<br>3. Melihat dan mengunduh surat selesai sesuai `assigned_role`; bukan approver | ✅ MVP |
+| Kaur TU dan Umum | Sama seperti Kasi: notifikasi, daftar surat selesai sesuai `assigned_role`, dan unduh; bukan approver | ✅ MVP |
+| Kepala Dusun (Kadus) | 1. Login<br>2. Bukan approver; jabatan struktural tetap ada (`officials.position='kadus'`)<br>3. Melihat daftar/detail surat dusunnya yang sudah disetujui RT melalui endpoint bersama<br>4. Dashboard read-only FYI dan notifikasi setelah RT approve untuk dusun yang sama | ✅ MVP |
 | RT | 1. Login<br>2. Proses surat pending di wilayahnya<br>3. Approve/reject (tahap 1)<br>4. Terima notifikasi | ✅ MVP |
 | RW | 1. Login<br>2. **Notif only** — bukan approver, tidak bisa approve/reject/block. Murni penerima notifikasi FYI otomatis begitu RT approve, tidak tercatat sebagai approval level di tabel manapun<br>3. Terima notifikasi | ✅ MVP |
-| Warga | 1. Register & login akun<br>2. Ajukan permohonan surat mandiri (self-service)<br>3. Lihat status & riwayat surat miliknya<br>4. Download surat yang masih belum habis masa berlakunya<br>5. Akses halaman publik | ✅ MVP |
+| Warga | 1. Register dengan NIK + password; username otomatis<br>2. Login dengan username<br>3. Ajukan permohonan surat<br>4. Lihat surat milik sendiri (`scope=mine` tersedia untuk semua role)<br>5. Download surat approved yang belum kedaluwarsa bila ia pemohon<br>6. Akses halaman publik | ✅ MVP |
 | Warga (Publik) | 1. Akses halaman publik (beranda, profil desa, pengumuman, info jenis surat)<br>2. Tanpa login | ✅ MVP (read-only publik) |
 
 > **Catatan status Kadus:** Kadus dihapus total sebagai *approver surat*, namun jabatan struktural `officials.position='kadus'` tetap eksis di sistem. Akun Kadus tetap **bisa login** dan tetap muncul sebagai aktor pasif di UC Login, Logout, Lihat Daftar Surat (hanya melihat, tanpa hak approve apapun), dan Lihat Detail Surat. Ini bukan inkonsistensi — Kadus hanya kehilangan hak approval, bukan akun sistemnya.
 
-> ⚠ **Catatan status keputusan — first-action-wins Kades/Sekdes:** Bahwa Sekretaris Desa benar-benar ikut approve di step yang sama dengan Kepala Desa (saling menggantikan) masih berstatus **rekomendasi/asumsi default**, bukan keputusan final eksplisit dari pihak desa. Lihat `TDD-05_Roadmap_Risks_OpenQuestions.md` untuk status pertanyaan ini.
+> **Keputusan model approval:** Sekretaris Desa dapat memutuskan pada step `kepala_desa` yang sama dengan Kepala Desa (first-action-wins). Flow baru hanya menerima step `rt` dan `kepala_desa`; step final harus `kepala_desa`.
 
 **Table 3 - Scope Monitoring Surat per Role**
 
 | Role | Surat Yang Bisa Dilihat |
 |---|---|
-| Warga | Hanya surat milik sendiri |
-| RT | Surat wilayahnya, status pending (step aktif = rt) |
-| RW | Surat yang lewat FYI (notifikasi read-only, bukan status filter aktif — RW bukan approver) |
-| Kepala Desa / Sekretaris Desa | Surat dengan `current_step_order` menunjuk ke posisi `kepala_desa`/`sekdes`, status `in_progress` |
-| Kasi Pelayanan / Kaur TU | Surat dengan `current_step_order` menunjuk ke posisinya, status `in_progress` (step final) |
-| Petugas Desa | SEMUA surat — dari pending hingga rejected, termasuk yang rejected di step manapun |
-| Kadus | Tidak memiliki scope approval khusus (bukan approver). Jabatan struktural non-approval saja — tidak ada daftar surat "menunggu Kadus" karena Kadus tidak lagi menjadi gate manapun di `flow_steps` |
+| Semua role (`scope=mine`) | Surat yang diajukan oleh akun tersebut; pemohon pejabat dapat mengakses surat sendiri |
+| RT | Semua surat dari warga di RT-nya, termasuk yang masih menunggu RT dan seluruh riwayat setelah approve/reject |
+| RW | Surat dari warga di RW-nya yang sudah di-approve RT, termasuk semua status setelahnya (read-only) |
+| Kepala Desa / Sekretaris Desa | Surat di desanya yang sudah di-approve RT atau tercatat melewati tahap RT; aksi keputusan hanya pada step aktif `kepala_desa` |
+| Kasi Pelayanan / Kaur TU | Surat berstatus `approved` di desa dan sesuai `letter_types.assigned_role`; NULL berlaku untuk keduanya |
+| Petugas Desa | SEMUA surat di desanya sendiri — dari pending hingga rejected, termasuk yang rejected di step manapun |
+| Kadus | Surat dari warga di dusunnya yang sudah di-approve RT, termasuk semua status setelahnya (read-only); juga menerima FYI untuk surat tersebut |
 
 ### 3.1. Gambaran Umum Alur Kerja (Non-Teknis)
 
 Sistem Informasi Desa (SID) adalah sebuah platform digital berbasis web yang membantu pengelolaan administrasi surat-menyurat serta manajemen data desa. Dapat diakses melalui browser tanpa perlu instalasi aplikasi khusus.
 
-Secara sederhana, sistem ini bekerja seperti loket pelayanan digital. Warga dapat secara langsung mengajukan permohonan surat melalui sistem tanpa perlu melalui petugas desa. Sebelum permohonan disetujui, terdapat mekanisme verifikasi berjenjang berbasis flow dinamis (Category + Flow) yang melibatkan Ketua RT (approve), Ketua RW (notifikasi FYI saja, bukan approver), dan Kepala Desa/Sekretaris Desa (approve, menggantikan posisi Kadus lama), sebelum diproses final oleh Kasi/Kaur yang berwenang atas jenis surat tersebut.
+Secara sederhana, sistem ini bekerja seperti loket pelayanan digital. Warga dan pejabat yang akunnya terhubung dengan data kependudukan dapat mengajukan surat untuk dirinya sendiri. Flow default terdiri dari Ketua RT lalu Kepala Desa/Sekretaris Desa sebagai tahap final. RW menerima FYI surat di wilayah RW-nya dan Kadus menerima FYI surat dari dusunnya, keduanya setelah RT menyetujui. Kasi/Kaur bukan approver; mereka menerima pemberitahuan setelah surat disetujui dan dapat melihat/mengunduh surat selesai sesuai `assigned_role`.
 
 Jumlah dan urutan tahap approval tidak hardcode — ditentukan oleh flow spesifik jenis surat, sehingga bisa berbeda-beda antar jenis surat meski berada di kategori yang sama. Penolakan di tahap manapun bersifat final (terminal): permohonan langsung ditolak dan warga mendapat notifikasi. Kepala Desa/Sekretaris Desa berperan sebagai approver aktif, sedangkan Kadus tidak lagi terlibat dalam alur approval surat. Seluruh proses berlangsung secara digital sehingga tidak perlu lagi membawa berkas fisik antar kantor.
 
 Sistem juga dilengkapi fitur keamanan data untuk melindungi informasi pribadi warga seperti Nomor Induk Kependudukan (NIK) agar tidak dapat dibaca oleh pihak yang tidak berwenang, bahkan sekalipun terjadi kebocoran data pada tingkat teknis. Setiap perubahan yang terjadi pada data surat tercatat secara otomatis, sehingga selalu ada jejak yang dapat ditelusuri.
 
-**Table 4 - Alur Sistem Kerja (Flow Default: RT → Kades/Sekdes → Staff)**
+**Table 4 - Alur Sistem Kerja (Flow Default: RT → Kades/Sekdes final)**
 
 | No. | Pelaku | Yang Dilakukan | Hasil |
 |---|---|---|---|
-| 1 | Warga | Login dan mengisi formulir permohonan surat secara mandiri, pilih jenis surat, pengisian form. | Data permohonan tersimpan dengan status `pending` |
-| 2 | Sistem | Mencatat waktu pengajuan, menyimpan data (snapshot `flow_id`, `current_step_order = 1`), mengirim notifikasi ke RT wilayah warga. | RT wilayah warga mendapat notifikasi |
-| 3 | RT | Memeriksa permohonan, memberikan keputusan (approve/reject). | Status: `in_progress` atau `rejected` (terminal) |
+| 1 | Warga atau pejabat | Login dengan username dan mengisi formulir untuk dirinya sendiri. Akun harus aktif dan terhubung dengan citizen. | Permohonan diterima; pemohon tidak boleh memutuskan suratnya sendiri |
+| 2 | Sistem | Menyimpan snapshot `flow_id`, status awal `pending`, mencari tahap awal yang dapat ditindaklanjuti, dan mencatat tahap pemohon yang dilewati bila memenuhi aturan. | Tahap awal dapat bernilai 1 atau 2 |
+| 3 | RT (bila menjadi tahap awal) | Memeriksa permohonan dan memberi keputusan approve/reject. | `in_progress` atau `rejected` (terminal) |
 | 4a | Sistem (jika RT reject) | Catat keputusan + waktu + IP + kirim notif ke Warga. | Proses selesai (terminal), `rejected_at_step` = step RT |
-| 4b | Sistem (jika RT approve) | Catat keputusan + waktu + IP. Secara **paralel**: kirim notif FYI ke RW (non-blocking) + kirim notif ke Kepala Desa/Sekretaris Desa (approver berikutnya). `current_step_order += 1`. | RW mendapat notifikasi FYI (non-blocking, tidak pernah menjadi gate) + Kepala Desa/Sekretaris Desa mendapat notifikasi |
-| 5 | Kepala Desa / Sekretaris Desa | Memeriksa surat dengan `current_step_order` sesuai posisinya, memberikan keputusan (approve/reject). Saling menggantikan (first-action-wins). | Status: `in_progress` atau `rejected` (terminal) |
+| 4b | Sistem (jika RT approve) | Catat keputusan dan kirim FYI RW hanya setelah keputusan RT approve; pindah ke tahap berikutnya yang actionable. | RW FYI bukan gate; approver berikutnya diberi notifikasi |
+| 5 | Kepala Desa / Sekretaris Desa | Memutuskan tahap final, siapa yang lebih dulu bertindak tercatat sebagai aktor. Pemohon Kades dapat diputuskan Sekdes, dan sebaliknya. | Surat berstatus `approved` atau `rejected` (terminal) |
 | 6a | Sistem (jika Kades/Sekdes reject) | Catat keputusan + kirim notif ke Warga. | Proses selesai (terminal), `rejected_at_step` = step Kades/Sekdes |
-| 6b | Sistem (jika Kades/Sekdes approve) | Catat keputusan, `current_step_order += 1`, kirim notif ke Kasi/Kaur sesuai `flow_steps.approver_position` step berikutnya. | Kasi/Kaur mendapat notifikasi |
-| 7 | Kasi/Kaur | Memproses surat dengan `current_step_order` sesuai posisinya (step final, `is_final=true`), memberikan keputusan final. | Status: `approved` atau `rejected` (terminal, dicatat di `rejected_at_step`) |
-| 8 | Sistem (jika approved) | Generate `letter_number` resmi, hitung `expires_at`, kirim notif ke Warga + Kepala Desa & Sekretaris Desa (monitoring). | Surat selesai, siap didownload |
-| 9 | Warga | Menerima notifikasi hasil akhir, dapat download PDF surat. | - |
+| 6b | Sistem (jika final approve) | Menetapkan `letter_number`, `expires_at` bila masa berlaku diatur, dan `processed_at`. Mengirim notifikasi final ke pemohon serta notifikasi siap cetak ke Kasi/Kaur sesuai `assigned_role`. | Status `approved`; nomor surat dibuat satu kali |
+| 7 | Kasi/Kaur | Membuka daftar surat selesai yang sesuai role, lalu mengunduh/mencetak bila diperlukan. | Tidak ada aksi approve/reject |
+| 8 | Pemohon | Menerima notifikasi hasil akhir dan mengunduh PDF selama surat belum kedaluwarsa. | PDF memakai TTD/stempel Kepala Desa aktif |
 
-> Alur ini menggunakan status generik (`pending`/`in_progress`/`approved`/`rejected`) dan pointer `current_step_order` — bukan status granular per posisi. Tabel di atas merepresentasikan flow default 3-tahap-approve (`RT → Kades/Sekdes → Staff`); flow lain bisa punya jumlah/urutan tahap berbeda (lihat `TDD-03_Database_Schema.md` Section 3, `letter_categories`/`approval_flows`/`flow_steps`).
+> Alur ini menggunakan status generik (`pending`/`in_progress`/`approved`/`rejected`) dan pointer `current_step_order`. Tahap non-final dilewati hanya jika pejabat tersedia tetapi semua pejabat eligible merupakan pemohon; jabatan kosong tidak dilewati. Tahap final tidak pernah dilewati dan tanpa approver eligible permohonan gagal. Flow default adalah RT → Kades/Sekdes final; Kasi/Kaur bukan tahap flow.
 
 ### 3.2. Diagram Alur Sistem
 

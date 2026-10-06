@@ -7,11 +7,13 @@ Family:
     (no_kk / no_kk_hash), karena levelnya sama sensitif dengan NIK.
   properties:
     id:
-      type: integer
-      example: 20
+      type: string
+      format: uuid
+      example: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
     village_id:
-      type: integer
-      example: 1
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     no_kk_masked:
       type: string
       example: "************0001"
@@ -34,9 +36,10 @@ Family:
       nullable: true
       example: 1
     head_of_family_id:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 55
+      example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
       description: |
         Denormalisasi OPSIONAL untuk performa query. Pada prinsipnya bisa
         diturunkan dari citizens.family_role='kepala_keluarga'. Aplikasi
@@ -46,8 +49,9 @@ Family:
       nullable: true
       properties:
         id:
-          type: integer
-          example: 55
+          type: string
+          format: uuid
+          example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
         name:
           type: string
           example: "Ahmad Budiman"
@@ -55,6 +59,30 @@ Family:
       type: integer
       example: 4
       description: "Jumlah anggota aktif dalam KK ini, dihitung dari citizens.family_id"
+    rw_id:
+      type: integer
+      nullable: true
+      example: 5
+    village:
+      nullable: true
+      $ref: '../villages/villages.yaml#/Village'
+    rt:
+      nullable: true
+      $ref: '../wilayah/wilayah.yaml#/Rt'
+    rw:
+      nullable: true
+      $ref: '../wilayah/wilayah.yaml#/Rw'
+    hamlet:
+      nullable: true
+      $ref: '../wilayah/wilayah.yaml#/Hamlet'
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+    updated_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
 
 FamilyCreateRequest:
   type: object
@@ -73,9 +101,15 @@ FamilyCreateRequest:
       example: "aktif"
     rt_id:
       type: integer
+      nullable: true
       example: 12
+    rw_id:
+      type: integer
+      nullable: true
+      example: 5
     hamlet_id:
       type: integer
+      nullable: true
       example: 1
 
 FamilyUpdateRequest:
@@ -92,6 +126,10 @@ FamilyUpdateRequest:
       type: integer
       nullable: true
       example: 12
+    rw_id:
+      type: integer
+      nullable: true
+      example: 5
     hamlet_id:
       type: integer
       nullable: true
@@ -105,8 +143,9 @@ FamilyMemberAddRequest:
     validasi hanya 1 family_role='kepala_keluarga' per family_id aktif.
   properties:
     citizen_id:
-      type: integer
-      example: 56
+      type: string
+      format: uuid
+      example: "e3b6a9c4-2d58-4f71-a0c3-9d1e7b5a2f84"
     family_role:
       type: string
       enum: [kepala_keluarga, istri, suami, anak, famili_lain]

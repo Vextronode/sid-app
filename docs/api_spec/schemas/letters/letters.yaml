@@ -1,37 +1,35 @@
 Letter:
   type: object
   description: |
-    v5.0: `status` sekarang generik (4 nilai), bukan granular per posisi.
+    v5.1: `status` generik; final approver adalah Kades/Sekdes, Kasi/Kaur bukan approver.
     Posisi "sedang di step mana" dibaca dari `current_step_order` + `current_step`
     (di-JOIN backend ke flow_steps), bukan dari nama status.
   properties:
     id:
-      type: integer
-      example: 501
+      type: string
+      format: uuid
     village_id:
-      type: integer
-      example: 1
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     letter_type_id:
       type: integer
       example: 1
     letter_type:
-      type: object
-      properties:
-        code:
-          type: string
-          example: "SKD"
-        name:
-          type: string
-          example: "Surat Keterangan Domisili"
-    submitted_by:
-      type: integer
-      example: 101
-    citizen_id:
-      type: integer
       nullable: true
-      example: 55
+      description: "Included when relation is loaded. Bentuk penuh LetterTypeResource."
+      $ref: '../letter-types/letter-types.yaml#/LetterType'
+    submitted_by:
+      type: string
+      format: uuid
+    citizen_id:
+      type: string
+      format: uuid
+      nullable: true
+      example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
     on_behalf_of:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
       example: null
       description: "Selalu NULL di MVP - dipersiapkan untuk future use case"
@@ -53,6 +51,10 @@ Letter:
       type: string
       nullable: true
       example: null
+    payload:
+      type: object
+      nullable: true
+      description: "Data tambahan bebas (JSON, cast array)"
     status:
       type: string
       enum: [pending, in_progress, approved, rejected]
@@ -60,7 +62,7 @@ Letter:
       description: |
         BARU v5.0 - status generik menggantikan ENUM granular per posisi
         (rt_approved/rw_approved/kadus_approved/dst sudah dihapus total).
-        pending: step 1 belum ada action.
+        pending: belum ada keputusan approver; tahap non-final milik pemohon dapat dilewati.
         in_progress: minimal 1 step approve, belum sampai step is_final=true.
         approved: step is_final=true sudah di-approve.
         rejected: TERMINAL, rejected_at_step dicatat.
@@ -82,7 +84,7 @@ Letter:
           example: 1
         approver_position:
           type: string
-          enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+          enum: [rt, kepala_desa]
           example: "rt"
         is_final:
           type: boolean
@@ -95,6 +97,7 @@ Letter:
     is_overdue:
       type: boolean
       example: false
+      description: "Pada daftar surat, true bila deadline approval pending pada step aktif terlewati. Surat terminal dan approval dari step sebelumnya tidak membuat surat overdue."
     expires_at:
       type: string
       format: date-time
@@ -109,6 +112,22 @@ Letter:
       format: date-time
       nullable: true
       example: null
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-07-01T09:00:00Z"
+    updated_at:
+      type: string
+      format: date-time
+      example: "2026-07-01T09:00:00Z"
+    citizen:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../citizens/citizens.yaml#/Citizen'
+    user:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../users/users.yaml#/User'
 
 LetterDetail:
   allOf:
@@ -127,36 +146,43 @@ LetterDetail:
           type: boolean
           example: true
           description: |
-            BARU v5.0 - indikator apakah notifikasi FYI ke RW sudah terkirim
-            untuk surat ini. RW TIDAK PERNAH punya row di letter_approvals -
-            field ini murni penanda notifikasi side-effect, bukan approval.
+            True jika terdapat keputusan approve pada step RT. Ini indikator
+            bahwa surat melewati tahap RT, bukan bukti pengiriman atau
+            keberhasilan notifikasi FYI ke RW. RW tidak punya row approval.
 
 LetterApproval:
   type: object
   description: |
-    v5.0: approval_level ENUM berubah total. 'rw' dan 'kadus' DIHAPUS -
-    keduanya tidak pernah membuat row di tabel ini (RW = notif-only side
-    effect, Kadus = dihapus total dari alur approval).
+    Row dibuat saat suatu step mulai menunggu keputusan dengan approved_by
+    dan action null, lalu diperbarui saat keputusan dicatat. Ketika alur
+    maju, row pending deadline dibuat untuk step berikutnya. `sekdes` tetap
+    nilai legacy DB; request flow baru hanya mengizinkan rt/kepala_desa.
+    RW tidak pernah membuat row (FYI saja).
   properties:
     id:
       type: integer
       example: 901
     letter_id:
-      type: integer
-      example: 501
+      type: string
+      format: uuid
     approved_by:
-      type: integer
+      type: string
+      format: uuid
       nullable: true
-      example: 40
+      example: "3c7e1a95-4d82-4b06-9f5a-8d2b6e0c4a17"
     approver_name:
       type: string
       nullable: true
       example: "Pak RT Ujang"
+    approved_by_user:
+      nullable: true
+      description: "Included when relation approvedBy is loaded"
+      $ref: '../users/users.yaml#/User'
     approval_level:
       type: string
       enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
       example: "rt"
-      description: "BARU v5.0 - 5 nilai. Tahap lanjutan (kepala_desa/sekdes) saling menggantikan, first-action-wins."
+      description: "Level step untuk row pending; setelah keputusan berisi posisi aktor sebenarnya. Kades dan Sekdes saling menggantikan pada step kepala_desa."
     flow_step_id:
       type: integer
       nullable: true
@@ -193,11 +219,12 @@ LetterStatusLog:
       type: integer
       example: 1200
     letter_id:
-      type: integer
-      example: 501
+      type: string
+      format: uuid
     actor_id:
-      type: integer
-      example: 40
+      type: string
+      format: uuid
+      example: "3c7e1a95-4d82-4b06-9f5a-8d2b6e0c4a17"
     actor_name:
       type: string
       example: "Pak RT Ujang"
@@ -214,6 +241,7 @@ LetterStatusLog:
       type: string
       nullable: true
       example: null
+      description: "Dipetakan dari kolom `reason` pada letter_status_logs (alasan/catatan perubahan status)"
     ip_address:
       type: string
       nullable: true
@@ -232,22 +260,33 @@ LetterCreateRequest:
       example: 1
     purpose:
       type: string
+      maxLength: 500
       example: "Untuk keperluan pembuatan rekening bank"
     notes:
       type: string
       nullable: true
       example: "Mohon diproses secepatnya"
-    supporting_document:
-      type: string
-      format: binary
+    payload:
+      type: object
       nullable: true
-      description: "Wajib diisi jika letter_type.verification_type = document"
+      description: "Data tambahan bebas (array/objek). Disimpan apa adanya ke `letters.payload` (JSON, cast array)."
+    attachments:
+      type: array
+      nullable: true
+      description: |
+        Berkas lampiran (pdf/jpg/jpeg/png, maks 2048 KB per berkas). Hanya DIVALIDASI oleh
+        `StoreLetterRequest`; `LetterService` tidak menyimpan atau memprosesnya, dan tidak
+        ada kolom/tabel penyimpanan lampiran. Field `supporting_document` pada versi spec
+        sebelumnya tidak ada di source dan sudah dihapus.
+      items:
+        type: string
+        format: binary
 
 DecisionRequest:
   type: object
-  required: [action]
+  required: [status]
   properties:
-    action:
+    status:
       type: string
       enum: [approved, rejected]
       example: "approved"
@@ -255,7 +294,7 @@ DecisionRequest:
       type: string
       nullable: true
       example: null
-      description: "Wajib diisi jika action = rejected"
+      description: "Wajib diisi jika status = rejected"
 
 DecisionResponse:
   type: object

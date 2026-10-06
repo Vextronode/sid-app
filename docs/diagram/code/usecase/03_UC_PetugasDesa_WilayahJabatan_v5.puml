@@ -2,7 +2,7 @@
 ' SECTION: USE CASE DIAGRAM
 ' FILE: 03_UC_PetugasDesa_WilayahJabatan_v5.puml
 ' JUDUL: Use Case - Petugas Desa (Wilayah, Jabatan & Approval Setting)
-' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-14/20/22/23)
+' SUMBER: TDD SID Desa Cibenda v5.1 (Section 5.3.2 UC-14/20/22/23)
 ' CATATAN: Menggantikan 03_UC_PetugasDesa_WilayahJabatan_v4.puml.
 '==================================================================================
 
@@ -23,7 +23,7 @@ skinparam actor {
   FontSize 12
 }
 
-title Use Case Diagram - Petugas Desa (2/3: Wilayah, Jabatan & Approval Setting) [v5.0]
+title Use Case Diagram - Petugas Desa (2/3: Wilayah, Jabatan & Approval Setting) [v5.1]
 
 actor "Petugas Desa" as PD
 actor "Sistem\n(Otomatis)" as SYS
@@ -42,8 +42,11 @@ rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
   }
 
   rectangle "UC-14: Kelola User,\nRole & Jabatan Struktural" #F0F4FF {
-    usecase "Tambah/Edit akun\nRT/RW/Kadus/Kasi/Kaur/\nKades/Sekdes" as UC_USER
-    usecase "Rotasi Jabatan\n(officials)" as UC_ROTASI
+    usecase "Lihat & perbarui akun\n(non-email)" as UC_USER
+    usecase "Promote / Demote\nJabatan Akun" as UC_ASSIGN
+    usecase "Rotasi Jabatan\n(akun warga)" as UC_ROTASI
+    usecase "Reset Password\nSementara" as UC_RESET
+    usecase "Buat Petugas Pertama\n(CLI)" as UC_FIRST
   }
 
   rectangle "UC-22: Kelola Setting\nDeadline Approval" #FFF3E0 {
@@ -73,7 +76,10 @@ PD -- UC_HAMLET
 PD -- UC_RW_MGT
 PD -- UC_RT_MGT
 PD -- UC_USER
+PD -- UC_ASSIGN
 PD -- UC_ROTASI
+PD -- UC_RESET
+SYS -- UC_FIRST
 PD -- UC_DEADLINE
 PD -- UC_BPD
 PD -- UC_BUMDES
@@ -84,50 +90,37 @@ PD -- UC_DASH
 
 SYS -- UC_NOTIF_SND
 
-UC_USER ..> UC_ROTASI : <<include>>
+UC_ASSIGN ..> UC_ROTASI : <<extend>>
 UC_ROTASI ..> UC_NOTIF_SND : <<trigger>>
 UC_HAMLET ..> UC_RW_MGT : <<extend>>
 UC_RW_MGT ..> UC_RT_MGT : <<extend>>
 
 note bottom of UC_ROTASI
-  DB::transaction():
-  1. UPDATE officials lama SET ended_at=today, is_active=false
-  2. INSERT officials baru
-  3. Jika posisi = 'sekdes' -> UPDATE users SET role='sekretaris_desa'
-  Guard: tidak bisa nonaktifkan diri sendiri /
-  satu-satunya petugas_desa aktif.
-  TIDAK BERUBAH dari v4.2.
+  Promote/demote/rotate mengubah official
+  aktif dan users.role dalam satu transaksi.
+  Rotasi mempertahankan posisi/wilayah;
+  petugas_desa memakai promote/demote dan
+  tidak dapat dirotasi.
 end note
 
 note bottom of UC_USER
-  v5.0: Kadus TETAP tercantum dalam daftar
-  jabatan yang bisa dikelola di UC-14
-  (jabatan strukturalnya masih ada di
-  ENUM officials.position), NAMUN Kadus
-  tidak lagi punya relevansi terhadap
-  flow_steps.approver_position sejak
-  v5.0 - akun Kadus tidak pernah menjadi
-  target resolve approval surat.
+  Akun pejabat tidak dibuat melalui POST
+  /users. Akun warga yang aktif dan
+  terhubung ke citizen dipromosikan.
+  Perubahan role jabatan dilakukan via
+  promote/demote/rotate; update akun hanya
+  name/is_active dan tidak menerima email.
+  Reset password menghasilkan password
+  sementara; target bukan diri sendiri atau
+  petugas_desa.
 end note
 
 note bottom of UC_DEADLINE
-  UNIQUE(village_id, approval_level).
-  Jika deadline lewat: TIDAK auto-reject,
-  hanya is_overdue=true + reminder scheduler.
-  ⚠ CATATAN v5.0: kolom approval_settings.
-  approval_level MASIH ber-ENUM peninggalan
-  v4.2 ('rt','rw','kadus','kasi') - BELUM
-  di-patch eksplisit oleh Patch Guide v5.0,
-  sehingga BELUM SELARAS dengan
-  letter_approvals.approval_level yang
-  sudah berubah 5 nilai (rt, kepala_desa,
-  sekdes, kasi_pelayanan, kaur_tu_umum).
-  Dicatat sebagai technical debt di TDD
-  Table 70 & Section 8.3.2 - Petugas Desa
-  MASIH mengelola deadline dengan skema
-  lama ini apa adanya sampai ditinjau ulang
-  tim teknis. TIDAK dikoreksi sepihak di
-  diagram ini.
+  API hanya menampilkan dan menerima level
+  approver RT dan Kades. Sekdes memutuskan
+  melalui step `kepala_desa`. Kasi/Kaur
+  bukan level approval. Jika deadline lewat,
+  surat tidak auto-reject.
 end note
 
 note bottom of UC_BPD
@@ -140,6 +133,12 @@ end note
 
 @enduml
 
+'==================================================================================
+' SINKRONISASI v5.1 — AUTH & APPROVAL FLOW:
+' - Manajemen akun menggunakan promote/demote/rotate; pembuatan Petugas pertama via CLI.
+' - Petugas terakhir dan self-demote dilindungi guard; reset password bersifat sementara.
+' - Approval settings aktif dibatasi pada level RT/Kades; Sekdes/Kasi/Kaur
+'   tetap ada sebagai nilai legacy enum database.
 '==================================================================================
 ' CATATAN REVISI: 03_UC_PetugasDesa_WilayahJabatan_v4.puml -> ..._v5.puml
 '==================================================================================

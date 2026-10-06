@@ -2,13 +2,14 @@ patch:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Edit / nonaktifkan dusun
   description: |
+    Aktor: Petugas Desa.
     UC-20. Guard: menonaktifkan dusun yang masih punya warga aktif
     akan ditolak (cek relasi citizens.hamlet_id). Tidak berubah dari v4.2.
   operationId: updateHamlet
   security:
     - sanctumCookie: []
   parameters:
-    - name: id
+    - name: hamlet
       in: path
       required: true
       schema:
@@ -53,3 +54,32 @@ patch:
             message: "Dusun tidak bisa dinonaktifkan karena masih ada warga aktif terdaftar di wilayah ini."
     '422':
       $ref: '../../responses/common.yaml#/ValidationError'
+delete:
+  tags: [Epic 1 - Struktur Wilayah]
+  summary: Hapus dusun
+  description: Eksklusif Petugas Desa. Penghapusan ditolak bila masih ada warga aktif di dusun.
+  operationId: deleteHamlet
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: hamlet
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  responses:
+    '200':
+      description: Dusun berhasil dihapus
+      content:
+        application/json:
+          example:
+            message: "Dusun berhasil dihapus."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      $ref: '../../responses/common.yaml#/Conflict'

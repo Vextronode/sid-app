@@ -1,6 +1,7 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Daftar peraturan desa publik (tanpa login)
+  security: []
   description: |
     UC-16 extended. Berbeda dengan news, TIDAK ADA konsep is_published -
     begitu dibuat oleh Petugas Desa, selalu tampil di halaman publik.

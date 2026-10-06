@@ -2,6 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat daftar kombinasi wilayah (RT/RW) unik yang dipakai warga
   description: |
+    Aktor: Petugas Desa.
     Helper endpoint untuk keperluan dropdown/filter wilayah di frontend.
     Mengembalikan kombinasi rt_id + rw_id unik yang benar-benar dipakai
     minimal satu warga, beserta relasi RT/RW-nya.

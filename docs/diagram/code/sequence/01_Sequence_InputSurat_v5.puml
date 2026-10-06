@@ -2,7 +2,7 @@
 ' SECTION: SEQUENCE DIAGRAM
 ' FILE: 01_Sequence_InputSurat_v5.puml
 ' JUDUL: Sequence - Input Permohonan Surat
-' SUMBER: TDD SID Desa Cibenda v5.0 (Section 5.3.2 UC-03, Section 5.4.2 letters)
+' SUMBER: TDD SID Desa Cibenda v5.1 (Section 5.3.2 UC-03, Section 5.4.2 letters)
 '         + SID-ARCH-BE-001 S3.2 (flow_id snapshot)
 ' CATATAN: Menggantikan 01_Sequence_InputSurat_v4.puml.
 '==================================================================================
@@ -25,14 +25,16 @@ skinparam sequence {
   NoteBorderColor #F9A825
 }
 
-title Sequence Diagram - Input Permohonan Surat [v5.0] \n(Warga Self-Service -> Snapshot Flow -> Notifikasi ke RT, Step 1)
+title Sequence Diagram - Input Permohonan Surat [v5.1] \n(Akun Aktif dengan Citizen -> Snapshot Flow -> Step Awal Eligible)
 
-actor "Warga\n(Self-Service)" as WRG
+actor "Pemohon\n(Akun Aktif + citizen_id)" as WRG
 participant "React\nFrontend" as FE
 participant "LetterController" as CTRL
-participant "AuthController" as AUTHCTRL
+participant "Auth:sanctum middleware" as AUTHCTRL
 participant "Form\nRequest" as FREQ
 participant "LetterService" as SVC
+participant "LetterFlowService" as FLSVC
+participant "ApprovalSettingService" as ASSVC
 participant "OfficialService" as OSVC
 participant "LetterTypeRepository" as LTREPO
 participant "ApprovalFlowRepository" as AFREPO
@@ -40,7 +42,7 @@ participant "UserRepository" as UREPO
 participant "LetterRepository" as REPO
 participant "OfficialRepository" as OREPO
 participant "DB::transaction" as TX
-participant "Queue\n(Jobs)" as Q
+participant "Notification database channel" as Q
 participant "PostgreSQL" as DB
 actor "RT\n(Wilayah Warga)" as RT
 
@@ -63,21 +65,13 @@ SVC --> CTRL : LetterTypeCollection
 CTRL --> FE : 200 OK {letter_types[]}
 FE --> WRG : Tampilkan pilihan jenis surat
 
-WRG -> FE : Pilih jenis surat
-FE -> CTRL : GET /api/letter-types/{id}
-CTRL -> SVC : getLetterTypeDetail(id)
-SVC -> LTREPO : findById(id)
-LTREPO -> DB : SELECT * FROM letter_types WHERE id = ?
-DB --> LTREPO : letter_type\n(verification_type, requirements_info,\nassigned_role, validity_days,\ncategory_id, flow_id)
-note right of DB
-  v5.0: letter_type kini membawa
-  category_id & flow_id (FK NOT NULL
-  keduanya) - dipakai nanti sebagai
-  SUMBER SNAPSHOT saat surat disubmit.
+WRG -> FE : Pilih jenis surat dari daftar
+note right of FE
+  GET /api/letter-types mengembalikan
+  tipe surat aktif beserta konfigurasi
+  yang diperlukan form. Tidak ada route
+  detail GET /letter-types/{id}.
 end note
-LTREPO --> SVC : letter_type
-SVC --> CTRL : LetterTypeResource
-CTRL --> FE : 200 OK {letter_type detail}
 
 alt verification_type = "auto"
   FE --> WRG : Tampilkan form langsung\n(NIK otomatis tervalidasi dari akun)
@@ -89,7 +83,7 @@ end
 
 == Ambil Data Warga dari Session ==
 
-FE -> AUTHCTRL : GET /api/auth/me
+FE -> AUTHCTRL : GET /api/user
 AUTHCTRL -> UREPO : findByIdWithCitizen(auth()->id())
 UREPO -> DB : SELECT users.*, citizens.*\nFROM users\nLEFT JOIN citizens\nON users.citizen_id = citizens.id\nWHERE users.id = ?
 DB --> UREPO : user + citizen data\n(termasuk family_id, residency_type\njika relevan ditampilkan)
@@ -147,12 +141,12 @@ else Validasi Berhasil
   TX -> REPO : create(letterData)
   note right of REPO
     citizen_id   = auth()->user()->citizen_id
-    submitted_by = auth()->user()->id (role: warga)
+    submitted_by = auth()->user()->id (role apa pun)
     applicant_nik_hash = SHA-256(nik plaintext)
     applicant_nik = AES-256 encrypt(nik)
     status = 'pending'              <<GENERIK v5.0>>
     flow_id = letter_type.flow_id   <<SNAPSHOT, BARU v5.0>>
-    current_step_order = 1          <<BARU v5.0>>
+    current_step_order = 1 (sementara)
     rejected_at_step = NULL         <<BARU v5.0>>
     submitted_at = now()
     is_overdue = false
@@ -171,60 +165,50 @@ else Validasi Berhasil
   REPO -> DB : INSERT INTO letter_status_logs
   DB --> REPO : log created
 
-  TX --> SVC : letter created (commit)
+  TX -> FLSVC : resolveStartStep(letter)
+  FLSVC -> OSVC : resolveOfficialsForStep(each flow step)
+  OSVC -> OREPO : find active officials by position/scope
+  OREPO -> DB : SELECT active eligible officials
+  DB --> OREPO : approvers per flow step
+  OREPO --> OSVC : raw approvers
+  OSVC --> FLSVC : raw approvers
+  FLSVC -> FLSVC : exclude pemohon sebagai approver;\nlewati step non-final hanya jika\nraw approver ada dan semua eligible\nadalah pemohon
+  FLSVC --> TX : start step + skipped steps
+  TX -> REPO : update current_step_order\n(start.step_order)
+  REPO -> DB : UPDATE letters.current_step_order
+  DB --> REPO : updated
+  TX -> FLSVC : logSkipped(letter, skipped, user)
+  FLSVC -> REPO : create status logs\n(pending -> pending, reason tahap dilewati)
+  REPO -> DB : INSERT INTO letter_status_logs
+  DB --> REPO : skip logs created
 
-  == Resolve RT Wilayah Warga (Step 1, Berbasis Wilayah) ==
-
-  SVC -> OSVC : resolveRtForCitizen(citizen)
-  note right of OSVC
-    TIDAK BERUBAH dari v4.2: resolve
-    berdasarkan citizens.rt_id (FK ->
-    rts.id). Step 1 SELALU RT untuk
-    kategori approval_normal - ini
-    ditentukan oleh flow_steps
-    step_order=1, approver_position='rt'
-    (bukan lagi hardcode di kode).
-  end note
-  OSVC -> OREPO : findActiveByRtId(citizen.rt_id)
-  OREPO -> DB : SELECT * FROM officials\nWHERE rt_id = ?\nAND position = 'rt'\nAND is_active = true\nAND ended_at IS NULL
-  DB --> OREPO : official RT | null
-  OREPO --> OSVC : Official RT | null
-
-  alt RT wilayah ditemukan
-    OSVC --> SVC : Official RT (user_id)
-
-    SVC -> SVC : hitung deadline_at\n(dari approval_settings\nWHERE approval_level='rt')
-
-    SVC -> REPO : createApprovalPlaceholder(\n  letter_id, approval_level: 'rt',\n  flow_step_id, deadline_at\n)
-    note right of REPO
-      flow_step_id (BARU v5.0): referensi
-      eksplisit ke row flow_steps step 1
-      milik flow surat ini - untuk audit
-      trail granular.
-    end note
-
-    SVC -> Q : dispatch(SendNotificationJob -> RT)
-    Q -> OREPO : createNotification({\n  notifiable_id: RT.user_id,\n  data: {letter_id, pesan}\n})
-    OREPO -> DB : INSERT INTO notifications
-    DB --> OREPO : notification created
-    Q --> RT : Notifikasi in-app + email:\n"Ada permohonan surat baru\ndari warga wilayahmu"
-
-  else RT wilayah tidak ditemukan / jabatan kosong
-    OSVC --> SVC : null
-    SVC -> Q : dispatch(SendNotificationJob -> Semua Petugas Desa)
-    note right of Q
-      Fallback broadcast: notif ke SEMUA
-      petugas_desa aktif untuk penanganan
-      manual (jabatan RT kosong / belum
-      diisi). TIDAK BERUBAH dari v4.2.
-    end note
-    Q -> UREPO : createNotificationBroadcast({\n  notifiable: semua petugas_desa aktif\n})
-    UREPO -> DB : INSERT INTO notifications\n(multiple rows)
-    DB --> UREPO : notifications created
+  TX -> SVC : createFirstApproval(letter, step)
+  opt step tersedia
+    SVC -> ASSVC : resolveDeadline(position, village_id)
+    ASSVC --> SVC : deadline_at | null
+    SVC -> REPO : createApprovalForLetter(\n  approved_by: null,\n  approval_level: step.approver_position,\n  flow_step_id: step.id,\n  deadline_at)
+    REPO -> DB : INSERT INTO letter_approvals
+    DB --> REPO : placeholder created
   end
 
+  TX -> SVC : notifyFirstApprovers(letter, step)
+  opt step tersedia
+    SVC -> FLSVC : eligibleApprovers(step, letter)
+    FLSVC -> OSVC : resolveOfficialsForStep(step, letter)
+    OSVC -> OREPO : find active officials by position/scope
+    OREPO -> DB : SELECT active officials for step
+    DB --> OREPO : eligible officials (pemohon dikecualikan)
+    OREPO --> OSVC : eligible officials
+    OSVC --> FLSVC : eligible officials
+    FLSVC --> SVC : eligible officials
+    SVC -> Q : notify each eligible official
+    Q --> RT : Notifikasi bila RT adalah approver aktif awal
+    Q --> KD : Notifikasi bila Kades/Sekdes adalah approver aktif awal
+  end
+
+  TX --> SVC : commit letter, approvals, status log,\nand skipped-step logs
   SVC --> CTRL : LetterResource
-  CTRL --> FE : 201 Created {letter data, status: 'pending',\ncurrent_step_order: 1}
+  CTRL --> FE : 201 Created {letter data, status: 'pending',\ncurrent_step_order: resolved step}
   FE --> WRG : "Permohonan berhasil dikirim!\nSilakan pantau status di Dashboard."
 end
 
@@ -234,25 +218,11 @@ end
 ' CATATAN REVISI: 01_Sequence_InputSurat_v4.puml -> 01_Sequence_InputSurat_v5.puml
 '==================================================================================
 '
-' TIDAK BERUBAH: alur pemilihan jenis surat, pengambilan data warga dari
-'   session, validasi form, resolve RT berbasis wilayah (citizens.rt_id),
-'   fallback broadcast RT kosong, enkripsi NIK, dan seluruh mekanisme
-'   verification_type (auto/manual/document).
-'
-' PERUBAHAN:
-'   - TAMBAH interaksi baru "Snapshot Flow Sebelum Simpan": sebelum
-'     DB::transaction(), Service kini WAJIB fetch letter_type.flow_id
-'     lalu load ApprovalFlow beserta flow_steps-nya (via
-'     ApprovalFlowRepository::findWithSteps()) - untuk memastikan flow_id
-'     yang disimpan ke letters.flow_id adalah snapshot yang valid dan
-'     dikunci pada saat submit ini juga.
-'   - Data yang di-INSERT ke letters berubah: status kini 'pending' sebagai
-'     nilai ENUM GENERIK (4 nilai: pending/in_progress/approved/rejected),
-'     BUKAN lagi bagian dari status granular. TAMBAH flow_id (snapshot)
-'     dan current_step_order=1, rejected_at_step=NULL sebagai kolom baru.
-'   - createApprovalPlaceholder() kini juga menyertakan flow_step_id
-'     (BARU v5.0) sebagai referensi granular ke step 1 milik flow surat.
-'   - Response 201 Created kini eksplisit menyertakan current_step_order:1
-'     di payload, bukan hanya status.
+' SINKRONISASI v5.1 — Auth & Approval Flow:
+' - Submit diizinkan untuk semua akun aktif ber-citizen_id; pemohon adalah submitted_by.
+' - Flow di-snapshot saat submit; resolveStartStep melewati tahap non-final milik
+'   pemohon hanya jika approver aktif tersedia, lalu menulis log tahap yang dilewati.
+' - Tahap final Kades/Sekdes tidak dilewati dan self-approval ditolak.
+' - Route hanya menyediakan GET /api/letter-types (tidak ada GET detail).
 '
 '==================================================================================

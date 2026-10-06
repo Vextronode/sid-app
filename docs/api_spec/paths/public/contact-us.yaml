@@ -1,6 +1,7 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Hubungi Kami - kontak WA Kasi Pelayanan & Kaur TU Umum (tanpa login)
+  security: []
   description: |
     UC-16 extended. Query officials WHERE position IN (kasi_pelayanan,
     kaur_tu_umum) AND is_active=true AND ended_at IS NULL. Data diambil

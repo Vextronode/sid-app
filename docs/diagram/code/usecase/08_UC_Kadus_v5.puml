@@ -28,7 +28,7 @@ skinparam actor {
   FontSize 12
 }
 
-title Use Case Diagram - Kadus / Kepala Dusun (Jabatan Struktural, TANPA Approval) [REVISI TOTAL - v5.0]\n(Menggantikan diagram "Approver Tahap 3 dari 4" v4.2 - lihat catatan revisi)
+title Use Case Diagram - Kadus / Kepala Dusun (Monitoring Read-Only, TANPA Approval) [v5.1]\n(Menggantikan diagram "Approver Tahap 3 dari 4" v4.2)
 
 actor "Kadus" as KADUS
 
@@ -39,16 +39,21 @@ rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
     usecase "UC-02: Logout" as UC_LOGOUT
   }
 
-  rectangle "Monitoring Read-Only\n(Tanpa Hak Approval Apapun)" #E0F2F1 {
-    usecase "UC-05: Lihat Daftar Surat\n(read-only, tidak ada filter\napproval khusus)" as UC_KADUS_LIST
+  rectangle "Monitoring Surat Dusun\n(Read-Only, Sesudah Tahap RT)" #E0F2F1 {
+    usecase "UC-05: Lihat Daftar Surat Dusun\n(GET /letters, scope role)" as UC_KADUS_LIST
     usecase "UC-06: Lihat Detail\n& Status Surat (read-only)" as UC_KADUS_DETAIL
   }
+
+  usecase "UC-15: Lihat Dashboard\n(FYI dusun, read-only)" as UC_KADUS_DASHBOARD
+  usecase "Terima FYI Surat dari\nDusun Sendiri setelah RT approve" as UC_KADUS_FYI
 }
 
 KADUS -- UC_LOGIN
 KADUS -- UC_LOGOUT
 KADUS -- UC_KADUS_LIST
 KADUS -- UC_KADUS_DETAIL
+KADUS -- UC_KADUS_DASHBOARD
+KADUS -- UC_KADUS_FYI
 
 UC_KADUS_LIST ..> UC_KADUS_DETAIL : <<include>>
 
@@ -56,12 +61,14 @@ note "*** KADUS DIHAPUS TOTAL DARI ALUR APPROVAL SURAT (v5.0, Patch 37) ***\nTID
 
 note "Jabatan struktural officials.position='kadus' TETAP EKSIS di sistem\n(dipakai domain Governance/CMS, misal halaman publik struktur desa),\nDAN akun Kadus TETAP BISA LOGIN - hanya kehilangan hak approval,\nBUKAN kehilangan akun sistemnya sama sekali." as NOTE2
 
-note "Kadus TIDAK memiliki scope approval khusus (bukan approver sejak v5.0).\nTidak ada daftar surat 'menunggu Kadus' karena Kadus tidak lagi menjadi\ngate manapun di flow_steps - hamlet_id pada officials tetap dipakai untuk\nkeperluan resolve struktural non-approval (contoh: halaman publik struktur\ndesa per dusun), BUKAN untuk resolve approval surat." as NOTE3
+note "Kadus bukan approver. GET /letters otomatis membatasi daftar ke surat\nwarga di dusunnya yang sudah disetujui RT; GET /letters/{id} memakai\notorisasi wilayah yang sama. scope=mine tetap tersedia untuk semua role." as NOTE3
 
-note "Kadus TIDAK LAGI muncul di UC-15 (Dashboard) sebagai aktor dashboard\naktif - tidak ada action item apapun untuk Kadus. Kadus hanya tetap\nmuncul sebagai aktor pasif di UC-01 (Login), UC-02 (Logout),\nUC-05 (Lihat Daftar Surat - read-only), dan UC-06 (Lihat Detail Surat)." as NOTE4
+note "Dashboard Kadus adalah read-only dan menampilkan FYI surat dusun yang\nsudah disetujui RT serta notifikasi belum dibaca. Kadus tidak memiliki aksi\nkeputusan. Notifikasi tidak memberikan akses di luar scope policy." as NOTE4
 
 @enduml
 
+'==================================================================================
+' SINKRONISASI v5.1 — Daftar/detail memakai endpoint bersama dengan scope dusun setelah RT approve.
 '==================================================================================
 ' CATATAN REVISI: 08_UC_Kadus_v4.puml -> 08_UC_Kadus_v5.puml
 '==================================================================================
@@ -81,24 +88,19 @@ note "Kadus TIDAK LAGI muncul di UC-15 (Dashboard) sebagai aktor dashboard\nakti
 '      diganti rectangle "Monitoring Read-Only (Tanpa Hak Approval Apapun)"
 '      yang hanya berisi UC-05/UC-06 versi read-only.
 '   3. Use case "Approve / Reject Surat" DIHAPUS dari aktor Kadus.
-'   4. Seluruh rectangle "Notifikasi" (terima notifikasi surat lolos RW,
-'      kirim notifikasi ke Kasi/Kaur) DIHAPUS - Kadus tidak lagi menerima
-'      maupun memicu notifikasi terkait pipeline surat sama sekali.
-'   5. Rectangle "Fitur Pendukung" (UC-15 Dashboard Kadus) DIHAPUS TOTAL -
-'      tidak ada dashboard approval untuk Kadus lagi (selaras dengan TDD
-'      Section 3.2 catatan revisi: "Dashboard Kadus sudah dihapus dari
-'      daftar ini sesuai Patch 39 v5.0").
+'   4. Notifikasi approval lama (surat lolos RW / keputusan Kadus / notifikasi
+'      keluar ke Kasi/Kaur) DIHAPUS. Kadus tetap menerima FYI non-blocking
+'      setelah RT approve, terbatas pada surat dari dusunnya.
+'   5. Dashboard Kadus bukan dashboard approval; dashboard read-only FYI
+'      tetap tersedia dan memuat surat dusun yang telah melewati tahap RT.
 '
 ' YANG DIPERTAHANKAN (justru untuk menegaskan Kadus TIDAK hilang total
 ' dari sistem, hanya kehilangan hak approval):
 '   - UC-01 (Login) dan UC-02 (Logout) tetap ada - akun Kadus tetap bisa
 '     login, jabatan struktural officials.position='kadus' tetap eksis.
-'   - UC-05/UC-06 tetap ada TAPI diberi label eksplisit "read-only" tanpa
-'     filter approval khusus - berbeda total dari v4.2 yang filternya
-'     "status: rw_approved" (menyiratkan Kadus adalah gate aktif).
+'   - UC-05/UC-06 tetap read-only dan memakai endpoint daftar/detail bersama;
+'     scope Kadus hanya surat warga di dusunnya yang telah disetujui RT.
 '
-' File ini sengaja dibuat MINIMALIS untuk mencerminkan betapa kecilnya sisa
-' peran Kadus di sistem v5.0 dibanding v4.2 - ini konsisten dengan TDD yang
-' secara eksplisit mencatat "Kadus DIHAPUS TOTAL dari alur approval surat".
+' Kadus dihapus sebagai approver, bukan sebagai pengguna monitoring.
 '
 '==================================================================================

@@ -5,46 +5,34 @@ patch:
     BARU v5.0 (UC-04c versi baru). Endpoint ini MENGGANTIKAN TOTAL
     `/kadus/letters/{id}/decision` yang sudah dihapus.
 
-    ⚠ **Catatan status keputusan (SID-ARCH-BE-001 S3.3):** bahwa
-    Sekretaris Desa benar-benar ikut approve di step yang sama dengan
-    Kepala Desa (first-action-wins) masih berstatus **rekomendasi/asumsi
-    default**, BUKAN keputusan final eksplisit - user menjawab
-    "no preference" saat ditanya di sesi v5.0. Spec ini mendokumentasikan
-    perilaku endpoint SESUAI asumsi tersebut karena itulah desain teknis
-    yang sudah dijabarkan di dokumen arsitektur; jika keputusan bisnisnya
-    berubah, kontrak endpoint ini (khususnya siapa saja yang boleh
-    memanggilnya) perlu ditinjau ulang.
+    Kades dan Sekdes dapat memutuskan pada step `kepala_desa` yang sama
+    (first-action-wins). Flow baru hanya menerima posisi step `rt` dan
+    `kepala_desa`, dengan step final wajib `kepala_desa`.
 
-    **Mekanisme first-action-wins (bukan row-level lock):**
-    - Setiap request melakukan re-validasi status/current_step_order di
-      dalam `DB::transaction()` sebelum commit - siapa pun (Kades atau
-      Sekdes) yang transaksinya berhasil commit lebih dulu, itu yang
-      tercatat.
-    - Request kedua yang datang setelah step sudah berpindah akan gagal
-      di gate re-validasi (409 Conflict), pola yang sama dengan gate
-      logic RT->RW di v4.2 - BUKAN mekanisme locking khusus.
-    - Trade-off diterima sadar untuk traffic desa kecil (SID-ARCH-BE-001 S3.3).
+    **Mekanisme first-action-wins:** request mengunci row surat dengan
+    `SELECT ... FOR UPDATE`, lalu memeriksa ulang status dan step aktif di
+    dalam transaksi. Request kedua mendapat 409 jika surat telah diproses.
 
-    **Approve**: INSERT ke `letter_approvals` (approval_level sesuai role
-    aktor yang benar-benar submit - 'kepala_desa' atau 'sekdes',
-    flow_step_id terisi), `current_step_order += 1`. Jika step berikutnya
-    `is_final=true`, status tetap `in_progress` sampai step final itu
-    benar-benar diputuskan Kasi/Kaur (lihat endpoint Kasi). Notifikasi
-    dikirim ke approver step berikutnya (Kasi/Kaur sesuai
-    letter_types.assigned_role via flow_steps).
+    **Approve**: placeholder `letter_approvals` untuk step aktif diperbarui
+    dengan aktor (approval_level `kepala_desa` atau `sekdes` sesuai jabatan)
+    dan aksi. Step `kepala_desa` adalah tahap final pada flow yang divalidasi;
+    surat menjadi `approved`, lalu nomor surat dan tanggal kedaluwarsa
+    (bila berlaku) ditetapkan. Kades dan Sekdes sama-sama menerima notifikasi
+    saat surat menunggu keputusan pada step `kepala_desa`.
 
-    **Reject**: `status = 'rejected'`, `rejected_at_step` dicatat,
+    **Reject**: placeholder approval step aktif diperbarui; `status = 'rejected'`, `rejected_at_step` dicatat,
     TERMINAL, notifikasi ke Warga.
   operationId: decideKadesLetter
   security:
     - sanctumCookie: []
   parameters:
-    - name: id
+    - name: letter
       in: path
       required: true
       schema:
-        type: integer
-      example: 501
+        type: string
+        format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440501"
   requestBody:
     required: true
     content:
@@ -60,20 +48,20 @@ patch:
             $ref: '../../schemas/letters/letters.yaml#/DecisionResponse'
           examples:
             approved:
-              summary: Kades/Sekdes menyetujui surat - lanjut ke Kasi/Kaur
+              summary: Kades/Sekdes menyetujui surat - tahap final
               value:
                 message: "Keputusan berhasil disimpan"
                 data:
-                  id: 501
-                  status: "in_progress"
-                  current_step_order: 3
-                  current_step: { step_order: 3, approver_position: "kasi_pelayanan", is_final: true }
+                  id: "550e8400-e29b-41d4-a716-446655440501"
+                  status: "approved"
+                  current_step_order: 2
+                  current_step: { step_order: 2, approver_position: "kepala_desa", is_final: true }
             rejected:
               summary: Kades/Sekdes menolak surat (TERMINAL)
               value:
                 message: "Keputusan berhasil disimpan"
                 data:
-                  id: 501
+                  id: "550e8400-e29b-41d4-a716-446655440501"
                   status: "rejected"
                   rejected_at_step: 2
     '401':

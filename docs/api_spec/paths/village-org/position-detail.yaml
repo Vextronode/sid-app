@@ -1,6 +1,7 @@
 get:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Lihat detail satu jabatan organisasi non-struktural
+  description: "Aktor: Petugas Desa."
   operationId: getVillageOrgPosition
   security:
     - sanctumCookie: []
@@ -30,6 +31,7 @@ get:
 patch:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Ubah jabatan organisasi (label, urutan tampil, status aktif, dst)
+  description: "Aktor: Petugas Desa."
   operationId: updateVillageOrgPosition
   security:
     - sanctumCookie: []
@@ -80,6 +82,7 @@ patch:
 delete:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Hapus jabatan organisasi
+  description: "Aktor: Petugas Desa."
   operationId: deleteVillageOrgPosition
   security:
     - sanctumCookie: []

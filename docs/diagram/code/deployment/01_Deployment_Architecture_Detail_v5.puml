@@ -15,6 +15,9 @@
 '==================================================================================
 
 @startuml 5.2.5_v5 Diagram Deployment Architecture Detail
+note top
+Topologi deployment, layanan infrastruktur, versi PostgreSQL server, scheduler OS, worker process, dan backup tidak diverifikasi terhadap source backend.
+end note
 skinparam backgroundColor #FFFFFF
 skinparam node {
   BackgroundColor #EBF3FB
@@ -114,19 +117,19 @@ node "VPS / Server Produksi\n(Minimum: 2 vCPU, 2GB RAM, 20GB SSD)" as VPS #EBF3F
   }
 
   rectangle "Background Processing" #81C784 {
-    component "Supervisor" as SUPERVISOR
+    component "Supervisor (Tidak diverifikasi terhadap source backend)" as SUPERVISOR
     component "Queue Worker\n(php artisan queue:work)" as QWORKER
     component "Laravel Scheduler\n(Cron: * * * * *\nphp artisan schedule:run)" as SCHEDULER
     note bottom of SUPERVISOR
-      Queue worker HARUS selalu aktif -
+      Worker aplikasi: **Tidak diverifikasi terhadap source backend** -
       Supervisor auto-restart jika worker
       crash/mati. Jobs yang berjalan:
-      SendNotificationJob (GENERIK v5.0 -
+      LetterStatusNotification (database channel, sent synchronously)
       menerima approverPosition sebagai
       parameter, menggantikan asumsi job
       terpisah per posisi),
-      SendApprovalReminderJob (via
-      scheduler, setiap jam).
+      SendApprovalReminderJob (Planned;
+      scheduler belum diimplementasikan).
       Queue driver: database (Tahap 1),
       BUKAN Redis (Redis = Tahap 2).
       TIDAK ADA GenerateLetterHashJob
@@ -147,7 +150,7 @@ node "VPS / Server Produksi\n(Minimum: 2 vCPU, 2GB RAM, 20GB SSD)" as VPS #EBF3F
   }
 
   rectangle "Database Layer" #FDE8D8 {
-    database "PostgreSQL 16" as PGSQL
+    database "PostgreSQL (versi tidak diverifikasi)" as PGSQL
     note bottom of PGSQL
       Sama VPS (single-server MVP).
       v5.0: +5 tabel baru (letter_categories,
@@ -156,8 +159,8 @@ node "VPS / Server Produksi\n(Minimum: 2 vCPU, 2GB RAM, 20GB SSD)" as VPS #EBF3F
       tabel MVP (naik dari 17 di v4.2).
       TIDAK menambah requirement resource
       signifikan untuk skala desa.
-      Backup dijadwalkan via Laravel
-      Scheduler, file backup dienkripsi,
+      Jadwal backup dan enkripsi file backup
+      **Tidak diverifikasi terhadap source backend**;
       disimpan terpisah dari direktori
       aplikasi.
     end note
@@ -188,7 +191,7 @@ node "VPS / Server Produksi\n(Minimum: 2 vCPU, 2GB RAM, 20GB SSD)" as VPS #EBF3F
     production - semua data
     terenkripsi (AES-256) akan
     tidak terbaca jika berubah.
-    Backup key disimpan terpisah
+    Penyimpanan backup key **Tidak diverifikasi**
     (password manager / vault).
     v5.0: cakupan field terenkripsi
     bertambah (families.no_kk,
@@ -221,7 +224,8 @@ LARAVEL --> DOMPDF : generate PDF\n(saat request download)
 LARAVEL --> DISK : simpan/ambil\nfile upload
 
 SUPERVISOR --> QWORKER : monitor & auto-restart
-SCHEDULER --> QWORKER : trigger scheduled jobs\n(reminder, backup)
+' Target deployment only; scheduled jobs are not implemented in current source.
+' SCHEDULER --> QWORKER : trigger scheduled jobs (reminder, backup)
 
 QWORKER --> PGSQL : proses job\n(notifications table)
 QWORKER --> SMTP : kirim email\n(opsional channel)
@@ -231,7 +235,7 @@ TELESCOPE ..> PGSQL : monitor query\n(dev/staging only)
 note bottom of VPS
   KETERANGAN SKENARIO (v5.0):
   - Single VPS: seluruh komponen (Nginx, PHP-FPM,
-    PostgreSQL, Queue Worker, Scheduler) berjalan
+    PostgreSQL dan layanan deployment: Tidak diverifikasi terhadap source backend
     di satu server yang sama, sesuai roadmap MVP
     Tahap 1 (constraint minimum 2 vCPU / 2GB RAM).
   - Docker + Laravel Sail BELUM dipakai (masuk Tahap 2).
@@ -280,7 +284,7 @@ end note
 '      menjelaskan bahwa pipeline approval kini config-driven - murni
 '      informasi kontekstual, TIDAK menambah requirement resource server.
 '   3. Catatan pada QWORKER (Background Processing) diperbarui:
-'      SendNotificationJob kini dijelaskan sebagai GENERIK (menerima
+'      Notifikasi database dikirim langsung oleh service (
 '      approverPosition sebagai parameter), menggantikan asumsi implisit
 '      job terpisah per posisi approver.
 '   4. Catatan pada PGSQL (Database Layer) diperbarui: disebutkan +5 tabel

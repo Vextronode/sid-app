@@ -68,7 +68,7 @@ end note
 rectangle "API LAYER  -  Laravel REST API" #D5EAD0 {
   rectangle "HTTP Layer" #C8E6C9 {
     [Middleware\n(Sanctum Auth, RBAC Custom,\nThrottle)] as MW
-    [Controllers\n(RtApprovalController,\nFlowStepApprovalController*,\ndst)] as CTRL
+    [Controllers\n(RtApprovalController,\nKadesApprovalController*,\ndst)] as CTRL
     [Form Requests\n(Validation)] as FREQ
     [API Resources] as ARES
   }
@@ -78,8 +78,8 @@ rectangle "API LAYER  -  Laravel REST API" #D5EAD0 {
     [Policies\n(Authorization,\nLetterPolicy::decide())] as POL
   }
   rectangle "Async Layer" #81C784 {
-    [Events &\nListeners\n(FlowStepAdvanced*\n- generik)] as EVT
-    [Jobs / Queue\nWorker] as QUEUE
+    [Notifikasi database\n(LetterStatusNotification)] as NOTIF
+    [Queue worker aplikasi: Tidak diverifikasi] as QUEUE
     [Notifications] as NOTIF
     [Scheduler] as SCHED
   }
@@ -90,22 +90,18 @@ rectangle "API LAYER  -  Laravel REST API" #D5EAD0 {
 }
 
 note right of CTRL
-  * FlowStepApprovalController BARU v5.0 -
+  * KadesApprovalController adalah controller aktif;
   menggantikan RwApprovalController (DIHAPUS)
   dan KadusApprovalController (DIHAPUS).
-  Satu controller generik melayani
-  Kepala Desa/Sekdes/Kasi/Kaur sekaligus.
+  KadesApprovalController menangani keputusan step final kepala_desa; hanya role Kades/Sekdes dapat memutuskan.
   RtApprovalController TETAP TERPISAH
   (basis wilayah, bukan posisi murni).
 end note
 
 note right of SVC
-  LetterService: processStepDecision()
-  generik menggantikan
-  processRwDecision/processKadusDecision/
-  processKasiDecision (v4.2, DIHAPUS).
+  Approval services menjalankan keputusan RT dan Kades secara terpisah. Notifikasi memakai kanal database dan dipanggil langsung oleh service.
   OfficialService: resolveByPositionOnly()
-  BARU untuk Kades/Sekdes/Kasi/Kaur;
+  BARU untuk Kades/Sekdes/Kades/Sekdes;
   resolveKadusForCitizen() DIHAPUS;
   resolveRwForCitizen() turun level jadi
   notifier saja (SID-ARCH-BE-001 S3.2).
@@ -118,18 +114,19 @@ note right of REPO
   findByHamletIdAndStatus/
   findByAssignedRoleAndStatus (v4.2,
   SEMUA DIHAPUS) - dipakai lintas Service
-  (dashboard, notifikasi, scheduler).
+  (dashboard dan notifikasi; pemakaian scheduler
+  adalah rancangan target, belum ada di source).
   * ApprovalFlowRepository, FamilyRepository,
   LetterCategoryRepository: BARU v5.0.
 end note
 
 note right of EVT
   *** PERUBAHAN v5.0 (SID-ARCH-BE-001 S7) ***
-  FlowStepAdvanced: Event GENERIK, dipicu
+  Approval service memanggil LetterStatusNotification secara langsung; tidak ada Event aplikasi.
   SETIAP kali current_step_order berpindah -
   MENGGANTIKAN Event spesifik per posisi
   (RtApproved/RwApproved/dst - v4.2, DIHAPUS).
-  Satu Listener generik resolve approver
+  Approver berikutnya di-resolve langsung oleh approval service
   berikutnya via OfficialService, PLUS
   memicu notifikasi FYI ke RW secara
   paralel/non-blocking jika step
@@ -137,7 +134,7 @@ note right of EVT
 end note
 
 rectangle "DATA LAYER" #FDE8D8 {
-  database "PostgreSQL 16" as DB {
+  database "PostgreSQL (versi tidak diverifikasi terhadap source backend)" as DB {
     [letters (status generik,\nflow_id, current_step_order,\nrejected_at_step)\nletter_approvals, letter_status_logs\nletter_types, letter_categories*\napproval_flows*, flow_steps*\nusers, citizens (+ 11 kolom baru),\nfamilies*, citizen_socioeconomics*\nofficials, hamlets, rws, rts\napproval_settings\nvillage_org_positions/members\nnotifications, news\nvillage_regulations, villages] as TABLES
   }
   [Eloquent ORM\n+ Migrations] as ORM
@@ -179,8 +176,9 @@ EVT --> QUEUE
 QUEUE --> NOTIF
 NOTIF --> MAIL
 QUEUE --> REPO
-SCHED --> REPO
-SCHED --> QUEUE : SendApprovalReminderJob\n(cek deadline_at setiap jam)
+' Rancangan target; belum tersedia pada source saat ini.
+' SCHED --> REPO
+' SCHED --> QUEUE : SendApprovalReminderJob\n(cek deadline_at setiap jam)
 ORM --> DB
 CTRL --> ARES
 ARES --> AXIOS
@@ -214,9 +212,10 @@ end note
 
 note bottom of QUEUE
   Queue driver: database (Tahap 1).
-  Job yang berjalan: SendNotificationJob
-  (generik, menerima approverPosition),
-  SendApprovalReminderJob.
+  Tidak ada Job aplikasi yang terdaftar; notifikasi status dikirim langsung dari service.
+  (generik, menerima approverPosition).
+  Reminder otomatis berstatus Planned; SendApprovalReminderJob tidak ada pada source.
+  target dan belum diimplementasikan.
   TIDAK ADA GenerateLetterHashJob
   (blockchain hashing = Next Dev, belum
   diimplementasikan di MVP).
@@ -237,7 +236,7 @@ end note
 '   1. Client Layer: TAMBAH komponen "ApprovalStepRenderer" (BARU v5.0,
 '      SID-ARCH-FE-001 S6) - komponen generik pengganti kartu approval
 '      per-role yang di v4.2 tersirat ada tapi tidak digambar eksplisit.
-'   2. HTTP Layer: Controllers kini merujuk FlowStepApprovalController
+'   2. HTTP Layer: Controllers kini merujuk KadesApprovalController
 '      (BARU, generik) menggantikan RwApprovalController+
 '      KadusApprovalController (DIHAPUS) sebagai representasi - dicatat
 '      via note, bukan komponen box terpisah (mengikuti gaya diagram asli
@@ -246,8 +245,7 @@ end note
 '      eksplisit tentang method yang dihapus/diganti/ditambah - mengikuti
 '      detail yang sudah dirinci di Class Diagram Core v5, versi ringkas
 '      untuk level component diagram ini.
-'   4. Async Layer: Events & Listeners diberi label "(FlowStepAdvanced -
-'      generik)" dan catatan tentang perubahan filosofi Event generik
+'   4. Async Layer: notifikasi langsung database menggantikan gambaran Event/Listener yang tidak ada di source
 '      menggantikan Event granular per posisi (SID-ARCH-BE-001 S7).
 '   5. Data Layer: daftar tabel di dalam box PostgreSQL diperbarui -
 '      tambah letter_categories, approval_flows, flow_steps, families,

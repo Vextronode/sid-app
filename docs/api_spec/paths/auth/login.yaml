@@ -1,10 +1,16 @@
+servers:
+  - url: https://api.sid-cibenda.id
+    description: Endpoint web autentikasi (tanpa prefix /api)
+security: []
 post:
   tags: [Epic 3 - Autentikasi]
   summary: Login (Sanctum SPA cookie-based)
+  security:
+    - sanctumCookie: []
   description: |
-    UC-01. Autentikasi via Laravel Sanctum, session token disimpan di
-    HttpOnly cookie (bukan localStorage). Rate limiting aktif untuk
-    mencegah brute-force (throttle). Tidak berubah dari v4.2.
+    UC-01. Login menggunakan username + password. Session cookie Sanctum
+    dikirim HttpOnly. Respons mencakup `user` beserta role, official aktif,
+    dan `must_change_password`.
   operationId: login
   requestBody:
     required: true
@@ -27,11 +33,11 @@ post:
             $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
           examples:
             invalid_credentials:
-              summary: Email atau password salah
+              summary: Username atau password salah
               value:
                 message: "The given data was invalid."
                 errors:
-                  email: ["Email atau password salah"]
+                  username: ["Username atau kata sandi salah."]
     '403':
       description: Akun tidak aktif
       content:

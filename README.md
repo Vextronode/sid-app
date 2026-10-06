@@ -2,7 +2,7 @@
 
 **Sistem Informasi Desa (SID)** untuk Desa Cibenda. Aplikasi web ini mendigitalisasi layanan administrasi surat, pengelolaan data kependudukan, informasi publik desa, dan alur kerja petugas desa.
 
-> Status: pengembangan aktif. Dokumen desain dan OpenAPI v5.0 adalah target arsitektur/migrasi; gunakan kode, migration, dan route yang berjalan sebagai sumber kebenaran implementasi saat ini.
+> Status: pengembangan aktif. Kontrak autentikasi dan alur persetujuan mengikuti revisi v5.1; gunakan kode, migration, dan route yang berjalan sebagai sumber kebenaran implementasi.
 
 ## Fitur utama
 
@@ -12,7 +12,7 @@
 - Halaman publik mencakup beranda, profil desa, berita, peraturan, serta informasi jenis surat.
 - Notifikasi in-app merupakan bagian dari alur; pengiriman email masih menunggu keputusan aktivasi MVP.
 
-Alur default surat pada desain MVP adalah **Warga → RT → Kepala Desa/Sekretaris Desa → Kasi Pelayanan/Kaur TU & Umum**. RW menerima notifikasi FYI setelah persetujuan RT dan bukan approver. Flow lain dapat memiliki tahapan berbeda sesuai konfigurasi.
+Alur default surat adalah **Warga → RT → Kepala Desa/Sekretaris Desa (final)**. RW menerima notifikasi FYI setelah persetujuan RT dan bukan approver. Kasi Pelayanan/Kaur TU & Umum menerima notifikasi surat yang telah disetujui dan dapat melihat/mengunduh surat sesuai `assigned_role`; keduanya bukan approver. Flow lain dapat memiliki tahapan berbeda sesuai konfigurasi.
 
 ## Role
 
@@ -22,7 +22,7 @@ Alur default surat pada desain MVP adalah **Warga → RT → Kepala Desa/Sekreta
 | RT | Memverifikasi pengajuan pada wilayahnya |
 | RW | Menerima notifikasi FYI |
 | Kepala Desa / Sekretaris Desa | Approver pada tahap pemeriksaan desa |
-| Kasi Pelayanan / Kaur TU & Umum | Memproses persetujuan akhir dan penerbitan surat |
+| Kasi Pelayanan / Kaur TU & Umum | Menerima notifikasi dan melihat/mengunduh surat yang telah disetujui sesuai penugasannya |
 | Petugas Desa | Mengelola data master, konten desa, wilayah, pengguna, dan memantau seluruh surat |
 | Kadus | Jabatan struktural dan akses non-approval |
 
@@ -80,10 +80,23 @@ SANCTUM_STATEFUL_DOMAINS=localhost:5173
 SESSION_DOMAIN=localhost
 ```
 
-Lalu jalankan migration dan server API:
+Jalankan migration:
 
 ```powershell
-php artisan migrate
+php artisan migrate --force
+```
+
+Bootstrap Petugas pertama sekaligus membuat citizen, akun, dan jabatan dalam satu transaksi. Untuk citizen baru, sertakan data wajib sesuai form tambah warga (termasuk UUID desa dan ID RT):
+
+```powershell
+php artisan petugas:first --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas" --village="<UUID_DESA>" --rt=1
+```
+
+Jika citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Username dibuat otomatis dan password sementara acak hanya dicetak sekali. Petugas wajib menggantinya saat login pertama. Command gagal jika Petugas Desa aktif sudah ada. Setelah Petugas pertama aktif, promosi berikutnya dilakukan melalui endpoint manajemen jabatan.
+
+Untuk lingkungan lokal, `--force` dapat dihilangkan. Setelah akun awal siap, jalankan server API:
+
+```powershell
 php artisan serve
 ```
 
