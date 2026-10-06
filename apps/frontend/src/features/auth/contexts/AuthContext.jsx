@@ -40,10 +40,6 @@ export function AuthProvider({ children }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [authError, setAuthError] = useState('')
 
-  // ==========================================
-  // REHYDRATE SESSION
-  // ==========================================
-
   const refreshUser = useCallback(async () => {
     setIsLoading(true)
     setAuthError('')
@@ -59,13 +55,11 @@ export function AuthProvider({ children }) {
     } catch (error) {
       const status = error.response?.status
 
-      // Session memang sudah tidak valid.
       if (isAuthFailure(status)) {
         setUser(null)
         return null
       }
 
-      // Error koneksi/server tidak langsung dianggap logout.
       setAuthError(
         error.response?.data?.message ??
           'Session tidak dapat diperiksa saat ini.'
@@ -77,36 +71,23 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  // ==========================================
-  // INITIAL SESSION CHECK
-  // ==========================================
-
   useEffect(() => {
+    // Initial session check intentionally synchronizes
+    // React state with the external authentication session.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshUser()
   }, [refreshUser])
-
-  // ==========================================
-  // LOGIN
-  // ==========================================
-  // Login request dilakukan oleh useLoginForm.
-  // AuthContext hanya menyimpan user hasil login
-  // ke state global.
 
   const login = useCallback((loggedUser) => {
     setAuthError('')
     setUser(loggedUser ?? null)
   }, [])
 
-  // ==========================================
-  // LOGOUT
-  // ==========================================
-
   const logout = useCallback(async () => {
     setIsLoggingOut(true)
     setAuthError('')
 
     try {
-      // Pastikan CSRF cookie tersedia sebelum POST logout.
       await api.get(CSRF_ENDPOINT)
 
       await api.post(LOGOUT_ENDPOINT)
@@ -115,14 +96,11 @@ export function AuthProvider({ children }) {
     } catch (error) {
       const status = error.response?.status
 
-      // Session sudah tidak ada di server.
-      // Dari sisi frontend, logout dianggap selesai.
       if (isAuthFailure(status)) {
         setUser(null)
         return
       }
 
-      // Retry sekali apabila CSRF token sudah tidak valid.
       if (status === 419) {
         await api.get(CSRF_ENDPOINT)
         await api.post(LOGOUT_ENDPOINT)
@@ -148,7 +126,6 @@ export function AuthProvider({ children }) {
       isLoading,
       isLoggingOut,
       authError,
-
       login,
       logout,
       refreshUser,
@@ -171,6 +148,8 @@ export function AuthProvider({ children }) {
   )
 }
 
+// useAuth sengaja tetap berada di file ini agar struktur FE tetap sederhana.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext)
 
