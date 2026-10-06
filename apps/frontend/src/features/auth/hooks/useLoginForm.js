@@ -1,307 +1,204 @@
-import { useState } from "react";
-import { loginSchema } from "../schemas/loginSchema";
-import api from "@/lib/api";
+import { useState } from 'react'
+
+import api from '@/lib/api'
+
+const INITIAL_FORM = {
+  username: '',
+  password: '',
+}
+
+const INITIAL_ERRORS = {
+  username: '',
+  password: '',
+  general: '',
+}
+
+const getBackendMessage = (error) => {
+  const data = error.response?.data
+
+  if (data?.message) {
+    return data.message
+  }
+
+  return null
+}
+
+const getValidationErrors = (error) => {
+  return error.response?.data?.errors ?? {}
+}
 
 export function useLoginForm() {
-  const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-  });
-
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState(INITIAL_FORM)
+  const [errors, setErrors] = useState(INITIAL_ERRORS)
+  const [isLoading, setIsLoading] = useState(false)
 
   // ==========================================
-  // VALIDATION
+  // CHANGE FIELD
   // ==========================================
 
-  const validateForm = () => {
-    const result = loginSchema.safeParse(formData);
+  const handleChange = (event) => {
+    const { name, value } = event.target
 
-    if (!result.success) {
-      const formattedErrors = {};
-
-      result.error.issues.forEach((issue) => {
-        const fieldName = issue.path[0];
-
-        if (!formattedErrors[fieldName]) {
-          formattedErrors[fieldName] = issue.message;
-        }
-      });
-
-      setErrors(formattedErrors);
-
-      return false;
-    }
-
-    setErrors({});
-
-    return true;
-  };
-
-  // ==========================================
-  // HANDLE CHANGE
-  // ==========================================
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
+    setFormData((previous) => ({
+      ...previous,
       [name]: value,
-    }));
+    }))
 
-    setErrors((prev) => ({
-      ...prev,
-      [name]: null,
-      general: null,
-    }));
-  };
+    setErrors((previous) => ({
+      ...previous,
+      [name]: '',
+      general: '',
+    }))
+  }
 
   // ==========================================
-  // HANDLE SUBMIT
+  // LOGIN
   // ==========================================
 
-  const handleSubmit = async (e, onSuccess) => {
-    e.preventDefault();
+  const handleSubmit = async (event, onSuccess) => {
+    event?.preventDefault()
 
     if (isLoading) {
-      return;
+      return
     }
 
-    // ==========================================
-    // 1. VALIDATE FORM
-    // ==========================================
+    setErrors(INITIAL_ERRORS)
 
-    if (!validateForm()) {
-      return;
-    }
+    setIsLoading(true)
 
     try {
-      setIsLoading(true);
-      setErrors({});
-
-
       // ==========================================
-      // 2. CSRF COOKIE
+      // 1. AMBIL CSRF COOKIE
       // ==========================================
 
-
-
-      await api.get("/sanctum/csrf-cookie");
-
-  
-      // ==========================================
-      // 3. LOGIN
-      // ==========================================
-
-      const loginUrl =
-        `${api.defaults.baseURL}/api/login`;
-
-      console.log("REQUEST LOGIN:", loginUrl);
-
-      const response = await api.post(
-        "/api/login",
-        {
-          username: formData.username,
-          password: formData.password,
-        },
-        {
-          headers: {
-            Accept: "application/json",
-            "X-Requested-With": "XMLHttpRequest",
-          },
-        },
-      );
+      await api.get('/sanctum/csrf-cookie')
 
       // ==========================================
-      // LOGIN RESPONSE
+      // 2. LOGIN
+      // Endpoint backend v5.1:
+      // POST /login
       // ==========================================
 
+      const response = await api.post('/login', {
+        username: formData.username,
+        password: formData.password,
+      })
+
       // ==========================================
-      // 4. AMBIL USER
+      // 3. AMBIL USER DARI RESPONSE
       // ==========================================
 
-      const loggedUser = response.data?.user;
+      const loggedUser = response.data?.user
 
-      // ==========================================
-      // 5. VALIDASI RESPONSE LOGIN
-      // ==========================================
-
-      if (
-        !loggedUser ||
-        typeof loggedUser !== "object" ||
-        !loggedUser.role
-      ) {
-        console.error(
-          "INVALID LOGIN RESPONSE:",
-          response.data,
-        );
-
-        setErrors({
-          general: "Username atau password salah.",
-        });
-
-        return;
+      if (!loggedUser?.role) {
+        throw new Error(
+          'Login berhasil, tetapi data user tidak lengkap.',
+        )
       }
 
       // ==========================================
-      // 6. LOGIN BERHASIL
+      // 4. KIRIM USER KE CALLBACK
+      // LoginPage menangani AuthContext + redirect
       // ==========================================
 
-
-      if (onSuccess) {
-        await onSuccess(loggedUser);
+      if (typeof onSuccess === 'function') {
+        await onSuccess(loggedUser)
       }
-    }
-     catch (err) {
-      // ==========================================
-      // LOGIN ERROR
-      // ==========================================
 
-      console.error("=================================");
-      console.error("LOGIN ERROR:", err);
-      console.error(
-        "LOGIN STATUS:",
-        err.response?.status,
-      );
-      console.error(
-        "LOGIN RESPONSE:",
-        err.response?.data,
-      );
-      console.error(
-        "LOGIN URL:",
-        err.config?.url,
-      );
-      console.error(
-        "LOGIN BASE URL:",
-        err.config?.baseURL,
-      );
-      console.error("=================================");
+      return loggedUser
+    } catch (error) {
+      const status = error.response?.status
+      const backendErrors = getValidationErrors(error)
+      const backendMessage = getBackendMessage(error)
 
       // ==========================================
-      // 422 VALIDATION / CREDENTIAL ERROR
+      // VALIDATION
       // ==========================================
 
-      if (err.response?.status === 422) {
-        const backendErrors =
-          err.response.data?.errors ?? {};
-
-        const usernameError =
-          backendErrors.username?.[0];
-
-        const passwordError =
-          backendErrors.password?.[0];
-
-        // ------------------------------------------
-        // USERNAME SALAH
-        // ------------------------------------------
-
-        if (usernameError) {
-          setErrors({
-            username: "Username tidak ditemukan.",
-            password: null,
-            general: null,
-          });
-
-          return;
-        }
-
-        // ------------------------------------------
-        // PASSWORD SALAH
-        // ------------------------------------------
-
-        if (passwordError) {
-          setErrors({
-            username: null,
-            password: "Password salah.",
-            general: null,
-          });
-
-          return;
-        }
-
-        // ------------------------------------------
-        // ERROR VALIDASI LAIN
-        // ------------------------------------------
-
+      if (status === 422) {
         setErrors({
-          username: null,
-          password: null,
+          username: backendErrors.username?.[0] ?? '',
+          password: backendErrors.password?.[0] ?? '',
           general:
-            err.response.data?.message ??
-            "Username atau password salah.",
-        });
+            backendMessage ??
+            'Username atau password belum sesuai.',
+        })
 
-        return;
+        return null
       }
 
       // ==========================================
-      // 401 UNAUTHORIZED
+      // UNAUTHORIZED
       // ==========================================
 
-      if (err.response?.status === 401) {
+      if (status === 401) {
         setErrors({
-          username: null,
-          password: "Password salah.",
-          general: null,
-        });
+          ...INITIAL_ERRORS,
+          general: backendMessage ?? 'Username atau password salah.',
+        })
 
-        return;
+        return null
       }
 
       // ==========================================
-      // 403 ACCOUNT BLOCKED
+      // TOO MANY REQUESTS / LOCKOUT
       // ==========================================
 
-      if (err.response?.status === 403) {
+      if (status === 429) {
         setErrors({
-          username: null,
-          password: null,
+          ...INITIAL_ERRORS,
           general:
-            err.response.data?.message ??
-            "Akun Anda telah diblokir.",
-        });
+            backendMessage ??
+            'Terlalu banyak percobaan login. Silakan coba lagi beberapa saat.',
+        })
 
-        return;
+        return null
       }
 
       // ==========================================
-      // 404 NOT FOUND
+      // METHOD NOT ALLOWED
       // ==========================================
 
-      if (err.response?.status === 404) {
+      if (status === 405) {
         setErrors({
-          username: null,
-          password: null,
-          general:
-            "Endpoint login tidak ditemukan. Periksa konfigurasi API atau Nginx.",
-        });
+          ...INITIAL_ERRORS,
+          general: 'Method login tidak sesuai dengan route server.',
+        })
 
-        return;
+        return null
       }
 
       // ==========================================
-      // ERROR LAIN
+      // CSRF
+      // ==========================================
+
+      if (status === 419) {
+        setErrors({
+          ...INITIAL_ERRORS,
+          general:
+            'Sesi keamanan tidak valid. Silakan coba login kembali.',
+        })
+
+        return null
+      }
+
+      // ==========================================
+      // DEFAULT ERROR
       // ==========================================
 
       setErrors({
-        username: null,
-        password: null,
+        ...INITIAL_ERRORS,
         general:
-          err.response?.data?.message ??
-          "Terjadi kesalahan saat login.",
-      });
+          backendMessage ??
+          error.message ??
+          'Terjadi kesalahan saat login.',
+      })
 
-
+      return null
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
-
-  // ==========================================
-  // RETURN
-  // ==========================================
+  }
 
   return {
     formData,
@@ -309,5 +206,5 @@ export function useLoginForm() {
     isLoading,
     handleChange,
     handleSubmit,
-  };
+  }
 }
