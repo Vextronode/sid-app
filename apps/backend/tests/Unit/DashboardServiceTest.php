@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\ApprovalFlow;
 use App\Models\Citizen;
 use App\Models\FlowStep;
+use App\Models\Hamlet;
 use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\Official;
@@ -146,6 +147,56 @@ class DashboardServiceTest extends TestCase
         $this->expectException(HttpException::class);
 
         $this->service->getLetterStats($user, null, null);
+    }
+
+    public function test_kadus_dashboard_only_includes_rt_approved_letters_from_own_hamlet(): void
+    {
+        $village = Village::factory()->create();
+        $hamlet = Hamlet::factory()->create(['village_id' => $village->id]);
+        $otherHamlet = Hamlet::factory()->create(['village_id' => $village->id]);
+        $user = User::factory()->create(['role' => 'kadus', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('kadus')->create([
+            'village_id' => $village->id,
+            'hamlet_id' => $hamlet->id,
+            'is_active' => true,
+        ]);
+
+        $ownCitizen = Citizen::factory()->create([
+            'village_id' => $village->id,
+            'hamlet_id' => $hamlet->id,
+        ]);
+        $ownApprovedLetter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $ownCitizen->id,
+        ]);
+        $ownPendingLetter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $ownCitizen->id,
+        ]);
+        $otherCitizen = Citizen::factory()->create([
+            'village_id' => $village->id,
+            'hamlet_id' => $otherHamlet->id,
+        ]);
+        $otherHamletLetter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $otherCitizen->id,
+        ]);
+        $approver = User::factory()->create(['village_id' => $village->id]);
+        foreach ([$ownApprovedLetter, $otherHamletLetter] as $letter) {
+            $letter->approvals()->create([
+                'approved_by' => $approver->id,
+                'approval_level' => 'rt',
+                'action' => 'approved',
+            ]);
+        }
+
+        $dashboard = $this->service->getDashboard($user);
+
+        $this->assertSame('kadus', $dashboard['role']);
+        $this->assertSame(
+            [$ownApprovedLetter->id],
+            array_column($dashboard['fyi_letters'], 'id'),
+        );
     }
 
     public function test_kasi_dashboard_shows_only_matching_approved_letters_with_total_and_limit(): void

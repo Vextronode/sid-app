@@ -297,34 +297,41 @@ class LetterPolicyTest extends TestCase
         $this->assertFalse($this->policy->view($user, $letter));
     }
 
-    public function test_kasi_can_view_only_approved_letters_assigned_to_them_or_unassigned(): void
+    #[DataProvider('kasiKaurRoles')]
+    public function test_kasi_kaur_can_view_only_approved_letters_assigned_to_them_or_unassigned(string $role): void
     {
         $village = Village::factory()->create();
         $user = User::factory()->create([
-            'role' => 'kasi_pelayanan',
+            'role' => $role,
             'village_id' => $village->id,
         ]);
         Official::factory()->create([
             'user_id' => $user->id,
-            'position' => 'kasi_pelayanan',
+            'position' => $role,
             'village_id' => $village->id,
             'is_active' => true,
         ]);
 
         $matching = Letter::factory()->approved()->create([
             'village_id' => $village->id,
-            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => $role])->id,
         ]);
         $unassigned = Letter::factory()->approved()->create([
             'village_id' => $village->id,
             'letter_type_id' => LetterType::factory()->create(['assigned_role' => null])->id,
         ]);
+        $otherRole = $role === 'kasi_pelayanan' ? 'kaur_tu_umum' : 'kasi_pelayanan';
         $wrongRole = Letter::factory()->approved()->create([
             'village_id' => $village->id,
-            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum'])->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => $otherRole])->id,
         ]);
         $pending = Letter::factory()->create([
             'village_id' => $village->id,
+            'letter_type_id' => $matching->letter_type_id,
+        ]);
+
+        $otherVillageLetter = Letter::factory()->approved()->create([
+            'village_id' => Village::factory()->create()->id,
             'letter_type_id' => $matching->letter_type_id,
         ]);
 
@@ -332,6 +339,15 @@ class LetterPolicyTest extends TestCase
         $this->assertTrue($this->policy->view($user, $unassigned));
         $this->assertFalse($this->policy->view($user, $wrongRole));
         $this->assertFalse($this->policy->view($user, $pending));
+        $this->assertFalse($this->policy->view($user, $otherVillageLetter));
+    }
+
+    public static function kasiKaurRoles(): array
+    {
+        return [
+            ['kasi_pelayanan'],
+            ['kaur_tu_umum'],
+        ];
     }
 
     public function test_download_requires_approved_status_and_allows_owner(): void

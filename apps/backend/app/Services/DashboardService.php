@@ -34,6 +34,7 @@ class DashboardService
             'warga' => $this->forWarga($user),
             'rt' => $this->forRt($user),
             'rw' => $this->forRw($user),
+            'kadus' => $this->forKadus($user),
             'kasi_pelayanan', 'kaur_tu_umum' => $this->forKasiKaur($user),
             'petugas_desa' => $this->forPetugasDesa($user),
             'kepala_desa', 'sekretaris_desa' => $this->forKadesSekdes($user),
@@ -175,6 +176,29 @@ class DashboardService
     }
 
     /**
+     * @return array{role: string, fyi_letters: array<int, array<string, mixed>>, unread_notifications_count: int}
+     */
+    private function forKadus(User $user): array
+    {
+        $official = $this->activeOfficial($user, 'kadus');
+
+        if (! $official->hamlet_id) {
+            throw new HttpException(403, 'Data wilayah dusun tidak ditemukan.');
+        }
+
+        $letters = $this->letterRepository
+            ->queryByCitizenHamlet($official->hamlet_id)
+            ->latest()
+            ->get();
+
+        return [
+            'role' => 'kadus',
+            'fyi_letters' => $this->letterSummaries($letters),
+            'unread_notifications_count' => $this->unreadCount($user),
+        ];
+    }
+
+    /**
      * @return array{role: string, total_surat_selesai: int, completed_letters: array<int, array<string, mixed>>, unread_notifications_count: int}
      */
     private function forKasiKaur(User $user): array
@@ -277,8 +301,7 @@ class DashboardService
     }
 
     /**
-     * Legacy statistics endpoint scope. The generic dashboard uses explicit
-     * role builders above and rejects kadus.
+     * Endpoint statistik legacy; role `kadus` tetap ditolak. Dashboard generik memiliki `forKadus()`.
      *
      * @return array{0: string, 1: int|null, 2: int|null}
      */

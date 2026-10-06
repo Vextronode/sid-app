@@ -9,7 +9,6 @@ use App\Models\Official;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class KadesApprovalService
@@ -23,30 +22,6 @@ class KadesApprovalService
         protected LetterNumberGenerator $letterNumberGenerator,
         protected ApprovalSettingService $approvalSettingService,
     ) {}
-
-    /** All letters in the official's village that have been approved by RT. */
-    public function getPendingLetters(User $user): Collection
-    {
-        $official = $this->authorizeOfficial($user);
-
-        return $this->letterRepository
-            ->queryRtApprovedInVillage($official->village_id)
-            ->latest()
-            ->get();
-    }
-
-    public function getLetterDetail(Letter $letter, User $user): Letter
-    {
-        $official = $this->authorizeOfficial($user);
-
-        $letter = $this->letterRepository->loadDetailForApproval($letter);
-
-        if ($letter->village_id !== $official->village_id) {
-            abort(403, 'Anda tidak berwenang melihat surat ini.');
-        }
-
-        return $letter;
-    }
 
     /**
      * Memutuskan (approve/reject) surat pada tahap Kepala Desa.

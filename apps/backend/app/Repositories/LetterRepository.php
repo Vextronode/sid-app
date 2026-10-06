@@ -143,20 +143,9 @@ class LetterRepository
         ]);
     }
 
-    public function loadDetailForRw(Letter $letter): Letter
-    {
-        return $letter->load([
-            'citizen.rt',
-            'letterType',
-            'approvals.approvedBy:id,name',
-            'flow.steps',
-            'statusLogs.actor:id,name',
-        ]);
-    }
-
     /**
      * Query surat berstatus tertentu yang discope ke warga dalam RT
-     * tertentu (dipakai RtApprovalService::getPendingLetters()).
+     * tertentu (dipakai DashboardService::forRt()).
      */
     public function queryByStatusesAndCitizenRt(array $statuses, int $rtId): Builder
     {
@@ -408,6 +397,7 @@ class LetterRepository
     {
         return Letter::query()
             ->with([
+                'citizen.rt',
                 'letterType:id,name,code',
                 'approvals.approvedBy:id,name',
                 'flow.steps',

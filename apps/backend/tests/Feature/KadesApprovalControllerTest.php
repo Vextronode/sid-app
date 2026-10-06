@@ -6,7 +6,6 @@ use App\Models\ApprovalFlow;
 use App\Models\Citizen;
 use App\Models\FlowStep;
 use App\Models\Letter;
-use App\Models\LetterApproval;
 use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\User;
@@ -74,100 +73,6 @@ class KadesApprovalControllerTest extends TestCase
         $user->official()->save($official);
 
         return $user->fresh();
-    }
-
-    public function test_index_returns_letters_at_kades_step(): void
-    {
-        $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
-        $this->markRtApproved($letter);
-        $kades = $this->makeUserWithPosition('kepala_desa', $village);
-
-        $this->actingAs($kades)
-            ->getJson('/api/kades/letters')
-            ->assertOk()
-            ->assertJsonPath('message', 'Daftar surat Kepala Desa berhasil diambil.')
-            ->assertJsonCount(1, 'data');
-    }
-
-    public function test_index_also_accessible_by_sekdes(): void
-    {
-        $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
-        $this->markRtApproved($letter);
-        $sekdes = $this->makeUserWithPosition('sekdes', $village);
-
-        $this->actingAs($sekdes)
-            ->getJson('/api/kades/letters')
-            ->assertOk()
-            ->assertJsonCount(1, 'data');
-    }
-
-    public function test_index_includes_letters_at_second_kepala_desa_step(): void
-    {
-        $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
-        $this->markRtApproved($letter);
-        $letter->update(['current_step_order' => 2]);
-        $sekdes = $this->makeUserWithPosition('sekdes', $village);
-
-        $this->actingAs($sekdes)
-            ->getJson('/api/kades/letters')
-            ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $letter->id);
-    }
-
-    public function test_index_excludes_letters_submitted_by_current_kades(): void
-    {
-        $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
-        $kades = $this->makeUserWithPosition('kepala_desa', $village);
-        $letter->update(['submitted_by' => $kades->id]);
-
-        $this->actingAs($kades)
-            ->getJson('/api/kades/letters')
-            ->assertOk()
-            ->assertJsonCount(0, 'data');
-    }
-
-    public function test_index_requires_authentication(): void
-    {
-        $this->getJson('/api/kades/letters')->assertUnauthorized();
-    }
-
-    public function test_index_forbidden_for_non_kades_role(): void
-    {
-        $village = Village::factory()->create();
-        $kasi = $this->makeUserWithPosition('kasi_pelayanan', $village);
-
-        $this->actingAs($kasi)
-            ->getJson('/api/kades/letters')
-            ->assertStatus(403);
-    }
-
-    public function test_show_returns_letter_detail(): void
-    {
-        $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
-        $this->markRtApproved($letter);
-        $kades = $this->makeUserWithPosition('kepala_desa', $village);
-
-        $this->actingAs($kades)
-            ->getJson("/api/kades/letters/{$letter->id}")
-            ->assertOk()
-            ->assertJsonPath('data.id', $letter->id);
-    }
-
-    private function markRtApproved(Letter $letter): void
-    {
-        $approver = User::factory()->create(['village_id' => $letter->village_id]);
-        LetterApproval::query()->create([
-            'letter_id' => $letter->id,
-            'approved_by' => $approver->id,
-            'approval_level' => 'rt',
-            'action' => 'approved',
-        ]);
     }
 
     public function test_decision_approve_by_kades_advances_letter(): void
@@ -281,7 +186,7 @@ class KadesApprovalControllerTest extends TestCase
             ->assertOk();
 
         $this->actingAs($kades)
-            ->getJson('/api/kades/letters')
+            ->getJson('/api/letters')
             ->assertOk()
             ->assertJsonCount(0, 'data');
 

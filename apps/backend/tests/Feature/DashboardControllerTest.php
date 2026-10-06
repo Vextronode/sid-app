@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ApprovalFlow;
 use App\Models\Citizen;
 use App\Models\FlowStep;
+use App\Models\Hamlet;
 use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\Official;
@@ -121,12 +122,60 @@ class DashboardControllerTest extends TestCase
             ->assertJsonPath('data.role', 'rw');
     }
 
-    public function test_generic_dashboard_forbids_kadus(): void
+    public function test_kadus_dashboard_returns_fyi_letters_for_own_hamlet(): void
+    {
+        $village = Village::factory()->create();
+        $hamlet = Hamlet::factory()->create(['village_id' => $village->id]);
+        $user = User::factory()->create(['role' => 'kadus', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('kadus')->create([
+            'village_id' => $village->id,
+            'hamlet_id' => $hamlet->id,
+            'is_active' => true,
+        ]);
+        $citizen = Citizen::factory()->create([
+            'village_id' => $village->id,
+            'hamlet_id' => $hamlet->id,
+        ]);
+        $letter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+        ]);
+        $approver = User::factory()->create(['village_id' => $village->id]);
+        $letter->approvals()->create([
+            'approved_by' => $approver->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => ['role', 'fyi_letters', 'unread_notifications_count'],
+            ])
+            ->assertJsonPath('data.role', 'kadus')
+            ->assertJsonPath('data.fyi_letters.0.id', $letter->id);
+    }
+
+    public function test_kadus_dashboard_forbidden_without_hamlet(): void
+    {
+        $user = User::factory()->create(['role' => 'kadus']);
+        Official::factory()->forUser($user)->position('kadus')->create([
+            'hamlet_id' => null,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/dashboard')
+            ->assertForbidden();
+    }
+
+    public function test_stats_endpoints_still_forbid_kadus(): void
     {
         $user = User::factory()->create(['role' => 'kadus']);
 
         $this->actingAs($user)
-            ->getJson('/api/dashboard')
+            ->getJson('/api/dashboard/gender-stats')
             ->assertForbidden();
     }
 

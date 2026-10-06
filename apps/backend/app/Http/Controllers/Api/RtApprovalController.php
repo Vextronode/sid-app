@@ -4,29 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RtDecisionRequest;
-use App\Http\Resources\LetterCollection;
-use App\Http\Resources\LetterResource;
 use App\Models\Letter;
 use App\Services\RtApprovalService;
-use Illuminate\Http\Request;
 
 class RtApprovalController extends Controller
 {
     public function __construct(
         protected RtApprovalService $service
     ) {}
-
-    public function index(Request $request)
-    {
-        $letters = $this->service->getPendingLetters(
-            $request->user()
-        );
-
-        return response()->json([
-            'message' => 'Daftar surat RT berhasil diambil.',
-            'data' => new LetterCollection($letters),
-        ]);
-    }
 
     public function decision(
         RtDecisionRequest $request,
@@ -40,18 +25,6 @@ class RtApprovalController extends Controller
 
         return response()->json([
             'message' => 'Surat berhasil diproses.',
-        ]);
-    }
-
-    public function show(Request $request, Letter $letter)
-    {
-        $this->authorize('view', $letter);
-
-        $letter = $this->service->getLetterDetail($letter);
-
-        return response()->json([
-            'message' => 'Detail surat berhasil diambil',
-            'data' => new LetterResource($letter),
         ]);
     }
 }

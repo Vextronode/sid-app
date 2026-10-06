@@ -23,7 +23,6 @@ use App\Services\ApprovalSettingService;
 use App\Services\LetterFlowService;
 use App\Services\OfficialService;
 use App\Services\RtApprovalService;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -104,72 +103,6 @@ class RtApprovalServiceTest extends TestCase
         $user->official()->save($official);
 
         return $user->fresh();
-    }
-
-    // ==========================================
-    // getPendingLetters
-    // ==========================================
-
-    public function test_get_pending_letters_throws_when_official_missing(): void
-    {
-        $user = User::factory()->create(['role' => 'rt']);
-
-        $this->expectException(ModelNotFoundException::class);
-
-        $this->service->getPendingLetters($user);
-    }
-
-    public function test_get_pending_letters_forbidden_when_official_has_no_village(): void
-    {
-        $rt = Rt::factory()->create();
-        $official = Official::factory()->create([
-            'position' => 'rt',
-            'rt_id' => $rt->id,
-            'village_id' => null,
-            'is_active' => true,
-        ]);
-        $user = User::factory()->create(['role' => 'rt']);
-        $user->official()->save($official);
-
-        $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Data wilayah desa tidak ditemukan.');
-
-        $this->service->getPendingLetters($user->fresh());
-    }
-
-    public function test_get_pending_letters_returns_only_letters_at_own_rt_step(): void
-    {
-        $village = Village::factory()->create();
-        ['letter' => $matchingLetter, 'rt' => $rt] = $this->makeLetterAtRtStep($village);
-        $rtUser = $this->makeRtUser($village, $rt);
-
-        // Surat milik RT lain, sama-sama di step 'rt' tapi rt_id beda.
-        $this->makeLetterAtRtStep($village);
-
-        $result = $this->service->getPendingLetters($rtUser);
-
-        $this->assertCount(1, $result);
-        $this->assertSame($matchingLetter->id, $result->first()->id);
-    }
-
-    /**
-     * Guard penting: current_step_order TIDAK berubah saat RT reject
-     * (tetap di step 1) — tanpa filter status eksplisit, surat yang
-     * sudah diputuskan rejected akan tetap "nyangkut" selamanya di
-     * daftar pending karena masih match current_step_order + posisi.
-     */
-    public function test_rt_letter_history_keeps_already_rejected_letters_visible(): void
-    {
-        $village = Village::factory()->create();
-        ['letter' => $letter, 'rt' => $rt] = $this->makeLetterAtRtStep($village);
-        $rtUser = $this->makeRtUser($village, $rt);
-
-        $this->service->decision($letter, $rtUser, ['status' => 'rejected', 'notes' => 'Ditolak']);
-
-        $result = $this->service->getPendingLetters($rtUser);
-
-        $this->assertCount(1, $result);
-        $this->assertSame($letter->id, $result->first()->id);
     }
 
     // ==========================================

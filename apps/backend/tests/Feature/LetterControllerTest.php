@@ -10,6 +10,7 @@ use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\User;
 use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -184,6 +185,75 @@ class LetterControllerTest extends TestCase
             ->getJson('/api/letters')
             ->assertOk()
             ->assertJsonCount(0, 'data');
+    }
+
+    public function test_show_for_rw_includes_citizen_and_rw_id_for_rt_approved_letter(): void
+    {
+        $rw = Rw::factory()->create();
+        $rt = Rt::factory()->create(['rw_id' => $rw->id]);
+        $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
+        $letter = Letter::factory()->create(['citizen_id' => $citizen->id]);
+        $approver = User::factory()->create(['village_id' => $letter->village_id]);
+        $letter->approvals()->create([
+            'approved_by' => $approver->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
+        $official = Official::factory()->create([
+            'position' => 'rw',
+            'rw_id' => $rw->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create(['role' => 'rw']);
+        $user->official()->save($official);
+
+        $this->actingAs($user->fresh())
+            ->getJson("/api/letters/{$letter->id}")
+            ->assertOk()
+            ->assertJsonPath('data.citizen.id', $citizen->id)
+            ->assertJsonPath('data.citizen.rw_id', $rw->id);
+    }
+
+    public function test_show_for_kadus_includes_citizen_from_own_hamlet(): void
+    {
+        $hamlet = Hamlet::factory()->create();
+        $citizen = Citizen::factory()->create(['hamlet_id' => $hamlet->id]);
+        $letter = Letter::factory()->create(['citizen_id' => $citizen->id]);
+        $approver = User::factory()->create(['village_id' => $letter->village_id]);
+        $letter->approvals()->create([
+            'approved_by' => $approver->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
+        $user = $this->makeUserWithOfficialAssignment('kadus', 'kadus', null, [
+            'hamlet_id' => $hamlet->id,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson("/api/letters/{$letter->id}")
+            ->assertOk()
+            ->assertJsonPath('data.citizen.id', $citizen->id);
+    }
+
+    public function test_show_for_kadus_forbids_other_hamlet_or_non_rt_approved_letter(): void
+    {
+        $ownHamlet = Hamlet::factory()->create();
+        $otherHamlet = Hamlet::factory()->create();
+        $ownCitizen = Citizen::factory()->create(['hamlet_id' => $ownHamlet->id]);
+        $otherCitizen = Citizen::factory()->create(['hamlet_id' => $otherHamlet->id]);
+        $otherHamletLetter = Letter::factory()->create(['citizen_id' => $otherCitizen->id]);
+        $unapprovedLetter = Letter::factory()->create(['citizen_id' => $ownCitizen->id]);
+        $user = $this->makeUserWithOfficialAssignment('kadus', 'kadus', null, [
+            'hamlet_id' => $ownHamlet->id,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson("/api/letters/{$otherHamletLetter->id}")
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->getJson("/api/letters/{$unapprovedLetter->id}")
+            ->assertForbidden();
     }
 
     public function test_index_scope_mine_returns_owned_letters_for_rt_and_kadus(): void

@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class RtApprovalService
@@ -22,22 +21,6 @@ class RtApprovalService
         protected LetterFlowService $letterFlowService,
         protected ApprovalSettingService $approvalSettingService,
     ) {}
-
-    /** All letters for this RT's territory, including its processed history. */
-    public function getPendingLetters(User $user): Collection
-    {
-        $official = $this->authorizeOfficial($user);
-
-        return $this->letterRepository
-            ->queryByCitizenRt($official->rt_id)
-            ->latest()
-            ->get();
-    }
-
-    public function getLetterDetail(Letter $letter): Letter
-    {
-        return $this->letterRepository->loadDetailForApproval($letter);
-    }
 
     /**
      * Memutuskan (approve/reject) surat pada step 'rt'. Hanya RT yang
