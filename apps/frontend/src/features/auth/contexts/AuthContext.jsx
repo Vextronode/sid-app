@@ -1,198 +1,184 @@
+// ==========================================
+// AuthContext.jsx
+// Session & Logout - Backend v5.1
+// Sanctum cookie-based authentication
+// ==========================================
 
 import {
   createContext,
+  useCallback,
   useContext,
-  useState,
   useEffect,
-} from "react";
+  useMemo,
+  useState,
+} from 'react'
 
-import api from "@/lib/api";
+import api from '@/lib/api'
 
-const AuthContext = createContext();
+const AuthContext = createContext(null)
+
+const SESSION_ENDPOINT = '/api/user'
+const LOGOUT_ENDPOINT = '/api/logout'
+const CSRF_ENDPOINT = '/sanctum/csrf-cookie'
+
+function resolveUser(response) {
+  return (
+    response.data?.user ??
+    response.data?.data ??
+    response.data ??
+    null
+  )
+}
+
+function isAuthFailure(status) {
+  return status === 401 || status === 403
+}
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [authError, setAuthError] = useState('')
 
   // ==========================================
-  // NORMALIZE USER RESPONSE
+  // REHYDRATE SESSION
   // ==========================================
-  // API /api/user mengembalikan:
-  //
-  // {
-  //   data: {
-  //     id: 12,
-  //     name: "...",
-  //     role: "rt",
-  //     ...
-  //   }
-  // }
-  //
-  // Frontend membutuhkan:
-  //
-  // {
-  //   id: 12,
-  //   name: "...",
-  //   role: "rt",
-  //   ...
-  // }
-  //
-  const normalizeUser = (response) => {
-    return response?.data?.data ?? response?.data ?? null;
-  };
+
+  const refreshUser = useCallback(async () => {
+    setIsLoading(true)
+    setAuthError('')
+
+    try {
+      const response = await api.get(SESSION_ENDPOINT)
+
+      const currentUser = resolveUser(response)
+
+      setUser(currentUser)
+
+      return currentUser
+    } catch (error) {
+      const status = error.response?.status
+
+      // Session memang sudah tidak valid.
+      if (isAuthFailure(status)) {
+        setUser(null)
+        return null
+      }
+
+      // Error koneksi/server tidak langsung dianggap logout.
+      setAuthError(
+        error.response?.data?.message ??
+          'Session tidak dapat diperiksa saat ini.'
+      )
+
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   // ==========================================
-  // CHECK SESSION SAAT APP PERTAMA DIBUKA
+  // INITIAL SESSION CHECK
   // ==========================================
 
   useEffect(() => {
-    let isMounted = true;
-
-    const checkSession = async () => {
-      try {
-        const response = await api.get("/api/user");
-
-        const authenticatedUser = normalizeUser(response);
-
-
-        if (isMounted) {
-          setUser(authenticatedUser);
-        }
-      } catch (error) {
-        if (error.response?.status !== 401) {
-          console.error(
-            "CHECK SESSION ERROR:",
-            error.response?.status,
-            error.response?.data || error.message
-          );
-        }
-
-        if (isMounted) {
-          setUser(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    checkSession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // ==========================================
-  // CHECK SESSION
-  // ==========================================
-
-  const checkSession = async () => {
-    try {
-      const response = await api.get("/api/user");
-
-      const authenticatedUser = normalizeUser(response);
-
-      setUser(authenticatedUser);
-
-      return authenticatedUser;
-    } catch (error) {
-      if (error.response?.status !== 401) {
-        console.error(
-          "CHECK SESSION ERROR:",
-          error.response?.status,
-          error.response?.data || error.message
-        );
-      }
-
-      setUser(null);
-
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    refreshUser()
+  }, [refreshUser])
 
   // ==========================================
   // LOGIN
   // ==========================================
+  // Login request dilakukan oleh useLoginForm.
+  // AuthContext hanya menyimpan user hasil login
+  // ke state global.
 
-  const login = async (loggedUser = null) => {
-    // ==========================================
-    // USER DARI RESPONSE LOGIN
-    // ==========================================
-
-    if (loggedUser) {
-      const authenticatedUser =
-        loggedUser?.data ?? loggedUser;
-
-      setUser(authenticatedUser);
-
-      return authenticatedUser;
-    }
-
-    // ==========================================
-    // FALLBACK
-    // ==========================================
-
-    try {
-      const response = await api.get("/api/user");
-
-      const authenticatedUser = normalizeUser(response);
-
-      setUser(authenticatedUser);
-
-      return authenticatedUser;
-    } catch (error) {
-      console.error(
-        "LOGIN SESSION ERROR:",
-        error.response?.status,
-        error.response?.data || error.message
-      );
-
-      setUser(null);
-
-      return null;
-    }
-  };
+  const login = useCallback((loggedUser) => {
+    setAuthError('')
+    setUser(loggedUser ?? null)
+  }, [])
 
   // ==========================================
   // LOGOUT
   // ==========================================
 
-  const logout = async () => {
-    try {
-      await api.post("/api/logout");
-    } catch (error) {
-      console.error("LOGOUT ERROR:", error);
-    } finally {
-      setUser(null);
-    }
-  };
+  const logout = useCallback(async () => {
+    setIsLoggingOut(true)
+    setAuthError('')
 
-  // ==========================================
-  // PROVIDER
-  // ==========================================
+    try {
+      // Pastikan CSRF cookie tersedia sebelum POST logout.
+      await api.get(CSRF_ENDPOINT)
+
+      await api.post(LOGOUT_ENDPOINT)
+
+      setUser(null)
+    } catch (error) {
+      const status = error.response?.status
+
+      // Session sudah tidak ada di server.
+      // Dari sisi frontend, logout dianggap selesai.
+      if (isAuthFailure(status)) {
+        setUser(null)
+        return
+      }
+
+      // Retry sekali apabila CSRF token sudah tidak valid.
+      if (status === 419) {
+        await api.get(CSRF_ENDPOINT)
+        await api.post(LOGOUT_ENDPOINT)
+
+        setUser(null)
+        return
+      }
+
+      setAuthError(
+        error.response?.data?.message ??
+          'Logout gagal. Silakan coba lagi.'
+      )
+
+      throw error
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }, [])
+
+  const value = useMemo(
+    () => ({
+      user,
+      isLoading,
+      isLoggingOut,
+      authError,
+
+      login,
+      logout,
+      refreshUser,
+    }),
+    [
+      user,
+      isLoading,
+      isLoggingOut,
+      authError,
+      login,
+      logout,
+      refreshUser,
+    ]
+  )
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        login,
-        logout,
-        checkSession,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
-  );
+  )
 }
 
-// ==========================================
-// HOOK
-// ==========================================
+export function useAuth() {
+  const context = useContext(AuthContext)
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => useContext(AuthContext);
+  if (!context) {
+    throw new Error(
+      'useAuth harus digunakan di dalam AuthProvider.'
+    )
+  }
+
+  return context
+}
