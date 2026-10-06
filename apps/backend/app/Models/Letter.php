@@ -83,6 +83,7 @@ class Letter extends Model
             ->first();
     }
 
+    /** @return HasMany<LetterApproval, $this> */
     public function approvals(): HasMany
     {
         return $this->hasMany(LetterApproval::class);
