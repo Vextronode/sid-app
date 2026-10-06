@@ -1,164 +1,312 @@
 // ==========================================
 // RegisterPage.jsx
-// Halaman daftar akun warga, cuma pakai NIK + password (tanpa email).
-// ⚠️ Endpoint /register perlu dicek/disesuaikan sesuai backend asli.
+// Registrasi akun warga - Backend v5.1
+// NIK + Password
+// Username dibuat otomatis oleh backend
+// User wajib login manual setelah register
 // ==========================================
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Landmark, CreditCard, User, Lock, Eye, EyeOff, UserPlus, CheckCircle2 } from 'lucide-react';
-import api from '@/lib/api';
+import { Link, useNavigate } from 'react-router-dom'
+
+import {
+  CheckCircle2,
+  CreditCard,
+  Eye,
+  EyeOff,
+  Landmark,
+  Lock,
+  UserPlus,
+} from 'lucide-react'
+
+import { useRegisterForm } from '@/features/auth/hooks/useRegisterForm'
 
 export default function RegisterPage() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
-  const [form, setForm] = useState({ nik: '', name: '', password: '', password_confirmation: '' });
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const {
+    formData,
+    errors,
+    isLoading,
+    isSuccess,
+    registeredUsername,
+    showPassword,
+    showPasswordConfirmation,
+    handleChange,
+    handleSubmit,
+    togglePassword,
+    togglePasswordConfirmation,
+  } = useRegisterForm()
 
-  const handleChange = (field) => (e) => {
-    const value = field === 'nik' ? e.target.value.replace(/\D/g, '') : e.target.value;
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (form.password !== form.password_confirmation) {
-      setError('Konfirmasi password tidak cocok.');
-      return;
-    }
-    if (form.nik.length !== 16) {
-      setError('NIK harus 16 digit.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-        await api.get('/sanctum/csrf-cookie');
-      await api.post('/api/register', form);
-      setSuccess(true);
-      setTimeout(() => navigate('/loginpage'), 1500);
-    } catch (err) {
-      const errors = err.response?.data?.errors;
-      const message = errors ? Object.values(errors)[0]?.[0] : err.response?.data?.message ?? 'Pendaftaran gagal, coba lagi.';
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (success) {
+  if (isSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-8 text-center">
-          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 size={28} className="text-green-600" />
+      <div className="sid-login">
+        <div className="sid-login-card">
+          <div className="sid-login-logo">
+            <CheckCircle2 size={24} />
           </div>
-          <h2 className="font-bold text-gray-800 text-lg mb-1">Pendaftaran Berhasil!</h2>
-          <p className="text-sm text-gray-500">Kamu akan diarahkan ke halaman login...</p>
+
+          <div className="sid-login-header">
+            <h1 className="sid-login-title">
+              Pendaftaran Berhasil
+            </h1>
+
+            <p className="sid-login-description">
+              Akun warga berhasil dibuat.
+              Silakan login untuk mulai menggunakan sistem.
+            </p>
+          </div>
+
+          {registeredUsername && (
+            <div className="sid-register-username">
+              <span className="sid-register-username-label">
+                Username Anda
+              </span>
+
+              <strong>
+                {registeredUsername}
+              </strong>
+            </div>
+          )}
+
+          {!registeredUsername && (
+            <div className="sid-register-success-info">
+              Username telah dibuat otomatis oleh sistem.
+              Silakan login menggunakan username Anda.
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate('/login', {
+                replace: true,
+              })
+            }
+            className="sid-login-submit"
+          >
+            <span>
+              Masuk ke Halaman Login
+            </span>
+
+            <UserPlus size={16} />
+          </button>
+
+          <div className="sid-login-footer">
+            <p className="sid-login-copyright">
+              Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026
+            </p>
+          </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-6">
-        <div className="w-11 h-11 rounded-xl bg-green-600 flex items-center justify-center mb-3">
-          <Landmark size={22} className="text-white" />
+    <div className="sid-login">
+      <div className="sid-login-card">
+        <div className="sid-login-logo">
+          <Landmark size={24} />
         </div>
-        <p className="font-bold text-gray-800">Cibenda</p>
-        <h1 className="text-xl font-bold text-gray-800 mt-1">Daftar Akun Warga</h1>
-        <p className="text-sm text-gray-500 mb-6">Cukup pakai NIK, tanpa perlu email</p>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2 mb-4">{error}</div>
+        <div className="sid-login-header">
+          <h1 className="sid-login-title">
+            Daftar Akun Warga
+          </h1>
+
+          <p className="sid-login-description">
+            Buat akun menggunakan NIK dan password Anda
+          </p>
+        </div>
+
+        {errors.general && (
+          <div className="sid-login-error">
+            {errors.general}
+          </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Nomor Induk Kependudukan (NIK)</label>
-            <div className="relative mt-1">
-              <CreditCard size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <form
+          onSubmit={handleSubmit}
+          className="sid-login-form"
+        >
+          {/* NIK */}
+          <div className="sid-login-field">
+            <label className="sid-login-label">
+              Nomor Induk Kependudukan (NIK)
+            </label>
+
+            <div className="sid-login-input-wrapper">
+              <CreditCard
+                size={16}
+                className="sid-login-input-icon"
+              />
+
               <input
-                required
+                type="text"
+                name="nik"
+                value={formData.nik}
+                onChange={handleChange}
                 maxLength={16}
                 inputMode="numeric"
-                value={form.nik}
-                onChange={handleChange('nik')}
-                placeholder="16 Digit NIK"
-                className="w-full border rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none focus:border-green-500 bg-gray-50"
+                autoComplete="username"
+                placeholder="Masukkan 16 digit NIK"
+                className={`sid-login-input sid-login-input-with-left-icon ${
+                  errors.nik
+                    ? 'sid-login-input-error'
+                    : ''
+                }`}
               />
             </div>
+
+            {errors.nik && (
+              <span className="sid-login-field-error">
+                {errors.nik}
+              </span>
+            )}
           </div>
 
-          <div className="mb-4">
-            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Nama Lengkap</label>
-            <div className="relative mt-1">
-              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                required
-                value={form.name}
-                onChange={handleChange('name')}
-                placeholder="Nama sesuai KTP"
-                className="w-full border rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none focus:border-green-500 bg-gray-50"
-              />
-            </div>
-          </div>
+          {/* PASSWORD */}
+          <div className="sid-login-field">
+            <label className="sid-login-label">
+              Password
+            </label>
 
-          <div className="mb-4">
-            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Password</label>
-            <div className="relative mt-1">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                required
-                type={showPassword ? 'text' : 'password'}
-                value={form.password}
-                onChange={handleChange('password')}
-                placeholder="Minimal 8 karakter"
-                className="w-full border rounded-lg pl-10 pr-10 py-2.5 text-sm outline-none focus:border-green-500 bg-gray-50"
+            <div className="sid-login-input-wrapper">
+              <Lock
+                size={16}
+                className="sid-login-input-icon"
               />
-              <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+
+              <input
+                type={
+                  showPassword
+                    ? 'text'
+                    : 'password'
+                }
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                autoComplete="new-password"
+                placeholder="Masukkan password"
+                className={`sid-login-input sid-login-input-password ${
+                  errors.password
+                    ? 'sid-login-input-error'
+                    : ''
+                }`}
+              />
+
+              <button
+                type="button"
+                onClick={togglePassword}
+                className="sid-login-password-toggle"
+                aria-label={
+                  showPassword
+                    ? 'Sembunyikan password'
+                    : 'Tampilkan password'
+                }
+              >
+                {showPassword ? (
+                  <EyeOff size={16} />
+                ) : (
+                  <Eye size={16} />
+                )}
               </button>
             </div>
+
+            {errors.password && (
+              <span className="sid-login-field-error">
+                {errors.password}
+              </span>
+            )}
           </div>
 
-          <div className="mb-6">
-            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Konfirmasi Password</label>
-            <div className="relative mt-1">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                required
-                type={showPassword ? 'text' : 'password'}
-                value={form.password_confirmation}
-                onChange={handleChange('password_confirmation')}
-                placeholder="Ulangi password"
-                className="w-full border rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none focus:border-green-500 bg-gray-50"
+          {/* PASSWORD CONFIRMATION */}
+          <div className="sid-login-field">
+            <label className="sid-login-label">
+              Konfirmasi Password
+            </label>
+
+            <div className="sid-login-input-wrapper">
+              <Lock
+                size={16}
+                className="sid-login-input-icon"
               />
+
+              <input
+                type={
+                  showPasswordConfirmation
+                    ? 'text'
+                    : 'password'
+                }
+                name="password_confirmation"
+                value={formData.password_confirmation}
+                onChange={handleChange}
+                autoComplete="new-password"
+                placeholder="Ulangi password"
+                className={`sid-login-input sid-login-input-password ${
+                  errors.password_confirmation
+                    ? 'sid-login-input-error'
+                    : ''
+                }`}
+              />
+
+              <button
+                type="button"
+                onClick={togglePasswordConfirmation}
+                className="sid-login-password-toggle"
+                aria-label={
+                  showPasswordConfirmation
+                    ? 'Sembunyikan konfirmasi password'
+                    : 'Tampilkan konfirmasi password'
+                }
+              >
+                {showPasswordConfirmation ? (
+                  <EyeOff size={16} />
+                ) : (
+                  <Eye size={16} />
+                )}
+              </button>
             </div>
+
+            {errors.password_confirmation && (
+              <span className="sid-login-field-error">
+                {errors.password_confirmation}
+              </span>
+            )}
           </div>
 
+          {/* SUBMIT */}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-green-600 text-white rounded-lg py-3 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="sid-login-submit"
           >
-            {isLoading ? 'Mendaftarkan...' : 'Daftar Sekarang'} <UserPlus size={16} />
+            <span>
+              {isLoading
+                ? 'Mendaftarkan...'
+                : 'Daftar Sekarang'}
+            </span>
+
+            <UserPlus size={16} />
           </button>
         </form>
 
-        <div className="border-t mt-6 pt-4 text-center">
-          <p className="text-sm text-gray-500">
-            Sudah punya akun? <Link to="/loginpage" className="text-green-600 font-medium hover:underline">Masuk di sini</Link>
+        <div className="sid-login-footer">
+          <p className="sid-login-register-text">
+            Sudah punya akun?
+
+            <Link
+              to="/login"
+              className="sid-login-register-button"
+            >
+              Masuk di sini
+            </Link>
           </p>
-          <p className="text-[11px] text-gray-400 mt-3">© 2024 Sistem Informasi Desa Modern.</p>
+
+          <p className="sid-login-copyright">
+            Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026
+          </p>
         </div>
       </div>
     </div>
-  );
+  )
 }
