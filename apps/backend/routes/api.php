@@ -10,7 +10,6 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\KadesApprovalController;
-use App\Http\Controllers\Api\KasiLetterController;
 use App\Http\Controllers\Api\LetterCategoryController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
@@ -24,7 +23,6 @@ use App\Http\Controllers\Api\RegulationController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RtController;
 use App\Http\Controllers\Api\RwController;
-use App\Http\Controllers\Api\RwFyiController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillageOrgMemberController;
 use App\Http\Controllers\Api\VillageOrgPositionController;
@@ -197,20 +195,6 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
 
     /*
     |----------------------------------------------------------------------
-    | Kasi/Kaur Completed Letters (read-only)
-    |----------------------------------------------------------------------
-    | Akses surat approved dan assigned_role diperiksa di
-    | KasiLetterService; middleware membatasi role Kasi/Kaur.
-    */
-    Route::middleware(UserRole::middleware(UserRole::KasiPelayanan, UserRole::KaurTuUmum))
-        ->prefix('kasi')
-        ->group(function () {
-            Route::get('/letters', [KasiLetterController::class, 'index']);
-            Route::get('/letters/{letter}', [KasiLetterController::class, 'show']);
-        });
-
-    /*
-    |----------------------------------------------------------------------
     | Letters (UC-03, UC-05, UC-06, UC-08)
     |----------------------------------------------------------------------
     */
@@ -229,9 +213,9 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         // Authorization to submit is handled by LetterPolicy::create.
         Route::post('/', [LetterController::class, 'store']);
 
-        // UC-05/UC-06/UC-08: lintas-role, scoping ada di
-        // LetterService::getScopedLetters() dan LetterPolicy. Kadus
-        // hanya dapat mengakses daftar suratnya sendiri dengan scope=mine.
+        // RW dan Kadus membaca surat wilayahnya (yang sudah di-approve RT)
+        // lewat endpoint ini; scoping di LetterService::getScopedLetters()
+        // dan LetterPolicy::view.
         Route::get('/', [LetterController::class, 'index']);
         Route::get('/{id}', [LetterController::class, 'show']);
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
@@ -300,13 +284,12 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | RT Approvals (UC-04a - Tahap 1)
     |----------------------------------------------------------------------
-    | Context check wilayah (rt_id) tetap di RtApprovalService.
+    | Daftar/detail surat dibaca lewat /letters; section ini hanya untuk
+    | aksi decision. Context check wilayah tetap di RtApprovalService.
     */
     Route::middleware(UserRole::middleware(UserRole::Rt))
         ->prefix('rt')
         ->group(function () {
-            Route::get('/letters', [RtApprovalController::class, 'index']);
-            Route::get('/letters/{letter}', [RtApprovalController::class, 'show']);
             Route::patch('/letters/{letter}/decision', [RtApprovalController::class, 'decision']);
         });
 
@@ -319,37 +302,13 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | lihat docblock KadesApprovalService dan SID-ARCH-BE-001 S3.3.
     | Status keputusan ini masih rekomendasi/asumsi default (belum
     | keputusan final eksplisit dari desa) - lihat
-    | TDD-05_Roadmap_Risks_OpenQuestions Section 3.1.
+    | TDD-05_Roadmap_Risks_OpenQuestions Section 3.1. Daftar/detail
+    | surat dibaca lewat /letters; section ini hanya untuk aksi decision.
     */
     Route::middleware(UserRole::middleware(UserRole::KepalaDesa, UserRole::SekretarisDesa))
         ->prefix('kades')
         ->group(function () {
-            Route::get('/letters', [KadesApprovalController::class, 'index']);
-            Route::get('/letters/{letter}', [KadesApprovalController::class, 'show']);
             Route::patch('/letters/{letter}/decision', [KadesApprovalController::class, 'decision']);
-        });
-
-    /*
-    |----------------------------------------------------------------------
-    | RW (read-only FYI, UC-04a sub-flow)
-    |----------------------------------------------------------------------
-    | RW BUKAN approver sejak v5.0 (SID-ARCH-BE-001 S3.2) - tidak ada
-    | dan tidak akan pernah ada endpoint decision untuk RW. Endpoint
-    | ini murni read-only riwayat notifikasi FYI, tetap dibatasi role
-    | 'rw' saja (bukan lintas-role) karena datanya spesifik wilayah RW
-    | yang login.
-    |
-    | Catatan: ini adalah jalur khusus histori FYI RW. GET /letters
-    | (generik, lihat section "Letters" di bawah) juga bisa diakses RW
-    | lewat LetterService::getScopedLetters() case 'rw'. Kedua jalur
-    | bersifat read-only, dibatasi ke rw_id user, dan menampilkan semua
-    | status surat. RW tidak memiliki worklist approval maupun decision.
-    */
-    Route::middleware(UserRole::middleware(UserRole::Rw))
-        ->prefix('rw')
-        ->group(function () {
-            Route::get('/letters', [RwFyiController::class, 'index']);
-            Route::get('/letters/{letter}', [RwFyiController::class, 'show']);
         });
 
     /*

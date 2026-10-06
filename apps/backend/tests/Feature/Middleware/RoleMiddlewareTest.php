@@ -70,39 +70,52 @@ class RoleMiddlewareTest extends TestCase
     #[Test]
     public function guest_gets_401_on_any_protected_route(): void
     {
-        $this->getJson('/api/rt/letters')->assertUnauthorized();
-        $this->getJson('/api/kades/letters')->assertUnauthorized();
+        $letter = Letter::factory()->create();
+
+        $this->patchJson("/api/rt/letters/{$letter->id}/decision", ['status' => 'approved'])->assertUnauthorized();
+        $this->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])->assertUnauthorized();
         $this->getJson('/api/citizens')->assertUnauthorized();
     }
 
     /*
     |--------------------------------------------------------------------------
-    | RT approval endpoints — hanya role 'rt'
+    | RT decision endpoint — hanya role 'rt'
     |--------------------------------------------------------------------------
     */
 
     #[Test]
-    public function rt_can_access_rt_letters_index(): void
+    public function rt_can_reach_rt_decision_after_middleware(): void
     {
-        $rw = Rw::factory()->create();
-        $rt = Rt::factory()->create(['rw_id' => $rw->id]);
-        $user = $this->officialUser('rt', 'rt', ['rt_id' => $rt->id]);
+        $user = $this->officialUser('rt', 'rt');
+        $rw = Rw::factory()->create(['village_id' => $user->village_id]);
+        $rt = Rt::factory()->create(['rw_id' => $rw->id, 'village_id' => $user->village_id]);
+        $user->official->update(['rt_id' => $rt->id]);
+        $citizen = Citizen::factory()->create([
+            'village_id' => $user->village_id,
+            'rt_id' => $rt->id,
+        ]);
+        $letter = Letter::factory()->create([
+            'village_id' => $user->village_id,
+            'citizen_id' => $citizen->id,
+        ]);
 
         $this->actingAs($user)
-            ->getJson('/api/rt/letters')
-            ->assertStatus(200);
+            ->patchJson("/api/rt/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertStatus(409);
     }
 
     #[DataProvider('nonRtRoles')]
     #[Test]
-    public function non_rt_roles_cannot_access_rt_letters_index(string $role): void
+    public function non_rt_roles_cannot_access_rt_decision(string $role): void
     {
         // Sengaja TANPA fixture Official — membuktikan middleware
         // menolak di depan, sebelum Service butuh data apa pun.
         $user = $this->userWithRole($role);
 
+        $letter = Letter::factory()->create();
+
         $this->actingAs($user)
-            ->getJson('/api/rt/letters')
+            ->patchJson("/api/rt/letters/{$letter->id}/decision", ['status' => 'approved'])
             ->assertForbidden()
             ->assertJson(['message' => 'Anda tidak memiliki akses untuk aksi ini.']);
     }
@@ -117,38 +130,41 @@ class RoleMiddlewareTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | Kades/Sekdes approval endpoints — hanya kepala_desa & sekretaris_desa
+    | Kades/Sekdes decision endpoint — hanya kepala_desa & sekretaris_desa
     |--------------------------------------------------------------------------
     */
 
     #[Test]
-    public function kepala_desa_can_access_kades_letters_index(): void
+    public function kepala_desa_can_reach_kades_decision_after_middleware(): void
     {
         $user = $this->officialUser('kepala_desa', 'kepala_desa');
+        $letter = Letter::factory()->create(['village_id' => $user->village_id]);
 
         $this->actingAs($user)
-            ->getJson('/api/kades/letters')
-            ->assertStatus(200);
+            ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertStatus(409);
     }
 
     #[Test]
-    public function sekretaris_desa_can_access_kades_letters_index(): void
+    public function sekretaris_desa_can_reach_kades_decision_after_middleware(): void
     {
         $user = $this->officialUser('sekretaris_desa', 'sekdes');
+        $letter = Letter::factory()->create(['village_id' => $user->village_id]);
 
         $this->actingAs($user)
-            ->getJson('/api/kades/letters')
-            ->assertStatus(200);
+            ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertStatus(409);
     }
 
     #[DataProvider('nonKadesRoles')]
     #[Test]
-    public function non_kades_roles_cannot_access_kades_letters_index(string $role): void
+    public function non_kades_roles_cannot_access_kades_decision(string $role): void
     {
         $user = $this->userWithRole($role);
+        $letter = Letter::factory()->create();
 
         $this->actingAs($user)
-            ->getJson('/api/kades/letters')
+            ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
             ->assertForbidden();
     }
 
@@ -160,68 +176,15 @@ class RoleMiddlewareTest extends TestCase
         ];
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Kasi/Kaur approval endpoints — hanya kasi_pelayanan & kaur_tu_umum
-    |--------------------------------------------------------------------------
-    */
-
     #[Test]
-    public function kasi_pelayanan_can_access_kasi_letters_index(): void
-    {
-        $user = $this->officialUser('kasi_pelayanan', 'kasi_pelayanan');
-
-        $this->actingAs($user)
-            ->getJson('/api/kasi/letters')
-            ->assertStatus(200);
-    }
-
-    #[Test]
-    public function kaur_tu_umum_can_access_kasi_letters_index(): void
-    {
-        $user = $this->officialUser('kaur_tu_umum', 'kaur_tu_umum');
-
-        $this->actingAs($user)
-            ->getJson('/api/kasi/letters')
-            ->assertStatus(200);
-    }
-
-    #[Test]
-    public function rw_cannot_access_kasi_letters_index(): void
-    {
-        // Regression guard SID-ARCH-BE-001 S3.2: RW tidak pernah approver.
-        $user = $this->userWithRole('rw');
-
-        $this->actingAs($user)
-            ->getJson('/api/kasi/letters')
-            ->assertForbidden();
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | RW read-only FYI endpoint — hanya role 'rw'
-    |--------------------------------------------------------------------------
-    */
-
-    #[Test]
-    public function rw_can_access_own_fyi_letters_index(): void
+    public function rw_with_valid_rw_id_can_access_generic_letters_index(): void
     {
         $rw = Rw::factory()->create();
         $user = $this->officialUser('rw', 'rw', ['rw_id' => $rw->id]);
 
         $this->actingAs($user)
-            ->getJson('/api/rw/letters')
-            ->assertStatus(200);
-    }
-
-    #[Test]
-    public function rt_cannot_access_rw_fyi_endpoint(): void
-    {
-        $user = $this->userWithRole('rt');
-
-        $this->actingAs($user)
-            ->getJson('/api/rw/letters')
-            ->assertForbidden();
+            ->getJson('/api/letters')
+            ->assertOk();
     }
 
     /*
@@ -271,21 +234,10 @@ class RoleMiddlewareTest extends TestCase
         ];
     }
 
-    #[Test]
-    public function kasi_letters_endpoint_is_read_only(): void
-    {
-        $user = $this->userWithRole('kasi_pelayanan');
-        $letter = Letter::factory()->create();
-
-        $this->actingAs($user)
-            ->patchJson("/api/kasi/letters/{$letter->id}", ['status' => 'approved'])
-            ->assertMethodNotAllowed();
-    }
-
     /*
     |--------------------------------------------------------------------------
-    | Letters index — lintas-role (tidak boleh 403 middleware untuk role
-    | manapun kecuali kadus, yang ditolak di LetterService bukan middleware)
+    | Letters index — lintas-role, termasuk Kadus yang kini mendapat
+    | daftar surat dusunnya melalui LetterService.
     |--------------------------------------------------------------------------
     */
 
@@ -407,9 +359,10 @@ class RoleMiddlewareTest extends TestCase
         // Arah sebaliknya: petugas_desa (Tier 2 sama seperti Kades/Sekdes
         // di label navigasi) tetap TIDAK termasuk approver RT.
         $user = $this->userWithRole('petugas_desa');
+        $letter = Letter::factory()->create();
 
         $this->actingAs($user)
-            ->getJson('/api/rt/letters')
+            ->patchJson("/api/rt/letters/{$letter->id}/decision", ['status' => 'approved'])
             ->assertForbidden();
     }
 
