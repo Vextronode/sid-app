@@ -139,12 +139,12 @@ class EndToEndApprovalFlowTest extends TestCase
         ]);
 
         $this->actingAs($kades['user'])
-            ->getJson('/api/kades/letters')
+            ->getJson('/api/letters')
             ->assertOk()
             ->assertJsonFragment(['id' => $letter->id]);
 
         $this->actingAs($kades['user'])
-            ->getJson("/api/kades/letters/{$letter->id}")
+            ->getJson("/api/letters/{$letter->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $letter->id);
 

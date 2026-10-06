@@ -69,19 +69,6 @@ class RtApprovalControllerTest extends TestCase
         return $user->fresh();
     }
 
-    public function test_index_returns_pending_letters_for_rt(): void
-    {
-        $village = Village::factory()->create();
-        ['rt' => $rt] = $this->makeLetterAtRtStep($village);
-        $user = $this->makeRtUser($village, $rt);
-
-        $this->actingAs($user)
-            ->getJson('/api/rt/letters')
-            ->assertOk()
-            ->assertJsonPath('message', 'Daftar surat RT berhasil diambil.')
-            ->assertJsonCount(1, 'data');
-    }
-
     public function test_decision_approve_marks_letter_in_progress_and_advances_step(): void
     {
         Notification::fake();
@@ -166,17 +153,5 @@ class RtApprovalControllerTest extends TestCase
             ->patchJson("/api/rt/letters/{$letter->id}/decision", ['status' => 'approved'])
             ->assertForbidden()
             ->assertJsonPath('message', 'Anda tidak dapat memutuskan surat milik Anda sendiri.');
-    }
-
-    public function test_show_returns_letter_detail_with_relations(): void
-    {
-        $village = Village::factory()->create();
-        ['letter' => $letter, 'rt' => $rt] = $this->makeLetterAtRtStep($village);
-        $user = $this->makeRtUser($village, $rt);
-
-        $this->actingAs($user)
-            ->getJson("/api/rt/letters/{$letter->id}")
-            ->assertOk()
-            ->assertJsonPath('data.id', $letter->id);
     }
 }

@@ -395,14 +395,17 @@ class LetterServiceTest extends TestCase
         return [$letter, $flow];
     }
 
-    public function test_get_scoped_letters_for_rt_scopes_to_citizen_rt_and_active_rt_step(): void
+    public function test_get_scoped_letters_for_rt_includes_pending_and_processed_letters_in_own_rt(): void
     {
         $rt = Rt::factory()->create();
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
         [$letter] = $this->makeLetterAtStep('rt', 1, ['citizen_id' => $citizen->id]);
 
         // Surat dari wilayah RT tetap muncul setelah melewati step RT.
-        $this->makeLetterAtStep('kepala_desa', 2, ['citizen_id' => $citizen->id]);
+        [$processedLetter] = $this->makeLetterAtStep('kepala_desa', 2, [
+            'citizen_id' => $citizen->id,
+            'status' => 'in_progress',
+        ]);
 
         // surat di RT lain, tetap di step RT (harus tidak ikut muncul).
         $otherCitizen = Citizen::factory()->create();
@@ -416,6 +419,8 @@ class LetterServiceTest extends TestCase
 
         $this->assertCount(2, $result);
         $this->assertContains($letter->id, $result->modelKeys());
+        $this->assertSame('pending', $letter->status->value);
+        $this->assertContains($processedLetter->id, $result->modelKeys());
     }
 
     public function test_get_scoped_letters_for_rw_returns_full_history_without_status_filter(): void
@@ -452,10 +457,11 @@ class LetterServiceTest extends TestCase
         $this->assertContains($rejectedLetter->id, $result->pluck('id'));
     }
 
-    public function test_get_scoped_letters_for_kades_scopes_to_own_village_and_active_step(): void
+    public function test_get_scoped_letters_for_kades_returns_rt_approved_letters_in_own_village(): void
     {
         $village = Village::factory()->create();
         [$letter] = $this->makeLetterAtStep('kepala_desa', 1, ['village_id' => $village->id, 'status' => 'in_progress']);
+        $unapprovedLetter = Letter::factory()->create(['village_id' => $village->id]);
 
         $otherVillage = Village::factory()->create();
         $this->makeLetterAtStep('kepala_desa', 1, ['village_id' => $otherVillage->id, 'status' => 'in_progress']);
@@ -468,6 +474,7 @@ class LetterServiceTest extends TestCase
 
         $this->assertCount(1, $result);
         $this->assertSame($letter->id, $result->first()->id);
+        $this->assertNotContains($unapprovedLetter->id, $result->modelKeys());
     }
 
     public function test_get_scoped_letters_for_sekretaris_desa_reads_the_same_kepala_desa_step(): void

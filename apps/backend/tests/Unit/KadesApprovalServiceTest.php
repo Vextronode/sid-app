@@ -132,61 +132,6 @@ class KadesApprovalServiceTest extends TestCase
         return $user->fresh();
     }
 
-    private function recordRtApproval(Letter $letter, Village $village): void
-    {
-        $user = User::factory()->create(['village_id' => $village->id]);
-        LetterApproval::query()->create([
-            'letter_id' => $letter->id,
-            'approved_by' => $user->id,
-            'approval_level' => 'rt',
-            'action' => 'approved',
-        ]);
-    }
-
-    // ==========================================
-    // getPendingLetters
-    // ==========================================
-
-    public function test_get_pending_letters_returns_letters_at_kades_step(): void
-    {
-        $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
-        $this->recordRtApproval($letter, $village);
-        $kades = $this->makeUserWithPosition('kepala_desa', $village);
-
-        $result = $this->service->getPendingLetters($kades);
-
-        $this->assertCount(1, $result);
-        $this->assertSame($letter->id, $result->first()->id);
-    }
-
-    public function test_get_pending_letters_visible_to_sekdes_too(): void
-    {
-        $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
-        $this->recordRtApproval($letter, $village);
-        $sekdes = $this->makeUserWithPosition('sekdes', $village);
-
-        $result = $this->service->getPendingLetters($sekdes);
-
-        $this->assertCount(1, $result);
-        $this->assertSame($letter->id, $result->first()->id);
-    }
-
-    public function test_get_pending_letters_includes_letters_at_second_kepala_desa_step(): void
-    {
-        $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
-        $this->recordRtApproval($letter, $village);
-        $letter->update(['current_step_order' => 2]);
-        $kades = $this->makeUserWithPosition('kepala_desa', $village);
-
-        $result = $this->service->getPendingLetters($kades);
-
-        $this->assertCount(1, $result);
-        $this->assertSame($letter->id, $result->first()->id);
-    }
-
     public function test_decision_by_sekdes_can_finalize_a_kepala_desa_step(): void
     {
         $village = Village::factory()->create();
@@ -203,79 +148,6 @@ class KadesApprovalServiceTest extends TestCase
             'action' => 'approved',
             'approved_by' => $sekdes->id,
         ]);
-    }
-
-    public function test_get_pending_letters_excludes_letters_not_at_kades_step(): void
-    {
-        $village = Village::factory()->create();
-        $citizen = Citizen::factory()->create(['village_id' => $village->id]);
-
-        $flow = ApprovalFlow::factory()->create();
-        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'rt']);
-        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'kepala_desa']);
-
-        Letter::factory()->create([
-            'flow_id' => $flow->id,
-            'current_step_order' => 1,
-            'village_id' => $village->id,
-            'citizen_id' => $citizen->id,
-        ]);
-
-        $kades = $this->makeUserWithPosition('kepala_desa', $village);
-
-        $result = $this->service->getPendingLetters($kades);
-
-        $this->assertCount(0, $result);
-    }
-
-    public function test_get_pending_letters_excludes_letters_in_other_village(): void
-    {
-        $village = Village::factory()->create();
-        $otherVillage = Village::factory()->create();
-        $this->makeLetterAtKadesStep($otherVillage);
-
-        $kades = $this->makeUserWithPosition('kepala_desa', $village);
-
-        $result = $this->service->getPendingLetters($kades);
-
-        $this->assertCount(0, $result);
-    }
-
-    public function test_get_pending_letters_forbidden_for_non_kades_role(): void
-    {
-        $village = Village::factory()->create();
-        $kasi = $this->makeUserWithPosition('kasi_pelayanan', $village);
-
-        $this->expectException(HttpException::class);
-
-        $this->service->getPendingLetters($kasi);
-    }
-
-    // ==========================================
-    // getLetterDetail
-    // ==========================================
-
-    public function test_get_letter_detail_returns_letter_in_same_village(): void
-    {
-        $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
-        $kades = $this->makeUserWithPosition('kepala_desa', $village);
-
-        $result = $this->service->getLetterDetail($letter, $kades);
-
-        $this->assertSame($letter->id, $result->id);
-    }
-
-    public function test_get_letter_detail_forbidden_for_other_village(): void
-    {
-        $village = Village::factory()->create();
-        $otherVillage = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($otherVillage);
-        $kades = $this->makeUserWithPosition('kepala_desa', $village);
-
-        $this->expectException(HttpException::class);
-
-        $this->service->getLetterDetail($letter, $kades);
     }
 
     // ==========================================
@@ -349,20 +221,6 @@ class KadesApprovalServiceTest extends TestCase
             'id' => $letter->id,
             'status' => 'rejected',
         ]);
-    }
-
-    public function test_rejected_letter_is_not_returned_to_the_pending_worklist(): void
-    {
-        $village = Village::factory()->create();
-        $letter = $this->makeLetterAtKadesStep($village);
-        $kades = $this->makeUserWithPosition('kepala_desa', $village);
-
-        $this->service->decision($letter, $kades, [
-            'status' => 'rejected',
-            'notes' => 'Dokumen tidak lengkap',
-        ]);
-
-        $this->assertCount(0, $this->service->getPendingLetters($kades));
     }
 
     public function test_rejected_letter_cannot_be_decided_again(): void

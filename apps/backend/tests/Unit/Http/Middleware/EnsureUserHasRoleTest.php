@@ -26,7 +26,7 @@ class EnsureUserHasRoleTest extends TestCase
     #[Test]
     public function it_allows_request_when_role_matches_single_allowed_role(): void
     {
-        $request = Request::create('/api/rt/letters', 'GET');
+        $request = Request::create('/api/rt/letters/1/decision', 'PATCH');
         $request->setUserResolver(fn () => $this->userWithRole('rt'));
 
         $middleware = new EnsureUserHasRole;
@@ -38,7 +38,7 @@ class EnsureUserHasRoleTest extends TestCase
     #[Test]
     public function it_allows_request_when_role_matches_one_of_several_comma_separated_roles(): void
     {
-        $request = Request::create('/api/kades/letters', 'GET');
+        $request = Request::create('/api/kades/letters/1/decision', 'PATCH');
         $request->setUserResolver(fn () => $this->userWithRole('sekretaris_desa'));
 
         $middleware = new EnsureUserHasRole;
@@ -53,11 +53,11 @@ class EnsureUserHasRoleTest extends TestCase
         // Laravel biasanya mem-parse "role:a,b" menjadi satu argumen
         // "a,b", tapi middleware ini juga mendukung beberapa argumen
         // terpisah untuk kelenturan pemanggilan langsung.
-        $request = Request::create('/api/kasi/letters', 'GET');
-        $request->setUserResolver(fn () => $this->userWithRole('kaur_tu_umum'));
+        $request = Request::create('/api/kades/letters/1/decision', 'PATCH');
+        $request->setUserResolver(fn () => $this->userWithRole('sekretaris_desa'));
 
         $middleware = new EnsureUserHasRole;
-        $response = $middleware->handle($request, $this->passthroughNext(), 'kasi_pelayanan', 'kaur_tu_umum');
+        $response = $middleware->handle($request, $this->passthroughNext(), 'kepala_desa', 'sekretaris_desa');
 
         $this->assertSame(200, $response->getStatusCode());
     }
@@ -65,7 +65,7 @@ class EnsureUserHasRoleTest extends TestCase
     #[Test]
     public function it_rejects_with_403_when_role_not_in_allowed_list(): void
     {
-        $request = Request::create('/api/kades/letters', 'GET');
+        $request = Request::create('/api/kades/letters/1/decision', 'PATCH');
         $request->setUserResolver(fn () => $this->userWithRole('warga'));
 
         $middleware = new EnsureUserHasRole;
@@ -81,7 +81,7 @@ class EnsureUserHasRoleTest extends TestCase
     #[Test]
     public function it_rejects_with_401_when_no_authenticated_user(): void
     {
-        $request = Request::create('/api/rt/letters', 'GET');
+        $request = Request::create('/api/rt/letters/1/decision', 'PATCH');
         $request->setUserResolver(fn () => null);
 
         $middleware = new EnsureUserHasRole;
@@ -109,7 +109,7 @@ class EnsureUserHasRoleTest extends TestCase
     #[Test]
     public function it_does_not_call_next_closure_when_rejected(): void
     {
-        $request = Request::create('/api/kades/letters', 'GET');
+        $request = Request::create('/api/kades/letters/1/decision', 'PATCH');
         $request->setUserResolver(fn () => $this->userWithRole('warga'));
 
         $called = false;
@@ -128,7 +128,7 @@ class EnsureUserHasRoleTest extends TestCase
     #[Test]
     public function it_trims_whitespace_in_role_list(): void
     {
-        $request = Request::create('/api/kades/letters', 'GET');
+        $request = Request::create('/api/kades/letters/1/decision', 'PATCH');
         $request->setUserResolver(fn () => $this->userWithRole('kepala_desa'));
 
         $middleware = new EnsureUserHasRole;
@@ -140,13 +140,13 @@ class EnsureUserHasRoleTest extends TestCase
     /**
      * Regression guard (SID-ARCH-BE-001 S3.2): RW tidak pernah menjadi
      * approver_position di flow_steps manapun sejak v5.0 — pastikan
-     * middleware role menolaknya di endpoint approval Kades/Sekdes
-     * maupun Kasi/Kaur, terlepas dari context check apa pun di Policy.
+     * middleware role menolaknya pada endpoint approval Kades/Sekdes,
+     * terlepas dari context check apa pun di Policy.
      */
     #[Test]
     public function rw_role_is_rejected_from_kades_approval_route(): void
     {
-        $request = Request::create('/api/kades/letters', 'GET');
+        $request = Request::create('/api/kades/letters/1/decision', 'PATCH');
         $request->setUserResolver(fn () => $this->userWithRole('rw'));
 
         $middleware = new EnsureUserHasRole;
@@ -155,22 +155,10 @@ class EnsureUserHasRoleTest extends TestCase
         $this->assertSame(403, $response->getStatusCode());
     }
 
-    #[Test]
-    public function rw_role_is_rejected_from_kasi_completed_letters_route(): void
-    {
-        $request = Request::create('/api/kasi/letters', 'GET');
-        $request->setUserResolver(fn () => $this->userWithRole('rw'));
-
-        $middleware = new EnsureUserHasRole;
-        $response = $middleware->handle($request, $this->passthroughNext(), 'kasi_pelayanan,kaur_tu_umum');
-
-        $this->assertSame(403, $response->getStatusCode());
-    }
-
     /**
      * Regression guard (SID-ARCH-BE-001 S3.2): Kadus dihapus total dari
      * domain approval surat sejak v5.0 — middleware role harus menolak
-     * di semua endpoint approval (rt, kades, kasi), meskipun akun Kadus
+     * di semua endpoint approval yang tersisa (rt, kades), meskipun akun Kadus
      * tetap valid untuk login/lihat status (UC-01/UC-05/UC-06).
      */
     #[Test]
@@ -178,13 +166,12 @@ class EnsureUserHasRoleTest extends TestCase
     {
         $middleware = new EnsureUserHasRole;
         $scenarios = [
-            ['/api/rt/letters', 'rt'],
-            ['/api/kades/letters', 'kepala_desa,sekretaris_desa'],
-            ['/api/kasi/letters', 'kasi_pelayanan,kaur_tu_umum'],
+            ['/api/rt/letters/1/decision', 'rt'],
+            ['/api/kades/letters/1/decision', 'kepala_desa,sekretaris_desa'],
         ];
 
         foreach ($scenarios as [$uri, $allowedRoles]) {
-            $request = Request::create($uri, 'GET');
+            $request = Request::create($uri, 'PATCH');
             $request->setUserResolver(fn () => $this->userWithRole('kadus'));
 
             $response = $middleware->handle($request, $this->passthroughNext(), $allowedRoles);
