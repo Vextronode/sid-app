@@ -54,12 +54,6 @@ export function AuthProvider({ children }) {
 
         const authenticatedUser = normalizeUser(response);
 
-        console.log("=================================");
-        console.log("AUTH SESSION CHECK");
-        console.log("RAW RESPONSE:", response.data);
-        console.log("AUTH USER:", authenticatedUser);
-        console.log("USER ROLE:", authenticatedUser?.role);
-        console.log("=================================");
 
         if (isMounted) {
           setUser(authenticatedUser);
@@ -100,13 +94,6 @@ export function AuthProvider({ children }) {
 
       const authenticatedUser = normalizeUser(response);
 
-      console.log("=================================");
-      console.log("MANUAL SESSION CHECK");
-      console.log("RAW RESPONSE:", response.data);
-      console.log("AUTH USER:", authenticatedUser);
-      console.log("USER ROLE:", authenticatedUser?.role);
-      console.log("=================================");
-
       setUser(authenticatedUser);
 
       return authenticatedUser;
@@ -140,12 +127,6 @@ export function AuthProvider({ children }) {
       const authenticatedUser =
         loggedUser?.data ?? loggedUser;
 
-      console.log("=================================");
-      console.log("LOGIN USER");
-      console.log("AUTH USER:", authenticatedUser);
-      console.log("ROLE:", authenticatedUser?.role);
-      console.log("=================================");
-
       setUser(authenticatedUser);
 
       return authenticatedUser;
@@ -159,12 +140,6 @@ export function AuthProvider({ children }) {
       const response = await api.get("/api/user");
 
       const authenticatedUser = normalizeUser(response);
-
-      console.log("=================================");
-      console.log("LOGIN FALLBACK USER");
-      console.log("AUTH USER:", authenticatedUser);
-      console.log("ROLE:", authenticatedUser?.role);
-      console.log("=================================");
 
       setUser(authenticatedUser);
 
