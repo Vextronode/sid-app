@@ -13,50 +13,26 @@ const api = axios.create({
 
 // ======================================================
 // GET LIST SURAT
+// Endpoint generic:
+// GET /api/letters
+// Scope ditentukan backend berdasarkan user / role / wilayah
 // ======================================================
-export function getSuratList(role) {
-  switch (role) {
-    case 'rt':
-      return api.get('/api/rt/letters')
-
-    case 'rw':
-      return api.get('/api/rw/letters')
-
-    case 'kadus':
-      return api.get('/api/letters')
-
-    case 'kasi':
-      return api.get('/api/kasi/letters')
-
-    default:
-      return api.get('/api/letters')
-  }
+export function getSuratList() {
+  return api.get('/api/letters')
 }
 
 // ======================================================
 // GET DETAIL SURAT
+// Endpoint generic:
+// GET /api/letters/{id}
+// Scope ditentukan backend berdasarkan user / role / wilayah
 // ======================================================
-export function getSuratDetail(id, role = 'rt') {
-  switch (role) {
-    case 'rt':
-      return api.get(`/api/rt/letters/${id}`)
-
-    case 'rw':
-      return api.get(`/api/rw/letters/${id}`)
-
-    case 'kadus':
-      return api.get(`/api/letters/${id}`)
-
-    case 'kasi':
-      return api.get(`/api/kasi/letters/${id}`)
-
-    default:
-      return api.get(`/api/letters/${id}`)
-  }
+export function getSuratDetail(id) {
+  return api.get(`/api/letters/${id}`)
 }
 
 // ======================================================
-// RT / Kadus
+// RT / kades / sekdes
 // Endpoint : /decision
 // ======================================================
 export function submitDecision(role, id, status, notes = null) {

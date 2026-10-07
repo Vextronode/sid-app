@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { Mail, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { getSuratList } from '@/features/approval/api'
+import { getSuratList } from '@/lib/api'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FooterDesa } from '@/components/layout/FooterDesa'
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
@@ -40,7 +40,7 @@ export default function RWDashboardPage() {
     }
 
     try {
-      const res = await getSuratList('rw')
+      const res = await getSuratList()
 
       setLetters(res.data?.data ?? [])
     } catch (err) {

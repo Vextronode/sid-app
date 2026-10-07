@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react'
-import { getSuratDetail } from '@/features/approval/api'
+import { getSuratDetail } from '@/lib/api'
 
 export function useSuratDetail(id) {
   const [surat, setSurat] = useState(null)
@@ -11,7 +11,7 @@ export function useSuratDetail(id) {
   const fetchDetail = async () => {
     try {
       setIsLoading(true)
-      const response = await getSuratDetail(id, 'rw')
+      const response = await getSuratDetail(id)
       setSurat(response.data.data)
       setNotFound(false)
     } catch (error) {
