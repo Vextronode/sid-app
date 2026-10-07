@@ -8,11 +8,15 @@ use App\Http\Requests\PromoteOfficialRequest;
 use App\Http\Requests\RotateOfficialRequest;
 use App\Http\Requests\StoreOfficialRequest;
 use App\Http\Requests\UpdateOfficialRequest;
+use App\Http\Requests\UploadOfficialSignatureRequest;
 use App\Http\Resources\OfficialCollection;
 use App\Http\Resources\OfficialResource;
 use App\Models\Official;
 use App\Services\OfficialAssignmentService;
 use App\Services\OfficialService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class OfficialController extends Controller
 {
@@ -55,6 +59,25 @@ class OfficialController extends Controller
         $official = $this->officialService->update($official, $request->validated(), $request->user());
 
         return (new OfficialResource($official))->response()->setStatusCode(200);
+    }
+
+    public function uploadSignature(UploadOfficialSignatureRequest $request, Official $official): JsonResponse
+    {
+        $official = $this->officialService->replaceSignature(
+            $official,
+            $request->user(),
+            $request->file('signature'),
+        );
+
+        return response()->json([
+            'message' => 'Tanda tangan Kepala Desa berhasil diperbarui.',
+            'data' => new OfficialResource($official),
+        ]);
+    }
+
+    public function signaturePreview(Request $request, Official $official): BinaryFileResponse
+    {
+        return $this->officialService->signaturePreview($official, $request->user());
     }
 
     public function promote(PromoteOfficialRequest $request)

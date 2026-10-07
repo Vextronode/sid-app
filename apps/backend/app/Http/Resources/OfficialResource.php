@@ -23,7 +23,7 @@ class OfficialResource extends JsonResource
             'rt_id' => $this->rt_id,
             'rw_id' => $this->rw_id,
             'hamlet_id' => $this->hamlet_id,
-            'signature_img' => $this->signature_img,
+            'has_signature_img' => $this->signature_img !== null,
             'stamp_img' => $this->stamp_img,
             'photo_img' => $this->photo_img,
             'phone_wa' => $this->phone_wa,

@@ -33,7 +33,6 @@ class UpdateVillageProfileRequest extends FormRequest
             'head_name' => ['required', 'string', 'max:100'],
             'address' => ['nullable', 'string'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'stamp_img' => ['nullable', 'string', 'max:255'],
             'history' => ['nullable', 'string'],
             'vision' => ['nullable', 'string'],
             'mission' => ['nullable', 'string'],

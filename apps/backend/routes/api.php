@@ -336,6 +336,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
         ->prefix('officials')
         ->group(function () {
+            Route::post('/{official}/signature', [OfficialController::class, 'uploadSignature']);
+            Route::get('/{official}/signature', [OfficialController::class, 'signaturePreview']);
             Route::post('/promote', [OfficialController::class, 'promote']);
             Route::get('/', [OfficialController::class, 'index']);
             Route::post('/', [OfficialController::class, 'store']);
@@ -374,8 +376,11 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::prefix('villages')->group(function () {
         Route::get('/profile', [VillageProfileController::class, 'show']);
 
-        Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
-            ->patch('/profile', [VillageProfileController::class, 'update']);
+        Route::middleware(UserRole::middleware(UserRole::PetugasDesa))->group(function () {
+            Route::patch('/profile', [VillageProfileController::class, 'update']);
+            Route::post('/profile/stamp', [VillageProfileController::class, 'uploadStamp']);
+            Route::get('/profile/stamp', [VillageProfileController::class, 'stampPreview']);
+        });
     });
 
     /*
