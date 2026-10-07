@@ -44,9 +44,30 @@ const STEPS = [
 // HELPERS
 // ==========================================
 
-function getApprovalTimestamp(surat, flowStepId) {
-  const approval = (surat?.approvals ?? [])
-    .filter((item) => item?.flow_step_id === flowStepId && item?.action === 'approved')
+function getApprovalTimestamp(surat, stepKey) {
+  const approvals = surat?.approvals ?? []
+
+  // Map step keys to approval_level values coming from BE
+  const STEP_TO_LEVELS = {
+    rt: ['rt'],
+    kades: ['kepala_desa', 'sekdes', 'sekretaris_desa'],
+    selesai: [],
+  }
+
+  const levels = STEP_TO_LEVELS[stepKey]
+
+  // If no explicit levels (eg. submit/selesai), derive from last approved approval
+  if (!levels || levels.length === 0) {
+    const approval = approvals
+      .filter((a) => a?.action === 'approved')
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      .at(-1)
+
+    return approval?.created_at ?? null
+  }
+
+  const approval = approvals
+    .filter((a) => levels.includes(a?.approval_level) && a?.action === 'approved')
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
     .at(-1)
 
@@ -163,15 +184,15 @@ export default function ApprovalStepper({ surat }) {
         }
 
         if (step.key === 'rt') {
-          timestamp = getApprovalTimestamp(surat, 1)
+          timestamp = getApprovalTimestamp(surat, 'rt')
         }
 
         if (step.key === 'kades') {
-          timestamp = getApprovalTimestamp(surat, 2)
+          timestamp = getApprovalTimestamp(surat, 'kades')
         }
 
         if (step.key === 'selesai') {
-          timestamp = getApprovalTimestamp(surat, 3)
+          timestamp = getApprovalTimestamp(surat, 'selesai')
         }
 
         // =====================================
