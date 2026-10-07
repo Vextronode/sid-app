@@ -4,30 +4,18 @@
 // Sanctum cookie-based authentication
 // ==========================================
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 import api from '@/lib/api'
 
 const AuthContext = createContext(null)
 
 const SESSION_ENDPOINT = '/api/user'
-const LOGOUT_ENDPOINT = '/api/logout'
+const LOGOUT_ENDPOINT = '/logout'
 const CSRF_ENDPOINT = '/sanctum/csrf-cookie'
 
 function resolveUser(response) {
-  return (
-    response.data?.user ??
-    response.data?.data ??
-    response.data ??
-    null
-  )
+  return response.data?.user ?? response.data?.data ?? response.data ?? null
 }
 
 function isAuthFailure(status) {
@@ -60,10 +48,7 @@ export function AuthProvider({ children }) {
         return null
       }
 
-      setAuthError(
-        error.response?.data?.message ??
-          'Session tidak dapat diperiksa saat ini.'
-      )
+      setAuthError(error.response?.data?.message ?? 'Session tidak dapat diperiksa saat ini.')
 
       return null
     } finally {
@@ -109,10 +94,7 @@ export function AuthProvider({ children }) {
         return
       }
 
-      setAuthError(
-        error.response?.data?.message ??
-          'Logout gagal. Silakan coba lagi.'
-      )
+      setAuthError(error.response?.data?.message ?? 'Logout gagal. Silakan coba lagi.')
 
       throw error
     } finally {
@@ -130,22 +112,10 @@ export function AuthProvider({ children }) {
       logout,
       refreshUser,
     }),
-    [
-      user,
-      isLoading,
-      isLoggingOut,
-      authError,
-      login,
-      logout,
-      refreshUser,
-    ]
+    [user, isLoading, isLoggingOut, authError, login, logout, refreshUser],
   )
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 // useAuth sengaja tetap berada di file ini agar struktur FE tetap sederhana.
@@ -154,9 +124,7 @@ export function useAuth() {
   const context = useContext(AuthContext)
 
   if (!context) {
-    throw new Error(
-      'useAuth harus digunakan di dalam AuthProvider.'
-    )
+    throw new Error('useAuth harus digunakan di dalam AuthProvider.')
   }
 
   return context

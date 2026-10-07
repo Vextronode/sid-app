@@ -32,7 +32,7 @@ class ActiveAccountMiddlewareTest extends TestCase
             ]);
 
         // Akun nonaktif tetap boleh membersihkan sesi login yang tertinggal.
-        $this->postJson('/api/logout')->assertOk();
+        $this->postJson('/logout')->assertOk();
     }
 
     public function test_deactivated_account_cannot_use_an_existing_sanctum_token(): void
@@ -50,7 +50,7 @@ class ActiveAccountMiddlewareTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('code', 'account_inactive');
 
-        $this->postJson('/api/logout')->assertOk();
+        $this->postJson('/logout')->assertOk();
         $this->assertSame(0, $user->tokens()->count());
     }
 }

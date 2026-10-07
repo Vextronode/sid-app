@@ -297,7 +297,6 @@ class EndToEndApprovalFlowTest extends TestCase
         $this->assertMatchesRegularExpression('/^siti\.\d{4}$/', $oldUsername);
 
         Auth::shouldUse('web');
-        Auth::guard('web')->logout();
         $this->assertGuest('web');
         $this->postJson('/login', [
             'username' => $oldUsername,

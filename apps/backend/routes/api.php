@@ -27,7 +27,6 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillageOrgMemberController;
 use App\Http\Controllers\Api\VillageOrgPositionController;
 use App\Http\Controllers\Api\VillageProfileController;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -66,10 +65,10 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
 
     /*
     |----------------------------------------------------------------------
-    | Auth
+    | Auth Token in Future: token-based auth (API) dipisah dari session-based auth (web)
     |----------------------------------------------------------------------
     */
-    Route::post('/logout', [AuthenticatedSessionController::class, 'logout']);
+
 
     /*
     |----------------------------------------------------------------------

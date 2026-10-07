@@ -43,7 +43,7 @@ class PasswordChangeMiddlewareTest extends TestCase
     public function test_logout_remains_available_while_password_change_is_required(): void
     {
         $user = User::factory()->mustChangePassword()->create();
-        $request = Request::create('/api/logout', 'POST');
+        $request = Request::create('/logout', 'POST');
         $request->setUserResolver(fn () => $user);
 
         $response = (new EnsurePasswordIsChanged)->handle(

@@ -8,7 +8,6 @@ use App\Http\Resources\RegisteredUserResource;
 use App\Services\Auth\AuthService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 
 class RegisteredUserController extends Controller
 {
@@ -21,8 +20,6 @@ class RegisteredUserController extends Controller
         $user = $this->authService->registerWarga($request->validated());
 
         event(new Registered($user));
-
-        Auth::login($user);
 
         return (new RegisteredUserResource($user))
             ->additional(['message' => 'Akun berhasil dibuat. Simpan username Anda.'])

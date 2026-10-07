@@ -32,7 +32,7 @@ class RegisteredUserControllerTest extends TestCase
 
         $username = $response->json('data.username');
         $this->assertMatchesRegularExpression('/^[a-z]+\.\d{4}$/', $username);
-        $this->assertAuthenticated();
+        $this->assertGuest();
 
         $user = User::query()->where('citizen_id', $citizen->id)->firstOrFail();
         $this->assertSame($username, $user->username);
@@ -154,7 +154,6 @@ class RegisteredUserControllerTest extends TestCase
                 'password' => 'RahasiaAman123!',
                 'password_confirmation' => 'RahasiaAman123!',
             ])->assertCreated();
-            auth()->logout();
         }
 
         $users = User::query()->whereIn('citizen_id', [$first->id, $second->id])->get();
