@@ -5,6 +5,8 @@ namespace Tests\Feature\Auth;
 use App\Models\Official;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class LoginTest extends TestCase
@@ -79,5 +81,43 @@ class LoginTest extends TestCase
             'username' => 'limit.1234',
             'password' => 'wrong-password',
         ])->assertRedirect()->assertSessionHasErrors('username');
+    }
+
+    public function test_lockout_after_five_failed_attempts_lasts_one_hour(): void
+    {
+        User::factory()->create(['username' => 'lockout.1234']);
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->post('/login', [
+                'username' => 'lockout.1234',
+                'password' => 'wrong-password',
+            ]);
+        }
+
+        $throttleKey = Str::transliterate(Str::lower('lockout.1234').'|127.0.0.1');
+
+        $this->assertTrue(RateLimiter::tooManyAttempts($throttleKey, 5));
+        $this->assertGreaterThan(3500, RateLimiter::availableIn($throttleKey));
+        $this->assertLessThanOrEqual(3600, RateLimiter::availableIn($throttleKey));
+    }
+
+    public function test_lockout_blocks_login_even_with_correct_password(): void
+    {
+        $user = User::factory()->create(['username' => 'lockout2.1234']);
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->post('/login', [
+                'username' => 'lockout2.1234',
+                'password' => 'wrong-password',
+            ]);
+        }
+
+        $this->post('/login', [
+            'username' => 'lockout2.1234',
+            'password' => 'Password123',
+        ])->assertRedirect()->assertSessionHasErrors('username');
+
+        $this->assertGuest();
+        $this->assertNotEquals($user->id, auth()->id());
     }
 }
