@@ -10,8 +10,7 @@ import OperatorSuratPreviewModal from '@/features/operator-desa/components/Opera
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download, Search, Pencil, Eye, Trash2 } from 'lucide-react'
 
-import api from '@/lib/api'
-import { getSuratList } from '@/features/approval/api'
+import api, { getSuratList } from '@/lib/api'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -73,7 +72,7 @@ export default function OperatorSuratListPage() {
       }
 
       try {
-        const res = await getSuratList(roleKey)
+        const res = await getSuratList()
 
         const data = Array.isArray(res.data?.data)
           ? res.data.data

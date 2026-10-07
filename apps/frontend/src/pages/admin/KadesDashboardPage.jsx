@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router-dom'
 import { ClipboardList, Eye, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { getSuratList } from '@/features/approval/api'
+import { getSuratList } from '@/lib/api'
 
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FooterDesa } from '@/components/layout/FooterDesa'
@@ -54,7 +54,7 @@ export default function KadesDashboardPage() {
       try {
         setLoading(true)
 
-        const res = await getSuratList('kepala_desa')
+        const res = await getSuratList()
 
         if (isMounted) {
           setLetters(res.data?.data ?? [])

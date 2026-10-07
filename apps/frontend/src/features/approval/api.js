@@ -28,21 +28,6 @@ function resolvePrefix(role) {
 }
 
 /**
- * Mengambil daftar surat sesuai role approver.
- *   - rt    -> /api/rt/letters
- *   - kades -> /api/kades/letters
- *   - kasi  -> /api/kasi/letters
- *   - rw    -> /api/rw/letters (READ-ONLY)
- */
-export const getSuratList = (role, params = {}) =>
-  api.get(`/api/${resolvePrefix(role)}/letters`, { params })
-
-/**
- * Mengambil detail surat berdasarkan ID dan role.
- */
-export const getSuratDetail = (id, role) => api.get(`/api/${resolvePrefix(role)}/letters/${id}`)
-
-/**
  * Kirim keputusan approve/reject.
  *
  * Backend membutuhkan field:

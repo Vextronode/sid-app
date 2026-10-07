@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Printer, AlertCircle } from 'lucide-react'
 
-import { getSuratList } from '@/features/approval/api'
+import { getSuratList } from '@/lib/api'
 import { RELEVANT_STATUSES, SURAT_STATUS } from '@/constants/suratStatus'
 
 export default function PetugasDesaDashboardPage() {
@@ -34,7 +34,7 @@ export default function PetugasDesaDashboardPage() {
       try {
         setLoading(true)
 
-        const response = await getSuratList('kasi')
+        const response = await getSuratList()
 
         if (isMounted) {
           setLetters(Array.isArray(response.data?.data) ? response.data.data : [])

@@ -6,7 +6,8 @@
 
 import { useEffect, useMemo, useState, useCallback } from 'react'
 
-import { getSuratList, getGenderStats } from '@/features/approval/api'
+import { getGenderStats } from '@/features/approval/api'
+import { getSuratList } from '@/lib/api'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
@@ -57,7 +58,7 @@ export default function OperatorDesaDashboardPage() {
       }
 
       try {
-        const [suratRes, genderRes] = await Promise.all([getSuratList(roleKey), getGenderStats()])
+        const [suratRes, genderRes] = await Promise.all([getSuratList(), getGenderStats()])
 
         const suratData = Array.isArray(suratRes.data?.data)
           ? suratRes.data.data

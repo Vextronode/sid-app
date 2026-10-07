@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router-dom'
 import { Mail, Eye, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { getSuratList } from '@/features/approval/api'
+import { getSuratList } from '@/lib/api'
 
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FooterDesa } from '@/components/layout/FooterDesa'
@@ -52,7 +52,7 @@ export default function KadusDashboardPage() {
     }
 
     try {
-      const res = await getSuratList('kadus')
+      const res = await getSuratList()
 
       setLetters(res.data?.data ?? [])
     } catch (err) {
