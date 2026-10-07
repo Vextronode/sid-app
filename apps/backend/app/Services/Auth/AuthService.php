@@ -2,10 +2,12 @@
 
 namespace App\Services\Auth;
 
+use App\Models\Citizen;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -20,7 +22,7 @@ class AuthService
     ) {}
 
     /**
-     * @param  array{nik: string, password: string}  $data
+     * @param  array{nik: string, date_of_birth: string, password: string}  $data
      */
     public function registerWarga(array $data): User
     {
@@ -33,6 +35,8 @@ class AuthService
                 'nik' => ['NIK tidak terdaftar sebagai warga Desa Cibenda'],
             ]);
         }
+
+        $this->guardMatchingDateOfBirth($citizen, $data['date_of_birth']);
 
         $existingUser = $this->userRepository->findByCitizenId($citizen->id);
 
@@ -71,6 +75,24 @@ class AuthService
         }
 
         throw new RuntimeException('Tidak dapat membuat username unik setelah beberapa percobaan.');
+    }
+
+    /**
+     * Verifikasi kedua (selain NIK) bahwa pendaftar memang warga yang
+     * bersangkutan: tanggal lahir dari request harus cocok dengan
+     * citizens.date_of_birth - mencegah pendaftaran hanya bermodal NIK
+     * yang bocor/tersebar tanpa tahu data kependudukan yang sebenarnya.
+     */
+    private function guardMatchingDateOfBirth(Citizen $citizen, string $dateOfBirth): void
+    {
+        $matches = $citizen->date_of_birth
+            && Carbon::parse($dateOfBirth)->isSameDay($citizen->date_of_birth);
+
+        if (! $matches) {
+            throw ValidationException::withMessages([
+                'date_of_birth' => ['Tanggal lahir tidak sesuai dengan data kependudukan'],
+            ]);
+        }
     }
 
     private function isUniqueViolationFor(QueryException $exception, string $column): bool

@@ -25,6 +25,7 @@ class RegisterUserRequest extends FormRequest
     {
         return [
             'nik' => ['required', 'string', 'digits:16'],
+            'date_of_birth' => ['required', 'date'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ];
     }
@@ -35,6 +36,8 @@ class RegisterUserRequest extends FormRequest
             'nik.digits' => 'NIK harus 16 digit angka.',
             'nik.required' => 'NIK wajib diisi.',
             'nik.string' => 'NIK harus berupa teks.',
+            'date_of_birth.required' => 'Tanggal lahir wajib diisi.',
+            'date_of_birth.date' => 'Tanggal lahir tidak valid.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
             'password' => 'Kata sandi tidak memenuhi persyaratan keamanan.',

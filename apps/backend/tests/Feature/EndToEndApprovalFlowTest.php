@@ -288,6 +288,7 @@ class EndToEndApprovalFlowTest extends TestCase
 
         $registration = $this->postJson('/register', [
             'nik' => '3201012345679991',
+            'date_of_birth' => $citizen->date_of_birth->format('Y-m-d'),
             'password' => 'RahasiaAman123!',
             'password_confirmation' => 'RahasiaAman123!',
         ])->assertCreated()
