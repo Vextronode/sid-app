@@ -83,7 +83,7 @@ export function LoginForm() {
           break;
 
         case "sekretaris_desa":
-          navigate("/", {
+          navigate("/admin/dashboard-surat-kades", {
             replace: true,
           });
           break;
@@ -175,4 +175,3 @@ export function LoginForm() {
     </div>
   );
 }
-
