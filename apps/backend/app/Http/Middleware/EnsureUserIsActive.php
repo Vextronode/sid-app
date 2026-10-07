@@ -13,7 +13,7 @@ class EnsureUserIsActive
     {
         $user = $request->user();
 
-        if ($user && ! $user->is_active && ! $request->is('api/logout', 'logout')) {
+        if ($user && ! $user->is_active && ! $request->is('logout')) {
             return new JsonResponse([
                 'message' => 'Akun tidak aktif, hubungi administrator.',
                 'code' => 'account_inactive',

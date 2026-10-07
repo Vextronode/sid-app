@@ -33,5 +33,5 @@ Route::post('/email/verification-notification', [EmailVerificationNotificationCo
     ->name('verification.send');
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'logout'])
-    ->middleware('auth')
+    ->middleware('auth:sanctum')
     ->name('logout');

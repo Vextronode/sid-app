@@ -15,7 +15,7 @@ class EnsurePasswordIsChanged
 
         if (
             $user?->must_change_password &&
-            ! $request->is('api/user', 'api/profile/password', 'api/logout', 'logout')
+            ! $request->is('api/user', 'api/profile/password', 'logout')
         ) {
             return new JsonResponse([
                 'message' => 'Anda harus mengganti password terlebih dahulu.',

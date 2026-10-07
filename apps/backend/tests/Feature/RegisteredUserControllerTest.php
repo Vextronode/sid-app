@@ -32,7 +32,7 @@ class RegisteredUserControllerTest extends TestCase
 
         $username = $response->json('data.username');
         $this->assertMatchesRegularExpression('/^[a-z]+\.\d{4}$/', $username);
-        $this->assertAuthenticated();
+        $this->assertGuest();
 
         $user = User::query()->where('citizen_id', $citizen->id)->firstOrFail();
         $this->assertSame($username, $user->username);
@@ -50,10 +50,8 @@ class RegisteredUserControllerTest extends TestCase
             'password_confirmation' => 'RahasiaAman123!',
         ]);
 
-        $response->assertRedirect()
-            ->assertSessionHasErrors([
-                'nik' => 'NIK tidak terdaftar sebagai warga Desa Cibenda',
-            ]);
+        $response->assertJsonValidationErrors(['nik'])
+            ->assertJsonPath('errors.nik.0', 'NIK tidak terdaftar sebagai warga Desa Cibenda');
 
         Citizen::factory()->create([
             'nik' => '3201012345670002',
@@ -156,7 +154,6 @@ class RegisteredUserControllerTest extends TestCase
                 'password' => 'RahasiaAman123!',
                 'password_confirmation' => 'RahasiaAman123!',
             ])->assertCreated();
-            auth()->logout();
         }
 
         $users = User::query()->whereIn('citizen_id', [$first->id, $second->id])->get();
@@ -172,7 +169,7 @@ class RegisteredUserControllerTest extends TestCase
                 'nik' => sprintf('%016d', 9000000000000000 + $attempt),
                 'password' => 'RahasiaAman123!',
                 'password_confirmation' => 'RahasiaAman123!',
-            ])->assertRedirect()->assertSessionHasErrors('nik');
+            ])->assertJsonValidationErrors(['nik']);
         }
 
         $this->postJson('/register', [

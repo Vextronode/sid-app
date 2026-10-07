@@ -1,198 +1,131 @@
+// ==========================================
+// AuthContext.jsx
+// Session & Logout - Backend v5.1
+// Sanctum cookie-based authentication
+// ==========================================
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
-import api from "@/lib/api";
+import api from '@/lib/api'
 
-const AuthContext = createContext();
+const AuthContext = createContext(null)
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+const SESSION_ENDPOINT = '/api/user'
+const LOGOUT_ENDPOINT = '/logout'
+const CSRF_ENDPOINT = '/sanctum/csrf-cookie'
 
-  // ==========================================
-  // NORMALIZE USER RESPONSE
-  // ==========================================
-  // API /api/user mengembalikan:
-  //
-  // {
-  //   data: {
-  //     id: 12,
-  //     name: "...",
-  //     role: "rt",
-  //     ...
-  //   }
-  // }
-  //
-  // Frontend membutuhkan:
-  //
-  // {
-  //   id: 12,
-  //   name: "...",
-  //   role: "rt",
-  //   ...
-  // }
-  //
-  const normalizeUser = (response) => {
-    return response?.data?.data ?? response?.data ?? null;
-  };
-
-  // ==========================================
-  // CHECK SESSION SAAT APP PERTAMA DIBUKA
-  // ==========================================
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkSession = async () => {
-      try {
-        const response = await api.get("/api/user");
-
-        const authenticatedUser = normalizeUser(response);
-
-
-        if (isMounted) {
-          setUser(authenticatedUser);
-        }
-      } catch (error) {
-        if (error.response?.status !== 401) {
-          console.error(
-            "CHECK SESSION ERROR:",
-            error.response?.status,
-            error.response?.data || error.message
-          );
-        }
-
-        if (isMounted) {
-          setUser(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    checkSession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // ==========================================
-  // CHECK SESSION
-  // ==========================================
-
-  const checkSession = async () => {
-    try {
-      const response = await api.get("/api/user");
-
-      const authenticatedUser = normalizeUser(response);
-
-      setUser(authenticatedUser);
-
-      return authenticatedUser;
-    } catch (error) {
-      if (error.response?.status !== 401) {
-        console.error(
-          "CHECK SESSION ERROR:",
-          error.response?.status,
-          error.response?.data || error.message
-        );
-      }
-
-      setUser(null);
-
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ==========================================
-  // LOGIN
-  // ==========================================
-
-  const login = async (loggedUser = null) => {
-    // ==========================================
-    // USER DARI RESPONSE LOGIN
-    // ==========================================
-
-    if (loggedUser) {
-      const authenticatedUser =
-        loggedUser?.data ?? loggedUser;
-
-      setUser(authenticatedUser);
-
-      return authenticatedUser;
-    }
-
-    // ==========================================
-    // FALLBACK
-    // ==========================================
-
-    try {
-      const response = await api.get("/api/user");
-
-      const authenticatedUser = normalizeUser(response);
-
-      setUser(authenticatedUser);
-
-      return authenticatedUser;
-    } catch (error) {
-      console.error(
-        "LOGIN SESSION ERROR:",
-        error.response?.status,
-        error.response?.data || error.message
-      );
-
-      setUser(null);
-
-      return null;
-    }
-  };
-
-  // ==========================================
-  // LOGOUT
-  // ==========================================
-
-  const logout = async () => {
-    try {
-      await api.post("/api/logout");
-    } catch (error) {
-      console.error("LOGOUT ERROR:", error);
-    } finally {
-      setUser(null);
-    }
-  };
-
-  // ==========================================
-  // PROVIDER
-  // ==========================================
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        login,
-        logout,
-        checkSession,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+function resolveUser(response) {
+  return response.data?.user ?? response.data?.data ?? response.data ?? null
 }
 
-// ==========================================
-// HOOK
-// ==========================================
+function isAuthFailure(status) {
+  return status === 401 || status === 403
+}
 
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [authError, setAuthError] = useState('')
+
+  const refreshUser = useCallback(async () => {
+    setIsLoading(true)
+    setAuthError('')
+
+    try {
+      const response = await api.get(SESSION_ENDPOINT)
+
+      const currentUser = resolveUser(response)
+
+      setUser(currentUser)
+
+      return currentUser
+    } catch (error) {
+      const status = error.response?.status
+
+      if (isAuthFailure(status)) {
+        setUser(null)
+        return null
+      }
+
+      setAuthError(error.response?.data?.message ?? 'Session tidak dapat diperiksa saat ini.')
+
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    // Initial session check intentionally synchronizes
+    // React state with the external authentication session.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refreshUser()
+  }, [refreshUser])
+
+  const login = useCallback((loggedUser) => {
+    setAuthError('')
+    setUser(loggedUser ?? null)
+  }, [])
+
+  const logout = useCallback(async () => {
+    setIsLoggingOut(true)
+    setAuthError('')
+
+    try {
+      await api.get(CSRF_ENDPOINT)
+
+      await api.post(LOGOUT_ENDPOINT)
+
+      setUser(null)
+    } catch (error) {
+      const status = error.response?.status
+
+      if (isAuthFailure(status)) {
+        setUser(null)
+        return
+      }
+
+      if (status === 419) {
+        await api.get(CSRF_ENDPOINT)
+        await api.post(LOGOUT_ENDPOINT)
+
+        setUser(null)
+        return
+      }
+
+      setAuthError(error.response?.data?.message ?? 'Logout gagal. Silakan coba lagi.')
+
+      throw error
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }, [])
+
+  const value = useMemo(
+    () => ({
+      user,
+      isLoading,
+      isLoggingOut,
+      authError,
+      login,
+      logout,
+      refreshUser,
+    }),
+    [user, isLoading, isLoggingOut, authError, login, logout, refreshUser],
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+// useAuth sengaja tetap berada di file ini agar struktur FE tetap sederhana.
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  const context = useContext(AuthContext)
+
+  if (!context) {
+    throw new Error('useAuth harus digunakan di dalam AuthProvider.')
+  }
+
+  return context
+}
