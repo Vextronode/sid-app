@@ -68,11 +68,13 @@ class VillageProfileEndpointTest extends TestCase
             'name' => 'Desa Cibenda Baru',
             'head_name' => 'H. Ridwan Saepudin',
             'vision' => 'Menjadi desa mandiri, maju, dan sejahtera',
+            'stamp_img' => 'stamps/cibenda.png',
         ]);
 
         $response->assertOk()
             ->assertJsonPath('data.name', 'Desa Cibenda Baru')
-            ->assertJsonPath('data.vision', 'Menjadi desa mandiri, maju, dan sejahtera');
+            ->assertJsonPath('data.vision', 'Menjadi desa mandiri, maju, dan sejahtera')
+            ->assertJsonPath('data.stamp_img', 'stamps/cibenda.png');
     }
 
     #[Test]

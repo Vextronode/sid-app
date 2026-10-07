@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Citizen;
 use App\Models\Family;
+use App\Models\Occupation;
 use App\Models\Rt;
 use App\Models\User;
 use App\Models\Village;
@@ -90,6 +91,65 @@ class CitizenStoreUpdateTest extends TestCase
             ->assertJsonPath('data.father_id', $father->id)
             ->assertJsonPath('data.blood_type', 'O')
             ->assertJsonPath('data.residency_type', 'pendatang');
+    }
+
+    public function test_store_accepts_village_occupation_id_and_returns_name(): void
+    {
+        $village = Village::factory()->create();
+        $occupation = Occupation::factory()->create(['village_id' => $village->id, 'name' => 'Petani']);
+        $rt = Rt::factory()->create(['village_id' => $village->id]);
+
+        $this->actingAs($this->petugas($village))
+            ->postJson('/api/citizens', $this->payload([
+                'rt_id' => $rt->id,
+                'occupation_id' => $occupation->id,
+            ]))
+            ->assertCreated()
+            ->assertJsonPath('data.occupation_id', $occupation->id)
+            ->assertJsonPath('data.occupation', 'Petani');
+    }
+
+    public function test_store_rejects_occupation_from_another_village(): void
+    {
+        $village = Village::factory()->create();
+        $foreignOccupation = Occupation::factory()->create();
+        $rt = Rt::factory()->create(['village_id' => $village->id]);
+
+        $this->actingAs($this->petugas($village))
+            ->postJson('/api/citizens', $this->payload([
+                'rt_id' => $rt->id,
+                'occupation_id' => $foreignOccupation->id,
+            ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['occupation_id']);
+    }
+
+    public function test_nonactive_occupation_cannot_be_selected_but_existing_value_can_remain(): void
+    {
+        $village = Village::factory()->create();
+        $occupation = Occupation::factory()->create([
+            'village_id' => $village->id,
+            'is_active' => false,
+        ]);
+        $rt = Rt::factory()->create(['village_id' => $village->id]);
+        $user = $this->petugas($village);
+        $citizen = Citizen::factory()->create([
+            'village_id' => $village->id,
+            'rt_id' => $rt->id,
+            'occupation_id' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->patchJson("/api/citizens/{$citizen->id}", ['occupation_id' => $occupation->id])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['occupation_id']);
+
+        $citizen->update(['occupation_id' => $occupation->id]);
+        $this->actingAs($user)
+            ->patchJson("/api/citizens/{$citizen->id}", ['occupation_id' => $occupation->id])
+            ->assertOk()
+            ->assertJsonPath('data.occupation_id', $occupation->id)
+            ->assertJsonPath('data.occupation', $occupation->name);
     }
 
     public function test_store_rejects_duplicate_nik(): void

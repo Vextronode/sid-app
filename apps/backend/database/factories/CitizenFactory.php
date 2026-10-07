@@ -33,7 +33,7 @@ class CitizenFactory extends Factory
             'rt_id' => Rt::factory(),
             'hamlet_id' => fn () => Hamlet::query()->value('id') ?? Hamlet::factory()->create()->id,
             'marital_status' => fake()->randomElement(['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati']),
-            'occupation' => fake()->jobTitle(),
+            'occupation_id' => null,
             'religion' => fake()->randomElement(['islam', 'kristen', 'katolik', 'hindu', 'buddha', 'konghucu']),
             'last_education' => fake()->randomElement(LastEducation::cases()),
             'domicile_status' => fake()->randomElement(DomicileStatus::cases()),

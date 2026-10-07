@@ -148,8 +148,8 @@ class PdfService
         if ($template === 'digital' && $kades->signature_img) {
             $signatureHtml .= '<img src="'.storage_path('app/public/'.$kades->signature_img).'" style="max-height: 60px; width: auto;">';
         }
-        if ($kades->stamp_img) {
-            $signatureHtml .= '<img src="'.public_path('storage/'.$kades->stamp_img).'" style="max-height: 45px; width: auto; margin-left: 10px;">';
+        if ($letter->village->stamp_img) {
+            $signatureHtml .= '<img src="'.public_path('storage/'.$letter->village->stamp_img).'" style="max-height: 45px; width: auto; margin-left: 10px;">';
         }
 
         $logoPath = public_path('images/logo-pangandaran.png');

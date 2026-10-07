@@ -4,10 +4,10 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\ApprovalSettingController;
 use App\Http\Controllers\Api\CitizenController;
-use App\Http\Controllers\Api\CitizenSocioeconomicController;
 use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FamilyController;
+use App\Http\Controllers\Api\FamilySocioeconomicController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\KadesApprovalController;
 use App\Http\Controllers\Api\LetterCategoryController;
@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\LetterDownloadController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\OccupationController;
 use App\Http\Controllers\Api\OfficialController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PublicPageController;
@@ -127,8 +128,6 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::patch('/{citizen}', [CitizenController::class, 'update']);
             Route::delete('/{citizen}', [CitizenController::class, 'destroy']);
             Route::get('/wilayah', [CitizenController::class, 'wilayah']);
-            Route::get('/{id}/socioeconomic', [CitizenSocioeconomicController::class, 'show']);
-            Route::put('/{id}/socioeconomic', [CitizenSocioeconomicController::class, 'upsert']);
         });
 
     /*
@@ -142,9 +141,20 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::get('/', [FamilyController::class, 'index']);
             Route::post('/', [FamilyController::class, 'store']);
+            Route::get('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'show']);
+            Route::put('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'upsert']);
             Route::get('/{family}', [FamilyController::class, 'show']);
             Route::patch('/{family}', [FamilyController::class, 'update']);
             Route::delete('/{family}', [FamilyController::class, 'destroy']);
+        });
+
+    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+        ->prefix('occupations')
+        ->group(function () {
+            Route::get('/', [OccupationController::class, 'index']);
+            Route::post('/', [OccupationController::class, 'store']);
+            Route::patch('/{id}', [OccupationController::class, 'update']);
+            Route::delete('/{id}', [OccupationController::class, 'destroy']);
         });
 
     /*

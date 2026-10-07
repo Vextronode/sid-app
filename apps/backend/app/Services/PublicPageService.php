@@ -93,7 +93,7 @@ class PublicPageService
 
         $officials = $this->officialRepository
             ->allActiveByPositionsAndVillage(['kasi_pelayanan', 'kaur_tu_umum'], $village->id)
-            ->load('citizen');
+            ->load('citizen.occupation');
 
         if ($officials->isEmpty()) {
             throw new HttpException(404, 'Belum ada kontak yang tersedia saat ini.');

@@ -67,7 +67,7 @@ class LetterRepository
 
     public function loadForPdf(Letter $letter): Letter
     {
-        return $letter->load(['letterType', 'citizen', 'village']);
+        return $letter->load(['letterType', 'citizen.occupation', 'village']);
     }
 
     public function update(Letter $letter, array $data): Letter
@@ -135,6 +135,7 @@ class LetterRepository
     {
         return $letter->load([
             'citizen.user',
+            'citizen.occupation',
             'letterType',
             'approvals.approvedBy:id,name',
             'approvals.flowStep',
@@ -153,7 +154,7 @@ class LetterRepository
             ->whereIn('status', $statuses)
             ->whereHas('citizen', fn (Builder $q) => $q->where('rt_id', $rtId))
             ->with([
-                'citizen',
+                'citizen.occupation',
                 'letterType',
                 'approvals.approvedBy:id,name',
                 'approvals.flowStep',
@@ -171,7 +172,7 @@ class LetterRepository
                     ->orWhereNull('assigned_role');
             })
             ->with([
-                'citizen',
+                'citizen.occupation',
                 'letterType',
                 'approvals.approvedBy:id,name',
                 'approvals.flowStep',
@@ -324,7 +325,7 @@ class LetterRepository
                         ->where('approver_position', $approverPosition);
                 });
             })
-            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
+            ->with(['citizen.occupation', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
 
         if ($excludeSubmittedBy !== null) {
             $query->where('submitted_by', '!=', $excludeSubmittedBy);
@@ -354,7 +355,7 @@ class LetterRepository
             ->whereHas('approvals', fn (Builder $q) => $q
                 ->where('approval_level', 'rt')
                 ->where('action', 'approved'))
-            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
+            ->with(['citizen.occupation', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
     }
 
     /**
@@ -365,7 +366,7 @@ class LetterRepository
     {
         return Letter::query()
             ->whereHas('citizen', fn (Builder $q) => $q->where('rt_id', $rtId))
-            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
+            ->with(['citizen.occupation', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
     }
 
     /** Letters that passed RT approval or have a recorded RT skip, in one village. */
@@ -382,7 +383,7 @@ class LetterRepository
                         LetterFlowLogReason::RtStageSkippedForOfficialApplicant->value,
                     ));
             })
-            ->with(['citizen', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
+            ->with(['citizen.occupation', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
     }
 
     public function wasApprovedByRt(Letter $letter): bool

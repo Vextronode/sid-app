@@ -29,6 +29,7 @@ class DemoVillageSeeder extends Seeder
             ],
         );
 
+        // New village-creation flows must call OccupationService::seedDefaultsForVillage().
         for ($hamletNumber = 1; $hamletNumber <= 5; $hamletNumber++) {
             $hamletCode = sprintf('%s%02d', self::VILLAGE_CODE, $hamletNumber);
             $hamlet = Hamlet::query()->updateOrCreate(

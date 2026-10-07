@@ -43,6 +43,11 @@ class FamilyRepository
             ->find($id);
     }
 
+    public function findForVillageOrFail(string $id, string $villageId): Family
+    {
+        return Family::query()->where('village_id', $villageId)->findOrFail($id);
+    }
+
     public function findByNoKkHash(string $noKkHash): ?Family
     {
         return Family::query()->where('no_kk_hash', $noKkHash)->first();

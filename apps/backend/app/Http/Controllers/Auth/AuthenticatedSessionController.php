@@ -20,7 +20,7 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
-        $user = $request->user()->load(['citizen', 'official']);
+        $user = $request->user()->load(['citizen.occupation', 'official.citizen.occupation']);
 
         return response()->json([
             'message' => 'Login berhasil',

@@ -21,7 +21,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui.',
-            'user' => new UserResource($user->load(['citizen', 'official'])),
+            'user' => new UserResource($user->load(['citizen.occupation', 'official.citizen.occupation'])),
         ]);
     }
 
@@ -31,7 +31,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'message' => 'Kata sandi berhasil diperbarui.',
-            'user' => new UserResource($user->load(['citizen', 'official'])),
+            'user' => new UserResource($user->load(['citizen.occupation', 'official.citizen.occupation'])),
         ]);
     }
 }

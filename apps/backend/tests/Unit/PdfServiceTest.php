@@ -161,4 +161,65 @@ class PdfServiceTest extends TestCase
 
         $this->service->download($letter, User::factory()->create(['role' => 'petugas_desa']));
     }
+
+    public function test_pdf_uses_village_stamp_and_ignores_official_stamp(): void
+    {
+        $village = Village::factory()->create(['stamp_img' => 'stamps/village.png']);
+        $kadesCitizen = Citizen::factory()->create(['village_id' => $village->id]);
+        Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'citizen_id' => $kadesCitizen->id,
+            'stamp_img' => 'stamps/official.png',
+            'is_active' => true,
+            'ended_at' => null,
+        ]);
+        $letterType = LetterType::factory()->create(['template' => '{{ signature_img }}']);
+        $letter = Letter::factory()->create([
+            'status' => 'approved',
+            'village_id' => $village->id,
+            'letter_type_id' => $letterType->id,
+        ]);
+        $pdf = Mockery::mock(DomPdf::class);
+        $pdf->shouldReceive('download')->once()->andReturn(new LaravelResponse);
+        Pdf::shouldReceive('loadView')
+            ->once()
+            ->with('pdf.templates.wet', Mockery::on(function (array $data): bool {
+                return str_contains($data['template'], public_path('storage/stamps/village.png'))
+                    && ! str_contains($data['template'], 'stamps/official.png');
+            }))
+            ->andReturn($pdf);
+
+        $this->service->download($letter, User::factory()->create(['role' => 'petugas_desa']));
+    }
+
+    public function test_pdf_omits_stamp_when_village_stamp_is_null_even_if_official_has_one(): void
+    {
+        $village = Village::factory()->create(['stamp_img' => null]);
+        $kadesCitizen = Citizen::factory()->create(['village_id' => $village->id]);
+        Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'citizen_id' => $kadesCitizen->id,
+            'stamp_img' => 'stamps/official.png',
+            'is_active' => true,
+            'ended_at' => null,
+        ]);
+        $letterType = LetterType::factory()->create(['template' => '{{ signature_img }}']);
+        $letter = Letter::factory()->create([
+            'status' => 'approved',
+            'village_id' => $village->id,
+            'letter_type_id' => $letterType->id,
+        ]);
+        $pdf = Mockery::mock(DomPdf::class);
+        $pdf->shouldReceive('download')->once()->andReturn(new LaravelResponse);
+        Pdf::shouldReceive('loadView')
+            ->once()
+            ->with('pdf.templates.wet', Mockery::on(
+                fn (array $data): bool => $data['template'] === '',
+            ))
+            ->andReturn($pdf);
+
+        $this->service->download($letter, User::factory()->create(['role' => 'petugas_desa']));
+    }
 }

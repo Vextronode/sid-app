@@ -63,7 +63,7 @@ class OfficialController extends Controller
 
         $official = $this->assignmentService->promote($request->user(), $request->validated());
 
-        return (new OfficialResource($official->load(['citizen', 'user'])))->response()->setStatusCode(201);
+        return (new OfficialResource($official->load(['citizen.occupation', 'user'])))->response()->setStatusCode(201);
     }
 
     public function demote(DemoteOfficialRequest $request, Official $official)
@@ -78,7 +78,7 @@ class OfficialController extends Controller
 
         return response()->json([
             'message' => 'Jabatan berhasil diturunkan.',
-            'data' => new OfficialResource($result['official']->load(['citizen', 'user'])),
+            'data' => new OfficialResource($result['official']->load(['citizen.occupation', 'user'])),
             'warnings' => $result['warnings'],
         ]);
     }

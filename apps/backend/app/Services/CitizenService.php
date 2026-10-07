@@ -6,6 +6,7 @@ use App\Imports\CitizensImport;
 use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\Hamlet;
+use App\Models\Occupation;
 use App\Models\Rt;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
@@ -47,7 +48,7 @@ class CitizenService
                 'data_source' => 'manual_input_desa',
             ]));
 
-            return $citizen->refresh()->load(['family', 'rt', 'rw', 'hamlet', 'village']);
+            return $citizen->refresh()->load(['family', 'rt', 'rw', 'hamlet', 'village', 'occupation']);
         });
     }
 
@@ -71,7 +72,7 @@ class CitizenService
         return DB::transaction(function () use ($citizen, $data) {
             $citizen = $this->citizenRepository->update($citizen, $data);
 
-            return $citizen->load(['family', 'rt', 'rw', 'hamlet', 'village']);
+            return $citizen->load(['family', 'rt', 'rw', 'hamlet', 'village', 'occupation']);
         });
     }
 
@@ -138,6 +139,30 @@ class CitizenService
             $id = $data[$field] ?? $citizen?->{$field};
             if ($id !== null && ! $model::query()->whereKey($id)->where('village_id', $villageId)->exists()) {
                 abort(422, 'Data wilayah atau keluarga harus berasal dari desa Anda.');
+            }
+
+            $occupationId = array_key_exists('occupation_id', $data)
+                ? $data['occupation_id']
+                : $citizen?->occupation_id;
+
+            if ($occupationId !== null) {
+                $occupation = Occupation::query()
+                    ->whereKey($occupationId)
+                    ->where('village_id', $villageId)
+                    ->first();
+
+                if (! $occupation) {
+                    throw ValidationException::withMessages([
+                        'occupation_id' => ['Pekerjaan harus berasal dari desa Anda.'],
+                    ]);
+                }
+
+                $occupationIsUnchanged = $citizen && (int) $citizen->occupation_id === (int) $occupationId;
+                if (! $occupation->is_active && ! $occupationIsUnchanged) {
+                    throw ValidationException::withMessages([
+                        'occupation_id' => ['Pekerjaan nonaktif tidak dapat dipilih.'],
+                    ]);
+                }
             }
         }
 
