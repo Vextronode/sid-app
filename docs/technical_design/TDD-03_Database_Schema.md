@@ -5,12 +5,12 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 3 dari 5 (+ Appendix) |
-| Status | v5.1 — Auth & Approval Flow |
-| Cakupan | ERD, definisi tabel & atribut (22 tabel domain inti + 2 tabel operasional), indexing strategy, strategi enkripsi |
+| Status | v5.2 — Kependudukan, Stempel & Pekerjaan |
+| Cakupan | ERD, definisi tabel & atribut (23 tabel domain inti + 2 tabel operasional), indexing strategy, strategi enkripsi |
 | Tabel Next Dev / Tahap 2 (letter_hashes, village_assets, dst) | Lihat `TDD-06_Appendix.md` |
-| Dokumen terkait | `TDD-01_Overview_Scope_Roles.md`, `TDD-02_UseCase_Descriptions.md`, OpenAPI Spec v5.0, `SID-ARCH-BE-001` |
+| Dokumen terkait | `TDD-01_Overview_Scope_Roles.md`, `TDD-02_UseCase_Descriptions.md`, OpenAPI Spec v5.2, `SID-ARCH-BE-001` |
 
-> **v5.1 — Auth & Approval Flow:** users/citizens/letters menggunakan UUID; login memakai username; jabatan memiliki `term_ends_at`; alur aktif berakhir di tahap Kades/Sekdes. Kasi/Kaur bukan approver.
+> **v5.2 — Kependudukan, Stempel & Pekerjaan:** sosio-ekonomi dicatat per KK, pekerjaan menggunakan katalog per desa, dan PDF memakai TTD Kepala Desa aktif serta stempel desa.
 
 ---
 
@@ -18,7 +18,7 @@
 
 ⚠ Diagram tersedia di file diagram terpisah (ERD v7 — Core [1/2] dan Pendukung [2/2], format PlantUML).
 
-ERD mencakup 5 entity baru sejak restrukturisasi v5.0: `letter_categories`, `approval_flows`, `flow_steps`, `families`, `citizen_socioeconomics`. Entity `letters` berubah signifikan (status generik, tambah `flow_id`/`current_step_order`/`rejected_at_step`). Entity `citizens` berubah signifikan (hapus `no_kk`, tambah 11 kolom baru termasuk 2 self-reference FK). Entity `letter_approvals` berubah ENUM `approval_level`. Relasi `officials` ke Kadus untuk approval dilepas (Kadus tetap ada sebagai jabatan struktural, tapi tidak lagi terhubung ke alur approval surat).
+ERD mencakup 23 tabel domain inti. Perubahan v5.2 memindahkan sosio-ekonomi ke tingkat keluarga, menambahkan `occupations`, menambahkan stempel desa di `villages`, dan mengganti pekerjaan bebas pada warga menjadi FK `occupation_id`.
 
 ---
 
@@ -36,6 +36,7 @@ ERD mencakup 5 entity baru sejak restrukturisasi v5.0: `letter_categories`, `app
 | head_name | VARCHAR(100) | NULL | Nama kepala desa |
 | address | VARCHAR(255) | NULL | Alamat kantor desa |
 | phone | VARCHAR(20) | NULL | Nomor telepon |
+| stamp_img | VARCHAR(255) | NULL | Path stempel desa pada private storage; satu desa memiliki satu stempel |
 | history | TEXT | NULL | Sejarah desa untuk profil publik |
 | vision | TEXT | NULL | Visi desa |
 | mission | TEXT | NULL | Misi desa |
@@ -124,7 +125,7 @@ Kolom `nik` dienkripsi dengan cast Laravel `encrypted`; `address` disimpan sebag
 | rt_id | BIGINT | FK → rts.id, NULL | |
 | hamlet_id | BIGINT | FK → hamlets.id, NULL | |
 | marital_status | ENUM | NULL | `belum_kawin` \| `kawin` \| `cerai_hidup` \| `cerai_mati` |
-| occupation | VARCHAR(100) | NULL | |
+| occupation_id | BIGINT | FK → occupations.id, NULL, ON DELETE RESTRICT | Pekerjaan baku desa; NULL = belum diisi. Kesamaan desa divalidasi di aplikasi, bukan FK |
 | religion | ENUM | NULL | `islam` \| `kristen` \| `katolik` \| `hindu` \| `buddha` \| `konghucu` |
 | last_education | ENUM | NULL | `tidak_sekolah` \| `sd` \| `smp` \| `sma` \| `diploma` \| `s1` \| `s2` \| `s3` |
 | domicile_status | ENUM | NOT NULL, DEFAULT 'menetap' | `menetap` \| `merantau_dalam_negeri` \| `merantau_luar_negeri` \| `tki`. Murni informatif, tidak mempengaruhi hak akses |
@@ -166,23 +167,40 @@ Sengaja dibuat tipis — hanya berisi data yang sama untuk semua anggota keluarg
 
 `head_of_family_id` pada prinsipnya bisa diturunkan dari `citizens.family_role = 'kepala_keluarga'`. Jika dipakai untuk mempercepat query, aplikasi wajib menjaga konsistensi manual antara kedua sumber data ini.
 
-**Tabel: citizen_socioeconomics**
+**Tabel: occupations**
 
-Relasi 1:1 dengan `citizens` (per individu, bukan per keluarga). Dipisah tabel karena sering kosong (belum semua warga disurvei), diinput petugas berbeda-beda, dan butuh jejak waktu survei.
+Daftar pekerjaan baku per desa; bukan ENUM database agar dapat dikelola Petugas Desa. Nama unik tanpa membedakan huruf besar/kecil dalam satu desa, dijamin oleh unique index `LOWER(name)` dan validasi aplikasi.
 
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
-| citizen_id | UUID | FK → citizens.id, UNIQUE NOT NULL | Relasi 1:1 |
-| income_range | ENUM | NULL | `<1jt` \| `1-3jt` \| `3-5jt` \| `5-10jt` \| `>10jt` |
+| village_id | UUID | FK → villages.id, NOT NULL | Desa pemilik referensi pekerjaan |
+| name | VARCHAR(100) | NOT NULL | Unik case-insensitive dalam desa |
+| is_active | BOOLEAN | DEFAULT true | Pekerjaan nonaktif tidak tersedia untuk pemilihan baru |
+| sort_order | UNSIGNED INT | DEFAULT 0 | Urutan tampilan |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+`citizens.occupation_id` mengacu ke pekerjaan yang sama desanya dengan warga; aturan kesamaan desa dijaga di aplikasi. FK `RESTRICT` melindungi data yang terpakai. Penghapusan melalui aplikasi menghasilkan HTTP 409 bila masih dipakai; saran respons adalah menonaktifkan pekerjaan. Seeder menyediakan `Tidak bekerja`, `Pelajar/Mahasiswa`, dan `Ibu rumah tangga` untuk tiap desa.
+
+**Tabel: family_socioeconomics**
+
+Relasi 1:1 opsional dengan `families`; tidak ada data penghasilan individu.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | BIGINT | PK, AUTO INCREMENT | Primary key |
+| family_id | UUID | FK → families.id, UNIQUE NOT NULL, ON DELETE CASCADE | Satu baris survei per KK |
+| household_income_range | ENUM | NULL | `<1jt` \| `1-3jt` \| `3-5jt` \| `5-10jt` \| `>10jt`; pendapatan rumah tangga |
 | house_ownership_status | ENUM | NULL | `milik_sendiri` \| `sewa` \| `menumpang` \| `dinas` |
 | water_source | ENUM | NULL | `pdam` \| `sumur` \| `sungai` \| `lainnya` |
 | electricity_source | ENUM | NULL | `pln` \| `non_pln` \| `tidak_ada` |
 | dependents_count | INT | NULL | Jumlah tanggungan |
 | productive_assets | JSON | NULL | Aset produktif |
 | surveyed_at | TIMESTAMP | NULL | |
-| surveyed_by | UUID | FK → users.id, NULL | Petugas yang melakukan survei |
+| surveyed_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | Petugas yang melakukan survei |
 | created_at, updated_at | TIMESTAMP | NULL | |
+
+Baris belum ada sampai KK disurvei; survei ulang menimpa data sebelumnya. Tidak ada kolom `village_id` karena scope mengikuti `families.village_id`. Warga tanpa KK tidak memiliki record sosio-ekonomi melalui model ini. Definisi periode penghasilan belum ditetapkan. Data tidak dienkripsi; keputusan enkripsi belum final.
 
 **Tabel: officials**
 
@@ -198,8 +216,8 @@ Rekam jejak jabatan struktural desa per periode. Digunakan untuk resolusi wilaya
 | rt_id | BIGINT | FK → rts.id, NULL | Diisi untuk jabatan RT |
 | rw_id | BIGINT | FK → rws.id, NULL | Diisi untuk jabatan RW |
 | hamlet_id | BIGINT | FK → hamlets.id, NULL | Diisi untuk jabatan Kadus |
-| signature_img | VARCHAR(255) | NULL | Path TTD (untuk generate PDF surat) |
-| stamp_img | VARCHAR(255) | NULL | Path stempel desa |
+| signature_img | VARCHAR(255) | NULL | Path TTD Kepala Desa pada private storage; upload/preview terproteksi |
+| stamp_img | VARCHAR(255) | NULL | Kolom legacy; tidak dipakai PDF. Stempel PDF berasal dari `villages.stamp_img`; nasib kolom belum diputuskan |
 | photo_img | VARCHAR(255) | NULL | Path foto (halaman publik) |
 | phone_wa | VARCHAR(255) | NULL | Untuk fitur Hubungi Kami |
 | started_at | DATE | NOT NULL | |
@@ -512,7 +530,7 @@ Tidak ada kolom `is_published` — semua peraturan yang disimpan langsung tampil
 
 **Tabel operasional: activity_log**
 
-Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 22 tabel domain inti. Migration aplikasi menambahkan `event` dan `batch_uuid` ke skema package.
+Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 23 tabel domain inti. Migration aplikasi menambahkan `event` dan `batch_uuid` ke skema package.
 
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|
@@ -528,24 +546,25 @@ Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 22 tabel dom
 
 ## 3. Ringkasan Tabel
 
-Ada 22 tabel domain inti MVP. `letter_number_counters` dan `activity_log` adalah dua tabel operasional tambahan, sehingga terdapat 24 tabel aplikasi non-framework.
+Ada 23 tabel domain inti MVP. `letter_number_counters` dan `activity_log` adalah dua tabel operasional tambahan, sehingga terdapat 25 tabel aplikasi non-framework.
 
 ```
 Wilayah (4): villages, hamlets, rws, rts
 Pengguna & Jabatan Struktural (3): users, citizens, officials
-Data Keluarga & Sosio-Ekonomi (2): families, citizen_socioeconomics
+Data Keluarga & Sosio-Ekonomi (2): families, family_socioeconomics
 Organisasi Non-Struktural (2): village_org_positions, village_org_members
 Klasifikasi & Alur Surat (3): letter_categories, approval_flows, flow_steps
 Surat (4): letter_types, letters, letter_approvals, letter_status_logs
 Konfigurasi (1): approval_settings
 Konten & Komunikasi (3): notifications, news, village_regulations
+Referensi (1): occupations
 
-Total domain inti: 4 + 3 + 2 + 2 + 3 + 4 + 1 + 3 = 22 tabel
+Total domain inti: 4 + 3 + 2 + 2 + 3 + 4 + 1 + 3 + 1 = 23 tabel
 Operasional: `letter_number_counters`, `activity_log` (2 tabel)
-Total aplikasi non-framework: 24 tabel
+Total aplikasi non-framework: 25 tabel
 ```
 
-Tabel yang di-hold (bukan bagian dari 22 tabel MVP — detail lengkap di `TDD-06_Appendix.md`): `village_assets`, `village_finances`, `letter_hashes`, `letter_type_fields`, `letter_field_values`, `citizen_aid_eligibility`, `citizen_aid_history`, `aid_programs`.
+Tabel yang di-hold (bukan bagian dari 23 tabel MVP — detail lengkap di `TDD-06_Appendix.md`): `village_assets`, `village_finances`, `letter_hashes`, `letter_type_fields`, `letter_field_values`, `citizen_aid_eligibility`, `citizen_aid_history`, `aid_programs`.
 
 ---
 
@@ -638,16 +657,24 @@ Strategi indexing dirancang berdasarkan pola query yang paling sering digunakan.
 | flow_steps | (auto unique) | (flow_id, step_order) | ✅ Aktif (`->unique()`) | Composite UNIQUE — query step aktif, **paling kritis**, dipanggil di setiap pengecekan gate |
 | flow_steps | idx_flowsteps_position | approver_position | ✅ Aktif | Resolve semua flow yang punya step approver tertentu |
 
-**Index Tabel `families` & `citizen_socioeconomics`**
+**Index Tabel `families` & `family_socioeconomics`**
 
 | Tabel | Index | Kolom | Status | Alasan |
 |---|---|---|---|---|
 | families | idx_families_nokk_hash | no_kk_hash | ✅ Aktif (auto dari `->unique()`) | B-Tree UNIQUE — pencarian KK berdasarkan No KK |
 | families | idx_families_village | village_id | 📋 Planned | Filter KK per desa |
 | families | idx_families_rt | rt_id | 📋 Planned | Filter KK per RT |
-| citizen_socioeconomics | idx_socioeco_citizen | citizen_id | ✅ Aktif (auto dari `->unique()`) | B-Tree UNIQUE — relasi 1:1 dengan citizens |
+| family_socioeconomics | (auto unique) | family_id | ✅ Aktif (auto dari `->unique()`) | B-Tree UNIQUE — relasi 1:1 dengan families |
+
+**Index Tabel `occupations`**
+
+| Tabel | Index | Kolom | Status | Alasan |
+|---|---|---|---|---|
+| occupations | occupations_village_name_ci_unique | (village_id, LOWER(name)) | ✅ Aktif | Unik case-insensitive; menjaga race antarrekuest di PostgreSQL dan SQLite |
 
 ---
+
+Data `family_socioeconomics` belum menggunakan cast enkripsi; keputusan enkripsi sosio-ekonomi belum final.
 
 ## 5. Strategi Enkripsi Field
 

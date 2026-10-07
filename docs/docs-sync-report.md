@@ -1,5 +1,41 @@
 # Laporan Sinkronisasi Dokumentasi
 
+## Batch 17 — Sosio-Ekonomi per KK, Stempel Desa, Pekerjaan Baku (2026-10-06)
+
+Dokumentasi diselaraskan terhadap migration, route, request, resource, dan service backend aktif. Penambahan pada batch ini mencakup upload/preview privat stempel desa dan tanda tangan Kepala Desa aktif. Tidak ada file backend/frontend yang diubah dan tidak ada commit.
+
+| ID | Dokumen | Sebelum | Sesudah |
+|---|---|---|---|
+| B17-01 | OpenAPI | Sosio-ekonomi per warga, tanpa katalog pekerjaan/upload gambar | Sosio-ekonomi per KK, CRUD pekerjaan, upload dan preview terproteksi stempel serta TTD |
+| B17-02 | TDD-01..06 | Rujukan skema/flow v5.1 dan pekerjaan bebas | Status v5.2, level KK dan occupation_id, sumber PDF terkini, keputusan terbuka diperbarui |
+| B17-03 | ERD dan class diagram | CitizenSocioeconomic, occupation teks, 22 tabel | FamilySocioeconomic, Occupation, village stamp, 23 tabel |
+| B17-04 | Use-case, activity, component, deployment | TTD/stempel dianggap milik pejabat; tidak ada alur upload privat | TTD Kades aktif + stempel desa, upload/preview privat, katalog pekerjaan dan survei KK |
+| B17-05 | Arsitektur backend/sistem | Sosio-ekonomi warga dan stempel officials | Sosio-ekonomi keluarga, pekerjaan baku per desa, file gambar privat |
+| B17-06 | Changelog FE | Tidak ditemukan pada working tree | Ditambahkan changelog kontrak backend yang relevan untuk integrasi FE |
+
+### Verifikasi terhadap source backend
+
+- Migration aktif: `family_socioeconomics.family_id` adalah UUID FK UNIQUE ke `families` (cascade delete), dengan `household_income_range` enum `<1jt`, `1-3jt`, `3-5jt`, `5-10jt`, `>10jt`; migration `occupations` menyimpan `village_id`, `name` VARCHAR(100), `is_active`, `sort_order` serta unique index `(village_id, LOWER(name))`. `citizens.occupation_id` FK ke `occupations.id` menggunakan RESTRICT.
+- Route aktif: `GET/PUT /families/{id}/socioeconomic`, `GET/POST /occupations`, `PATCH/DELETE /occupations/{id}`, `POST/GET /villages/profile/stamp`, dan `POST/GET /officials/{official}/signature`.
+- Upload memakai multipart field `stamp` atau `signature`, validasi image PNG/JPG/JPEG/WebP dan `max:5120` KB. File masuk private storage; preview memerlukan autentikasi Petugas Desa dengan scope desa, dan tanda tangan dibatasi pada Kepala Desa aktif yang belum mengakhiri masa jabatan.
+- Resource desa mengeluarkan `has_stamp_img`, bukan path `stamp_img`. Resource pejabat mengeluarkan `has_signature_img`; kolom legacy `stamp_img` pejabat tetap ikut ada tetapi tidak dipakai PDF. Stempel PDF berasal dari `villages.stamp_img`, TTD dari `officials.signature_img`.
+- Kode akhir berbeda dari beberapa asumsi rencana awal: profil desa publik tidak mengekspos path stempel, melainkan indikator `has_stamp_img`; endpoint preview tidak publik. Route upload/preview TTD bersifat terpisah dari rotasi pejabat. Kolom legacy `officials.stamp_img` tetap dipertahankan.
+
+### Keputusan belum final dan tidak diverifikasi
+
+- Belum diputuskan: nasib `officials.stamp_img`; definisi periode penghasilan rumah tangga; penanganan kebutuhan sosio-ekonomi untuk warga tanpa KK; enkripsi `family_socioeconomics`; isi katalog pekerjaan selain tiga seed awal dan pemetaan nama pekerjaan pada import.
+- Tidak diverifikasi terhadap source backend: kebutuhan FE selain Petugas Desa mengakses daftar pekerjaan; kebutuhan mempublikasikan file gambar atau menyediakan URL publik; rencana penghapusan kolom legacy `officials.stamp_img`.
+
+### Hasil validasi dan sapu silang
+
+- `npm exec --yes --package=@redocly/cli redocly -- lint docs/api_spec/openapi.yaml` — **belum hijau**: 14 error dan 43 warning pada operasi lama yang tidak disentuh (security di file autentikasi/infrastruktur, parameter route organisasi desa, dan warning response); file path/schema baru batch ini tidak melaporkan error setelah koreksi YAML.
+- Pemeriksaan PlantUML belum dijalankan karena CLI/JAR tidak tersedia lokal; unduhan validator tidak selesai.
+- Pencarian `citizen_socioeconomics`, `CitizenSocioeconomic`, route citizen socioeconomic lama, dan token kolom `income_range` tidak menemukan residu pada kontrak API aktif atau TDD-01 s.d. TDD-05. Istilah tabel lama tetap sebagai sejarah pada TDD-06, catatan revisi ERD, laporan sinkronisasi, dan keterangan route lama yang dihapus pada changelog FE.
+- Hitungan 22 tabel hanya tersisa pada catatan historis v5.0 di OpenAPI dan laporan batch terdahulu; hitungan state aktif di TDD-03, ERD, komponen, dan deployment adalah 23 tabel domain / 25 tabel aplikasi non-framework.
+- Line ending: `openapi.yaml` ditemukan memakai LF sebelum dan sesudah patch, sehingga tidak dinormalisasi; `docs-sync-report.md` tetap CRLF.
+
+---
+
 ## Batch 16 — Audit Migration, Index, & Class Diagram (2026-10-06)
 
 Putaran ini menyelesaikan audit **kolom demi kolom** seluruh migration vs TDD-03, menambahkan kolom **Status** ke seluruh tabel indexing strategy, dan melengkapi class diagram dengan semua kelas yang sebelumnya missing. Source code menjadi acuan; tidak ada file `apps/` yang diubah.

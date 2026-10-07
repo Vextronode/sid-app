@@ -2,16 +2,16 @@
 ## SISTEM INFORMASI DESA - DESA CIBENDA
 ### Overview, Ruang Lingkup, dan Pengguna Sistem
 
-> **v5.1 — Auth & Approval Flow:** catatan revisi menyesuaikan role, alur dua tahap, submit oleh pejabat, serta akses Kasi/Kaur sebagai pembaca surat selesai.
+> **v5.2 — Kependudukan, Stempel & Pekerjaan:** sosio-ekonomi per KK, pekerjaan baku per desa, serta upload/preview privat stempel desa dan TTD pejabat.
 
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 1 dari 5 (+ Appendix) |
-| Status | v5.0 — mencerminkan state final saat ini, bukan riwayat perubahan |
+| Status | v5.2 — mencerminkan state final saat ini, bukan riwayat perubahan |
 | Cakupan | Latar belakang & tujuan sistem, ruang lingkup MVP, pengguna & role |
 | Riwayat versi lengkap (v1–v4.2) | Lihat `TDD-06_Appendix.md` |
 | Fitur Next Dev / Tahap 2 (detail lengkap) | Lihat `TDD-06_Appendix.md` |
-| Dokumen terkait | `TDD-02_UseCase_Descriptions.md`, `TDD-03_Database_Schema.md`, `TDD-04_Security_NFR_Compliance.md`, `TDD-05_Roadmap_Risks_OpenQuestions.md`, OpenAPI Spec v5.0 (`openapi.yaml`), `SID-ARCH-SYS-001`, `SID-ARCH-BE-001`, `SID-ARCH-FE-001` |
+| Dokumen terkait | `TDD-02_UseCase_Descriptions.md`, `TDD-03_Database_Schema.md`, `TDD-04_Security_NFR_Compliance.md`, `TDD-05_Roadmap_Risks_OpenQuestions.md`, OpenAPI Spec v5.2 (`openapi.yaml`), `SID-ARCH-SYS-001`, `SID-ARCH-BE-001`, `SID-ARCH-FE-001` |
 
 > **Catatan status dokumen:** TDD ini pernah mengalami periode di mana skema sudah dipatch ke v5.0 tapi sebagian catatan status/technical debt belum ikut diperbarui (contoh: ENUM `approval_settings.approval_level`, lihat `TDD-03_Database_Schema.md`). Bagian 1–5 dokumen ini sudah dikoreksi untuk selaras dengan kode/migration yang berjalan saat ini. Jika menemukan dokumen lain (OpenAPI spec, dokumen arsitektur) yang tampak berbeda, anggap kode/migration sebagai sumber kebenaran tertinggi, baru OpenAPI spec, baru dokumen ini.
 
@@ -65,7 +65,7 @@ Fokus utama MVP adalah fitur inti yang membentuk alur kerja administrasi surat.
     - Kelola Info Desa dan Berita Desa
     - Kelola Struktur Wilayah (Dusun/RW/RT)
     - Kelola Setting Deadline Approval per tahap
-    - Kelola Data Organisasi Desa (BPD, BUMDES, LPM, Karang Taruna, PKK)
+    - Kelola Data Organisasi Desa (BPD, BUMDES, LPM, Karang Taruna, PKK), daftar pekerjaan desa, dan survei sosio-ekonomi per KK
   - RW: daftar surat yang lewat FYI (read-only — RW bukan approver)
   - Kepala Desa / Sekretaris Desa: daftar surat di step aktif `kepala_desa` dengan status `pending`/`in_progress`; keduanya dapat memutuskan dengan first-action-wins
   - Kasi Pelayanan / Kaur TU & Umum: daftar surat yang sudah `approved` sesuai `assigned_role`; hanya baca dan unduh, bukan approver
@@ -98,7 +98,7 @@ Sistem mendefinisikan sembilan role dengan hak akses yang berbeda. Seluruh role 
 | Role | Akses & Kewenangan | Status |
 |---|---|---|
 | Petugas Desa (Operator) | 1. Login dengan username<br>2. CRUD data warga (citizens) manual + excel<br>3. Promote/demote/rotate jabatan melalui manajemen officials<br>4. Reset password sementara untuk non-Petugas Desa<br>5. Kelola profil desa & berita<br>6. Kelola struktur wilayah, setting deadline, peraturan, dan organisasi desa<br>7. Dapat lebih dari satu akun aktif<br>8. Full visibility seluruh surat di desanya; dashboard juga menampilkan jabatan lewat masa dan segera berakhir | ✅ MVP |
-| Kepala Desa | 1. Login<br>2. Approver aktif pada tahap final; resolve berbasis posisi dalam desanya<br>3. Dashboard surat menunggu keputusan, kecuali surat yang diajukan sendiri<br>4. Tanda tangan dan stempel PDF tetap milik Kepala Desa aktif | ✅ MVP |
+| Kepala Desa | 1. Login<br>2. Approver aktif pada tahap final; resolve berbasis posisi dalam desanya<br>3. Dashboard surat menunggu keputusan, kecuali surat yang diajukan sendiri<br>4. TTD PDF berasal dari Kepala Desa aktif; stempel PDF dari profil desa | ✅ MVP |
 | Sekretaris Desa | 1. Login<br>2. Dapat memutuskan tahap final yang sama dengan Kepala Desa (first-action-wins)<br>3. Dashboard seperti Kades, tanpa surat miliknya sendiri<br>4. `approval_level` mencatat aktor sebenarnya (`sekdes`) | ✅ MVP |
 | Kasi Pelayanan | 1. Login<br>2. Menerima notifikasi setelah surat final disetujui<br>3. Melihat dan mengunduh surat selesai sesuai `assigned_role`; bukan approver | ✅ MVP |
 | Kaur TU dan Umum | Sama seperti Kasi: notifikasi, daftar surat selesai sesuai `assigned_role`, dan unduh; bukan approver | ✅ MVP |
@@ -147,7 +147,7 @@ Sistem juga dilengkapi fitur keamanan data untuk melindungi informasi pribadi wa
 | 6a | Sistem (jika Kades/Sekdes reject) | Catat keputusan + kirim notif ke Warga. | Proses selesai (terminal), `rejected_at_step` = step Kades/Sekdes |
 | 6b | Sistem (jika final approve) | Menetapkan `letter_number`, `expires_at` bila masa berlaku diatur, dan `processed_at`. Mengirim notifikasi final ke pemohon serta notifikasi siap cetak ke Kasi/Kaur sesuai `assigned_role`. | Status `approved`; nomor surat dibuat satu kali |
 | 7 | Kasi/Kaur | Membuka daftar surat selesai yang sesuai role, lalu mengunduh/mencetak bila diperlukan. | Tidak ada aksi approve/reject |
-| 8 | Pemohon | Menerima notifikasi hasil akhir dan mengunduh PDF selama surat belum kedaluwarsa. | PDF memakai TTD/stempel Kepala Desa aktif |
+| 8 | Pemohon | Menerima notifikasi hasil akhir dan mengunduh PDF selama surat belum kedaluwarsa. | PDF memakai TTD Kepala Desa aktif dan stempel desa |
 
 > Alur ini menggunakan status generik (`pending`/`in_progress`/`approved`/`rejected`) dan pointer `current_step_order`. Tahap non-final dilewati hanya jika pejabat tersedia tetapi semua pejabat eligible merupakan pemohon; jabatan kosong tidak dilewati. Tahap final tidak pernah dilewati dan tanpa approver eligible permohonan gagal. Flow default adalah RT → Kades/Sekdes final; Kasi/Kaur bukan tahap flow.
 

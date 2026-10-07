@@ -41,7 +41,7 @@ skinparam arrow {
   FontSize 11
 }
 
-title Diagram Arsitektur Teknis - SID Desa Cibenda (v5.0)
+title Diagram Arsitektur Teknis - SID Desa Cibenda (v5.2)
 
 rectangle "CLIENT LAYER" #EBF3FB {
   [Browser\n(Warga / RT / RW / Kasi / Kaur /\nPetugas Desa / Kepala Desa /\nSekretaris Desa)] as CLIENT
@@ -135,7 +135,7 @@ end note
 
 rectangle "DATA LAYER" #FDE8D8 {
   database "PostgreSQL (versi tidak diverifikasi terhadap source backend)" as DB {
-    [letters (status generik,\nflow_id, current_step_order,\nrejected_at_step)\nletter_approvals, letter_status_logs\nletter_types, letter_categories*\napproval_flows*, flow_steps*\nusers, citizens (+ 11 kolom baru),\nfamilies*, citizen_socioeconomics*\nofficials, hamlets, rws, rts\napproval_settings\nvillage_org_positions/members\nnotifications, news\nvillage_regulations, villages] as TABLES
+    [letters (status generik,\nflow_id, current_step_order,\nrejected_at_step)\nletter_approvals, letter_status_logs\nletter_types, letter_categories*\napproval_flows*, flow_steps*\n    users, citizens (+ occupation_id),\nfamilies*, family_socioeconomics*, occupations*\nofficials, hamlets, rws, rts\napproval_settings\nvillage_org_positions/members\nnotifications, news\nvillage_regulations, villages] as TABLES
   }
   [Eloquent ORM\n+ Migrations] as ORM
 }
@@ -143,7 +143,7 @@ rectangle "DATA LAYER" #FDE8D8 {
 note bottom of TABLES
   * Tabel/kolom BARU v5.0: letter_categories,
   approval_flows, flow_steps, families,
-  citizen_socioeconomics, + kolom baru di
+  family_socioeconomics, occupations, + kolom baru di
   citizens (family_id, father_id, mother_id,
   residency_type, dst - lihat TDD 5.4.2).
   Kolom no_kk DIHAPUS dari citizens (pindah
@@ -185,7 +185,7 @@ ARES --> AXIOS
 TEL ..> DB : monitor (dev only)
 
 CTRL --> PDFGEN : trigger saat\nklik Download
-PDFGEN --> REPO : ambil data surat\n+ TTD/stempel (officials)
+PDFGEN --> REPO : ambil data surat\n+ TTD (officials) / stempel (villages)
 PDFGEN --> CTRL : return binary PDF\n(tidak disimpan)
 
 CTRL --> EXCEL : trigger saat\nImport Data Warga
@@ -249,7 +249,7 @@ end note
 '      menggantikan Event granular per posisi (SID-ARCH-BE-001 S7).
 '   5. Data Layer: daftar tabel di dalam box PostgreSQL diperbarui -
 '      tambah letter_categories, approval_flows, flow_steps, families,
-'      citizen_socioeconomics; kolom citizens diberi catatan perubahan
+'      family_socioeconomics dan occupations; kolom citizens diberi catatan perubahan
 '      (+11 kolom baru, no_kk dihapus); letters diberi catatan kolom baru
 '      (flow_id, current_step_order, rejected_at_step).
 '   6. Note di bawah SVC (OfficialService dua pola resolve) DIPERBARUI

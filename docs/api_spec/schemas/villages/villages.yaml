@@ -35,6 +35,10 @@ Village:
       type: string
       nullable: true
       example: "1. Meningkatkan pelayanan publik\n2. Mengembangkan ekonomi desa"
+    has_stamp_img:
+      type: boolean
+      example: true
+      description: Indikator ketersediaan stempel private; preview melalui endpoint terproteksi.
 
 VillageUpdateRequest:
   type: object

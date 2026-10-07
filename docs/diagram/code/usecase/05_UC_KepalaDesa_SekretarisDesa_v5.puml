@@ -107,11 +107,11 @@ note "Tahap non-final milik pemohon dapat dilewati\nhanya jika ada approver akti
 @enduml
 
 '==================================================================================
-' SINKRONISASI v5.1 — Auth & Approval Flow:
+' SINKRONISASI v5.2 — Auth, Approval, dan sumber aset PDF:
 ' - Step final Kades/Sekdes (bukan Kasi/Kaur); Kasi/Kaur hanya menerima notifikasi
 '   dan mendapat akses baca/unduh sesuai assigned_role setelah surat approved.
 ' - Kades/Sekdes tidak melihat surat milik sendiri pada daftar/dashboard.
-' - Masa berlaku unduhan berlaku bagi pemohon semua role; TTD/stempel tetap Kades aktif.
+' - Masa berlaku unduhan berlaku bagi pemohon semua role; TTD berasal dari Kades aktif dan stempel dari desa.
 '==================================================================================
 ' Riwayat revisi v5.0 tidak lagi disertakan: ringkasan sinkronisasi aktif
-' v5.1 berada pada diagram di atas.
+' v5.2 berada pada diagram di atas.
