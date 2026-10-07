@@ -78,14 +78,10 @@ function getStepState(surat) {
   const status = surat?.status
   const currentStepOrder = Number(surat?.current_step_order) || 1
 
-  const rejectedAtStep = Number(surat?.rejected_at_step) || null
-
-  // ==========================================
-  // REJECTED
-  // ==========================================
+  const rejectedAtStep = Number(surat?.rejected_at_step)
 
   if (status === SURAT_STATUS.REJECTED) {
-    const rejectedStep = rejectedAtStep ?? currentStepOrder
+    const rejectedStep = (rejectedAtStep || currentStepOrder) + 1
 
     return {
       currentStep: rejectedStep,
@@ -94,24 +90,17 @@ function getStepState(surat) {
     }
   }
 
-  // ==========================================
-  // APPROVED
-  // ==========================================
-
   if (status === SURAT_STATUS.APPROVED) {
     return {
-      currentStep: 4,
+      currentStep: STEPS.length,
       rejectedStep: null,
       completed: true,
     }
   }
 
-  // ==========================================
-  // IN PROGRESS / PENDING
-  // ==========================================
-
   return {
-    currentStep: Math.min(Math.max(currentStepOrder, 1), 4),
+    // Backend step 1 is RT and step 2 is final approval; Submit is UI step 1.
+    currentStep: Math.min(Math.max(currentStepOrder + 1, 2), STEPS.length - 1),
     rejectedStep: null,
     completed: false,
   }
