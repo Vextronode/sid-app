@@ -13,6 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
+    private const MAX_ATTEMPTS = 5;
+
+    private const LOCKOUT_SECONDS = 3600;
+
     protected function prepareForValidation(): void
     {
         $username = $this->input('username');
@@ -51,7 +55,7 @@ class LoginRequest extends FormRequest
                 'password' => $this->password,
             ])
         ) {
-            RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey(), self::LOCKOUT_SECONDS);
 
             Log::warning('Failed login attempt', [
                 'username' => $this->input('username'),
@@ -77,7 +81,7 @@ class LoginRequest extends FormRequest
 
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), self::MAX_ATTEMPTS)) {
             return;
         }
 
