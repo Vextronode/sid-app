@@ -22,8 +22,14 @@ export function AdminLayout({ children, menuItems }) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
-  // Settings digunakan untuk RT, RW, dan Kadus
-  const showSettingsMenu = ['rt', 'rw', 'kadus', 'kepala_desa'].includes(user?.role)
+  // Settings digunakan untuk role admin.
+  const showSettingsMenu = [
+    'rt',
+    'rw',
+    'kadus',
+    'kepala_desa',
+    'sekretaris_desa',
+  ].includes(user?.role)
 
   const handleLogout = () => {
     setSettingsOpen(false)

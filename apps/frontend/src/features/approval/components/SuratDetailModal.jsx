@@ -5,7 +5,6 @@ import ApprovalStepRenderer from '@/features/approval/components/ApprovalStepRen
 import { getLatestApprovalForLevel } from '@/features/approval/constants/statusFlow'
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { StatusBadge } from '@/components/ui/StatusBadge'
-import { SURAT_STATUS } from '@/constants/suratStatus'
 
 const FIELD_MAP = {
   noSurat: (s) => s?.letter_number ?? '-',
@@ -29,11 +28,22 @@ function getApproverName(approval) {
   return (
     approval?.approved_by_user?.name ??
     approval?.approvedBy?.name ??
+    approval?.approver_name ??
     approval?.actor_name ??
     approval?.decided_by ??
-    approval?.approved_by ??
     '-'
   )
+}
+
+function getApproverRole(approval) {
+  const roleLabels = {
+    kepala_desa: 'Kepala Desa',
+    sekdes: 'Sekretaris Desa',
+    sekretaris_desa: 'Sekretaris Desa',
+    rt: 'RT',
+  }
+
+  return roleLabels[approval?.approval_level] ?? null
 }
 
 function getApprovalNotes(approval, surat) {
@@ -46,6 +56,7 @@ function DecisionBox({ approval, title, surat }) {
   }
 
   const isRejected = approval.action === 'rejected'
+  const approverRole = getApproverRole(approval)
 
   return (
     <div className={`sid-decision-box ${isRejected ? 'rejected' : 'approved'}`}>
@@ -59,6 +70,7 @@ function DecisionBox({ approval, title, surat }) {
 
       <div className="sid-decision-meta">
         diputuskan oleh <strong>{getApproverName(approval)}</strong>
+        {approverRole && <> ({approverRole})</>}
       </div>
 
       {isRejected && <p className="sid-decision-comment-label">Komentar Penolakan</p>}
@@ -78,11 +90,12 @@ export default function SuratDetailModal({
   subtitle,
   decisionLevels = [],
   showStatus = false,
-  approverPosition = null,
   currentUserRole = null,
   apiRole = null,
   onApprove,
   onReject,
+  onConflict,
+  closeOnDecision = true,
   showPreview = true,
   previewWhen = null,
 }) {
@@ -131,10 +144,6 @@ export default function SuratDetailModal({
         }))
         .filter((decision) => decision.approval)
     : []
-
-  const canApprove =
-    approverPosition &&
-    (surat?.status === SURAT_STATUS.PENDING || surat?.status === SURAT_STATUS.IN_PROGRESS)
 
   const canPreview = showPreview && surat && (!previewWhen || surat.status === previewWhen)
 
@@ -198,18 +207,20 @@ export default function SuratDetailModal({
               />
             ))}
 
-            {canApprove && (
+            {apiRole && surat && (
               <div className="mb-4">
                 <ApprovalStepRenderer
-                  approverPosition={approverPosition}
-                  isFinal={false}
+                  currentStep={surat.current_step}
+                  approvals={surat.approvals}
                   letterStatus={surat.status}
                   currentUserRole={currentUserRole}
                   apiRole={apiRole}
                   letterId={surat.id}
                   onApprove={handleApprove}
                   onReject={handleReject}
+                  onConflict={onConflict}
                   onClose={onClose}
+                  closeOnDecision={closeOnDecision}
                 />
               </div>
             )}

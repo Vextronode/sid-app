@@ -2,38 +2,56 @@ import { useState } from 'react'
 import { ChevronDown, X } from 'lucide-react'
 import { submitDecision } from '../api'
 
+const APPROVER_ROLES_BY_POSITION = {
+  rt: ['rt'],
+  kepala_desa: ['kepala_desa', 'sekretaris_desa'],
+}
+
+const APPROVAL_LEVELS_BY_POSITION = {
+  rt: ['rt'],
+  kepala_desa: ['kepala_desa', 'sekdes', 'sekretaris_desa'],
+}
+
 /**
- * Komponen generik untuk render aksi approval — SATU komponen untuk semua
- * @param {string} approverPosition - flow_steps.approver_position step aktif
- * @param {boolean} isFinal - flow_steps.is_final step aktif
- * @param {string} letterStatus - status surat saat ini (pending|in_progress|approved|rejected)
- * @param {string} currentUserRole - role user yang login (dari useAuth)
- * @param {string} apiRole - role untuk resolve endpoint: 'rt'|'kepala_desa'|'sekretaris_desa'|'kasi_pelayanan'|'kaur_tu_umum'
- * @param {string|number} letterId
- * @param {function} onApprove - callback setelah approve sukses, menerima response
- * @param {function} onReject - callback setelah reject sukses, menerima (notes, response)
- * @param {function} onClose - dipanggil setelah approve sukses (menutup modal, dst)
+ * Render aksi untuk pengguna yang berhak pada step aktif dan belum memiliki keputusan.
  */
 export default function ApprovalStepRenderer({
-  approverPosition,
-  isFinal,
+  currentStep,
+  approvals = [],
   letterStatus,
   currentUserRole,
   apiRole,
   letterId,
   onApprove,
   onReject,
+  onConflict,
   onClose,
+  closeOnDecision = true,
 }) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [showRejectBox, setShowRejectBox] = useState(false)
   const [alasan, setAlasan] = useState('')
 
-  const isDecidable = letterStatus === 'pending' || letterStatus === 'in_progress'
-  const canDecide = isDecidable && approverPosition === currentUserRole
+  const position = currentStep?.approver_position
+  const approverRoles = APPROVER_ROLES_BY_POSITION[position] ?? []
+  const approvalLevels = APPROVAL_LEVELS_BY_POSITION[position] ?? []
+  const hasExistingDecision = approvals.some(
+    (approval) =>
+      approvalLevels.includes(approval?.approval_level) &&
+      ['approved', 'rejected'].includes(approval?.action),
+  )
+  const isDecidable =
+    position === 'rt'
+      ? letterStatus === 'pending' || letterStatus === 'in_progress'
+      : position === 'kepala_desa' && letterStatus === 'in_progress'
+  const canDecide =
+    isDecidable &&
+    approverRoles.includes(currentUserRole) &&
+    !hasExistingDecision &&
+    Boolean(apiRole)
 
   if (!canDecide) {
-    return <ReadOnlyStepView approverPosition={approverPosition} isFinal={isFinal} />
+    return null
   }
 
   const handleApprove = async () => {
@@ -48,9 +66,12 @@ export default function ApprovalStepRenderer({
         await onApprove(response)
       }
 
-      if (onClose) onClose()
+      if (closeOnDecision && onClose) onClose()
     } catch (error) {
       console.error('APPROVE ERROR:', error.response?.data ?? error)
+      if (error.response?.status === 409 && onConflict) {
+        await onConflict()
+      }
       alert(error.response?.data?.message ?? 'Gagal menyetujui surat.')
     } finally {
       setIsProcessing(false)
@@ -72,8 +93,12 @@ export default function ApprovalStepRenderer({
 
       setAlasan('')
       setShowRejectBox(false)
+      if (closeOnDecision && onClose) onClose()
     } catch (error) {
       console.error('REJECT ERROR:', error.response?.data ?? error)
+      if (error.response?.status === 409 && onConflict) {
+        await onConflict()
+      }
       alert(error.response?.data?.message ?? 'Gagal menolak surat.')
     } finally {
       setIsProcessing(false)
@@ -82,7 +107,7 @@ export default function ApprovalStepRenderer({
 
   return (
     <div>
-      {isFinal && (
+      {currentStep?.is_final && (
         <span className="inline-block mb-2 px-2 py-1 text-xs font-semibold bg-amber-100 text-amber-800 rounded">
           Tahap Final
         </span>
@@ -137,21 +162,6 @@ export default function ApprovalStepRenderer({
             </button>
           </div>
         </div>
-      )}
-    </div>
-  )
-}
-
-function ReadOnlyStepView({ approverPosition, isFinal }) {
-  return (
-    <div className="text-sm text-gray-600">
-      <p>
-        Menunggu keputusan dari: <strong>{approverPosition}</strong>
-      </p>
-      {isFinal && (
-        <span className="inline-block mt-1 px-2 py-1 text-xs font-semibold bg-amber-100 text-amber-800 rounded">
-          Tahap Final
-        </span>
       )}
     </div>
   )
