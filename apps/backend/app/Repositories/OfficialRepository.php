@@ -18,7 +18,7 @@ class OfficialRepository
         return Official::query()
             ->where('village_id', $villageId)
             ->with([
-                'citizen',
+                'citizen.occupation',
                 'user',
                 'village',
                 'hamlet',
@@ -75,7 +75,7 @@ class OfficialRepository
     public function allTermExpiredActive(string $villageId): Collection
     {
         return Official::query()
-            ->with(['citizen', 'user'])
+            ->with(['citizen.occupation', 'user'])
             ->where('village_id', $villageId)
             ->active()
             ->termExpired()
@@ -85,7 +85,7 @@ class OfficialRepository
     public function allTermEndingWithin(string $villageId, int $days): Collection
     {
         return Official::query()
-            ->with(['citizen', 'user'])
+            ->with(['citizen.occupation', 'user'])
             ->where('village_id', $villageId)
             ->active()
             ->termEndingWithin($days)
@@ -281,7 +281,7 @@ class OfficialRepository
     public function findActiveVillageHeadWithCitizenOrFail(string $villageId): Official
     {
         return Official::query()
-            ->with('citizen')
+            ->with('citizen.occupation')
             ->where('position', 'kepala_desa')
             ->where('village_id', $villageId)
             ->where('is_active', true)

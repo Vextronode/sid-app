@@ -10,6 +10,7 @@ use App\Enums\Religion;
 use App\Enums\ResidencyType;
 use App\Models\User;
 use App\Services\CitizenService;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -104,7 +105,7 @@ class CitizensImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow
             'father_name_text' => ['nullable', 'string', 'max:255'],
             'mother_name_text' => ['nullable', 'string', 'max:255'],
             'marital_status' => ['nullable', Rule::in(['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati'])],
-            'occupation' => ['nullable', 'string', 'max:100'],
+            // TODO: Resolve imported occupation labels to village-scoped occupation IDs.
             'religion' => ['nullable', Rule::enum(Religion::class)],
             'last_education' => ['nullable', Rule::enum(LastEducation::class)],
             'domicile_status' => ['nullable', Rule::enum(DomicileStatus::class)],

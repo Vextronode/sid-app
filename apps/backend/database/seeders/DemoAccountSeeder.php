@@ -125,7 +125,7 @@ class DemoAccountSeeder extends Seeder
                     'rt_id' => $rt->id,
                     'hamlet_id' => $hamlet->id,
                     'marital_status' => 'belum_kawin',
-                    'occupation' => $account['position']?->label() ?? 'Warga',
+                    'occupation_id' => null,
                     'religion' => 'islam',
                     'last_education' => 'sma',
                     'domicile_status' => 'menetap',

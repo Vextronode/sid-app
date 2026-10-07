@@ -42,7 +42,7 @@ class StoreCitizenRequest extends FormRequest
             'father_name_text' => ['nullable', 'string', 'max:255'],
             'mother_name_text' => ['nullable', 'string', 'max:255'],
             'marital_status' => ['nullable', Rule::in(['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati'])],
-            'occupation' => ['nullable', 'string', 'max:100'],
+            'occupation_id' => ['nullable', 'integer', 'exists:occupations,id'],
             'religion' => ['nullable', Rule::enum(Religion::class)],
             'last_education' => ['nullable', Rule::enum(LastEducation::class)],
             'domicile_status' => ['nullable', Rule::enum(DomicileStatus::class)],
