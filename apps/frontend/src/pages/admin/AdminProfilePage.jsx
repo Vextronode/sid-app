@@ -53,9 +53,10 @@ const getAdminMobileLinks = (role) => {
         '/admin/list-kadus'
       );
 
-    case 'kades':
+    case 'kepala_desa':
+    case 'sekretaris_desa':
       return ADMIN_MOBILE_LINKS(
-        '/admin/dashboard-kades',
+        '/admin/dashboard-surat-kades',
         '/admin/list-kades'
       );
 

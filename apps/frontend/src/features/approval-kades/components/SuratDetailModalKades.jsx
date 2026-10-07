@@ -23,12 +23,7 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
     surat &&
     (String(surat.submitted_by) === String(user?.id) ||
       (surat.citizen_id && String(surat.citizen_id) === String(user?.citizen_id)))
-  const approverPosition =
-    !isApplicantOfficial &&
-    surat?.current_step?.approver_position === 'kepala_desa' &&
-    (user?.role === 'kepala_desa' || user?.role === 'sekretaris_desa')
-      ? 'kepala_desa'
-      : null
+  const currentUserRole = !isApplicantOfficial ? user?.role : null
 
   const handleApprove = async (response) => {
     if (response) {
@@ -36,12 +31,10 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
     }
   }
 
-  const handleReject = async (notes, response) => {
-    if (notes || response) {
+  const handleReject = async (_notes, response) => {
+    if (response) {
       await refresh()
     }
-
-    onClose()
   }
 
   return (
@@ -50,19 +43,20 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
       onClose={onClose}
       surat={surat}
       notFound={notFound}
-      subtitle="Kepala Desa"
+      subtitle="Tahap Final (Kades/Sekdes)"
       decisionLevels={[
         {
           levels: ['kepala_desa', 'sekdes'],
-          title: 'Keputusan Kepala Desa',
+          title: 'Keputusan Tahap Final',
         },
       ]}
       showStatus
-      approverPosition={approverPosition}
-      currentUserRole={approverPosition}
-      apiRole="kepala_desa"
+      currentUserRole={currentUserRole}
+      apiRole={currentUserRole}
       onApprove={handleApprove}
       onReject={handleReject}
+      onConflict={refresh}
+      closeOnDecision={false}
       previewWhen="approved"
     />
   )

@@ -29,13 +29,7 @@ export default function SuratDetailModalRT({
     surat &&
     (String(surat.submitted_by) === String(user?.id) ||
       (surat.citizen_id && String(surat.citizen_id) === String(user?.citizen_id)))
-  const approverPosition =
-    !readOnly &&
-    !isApplicantOfficial &&
-    user?.role === 'rt' &&
-    surat?.current_step?.approver_position === 'rt'
-      ? 'rt'
-      : null
+  const currentUserRole = !readOnly && !isApplicantOfficial ? user?.role : null
 
   return (
     <SuratDetailModal
@@ -50,9 +44,8 @@ export default function SuratDetailModalRT({
           title: 'Keputusan RT',
         },
       ]}
-      approverPosition={approverPosition}
-      currentUserRole={approverPosition}
-      apiRole="rt"
+      currentUserRole={currentUserRole}
+      apiRole={currentUserRole}
       onApprove={onApprove}
       onReject={onReject}
     />

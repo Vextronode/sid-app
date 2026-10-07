@@ -49,6 +49,7 @@ import OperatorSuratListPage from '@/pages/admin/OperatorSuratListPage'
 import ApprovalSettingPage from '@/pages/admin/ApprovalSettingPage'
 // Role yang termasuk "Operator Desa" (dipakai berulang di bawah)
 const OPERATOR_DESA_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa']
+const KADES_APPROVER_ROLES = ['kepala_desa', 'sekretaris_desa']
 
 // Route khusus untuk user yang belum login.
 // Jika user sudah login, arahkan ke halaman sesuai role.
@@ -68,6 +69,7 @@ const GuestRoute = ({ children }) => {
       case 'kadus':
         return <Navigate to="/admin/dashboard-surat-kadus" replace />
       case 'kepala_desa':
+      case 'sekretaris_desa':
         return <Navigate to="/admin/dashboard-surat-kades" replace />
       case 'kasi_pelayanan':
       case 'kaur_tu_umum':
@@ -220,7 +222,9 @@ export default function App() {
           <Route
             path="/admin/profile"
             element={
-              <ProtectedRoute allowedRoles={['rt', 'rw', 'kadus']}>
+              <ProtectedRoute
+                allowedRoles={['rt', 'rw', 'kadus', ...KADES_APPROVER_ROLES]}
+              >
                 <AdminLayout>
                   <AdminProfilePage />
                 </AdminLayout>
@@ -276,7 +280,7 @@ export default function App() {
           <Route
             path="/admin/dashboard-surat-kades"
             element={
-              <ProtectedRoute allowedRoles={['kepala_desa']}>
+              <ProtectedRoute allowedRoles={KADES_APPROVER_ROLES}>
                 <AdminLayout>
                   <KadesDashboardPage />
                 </AdminLayout>
@@ -286,7 +290,7 @@ export default function App() {
           <Route
             path="/admin/list-kades"
             element={
-              <ProtectedRoute allowedRoles={['kepala_desa']}>
+              <ProtectedRoute allowedRoles={KADES_APPROVER_ROLES}>
                 <AdminLayout>
                   <KadesListPage />
                 </AdminLayout>
