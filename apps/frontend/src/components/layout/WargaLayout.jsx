@@ -29,7 +29,8 @@ export function WargaLayout({ children }) {
   const [helpOpen, setHelpOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const { unreadCount } = useNotifications();
+  const notificationState = useNotifications();
+  const { unreadCount, reload } = notificationState;
 
   const handleLogout = () => {
     setSettingsOpen(false);
@@ -101,7 +102,11 @@ export function WargaLayout({ children }) {
               ======================================== */}
 
           <button
-            onClick={() => setNotifOpen((prev) => !prev)}
+            onClick={() => {
+              const opening = !notifOpen;
+              setNotifOpen(opening);
+              if (opening) void reload();
+            }}
             className="sid-navbar-icon-btn"
             title="Notifikasi"
           >
@@ -203,6 +208,7 @@ export function WargaLayout({ children }) {
         <NotificationPopover
           open={notifOpen}
           onClose={() => setNotifOpen(false)}
+          {...notificationState}
         />
 
       </nav>

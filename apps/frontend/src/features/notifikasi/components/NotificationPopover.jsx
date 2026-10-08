@@ -4,9 +4,8 @@
 // Styling mengikuti SID Global Theme.
 // ==========================================
 
-import { useState } from "react";
-import { FileText, PenLine } from "lucide-react";
-import useNotifications from "@/features/notifikasi/hooks/useNotifications";
+import { useState } from 'react'
+import { Bell, FileText, PenLine } from 'lucide-react'
 
 const TABS = [
   { value: "semua", label: "Semua" },
@@ -17,6 +16,7 @@ const TABS = [
 const ICON_MAP = {
   document: FileText,
   signature: PenLine,
+  bell: Bell,
 };
 
 const WARNA_MAP = {
@@ -51,17 +51,19 @@ function getDayLabel(dateString) {
   });
 }
 
-export default function NotificationPopover({ open, onClose }) {
-
-
+export default function NotificationPopover({
+  open,
+  onClose,
+  notifications,
+  unreadCount,
+  loading,
+  error,
+  markingIds,
+  markingAll,
+  markAsRead,
+  markAllAsRead,
+}) {
   const [activeTab, setActiveTab] = useState("semua");
-
-  const {
-    notifications,
-  
-    markAsRead,
-    markAllAsRead,
-  } = useNotifications();
 
   if (!open) return null;
 
@@ -106,10 +108,12 @@ export default function NotificationPopover({ open, onClose }) {
           </h2>
 
           <button
+            type="button"
             onClick={handleTandaiSemua}
+            disabled={markingAll || unreadCount === 0}
             className="sid-notification-mark-all"
           >
-            Tandai Semua Dibaca
+            {markingAll ? 'Menyimpan...' : 'Tandai Semua Dibaca'}
           </button>
         </div>
 
@@ -132,6 +136,16 @@ export default function NotificationPopover({ open, onClose }) {
 
         {/* CONTENT */}
         <div className="sid-notification-content">
+          {error && (
+            <p role="alert" className="sid-notification-empty">
+              {error}
+            </p>
+          )}
+
+          {loading && (
+            <p className="sid-notification-empty">Memuat notifikasi...</p>
+          )}
+
           {Object.entries(groupedNotifications).map(
             ([label, items]) => (
               <div
@@ -148,6 +162,7 @@ export default function NotificationPopover({ open, onClose }) {
                       key={n.id}
                       data={n}
                       onRead={() => markAsRead(n.id)}
+                      disabled={n.read || markingIds.includes(n.id)}
                     />
                   ))}
                 </div>
@@ -155,7 +170,7 @@ export default function NotificationPopover({ open, onClose }) {
             )
           )}
 
-          {filtered.length === 0 && (
+          {!loading && filtered.length === 0 && !error && (
             <p className="sid-notification-empty">
               Tidak ada notifikasi.
             </p>
@@ -166,14 +181,22 @@ export default function NotificationPopover({ open, onClose }) {
   );
 }
 
-function NotifItem({ data, onRead }) {
+function NotifItem({ data, onRead, disabled }) {
   const Icon = ICON_MAP[data.icon] ?? FileText;
 
   return (
     <div
-      onClick={onRead}
+      onClick={disabled ? undefined : onRead}
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      onKeyDown={(event) => {
+        if (!disabled && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault()
+          onRead()
+        }
+      }}
       className={`sid-notification-item ${
-        data.read_at
+        data.read
           ? "sid-notification-item-read"
           : "sid-notification-item-unread"
       }`}
@@ -194,18 +217,18 @@ function NotifItem({ data, onRead }) {
           </p>
 
           <span className="sid-notification-item-time">
-            {new Date(
-              data.created_at
-            ).toLocaleTimeString("id-ID", {
+            {data.time ??
+              new Date(data.created_at).toLocaleTimeString('id-ID', {
               hour: "2-digit",
               minute: "2-digit",
-            })}
+              })}
           </span>
         </div>
 
-        <p className="sid-notification-item-message">
-          {data.message}
-        </p>
+        {data.context?.applicant && (
+          <p className="sid-notification-item-message">Dari: {data.context.applicant}</p>
+        )}
+        <p className="sid-notification-item-message">{data.message}</p>
       </div>
     </div>
   );

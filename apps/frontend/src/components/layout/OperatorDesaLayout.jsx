@@ -85,7 +85,8 @@ export function OperatorDesaLayout({ children }) {
 
   const [notifOpen, setNotifOpen] = useState(false)
 
-  const { unreadCount } = useNotifications()
+  const notificationState = useNotifications()
+  const { unreadCount, reload } = notificationState
 
   return (
     <WilayahMasterProvider>
@@ -154,7 +155,11 @@ export function OperatorDesaLayout({ children }) {
 
               <button
                 type="button"
-                onClick={() => setNotifOpen((prev) => !prev)}
+                onClick={() => {
+                  const opening = !notifOpen
+                  setNotifOpen(opening)
+                  if (opening) void reload()
+                }}
                 className="sid-operator-notification-btn"
                 title="Notifikasi"
               >
@@ -184,7 +189,11 @@ export function OperatorDesaLayout({ children }) {
 
             {/* NOTIFICATION POPOVER */}
 
-            <NotificationPopover open={notifOpen} onClose={() => setNotifOpen(false)} />
+            <NotificationPopover
+              open={notifOpen}
+              onClose={() => setNotifOpen(false)}
+              {...notificationState}
+            />
           </header>
 
           {/* =================================================
