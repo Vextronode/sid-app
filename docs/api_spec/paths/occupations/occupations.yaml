@@ -1,0 +1,64 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Daftar pekerjaan desa
+  description: "Aktor: Petugas Desa. Hanya pekerjaan desa yang login ditampilkan."
+  operationId: listOccupations
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: include_inactive
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+  responses:
+    '200':
+      description: Daftar pekerjaan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/occupations/occupations.yaml#/Occupation'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Tambah pekerjaan desa
+  operationId: createOccupation
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/occupations/occupations.yaml#/OccupationCreateRequest'
+  responses:
+    '201':
+      description: Pekerjaan berhasil ditambahkan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/occupations/occupations.yaml#/Occupation'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: Input tidak valid atau nama pekerjaan sudah digunakan di desa
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'

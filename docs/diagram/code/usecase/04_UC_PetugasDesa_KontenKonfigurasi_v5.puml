@@ -2,7 +2,7 @@
 ' SECTION: USE CASE DIAGRAM
 ' FILE: 04_UC_PetugasDesa_KontenKonfigurasi_v5.puml
 ' JUDUL: Use Case - Petugas Desa (Konten Publik & Konfigurasi Surat)
-' SUMBER: TDD SID Desa Cibenda v5.1 (Section 5.3.2 UC-18/19/21/24)
+' SUMBER: TDD SID Desa Cibenda v5.2 (Section 5.3.2 UC-18/19/21/24)
 ' CATATAN: Menggantikan 04_UC_PetugasDesa_KontenKonfigurasi_v4.puml.
 '==================================================================================
 
@@ -23,7 +23,7 @@ skinparam actor {
   FontSize 12
 }
 
-title Use Case Diagram - Petugas Desa (3/3: Konten Publik & Konfigurasi Surat) [v5.1]
+title Use Case Diagram - Petugas Desa (3/3: Konten Publik & Konfigurasi Surat) [v5.2]
 
 actor "Petugas Desa" as PD
 
@@ -31,6 +31,7 @@ rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
 
   rectangle "UC-18: Kelola Profil Desa" #FDF2F8 {
     usecase "Edit Profil Desa\n(sejarah, visi misi, dll)" as UC_DESA
+    usecase "Upload / preview\nstempel desa" as UC_STAMP
   }
 
   rectangle "UC-19: Kelola Berita\n/ Informasi" #FDF2F8 {
@@ -56,6 +57,7 @@ rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
 PD -- UC_LOGIN
 PD -- UC_LOGOUT
 PD -- UC_DESA
+PD -- UC_STAMP
 PD -- UC_NEWS
 PD -- UC_LT_TOGGLE
 PD -- UC_LT_VALIDITY

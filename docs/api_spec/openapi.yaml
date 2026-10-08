@@ -2,9 +2,9 @@ openapi: 3.0.3
 
 info:
   title: Sistem Informasi Desa (SID) Desa Cibenda - REST API
-  version: "5.1.0"
+  version: "5.2.0"
   description: |
-    Spesifikasi API untuk SIDUTama Cibenda, diselaraskan ke backend v5.1.
+    Spesifikasi API untuk SIDUTama Cibenda, diselaraskan ke backend v5.2.
     per Epic (E0 s/d E12, disesuaikan penomoran/judul untuk domain baru
     v5.0). Epic 0, 11, dan 12 bersifat cross-cutting/infrastruktur dan
     tidak menghasilkan endpoint HTTP baru.
@@ -41,11 +41,19 @@ info:
     - **3 tabel/domain baru**: `letter_categories`, `approval_flows`,
       `flow_steps` (Config over Code - lihat Epic 4).
     - **Data warga**: tabel baru `families` (KK, dipisah dari citizens)
-      dan `citizen_socioeconomics`; `citizens.no_kk` dihapus total,
+      dan `family_socioeconomics`; `citizens.no_kk` dihapus total,
       ditambah 11 kolom baru (family_id, residency_type, blood_type, dst).
 
     Keputusan v5.1: Sekdes dapat menggantikan Kades pada tahap final
     (first-action-wins); aktor aktual tercatat di approval.
+
+    ## Perubahan besar v5.2 — Kependudukan, Stempel & Pekerjaan
+
+    Sosio-ekonomi dicatat per KK melalui `/families/{id}/socioeconomic`;
+    pekerjaan warga memakai `occupation_id` dari katalog per desa.
+    Stempel desa dan TTD Kades diunggah sebagai multipart ke private
+    storage dan hanya dapat dipreview melalui endpoint terautentikasi.
+    PDF memakai TTD Kepala Desa aktif dan stempel dari profil desa.
 
     ⚠ **Scope eksklusi eksplisit**: QR Verification, Void/Cancel Surat,
     dan Staging Perubahan Data Self-Service TIDAK ada di spec ini - status
@@ -91,7 +99,7 @@ tags:
     description: CRUD Dusun (Hamlet) / RW / RT. UC-20. Tidak berubah dari v4.2.
   - name: Epic 2 - Users, Citizens, Officials
     description: |
-      CRUD Data Warga (skema v5.0: families, citizen_socioeconomics,
+      CRUD Data Warga (skema v5.0: families, family_socioeconomics,
       residency_type, dst), Import Excel, promote/demote/rotate jabatan,
       reset password, Register Warga. UC-09, UC-14, UC-17.
   - name: Epic 3 - Autentikasi
@@ -206,8 +214,6 @@ paths:
     $ref: 'paths/citizens/citizens.yaml'
   /citizens/{citizen}:
     $ref: 'paths/citizens/citizen-detail.yaml'
-  /citizens/{id}/socioeconomic:
-    $ref: 'paths/citizens/citizen-socioeconomics.yaml'
   /citizens/import:
     $ref: 'paths/citizens/import.yaml'
   /citizens/wilayah:
@@ -216,6 +222,12 @@ paths:
     $ref: 'paths/families/families.yaml'
   /families/{family}:
     $ref: 'paths/families/family-detail.yaml'
+  /families/{id}/socioeconomic:
+    $ref: 'paths/families/family-socioeconomics.yaml'
+  /occupations:
+    $ref: 'paths/occupations/occupations.yaml'
+  /occupations/{id}:
+    $ref: 'paths/occupations/occupation-detail.yaml'
   /users:
     $ref: 'paths/users/users.yaml'
   /users/{user}:
@@ -230,6 +242,8 @@ paths:
     $ref: 'paths/officials/official-detail.yaml'
   /officials/{official}/rotate:
     $ref: 'paths/officials/rotate.yaml'
+  /officials/{official}/signature:
+    $ref: 'paths/officials/official-signature.yaml'
   /officials/{official}/demote:
     $ref: 'paths/officials/demote-v51.yaml'
   /users/{user}/reset-password:
@@ -314,6 +328,8 @@ paths:
     $ref: 'paths/public/contact-us.yaml'
   /villages/profile:
     $ref: 'paths/villages/profile.yaml'
+  /villages/profile/stamp:
+    $ref: 'paths/villages/profile-stamp.yaml'
   /news:
     $ref: 'paths/news/news.yaml'
   /news/{id}:

@@ -150,3 +150,83 @@ FamilyMemberAddRequest:
       type: string
       enum: [kepala_keluarga, istri, suami, anak, famili_lain]
       example: "anak"
+
+FamilySocioeconomic:
+  type: object
+  description: Data survei sosio-ekonomi per KK; satu baris opsional untuk setiap keluarga.
+  properties:
+    id:
+      type: integer
+      example: 1
+    family_id:
+      type: string
+      format: uuid
+      example: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
+    household_income_range:
+      type: string
+      enum: ["<1jt", "1-3jt", "3-5jt", "5-10jt", ">10jt"]
+      nullable: true
+      example: "3-5jt"
+      description: Penghasilan rumah tangga; definisi periode belum ditetapkan.
+    house_ownership_status:
+      type: string
+      enum: [milik_sendiri, sewa, menumpang, dinas]
+      nullable: true
+      example: "milik_sendiri"
+    water_source:
+      type: string
+      enum: [pdam, sumur, sungai, lainnya]
+      nullable: true
+      example: "pdam"
+    electricity_source:
+      type: string
+      enum: [pln, non_pln, tidak_ada]
+      nullable: true
+      example: "pln"
+    dependents_count:
+      type: integer
+      nullable: true
+      example: 3
+    productive_assets:
+      type: object
+      nullable: true
+      additionalProperties: true
+      example: {"kendaraan": "motor", "ternak": null}
+    surveyed_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: "2026-05-01T09:00:00Z"
+    surveyed_by:
+      type: string
+      format: uuid
+      nullable: true
+      example: "e8aaa421-7fdd-42cf-8c30-993264820afd"
+
+FamilySocioeconomicUpsertRequest:
+  type: object
+  properties:
+    household_income_range:
+      type: string
+      enum: ["<1jt", "1-3jt", "3-5jt", "5-10jt", ">10jt"]
+      example: "3-5jt"
+      description: Penghasilan rumah tangga; definisi periode belum ditetapkan.
+    house_ownership_status:
+      type: string
+      enum: [milik_sendiri, sewa, menumpang, dinas]
+      example: "milik_sendiri"
+    water_source:
+      type: string
+      enum: [pdam, sumur, sungai, lainnya]
+      example: "pdam"
+    electricity_source:
+      type: string
+      enum: [pln, non_pln, tidak_ada]
+      example: "pln"
+    dependents_count:
+      type: integer
+      example: 3
+    productive_assets:
+      type: object
+      additionalProperties: true
+      example: {"kendaraan": "motor"}

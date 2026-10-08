@@ -5,13 +5,13 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 5 dari 5 (+ Appendix) |
-| Status | v5.1 — Auth & Approval Flow |
+| Status | v5.2 — Kependudukan, Stempel & Pekerjaan |
 | Cakupan | Roadmap pengembangan, asumsi & risiko, pertanyaan prioritas (terjawab & belum), known technical constraints |
-| Dokumen terkait | Seluruh bagian TDD 01–04, `TDD-06_Appendix.md`, OpenAPI Spec v5.0 |
+| Dokumen terkait | Seluruh bagian TDD 01–04, `TDD-06_Appendix.md`, OpenAPI Spec v5.2 |
 
 > **Cara pakai dokumen ini:** Section 3 (Pertanyaan Prioritas) adalah bagian paling penting untuk dicek berkala — status di sini bisa berubah seiring project jalan, sementara dokumen tidak selalu ikut diperbarui secara real-time. Jika ragu, cek migration/kode terlebih dulu, baru anggap dokumen ini sebagai rujukan kedua.
 
-> **v5.1 — Auth & Approval Flow:** keputusan alur final Sekdes, otorisasi Kasi/Kaur, akun username, pemohon pejabat, dan guard jabatan yang sudah terkunci pada plan tidak lagi dicatat sebagai pertanyaan terbuka.
+> **Catatan v5.2:** keputusan alur final Sekdes, otorisasi Kasi/Kaur, akun username, pemohon pejabat, dan guard jabatan yang sudah terkunci pada versi sebelumnya tetap berlaku dan tidak dicatat ulang sebagai pertanyaan terbuka.
 
 ---
 
@@ -74,10 +74,17 @@ Bagian ini mendokumentasikan pertanyaan yang perlu dikonfirmasi sebelum atau sel
 | Queue driver Tahap 1: database | Sudah diputuskan | Database driver dipakai di Tahap 1, migrasi ke Redis di Tahap 2 |
 | Docker + Laravel Sail masuk Tahap 2 | Sudah diputuskan | Ya |
 | Apakah notifikasi email aktif di MVP atau in-app dulu? | Belum dikonfirmasi | — |
-| React via REST API atau via Inertia | Sudah diputuskan | REST API (lihat OpenAPI Spec v5.0, `SID-ARCH-FE-001`) |
+| React via REST API atau via Inertia | Sudah diputuskan | REST API (lihat OpenAPI Spec v5.2, `SID-ARCH-FE-001`) |
 | Apakah fitur rotasi jabatan organisasi non-struktural diaktifkan di UI MVP? | Menunggu konfirmasi desa | — |
 | Apakah Sekdes ikut menjadi approver tahap final yang sama dengan Kades? | **Sudah diputuskan (K7/K13)** | Ya. Kades dan Sekdes saling menggantikan pada tahap final; pemohon Kades diputuskan Sekdes dan sebaliknya. |
 | Apakah `assigned_role` menjadi penentu akses Kasi/Kaur? | **Sudah diputuskan (K8/A9/A10)** | Ya. Kasi/Kaur bukan approver; `assigned_role` menentukan akses surat selesai, dan NULL berlaku untuk kedua role. |
+| Apa definisi periode untuk `household_income_range`? | Belum diputuskan | Field mengacu pada penghasilan rumah tangga; periode belum ditetapkan. |
+| Bagaimana data sosio-ekonomi untuk warga tanpa KK? | Belum diputuskan | Perilaku saat ini tidak menyediakan record sosio-ekonomi pada tingkat individu. |
+| Apakah `family_socioeconomics` perlu dienkripsi? | Belum diputuskan | Belum menggunakan cast enkripsi. |
+| Apa isi lengkap daftar pekerjaan awal dan bagaimana import memetakan nama pekerjaan ke ID? | Belum diputuskan / ditunda | Seeder awal berisi tiga pekerjaan; pemetaan nama saat import belum dilakukan. |
+| Apakah kolom legacy `officials.stamp_img` akan dihapus? | Belum diputuskan | Kolom masih ada, tetapi PDF mengambil stempel dari `villages.stamp_img`. |
+| Bagaimana daftar pekerjaan per desa dan sumber stempel PDF ditentukan? | Terjawab | Pekerjaan baku disimpan per desa di `occupations`; PDF memakai stempel pada profil desa. |
+| Apakah sosio-ekonomi dicatat pada individu atau keluarga? | Terjawab | Dicatat per KK di `family_socioeconomics`; tidak ada penghasilan individu. |
 | ~~Konsistensi ENUM `approval_settings.approval_level` terhadap `letter_approvals.approval_level`~~ | **✅ Selesai / Closed** | Sudah diselaraskan — ENUM `approval_settings.approval_level` menggunakan 5 nilai yang sama dengan `letter_approvals.approval_level` (`rt`, `kepala_desa`, `sekdes`, `kasi_pelayanan`, `kaur_tu_umum`), dikonfirmasi dari migration project yang berjalan. Riwayat koreksi status ini ada di `TDD-06_Appendix.md`. |
 
 ---
@@ -103,4 +110,10 @@ Bagian ini mendokumentasikan keterbatasan teknis yang sudah dapat diprediksi seb
 | Blockchain-inspired hashing dikeluarkan dari MVP | Integritas data surat belum tervalidasi di MVP | Detail lengkap dicatat di `TDD-06_Appendix.md` untuk implementasi Next Dev Paket 2 |
 | Keputusan bersamaan oleh Kades dan Sekdes | Kedua user memproses tahap final yang sama hampir bersamaan | Aplikasi menerapkan first-action-wins; keputusan aktual actor tersimpan pada approval. |
 | `assigned_role` mengatur akses Kasi/Kaur | Salah konfigurasi dapat membuka akses role yang tidak dituju | Policy dan repository memfilter surat selesai memakai nilai `assigned_role`; NULL berarti kedua role. |
+| Desa baru memerlukan referensi pekerjaan awal | Dropdown pekerjaan kosong bila seed tidak dijalankan | Jalankan seeder pekerjaan untuk setiap desa baru. |
+| Kecocokan desa antara `citizens` dan `occupations` hanya dijaga di aplikasi | Referensi lintas desa dapat tersimpan bila validasi terlewati | Validasi desa pada service saat assign pekerjaan. |
+| ID pekerjaan berbeda antar desa | Analisis lintas desa tidak dapat membandingkan ID langsung | Bandingkan nama/normalisasi, atau buat pemetaan lintas desa jika kelak dibutuhkan. |
+| Warga pindah desa dengan `occupation_id` terisi | Pekerjaan dapat menunjuk ke katalog desa lama | Kosongkan atau ganti `occupation_id` sesuai katalog desa tujuan saat pindah. |
+| Nama pekerjaan dapat diubah dan dipakai ulang dalam dokumen | Surat yang digenerate ulang menampilkan data terbaru | Cetak ulang surat menggunakan nama pekerjaan dan stempel desa terbaru. |
+| File gambar disimpan private dan tidak ditautkan sebagai URL publik | FE tidak dapat menampilkan path langsung; rotasi jabatan memerlukan record baru | Gunakan endpoint preview terproteksi; upload TTD dilakukan terpisah setelah rotasi Kades. |
 | ~~`approval_settings.approval_level` ENUM belum diselaraskan dengan `letter_approvals.approval_level`~~ | — | **Sudah tidak berlaku** — ENUM sudah diselaraskan. Lihat Section 3.2 dan `TDD-06_Appendix.md` |

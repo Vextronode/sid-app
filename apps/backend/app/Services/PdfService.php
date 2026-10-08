@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 class PdfService
@@ -145,11 +146,22 @@ class PdfService
         $submittedAtFormatted = $submittedDate->translatedFormat('d F Y');
 
         $signatureHtml = '';
-        if ($template === 'digital' && $kades->signature_img) {
-            $signatureHtml .= '<img src="'.storage_path('app/public/'.$kades->signature_img).'" style="max-height: 60px; width: auto;">';
+        $signatureDirectory = "official-signatures/{$kades->village_id}/{$kades->id}/";
+        if (
+            $template === 'digital'
+            && $kades->signature_img
+            && str_starts_with($kades->signature_img, $signatureDirectory)
+            && Storage::disk('private_uploads')->exists($kades->signature_img)
+        ) {
+            $signatureHtml .= '<img src="'.Storage::disk('private_uploads')->path($kades->signature_img).'" style="max-height: 60px; width: auto;">';
         }
-        if ($kades->stamp_img) {
-            $signatureHtml .= '<img src="'.public_path('storage/'.$kades->stamp_img).'" style="max-height: 45px; width: auto; margin-left: 10px;">';
+        $stampDirectory = "village-stamps/{$letter->village_id}/";
+        if (
+            $letter->village->stamp_img
+            && str_starts_with($letter->village->stamp_img, $stampDirectory)
+            && Storage::disk('private_uploads')->exists($letter->village->stamp_img)
+        ) {
+            $signatureHtml .= '<img src="'.Storage::disk('private_uploads')->path($letter->village->stamp_img).'" style="max-height: 45px; width: auto; margin-left: 10px;">';
         }
 
         $logoPath = public_path('images/logo-pangandaran.png');

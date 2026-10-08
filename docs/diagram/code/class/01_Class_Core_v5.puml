@@ -31,7 +31,8 @@ skinparam arrow {
   FontSize 9
 }
 
-title Class Diagram [1/2: CORE] - SID Desa Cibenda (v5.1)\nLayer: Controller -> Form Request -> Service -> Repository -> Eloquent Model -> DB (Policy per-resource)\nScope: Auth, penugasan jabatan, kependudukan, approval dua tahap, surat\nLihat file Class Diagram Pendukung [2/2] untuk: Organisasi Non-Struktural, Notifikasi, Berita, Peraturan Desa
+title Class Diagram [1/2: CORE] - SID Desa Cibenda (v5.2)\nLayer: Controller -> Form Request -> Service -> Repository -> Eloquent Model -> DB (Policy per-resource)\nScope: Auth, penugasan jabatan, kependudukan, pekerjaan, approval dua tahap, surat
+Lihat file Class Diagram Pendukung [2/2] untuk: Organisasi Non-Struktural, Notifikasi, Berita, Peraturan Desa
 
 ' ═══════════════════════════════════════════════════
 ' LAYER 1: CONTROLLER
@@ -425,12 +426,14 @@ package "Eloquent Model Layer" #FDE8D8 {
     +name : string
     +code : string
     +headName : string
+    +stampImg : string?
     --
     +hamlets() : HasMany
     +users() : HasMany
     +citizens() : HasMany
     +families() : HasMany
     +officials() : HasMany
+    +occupations() : HasMany
     +letters() : HasMany
   }
 
@@ -511,6 +514,7 @@ package "Eloquent Model Layer" #FDE8D8 {
     +currentDomicile : string?
     +familyId : bigint?
     +familyRole : enum?
+    +occupationId : bigint?
     +fatherId : bigint?
     +motherId : bigint?
     +fatherNameText : string?
@@ -529,9 +533,9 @@ package "Eloquent Model Layer" #FDE8D8 {
     +family() : BelongsTo
     +father() : BelongsTo
     +mother() : BelongsTo
+    +occupation() : BelongsTo
     +childrenAsFather() : HasMany
     +childrenAsMother() : HasMany
-    +socioeconomic() : HasOne
     +user() : HasOne
     +official() : HasOne
     note right
@@ -547,8 +551,6 @@ package "Eloquent Model Layer" #FDE8D8 {
       motherNameText (fallback teks bebas),
       bloodType, residencyType, originRegion,
       dataSource, lastVerifiedAt, syncStatus.
-      socioeconomic(): HasOne ke
-      CitizenSocioeconomic (1:1 per individu).
       ---
       TIDAK ADA kategori "warga Non-NIK" -
       setiap row di sini SUDAH PASTI punya
@@ -578,6 +580,7 @@ package "Eloquent Model Layer" #FDE8D8 {
     +hamlet() : BelongsTo
     +members() : HasMany
     +headOfFamily() : BelongsTo
+    +socioeconomics() : HasOne
     note right
       BARU v5.0. Tabel KK, sengaja TIPIS -
       hanya fakta level-keluarga. noKk/
@@ -591,10 +594,10 @@ package "Eloquent Model Layer" #FDE8D8 {
     end note
   }
 
-  class CitizenSocioeconomic {
+  class FamilySocioeconomic {
     +id : bigint
-    +citizenId : bigint
-    +incomeRange : enum?
+    +familyId : uuid
+    +householdIncomeRange : enum?
     +houseOwnershipStatus : enum?
     +waterSource : enum?
     +electricitySource : enum?
@@ -603,16 +606,24 @@ package "Eloquent Model Layer" #FDE8D8 {
     +surveyedAt : datetime?
     +surveyedBy : bigint?
     --
-    +citizen() : BelongsTo
+    +family() : BelongsTo
     +surveyor() : BelongsTo
     note right
-      BARU v5.0, MASUK MVP. Relasi 1:1
-      dengan Citizen (per INDIVIDU, bukan
-      per keluarga). Dipisah dari Citizen
-      karena sering kosong (belum semua
-      warga disurvei) dan butuh jejak waktu
-      survei terpisah.
+      Data sosio-ekonomi per KK, relasi
+      1:1 opsional ke Family. Survei ulang
+      menimpa data sebelumnya.
     end note
+  }
+
+  class Occupation {
+    +id : bigint
+    +villageId : uuid
+    +name : string
+    +isActive : bool
+    +sortOrder : int
+    --
+    +village() : BelongsTo
+    +citizens() : HasMany
   }
 
   class Official {
@@ -624,8 +635,8 @@ package "Eloquent Model Layer" #FDE8D8 {
     +rtId : bigint?
     +rwId : bigint?
     +hamletId : bigint?
-    +signatureImg : string?
-    +stampImg : string?
+    +signatureImg : string? <<private storage>>
+    +stampImg : string? <<legacy, not used by PDF>>
     +photoImg : string?
     +phoneWa : string?
     +startedAt : date
@@ -986,7 +997,10 @@ Citizen "1" o-- "0..1" Hamlet : hamletId
 Citizen "many" o-- "0..1" Family : familyId
 Citizen "0..1" -- "0..1" Citizen : fatherId (self-ref)
 Citizen "0..1" -- "0..1" Citizen : motherId (self-ref)
-Citizen "1" -- "0..1" CitizenSocioeconomic : 1:1
+Family "1" -- "0..1" FamilySocioeconomic : 1:1 per KK
+User "1" -- "many" FamilySocioeconomic : surveyedBy
+Village "1" -- "many" Occupation
+Occupation "1" -- "many" Citizen : occupationId
 
 Family "0..1" -- "0..1" Citizen : headOfFamilyId\n(denormalisasi opsional)
 
@@ -1024,7 +1038,8 @@ package "Komponen backend aktif yang belum ditampilkan di layer utama" #E8EAF6 {
     +update(UpdateProfileRequest) : JsonResponse
     +updatePassword(UpdatePasswordRequest) : JsonResponse
   }
-  class CitizenSocioeconomicController
+  class FamilySocioeconomicController
+  class OccupationController
   class LetterCategoryController
   class RtController
   class RwController
@@ -1054,7 +1069,9 @@ package "Komponen backend aktif yang belum ditampilkan di layer utama" #E8EAF6 {
     +getGenderStats(user) : array
     +getLetterStats(user, date, type) : array
   }
-  class CitizenSocioeconomicService
+  class FamilySocioeconomicService
+  class OccupationService
+  class OccupationInUseException
   class LetterCategoryService
   class LetterTypeService
   class UsernameGenerator {
@@ -1062,7 +1079,8 @@ package "Komponen backend aktif yang belum ditampilkan di layer utama" #E8EAF6 {
   }
 
   ' --- Repository Layer ---
-  class CitizenSocioeconomicRepository
+  class FamilySocioeconomicRepository
+  class OccupationRepository
   class LetterApprovalRepository
   class LetterStatusLogRepository
   class LetterNumberCounterRepository {
@@ -1157,7 +1175,7 @@ package "Komponen backend aktif yang belum ditampilkan di layer utama" #E8EAF6 {
 '
 ' ELOQUENT MODEL LAYER:
 '   - TAMBAH 5 model baru: LetterCategory, ApprovalFlow, FlowStep, Family,
-'     CitizenSocioeconomic.
+'     FamilySocioeconomic.
 '   - Citizen: hapus atribut noKk; tambah familyId/familyRole, fatherId/
 '     motherId (SELF-REFERENCE relasi father()/mother()/childrenAsFather()/
 '     childrenAsMother()), fatherNameText/motherNameText, bloodType,

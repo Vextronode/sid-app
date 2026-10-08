@@ -1,6 +1,6 @@
-# Index API Spec (OpenAPI 3.0.3) — SIDUTama Cibenda v5.1
+# Index API Spec (OpenAPI 3.0.3) — SIDUTama Cibenda v5.2
 
-**Status:** Kontrak API mengikuti route dan perilaku backend aktif v5.1.
+**Status:** Kontrak API mengikuti route dan perilaku backend aktif v5.2.
 Untuk endpoint dan bentuk data, `openapi.yaml` beserta path/schema yang
 direferensikan menjadi acuan.
 
@@ -19,6 +19,7 @@ api_spec_v5/
 ├── paths/
 │   ├── auth/, wilayah/, citizens/, users/, officials/
 │   ├── families/
+│   ├── occupations/
 │   ├── letter-types/, letter-categories/, approval-flows/
 │   ├── letters/                                                    daftar/detail surat bersama semua role
 │   ├── rt/, kades/                                                  operasi keputusan saja
@@ -27,6 +28,7 @@ api_spec_v5/
 │   └── village-org/
 ├── schemas/
 │   ├── families/                                                  BARU
+│   ├── occupations/                                               BARU
 │   └── letter-categories/                                         BARU (LetterCategory, ApprovalFlow, FlowStep)
 └── responses/
 ```
@@ -44,6 +46,22 @@ Tidak ada operasi GET khusus `/rt/letters`, `/rw/letters`, `/kades/letters`,
 atau `/kasi/letters`. RW dan Kadus membaca melalui endpoint bersama sesuai
 scope wilayah, tanpa hak keputusan. Kasi/Kaur membaca surat approved sesuai
 `assigned_role` melalui endpoint bersama.
+
+## Pekerjaan, sosio-ekonomi, dan gambar privat
+
+- Sosio-ekonomi per KK tersedia pada `GET/PUT /families/{id}/socioeconomic`.
+- Katalog pekerjaan per desa tersedia melalui `GET/POST /occupations` dan
+  `PATCH/DELETE /occupations/{id}`; hanya Petugas Desa yang berwenang.
+- Stempel: upload `POST /villages/profile/stamp`, preview `GET` pada path
+  yang sama. TTD Kades: upload `POST /officials/{official}/signature`,
+  preview `GET` pada path yang sama. Upload memakai multipart field `stamp`
+  atau `signature`; format PNG/JPEG/WebP, maksimum 5 MB.
+- Gambar disimpan secara private. Preview mengharuskan autentikasi Petugas
+  Desa dan scope desa; resource memberi `has_stamp_img` atau
+  `has_signature_img`, bukan URL media aktif. `OfficialResource` masih
+  membawa field legacy `officials.stamp_img` apa adanya; field itu bukan
+  sumber PDF. Rotasi Kades tetap operasi terpisah; TTD diunggah pada record
+  pejabat aktif yang baru.
 
 ## Audit Bug Fix yang Tercermin di Kontrak v5.0
 
@@ -88,14 +106,14 @@ redocly preview-docs openapi.yaml
 |---|---|---|---|
 | E0 | Fondasi Proyek | Tambah Repository/Policy layer ke arsitektur (tidak menghasilkan endpoint) | - |
 | E1 | Struktur Wilayah | Tidak berubah | UC-20 |
-| E2 | Users, Citizens, Officials, Families | +families, +citizen_socioeconomics, citizens dirombak | UC-09, UC-14, UC-17 |
+| E2 | Users, Citizens, Officials, Families, Occupations | family_socioeconomics, occupations, katalog pekerjaan desa | UC-09, UC-14, UC-17 |
 | E3 | Autentikasi | Tidak berubah struktural | UC-01, UC-02, UC-17 |
 | E4 | Konfigurasi Tipe Surat & Pipeline Approval | +letter_categories, +approval_flows, +flow_steps | UC-21 |
 | E5 | Alur Pengajuan & Approval Surat | Dirombak total (lihat tabel di atas) | UC-03, UC-04a, UC-04c(baru), UC-04d, UC-05, UC-06, UC-08 |
 | E6 | Sistem Notifikasi | `LetterStatusNotification` dikirim langsung dari service melalui kanal database | - |
-| E7 | Deadline & Reminder Approval | Enum approval_level diselaraskan (belum final) | UC-22 |
+| E7 | Deadline & Reminder Approval | Enum approval_level konsisten dengan migration; reminder otomatis belum aktif | UC-22 |
 | E8 | Dashboard & Statistik | Dashboard tetap menyediakan scope role Kadus dan RW read-only; Kades/Sekdes aktif pada tahap final | UC-15 |
-| E9 | Halaman Publik & Konten | Tidak berubah, guard petugas_desa ditegaskan ulang | UC-16, UC-18, UC-19, UC-24 |
+| E9 | Halaman Publik & Konten | Upload dan preview privat stempel desa; profil hanya menampilkan indikator gambar | UC-16, UC-18, UC-19, UC-24 |
 | E10 | Organisasi Non-Struktural Desa | Tidak berubah | UC-23 |
 | E11 | Security, Audit & Compliance | Dual-column enkripsi meluas ke families.no_kk | - |
 | E12 | Testing, QA & Deployment | Tidak berubah | - |
@@ -117,7 +135,7 @@ redocly preview-docs openapi.yaml
 
 - **UC & alur bisnis v5.0**: TDD v5.0 Section 5.3.2 (UC Description), khususnya UC-04a/c/d dan sub-flow notifikasi RW
 - **Skema pipeline dinamis**: TDD v5.0 Section 5.4.2 (`letter_categories`, `approval_flows`, `flow_steps`), `SID-ARCH-BE-001` S3
-- **Skema kependudukan v5.0**: TDD v5.0 Section 5.4.2 (`families`, `citizens`, `citizen_socioeconomics`), `SID-ARCH-BE-001` S5
+- **Skema kependudukan v5.2**: TDD v5.2 (`families`, `citizens`, `family_socioeconomics`, `occupations`), `SID-ARCH-BE-001` S5
 - **RBAC & scope otorisasi**: `SID-ARCH-SYS-001` S4, `SID-ARCH-BE-001` S4
 - **Bug fix kontrak Kasi**: `AUDIT_PROGRESS_SID_CIBENDA.md` §3.4
 - **Urutan migrasi & keputusan terbuka**: `RENCANA_MIGRASI_v4_ke_v5_SID_CIBENDA.md` Fase 1–7 dan bagian "Hal yang Wajib Dikonfirmasi"

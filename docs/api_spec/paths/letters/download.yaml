@@ -7,11 +7,13 @@ get:
     (barryvdh/laravel-dompdf) saat request, tidak disimpan di server
     (keputusan final struktural, SID-ARCH-BE-001 S6 - bukan sekadar hemat
     storage, tapi menghindari PDF stale jika data surat berubah setelah
-    digenerate). TTD & stempel diambil dari officials (Kades aktif:
-    is_active=true AND ended_at IS NULL). Untuk role warga, dicek
+    digenerate). TTD diambil dari officials (Kades aktif:
+    is_active=true AND ended_at IS NULL), sedangkan stempel berasal dari
+    villages.stamp_img. Untuk role warga, dicek
     expires_at bagi pemohon (`submitted_by = user.id`) tanpa membedakan
-    role. Kasi/Kaur juga wajib sesuai assigned_role. TTD dan stempel selalu
-    berasal dari Kepala Desa aktif, termasuk bila Sekdes yang menyetujui.
+    role. Kasi/Kaur juga wajib sesuai assigned_role. TTD berasal dari
+    Kepala Desa aktif; stempel berasal dari profil desa. Gambar berada di
+    private storage dan tidak diekspos sebagai URL publik.
   operationId: downloadLetterPdf
   security:
     - sanctumCookie: []
@@ -50,7 +52,7 @@ get:
     '404':
       $ref: '../../responses/common.yaml#/NotFound'
     '500':
-      description: Gagal generate PDF (misal TTD/stempel Kades belum tersedia)
+      description: Kesalahan server saat proses generate PDF.
       content:
         application/json:
           schema:

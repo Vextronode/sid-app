@@ -59,7 +59,7 @@ skinparam arrow {
   FontSize 10
 }
 
-title Diagram Deployment Architecture - SID Desa Cibenda (v5.0)\nSkenario: Single VPS - Tahap 1 (Tanpa Docker/Redis, sesuai roadmap MVP)\nInfrastruktur TIDAK BERUBAH dari v4.2 - lihat catatan revisi
+title Diagram Deployment Architecture - SID Desa Cibenda (v5.2)\nSkenario: Single VPS - Tahap 1 (Tanpa Docker/Redis, sesuai roadmap MVP)\nInfrastruktur TIDAK BERUBAH dari v4.2 - lihat catatan revisi
 
 actor "Warga / RT / RW / Kasi / Kaur /\nPetugas Desa / Kepala Desa /\nSekretaris Desa / Kadus\n(login only, non-approval)" as USER
 
@@ -155,7 +155,7 @@ node "VPS / Server Produksi\n(Minimum: 2 vCPU, 2GB RAM, 20GB SSD)" as VPS #EBF3F
       Sama VPS (single-server MVP).
       v5.0: +5 tabel baru (letter_categories,
       approval_flows, flow_steps, families,
-      citizen_socioeconomics) - total 22
+      family_socioeconomics, occupations) - total 23
       tabel MVP (naik dari 17 di v4.2).
       TIDAK menambah requirement resource
       signifikan untuk skala desa.
@@ -171,7 +171,7 @@ node "VPS / Server Produksi\n(Minimum: 2 vCPU, 2GB RAM, 20GB SSD)" as VPS #EBF3F
     note bottom of DISK
       Untuk: dokumen pendukung upload
       warga (jika verification_type=document),
-      foto/TTD/stempel officials,
+      foto officials; TTD dan stempel disimpan pada private storage
       thumbnail news.
       TIDAK menyimpan PDF surat
       (on-demand, tidak persisten).
@@ -288,7 +288,7 @@ end note
 '      approverPosition sebagai parameter), menggantikan asumsi implisit
 '      job terpisah per posisi approver.
 '   4. Catatan pada PGSQL (Database Layer) diperbarui: disebutkan +5 tabel
-'      baru dan total 22 tabel MVP (naik dari 17 di v4.2), dengan penegasan
+'      baru dan total 23 tabel MVP (naik dari 17 di v4.2), dengan penegasan
 '      bahwa ini tidak menambah requirement resource signifikan untuk
 '      skala desa.
 '   5. Catatan APPKEYNOTE diperbarui: disebutkan cakupan field terenkripsi

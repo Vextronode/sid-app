@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateVillageProfileRequest;
+use App\Http\Requests\UploadVillageStampRequest;
 use App\Http\Resources\VillageResource;
 use App\Services\VillageProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class VillageProfileController extends Controller
 {
@@ -30,5 +32,20 @@ class VillageProfileController extends Controller
             'message' => 'Profil desa berhasil diperbarui',
             'data' => new VillageResource($village),
         ]);
+    }
+
+    public function uploadStamp(UploadVillageStampRequest $request): JsonResponse
+    {
+        $village = $this->service->replaceStamp($request->user(), $request->file('stamp'));
+
+        return response()->json([
+            'message' => 'Stempel desa berhasil diperbarui.',
+            'data' => new VillageResource($village),
+        ]);
+    }
+
+    public function stampPreview(Request $request): BinaryFileResponse
+    {
+        return $this->service->stampPreview($request->user());
     }
 }

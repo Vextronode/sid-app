@@ -4,7 +4,7 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Kode Dokumen | SID-ARCH-BE-001 |
-| Status | Berlaku (Aktif) - Versi 1.1 — v5.1 Auth & Approval Flow |
+| Status | Berlaku (Aktif) - Versi 1.2 — v5.2 Kependudukan, Stempel & Pekerjaan |
 | Audiens | Backend Developer, Reviewer, Tech Lead, QA Coordinator |
 | Sifat Dokumen | Keputusan struktural & alasan di baliknya. Aturan penulisan kode sehari-hari ada di `DEV-CODE-001`. Skema tabel lengkap ada di dokumen skema domain (lihat S10). |
 | Dokumen Induk | `SID-ARCH-SYS-001` (System Architecture) |
@@ -32,8 +32,8 @@
 
 | Lapisan | Komponen yang aktif |
 |---|---|
-| Service domain | `CitizenSocioeconomicService`, `HamletService`, `LetterCategoryService`, `LetterTypeService`, `PublicPageService`, `RtService`, `RwService`, `VillageOrgMemberService`, `VillageOrgPositionService` |
-| Repository domain | `CitizenSocioeconomicRepository`, `HamletRepository`, `LetterApprovalRepository`, `LetterStatusLogRepository`, `RtRepository`, `RwRepository`, `VillageOrgMemberRepository`, `VillageOrgPositionRepository` |
+| Service domain | `FamilySocioeconomicService`, `OccupationService`, `HamletService`, `LetterCategoryService`, `LetterTypeService`, `PublicPageService`, `RtService`, `RwService`, `VillageOrgMemberService`, `VillageOrgPositionService` |
+| Repository domain | `FamilySocioeconomicRepository`, `OccupationRepository`, `HamletRepository`, `LetterApprovalRepository`, `LetterStatusLogRepository`, `RtRepository`, `RwRepository`, `VillageOrgMemberRepository`, `VillageOrgPositionRepository` |
 | Policy dan middleware | `LetterPolicy`, `OfficialPolicy`, `RegionPolicy`, `EnsureUserIsActive` (`account.active`), `EnsureEmailIsVerified` (`verified`) |
 | Integrasi dan operasi | `CitizensImport`, `PetugasFirstCommand` (`petugas:first`), `RegionContainsCitizensException`, `RegionHasActiveCitizensException` |
 
@@ -161,6 +161,8 @@ Untuk Kasi/Kaur (`kasi_pelayanan`, `kaur_tu_umum`), `letter_types.assigned_role`
 
 Backend mengikuti prinsip *single source of truth* dari skema v5.0: `families` (tipis, hanya fakta level-keluarga: `no_kk`, `family_address`, `family_status`) terpisah dari `citizens` (fakta level-individu, termasuk `address` domisili riil yang bisa berbeda dari `family_address`). Service layer (`CitizenService`, `FamilyService`) **tidak boleh** menyalin data KK ke `citizens` atau sebaliknya sebagai denormalisasi tambahan di luar `families.head_of_family_id` yang memang sudah didefinisikan sebagai denormalisasi opsional terjaga manual.
 
+Pada v5.2, sosio-ekonomi disimpan per keluarga pada `family_socioeconomics`, sementara pekerjaan tetap atribut individu dan direferensikan melalui katalog `occupations` per desa (bukan ENUM DB). Service memvalidasi bahwa pekerjaan dan warga berasal dari desa yang sama.
+
 ### 5.2 Warga Lokal vs Pendatang — Satu Tabel, Bukan Dua
 
 **Tidak ada kategori "warga Non-NIK" di domain ini.** Ini koreksi eksplisit terhadap draft awal dokumen arsitektur - keputusan final TDD v5.0 (Patch Guide v4.2→v5.0, PATCH 41) menegaskan: **setiap row di `citizens` sudah pasti memiliki NIK** (`nik`/`nik_hash` adalah bagian inti skema sejak v3.2), baik untuk warga lokal maupun pendatang. Tidak ada jalur di mana seseorang menjadi warga tercatat di sistem tanpa NIK terverifikasi.
@@ -183,7 +185,7 @@ Sesuai TDD (UC-09), pengelolaan data `citizens` - termasuk koreksi/update - **ha
 
 ## 6. PDF Generation: On-Demand, Bukan Persisten
 
-Keputusan final sejak v4.0: **tidak ada kolom path PDF** di `letters`, tidak ada file surat tersimpan permanen di server. Setiap klik tombol download memicu generate ulang dari `letter_types.template` (HTML Blade) + data surat terkini + TTD/stempel dari `officials` (Kades aktif), lalu langsung di-stream sebagai response binary.
+Keputusan final sejak v4.0: **tidak ada kolom path PDF** di `letters`, tidak ada file surat tersimpan permanen di server. Setiap klik tombol download memicu generate ulang dari `letter_types.template` (HTML Blade) + data surat terkini + TTD Kepala Desa aktif (`officials.signature_img`) dan stempel desa (`villages.stamp_img`), lalu langsung di-stream sebagai response binary. Kedua gambar diunggah ke private storage; endpoint preview terproteksi hanya mengembalikan binary bagi Petugas Desa dengan scope desa yang sesuai. Upload TTD terpisah dari rotasi jabatan dan dilakukan pada record Kades aktif yang baru setelah rotasi.
 
 **Alasan struktural (bukan sekadar penghematan storage):** PDF yang persisten berisiko menjadi *stale* jika data surat berubah setelah digenerate (misal koreksi nama pemohon), dan menambah kompleksitas manajemen storage/cleanup yang tidak sepadan untuk traffic desa kecil. Trade-off latency generate-per-klik diterima sebagai biaya yang wajar.
 
@@ -248,7 +250,7 @@ Tiga istilah berikut disebut sepintas di `SID-ARCH-SYS-001` S2.1/S2.2 sebagai ba
 | Strategi & cakupan pengujian Backend | `DEV-TEST-001` |
 | Alur kerja Git & review | `DEV-GIT-001` |
 | Skema lengkap domain Surat & Pipeline (`letter_categories`, `approval_flows`, `flow_steps`, `letters`, dst) | `SID_Arsitektur_RoleSegmentation_Pipeline_Kependudukan_Tahap2.md`, `SID_Addendum_KategoriLetterType_OperasionalPipeline_Verifikasi.md` |
-| Skema lengkap domain Kependudukan (`families`, `citizens`, `citizen_socioeconomics`, 4 lapis) | `SID_MasterData_Kependudukan_NIK_Cibenda.md` |
+| Skema lengkap domain Kependudukan (`families`, `citizens`, `family_socioeconomics`, `occupations`) | TDD-03 Database Schema |
 | Alur interaksi per aktor (Business Workflow) | `01_BWF_Overview_v1.puml` s.d. `05_BWF_SistemOtomatis_v1.puml` |
 | Standar keamanan lintas program | `AWG-SEC-001` s.d. `AWG-SEC-007` |
 | Standar observability lintas program | `AWG-OBS-001`, `AWG-OBS-002` |
@@ -262,3 +264,4 @@ Tiga istilah berikut disebut sepintas di `SID-ARCH-SYS-001` S2.1/S2.2 sebagai ba
 |---|---|---|
 | 1.0 | - | Penyusunan awal, disusun selaras dengan `SID-ARCH-SYS-001` v1.0 dan skema TDD v5.0 |
 | 1.1 | - | v5.1 Auth & Approval Flow: keputusan Kades/Sekdes ditutup, Kasi/Kaur menjadi read-only, tahap submit pejabat, password change guard, OfficialAssignmentService, dashboard dan notifikasi diselaraskan. |
+| 1.2 | - | v5.2: sosio-ekonomi per KK, pekerjaan baku per desa, stempel PDF dari desa, serta upload/preview privat TTD dan stempel. |

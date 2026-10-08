@@ -70,6 +70,26 @@ class CitizenImportTest extends TestCase
         $this->assertDatabaseHas('citizens', ['nik_hash' => hash('sha256', '3201012345670002')]);
     }
 
+    public function test_import_ignores_legacy_occupation_text_column(): void
+    {
+        $rt = Rt::factory()->create();
+        $file = $this->makeXlsx(
+            ['nik', 'name', 'date_of_birth', 'gender', 'address', 'rt_id', 'occupation'],
+            [['3201012345670011', 'Warga Import', '1990-05-12', 'P', 'Jl. Merdeka 1', $rt->id, 'Petani']],
+        );
+
+        $this->actingAs($this->petugas())
+            ->postJson('/api/citizens/import', ['file' => $file])
+            ->assertOk()
+            ->assertJsonPath('data.success_count', 1)
+            ->assertJsonPath('data.error_count', 0);
+
+        $this->assertDatabaseHas('citizens', [
+            'nik_hash' => hash('sha256', '3201012345670011'),
+            'occupation_id' => null,
+        ]);
+    }
+
     public function test_import_skips_invalid_rows_but_keeps_valid_ones(): void
     {
         $rt = Rt::factory()->create();

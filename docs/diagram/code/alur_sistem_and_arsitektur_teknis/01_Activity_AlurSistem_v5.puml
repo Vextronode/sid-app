@@ -29,7 +29,7 @@ skinparam note {
   FontSize 11
 }
 
-title Diagram Alur Sistem - SID Desa Cibenda (v5.1 - Flow Dinamis, Default 2 Tahap: RT → Kades/Sekdes)
+title Diagram Alur Sistem - SID Desa Cibenda (v5.2 - Flow Dinamis, Default 2 Tahap: RT → Kades/Sekdes)
 
 |#D6E4F7|Warga|
 |#D5F5E3|Sistem|
@@ -165,6 +165,8 @@ note right: Kasi/Kaur bukan approver dan tidak mengubah status surat
 :Menerima notifikasi\nhasil akhir permohonan;
 :Melihat status & riwayat\nlengkap permohonan\n(indikator step generik:\nRT / RW-FYI / Kades-Sekdes / Kasi-Kaur);
 :Download PDF surat\n(jika approved & step final,\ndan expires_at belum lewat);
+:PDF memakai TTD Kades aktif
+dan stempel dari profil desa;
 stop
 
 @enduml

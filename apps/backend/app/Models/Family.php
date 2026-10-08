@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Family extends Model
 {
@@ -75,5 +76,10 @@ class Family extends Model
     public function members(): HasMany
     {
         return $this->hasMany(Citizen::class, 'family_id');
+    }
+
+    public function socioeconomics(): HasOne
+    {
+        return $this->hasOne(FamilySocioeconomic::class);
     }
 }

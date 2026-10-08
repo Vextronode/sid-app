@@ -10,7 +10,8 @@ import OperatorSuratPreviewModal from '@/features/operator-desa/components/Opera
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download, Search, Eye } from 'lucide-react'
 
-import { getSuratList } from '@/lib/api'
+import api, { getSuratList } from '@/lib/api'
+import { useAuth } from '@/features/auth/contexts/AuthContext'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
@@ -40,8 +41,8 @@ export default function OperatorSuratListPage() {
       setLoading(true)
     }
 
-    try {
-      const res = await getSuratList()
+      try {
+        const res = await getSuratList()
 
       const data = Array.isArray(res.data?.data)
         ? res.data.data

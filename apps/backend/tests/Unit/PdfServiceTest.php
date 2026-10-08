@@ -17,6 +17,8 @@ use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response as LaravelResponse;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
@@ -156,6 +158,76 @@ class PdfServiceTest extends TestCase
             ->once()
             ->with('pdf.templates.wet', Mockery::on(
                 fn (array $data): bool => $data['kades']->is($kades),
+            ))
+            ->andReturn($pdf);
+
+        $this->service->download($letter, User::factory()->create(['role' => 'petugas_desa']));
+    }
+
+    public function test_pdf_uses_village_stamp_and_ignores_official_stamp(): void
+    {
+        Storage::fake('private_uploads');
+        $village = Village::factory()->create(['stamp_img' => null]);
+        $villageStamp = UploadedFile::fake()->image('village.png')
+            ->store("village-stamps/{$village->id}", 'private_uploads');
+        $village->update(['stamp_img' => $villageStamp]);
+        $kadesCitizen = Citizen::factory()->create(['village_id' => $village->id]);
+        $kades = Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'citizen_id' => $kadesCitizen->id,
+            'stamp_img' => 'stamps/official.png',
+            'is_active' => true,
+            'ended_at' => null,
+        ]);
+        $signature = UploadedFile::fake()->image('signature.png')
+            ->store("official-signatures/{$village->id}/{$kades->id}", 'private_uploads');
+        $kades->update(['signature_img' => $signature]);
+        $letterType = LetterType::factory()->create(['template' => '{{ signature_img }}']);
+        $letter = Letter::factory()->create([
+            'status' => 'approved',
+            'village_id' => $village->id,
+            'letter_type_id' => $letterType->id,
+        ]);
+        $pdf = Mockery::mock(DomPdf::class);
+        $pdf->shouldReceive('download')->once()->andReturn(new LaravelResponse);
+        Pdf::shouldReceive('loadView')
+            ->once()
+            ->with('pdf.templates.digital', Mockery::on(function (array $data) use ($villageStamp, $signature): bool {
+                return str_contains($data['template'], Storage::disk('private_uploads')->path($villageStamp))
+                    && str_contains($data['template'], Storage::disk('private_uploads')->path($signature))
+                    && ! str_contains($data['template'], 'stamps/official.png');
+            }))
+            ->andReturn($pdf);
+
+        $this->service->download($letter, User::factory()->create(['role' => 'petugas_desa']), 'digital');
+    }
+
+    public function test_pdf_omits_stamp_when_village_stamp_is_null_even_if_official_has_one(): void
+    {
+        Storage::fake('private_uploads');
+        $village = Village::factory()->create(['stamp_img' => null]);
+        $kadesCitizen = Citizen::factory()->create(['village_id' => $village->id]);
+        Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'citizen_id' => $kadesCitizen->id,
+            'stamp_img' => 'stamps/official.png',
+            'is_active' => true,
+            'ended_at' => null,
+        ]);
+        $letterType = LetterType::factory()->create(['template' => '{{ signature_img }}']);
+        $letter = Letter::factory()->create([
+            'status' => 'approved',
+            'village_id' => $village->id,
+            'letter_type_id' => $letterType->id,
+        ]);
+        $pdf = Mockery::mock(DomPdf::class);
+        $pdf->shouldReceive('download')->once()->andReturn(new LaravelResponse);
+        Pdf::shouldReceive('loadView')
+            ->once()
+            ->with('pdf.templates.wet', Mockery::on(
+                fn (array $data): bool => $data['template'] === '',
             ))
             ->andReturn($pdf);
 
