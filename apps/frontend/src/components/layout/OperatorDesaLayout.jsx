@@ -65,6 +65,7 @@ const MENU_ITEMS = [
     label: 'Pengaturan Deadline',
     path: '/admin/approval-settings',
     icon: Settings,
+    roles: ['petugas_desa'],
   },
   {
     label: 'Organisasi BPD',
@@ -105,7 +106,7 @@ export function OperatorDesaLayout({ children }) {
           {/* MENU */}
 
           <nav className="sid-operator-sidebar-nav">
-            {MENU_ITEMS.map((item) => {
+            {MENU_ITEMS.filter((item) => !item.roles || item.roles.includes(user?.role)).map((item) => {
               const isActive = location.pathname === item.path
 
               const Icon = item.icon

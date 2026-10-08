@@ -44,9 +44,30 @@ const STEPS = [
 // HELPERS
 // ==========================================
 
-function getApprovalTimestamp(surat, flowStepId) {
-  const approval = (surat?.approvals ?? [])
-    .filter((item) => item?.flow_step_id === flowStepId && item?.action === 'approved')
+function getApprovalTimestamp(surat, stepKey) {
+  const approvals = surat?.approvals ?? []
+
+  // Map step keys to approval_level values coming from BE
+  const STEP_TO_LEVELS = {
+    rt: ['rt'],
+    kades: ['kepala_desa', 'sekdes', 'sekretaris_desa'],
+    selesai: [],
+  }
+
+  const levels = STEP_TO_LEVELS[stepKey]
+
+  // If no explicit levels (eg. submit/selesai), derive from last approved approval
+  if (!levels || levels.length === 0) {
+    const approval = approvals
+      .filter((a) => a?.action === 'approved')
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      .at(-1)
+
+    return approval?.created_at ?? null
+  }
+
+  const approval = approvals
+    .filter((a) => levels.includes(a?.approval_level) && a?.action === 'approved')
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
     .at(-1)
 
@@ -57,14 +78,10 @@ function getStepState(surat) {
   const status = surat?.status
   const currentStepOrder = Number(surat?.current_step_order) || 1
 
-  const rejectedAtStep = Number(surat?.rejected_at_step) || null
-
-  // ==========================================
-  // REJECTED
-  // ==========================================
+  const rejectedAtStep = Number(surat?.rejected_at_step)
 
   if (status === SURAT_STATUS.REJECTED) {
-    const rejectedStep = rejectedAtStep ?? currentStepOrder
+    const rejectedStep = (rejectedAtStep || currentStepOrder) + 1
 
     return {
       currentStep: rejectedStep,
@@ -73,24 +90,17 @@ function getStepState(surat) {
     }
   }
 
-  // ==========================================
-  // APPROVED
-  // ==========================================
-
   if (status === SURAT_STATUS.APPROVED) {
     return {
-      currentStep: 4,
+      currentStep: STEPS.length,
       rejectedStep: null,
       completed: true,
     }
   }
 
-  // ==========================================
-  // IN PROGRESS / PENDING
-  // ==========================================
-
   return {
-    currentStep: Math.min(Math.max(currentStepOrder, 1), 4),
+    // Backend step 1 is RT and step 2 is final approval; Submit is UI step 1.
+    currentStep: Math.min(Math.max(currentStepOrder + 1, 2), STEPS.length - 1),
     rejectedStep: null,
     completed: false,
   }
@@ -163,15 +173,15 @@ export default function ApprovalStepper({ surat }) {
         }
 
         if (step.key === 'rt') {
-          timestamp = getApprovalTimestamp(surat, 1)
+          timestamp = getApprovalTimestamp(surat, 'rt')
         }
 
         if (step.key === 'kades') {
-          timestamp = getApprovalTimestamp(surat, 2)
+          timestamp = getApprovalTimestamp(surat, 'kades')
         }
 
         if (step.key === 'selesai') {
-          timestamp = getApprovalTimestamp(surat, 3)
+          timestamp = getApprovalTimestamp(surat, 'selesai')
         }
 
         // =====================================
