@@ -10,8 +10,7 @@ import OperatorSuratPreviewModal from '@/features/operator-desa/components/Opera
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download, Search, Eye } from 'lucide-react'
 
-import api, { getSuratList } from '@/lib/api'
-import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { getSuratList } from '@/lib/api'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
