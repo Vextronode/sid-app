@@ -21,6 +21,7 @@ import { useApprovalLetterList } from '@/features/approval/hooks/useApprovalLett
 import SuratDetailModalRW from '@/features/approval-rw/components/SuratDetailModalRW'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FooterDesa } from '@/components/layout/FooterDesa'
@@ -227,7 +228,10 @@ export default function RWListPage() {
                       {/* STATUS */}
 
                       <td className="rw-table-center">
-                        <StatusBadge status={s.status} />
+                        <div className="flex flex-col items-center gap-1.5">
+                          <StatusBadge status={s.status} />
+                          <OverdueBadge isOverdue={s.is_overdue} />
+                        </div>
                       </td>
 
                       {/* AKSI */}

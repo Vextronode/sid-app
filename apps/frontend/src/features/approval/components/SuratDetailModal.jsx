@@ -5,6 +5,7 @@ import ApprovalStepRenderer from '@/features/approval/components/ApprovalStepRen
 import { getLatestApprovalForLevel } from '@/features/approval/constants/statusFlow'
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
 const FIELD_MAP = {
   noSurat: (s) => s?.letter_number ?? '-',
@@ -182,9 +183,10 @@ export default function SuratDetailModal({
 
             <ApprovalStepper surat={surat} />
 
-            {showStatus && (
-              <div className="mb-4">
-                <StatusBadge status={surat.status} />
+            {(showStatus || surat.is_overdue === true) && (
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                {showStatus && <StatusBadge status={surat.status} />}
+                <OverdueBadge isOverdue={surat.is_overdue} />
               </div>
             )}
 

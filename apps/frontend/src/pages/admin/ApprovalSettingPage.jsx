@@ -88,7 +88,7 @@ export default function ApprovalSettingPage() {
         reminder_hours: reminderHours,
       })
 
-      const updatedSetting = response.data
+      const updatedSetting = response.data?.data ?? response.data
 
       setSettings((current) =>
         current.map((item) =>
@@ -182,23 +182,26 @@ export default function ApprovalSettingPage() {
               {orderedSettings.map((setting) => (
                 <div
                   key={setting.id}
-                  className="grid gap-5 px-5 py-5 md:grid-cols-[1.5fr_1fr_1fr_auto] md:items-end"
+                  className="grid gap-5 px-5 py-5 md:grid-cols-[1.35fr_1fr_1fr_auto_auto] md:items-end"
                 >
                   <div>
+                    <p className="mb-1.5 text-xs font-medium text-gray-600">Tahap Approval</p>
                     <p className="text-sm font-medium text-[var(--sid-text)]">
                       {APPROVAL_SETTING_LABELS[setting.approval_level] ?? setting.approval_level}
                     </p>
-
-                    <p className="mt-1 text-xs text-gray-500">Tahap {setting.approval_level}</p>
                   </div>
 
                   <label className="block">
-                    <span className="mb-1.5 block text-xs font-medium text-gray-600">Deadline</span>
+                    <span className="mb-1.5 block text-xs font-medium text-gray-600">
+                      Deadline Hours
+                    </span>
 
                     <div className="relative">
                       <input
                         type="number"
                         min="1"
+                        step="1"
+                        required
                         value={setting.deadline_hours}
                         onChange={(event) =>
                           handleChange(setting.id, 'deadline_hours', event.target.value)
@@ -214,13 +217,15 @@ export default function ApprovalSettingPage() {
 
                   <label className="block">
                     <span className="mb-1.5 block text-xs font-medium text-gray-600">
-                      Pengingat
+                      Reminder Hours
                     </span>
 
                     <div className="relative">
                       <input
                         type="number"
                         min="0"
+                        step="1"
+                        required
                         value={setting.reminder_hours}
                         onChange={(event) =>
                           handleChange(setting.id, 'reminder_hours', event.target.value)
@@ -233,6 +238,19 @@ export default function ApprovalSettingPage() {
                       </span>
                     </div>
                   </label>
+
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium text-gray-600">Active</p>
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                        setting.is_active
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {setting.is_active ? 'Aktif' : 'Nonaktif'}
+                    </span>
+                  </div>
 
                   <button
                     type="button"
