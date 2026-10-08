@@ -17,7 +17,8 @@ export function AdminLayout({ children, menuItems }) {
   const navigate = useNavigate()
 
   const { user, logout } = useAuth()
-  const { unreadCount } = useNotifications()
+  const notificationState = useNotifications()
+  const { unreadCount, reload } = notificationState
 
   const [notifOpen, setNotifOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -85,7 +86,11 @@ export function AdminLayout({ children, menuItems }) {
 
           <button
             type="button"
-            onClick={() => setNotifOpen((prev) => !prev)}
+            onClick={() => {
+              const opening = !notifOpen
+              setNotifOpen(opening)
+              if (opening) void reload()
+            }}
             className="sid-navbar-icon-btn"
             title="Notifikasi"
           >
@@ -162,7 +167,11 @@ export function AdminLayout({ children, menuItems }) {
           NOTIFICATION POPOVER
           ========================================== */}
 
-      <NotificationPopover open={notifOpen} onClose={() => setNotifOpen(false)} />
+      <NotificationPopover
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        {...notificationState}
+      />
 
       {/* ==========================================
           CONTENT

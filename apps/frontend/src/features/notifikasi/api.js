@@ -1,13 +1,17 @@
-import api from "@/lib/api";
+import api from '@/lib/api'
 
-export const getNotifications = () =>
-    api.get("/api/notifications");
+export function getNotifications() {
+  return api.get('/api/notifications')
+}
 
-export const getUnreadCount = () =>
-    api.get("/api/notifications/unread-count");
+export function getUnreadNotificationCount() {
+  return api.get('/api/notifications/unread-count')
+}
 
-export const readNotification = (id) =>
-    api.post(`/api/notifications/${id}/read`);
+export function markNotificationAsRead(id) {
+  return api.post(`/api/notifications/${id}/read`)
+}
 
-export const readAllNotifications = () =>
-    api.post("/api/notifications/read-all");
+export function markAllNotificationsAsRead() {
+  return api.post('/api/notifications/read-all')
+}
