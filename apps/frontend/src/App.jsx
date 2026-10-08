@@ -35,8 +35,8 @@ import KadusListPage from '@/pages/admin/KadusListPage'
 import KadesDashboardPage from '@/pages/admin/KadesDashboardPage'
 import KadesListPage from '@/pages/admin/KadesListPage'
 
-// Operator Desa — Kasi Pelayanan, Kaur TU Umum, Petugas Desa
-// 1 role gabungan, 1 tampilan yang sama untuk ketiganya.
+// Operator roles share the overview and letter list; management routes
+// are restricted according to their backend capabilities.
 import OperatorDesaDashboardPage from '@/pages/admin/OperatorDesaDashboardPage'
 import DataWargaPage from '@/pages/admin/DataWargaPage'
 import ManajemenUserPage from '@/pages/admin/ManajemenUserPage'
@@ -48,8 +48,7 @@ import OperatorSuratListPage from '@/pages/admin/OperatorSuratListPage'
 
 import ApprovalSettingPage from '@/pages/admin/ApprovalSettingPage'
 import ApprovalFlowsPage from '@/pages/admin/ApprovalFlowsPage'
-// Role yang termasuk "Operator Desa" (dipakai berulang di bawah)
-const OPERATOR_DESA_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa']
+import { getOperatorAllowedRoles } from '@/features/operator-desa/constants/roleNavigation'
 const KADES_APPROVER_ROLES = ['kepala_desa', 'sekretaris_desa']
 
 // Route khusus untuk user yang belum login.
@@ -305,7 +304,7 @@ export default function App() {
           <Route
             path="/admin/operator-desa"
             element={
-              <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/operator-desa')}>
                 <OperatorDesaLayout>
                   <OperatorDesaDashboardPage />
                 </OperatorDesaLayout>
@@ -315,7 +314,7 @@ export default function App() {
           <Route
             path="/admin/data-warga"
             element={
-              <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/data-warga')}>
                 <OperatorDesaLayout>
                   <DataWargaPage />
                 </OperatorDesaLayout>
@@ -325,7 +324,7 @@ export default function App() {
           <Route
             path="/admin/manajemen-user"
             element={
-              <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/manajemen-user')}>
                 <OperatorDesaLayout>
                   <ManajemenUserPage />
                 </OperatorDesaLayout>
@@ -335,7 +334,7 @@ export default function App() {
           <Route
             path="/admin/kelola-berita"
             element={
-              <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-berita')}>
                 <OperatorDesaLayout>
                   <KelolaBeritaPage />
                 </OperatorDesaLayout>
@@ -345,7 +344,7 @@ export default function App() {
           <Route
             path="/admin/kelola-wilayah"
             element={
-              <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-wilayah')}>
                 <OperatorDesaLayout>
                   <KelolaWilayahPage />
                 </OperatorDesaLayout>
@@ -355,7 +354,7 @@ export default function App() {
           <Route
             path="/admin/organisasi/bpd"
             element={
-              <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/organisasi/bpd')}>
                 <OperatorDesaLayout>
                   <OrganisasiBpdPage />
                 </OperatorDesaLayout>
@@ -365,7 +364,7 @@ export default function App() {
           <Route
             path="/admin/organisasi/lembaga"
             element={
-              <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/organisasi/lembaga')}>
                 <OperatorDesaLayout>
                   <OrganisasiLembagaPage />
                 </OperatorDesaLayout>
@@ -376,7 +375,7 @@ export default function App() {
           <Route
             path="/admin/kelola-profil-desa"
             element={
-              <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-profil-desa')}>
                 <OperatorDesaLayout>
                   <KelolaProfilDesaPage />
                 </OperatorDesaLayout>
@@ -387,7 +386,7 @@ export default function App() {
           <Route
             path="/admin/operator-desa/surat"
             element={
-              <ProtectedRoute allowedRoles={OPERATOR_DESA_ROLES}>
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/operator-desa/surat')}>
                 <OperatorDesaLayout>
                   <OperatorSuratListPage />
                 </OperatorDesaLayout>
@@ -397,7 +396,7 @@ export default function App() {
           <Route
             path="/admin/approval-settings"
             element={
-              <ProtectedRoute allowedRoles={['petugas_desa']}>
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/approval-settings')}>
                 <OperatorDesaLayout>
                   <ApprovalSettingPage />
                 </OperatorDesaLayout>
@@ -407,7 +406,7 @@ export default function App() {
           <Route
             path="/admin/approval-flows"
             element={
-              <ProtectedRoute allowedRoles={['petugas_desa']}>
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/approval-flows')}>
                 <OperatorDesaLayout>
                   <ApprovalFlowsPage />
                 </OperatorDesaLayout>
