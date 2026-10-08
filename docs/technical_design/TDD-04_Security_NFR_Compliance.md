@@ -5,9 +5,9 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 4 dari 5 (+ Appendix) |
-| Status | v5.1 — Auth & Approval Flow |
+| Status | v5.2 — Kependudukan, Stempel & Pekerjaan |
 | Cakupan | Keamanan per layer, klasifikasi data & threat modeling, NFR, compliance |
-| Dokumen terkait | `TDD-03_Database_Schema.md` (strategi enkripsi field), `SID-ARCH-BE-001` (S8), OpenAPI Spec v5.0 |
+| Dokumen terkait | `TDD-03_Database_Schema.md` (strategi enkripsi field), `SID-ARCH-BE-001` (S8), OpenAPI Spec v5.2 |
 
 ---
 
@@ -36,12 +36,14 @@
 - Password reset sementara mewajibkan `must_change_password`; perubahan password menghapus guard ini
 - Permintaan terproteksi ditolak dengan HTTP 403 dan kode `password_change_required` sampai password diganti
 - Field sensitif terenkripsi AES-256-CBC via Laravel Encryption (`$casts = encrypted`): `citizens.nik`, `families.no_kk`, `families.family_address`, `letters.applicant_nik`, `letters.applicant_address`. Catatan: `citizens.address` **tidak** dienkripsi (teks biasa). Detail lengkap di `TDD-03_Database_Schema.md` Section 5
+- Data sosio-ekonomi tersimpan per keluarga di `family_socioeconomics`; tabel tersebut belum menggunakan cast enkripsi. Keputusan enkripsi data sosio-ekonomi belum final.
 - Key management: `APP_KEY` tersimpan di `.env`, tidak pernah di-commit ke repository
 
 **Backend Security**
 
 - CSRF protection aktif (default Laravel middleware)
 - Semua input divalidasi via Laravel Form Request, tidak ada data yang masuk tanpa validasi
+- File stempel desa dan TTD pejabat disimpan di private storage, dengan tipe gambar PNG/JPEG/WebP dan batas ukuran 5 MB. Preview dilayani sebagai binary lewat endpoint terautentikasi dan dibatasi scope desa; respons menerapkan `Cache-Control: private, no-store` dan `X-Content-Type-Options: nosniff`. Resource profil desa mengembalikan indikator, bukan path stempel baru; resource pejabat tidak mengembalikan path tanda tangan, tetapi tetap membawa field legacy `officials.stamp_img`.
 - Hanya menggunakan Eloquent ORM / Query Builder, raw query dilarang
 - Rate limit terdaftar: registrasi 5 permintaan/menit per IP dan 10/jam per hash NIK; pengiriman verifikasi email 6/menit. Source tidak memasang rate limit global pada seluruh API.
 - Source tidak mencatat failed login ke log aplikasi secara khusus.

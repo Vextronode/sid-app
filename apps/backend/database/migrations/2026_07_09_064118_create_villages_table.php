@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('head_name', 100)->nullable();
             $table->string('address')->nullable();
             $table->string('phone', 20)->nullable();
+            $table->string('stamp_img')->nullable();
             $table->timestamps();
         });
     }

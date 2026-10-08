@@ -41,7 +41,7 @@ class Citizen extends Model
         'father_name_text',
         'mother_name_text',
         'marital_status',
-        'occupation',
+        'occupation_id',
         'religion',
         'last_education',
         'domicile_status',
@@ -120,13 +120,9 @@ class Citizen extends Model
         return $this->belongsTo(self::class, 'mother_id');
     }
 
-    /**
-     * EV5-3-S3 provides the related model and table in Sprint 3.
-     * Do not call this relation before that migration is implemented.
-     */
-    public function socioeconomics(): HasOne
+    public function occupation(): BelongsTo
     {
-        return $this->hasOne(CitizenSocioeconomic::class);
+        return $this->belongsTo(Occupation::class);
     }
 
     public function user(): HasOne

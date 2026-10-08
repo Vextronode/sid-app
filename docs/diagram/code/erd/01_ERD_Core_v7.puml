@@ -2,7 +2,7 @@
 ' SECTION: ERD (ENTITY RELATIONSHIP DIAGRAM)
 ' FILE: 01_ERD_Core_v7.puml
 ' JUDUL: ERD - Core [1/2]
-' SUMBER: TECHNICAL DESIGN DOCUMENT SID Desa Cibenda v5.1 (Section 5.4.1, 5.4.2)
+' SUMBER: TECHNICAL DESIGN DOCUMENT SID Desa Cibenda v5.2 (Section 2)
 '         + SID-ARCH-BE-001 v1.0 (S3, S5)
 ' CATATAN: Menggantikan 01_ERD_Core_v6.puml (v4.2). Perubahan utama v6 -> v7
 '          didokumentasikan di catatan revisi bawah file ini.
@@ -18,6 +18,7 @@ skinparam entity {
   HeaderBackgroundColor #2E5FA3
   HeaderFontColor #FFFFFF
 }
+
 skinparam arrow {
   Color #2E5FA3
   FontName Arial
@@ -25,7 +26,7 @@ skinparam arrow {
 }
 skinparam linetype ortho
 
-title Entity Relationship Diagram (ERD) v7 - CORE [1/2] - SID Desa Cibenda\n(Wilayah, Pengguna & Jabatan Struktural, Kependudukan (KK+Individu+Sosioekonomi), Surat, Pipeline Approval Dinamis)\nLihat file ERD Pendukung [2/2] untuk: Organisasi Non-Struktural, Notifikasi, Berita, Peraturan Desa\nDiselaraskan v5.1 — Auth & Approval Flow
+title Entity Relationship Diagram (ERD) v7.1 - CORE [1/2] - SID Desa Cibenda\n(Wilayah, Pengguna & Jabatan Struktural, Kependudukan (KK+Individu+Sosioekonomi), Surat, Pipeline Approval Dinamis; 23 tabel domain inti)\nLihat file ERD Pendukung [2/2] untuk: Organisasi Non-Struktural, Notifikasi, Berita, Peraturan Desa\nDiselaraskan v5.2 — Kependudukan, Stempel & Pekerjaan
 
 ' ─────────────────────────────────────────────
 ' WILAYAH
@@ -39,6 +40,7 @@ entity "villages" as VIL {
   head_name : VARCHAR(100)
   address : VARCHAR(255) <<NULL>>
   phone : VARCHAR(20)
+  stamp_img : VARCHAR(255) <<NULL>>
   history : TEXT <<NULL>>
   vision : TEXT <<NULL>>
   mission : TEXT <<NULL>>
@@ -172,7 +174,7 @@ entity "citizens" as CIT {
   rt_id : BIGINT <<FK -> rts, NULL>>
   hamlet_id : BIGINT <<FK -> hamlets, NULL>>
   marital_status : ENUM('belum_kawin',\n'kawin','cerai_hidup','cerai_mati')
-  occupation : VARCHAR(100)
+  occupation_id : BIGINT <<FK -> occupations, NULL, RESTRICT>>
   religion : ENUM('islam','kristen',\n'katolik','hindu','buddha','konghucu')
   last_education : ENUM('tidak_sekolah','sd',\n'smp','sma','diploma','s1','s2','s3')
   * domicile_status : ENUM('menetap',\n'merantau_dalam_negeri',\n'merantau_luar_negeri','tki')\nDEFAULT 'menetap'
@@ -224,11 +226,31 @@ note right of CIT
   residency_type murni informatif.
 end note
 
-entity "citizen_socioeconomics" as CSE {
+entity "occupations" as OCC {
   * id : BIGINT <<PK, AUTO INCREMENT>>
   --
-  * citizen_id : UUID <<FK -> citizens, UNIQUE NOT NULL>>
-  income_range : ENUM('<1jt','1-3jt','3-5jt',\n'5-10jt','>10jt') <<NULL>>
+  * village_id : UUID <<FK -> villages>>
+  * name : VARCHAR(100)
+  * is_active : BOOLEAN <<DEFAULT true>>
+  * sort_order : UNSIGNED INT <<DEFAULT 0>>
+  UNIQUE (village_id, LOWER(name))
+  created_at : TIMESTAMP <<NULL>>
+  updated_at : TIMESTAMP <<NULL>>
+}
+
+note right of OCC
+  Referensi pekerjaan baku per desa,
+  bukan ENUM DB. Nama dijaga unik
+  case-insensitive dalam satu desa.
+  Hapus hanya jika belum dipakai warga;
+  jika masih dipakai, gunakan nonaktif.
+end note
+
+entity "family_socioeconomics" as FSE {
+  * id : BIGINT <<PK, AUTO INCREMENT>>
+  --
+  * family_id : UUID <<FK -> families, UNIQUE NOT NULL>>
+  household_income_range : ENUM('<1jt','1-3jt','3-5jt',\n'5-10jt','>10jt') <<NULL>>
   house_ownership_status : ENUM('milik_sendiri',\n'sewa','menumpang','dinas') <<NULL>>
   water_source : ENUM('pdam','sumur',\n'sungai','lainnya') <<NULL>>
   electricity_source : ENUM('pln','non_pln',\n'tidak_ada') <<NULL>>
@@ -240,14 +262,12 @@ entity "citizen_socioeconomics" as CSE {
   updated_at : TIMESTAMP <<NULL>>
 }
 
-note right of CSE
-  BARU v5.0, MASUK MVP.
-  Relasi 1:1 dengan citizens
-  (per INDIVIDU, bukan per keluarga).
-  Dipisah dari citizens karena:
-  sering kosong (belum semua warga
-  disurvei), diinput petugas berbeda-beda,
-  butuh jejak waktu survei (surveyed_at).
+note right of FSE
+  Relasi 1:1 opsional dengan families;
+  sosio-ekonomi dan penghasilan dicatat
+  per KELUARGA/KK, bukan per individu.
+  KK baru belum memiliki baris sampai
+  disurvei; survei ulang menimpa data.
   ---
   Cluster Kelayakan Bansos
   (citizen_aid_eligibility,
@@ -283,6 +303,10 @@ note right of OFF
   v5.1: akun pejabat memakai UUID pada
   citizen_id/user_id; term_ends_at hanya
   informasi masa jabatan, tanpa scheduler.
+  officials.stamp_img masih ada dan
+  nasibnya belum diputuskan. Kolom ini
+  tidak dipakai PDF; sumber stempel PDF
+  adalah villages.stamp_img.
   PERUBAHAN v5.0 pada level makna relasi:
   - officials.position='kadus' TETAP
     eksis untuk keperluan struktural
@@ -609,7 +633,7 @@ entity "activity_log" as ALOG {
 note right of ALOG
   Tabel operasional dari package
   spatie/laravel-activitylog; di luar
-  hitungan 22 tabel domain inti.
+  hitungan 23 tabel domain inti.
 end note
 
 note right of LSL
@@ -693,8 +717,10 @@ FAM }o--o| RWS : "rw_id (nullable)"
 FAM }o--o| HAM : "hamlet_id (nullable)"
 FAM |o--o| CIT : "head_of_family_id\n(nullable, denormalisasi opsional)"
 
-CIT ||--o| CSE : "1:1 data\nsosio-ekonomi"
-USR ||--o{ CSE : "surveyed_by\n(petugas survei, nullable)"
+FAM ||--o| FSE : "1:1 data\nsosio-ekonomi KK"
+USR ||--o{ FSE : "surveyed_by\n(petugas survei, nullable)"
+VIL ||--o{ OCC : "katalog pekerjaan desa"
+OCC ||--o{ CIT : "occupation_id\n(RESTRICT)"
 
 USR ||--o{ OFF : "menjabat sebagai\n(user_id nullable)"
 CIT ||--o{ OFF : "data kependudukan\npejabat (citizen_id)"
@@ -731,14 +757,12 @@ LET ||--o{ LA : "keputusan approval\n(jumlah record dinamis\nsesuai flow_steps m
 '==================================================================================
 ' CATATAN REVISI: 01_ERD_Core_v6.puml (v4.2) -> 01_ERD_Core_v7.puml (v5.0)
 '==================================================================================
-'
 ' ENTITY BARU (5):
 '   - letter_categories  : gate awal klasifikasi surat (approval_normal/upload_mandiri/dokumen_pendukung/update_data)
 '   - approval_flows     : anak dari category, urutan step approval spesifik
 '   - flow_steps         : urutan approver per flow (approver_position, is_final)
 '   - families            : tabel KK (no_kk pindah dari citizens ke sini)
 '   - citizen_socioeconomics : data sosio-ekonomi 1:1 per individu warga
-'
 ' ENTITY BERUBAH SIGNIFIKAN:
 '   - citizens : hapus no_kk; tambah 11 kolom baru termasuk 2 self-reference
 '                FK (father_id, mother_id -> citizens.id)
@@ -758,7 +782,8 @@ LET ||--o{ LA : "keputusan approval\n(jumlah record dinamis\nsesuai flow_steps m
 '                 TIDAK PERNAH menunjuk position='kadus')
 '
 ' ENTITY TIDAK BERUBAH SAMA SEKALI:
-'   - villages, hamlets, rws, rts, users
+'   - hamlets, rws, rts, users
+'   - villages berubah pada v5.2 dengan penambahan stamp_img
 '
 ' ENTITY YANG DIKELUARKAN DARI ERD MVP (dipindah ke Next Dev/Tahap 2,
 ' TIDAK digambar di sini - lihat TDD Section 3.3/3.4/3.5 & Table 70):
@@ -775,5 +800,13 @@ LET ||--o{ LA : "keputusan approval\n(jumlah record dinamis\nsesuai flow_steps m
 '     (create_approval_settings_table.php). Catatan technical debt versi
 '     sebelumnya sudah tidak berlaku - lihat TDD-06_Appendix.md Section A.2
 '     untuk riwayat koreksinya.
+'
+' REVISI v7 -> v7.1 (v5.2):
+' ENTITY BARU: occupations (referensi pekerjaan per desa).
+' ENTITY DIGANTI: citizen_socioeconomics menjadi family_socioeconomics.
+' ENTITY BERUBAH: villages mendapat stamp_img; citizens.occupation
+' diganti occupation_id FK RESTRICT.
+' PDF memakai TTD Kepala Desa aktif dan stempel villages; file upload
+' berada pada private storage dan preview melalui endpoint terproteksi.
 '
 '==================================================================================

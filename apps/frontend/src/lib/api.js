@@ -42,4 +42,15 @@ export function submitDecision(role, id, status, notes = null) {
   })
 }
 
+// ======================================================
+// RW / Kasi
+// Endpoint : /approve
+// ======================================================
+export function approveSurat(role, id, status, notes = null) {
+  return api.patch(`/api/${role}/approvals/${id}/approve`, {
+    status,
+    notes,
+  })
+}
+
 export default api

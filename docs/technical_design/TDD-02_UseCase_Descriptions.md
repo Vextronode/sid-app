@@ -5,13 +5,13 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 2 dari 5 (+ Appendix) |
-| Status | v5.1 — Auth & Approval Flow |
+| Status | v5.2 — Kependudukan, Stempel & Pekerjaan |
 | Cakupan | Deskripsi seluruh Use Case aktif MVP (UC-01 s/d UC-24, kecuali yang dipindah ke Appendix) |
 | UC Next Dev / Tahap 2 (UC-07, UC-11, UC-12, UC-13) | Lihat `TDD-06_Appendix.md` |
-| Dokumen terkait | `TDD-01_Overview_Scope_Roles.md`, `TDD-03_Database_Schema.md`, OpenAPI Spec v5.0 |
+| Dokumen terkait | `TDD-01_Overview_Scope_Roles.md`, `TDD-03_Database_Schema.md`, OpenAPI Spec v5.2 |
 
-> **v5.1 — Auth & Approval Flow:** UC-01, UC-03, UC-04c/d, UC-08, UC-14/15/17/22 diperbarui mengikuti plan dan perilaku backend saat ini.
-> Referensi kontrak endpoint (request/response, error handling) untuk setiap UC ada di OpenAPI Spec v5.1 — dokumen ini fokus pada alur bisnis.
+> **v5.2 — Kependudukan, Stempel & Pekerjaan:** UC-08, UC-09, dan UC-18 mencerminkan stempel desa, sosio-ekonomi per KK, serta katalog pekerjaan per desa.
+> Referensi kontrak endpoint (request/response, error handling) untuk setiap UC ada di OpenAPI Spec v5.2 — dokumen ini fokus pada alur bisnis.
 
 ---
 
@@ -286,7 +286,7 @@ Main Flow:
    - Kasi/Kaur hanya dapat mengakses surat approved yang sesuai `assigned_role`
 4. Sistem mengambil template dari `letter_types.template` (HTML Blade)
 5. Sistem inject data: nomor surat, data pemohon, keperluan, tanggal
-6. Sistem mengambil TTD dan stempel dari Kepala Desa aktif, termasuk jika Sekdes yang menyetujui surat.
+6. Sistem mengambil TTD dari Kepala Desa aktif (termasuk jika Sekdes yang menyetujui) dan stempel dari `villages.stamp_img`.
 7. `barryvdh/laravel-dompdf` generate PDF dari template yang sudah diisi data
 8. Sistem mengembalikan binary PDF langsung (tidak disimpan file di server)
 
@@ -314,7 +314,7 @@ Alternative Flow:
 3. Petugas mengisi form:
    - NIK (16 digit numerik), nama lengkap, tempat & tanggal lahir
    - Jenis kelamin, alamat, `rt_id`, `hamlet_id`
-   - Status perkawinan, pekerjaan, agama, pendidikan terakhir, `domicile_status`, `current_domicile`
+   - Status perkawinan, `occupation_id` (pilihan dari daftar pekerjaan desa), agama, pendidikan terakhir, `domicile_status`, `current_domicile`
    - `blood_type`, `residency_type` (lokal/pendatang), `origin_region` (jika pendatang)
    - `father_id`/`father_name_text` (pilih dari data warga terdaftar atau isi teks bebas jika tidak terdaftar), `mother_id`/`mother_name_text` (sama)
    - `family_id` (pilih dari dropdown KK yang sudah ada, atau buat KK baru via sub-flow Kelola Data Keluarga), `family_role`
@@ -336,7 +336,7 @@ Alternative Flow:
 1. Petugas memilih "Import Data Warga dari Excel"
 2. Petugas upload file Excel (.xlsx / .csv) sesuai template yang disediakan
 3. Sistem memvalidasi format file dan header kolom
-4. Sistem memproses via `maatwebsite/excel`: validasi per baris (format NIK, duplikat) — **bukan all-or-nothing**, baris gagal di-skip tanpa membatalkan baris valid lainnya
+4. Sistem memproses via `maatwebsite/excel`: validasi per baris (format NIK, duplikat) — **bukan all-or-nothing**, baris gagal di-skip tanpa membatalkan baris valid lainnya; kolom pekerjaan lama belum diproses dan pemetaan nama ke `occupation_id` ditunda
 5. Sistem menyimpan data yang valid, skip baris yang error
 6. Sistem menampilkan ringkasan: jumlah berhasil, jumlah error beserta detail per baris
 
@@ -351,6 +351,18 @@ Alternative Flow:
 - Tambah KK baru: input `no_kk`, `family_address`, pilih `rt_id`/`hamlet_id`
 - Tambah anggota ke KK: pilih/buat citizen, set `family_role`, FK ke `family_id`
 - Sistem otomatis validasi: hanya 1 `family_role='kepala_keluarga'` per `family_id` aktif
+
+**Sub-flow - Kelola Data Sosio-Ekonomi Keluarga:**
+- Petugas Desa membuka satu data KK dan melihat status survei.
+- Petugas mengisi atau memperbarui `household_income_range` dan atribut sosio-ekonomi keluarga lainnya melalui survei per KK.
+- Sistem mengisi `surveyed_by` dan `surveyed_at` dari Petugas yang login dan waktu request.
+- Survei ulang menimpa data sebelumnya; KK tanpa record berarti belum disurvei.
+- Data penghasilan adalah tingkat rumah tangga; periode penghasilan belum ditetapkan. KK tanpa anggota/warga terhubung juga tidak memiliki record terpisah di tingkat individu.
+
+**Sub-flow - Kelola Daftar Pekerjaan Desa:**
+- Petugas Desa menambah, mengubah nama/urutan, atau menonaktifkan pekerjaan untuk desanya.
+- Form warga memilih pekerjaan aktif dari katalog desa melalui `occupation_id`; pekerjaan desa lain dan pekerjaan nonaktif tidak dapat dipilih.
+- Pekerjaan yang masih digunakan warga tidak dapat dihapus (HTTP 409); Petugas disarankan menonaktifkannya.
 
 ---
 
@@ -370,6 +382,11 @@ Main Flow:
 3. Promote menghubungkan akun warga aktif dengan citizen ke jabatan/wilayah valid; demote dan rotate mengubah akun serta official secara transaksional.
 4. Reset password hanya untuk akun non-Petugas Desa selain diri sendiri; password acak 12 karakter ditandai `must_change_password=true` dan hanya ditampilkan sekali.
 5. Perubahan jabatan dicatat pada audit activitylog.
+
+**Sub-flow - Upload / Ganti TTD Kepala Desa:**
+- Setelah rotasi jabatan, Petugas Desa mengunggah file TTD ke record Kepala Desa aktif yang baru melalui `POST /officials/{official}/signature` (multipart field `signature`).
+- File PNG/JPEG/WebP maksimum 5 MB disimpan pada private storage; preview binary melalui `GET` pada endpoint yang sama hanya tersedia bagi Petugas Desa desa terkait dan Kepala Desa aktif yang belum mengakhiri masa jabatan.
+- Upload ulang mengganti file TTD pada record aktif yang sama. Alur upload terpisah dari operasi rotasi.
 
 Alternative Flow:
 - Email sudah terdaftar → error "Email sudah digunakan"
@@ -482,20 +499,21 @@ Alternatif Flow:
 
 Main Flow:
 1. User membuka menu "Profil Desa"
-2. Sistem menampilkan data profil desa saat ini: nama desa, kode desa, nama Kepala Desa, sejarah singkat, visi misi, alamat kantor, nomor telepon, struktur pemerintahan
-3. User memilih "Edit Profil Desa"
-4. User mengubah field yang diperlukan
-5. Sistem memvalidasi input (field wajib tidak boleh kosong)
-6. Sistem menyimpan perubahan ke tabel `villages`
-7. Sistem menampilkan konfirmasi
-8. Perubahan langsung tampil di halaman publik (UC-16)
+2. Sistem menampilkan data profil desa saat ini: nama desa, kode desa, nama Kepala Desa, sejarah singkat, visi misi, alamat kantor, nomor telepon, struktur pemerintahan, dan indikator ketersediaan stempel.
+3. User memilih "Edit Profil Desa", mengubah data profil, lalu menyimpan form profil (field gambar tidak diisi melalui form ini).
+4. Untuk menambah atau mengganti stempel, User mengunggah file PNG/JPEG/WebP maksimum 5 MB melalui operasi upload terpisah.
+5. File disimpan di private storage; API menyimpan path dan menyediakan preview binary melalui endpoint yang memerlukan autentikasi serta scope Petugas Desa pada desanya.
+6. Sistem menampilkan konfirmasi; profil publik hanya menerima indikator `has_stamp_img`, bukan path private atau URL file.
 
 Alternatif Flow:
 - Field wajib kosong (nama desa, nama Kepala Desa) → error validasi per field
+- Stempel belum tersedia → indikator bernilai `false`; endpoint preview memberi 404.
+- File bukan PNG/JPEG/WebP atau melebihi 5 MB → 422.
 
 Notes:
 - Domain CMS (Profil Desa, Berita, Peraturan Desa) dimiliki **eksklusif** oleh `petugas_desa`. Kepala Desa dan Sekretaris Desa **tidak** memiliki akses ke domain ini meski keduanya adalah approver aktif di domain surat — dua domain ini terpisah tegas.
 - Tidak ada approval bertingkat; perubahan langsung tersimpan
+- Upload stempel terpisah dari rotasi jabatan; alur upload TTD Kepala Desa dijelaskan pada UC-14.
 
 ---
 

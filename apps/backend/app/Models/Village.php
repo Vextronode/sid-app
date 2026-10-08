@@ -17,6 +17,7 @@ class Village extends Model
         'head_name',
         'address',
         'phone',
+        'stamp_img',
         'history',
         'vision',
         'mission',
@@ -45,6 +46,11 @@ class Village extends Model
     public function letters(): HasMany
     {
         return $this->hasMany(Letter::class);
+    }
+
+    public function occupations(): HasMany
+    {
+        return $this->hasMany(Occupation::class);
     }
 
     public function VillageRegulations(): HasMany

@@ -1,3 +1,48 @@
+# Dokumen yang Berubah — Batch 17
+
+## Sosio-Ekonomi KK, Pekerjaan, Stempel dan TTD Privat (6 Okt 2026)
+
+### Dokumen baru
+
+- `docs/api_spec/paths/families/family-socioeconomics.yaml`
+- `docs/api_spec/paths/occupations/occupations.yaml`
+- `docs/api_spec/paths/occupations/occupation-detail.yaml`
+- `docs/api_spec/paths/officials/official-signature.yaml`
+- `docs/api_spec/paths/villages/profile-stamp.yaml`
+- `docs/api_spec/schemas/occupations/occupations.yaml`
+- `docs/frontend-changelog-patch-stempel-pekerjaan.md`
+
+### Dokumen dihapus
+
+- `docs/api_spec/paths/citizens/citizen-socioeconomics.yaml` (route berpindah ke `/families/{id}/socioeconomic`)
+
+### Dokumen diperbarui
+
+- `docs/api_spec/00_INDEX.md`
+- `docs/api_spec/openapi.yaml`
+- `docs/api_spec/paths/letters/download.yaml`
+- `docs/api_spec/paths/letters/download.yaml`
+- `docs/api_spec/schemas/citizens/citizens.yaml`
+- `docs/api_spec/schemas/families/families.yaml`
+- `docs/api_spec/schemas/users/users.yaml`
+- `docs/api_spec/schemas/villages/villages.yaml`
+- `docs/architecture/SID-ARCH-BE-001_Backend_Architecture.md`
+- `docs/architecture/SID-ARCH-SYS-001_System_Architecture_v1.1.md`
+- `docs/diagram/code/alur_sistem_and_arsitektur_teknis/01_Activity_AlurSistem_v5.puml`
+- `docs/diagram/code/alur_sistem_and_arsitektur_teknis/02_Component_ArsitekturTeknis_v5.puml`
+- `docs/diagram/code/class/01_Class_Core_v5.puml`
+- `docs/diagram/code/deployment/01_Deployment_Architecture_Detail_v5.puml`
+- `docs/diagram/code/erd/01_ERD_Core_v7.puml`
+- `docs/diagram/code/usecase/02_UC_PetugasDesa_SuratWarga_v5.puml`
+- `docs/diagram/code/usecase/04_UC_PetugasDesa_KontenKonfigurasi_v5.puml`
+- `docs/technical_design/TDD-01_Overview_Scope_Roles.md`
+- `docs/technical_design/TDD-02_UseCase_Descriptions.md`
+- `docs/technical_design/TDD-03_Database_Schema.md`
+- `docs/technical_design/TDD-04_Security_NFR_Compliance.md`
+- `docs/technical_design/TDD-05_Roadmap_Risks_OpenQuestions.md`
+- `docs/technical_design/TDD-06_Appendix.md`
+- `docs/docs-sync-report.md`
+
 # Dokumen yang Berubah — Batch 12
 
 ## Sinkronisasi backend tambahan (6 Okt 2026)

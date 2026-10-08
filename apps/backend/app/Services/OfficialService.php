@@ -15,6 +15,10 @@ use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OfficialService
 {
@@ -215,6 +219,73 @@ class OfficialService
         $this->assertPositionAvailable($merged, excludeId: $official->id);
 
         return $this->officialRepository->update($official, $data);
+    }
+
+    public function replaceSignature(Official $official, User $user, UploadedFile $signature): Official
+    {
+        $villageId = $this->villageId($user);
+        $this->assertCurrentVillageHead($official, $villageId);
+
+        $directory = "official-signatures/{$villageId}/{$official->id}";
+        $newPath = $signature->store($directory, 'private_uploads');
+        $oldPath = $official->signature_img;
+
+        try {
+            $official = $this->officialRepository->update($official, ['signature_img' => $newPath]);
+        } catch (\Throwable $exception) {
+            Storage::disk('private_uploads')->delete($newPath);
+            throw $exception;
+        }
+
+        $this->deletePreviousSignature($oldPath, $directory);
+
+        return $official;
+    }
+
+    public function signaturePreview(Official $official, User $user): BinaryFileResponse
+    {
+        $villageId = $this->villageId($user);
+        $this->assertCurrentVillageHead($official, $villageId);
+
+        $directory = "official-signatures/{$villageId}/{$official->id}";
+        if (
+            ! $official->signature_img
+            || ! str_starts_with($official->signature_img, $directory.'/')
+            || ! Storage::disk('private_uploads')->exists($official->signature_img)
+        ) {
+            throw new HttpException(404, 'Tanda tangan Kepala Desa belum tersedia.');
+        }
+
+        $response = response()->file(Storage::disk('private_uploads')->path($official->signature_img), [
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+        $response->setPrivate();
+        $response->headers->set('Cache-Control', 'private, no-store');
+
+        return $response;
+    }
+
+    private function assertCurrentVillageHead(Official $official, string $villageId): void
+    {
+        if ($official->village_id !== $villageId) {
+            throw new HttpException(404, 'Data pejabat tidak ditemukan.');
+        }
+
+        if (
+            $official->position !== OfficialPosition::KepalaDesa->value
+            || ! $official->is_active
+            || $official->ended_at !== null
+        ) {
+            throw new HttpException(404, 'Kepala Desa aktif tidak ditemukan.');
+        }
+    }
+
+    private function deletePreviousSignature(?string $path, string $directory): void
+    {
+        if ($path && str_starts_with($path, $directory.'/')) {
+            Storage::disk('private_uploads')->delete($path);
+        }
     }
 
     private function villageId(User $user): string

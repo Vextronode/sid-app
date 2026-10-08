@@ -256,16 +256,15 @@ Official:
     is_active:
       type: boolean
       example: true
-    signature_img:
-      type: string
-      nullable: true
-      example: null
-      description: "Nilai kolom signature_img apa adanya (tidak ditransformasi Resource)"
+    has_signature_img:
+      type: boolean
+      example: true
+      description: "Indikator ketersediaan TTD private; preview melalui endpoint terproteksi."
     stamp_img:
       type: string
       nullable: true
       example: null
-      description: "Nilai kolom stamp_img apa adanya (tidak ditransformasi Resource)"
+      description: "Kolom legacy; tidak dipakai PDF. PDF mengambil stempel dari villages."
     photo_img:
       type: string
       nullable: true

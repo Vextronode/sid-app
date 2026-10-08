@@ -105,10 +105,16 @@ Citizen:
       enum: [belum_kawin, kawin, cerai_hidup, cerai_mati]
       nullable: true
       example: "kawin"
+    occupation_id:
+      type: integer
+      nullable: true
+      example: 3
+      description: ID pekerjaan baku milik desa warga.
     occupation:
       type: string
       nullable: true
       example: "Wiraswasta"
+      description: Nama pekerjaan dari relasi occupation; null jika belum dipilih.
     religion:
       type: string
       enum: [islam, kristen, katolik, hindu, buddha, konghucu]
@@ -254,9 +260,10 @@ CitizenCreateRequest:
       type: string
       enum: [belum_kawin, kawin, cerai_hidup, cerai_mati]
       example: "kawin"
-    occupation:
-      type: string
-      example: "Wiraswasta"
+    occupation_id:
+      type: integer
+      nullable: true
+      example: 3
     religion:
       type: string
       enum: [islam, kristen, katolik, hindu, buddha, konghucu]
@@ -311,83 +318,3 @@ CitizenImportResponse:
               message:
                 type: string
                 example: "NIK sudah terdaftar dalam database warga"
-
-CitizenSocioeconomic:
-  type: object
-  description: |
-    BARU v5.0. Relasi 1:1 dengan citizens (per individu, BUKAN per keluarga).
-    Dipisah tabel karena sering kosong (belum semua warga disurvei).
-  properties:
-    id:
-      type: integer
-      example: 1
-    citizen_id:
-      type: string
-      format: uuid
-      example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
-    income_range:
-      type: string
-      enum: ["<1jt", "1-3jt", "3-5jt", "5-10jt", ">10jt"]
-      nullable: true
-      example: "3-5jt"
-    house_ownership_status:
-      type: string
-      enum: [milik_sendiri, sewa, menumpang, dinas]
-      nullable: true
-      example: "milik_sendiri"
-    water_source:
-      type: string
-      enum: [pdam, sumur, sungai, lainnya]
-      nullable: true
-      example: "pdam"
-    electricity_source:
-      type: string
-      enum: [pln, non_pln, tidak_ada]
-      nullable: true
-      example: "pln"
-    dependents_count:
-      type: integer
-      nullable: true
-      example: 3
-    productive_assets:
-      type: object
-      nullable: true
-      additionalProperties: true
-      example: {"kendaraan": "motor", "ternak": null}
-    surveyed_at:
-      type: string
-      format: date-time
-      nullable: true
-      example: "2026-05-01T09:00:00Z"
-    surveyed_by:
-      type: string
-      format: uuid
-      nullable: true
-      example: "e8aaa421-7fdd-42cf-8c30-993264820afd"
-
-CitizenSocioeconomicUpsertRequest:
-  type: object
-  properties:
-    income_range:
-      type: string
-      enum: ["<1jt", "1-3jt", "3-5jt", "5-10jt", ">10jt"]
-      example: "3-5jt"
-    house_ownership_status:
-      type: string
-      enum: [milik_sendiri, sewa, menumpang, dinas]
-      example: "milik_sendiri"
-    water_source:
-      type: string
-      enum: [pdam, sumur, sungai, lainnya]
-      example: "pdam"
-    electricity_source:
-      type: string
-      enum: [pln, non_pln, tidak_ada]
-      example: "pln"
-    dependents_count:
-      type: integer
-      example: 3
-    productive_assets:
-      type: object
-      additionalProperties: true
-      example: {"kendaraan": "motor"}

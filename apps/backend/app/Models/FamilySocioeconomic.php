@@ -9,11 +9,11 @@ use App\Enums\WaterSource;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class CitizenSocioeconomic extends Model
+class FamilySocioeconomic extends Model
 {
     protected $fillable = [
-        'citizen_id',
-        'income_range',
+        'family_id',
+        'household_income_range',
         'house_ownership_status',
         'water_source',
         'electricity_source',
@@ -23,8 +23,11 @@ class CitizenSocioeconomic extends Model
         'surveyed_by',
     ];
 
+    /**
+     * household_income_range is the combined monthly income of all family members.
+     */
     protected $casts = [
-        'income_range' => IncomeRange::class,
+        'household_income_range' => IncomeRange::class,
         'house_ownership_status' => HouseOwnershipStatus::class,
         'water_source' => WaterSource::class,
         'electricity_source' => ElectricitySource::class,
@@ -33,9 +36,9 @@ class CitizenSocioeconomic extends Model
         'surveyed_at' => 'datetime',
     ];
 
-    public function citizen(): BelongsTo
+    public function family(): BelongsTo
     {
-        return $this->belongsTo(Citizen::class);
+        return $this->belongsTo(Family::class);
     }
 
     public function surveyor(): BelongsTo

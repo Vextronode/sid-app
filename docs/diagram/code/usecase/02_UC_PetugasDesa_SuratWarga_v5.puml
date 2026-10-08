@@ -23,7 +23,7 @@ skinparam actor {
   FontSize 12
 }
 
-title Use Case Diagram - Petugas Desa (1/3: Monitoring Surat & Data Warga) [v5.0]
+title Use Case Diagram - Petugas Desa (1/3: Monitoring Surat & Data Warga) [v5.2]
 
 actor "Petugas Desa" as PD
 
@@ -48,6 +48,8 @@ rectangle "Sistem Informasi Desa (SID) - Desa Cibenda" {
     usecase "Cari & Lihat\nData Warga" as UC_CIT_LIST
     usecase "Import Data Warga\nvia Excel" as UC_CIT_IMPORT
     usecase "Kelola Data Keluarga\n(KK - families)" as UC_FAM_CRUD
+    usecase "Kelola Daftar Pekerjaan\nper Desa" as UC_OCC
+    usecase "Survei Sosio-Ekonomi\nper KK" as UC_FSE
   }
 
   rectangle "Fitur Pendukung" #FDF2F8 {
@@ -64,11 +66,15 @@ PD -- UC_CIT_CRUD
 PD -- UC_CIT_LIST
 PD -- UC_CIT_IMPORT
 PD -- UC_FAM_CRUD
+PD -- UC_OCC
+PD -- UC_FSE
 PD -- UC_DASH
 
 UC_CIT_CRUD ..> UC_CIT_LIST : <<include>>
 UC_CIT_CRUD ..> UC_CIT_IMPORT : <<extend>>
 UC_CIT_CRUD ..> UC_FAM_CRUD : <<extend>>
+UC_CIT_CRUD ..> UC_OCC : <<extend>>
+UC_CIT_CRUD ..> UC_FSE : <<extend>>
 UC_LIST ..> UC_DETAIL : <<include>>
 UC_DETAIL ..> UC_DOWNLOAD : <<extend>>
 

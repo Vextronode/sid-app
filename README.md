@@ -20,11 +20,11 @@ Alur default surat adalah **Warga → RT → Kepala Desa/Sekretaris Desa (final)
 | --- | --- |
 | Warga | Mengajukan, melacak, dan mengunduh surat miliknya |
 | RT | Memverifikasi pengajuan pada wilayahnya |
-| RW | Menerima notifikasi FYI |
+| RW | Menerima notifikasi FYI, Melihat Surat yang masuk ke wilayahnya |
+| Kadus | Menerima notifikasi FYI, Melihat Surat yang masuk ke wilayahnya |
 | Kepala Desa / Sekretaris Desa | Approver pada tahap pemeriksaan desa |
 | Kasi Pelayanan / Kaur TU & Umum | Menerima notifikasi dan melihat/mengunduh surat yang telah disetujui sesuai penugasannya |
 | Petugas Desa | Mengelola data master, konten desa, wilayah, pengguna, dan memantau seluruh surat |
-| Kadus | Jabatan struktural dan akses non-approval |
 
 ## Arsitektur
 
