@@ -2,18 +2,20 @@
 // OperatorSuratListPage.jsx
 // Halaman "Daftar Permohonan Surat" untuk Operator Desa.
 // Status menggunakan status generic.
-// Daftar, detail, riwayat, dan unduhan bersifat read-only.
+// Logic edit/hapus/preview tetap dipertahankan.
 // Styling menggunakan Global CSS.
 // ==========================================
 
 import OperatorSuratPreviewModal from '@/features/operator-desa/components/OperatorSuratPreviewModal'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Download, Search, Eye } from 'lucide-react'
+import { Download, Search, Pencil, Eye, Trash2 } from 'lucide-react'
 
-import { getSuratList } from '@/lib/api'
+import api, { getSuratList } from '@/lib/api'
+import { useAuth } from '@/features/auth/contexts/AuthContext'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
+import OperatorSuratActionModal from '@/features/operator-desa/components/OperatorSuratActionModal'
 import { FooterOperator } from '../../components/layout/FooterOperator'
 
 import { SURAT_STATUS, SURAT_STATUS_ORDER } from '@/constants/suratStatus'
@@ -21,6 +23,8 @@ import { SURAT_STATUS, SURAT_STATUS_ORDER } from '@/constants/suratStatus'
 const ITEMS_PER_PAGE = 3
 
 export default function OperatorSuratListPage() {
+  const { user } = useAuth()
+
   const [letters, setLetters] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -29,43 +33,76 @@ export default function OperatorSuratListPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 
+  const [selectedSurat, setSelectedSurat] = useState(null)
   const [previewSurat, setPreviewSurat] = useState(null)
+
+  // ==========================================
+  // DELETE CONFIRMATION
+  // ==========================================
+
+  const [deleteSurat, setDeleteSurat] = useState(null)
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  // ==========================================
+  // ROLE ENDPOINT
+  // ==========================================
+
+  const ROLE_ENDPOINT = {
+    rt: 'rt',
+    kasi_pelayanan: 'kasi',
+    kaur_tu_umum: 'kasi',
+    petugas_desa: 'kasi',
+  }
+
+  const roleKey = ROLE_ENDPOINT[user?.role] ?? user?.role
 
   // ==========================================
   // LOAD DATA
   // ==========================================
 
-  const loadLetters = useCallback(async (showLoading = true) => {
-    if (showLoading) {
-      setLoading(true)
-    }
+  const loadLetters = useCallback(
+    async (showLoading = true) => {
+      if (!roleKey) {
+        return
+      }
+
+      if (showLoading) {
+        setLoading(true)
+      }
 
       try {
         const res = await getSuratList()
 
-      const data = Array.isArray(res.data?.data)
-        ? res.data.data
-        : Array.isArray(res.data)
-          ? res.data
-          : []
+        const data = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+            ? res.data
+            : []
 
-      setLetters(data)
-    } catch (err) {
-      console.error('GAGAL MENGAMBIL DATA SURAT:', err.response?.data ?? err)
+        setLetters(data)
+      } catch (err) {
+        console.error('GAGAL MENGAMBIL DATA SURAT:', err.response?.data ?? err)
 
-      setLetters([])
-    } finally {
-      if (showLoading) {
-        setLoading(false)
+        setLetters([])
+      } finally {
+        if (showLoading) {
+          setLoading(false)
+        }
       }
-    }
-  }, [])
+    },
+    [roleKey],
+  )
 
   // ==========================================
   // LOAD DATA PERTAMA KALI
   // ==========================================
 
   useEffect(() => {
+    if (!roleKey) {
+      return
+    }
+
     let isMounted = true
 
     const loadInitialLetters = async () => {
@@ -81,19 +118,23 @@ export default function OperatorSuratListPage() {
     return () => {
       isMounted = false
     }
-  }, [loadLetters])
+  }, [roleKey, loadLetters])
 
   // ==========================================
   // AUTO REFRESH DATA SETIAP 5 DETIK
   // ==========================================
 
   useEffect(() => {
+    if (!roleKey) {
+      return
+    }
+
     const interval = setInterval(() => {
       loadLetters(false)
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [loadLetters])
+  }, [roleKey, loadLetters])
 
   // ==========================================
   // FILTER + SORT
@@ -392,6 +433,33 @@ export default function OperatorSuratListPage() {
                           >
                             <Eye size={17} />
                           </button>
+
+                          {/* EDIT */}
+
+                          {surat.status !== SURAT_STATUS.APPROVED && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedSurat(surat)}
+                              className="sid-operator-action edit"
+                              title="Edit Surat"
+                            >
+                              <Pencil size={17} />
+                            </button>
+                          )}
+
+                          {/* HAPUS */}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeleteSurat(surat)
+                              setDeleteConfirmation('')
+                            }}
+                            className="sid-operator-action delete"
+                            title="Hapus Surat"
+                          >
+                            <Trash2 size={17} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -455,6 +523,130 @@ export default function OperatorSuratListPage() {
 
       {previewSurat && (
         <OperatorSuratPreviewModal surat={previewSurat} onClose={() => setPreviewSurat(null)} />
+      )}
+
+      {/* ==========================================
+          ACTION MODAL
+      ========================================== */}
+
+      {selectedSurat && (
+        <OperatorSuratActionModal
+          surat={selectedSurat}
+          onClose={() => {
+            setSelectedSurat(null)
+            loadLetters()
+          }}
+        />
+      )}
+
+      {/* ==========================================
+          DELETE MODAL
+      ========================================== */}
+
+      {deleteSurat && (
+        <div className="sid-operator-delete-overlay">
+          <div className="sid-operator-delete-modal">
+            {/* HEADER */}
+
+            <div className="sid-operator-delete-header">
+              <div className="sid-operator-delete-icon">
+                <Trash2 size={20} />
+              </div>
+
+              <div>
+                <h2>Hapus Surat</h2>
+
+                <p>
+                  Tindakan ini akan menghapus surat dari sistem. Data yang sudah dihapus tidak dapat
+                  dikembalikan.
+                </p>
+              </div>
+            </div>
+
+            {/* INFORMASI SURAT */}
+
+            <div className="sid-operator-delete-info">
+              <p>Surat yang akan dihapus</p>
+
+              <strong>#{deleteSurat.letter_number ?? '-'}</strong>
+
+              <span>{deleteSurat.applicant_name ?? '-'}</span>
+
+              <span>{deleteSurat.letter_type?.name ?? '-'}</span>
+            </div>
+
+            {/* INSTRUKSI */}
+
+            <div className="sid-operator-delete-confirm">
+              <label>
+                Untuk melanjutkan, ketik
+                <strong>DELETE</strong>
+                di bawah ini.
+              </label>
+
+              <input
+                type="text"
+                value={deleteConfirmation}
+                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                placeholder="Ketik DELETE"
+                autoFocus
+                disabled={deleting}
+              />
+
+              {deleteConfirmation && deleteConfirmation !== 'DELETE' && (
+                <p>
+                  Ketik <strong>DELETE</strong> persis seperti yang diminta.
+                </p>
+              )}
+            </div>
+
+            {/* BUTTONS */}
+
+            <div className="sid-operator-delete-actions">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => {
+                  setDeleteSurat(null)
+                  setDeleteConfirmation('')
+                }}
+                className="cancel"
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                disabled={deleteConfirmation !== 'DELETE' || deleting}
+                onClick={async () => {
+                  if (deleteConfirmation !== 'DELETE') {
+                    return
+                  }
+
+                  try {
+                    setDeleting(true)
+
+                    await api.delete(`/api/letters/${deleteSurat.id}`)
+
+                    setDeleteSurat(null)
+                    setDeleteConfirmation('')
+
+                    await loadLetters()
+                  } catch (err) {
+                    console.error('GAGAL HAPUS SURAT:', err.response?.data ?? err)
+
+                    window.alert(err.response?.data?.message ?? 'Gagal menghapus surat.')
+                  } finally {
+                    setDeleting(false)
+                  }
+                }}
+                className="delete"
+              >
+                {deleting ? 'Menghapus...' : 'Hapus Surat'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
