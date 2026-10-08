@@ -26,7 +26,7 @@ export function DetailBeritaPage() {
   if (loading) {
     return (
       <div className="sid-detail-berita-not-found">
-        <p>Memuat berita...</p>
+        <p role="status">Memuat berita...</p>
       </div>
     )
   }
@@ -34,7 +34,7 @@ export function DetailBeritaPage() {
   if (error) {
     return (
       <div className="sid-detail-berita-not-found">
-        <p>{error}</p>
+        <p role="alert">{error}</p>
       </div>
     )
   }
