@@ -9,29 +9,15 @@ import { Link } from 'react-router-dom';
 import {
   Phone,
   MapPin,
-  Image as ImageIcon,
+  Newspaper,
 } from 'lucide-react';
 
-// ==========================================
-// GALERI FOTO
-// ==========================================
-
-const GALLERY_PHOTOS = [
-  {
-    src: '',
-    caption: 'Pemandangan Sawah Cibenda',
-  },
-  {
-    src: '',
-    caption: 'Balai Desa Cibenda',
-  },
-  {
-    src: '',
-    caption: 'Kegiatan Warga Desa',
-  },
-];
+import { usePublicNews } from '@/features/berita/usePublicNews';
 
 export function BerandaPage() {
+  const { news, loading, error } = usePublicNews();
+  const latestNews = news.slice(0, 3);
+
   return (
     <div className="sid-beranda">
 
@@ -63,61 +49,70 @@ export function BerandaPage() {
 
 
       {/* ==========================================
-          GALERI
+          BERITA TERBARU
           ========================================== */}
 
-      <section className="sid-beranda-gallery">
-
-        <div className="sid-beranda-gallery-container">
-
-          <h2 className="sid-beranda-section-title">
-            Keindahan Desa Cibenda
-          </h2>
-
-          <p className="sid-beranda-section-description">
-            Sekilas pemandangan dan kegiatan di desa kami
-          </p>
-
-
-          <div className="sid-beranda-gallery-grid">
-
-            {GALLERY_PHOTOS.map((photo, i) => (
-              <div
-                key={i}
-                className="sid-beranda-gallery-card"
-              >
-
-                <div className="sid-beranda-gallery-image">
-
-                  {photo.src ? (
-                    <img
-                      src={photo.src}
-                      alt={photo.caption}
-                    />
-                  ) : (
-                    <ImageIcon
-                      size={32}
-                      className="sid-beranda-gallery-placeholder-icon"
-                    />
-                  )}
-
-                </div>
-
-                <div className="sid-beranda-gallery-caption">
-
-                  <p>
-                    {photo.caption}
-                  </p>
-
-                </div>
-
-              </div>
-            ))}
-
+      <section className="sid-beranda-news">
+        <div className="sid-beranda-news-container">
+          <div className="sid-beranda-news-header">
+            <div>
+              <h2 className="sid-beranda-section-title">
+                Berita Terbaru
+              </h2>
+              <p className="sid-beranda-section-description">
+                Informasi dan kabar terbaru dari Desa Cibenda
+              </p>
+            </div>
+            <Link to="/berita" className="sid-beranda-news-all">
+              Lihat semua berita
+            </Link>
           </div>
 
+          {loading ? (
+            <p className="sid-beranda-news-state" role="status">
+              Memuat berita...
+            </p>
+          ) : error ? (
+            <p className="sid-beranda-news-state" role="alert">
+              {error}
+            </p>
+          ) : latestNews.length === 0 ? (
+            <p className="sid-beranda-news-state" role="status">
+              Belum ada berita yang dipublikasikan.
+            </p>
+          ) : (
+            <div className="sid-beranda-news-grid">
+              {latestNews.map((item) => (
+                <Link
+                  key={item.id}
+                  to={`/berita/${item.id}`}
+                  className="sid-beranda-news-card"
+                >
+                  <div className="sid-beranda-news-image">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.title} />
+                    ) : (
+                      <Newspaper
+                        size={32}
+                        className="sid-beranda-news-placeholder"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </div>
+                  <div className="sid-beranda-news-content">
+                    {item.date && (
+                      <span className="sid-beranda-news-date">{item.date}</span>
+                    )}
+                    <h3>{item.title}</h3>
+                    {(item.excerpt || item.content?.[0]) && (
+                      <p>{item.excerpt || item.content[0]}</p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
-
       </section>
 
 

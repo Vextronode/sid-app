@@ -68,7 +68,7 @@ export function BeritaPage() {
     return (
       <div className="sid-kelola-berita-page">
         <main className="sid-kelola-berita-content">
-          <p>Memuat berita...</p>
+          <p role="status">Memuat berita...</p>
         </main>
       </div>
     )
@@ -78,7 +78,29 @@ export function BeritaPage() {
     return (
       <div className="sid-kelola-berita-page">
         <main className="sid-kelola-berita-content">
-          <p style={{ color: '#d32f2f' }}>{error}</p>
+          <p role="alert" style={{ color: '#d32f2f' }}>
+            {error}
+          </p>
+        </main>
+      </div>
+    )
+  }
+
+  if (news.length === 0) {
+    return (
+      <div className="sid-kelola-berita-page">
+        <main className="sid-kelola-berita-content">
+          <header className="sid-kelola-berita-header">
+            <div className="sid-kelola-berita-header-info">
+              <h1>Berita Desa Cibenda</h1>
+              <p>Kabar dan informasi terbaru dari Desa Cibenda.</p>
+            </div>
+          </header>
+
+          <div className="sid-kelola-berita-empty" role="status">
+            <Newspaper size={28} />
+            <p>Belum ada berita yang dipublikasikan.</p>
+          </div>
         </main>
       </div>
     )
