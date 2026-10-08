@@ -24,57 +24,70 @@ import { WilayahMasterProvider } from '@/features/kelola-wilayah/hooks/WilayahMa
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover-Admin'
 import useNotifications from '@/features/notifikasi/hooks/useNotifications'
+import {
+  getOperatorAllowedRoles,
+  ROLE_NAVIGATION,
+} from '@/features/operator-desa/constants/roleNavigation'
 
 const MENU_ITEMS = [
   {
     label: 'Ringkasan',
-    path: '/admin/operator-desa',
+    route: '/admin/operator-desa',
+    allowedRoles: getOperatorAllowedRoles('/admin/operator-desa'),
     icon: LayoutGrid,
   },
   {
     label: 'Permohonan Surat',
-    path: '/admin/operator-desa/surat',
+    route: '/admin/operator-desa/surat',
+    allowedRoles: getOperatorAllowedRoles('/admin/operator-desa/surat'),
     icon: FileText,
   },
   {
     label: 'Data Penduduk',
-    path: '/admin/data-warga',
+    route: '/admin/data-warga',
+    allowedRoles: getOperatorAllowedRoles('/admin/data-warga'),
     icon: Users,
   },
   {
     label: 'Kelola Wilayah',
-    path: '/admin/kelola-wilayah',
+    route: '/admin/kelola-wilayah',
+    allowedRoles: getOperatorAllowedRoles('/admin/kelola-wilayah'),
     icon: MapPinned,
   },
   {
     label: 'Manajemen Pengguna',
-    path: '/admin/manajemen-user',
+    route: '/admin/manajemen-user',
+    allowedRoles: getOperatorAllowedRoles('/admin/manajemen-user'),
     icon: UserCog,
   },
   {
     label: 'Profil Desa',
-    path: '/admin/kelola-profil-desa',
+    route: '/admin/kelola-profil-desa',
+    allowedRoles: getOperatorAllowedRoles('/admin/kelola-profil-desa'),
     icon: Building2,
   },
   {
     label: 'Kelola Berita',
-    path: '/admin/kelola-berita',
+    route: '/admin/kelola-berita',
+    allowedRoles: getOperatorAllowedRoles('/admin/kelola-berita'),
     icon: Newspaper,
   },
   {
     label: 'Pengaturan Deadline',
-    path: '/admin/approval-settings',
+    route: '/admin/approval-settings',
+    allowedRoles: getOperatorAllowedRoles('/admin/approval-settings'),
     icon: Settings,
-    roles: ['petugas_desa'],
   },
   {
     label: 'Organisasi BPD',
-    path: '/admin/organisasi/bpd',
+    route: '/admin/organisasi/bpd',
+    allowedRoles: getOperatorAllowedRoles('/admin/organisasi/bpd'),
     icon: Network,
   },
   {
     label: 'LPM / Karang Taruna / PKK',
-    path: '/admin/organisasi/lembaga',
+    route: '/admin/organisasi/lembaga',
+    allowedRoles: getOperatorAllowedRoles('/admin/organisasi/lembaga'),
     icon: Network,
   },
 ]
@@ -82,6 +95,7 @@ const MENU_ITEMS = [
 export function OperatorDesaLayout({ children }) {
   const location = useLocation()
   const { user, logout } = useAuth()
+  const visibleRoutes = ROLE_NAVIGATION[user?.role] ?? []
 
   const [notifOpen, setNotifOpen] = useState(false)
 
@@ -107,15 +121,15 @@ export function OperatorDesaLayout({ children }) {
           {/* MENU */}
 
           <nav className="sid-operator-sidebar-nav">
-            {MENU_ITEMS.filter((item) => !item.roles || item.roles.includes(user?.role)).map((item) => {
-              const isActive = location.pathname === item.path
+            {MENU_ITEMS.filter((item) => visibleRoutes.includes(item.route)).map((item) => {
+              const isActive = location.pathname === item.route
 
               const Icon = item.icon
 
               return (
                 <Link
-                  key={item.path}
-                  to={item.path}
+                  key={item.route}
+                  to={item.route}
                   className={`sid-operator-menu-item ${isActive ? 'active' : ''}`}
                 >
                   <Icon size={18} />
