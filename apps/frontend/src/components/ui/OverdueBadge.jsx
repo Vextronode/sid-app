@@ -1,7 +1,7 @@
 import { AlertCircle } from 'lucide-react'
 
-export function OverdueBadge({ isOverdue }) {
-  if (!isOverdue) {
+export function OverdueBadge({ isOverdue, count }) {
+  if (isOverdue !== true) {
     return null
   }
 
@@ -14,7 +14,7 @@ export function OverdueBadge({ isOverdue }) {
       }}
     >
       <AlertCircle size={13} />
-      Terlambat
+      {Number.isInteger(count) ? `Terlambat · ${count}` : 'Terlambat'}
     </span>
   )
 }

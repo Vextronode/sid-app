@@ -29,6 +29,7 @@ import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
 import { getGreeting } from '@/lib/utils/greeting'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
 
@@ -93,12 +94,14 @@ export default function KadesDashboardPage() {
     const disetujui = letters.filter((letter) => letter.status === SURAT_STATUS.APPROVED).length
 
     const ditolak = letters.filter((letter) => letter.status === SURAT_STATUS.REJECTED).length
+    const overdue = letters.filter((letter) => letter.is_overdue === true).length
 
     return {
       menunggu,
       sedangDiproses,
       disetujui,
       ditolak,
+      overdue,
     }
   }, [letters])
 
@@ -203,7 +206,12 @@ export default function KadesDashboardPage() {
               <p className="sid-page-description">Kelola administrasi desa secara digital.</p>
             </div>
 
-            <span className="sid-dashboard-date">{hariIni}</span>
+            <div className="flex items-center gap-3">
+              {stats.overdue > 0 && (
+                <OverdueBadge isOverdue count={stats.overdue} />
+              )}
+              <span className="sid-dashboard-date">{hariIni}</span>
+            </div>
           </div>
 
           {/* ======================================
@@ -270,6 +278,11 @@ export default function KadesDashboardPage() {
           </h1>
 
           <p className="sid-page-description">Kelola administrasi desa secara digital.</p>
+          {stats.overdue > 0 && (
+            <div className="mt-3">
+              <OverdueBadge isOverdue count={stats.overdue} />
+            </div>
+          )}
 
           {/* ======================================
               STAT CARD

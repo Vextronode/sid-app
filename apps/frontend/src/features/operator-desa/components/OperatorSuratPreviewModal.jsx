@@ -15,6 +15,7 @@ import { Download } from 'lucide-react'
 import { getSuratDetail } from '@/lib/api'
 import { previewSuratPDF, generateSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
 function formatApprovalLevel(level) {
   const labels = {
@@ -159,6 +160,12 @@ export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose 
 
           {surat && (
             <>
+              {surat.is_overdue === true && (
+                <div className="mb-3">
+                  <OverdueBadge isOverdue={surat.is_overdue} />
+                </div>
+              )}
+
               <div className="sid-modal-note">
                 <p className="sid-modal-note-label">Status</p>
                 <p className="sid-modal-note-text">{surat.status}</p>

@@ -13,6 +13,7 @@ import { Download, Search, Eye } from 'lucide-react'
 import { getSuratList } from '@/lib/api'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
 import { FooterOperator } from '../../components/layout/FooterOperator'
 
@@ -375,7 +376,10 @@ export default function OperatorSuratListPage() {
                       {/* STATUS */}
 
                       <td className="center">
-                        <StatusBadge status={surat.status} />
+                        <div className="flex flex-col items-center gap-1.5">
+                          <StatusBadge status={surat.status} />
+                          <OverdueBadge isOverdue={surat.is_overdue} />
+                        </div>
                       </td>
 
                       {/* AKSI */}
