@@ -11,6 +11,19 @@ class RegisteredUserControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * @return array<string, string>
+     */
+    private function payloadFor(Citizen $citizen, array $overrides = []): array
+    {
+        return array_merge([
+            'nik' => $citizen->nik,
+            'date_of_birth' => $citizen->date_of_birth->format('Y-m-d'),
+            'password' => 'RahasiaAman123!',
+            'password_confirmation' => 'RahasiaAman123!',
+        ], $overrides);
+    }
+
     public function test_a_citizen_with_a_registered_nik_can_register_with_generated_username(): void
     {
         $citizen = Citizen::factory()->create([
@@ -18,11 +31,7 @@ class RegisteredUserControllerTest extends TestCase
             'name' => 'Siti Aminah',
         ]);
 
-        $response = $this->post('/register', [
-            'nik' => '3201012345670001',
-            'password' => 'RahasiaAman123!',
-            'password_confirmation' => 'RahasiaAman123!',
-        ]);
+        $response = $this->post('/register', $this->payloadFor($citizen));
 
         $response->assertCreated()
             ->assertJsonPath('message', 'Akun berhasil dibuat. Simpan username Anda.')
@@ -46,6 +55,7 @@ class RegisteredUserControllerTest extends TestCase
     {
         $response = $this->postJson('/register', [
             'nik' => '9999999999999999',
+            'date_of_birth' => '2000-01-01',
             'password' => 'RahasiaAman123!',
             'password_confirmation' => 'RahasiaAman123!',
         ]);
@@ -53,15 +63,11 @@ class RegisteredUserControllerTest extends TestCase
         $response->assertJsonValidationErrors(['nik'])
             ->assertJsonPath('errors.nik.0', 'NIK tidak terdaftar sebagai warga Desa Cibenda');
 
-        Citizen::factory()->create([
+        $inactiveCitizen = Citizen::factory()->create([
             'nik' => '3201012345670002',
             'is_active' => false,
         ]);
-        $inactiveResponse = $this->post('/register', [
-            'nik' => '3201012345670002',
-            'password' => 'RahasiaAman123!',
-            'password_confirmation' => 'RahasiaAman123!',
-        ]);
+        $inactiveResponse = $this->post('/register', $this->payloadFor($inactiveCitizen));
 
         $inactiveResponse->assertRedirect()
             ->assertSessionHasErrors([
@@ -75,11 +81,7 @@ class RegisteredUserControllerTest extends TestCase
         $citizen = Citizen::factory()->create(['nik' => '3201012345670003']);
         User::factory()->create(['citizen_id' => $citizen->id]);
 
-        $response = $this->post('/register', [
-            'nik' => '3201012345670003',
-            'password' => 'RahasiaAman123!',
-            'password_confirmation' => 'RahasiaAman123!',
-        ]);
+        $response = $this->post('/register', $this->payloadFor($citizen));
 
         $response->assertRedirect()
             ->assertSessionHasErrors([
@@ -90,21 +92,47 @@ class RegisteredUserControllerTest extends TestCase
 
     public function test_registration_requires_a_strong_confirmed_password(): void
     {
-        Citizen::factory()->create(['nik' => '3201012345670004']);
+        $citizen = Citizen::factory()->create(['nik' => '3201012345670004']);
 
-        $weak = $this->post('/register', [
-            'nik' => '3201012345670004',
+        $weak = $this->post('/register', $this->payloadFor($citizen, [
             'password' => 'short',
             'password_confirmation' => 'short',
-        ]);
+        ]));
         $weak->assertRedirect()->assertSessionHasErrors('password');
 
-        $unconfirmed = $this->post('/register', [
-            'nik' => '3201012345670004',
-            'password' => 'RahasiaAman123!',
+        $unconfirmed = $this->post('/register', $this->payloadFor($citizen, [
             'password_confirmation' => 'password-berbeda',
-        ]);
+        ]));
         $unconfirmed->assertRedirect()->assertSessionHasErrors('password');
+    }
+
+    public function test_registration_requires_date_of_birth(): void
+    {
+        $citizen = Citizen::factory()->create(['nik' => '3201012345670011']);
+
+        $response = $this->postJson('/register', $this->payloadFor($citizen, [
+            'date_of_birth' => null,
+        ]));
+
+        $response->assertJsonValidationErrors(['date_of_birth']);
+        $this->assertGuest();
+    }
+
+    public function test_registration_rejects_a_date_of_birth_that_does_not_match_the_citizen_record(): void
+    {
+        $citizen = Citizen::factory()->create([
+            'nik' => '3201012345670012',
+            'date_of_birth' => '1990-05-12',
+        ]);
+
+        $response = $this->postJson('/register', $this->payloadFor($citizen, [
+            'date_of_birth' => '1991-06-13',
+        ]));
+
+        $response->assertJsonValidationErrors(['date_of_birth'])
+            ->assertJsonPath('errors.date_of_birth.0', 'Tanggal lahir tidak sesuai dengan data kependudukan');
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['citizen_id' => $citizen->id]);
     }
 
     public function test_registration_ignores_client_supplied_identity_and_account_fields(): void
@@ -114,18 +142,14 @@ class RegisteredUserControllerTest extends TestCase
             'name' => 'Budi Santoso',
         ]);
 
-        $response = $this->postJson('/register', [
-            'nik' => '3201012345670005',
+        $response = $this->postJson('/register', $this->payloadFor($citizen, [
             'name' => 'Nama yang tidak dipercaya',
             'email' => 'tidak-dipakai@example.test',
             'username' => 'nama.palsu',
-            'date_of_birth' => '2000-01-01',
-            'password' => 'RahasiaAman123!',
-            'password_confirmation' => 'RahasiaAman123!',
             'village_id' => '00000000-0000-4000-8000-000000000000',
             'citizen_id' => '00000000-0000-4000-8000-000000000000',
             'role' => 'petugas_desa',
-        ]);
+        ]));
 
         $response->assertCreated()->assertJsonPath('data.name', $citizen->name);
         $user = User::query()->where('citizen_id', $citizen->id)->firstOrFail();
@@ -141,19 +165,13 @@ class RegisteredUserControllerTest extends TestCase
             'nik' => '3201012345670006',
             'name' => 'Siti Aminah',
         ]);
-        $firstNik = '3201012345670006';
         $second = Citizen::factory()->create([
             'nik' => '3201012345670007',
             'name' => 'Siti Nurhayati',
         ]);
-        $secondNik = '3201012345670007';
 
-        foreach ([[$first, $firstNik], [$second, $secondNik]] as [$citizen, $nik]) {
-            $this->post('/register', [
-                'nik' => $nik,
-                'password' => 'RahasiaAman123!',
-                'password_confirmation' => 'RahasiaAman123!',
-            ])->assertCreated();
+        foreach ([$first, $second] as $citizen) {
+            $this->post('/register', $this->payloadFor($citizen))->assertCreated();
         }
 
         $users = User::query()->whereIn('citizen_id', [$first->id, $second->id])->get();
@@ -167,6 +185,7 @@ class RegisteredUserControllerTest extends TestCase
         for ($attempt = 0; $attempt < 5; $attempt++) {
             $this->postJson('/register', [
                 'nik' => sprintf('%016d', 9000000000000000 + $attempt),
+                'date_of_birth' => '2000-01-01',
                 'password' => 'RahasiaAman123!',
                 'password_confirmation' => 'RahasiaAman123!',
             ])->assertJsonValidationErrors(['nik']);
@@ -174,6 +193,7 @@ class RegisteredUserControllerTest extends TestCase
 
         $this->postJson('/register', [
             'nik' => '9000000000000005',
+            'date_of_birth' => '2000-01-01',
             'password' => 'RahasiaAman123!',
             'password_confirmation' => 'RahasiaAman123!',
         ])->assertTooManyRequests();
