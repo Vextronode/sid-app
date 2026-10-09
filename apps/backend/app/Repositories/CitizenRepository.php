@@ -16,7 +16,7 @@ class CitizenRepository
     {
         return Citizen::query()
             ->where('village_id', $villageId)
-            ->with(['rt', 'rw', 'hamlet', 'village', 'occupation'])
+            ->with(['rt', 'rw', 'hamlet', 'village', 'occupation', 'family'])
             ->orderBy('name')
             ->get();
     }

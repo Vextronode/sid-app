@@ -6,7 +6,8 @@ import {
 
 import {
     getUsers,
-    toggleUserStatus
+    toggleUserStatus,
+    updateUser as updateUserRequest,
 } from "../api";
 
 
@@ -17,6 +18,7 @@ export function useUserList(){
 
     const [users,setUsers] = useState([]);
     const [loading,setLoading] = useState(true);
+    const [error,setError] = useState("");
 
 
     const [search,setSearch] = useState("");
@@ -38,20 +40,13 @@ export function useUserList(){
         try{
 
             setLoading(true);
-
+            setError("");
 
             const res = await getUsers();
-
-
-           
-
-            // aman untuk berbagai bentuk response
             const userData =
                 res.data?.data ??
                 res.data?.users ??
-                res.data ??
                 [];
-
 
             setUsers(
                 Array.isArray(userData)
@@ -59,16 +54,8 @@ export function useUserList(){
                 : []
             );
 
-
         }catch(error){
-
-            console.error(
-                "GET USERS ERROR",
-                error.response?.data ?? error
-            );
-
-
-            setUsers([]);
+            setError(error.response?.data?.message || "Gagal memuat data pengguna.");
 
         }finally{
 
@@ -187,13 +174,27 @@ export function useUserList(){
 
 
     async function toggleStatus(id){
-
-        await toggleUserStatus(id);
-
-        loadUsers();
+        try {
+            setError("");
+            await toggleUserStatus(id);
+            await loadUsers();
+        } catch (error) {
+            const message = error?.response?.data?.message || "Gagal mengubah status pengguna.";
+            setError(message);
+            return false;
+        }
 
     }
 
+    async function updateUserName(id, name) {
+        try {
+            await updateUserRequest(id, { name });
+            await loadUsers();
+        } catch (error) {
+            setError(error?.response?.data?.message || "Gagal memperbarui nama pengguna.");
+            throw error;
+        }
+    }
 
 
 
@@ -202,6 +203,7 @@ export function useUserList(){
         data,
 
         loading,
+        error,
 
 
         setSearch,
@@ -216,13 +218,13 @@ export function useUserList(){
 
 
         totalPages,
+        totalItems: filtered.length,
 
 
         toggleStatus,
 
 
-        addUser:()=>{},
-        updateUser:()=>{}
+        updateUser: updateUserName,
 
     };
 

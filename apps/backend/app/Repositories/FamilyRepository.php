@@ -17,12 +17,14 @@ class FamilyRepository
     {
         return Family::query()
             ->where('village_id', $villageId)
+            ->withCount('members')
             ->with([
                 'rt',
                 'rw',
                 'hamlet',
                 'village',
                 'headOfFamily',
+                'headMember',
             ])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -37,6 +39,7 @@ class FamilyRepository
                 'hamlet',
                 'village',
                 'headOfFamily',
+                'headMember',
                 Schema::hasColumn('citizens', 'family_id') ? 'members' : null,
             ]))
             ->where('village_id', $villageId)

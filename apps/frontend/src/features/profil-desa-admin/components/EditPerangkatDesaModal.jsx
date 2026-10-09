@@ -122,23 +122,14 @@ function PersonEditor({ person, onChange, disabled }) {
         />
       </div>
 
-      <label className="sid-profil-desa-device-status">
+      <div className="sid-profil-desa-device-status">
         <span>
           <Power size={14} />
-          Status Aktif
+          Status Jabatan
         </span>
-
-        <input
-          type="checkbox"
-          checked={person.isActive}
-          onChange={(event) =>
-            onChange({
-              isActive: event.target.checked,
-            })
-          }
-          disabled={disabled}
-        />
-      </label>
+        <strong>{person.isActive ? 'Aktif' : 'Tidak aktif'}</strong>
+        <small>Status jabatan dikelola melalui aksi pejabat.</small>
+      </div>
     </div>
   )
 }
