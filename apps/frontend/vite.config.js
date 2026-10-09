@@ -51,6 +51,7 @@ export default defineConfig({
 
       workbox: {
         navigateFallback: '/index.html',
+        importScripts: ['/push-handler.js'],
 
         runtimeCaching: [
           {

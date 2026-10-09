@@ -125,7 +125,10 @@ Jika frontend dan backend dijalankan pada origin berbeda, buat `apps/frontend/.e
 ```env
 VITE_API_URL=http://localhost:8000
 VITE_API_BASE_URL=http://localhost:8000/api
+VITE_VAPID_PUBLIC_KEY=
 ```
+
+Set `VITE_VAPID_PUBLIC_KEY` to the public VAPID key configured by the backend to enable browser push notifications.
 
 Frontend tersedia di `http://localhost:5173`.
 
