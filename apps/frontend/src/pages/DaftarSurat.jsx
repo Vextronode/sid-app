@@ -1,18 +1,18 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { WargaLayout } from "@/components/layout/WargaLayout";
-import { SURAT_CONFIG } from "@/lib/constants/suratConfig";
 import { DynamicSuratForm } from "@/features/surat/components/DynamicSuratForm";
+import { useLetterTypes } from "@/features/surat/hooks/useLetterTypes";
+import { getLetterTypeFormConfig } from "@/features/surat/utils/letterTypeConfig";
 import { FileText, ChevronDown } from "lucide-react";
 
 export function DaftarSurat() {
   const navigate = useNavigate();
   const [selectedCode, setSelectedCode] = useState("");
+  const { letterTypes, loading, error } = useLetterTypes();
 
-  const currentConfig = useMemo(
-    () => (selectedCode ? SURAT_CONFIG[selectedCode] : null),
-    [selectedCode]
-  );
+  const selectedLetterType = letterTypes.find((type) => type.code === selectedCode);
+  const currentConfig = useMemo(() => getLetterTypeFormConfig(selectedLetterType), [selectedLetterType]);
 
   const handleCancel = () => setSelectedCode("");
 
@@ -61,6 +61,7 @@ export function DaftarSurat() {
 
               <select
                 value={selectedCode}
+                disabled={loading || !!error}
                 onChange={(e) =>
                   setSelectedCode(e.target.value)
                 }
@@ -70,12 +71,12 @@ export function DaftarSurat() {
                   Pilih jenis surat...
                 </option>
 
-                {Object.values(SURAT_CONFIG).map((cfg) => (
+                {letterTypes.map((type) => (
                   <option
-                    key={cfg.code}
-                    value={cfg.code}
+                    key={type.id}
+                    value={type.code}
                   >
-                    {cfg.title}
+                    {type.name}
                   </option>
                 ))}
               </select>
@@ -86,6 +87,11 @@ export function DaftarSurat() {
               />
 
             </div>
+            {loading && <p role="status">Memuat jenis surat...</p>}
+            {error && <p role="alert">{error}</p>}
+            {!loading && !error && selectedLetterType && !currentConfig && (
+              <p role="alert">Formulir untuk jenis surat ini belum tersedia.</p>
+            )}
           </div>
 
 
@@ -96,10 +102,11 @@ export function DaftarSurat() {
           {currentConfig ? (
             <DynamicSuratForm
               config={currentConfig}
+              letterTypes={letterTypes}
               onCancel={handleCancel}
               onSubmit={handleSubmit}
             />
-          ) : (
+          ) : !loading && !error && !selectedLetterType ? (
             <div className="sid-daftar-surat-empty">
 
               <FileText className="sid-daftar-surat-empty-icon" />
@@ -114,7 +121,7 @@ export function DaftarSurat() {
               </p>
 
             </div>
-          )}
+          ) : null}
 
         </div>
       </div>

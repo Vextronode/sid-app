@@ -3,13 +3,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
-import { LIST_SURAT_GLOBAL } from '@/lib/constants/suratList'
 import { getSuratSchema } from '../validation/suratSchema'
 
 import { CheckCircle2, ChevronDown } from 'lucide-react'
 
 import { useSubmitSurat } from '../hooks/useSubmitSurat'
-import { useLetterTypes } from '../hooks/useLetterTypes'
 
 import { AutoFillProfile } from './AutoFillProfile'
 import { FileUploader } from './FileUploader'
@@ -20,6 +18,7 @@ export function DynamicSuratForm({
   onSubmit,
   initialData = {},
   onSubmitAPI = null,
+  letterTypes = [],
 }) {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -41,8 +40,6 @@ export function DynamicSuratForm({
   })
 
   const { handleSubmit: submitSurat, loading } = useSubmitSurat()
-
-  const letterTypes = useLetterTypes()
 
   const handleFileChange = (e, name) => {
     const files = Array.from(e.target.files || [])
@@ -76,12 +73,8 @@ export function DynamicSuratForm({
   }
 
   const handleFormSubmit = async (formData) => {
-    if (!Array.isArray(letterTypes) || letterTypes.length === 0) {
-      alert('Jenis surat masih dimuat.')
-      return
-    }
-
-    const selectedLetterType = letterTypes.find((item) => item.code === config.code)
+    const selectedLetterType = letterTypes.find((item) => item.code === config.code) ??
+      (config.id ? { id: config.id } : null)
 
     if (!selectedLetterType) {
       alert('Jenis surat tidak ditemukan.')
@@ -154,9 +147,12 @@ export function DynamicSuratForm({
               onChange={(e) => navigate(`/pengajuan-surat/${e.target.value}`)}
               className="sid-select appearance-none pr-10"
             >
-              {LIST_SURAT_GLOBAL.map((surat) => (
-                <option key={surat.code} value={surat.code}>
-                  {surat.name}
+              {(letterTypes.some((item) => item.code === config.code)
+                ? letterTypes
+                : [{ id: config.id, code: config.code, name: config.title }]
+              ).map((letterType) => (
+                <option key={letterType.id} value={letterType.code}>
+                  {letterType.name}
                 </option>
               ))}
             </select>

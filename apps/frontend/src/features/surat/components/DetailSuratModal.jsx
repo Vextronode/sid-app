@@ -14,12 +14,18 @@
 // ==========================================
 
 import { useEffect, useRef, useState } from 'react'
-import { ChevronLeft, Eye, FileText, X, Check, Clock } from 'lucide-react'
+import { ChevronLeft, Download, Eye, FileText, X, Check, Clock } from 'lucide-react'
 
-import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import { downloadSuratPDF, previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import {
+  getApplicantAddress,
+  getApplicantNik,
+  getLetterTrackingState,
+  LETTER_TRACKING_STEPS,
+} from '../utils/letterDetails'
 
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
@@ -35,9 +41,9 @@ const FIELD_MAP = {
 
   namaPemohon: (s) => s?.applicant_name ?? '-',
 
-  nik: (s) => s?.applicant_nik ?? '-',
+  nik: getApplicantNik,
 
-  alamat: (s) => s?.applicant_address ?? '-',
+  alamat: getApplicantAddress,
 
   jenisSurat: (s) => s?.letter_type?.name ?? '-',
 
@@ -52,64 +58,24 @@ const FIELD_MAP = {
 // GENERIC TRACKING STEPS
 // ==========================================
 
-const TRACKING_STEPS = ['Pengajuan', 'Diproses', 'Selesai']
-
-// ==========================================
-// GENERIC TRACKING STATE
-// ==========================================
-
-function getTrackingState(status) {
-  switch (status) {
-    case SURAT_STATUS.PENDING:
-      return {
-        step: 1,
-        state: 'current',
-      }
-
-    case SURAT_STATUS.IN_PROGRESS:
-      return {
-        step: 2,
-        state: 'current',
-      }
-
-    case SURAT_STATUS.APPROVED:
-      return {
-        step: 3,
-        state: 'done',
-      }
-
-    case SURAT_STATUS.REJECTED:
-      return {
-        step: 2,
-        state: 'rejected',
-      }
-
-    default:
-      return {
-        step: 0,
-        state: 'waiting',
-      }
-  }
-}
-
 // ==========================================
 // GENERIC TRACKER
 // ==========================================
 
-function GenericTracker({ status }) {
-  const { step, state } = getTrackingState(status)
+function GenericTracker({ surat }) {
+  const { currentStep, rejectedStep, completed } = getLetterTrackingState(surat)
 
   return (
     <div className="sid-tracker-scroll">
       <div className="sid-tracker-stepper">
-        {TRACKING_STEPS.map((label, index) => {
+        {LETTER_TRACKING_STEPS.map((label, index) => {
           const stepNumber = index + 1
 
-          const isRejected = state === 'rejected' && stepNumber === 2
+          const isRejected = rejectedStep === stepNumber
 
-          const isDone = state === 'done' && stepNumber <= 3
+          const isDone = completed || (!isRejected && stepNumber < currentStep)
 
-          const isCurrent = state === 'current' && stepNumber === step
+          const isCurrent = !completed && !isRejected && stepNumber === currentStep
 
           let circleClass = 'sid-tracker-circle sid-tracker-circle-waiting'
 
@@ -137,15 +103,14 @@ function GenericTracker({ status }) {
             content = <Clock size={15} />
           }
 
-          const connectorDone =
-            state === 'done' ? stepNumber < TRACKING_STEPS.length : stepNumber < step
+          const connectorDone = completed || stepNumber < currentStep
 
           return (
             <div key={label} className="sid-tracker-step">
               <div className="sid-tracker-node">
                 <div className={circleClass}>{content}</div>
 
-                {stepNumber < TRACKING_STEPS.length && (
+                {stepNumber < LETTER_TRACKING_STEPS.length && (
                   <div
                     className={`sid-tracker-line${connectorDone ? ' sid-tracker-line-done' : ''}`}
                   />
@@ -194,10 +159,10 @@ function RejectionReason({ surat }) {
 
 function SuratPreview({ surat }) {
   const [showPreview, setShowPreview] = useState(false)
-
   const [loading, setLoading] = useState(false)
-
   const [loadError, setLoadError] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState('')
 
   const canvasContainerRef = useRef(null)
 
@@ -210,6 +175,18 @@ function SuratPreview({ surat }) {
   const status = surat?.status
 
   const canPreview = status === SURAT_STATUS.APPROVED
+
+  const handleDownload = async () => {
+    setDownloading(true)
+    setDownloadError('')
+    try {
+      await downloadSuratPDF(surat)
+    } catch (error) {
+      setDownloadError(error?.message || 'Gagal mengunduh surat.')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   // ========================================
   // RESET
@@ -371,6 +348,24 @@ function SuratPreview({ surat }) {
 
   return (
     <>
+      {canPreview && (
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={downloading}
+          className="sid-modal-preview"
+        >
+          <Download size={16} />
+          {downloading ? 'Menyiapkan unduhan...' : 'Download Surat'}
+        </button>
+      )}
+
+      {downloadError && (
+        <p className="sid-admin-alert sid-admin-alert-error" role="alert">
+          {downloadError}
+        </p>
+      )}
+
       <button
         type="button"
         onClick={() => {
@@ -515,7 +510,7 @@ export function DetailSuratModal({ data, onClose }) {
 
         {/* GENERIC TRACKER */}
 
-        <GenericTracker status={data.status} />
+        <GenericTracker surat={data} />
 
         {/* DETAIL SURAT */}
 

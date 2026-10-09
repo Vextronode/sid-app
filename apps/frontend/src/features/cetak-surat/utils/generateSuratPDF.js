@@ -3,21 +3,46 @@
 // Generate PDF surat dari backend seeder template
 // ==========================================
 
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
 
+export async function downloadSuratPDF(surat, template = 'wet') {
+  const url = `${API_URL}/api/letters/${surat.id}/download?template=${template}`
+  const response = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/pdf',
+    },
+  })
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`${response.status} ${response.statusText}: ${text}`)
+  }
+
+  const blob = await response.blob()
+  const blobUrl = window.URL.createObjectURL(blob)
+  const downloadLink = document.createElement('a')
+  const letterNumber = String(surat.letter_number ?? surat.id).replace(/[^\w-]/g, '-')
+
+  downloadLink.href = blobUrl
+  downloadLink.download = `surat-${letterNumber}.pdf`
+  document.body.appendChild(downloadLink)
+  downloadLink.click()
+  downloadLink.remove()
+
+  setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000)
+}
 
 // buka file PDF dari backend
 export async function generateSuratPDF(surat, template = 'wet') {
-  const url = `${API_URL}/api/letters/${surat.id}/download?template=${template}`;
+  const url = `${API_URL}/api/letters/${surat.id}/download?template=${template}`
 
   // Buka tab SEBELUM await agar tidak diblokir browser
-  const pdfTab = window.open('', '_blank');
+  const pdfTab = window.open('', '_blank')
 
   if (!pdfTab) {
-    throw new Error(
-      'Popup diblokir browser. Silakan izinkan popup untuk website ini.'
-    );
+    throw new Error('Popup diblokir browser. Silakan izinkan popup untuk website ini.')
   }
 
   try {
@@ -37,7 +62,7 @@ export async function generateSuratPDF(surat, template = 'wet') {
           <p>Memproses surat...</p>
         </body>
       </html>
-    `);
+    `)
 
     const response = await fetch(url, {
       method: 'GET',
@@ -45,51 +70,49 @@ export async function generateSuratPDF(surat, template = 'wet') {
       headers: {
         Accept: 'application/pdf',
       },
-    });
+    })
 
     if (!response.ok) {
-      const text = await response.text();
+      const text = await response.text()
 
-      throw new Error(
-        `${response.status} ${response.statusText}: ${text}`
-      );
+      throw new Error(`${response.status} ${response.statusText}: ${text}`)
     }
 
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
+    const blob = await response.blob()
+    const blobUrl = window.URL.createObjectURL(blob)
 
-    pdfTab.location.href = blobUrl;
+    pdfTab.location.href = blobUrl
 
     // Jangan revoke terlalu cepat
     setTimeout(() => {
-      window.URL.revokeObjectURL(blobUrl);
-    }, 60000);
+      window.URL.revokeObjectURL(blobUrl)
+    }, 60000)
 
-    return true;
+    return true
   } catch (error) {
-    pdfTab.close();
-    throw error;
+    pdfTab.close()
+    throw error
   }
 }
 
 // Preview PDF di tab baru dari backend
 export async function previewSuratPDF(surat, template = 'wet') {
-  const url = `${API_URL}/api/letters/${surat.id}/preview?template=${template}`;
+  const url = `${API_URL}/api/letters/${surat.id}/preview?template=${template}`
 
   const response = await fetch(url, {
-    method: "GET",
-    credentials: "include",
+    method: 'GET',
+    credentials: 'include',
     headers: {
-      Accept: "application/pdf",
+      Accept: 'application/pdf',
     },
-  });
+  })
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text);
+    const text = await response.text()
+    throw new Error(text)
   }
 
-  const blob = await response.blob();
+  const blob = await response.blob()
 
-  return window.URL.createObjectURL(blob);
+  return window.URL.createObjectURL(blob)
 }

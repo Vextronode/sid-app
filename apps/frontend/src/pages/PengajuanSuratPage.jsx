@@ -11,21 +11,24 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/features/auth/contexts/AuthContext";
-import { SURAT_CONFIG } from "@/lib/constants/suratConfig";
 import { DynamicSuratForm } from "@/features/surat/components/DynamicSuratForm";
+import { useLetterTypes } from "@/features/surat/hooks/useLetterTypes";
+import { getLetterTypeFormConfig } from "@/features/surat/utils/letterTypeConfig";
 import { WargaLayout } from "@/components/layout/WargaLayout";
 
 export function PengajuanSuratPage() {
   const { kode } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { letterTypes, loading, error } = useLetterTypes();
 
   // Kalau nggak ada kode di URL, mulai kosong (user harus pilih dulu)
   const [selectedCode, setSelectedCode] = useState(
     kode?.toUpperCase() ?? ""
   );
 
-  const currentConfig = selectedCode ? SURAT_CONFIG[selectedCode] : null;
+  const selectedLetterType = letterTypes.find((type) => type.code === selectedCode);
+  const currentConfig = getLetterTypeFormConfig(selectedLetterType);
   const isLocked = !!kode; // kalau dari URL langsung, dropdown dikunci
 
   const handleCancel = () => navigate("/jenis-surat");
@@ -105,7 +108,7 @@ export function PengajuanSuratPage() {
 
               <select
                 value={selectedCode}
-                disabled={isLocked}
+                disabled={isLocked || loading || !!error}
                 onChange={(e) => setSelectedCode(e.target.value)}
                 className="sid-input"
               >
@@ -113,22 +116,29 @@ export function PengajuanSuratPage() {
                   Pilih jenis surat...
                 </option>
 
-                {Object.values(SURAT_CONFIG).map((cfg) => (
-                  <option key={cfg.code} value={cfg.code}>
-                    {cfg.title}
+                {letterTypes.map((type) => (
+                  <option key={type.id} value={type.code}>
+                    {type.name}
                   </option>
                 ))}
               </select>
             </div>
+
+            {loading && <p role="status">Memuat jenis surat...</p>}
+            {error && <p role="alert">{error}</p>}
+            {!loading && !error && selectedLetterType && !currentConfig && (
+              <p role="alert">Formulir untuk jenis surat ini belum tersedia.</p>
+            )}
 
             {currentConfig && (
               <div className="sid-info">
                 <span className="sid-info-dot" />
 
                 <span>
-                  Jenis ini: verifikasi{" "}
-                  <strong>document</strong> — wajib upload
-                  dokumen pendukung.
+                  Jenis ini: verifikasi <strong>{selectedLetterType.verification_type}</strong>
+                  {selectedLetterType.requirements_info
+                    ? ` — ${selectedLetterType.requirements_info}`
+                    : ''}
                 </span>
               </div>
             )}
@@ -140,14 +150,15 @@ export function PengajuanSuratPage() {
           {currentConfig ? (
             <DynamicSuratForm
               config={currentConfig}
+              letterTypes={letterTypes}
               onCancel={handleCancel}
               onSubmit={handleSubmit}
             />
-          ) : (
+          ) : !loading && !error && !selectedLetterType ? (
             <div className="sid-card sid-empty-state">
               Silakan pilih jenis surat di atas untuk melanjutkan.
             </div>
-          )}
+          ) : null}
         </main>
       </div>
     </WargaLayout>
