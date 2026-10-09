@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\OccupationController;
 use App\Http\Controllers\Api\OfficialController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PublicPageController;
+use App\Http\Controllers\Api\PushSubscriptionController;
 use App\Http\Controllers\Api\RegulationController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RtController;
@@ -266,6 +267,20 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
         Route::post('/read-all', [NotificationController::class, 'readAll']);
         Route::post('/{id}/read', [NotificationController::class, 'read']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Push Subscriptions (Web Push)
+    |----------------------------------------------------------------------
+    | Lintas-role: setiap user mengelola langganan push miliknya sendiri
+    | (device/browser saat ini). Dipanggil frontend setelah
+    | PushManager.subscribe() berhasil (store) atau saat user menonaktifkan
+    | notifikasi push di browser (destroy).
+    */
+    Route::prefix('push-subscriptions')->group(function () {
+        Route::post('/', [PushSubscriptionController::class, 'store']);
+        Route::delete('/', [PushSubscriptionController::class, 'destroy']);
     });
 
     // Route::prefix('official')->group(function () {
