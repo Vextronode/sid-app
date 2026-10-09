@@ -3,9 +3,6 @@ export const SURAT_STATUS = {
   IN_PROGRESS: 'in_progress',
   APPROVED: 'approved',
   REJECTED: 'rejected',
-
-  WAITING_REVISION: 'waiting_revision_warga',
-  REJECTED_REVISION: 'rejected_revision',
 }
 
 export const SURAT_STATUS_OPTIONS = [
@@ -32,9 +29,6 @@ export const STATUS_LABELS = {
   [SURAT_STATUS.IN_PROGRESS]: 'Sedang Diproses',
   [SURAT_STATUS.APPROVED]: 'Disetujui',
   [SURAT_STATUS.REJECTED]: 'Ditolak',
-
-  [SURAT_STATUS.WAITING_REVISION]: 'Revisi Diperlukan',
-  [SURAT_STATUS.REJECTED_REVISION]: 'Ditolak (Revisi)',
 }
 
 export const STATUS_CLASSES = {
@@ -45,10 +39,6 @@ export const STATUS_CLASSES = {
   [SURAT_STATUS.APPROVED]: 'bg-[#2E7D31]/40 text-black',
 
   [SURAT_STATUS.REJECTED]: 'bg-[#E53835]/40 text-black',
-
-  [SURAT_STATUS.WAITING_REVISION]: 'bg-amber-100 text-amber-800',
-
-  [SURAT_STATUS.REJECTED_REVISION]: 'bg-[#E53835]/40 text-black',
 }
 
 export const SURAT_STATUS_ORDER = {
@@ -56,8 +46,6 @@ export const SURAT_STATUS_ORDER = {
   [SURAT_STATUS.IN_PROGRESS]: 2,
   [SURAT_STATUS.PENDING]: 3,
   [SURAT_STATUS.REJECTED]: 4,
-  [SURAT_STATUS.WAITING_REVISION]: 5,
-  [SURAT_STATUS.REJECTED_REVISION]: 6,
 }
 
 export const RELEVANT_STATUSES = [
@@ -88,5 +76,5 @@ export function isApprovedStatus(status) {
 }
 
 export function isRejectedStatus(status) {
-  return status === SURAT_STATUS.REJECTED || status === SURAT_STATUS.REJECTED_REVISION
+  return status === SURAT_STATUS.REJECTED
 }

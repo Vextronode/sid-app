@@ -8,7 +8,6 @@ import { BeritaPage } from '@/pages/BeritaPage'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { ProfilDesaPage } from '@/pages/ProfilDesaPage'
 import { PengajuanSuratPage } from '@/pages/PengajuanSuratPage'
-import { RevisiSuratPage } from '@/pages/RevisiSuratPage'
 import { DaftarSurat } from '@/pages/DaftarSurat'
 import RegisterPage from '@/pages/RegisterPage'
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
@@ -180,15 +179,6 @@ export default function App() {
           />
 
           <Route
-            path="/revisi-surat/:id"
-            element={
-              <ProtectedRoute allowedRoles={['warga']}>
-                <RevisiSuratPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
             path="/daftar-surat-saya"
             element={
               <ProtectedRoute allowedRoles={['warga']}>
@@ -300,7 +290,7 @@ export default function App() {
 
           {/* ===== OPERATOR DESA — Kasi Pelayanan, Kaur TU Umum, Petugas Desa =====
               1 role gabungan, 1 tampilan yang sama untuk ketiganya.
-              Hanya bisa print surat yang sudah kades_approved. */}
+              Hanya bisa print surat yang sudah disetujui final. */}
           <Route
             path="/admin/operator-desa"
             element={

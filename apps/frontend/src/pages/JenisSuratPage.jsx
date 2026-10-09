@@ -22,8 +22,7 @@ export default function JenisSuratPage() {
   const disetujui = letters.filter((letter) => letter.status === SURAT_STATUS.APPROVED).length
 
   const ditolak = letters.filter(
-    (letter) =>
-      letter.status === SURAT_STATUS.REJECTED || letter.status === SURAT_STATUS.REJECTED_REVISION,
+    (letter) => letter.status === SURAT_STATUS.REJECTED,
   ).length
 
   const sedangDiproses = letters.filter(

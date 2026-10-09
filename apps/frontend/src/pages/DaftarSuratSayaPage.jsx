@@ -2,12 +2,11 @@
 // DaftarSuratSayaPage.jsx
 // Tabel daftar surat warga.
 // Status menggunakan status generic.
-// Fitur revisi tetap dipertahankan.
 // ==========================================
 
 import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Edit, Eye } from 'lucide-react'
+import { ArrowLeft, Eye } from 'lucide-react'
 
 import { WargaLayout } from '@/components/layout/WargaLayout'
 import { useLetters } from '@/features/surat/hooks/useLetters'
@@ -41,9 +40,8 @@ export default function DaftarSuratSayaPage() {
       return true
     }
 
-    // Semua status yang termasuk penolakan.
     if (filterStatus === 'ditolak') {
-      return item.status === SURAT_STATUS.REJECTED || item.status === SURAT_STATUS.REJECTED_REVISION
+      return item.status === SURAT_STATUS.REJECTED
     }
 
     // Status approved.
@@ -164,18 +162,6 @@ export default function DaftarSuratSayaPage() {
                             Detail
                           </button>
 
-                          {/* REVISI */}
-
-                          {item.status === SURAT_STATUS.WAITING_REVISION && (
-                            <button
-                              type="button"
-                              onClick={() => navigate(`/revisi-surat/${item.id}`)}
-                              className="sid-surat-saya-revision-button"
-                            >
-                              <Edit />
-                              Revisi
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
