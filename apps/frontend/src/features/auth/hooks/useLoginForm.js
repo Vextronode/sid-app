@@ -33,6 +33,27 @@ const isServerError = (status) => {
   return typeof status === 'number' && status >= 500
 }
 
+function getRateLimitMessage(error) {
+  const response = error.response
+  const rawRetryAfter = response?.headers?.['retry-after'] ?? response?.data?.retry_after
+  const retrySeconds = Number(rawRetryAfter)
+  const retryDate = typeof rawRetryAfter === 'string' ? Date.parse(rawRetryAfter) : Number.NaN
+  const retryAfter = Number.isFinite(retrySeconds) && retrySeconds > 0
+    ? retrySeconds
+    : Number.isFinite(retryDate)
+      ? Math.max(Math.ceil((retryDate - Date.now()) / 1000), 0)
+      : 0
+
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    const minutes = Math.ceil(retryAfter / 60)
+    const wait = minutes >= 60 ? `${Math.ceil(minutes / 60)} jam` : `${minutes} menit`
+
+    return `${response.data?.message ?? 'Terlalu banyak percobaan login.'} Akses login ditangguhkan sementara hingga ${wait}.`
+  }
+
+  return `${response?.data?.message ?? 'Terlalu banyak percobaan login.'} Akses login ditangguhkan sementara hingga 1 jam.`
+}
+
 export function useLoginForm() {
   const [formData, setFormData] = useState(INITIAL_FORM)
   const [errors, setErrors] = useState(INITIAL_ERRORS)
@@ -150,6 +171,15 @@ export function useLoginForm() {
           general:
             backendMessage ||
             'Akun tidak dapat digunakan. Silakan hubungi administrator.',
+        })
+
+        return null
+      }
+
+      if (status === 429) {
+        setErrors({
+          ...INITIAL_ERRORS,
+          general: getRateLimitMessage(error),
         })
 
         return null

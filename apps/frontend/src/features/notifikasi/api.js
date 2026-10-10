@@ -15,3 +15,11 @@ export function markNotificationAsRead(id) {
 export function markAllNotificationsAsRead() {
   return api.post('/api/notifications/read-all')
 }
+
+export function savePushSubscription(subscription) {
+  return api.post('/api/push-subscriptions', subscription)
+}
+
+export function removePushSubscription(endpoint) {
+  return api.delete('/api/push-subscriptions', { data: { endpoint } })
+}

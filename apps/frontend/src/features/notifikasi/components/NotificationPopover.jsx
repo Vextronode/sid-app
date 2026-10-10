@@ -6,6 +6,7 @@
 
 import { useState } from 'react'
 import { Bell, FileText, PenLine } from 'lucide-react'
+import WebPushControls from './WebPushControls'
 
 const TABS = [
   { value: "semua", label: "Semua" },
@@ -117,7 +118,9 @@ export default function NotificationPopover({
           </button>
         </div>
 
-        {/* TABS */}
+        <WebPushControls />
+
+        {/* Tabs */}
         <div className="sid-notification-tabs">
           {TABS.map((tab) => (
             <button

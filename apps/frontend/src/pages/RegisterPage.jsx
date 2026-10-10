@@ -164,6 +164,33 @@ export default function RegisterPage() {
             )}
           </div>
 
+          {/* DATE OF BIRTH */}
+          <div className="sid-login-field">
+            <label htmlFor="date_of_birth" className="sid-login-label">
+              Tanggal Lahir
+            </label>
+
+            <input
+              id="date_of_birth"
+              type="date"
+              name="date_of_birth"
+              value={formData.date_of_birth}
+              onChange={handleChange}
+              autoComplete="bday"
+              className={`sid-login-input ${
+                errors.date_of_birth ? 'sid-login-input-error' : ''
+              }`}
+              aria-invalid={Boolean(errors.date_of_birth)}
+              aria-describedby={errors.date_of_birth ? 'date-of-birth-error' : undefined}
+            />
+
+            {errors.date_of_birth && (
+              <span id="date-of-birth-error" className="sid-login-field-error">
+                {errors.date_of_birth}
+              </span>
+            )}
+          </div>
+
           {/* PASSWORD */}
           <div className="sid-login-field">
             <label className="sid-login-label">
@@ -295,7 +322,7 @@ export default function RegisterPage() {
             Sudah punya akun?
 
             <Link
-              to="/login"
+              to="/loginpage"
               className="sid-login-register-button"
             >
               Masuk di sini

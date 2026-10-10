@@ -9,12 +9,14 @@ import api from '@/lib/api'
 
 const INITIAL_FORM = {
   nik: '',
+  date_of_birth: '',
   password: '',
   password_confirmation: '',
 }
 
 const INITIAL_ERRORS = {
   nik: '',
+  date_of_birth: '',
   password: '',
   password_confirmation: '',
   general: '',
@@ -60,6 +62,10 @@ export function useRegisterForm() {
       nextErrors.nik = 'NIK harus terdiri dari 16 digit.'
     }
 
+    if (!formData.date_of_birth) {
+      nextErrors.date_of_birth = 'Tanggal lahir wajib diisi.'
+    }
+
     if (!formData.password) {
       nextErrors.password = 'Password wajib diisi.'
     }
@@ -98,6 +104,7 @@ export function useRegisterForm() {
       // 2. Register
       const response = await api.post('/register', {
         nik: formData.nik,
+        date_of_birth: formData.date_of_birth,
         password: formData.password,
         password_confirmation: formData.password_confirmation,
       })
@@ -120,6 +127,7 @@ export function useRegisterForm() {
       if (status === 422) {
         setErrors({
           nik: backendErrors.nik?.[0] ?? '',
+          date_of_birth: backendErrors.date_of_birth?.[0] ?? '',
           password: backendErrors.password?.[0] ?? '',
           password_confirmation: backendErrors.password_confirmation?.[0] ?? '',
           general: backendMessage ?? 'Data pendaftaran belum sesuai.',
