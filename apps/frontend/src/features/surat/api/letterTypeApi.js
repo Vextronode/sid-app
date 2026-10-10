@@ -6,3 +6,5 @@ export const getLetterTypes = async () => {
 
   return response.data.data
 }
+
+export const updateLetterType = (id, payload) => api.put(`/api/letter-types/${id}`, payload)

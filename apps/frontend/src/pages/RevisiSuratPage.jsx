@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-import { SURAT_CONFIG } from "@/lib/constants/suratConfig";
 import { DynamicSuratForm } from "@/features/surat/components/DynamicSuratForm";
+import { useLetterTypes } from "@/features/surat/hooks/useLetterTypes";
+import { getLetterTypeFormConfig } from "@/features/surat/utils/letterTypeConfig";
 import { WargaLayout } from "@/components/layout/WargaLayout";
 import api from "@/lib/api";
 
@@ -15,6 +16,7 @@ export function RevisiSuratPage() {
   const [surat, setSurat] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { letterTypes } = useLetterTypes();
 
 
   // ==========================================
@@ -165,15 +167,9 @@ export function RevisiSuratPage() {
   // SURAT CONFIG
   // ==========================================
 
-  const currentConfig =
-    Object.values(SURAT_CONFIG).find(
-      (cfg) =>
-        cfg.id === surat.letter_type_id ||
-        cfg.code === surat.letter_type?.code
-    ) ||
-    SURAT_CONFIG[
-      surat.letter_type?.code
-    ];
+  const selectedLetterType =
+    letterTypes.find((type) => type.code === surat.letter_type?.code) ?? surat.letter_type;
+  const currentConfig = getLetterTypeFormConfig(selectedLetterType);
 
 
   // ==========================================
@@ -278,6 +274,7 @@ export function RevisiSuratPage() {
 
           <DynamicSuratForm
             config={currentConfig}
+            letterTypes={letterTypes}
             onCancel={handleCancel}
             onSubmit={handleSubmit}
             initialData={initialData}

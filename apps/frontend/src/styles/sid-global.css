@@ -21030,6 +21030,59 @@
   margin-top: 1.5rem;
 }
 
+.sid-admin-letter-types-panel {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+  background: var(--sid-surface-card);
+  box-shadow: var(--shadow-card);
+}
+
+.sid-admin-letter-types-panel > header {
+  margin-bottom: 1rem;
+}
+
+.sid-admin-letter-types-panel h2 {
+  margin: 0;
+  color: var(--sid-text-primary);
+  font-size: 1.125rem;
+}
+
+.sid-admin-letter-types-panel > header p {
+  margin: 0.35rem 0 0;
+  color: var(--sid-text-muted);
+  font-size: 0.875rem;
+}
+
+.sid-admin-letter-types-panel .sid-admin-alert {
+  margin: 0 0 0.75rem;
+}
+
+.sid-admin-letter-types-panel .sid-operator-table-wrapper {
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+}
+
+.sid-admin-letter-types-panel .sid-admin-letter-type-edit input,
+.sid-admin-letter-types-panel td select {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  font: inherit;
+}
+
+.sid-admin-letter-types-panel .sid-admin-letter-type-edit input {
+  width: 7rem;
+}
+
+.sid-admin-letter-types-panel td select {
+  min-width: 10rem;
+}
+
 .sid-admin-officials-header {
   min-height: auto;
   margin: 0;

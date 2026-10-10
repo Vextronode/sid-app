@@ -21,6 +21,7 @@ import {
   getLetterCategories,
   updateApprovalFlowSteps,
 } from '@/features/approval/api'
+import LetterTypeSettingsPanel from '@/features/surat/components/LetterTypeSettingsPanel'
 import { FooterDesa } from '@/components/layout/FooterDesa'
 
 const EMPTY_FLOW_FORM = {
@@ -330,6 +331,8 @@ export default function ApprovalFlowsPage() {
             {error}
           </div>
         )}
+
+        <LetterTypeSettingsPanel />
 
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-sm text-gray-600">
