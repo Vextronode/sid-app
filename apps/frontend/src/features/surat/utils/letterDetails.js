@@ -10,21 +10,18 @@ export function getLetterTrackingState(letter) {
     return { currentStep: 4, rejectedStep: null, completed: true }
   }
 
-  if (
-    status === SURAT_STATUS.REJECTED ||
-    status === SURAT_STATUS.REJECTED_REVISION ||
-    status === SURAT_STATUS.WAITING_REVISION
-  ) {
+  if (status === SURAT_STATUS.REJECTED) {
     const rejectedAtStep = Number(letter?.rejected_at_step)
-    const currentStep = Number.isFinite(rejectedAtStep) && rejectedAtStep > 0
-      ? rejectedAtStep + 1
-      : currentStepOrder > 0
-        ? currentStepOrder + 1
-        : 2
+    const currentStep =
+      Number.isFinite(rejectedAtStep) && rejectedAtStep > 0
+        ? rejectedAtStep + 1
+        : currentStepOrder > 0
+          ? currentStepOrder + 1
+          : 2
 
     return {
       currentStep: Math.min(currentStep, 3),
-      rejectedStep: status === SURAT_STATUS.WAITING_REVISION ? null : Math.min(currentStep, 3),
+      rejectedStep: Math.min(currentStep, 3),
       completed: false,
     }
   }

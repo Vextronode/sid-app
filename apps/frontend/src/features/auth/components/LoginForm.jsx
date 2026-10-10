@@ -71,13 +71,13 @@ export function LoginForm() {
 
         case "kasi":
         case "kasi_pelayanan":
-          navigate("/admin/dashboard-surat-kasi", {
+          navigate("/admin/operator-desa", {
             replace: true,
           });
           break;
 
         case "kaur_tu_umum":
-          navigate("/admin/dashboard-surat-kaur", {
+          navigate("/admin/operator-desa", {
             replace: true,
           });
           break;

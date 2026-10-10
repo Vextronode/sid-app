@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Eye, FileText, Edit } from "lucide-react";
+import { Eye, FileText } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DetailSuratModal } from "./DetailSuratModal";
 
 export function TableSurat({ data }) {
   const [selectedSurat, setSelectedSurat] = useState(null);
-  const navigate = useNavigate();
 
 
 
@@ -66,20 +64,6 @@ export function TableSurat({ data }) {
                         <Eye className="w-3.5 h-3.5" />
                         Detail
                       </button>
-
-                      {/* Revisi */}
-                      {item.status === "waiting_revision_warga" && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            navigate(`/revisi-surat/${item.id}`)
-                          }
-                          className="sid-table-btn sid-table-btn-revision"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                          Revisi
-                        </button>
-                      )}
 
                     </div>
                   </td>
