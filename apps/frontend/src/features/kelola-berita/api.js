@@ -34,23 +34,6 @@ export function createBerita(payload) {
 export function updateBerita(id, payload) {
   const formData = buildNewsFormData(payload, true)
 
-  console.log('=== UPDATE BERITA ===')
-
-  for (const [key, value] of formData.entries()) {
-    console.log(
-      key,
-      value instanceof File
-        ? {
-            name: value.name,
-            type: value.type,
-            size: value.size,
-          }
-        : value,
-    )
-  }
-
-  console.log('====================')
-
   return api.post(`/api/news/${id}`, formData)
 }
 
