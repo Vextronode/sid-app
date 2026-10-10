@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\User;
 use App\Models\Village;
@@ -69,6 +70,31 @@ class FamilyControllerTest extends TestCase
 
         $response->assertJsonMissingPath('data.no_kk');
         $this->assertSame('************0001', $response->json('data.no_kk_masked'));
+    }
+
+    public function test_family_list_includes_head_citizen_from_family_role(): void
+    {
+        $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
+        $user = $this->petugasDesa($village);
+        $family = Family::factory()->create(['village_id' => $village->id]);
+        Citizen::factory()->create([
+            'village_id' => $village->id,
+            'family_id' => $family->id,
+            'family_role' => 'kepala_keluarga',
+            'name' => 'Budi Santoso',
+        ]);
+        Citizen::factory()->create([
+            'village_id' => $village->id,
+            'family_id' => $family->id,
+            'family_role' => 'anak',
+            'name' => 'Ani Santoso',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/families')
+            ->assertOk()
+            ->assertJsonPath('data.0.head_of_family.name', 'Budi Santoso')
+            ->assertJsonPath('data.0.members_count', 2);
     }
 
     public function test_no_kk_hash_is_generated_automatically(): void

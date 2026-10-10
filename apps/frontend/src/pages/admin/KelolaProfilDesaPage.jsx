@@ -169,7 +169,6 @@ export default function KelolaProfilDesaPage() {
         updates.push(
           updateOfficial(official.id, {
             phone_wa: official.phoneWa || null,
-            is_active: official.isActive,
             notes: official.notes || null,
           }),
         )
@@ -184,7 +183,6 @@ export default function KelolaProfilDesaPage() {
           updates.push(
             updateOfficial(kadus.id, {
               phone_wa: kadus.phoneWa || null,
-              is_active: kadus.isActive,
               notes: kadus.notes || null,
             }),
           )

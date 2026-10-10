@@ -73,6 +73,13 @@ class Family extends Model
         return $this->belongsTo(Citizen::class, 'head_of_family_id');
     }
 
+    public function headMember(): HasOne
+    {
+        return $this->hasOne(Citizen::class, 'family_id')
+            ->where('family_role', 'kepala_keluarga')
+            ->where('is_active', true);
+    }
+
     public function members(): HasMany
     {
         return $this->hasMany(Citizen::class, 'family_id');

@@ -2,12 +2,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   getCitizens,
-  getWilayah,
   createCitizen,
   updateCitizen,
   deleteCitizen,
   importCitizensExcel,
 } from '../api'
+import { getRts, getRws } from '@/features/kelola-wilayah/api'
 
 const ITEMS_PER_PAGE = 10
 
@@ -26,19 +26,16 @@ export function useWargaList() {
       setLoading(true)
       setError(null)
 
-      const [citizenRes, wilayahRes] = await Promise.all([getCitizens(), getWilayah()])
+      const [citizenRes, rtRes, rwRes] = await Promise.all([getCitizens(), getRts(), getRws()])
 
       setCitizens(citizenRes.data?.data ?? [])
-
-      // Wilayah diambil dari daftar warga, jadi bisa ada duplikat RT.
-      // Hilangkan duplikat berdasarkan rt_id.
-      const byRt = new Map()
-      ;(wilayahRes.data?.data ?? []).forEach((item) => {
-        if (item.rt_id && !byRt.has(item.rt_id)) {
-          byRt.set(item.rt_id, item)
-        }
-      })
-      setWilayahOptions([...byRt.values()])
+      const rwNumbers = new Map((rwRes.data?.data ?? []).map((rw) => [String(rw.id), rw.number]))
+      setWilayahOptions(
+        (rtRes.data?.data ?? []).map((rt) => ({
+          ...rt,
+          label: `RT ${rt.number} / RW ${rwNumbers.get(String(rt.rw_id)) ?? '-'}`,
+        })),
+      )
     } catch (err) {
       console.error('GET CITIZENS ERROR', err)
       setError(err?.response?.data?.message || 'Gagal memuat data warga.')

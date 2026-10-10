@@ -5,77 +5,60 @@
 // Logic/API tidak diubah.
 // ==========================================
 
-import { useState } from 'react';
-import {
-  Search,
-  SquarePen,
-  Eye,
-  EyeOff,
-  UserPlus,
+import { useState } from 'react'
+import { Search, SquarePen, Eye, EyeOff } from 'lucide-react'
 
-} from 'lucide-react';
-
-import { useUserList } from '@/features/manajemen-user/hooks/useUserList';
-import UserFormModal from '@/features/manajemen-user/components/UserFormModal';
-import { FooterOperator } from '../../components/layout/FooterOperator';
+import { useUserList } from '@/features/manajemen-user/hooks/useUserList'
+import OfficialManagementPanel from '@/features/manajemen-user/components/OfficialManagementPanel'
+import { FooterOperator } from '../../components/layout/FooterOperator'
 
 export default function ManajemenUserPage() {
   const {
     data,
     loading,
+    error,
     setSearch,
     filterStatus,
     setFilterStatus,
     currentPage,
     setCurrentPage,
     totalPages,
+    totalItems,
     toggleStatus,
-    addUser,
     updateUser,
-  } = useUserList();
+  } = useUserList()
 
-  const [keyword, setKeyword] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+  const [keyword, setKeyword] = useState('')
+  const [editingUser, setEditingUser] = useState(null)
+  const [editName, setEditName] = useState('')
+  const [editError, setEditError] = useState('')
 
   const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    setSearch(keyword);
-  };
-
-  const handleOpenAdd = () => {
-    setEditingUser(null);
-    setModalOpen(true);
-  };
+    e.preventDefault()
+    setSearch(keyword)
+  }
 
   const handleOpenEdit = (user) => {
-    setEditingUser({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      wilayah: user.wilayah,
-      is_active: user.is_active,
-    });
+    setEditingUser(user)
+    setEditName(user.name ?? '')
+    setEditError('')
+  }
 
-    setModalOpen(true);
-  };
-
-  const handleSubmitForm = (formData) => {
-    if (editingUser) {
-      updateUser(editingUser.id, formData);
-    } else {
-      addUser(formData);
+  const handleSubmitName = async (event) => {
+    event.preventDefault()
+    if (!editingUser) return
+    setEditError('')
+    try {
+      await updateUser(editingUser.id, editName)
+      setEditingUser(null)
+    } catch (err) {
+      setEditError(err?.response?.data?.message || 'Gagal memperbarui nama pengguna.')
     }
-
-    setModalOpen(false);
-  };
+  }
 
   return (
-    <div className="sid-operator-page">
-
+    <div className="sid-operator-page sid-admin-users-page">
       <div className="sid-operator-content">
-
         {/* Breadcrumb */}
         <p className="sid-operator-breadcrumb">
           Admin / <span>Manajemen Pengguna</span>
@@ -84,32 +67,16 @@ export default function ManajemenUserPage() {
         {/* Header */}
         <div className="sid-operator-header">
           <h1>Manajemen Pengguna</h1>
-
-          <button
-            type="button"
-            onClick={handleOpenAdd}
-            className="sid-operator-primary"
-          >
-            <UserPlus size={16} />
-            Tambah User
-          </button>
         </div>
 
         {/* Search & Filter */}
         <div className="sid-operator-filter-card">
-
-          <form
-            onSubmit={handleSearchSubmit}
-            className="sid-operator-filter-grid user-filter"
-          >
-
+          <form onSubmit={handleSearchSubmit} className="sid-operator-filter-grid user-filter">
             {/* Search */}
             <div className="sid-operator-filter-field">
-
               <p>Pencarian Cepat</p>
 
               <div className="sid-operator-search">
-
                 <Search size={16} />
 
                 <input
@@ -117,41 +84,32 @@ export default function ManajemenUserPage() {
                   onChange={(e) => setKeyword(e.target.value)}
                   placeholder="Cari nama atau email..."
                 />
-
               </div>
-
             </div>
 
             {/* Status */}
             <div className="sid-operator-filter-field">
-
               <p>Status</p>
 
               <select
                 value={filterStatus}
                 onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  setCurrentPage(1);
+                  setFilterStatus(e.target.value)
+                  setCurrentPage(1)
                 }}
               >
                 <option value="">Semua Status</option>
                 <option value="aktif">Aktif</option>
                 <option value="nonaktif">Nonaktif</option>
               </select>
-
             </div>
-
           </form>
-
         </div>
 
         {/* Table */}
         <div className="sid-operator-table-card">
-
           <div className="sid-operator-table-wrapper">
-
             <table className="sid-operator-table">
-
               <thead>
                 <tr>
                   <th>Nama</th>
@@ -164,11 +122,16 @@ export default function ManajemenUserPage() {
               </thead>
 
               <tbody>
-
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="empty">
                       Memuat data...
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan={6} className="empty" role="alert">
+                      {error}
                     </td>
                   </tr>
                 ) : data.length === 0 ? (
@@ -180,22 +143,15 @@ export default function ManajemenUserPage() {
                 ) : (
                   data.map((user) => (
                     <tr key={user.id}>
-
                       {/* Nama */}
-                      <td className="primary-text">
-                        {user.name}
-                      </td>
+                      <td className="primary-text">{user.name}</td>
 
                       {/* Email */}
-                      <td className="center">
-                        {user.email}
-                      </td>
+                      <td className="center">{user.email}</td>
 
                       {/* Jabatan */}
                       <td className="center">
-                        <span className="sid-operator-role">
-                          {user.role}
-                        </span>
+                        <span className="sid-operator-role">{user.role}</span>
                       </td>
 
                       {/* Wilayah */}
@@ -209,27 +165,21 @@ export default function ManajemenUserPage() {
                       <td className="center">
                         <span
                           className={`sid-operator-status ${
-                            user.is_active
-                              ? 'active'
-                              : 'inactive'
+                            user.is_active ? 'active' : 'inactive'
                           }`}
                         >
-                          {user.is_active
-                            ? 'Aktif'
-                            : 'Nonaktif'}
+                          {user.is_active ? 'Aktif' : 'Nonaktif'}
                         </span>
                       </td>
 
                       {/* Aksi */}
                       <td className="center">
-
                         <div className="sid-operator-actions">
-
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(user)}
                             className="sid-operator-action edit"
-                            title="Edit"
+                            title="Ubah nama"
                           >
                             <SquarePen size={16} />
                           </button>
@@ -238,67 +188,40 @@ export default function ManajemenUserPage() {
                             type="button"
                             onClick={() => toggleStatus(user.id)}
                             className="sid-operator-action toggle"
-                            title={
-                              user.is_active
-                                ? 'Nonaktifkan'
-                                : 'Aktifkan'
-                            }
+                            title={user.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                           >
-                            {user.is_active ? (
-                              <Eye size={16} />
-                            ) : (
-                              <EyeOff size={16} />
-                            )}
+                            {user.is_active ? <Eye size={16} /> : <EyeOff size={16} />}
                           </button>
-
                         </div>
-
                       </td>
-
                     </tr>
                   ))
                 )}
-
               </tbody>
-
             </table>
-
           </div>
 
           {/* Pagination */}
           <div className="sid-operator-pagination">
-
             <p>
-              Menampilkan{' '}
-              {data.length === 0 ? 0 : data.length}{' '}
-              dari {data.length} data
+              Menampilkan {data.length} dari {totalItems} pengguna
             </p>
 
             <div>
-
               <button
                 type="button"
-                onClick={() =>
-                  setCurrentPage((p) => Math.max(1, p - 1))
-                }
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
                 Sebelumnya
               </button>
 
-              {Array.from(
-                { length: totalPages },
-                (_, i) => i + 1
-              ).map((page) => (
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   type="button"
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={
-                    page === currentPage
-                      ? 'active'
-                      : ''
-                  }
+                  className={page === currentPage ? 'active' : ''}
                 >
                   {page}
                 </button>
@@ -306,33 +229,54 @@ export default function ManajemenUserPage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setCurrentPage((p) =>
-                    Math.min(totalPages, p + 1)
-                  )
-                }
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
               >
                 Selanjutnya
               </button>
-
             </div>
-
           </div>
-
         </div>
 
+        <OfficialManagementPanel />
       </div>
 
       <FooterOperator />
 
-      <UserFormModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleSubmitForm}
-        initialData={editingUser}
-      />
-
+      {editingUser && (
+        <div className="sid-modal-overlay">
+          <form className="sid-modal" onSubmit={handleSubmitName}>
+            <h2>Ubah Nama Pengguna</h2>
+            <label className="sid-form-group">
+              <span className="sid-form-label">Nama *</span>
+              <input
+                className="sid-input"
+                required
+                maxLength={255}
+                value={editName}
+                onChange={(event) => setEditName(event.target.value)}
+              />
+            </label>
+            {editError && (
+              <p className="sid-admin-alert sid-admin-alert-error" role="alert">
+                {editError}
+              </p>
+            )}
+            <div className="sid-modal-actions">
+              <button
+                type="button"
+                className="sid-button sid-button-outline"
+                onClick={() => setEditingUser(null)}
+              >
+                Batal
+              </button>
+              <button type="submit" className="sid-button sid-button-primary">
+                Simpan
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
-  );
+  )
 }

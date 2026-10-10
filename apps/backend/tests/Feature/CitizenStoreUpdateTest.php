@@ -50,6 +50,26 @@ class CitizenStoreUpdateTest extends TestCase
             ->assertJsonMissingPath('data.0.nik');
     }
 
+    public function test_index_includes_masked_no_kk_for_citizen_linked_to_family(): void
+    {
+        $village = Village::factory()->create();
+        $family = Family::factory()->create([
+            'village_id' => $village->id,
+            'no_kk' => '3201011234560001',
+        ]);
+        Citizen::factory()->create([
+            'village_id' => $village->id,
+            'family_id' => $family->id,
+            'family_role' => 'anak',
+        ]);
+
+        $this->actingAs($this->petugas($village))
+            ->getJson('/api/citizens')
+            ->assertOk()
+            ->assertJsonPath('data.0.family.id', $family->id)
+            ->assertJsonPath('data.0.family.no_kk_masked', '************0001');
+    }
+
     public function test_store_creates_citizen_with_encrypted_nik_hash_and_derived_rw(): void
     {
         $village = Village::factory()->create();

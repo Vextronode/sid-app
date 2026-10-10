@@ -25,16 +25,15 @@ class FamilyResource extends JsonResource
             'hamlet_id' => $this->hamlet_id,
             'head_of_family_id' => $this->head_of_family_id,
             'head_of_family' => $this->when(
-                $this->relationLoaded('headOfFamily') && $this->headOfFamily,
+                ($this->relationLoaded('headOfFamily') && $this->headOfFamily)
+                    || ($this->relationLoaded('headMember') && $this->headMember),
                 fn () => [
-                    'id' => $this->headOfFamily->id,
-                    'name' => $this->headOfFamily->name,
+                    'id' => ($this->headOfFamily ?? $this->headMember)->id,
+                    'name' => ($this->headOfFamily ?? $this->headMember)->name,
                 ]
             ),
-            'members_count' => $this->when(
-                $this->relationLoaded('members'),
-                fn () => $this->members->count()
-            ),
+            'members_count' => $this->members_count
+                ?? ($this->relationLoaded('members') ? $this->members->count() : null),
             'village' => new VillageResource($this->whenLoaded('village')),
             'rt' => new RtResource($this->whenLoaded('rt')),
             'rw' => new RwResource($this->whenLoaded('rw')),
