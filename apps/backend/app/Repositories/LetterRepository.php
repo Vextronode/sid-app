@@ -399,7 +399,7 @@ class LetterRepository
         return Letter::query()
             ->with([
                 'citizen.rt',
-                'letterType:id,name,code,assigned_role,produces_letter,data_action,signature_slots,supporting_template',
+                'letterType:id,name,code,assigned_role,produces_letter,data_action,form_fields,signature_slots,supporting_template',
                 'approvals.approvedBy:id,name',
                 'flow.steps',
                 'statusLogs.actor:id,name',
@@ -479,6 +479,24 @@ class LetterRepository
     public function countSubmittedOnDate(Builder $query, Carbon $date): int
     {
         return (clone $query)->whereDate('submitted_at', $date)->count();
+    }
+
+    /**
+     * Jumlah surat per tanggal pengajuan dalam satu query, berkunci
+     * tanggal (Y-m-d). Tanggal tanpa surat tidak ikut dikembalikan.
+     *
+     * @return array<string, int>
+     */
+    public function countSubmittedPerDay(Builder $query, Carbon $from, Carbon $to): array
+    {
+        return (clone $query)
+            ->whereDate('submitted_at', '>=', $from)
+            ->whereDate('submitted_at', '<=', $to)
+            ->selectRaw('DATE(submitted_at) as submitted_day, COUNT(*) as aggregate')
+            ->groupBy('submitted_day')
+            ->pluck('aggregate', 'submitted_day')
+            ->mapWithKeys(fn ($count, $day): array => [substr((string) $day, 0, 10) => (int) $count])
+            ->all();
     }
 
     public function querySubmittedBy(string $userId): Builder

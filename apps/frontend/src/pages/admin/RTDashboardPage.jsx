@@ -18,13 +18,13 @@
 // Tidak ada QuickNavButtons setelah grafik.
 // ==========================================
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { Mail, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { getSuratList } from '@/lib/api'
+import { useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
 
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FooterDesa } from '@/components/layout/FooterDesa'
@@ -45,62 +45,7 @@ export default function RTDashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const [letters, setLetters] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  // ==========================================
-  // LOAD DATA RT
-  // ==========================================
-
-  const loadDashboardData = useCallback(async (showLoading = true) => {
-    if (showLoading) {
-      setLoading(true)
-    }
-
-    try {
-      const res = await getSuratList()
-
-      setLetters(res.data?.data ?? [])
-    } catch (err) {
-      console.error('GET RT DASHBOARD ERROR:', err.response?.data ?? err)
-    } finally {
-      if (showLoading) {
-        setLoading(false)
-      }
-    }
-  }, [])
-
-  // ==========================================
-  // LOAD PERTAMA KALI
-  // ==========================================
-
-  useEffect(() => {
-    let isMounted = true
-
-    const loadInitialData = async () => {
-      if (!isMounted) return
-
-      await loadDashboardData(true)
-    }
-
-    loadInitialData()
-
-    return () => {
-      isMounted = false
-    }
-  }, [loadDashboardData])
-
-  // ==========================================
-  // AUTO REFRESH SETIAP 5 DETIK
-  // ==========================================
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadDashboardData(false)
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [loadDashboardData])
+  const { letters, loading } = useSuratListQuery()
 
   // ==========================================
   // STATISTIK
@@ -215,9 +160,7 @@ export default function RTDashboardPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              {stats.overdue > 0 && (
-                <OverdueBadge isOverdue count={stats.overdue} />
-              )}
+              {stats.overdue > 0 && <OverdueBadge isOverdue count={stats.overdue} />}
               <span className="sid-dashboard-date">{hariIni}</span>
             </div>
           </div>

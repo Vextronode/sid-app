@@ -144,13 +144,8 @@ export default function SuratSayaPejabatPage() {
 
               {typesLoading && <p role="status">Memuat jenis surat...</p>}
               {typesError && <p role="alert">{typesError}</p>}
-              {selectedLetterType && (
-                <p className="sid-info">
-                  Verifikasi: {selectedLetterType.verification_type}
-                  {selectedLetterType.requirements_info
-                    ? ` — Persyaratan: ${selectedLetterType.requirements_info}`
-                    : ''}
-                </p>
+              {selectedLetterType?.requirements_info && (
+                <p className="sid-info">Persyaratan: {selectedLetterType.requirements_info}</p>
               )}
             </div>
 

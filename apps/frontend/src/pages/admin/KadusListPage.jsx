@@ -46,23 +46,12 @@ export default function KadusListPage() {
   // DATA
   // ==========================================
 
-  const { data, loading, search, setSearch, filterStatus, setFilterStatus, refresh } =
-    useApprovalLetterList({
+  const { data, loading, search, setSearch, filterStatus, setFilterStatus } = useApprovalLetterList(
+    {
       role: 'kadus',
       initialStatus,
-    })
-  // ==========================================
-  // AUTO REFRESH DATA SURAT
-  // ==========================================
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refresh()
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [refresh])
-
+    },
+  )
   // ==========================================
   // RESET PAGINATION
   // ==========================================

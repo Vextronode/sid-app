@@ -25,7 +25,6 @@ class LetterTypeFactory extends Factory
             'name' => fake()->words(3, true),
             'description' => fake()->sentence(),
             'template' => null,
-            'verification_type' => 'manual',
             'requirement_info' => fake()->sentence(),
             'flow_id' => ApprovalFlow::factory(),
             'assigned_role' => 'kasi_pelayanan',

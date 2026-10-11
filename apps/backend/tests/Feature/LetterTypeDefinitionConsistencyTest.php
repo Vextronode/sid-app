@@ -53,6 +53,11 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
         }
 
         $this->assertSame([], $unsourced);
+
+        // "Keperluan" bukan lagi isian umum: tidak ada template yang memakainya.
+        foreach (LetterType::query()->get() as $letterType) {
+            $this->assertStringNotContainsString('{{ purpose }}', (string) $letterType->template, $letterType->code);
+        }
     }
 
     public function test_every_form_field_is_used_by_the_template_or_a_data_action(): void

@@ -22,6 +22,12 @@ class UserResource extends JsonResource
             'username' => $this->username,
             'role' => $this->role,
             'email' => $this->email,
+            // NIK utuh hanya untuk pemilik akun sendiri; orang lain hanya
+            // mendapat citizen.nik_masked.
+            'nik' => $this->when(
+                $request->user()?->is($this->resource),
+                fn () => $this->citizen?->nik,
+            ),
             'is_active' => $this->is_active,
             'must_change_password' => $this->must_change_password,
             'created_at' => $this->created_at,

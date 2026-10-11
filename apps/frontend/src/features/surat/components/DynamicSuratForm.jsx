@@ -173,6 +173,13 @@ export function DynamicSuratForm({
             borderColor: 'var(--sid-border)',
           }}
         >
+          {config.fields.length === 0 && (
+            <p className="sid-info">
+              Jenis surat ini tidak memerlukan isian tambahan. Data di atas diambil dari profil
+              Anda.
+            </p>
+          )}
+
           {config.fields.map((field) => {
             const fieldError = errors[field.name]
             const inputClass = `sid-input ${fieldError ? 'sid-input-error' : ''}`

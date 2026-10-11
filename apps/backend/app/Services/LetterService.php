@@ -84,11 +84,13 @@ class LetterService
 
             'applicant_address' => $citizen->address,
 
-            'purpose' => $data['purpose'],
+            // Keperluan dan catatan bukan lagi isian umum; bila sebuah jenis
+            // surat memerlukannya, ia menjadi isian di payload.
+            'purpose' => null,
 
             'payload' => $data['payload'] ?? null,
 
-            'notes' => $data['notes'] ?? null,
+            'notes' => null,
 
             'status' => 'pending',
 
@@ -121,7 +123,6 @@ class LetterService
         $this->letterAttachmentService->storeSubmission(
             $letter,
             $user,
-            $data['attachments'] ?? [],
             $data['files'] ?? [],
         );
 

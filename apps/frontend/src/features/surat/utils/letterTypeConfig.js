@@ -1,34 +1,7 @@
-// Isian yang dimiliki semua jenis surat. Dikirim sebagai purpose, lampiran
-// umum, dan notes; bukan bagian dari definisi per jenis surat.
-const COMMON_FIELDS = [
-  {
-    name: 'keperluan',
-    label: 'Keperluan',
-    type: 'textarea',
-    required: true,
-    placeholder: 'Jelaskan keperluan surat',
-    scope: 'common',
-  },
-  {
-    name: 'dokumen',
-    label: 'Upload Dokumen Pendukung',
-    type: 'file',
-    required: false,
-    multiple: true,
-    accept: '.pdf,.jpg,.jpeg,.png',
-    scope: 'common',
-  },
-  {
-    name: 'catatan',
-    label: 'Catatan Tambahan',
-    type: 'textarea',
-    required: false,
-    placeholder: 'Opsional',
-    scope: 'common',
-  },
-]
-
-export const COMMON_FIELD_NAMES = COMMON_FIELDS.map((field) => field.name)
+// `accept: 'image'` pada definisi membatasi unggahan ke gambar.
+function fileAccept(field) {
+  return field.accept === 'image' ? '.jpg,.jpeg,.png' : '.pdf,.jpg,.jpeg,.png'
+}
 
 function normalizeField(field) {
   return {
@@ -38,7 +11,8 @@ function normalizeField(field) {
     required: Boolean(field.required),
     placeholder: field.placeholder ?? '',
     options: Array.isArray(field.options) ? field.options : [],
-    accept: field.type === 'file' ? '.pdf,.jpg,.jpeg,.png' : undefined,
+    accept: field.type === 'file' ? fileAccept(field) : undefined,
+    imageOnly: field.type === 'file' && field.accept === 'image',
     multiple: false,
     scope: 'definition',
   }
@@ -67,15 +41,13 @@ export function getLetterTypeFormConfig(letterType) {
     id: letterType.id,
     code: letterType.code,
     title: letterType.name,
-    type: letterType.verification_type,
     requirementsInfo: letterType.requirements_info,
     producesLetter: letterType.produces_letter ?? true,
     dataAction: letterType.data_action ?? 'none',
     hasSupportingDocument: Boolean(letterType.has_supporting_document),
-    fields: [
-      ...definitionFields.filter((field) => field?.name).map(normalizeField),
-      ...COMMON_FIELDS,
-    ],
+    // Isian form hanya yang didefinisikan jenis suratnya (mengikuti
+    // template fisik); tidak ada isian umum seperti keperluan/catatan.
+    fields: definitionFields.filter((field) => field?.name).map(normalizeField),
     signatureSlots: signatureSlots.filter((slot) => slot?.key).map(normalizeSlot),
   }
 }

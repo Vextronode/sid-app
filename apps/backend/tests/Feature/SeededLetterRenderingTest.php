@@ -14,7 +14,9 @@ use Database\Seeders\ApprovalFlowSeeder;
 use Database\Seeders\LetterTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Tests\Concerns\BuildsLetterScenario;
 use Tests\TestCase;
@@ -195,6 +197,133 @@ class SeededLetterRenderingTest extends TestCase
         $this->assertSame($this->applicant['citizen']->rt_id, $child->rt_id);
     }
 
+    public function test_business_letter_requires_a_current_photo_that_approvers_can_see(): void
+    {
+        Storage::fake('private_uploads');
+        $submit = fn (array $files) => $this->actingAs($this->applicant['user'])
+            ->post('/api/letters', [
+                'letter_type_id' => $this->letterType('A01')->id,
+                'purpose' => 'Pengajuan pinjaman',
+                'payload' => ['jenis_usaha' => 'Warung'],
+                ...$files,
+            ], ['Accept' => 'application/json']);
+
+        // Foto wajib, dan harus gambar.
+        $submit([])->assertStatus(422)->assertJsonValidationErrors(['files.foto_usaha']);
+        $submit(['files' => ['foto_usaha' => UploadedFile::fake()->create('usaha.pdf', 100, 'application/pdf')]])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['files.foto_usaha']);
+        $this->assertDatabaseCount('letters', 0);
+
+        $letterId = $submit(['files' => ['foto_usaha' => UploadedFile::fake()->image('usaha.jpg')]])
+            ->assertCreated()
+            ->json('data.id');
+
+        // RT melihat foto itu di detail surat sebagai bahan pertimbangan.
+        $detail = $this->actingAs($this->rtApprover['user'])
+            ->getJson("/api/letters/{$letterId}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.attachments')
+            ->assertJsonPath('data.attachments.0.field', 'foto_usaha')
+            ->assertJsonPath('data.letter_type.form_fields.1.label', 'Foto Usaha Terkini');
+        $this->actingAs($this->rtApprover['user'])
+            ->get($detail->json('data.attachments.0.url'))
+            ->assertOk();
+    }
+
+    public function test_forms_follow_the_physical_templates_without_a_general_purpose_field(): void
+    {
+        // A02 dan A09 tidak punya isian apa pun: cukup memilih jenis surat.
+        foreach (['A02' => 'tidak memiliki rumah', 'A09' => 'belum menikah'] as $code => $phrase) {
+            $html = $this->issue($code, [], $letterId);
+
+            $this->assertStringContainsString($phrase, $html);
+            $this->assertStringNotContainsString('________', $html);
+            $this->assertNull(Letter::query()->findOrFail($letterId)->purpose);
+        }
+
+        // Isian di luar template fisik ditolak, termasuk lokasi usaha.
+        $this->actingAs($this->applicant['user'])
+            ->postJson('/api/letters', [
+                'letter_type_id' => $this->letterType('A02')->id,
+                'payload' => ['keperluan' => 'Bantuan rumah'],
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['payload']);
+
+        // Keperluan yang dikirim klien lama diabaikan, tidak disimpan.
+        $this->actingAs($this->applicant['user'])
+            ->postJson('/api/letters', [
+                'letter_type_id' => $this->letterType('A09')->id,
+                'purpose' => 'Keperluan lama',
+                'notes' => 'Catatan lama',
+            ])
+            ->assertCreated();
+        $this->assertDatabaseMissing('letters', ['notes' => 'Catatan lama']);
+        $this->assertSame(0, Letter::query()->whereNotNull('purpose')->count());
+    }
+
+    public function test_poverty_letter_prints_the_requirement_it_is_meant_for(): void
+    {
+        $html = $this->issue('A05', [
+            'nama_anak' => 'Anak Contoh',
+            'tempat_lahir_anak' => 'Pangandaran',
+            'tanggal_lahir_anak' => '2010-03-04',
+            'nik_anak' => '3207010403100001',
+            'jenis_kelamin_anak' => 'L',
+            'alamat_anak' => 'Dusun Cibenda RT 001/RW 013',
+            'keperluan_persyaratan' => 'pengajuan beasiswa',
+        ]);
+
+        $this->assertStringContainsString('Selaku Orangtua dari :', $html);
+        $this->assertStringContainsString('Anak Contoh', $html);
+        $this->assertStringContainsString('Persyaratan dan syarat pengajuan beasiswa, Mohon', $html);
+        $this->assertStringNotContainsString('________', $html);
+    }
+
+    public function test_requirement_line_is_only_kept_for_the_business_photo(): void
+    {
+        $this->assertSame(
+            ['A01' => 'Foto usaha terkini.'],
+            LetterType::query()
+                ->where('village_id', $this->village->id)
+                ->whereNotNull('requirement_info')
+                ->pluck('requirement_info', 'code')
+                ->all(),
+        );
+    }
+
+    public function test_own_nik_is_shown_in_full_to_its_owner_only(): void
+    {
+        $petugas = $this->makeOfficialUser('petugas_desa', $this->village);
+        $nik = $this->applicant['citizen']->nik;
+
+        $this->actingAs($this->applicant['user'])
+            ->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('data.nik', $nik);
+
+        // Petugas Desa melihat daftar pengguna tanpa NIK utuh milik orang lain.
+        $list = $this->actingAs($petugas['user'])->getJson('/api/users')->assertOk();
+        $row = collect($list->json('data'))->firstWhere('id', $this->applicant['user']->id);
+
+        $this->assertNotNull($row);
+        $this->assertArrayNotHasKey('nik', $row);
+        $this->assertStringNotContainsString($nik, json_encode($row));
+    }
+
+    public function test_only_the_business_letter_asks_for_an_upload(): void
+    {
+        $withUpload = LetterType::query()
+            ->where('village_id', $this->village->id)
+            ->get()
+            ->filter(fn (LetterType $type) => collect($type->form_fields)->contains('type', 'file'))
+            ->pluck('code')
+            ->all();
+
+        $this->assertSame(['A01'], array_values($withUpload));
+    }
+
     public function test_required_fields_of_seeded_types_are_enforced_on_submission(): void
     {
         $this->actingAs($this->applicant['user'])
@@ -318,8 +447,7 @@ class SeededLetterRenderingTest extends TestCase
         $letterId = $this->actingAs($this->applicant['user'])
             ->postJson('/api/letters', [
                 'letter_type_id' => $this->letterType($code)->id,
-                'purpose' => 'Keperluan administrasi',
-                'payload' => $payload,
+                ...($payload === [] ? [] : ['payload' => $payload]),
             ])
             ->assertCreated()
             ->json('data.id');
