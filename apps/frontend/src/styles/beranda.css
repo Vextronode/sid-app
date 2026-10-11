@@ -63,6 +63,8 @@
   --bd-text-meta-sm: 13px;
   --bd-text-meta: 14px;
   --bd-text-meta-lg: 15px;
+  /* Kutipan sambutan Kepala Desa (mockup 24px). */
+  --bd-text-quote: clamp(20px, 15.43px + 0.714vw, 24px);
 
   --bd-leading-hero: 1.08;
   --bd-leading-h2: 1.2;
@@ -73,6 +75,7 @@
   --bd-leading-card-title: 1.35;
   --bd-leading-small: 1.5;
   --bd-leading-meta: 1.4;
+  --bd-leading-quote: 1.45;
 
   /* ===== Ruang ===== */
   --bd-space-4: 4px;
@@ -132,6 +135,14 @@
   --bd-color-track: #e3e8e0;
   --bd-progress-height: 10px;
 
+  /* Sambutan Kepala Desa dan Kontak. */
+  --bd-welcome-pad: 40px;
+  --bd-welcome-photo-width: 200px;
+  --bd-welcome-photo-height: 240px;
+  /* Placeholder foto Kepala Desa (nilai dari mockup). */
+  --bd-color-photo-placeholder: #c8d6c2;
+  --bd-contact-card-min: 260px;
+
   /* Logo mitra di footer. */
   --bd-partner-height: 40px;
   --bd-partner-logo-height: 26px;
@@ -172,6 +183,7 @@
     --bd-stat-pad: 20px 24px;
     --bd-news-feature-image-height: 200px;
     --bd-howto-pad: 56px;
+    --bd-welcome-pad: 24px;
     /* Di layar sempit judul hero jatuh di atas langit yang terang: overlay
        dinaikkan agar kontras tetap ≥ 4.5:1 (02-design-tokens.md). */
     --bd-color-hero-overlay: rgba(12, 24, 18, 0.6);
@@ -1376,4 +1388,142 @@
   color: var(--bd-color-muted);
   font-size: var(--bd-text-meta-lg);
   line-height: var(--bd-leading-meta);
+}
+
+/* ----- Sambutan Kepala Desa (dev saja; tanpa link, P9) ----- */
+.bd-welcome-section {
+  margin-top: var(--bd-section-space);
+}
+
+.bd-welcome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bd-space-40);
+  padding: var(--bd-welcome-pad);
+  border-radius: var(--bd-radius-block);
+  background: var(--bd-color-accent-tint);
+}
+
+.bd-welcome-photo {
+  flex: 0 0 var(--bd-welcome-photo-width);
+  height: var(--bd-welcome-photo-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--bd-radius-card);
+  background: var(--bd-color-photo-placeholder);
+  color: var(--bd-color-accent);
+}
+
+.bd-welcome-body {
+  flex: 1 1 420px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+}
+
+.bd-welcome-label {
+  margin: 0;
+}
+
+.bd-welcome-quote {
+  margin: 0;
+}
+
+.bd-welcome-quote p {
+  margin: 0;
+  font-size: var(--bd-text-quote);
+  font-weight: var(--bd-font-semibold);
+  line-height: var(--bd-leading-quote);
+}
+
+.bd-welcome-caption {
+  display: flex;
+  flex-direction: column;
+  line-height: var(--bd-leading-card-title);
+}
+
+.bd-welcome-name {
+  font-weight: var(--bd-font-extrabold);
+}
+
+.bd-welcome-role {
+  color: var(--bd-color-muted);
+}
+
+/* ----- Kontak (A31, A32; tujuan gulir A8) ----- */
+.bd-contact {
+  margin-top: var(--bd-section-space);
+  padding-bottom: var(--bd-section-space);
+  scroll-margin-top: var(--bd-space-24);
+}
+
+.bd-contact-heading {
+  margin-bottom: var(--bd-space-24);
+}
+
+.bd-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--bd-contact-card-min), 100%), 1fr));
+  gap: var(--bd-space-16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-contact-grid > li {
+  display: flex;
+}
+
+.bd-contact-card {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--bd-space-16);
+  padding: var(--bd-space-24);
+  background: var(--bd-color-surface);
+  border: 1px solid var(--bd-color-border);
+  border-radius: var(--bd-radius-card);
+  color: var(--bd-color-ink);
+}
+
+.bd-root .bd-contact-card--link,
+.bd-root .bd-contact-card--link:hover {
+  color: var(--bd-color-ink);
+  text-decoration: none;
+}
+
+.bd-contact-icon {
+  flex: none;
+  display: flex;
+  color: var(--bd-color-primary);
+}
+
+.bd-contact-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bd-contact-title {
+  font-weight: var(--bd-font-bold);
+}
+
+.bd-contact-detail {
+  color: var(--bd-color-muted);
+  overflow-wrap: anywhere;
+}
+
+/* "Buka di peta": bergaris bawah sebagai penanda link (dev saja). */
+.bd-contact-map {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bd-space-8);
+  color: var(--bd-color-primary);
+  font-weight: var(--bd-font-bold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }

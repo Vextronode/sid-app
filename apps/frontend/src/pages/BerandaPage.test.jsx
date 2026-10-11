@@ -365,3 +365,106 @@ describe('BerandaPage transparency section', () => {
     expect(screen.queryByText('Pendapatan')).toBeNull()
   })
 })
+
+describe('BerandaPage Kepala Desa welcome', () => {
+  const block = () => screen.queryByRole('region', { name: 'Sambutan Kepala Desa' })
+
+  it('shows the dummy welcome with the real head name and no links in development (P9)', () => {
+    usePublicVillageInfo.mockReturnValue({
+      village: { head_name: 'Nama Kades Asli' },
+      stats: null,
+      contacts: [],
+    })
+
+    renderPage({ isDev: true })
+
+    const region = within(block())
+    expect(region.getByRole('heading', { level: 2 })).toHaveTextContent('Sambutan Kepala Desa')
+    expect(region.getByText('Nama Kades Asli')).toBeInTheDocument()
+    expect(region.getByText('Kepala Desa Cibenda')).toBeInTheDocument()
+    expect(region.getByText(/Dua kalimat sambutan/)).toBeInTheDocument()
+    expect(region.queryAllByRole('link')).toHaveLength(0)
+  })
+
+  it('falls back to the dummy name while village data is missing', () => {
+    renderPage({ isDev: true })
+
+    expect(within(block()).getByText('Dede Rusliana')).toBeInTheDocument()
+  })
+
+  it('is not rendered in production (K1)', () => {
+    renderPage({ isDev: false })
+
+    expect(block()).toBeNull()
+    expect(screen.queryByText(/Dua kalimat sambutan/)).toBeNull()
+  })
+})
+
+describe('BerandaPage contact section', () => {
+  const section = () => screen.getByRole('region', { name: 'Butuh bantuan?' })
+  const village = {
+    phone: '0265-639 123',
+    address: 'Jl. Raya Cibenda No. 1',
+    head_name: 'Dede Rusliana',
+  }
+  const officialContacts = [{ name: 'Petugas Lama', position: 'kasi_pelayanan', wa_link: 'x' }]
+
+  beforeEach(() => {
+    usePublicVillageInfo.mockReturnValue({ village, stats: null, contacts: officialContacts })
+  })
+
+  it('renders id="kontak" with three cards and no old staff list (K14)', () => {
+    renderPage()
+
+    expect(section()).toHaveAttribute('id', 'kontak')
+    expect(within(section()).getByRole('heading', { level: 2 })).toHaveTextContent('Butuh bantuan?')
+    expect(within(section()).getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.queryByText('Petugas Lama')).toBeNull()
+    expect(screen.queryByRole('link', { name: 'WhatsApp' })).toBeNull()
+  })
+
+  it('makes the whole phone card a tel: link from village.phone (A31)', () => {
+    renderPage({ isDev: false })
+
+    const link = within(section()).getByRole('link', { name: /Telepon \/ WhatsApp/ })
+    expect(link).toHaveAttribute('href', 'tel:0265639123')
+    expect(link).toHaveTextContent('0265-639 123')
+  })
+
+  it('keeps the service hours card unclickable', () => {
+    renderPage()
+
+    const hours = within(section()).getByText('Senin – Jumat, 08.00 – 16.00 WIB')
+    expect(hours.closest('a')).toBeNull()
+  })
+
+  it('opens the dummy map in a new tab in development (A32)', () => {
+    renderPage({ isDev: true })
+
+    const link = within(section()).getByRole('link', { name: /Kantor Desa Cibenda/ })
+    expect(link).toHaveTextContent('Jl. Raya Cibenda No. 1')
+    expect(link).toHaveAccessibleName(/Buka di peta \(tab baru\)$/)
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link.getAttribute('rel')).toMatch(/\bnoopener\b/)
+    expect(link.getAttribute('href')).toMatch(/^https:\/\//)
+  })
+
+  it('hides "Buka di peta" and keeps the office card unclickable in production (K1)', () => {
+    renderPage({ isDev: false })
+
+    const office = within(section()).getByText('Kantor Desa Cibenda')
+    expect(office.closest('a')).toBeNull()
+    expect(within(section()).getByText('Jl. Raya Cibenda No. 1')).toBeInTheDocument()
+    expect(screen.queryByText(/Buka di peta/)).toBeNull()
+    expect(within(section()).getAllByRole('link')).toHaveLength(1)
+  })
+
+  it('shows the phone card without a link while village data is missing', () => {
+    usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
+
+    renderPage({ isDev: false })
+
+    expect(within(section()).getByText('Telepon / WhatsApp').closest('a')).toBeNull()
+    expect(within(section()).queryAllByRole('link')).toHaveLength(0)
+  })
+})

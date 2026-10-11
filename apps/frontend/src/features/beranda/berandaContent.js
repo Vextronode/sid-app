@@ -148,6 +148,12 @@ const STATIC = {
     updatedPrefix: 'Diperbarui',
   },
 
+  // Label blok Sambutan Kepala Desa. Isinya dummy (DEV_ONLY.welcome).
+  welcomeBlock: {
+    // Ditampilkan kapital lewat CSS: "SAMBUTAN KEPALA DESA".
+    label: 'Sambutan Kepala Desa',
+  },
+
   contact: {
     title: 'Butuh bantuan?',
     phoneLabel: 'Telepon / WhatsApp',
@@ -155,6 +161,9 @@ const STATIC = {
     // Teks yang sama dengan FooterDesa (FooterDesa sendiri tidak diubah).
     hours: 'Senin – Jumat, 08.00 – 16.00 WIB',
     officeLabel: 'Kantor Desa Cibenda',
+    // A32: hanya tampil bila DEV_ONLY.mapUrl ada.
+    mapLink: 'Buka di peta',
+    mapHint: '(tab baru)',
   },
 
   footer: {
