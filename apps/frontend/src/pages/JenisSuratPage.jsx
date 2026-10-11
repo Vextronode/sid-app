@@ -8,26 +8,19 @@ import { useNavigate } from 'react-router-dom'
 import { FileText, CheckCircle2, XCircle, ListChecks } from 'lucide-react'
 
 import { WargaLayout } from '@/components/layout/WargaLayout'
-import { useLetters } from '@/features/surat/hooks/useLetters'
+import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 import SuratDateTracker from '@/features/warga-surat/components/SuratDateTracker'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
 export default function JenisSuratPage() {
   const navigate = useNavigate()
-  const { letters, loading } = useLetters()
+  const { summary, loading } = useSuratSummaryQuery({ scope: 'mine' })
 
-  const total = letters.length
-
-  const disetujui = letters.filter((letter) => letter.status === SURAT_STATUS.APPROVED).length
-
-  const ditolak = letters.filter(
-    (letter) => letter.status === SURAT_STATUS.REJECTED,
-  ).length
-
-  const sedangDiproses = letters.filter(
-    (letter) => letter.status === SURAT_STATUS.IN_PROGRESS,
-  ).length
+  const total = summary.total
+  const disetujui = summary.by_status[SURAT_STATUS.APPROVED]
+  const ditolak = summary.by_status[SURAT_STATUS.REJECTED]
+  const sedangDiproses = summary.by_status[SURAT_STATUS.IN_PROGRESS]
 
   return (
     <WargaLayout>
@@ -126,7 +119,7 @@ export default function JenisSuratPage() {
             TRACKER
         ========================================== */}
 
-        <SuratDateTracker letters={letters} loading={loading} />
+        <SuratDateTracker />
       </div>
     </WargaLayout>
   )
