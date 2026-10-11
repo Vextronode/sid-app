@@ -140,6 +140,22 @@ class CitizenRepository
         return $query->count();
     }
 
+    /**
+     * @return array<string, int> jumlah warga berkunci gender (L/P)
+     */
+    public function countGroupedByGender(string $villageId, ?int $rtId = null, ?int $rwId = null): array
+    {
+        return Citizen::query()
+            ->where('village_id', $villageId)
+            ->when($rtId !== null, fn ($query) => $query->where('rt_id', $rtId))
+            ->when($rwId !== null, fn ($query) => $query->whereHas('rt', fn ($rtQuery) => $rtQuery->where('rw_id', $rwId)))
+            ->selectRaw('gender, COUNT(*) as aggregate')
+            ->groupBy('gender')
+            ->pluck('aggregate', 'gender')
+            ->map(fn ($count): int => (int) $count)
+            ->all();
+    }
+
     public function countActiveByVillage(string $villageId): int
     {
         return Citizen::query()

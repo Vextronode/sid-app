@@ -14,13 +14,13 @@
 // UI mengikuti pola RWDashboardPage.
 // ==========================================
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { ClipboardList, Eye, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { getSuratList } from '@/lib/api'
+import { useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
 
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FooterDesa } from '@/components/layout/FooterDesa'
@@ -41,44 +41,7 @@ export default function KadesDashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const [letters, setLetters] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  // ==========================================
-  // LOAD DATA KADES
-  // ==========================================
-
-  useEffect(() => {
-    let isMounted = true
-
-    const loadLetters = async () => {
-      try {
-        setLoading(true)
-
-        const res = await getSuratList()
-
-        if (isMounted) {
-          setLetters(res.data?.data ?? [])
-        }
-      } catch (err) {
-        console.error('GET KADES LIST ERROR', err.response?.data ?? err)
-
-        if (isMounted) {
-          setLetters([])
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    loadLetters()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
+  const { letters, loading } = useSuratListQuery()
 
   // ==========================================
   // STATISTIK
@@ -207,9 +170,7 @@ export default function KadesDashboardPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              {stats.overdue > 0 && (
-                <OverdueBadge isOverdue count={stats.overdue} />
-              )}
+              {stats.overdue > 0 && <OverdueBadge isOverdue count={stats.overdue} />}
               <span className="sid-dashboard-date">{hariIni}</span>
             </div>
           </div>

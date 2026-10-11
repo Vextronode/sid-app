@@ -20,6 +20,7 @@ class OfficialRepository
             ->where('village_id', $villageId)
             ->with([
                 'citizen.occupation',
+                'citizen.rt',
                 'user',
                 'village',
                 'hamlet',
@@ -209,6 +210,7 @@ class OfficialRepository
             ->where('rw_id', $rwId)
             ->where('position', 'rw')
             ->where('is_active', true)
+            ->with('user')
             ->get();
     }
 
@@ -224,6 +226,7 @@ class OfficialRepository
             ->where('hamlet_id', $hamletId)
             ->where('position', 'kadus')
             ->where('is_active', true)
+            ->with('user')
             ->get();
     }
 
@@ -243,6 +246,7 @@ class OfficialRepository
             ->where('rt_id', $rtId)
             ->where('position', $position)
             ->where('is_active', true)
+            ->with('user')
             ->get();
     }
 
@@ -261,6 +265,7 @@ class OfficialRepository
             ->whereIn('position', $positions)
             ->where('village_id', $villageId)
             ->where('is_active', true)
+            ->with('user')
             ->get();
     }
 

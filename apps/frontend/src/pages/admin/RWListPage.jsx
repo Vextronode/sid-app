@@ -44,23 +44,12 @@ export default function RWListPage() {
   // DATA
   // ==========================================
 
-  const { data, loading, search, setSearch, filterStatus, setFilterStatus, refresh } =
-    useApprovalLetterList({
+  const { data, loading, search, setSearch, filterStatus, setFilterStatus } = useApprovalLetterList(
+    {
       role: 'rw',
       initialStatus,
-    })
-
-  // ==========================================
-  // AUTO REFRESH DATA SURAT
-  // ==========================================
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refresh()
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [refresh])
+    },
+  )
 
   // ==========================================
   // RESET PAGINATION

@@ -22,6 +22,21 @@ class NewsRepository
     }
 
     /**
+     * Berita published terbaru untuk beranda publik; dibatasi di SQL agar
+     * tidak memuat seluruh berita hanya untuk menampilkan beberapa.
+     */
+    public function latestPublishedForVillage(string $villageId, int $limit): Collection
+    {
+        return News::query()
+            ->with('author')
+            ->where('village_id', $villageId)
+            ->where('is_published', true)
+            ->latest()
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
      * UC-16. Halaman publik /public/news - hanya berita published,
      * dipaginasi (beda dengan allForVillage() yang dipakai admin, selalu
      * kembalikan seluruh baris tanpa pagination).

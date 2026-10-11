@@ -24,6 +24,15 @@ class LetterTypeRepository
         return $letterType->load('flow');
     }
 
+    public function countActiveWithTemplate(string $villageId): int
+    {
+        return LetterType::query()
+            ->where('village_id', $villageId)
+            ->whereNotNull('template')
+            ->where('is_active', true)
+            ->count();
+    }
+
     public function allActiveWithTemplate(?string $villageId = null): Collection
     {
         return LetterType::query()

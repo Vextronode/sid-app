@@ -123,10 +123,7 @@ export default function SuratDetailModal({
           label: 'Jenis Surat',
           value: FIELD_MAP.jenisSurat(surat),
         },
-        {
-          label: 'Keperluan',
-          value: FIELD_MAP.keperluan(surat),
-        },
+        ...(surat?.purpose ? [{ label: 'Keperluan', value: FIELD_MAP.keperluan(surat) }] : []),
         {
           label: 'Diajukan',
           value: FIELD_MAP.diajukan(surat),

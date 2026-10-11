@@ -14,7 +14,8 @@ use Illuminate\Database\Seeder;
  * template mengikuti template fisik kantor desa di
  * docs/template-surat-fisik/. Setiap jenis surat didefinisikan utuh di
  * satu tempat: isian form, template, kode klasifikasi nomor surat, dan
- * aksi data. Nama isian = nama placeholder di template. Kop surat dan
+ * aksi data. Isian form hanya yang ada di template fisik (kecuali
+ * foto usaha di A01). Nama isian = nama placeholder di template. Kop surat dan
  * wilayah administratif diambil dari profil desa, bukan ditulis tetap.
  */
 class LetterTypeSeeder extends Seeder
@@ -41,6 +42,7 @@ class LetterTypeSeeder extends Seeder
                 LetterType::updateOrCreate(
                     ['village_id' => $village->id, 'code' => $type['code']],
                     array_merge([
+                        'requirement_info' => null,
                         'classification_code' => '470',
                         'produces_letter' => true,
                         'data_action' => 'none',
@@ -49,7 +51,6 @@ class LetterTypeSeeder extends Seeder
                     ], $type, [
                         'village_id' => $village->id,
                         'template' => $this->page($type['name'], $sections),
-                        'verification_type' => 'manual',
                         'assigned_role' => 'kasi_pelayanan',
                         'is_active' => true,
                         'flow_id' => $flow->id,
@@ -71,15 +72,17 @@ class LetterTypeSeeder extends Seeder
                 'code' => 'A01',
                 'name' => 'Surat Keterangan Usaha',
                 'description' => 'Keterangan kepemilikan/menjalankan usaha di wilayah desa.',
-                'requirement_info' => 'KTP, KK, jenis & lokasi usaha.',
+                'requirement_info' => 'Foto usaha terkini.',
                 'validity_days' => 365,
                 'form_fields' => [
                     $this->text('jenis_usaha', 'Jenis Usaha', true, 'Masukkan jenis usaha'),
-                    $this->text('lokasi_usaha', 'Lokasi Usaha', true, 'Contoh: Dusun ..., RT 001/RW 013'),
+                    // Bukti usaha untuk pertimbangan RT dan Kepala Desa saat
+                    // menyetujui; tidak dicetak di surat.
+                    $this->image('foto_usaha', 'Foto Usaha Terkini'),
                 ],
                 'sections' => [
                     $applicant,
-                    $this->paragraph('Orang tersebut diatas benar-benar warga kami dan perlu kami terangkan bahwa orang tersebut diatas benar-benar mempunyai kegiatan usaha &ldquo;{{ jenis_usaha }}&rdquo; di wilayah {{ lokasi_usaha }} {{ village_region }}.'),
+                    $this->paragraph('Orang tersebut diatas benar-benar warga kami dan perlu kami terangkan bahwa orang tersebut diatas benar-benar mempunyai kegiatan usaha &ldquo;{{ jenis_usaha }}&rdquo; di wilayah {{ village_region }}.'),
                     $this->paragraph(self::CLOSING),
                 ],
             ],
@@ -87,7 +90,6 @@ class LetterTypeSeeder extends Seeder
                 'code' => 'A02',
                 'name' => 'Surat Keterangan Tidak Memiliki Rumah',
                 'description' => 'Keterangan bahwa warga tidak memiliki rumah untuk keperluan bantuan atau administrasi.',
-                'requirement_info' => 'KTP, KK, surat pengantar RT/RW.',
                 'validity_days' => 90,
                 'form_fields' => [],
                 'sections' => [
@@ -100,7 +102,6 @@ class LetterTypeSeeder extends Seeder
                 'code' => 'A03',
                 'name' => 'Surat Keterangan Penghasilan',
                 'description' => 'Keterangan penghasilan untuk keperluan administrasi atau bantuan sosial.',
-                'requirement_info' => 'KTP, KK, bukti penghasilan.',
                 'validity_days' => 90,
                 'classification_code' => '510',
                 'form_fields' => [
@@ -117,7 +118,6 @@ class LetterTypeSeeder extends Seeder
                 'code' => 'A04',
                 'name' => 'Surat Keterangan Domisili',
                 'description' => 'Keterangan domisili/tempat tinggal di wilayah desa.',
-                'requirement_info' => 'KTP, KK. Untuk pendatang: keterangan RT/RW dan Kepala Dusun setempat.',
                 'validity_days' => 90,
                 'form_fields' => [
                     $this->text('alamat_domisili', 'Alamat Domisili Saat Ini', true, 'Contoh: Dusun ..., RT 001/RW 013'),
@@ -134,21 +134,23 @@ class LetterTypeSeeder extends Seeder
                 'code' => 'A05',
                 'name' => 'Surat Keterangan Tidak Mampu',
                 'description' => 'Keterangan status ekonomi tidak mampu untuk keperluan bantuan sosial/pendidikan.',
-                'requirement_info' => 'KTP, KK, data anak yang dimohonkan.',
                 'validity_days' => 180,
-                'form_fields' => $this->personFields('anak', 'Anak', nikRequired: true),
+                'form_fields' => [
+                    ...$this->personFields('anak', 'Anak', nikRequired: true),
+                    // "untuk Melengkapi Persyaratan dan syarat ____" di template fisik.
+                    $this->text('keperluan_persyaratan', 'Untuk Melengkapi Persyaratan', true, 'Contoh: pengajuan beasiswa'),
+                ],
                 'sections' => [
                     $applicant,
                     $this->personBlock('Selaku Orangtua dari :', 'anak'),
                     $this->paragraph('Orang tersebut benar-benar warga masyarakat Desa kami, yang Tinggal dan berdomisili di alamat tersebut diatas, menurut keterangan RT/ RW dan warga setempat bahwa orang tersebut benar-benar <strong>tidak mampu</strong>.'),
-                    $this->paragraph('Demikian surat keterangan ini kami buat dengan sebenarnya untuk Melengkapi Persyaratan dan syarat {{ purpose }}, Mohon kepada yang bersangkutan agar menjadi maklum dan untuk menjadi bahan selanjutnya.'),
+                    $this->paragraph('Demikian surat keterangan ini kami buat dengan sebenarnya untuk Melengkapi Persyaratan dan syarat {{ keperluan_persyaratan }}, Mohon kepada yang bersangkutan agar menjadi maklum dan untuk menjadi bahan selanjutnya.'),
                 ],
             ],
             [
                 'code' => 'A06',
                 'name' => 'Surat Keterangan Beda Nama',
                 'description' => 'Keterangan perbedaan penulisan nama antar dokumen untuk orang yang sama.',
-                'requirement_info' => 'KTP, KK, dokumen yang memuat nama yang benar (akta, ijazah, dsb.).',
                 'validity_days' => 90,
                 'form_fields' => [
                     $this->textarea('nama_berbeda', 'Nama yang Berbeda', true, 'Tulis satu nama per baris, beserta dokumennya. Contoh: SITI AMINAH (KK an. Budi)'),
@@ -168,7 +170,6 @@ class LetterTypeSeeder extends Seeder
                 'code' => 'A07',
                 'name' => 'Surat Keterangan Penguburan',
                 'description' => 'Keterangan kematian dan penguburan untuk keperluan administrasi keluarga.',
-                'requirement_info' => 'KTP pelapor, KK, identitas almarhum/almarhumah.',
                 'validity_days' => 90,
                 'form_fields' => [
                     // Identitas di surat ini milik almarhum, bukan pemohon.
@@ -210,7 +211,6 @@ class LetterTypeSeeder extends Seeder
                 'code' => 'A08',
                 'name' => 'Surat Keterangan Kelahiran',
                 'description' => 'Keterangan kelahiran untuk keperluan administrasi kartu keluarga atau akta kelahiran.',
-                'requirement_info' => 'KTP kedua orang tua, KK, surat keterangan lahir dari bidan/rumah sakit.',
                 'validity_days' => 90,
                 'form_fields' => [
                     // Pemohon adalah salah satu orang tua; datanya diambil
@@ -241,7 +241,6 @@ class LetterTypeSeeder extends Seeder
                 'code' => 'A09',
                 'name' => 'Surat Keterangan Belum Menikah',
                 'description' => 'Keterangan status belum menikah untuk keperluan administratif.',
-                'requirement_info' => 'KTP, KK.',
                 'validity_days' => 90,
                 'form_fields' => [],
                 'sections' => [
@@ -254,7 +253,6 @@ class LetterTypeSeeder extends Seeder
                 'code' => 'A10',
                 'name' => 'Surat Keterangan & Pertama Kali Memiliki Rumah',
                 'description' => 'Keterangan baru pertama kali memiliki rumah, untuk persyaratan pengajuan KPR.',
-                'requirement_info' => 'KTP, KK, bukti penghasilan.',
                 'validity_days' => 90,
                 'form_fields' => [
                     $this->number('penghasilan_perbulan', 'Rata-rata Penghasilan per Bulan (Rp)', true, 'Contoh: 4000000'),
@@ -293,6 +291,14 @@ class LetterTypeSeeder extends Seeder
     private function number(string $name, string $label, bool $required = true, ?string $placeholder = null): array
     {
         return $this->field($name, $label, 'number', $required, $placeholder);
+    }
+
+    /**
+     * Unggahan gambar (JPG/PNG) sebagai bahan pertimbangan approver.
+     */
+    private function image(string $name, string $label, bool $required = true): array
+    {
+        return $this->field($name, $label, 'file', $required, null, ['accept' => 'image']);
     }
 
     private function date(string $name, string $label, bool $required = true): array

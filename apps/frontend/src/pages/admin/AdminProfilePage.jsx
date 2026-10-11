@@ -157,7 +157,7 @@ export default function AdminProfilePage() {
               <p className="sid-admin-profile-label">NIK</p>
 
               <div className="sid-admin-profile-value">
-                <span>{user?.citizen?.nik ?? '-'}</span>
+                <span>{user?.nik ?? user?.citizen?.nik_masked ?? '-'}</span>
 
                 <CreditCard size={14} />
               </div>

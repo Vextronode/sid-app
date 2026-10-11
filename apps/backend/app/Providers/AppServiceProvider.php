@@ -9,8 +9,10 @@ use App\Models\Rw;
 use App\Policies\RegionPolicy;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
@@ -38,6 +40,19 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
+
+        // Lazy-load di dalam koleksi (N+1) gagal keras di test dan
+        // hanya dicatat di lingkungan lain, supaya tidak pernah
+        // menjatuhkan request pengguna.
+        Model::preventLazyLoading();
+        if (! $this->app->runningUnitTests()) {
+            Model::handleLazyLoadingViolationUsing(function (Model $model, string $relation): void {
+                Log::warning('Lazy loading terdeteksi (N+1).', [
+                    'model' => $model::class,
+                    'relation' => $relation,
+                ]);
+            });
+        }
 
         Gate::policy(Hamlet::class, RegionPolicy::class);
         Gate::policy(Rw::class, RegionPolicy::class);

@@ -4,11 +4,12 @@ namespace App\Notifications;
 
 use App\Models\Letter;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
-class LetterStatusNotification extends Notification
+class LetterStatusNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -17,7 +18,23 @@ class LetterStatusNotification extends Notification
         protected string $title,
         protected string $message,
         protected string $status,
-    ) {}
+    ) {
+        // Notifikasi dibuat di dalam transaksi surat; jangan dikirim
+        // sebelum datanya benar-benar tersimpan.
+        $this->afterCommit();
+    }
+
+    /**
+     * Notifikasi in-app tetap ditulis langsung supaya tidak bergantung
+     * pada queue worker; hanya web push (HTTP keluar ke layanan push
+     * browser) yang diantrekan agar tidak menahan request submit/approve.
+     *
+     * @return array<string, string>
+     */
+    public function viaConnections(): array
+    {
+        return ['database' => 'sync'];
+    }
 
     /**
      * Notifikasi berjalan beriringan di dua kanal: 'database' (in-app,

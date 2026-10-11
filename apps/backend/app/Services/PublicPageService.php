@@ -38,15 +38,13 @@ class PublicPageService
         $village = $this->requireVillage($villageCode);
 
         $latestNews = $this->newsRepository
-            ->allForVillage($village->id, 'published')
-            ->take(self::LATEST_NEWS_LIMIT)
-            ->values();
+            ->latestPublishedForVillage($village->id, self::LATEST_NEWS_LIMIT);
 
         return [
             'village' => $village,
             'latest_news' => $latestNews,
             'public_stats' => [
-                'total_letter_types' => $this->letterTypeRepository->allActiveWithTemplate($village->id)->count(),
+                'total_letter_types' => $this->letterTypeRepository->countActiveWithTemplate($village->id),
             ],
         ];
     }

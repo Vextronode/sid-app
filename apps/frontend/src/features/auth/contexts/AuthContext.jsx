@@ -7,6 +7,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 import api from '@/lib/api'
+import { queryClient } from '@/shared/lib/queryClient'
 
 const AuthContext = createContext(null)
 
@@ -44,6 +45,7 @@ export function AuthProvider({ children }) {
       const status = error.response?.status
 
       if (isAuthFailure(status)) {
+        queryClient.clear()
         setUser(null)
         return null
       }
@@ -63,10 +65,20 @@ export function AuthProvider({ children }) {
     refreshUser()
   }, [refreshUser])
 
-  const login = useCallback((loggedUser) => {
-    setAuthError('')
-    setUser(loggedUser ?? null)
+  // Data ter-cache milik sesi sebelumnya tidak boleh terlihat oleh akun
+  // berikutnya di browser yang sama.
+  const applySession = useCallback((nextUser) => {
+    queryClient.clear()
+    setUser(nextUser)
   }, [])
+
+  const login = useCallback(
+    (loggedUser) => {
+      setAuthError('')
+      applySession(loggedUser ?? null)
+    },
+    [applySession],
+  )
 
   const logout = useCallback(async () => {
     setIsLoggingOut(true)
@@ -77,12 +89,12 @@ export function AuthProvider({ children }) {
 
       await api.post(LOGOUT_ENDPOINT)
 
-      setUser(null)
+      applySession(null)
     } catch (error) {
       const status = error.response?.status
 
       if (isAuthFailure(status)) {
-        setUser(null)
+        applySession(null)
         return
       }
 
@@ -90,7 +102,7 @@ export function AuthProvider({ children }) {
         await api.get(CSRF_ENDPOINT)
         await api.post(LOGOUT_ENDPOINT)
 
-        setUser(null)
+        applySession(null)
         return
       }
 
@@ -100,7 +112,7 @@ export function AuthProvider({ children }) {
     } finally {
       setIsLoggingOut(false)
     }
-  }, [])
+  }, [applySession])
 
   const value = useMemo(
     () => ({
