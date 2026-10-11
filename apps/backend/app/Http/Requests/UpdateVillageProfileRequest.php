@@ -33,6 +33,12 @@ class UpdateVillageProfileRequest extends FormRequest
             'head_name' => ['required', 'string', 'max:100'],
             'address' => ['nullable', 'string'],
             'phone' => ['nullable', 'string', 'max:20'],
+            // Data kop surat dan wilayah administratif.
+            'district' => ['nullable', 'string', 'max:100'],
+            'regency' => ['nullable', 'string', 'max:100'],
+            'province' => ['nullable', 'string', 'max:100'],
+            'postal_code' => ['nullable', 'string', 'max:10'],
+            'email' => ['nullable', 'email', 'max:150'],
             'history' => ['nullable', 'string'],
             'vision' => ['nullable', 'string'],
             'mission' => ['nullable', 'string'],

@@ -26,6 +26,11 @@ class DemoVillageSeeder extends Seeder
                 'head_name' => 'Kepala Desa Demo',
                 'address' => 'Jl. Raya Cibenda, Kecamatan Parigi, Kabupaten Pangandaran',
                 'phone' => '080000000000',
+                'district' => 'Parigi',
+                'regency' => 'Pangandaran',
+                'province' => 'Jawa Barat',
+                'postal_code' => '46393',
+                'email' => 'kantordesacibenda@gmail.com',
             ],
         );
 

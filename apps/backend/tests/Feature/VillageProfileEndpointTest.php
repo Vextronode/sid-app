@@ -118,7 +118,8 @@ class VillageProfileEndpointTest extends TestCase
             'stamp' => UploadedFile::fake()->image('second.png'),
         ])->assertOk();
 
-        Storage::disk('private_uploads')->assertMissing($firstPath);
+        // File lama dipertahankan untuk snapshot surat yang sudah terbit.
+        Storage::disk('private_uploads')->assertExists($firstPath);
         Storage::disk('private_uploads')->assertExists($village->fresh()->stamp_img);
     }
 
