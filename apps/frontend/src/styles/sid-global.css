@@ -9972,15 +9972,28 @@
   flex: 0 0 calc((100% - 2rem) / 3);
 }
 
-/* Kepala Desa: kartu persegi. Sisinya mengikuti tinggi kartu pejabat lain
-   (padding + foto + nama + jabatan), di desktop maupun ponsel. */
+/* Kepala Desa: kartu persegi, di desktop maupun ponsel. Lebarnya sama
+   dengan kartu jabatan lain (sepertiga baris di desktop, selebar baris di
+   ponsel) dan tingginya mengikuti lebar itu. */
 
 .sid-profil-desa-officials-row > .sid-profil-desa-official-card.sid-profil-desa-kepala-card {
-  flex: 0 0 auto;
   justify-content: center;
 
-  width: 10rem;
   aspect-ratio: 1 / 1;
+}
+
+/* Foto Kepala Desa mengikuti ukuran kartunya (bukan 5rem tetap), supaya
+   proporsinya sama di desktop dan ponsel. */
+
+.sid-profil-desa-kepala-card .sid-profil-desa-avatar {
+  width: 45%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+.sid-profil-desa-kepala-card .sid-profil-desa-avatar-placeholder {
+  width: 35%;
+  height: 35%;
 }
 
 .sid-profil-desa-kadus p {
