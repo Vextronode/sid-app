@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LetterIndexRequest;
 use App\Http\Requests\StoreLetterRequest;
-use App\Http\Resources\LetterCollection;
+use App\Http\Resources\LetterListResource;
 use App\Http\Resources\LetterResource;
 use App\Models\Letter;
 use App\Services\LetterService;
@@ -34,14 +34,33 @@ class LetterController extends Controller
     {
         $this->authorize('viewAny', Letter::class);
 
-        $letters = $this->letterService->getScopedLetters(
+        $letters = $this->letterService->paginateScopedLetters(
             $request->user(),
             $request->validated()
         );
 
         return response()->json([
             'message' => 'Daftar surat berhasil diambil.',
-            'data' => new LetterCollection($letters),
+            'data' => LetterListResource::collection($letters->getCollection()),
+            'meta' => [
+                'current_page' => $letters->currentPage(),
+                'per_page' => $letters->perPage(),
+                'total' => $letters->total(),
+                'last_page' => $letters->lastPage(),
+            ],
+        ]);
+    }
+
+    public function summary(LetterIndexRequest $request)
+    {
+        $this->authorize('viewAny', Letter::class);
+
+        return response()->json([
+            'message' => 'Ringkasan surat berhasil diambil.',
+            'data' => $this->letterService->summarizeScopedLetters(
+                $request->user(),
+                $request->validated()
+            ),
         ]);
     }
 
