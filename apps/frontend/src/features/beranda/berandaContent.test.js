@@ -1,15 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEV_ONLY_KEYS, getBerandaContent } from './berandaContent'
 
-const PRODUCTION_HIDDEN = [
-  'announcement',
-  'newsCategories',
-  'stats',
-  'apbdes',
-  'welcome',
-  'mapUrl',
-  'site',
-]
+const PRODUCTION_HIDDEN = ['announcement', 'newsCategories', 'stats', 'apbdes', 'welcome', 'mapUrl']
 
 describe('getBerandaContent', () => {
   it('marks exactly the K1 items as development-only', () => {
@@ -30,7 +22,7 @@ describe('getBerandaContent', () => {
     for (const key of PRODUCTION_HIDDEN) {
       expect(content[key], key).toBeTruthy()
     }
-    expect(content.announcement.otherCount).toBe(2)
+    expect(content.announcement.newsId).toBe(1)
     expect(content.stats.items).toHaveLength(3)
     expect(content.welcome.fallbackName).toBe('Dede Rusliana')
   })
@@ -42,12 +34,18 @@ describe('getBerandaContent', () => {
     expect(content.complaint.email).toBeTruthy()
     expect(content.contact.hours).toBe('Senin – Jumat, 08.00 – 16.00 WIB')
     expect(content.hero.imageUrl).toBe('/assets/image/beranda/hero-pemandangan.jpg')
+    // Domain dan tanggal pembaruan footer sudah asli (keputusan pemilik, 11 Okt 2026).
+    expect(content.site).toEqual({
+      domain: 'https://desacibenda.id/',
+      updatedAt: '10 Oktober 2026',
+    })
     expect(content.howTo.steps).toHaveLength(4)
-    // Logo mitra sudah asli, jadi tampil juga di production. Urut kiri → kanan.
+    // Logo mitra sudah asli, jadi tampil juga di production. Urut kiri → kanan
+    // seperti yang dilihat pengunjung di layar.
     expect(content.partners.map((p) => p.src)).toEqual([
-      '/assets/image/Primary_Horizontal-Logo.png',
-      '/assets/image/lambang-kabupaten-pangandaran.webp',
       '/assets/image/logo-widyatama.webp',
+      '/assets/image/lambang-kabupaten-pangandaran.webp',
+      '/assets/image/Primary_Horizontal-Logo.png',
     ])
   })
 

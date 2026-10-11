@@ -53,22 +53,14 @@ describe('BerandaLayout', () => {
     expect(footer.queryByText(/privasi|aksesibilitas|PPID/i)).toBeNull()
   })
 
-  it('shows the domain and update date only in development (K1)', () => {
-    renderLayout(true)
+  // Domain dan tanggal sudah asli, jadi tampil juga di production (keputusan pemilik, 11 Okt 2026).
+  it.each([true, false])('shows the official domain and update date (isDev=%s)', (isDev) => {
+    renderLayout(isDev)
     const footer = within(screen.getByRole('contentinfo'))
 
     expect(footer.getByText('Pemerintah Desa Cibenda')).toBeInTheDocument()
-    expect(footer.getByText(/\.desa\.id · Situs resmi/)).toBeInTheDocument()
-    expect(footer.getByText(/Terakhir diperbarui/)).toBeInTheDocument()
-  })
-
-  it('hides the dummy footer items in production (K1)', () => {
-    renderLayout(false)
-    const footer = within(screen.getByRole('contentinfo'))
-
-    expect(footer.getByText('Pemerintah Desa Cibenda')).toBeInTheDocument()
-    expect(footer.queryByText(/desa\.id/)).toBeNull()
-    expect(footer.queryByText(/Terakhir diperbarui/)).toBeNull()
+    expect(footer.getByText('https://desacibenda.id/ · Situs resmi')).toBeInTheDocument()
+    expect(footer.getByText('Terakhir diperbarui 10 Oktober 2026')).toBeInTheDocument()
   })
 
   it.each([true, false])(
@@ -80,9 +72,9 @@ describe('BerandaLayout', () => {
       expect(footer.getByText('Didukung oleh')).toBeInTheDocument()
       const logos = footer.getAllByRole('img')
       expect(logos.map((img) => img.getAttribute('alt'))).toEqual([
-        'Diktisaintek Berdampak',
-        'Lambang Kabupaten Pangandaran',
         'Universitas Widyatama',
+        'Lambang Kabupaten Pangandaran',
+        'Diktisaintek Berdampak',
       ])
       for (const img of logos) expect(img).toHaveAttribute('loading', 'lazy')
     },

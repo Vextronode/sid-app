@@ -27,11 +27,19 @@ const STATIC = {
     transparansi: 'Transparansi APBDes',
   },
 
+  // Label bar pengumuman. Isinya dummy (DEV_ONLY.announcement).
+  announcementBar: {
+    label: 'Pengumuman',
+    badge: 'PENGUMUMAN',
+    readMore: 'Selengkapnya',
+  },
+
   hero: {
     // File di public/, jadi build tidak gagal bila file tidak ada (K2).
     imageUrl: '/assets/image/beranda/hero-pemandangan.jpg',
     // Kredit "Foto: [NAMA]" hanya tampil bila nama diisi.
     photoCredit: '',
+    creditPrefix: 'Foto:',
     greeting: 'Wilujeng Sumping',
     title: 'Urus surat dari rumah, pantau desa dari mana saja.',
     lead: 'Situs resmi Pemerintah Desa Cibenda: layanan administrasi, kabar desa, dan laporan anggaran dalam satu tempat.',
@@ -40,6 +48,7 @@ const STATIC = {
   },
 
   services: {
+    label: 'Layanan populer',
     ajukan: {
       title: 'Ajukan surat',
       description: 'Domisili, SKTM, keterangan usaha, dan lainnya.',
@@ -55,6 +64,9 @@ const STATIC = {
     },
     pengaduan: {
       title: 'Sampaikan pengaduan',
+      // Awalan nama aksesibel baris kontak, mis. "WhatsApp pengaduan +62 …".
+      whatsappLabel: 'WhatsApp pengaduan',
+      emailLabel: 'Email pengaduan',
     },
   },
 
@@ -113,6 +125,13 @@ const STATIC = {
     supportedBy: 'Didukung oleh',
   },
 
+  // Footer: domain resmi dan tanggal pembaruan. Sudah asli dan final, jadi
+  // tampil juga di production (keputusan pemilik, 11 Okt 2026).
+  site: {
+    domain: 'https://desacibenda.id/',
+    updatedAt: '10 Oktober 2026',
+  },
+
   // "Didukung oleh": logo mitra di footer, urut dari kiri ke kanan.
   // Tampil di production karena logonya sudah tersedia (keputusan pemilik, 11 Okt 2026).
   // `id` dipakai sebagai kelas penyesuaian ukuran di beranda.css (bd-partner-logo--<id>).
@@ -144,7 +163,6 @@ const DEV_ONLY = {
     date: '[TANGGAL]',
     title: '[Satu pengumuman penting, mis. kantor desa tutup / jadwal posyandu]',
     newsId: 1,
-    otherCount: 2,
   },
 
   // K7: chip kategori, dipasang berurutan ke kartu berita.
@@ -184,12 +202,6 @@ const DEV_ONLY = {
 
   // "Buka di peta" di kartu kantor desa.
   mapUrl: 'https://www.google.com/maps/search/?api=1&query=Kantor+Desa+Cibenda',
-
-  // Footer: domain dan tanggal pembaruan.
-  site: {
-    domain: 'https://desacibenda.id/',
-    updatedAt: '[TANGGAL]',
-  },
 }
 
 export const DEV_ONLY_KEYS = Object.keys(DEV_ONLY)

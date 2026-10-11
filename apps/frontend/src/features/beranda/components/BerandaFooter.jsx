@@ -5,8 +5,8 @@ import { Wave } from './Wave'
 
 // Footer khusus beranda. Halaman lain tetap memakai FooterDesa.
 // A33–A35 (privasi, aksesibilitas, PPID) tidak dirender sampai halamannya ada (K3).
-// Domain/tanggal hanya ada di development (K1). Logo "Didukung oleh" tampil di
-// semua mode sejak logonya tersedia.
+// Domain/tanggal pembaruan dan logo "Didukung oleh" tampil di semua mode
+// karena isinya sudah asli (keputusan pemilik, 11 Okt 2026).
 export function BerandaFooter({ content }) {
   const { footer, site, partners } = content
 

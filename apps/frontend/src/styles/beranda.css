@@ -33,6 +33,10 @@
   --bd-color-hero-fallback: #1f3a2e;
   --bd-color-hero-overlay: rgba(12, 24, 18, 0.45);
   --bd-color-on-hero: #ffffff;
+  /* Paragraf hero, kredit foto, dan pil sapaan (nilai dari mockup). */
+  --bd-color-on-hero-muted: #e6eee8;
+  --bd-color-hero-pill-bg: rgba(255, 255, 255, 0.14);
+  --bd-color-hero-pill-border: rgba(255, 255, 255, 0.35);
   --bd-color-announce-bg: #fff4d6;
   --bd-color-announce-border: #ead9a6;
   --bd-color-announce-badge: #7a5200;
@@ -104,6 +108,16 @@
 
   --bd-tap-min: 44px;
   --bd-button-primary-min: 52px;
+  --bd-button-hero-min: 56px;
+
+  /* Hero dan kartu layanan yang menumpang di tepi bawahnya. */
+  --bd-hero-text-max: 760px;
+  --bd-hero-lead-max: 620px;
+  --bd-hero-pad-top: 96px;
+  --bd-hero-pad-bottom: 168px;
+  --bd-hero-wave-height: 90px;
+  --bd-services-overlap: 72px;
+  --bd-service-icon-size: 48px;
 
   /* Logo mitra di footer. */
   --bd-partner-height: 40px;
@@ -137,6 +151,13 @@
 @media (max-width: 640px) {
   .bd-root {
     --bd-section-space: 60px;
+    --bd-hero-pad-top: 56px;
+    --bd-hero-pad-bottom: 136px;
+    --bd-hero-wave-height: 56px;
+    --bd-services-overlap: 56px;
+    /* Di layar sempit judul hero jatuh di atas langit yang terang: overlay
+       dinaikkan agar kontras tetap ≥ 4.5:1 (02-design-tokens.md). */
+    --bd-color-hero-overlay: rgba(12, 24, 18, 0.6);
   }
 }
 
@@ -618,4 +639,289 @@
 .bd-partner-logo--widyatama img {
   height: 40px;
   margin: -9px -14px -5px;
+}
+
+/* ===== Section beranda ===== */
+
+/* Tombol besar: hero (A12, A13). */
+.bd-root .bd-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: var(--bd-button-hero-min);
+  padding: var(--bd-space-16) 26px;
+  border-radius: var(--bd-radius-button);
+  font-size: var(--bd-text-body);
+  font-weight: var(--bd-font-bold);
+  line-height: var(--bd-leading-small);
+  text-decoration: none;
+}
+
+/* Hijau hanya untuk tombol utama (02-design-tokens.md). */
+.bd-root .bd-button--primary,
+.bd-root .bd-button--primary:hover {
+  background: var(--bd-color-accent);
+  color: var(--bd-color-on-accent);
+}
+
+.bd-root .bd-button--light,
+.bd-root .bd-button--light:hover {
+  background: var(--bd-color-surface);
+  color: var(--bd-color-ink);
+}
+
+.bd-hero .bd-button:focus-visible {
+  outline-color: var(--bd-color-on-hero);
+}
+
+/* ----- Bar pengumuman (A10, A11; dev saja) ----- */
+.bd-announce {
+  background: var(--bd-color-announce-bg);
+  border-bottom: 1px solid var(--bd-color-announce-border);
+}
+
+.bd-announce-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bd-space-4) var(--bd-space-12);
+  padding-block: var(--bd-space-4);
+}
+
+.bd-announce-badge {
+  padding: var(--bd-space-4) 10px;
+  border-radius: var(--bd-radius-chip);
+  background: var(--bd-color-announce-badge);
+  color: var(--bd-color-on-primary);
+  font-size: var(--bd-text-meta-sm);
+  font-weight: var(--bd-font-bold);
+  line-height: var(--bd-leading-meta);
+}
+
+.bd-announce-text {
+  font-weight: var(--bd-font-semibold);
+  line-height: var(--bd-leading-small);
+}
+
+.bd-root .bd-announce-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--bd-tap-min);
+  color: var(--bd-color-announce-link);
+  font-weight: var(--bd-font-bold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.bd-root .bd-announce-link:hover {
+  color: var(--bd-color-ink);
+}
+
+.bd-announce :focus-visible {
+  outline-color: var(--bd-color-announce-link);
+}
+
+/* ----- Hero (A12, A13) ----- */
+.bd-hero {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bd-color-hero-fallback);
+  background-image: var(--bd-hero-image, none);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  color: var(--bd-color-on-hero);
+}
+
+.bd-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bd-color-hero-overlay);
+}
+
+.bd-hero-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--bd-space-20);
+  padding-top: var(--bd-hero-pad-top);
+  padding-bottom: var(--bd-hero-pad-bottom);
+}
+
+.bd-hero-greeting {
+  padding: 6px 14px;
+  border: 1px solid var(--bd-color-hero-pill-border);
+  border-radius: var(--bd-radius-pill);
+  background: var(--bd-color-hero-pill-bg);
+  font-size: var(--bd-text-meta-lg);
+  font-weight: var(--bd-font-bold);
+  letter-spacing: 0.04em;
+  line-height: var(--bd-leading-meta);
+}
+
+.bd-hero-title {
+  max-width: var(--bd-hero-text-max);
+  margin: 0;
+  font-size: var(--bd-text-hero);
+  font-weight: var(--bd-font-extrabold);
+  line-height: var(--bd-leading-hero);
+}
+
+.bd-hero-lead {
+  max-width: var(--bd-hero-lead-max);
+  margin: 0;
+  color: var(--bd-color-on-hero-muted);
+  font-size: var(--bd-text-lead);
+  line-height: var(--bd-leading-lead);
+}
+
+.bd-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bd-space-12);
+  margin-top: var(--bd-space-8);
+}
+
+.bd-hero-credit {
+  position: absolute;
+  right: var(--bd-gutter);
+  bottom: calc(var(--bd-services-overlap) + var(--bd-space-24));
+  margin: 0;
+  color: var(--bd-color-on-hero-muted);
+  font-size: var(--bd-text-meta-sm);
+  line-height: var(--bd-leading-meta);
+}
+
+.bd-hero .bd-wave--hero {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: var(--bd-hero-wave-height);
+}
+
+/* ----- Kartu layanan (A14–A18) ----- */
+.bd-services {
+  position: relative;
+  margin-top: calc(-1 * var(--bd-services-overlap));
+}
+
+.bd-service-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--bd-space-16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-service-grid > li {
+  display: flex;
+}
+
+.bd-service-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: var(--bd-space-24);
+  background: var(--bd-color-surface);
+  border: 1px solid var(--bd-color-border);
+  border-radius: var(--bd-radius-card);
+  color: var(--bd-color-ink);
+}
+
+.bd-root .bd-service-card--link,
+.bd-root .bd-service-card--link:hover {
+  color: var(--bd-color-ink);
+  text-decoration: none;
+}
+
+.bd-service-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--bd-service-icon-size);
+  height: var(--bd-service-icon-size);
+  border-radius: var(--bd-radius-button);
+}
+
+.bd-service-icon--accent {
+  background: var(--bd-color-accent-tint);
+  color: var(--bd-color-accent);
+}
+
+.bd-service-icon--primary {
+  background: var(--bd-color-primary-tint);
+  color: var(--bd-color-primary);
+}
+
+.bd-service-title {
+  font-size: var(--bd-text-card-title);
+  font-weight: var(--bd-font-bold);
+  line-height: var(--bd-leading-card-title);
+}
+
+.bd-service-desc {
+  color: var(--bd-color-muted);
+  font-size: var(--bd-text-body);
+  line-height: var(--bd-leading-body);
+}
+
+.bd-service-badge {
+  margin-top: auto;
+}
+
+/* Baris WA dan email: satu-satunya bagian kartu pengaduan yang bisa diklik. */
+.bd-root .bd-service-contact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--bd-tap-min);
+  max-width: 100%;
+  color: var(--bd-color-ink);
+  font-size: var(--bd-text-small);
+  font-weight: var(--bd-font-semibold);
+  line-height: var(--bd-leading-small);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.bd-root .bd-service-contact:hover {
+  color: var(--bd-color-primary);
+}
+
+.bd-service-contact-icon {
+  flex: none;
+  display: flex;
+}
+
+.bd-service-contact-icon--accent {
+  color: var(--bd-color-accent);
+}
+
+.bd-service-contact-icon--primary {
+  color: var(--bd-color-primary);
+}
+
+@media (max-width: 1023.98px) {
+  .bd-service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 559.98px) {
+  .bd-service-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Tombol hero selebar layar agar mudah disentuh. */
+  .bd-hero-actions,
+  .bd-root .bd-hero-actions .bd-button {
+    width: 100%;
+  }
 }
