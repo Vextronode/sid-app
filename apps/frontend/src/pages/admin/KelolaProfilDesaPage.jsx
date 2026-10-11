@@ -26,22 +26,6 @@ function Avatar({ src, name, size = 'medium' }) {
   )
 }
 
-function formatPosition(position) {
-  const labels = {
-    kepala_desa: 'Kepala Desa',
-    sekdes: 'Sekretaris Desa',
-    kasi_pelayanan: 'Kasi Pelayanan',
-    kasi_kesejahteraan: 'Kasi Kesejahteraan',
-    kasi_pemerintahan: 'Kasi Pemerintahan',
-    kaur_tu_umum: 'Kaur TU Umum',
-    kaur_perencanaan: 'Kaur Perencanaan',
-    kaur_keuangan: 'Kaur Keuangan',
-    kadus: 'Kepala Dusun',
-  }
-
-  return labels[position] ?? position?.replaceAll('_', ' ') ?? '-'
-}
-
 function formatValue(value) {
   return value?.trim() ? value : '-'
 }
@@ -53,13 +37,7 @@ export default function KelolaProfilDesaPage() {
 
     // Perangkat AKTIF untuk tampilan utama
     kepalaDesa,
-    sekdes,
-    kasiPelayanan,
-    kasiKesejahteraan,
-    kasiPemerintahan,
-    kaurTuUmum,
-    kaurPerencanaan,
-    kaurKeuangan,
+    perangkatList,
     kadusList,
 
     loading,
@@ -82,40 +60,9 @@ export default function KelolaProfilDesaPage() {
   // dan diaktifkan kembali.
   // ==========================================
 
-  const getOfficialByPosition = (position) =>
-    officials.find((official) => official.position === position) ?? null
-
-  const modalKepalaDesa = getOfficialByPosition('kepala_desa')
-
-  const modalSekdes = getOfficialByPosition('sekdes')
-
-  const modalKasiPelayanan = getOfficialByPosition('kasi_pelayanan')
-
-  const modalKasiKesejahteraan = getOfficialByPosition('kasi_kesejahteraan')
-
-  const modalKasiPemerintahan = getOfficialByPosition('kasi_pemerintahan')
-
-  const modalKaurTuUmum = getOfficialByPosition('kaur_tu_umum')
-
-  const modalKaurPerencanaan = getOfficialByPosition('kaur_perencanaan')
-
-  const modalKaurKeuangan = getOfficialByPosition('kaur_keuangan')
+  const modalPerangkatList = officials.filter((official) => official.position !== 'kadus')
 
   const modalKadusList = officials.filter((official) => official.position === 'kadus')
-
-  // ==========================================
-  // PERANGKAT UTAMA YANG DITAMPILKAN
-  // ==========================================
-
-  const perangkatList = [
-    sekdes,
-    kasiPelayanan,
-    kasiKesejahteraan,
-    kasiPemerintahan,
-    kaurTuUmum,
-    kaurPerencanaan,
-    kaurKeuangan,
-  ].filter(Boolean)
 
   // ==========================================
   // UPDATE PROFIL DESA
@@ -151,16 +98,7 @@ export default function KelolaProfilDesaPage() {
     try {
       const updates = []
 
-      const perangkatEntries = [
-        perangkat?.kepalaDesa,
-        perangkat?.sekdes,
-        perangkat?.kasiPelayanan,
-        perangkat?.kasiKesejahteraan,
-        perangkat?.kasiPemerintahan,
-        perangkat?.kaurTuUmum,
-        perangkat?.kaurPerencanaan,
-        perangkat?.kaurKeuangan,
-      ]
+      const perangkatEntries = Array.isArray(perangkat) ? perangkat : []
 
       perangkatEntries.forEach((official) => {
         if (!official?.id) {
@@ -429,7 +367,7 @@ export default function KelolaProfilDesaPage() {
 
               <p className="sid-profil-desa-kepala-name">{formatValue(kepalaDesa.name)}</p>
 
-              <p className="sid-profil-desa-kepala-role">{formatPosition(kepalaDesa.position)}</p>
+              <p className="sid-profil-desa-kepala-role">{kepalaDesa.positionLabel}</p>
             </div>
           )}
 
@@ -445,9 +383,7 @@ export default function KelolaProfilDesaPage() {
 
                   <p className="sid-profil-desa-official-name">{formatValue(official.name)}</p>
 
-                  <p className="sid-profil-desa-official-role">
-                    {formatPosition(official.position)}
-                  </p>
+                  <p className="sid-profil-desa-official-role">{official.positionLabel}</p>
                 </div>
               ))}
             </div>
@@ -512,18 +448,8 @@ export default function KelolaProfilDesaPage() {
         open={modalPerangkat}
         onClose={() => setModalPerangkat(false)}
         onSubmit={handleUpdatePerangkat}
-        initialPerangkat={{
-          // SEMUA DATA, termasuk nonaktif
-          kepalaDesa: modalKepalaDesa,
-          sekdes: modalSekdes,
-          kasi: modalKasiPelayanan,
-          kasiPelayanan: modalKasiPelayanan,
-          kasiKesejahteraan: modalKasiKesejahteraan,
-          kasiPemerintahan: modalKasiPemerintahan,
-          kaurTuUmum: modalKaurTuUmum,
-          kaurPerencanaan: modalKaurPerencanaan,
-          kaurKeuangan: modalKaurKeuangan,
-        }}
+        // SEMUA DATA, termasuk nonaktif
+        initialPerangkat={modalPerangkatList}
         initialKadus={modalKadusList}
         processing={processing}
       />

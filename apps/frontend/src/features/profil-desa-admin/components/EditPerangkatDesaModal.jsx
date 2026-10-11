@@ -10,6 +10,7 @@ import { Save, X, User, Phone, FileText, Power } from 'lucide-react'
 const EMPTY_OFFICIAL = {
   id: null,
   position: '',
+  positionLabel: '',
   name: '',
   phoneWa: '',
   isActive: true,
@@ -25,31 +26,12 @@ function normalizePerson(person) {
     ...EMPTY_OFFICIAL,
     id: person?.id ?? null,
     position: person?.position ?? '',
+    positionLabel: person?.positionLabel ?? '',
     name: person?.name ?? '',
     phoneWa: person?.phoneWa ?? '',
     isActive: person?.isActive ?? true,
     notes: person?.notes ?? '',
   }
-}
-
-// ==========================================
-// FORMAT POSITION
-// ==========================================
-
-function formatPosition(position) {
-  const labels = {
-    kepala_desa: 'Kepala Desa',
-    sekdes: 'Sekretaris Desa',
-    kasi_pelayanan: 'Kasi Pelayanan',
-    kasi_kesejahteraan: 'Kasi Kesejahteraan',
-    kasi_pemerintahan: 'Kasi Pemerintahan',
-    kaur_tu_umum: 'Kaur TU Umum',
-    kaur_perencanaan: 'Kaur Perencanaan',
-    kaur_keuangan: 'Kaur Keuangan',
-    kadus: 'Kepala Dusun',
-  }
-
-  return labels[position] ?? position?.replaceAll('_', ' ') ?? '-'
 }
 
 // ==========================================
@@ -65,7 +47,7 @@ function PersonEditor({ person, onChange, disabled }) {
         </div>
 
         <div>
-          <h3>{formatPosition(person.position)}</h3>
+          <h3>{person.positionLabel || '-'}</h3>
 
           <p>{person.name || '-'}</p>
         </div>
@@ -80,7 +62,7 @@ function PersonEditor({ person, onChange, disabled }) {
       <div className="sid-profil-desa-device-readonly">
         <span>Jabatan</span>
 
-        <strong>{formatPosition(person.position)}</strong>
+        <strong>{person.positionLabel || '-'}</strong>
       </div>
 
       <div className="sid-profil-desa-form-field">
@@ -146,21 +128,7 @@ export default function EditPerangkatDesaModal({
   initialKadus = [],
   processing = false,
 }) {
-  const [kepalaDesa, setKepalaDesa] = useState(EMPTY_OFFICIAL)
-
-  const [sekdes, setSekdes] = useState(EMPTY_OFFICIAL)
-
-  const [kasiPelayanan, setKasiPelayanan] = useState(EMPTY_OFFICIAL)
-
-  const [kasiKesejahteraan, setKasiKesejahteraan] = useState(EMPTY_OFFICIAL)
-
-  const [kasiPemerintahan, setKasiPemerintahan] = useState(EMPTY_OFFICIAL)
-
-  const [kaurTuUmum, setKaurTuUmum] = useState(EMPTY_OFFICIAL)
-
-  const [kaurPerencanaan, setKaurPerencanaan] = useState(EMPTY_OFFICIAL)
-
-  const [kaurKeuangan, setKaurKeuangan] = useState(EMPTY_OFFICIAL)
+  const [perangkatList, setPerangkatList] = useState([])
 
   const [kadusList, setKadusList] = useState([])
 
@@ -173,41 +141,24 @@ export default function EditPerangkatDesaModal({
       return
     }
 
-    setKepalaDesa(normalizePerson(initialPerangkat?.kepalaDesa))
-
-    setSekdes(normalizePerson(initialPerangkat?.sekdes))
-
-    setKasiPelayanan(normalizePerson(initialPerangkat?.kasiPelayanan ?? initialPerangkat?.kasi))
-
-    setKasiKesejahteraan(normalizePerson(initialPerangkat?.kasiKesejahteraan))
-
-    setKasiPemerintahan(normalizePerson(initialPerangkat?.kasiPemerintahan))
-
-    setKaurTuUmum(normalizePerson(initialPerangkat?.kaurTuUmum))
-
-    setKaurPerencanaan(normalizePerson(initialPerangkat?.kaurPerencanaan))
-
-    setKaurKeuangan(normalizePerson(initialPerangkat?.kaurKeuangan))
+    setPerangkatList(Array.isArray(initialPerangkat) ? initialPerangkat.map(normalizePerson) : [])
 
     setKadusList(Array.isArray(initialKadus) ? initialKadus.map(normalizePerson) : [])
   }, [open, initialPerangkat, initialKadus])
 
   // ==========================================
-  // UPDATE KADUS
+  // UPDATE PERANGKAT & KADUS
   // ==========================================
 
-  const updateKadus = (id, changes) => {
-    setKadusList((current) =>
-      current.map((kadus) =>
-        kadus.id === id
-          ? {
-              ...kadus,
-              ...changes,
-            }
-          : kadus,
-      ),
+  const updateIn = (setList) => (id, changes) => {
+    setList((current) =>
+      current.map((person) => (person.id === id ? { ...person, ...changes } : person)),
     )
   }
+
+  const updatePerangkat = updateIn(setPerangkatList)
+
+  const updateKadus = updateIn(setKadusList)
 
   // ==========================================
   // SUBMIT
@@ -216,21 +167,7 @@ export default function EditPerangkatDesaModal({
   const handleSubmit = async (event) => {
     event.preventDefault()
 
-    const perangkat = {
-      kepalaDesa,
-      sekdes,
-      kasiPelayanan,
-      kasiKesejahteraan,
-      kasiPemerintahan,
-      kaurTuUmum,
-      kaurPerencanaan,
-      kaurKeuangan,
-
-      // Alias kompatibilitas
-      kasi: kasiPelayanan,
-    }
-
-    await onSubmit(perangkat, kadusList)
+    await onSubmit(perangkatList, kadusList)
   }
 
   if (!open) {
@@ -240,17 +177,10 @@ export default function EditPerangkatDesaModal({
   // ==========================================
   // PERANGKAT DESA
   // ==========================================
+  // Semua perangkat selain Kepala Dusun, termasuk jenis jabatan yang
+  // ditambahkan Petugas Desa.
 
-  const perangkatSections = [
-    kepalaDesa,
-    sekdes,
-    kasiPelayanan,
-    kasiKesejahteraan,
-    kasiPemerintahan,
-    kaurTuUmum,
-    kaurPerencanaan,
-    kaurKeuangan,
-  ].filter((person) => person?.id)
+  const perangkatSections = perangkatList.filter((person) => person?.id)
 
   return (
     <div
@@ -297,8 +227,8 @@ export default function EditPerangkatDesaModal({
               ========================================== */}
 
           <div className="sid-profil-desa-device-notice">
-            Nama dan foto perangkat berasal dari data backend. Nama tidak diedit dari modal ini, dan
-            upload foto belum tersedia pada endpoint update perangkat.
+            Nama dan foto perangkat berasal dari data backend dan tidak diedit dari modal ini. Foto
+            diunggah saat penetapan atau rotasi, dan dapat diganti di halaman Pejabat Desa.
           </div>
 
           {/* ==========================================
@@ -318,109 +248,14 @@ export default function EditPerangkatDesaModal({
               </div>
 
               <div className="sid-profil-desa-device-sections">
-                {kepalaDesa.id && (
+                {perangkatSections.map((person) => (
                   <PersonEditor
-                    person={kepalaDesa}
-                    onChange={(changes) =>
-                      setKepalaDesa((current) => ({
-                        ...current,
-                        ...changes,
-                      }))
-                    }
+                    key={person.id}
+                    person={person}
+                    onChange={(changes) => updatePerangkat(person.id, changes)}
                     disabled={processing}
                   />
-                )}
-
-                {sekdes.id && (
-                  <PersonEditor
-                    person={sekdes}
-                    onChange={(changes) =>
-                      setSekdes((current) => ({
-                        ...current,
-                        ...changes,
-                      }))
-                    }
-                    disabled={processing}
-                  />
-                )}
-
-                {kasiPelayanan.id && (
-                  <PersonEditor
-                    person={kasiPelayanan}
-                    onChange={(changes) =>
-                      setKasiPelayanan((current) => ({
-                        ...current,
-                        ...changes,
-                      }))
-                    }
-                    disabled={processing}
-                  />
-                )}
-
-                {kasiKesejahteraan.id && (
-                  <PersonEditor
-                    person={kasiKesejahteraan}
-                    onChange={(changes) =>
-                      setKasiKesejahteraan((current) => ({
-                        ...current,
-                        ...changes,
-                      }))
-                    }
-                    disabled={processing}
-                  />
-                )}
-
-                {kasiPemerintahan.id && (
-                  <PersonEditor
-                    person={kasiPemerintahan}
-                    onChange={(changes) =>
-                      setKasiPemerintahan((current) => ({
-                        ...current,
-                        ...changes,
-                      }))
-                    }
-                    disabled={processing}
-                  />
-                )}
-
-                {kaurTuUmum.id && (
-                  <PersonEditor
-                    person={kaurTuUmum}
-                    onChange={(changes) =>
-                      setKaurTuUmum((current) => ({
-                        ...current,
-                        ...changes,
-                      }))
-                    }
-                    disabled={processing}
-                  />
-                )}
-
-                {kaurPerencanaan.id && (
-                  <PersonEditor
-                    person={kaurPerencanaan}
-                    onChange={(changes) =>
-                      setKaurPerencanaan((current) => ({
-                        ...current,
-                        ...changes,
-                      }))
-                    }
-                    disabled={processing}
-                  />
-                )}
-
-                {kaurKeuangan.id && (
-                  <PersonEditor
-                    person={kaurKeuangan}
-                    onChange={(changes) =>
-                      setKaurKeuangan((current) => ({
-                        ...current,
-                        ...changes,
-                      }))
-                    }
-                    disabled={processing}
-                  />
-                )}
+                ))}
               </div>
             </div>
           )}
