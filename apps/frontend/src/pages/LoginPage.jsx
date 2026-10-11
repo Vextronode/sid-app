@@ -1,49 +1,36 @@
 // ==========================================
 // LoginPage.jsx
 // ==========================================
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
-import { useLoginForm } from '@/features/auth/hooks/useLoginForm';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useLoginForm } from '@/features/auth/hooks/useLoginForm'
+import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
 
-import {
-  Landmark,
-  User,
-  Lock,
-  Eye,
-  EyeOff,
-  LogIn,
-} from 'lucide-react';
+import { Landmark, User, Lock, Eye, EyeOff, LogIn } from 'lucide-react'
 
 export default function LoginPage() {
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { login } = useAuth()
 
   // ==========================================
   // LOGIN FORM HOOK
   // ==========================================
 
-  const {
-    formData,
-    errors,
-    isLoading,
-    handleChange,
-    handleSubmit,
-  } = useLoginForm();
+  const { formData, errors, isLoading, handleChange, handleSubmit } = useLoginForm()
 
   // ==========================================
   // UI STATE
   // ==========================================
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
 
-  const [showRegisterModal, setShowRegisterModal] =
-    useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false)
 
-  const [showForgotModal, setShowForgotModal] =
-    useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false)
 
   // ==========================================
   // LOGIN SUCCESS
@@ -52,7 +39,19 @@ export default function LoginPage() {
   const handleLoginSuccess = async (loggedUser) => {
     try {
       // Simpan user hasil login ke AuthContext
-      await login(loggedUser);
+      await login(loggedUser)
+
+      // ==========================================
+      // KEMBALI KE TUJUAN (?redirect=, K4)
+      // Hanya bila tujuan aman dan diizinkan untuk role.
+      // ==========================================
+
+      const redirectTo = resolveLoginRedirect(searchParams.get('redirect'), loggedUser?.role)
+
+      if (redirectTo) {
+        navigate(redirectTo, { replace: true })
+        return
+      }
 
       // ==========================================
       // REDIRECT SESUAI ROLE
@@ -62,48 +61,45 @@ export default function LoginPage() {
         case 'rt':
           navigate('/admin/dashboard-surat-rt', {
             replace: true,
-          });
-          break;
+          })
+          break
 
         case 'rw':
           navigate('/admin/dashboard-surat-rw', {
             replace: true,
-          });
-          break;
+          })
+          break
 
         case 'kadus':
           navigate('/admin/dashboard-surat-kadus', {
             replace: true,
-          });
-          break;
+          })
+          break
 
         case 'kepala_desa':
           navigate('/admin/dashboard-surat-kades', {
             replace: true,
-          });
-          break;
+          })
+          break
 
         case 'kasi_pelayanan':
         case 'kaur_tu_umum':
         case 'petugas_desa':
           navigate('/admin/operator-desa', {
             replace: true,
-          });
-          break;
+          })
+          break
 
         default:
           navigate('/daftar-surat', {
             replace: true,
-          });
-          break;
+          })
+          break
       }
     } catch (error) {
-      console.error(
-        'LOGIN SUCCESS HANDLER ERROR:',
-        error
-      );
+      console.error('LOGIN SUCCESS HANDLER ERROR:', error)
     }
-  };
+  }
 
   // ==========================================
   // RENDER
@@ -111,13 +107,11 @@ export default function LoginPage() {
 
   return (
     <div className="sid-login">
-
       {/* ==========================================
           LOGIN CARD
           ========================================== */}
 
       <div className="sid-login-card">
-
         {/* LOGO */}
 
         <div className="sid-login-logo">
@@ -127,50 +121,29 @@ export default function LoginPage() {
         {/* HEADER */}
 
         <div className="sid-login-header">
+          <h1 className="sid-login-title">Masuk ke SIDUTama</h1>
 
-          <h1 className="sid-login-title">
-            Masuk ke SIDUTama
-          </h1>
-
-          <p className="sid-login-description">
-            Masukkan Username dan Password Anda
-          </p>
-
+          <p className="sid-login-description">Masukkan Username dan Password Anda</p>
         </div>
 
         {/* ERROR */}
 
         {errors.general && (
           <div className="sid-login-error">
-            {Array.isArray(errors.general)
-              ? errors.general[0]
-              : errors.general}
+            {Array.isArray(errors.general) ? errors.general[0] : errors.general}
           </div>
         )}
 
         {/* FORM */}
 
-        <form
-          onSubmit={(e) =>
-            handleSubmit(e, handleLoginSuccess)
-          }
-          className="sid-login-form"
-        >
-
+        <form onSubmit={(e) => handleSubmit(e, handleLoginSuccess)} className="sid-login-form">
           {/* USERNAME */}
 
           <div className="sid-login-field">
-
-            <label className="sid-login-label">
-              Username
-            </label>
+            <label className="sid-login-label">Username</label>
 
             <div className="sid-login-input-wrapper">
-
-              <User
-                size={16}
-                className="sid-login-input-icon"
-              />
+              <User size={16} className="sid-login-input-icon" />
 
               <input
                 type="text"
@@ -178,67 +151,44 @@ export default function LoginPage() {
                 value={formData.username}
                 onChange={handleChange}
                 className={`sid-login-input sid-login-input-with-left-icon ${
-                  errors.username
-                    ? 'sid-login-input-error'
-                    : ''
+                  errors.username ? 'sid-login-input-error' : ''
                 }`}
                 placeholder="Masukkan username"
                 autoComplete="username"
               />
-
             </div>
 
             {errors.username && (
               <span className="sid-login-field-error">
-                {Array.isArray(errors.username)
-                  ? errors.username[0]
-                  : errors.username}
+                {Array.isArray(errors.username) ? errors.username[0] : errors.username}
               </span>
             )}
-
           </div>
           {/* PASSWORD */}
 
           <div className="sid-login-field">
-
             <div className="sid-login-password-header">
-
-              <label className="sid-login-label">
-                Password
-              </label>
+              <label className="sid-login-label">Password</label>
 
               <button
                 type="button"
-                onClick={() =>
-                  setShowForgotModal(true)
-                }
+                onClick={() => setShowForgotModal(true)}
                 className="sid-login-forgot"
               >
                 Lupa password?
               </button>
-
             </div>
 
             <div className="sid-login-input-wrapper">
-
-              <Lock
-                size={16}
-                className="sid-login-input-icon"
-              />
+              <Lock size={16} className="sid-login-input-icon" />
 
               <input
-                type={
-                  showPassword
-                    ? 'text'
-                    : 'password'
-                }
+                type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 className={`sid-login-input sid-login-input-password ${
-                  errors.password
-                    ? 'sid-login-input-error'
-                    : ''
+                  errors.password ? 'sid-login-input-error' : ''
                 }`}
                 placeholder="Masukkan password"
                 autoComplete="current-password"
@@ -246,86 +196,49 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setShowPassword(
-                    (value) => !value
-                  )
-                }
+                onClick={() => setShowPassword((value) => !value)}
                 className="sid-login-password-toggle"
-                aria-label={
-                  showPassword
-                    ? 'Sembunyikan password'
-                    : 'Tampilkan password'
-                }
+                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
               >
-                {showPassword ? (
-                  <EyeOff size={16} />
-                ) : (
-                  <Eye size={16} />
-                )}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-
             </div>
 
             {errors.password && (
               <span className="sid-login-field-error">
-                {Array.isArray(errors.password)
-                  ? errors.password[0]
-                  : errors.password}
+                {Array.isArray(errors.password) ? errors.password[0] : errors.password}
               </span>
             )}
-
           </div>
           {/* REMEMBER ME */}
 
           <label className="sid-login-remember">
-
             <input
               type="checkbox"
               checked={rememberMe}
-              onChange={(e) =>
-                setRememberMe(e.target.checked)
-              }
+              onChange={(e) => setRememberMe(e.target.checked)}
             />
 
-            <span>
-              Ingat saya di perangkat ini
-            </span>
-
+            <span>Ingat saya di perangkat ini</span>
           </label>
 
           {/* SUBMIT */}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="sid-login-submit"
-          >
-
-            <span>
-              {isLoading
-                ? 'Memproses...'
-                : 'Masuk Sekarang'}
-            </span>
+          <button type="submit" disabled={isLoading} className="sid-login-submit">
+            <span>{isLoading ? 'Memproses...' : 'Masuk Sekarang'}</span>
 
             <LogIn size={16} />
-
           </button>
-
         </form>
 
         {/* FOOTER */}
 
         <div className="sid-login-footer">
-
           <p className="sid-login-register-text">
             Belum punya akun?
-
             <button
               type="button"
-              onClick={() =>
-                setShowRegisterModal(true)
-              }
+              onClick={() => setShowRegisterModal(true)}
               className="sid-login-register-button"
             >
               Daftar sekarang
@@ -335,9 +248,7 @@ export default function LoginPage() {
           <p className="sid-login-copyright">
             Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026
           </p>
-
         </div>
-
       </div>
 
       {/* ==========================================
@@ -346,44 +257,29 @@ export default function LoginPage() {
 
       {showForgotModal && (
         <div className="sid-login-modal">
-
-          <div
-            className="sid-login-modal-overlay"
-            onClick={() =>
-              setShowForgotModal(false)
-            }
-          />
+          <div className="sid-login-modal-overlay" onClick={() => setShowForgotModal(false)} />
 
           <div className="sid-login-modal-dialog">
-
             <div className="sid-login-modal-icon sid-login-modal-icon-forgot">
               <Lock size={26} />
             </div>
 
-            <h2 className="sid-login-modal-title">
-              Fitur Belum Tersedia
-            </h2>
+            <h2 className="sid-login-modal-title">Fitur Belum Tersedia</h2>
 
             <p className="sid-login-modal-description">
-              Reset password masih dalam tahap
-              pengembangan.
+              Reset password masih dalam tahap pengembangan.
               <br />
-              Silakan hubungi perangkat desa apabila
-              mengalami kendala saat masuk ke akun.
+              Silakan hubungi perangkat desa apabila mengalami kendala saat masuk ke akun.
             </p>
 
             <button
               type="button"
-              onClick={() =>
-                setShowForgotModal(false)
-              }
+              onClick={() => setShowForgotModal(false)}
               className="sid-login-modal-button"
             >
               Mengerti
             </button>
-
           </div>
-
         </div>
       )}
 
@@ -393,47 +289,31 @@ export default function LoginPage() {
 
       {showRegisterModal && (
         <div className="sid-login-modal">
-
-          <div
-            className="sid-login-modal-overlay"
-            onClick={() =>
-              setShowRegisterModal(false)
-            }
-          />
+          <div className="sid-login-modal-overlay" onClick={() => setShowRegisterModal(false)} />
 
           <div className="sid-login-modal-dialog">
-
             <div className="sid-login-modal-icon sid-login-modal-icon-register">
               <Landmark size={26} />
             </div>
 
-            <h2 className="sid-login-modal-title">
-              Fitur Belum Tersedia
-            </h2>
+            <h2 className="sid-login-modal-title">Fitur Belum Tersedia</h2>
 
             <p className="sid-login-modal-description">
-              Pendaftaran akun mandiri masih dalam
-              tahap pengembangan.
+              Pendaftaran akun mandiri masih dalam tahap pengembangan.
               <br />
-              Silakan datang ke kantor desa untuk
-              melakukan pendaftaran sementara.
+              Silakan datang ke kantor desa untuk melakukan pendaftaran sementara.
             </p>
 
             <button
               type="button"
-              onClick={() =>
-                setShowRegisterModal(false)
-              }
+              onClick={() => setShowRegisterModal(false)}
               className="sid-login-modal-button"
             >
               Mengerti
             </button>
-
           </div>
-
         </div>
       )}
-
     </div>
-  );
+  )
 }
