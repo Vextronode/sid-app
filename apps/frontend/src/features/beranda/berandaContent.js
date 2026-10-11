@@ -78,10 +78,31 @@ const STATIC = {
     email: 'kantordesacibenda@gmail.com',
   },
 
+  // Label pita angka.
+  statsBand: {
+    label: 'Desa dalam angka',
+    asOfPrefix: 'Data per',
+    profileLink: 'Lihat profil desa →',
+  },
+
+  // Pita angka. Data final dari pemilik proyek, tampil juga di production
+  // (keputusan pemilik, 11 Okt 2026).
+  stats: {
+    items: [
+      { value: '6.080', label: 'jiwa penduduk' },
+      { value: '759,319 ha', label: 'luas wilayah' },
+      { value: '5', label: 'dusun' },
+    ],
+    asOf: 'Oktober 2026',
+  },
+
   news: {
     title: 'Kabar desa',
     subtitle: 'Berita dan kegiatan terbaru dari Desa Cibenda.',
     allLink: 'Semua berita →',
+    // Teks keadaan sama dengan beranda lama; pesan error berasal dari usePublicNews.
+    loading: 'Memuat berita...',
+    empty: 'Belum ada berita yang dipublikasikan.',
   },
 
   howTo: {
@@ -167,16 +188,6 @@ const DEV_ONLY = {
 
   // K7: chip kategori, dipasang berurutan ke kartu berita.
   newsCategories: ['Lingkungan', 'Pendidikan', 'Kabar Warga', 'Infrastruktur'],
-
-  // Pita angka.
-  stats: {
-    items: [
-      { value: '4.281', label: 'jiwa penduduk' },
-      { value: '124,5 ha', label: 'luas wilayah' },
-      { value: '6', label: 'dusun' },
-    ],
-    asOf: '[BULAN TAHUN]',
-  },
 
   // Transparansi APBDes.
   apbdes: {

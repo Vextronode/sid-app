@@ -119,6 +119,13 @@
   --bd-services-overlap: 72px;
   --bd-service-icon-size: 48px;
 
+  /* Pita angka dan kabar desa. */
+  --bd-color-on-primary-divider: rgba(255, 255, 255, 0.18);
+  --bd-stats-space: 64px;
+  --bd-stat-pad: 28px;
+  --bd-news-feature-image-height: 300px;
+  --bd-news-thumb-size: 104px;
+
   /* Logo mitra di footer. */
   --bd-partner-height: 40px;
   --bd-partner-logo-height: 26px;
@@ -155,6 +162,9 @@
     --bd-hero-pad-bottom: 136px;
     --bd-hero-wave-height: 56px;
     --bd-services-overlap: 56px;
+    --bd-stats-space: 48px;
+    --bd-stat-pad: 20px 24px;
+    --bd-news-feature-image-height: 200px;
     /* Di layar sempit judul hero jatuh di atas langit yang terang: overlay
        dinaikkan agar kontras tetap ≥ 4.5:1 (02-design-tokens.md). */
     --bd-color-hero-overlay: rgba(12, 24, 18, 0.6);
@@ -164,6 +174,7 @@
 @media (max-width: 400px) {
   .bd-root {
     --bd-gutter: 16px;
+    --bd-news-thumb-size: 88px;
   }
 }
 
@@ -923,5 +934,260 @@
   .bd-hero-actions,
   .bd-root .bd-hero-actions .bd-button {
     width: 100%;
+  }
+}
+
+/* ----- Judul section (h2 + sub + link kanan) ----- */
+.bd-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--bd-space-12);
+  margin-bottom: var(--bd-space-24);
+}
+
+.bd-section-title {
+  margin: 0;
+  font-size: var(--bd-text-h2);
+  font-weight: var(--bd-font-extrabold);
+  line-height: var(--bd-leading-h2);
+}
+
+.bd-section-subtitle {
+  margin: 6px 0 0;
+  color: var(--bd-color-muted);
+}
+
+.bd-root .bd-section-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--bd-tap-min);
+  font-weight: var(--bd-font-bold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ----- Pita angka (A19; dev saja) ----- */
+.bd-stats {
+  margin-top: var(--bd-stats-space);
+}
+
+.bd-stats-band {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border-radius: var(--bd-radius-band);
+  background: var(--bd-color-primary);
+  color: var(--bd-color-on-primary);
+}
+
+/* Garis pemisah di kiri dan atas tiap sel; yang jatuh di tepi luar pita
+   terpotong overflow, jadi pemisah tetap benar di 4, 2, maupun 1 kolom. */
+.bd-stat {
+  display: flex;
+  flex-direction: column;
+  padding: var(--bd-stat-pad);
+  box-shadow: -1px -1px 0 0 var(--bd-color-on-primary-divider);
+}
+
+.bd-stat--meta {
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Angka dan satuannya ("759,319 ha") tidak dipatah. */
+.bd-stat-value {
+  white-space: nowrap;
+  font-size: var(--bd-text-stat);
+  font-weight: var(--bd-font-extrabold);
+  line-height: var(--bd-leading-stat);
+}
+
+.bd-stat-label {
+  color: var(--bd-color-on-primary-muted);
+}
+
+.bd-stat-asof {
+  color: var(--bd-color-on-primary-muted);
+  font-size: var(--bd-text-meta-lg);
+  line-height: var(--bd-leading-meta);
+}
+
+.bd-root .bd-stat-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: var(--bd-tap-min);
+  color: var(--bd-color-on-primary);
+  font-weight: var(--bd-font-bold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.bd-root .bd-stat-link:hover {
+  color: var(--bd-color-on-primary-muted);
+}
+
+.bd-stats :focus-visible {
+  outline-color: var(--bd-color-on-primary);
+}
+
+/* ----- Kabar desa (A20–A24) ----- */
+.bd-news {
+  margin-top: var(--bd-section-space);
+}
+
+.bd-news-state {
+  margin: 0;
+  padding: var(--bd-space-24);
+  background: var(--bd-color-surface);
+  border: 1px solid var(--bd-color-border);
+  border-radius: var(--bd-radius-card);
+  color: var(--bd-color-muted);
+}
+
+.bd-news-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bd-space-24);
+}
+
+.bd-root .bd-news-card,
+.bd-root .bd-news-card:hover {
+  color: var(--bd-color-ink);
+  text-decoration: none;
+}
+
+.bd-news-card {
+  display: flex;
+  min-width: 0;
+  background: var(--bd-color-surface);
+  border: 1px solid var(--bd-color-border);
+}
+
+.bd-news-card--feature {
+  flex: 999 1 560px;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--bd-radius-card-feature);
+}
+
+.bd-news-list {
+  flex: 1 1 340px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bd-space-16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-news-card--compact {
+  gap: var(--bd-space-16);
+  padding: var(--bd-space-16);
+  border-radius: var(--bd-radius-card);
+}
+
+/* Thumbnail atau placeholder netral (K2). */
+.bd-news-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--bd-color-primary-tint);
+  color: var(--bd-color-muted);
+}
+
+.bd-news-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bd-news-image--feature {
+  height: var(--bd-news-feature-image-height);
+}
+
+.bd-news-image--thumb {
+  flex: 0 0 var(--bd-news-thumb-size);
+  height: var(--bd-news-thumb-size);
+  border-radius: var(--bd-radius-icon);
+}
+
+.bd-news-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bd-news-body--feature {
+  gap: 10px;
+  padding: var(--bd-space-24) var(--bd-space-28) var(--bd-space-28);
+}
+
+.bd-news-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bd-space-4) 10px;
+  font-size: var(--bd-text-meta-sm);
+  line-height: var(--bd-leading-meta);
+}
+
+.bd-news-meta--feature {
+  gap: var(--bd-space-4) var(--bd-space-12);
+  font-size: var(--bd-text-meta);
+}
+
+/* Chip kategori: dummy, dev saja (K7). */
+.bd-news-category {
+  color: var(--bd-color-primary);
+  font-weight: var(--bd-font-bold);
+}
+
+.bd-news-meta--feature .bd-news-category {
+  padding: 3px 10px;
+  border-radius: var(--bd-radius-chip);
+  background: var(--bd-color-accent-tint);
+  color: var(--bd-color-accent);
+}
+
+.bd-news-date {
+  color: var(--bd-color-muted);
+  font-weight: var(--bd-font-semibold);
+}
+
+.bd-news-title {
+  margin: 0;
+  font-size: var(--bd-text-body);
+  font-weight: var(--bd-font-bold);
+  line-height: var(--bd-leading-card-title);
+  overflow-wrap: anywhere;
+}
+
+.bd-news-title--feature {
+  font-size: var(--bd-text-h3-feature);
+  font-weight: var(--bd-font-extrabold);
+  line-height: var(--bd-leading-h3-feature);
+}
+
+.bd-news-summary {
+  margin: 0;
+  color: var(--bd-color-muted);
+}
+
+/* Di bawah 1200px sel 4 kolom terlalu sempit untuk "759,319 ha". */
+@media (max-width: 1199.98px) {
+  .bd-stats-band {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 559.98px) {
+  .bd-stats-band {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

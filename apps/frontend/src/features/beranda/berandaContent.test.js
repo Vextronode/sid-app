@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEV_ONLY_KEYS, getBerandaContent } from './berandaContent'
 
-const PRODUCTION_HIDDEN = ['announcement', 'newsCategories', 'stats', 'apbdes', 'welcome', 'mapUrl']
+const PRODUCTION_HIDDEN = ['announcement', 'newsCategories', 'apbdes', 'welcome', 'mapUrl']
 
 describe('getBerandaContent', () => {
   it('marks exactly the K1 items as development-only', () => {
@@ -23,7 +23,6 @@ describe('getBerandaContent', () => {
       expect(content[key], key).toBeTruthy()
     }
     expect(content.announcement.newsId).toBe(1)
-    expect(content.stats.items).toHaveLength(3)
     expect(content.welcome.fallbackName).toBe('Dede Rusliana')
   })
 
@@ -38,6 +37,15 @@ describe('getBerandaContent', () => {
     expect(content.site).toEqual({
       domain: 'https://desacibenda.id/',
       updatedAt: '10 Oktober 2026',
+    })
+    // Pita angka: data final dari pemilik proyek (11 Okt 2026).
+    expect(content.stats).toEqual({
+      items: [
+        { value: '6.080', label: 'jiwa penduduk' },
+        { value: '759,319 ha', label: 'luas wilayah' },
+        { value: '5', label: 'dusun' },
+      ],
+      asOf: 'Oktober 2026',
     })
     expect(content.howTo.steps).toHaveLength(4)
     // Logo mitra sudah asli, jadi tampil juga di production. Urut kiri → kanan

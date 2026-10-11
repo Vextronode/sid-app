@@ -62,31 +62,109 @@ describe('BerandaPage news section', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Belum ada berita yang dipublikasikan.')
   })
 
-  it('displays up to three news items from the public API', () => {
-    usePublicNews.mockReturnValue({
-      news: [1, 2, 3, 4].map((id) => ({
-        id,
-        title: `Berita ${id}`,
-        date: '1 Juli 2026',
-        excerpt: `Ringkasan ${id}`,
-        content: [],
-        imageUrl: null,
-      })),
-      loading: false,
-      error: null,
-    })
+  const newsItems = (count) =>
+    Array.from({ length: count }, (_, i) => ({
+      id: i + 1,
+      title: `Berita ${i + 1}`,
+      date: `${i + 1} Oktober 2026`,
+      excerpt: '',
+      content: [`<p>Kalimat pertama berita ${i + 1}. Kalimat kedua tidak ikut.</p>`],
+      imageUrl: i % 2 === 0 ? `/foto-${i + 1}.jpg` : null,
+    }))
+
+  const newsRegion = () => within(screen.getByRole('region', { name: 'Kabar desa' }))
+
+  it('links one featured and three compact news cards, not the fifth (A21–A24)', () => {
+    usePublicNews.mockReturnValue({ news: newsItems(5), loading: false, error: null })
 
     renderPage()
 
-    expect(screen.getByRole('link', { name: /Berita 1/ })).toHaveAttribute('href', '/berita/1')
-    expect(screen.getByRole('link', { name: /Berita 2/ })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Berita 3/ })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: /Berita 4/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Lihat semua berita' })).toHaveAttribute(
+    for (const id of [1, 2, 3, 4]) {
+      const title = newsRegion().getByRole('heading', { level: 3, name: `Berita ${id}` })
+      expect(title.closest('a')).toHaveAttribute('href', `/berita/${id}`)
+    }
+    expect(screen.queryByText('Berita 5')).toBeNull()
+    expect(newsRegion().getAllByRole('heading', { level: 3 })).toHaveLength(4)
+    expect(newsRegion().getAllByRole('listitem')).toHaveLength(3)
+  })
+
+  it('links "Semua berita →" to the news page (A20)', () => {
+    renderPage()
+
+    expect(newsRegion().getByRole('link', { name: 'Semua berita →' })).toHaveAttribute(
       'href',
       '/berita',
     )
+    expect(newsRegion().getByRole('heading', { level: 2 })).toHaveTextContent('Kabar desa')
   })
+
+  it('shows a one-sentence plain-text summary only on the featured card', () => {
+    usePublicNews.mockReturnValue({ news: newsItems(4), loading: false, error: null })
+
+    renderPage()
+
+    expect(newsRegion().getByText('Kalimat pertama berita 1.')).toBeInTheDocument()
+    expect(screen.queryByText(/Kalimat kedua/)).toBeNull()
+    expect(screen.queryByText(/Kalimat pertama berita 2/)).toBeNull()
+  })
+
+  it('lazy-loads thumbnails and shows a neutral placeholder when empty (K2)', () => {
+    usePublicNews.mockReturnValue({ news: newsItems(4), loading: false, error: null })
+
+    const { container } = renderPage()
+
+    const images = container.querySelectorAll('.bd-news img')
+    expect([...images].map((img) => img.getAttribute('src'))).toEqual([
+      '/foto-1.jpg',
+      '/foto-3.jpg',
+    ])
+    for (const img of images) {
+      expect(img).toHaveAttribute('loading', 'lazy')
+      expect(img).toHaveAttribute('alt', '')
+    }
+    const placeholders = container.querySelectorAll('.bd-news-image--empty')
+    expect(placeholders).toHaveLength(2)
+    for (const placeholder of placeholders) {
+      expect(placeholder).toHaveAttribute('aria-hidden', 'true')
+    }
+  })
+
+  it.each([
+    [true, ['Lingkungan', 'Pendidikan', 'Kabar Warga', 'Infrastruktur']],
+    [false, []],
+  ])('shows dummy category chips only in development (isDev=%s, K7)', (isDev, expected) => {
+    usePublicNews.mockReturnValue({ news: newsItems(4), loading: false, error: null })
+
+    const { container } = renderPage({ isDev })
+
+    const chips = [...container.querySelectorAll('.bd-news-category')].map((el) => el.textContent)
+    expect(chips).toEqual(expected)
+  })
+})
+
+describe('BerandaPage stats band', () => {
+  const band = () => screen.queryByRole('region', { name: 'Desa dalam angka' })
+
+  it.each([true, false])(
+    'shows the final figures and links to the village profile (isDev=%s, A19)',
+    (isDev) => {
+      renderPage({ isDev })
+
+      const region = within(band())
+      expect(region.getByText('6.080')).toBeInTheDocument()
+      expect(region.getByText('jiwa penduduk')).toBeInTheDocument()
+      expect(region.getByText('759,319 ha')).toBeInTheDocument()
+      expect(region.getByText('luas wilayah')).toBeInTheDocument()
+      expect(region.getByText('5')).toBeInTheDocument()
+      expect(region.getByText('dusun')).toBeInTheDocument()
+      expect(region.getByText('Data per Oktober 2026')).toBeInTheDocument()
+      expect(region.getAllByRole('link')).toHaveLength(1)
+      expect(region.getByRole('link', { name: 'Lihat profil desa →' })).toHaveAttribute(
+        'href',
+        '/profil-desa',
+      )
+    },
+  )
 })
 
 describe('BerandaPage hero', () => {
