@@ -60,7 +60,7 @@ export function TransparencySection({ content }) {
             <span className="bd-progress-fill" style={{ '--bd-progress': `${percent}%` }} />
           </span>
         </div>
-        <p className="bd-transparency-source">
+        <p className="bd-transparency-source bd-meta">
           {labels.sourcePrefix} {apbdes.source} · {labels.updatedPrefix} {apbdes.updatedAt}
         </p>
       </div>

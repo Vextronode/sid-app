@@ -59,7 +59,9 @@
   --bd-text-body: 18px;
   --bd-text-card-title: clamp(19px, 17.86px + 0.179vw, 20px);
   --bd-text-small: 16px;
-  /* Meta (13–15px) hanya untuk tanggal, chip kategori, label "Segera hadir". */
+  /* Meta (13–15px) hanya untuk tanggal, chip kategori, label "Segera hadir",
+     dan sumber data. Elemen `<p>`/`<li>` meta diberi kelas `bd-meta` agar
+     dikecualikan dari pengecekan teks isi di skrip screenshot. */
   --bd-text-meta-sm: 13px;
   --bd-text-meta: 14px;
   --bd-text-meta-lg: 15px;

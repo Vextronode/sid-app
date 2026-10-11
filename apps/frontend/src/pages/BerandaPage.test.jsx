@@ -33,6 +33,62 @@ beforeEach(() => {
   useAuth.mockReturnValue({ user: null, isLoading: false })
 })
 
+describe('BerandaPage structure and accessibility', () => {
+  it.each([
+    [
+      true,
+      [
+        'Kabar desa',
+        'Cara mengajukan surat',
+        'APBDes Cibenda 2026',
+        'Sambutan Kepala Desa',
+        'Butuh bantuan?',
+      ],
+    ],
+    [false, ['Kabar desa', 'Cara mengajukan surat', 'Butuh bantuan?']],
+  ])('has one h1 and an h2 for every titled section (isDev=%s, Ak3)', (isDev, expected) => {
+    renderPage({ isDev })
+
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(expected)
+  })
+
+  it('names every region and only uses ordered lists for the steps', () => {
+    const { container } = renderPage({ isDev: true })
+
+    for (const region of screen.getAllByRole('region')) {
+      expect(region).toHaveAccessibleName()
+    }
+    expect([...container.querySelectorAll('ol')]).toHaveLength(1)
+  })
+
+  it.each([true, false])(
+    'hides every icon and decorative graphic from assistive tech (isDev=%s, Ak4)',
+    (isDev) => {
+      const { container } = renderPage({ isDev })
+
+      const svgs = [...container.querySelectorAll('svg')]
+      expect(svgs.length).toBeGreaterThan(0)
+      for (const svg of svgs) {
+        expect(svg.closest('[aria-hidden="true"]')).not.toBeNull()
+      }
+    },
+  )
+
+  it('renders only real-data sections in production (K1)', () => {
+    renderPage({ isDev: false })
+
+    expect(screen.queryByRole('region', { name: 'Pengumuman' })).toBeNull()
+    expect(screen.queryByRole('region', { name: /APBDes/ })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Sambutan Kepala Desa' })).toBeNull()
+    expect(screen.getByRole('region', { name: 'Layanan populer' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Desa dalam angka' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Kabar desa' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Cara mengajukan surat' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Butuh bantuan?' })).toBeInTheDocument()
+  })
+})
+
 describe('BerandaPage news section', () => {
   it('shows loading state while fetching public news', () => {
     usePublicNews.mockReturnValue({ news: [], loading: true, error: null })

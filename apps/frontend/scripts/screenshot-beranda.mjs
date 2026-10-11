@@ -140,11 +140,23 @@ function inspectPage() {
       return `${label(el)} (${Math.round(r.width)}x${Math.round(r.height)})`
     })
 
-  const smallText = [...document.querySelectorAll('p, li')]
+  // Meta (02-design-tokens: 13–15px, mis. tanggal dan sumber data) ditandai
+  // kelas `bd-meta` dan dilaporkan terpisah; di atas 15px tetap dianggap teks isi.
+  const fontSize = (el) => parseFloat(getComputedStyle(el).fontSize)
+  const isMeta = (el) => Boolean(el.closest('.bd-meta')) && fontSize(el) <= 15
+  const textBlocks = [...document.querySelectorAll('p, li')]
     .filter(visible)
     .filter((el) => el.textContent.trim().length > 0)
-    .filter((el) => parseFloat(getComputedStyle(el).fontSize) < 18)
-    .map((el) => `${label(el)} (${getComputedStyle(el).fontSize})`)
+    .filter((el) => fontSize(el) < 18)
+  const describeText = (el) => `${label(el)} (${getComputedStyle(el).fontSize})`
+  const smallText = textBlocks.filter((el) => !isMeta(el)).map(describeText)
+  const metaText = textBlocks.filter(isMeta).map(describeText)
+
+  // Ikon SVG yang tidak disembunyikan dari pembaca layar dan tidak berlabel (Ak4).
+  const exposedSvgs = [...document.querySelectorAll('svg')]
+    .filter((svg) => !svg.closest('[aria-hidden="true"]'))
+    .filter((svg) => !svg.getAttribute('aria-label') && svg.getAttribute('role') !== 'img')
+    .map((svg) => label(svg.parentElement))
 
   const root = document.documentElement
   return {
@@ -154,6 +166,8 @@ function inspectPage() {
     h1Count: document.querySelectorAll('h1').length,
     smallTargets,
     smallText,
+    metaText,
+    exposedSvgs,
   }
 }
 
@@ -209,6 +223,8 @@ function printReport(r) {
   console.log(`  jumlah <h1>    : ${r.h1Count}`)
   console.log(`  target < 44px  : ${r.smallTargets.length}${r.smallTargets.length ? ` — ${r.smallTargets.slice(0, 5).join('; ')}` : ''}`)
   console.log(`  teks p/li < 18px: ${r.smallText.length}${r.smallText.length ? ` — ${r.smallText.slice(0, 3).join('; ')}` : ''}`)
+  console.log(`  meta (bd-meta) : ${r.metaText.length}${r.metaText.length ? ` — ${r.metaText.slice(0, 3).join('; ')}` : ''}`)
+  console.log(`  svg tanpa aria : ${r.exposedSvgs.length}${r.exposedSvgs.length ? ` — ${r.exposedSvgs.slice(0, 3).join('; ')}` : ''}`)
   console.log(`  error konsol   : ${r.consoleErrors.length}${r.consoleErrors.length ? ` — ${r.consoleErrors.slice(0, 2).join(' | ')}` : ''}`)
 }
 
