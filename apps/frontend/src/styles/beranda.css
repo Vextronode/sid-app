@@ -212,7 +212,10 @@
   outline-offset: var(--bd-focus-offset);
 }
 
+/* Lebar konten 1200px di luar gutter, sama dengan mockup (gutter tidak
+   memakan lebar konten; preflight Tailwind memakai border-box). */
 .bd-container {
+  box-sizing: content-box;
   max-width: var(--bd-container-max);
   margin-inline: auto;
   padding-inline: var(--bd-gutter);
