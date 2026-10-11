@@ -14,6 +14,7 @@ import { BerandaPage } from '@/pages/BerandaPage'
 import { DetailBeritaPage } from '@/pages/DetailBeritaPage'
 import { BeritaPage } from '@/pages/BeritaPage'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { BerandaLayout } from '@/features/beranda/components/BerandaLayout'
 import { ProfilDesaPage } from '@/pages/ProfilDesaPage'
 import { PengajuanSuratPage } from '@/pages/PengajuanSuratPage'
 import { DaftarSurat } from '@/pages/DaftarSurat'
@@ -161,9 +162,9 @@ export default function App() {
           <Route
             path="/"
             element={
-              <MainLayout>
+              <BerandaLayout>
                 <BerandaPage />
-              </MainLayout>
+              </BerandaLayout>
             }
           />
           <Route

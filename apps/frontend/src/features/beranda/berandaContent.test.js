@@ -9,7 +9,6 @@ const PRODUCTION_HIDDEN = [
   'welcome',
   'mapUrl',
   'site',
-  'partners',
 ]
 
 describe('getBerandaContent', () => {
@@ -44,6 +43,12 @@ describe('getBerandaContent', () => {
     expect(content.contact.hours).toBe('Senin – Jumat, 08.00 – 16.00 WIB')
     expect(content.hero.imageUrl).toBe('/assets/image/beranda/hero-pemandangan.jpg')
     expect(content.howTo.steps).toHaveLength(4)
+    // Logo mitra sudah asli, jadi tampil juga di production. Urut kiri → kanan.
+    expect(content.partners.map((p) => p.src)).toEqual([
+      '/assets/image/Primary_Horizontal-Logo.png',
+      '/assets/image/lambang-kabupaten-pangandaran.webp',
+      '/assets/image/logo-widyatama.webp',
+    ])
   })
 
   it('uses the copy decided in K10 and K11', () => {

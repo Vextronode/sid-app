@@ -8,6 +8,25 @@
 // Pakai getBerandaContent(); jangan impor DEV_ONLY langsung dari komponen.
 
 const STATIC = {
+  header: {
+    // Nama dari village.name bila tersedia; ini cadangannya.
+    fallbackName: 'Desa Cibenda',
+    // Placeholder lambang sampai lambang desa tersedia.
+    monogram: 'CB',
+    nav: {
+      berita: 'Berita',
+      profil: 'Profil Desa',
+      kontak: 'Kontak',
+      masuk: 'Masuk Warga',
+      menu: 'Menu',
+    },
+    // A4–A6: teks biasa, bukan link.
+    profilComingSoon: ['Sejarah & visi misi', 'Perangkat desa', 'Peta wilayah'],
+    comingSoonBadge: 'Segera hadir',
+    // A7: tampil hanya bila section Transparansi tampil.
+    transparansi: 'Transparansi APBDes',
+  },
+
   hero: {
     // File di public/, jadi build tidak gagal bila file tidak ada (K2).
     imageUrl: '/assets/image/beranda/hero-pemandangan.jpg',
@@ -89,7 +108,32 @@ const STATIC = {
   footer: {
     title: 'Pemerintah Desa Cibenda',
     staffLogin: 'Masuk petugas',
+    siteLabel: 'Situs resmi',
+    updatedPrefix: 'Terakhir diperbarui',
+    supportedBy: 'Didukung oleh',
   },
+
+  // "Didukung oleh": logo mitra di footer, urut dari kiri ke kanan.
+  // Tampil di production karena logonya sudah tersedia (keputusan pemilik, 11 Okt 2026).
+  // `id` dipakai sebagai kelas penyesuaian ukuran di beranda.css (bd-partner-logo--<id>).
+  // Nama file peka huruf besar/kecil di server production.
+  partners: [
+    {
+      id: 'widyatama',
+      name: 'Universitas Widyatama',
+      src: '/assets/image/logo-widyatama.webp',
+    },
+    {
+      id: 'pangandaran',
+      name: 'Lambang Kabupaten Pangandaran',
+      src: '/assets/image/lambang-kabupaten-pangandaran.webp',
+    },
+    {
+      id: 'diktisaintek',
+      name: 'Diktisaintek Berdampak',
+      src: '/assets/image/Primary_Horizontal-Logo.png',
+    },
+  ],
 }
 
 // Dummy dari reference/mockup.html. Jangan mengarang angka: placeholder
@@ -143,16 +187,9 @@ const DEV_ONLY = {
 
   // Footer: domain dan tanggal pembaruan.
   site: {
-    domain: '[nama].desa.id',
+    domain: 'https://desacibenda.id/',
     updatedAt: '[TANGGAL]',
   },
-
-  // "Didukung oleh": jumlah kotak logo placeholder.
-  partners: [
-    { name: 'Logo mitra (placeholder)' },
-    { name: 'Logo mitra (placeholder)' },
-    { name: 'Logo mitra (placeholder)' },
-  ],
 }
 
 export const DEV_ONLY_KEYS = Object.keys(DEV_ONLY)

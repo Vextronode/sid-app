@@ -25,6 +25,8 @@
   --bd-color-primary-tint: #e8eef5;
   --bd-color-on-primary: #ffffff;
   --bd-color-on-primary-muted: #d5e0ec;
+  /* Garis putus-putus placeholder logo mitra di footer. */
+  --bd-color-on-primary-faint: rgba(255, 255, 255, 0.5);
   --bd-color-accent: #2e6b34;
   --bd-color-accent-tint: #eaf0e6;
   --bd-color-on-accent: #ffffff;
@@ -103,6 +105,10 @@
   --bd-tap-min: 44px;
   --bd-button-primary-min: 52px;
 
+  /* Logo mitra di footer. */
+  --bd-partner-height: 40px;
+  --bd-partner-logo-height: 26px;
+
   /* ===== Motion ===== */
   --bd-rise-duration: 600ms;
   --bd-rise-distance: 10px;
@@ -111,6 +117,7 @@
   --bd-lift-duration: 200ms;
   --bd-lift-distance: -3px;
   --bd-shadow-lift: 0 10px 24px rgba(23, 33, 43, 0.1);
+  --bd-z-menu: 50;
 
   /* ===== Fokus ===== */
   --bd-focus-ring: 3px solid var(--bd-color-primary);
@@ -123,6 +130,8 @@
   color: var(--bd-color-ink);
   background: var(--bd-color-bg);
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-width: 640px) {
@@ -207,4 +216,406 @@
   .bd-lift:hover {
     transform: none;
   }
+}
+
+/* ===== Layout beranda: header, dropdown, menu ponsel, footer ===== */
+.bd-main {
+  flex: 1 0 auto;
+}
+
+/* Tombol berbingkai: "Masuk Warga". */
+.bd-root .bd-button-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--bd-tap-min);
+  padding: var(--bd-space-8) var(--bd-space-16);
+  border: 2px solid var(--bd-color-primary);
+  border-radius: var(--bd-radius-icon);
+  background: var(--bd-color-surface);
+  color: var(--bd-color-primary);
+  font-size: var(--bd-text-small);
+  font-weight: var(--bd-font-bold);
+  line-height: var(--bd-leading-small);
+  text-decoration: none;
+}
+
+.bd-root .bd-button-outline:hover {
+  background: var(--bd-color-primary-tint);
+  color: var(--bd-color-primary-hover);
+}
+
+/* ----- Header (A1–A9) ----- */
+.bd-header {
+  position: relative;
+  z-index: var(--bd-z-menu);
+  background: var(--bd-color-surface);
+  border-bottom: 1px solid var(--bd-color-border);
+}
+
+.bd-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bd-space-16);
+  padding-block: var(--bd-space-12);
+}
+
+.bd-root .bd-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--bd-space-12);
+  min-height: var(--bd-tap-min);
+  min-width: 0;
+  color: var(--bd-color-ink);
+  text-decoration: none;
+}
+
+.bd-brand-mark {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--bd-tap-min);
+  height: var(--bd-tap-min);
+  border-radius: var(--bd-radius-icon);
+  background: var(--bd-color-primary);
+  color: var(--bd-color-on-primary);
+  font-size: var(--bd-text-meta-lg);
+  font-weight: var(--bd-font-extrabold);
+}
+
+.bd-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.bd-brand-name {
+  font-size: var(--bd-text-body);
+  font-weight: var(--bd-font-extrabold);
+}
+
+.bd-brand-region {
+  font-size: var(--bd-text-meta-sm);
+  color: var(--bd-color-muted);
+}
+
+.bd-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--bd-space-4);
+}
+
+.bd-root .bd-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--bd-tap-min);
+  padding: var(--bd-space-8) 14px;
+  border: 0;
+  border-radius: var(--bd-radius-menu-item);
+  background: transparent;
+  color: var(--bd-color-ink);
+  font-family: inherit;
+  font-size: var(--bd-text-small);
+  font-weight: var(--bd-font-semibold);
+  line-height: var(--bd-leading-small);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.bd-root .bd-nav-link:hover {
+  color: var(--bd-color-primary);
+}
+
+/* Tanpa transisi: motion hanya rise dan lift (02-design-tokens.md). */
+.bd-nav-trigger[aria-expanded='true'] .bd-nav-chevron {
+  transform: rotate(180deg);
+}
+
+.bd-root .bd-nav-login {
+  margin-left: var(--bd-space-8);
+}
+
+/* ----- Dropdown Profil Desa (A3–A7) ----- */
+.bd-dropdown {
+  position: relative;
+}
+
+.bd-dropdown-panel {
+  position: absolute;
+  top: calc(100% + var(--bd-space-8));
+  left: 0;
+  /* ±260px; melebar seperlunya agar label + badge tetap satu baris. */
+  min-width: 260px;
+  width: max-content;
+  padding: var(--bd-space-8);
+  background: var(--bd-color-surface);
+  border: 1px solid var(--bd-color-border);
+  border-radius: var(--bd-radius-button);
+  box-shadow: var(--bd-shadow-lift);
+}
+
+.bd-menu-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bd-space-8);
+  min-height: var(--bd-tap-min);
+  padding: var(--bd-space-8) var(--bd-space-12);
+  border-radius: var(--bd-radius-menu-item);
+  font-size: var(--bd-text-small);
+  line-height: var(--bd-leading-small);
+}
+
+/* Bukan link: tidak bisa diklik maupun difokus. */
+.bd-menu-item--soon {
+  color: var(--bd-color-muted);
+  cursor: default;
+}
+
+.bd-root .bd-menu-item--link {
+  color: var(--bd-color-primary);
+  font-weight: var(--bd-font-bold);
+  text-decoration: none;
+}
+
+.bd-root .bd-menu-item--link:hover {
+  background: var(--bd-color-primary-tint);
+  color: var(--bd-color-primary-hover);
+}
+
+.bd-badge-soon {
+  flex: none;
+  padding: 2px var(--bd-space-8);
+  border-radius: var(--bd-radius-chip);
+  background: var(--bd-color-bg);
+  color: var(--bd-color-muted);
+  font-size: var(--bd-text-meta-sm);
+  font-weight: var(--bd-font-semibold);
+  line-height: var(--bd-leading-meta);
+  white-space: nowrap;
+}
+
+.bd-menu-divider {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--bd-color-border);
+}
+
+/* ----- Menu ponsel (K5) ----- */
+.bd-mobile-menu {
+  display: none;
+}
+
+.bd-root .bd-menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bd-space-8);
+  min-height: var(--bd-tap-min);
+  padding: var(--bd-space-8) var(--bd-space-16) var(--bd-space-8) var(--bd-space-12);
+  border: 2px solid var(--bd-color-primary);
+  border-radius: var(--bd-radius-icon);
+  background: var(--bd-color-surface);
+  color: var(--bd-color-primary);
+  font-family: inherit;
+  font-size: var(--bd-text-small);
+  font-weight: var(--bd-font-bold);
+  line-height: var(--bd-leading-small);
+  cursor: pointer;
+}
+
+.bd-mobile-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding: var(--bd-space-8) var(--bd-gutter) var(--bd-space-16);
+  background: var(--bd-color-surface);
+  border-bottom: 1px solid var(--bd-color-border);
+  box-shadow: var(--bd-shadow-lift);
+}
+
+.bd-mobile-panel .bd-menu-item {
+  font-size: var(--bd-text-body);
+}
+
+.bd-root .bd-mobile-panel > .bd-menu-list > li > .bd-menu-item--link {
+  color: var(--bd-color-ink);
+  font-weight: var(--bd-font-semibold);
+}
+
+.bd-mobile-group {
+  padding-block: var(--bd-space-4);
+  border-block: 1px solid var(--bd-color-border);
+}
+
+.bd-mobile-group-title {
+  display: block;
+  padding: var(--bd-space-8) var(--bd-space-12) var(--bd-space-4);
+  color: var(--bd-color-ink);
+  font-size: var(--bd-text-body);
+  font-weight: var(--bd-font-semibold);
+}
+
+.bd-mobile-group .bd-menu-list {
+  padding-left: var(--bd-space-12);
+}
+
+.bd-root .bd-mobile-login {
+  width: 100%;
+  margin-top: var(--bd-space-12);
+  font-size: var(--bd-text-body);
+}
+
+@media (max-width: 767.98px) {
+  .bd-nav {
+    display: none;
+  }
+
+  .bd-mobile-menu {
+    display: block;
+  }
+}
+
+/* ----- Gelombang terasering ----- */
+.bd-wave {
+  display: block;
+  width: 100%;
+}
+
+.bd-wave--hero path {
+  fill: var(--bd-color-bg);
+}
+
+.bd-wave--footer {
+  height: 60px;
+  background: var(--bd-color-bg);
+}
+
+.bd-wave--footer path {
+  fill: var(--bd-color-primary);
+}
+
+/* ----- Footer ----- */
+.bd-footer {
+  background: var(--bd-color-primary);
+  color: var(--bd-color-on-primary);
+}
+
+.bd-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--bd-space-40);
+  padding-top: var(--bd-space-24);
+  padding-bottom: var(--bd-space-40);
+}
+
+.bd-footer-identity {
+  flex: 1 1 280px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bd-space-8);
+}
+
+.bd-footer-title {
+  font-size: var(--bd-text-card-title);
+  font-weight: var(--bd-font-extrabold);
+}
+
+.bd-footer-meta {
+  color: var(--bd-color-on-primary-muted);
+  font-size: var(--bd-text-small);
+  line-height: var(--bd-leading-small);
+}
+
+.bd-footer-meta--small {
+  font-size: var(--bd-text-meta);
+}
+
+.bd-footer-nav {
+  flex: 1 1 280px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 10px var(--bd-space-24);
+}
+
+.bd-root .bd-footer-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--bd-tap-min);
+  color: var(--bd-color-on-primary);
+  font-size: var(--bd-text-small);
+}
+
+.bd-root .bd-footer-link:hover {
+  color: var(--bd-color-on-primary-muted);
+}
+
+.bd-footer :focus-visible {
+  outline-color: var(--bd-color-on-primary);
+}
+
+.bd-footer-partners {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bd-partner-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bd-space-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Ubin putih setinggi placeholder lama (40px): logo berwarna gelap (mis.
+   Widyatama) tetap terbaca di atas biru footer, warna asli logo tidak diubah. */
+.bd-partner-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--bd-partner-height);
+  padding: 7px var(--bd-space-12);
+  overflow: hidden;
+  background: var(--bd-color-surface);
+  border-radius: var(--bd-radius-menu-item);
+  box-shadow: 0 0 0 1px var(--bd-color-on-primary-faint);
+}
+
+.bd-partner-logo img {
+  display: block;
+  width: auto;
+  max-width: none;
+  height: var(--bd-partner-logo-height);
+}
+
+/* Penyesuaian per logo agar bobot visualnya seimbang. */
+/* Lambang tegak: dibuat sedikit lebih tinggi agar tidak tampak kecil di samping logo mendatar. */
+.bd-partner-logo--pangandaran {
+  padding-block: var(--bd-space-4);
+}
+
+.bd-partner-logo--pangandaran img {
+  height: 32px;
+}
+
+/* File Widyatama punya ruang kosong ±25% di atas dan ±11% di kiri/kanan. */
+.bd-partner-logo--widyatama img {
+  height: 40px;
+  margin: -9px -14px -5px;
 }
