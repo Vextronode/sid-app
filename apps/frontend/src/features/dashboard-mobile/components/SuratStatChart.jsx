@@ -6,39 +6,12 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 
 import { Calendar } from 'lucide-react'
 
-export default function SuratStatChart({ letters = [] }) {
+export default function SuratStatChart({ letterTypes = [] }) {
   const dateInputRef = useRef(null)
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
 
   const [letterType, setLetterType] = useState('all')
-
-  // ==========================================
-  // DAFTAR JENIS SURAT
-  // ==========================================
-
-  const letterTypes = useMemo(() => {
-    if (!letters?.length) {
-      return []
-    }
-
-    const map = new Map()
-
-    letters.forEach((item) => {
-      const type = item?.letter_type
-
-      if (!type) return
-
-      if (!map.has(type.id)) {
-        map.set(type.id, {
-          id: type.id,
-          name: type.name,
-        })
-      }
-    })
-
-    return Array.from(map.values())
-  }, [letters])
 
   // ==========================================
   // LOAD CHART

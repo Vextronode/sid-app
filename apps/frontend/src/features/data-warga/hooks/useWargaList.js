@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   getCitizens,
   createCitizen,
@@ -8,6 +8,7 @@ import {
   importCitizensExcel,
 } from '../api'
 import { getRts, getRws } from '@/features/kelola-wilayah/api'
+import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
 
 const ITEMS_PER_PAGE = 10
 
@@ -20,33 +21,60 @@ export function useWargaList() {
   const [filterWilayah, setFilterWilayahState] = useState('')
   const [wilayahOptions, setWilayahOptions] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
 
+  const debouncedSearch = useDebouncedValue(search.trim())
+
+  // Pencarian nama, filter RT, dan pagination diproses di server.
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
 
-      const [citizenRes, rtRes, rwRes] = await Promise.all([getCitizens(), getRts(), getRws()])
+      const response = await getCitizens({
+        page: currentPage,
+        per_page: ITEMS_PER_PAGE,
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
+        ...(filterWilayah ? { rt_id: filterWilayah } : {}),
+      })
 
-      setCitizens(citizenRes.data?.data ?? [])
-      const rwNumbers = new Map((rwRes.data?.data ?? []).map((rw) => [String(rw.id), rw.number]))
-      setWilayahOptions(
-        (rtRes.data?.data ?? []).map((rt) => ({
-          ...rt,
-          label: `RT ${rt.number} / RW ${rwNumbers.get(String(rt.rw_id)) ?? '-'}`,
-        })),
-      )
+      setCitizens(response.data?.data ?? [])
+      setTotalItems(response.data?.meta?.total ?? response.data?.total ?? 0)
     } catch (err) {
       console.error('GET CITIZENS ERROR', err)
       setError(err?.response?.data?.message || 'Gagal memuat data warga.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentPage, debouncedSearch, filterWilayah])
 
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // Pilihan RT/RW tidak bergantung pada halaman warga yang sedang dibuka.
+  useEffect(() => {
+    let active = true
+
+    Promise.all([getRts(), getRws()])
+      .then(([rtRes, rwRes]) => {
+        if (!active) return
+
+        const rwNumbers = new Map((rwRes.data?.data ?? []).map((rw) => [String(rw.id), rw.number]))
+
+        setWilayahOptions(
+          (rtRes.data?.data ?? []).map((rt) => ({
+            ...rt,
+            label: `RT ${rt.number} / RW ${rwNumbers.get(String(rt.rw_id)) ?? '-'}`,
+          })),
+        )
+      })
+      .catch((err) => console.error('GET WILAYAH OPTIONS ERROR', err))
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   const setSearch = (value) => {
     setSearchState(value)
@@ -58,23 +86,6 @@ export function useWargaList() {
     setCurrentPage(1)
   }
 
-  const filtered = useMemo(() => {
-    let result = [...citizens]
-
-    // Backend hanya mengirim nik_masked, jadi pencarian hanya by nama.
-    if (search) {
-      const keyword = search.toLowerCase()
-      result = result.filter((warga) => warga.name?.toLowerCase().includes(keyword))
-    }
-
-    if (filterWilayah) {
-      result = result.filter((warga) => String(warga.rt_id) === String(filterWilayah))
-    }
-
-    return result
-  }, [citizens, search, filterWilayah])
-
-  const totalItems = filtered.length
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE))
 
   // Kalau halaman saat ini melebihi total (mis. setelah hapus data), mundurkan.
@@ -82,10 +93,8 @@ export function useWargaList() {
     if (currentPage > totalPages) setCurrentPage(totalPages)
   }, [currentPage, totalPages])
 
-  const data = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
-    return filtered.slice(start, start + ITEMS_PER_PAGE)
-  }, [filtered, currentPage])
+  // Baris yang diterima sudah merupakan satu halaman dari server.
+  const data = citizens
 
   async function addCitizen(payload) {
     await createCitizen(payload)
@@ -99,7 +108,7 @@ export function useWargaList() {
 
   async function removeCitizen(id) {
     await deleteCitizen(id)
-    setCitizens((prev) => prev.filter((item) => item.id !== id))
+    await loadData()
   }
 
   // Mengembalikan { total_rows, success_count, error_count, errors }

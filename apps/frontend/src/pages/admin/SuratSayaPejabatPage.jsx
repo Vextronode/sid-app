@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ArrowLeft, Eye, FilePlus, Trash2 } from 'lucide-react'
 
 import api from '@/lib/api'
@@ -7,8 +6,10 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { OperatorDesaLayout } from '@/components/layout/OperatorDesaLayout'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { SimplePagination } from '@/components/ui/SimplePagination'
 import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal'
 import { DynamicSuratForm } from '@/features/surat/components/DynamicSuratForm'
+import { useLetters } from '@/features/surat/hooks/useLetters'
 import { useLetterTypes } from '@/features/surat/hooks/useLetterTypes'
 import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig'
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
@@ -33,36 +34,20 @@ function toDetail(item) {
 export default function SuratSayaPejabatPage() {
   const { user } = useAuth()
   const { letterTypes, loading: typesLoading, error: typesError } = useLetterTypes()
-  const [letters, setLetters] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const { letters, meta, loading, refresh: loadLetters } = useLetters({ page })
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [applying, setApplying] = useState(false)
   const [selectedCode, setSelectedCode] = useState('')
   const [selectedSurat, setSelectedSurat] = useState(null)
 
-  const loadLetters = useCallback(async () => {
-    try {
-      const response = await api.get('/api/letters', { params: { scope: 'mine' } })
-
-      setLetters(response.data?.data ?? [])
-      setError('')
-    } catch (requestError) {
-      setError(requestError?.response?.data?.message || 'Gagal memuat daftar surat Anda.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    loadLetters()
-  }, [loadLetters])
-
   // Dibuka dari notifikasi: ?surat=<id>.
   useLetterDeepLink((letterId) => {
     const listed = letters.find((item) => String(item.id) === letterId)
 
-    if (listed) setSelectedSurat(toDetail(listed))
+    // Surat di halaman lain tetap bisa dibuka: modal memuat detailnya sendiri.
+    setSelectedSurat(listed ? toDetail(listed) : { id: letterId })
   }, !loading)
 
   const selectedLetterType = letterTypes.find((type) => type.code === selectedCode)
@@ -89,6 +74,10 @@ export default function SuratSayaPejabatPage() {
     try {
       await api.delete(`/api/letters/${item.id}`)
       setMessage('Permohonan surat berhasil dihapus.')
+
+      // Baris terakhir di halaman ini terhapus: mundur satu halaman.
+      if (letters.length === 1 && page > 1) setPage(page - 1)
+
       await loadLetters()
     } catch (requestError) {
       setError(requestError?.response?.data?.message || 'Gagal menghapus surat.')
@@ -100,6 +89,7 @@ export default function SuratSayaPejabatPage() {
   const handleSubmitted = async () => {
     closeForm()
     setMessage('Permohonan surat berhasil dikirim.')
+    setPage(1)
     await loadLetters()
   }
 
@@ -259,6 +249,8 @@ export default function SuratSayaPejabatPage() {
                   </table>
                 </div>
               )}
+
+              <SimplePagination page={page} totalPages={meta.last_page} onChange={setPage} />
             </div>
           </>
         )}

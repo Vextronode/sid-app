@@ -1,49 +1,47 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 
-import { RELEVANT_STATUSES } from '@/constants/suratStatus'
-import { useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
+import { useDebouncedValue, useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
 
-export function useApprovalLetterList({ initialStatus = '' } = {}) {
-  const { letters, loading, refresh } = useSuratListQuery()
+// Filter status, pencarian, dan halaman diproses di server; hook ini hanya
+// menyimpan pilihan pengguna dan mengembalikan baris halaman yang aktif.
+export function useApprovalLetterList({ initialStatus = '', perPage = 5 } = {}) {
+  const [search, setSearchState] = useState('')
+  const [filterStatus, setFilterStatusState] = useState(initialStatus)
+  const [page, setPage] = useState(1)
 
-  const [search, setSearch] = useState('')
-  const [filterJenis, setFilterJenis] = useState('')
-  const [filterStatus, setFilterStatus] = useState(initialStatus)
+  const debouncedSearch = useDebouncedValue(search.trim())
 
-  const data = useMemo(() => {
-    let result = letters.filter((letter) => RELEVANT_STATUSES.includes(letter.status))
+  const { letters, meta, loading, refresh } = useSuratListQuery({
+    page,
+    per_page: perPage,
+    status: filterStatus,
+    search: debouncedSearch,
+  })
 
-    if (filterJenis) {
-      result = result.filter((letter) => letter.letter_type?.name === filterJenis)
-    }
+  const setSearch = useCallback((value) => {
+    setSearchState(value)
+    setPage(1)
+  }, [])
 
-    if (filterStatus) {
-      result = result.filter((letter) => letter.status === filterStatus)
-    }
+  const setFilterStatus = useCallback((value) => {
+    setFilterStatusState(value)
+    setPage(1)
+  }, [])
 
-    if (search) {
-      const keyword = search.toLowerCase()
-
-      result = result.filter(
-        (letter) =>
-          letter.applicant_name?.toLowerCase().includes(keyword) ||
-          letter.citizen?.name?.toLowerCase().includes(keyword) ||
-          letter.letter_number?.toLowerCase().includes(keyword),
-      )
-    }
-
-    return result
-  }, [letters, filterJenis, filterStatus, search])
+  const totalPages = Math.max(1, meta.last_page)
 
   return {
-    data,
+    data: letters,
     loading,
     search,
     setSearch,
-    filterJenis,
-    setFilterJenis,
     filterStatus,
     setFilterStatus,
+    totalItems: meta.total,
+    totalPages,
+    // Halaman bisa melebihi total setelah data berkurang (mis. surat diproses).
+    currentPage: Math.min(page, totalPages),
+    setCurrentPage: setPage,
     refresh,
   }
 }

@@ -100,7 +100,7 @@ class PublicPageService
         return $officials;
     }
 
-    private function requireVillage(?string $villageCode = null): Village
+    public function requireVillage(?string $villageCode = null): Village
     {
         if ($villageCode !== null) {
             $village = $this->villageRepository->findByCode($villageCode);

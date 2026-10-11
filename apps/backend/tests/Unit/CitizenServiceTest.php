@@ -26,7 +26,7 @@ class CitizenServiceTest extends TestCase
         $citizens = Citizen::factory()->count(2)->create();
         $user = $this->makePetugasDesaActor($citizens->first()->village_id);
 
-        $result = $this->service->getAllWithWilayah($user);
+        $result = $this->service->paginateWithWilayah($user);
 
         $this->assertCount(2, $result);
     }

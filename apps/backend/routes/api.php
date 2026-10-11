@@ -242,6 +242,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         // lewat endpoint ini; scoping di LetterService::getScopedLetters()
         // dan LetterPolicy::view.
         Route::get('/', [LetterController::class, 'index']);
+        // Angka ringkasan atas scope yang sama dengan daftar di atas.
+        Route::get('/summary', [LetterController::class, 'summary']);
         Route::get('/{id}', [LetterController::class, 'show']);
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
         //        Route::patch('/{letter}/resubmit', [LetterController::class, 'resubmit']);

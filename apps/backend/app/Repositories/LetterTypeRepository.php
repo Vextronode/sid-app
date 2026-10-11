@@ -24,6 +24,15 @@ class LetterTypeRepository
         return $letterType->load('flow');
     }
 
+    /**
+     * @param  array<int, int|string>  $ids
+     * @return array<int, string> nama tipe surat berkunci id
+     */
+    public function namesByIds(array $ids): array
+    {
+        return LetterType::query()->whereKey($ids)->pluck('name', 'id')->all();
+    }
+
     public function countActiveWithTemplate(string $villageId): int
     {
         return LetterType::query()

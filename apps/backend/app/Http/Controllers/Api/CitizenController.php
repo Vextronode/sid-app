@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ImportCitizensRequest;
+use App\Http\Requests\IndexCitizenRequest;
 use App\Http\Requests\StoreCitizenRequest;
 use App\Http\Requests\UpdateCitizenRequest;
 use App\Http\Resources\CitizenCollection;
@@ -18,9 +19,9 @@ class CitizenController extends Controller
         protected CitizenService $citizenService
     ) {}
 
-    public function index()
+    public function index(IndexCitizenRequest $request)
     {
-        $citizens = $this->citizenService->getAllWithWilayah(request()->user());
+        $citizens = $this->citizenService->paginateWithWilayah($request->user(), $request->validated());
 
         return (new CitizenCollection($citizens))->response()->setStatusCode(200);
     }

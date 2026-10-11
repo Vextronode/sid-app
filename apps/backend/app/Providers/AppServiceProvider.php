@@ -3,10 +3,16 @@
 namespace App\Providers;
 
 use App\Models\Hamlet;
+use App\Models\LetterType;
+use App\Models\News;
+use App\Models\Official;
 use App\Models\PersonalAccessToken;
 use App\Models\Rt;
 use App\Models\Rw;
+use App\Models\Village;
+use App\Models\VillageRegulation;
 use App\Policies\RegionPolicy;
+use App\Support\PublicPageCache;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
@@ -53,6 +59,14 @@ class AppServiceProvider extends ServiceProvider
                 ]);
             });
         }
+
+        // Konten halaman publik di-cache; perubahan pada sumber datanya
+        // langsung menggugurkan cache desa yang bersangkutan.
+        foreach ([News::class, VillageRegulation::class, LetterType::class, Official::class] as $publicSource) {
+            $publicSource::saved(fn (Model $model) => PublicPageCache::flush($model->village_id));
+            $publicSource::deleted(fn (Model $model) => PublicPageCache::flush($model->village_id));
+        }
+        Village::saved(fn (Village $village) => PublicPageCache::flush($village->id));
 
         Gate::policy(Hamlet::class, RegionPolicy::class);
         Gate::policy(Rw::class, RegionPolicy::class);

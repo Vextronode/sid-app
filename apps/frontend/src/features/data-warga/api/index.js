@@ -1,7 +1,8 @@
 import api from '@/lib/api'
 
-export function getCitizens() {
-  return api.get('/api/citizens')
+// params: page, per_page, search (nama), rt_id — diproses di server.
+export function getCitizens(params = {}) {
+  return api.get('/api/citizens', { params })
 }
 
 export function createCitizen(data) {

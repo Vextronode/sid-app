@@ -3,22 +3,39 @@
 namespace App\Repositories;
 
 use App\Models\Citizen;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 class CitizenRepository
 {
+    public const DEFAULT_PER_PAGE = 20;
+
     public function __construct()
     {
         //
     }
 
-    public function allWithWilayah(string $villageId): Collection
+    /**
+     * Daftar warga satu desa, berpaginasi; pencarian nama dan filter RT
+     * dijalankan di database.
+     *
+     * @param  array{search?: ?string, rt_id?: int|string|null, per_page?: int|string|null}  $filters
+     */
+    public function paginateWithWilayah(string $villageId, array $filters = []): LengthAwarePaginator
     {
+        $search = trim((string) ($filters['search'] ?? ''));
+
         return Citizen::query()
             ->where('village_id', $villageId)
+            ->when($search !== '', fn ($query) => $query->whereRaw(
+                'LOWER(name) LIKE ?',
+                ['%'.addcslashes(mb_strtolower($search), '\\%_').'%'],
+            ))
+            ->when(! empty($filters['rt_id']), fn ($query) => $query->where('rt_id', $filters['rt_id']))
             ->with(['rt', 'rw', 'hamlet', 'village', 'occupation', 'family'])
             ->orderBy('name')
-            ->get();
+            ->orderBy('id')
+            ->paginate((int) ($filters['per_page'] ?? self::DEFAULT_PER_PAGE));
     }
 
     public function findByNikHash(string $nikHash): ?Citizen

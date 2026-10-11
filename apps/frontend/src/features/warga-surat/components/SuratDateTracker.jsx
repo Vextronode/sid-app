@@ -18,7 +18,7 @@
 // Surat sudah menyelesaikan proses Operator.
 // ==========================================
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Calendar, Check, ChevronLeft, ChevronRight, Clock, FileText, X } from 'lucide-react'
 
@@ -28,6 +28,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
 import { loadPdfjs } from '@/lib/pdfjs'
+import { useLetters } from '@/features/surat/hooks/useLetters'
 
 // ==========================================
 // TRACKING STEPS
@@ -474,73 +475,53 @@ function SuratPreview({ suratId, status }) {
 // HELPER FILTER TANGGAL
 // ==========================================
 
-function getLocalDateString(rawDate) {
-  if (!rawDate) {
-    return null
+// Di atas jumlah ini titik navigasi tidak lagi berguna; penghitung
+// "Surat X dari Y" dan tombol panah sudah cukup.
+const MAX_DOTS = 10
+
+// Awal dan akhir hari YYYY-MM-DD menurut zona waktu perangkat, sebagai
+// waktu ISO, supaya server menyaring tanggal lokal dengan tepat.
+function localDayRange(dateString) {
+  const [year, month, day] = dateString.split('-').map(Number)
+
+  return {
+    submittedFrom: new Date(year, month - 1, day, 0, 0, 0, 0).toISOString(),
+    submittedTo: new Date(year, month - 1, day, 23, 59, 59, 999).toISOString(),
   }
-
-  const date = new Date(rawDate)
-
-  if (Number.isNaN(date.getTime())) {
-    return null
-  }
-
-  const year = date.getFullYear()
-
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
 }
 
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
 
-export default function SuratDateTracker({ letters, loading }) {
+export default function SuratDateTracker() {
   const [selectedDate, setSelectedDate] = useState('')
 
   const [slideIndex, setSlideIndex] = useState(0)
 
+  // Satu slide = satu surat = satu halaman di server, sehingga seluruh
+  // surat bisa digeser tanpa batas jumlah dan tiap perpindahan hanya
+  // mengambil satu baris.
+  const { letters, meta, loading } = useLetters({
+    page: slideIndex + 1,
+    perPage: 1,
+    ...(selectedDate ? localDayRange(selectedDate) : {}),
+  })
+
+  const totalLetters = meta.total
+
   const dateInputRef = useRef(null)
 
   // ==========================================
-  // FILTER SURAT
-  // ==========================================
-
-  const filteredLetters = useMemo(() => {
-    if (!Array.isArray(letters)) {
-      return []
-    }
-
-    if (!selectedDate) {
-      return letters
-    }
-
-    return letters.filter((item) => {
-      const raw = item.submitted_at ?? item.created_at
-
-      const localDate = getLocalDateString(raw)
-
-      return localDate === selectedDate
-    })
-  }, [letters, selectedDate])
-
-  // ==========================================
   // JAGA SLIDE INDEX
+  // (jumlah surat bisa berkurang, mis. setelah surat dihapus)
   // ==========================================
 
   useEffect(() => {
-    if (filteredLetters.length === 0) {
-      setSlideIndex(0)
-      return
+    if (!loading && slideIndex > 0 && slideIndex >= totalLetters) {
+      setSlideIndex(Math.max(0, totalLetters - 1))
     }
-
-    if (slideIndex >= filteredLetters.length) {
-      setSlideIndex(filteredLetters.length - 1)
-    }
-  }, [filteredLetters.length, slideIndex])
+  }, [loading, totalLetters, slideIndex])
 
   // ==========================================
   // FILTER TANGGAL
@@ -565,7 +546,7 @@ export default function SuratDateTracker({ letters, loading }) {
   // SURAT AKTIF
   // ==========================================
 
-  const activeSurat = filteredLetters[slideIndex]
+  const activeSurat = letters[0]
 
   // ==========================================
   // FORMAT TANGGAL
@@ -619,7 +600,7 @@ export default function SuratDateTracker({ letters, loading }) {
 
       {loading ? (
         <p className="sid-date-tracker-empty">Memuat data surat...</p>
-      ) : filteredLetters.length === 0 ? (
+      ) : totalLetters === 0 ? (
         <p className="sid-date-tracker-empty">
           {selectedDate ? 'Belum ada surat pada tanggal ini.' : 'Belum ada permohonan surat.'}
         </p>
@@ -644,7 +625,7 @@ export default function SuratDateTracker({ letters, loading }) {
               </p>
 
               <p className="sid-date-tracker-letter-number">
-                Surat {slideIndex + 1} dari {filteredLetters.length}
+                Surat {slideIndex + 1} dari {totalLetters}
                 {' · #'}
                 {activeSurat?.letter_number ?? `SKD-${activeSurat?.id}`}
               </p>
@@ -652,10 +633,8 @@ export default function SuratDateTracker({ letters, loading }) {
 
             <button
               type="button"
-              onClick={() =>
-                setSlideIndex((index) => Math.min(filteredLetters.length - 1, index + 1))
-              }
-              disabled={slideIndex === filteredLetters.length - 1}
+              onClick={() => setSlideIndex((index) => Math.min(totalLetters - 1, index + 1))}
+              disabled={slideIndex >= totalLetters - 1}
               aria-label="Surat berikutnya"
               className="sid-date-tracker-nav-button"
             >
@@ -679,9 +658,9 @@ export default function SuratDateTracker({ letters, loading }) {
 
           {/* DOT SLIDER */}
 
-          {filteredLetters.length > 1 && (
+          {totalLetters > 1 && totalLetters <= MAX_DOTS && (
             <div className="sid-date-tracker-dots">
-              {filteredLetters.map((_, index) => (
+              {Array.from({ length: totalLetters }, (_, index) => (
                 <button
                   type="button"
                   key={index}
