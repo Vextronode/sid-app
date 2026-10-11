@@ -10,75 +10,44 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
-export default function DashboardFlowCard({ letters = [], loading }) {
+export default function DashboardFlowCard({ periods = {}, loading }) {
   const [period, setPeriod] = useState('day')
   const [index, setIndex] = useState(0)
 
   // ==========================================
-  // FILTER PERIODE
-  // ==========================================
-
-  const filteredLetters = useMemo(() => {
-    const now = new Date()
-
-    return letters.filter((letter) => {
-      const date = new Date(letter.submitted_at ?? letter.created_at)
-
-      if (Number.isNaN(date.getTime())) {
-        return false
-      }
-
-      if (period === 'day') {
-        return date.toDateString() === now.toDateString()
-      }
-
-      if (period === 'week') {
-        const diff = (now - date) / (1000 * 60 * 60 * 24)
-
-        return diff >= 0 && diff <= 7
-      }
-
-      if (period === 'month') {
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
-      }
-
-      return true
-    })
-  }, [letters, period])
-
-  // ==========================================
   // CARD STATUS
+  // Jumlah per periode dihitung backend (ringkasan surat).
   // ==========================================
 
-  const cards = useMemo(
-    () => [
+  const cards = useMemo(() => {
+    const counts = periods[period] ?? {}
+
+    return [
       {
         title: 'Total Surat',
-        value: filteredLetters.length,
+        value: counts.total ?? 0,
         color: 'sid-dashboard-status-primary',
       },
 
       {
         title: 'Menunggu',
-        value: filteredLetters.filter((letter) => letter.status === SURAT_STATUS.PENDING).length,
+        value: counts[SURAT_STATUS.PENDING] ?? 0,
         color: 'sid-dashboard-status-warning',
       },
 
       {
         title: 'Sedang Diproses',
-        value: filteredLetters.filter((letter) => letter.status === SURAT_STATUS.IN_PROGRESS)
-          .length,
+        value: counts[SURAT_STATUS.IN_PROGRESS] ?? 0,
         color: 'sid-dashboard-status-cyan',
       },
 
       {
         title: 'Selesai',
-        value: filteredLetters.filter((letter) => letter.status === SURAT_STATUS.APPROVED).length,
+        value: counts[SURAT_STATUS.APPROVED] ?? 0,
         color: 'sid-dashboard-status-success',
       },
-    ],
-    [filteredLetters],
-  )
+    ]
+  }, [periods, period])
 
   // ==========================================
   // AUTO CAROUSEL

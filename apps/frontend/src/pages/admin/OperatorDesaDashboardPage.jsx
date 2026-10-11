@@ -4,11 +4,10 @@
 // Styling menggunakan Global CSS SID.
 // ==========================================
 
-import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import { getGenderStats } from '@/features/approval/api'
-import { useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
+import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
@@ -28,7 +27,8 @@ export default function OperatorDesaDashboardPage() {
   const { user } = useAuth()
   const greeting = getGreeting()
 
-  const { letters, loading } = useSuratListQuery()
+  // Angka dihitung backend atas scope yang sama dengan daftar surat.
+  const { summary, loading } = useSuratSummaryQuery()
 
   const { data: genderStats = EMPTY_GENDER_STATS } = useQuery({
     queryKey: ['dashboard', 'gender-stats'],
@@ -40,19 +40,11 @@ export default function OperatorDesaDashboardPage() {
   // STATISTIK
   // ==========================================
 
-  const stats = useMemo(() => {
-    const permohonan = letters.length
-
-    const verifikasi = letters.filter((letter) => letter.status === SURAT_STATUS.IN_PROGRESS).length
-
-    const selesai = letters.filter((letter) => letter.status === SURAT_STATUS.APPROVED).length
-
-    return {
-      permohonan,
-      verifikasi,
-      selesai,
-    }
-  }, [letters])
+  const stats = {
+    permohonan: summary.total,
+    verifikasi: summary.by_status[SURAT_STATUS.IN_PROGRESS],
+    selesai: summary.by_status[SURAT_STATUS.APPROVED],
+  }
 
   // ==========================================
   // TANGGAL
@@ -150,11 +142,11 @@ export default function OperatorDesaDashboardPage() {
 
         <section className="sid-operator-dashboard-grid">
           <div className="sid-operator-chart-wrapper">
-            <SuratStatChart letters={letters} />
+            <SuratStatChart letterTypes={summary.by_type} />
           </div>
 
           <div className="sid-operator-flow-wrapper">
-            <DashboardFlowCard letters={letters} loading={loading} />
+            <DashboardFlowCard periods={summary.by_period} loading={loading} />
           </div>
         </section>
       </main>

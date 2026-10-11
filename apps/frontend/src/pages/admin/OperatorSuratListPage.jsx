@@ -7,20 +7,30 @@
 // ==========================================
 
 import OperatorSuratPreviewModal from '@/features/operator-desa/components/OperatorSuratPreviewModal'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
 import { Download, Search, Eye } from 'lucide-react'
 
-import { useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
+import {
+  useDebouncedValue,
+  useSuratListQuery,
+  useSuratSummaryQuery,
+} from '@/features/surat/hooks/useSuratListQuery'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
 import { FooterOperator } from '../../components/layout/FooterOperator'
 
-import { SURAT_STATUS, SURAT_STATUS_ORDER } from '@/constants/suratStatus'
+import { SURAT_STATUS } from '@/constants/suratStatus'
 
 const ITEMS_PER_PAGE = 3
+
+const STATUS_FILTER_PARAM = {
+  verification: SURAT_STATUS.IN_PROGRESS,
+  completed: SURAT_STATUS.APPROVED,
+  rejected: SURAT_STATUS.REJECTED,
+}
 
 export default function OperatorSuratListPage() {
   const [search, setSearch] = useState('')
@@ -37,121 +47,31 @@ export default function OperatorSuratListPage() {
   // LOAD DATA
   // ==========================================
 
-  const { letters, loading } = useSuratListQuery()
+  // Filter, pencarian, dan pagination diproses di server; surat terbaru
+  // tampil lebih dahulu.
+  const debouncedSearch = useDebouncedValue(search.trim())
 
-  // ==========================================
-  // FILTER + SORT
-  // ==========================================
+  const {
+    letters: paginated,
+    meta,
+    loading,
+  } = useSuratListQuery({
+    page: currentPage,
+    per_page: ITEMS_PER_PAGE,
+    status: STATUS_FILTER_PARAM[filterStatus],
+    letter_type_id: filterJenis,
+    search: debouncedSearch,
+  })
 
-  const filtered = useMemo(() => {
-    let result = [...letters]
-
-    // ========================================
-    // FILTER JENIS
-    // ========================================
-
-    if (filterJenis) {
-      result = result.filter((letter) => letter.letter_type?.name === filterJenis)
-    }
-
-    // ========================================
-    // FILTER STATUS
-    // ========================================
-
-    if (filterStatus) {
-      switch (filterStatus) {
-        case 'verification':
-          result = result.filter((letter) => letter.status === SURAT_STATUS.IN_PROGRESS)
-          break
-
-        case 'completed':
-          result = result.filter((letter) => letter.status === SURAT_STATUS.APPROVED)
-          break
-
-        case 'rejected':
-          result = result.filter((letter) => letter.status === SURAT_STATUS.REJECTED)
-          break
-
-        default:
-          break
-      }
-    }
-
-    // ========================================
-    // SEARCH
-    // ========================================
-
-    if (search) {
-      const keyword = search.toLowerCase()
-
-      result = result.filter(
-        (letter) =>
-          letter.applicant_name?.toLowerCase().includes(keyword) ||
-          letter.letter_number?.toLowerCase().includes(keyword),
-      )
-    }
-
-    // ========================================
-    // SORT
-    //
-    // Prioritas:
-    // 1. approved
-    // 2. in_progress
-    // 3. pending
-    // 4. rejected
-    //
-    // Jika tanggal berbeda, surat terbaru
-    // tetap ditampilkan lebih dahulu.
-    // ========================================
-
-    result.sort((a, b) => {
-      const dateA = new Date(a.submitted_at ?? a.created_at)
-
-      const dateB = new Date(b.submitted_at ?? b.created_at)
-
-      const onlyDateA = new Date(dateA.getFullYear(), dateA.getMonth(), dateA.getDate())
-
-      const onlyDateB = new Date(dateB.getFullYear(), dateB.getMonth(), dateB.getDate())
-
-      if (onlyDateA.getTime() !== onlyDateB.getTime()) {
-        return onlyDateB - onlyDateA
-      }
-
-      const orderA = SURAT_STATUS_ORDER[a.status] ?? 999
-
-      const orderB = SURAT_STATUS_ORDER[b.status] ?? 999
-
-      if (orderA !== orderB) {
-        return orderA - orderB
-      }
-
-      return dateB - dateA
-    })
-
-    return result
-  }, [letters, filterJenis, filterStatus, search])
-
-  // ==========================================
-  // PAGINATION
-  // ==========================================
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
-
-  const paginated = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
-
-    return filtered.slice(start, start + ITEMS_PER_PAGE)
-  }, [filtered, currentPage])
+  const totalItems = meta.total
+  const totalPages = Math.max(1, meta.last_page)
 
   // ==========================================
   // JENIS SURAT OPTIONS
   // ==========================================
 
-  const jenisOptions = useMemo(() => {
-    const set = new Set(letters.map((letter) => letter.letter_type?.name).filter(Boolean))
-
-    return Array.from(set)
-  }, [letters])
+  const { summary } = useSuratSummaryQuery()
+  const jenisOptions = summary.by_type
 
   // ==========================================
   // RENDER
@@ -217,8 +137,8 @@ export default function OperatorSuratListPage() {
                 <option value="">Semua Jenis</option>
 
                 {jenisOptions.map((jenis) => (
-                  <option key={jenis} value={jenis}>
-                    {jenis}
+                  <option key={jenis.id} value={jenis.id}>
+                    {jenis.name}
                   </option>
                 ))}
               </select>
@@ -355,7 +275,7 @@ export default function OperatorSuratListPage() {
           <div className="sid-operator-pagination">
             <p>
               Menampilkan {paginated.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-
-              {(currentPage - 1) * ITEMS_PER_PAGE + paginated.length} dari {filtered.length} data
+              {(currentPage - 1) * ITEMS_PER_PAGE + paginated.length} dari {totalItems} data
             </p>
 
             <div>

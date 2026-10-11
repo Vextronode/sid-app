@@ -6,12 +6,11 @@
 // Styling menggunakan SID Global Theme.
 // ==========================================
 
-import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
+import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FooterDesa } from '@/components/layout/FooterDesa'
 import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
@@ -27,30 +26,19 @@ export default function RWDashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const { letters, loading } = useSuratListQuery()
+  // Angka dihitung backend atas scope yang sama dengan daftar surat.
+  const { summary, loading } = useSuratSummaryQuery()
 
   // ==========================================
   // STATISTIK
   // ==========================================
 
-  const stats = useMemo(() => {
-    const permohonanBaru = letters.length
-
-    const sedangDiproses = letters.filter((s) =>
-      ['pending', 'in_progress'].includes(s.status),
-    ).length
-
-    const disetujuiFinal = letters.filter((s) => s.status === 'approved').length
-
-    const ditolak = letters.filter((s) => s.status === 'rejected').length
-
-    return {
-      permohonanBaru,
-      sedangDiproses,
-      disetujuiFinal,
-      ditolak,
-    }
-  }, [letters])
+  const stats = {
+    permohonanBaru: summary.total,
+    sedangDiproses: summary.by_status.pending + summary.by_status.in_progress,
+    disetujuiFinal: summary.by_status.approved,
+    ditolak: summary.by_status.rejected,
+  }
 
   // ==========================================
   // STAT CARDS
@@ -176,7 +164,7 @@ export default function RWDashboardPage() {
               ====================================== */}
 
           <div className="sid-dashboard-chart">
-            <SuratStatChart letters={letters} />
+            <SuratStatChart letterTypes={summary.by_type} />
           </div>
         </div>
 
@@ -242,7 +230,7 @@ export default function RWDashboardPage() {
               ====================================== */}
 
           <div className="sid-dashboard-chart-mobile">
-            <SuratStatChart letters={letters} />
+            <SuratStatChart letterTypes={summary.by_type} />
           </div>
         </div>
 

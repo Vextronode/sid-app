@@ -1,5 +1,8 @@
 import axios from 'axios'
 
+import { queryClient } from '@/shared/lib/queryClient'
+import { queryKeys } from '@/shared/lib/queryKeys'
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || window.location.origin,
   withCredentials: true,
@@ -33,16 +36,6 @@ api.interceptors.response.use(
 )
 
 // ======================================================
-// GET LIST SURAT
-// Endpoint generic:
-// GET /api/letters
-// Scope ditentukan backend berdasarkan user / role / wilayah
-// ======================================================
-export function getSuratList() {
-  return api.get('/api/letters')
-}
-
-// ======================================================
 // GET DETAIL SURAT
 // Endpoint generic:
 // GET /api/letters/{id}
@@ -56,11 +49,16 @@ export function getSuratDetail(id) {
 // RT / kades / sekdes
 // Endpoint : /decision
 // ======================================================
-export function submitDecision(role, id, status, notes = null) {
-  return api.patch(`/api/${role}/letters/${id}/decision`, {
+export async function submitDecision(role, id, status, notes = null) {
+  const response = await api.patch(`/api/${role}/letters/${id}/decision`, {
     status,
     notes,
   })
+
+  // Keputusan mengubah daftar dan angka dashboard di semua halaman surat.
+  queryClient.invalidateQueries({ queryKey: queryKeys.surat.all })
+
+  return response
 }
 
 export default api

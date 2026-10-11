@@ -14,13 +14,12 @@
 // UI mengikuti pola RWDashboardPage.
 // ==========================================
 
-import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { ClipboardList, Eye, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
+import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FooterDesa } from '@/components/layout/FooterDesa'
@@ -41,51 +40,20 @@ export default function KadesDashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const { letters, loading } = useSuratListQuery()
+  // Angka dihitung backend atas scope yang sama dengan daftar surat.
+  const { summary, loading } = useSuratSummaryQuery()
 
   // ==========================================
   // STATISTIK
   // ==========================================
 
-  const stats = useMemo(() => {
-    const menunggu = letters.filter((letter) => letter.status === SURAT_STATUS.PENDING).length
-
-    const sedangDiproses = letters.filter(
-      (letter) => letter.status === SURAT_STATUS.IN_PROGRESS,
-    ).length
-
-    const disetujui = letters.filter((letter) => letter.status === SURAT_STATUS.APPROVED).length
-
-    const ditolak = letters.filter((letter) => letter.status === SURAT_STATUS.REJECTED).length
-    const overdue = letters.filter((letter) => letter.is_overdue === true).length
-
-    return {
-      menunggu,
-      sedangDiproses,
-      disetujui,
-      ditolak,
-      overdue,
-    }
-  }, [letters])
-
-  // ==========================================
-  // CHART DATA
-  // ==========================================
-
-  const chartData = useMemo(() => {
-    const grouped = {}
-
-    letters.forEach((letter) => {
-      const key = letter.letter_type?.name ?? 'Lainnya'
-
-      grouped[key] = (grouped[key] ?? 0) + 1
-    })
-
-    return Object.entries(grouped).map(([kategori, jumlah]) => ({
-      kategori,
-      jumlah,
-    }))
-  }, [letters])
+  const stats = {
+    menunggu: summary.by_status[SURAT_STATUS.PENDING],
+    sedangDiproses: summary.by_status[SURAT_STATUS.IN_PROGRESS],
+    disetujui: summary.by_status[SURAT_STATUS.APPROVED],
+    ditolak: summary.by_status[SURAT_STATUS.REJECTED],
+    overdue: summary.overdue,
+  }
 
   // ==========================================
   // STAT CARDS
@@ -217,7 +185,7 @@ export default function KadesDashboardPage() {
               ====================================== */}
 
           <div className="sid-dashboard-chart">
-            <SuratStatChart data={chartData} />
+            <SuratStatChart letterTypes={summary.by_type} />
           </div>
         </div>
 
@@ -283,7 +251,7 @@ export default function KadesDashboardPage() {
               ====================================== */}
 
           <div className="sid-dashboard-chart-mobile">
-            <SuratStatChart data={chartData} />
+            <SuratStatChart letterTypes={summary.by_type} />
           </div>
         </div>
 

@@ -10,7 +10,7 @@
 // UI mengikuti pola RWListPage.
 // ==========================================
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
@@ -33,34 +33,34 @@ export default function KadesListPage() {
 
   const initialStatus = searchParams.get('status') ?? ''
 
-  const [currentPage, setCurrentPage] = useState(1)
   const [selectedId, setSelectedId] = useState(null)
 
   // Dibuka dari notifikasi: ?surat=<id>.
   useLetterDeepLink((letterId) => setSelectedId(letterId))
 
-  const { data, loading, search, setSearch, filterStatus, setFilterStatus } = useApprovalLetterList(
-    {
-      role: 'kepala_desa',
-      initialStatus,
-    },
-  )
-
-  // ==========================================
-  // RESET PAGINATION
-  // ==========================================
+  const {
+    data,
+    loading,
+    search,
+    setSearch,
+    filterStatus,
+    setFilterStatus,
+    totalItems,
+    totalPages,
+    currentPage,
+    setCurrentPage,
+  } = useApprovalLetterList({
+    role: 'kepala_desa',
+    initialStatus,
+    perPage: ITEMS_PER_PAGE,
+  })
 
   // ==========================================
   // PAGINATION
   // ==========================================
 
-  const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE))
-
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
-
-    return data.slice(start, start + ITEMS_PER_PAGE)
-  }, [data, currentPage])
+  // Baris yang diterima sudah merupakan satu halaman dari server.
+  const paginatedData = data
 
   // ==========================================
   // RENDER
@@ -237,7 +237,7 @@ export default function KadesListPage() {
               <p className="rw-pagination-info">
                 Menampilkan{' '}
                 {paginatedData.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-
-                {(currentPage - 1) * ITEMS_PER_PAGE + paginatedData.length} dari {data.length} data
+                {(currentPage - 1) * ITEMS_PER_PAGE + paginatedData.length} dari {totalItems} data
               </p>
 
               <div className="rw-pagination-buttons">
