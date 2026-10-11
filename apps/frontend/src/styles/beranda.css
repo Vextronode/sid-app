@@ -1,0 +1,210 @@
+/*
+ * Beranda (halaman `/`) — fondasi gaya terisolasi.
+ * Sumber nilai: docs/refactor-beranda/02-design-tokens.md.
+ * Semua token dan selektor di-scope ke `.bd-root`; jangan menambah aturan
+ * `html`, `body`, atau `:root` di sini agar halaman lain tidak terpengaruh.
+ */
+
+/* Plus Jakarta Sans self-host (K15), hanya bobot 400–800. Browser baru
+   mengunduh file font bila font ini dipakai (hanya di dalam `.bd-root`). */
+@import '@fontsource/plus-jakarta-sans/400.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/plus-jakarta-sans/800.css';
+
+.bd-root {
+  /* ===== Warna ===== */
+  --bd-color-ink: #17212b;
+  --bd-color-muted: #4a5563;
+  --bd-color-bg: #f6f7f3;
+  --bd-color-surface: #ffffff;
+  --bd-color-border: #dde2da;
+  --bd-color-primary: #163e6b;
+  --bd-color-primary-hover: #0e2a4a;
+  --bd-color-primary-tint: #e8eef5;
+  --bd-color-on-primary: #ffffff;
+  --bd-color-on-primary-muted: #d5e0ec;
+  --bd-color-accent: #2e6b34;
+  --bd-color-accent-tint: #eaf0e6;
+  --bd-color-on-accent: #ffffff;
+  --bd-color-hero-fallback: #1f3a2e;
+  --bd-color-hero-overlay: rgba(12, 24, 18, 0.45);
+  --bd-color-on-hero: #ffffff;
+  --bd-color-announce-bg: #fff4d6;
+  --bd-color-announce-border: #ead9a6;
+  --bd-color-announce-badge: #7a5200;
+  --bd-color-announce-link: #5c3d00;
+
+  /* ===== Tipografi ===== */
+  --bd-font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --bd-font-regular: 400;
+  --bd-font-medium: 500;
+  --bd-font-semibold: 600;
+  --bd-font-bold: 700;
+  --bd-font-extrabold: 800;
+
+  /* Ukuran: nilai ponsel di ≤640px, nilai desktop di ≥1200px, linear di antaranya. */
+  --bd-text-hero: clamp(36px, 8.57px + 4.286vw, 60px);
+  --bd-text-h2: clamp(28px, 18.86px + 1.429vw, 36px);
+  --bd-text-h3-feature: clamp(22px, 15.14px + 1.071vw, 28px);
+  --bd-text-stat: clamp(36px, 26.86px + 1.429vw, 44px);
+  --bd-text-lead: clamp(18px, 15.71px + 0.357vw, 20px);
+  --bd-text-body: 18px;
+  --bd-text-card-title: clamp(19px, 17.86px + 0.179vw, 20px);
+  --bd-text-small: 16px;
+  /* Meta (13–15px) hanya untuk tanggal, chip kategori, label "Segera hadir". */
+  --bd-text-meta-sm: 13px;
+  --bd-text-meta: 14px;
+  --bd-text-meta-lg: 15px;
+
+  --bd-leading-hero: 1.08;
+  --bd-leading-h2: 1.2;
+  --bd-leading-h3-feature: 1.25;
+  --bd-leading-stat: 1.1;
+  --bd-leading-lead: 1.6;
+  --bd-leading-body: 1.6;
+  --bd-leading-card-title: 1.35;
+  --bd-leading-small: 1.5;
+  --bd-leading-meta: 1.4;
+
+  /* ===== Ruang ===== */
+  --bd-space-4: 4px;
+  --bd-space-8: 8px;
+  --bd-space-12: 12px;
+  --bd-space-16: 16px;
+  --bd-space-20: 20px;
+  --bd-space-24: 24px;
+  --bd-space-28: 28px;
+  --bd-space-32: 32px;
+  --bd-space-40: 40px;
+  --bd-space-48: 48px;
+  --bd-space-64: 64px;
+  --bd-space-72: 72px;
+  --bd-space-80: 80px;
+  --bd-space-96: 96px;
+
+  --bd-container-max: 1200px;
+  --bd-gutter: 24px;
+  /* Jarak antar section: 80–96px desktop, 56–64px ponsel. */
+  --bd-section-space: 88px;
+
+  /* ===== Bentuk ===== */
+  --bd-radius-chip: 6px;
+  --bd-radius-menu-item: 8px;
+  --bd-radius-icon: 10px;
+  --bd-radius-button: 12px;
+  --bd-radius-card: 16px;
+  --bd-radius-card-feature: 18px;
+  --bd-radius-band: 20px;
+  --bd-radius-block: 24px;
+  --bd-radius-pill: 999px;
+
+  --bd-tap-min: 44px;
+  --bd-button-primary-min: 52px;
+
+  /* ===== Motion ===== */
+  --bd-rise-duration: 600ms;
+  --bd-rise-distance: 10px;
+  --bd-rise-delay-2: 120ms;
+  --bd-rise-delay-3: 240ms;
+  --bd-lift-duration: 200ms;
+  --bd-lift-distance: -3px;
+  --bd-shadow-lift: 0 10px 24px rgba(23, 33, 43, 0.1);
+
+  /* ===== Fokus ===== */
+  --bd-focus-ring: 3px solid var(--bd-color-primary);
+  --bd-focus-offset: 2px;
+
+  /* ===== Dasar halaman beranda ===== */
+  font-family: var(--bd-font-family);
+  font-size: var(--bd-text-body);
+  line-height: var(--bd-leading-body);
+  color: var(--bd-color-ink);
+  background: var(--bd-color-bg);
+  min-height: 100vh;
+}
+
+@media (max-width: 640px) {
+  .bd-root {
+    --bd-section-space: 60px;
+  }
+}
+
+@media (max-width: 400px) {
+  .bd-root {
+    --bd-gutter: 16px;
+  }
+}
+
+.bd-root a {
+  color: var(--bd-color-primary);
+}
+
+.bd-root a:hover {
+  color: var(--bd-color-primary-hover);
+}
+
+.bd-root :focus-visible {
+  outline: var(--bd-focus-ring);
+  outline-offset: var(--bd-focus-offset);
+}
+
+.bd-container {
+  max-width: var(--bd-container-max);
+  margin-inline: auto;
+  padding-inline: var(--bd-gutter);
+}
+
+/* ===== Motion: rise (hero) dan lift (kartu) ===== */
+@keyframes bd-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--bd-rise-distance));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.bd-rise,
+.bd-rise-2,
+.bd-rise-3 {
+  animation: bd-rise var(--bd-rise-duration) ease-out both;
+}
+
+.bd-rise-2 {
+  animation-delay: var(--bd-rise-delay-2);
+}
+
+.bd-rise-3 {
+  animation-delay: var(--bd-rise-delay-3);
+}
+
+.bd-lift {
+  transition:
+    transform var(--bd-lift-duration) ease,
+    box-shadow var(--bd-lift-duration) ease;
+}
+
+.bd-lift:hover {
+  transform: translateY(var(--bd-lift-distance));
+  box-shadow: var(--bd-shadow-lift);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-rise,
+  .bd-rise-2,
+  .bd-rise-3 {
+    animation: none;
+  }
+
+  .bd-lift {
+    transition: none;
+  }
+
+  .bd-lift:hover {
+    transform: none;
+  }
+}
