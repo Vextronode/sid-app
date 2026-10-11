@@ -6,12 +6,14 @@ use App\Models\Hamlet;
 use App\Models\LetterType;
 use App\Models\News;
 use App\Models\Official;
+use App\Models\OfficialPositionType;
 use App\Models\PersonalAccessToken;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\Village;
 use App\Models\VillageRegulation;
 use App\Policies\RegionPolicy;
+use App\Support\OfficialPositionCatalog;
 use App\Support\PublicPageCache;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -30,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->scoped(OfficialPositionCatalog::class);
     }
 
     /**
@@ -62,11 +64,20 @@ class AppServiceProvider extends ServiceProvider
 
         // Konten halaman publik di-cache; perubahan pada sumber datanya
         // langsung menggugurkan cache desa yang bersangkutan.
-        foreach ([News::class, VillageRegulation::class, LetterType::class, Official::class] as $publicSource) {
+        foreach ([News::class, VillageRegulation::class, LetterType::class, Official::class, Hamlet::class] as $publicSource) {
             $publicSource::saved(fn (Model $model) => PublicPageCache::flush($model->village_id));
             $publicSource::deleted(fn (Model $model) => PublicPageCache::flush($model->village_id));
         }
         Village::saved(fn (Village $village) => PublicPageCache::flush($village->id));
+
+        // Jenis jabatan tampil di Profil Desa publik dan menjadi label
+        // jabatan pejabat, jadi keduanya ikut disegarkan.
+        $refreshPositionTypes = function (OfficialPositionType $type): void {
+            PublicPageCache::flush($type->village_id);
+            $this->app->make(OfficialPositionCatalog::class)->forget($type->village_id);
+        };
+        OfficialPositionType::saved($refreshPositionTypes);
+        OfficialPositionType::deleted($refreshPositionTypes);
 
         Gate::policy(Hamlet::class, RegionPolicy::class);
         Gate::policy(Rw::class, RegionPolicy::class);
