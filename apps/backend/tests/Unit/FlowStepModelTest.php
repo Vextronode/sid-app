@@ -4,7 +4,6 @@ namespace Tests\Unit;
 
 use App\Models\ApprovalFlow;
 use App\Models\FlowStep;
-use App\Models\LetterCategory;
 use App\Models\Village;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -194,21 +193,8 @@ class FlowStepModelTest extends TestCase
 
     private function makeFlow(string $name = 'RT-Kades/Sekdes (2 Tahap)'): ApprovalFlow
     {
-        // firstOrCreate: LetterCategory.code UNIQUE, jadi kategori yang
-        // sama dipakai ulang antar pemanggilan makeFlow() dalam 1 test
-        // (misal saat menguji 2 flow berbeda di kategori yang sama).
-        $category = LetterCategory::query()->firstOrCreate(
-            ['code' => 'approval_normal'],
-            [
-                'name' => 'Approval Normal',
-                'handler_class' => 'App\\Services\\Letters\\ApprovalNormalHandler',
-                'is_active' => true,
-            ],
-        );
-
         return ApprovalFlow::query()->create([
             'village_id' => Village::query()->value('id') ?? Village::factory()->create()->id,
-            'category_id' => $category->id,
             'name' => $name,
             'is_active' => true,
         ]);

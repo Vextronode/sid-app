@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\ApprovalFlow;
-use App\Models\LetterCategory;
 use App\Models\User;
 use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,12 +27,7 @@ use Tests\TestCase;
  *  - Migration membuat tabel approval_flows dengan kolom & FK yang benar.
  *  - GET /approval-flows butuh login (401 untuk guest).
  *  - GET /approval-flows mengembalikan hanya flow aktif secara default.
- *  - GET /approval-flows?category_id=X memfilter per kategori.
  *  - GET /approval-flows/{id} mengembalikan 404 jika tidak ditemukan.
- *  - POST /approval-flows sukses (201) untuk petugas_desa dengan payload valid.
- *  - POST /approval-flows ditolak (403) untuk role selain petugas_desa.
- *  - POST /approval-flows gagal validasi (422) jika category_id tidak ada.
- *  - POST /approval-flows gagal validasi (422) jika name kosong.
  */
 class ApprovalFlowEndpointTest extends TestCase
 {
@@ -45,7 +39,6 @@ class ApprovalFlowEndpointTest extends TestCase
         $this->assertTrue(Schema::hasTable('approval_flows'));
         $this->assertTrue(Schema::hasColumns('approval_flows', [
             'id',
-            'category_id',
             'name',
             'description',
             'is_active',
@@ -67,34 +60,14 @@ class ApprovalFlowEndpointTest extends TestCase
     {
         // EV5-6-S2: /approval-flows eksklusif petugas_desa.
         $user = User::factory()->create(['role' => 'petugas_desa']);
-        $category = $this->makeCategory('approval_normal');
-        $this->makeFlow($category, 'Flow Aktif', true);
-        $this->makeFlow($category, 'Flow Nonaktif', false);
+        $this->makeFlow('Flow Aktif', true);
+        $this->makeFlow('Flow Nonaktif', false);
 
         $response = $this->actingAs($user)->getJson('/api/approval-flows');
 
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data');
         $response->assertJsonFragment(['name' => 'Flow Aktif']);
-    }
-
-    #[Test]
-    public function list_can_be_filtered_by_category_id(): void
-    {
-        // EV5-6-S2: /approval-flows kini dibatasi role 'petugas_desa' di
-        // level middleware (bukan lagi implisit lewat FormRequest saja).
-        $user = User::factory()->create(['role' => 'petugas_desa']);
-        $categoryA = $this->makeCategory('approval_normal');
-        $categoryB = $this->makeCategory('upload_mandiri');
-        $flowA = $this->makeFlow($categoryA, 'Flow A');
-        $this->makeFlow($categoryB, 'Flow B');
-
-        $response = $this->actingAs($user)
-            ->getJson('/api/approval-flows?category_id='.$categoryA->id);
-
-        $response->assertStatus(200);
-        $response->assertJsonCount(1, 'data');
-        $response->assertJsonFragment(['id' => $flowA->id]);
     }
 
     #[Test]
@@ -114,8 +87,7 @@ class ApprovalFlowEndpointTest extends TestCase
     {
         // EV5-6-S2: endpoint approval-flows eksklusif petugas_desa.
         $user = User::factory()->create(['role' => 'petugas_desa']);
-        $category = $this->makeCategory('approval_normal');
-        $flow = $this->makeFlow($category, 'Flow Detail');
+        $flow = $this->makeFlow('Flow Detail');
 
         $response = $this->actingAs($user)->getJson('/api/approval-flows/'.$flow->id);
 
@@ -124,121 +96,29 @@ class ApprovalFlowEndpointTest extends TestCase
         $response->assertJsonPath('data.name', 'Flow Detail');
     }
 
-    #[Test]
-    public function petugas_desa_can_create_new_flow(): void
-    {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
-        $category = $this->makeCategory('approval_normal');
-
-        $response = $this->actingAs($user)->postJson('/api/approval-flows', [
-            'category_id' => $category->id,
-            'name' => 'Flow Baru Hasil Test',
-            'description' => 'Deskripsi flow baru',
-            'is_active' => true,
-        ]);
-
-        $response->assertStatus(201);
-        $response->assertJsonPath('data.name', 'Flow Baru Hasil Test');
-        $this->assertDatabaseHas('approval_flows', [
-            'name' => 'Flow Baru Hasil Test',
-            'category_id' => $category->id,
-        ]);
-    }
-
-    #[Test]
-    public function non_petugas_desa_role_cannot_create_flow(): void
-    {
-        $user = User::factory()->create(['role' => 'warga']);
-        $category = $this->makeCategory('approval_normal');
-
-        $response = $this->actingAs($user)->postJson('/api/approval-flows', [
-            'category_id' => $category->id,
-            'name' => 'Flow Tidak Sah',
-        ]);
-
-        $response->assertStatus(403);
-        $this->assertDatabaseMissing('approval_flows', ['name' => 'Flow Tidak Sah']);
-    }
-
-    #[Test]
-    public function create_flow_fails_validation_when_category_id_does_not_exist(): void
-    {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
-
-        $response = $this->actingAs($user)->postJson('/api/approval-flows', [
-            'category_id' => 99999,
-            'name' => 'Flow Dengan Kategori Salah',
-        ]);
-
-        $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['category_id']);
-        $response->assertJsonFragment(['category_id' => ['Kategori surat tidak ditemukan']]);
-    }
-
-    #[Test]
-    public function create_flow_fails_validation_when_name_is_missing(): void
-    {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
-        $category = $this->makeCategory('approval_normal');
-
-        $response = $this->actingAs($user)->postJson('/api/approval-flows', [
-            'category_id' => $category->id,
-        ]);
-
-        $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['name']);
-    }
-
-    #[Test]
-    public function create_flow_fails_validation_when_name_exceeds_max_length(): void
-    {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
-        $category = $this->makeCategory('approval_normal');
-
-        $response = $this->actingAs($user)->postJson('/api/approval-flows', [
-            'category_id' => $category->id,
-            'name' => str_repeat('a', 151),
-        ]);
-
-        $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['name']);
-    }
-
-    #[Test]
-    public function new_flow_defaults_to_active_when_is_active_not_provided(): void
-    {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
-        $category = $this->makeCategory('approval_normal');
-
-        $response = $this->actingAs($user)->postJson('/api/approval-flows', [
-            'category_id' => $category->id,
-            'name' => 'Flow Tanpa is_active',
-        ]);
-
-        $response->assertStatus(201);
-        $this->assertDatabaseHas('approval_flows', [
-            'name' => 'Flow Tanpa is_active',
-            'is_active' => true,
-        ]);
-    }
-
-    private function makeCategory(string $code): LetterCategory
-    {
-        return LetterCategory::query()->create([
-            'code' => $code,
-            'name' => ucfirst(str_replace('_', ' ', $code)),
-            'handler_class' => 'App\\Services\\Letters\\Handler',
-            'is_active' => true,
-        ]);
-    }
-
-    private function makeFlow(LetterCategory $category, string $name, bool $isActive = true): ApprovalFlow
+    private function makeFlow(string $name, bool $isActive = true): ApprovalFlow
     {
         return ApprovalFlow::query()->create([
             'village_id' => Village::query()->value('id') ?? Village::factory()->create()->id,
-            'category_id' => $category->id,
             'name' => $name,
             'is_active' => $isActive,
         ]);
+    }
+
+    #[Test]
+    public function flow_write_endpoints_are_not_available(): void
+    {
+        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $flow = $this->makeFlow('Flow Terkunci');
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/approval-flows', ['name' => 'Flow Baru'])
+            ->assertStatus(405);
+
+        $this->actingAs($user, 'sanctum')
+            ->putJson("/api/approval-flows/{$flow->id}/steps", ['steps' => []])
+            ->assertStatus(404);
+
+        $this->assertDatabaseMissing('approval_flows', ['name' => 'Flow Baru']);
     }
 }

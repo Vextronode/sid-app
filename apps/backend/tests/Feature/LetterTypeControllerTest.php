@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ApprovalFlow;
-use App\Models\LetterCategory;
 use App\Models\LetterType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,34 +59,6 @@ class LetterTypeControllerTest extends TestCase
             'id' => $letterType->id,
             'assigned_role' => null,
         ]);
-    }
-
-    public function test_update_moves_letter_type_to_another_flow_in_the_same_category(): void
-    {
-        $admin = User::factory()->create(['role' => 'petugas_desa']);
-        $category = LetterCategory::factory()->create();
-        $oldFlow = ApprovalFlow::factory()->create(['category_id' => $category->id]);
-        $newFlow = ApprovalFlow::factory()->create(['category_id' => $category->id]);
-        $letterType = LetterType::factory()->create(['category_id' => $category->id, 'flow_id' => $oldFlow->id]);
-
-        $this->actingAs($admin)
-            ->putJson("/api/letter-types/{$letterType->id}", ['flow_id' => $newFlow->id])
-            ->assertOk()
-            ->assertJsonPath('data.flow_id', $newFlow->id);
-    }
-
-    public function test_update_rejects_flow_from_a_different_category(): void
-    {
-        $admin = User::factory()->create(['role' => 'petugas_desa']);
-        $category = LetterCategory::factory()->create();
-        $otherCategory = LetterCategory::factory()->create();
-        $flowInOtherCategory = ApprovalFlow::factory()->create(['category_id' => $otherCategory->id]);
-        $letterType = LetterType::factory()->create(['category_id' => $category->id]);
-
-        $this->actingAs($admin)
-            ->putJson("/api/letter-types/{$letterType->id}", ['flow_id' => $flowInOtherCategory->id])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['flow_id']);
     }
 
     public function test_update_rejects_non_positive_validity_days(): void

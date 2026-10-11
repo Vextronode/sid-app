@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\LetterDataAction;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,21 +19,28 @@ class LetterType extends Model
         'template',
         'verification_type',
         'requirement_info',
-        'category_id',
         'flow_id',
         'assigned_role',
         'validity_days',
         'is_active',
+        'classification_code',
+        'produces_letter',
+        'data_action',
+        'form_fields',
+        'data_fields',
+        'data_subject_field',
+        'signature_slots',
+        'supporting_template',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'produces_letter' => 'boolean',
+        'data_action' => LetterDataAction::class,
+        'form_fields' => 'array',
+        'data_fields' => 'array',
+        'signature_slots' => 'array',
     ];
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(LetterCategory::class, 'category_id');
-    }
 
     public function flow(): BelongsTo
     {

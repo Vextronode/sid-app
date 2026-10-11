@@ -21,7 +21,7 @@ class LetterTypeRepository
     {
         $letterType->update($data);
 
-        return $letterType->load(['category', 'flow']);
+        return $letterType->load('flow');
     }
 
     public function allActiveWithTemplate(?string $villageId = null): Collection

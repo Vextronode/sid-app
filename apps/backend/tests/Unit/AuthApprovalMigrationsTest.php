@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use App\Models\LetterType;
 use App\Models\Village;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,13 +51,12 @@ class AuthApprovalMigrationsTest extends TestCase
     }
 
     #[Test]
-    public function letter_number_counters_enforce_unique_village_type_and_year(): void
+    public function letter_number_counters_enforce_unique_village_classification_and_year(): void
     {
         $village = Village::factory()->create();
-        $letterType = LetterType::factory()->create();
         $counter = [
             'village_id' => $village->id,
-            'letter_type_id' => $letterType->id,
+            'classification_code' => '470',
             'year' => 2026,
             'last_number' => 0,
             'created_at' => now(),
