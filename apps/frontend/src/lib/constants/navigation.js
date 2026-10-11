@@ -1,16 +1,18 @@
 /* eslint-disable no-unused-vars */
-import { Home, Info, Newspaper, FileText, FilePlus, Bell, User } from 'lucide-react'
+import { Home, Info, Newspaper, ScrollText, FileText, FilePlus, Bell, User } from 'lucide-react'
 
 export const NAV_LINKS = [
   { name: 'Beranda', href: '/', icon: Home },
   { name: 'Profil Desa', href: '/profil-desa', icon: Info },
   { name: 'Berita', href: '/berita', icon: Newspaper },
+  { name: 'Peraturan', href: '/peraturan-desa', icon: ScrollText },
 ]
 
 export const MOBILE_ONLY_LINKS = [
   { name: 'Beranda', href: '/', icon: Home },
   { name: 'Profil Desa', href: '/profil-desa', icon: Info },
   { name: 'Berita', href: '/berita', icon: Newspaper },
+  { name: 'Peraturan', href: '/peraturan-desa', icon: ScrollText },
 ]
 
 // Bottom nav khusus admin (RT/RW/dll), cuma 2 menu sesuai desain
