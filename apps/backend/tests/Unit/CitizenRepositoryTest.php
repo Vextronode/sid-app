@@ -26,7 +26,7 @@ class CitizenRepositoryTest extends TestCase
         Citizen::factory()->create(['name' => 'Zainal']);
         Citizen::factory()->create(['name' => 'Anisa']);
 
-        $result = $this->repository->allWithWilayah($citizenVillage = Citizen::query()->firstOrFail()->village_id);
+        $result = $this->repository->paginateWithWilayah($citizenVillage = Citizen::query()->firstOrFail()->village_id);
 
         $this->assertCount(2, $result);
         $this->assertSame('Anisa', $result->first()->name);
