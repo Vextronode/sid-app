@@ -2,9 +2,15 @@
 
 namespace App\Services;
 
+use App\Enums\OfficialPosition;
+use App\Models\Hamlet;
+use App\Models\Official;
+use App\Models\OfficialPositionType;
 use App\Models\Village;
+use App\Repositories\HamletRepository;
 use App\Repositories\LetterTypeRepository;
 use App\Repositories\NewsRepository;
+use App\Repositories\OfficialPositionTypeRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\RegulationRepository;
 use App\Repositories\VillageRepository;
@@ -22,12 +28,23 @@ class PublicPageService
      */
     private const LATEST_NEWS_LIMIT = 5;
 
+    /**
+     * Jabatan berakun yang tampil di grup Kasi/Kaur/Staf Profil Desa,
+     * mendahului jenis jabatan tanpa akun yang dikelola Petugas Desa.
+     */
+    private const PUBLIC_STAFF_POSITIONS = [
+        OfficialPosition::KasiPelayanan,
+        OfficialPosition::KaurTuUmum,
+    ];
+
     public function __construct(
         private readonly VillageRepository $villageRepository,
         private readonly NewsRepository $newsRepository,
         private readonly LetterTypeRepository $letterTypeRepository,
         private readonly RegulationRepository $regulationRepository,
         private readonly OfficialRepository $officialRepository,
+        private readonly HamletRepository $hamletRepository,
+        private readonly OfficialPositionTypeRepository $positionTypeRepository,
     ) {}
 
     /**
@@ -52,6 +69,69 @@ class PublicPageService
     public function villageProfile(?string $villageCode = null): Village
     {
         return $this->requireVillage($villageCode);
+    }
+
+    /**
+     * Slot grup Kasi/Kaur/Staf di Profil Desa, berurutan: jabatan berakun
+     * lebih dulu, lalu jenis jabatan aktif menurut urutan yang diatur
+     * Petugas Desa. Jabatan yang belum terisi tetap punya slot.
+     *
+     * @return array<int, array{code: string, label: string}>
+     */
+    public function publicStaffPositions(?string $villageCode = null): array
+    {
+        $village = $this->requireVillage($villageCode);
+
+        return [
+            ...array_map(
+                fn (OfficialPosition $position) => ['code' => $position->value, 'label' => $position->label()],
+                self::PUBLIC_STAFF_POSITIONS,
+            ),
+            ...$this->positionTypeRepository
+                ->allForVillage($village->id, activeOnly: true)
+                ->map(fn (OfficialPositionType $type) => ['code' => $type->code, 'label' => $type->label])
+                ->all(),
+        ];
+    }
+
+    /**
+     * Perangkat desa aktif untuk halaman Profil Desa: Kepala Desa, Sekdes,
+     * grup Kasi/Kaur/Staf, lalu Kepala Dusun. RT, RW, dan Petugas Desa tidak
+     * ditampilkan. Boleh kosong: profil desa tetap tampil walau belum ada
+     * pejabat yang ditetapkan.
+     *
+     * @return Collection<int, Official>
+     */
+    public function publicOfficials(?string $villageCode = null): Collection
+    {
+        $village = $this->requireVillage($villageCode);
+        $positions = [
+            OfficialPosition::KepalaDesa->value,
+            OfficialPosition::Sekdes->value,
+            ...array_column($this->publicStaffPositions($villageCode), 'code'),
+            OfficialPosition::Kadus->value,
+        ];
+        $order = array_flip($positions);
+
+        return $this->officialRepository
+            ->allActiveByPositionsAndVillage($positions, $village->id)
+            ->load(['citizen', 'hamlet'])
+            ->sortBy(fn (Official $official) => [$order[$official->position], $official->id])
+            ->values();
+    }
+
+    /**
+     * Dusun aktif desa, supaya Profil Desa menampilkan slot Kepala Dusun
+     * untuk tiap dusun walau jabatannya masih kosong.
+     *
+     * @return Collection<int, Hamlet>
+     */
+    public function publicHamlets(?string $villageCode = null): Collection
+    {
+        return $this->hamletRepository
+            ->allOrderedByName($this->requireVillage($villageCode)->id)
+            ->where('is_active', true)
+            ->values();
     }
 
     public function paginatedNews(?string $villageCode = null, int $perPage = 10): LengthAwarePaginator

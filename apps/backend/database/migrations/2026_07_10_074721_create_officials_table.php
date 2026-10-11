@@ -15,22 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignUuid('citizen_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('user_id')->nullable()->constrained()->nullOnDelete();
-            $table->enum('position', [
-                'kepala_desa',
-                'rt',
-                'rw',
-                'kadus',
-                'kasi_pelayanan',
-                'kaur_tu_umum',
-                'petugas_desa',
-                'sekdes',
-                'kasi_kesejahteraan',
-                'kasi_pemerintahan',
-                'kaur_perencanaan',
-                'kaur_keuangan',
-                'staf_sipades',
-                'staf_siskeudes',
-            ]);
+            // Nilai App\Enums\OfficialPosition (jabatan berakun) atau `code`
+            // dari official_position_types (jabatan tanpa akun).
+            $table->string('position', 50);
             $table->foreignUuid('village_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
             $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();

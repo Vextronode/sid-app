@@ -2,6 +2,12 @@
 
 namespace App\Enums;
 
+/**
+ * Jabatan yang punya akun dan peran di aplikasi. Jabatan desa tanpa akun
+ * (Kasi/Kaur/Staf lain) bukan bagian enum ini: jenisnya dikelola Petugas
+ * Desa di tabel official_position_types, dan officials.position menyimpan
+ * `code`-nya.
+ */
 enum OfficialPosition: string
 {
     case KepalaDesa = 'kepala_desa';
@@ -12,14 +18,8 @@ enum OfficialPosition: string
     case KaurTuUmum = 'kaur_tu_umum';
     case PetugasDesa = 'petugas_desa';
     case Sekdes = 'sekdes';
-    case KasiKesejahteraan = 'kasi_kesejahteraan';
-    case KasiPemerintahan = 'kasi_pemerintahan';
-    case KaurPerencanaan = 'kaur_perencanaan';
-    case KaurKeuangan = 'kaur_keuangan';
-    case StafSipades = 'staf_sipades';
-    case StafSiskeudes = 'staf_siskeudes';
 
-    public function userRole(): ?UserRole
+    public function userRole(): UserRole
     {
         return match ($this) {
             self::KepalaDesa => UserRole::KepalaDesa,
@@ -30,13 +30,7 @@ enum OfficialPosition: string
             self::KaurTuUmum => UserRole::KaurTuUmum,
             self::PetugasDesa => UserRole::PetugasDesa,
             self::Sekdes => UserRole::SekretarisDesa,
-            default => null,
         };
-    }
-
-    public function hasAccount(): bool
-    {
-        return $this->userRole() !== null;
     }
 
     public function scopeColumn(): ?string
@@ -59,10 +53,7 @@ enum OfficialPosition: string
      */
     public static function accountPositions(): array
     {
-        return array_values(array_map(
-            fn (self $position) => $position->value,
-            array_filter(self::cases(), fn (self $position) => $position->hasAccount()),
-        ));
+        return array_column(self::cases(), 'value');
     }
 
     public function label(): string
@@ -76,12 +67,6 @@ enum OfficialPosition: string
             self::KaurTuUmum => 'Kaur TU & Umum',
             self::PetugasDesa => 'Petugas Desa',
             self::Sekdes => 'Sekretaris Desa',
-            self::KasiKesejahteraan => 'Kasi Kesejahteraan',
-            self::KasiPemerintahan => 'Kasi Pemerintahan',
-            self::KaurPerencanaan => 'Kaur Perencanaan',
-            self::KaurKeuangan => 'Kaur Keuangan',
-            self::StafSipades => 'Staf SIPADES',
-            self::StafSiskeudes => 'Staf SISKEUDES',
         };
     }
 }

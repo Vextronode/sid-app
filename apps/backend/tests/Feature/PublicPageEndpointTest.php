@@ -2,13 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\Hamlet;
 use App\Models\LetterType;
 use App\Models\News;
 use App\Models\Official;
+use App\Models\OfficialPositionType;
 use App\Models\User;
 use App\Models\Village;
 use App\Models\VillageRegulation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -84,7 +87,59 @@ class PublicPageEndpointTest extends TestCase
 
         $response = $this->getJson('/api/public/village-profile');
 
-        $response->assertOk()->assertJsonPath('data.vision', 'Maju Bersama');
+        $response->assertOk()
+            ->assertJsonPath('data.vision', 'Maju Bersama')
+            ->assertJsonPath('officials', []);
+    }
+
+    #[Test]
+    public function village_profile_lists_active_village_officials_with_photo(): void
+    {
+        $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
+        // Slot grup Kasi/Kaur/Staf: jabatan berakun dulu, lalu jenis jabatan
+        // aktif menurut urutannya. Jenis jabatan nonaktif tidak tampil.
+        OfficialPositionType::factory()->code('staf_arsip', 'Staf Arsip')
+            ->create(['village_id' => $village->id, 'sort_order' => 2]);
+        OfficialPositionType::factory()->code('kaur_keuangan', 'Kaur Keuangan')
+            ->create(['village_id' => $village->id, 'sort_order' => 1]);
+        OfficialPositionType::factory()->code('kaur_lama', 'Kaur Lama')
+            ->create(['village_id' => $village->id, 'is_active' => false]);
+        $kaur = Official::factory()->position('kaur_keuangan')->create([
+            'village_id' => $village->id,
+            'photo_img' => "official-photos/{$village->id}/kaur.jpg",
+        ]);
+        $kades = Official::factory()->position('kepala_desa')->create(['village_id' => $village->id]);
+        // RT dan pejabat yang sudah berakhir tidak tampil di halaman publik.
+        Official::factory()->position('rt')->create(['village_id' => $village->id]);
+        Official::factory()->position('sekdes')->create(['village_id' => $village->id, 'is_active' => false]);
+        // Dusun aktif dikirim walau belum punya Kepala Dusun.
+        $hamlet = Hamlet::factory()->create(['village_id' => $village->id, 'is_active' => true]);
+        $inactiveHamlet = Hamlet::factory()->create(['village_id' => $village->id, 'is_active' => false]);
+
+        $response = $this->getJson('/api/public/village-profile');
+        $hamletIds = array_column($response->json('hamlets'), 'id');
+
+        $this->assertContains($hamlet->id, $hamletIds);
+        $this->assertNotContains($inactiveHamlet->id, $hamletIds);
+        $this->assertSame(['id', 'name'], array_keys($response->json('hamlets.0')));
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('positions', [
+                ['code' => 'kasi_pelayanan', 'label' => 'Kasi Pelayanan'],
+                ['code' => 'kaur_tu_umum', 'label' => 'Kaur TU & Umum'],
+                ['code' => 'kaur_keuangan', 'label' => 'Kaur Keuangan'],
+                ['code' => 'staf_arsip', 'label' => 'Staf Arsip'],
+            ])
+            ->assertJsonPath('officials.1.position_label', 'Kaur Keuangan')
+            ->assertJsonCount(2, 'officials')
+            ->assertJsonPath('officials.0.position', 'kepala_desa')
+            ->assertJsonPath('officials.0.position_label', 'Kepala Desa')
+            ->assertJsonPath('officials.0.name', $kades->citizen->name)
+            ->assertJsonPath('officials.0.photo_url', null)
+            ->assertJsonPath('officials.1.position', 'kaur_keuangan')
+            ->assertJsonPath('officials.1.photo_url', Storage::disk('public')->url($kaur->photo_img))
+            ->assertJsonMissingPath('officials.0.phone_wa');
     }
 
     #[Test]

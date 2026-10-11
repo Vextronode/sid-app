@@ -24,8 +24,21 @@ export function deletePerangkatDesa(id) {
   return api.delete(`/api/officials/${id}`)
 }
 
+const multipart = { headers: { 'Content-Type': 'multipart/form-data' } }
+
+// Penetapan dan rotasi membawa foto pejabat, jadi dikirim multipart.
+function toFormData(payload) {
+  const formData = new FormData()
+
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') formData.append(key, value)
+  })
+
+  return formData
+}
+
 export function promotePerangkatDesa(payload) {
-  return api.post('/api/officials/promote', payload)
+  return api.post('/api/officials/promote', toFormData(payload), multipart)
 }
 
 export function demotePerangkatDesa(id, payload = {}) {
@@ -33,17 +46,38 @@ export function demotePerangkatDesa(id, payload = {}) {
 }
 
 export function rotatePerangkatDesa(id, payload) {
-  return api.post(`/api/officials/${id}/rotate`, payload)
+  return api.post(`/api/officials/${id}/rotate`, toFormData(payload), multipart)
 }
 
-// Cari calon pejabat lewat NIK: akun yang terhubung ke warga ber-NIK itu.
-export function findOfficialCandidate(nik) {
-  return api.post('/api/officials/candidates/lookup', { nik })
+// Cari calon pejabat lewat NIK. Jabatan menentukan apakah calon harus
+// sudah punya akun warga.
+export function findOfficialCandidate(nik, position) {
+  return api.post('/api/officials/candidates/lookup', position ? { nik, position } : { nik })
+}
+
+export function uploadOfficialPhoto(officialId, file) {
+  return api.post(`/api/officials/${officialId}/photo`, toFormData({ photo: file }), multipart)
+}
+
+// Jenis jabatan desa tanpa akun (Kasi/Kaur/Staf), dikelola Petugas Desa.
+export function getOfficialPositionTypes() {
+  return api.get('/api/official-position-types')
+}
+
+export function createOfficialPositionType(payload) {
+  return api.post('/api/official-position-types', payload)
+}
+
+export function updateOfficialPositionType(id, payload) {
+  return api.patch(`/api/official-position-types/${id}`, payload)
+}
+
+export function deleteOfficialPositionType(id) {
+  return api.delete(`/api/official-position-types/${id}`)
 }
 
 // Stempel desa dan tanda tangan Kepala Desa disimpan privat: tidak ada URL
 // publik, pratinjau diambil sebagai blob lewat sesi login.
-const multipart = { headers: { 'Content-Type': 'multipart/form-data' } }
 
 export function uploadVillageStamp(file) {
   const formData = new FormData()

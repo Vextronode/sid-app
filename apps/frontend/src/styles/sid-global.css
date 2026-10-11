@@ -9943,6 +9943,46 @@
   gap: 0.25rem;
 }
 
+/* Halaman publik: kartu selebar sepertiga baris, tiga per baris. Baris yang
+   tidak penuh (Sekdes sendirian, sisa 2 kartu) berada di tengah. */
+
+.sid-profil-desa-perangkat {
+  scroll-margin-top: 5rem;
+}
+
+.sid-profil-desa-officials-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  gap: 1rem;
+
+  margin-bottom: 1rem;
+}
+
+.sid-profil-desa-officials-row-last {
+  margin-bottom: 2rem;
+}
+
+.sid-profil-desa-officials-row-end {
+  margin-bottom: 0;
+}
+
+.sid-profil-desa-officials-row > .sid-profil-desa-official-card {
+  flex: 0 0 calc((100% - 2rem) / 3);
+}
+
+/* Kepala Desa: kartu persegi. Sisinya mengikuti tinggi kartu pejabat lain
+   (padding + foto + nama + jabatan), di desktop maupun ponsel. */
+
+.sid-profil-desa-officials-row > .sid-profil-desa-official-card.sid-profil-desa-kepala-card {
+  flex: 0 0 auto;
+  justify-content: center;
+
+  width: 10rem;
+  aspect-ratio: 1 / 1;
+}
+
 .sid-profil-desa-kadus p {
   max-width: 100px;
 
@@ -10017,6 +10057,10 @@
 
   .sid-profil-desa-kadus-list {
     gap: 1rem;
+  }
+
+  .sid-profil-desa-officials-row > .sid-profil-desa-official-card {
+    flex-basis: 100%;
   }
 }
 

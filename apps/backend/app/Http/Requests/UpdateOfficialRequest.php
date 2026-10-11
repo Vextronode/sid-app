@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\ValidOfficialPosition;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -37,7 +38,7 @@ class UpdateOfficialRequest extends FormRequest
             'position' => [
                 'sometimes',
                 'string',
-                'in:kepala_desa,rt,rw,kadus,kasi_pelayanan,kaur_tu_umum,petugas_desa,sekdes,kasi_kesejahteraan,kasi_pemerintahan,kaur_perencanaan,kaur_keuangan,staf_sipades,staf_siskeudes',
+                new ValidOfficialPosition($this->user()?->village_id),
             ],
 
             'village_id' => [
