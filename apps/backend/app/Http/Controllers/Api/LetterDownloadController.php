@@ -38,4 +38,16 @@ class LetterDownloadController extends Controller
             $request->query('template', 'wet')
         );
     }
+
+    public function supportingDocument(
+        Request $request,
+        Letter $letter
+    ) {
+        $this->authorize('view', $letter);
+
+        return $this->pdfService->supportingDocument(
+            $letter,
+            $request->boolean('download')
+        );
+    }
 }
