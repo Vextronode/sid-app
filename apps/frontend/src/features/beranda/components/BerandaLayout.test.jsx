@@ -49,7 +49,8 @@ describe('BerandaLayout', () => {
       'href',
       '/loginpage',
     )
-    expect(footer.getAllByRole('link')).toHaveLength(1)
+    // "Masuk petugas" dan logo Widyatama.
+    expect(footer.getAllByRole('link')).toHaveLength(2)
     expect(footer.queryByText(/privasi|aksesibilitas|PPID/i)).toBeNull()
   })
 
@@ -79,4 +80,16 @@ describe('BerandaLayout', () => {
       for (const img of logos) expect(img).toHaveAttribute('loading', 'lazy')
     },
   )
+
+  it('opens the Widyatama website in a new tab from its logo only', () => {
+    renderLayout(false)
+    const partners = within(screen.getByText('Didukung oleh').parentElement)
+
+    const links = partners.getAllByRole('link')
+    expect(links).toHaveLength(1)
+    expect(links[0]).toHaveAccessibleName('Universitas Widyatama (tab baru)')
+    expect(links[0]).toHaveAttribute('href', 'https://www.widyatama.ac.id/')
+    expect(links[0]).toHaveAttribute('target', '_blank')
+    expect(links[0].getAttribute('rel')).toMatch(/\bnoopener\b/)
+  })
 })

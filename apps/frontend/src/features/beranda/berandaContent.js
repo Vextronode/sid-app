@@ -11,8 +11,9 @@ const STATIC = {
   header: {
     // Nama dari village.name bila tersedia; ini cadangannya.
     fallbackName: 'Desa Cibenda',
-    // Placeholder lambang sampai lambang desa tersedia.
-    monogram: 'CB',
+    // Lambang di samping nama desa, pengganti monogram "CB" (permintaan pemilik,
+    // 11 Okt 2026). Dekoratif: nama desa sudah menjadi nama link.
+    logoSrc: '/assets/image/lambang-kabupaten-pangandaran.webp',
     nav: {
       berita: 'Berita',
       profil: 'Profil Desa',
@@ -156,7 +157,10 @@ const STATIC = {
 
   contact: {
     title: 'Butuh bantuan?',
-    phoneLabel: 'Telepon / WhatsApp',
+    // Judul kartu, juga awalan nama aksesibel link: "Telepon (0265) 2640613".
+    phoneLabel: 'Telepon',
+    // Nomor telepon kantor (permintaan pemilik, 11 Okt 2026).
+    phone: '(0265) 2640613',
     hoursLabel: 'Jam layanan kantor',
     // Teks yang sama dengan FooterDesa (FooterDesa sendiri tidak diubah).
     hours: 'Senin – Jumat, 08.00 – 16.00 WIB',
@@ -172,6 +176,8 @@ const STATIC = {
     siteLabel: 'Situs resmi',
     updatedPrefix: 'Terakhir diperbarui',
     supportedBy: 'Didukung oleh',
+    // Teks pembaca layar untuk logo mitra yang membuka tab baru.
+    newTabHint: '(tab baru)',
   },
 
   // Footer: domain resmi dan tanggal pembaruan. Sudah asli dan final, jadi
@@ -190,6 +196,8 @@ const STATIC = {
       id: 'widyatama',
       name: 'Universitas Widyatama',
       src: '/assets/image/logo-widyatama.webp',
+      // Opsional: logo menjadi link ke situs mitra di tab baru.
+      url: 'https://www.widyatama.ac.id/',
     },
     {
       id: 'pangandaran',

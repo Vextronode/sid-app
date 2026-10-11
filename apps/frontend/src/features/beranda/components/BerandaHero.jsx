@@ -23,11 +23,11 @@ export function BerandaHero({ content }) {
         <h1 className="bd-hero-title bd-rise-2">{hero.title}</h1>
         <p className="bd-hero-lead bd-rise-3">{hero.lead}</p>
         <div className="bd-hero-actions bd-rise-3">
-          <Link to={ajukanHref} className="bd-button bd-button--primary">
+          <Link to={ajukanHref} className="bd-button bd-button--primary bd-lift">
             {hero.primaryCta}
             <ArrowRight size={20} strokeWidth={2.2} aria-hidden="true" />
           </Link>
-          <Link to={statusHref} className="bd-button bd-button--light">
+          <Link to={statusHref} className="bd-button bd-button--light bd-lift">
             {hero.secondaryCta}
           </Link>
         </div>

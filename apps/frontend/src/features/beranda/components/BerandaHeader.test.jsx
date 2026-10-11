@@ -59,6 +59,16 @@ describe('BerandaHeader', () => {
       expect(brand).not.toHaveTextContent('Kec.')
     })
 
+    it('shows the decorative Pangandaran emblem instead of the "CB" monogram', () => {
+      const { container } = renderHeader()
+
+      const mark = container.querySelector('.bd-brand-mark')
+      expect(mark.tagName).toBe('IMG')
+      expect(mark).toHaveAttribute('src', '/assets/image/lambang-kabupaten-pangandaran.webp')
+      expect(mark).toHaveAttribute('alt', '')
+      expect(screen.queryByText('CB')).toBeNull()
+    })
+
     it('uses the route constants for the desktop nav links', () => {
       const { desktopNav } = renderHeader()
 

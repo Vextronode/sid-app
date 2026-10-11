@@ -24,9 +24,7 @@ export function BerandaHeader({ content }) {
     <header className="bd-header">
       <div className="bd-container bd-header-inner">
         <Link to={HAL_BERANDA} className="bd-brand">
-          <span className="bd-brand-mark" aria-hidden="true">
-            {header.monogram}
-          </span>
+          <img className="bd-brand-mark" src={header.logoSrc} alt="" decoding="async" />
           <span className="bd-brand-text">
             <span className="bd-brand-name">{villageName}</span>
             {region && <span className="bd-brand-region">{region}</span>}

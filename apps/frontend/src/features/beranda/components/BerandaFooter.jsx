@@ -38,11 +38,28 @@ export function BerandaFooter({ content }) {
           <div className="bd-footer-partners">
             <span className="bd-footer-meta bd-footer-meta--small">{footer.supportedBy}</span>
             <ul className="bd-partner-list">
-              {partners.map((partner) => (
-                <li key={partner.id} className={`bd-partner-logo bd-partner-logo--${partner.id}`}>
+              {partners.map((partner) => {
+                const logo = (
                   <img src={partner.src} alt={partner.name} loading="lazy" decoding="async" />
-                </li>
-              ))}
+                )
+
+                return (
+                  <li key={partner.id} className={`bd-partner-logo bd-partner-logo--${partner.id}`}>
+                    {partner.url ? (
+                      <a
+                        href={partner.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bd-partner-link"
+                      >
+                        {logo} <span className="bd-visually-hidden">{footer.newTabHint}</span>
+                      </a>
+                    ) : (
+                      logo
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </div>
         )}

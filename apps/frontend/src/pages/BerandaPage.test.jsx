@@ -261,6 +261,13 @@ describe('BerandaPage hero', () => {
     )
   })
 
+  it('gives both hero buttons the same lift effect as the service cards', () => {
+    renderPage()
+
+    expect(screen.getByRole('link', { name: 'Ajukan Surat' })).toHaveClass('bd-lift')
+    expect(screen.getByRole('link', { name: 'Cek Status Surat' })).toHaveClass('bd-lift')
+  })
+
   it('uses the hero photo from the content config and hides an empty credit (K2)', () => {
     const { container } = renderPage()
 
@@ -479,12 +486,20 @@ describe('BerandaPage contact section', () => {
     expect(screen.queryByRole('link', { name: 'WhatsApp' })).toBeNull()
   })
 
-  it('makes the whole phone card a tel: link from village.phone (A31)', () => {
+  // Nomor kantor dari konfigurasi, tanpa WhatsApp (permintaan pemilik, 11 Okt 2026).
+  it('shows only the office phone as a tel: link in the phone card (A31)', () => {
     renderPage({ isDev: false })
 
-    const link = within(section()).getByRole('link', { name: /Telepon \/ WhatsApp/ })
-    expect(link).toHaveAttribute('href', 'tel:0265639123')
-    expect(link).toHaveTextContent('0265-639 123')
+    const card = within(section()).getByText('Telepon').closest('.bd-contact-card')
+    expect(card.tagName).toBe('DIV')
+    const links = within(card).getAllByRole('link')
+    expect(links).toHaveLength(1)
+    expect(links[0]).toHaveAccessibleName('Telepon (0265) 2640613')
+    expect(links[0]).toHaveAttribute('href', 'tel:02652640613')
+    expect(links[0]).toHaveTextContent('(0265) 2640613')
+
+    expect(within(section()).queryByText(/WhatsApp/)).toBeNull()
+    expect(screen.queryByText('0265-639 123')).toBeNull()
   })
 
   it('keeps the service hours card unclickable', () => {
@@ -512,15 +527,17 @@ describe('BerandaPage contact section', () => {
     expect(office.closest('a')).toBeNull()
     expect(within(section()).getByText('Jl. Raya Cibenda No. 1')).toBeInTheDocument()
     expect(screen.queryByText(/Buka di peta/)).toBeNull()
+    // Hanya nomor telepon.
     expect(within(section()).getAllByRole('link')).toHaveLength(1)
   })
 
-  it('shows the phone card without a link while village data is missing', () => {
+  it('keeps the phone link while village data is missing', () => {
     usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
 
     renderPage({ isDev: false })
 
-    expect(within(section()).getByText('Telepon / WhatsApp').closest('a')).toBeNull()
-    expect(within(section()).queryAllByRole('link')).toHaveLength(0)
+    expect(within(section()).getByText('Telepon').closest('a')).toBeNull()
+    expect(within(section()).getByText('Kantor Desa Cibenda').closest('a')).toBeNull()
+    expect(within(section()).getAllByRole('link')).toHaveLength(1)
   })
 })

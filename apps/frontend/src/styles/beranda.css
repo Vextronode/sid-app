@@ -146,7 +146,8 @@
   --bd-contact-card-min: 260px;
 
   /* Logo mitra di footer. */
-  --bd-partner-height: 40px;
+  /* 44px: logo yang menjadi link (Widyatama) memenuhi target sentuh minimal. */
+  --bd-partner-height: 44px;
   --bd-partner-logo-height: 26px;
 
   /* ===== Motion ===== */
@@ -258,6 +259,12 @@
   box-shadow: var(--bd-shadow-lift);
 }
 
+/* Tombol hero juga terangkat saat ditekan, agar terasa di layar sentuh. */
+.bd-button.bd-lift:active {
+  transform: translateY(var(--bd-lift-distance));
+  box-shadow: var(--bd-shadow-lift);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bd-rise,
   .bd-rise-2,
@@ -269,7 +276,8 @@
     transition: none;
   }
 
-  .bd-lift:hover {
+  .bd-lift:hover,
+  .bd-button.bd-lift:active {
     transform: none;
   }
 }
@@ -327,18 +335,13 @@
   text-decoration: none;
 }
 
+/* Lambang: ukuran sama dengan monogram "CB" sebelumnya (44×44), utuh tanpa terpotong. */
 .bd-brand-mark {
   flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   width: var(--bd-tap-min);
   height: var(--bd-tap-min);
-  border-radius: var(--bd-radius-icon);
-  background: var(--bd-color-primary);
-  color: var(--bd-color-on-primary);
-  font-size: var(--bd-text-meta-lg);
-  font-weight: var(--bd-font-extrabold);
+  object-fit: contain;
 }
 
 .bd-brand-text {
@@ -674,6 +677,27 @@
 .bd-partner-logo--widyatama img {
   height: 40px;
   margin: -9px -14px -5px;
+}
+
+/* Logo yang menjadi link (tab baru) mengisi seluruh ubin, jadi target 44px.
+   Ubin memotong isinya (overflow), sehingga cincin fokus digambar di ubin. */
+.bd-root .bd-partner-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  margin: -7px calc(-1 * var(--bd-space-12));
+  padding: 7px var(--bd-space-12);
+}
+
+.bd-root .bd-partner-link:focus-visible {
+  outline: none;
+}
+
+.bd-partner-logo:has(.bd-partner-link:focus-visible) {
+  outline: var(--bd-focus-ring);
+  outline-color: var(--bd-color-on-primary);
+  outline-offset: var(--bd-focus-offset);
 }
 
 /* ===== Section beranda ===== */
@@ -1520,6 +1544,23 @@
 .bd-contact-detail {
   color: var(--bd-color-muted);
   overflow-wrap: anywhere;
+}
+
+/* Nomor telepon: bergaris bawah sebagai penanda link, target ≥44px. */
+.bd-root .bd-contact-line {
+  display: flex;
+  align-items: center;
+  min-height: var(--bd-tap-min);
+  max-width: 100%;
+  color: var(--bd-color-ink);
+  font-weight: var(--bd-font-semibold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.bd-root .bd-contact-line:hover {
+  color: var(--bd-color-primary);
 }
 
 /* "Buka di peta": bergaris bawah sebagai penanda link (dev saja). */
