@@ -27,27 +27,8 @@ class StoreLetterRequest extends FormRequest
                 'exists:letter_types,id',
             ],
 
-            'purpose' => [
-                'required',
-                'string',
-                'max:500',
-            ],
-
-            'notes' => [
-                'nullable',
-                'string',
-            ],
-
-            // Lampiran umum (dokumen pendukung yang diunggah warga).
-            'attachments' => [
-                'nullable',
-                'array',
-                'max:5',
-            ],
-
-            'attachments.*' => self::FILE_RULES,
-
-            // Berkas untuk isian bertipe file pada definisi tipe surat.
+            // Berkas hanya untuk isian bertipe file pada definisi tipe surat
+            // (mis. foto usaha); tidak ada lampiran bebas.
             'files' => [
                 'nullable',
                 'array',
@@ -85,7 +66,7 @@ class StoreLetterRequest extends FormRequest
         foreach ($schema->fileFields() as $field) {
             $rules["files.{$field['name']}"] = [
                 ($field['required'] ?? false) ? 'required' : 'nullable',
-                ...self::FILE_RULES,
+                ...LetterFormSchema::fileRules($field),
             ];
         }
 

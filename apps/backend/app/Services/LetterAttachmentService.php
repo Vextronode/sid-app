@@ -44,18 +44,12 @@ class LetterAttachmentService
     }
 
     /**
-     * Menyimpan lampiran umum dan berkas isian bertipe file dari
-     * pengajuan surat.
+     * Menyimpan berkas isian bertipe file dari pengajuan surat.
      *
-     * @param  array<int, UploadedFile>  $attachments
      * @param  array<string, UploadedFile>  $fieldFiles
      */
-    public function storeSubmission(Letter $letter, User $uploader, array $attachments, array $fieldFiles): void
+    public function storeSubmission(Letter $letter, User $uploader, array $fieldFiles): void
     {
-        foreach ($attachments as $file) {
-            $this->store($letter, $file, $uploader);
-        }
-
         foreach ($fieldFiles as $field => $file) {
             $this->store($letter, $file, $uploader, LetterAttachment::KIND_FIELD, (string) $field);
         }

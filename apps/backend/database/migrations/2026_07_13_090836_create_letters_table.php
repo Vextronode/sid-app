@@ -23,7 +23,7 @@ return new class extends Migration
             $table->text('applicant_nik');
             $table->string('applicant_nik_hash', 64)->index();
             $table->text('applicant_address')->nullable();
-            $table->text('purpose');
+            $table->text('purpose')->nullable();
             $table->json('payload')->nullable();
             $table->text('notes')->nullable();
             $table->enum('status', [

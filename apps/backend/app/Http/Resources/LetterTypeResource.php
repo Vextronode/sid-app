@@ -20,7 +20,6 @@ class LetterTypeResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'template' => $this->template,
-            'verification_type' => $this->verification_type,
             'requirements_info' => $this->requirement_info,
             'flow_id' => $this->flow_id,
             'flow' => $this->when(

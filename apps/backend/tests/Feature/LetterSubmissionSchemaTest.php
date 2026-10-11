@@ -119,6 +119,7 @@ class LetterSubmissionSchemaTest extends TestCase
                 'letter_type_id' => $letterType->id,
                 'purpose' => 'Keperluan',
                 'payload' => ['nama_almarhum' => 'Fulan', 'tanggal_meninggal' => '2026-10-01'],
+                // Lampiran bebas tidak lagi diterima; hanya berkas isian.
                 'attachments' => [UploadedFile::fake()->create('ktp.pdf', 100, 'application/pdf')],
                 'files' => ['surat_dokter' => UploadedFile::fake()->image('dokter.jpg')],
             ], ['Accept' => 'application/json'])
@@ -126,15 +127,15 @@ class LetterSubmissionSchemaTest extends TestCase
             ->json('data.id');
 
         $attachments = LetterAttachment::query()->where('letter_id', $letterId)->orderBy('id')->get();
-        $this->assertCount(2, $attachments);
-        $this->assertSame(['attachment', 'field'], $attachments->pluck('kind')->all());
-        $this->assertSame('surat_dokter', $attachments[1]->field);
+        $this->assertCount(1, $attachments);
+        $this->assertSame('field', $attachments[0]->kind);
+        $this->assertSame('surat_dokter', $attachments[0]->field);
         Storage::disk('private_uploads')->assertExists($attachments[0]->path);
 
         $detail = $this->actingAs($this->applicant['user'])
             ->getJson("/api/letters/{$letterId}")
             ->assertOk()
-            ->assertJsonCount(2, 'data.attachments')
+            ->assertJsonCount(1, 'data.attachments')
             ->assertJsonMissingPath('data.attachments.0.path');
         $url = $detail->json('data.attachments.0.url');
 
@@ -152,7 +153,7 @@ class LetterSubmissionSchemaTest extends TestCase
                 'letter_type_id' => $letterType->id,
                 'purpose' => 'Keperluan',
                 'payload' => ['nama_almarhum' => 'Fulan', 'tanggal_meninggal' => '2026-10-01'],
-                'attachments' => [UploadedFile::fake()->create('ktp.pdf', 100, 'application/pdf')],
+                'files' => ['surat_dokter' => UploadedFile::fake()->create('dokter.pdf', 100, 'application/pdf')],
             ], ['Accept' => 'application/json'])
             ->assertCreated()
             ->json('data.id');
@@ -174,11 +175,12 @@ class LetterSubmissionSchemaTest extends TestCase
                 'letter_type_id' => $letterType->id,
                 'purpose' => 'Keperluan',
                 'payload' => ['nama_almarhum' => 'Fulan', 'tanggal_meninggal' => '2026-10-01'],
-                'attachments' => [UploadedFile::fake()->create('ktp.pdf', 100, 'application/pdf')],
+                'files' => ['surat_dokter' => UploadedFile::fake()->create('dokter.pdf', 100, 'application/pdf')],
             ], ['Accept' => 'application/json'])
             ->assertCreated()
             ->json('data.id');
         $path = LetterAttachment::query()->where('letter_id', $letterId)->value('path');
+        Storage::disk('private_uploads')->assertExists($path);
 
         $this->actingAs($this->applicant['user'])
             ->deleteJson("/api/letters/{$letterId}")
