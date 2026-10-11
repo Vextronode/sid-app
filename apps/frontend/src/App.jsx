@@ -1,11 +1,20 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useSearchParams,
+} from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/features/auth/contexts/AuthContext'
+import { buildLoginPath, resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
 
 import LoginPage from '@/pages/LoginPage'
 import { BerandaPage } from '@/pages/BerandaPage'
 import { DetailBeritaPage } from '@/pages/DetailBeritaPage'
 import { BeritaPage } from '@/pages/BeritaPage'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { BerandaLayout } from '@/features/beranda/components/BerandaLayout'
 import { ProfilDesaPage } from '@/pages/ProfilDesaPage'
 import { PengajuanSuratPage } from '@/pages/PengajuanSuratPage'
 import { DaftarSurat } from '@/pages/DaftarSurat'
@@ -75,8 +84,10 @@ const OFFICIAL_ROLES = [
 
 // Route khusus untuk user yang belum login.
 // Jika user sudah login, arahkan ke halaman sesuai role.
-const GuestRoute = ({ children }) => {
+// ?redirect= yang diizinkan untuk role didahulukan (K4).
+export const GuestRoute = ({ children }) => {
   const { user, isLoading } = useAuth()
+  const [searchParams] = useSearchParams()
 
   if (isLoading) {
     return <div>Loading...</div>
@@ -85,6 +96,11 @@ const GuestRoute = ({ children }) => {
   if (user) {
     if (user.must_change_password) {
       return <Navigate to="/ganti-password" replace />
+    }
+
+    const redirectTo = resolveLoginRedirect(searchParams.get('redirect'), user.role)
+    if (redirectTo) {
+      return <Navigate to={redirectTo} replace />
     }
 
     switch (user.role) {
@@ -112,15 +128,17 @@ const GuestRoute = ({ children }) => {
 }
 
 // Route yang hanya bisa diakses oleh user yang sudah login.
-const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+// Belum login -> ke halaman login sambil membawa tujuan (?redirect=, K4).
+export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, isLoading } = useAuth()
+  const location = useLocation()
 
   if (isLoading) {
     return <div>Loading...</div>
   }
 
   if (!user) {
-    return <Navigate to="/loginpage" replace />
+    return <Navigate to={buildLoginPath(location.pathname + location.search)} replace />
   }
 
   // Backend menolak semua endpoint lain sampai kata sandi sementara diganti.
@@ -144,9 +162,9 @@ export default function App() {
           <Route
             path="/"
             element={
-              <MainLayout>
+              <BerandaLayout>
                 <BerandaPage />
-              </MainLayout>
+              </BerandaLayout>
             }
           />
           <Route

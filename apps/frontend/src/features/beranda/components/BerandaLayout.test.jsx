@@ -1,0 +1,95 @@
+import { render, screen, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
+import { BerandaLayout } from './BerandaLayout'
+
+vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
+  usePublicVillageInfo: vi.fn(),
+}))
+
+const renderLayout = (isDev) =>
+  render(
+    <MemoryRouter>
+      <BerandaLayout isDev={isDev}>
+        <p>Isi beranda</p>
+      </BerandaLayout>
+    </MemoryRouter>,
+  )
+
+describe('BerandaLayout', () => {
+  beforeEach(() => {
+    usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
+  })
+
+  it('wraps the page in .bd-root with the new header, main and footer', () => {
+    const { container } = renderLayout(true)
+
+    const root = container.firstChild
+    expect(root).toHaveClass('bd-root')
+    expect(within(screen.getByRole('main')).getByText('Isi beranda')).toBeInTheDocument()
+    expect(root.querySelector('header.bd-header')).not.toBeNull()
+    expect(root.querySelector('footer.bd-footer')).not.toBeNull()
+  })
+
+  it('does not render the MobileBottomNav (K5)', () => {
+    const { container } = renderLayout(true)
+
+    // MobileBottomNav dirender sebagai <nav> fixed di bawah dengan link "Beranda".
+    expect(screen.queryByRole('link', { name: /^beranda$/i })).toBeNull()
+    expect(container.querySelectorAll('nav')).toHaveLength(3) // header, menu ponsel, footer
+  })
+
+  it('links the footer staff login to the login page and hides pages that do not exist (K3)', () => {
+    renderLayout(true)
+    const footer = within(screen.getByRole('contentinfo'))
+
+    expect(footer.getByRole('link', { name: 'Masuk petugas' })).toHaveAttribute(
+      'href',
+      '/loginpage',
+    )
+    // "Masuk petugas" dan logo Widyatama.
+    expect(footer.getAllByRole('link')).toHaveLength(2)
+    expect(footer.queryByText(/privasi|aksesibilitas|PPID/i)).toBeNull()
+  })
+
+  // Domain dan tanggal sudah asli, jadi tampil juga di production (keputusan pemilik, 11 Okt 2026).
+  it.each([true, false])('shows the official domain and update date (isDev=%s)', (isDev) => {
+    renderLayout(isDev)
+    const footer = within(screen.getByRole('contentinfo'))
+
+    expect(footer.getByText('Pemerintah Desa Cibenda')).toBeInTheDocument()
+    expect(footer.getByText('https://desacibenda.id/ · Situs resmi')).toBeInTheDocument()
+    expect(footer.getByText('Terakhir diperbarui 10 Oktober 2026')).toBeInTheDocument()
+  })
+
+  it.each([true, false])(
+    'shows the three partner logos left to right, lazily loaded (isDev=%s)',
+    (isDev) => {
+      renderLayout(isDev)
+      const footer = within(screen.getByRole('contentinfo'))
+
+      expect(footer.getByText('Didukung oleh')).toBeInTheDocument()
+      const logos = footer.getAllByRole('img')
+      expect(logos.map((img) => img.getAttribute('alt'))).toEqual([
+        'Universitas Widyatama',
+        'Lambang Kabupaten Pangandaran',
+        'Diktisaintek Berdampak',
+      ])
+      for (const img of logos) expect(img).toHaveAttribute('loading', 'lazy')
+    },
+  )
+
+  it('opens the Widyatama website in a new tab from its logo only', () => {
+    renderLayout(false)
+    const partners = within(screen.getByText('Didukung oleh').parentElement)
+
+    const links = partners.getAllByRole('link')
+    expect(links).toHaveLength(1)
+    expect(links[0]).toHaveAccessibleName('Universitas Widyatama (tab baru)')
+    expect(links[0]).toHaveAttribute('href', 'https://www.widyatama.ac.id/')
+    expect(links[0]).toHaveAttribute('target', '_blank')
+    expect(links[0].getAttribute('rel')).toMatch(/\bnoopener\b/)
+  })
+})
