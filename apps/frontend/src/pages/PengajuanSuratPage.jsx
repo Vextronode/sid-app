@@ -8,68 +8,64 @@
 //   form baru muncul setelah user pilih jenis surat.
 // ==========================================
 
-import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { useAuth } from "@/features/auth/contexts/AuthContext";
-import { DynamicSuratForm } from "@/features/surat/components/DynamicSuratForm";
-import { useLetterTypes } from "@/features/surat/hooks/useLetterTypes";
-import { getLetterTypeFormConfig } from "@/features/surat/utils/letterTypeConfig";
-import { WargaLayout } from "@/components/layout/WargaLayout";
+import { useParams, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { DynamicSuratForm } from '@/features/surat/components/DynamicSuratForm'
+import { useLetterTypes } from '@/features/surat/hooks/useLetterTypes'
+import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig'
+import { WargaLayout } from '@/components/layout/WargaLayout'
 
 export function PengajuanSuratPage() {
-  const { kode } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { letterTypes, loading, error } = useLetterTypes();
+  const { kode } = useParams()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { letterTypes, loading, error } = useLetterTypes()
 
   // Kalau nggak ada kode di URL, mulai kosong (user harus pilih dulu)
-  const [selectedCode, setSelectedCode] = useState(
-    kode?.toUpperCase() ?? ""
-  );
+  const [selectedCode, setSelectedCode] = useState(kode?.toUpperCase() ?? '')
 
-  const selectedLetterType = letterTypes.find((type) => type.code === selectedCode);
-  const currentConfig = getLetterTypeFormConfig(selectedLetterType);
-  const isLocked = !!kode; // kalau dari URL langsung, dropdown dikunci
+  const selectedLetterType = letterTypes.find((type) => type.code === selectedCode)
+  const currentConfig = getLetterTypeFormConfig(selectedLetterType)
+  const isLocked = !!kode // kalau dari URL langsung, dropdown dikunci
 
-  const handleCancel = () => navigate("/jenis-surat");
+  const handleCancel = () => navigate('/jenis-surat')
 
   const handleSubmit = (data) => {
     const bulan = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "Mei",
-      "Jun",
-      "Jul",
-      "Ags",
-      "Sep",
-      "Okt",
-      "Nov",
-      "Des",
-    ];
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Ags',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ]
 
-    const tgl = new Date();
+    const tgl = new Date()
 
-    const formatTanggal = `${tgl.getDate()} ${
-      bulan[tgl.getMonth()]
-    } ${tgl.getFullYear()}`;
+    const formatTanggal = `${tgl.getDate()} ${bulan[tgl.getMonth()]} ${tgl.getFullYear()}`
 
     const suratBaru = {
       id: Date.now(),
-      noSurat: "-",
-      pemohon: user?.name || "Warga Desa",
-      jenis: currentConfig.code || "SKD",
+      noSurat: '-',
+      pemohon: user?.name || 'Warga Desa',
+      jenis: currentConfig.code || 'SKD',
       tanggal: formatTanggal,
-      status: "pending",
+      status: 'pending',
       nik: data.nik || null,
       alamat: data.alamat || null,
       keperluan: data.keperluan || null,
       processed_at: data.processed_at || null,
-    };
+    }
 
-    navigate("/daftar-surat");
-  };
+    navigate('/daftar-surat')
+  }
 
   return (
     <WargaLayout>
@@ -79,13 +75,10 @@ export function PengajuanSuratPage() {
               HEADER
               ========================================== */}
           <div className="sid-page-header">
-            <h1 className="sid-page-title">
-              Form Pengajuan Surat
-            </h1>
+            <h1 className="sid-page-title">Form Pengajuan Surat</h1>
 
             <p className="sid-page-description">
-              Lengkapi detail di bawah ini untuk mengajukan
-              permohonan surat administrasi.
+              Lengkapi detail di bawah ini untuk mengajukan permohonan surat administrasi.
             </p>
           </div>
 
@@ -96,9 +89,7 @@ export function PengajuanSuratPage() {
             <div className="sid-step-title">
               <span className="sid-step-number">1</span>
 
-              <span>
-                LANGKAH 1 – PILIH JENIS SURAT
-              </span>
+              <span>LANGKAH 1 – PILIH JENIS SURAT</span>
             </div>
 
             <div className="sid-form-group">
@@ -112,9 +103,7 @@ export function PengajuanSuratPage() {
                 onChange={(e) => setSelectedCode(e.target.value)}
                 className="sid-input"
               >
-                <option value="">
-                  Pilih jenis surat...
-                </option>
+                <option value="">Pilih jenis surat...</option>
 
                 {letterTypes.map((type) => (
                   <option key={type.id} value={type.code}>
@@ -130,16 +119,11 @@ export function PengajuanSuratPage() {
               <p role="alert">Formulir untuk jenis surat ini belum tersedia.</p>
             )}
 
-            {currentConfig && (
+            {currentConfig && selectedLetterType.requirements_info && (
               <div className="sid-info">
                 <span className="sid-info-dot" />
 
-                <span>
-                  Jenis ini: verifikasi <strong>{selectedLetterType.verification_type}</strong>
-                  {selectedLetterType.requirements_info
-                    ? ` — ${selectedLetterType.requirements_info}`
-                    : ''}
-                </span>
+                <span>Persyaratan: {selectedLetterType.requirements_info}</span>
               </div>
             )}
           </div>
@@ -162,5 +146,5 @@ export function PengajuanSuratPage() {
         </main>
       </div>
     </WargaLayout>
-  );
+  )
 }

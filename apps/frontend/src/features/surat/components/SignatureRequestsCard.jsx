@@ -114,7 +114,8 @@ export function SignatureRequestsCard() {
                 {request.applicant_name} meminta tanda tangan Anda sebagai {request.slot_label}
               </p>
               <p className="sid-modal-note-text">
-                {request.letter_type ?? 'Surat'} — {request.purpose ?? '-'}
+                {request.letter_type ?? 'Surat'}
+                {request.purpose ? ` — ${request.purpose}` : ''}
               </p>
               {request.expires_at && (
                 <p className="sid-upload-description">

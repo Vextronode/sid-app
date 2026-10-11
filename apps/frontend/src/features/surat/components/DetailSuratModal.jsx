@@ -28,10 +28,7 @@ import {
   LETTER_TRACKING_STEPS,
 } from '../utils/letterDetails'
 
-import * as pdfjsLib from 'pdfjs-dist'
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
+import { loadPdfjs } from '@/lib/pdfjs'
 
 // ==========================================
 // FIELD MAP
@@ -227,7 +224,8 @@ function SuratPreview({ surat }) {
         setLoading(true)
         setLoadError(false)
 
-        blobUrl = await previewSuratPDF(surat)
+        const [previewUrl, pdfjsLib] = await Promise.all([previewSuratPDF(surat), loadPdfjs()])
+        blobUrl = previewUrl
 
         if (cancelled) {
           if (blobUrl) {
@@ -449,10 +447,7 @@ function DetailInfo({ surat }) {
       label: 'Jenis Surat',
       value: FIELD_MAP.jenisSurat(surat),
     },
-    {
-      label: 'Keperluan',
-      value: FIELD_MAP.keperluan(surat),
-    },
+    ...(surat?.purpose ? [{ label: 'Keperluan', value: FIELD_MAP.keperluan(surat) }] : []),
     {
       label: 'Diajukan',
       value: FIELD_MAP.diajukan(surat),

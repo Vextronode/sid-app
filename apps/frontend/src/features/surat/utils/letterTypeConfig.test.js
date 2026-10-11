@@ -7,7 +7,6 @@ const letterType = {
   id: 12,
   code: 'A07',
   name: 'Surat Keterangan Penguburan',
-  verification_type: 'manual',
   requirements_info: 'KTP, KK',
   produces_letter: true,
   data_action: 'none',
@@ -31,7 +30,6 @@ describe('getLetterTypeFormConfig', () => {
       id: 12,
       code: 'A07',
       title: 'Surat Keterangan Penguburan',
-      type: 'manual',
       requirementsInfo: 'KTP, KK',
       producesLetter: true,
       dataAction: 'none',
@@ -41,9 +39,6 @@ describe('getLetterTypeFormConfig', () => {
       'tanggal_meninggal',
       'nik_pelapor',
       'surat_dokter',
-      'keperluan',
-      'dokumen',
-      'catatan',
     ])
     expect(config.signatureSlots).toEqual([
       { key: 'pemohon', label: 'Pemohon', signer: 'applicant' },
@@ -51,7 +46,7 @@ describe('getLetterTypeFormConfig', () => {
     ])
   })
 
-  it('still offers the common fields for a type without its own fields', () => {
+  it('has no fields at all for a type whose physical template has no blanks', () => {
     const config = getLetterTypeFormConfig({
       id: 20,
       code: 'A04',
@@ -59,8 +54,33 @@ describe('getLetterTypeFormConfig', () => {
       form_fields: [],
     })
 
-    expect(config.fields.map((field) => field.name)).toEqual(['keperluan', 'dokumen', 'catatan'])
+    expect(config.fields).toEqual([])
     expect(config.signatureSlots).toEqual([])
+  })
+
+  it('limits a file field to images when the definition says so', () => {
+    const config = getLetterTypeFormConfig({
+      id: 1,
+      code: 'A01',
+      name: 'Usaha',
+      form_fields: [
+        {
+          name: 'foto_usaha',
+          label: 'Foto Usaha Terkini',
+          type: 'file',
+          required: true,
+          accept: 'image',
+        },
+        { name: 'surat_dokter', label: 'Surat Dokter', type: 'file', required: false },
+      ],
+    })
+
+    expect(config.fields[0]).toMatchObject({
+      accept: '.jpg,.jpeg,.png',
+      imageOnly: true,
+      required: true,
+    })
+    expect(config.fields[1]).toMatchObject({ accept: '.pdf,.jpg,.jpeg,.png', imageOnly: false })
   })
 
   it('returns null when no letter type is selected', () => {
@@ -75,8 +95,6 @@ describe('getSuratSchema', () => {
     nama_almarhum: 'Fulan',
     tanggal_meninggal: '2026-10-01',
     nik_pelapor: '',
-    keperluan: 'Pengurusan akta',
-    catatan: '',
     [names.mode]: 'digital',
     [names.nik]: '3207010101900001',
   }
@@ -126,6 +144,7 @@ describe('buildLetterFormData', () => {
       tanggal_meninggal: '2026-10-01',
       nik_pelapor: '',
       surat_dokter: [doctorLetter],
+      // Nilai di luar definisi (sisa form lama) tidak ikut terkirim.
       keperluan: 'Pengurusan akta',
       catatan: 'Segera',
       dokumen: [attachment],
@@ -134,13 +153,15 @@ describe('buildLetterFormData', () => {
     })
 
     expect(formData.get('letter_type_id')).toBe('12')
-    expect(formData.get('purpose')).toBe('Pengurusan akta')
-    expect(formData.get('notes')).toBe('Segera')
+    // Keperluan dan catatan bukan lagi isian umum.
+    expect(formData.has('purpose')).toBe(false)
+    expect(formData.has('notes')).toBe(false)
     expect(formData.get('payload[nama_almarhum]')).toBe('Fulan')
     expect(formData.get('payload[tanggal_meninggal]')).toBe('2026-10-01')
     expect(formData.has('payload[nik_pelapor]')).toBe(false)
     expect(formData.has('payload[keperluan]')).toBe(false)
-    expect(formData.getAll('attachments[]')).toHaveLength(1)
+    // Tidak ada lagi lampiran bebas; hanya berkas isian jenis surat.
+    expect(formData.has('attachments[]')).toBe(false)
     expect(formData.get('files[surat_dokter]').name).toBe('dokter.jpg')
     expect(formData.get('signers[saksi][nik]')).toBe('3207010101900001')
     expect(formData.has('signers[pemohon][nik]')).toBe(false)

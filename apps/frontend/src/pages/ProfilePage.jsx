@@ -110,7 +110,7 @@ export default function ProfilePage() {
             <p className="sid-profile-field-label">NIK</p>
 
             <div className="sid-profile-field-value">
-              <span>{user?.citizen?.nik ?? '-'}</span>
+              <span>{user?.nik ?? user?.citizen?.nik_masked ?? '-'}</span>
 
               <CreditCard size={14} />
             </div>

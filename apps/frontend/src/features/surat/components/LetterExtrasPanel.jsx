@@ -167,6 +167,20 @@ export function LetterExtrasPanel({ letterId }) {
 
   const signatures = letter.signatures ?? []
   const attachments = letter.attachments ?? []
+  // Berkas isian ditampilkan dengan label isiannya (mis. "Foto Usaha Terkini").
+  const fieldLabels = Object.fromEntries(
+    (letter.letter_type?.form_fields ?? []).map((field) => [field.name, field.label]),
+  )
+  // Isian form pemohon, dengan label dari definisi jenis surat.
+  const formValues = (letter.letter_type?.form_fields ?? [])
+    .filter((field) => field.type !== 'file')
+    .map((field) => {
+      const raw = letter.payload?.[field.name]
+      const option = (field.options ?? []).find((item) => String(item.value) === String(raw))
+
+      return { name: field.name, label: field.label, value: option?.label ?? raw }
+    })
+    .filter((item) => item.value !== undefined && item.value !== null && item.value !== '')
   const isOwner = letter.submitted_by === user?.id
   const canRefill = isOwner && letter.awaiting_signatures
   const canFulfill = FULFILLMENT_ROLES.includes(user?.role) && letter.needs_fulfillment
@@ -199,6 +213,19 @@ export function LetterExtrasPanel({ letterId }) {
                 {canRefill && slot.signer_type === 'other' && slot.status !== 'signed' && (
                   <SignatureRefill letterId={letter.id} slot={slot} onDone={load} />
                 )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {formValues.length > 0 && (
+        <section className="sid-modal-note" aria-label="Isian surat">
+          <p className="sid-modal-note-label">Isian Surat</p>
+          <ul className="sid-modal-note-text">
+            {formValues.map((item) => (
+              <li key={item.name}>
+                <strong>{item.label}:</strong> {item.value}
               </li>
             ))}
           </ul>
@@ -244,7 +271,7 @@ export function LetterExtrasPanel({ letterId }) {
                   className="underline"
                   onClick={() => openFile(() => openProtectedFile(attachment.url))}
                 >
-                  {attachment.original_name}
+                  {fieldLabels[attachment.field] ?? attachment.original_name}
                 </button>
                 {attachment.kind === 'wet_signature' && ' (dokumen ber-tanda tangan basah)'}
               </li>
