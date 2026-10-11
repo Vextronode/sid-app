@@ -6,9 +6,10 @@
 // ==========================================
 
 import { useState } from 'react'
-import { Search, SquarePen, Eye, EyeOff, Eraser } from 'lucide-react'
+import { Search, SquarePen, Eye, EyeOff, Eraser, KeyRound } from 'lucide-react'
 
 import { useUserList } from '@/features/manajemen-user/hooks/useUserList'
+import { resetUserPassword } from '@/features/manajemen-user/api'
 import { resetUserSignature } from '@/features/surat/api/signatureApi'
 import { FooterOperator } from '../../components/layout/FooterOperator'
 
@@ -58,6 +59,40 @@ export default function ManajemenUserPage() {
         'Gagal mereset tanda tangan.'
 
       setSignatureNotice({ type: 'error', text })
+    }
+  }
+
+  // Reset kata sandi: backend membuat kata sandi sementara yang hanya
+  // ditampilkan sekali di sini untuk diserahkan langsung ke pengguna.
+  const [passwordReset, setPasswordReset] = useState(null)
+  const [copied, setCopied] = useState(false)
+
+  const handleResetPassword = async (user) => {
+    const confirmed = window.confirm(
+      `Reset kata sandi ${user.name}? Kata sandi lama tidak dapat dipakai lagi.`,
+    )
+
+    if (!confirmed) return
+
+    try {
+      const response = await resetUserPassword(user.id)
+
+      setCopied(false)
+      setPasswordReset({ user, password: response.data?.temporary_password ?? '' })
+    } catch (requestError) {
+      setSignatureNotice({
+        type: 'error',
+        text: requestError?.response?.data?.message || 'Gagal mereset kata sandi.',
+      })
+    }
+  }
+
+  const handleCopyPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(passwordReset.password)
+      setCopied(true)
+    } catch {
+      setCopied(false)
     }
   }
 
@@ -241,6 +276,19 @@ export default function ManajemenUserPage() {
                           >
                             <Eraser size={16} />
                           </button>
+
+                          {/* Backend menolak reset kata sandi sesama Petugas Desa. */}
+                          {user.role !== 'petugas_desa' && (
+                            <button
+                              type="button"
+                              onClick={() => handleResetPassword(user)}
+                              className="sid-operator-action edit"
+                              title="Reset kata sandi"
+                              aria-label={`Reset kata sandi ${user.name}`}
+                            >
+                              <KeyRound size={16} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -289,6 +337,44 @@ export default function ManajemenUserPage() {
       </div>
 
       <FooterOperator />
+
+      {passwordReset && (
+        <div className="sid-modal-overlay">
+          <div className="sid-modal" role="dialog" aria-labelledby="password-reset-heading">
+            <h2 id="password-reset-heading">Kata Sandi Sementara</h2>
+            <p>
+              Berikan kata sandi ini kepada <strong>{passwordReset.user.name}</strong> secara
+              langsung. Kata sandi hanya ditampilkan sekali, dan pengguna wajib menggantinya saat
+              masuk.
+            </p>
+            <label className="sid-form-group">
+              <span className="sid-form-label">Kata sandi sementara</span>
+              <input
+                className="sid-input"
+                readOnly
+                value={passwordReset.password}
+                onFocus={(event) => event.target.select()}
+              />
+            </label>
+            <div className="sid-modal-actions">
+              <button
+                type="button"
+                className="sid-button sid-button-outline"
+                onClick={handleCopyPassword}
+              >
+                {copied ? 'Tersalin' : 'Salin'}
+              </button>
+              <button
+                type="button"
+                className="sid-button sid-button-primary"
+                onClick={() => setPasswordReset(null)}
+              >
+                Selesai
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editingUser && (
         <div className="sid-modal-overlay">
