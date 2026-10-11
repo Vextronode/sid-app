@@ -8,11 +8,23 @@ use App\Models\Rt;
 use App\Models\User;
 use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class OfficialControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    // Foto dikirim multipart, jadi respons JSON diminta lewat header.
+    private const JSON = ['Accept' => 'application/json'];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('public');
+    }
 
     public function test_index_returns_all_officials_for_manager_role(): void
     {
@@ -65,11 +77,12 @@ class OfficialControllerTest extends TestCase
         $citizen = Citizen::factory()->create();
 
         $this->actingAs($manager)
-            ->postJson('/api/officials', [
+            ->post('/api/officials', [
                 'citizen_id' => $citizen->id,
                 'position' => 'petugas_desa',
                 'started_at' => now()->toDateString(),
-            ])
+                'photo' => UploadedFile::fake()->image('foto.jpg'),
+            ], self::JSON)
             ->assertCreated()
             ->assertJsonPath('data.position', 'petugas_desa');
 
@@ -100,7 +113,7 @@ class OfficialControllerTest extends TestCase
         $this->actingAs($manager)
             ->postJson('/api/officials', [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['citizen_id', 'position', 'started_at']);
+            ->assertJsonValidationErrors(['citizen_id', 'position', 'started_at', 'photo']);
     }
 
     public function test_store_rejects_duplicate_active_position_in_same_scope(): void
@@ -111,13 +124,14 @@ class OfficialControllerTest extends TestCase
         $citizen = Citizen::factory()->create();
 
         $this->actingAs($manager)
-            ->postJson('/api/officials', [
+            ->post('/api/officials', [
                 'citizen_id' => $citizen->id,
                 'position' => 'rt',
                 'rt_id' => $rt->id,
                 'started_at' => now()->toDateString(),
                 'is_active' => true,
-            ])
+                'photo' => UploadedFile::fake()->image('foto.jpg'),
+            ], self::JSON)
             ->assertStatus(409);
     }
 
@@ -186,11 +200,12 @@ class OfficialControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($manager)
-            ->postJson("/api/officials/{$old->id}/rotate", [
+            ->post("/api/officials/{$old->id}/rotate", [
                 'user_id' => $newUser->id,
                 'started_at' => now()->toDateString(),
                 'notes' => 'Pergantian rutin akhir periode',
-            ])
+                'photo' => UploadedFile::fake()->image('foto.jpg'),
+            ], self::JSON)
             ->assertOk()
             ->assertJsonPath('message', 'Rotasi jabatan berhasil diproses')
             ->assertJsonPath('data.old_official.id', $old->id)
@@ -238,7 +253,7 @@ class OfficialControllerTest extends TestCase
         $this->actingAs($manager)
             ->postJson("/api/officials/{$old->id}/rotate", [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['user_id', 'started_at']);
+            ->assertJsonValidationErrors(['user_id', 'started_at', 'photo']);
     }
 
     public function test_rotate_returns_404_for_unknown_official(): void

@@ -74,6 +74,18 @@ class OfficialRepository
             ->count();
     }
 
+    /**
+     * Apakah sebuah jabatan pernah dipakai di desa, termasuk riwayat
+     * yang sudah berakhir.
+     */
+    public function existsByPositionAndVillage(string $position, string $villageId): bool
+    {
+        return Official::query()
+            ->where('position', $position)
+            ->where('village_id', $villageId)
+            ->exists();
+    }
+
     public function allTermExpiredActive(string $villageId): Collection
     {
         return Official::query()

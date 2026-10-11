@@ -12,6 +12,7 @@ use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
 use App\Repositories\LetterRepository;
+use App\Repositories\OfficialPositionTypeRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,6 +27,7 @@ class OfficialService
         protected OfficialRepository $officialRepository,
         protected UserRepository $userRepository,
         protected LetterRepository $letterRepository,
+        protected OfficialPositionTypeRepository $positionTypes = new OfficialPositionTypeRepository,
     ) {}
 
     public function resolveRtForCitizen(Citizen $citizen)
@@ -194,13 +196,59 @@ class OfficialService
         $this->assertRelatedRecordsInVillage($data, $villageId);
         $position = OfficialPosition::tryFrom($data['position'] ?? '');
 
-        if ($position?->hasAccount() && ! empty($data['user_id'])) {
+        if ($position !== null && ! empty($data['user_id'])) {
             abort(422, 'Gunakan endpoint promote untuk menetapkan jabatan pada akun.');
         }
 
         $this->assertPositionAvailable($data);
 
-        return $this->officialRepository->create($data);
+        $photo = $data['photo'] ?? null;
+        unset($data['photo']);
+
+        if (! $photo instanceof UploadedFile) {
+            return $this->officialRepository->create($data);
+        }
+
+        $data['photo_img'] = $this->storePhoto($photo, $villageId);
+
+        try {
+            return $this->officialRepository->create($data);
+        } catch (\Throwable $exception) {
+            Storage::disk('public')->delete($data['photo_img']);
+            throw $exception;
+        }
+    }
+
+    /**
+     * Foto pejabat tampil di halaman publik Profil Desa, jadi disimpan
+     * di disk publik (berbeda dari tanda tangan dan stempel yang privat).
+     */
+    public function storePhoto(UploadedFile $photo, string $villageId): string
+    {
+        return $photo->store("official-photos/{$villageId}", 'public');
+    }
+
+    public function replacePhoto(Official $official, User $user, UploadedFile $photo): Official
+    {
+        if ($official->village_id !== $this->villageId($user)) {
+            abort(404, 'Data pejabat tidak ditemukan.');
+        }
+
+        $oldPath = $official->photo_img;
+        $newPath = $this->storePhoto($photo, $official->village_id);
+
+        try {
+            $official = $this->officialRepository->update($official, ['photo_img' => $newPath]);
+        } catch (\Throwable $exception) {
+            Storage::disk('public')->delete($newPath);
+            throw $exception;
+        }
+
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return $official;
     }
 
     public function update(Official $official, array $data, User $user): Official
@@ -337,9 +385,16 @@ class OfficialService
      */
     public function assertPositionAvailable(array $data, ?int $excludeId = null): void
     {
-        $position = OfficialPosition::tryFrom($data['position'] ?? '');
+        $code = (string) ($data['position'] ?? '');
+        $position = OfficialPosition::tryFrom($code);
 
-        if ($position === null || ! $position->isSingleHolderPerScope()) {
+        // Jabatan tanpa akun mengikuti pengaturan jenis jabatannya; yang
+        // tidak dikenal tidak dibatasi di sini (ditolak oleh validasi).
+        $singleHolder = $position !== null
+            ? $position->isSingleHolderPerScope()
+            : (bool) $this->positionTypes->findByCode($data['village_id'] ?? null, $code)?->is_single_occupant;
+
+        if (! $singleHolder) {
             return;
         }
 
@@ -350,7 +405,7 @@ class OfficialService
         }
 
         $exists = $this->officialRepository->existsActiveByPositionAndScope(
-            position: $position->value,
+            position: $code,
             villageId: $data['village_id'] ?? null,
             rtId: $data['rt_id'] ?? null,
             rwId: $data['rw_id'] ?? null,

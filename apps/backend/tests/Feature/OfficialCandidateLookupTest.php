@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Citizen;
+use App\Models\OfficialPositionType;
 use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\BuildsLetterScenario;
 use Tests\TestCase;
 
@@ -33,11 +36,13 @@ class OfficialCandidateLookupTest extends TestCase
 
         $this->assertSame($candidate['user']->id, $userId);
 
+        Storage::fake('public');
         $this->actingAs($petugas['user'])
-            ->postJson("/api/officials/{$currentRt['official']->id}/rotate", [
+            ->post("/api/officials/{$currentRt['official']->id}/rotate", [
                 'user_id' => $userId,
                 'started_at' => now()->toDateString(),
-            ])
+                'photo' => UploadedFile::fake()->image('foto.jpg'),
+            ], ['Accept' => 'application/json'])
             ->assertOk();
 
         $this->assertSame('rt', $candidate['user']->fresh()->role);
@@ -70,6 +75,18 @@ class OfficialCandidateLookupTest extends TestCase
         $lookup('3207010101900004')->assertOk()
             ->assertJsonPath('data.name', $withoutAccount->name)
             ->assertJsonPath('data.user_id', null)
+            ->assertJsonPath('data.eligible', false);
+        // Jabatan tanpa akun tidak mensyaratkan akun, tetapi tetap menolak
+        // warga yang sedang menjabat.
+        OfficialPositionType::factory()->code('kaur_keuangan')->create(['village_id' => $village->id]);
+        $this->actingAs($petugas['user'])
+            ->postJson('/api/officials/candidates/lookup', ['nik' => '3207010101900004', 'position' => 'kaur_keuangan'])
+            ->assertOk()
+            ->assertJsonPath('data.citizen_id', $withoutAccount->id)
+            ->assertJsonPath('data.eligible', true);
+        $this->actingAs($petugas['user'])
+            ->postJson('/api/officials/candidates/lookup', ['nik' => '3207010101900002', 'position' => 'kaur_keuangan'])
+            ->assertOk()
             ->assertJsonPath('data.eligible', false);
         $lookup('3299999999999999')->assertNotFound();
         $lookup('123')->assertStatus(422)->assertJsonValidationErrors(['nik']);
