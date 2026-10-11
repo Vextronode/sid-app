@@ -60,6 +60,7 @@ class LettersMigrationTest extends TestCase
         $this->assertTrue(Schema::hasColumns('letter_number_counters', [
             'village_id',
             'letter_type_id',
+            'classification_code',
             'year',
             'last_number',
         ]));

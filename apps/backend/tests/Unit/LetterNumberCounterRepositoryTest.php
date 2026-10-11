@@ -22,27 +22,27 @@ class LetterNumberCounterRepositoryTest extends TestCase
         $this->repository = new LetterNumberCounterRepository;
     }
 
-    public function test_next_number_increments_sequentially_for_matching_village_type_and_year(): void
+    public function test_next_number_increments_sequentially_for_matching_village_classification_and_year(): void
     {
         $village = Village::factory()->create();
         $letterType = LetterType::factory()->create();
 
-        DB::transaction(function () use ($village, $letterType) {
-            $this->assertSame(1, $this->repository->nextNumber($village->id, $letterType->id, 2026));
-            $this->assertSame(2, $this->repository->nextNumber($village->id, $letterType->id, 2026));
+        DB::transaction(function () use ($village) {
+            $this->assertSame(1, $this->repository->nextNumber($village->id, '470', 2026));
+            $this->assertSame(2, $this->repository->nextNumber($village->id, '470', 2026));
         });
     }
 
-    public function test_next_number_keeps_ranges_separate_per_year_and_letter_type(): void
+    public function test_next_number_keeps_ranges_separate_per_year_and_classification(): void
     {
         $village = Village::factory()->create();
         $letterTypeA = LetterType::factory()->create();
         $letterTypeB = LetterType::factory()->create();
 
-        DB::transaction(function () use ($village, $letterTypeA, $letterTypeB) {
-            $this->assertSame(1, $this->repository->nextNumber($village->id, $letterTypeA->id, 2026));
-            $this->assertSame(1, $this->repository->nextNumber($village->id, $letterTypeB->id, 2026));
-            $this->assertSame(1, $this->repository->nextNumber($village->id, $letterTypeA->id, 2027));
+        DB::transaction(function () use ($village) {
+            $this->assertSame(1, $this->repository->nextNumber($village->id, '470', 2026));
+            $this->assertSame(1, $this->repository->nextNumber($village->id, '510', 2026));
+            $this->assertSame(1, $this->repository->nextNumber($village->id, '470', 2027));
         });
     }
 }

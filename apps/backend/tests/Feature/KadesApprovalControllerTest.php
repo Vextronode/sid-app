@@ -251,7 +251,7 @@ class KadesApprovalControllerTest extends TestCase
         $second = $second->fresh();
         $this->assertSame(1, $first->current_step_order);
         $this->assertSame(1, $second->current_step_order);
-        $this->assertMatchesRegularExpression('/^\d{3}\/SKTM\/\d{4}$/', $first->letter_number);
+        $this->assertMatchesRegularExpression('/^470\/\d{3}\/Des\/[IVX]+\/\d{4}$/', $first->letter_number);
         $this->assertNotSame($first->letter_number, $second->letter_number);
         $this->assertNotNull($first->expires_at);
         $this->assertTrue($first->expires_at->isSameDay(now()->addDays(30)));
