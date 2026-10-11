@@ -9,6 +9,7 @@ import {
 } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/features/auth/contexts/AuthContext'
 import { buildLoginPath, resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
+import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
 
 // Beranda dan layout publik tetap statis agar halaman pertama tidak
 // menunggu chunk tambahan; halaman lain dimuat per-route.
@@ -47,6 +48,12 @@ const KelolaWilayahPage = lazy(() => import('@/pages/admin/KelolaWilayahPage'))
 const KelolaPekerjaanPage = lazy(() => import('@/pages/admin/KelolaPekerjaanPage'))
 const KelolaPeraturanPage = lazy(() => import('@/pages/admin/KelolaPeraturanPage'))
 const PeraturanDesaPage = lazyNamed(() => import('@/pages/PeraturanDesaPage'), 'PeraturanDesaPage')
+
+// Halaman informasi (D6) masih draf: hanya ada di mode dev. Saat build,
+// import.meta.env.DEV menjadi false sehingga route dan chunk-nya tidak ikut.
+const InfoPage = import.meta.env.DEV
+  ? lazyNamed(() => import('@/features/info/components/InfoPage'), 'InfoPage')
+  : null
 
 // RT — approver tahap 1
 // RW — monitoring
@@ -212,6 +219,24 @@ export default function App() {
                 </MainLayout>
               }
             />
+
+            {/* Halaman informasi (D6), khusus dev sampai isinya disetujui desa. */}
+            {import.meta.env.DEV &&
+              [
+                [HAL_KEBIJAKAN_PRIVASI, 'kebijakan-privasi'],
+                [HAL_AKSESIBILITAS, 'aksesibilitas'],
+                [HAL_PPID, 'ppid'],
+              ].map(([path, page]) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={
+                    <MainLayout>
+                      <InfoPage page={page} />
+                    </MainLayout>
+                  }
+                />
+              ))}
 
             {/* ===== WARGA ===== */}
             <Route

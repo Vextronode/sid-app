@@ -41,8 +41,8 @@ describe('BerandaLayout', () => {
     expect(container.querySelectorAll('nav')).toHaveLength(3) // header, menu ponsel, footer
   })
 
-  it('links the footer staff login to the login page and hides pages that do not exist (K3)', () => {
-    renderLayout(true)
+  it('links the footer staff login to the login page and hides the draft pages in production (D6)', () => {
+    renderLayout(false)
     const footer = within(screen.getByRole('contentinfo'))
 
     expect(footer.getByRole('link', { name: 'Masuk petugas' })).toHaveAttribute(
@@ -52,6 +52,24 @@ describe('BerandaLayout', () => {
     // "Masuk petugas" dan logo Widyatama.
     expect(footer.getAllByRole('link')).toHaveLength(2)
     expect(footer.queryByText(/privasi|aksesibilitas|PPID/i)).toBeNull()
+  })
+
+  it('links the three draft information pages from the footer in development (D6)', () => {
+    renderLayout(true)
+    const nav = within(screen.getByRole('navigation', { name: 'Tautan footer' }))
+
+    expect(
+      nav.getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')]),
+    ).toEqual([
+      ['Kebijakan privasi', '/kebijakan-privasi'],
+      ['Aksesibilitas', '/aksesibilitas'],
+      ['PPID', '/ppid'],
+      ['Masuk petugas', '/loginpage'],
+    ])
+    for (const link of nav.getAllByRole('link')) {
+      expect(link).toHaveClass('bd-footer-link')
+      expect(link).not.toHaveAttribute('target')
+    }
   })
 
   // Domain dan tanggal sudah asli, jadi tampil juga di production (keputusan pemilik, 11 Okt 2026).

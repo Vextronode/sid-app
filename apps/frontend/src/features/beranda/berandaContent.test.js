@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
 import { DEV_ONLY_KEYS, getBerandaContent } from './berandaContent'
 
-const PRODUCTION_HIDDEN = ['announcement', 'newsCategories', 'apbdes', 'welcome']
+const PRODUCTION_HIDDEN = ['announcement', 'newsCategories', 'apbdes', 'welcome', 'infoLinks']
 
 describe('getBerandaContent', () => {
   it('marks exactly the K1 items as development-only', () => {
@@ -71,6 +72,16 @@ describe('getBerandaContent', () => {
     expect(content.services.ajukan.description).toBe(
       'Domisili, SKTM, keterangan usaha, dan lainnya.',
     )
+  })
+
+  it('links the dev-only information pages through the route constants (D6)', () => {
+    const { infoLinks } = getBerandaContent(true)
+
+    expect(infoLinks).toEqual([
+      { label: 'Kebijakan privasi', to: HAL_KEBIJAKAN_PRIVASI },
+      { label: 'Aksesibilitas', to: HAL_AKSESIBILITAS },
+      { label: 'PPID', to: HAL_PPID },
+    ])
   })
 
   it('opens the dummy APBDes links over https', () => {

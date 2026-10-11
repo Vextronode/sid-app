@@ -16,3 +16,8 @@ export const HAL_STATUS_SURAT = '/daftar-surat-saya'
 // Id section di beranda yang menjadi tujuan gulir (A7, A8).
 export const SECTION_TRANSPARANSI = 'transparansi'
 export const SECTION_KONTAK = 'kontak'
+
+// Halaman informasi (D6). Route hanya terdaftar di mode dev sampai isinya disetujui desa.
+export const HAL_KEBIJAKAN_PRIVASI = '/kebijakan-privasi'
+export const HAL_AKSESIBILITAS = '/aksesibilitas'
+export const HAL_PPID = '/ppid'

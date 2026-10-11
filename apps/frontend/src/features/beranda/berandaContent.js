@@ -8,6 +8,8 @@
 //
 // Pakai getBerandaContent(); jangan impor DEV_ONLY langsung dari komponen.
 
+import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
+
 const STATIC = {
   header: {
     // Nama dari village.name bila tersedia; ini cadangannya.
@@ -258,6 +260,14 @@ const DEV_ONLY = {
     fallbackName: 'Dede Rusliana',
     role: 'Kepala Desa Cibenda',
   },
+
+  // A33–A35: link footer ke halaman informasi (D6). Halamannya masih draf dan
+  // route-nya hanya terdaftar di dev, jadi link ikut tersembunyi di production.
+  infoLinks: [
+    { label: 'Kebijakan privasi', to: HAL_KEBIJAKAN_PRIVASI },
+    { label: 'Aksesibilitas', to: HAL_AKSESIBILITAS },
+    { label: 'PPID', to: HAL_PPID },
+  ],
 }
 
 export const DEV_ONLY_KEYS = Object.keys(DEV_ONLY)
