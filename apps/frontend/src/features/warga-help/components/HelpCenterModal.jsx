@@ -4,22 +4,17 @@
 // desa. Dibuka dari ikon Pusat Bantuan di navbar WargaLayout.
 // ==========================================
 
-import {
-  X,
-  Phone,
-  Mail,
-  MapPin,
-  Clock,
-  HelpCircle,
-} from "lucide-react";
+import { X, Phone, Mail, MapPin, Clock, HelpCircle } from 'lucide-react'
+import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 
 export default function HelpCenterModal({ open, onClose }) {
-  if (!open) return null;
+  const { village } = usePublicVillageInfo()
+
+  if (!open) return null
 
   return (
     <div className="sid-help-modal-overlay">
       <div className="sid-help-modal">
-
         {/* =========================
             HEADER
         ========================= */}
@@ -34,21 +29,17 @@ export default function HelpCenterModal({ open, onClose }) {
 
           <HelpCircle size={28} className="sid-help-modal-icon" />
 
-          <h2 className="sid-help-modal-title">
-            Pusat Bantuan
-          </h2>
+          <h2 className="sid-help-modal-title">Pusat Bantuan</h2>
 
           <p className="sid-help-modal-subtitle">
             Butuh bantuan? Hubungi kami lewat kanal berikut.
           </p>
         </div>
 
-
         {/* =========================
             CONTENT
         ========================= */}
         <div className="sid-help-modal-content">
-
           {/* TELEPON */}
           <div className="sid-help-item">
             <div className="sid-help-item-icon">
@@ -56,16 +47,11 @@ export default function HelpCenterModal({ open, onClose }) {
             </div>
 
             <div className="sid-help-item-content">
-              <p className="sid-help-item-label">
-                Telepon / WhatsApp
-              </p>
+              <p className="sid-help-item-label">Telepon / WhatsApp</p>
 
-              <p className="sid-help-item-value">
-                +62 812-3456-7890
-              </p>
+              <p className="sid-help-item-value">{village?.phone || '+62 812-3456-7890'}</p>
             </div>
           </div>
-
 
           {/* EMAIL */}
           <div className="sid-help-item">
@@ -74,16 +60,11 @@ export default function HelpCenterModal({ open, onClose }) {
             </div>
 
             <div className="sid-help-item-content">
-              <p className="sid-help-item-label">
-                Email
-              </p>
+              <p className="sid-help-item-label">Email</p>
 
-              <p className="sid-help-item-value">
-                info@cibenda.desa.id
-              </p>
+              <p className="sid-help-item-value">{village?.email || 'info@cibenda.desa.id'}</p>
             </div>
           </div>
-
 
           {/* ALAMAT */}
           <div className="sid-help-item">
@@ -92,17 +73,13 @@ export default function HelpCenterModal({ open, onClose }) {
             </div>
 
             <div className="sid-help-item-content">
-              <p className="sid-help-item-label">
-                Alamat Kantor Desa
-              </p>
+              <p className="sid-help-item-label">Alamat Kantor Desa</p>
 
               <p className="sid-help-item-value">
-                Jl. Raya Parigi No. 123, Cibenda, Parigi,
-                Pangandaran
+                {village?.address || 'Jl. Raya Parigi No. 123, Cibenda, Parigi, Pangandaran'}
               </p>
             </div>
           </div>
-
 
           {/* JAM OPERASIONAL */}
           <div className="sid-help-item">
@@ -111,16 +88,11 @@ export default function HelpCenterModal({ open, onClose }) {
             </div>
 
             <div className="sid-help-item-content">
-              <p className="sid-help-item-label">
-                Jam Operasional
-              </p>
+              <p className="sid-help-item-label">Jam Operasional</p>
 
-              <p className="sid-help-item-value">
-                Senin – Jumat, 08.00 – 16.00 WIB
-              </p>
+              <p className="sid-help-item-value">Senin – Jumat, 08.00 – 16.00 WIB</p>
             </div>
           </div>
-
 
           {/* TUTUP */}
           <button
@@ -129,9 +101,8 @@ export default function HelpCenterModal({ open, onClose }) {
           >
             Tutup
           </button>
-
         </div>
       </div>
     </div>
-  );
+  )
 }
