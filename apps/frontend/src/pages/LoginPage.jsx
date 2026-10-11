@@ -2,11 +2,12 @@
 // LoginPage.jsx
 // ==========================================
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useLoginForm } from '@/features/auth/hooks/useLoginForm'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
+import { HAL_DAFTAR } from '@/lib/constants/routes'
 
 import { Landmark, User, Lock, Eye, EyeOff, LogIn } from 'lucide-react'
 
@@ -27,8 +28,6 @@ export default function LoginPage() {
 
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-
-  const [showRegisterModal, setShowRegisterModal] = useState(false)
 
   const [showForgotModal, setShowForgotModal] = useState(false)
 
@@ -236,13 +235,9 @@ export default function LoginPage() {
         <div className="sid-login-footer">
           <p className="sid-login-register-text">
             Belum punya akun?
-            <button
-              type="button"
-              onClick={() => setShowRegisterModal(true)}
-              className="sid-login-register-button"
-            >
+            <Link to={HAL_DAFTAR} className="sid-login-register-button">
               Daftar sekarang
-            </button>
+            </Link>
           </p>
 
           <p className="sid-login-copyright">
@@ -275,38 +270,6 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setShowForgotModal(false)}
-              className="sid-login-modal-button"
-            >
-              Mengerti
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ==========================================
-          REGISTER MODAL
-          ========================================== */}
-
-      {showRegisterModal && (
-        <div className="sid-login-modal">
-          <div className="sid-login-modal-overlay" onClick={() => setShowRegisterModal(false)} />
-
-          <div className="sid-login-modal-dialog">
-            <div className="sid-login-modal-icon sid-login-modal-icon-register">
-              <Landmark size={26} />
-            </div>
-
-            <h2 className="sid-login-modal-title">Fitur Belum Tersedia</h2>
-
-            <p className="sid-login-modal-description">
-              Pendaftaran akun mandiri masih dalam tahap pengembangan.
-              <br />
-              Silakan datang ke kantor desa untuk melakukan pendaftaran sementara.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => setShowRegisterModal(false)}
               className="sid-login-modal-button"
             >
               Mengerti

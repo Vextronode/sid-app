@@ -7,6 +7,7 @@ export const HAL_BERITA = '/berita'
 export const HAL_BERITA_DETAIL = (id) => `/berita/${encodeURIComponent(id)}`
 export const HAL_PROFIL = '/profil-desa'
 export const HAL_LOGIN = '/loginpage'
+export const HAL_DAFTAR = '/register'
 
 // Keduanya butuh login warga (ProtectedRoute allowedRoles={['warga']}).
 export const HAL_AJUKAN_SURAT = '/jenis-surat'
