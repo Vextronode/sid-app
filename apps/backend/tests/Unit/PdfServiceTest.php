@@ -11,6 +11,8 @@ use App\Models\User;
 use App\Models\Village;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
+use App\Services\LetterSignatureService;
+use App\Services\LetterSnapshotService;
 use App\Services\PdfService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
@@ -33,7 +35,12 @@ class PdfServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new PdfService(new OfficialRepository, new LetterRepository);
+        $this->service = new PdfService(
+            new OfficialRepository,
+            new LetterRepository,
+            new LetterSnapshotService(new OfficialRepository, new LetterRepository),
+            app(LetterSignatureService::class),
+        );
     }
 
     public function test_download_blocked_when_letter_not_approved(): void

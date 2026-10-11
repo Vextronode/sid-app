@@ -399,10 +399,12 @@ class LetterRepository
         return Letter::query()
             ->with([
                 'citizen.rt',
-                'letterType:id,name,code',
+                'letterType:id,name,code,assigned_role,produces_letter,data_action,signature_slots,supporting_template',
                 'approvals.approvedBy:id,name',
                 'flow.steps',
                 'statusLogs.actor:id,name',
+                'attachments',
+                'signatures',
             ])
             ->findOrFail($id);
     }

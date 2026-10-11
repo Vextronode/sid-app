@@ -48,12 +48,38 @@ class LetterResource extends JsonResource
             'expires_at' => $this->expires_at,
             'submitted_at' => $this->submitted_at,
             'processed_at' => $this->processed_at,
+            'signed_by_official_id' => $this->signed_by_official_id,
+            'fulfilled_at' => $this->fulfilled_at,
+            'fulfilled_by' => $this->fulfilled_by,
+            // Surat approved dengan aksi data yang belum diterapkan Kasi/Kaur.
+            'needs_fulfillment' => $this->when(
+                $this->relationLoaded('letterType') && $this->letterType,
+                fn () => $this->enumValue($this->status) === 'approved'
+                    && $this->fulfilled_at === null
+                    && ! in_array($this->enumValue($this->letterType->data_action), [null, 'none'], true)
+            ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'citizen' => new CitizenResource($this->whenLoaded('citizen')),
             'letter_type' => new LetterTypeResource($this->whenLoaded('letterType')),
             'approvals' => LetterApprovalResource::collection($this->whenLoaded('approvals')),
             'status_logs' => LetterStatusLogResource::collection($this->whenLoaded('statusLogs')),
+            'attachments' => LetterAttachmentResource::collection($this->whenLoaded('attachments')),
+            // Surat belum masuk ke approver karena masih ada slot tanda
+            // tangan yang kosong (current_step_order 0).
+            'awaiting_signatures' => $this->enumValue($this->status) === 'pending'
+                && $this->current_step_order === 0,
+            // Keadaan terkini tiap slot: baris terbaru per slot.
+            'signatures' => $this->when(
+                $this->relationLoaded('signatures'),
+                fn () => LetterSignatureResource::collection(
+                    $this->signatures->sortBy('id')->keyBy('slot_key')->values()
+                )
+            ),
+            'has_supporting_document' => $this->when(
+                $this->relationLoaded('letterType') && $this->letterType,
+                fn () => $this->letterType->supporting_template !== null
+            ),
             // Indikator FYI RW: RW dinotifikasi begitu RT approve (RW bukan approver,
             // tidak punya row di letter_approvals).
             'rw_fyi_notified' => $this->when(
