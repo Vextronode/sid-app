@@ -17,7 +17,6 @@ class LetterType extends Model
         'name',
         'description',
         'template',
-        'verification_type',
         'requirement_info',
         'flow_id',
         'assigned_role',

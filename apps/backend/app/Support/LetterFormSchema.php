@@ -54,6 +54,20 @@ class LetterFormSchema
     }
 
     /**
+     * Aturan berkas untuk isian bertipe file. `accept: image` membatasi
+     * ke gambar (mis. foto usaha); selain itu PDF juga diterima.
+     *
+     * @param  array<string, mixed>  $field
+     * @return array<int, string>
+     */
+    public static function fileRules(array $field): array
+    {
+        $mimes = ($field['accept'] ?? null) === 'image' ? 'jpg,jpeg,png' : 'pdf,jpg,jpeg,png';
+
+        return ['file', "mimes:{$mimes}", 'max:2048'];
+    }
+
+    /**
      * @return array<int, string>
      */
     public function valueFieldNames(): array
