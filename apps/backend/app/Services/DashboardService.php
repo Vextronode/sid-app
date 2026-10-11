@@ -49,8 +49,9 @@ class DashboardService
     {
         [$villageId, $rtId, $rwId] = $this->resolveLegacyScope($user);
 
-        $laki = $this->citizenRepository->countByGender($villageId, 'L', $rtId, $rwId);
-        $perempuan = $this->citizenRepository->countByGender($villageId, 'P', $rtId, $rwId);
+        $counts = $this->citizenRepository->countGroupedByGender($villageId, $rtId, $rwId);
+        $laki = $counts['L'] ?? 0;
+        $perempuan = $counts['P'] ?? 0;
 
         return [
             'total' => $laki + $perempuan,
@@ -81,13 +82,15 @@ class DashboardService
 
         $labels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
         $startOfWeek = $parsedDate->copy()->startOfWeek(Carbon::MONDAY);
+        $perDay = $this->letterRepository->countSubmittedPerDay(
+            $query,
+            $startOfWeek,
+            $startOfWeek->copy()->addDays(count($labels) - 1),
+        );
         $values = [];
 
-        foreach ($labels as $index => $label) {
-            $values[] = $this->letterRepository->countSubmittedOnDate(
-                $query,
-                $startOfWeek->copy()->addDays($index),
-            );
+        foreach (array_keys($labels) as $index) {
+            $values[] = $perDay[$startOfWeek->copy()->addDays($index)->toDateString()] ?? 0;
         }
 
         $maxValue = max($values);
@@ -307,9 +310,13 @@ class DashboardService
      */
     private function resolveLegacyScope(User $user): array
     {
+        $regional = in_array($user->role, ['rt', 'rw'], true)
+            ? $this->activeOfficial($user, $user->role)
+            : null;
+
         return match ($user->role) {
-            'rt' => [$this->activeOfficial($user, 'rt')->village_id, $this->activeOfficial($user, 'rt')->rt_id, null],
-            'rw' => [$this->activeOfficial($user, 'rw')->village_id, null, $this->activeOfficial($user, 'rw')->rw_id],
+            'rt' => [$regional->village_id, $regional->rt_id, null],
+            'rw' => [$regional->village_id, null, $regional->rw_id],
             'kasi_pelayanan', 'kaur_tu_umum' => [$this->officialVillageId($user), null, null],
             'petugas_desa' => [$this->officialVillageId($user), null, null],
             default => throw new HttpException(403, 'Tidak memiliki akses.'),
@@ -348,7 +355,8 @@ class DashboardService
             return 'Ditolak';
         }
 
-        $step = $letter->currentFlowStep();
+        // flow.steps sudah di-eager-load oleh querySubmittedBy().
+        $step = $letter->flow?->steps->firstWhere('step_order', $letter->current_step_order);
 
         return match ($step?->approver_position) {
             'rt' => 'Menunggu RT',

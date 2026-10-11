@@ -48,6 +48,7 @@ class UserRepository
         return User::with([
             'citizen.rt',
             'citizen.rw',
+            'citizen.occupation',
             'official',
         ])
             ->where('village_id', $villageId)
