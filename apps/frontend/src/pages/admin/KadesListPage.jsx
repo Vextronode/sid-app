@@ -13,6 +13,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
+import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
 
 import { useApprovalLetterList } from '@/features/approval/hooks/useApprovalLetterList'
 import SuratDetailModalKades from '@/features/approval-kades/components/SuratDetailModalKades'
@@ -34,6 +35,9 @@ export default function KadesListPage() {
 
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedId, setSelectedId] = useState(null)
+
+  // Dibuka dari notifikasi: ?surat=<id>.
+  useLetterDeepLink((letterId) => setSelectedId(letterId))
 
   const { data, loading, search, setSearch, filterStatus, setFilterStatus } = useApprovalLetterList(
     {
