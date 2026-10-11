@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Search,
   UserPlus,
@@ -18,6 +18,7 @@ import { useWargaList } from '../../features/data-warga/hooks/useWargaList'
 import { useFamilyList } from '../../features/data-warga/hooks/useFamilyList'
 import FamilyManagementPanel from '../../features/data-warga/components/FamilyManagementPanel'
 import { FooterOperator } from '../../components/layout/FooterOperator'
+import { getOccupations } from '../../features/pekerjaan/api'
 
 const formatResidencyType = (type) => {
   if (!type) return '-'
@@ -60,6 +61,7 @@ const emptyForm = {
   father_name_text: '',
   mother_name_text: '',
   marital_status: '',
+  occupation_id: '',
   religion: '',
   last_education: '',
   domicile_status: 'menetap',
@@ -102,6 +104,26 @@ export default function DataWargaPage() {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState(null)
 
+  // Katalog pekerjaan untuk pilihan di form warga. Yang nonaktif ikut
+  // dimuat agar pekerjaan lama warga tetap tampil saat diedit.
+  const [occupations, setOccupations] = useState([])
+
+  useEffect(() => {
+    let active = true
+
+    getOccupations({ includeInactive: true })
+      .then((response) => {
+        if (active) setOccupations(response.data?.data ?? [])
+      })
+      .catch(() => {
+        if (active) setOccupations([])
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   const handleSearchSubmit = (e) => {
     e.preventDefault()
     setSearch(keyword)
@@ -135,6 +157,7 @@ export default function DataWargaPage() {
       father_name_text: warga.father_name_text || '',
       mother_name_text: warga.mother_name_text || '',
       marital_status: warga.marital_status || '',
+      occupation_id: warga.occupation_id ? String(warga.occupation_id) : '',
       religion: warga.religion || '',
       last_education: warga.last_education || '',
       domicile_status: warga.domicile_status || 'menetap',
@@ -160,6 +183,7 @@ export default function DataWargaPage() {
         father_name_text: formData.father_name_text || null,
         mother_name_text: formData.mother_name_text || null,
         marital_status: formData.marital_status || null,
+        occupation_id: formData.occupation_id ? Number(formData.occupation_id) : null,
         religion: formData.religion || null,
         last_education: formData.last_education || null,
         domicile_status: formData.domicile_status || null,
@@ -622,6 +646,26 @@ export default function DataWargaPage() {
                           {value.replaceAll('_', ' ')}
                         </option>
                       ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Pekerjaan</label>
+                    <select
+                      value={formData.occupation_id}
+                      onChange={(e) => setFormData({ ...formData, occupation_id: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="">Pilih</option>
+                      {occupations
+                        .filter(
+                          (item) => item.is_active || String(item.id) === formData.occupation_id,
+                        )
+                        .map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                            {item.is_active ? '' : ' (nonaktif)'}
+                          </option>
+                        ))}
                     </select>
                   </div>
                   <div>
