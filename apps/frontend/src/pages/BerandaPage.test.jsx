@@ -291,3 +291,77 @@ describe('BerandaPage announcement bar', () => {
     expect(screen.queryByText('PENGUMUMAN')).toBeNull()
   })
 })
+
+describe('BerandaPage how-to steps', () => {
+  const howTo = () => within(screen.getByRole('region', { name: 'Cara mengajukan surat' }))
+
+  it('lists the four steps in an ordered list with the final copy (K10)', () => {
+    renderPage()
+
+    const list = howTo().getByRole('list')
+    expect(list.tagName).toBe('OL')
+    const steps = within(list).getAllByRole('listitem')
+    expect(steps).toHaveLength(4)
+    expect(steps[0]).toHaveTextContent('Masuk ke akun warga')
+    expect(steps[0]).toHaveTextContent('Daftar sekali dengan NIK')
+    expect(steps[3]).toHaveTextContent('Tunggu persetujuan')
+    expect(steps[3]).toHaveClass('bd-step--accent')
+    expect(howTo().getAllByRole('heading', { level: 3 })).toHaveLength(4)
+  })
+
+  it.each([
+    ['guest', null, '/loginpage?redirect=%2Fjenis-surat'],
+    ['warga', { role: 'warga' }, '/jenis-surat'],
+  ])('links "Mulai ajukan surat" through the login flow (%s, A25)', (_, user, href) => {
+    useAuth.mockReturnValue({ user, isLoading: false })
+
+    renderPage()
+
+    expect(howTo().getByRole('link', { name: 'Mulai ajukan surat' })).toHaveAttribute('href', href)
+  })
+
+  it('is shown in production as well', () => {
+    renderPage({ isDev: false })
+
+    expect(howTo().getAllByRole('listitem')).toHaveLength(4)
+  })
+})
+
+describe('BerandaPage transparency section', () => {
+  const section = () => screen.queryByRole('region', { name: /APBDes Cibenda/ })
+
+  it('renders the dummy APBDes with id="transparansi" in development', () => {
+    renderPage({ isDev: true })
+
+    const region = section()
+    expect(region).toHaveAttribute('id', 'transparansi')
+    expect(within(region).getByRole('heading', { level: 2 })).toHaveTextContent(
+      'APBDes Cibenda 2026',
+    )
+    expect(within(region).getByText('Pendapatan')).toBeInTheDocument()
+    expect(within(region).getByText('Belanja')).toBeInTheDocument()
+    expect(within(region).getByText('Realisasi belanja')).toBeInTheDocument()
+  })
+
+  it('opens both PDF links in a new tab with rel="noopener" and a screen-reader hint (A26, A27)', () => {
+    renderPage({ isDev: true })
+
+    const links = within(section()).getAllByRole('link')
+    expect(links).toHaveLength(2)
+    expect(links[0]).toHaveAccessibleName('Unduh dokumen APBDes (PDF) (tab baru)')
+    expect(links[1]).toHaveAccessibleName('Arsip tahun sebelumnya (PDF, tab baru)')
+    for (const link of links) {
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link.getAttribute('rel')).toMatch(/\bnoopener\b/)
+      expect(link.getAttribute('href')).toMatch(/^https:\/\//)
+    }
+  })
+
+  it('is not rendered in production (K1)', () => {
+    renderPage({ isDev: false })
+
+    expect(section()).toBeNull()
+    expect(document.getElementById('transparansi')).toBeNull()
+    expect(screen.queryByText('Pendapatan')).toBeNull()
+  })
+})

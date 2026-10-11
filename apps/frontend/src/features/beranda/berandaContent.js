@@ -109,6 +109,8 @@ const STATIC = {
     title: 'Cara mengajukan surat',
     subtitle: 'Empat langkah, tanpa harus antre di kantor desa.',
     cta: 'Mulai ajukan surat',
+    // Ditampilkan kapital lewat CSS: "LANGKAH 1".
+    stepLabel: 'Langkah',
     steps: [
       {
         title: 'Masuk ke akun warga',
@@ -127,6 +129,23 @@ const STATIC = {
         description: 'RT dan RW menyetujui; pantau statusnya kapan saja.',
       },
     ],
+  },
+
+  // Label section Transparansi. Angkanya dummy (DEV_ONLY.apbdes).
+  transparency: {
+    // Ditampilkan kapital lewat CSS: "TRANSPARANSI".
+    label: 'Transparansi',
+    titlePrefix: 'APBDes Cibenda',
+    documentLink: 'Unduh dokumen APBDes (PDF)',
+    archiveLink: 'Arsip tahun sebelumnya',
+    // Teks pembaca layar untuk link yang membuka tab baru (03, Persyaratan umum).
+    documentHint: '(tab baru)',
+    archiveHint: '(PDF, tab baru)',
+    income: 'Pendapatan',
+    spending: 'Belanja',
+    realization: 'Realisasi belanja',
+    sourcePrefix: 'Sumber:',
+    updatedPrefix: 'Diperbarui',
   },
 
   contact: {

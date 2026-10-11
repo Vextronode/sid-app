@@ -126,6 +126,12 @@
   --bd-news-feature-image-height: 300px;
   --bd-news-thumb-size: 104px;
 
+  /* Cara mengajukan dan Transparansi. */
+  --bd-howto-pad: 72px;
+  --bd-step-rule: 3px;
+  --bd-color-track: #e3e8e0;
+  --bd-progress-height: 10px;
+
   /* Logo mitra di footer. */
   --bd-partner-height: 40px;
   --bd-partner-logo-height: 26px;
@@ -165,6 +171,7 @@
     --bd-stats-space: 48px;
     --bd-stat-pad: 20px 24px;
     --bd-news-feature-image-height: 200px;
+    --bd-howto-pad: 56px;
     /* Di layar sempit judul hero jatuh di atas langit yang terang: overlay
        dinaikkan agar kontras tetap ≥ 4.5:1 (02-design-tokens.md). */
     --bd-color-hero-overlay: rgba(12, 24, 18, 0.6);
@@ -1190,4 +1197,183 @@
   .bd-stats-band {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* ----- Teks khusus pembaca layar ----- */
+.bd-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Label kecil di atas judul section, mis. "TRANSPARANSI". */
+.bd-eyebrow {
+  color: var(--bd-color-accent);
+  font-size: var(--bd-text-meta-lg);
+  font-weight: var(--bd-font-bold);
+  line-height: var(--bd-leading-meta);
+  text-transform: uppercase;
+}
+
+/* Tombol utama di judul section (A25). */
+.bd-root .bd-button--section {
+  min-height: var(--bd-button-primary-min);
+  padding: 14px 22px;
+}
+
+/* ----- Cara mengajukan surat (A25) ----- */
+.bd-howto {
+  margin-top: var(--bd-section-space);
+  background: var(--bd-color-surface);
+  border-block: 1px solid var(--bd-color-border);
+}
+
+.bd-howto-inner {
+  padding-block: var(--bd-howto-pad);
+}
+
+.bd-howto-head {
+  gap: var(--bd-space-16);
+  margin-bottom: var(--bd-space-32);
+}
+
+.bd-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--bd-space-24);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bd-step {
+  --bd-step-color: var(--bd-color-primary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--bd-space-12);
+  padding-top: var(--bd-space-20);
+  border-top: var(--bd-step-rule) solid var(--bd-step-color);
+}
+
+.bd-step--accent {
+  --bd-step-color: var(--bd-color-accent);
+}
+
+.bd-step-label {
+  color: var(--bd-step-color);
+  font-size: var(--bd-text-meta-lg);
+  font-weight: var(--bd-font-extrabold);
+  line-height: var(--bd-leading-meta);
+  text-transform: uppercase;
+}
+
+.bd-step-title {
+  margin: 0;
+  font-size: var(--bd-text-card-title);
+  font-weight: var(--bd-font-bold);
+  line-height: var(--bd-leading-card-title);
+}
+
+.bd-step-desc {
+  margin: 0;
+  color: var(--bd-color-muted);
+}
+
+/* ----- Transparansi APBDes (A26, A27; dev saja) ----- */
+.bd-transparency {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--bd-space-32);
+  margin-top: var(--bd-section-space);
+  scroll-margin-top: var(--bd-space-24);
+}
+
+.bd-transparency-intro {
+  flex: 1 1 360px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bd-transparency-desc {
+  margin: 0;
+  color: var(--bd-color-muted);
+}
+
+.bd-transparency-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bd-space-4) var(--bd-space-24);
+  margin-top: var(--bd-space-4);
+}
+
+.bd-root .bd-transparency-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bd-space-8);
+  min-height: var(--bd-tap-min);
+  font-weight: var(--bd-font-bold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.bd-transparency-figures {
+  flex: 2 1 520px;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--bd-space-16);
+}
+
+.bd-figure-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--bd-space-24);
+  background: var(--bd-color-surface);
+  border: 1px solid var(--bd-color-border);
+  border-radius: var(--bd-radius-card);
+}
+
+.bd-figure-label {
+  color: var(--bd-color-muted);
+}
+
+.bd-figure-value {
+  font-size: var(--bd-text-h3-feature);
+  font-weight: var(--bd-font-extrabold);
+  line-height: var(--bd-leading-h3-feature);
+}
+
+.bd-progress {
+  display: block;
+  height: var(--bd-progress-height);
+  margin-top: var(--bd-space-4);
+  overflow: hidden;
+  border-radius: var(--bd-radius-pill);
+  background: var(--bd-color-track);
+}
+
+.bd-progress-fill {
+  display: block;
+  width: var(--bd-progress, 0%);
+  height: 100%;
+  background: var(--bd-color-accent);
+}
+
+/* Sumber dan tanggal data: meta (13–15px). */
+.bd-transparency-source {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--bd-color-muted);
+  font-size: var(--bd-text-meta-lg);
+  line-height: var(--bd-leading-meta);
 }
