@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Save } from 'lucide-react'
 
 import { getLetterTypes, updateLetterType } from '../api/letterTypeApi'
+import { describeLetterTypeOutput } from '../utils/letterTypeConfig'
 
 const ASSIGNED_ROLE_OPTIONS = [
   ['', 'Tidak ditentukan'],
@@ -95,7 +96,7 @@ export default function LetterTypeSettingsPanel() {
       <header>
         <div>
           <h2 id="letter-types-heading">Konfigurasi Jenis Surat</h2>
-          <p>Nama, kategori, dan jenis surat mengikuti data dari backend.</p>
+          <p>Nama, isian form, dan keluaran jenis surat ditetapkan developer.</p>
         </div>
       </header>
 
@@ -115,7 +116,7 @@ export default function LetterTypeSettingsPanel() {
           <thead>
             <tr>
               <th>Jenis Surat</th>
-              <th>Kategori</th>
+              <th>Keluaran</th>
               <th>Masa Berlaku (hari)</th>
               <th>Petugas</th>
               <th>Aksi</th>
@@ -141,7 +142,7 @@ export default function LetterTypeSettingsPanel() {
                     <strong>{letterType.name}</strong>
                     <small className="sid-admin-cell-meta">{letterType.code}</small>
                   </td>
-                  <td>{letterType.category?.name ?? '-'}</td>
+                  <td>{describeLetterTypeOutput(letterType)}</td>
                   <td>
                     <form
                       id={`letter-type-${letterType.id}`}
