@@ -6,11 +6,12 @@
 
 import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Eye } from 'lucide-react'
+import { ArrowLeft, Eye, Trash2 } from 'lucide-react'
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
 
 import { WargaLayout } from '@/components/layout/WargaLayout'
 import { useLetters } from '@/features/surat/hooks/useLetters'
+import { deleteLetter } from '@/features/surat/api/letterApi'
 import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
@@ -28,9 +29,32 @@ export default function DaftarSuratSayaPage() {
 
   const filterStatus = searchParams.get('status') ?? ''
 
-  const { letters, loading } = useLetters()
+  const { letters, loading, refresh } = useLetters()
 
   const [selectedSurat, setSelectedSurat] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
+  const [deleteError, setDeleteError] = useState('')
+
+  // Surat yang sudah disetujui adalah dokumen terbit, jadi tidak ditawarkan untuk dihapus.
+  const handleDelete = async (item) => {
+    const confirmed = window.confirm(
+      `Hapus permohonan ${item.letter_type?.name ?? 'surat'} ini? Tindakan ini tidak dapat dibatalkan.`,
+    )
+
+    if (!confirmed) return
+
+    setDeletingId(item.id)
+    setDeleteError('')
+
+    try {
+      await deleteLetter(item.id)
+      await refresh()
+    } catch (requestError) {
+      setDeleteError(requestError?.response?.data?.message || 'Gagal menghapus surat.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const toDetail = (item) => ({
     ...item,
@@ -95,6 +119,12 @@ export default function DaftarSuratSayaPage() {
         {/* ==========================================
             CARD TABEL
         ========================================== */}
+
+        {deleteError && (
+          <p className="sid-form-field-error" role="alert">
+            {deleteError}
+          </p>
+        )}
 
         <div className="sid-card sid-surat-saya-table-card">
           {loading ? (
@@ -167,6 +197,19 @@ export default function DaftarSuratSayaPage() {
                             <Eye />
                             Detail
                           </button>
+
+                          {item.status !== SURAT_STATUS.APPROVED && (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(item)}
+                              disabled={deletingId === item.id}
+                              className="sid-surat-saya-delete-button"
+                              aria-label={`Hapus ${item.letter_type?.name ?? 'surat'}`}
+                            >
+                              <Trash2 />
+                              Hapus
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

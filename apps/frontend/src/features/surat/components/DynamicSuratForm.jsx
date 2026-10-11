@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
 import { getSuratSchema, signerFieldNames } from '../validation/suratSchema'
 import { buildLetterFormData } from '../utils/letterFormData'
 import { getMySignature } from '../api/signatureApi'
 
-import { CheckCircle2, ChevronDown } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 
 import { useSubmitSurat } from '../hooks/useSubmitSurat'
 
@@ -36,10 +36,8 @@ export function DynamicSuratForm({
   initialData = {},
   onSubmitAPI = null,
   letterTypes = [],
-  onSelectType = null,
 }) {
   const { user } = useAuth()
-  const navigate = useNavigate()
   const [submitError, setSubmitError] = useState('')
   const [hasSignature, setHasSignature] = useState(null)
 
@@ -158,59 +156,6 @@ export function DynamicSuratForm({
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="sid-card w-full" noValidate>
-      <section className="sid-section">
-        <h3 className="sid-section-title">Langkah 1 - Pilih Jenis Surat</h3>
-
-        <div className="sid-form-group">
-          <label className="sid-label">
-            Jenis surat <span className="sid-required">*</span>
-          </label>
-
-          <div className="relative">
-            <select
-              value={config.code}
-              onChange={(e) =>
-                onSelectType
-                  ? onSelectType(e.target.value)
-                  : navigate(`/pengajuan-surat/${e.target.value}`)
-              }
-              className="sid-select appearance-none pr-10"
-            >
-              {(letterTypes.some((item) => item.code === config.code)
-                ? letterTypes
-                : [{ id: config.id, code: config.code, name: config.title }]
-              ).map((letterType) => (
-                <option key={letterType.id} value={letterType.code}>
-                  {letterType.name}
-                </option>
-              ))}
-            </select>
-
-            <ChevronDown
-              size={18}
-              className="
-                absolute
-                right-3
-                top-1/2
-                -translate-y-1/2
-                pointer-events-none
-              "
-              style={{
-                color: 'var(--sid-primary)',
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="sid-info">
-          <CheckCircle2 size={16} />
-
-          <span>
-            Verifikasi: <strong>{config.type}</strong>
-          </span>
-        </div>
-      </section>
-
       <section className="sid-section">
         <h3 className="sid-section-title">Langkah 2 - Isi Form</h3>
 
