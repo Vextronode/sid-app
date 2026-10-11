@@ -9,6 +9,8 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Bell,
+  BriefcaseBusiness,
+  ScrollText,
   LayoutGrid,
   FilePlus,
   FileText,
@@ -64,6 +66,12 @@ const MENU_ITEMS = [
     icon: MapPinned,
   },
   {
+    label: 'Katalog Pekerjaan',
+    route: '/admin/kelola-pekerjaan',
+    allowedRoles: getOperatorAllowedRoles('/admin/kelola-pekerjaan'),
+    icon: BriefcaseBusiness,
+  },
+  {
     label: 'Manajemen Pengguna',
     route: '/admin/manajemen-user',
     allowedRoles: getOperatorAllowedRoles('/admin/manajemen-user'),
@@ -86,6 +94,12 @@ const MENU_ITEMS = [
     route: '/admin/kelola-berita',
     allowedRoles: getOperatorAllowedRoles('/admin/kelola-berita'),
     icon: Newspaper,
+  },
+  {
+    label: 'Peraturan Desa',
+    route: '/admin/kelola-peraturan',
+    allowedRoles: getOperatorAllowedRoles('/admin/kelola-peraturan'),
+    icon: ScrollText,
   },
   {
     label: 'Pengaturan Deadline',

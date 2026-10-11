@@ -11,6 +11,8 @@ import { PengajuanSuratPage } from '@/pages/PengajuanSuratPage'
 import { DaftarSurat } from '@/pages/DaftarSurat'
 import RegisterPage from '@/pages/RegisterPage'
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
+import ResetPasswordPage from '@/pages/ResetPasswordPage'
+import GantiPasswordPage from '@/pages/GantiPasswordPage'
 import JenisSuratPage from '@/pages/JenisSuratPage'
 import ProfilePage from '@/pages/ProfilePage'
 import { AdminLayout } from '@/components/layout/AdminLayout'
@@ -18,6 +20,9 @@ import { OfficialLayout } from '@/components/layout/OfficialLayout'
 import { OperatorDesaLayout } from '@/components/layout/OperatorDesaLayout'
 import DaftarSuratSayaPage from '@/pages/DaftarSuratSayaPage'
 import KelolaWilayahPage from '@/pages/admin/KelolaWilayahPage'
+import KelolaPekerjaanPage from '@/pages/admin/KelolaPekerjaanPage'
+import KelolaPeraturanPage from '@/pages/admin/KelolaPeraturanPage'
+import { PeraturanDesaPage } from '@/pages/PeraturanDesaPage'
 
 // RT — approver tahap 1
 // RW — monitoring
@@ -78,6 +83,10 @@ const GuestRoute = ({ children }) => {
   }
 
   if (user) {
+    if (user.must_change_password) {
+      return <Navigate to="/ganti-password" replace />
+    }
+
     switch (user.role) {
       case 'rt':
         return <Navigate to="/admin/dashboard-surat-rt" replace />
@@ -112,6 +121,11 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   if (!user) {
     return <Navigate to="/loginpage" replace />
+  }
+
+  // Backend menolak semua endpoint lain sampai kata sandi sementara diganti.
+  if (user.must_change_password) {
+    return <Navigate to="/ganti-password" replace />
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
@@ -156,6 +170,15 @@ export default function App() {
             element={
               <MainLayout>
                 <ProfilDesaPage />
+              </MainLayout>
+            }
+          />
+
+          <Route
+            path="/peraturan-desa"
+            element={
+              <MainLayout>
+                <PeraturanDesaPage />
               </MainLayout>
             }
           />
@@ -358,6 +381,26 @@ export default function App() {
             }
           />
           <Route
+            path="/admin/kelola-pekerjaan"
+            element={
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-pekerjaan')}>
+                <OperatorDesaLayout>
+                  <KelolaPekerjaanPage />
+                </OperatorDesaLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/kelola-peraturan"
+            element={
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-peraturan')}>
+                <OperatorDesaLayout>
+                  <KelolaPeraturanPage />
+                </OperatorDesaLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/organisasi/bpd"
             element={
               <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/organisasi/bpd')}>
@@ -455,6 +498,19 @@ export default function App() {
               </GuestRoute>
             }
           />
+
+          {/* Tujuan tautan reset kata sandi yang dikirim backend lewat email. */}
+          <Route
+            path="/password-reset/:token"
+            element={
+              <GuestRoute>
+                <ResetPasswordPage />
+              </GuestRoute>
+            }
+          />
+
+          {/* Wajib ganti kata sandi sementara; halaman ini menjaga aksesnya sendiri. */}
+          <Route path="/ganti-password" element={<GantiPasswordPage />} />
 
           {/* Tujuan klik notifikasi push; diteruskan sesuai peran. */}
           <Route

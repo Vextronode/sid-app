@@ -6,10 +6,12 @@ export const OPERATOR_ROUTE_CAPABILITIES = {
   // Kasi/Kaur hanya melihat daftar warga; halaman kelola tetap milik Petugas Desa.
   '/admin/data-warga': ['kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa'],
   '/admin/kelola-wilayah': ['petugas_desa'],
+  '/admin/kelola-pekerjaan': ['petugas_desa'],
   '/admin/manajemen-user': ['petugas_desa'],
   '/admin/pejabat-desa': ['petugas_desa'],
   '/admin/kelola-profil-desa': ['petugas_desa'],
   '/admin/kelola-berita': ['petugas_desa'],
+  '/admin/kelola-peraturan': ['petugas_desa'],
   '/admin/approval-settings': ['petugas_desa'],
   '/admin/approval-flows': ['petugas_desa'],
   '/admin/organisasi/bpd': ['petugas_desa'],
