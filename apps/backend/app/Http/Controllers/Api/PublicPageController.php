@@ -7,8 +7,10 @@ use App\Http\Requests\PublicNewsListRequest;
 use App\Http\Resources\NewsResource;
 use App\Http\Resources\PublicContactResource;
 use App\Http\Resources\PublicLetterTypeResource;
+use App\Http\Resources\PublicOfficialResource;
 use App\Http\Resources\RegulationResource;
 use App\Http\Resources\VillageResource;
+use App\Models\Hamlet;
 use App\Services\PublicPageService;
 use App\Support\PublicPageCache;
 use Closure;
@@ -40,7 +42,15 @@ class PublicPageController extends Controller
     {
         return $this->cached($request, 'village-profile', fn () => (new VillageResource(
             $this->service->villageProfile($request->query('village_code'))
-        ))->response());
+        ))->additional([
+            'officials' => PublicOfficialResource::collection(
+                $this->service->publicOfficials($request->query('village_code'))
+            ),
+            'positions' => $this->service->publicStaffPositions($request->query('village_code')),
+            'hamlets' => $this->service->publicHamlets($request->query('village_code'))
+                ->map(fn (Hamlet $hamlet) => ['id' => $hamlet->id, 'name' => $hamlet->name])
+                ->all(),
+        ])->response());
     }
 
     public function newsList(PublicNewsListRequest $request): JsonResponse
