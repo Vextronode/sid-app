@@ -41,7 +41,10 @@ class LetterFlowService
     /**
      * Empty-step flows remain valid for letter types that do not require approval.
      *
-     * @return array{step: FlowStep|null, skipped: Collection<int, FlowStep>}
+     * `vacant` bernilai true bila step yang dituju belum punya pejabat
+     * aktif sama sekali (mis. RT kosong): surat ditahan di step itu.
+     *
+     * @return array{step: FlowStep|null, skipped: Collection<int, FlowStep>, vacant: bool}
      */
     public function resolveStartStep(Letter $letter): array
     {
@@ -91,14 +94,14 @@ class LetterFlowService
     }
 
     /**
-     * @return array{step: FlowStep|null, skipped: Collection<int, FlowStep>}
+     * @return array{step: FlowStep|null, skipped: Collection<int, FlowStep>, vacant: bool}
      */
     private function resolveFromOrder(Letter $letter, int $afterOrder): array
     {
         $skipped = new Collection;
 
         if ($letter->flow_id === null) {
-            return ['step' => null, 'skipped' => $skipped];
+            return ['step' => null, 'skipped' => $skipped, 'vacant' => false];
         }
 
         $flow = $this->approvalFlowRepository->findWithSteps($letter->flow_id);
@@ -117,7 +120,7 @@ class LetterFlowService
                     abort(422, 'Surat tidak dapat diproses: tidak ada pejabat berwenang pada tahap final.');
                 }
 
-                return ['step' => $step, 'skipped' => $skipped];
+                return ['step' => $step, 'skipped' => $skipped, 'vacant' => false];
             }
 
             if ($rawApprovers->isNotEmpty() && $eligible->isEmpty()) {
@@ -126,9 +129,9 @@ class LetterFlowService
                 continue;
             }
 
-            return ['step' => $step, 'skipped' => $skipped];
+            return ['step' => $step, 'skipped' => $skipped, 'vacant' => $rawApprovers->isEmpty()];
         }
 
-        return ['step' => null, 'skipped' => $skipped];
+        return ['step' => null, 'skipped' => $skipped, 'vacant' => false];
     }
 }

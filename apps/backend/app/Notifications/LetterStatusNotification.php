@@ -54,6 +54,7 @@ class LetterStatusNotification extends Notification
                 'status' => $this->status,
 
                 'applicant' => $this->letter->applicant_name,
+                'is_applicant' => $this->isApplicant($notifiable),
             ],
 
         ];
@@ -66,6 +67,13 @@ class LetterStatusNotification extends Notification
             ->body($this->message)
             ->tag("letter-{$this->letter->id}")
             ->data([
+                // Dibuka saat notifikasi push diklik; frontend meneruskan
+                // ke daftar surat sesuai peran penerima.
+                'url' => '/buka-notifikasi?'.http_build_query([
+                    'surat' => $this->letter->id,
+                    'status' => $this->status,
+                    'mine' => $this->isApplicant($notifiable) ? 1 : 0,
+                ]),
                 'category' => 'pelayanan',
                 'icon' => $this->resolveIcon(),
                 'color' => $this->resolveColor(),
@@ -74,8 +82,18 @@ class LetterStatusNotification extends Notification
                     'letter_no' => $this->letter->letter_number,
                     'status' => $this->status,
                     'applicant' => $this->letter->applicant_name,
+                    'is_applicant' => $this->isApplicant($notifiable),
                 ],
             ]);
+    }
+
+    /**
+     * Penerima adalah pemohon surat ini. Frontend memakainya untuk membuka
+     * surat di "Surat Saya" bagi pejabat yang mengajukan surat pribadi.
+     */
+    private function isApplicant(object $notifiable): bool
+    {
+        return (string) ($notifiable->id ?? '') === (string) $this->letter->submitted_by;
     }
 
     private function resolveIcon(): string

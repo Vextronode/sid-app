@@ -55,6 +55,11 @@ class LetterStatusNotificationTest extends TestCase
         $this->assertSame($letter->id, $payload['data']['context']['letter_id']);
         $this->assertSame('001/SKD/2026', $payload['data']['context']['letter_no']);
         $this->assertSame('Siti Aminah', $payload['data']['context']['applicant']);
+        // Klik notifikasi push membuka surat yang dimaksud.
+        $this->assertSame(
+            "/buka-notifikasi?surat={$letter->id}&status=kasi_approved&mine=0",
+            $payload['data']['url'],
+        );
     }
 
     public function test_to_array_and_to_web_push_agree_on_icon_and_color(): void

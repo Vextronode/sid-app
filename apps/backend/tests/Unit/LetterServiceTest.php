@@ -17,15 +17,19 @@ use App\Models\Village;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\ApprovalFlowRepository;
 use App\Repositories\ApprovalSettingRepository;
+use App\Repositories\CitizenRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\LetterTypeRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\ApprovalSettingService;
+use App\Services\LetterAttachmentService;
 use App\Services\LetterFlowService;
 use App\Services\LetterService;
+use App\Services\LetterSignatureService;
 use App\Services\OfficialService;
+use App\Services\UserSignatureService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -52,6 +56,8 @@ class LetterServiceTest extends TestCase
             new LetterTypeRepository,
             new ApprovalSettingService(new ApprovalSettingRepository),
             new LetterFlowService($officialService, new ApprovalFlowRepository, $statusLogRepository),
+            $attachmentService = new LetterAttachmentService,
+            new LetterSignatureService(new UserSignatureService, $attachmentService, new CitizenRepository, new UserRepository),
         );
     }
 
@@ -210,15 +216,14 @@ class LetterServiceTest extends TestCase
         );
     }
 
-    public function test_create_letter_skips_first_approval_when_flow_has_no_steps(): void
+    public function test_create_letter_is_rejected_when_flow_has_no_steps(): void
     {
         Notification::fake();
 
         $citizen = Citizen::factory()->create();
 
-        // Flow tanpa FlowStep sama sekali (mis. kategori direct —
-        // upload_mandiri, dokumen_pendukung) — tidak boleh error,
-        // cukup tidak membuat approval apapun.
+        // Flow tanpa FlowStep tidak punya approver: surat akan menggantung
+        // selamanya, jadi pengajuan ditolak dan tidak ada surat yang dibuat.
         $flow = ApprovalFlow::factory()->create();
         $letterType = LetterType::factory()->create(['flow_id' => $flow->id]);
 
@@ -228,13 +233,17 @@ class LetterServiceTest extends TestCase
         ]);
         $this->actingAs($user);
 
-        $letter = $this->service->createLetter([
-            'letter_type_id' => $letterType->id,
-            'purpose' => 'Keperluan administrasi',
-        ]);
+        try {
+            $this->service->createLetter([
+                'letter_type_id' => $letterType->id,
+                'purpose' => 'Keperluan administrasi',
+            ]);
+            $this->fail('Pengajuan ke flow tanpa step seharusnya ditolak.');
+        } catch (HttpException $exception) {
+            $this->assertSame(422, $exception->getStatusCode());
+        }
 
-        $this->assertDatabaseHas('letters', ['id' => $letter->id]);
-        $this->assertDatabaseMissing('letter_approvals', ['letter_id' => $letter->id]);
+        $this->assertDatabaseCount('letters', 0);
     }
 
     public function test_create_letter_skips_applicant_rt_and_starts_at_next_step(): void

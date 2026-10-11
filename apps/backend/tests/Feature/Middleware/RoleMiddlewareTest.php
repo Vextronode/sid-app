@@ -296,21 +296,44 @@ class RoleMiddlewareTest extends TestCase
         $this->actingAs($user)->getJson('/api/citizens')->assertStatus(200);
     }
 
-    #[DataProvider('nonPetugasDesaRoles')]
+    #[DataProvider('rolesWithoutCitizenAccess')]
     #[Test]
-    public function non_petugas_desa_roles_cannot_access_citizens_index(string $role): void
+    public function roles_without_citizen_access_cannot_access_citizens_index(string $role): void
     {
         $user = $this->userWithRole($role);
 
         $this->actingAs($user)->getJson('/api/citizens')->assertForbidden();
     }
 
-    public static function nonPetugasDesaRoles(): array
+    public static function rolesWithoutCitizenAccess(): array
     {
         return [
-            ['warga'], ['rt'], ['rw'], ['kadus'],
-            ['kasi_pelayanan'], ['kaur_tu_umum'], ['kepala_desa'], ['sekretaris_desa'],
+            ['warga'], ['rt'], ['rw'], ['kadus'], ['kepala_desa'], ['sekretaris_desa'],
         ];
+    }
+
+    /**
+     * Kasi/Kaur boleh melihat daftar warga sebagai bahan pertimbangan,
+     * tetapi tidak boleh mengubahnya lewat modul data warga; perubahan
+     * oleh mereka hanya lewat surat (Terapkan).
+     */
+    #[DataProvider('kasiKaurRoles')]
+    #[Test]
+    public function kasi_kaur_can_read_but_not_write_citizens(string $role): void
+    {
+        $user = $this->userWithRole($role);
+        $citizen = Citizen::factory()->create(['village_id' => $user->village_id]);
+
+        $this->actingAs($user)->getJson('/api/citizens')->assertOk();
+        $this->actingAs($user)->postJson('/api/citizens', [])->assertForbidden();
+        $this->actingAs($user)->patchJson("/api/citizens/{$citizen->id}", ['name' => 'Diubah'])->assertForbidden();
+        $this->actingAs($user)->deleteJson("/api/citizens/{$citizen->id}")->assertForbidden();
+        $this->actingAs($user)->postJson('/api/citizens/import', [])->assertForbidden();
+    }
+
+    public static function kasiKaurRoles(): array
+    {
+        return [['kasi_pelayanan'], ['kaur_tu_umum']];
     }
 
     #[Test]

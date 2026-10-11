@@ -10,9 +10,11 @@ use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\FamilySocioeconomicController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\KadesApprovalController;
-use App\Http\Controllers\Api\LetterCategoryController;
+use App\Http\Controllers\Api\LetterAttachmentController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
+use App\Http\Controllers\Api\LetterFulfillmentController;
+use App\Http\Controllers\Api\LetterSignatureController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
@@ -25,7 +27,9 @@ use App\Http\Controllers\Api\RegulationController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RtController;
 use App\Http\Controllers\Api\RwController;
+use App\Http\Controllers\Api\SignatureRequestController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\UserSignatureController;
 use App\Http\Controllers\Api\VillageOrgMemberController;
 use App\Http\Controllers\Api\VillageOrgPositionController;
 use App\Http\Controllers\Api\VillageProfileController;
@@ -81,21 +85,31 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::patch('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
+    // Tanda tangan pribadi akun: diisi sekali, tidak dapat diubah sendiri.
+    Route::get('/profile/signature', [UserSignatureController::class, 'show']);
+    Route::post('/profile/signature', [UserSignatureController::class, 'store']);
+    Route::get('/profile/signature/image', [UserSignatureController::class, 'image']);
+
+    // Permintaan tanda tangan yang ditujukan ke akun ini (pemilik NIK).
+    Route::get('/signature-requests', [SignatureRequestController::class, 'index']);
+    Route::post('/signature-requests/{signatureRequest}/accept', [SignatureRequestController::class, 'accept']);
+    Route::post('/signature-requests/{signatureRequest}/reject', [SignatureRequestController::class, 'reject']);
+    Route::get('/signature-blocks', [SignatureRequestController::class, 'blocks']);
+    Route::delete('/signature-blocks/{signatureBlock}', [SignatureRequestController::class, 'unblock']);
+
     /*
     |----------------------------------------------------------------------
-    | Approval Flows (Epic 4 - Config over Code)
+    | Approval Flows
     |----------------------------------------------------------------------
-    | Konfigurasi pipeline approval: eksklusif Petugas Desa
-    | (SID-ARCH-BE-001 S3.4, S4.1 - domain konfigurasi bukan milik
-    | Kades/Sekdes meski keduanya approver aktif di domain surat).
+    | Hanya baca untuk Petugas Desa. Semua tipe surat memakai satu flow
+    | RT -> Kepala Desa/Sekdes yang diset developer lewat seeder; tidak
+    | ada endpoint tulis.
     */
     Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
         ->prefix('approval-flows')
         ->group(function () {
             Route::get('/', [ApprovalFlowController::class, 'index']);
-            Route::post('/', [ApprovalFlowController::class, 'store']);
             Route::get('/{id}', [ApprovalFlowController::class, 'show']);
-            Route::put('/{id}/steps', [ApprovalFlowController::class, 'replaceSteps']);
         });
 
     /*
@@ -115,14 +129,17 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Citizens (UC-09)
     |----------------------------------------------------------------------
-    | Eksklusif Petugas Desa - Human-in-the-Loop principle
-    | (SID-ARCH-BE-001 S5.3): hanya Petugas Desa yang boleh
-    | create/update/delete data kependudukan.
+    | Hanya Petugas Desa yang boleh create/update/delete/import data
+    | kependudukan lewat modul ini. Kasi/Kaur hanya boleh membaca daftar
+    | warga sebagai bahan pertimbangan; perubahan data oleh mereka hanya
+    | lewat surat (POST /letters/{letter}/fulfillment).
     */
+    Route::middleware(UserRole::middleware(UserRole::PetugasDesa, UserRole::KasiPelayanan, UserRole::KaurTuUmum))
+        ->get('/citizens', [CitizenController::class, 'index']);
+
     Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
         ->prefix('citizens')
         ->group(function () {
-            Route::get('/', [CitizenController::class, 'index']);
             Route::post('/', [CitizenController::class, 'store']);
             Route::post('/import', [CitizenController::class, 'import']);
             //            Route::put('/{citizen}', [CitizenController::class, 'update']);
@@ -209,7 +226,6 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     */
     // Lintas-role: dipakai warga saat submit (pilih jenis surat) dan
     // Petugas Desa saat konfigurasi - tidak ada role-guard sempit.
-    Route::get('/letter-categories', [LetterCategoryController::class, 'index']);
     Route::get('/letter-types', [LetterTypeController::class, 'index']);
 
     // UC-21: edit konfigurasi tipe surat eksklusif Petugas Desa.
@@ -230,6 +246,20 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
         //        Route::patch('/{letter}/resubmit', [LetterController::class, 'resubmit']);
         Route::get('/{letter}/download', [LetterDownloadController::class, 'download']);
+        Route::get('/{letter}/attachments/{attachment}', [LetterAttachmentController::class, 'show']);
+
+        // Terapkan perubahan data setelah final approve (Kasi/Kaur yang
+        // ditugaskan, atau Petugas Desa sebagai cadangan) - LetterPolicy::fulfill.
+        // Dokumen pendukung yang digenerate sistem dari isian form; dapat
+        // di-preview maupun diunduh (?download=1) oleh siapa pun yang
+        // berhak melihat suratnya.
+        Route::get('/{letter}/supporting-document', [LetterDownloadController::class, 'supportingDocument']);
+
+        // Pemohon mengisi ulang slot tanda tangan pihak lain.
+        Route::post('/{letter}/signatures/{slot}', [LetterSignatureController::class, 'store']);
+
+        Route::get('/{letter}/fulfillment', [LetterFulfillmentController::class, 'show']);
+        Route::post('/{letter}/fulfillment', [LetterFulfillmentController::class, 'store']);
 
         // Catatan refactor: sebelumnya closure inline yang langsung
         // memanggil PdfService, sekarang lewat
@@ -354,6 +384,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::post('/{official}/signature', [OfficialController::class, 'uploadSignature']);
             Route::get('/{official}/signature', [OfficialController::class, 'signaturePreview']);
             Route::post('/promote', [OfficialController::class, 'promote']);
+            // Cari calon pejabat lewat NIK (POST agar NIK tidak tercatat di URL).
+            Route::post('/candidates/lookup', [OfficialController::class, 'candidate']);
             Route::get('/', [OfficialController::class, 'index']);
             Route::post('/', [OfficialController::class, 'store']);
             Route::get('/{official}', [OfficialController::class, 'show']);
@@ -374,6 +406,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::get('/', [UserController::class, 'index']);
             Route::post('/{user}/reset-password', [UserController::class, 'resetPassword']);
+            Route::post('/{user}/signature/reset', [UserSignatureController::class, 'reset']);
             Route::patch('/{user}', [UserController::class, 'update']);
             Route::patch('/{user}/toggle-status', [UserController::class, 'updateStatus']);
         });

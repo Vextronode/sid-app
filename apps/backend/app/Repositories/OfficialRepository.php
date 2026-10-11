@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Official;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class OfficialRepository
@@ -280,12 +281,21 @@ class OfficialRepository
      */
     public function findActiveVillageHeadWithCitizenOrFail(string $villageId): Official
     {
+        return $this->activeVillageHeadQuery($villageId)->firstOrFail();
+    }
+
+    public function findActiveVillageHeadWithCitizen(string $villageId): ?Official
+    {
+        return $this->activeVillageHeadQuery($villageId)->first();
+    }
+
+    private function activeVillageHeadQuery(string $villageId): Builder
+    {
         return Official::query()
             ->with('citizen.occupation')
             ->where('position', 'kepala_desa')
             ->where('village_id', $villageId)
             ->where('is_active', true)
-            ->whereNull('ended_at')
-            ->firstOrFail();
+            ->whereNull('ended_at');
     }
 }

@@ -80,6 +80,17 @@ class OfficialController extends Controller
         return $this->officialService->signaturePreview($official, $request->user());
     }
 
+    public function candidate(Request $request): JsonResponse
+    {
+        $this->authorize('create', Official::class);
+
+        $validated = $request->validate(['nik' => ['required', 'digits:16']]);
+
+        return response()->json([
+            'data' => $this->assignmentService->findCandidateByNik($request->user(), $validated['nik']),
+        ]);
+    }
+
     public function promote(PromoteOfficialRequest $request)
     {
         $this->authorize('create', Official::class);

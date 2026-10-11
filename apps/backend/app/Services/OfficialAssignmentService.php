@@ -10,6 +10,7 @@ use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
 use App\Models\Village;
+use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
@@ -37,6 +38,45 @@ class OfficialAssignmentService
 
             return $this->promoteInTransaction($actor, $data);
         });
+    }
+
+    /**
+     * Mencari calon pejabat lewat NIK: akun yang terhubung ke warga
+     * ber-NIK itu di desa Petugas. Dipakai form penetapan dan rotasi,
+     * supaya pejabat dipilih dari identitas kependudukannya, bukan dari
+     * nama akun.
+     *
+     * @return array{user_id: ?string, name: string, username: ?string, eligible: bool, reason: ?string}
+     */
+    public function findCandidateByNik(User $actor, string $nik): array
+    {
+        $this->assertActivePetugas($actor);
+
+        $citizen = Citizen::query()
+            ->where('village_id', $actor->village_id)
+            ->where('nik_hash', hash('sha256', $nik))
+            ->first();
+
+        if ($citizen === null) {
+            abort(404, 'NIK tidak ditemukan di data warga desa ini.');
+        }
+
+        $user = $this->userRepository->findByCitizenId($citizen->id);
+
+        $reason = match (true) {
+            $user === null => 'Warga ini belum memiliki akun. Minta yang bersangkutan mendaftar lebih dulu.',
+            ! $user->is_active => 'Akun warga ini sedang nonaktif.',
+            $this->officialRepository->existsActiveForUser($user->id), $user->role !== 'warga' => 'Warga ini sedang menjabat. Akhiri jabatannya lebih dulu.',
+            default => null,
+        };
+
+        return [
+            'user_id' => $user?->id,
+            'name' => $citizen->name,
+            'username' => $user?->username,
+            'eligible' => $reason === null,
+            'reason' => $reason,
+        ];
     }
 
     /**
@@ -247,7 +287,38 @@ class OfficialAssignmentService
             'position' => $position->value,
         ]);
 
+        $this->notifyLettersWaitingForNewRt($official, $target);
+
         return $official;
+    }
+
+    /**
+     * Surat yang tertahan di step RT saat jabatan RT kosong tidak pernah
+     * mengirim notifikasi ke approver. Begitu RT ditetapkan, pejabat baru
+     * diberi tahu tentang surat yang sudah menunggunya.
+     */
+    private function notifyLettersWaitingForNewRt(Official $official, User $target): void
+    {
+        if ($official->position !== OfficialPosition::Rt->value || $official->rt_id === null) {
+            return;
+        }
+
+        $query = $this->letterRepository->queryPendingAtFlowStepPositions(
+            ['rt'],
+            $official->village_id,
+            $target->id,
+            $target->citizen_id,
+        );
+        $this->letterRepository->whereCitizenRtId($query, $official->rt_id);
+
+        foreach ($query->get() as $letter) {
+            $target->notify(new LetterStatusNotification(
+                $letter,
+                'Permohonan Surat Menunggu',
+                'Ada permohonan surat yang menunggu verifikasi Anda.',
+                'pending',
+            ));
+        }
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LetterFlowLogReason;
 use App\Enums\LetterStatus;
 use App\Models\FlowStep;
 use App\Models\Letter;
@@ -17,6 +18,9 @@ use Illuminate\Support\Facades\DB;
 
 class LetterService
 {
+    /** current_step_order saat surat masih menunggu tanda tangan. */
+    public const AWAITING_SIGNATURES_STEP = 0;
+
     public function __construct(
         protected OfficialService $officialService,
         protected LetterRepository $letterRepository,
@@ -24,92 +28,188 @@ class LetterService
         protected LetterTypeRepository $letterTypeRepository,
         protected ApprovalSettingService $approvalSettingService,
         protected LetterFlowService $letterFlowService,
+        protected LetterAttachmentService $letterAttachmentService,
+        protected LetterSignatureService $letterSignatureService,
     ) {}
 
     public function createLetter(array $data): Letter
     {
-        return DB::transaction(function () use ($data) {
+        $created = null;
 
-            $user = auth()->user();
-
-            $citizen = $user->citizen;
-
-            if ($citizen === null) {
-                abort(422, 'Akun Anda belum terhubung ke data kependudukan.');
+        try {
+            return DB::transaction(function () use ($data, &$created) {
+                return $this->createLetterInTransaction($data, $created);
+            });
+        } catch (\Throwable $exception) {
+            // Baris lampiran ikut di-rollback, tetapi berkasnya sudah
+            // tertulis di disk dan harus dibersihkan sendiri.
+            if ($created !== null) {
+                $this->letterAttachmentService->deleteFilesFor($created);
             }
 
-            $letterType = $this->letterTypeRepository->findOrFail(
-                $data['letter_type_id'],
-                $user->village_id,
-            );
+            throw $exception;
+        }
+    }
 
-            $letter = $this->letterRepository->create([
+    private function createLetterInTransaction(array $data, ?Letter &$created): Letter
+    {
+        $user = auth()->user();
 
-                'village_id' => $user->village_id,
+        $citizen = $user->citizen;
 
-                'letter_type_id' => $letterType->id,
+        if ($citizen === null) {
+            abort(422, 'Akun Anda belum terhubung ke data kependudukan.');
+        }
 
-                'submitted_by' => $user->id,
+        $letterType = $this->letterTypeRepository->findOrFail(
+            $data['letter_type_id'],
+            $user->village_id,
+        );
 
-                'citizen_id' => $citizen->id,
+        $letter = $this->letterRepository->create([
 
-                'applicant_name' => $citizen->name,
+            'village_id' => $user->village_id,
 
-                'applicant_nik' => $citizen->nik,
+            'letter_type_id' => $letterType->id,
 
-                'applicant_nik_hash' => $citizen->nik_hash,
+            'submitted_by' => $user->id,
 
-                'applicant_address' => $citizen->address,
+            'citizen_id' => $citizen->id,
 
-                'purpose' => $data['purpose'],
+            'applicant_name' => $citizen->name,
 
-                'payload' => $data['payload'] ?? null,
+            'applicant_nik' => $citizen->nik,
 
-                'notes' => $data['notes'] ?? null,
+            'applicant_nik_hash' => $citizen->nik_hash,
 
-                'status' => 'pending',
+            'applicant_address' => $citizen->address,
 
-                'current_step_order' => 1,
+            'purpose' => $data['purpose'],
 
-                // Snapshot flow_id dari letter type saat submit — dikunci,
-                // tidak boleh ikut berubah walau letter_types.flow_id
-                // berubah di kemudian hari (lihat LettersMigrationTest).
-                'flow_id' => $letterType->flow_id,
+            'payload' => $data['payload'] ?? null,
 
-                'submitted_at' => now(),
+            'notes' => $data['notes'] ?? null,
 
-            ]);
+            'status' => 'pending',
 
-            $this->letterStatusLogRepository->create([
+            'current_step_order' => 1,
 
-                'letter_id' => $letter->id,
+            // Snapshot flow_id dari letter type saat submit — dikunci,
+            // tidak boleh ikut berubah walau letter_types.flow_id
+            // berubah di kemudian hari (lihat LettersMigrationTest).
+            'flow_id' => $letterType->flow_id,
 
-                'actor_id' => $user->id,
+            'submitted_at' => now(),
 
-                'old_status' => null,
+        ]);
+        $created = $letter;
 
-                'new_status' => 'pending',
+        $this->letterStatusLogRepository->create([
 
-                'reason' => 'Permohonan surat dibuat',
+            'letter_id' => $letter->id,
 
-            ]);
+            'actor_id' => $user->id,
 
-            $start = $this->letterFlowService->resolveStartStep($letter);
-            $step = $start['step'];
+            'old_status' => null,
 
-            if ($step !== null) {
-                $letter = $this->letterRepository->update($letter, [
-                    'current_step_order' => $step->step_order,
-                ]);
+            'new_status' => 'pending',
+
+            'reason' => 'Permohonan surat dibuat',
+
+        ]);
+
+        $this->letterAttachmentService->storeSubmission(
+            $letter,
+            $user,
+            $data['attachments'] ?? [],
+            $data['files'] ?? [],
+        );
+
+        $this->letterSignatureService->openForSubmission(
+            $letter,
+            $user,
+            $data['signers'] ?? [],
+            $data['signature_files'] ?? [],
+        );
+
+        if (! $this->letterSignatureService->isComplete($letter)) {
+            return $this->holdForSignatures($letter, $user);
+        }
+
+        return $this->startApproval($letter, $user);
+    }
+
+    /**
+     * Dipanggil setelah sebuah slot tanda tangan terisi (disetujui pemilik
+     * NIK atau diganti TTD basah). Begitu semua slot terisi, surat yang
+     * tertahan masuk ke tahap approval pertama.
+     */
+    public function beginApprovalIfSigned(Letter $letter, User $actor): Letter
+    {
+        return DB::transaction(function () use ($letter, $actor): Letter {
+            $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
+            $locked->load('letterType');
+
+            if (
+                $locked->status !== LetterStatus::Pending
+                || $locked->current_step_order !== self::AWAITING_SIGNATURES_STEP
+                || ! $this->letterSignatureService->isComplete($locked)
+            ) {
+                return $locked;
             }
 
-            $this->letterFlowService->logSkipped($letter, $start['skipped'], $user);
-            $this->createFirstApproval($letter, $step);
-            $this->notifyFirstApprovers($letter, $step);
-
-            return $letter;
-
+            return $this->startApproval($locked, $actor);
         });
+    }
+
+    /**
+     * Surat belum boleh masuk ke approver selama masih ada slot tanda
+     * tangan yang kosong: current_step_order 0 berarti "menunggu tanda
+     * tangan", sehingga tidak ada step flow yang cocok dan tidak ada
+     * approver yang dapat memprosesnya.
+     */
+    private function holdForSignatures(Letter $letter, User $actor): Letter
+    {
+        $letter = $this->letterRepository->update($letter, [
+            'current_step_order' => self::AWAITING_SIGNATURES_STEP,
+        ]);
+
+        $this->letterStatusLogRepository->create([
+            'letter_id' => $letter->id,
+            'actor_id' => $actor->id,
+            'old_status' => 'pending',
+            'new_status' => 'pending',
+            'reason' => LetterFlowLogReason::AwaitingSignatures->value,
+        ]);
+
+        return $letter;
+    }
+
+    private function startApproval(Letter $letter, User $actor): Letter
+    {
+        $start = $this->letterFlowService->resolveStartStep($letter);
+        $step = $start['step'];
+
+        if ($step === null) {
+            // Flow tanpa step tidak punya approver; surat akan menggantung
+            // selamanya bila tetap dibuat.
+            abort(422, 'Jenis surat ini belum memiliki alur persetujuan. Hubungi Petugas Desa.');
+        }
+
+        $letter = $this->letterRepository->update($letter, [
+            'current_step_order' => $step->step_order,
+        ]);
+
+        $this->letterFlowService->logSkipped($letter, $start['skipped'], $actor);
+        $this->createFirstApproval($letter, $step);
+
+        if ($start['vacant']) {
+            $this->holdForVacantStep($letter, $actor);
+        } else {
+            $this->notifyFirstApprovers($letter, $step);
+        }
+
+        return $letter;
     }
 
     private function createFirstApproval(Letter $letter, ?FlowStep $step): void
@@ -127,6 +227,32 @@ class LetterService
                 $letter->village_id,
             ),
         ]);
+    }
+
+    /**
+     * Step pertama belum punya pejabat aktif (mis. RT kosong atau warga
+     * belum terdaftar di RT mana pun). Surat ditahan di step itu dan
+     * Petugas Desa diberi tahu untuk mengisi jabatannya; step tidak
+     * dilewati agar verifikasi tingkat RT tetap terjadi.
+     */
+    private function holdForVacantStep(Letter $letter, User $actor): void
+    {
+        $this->letterStatusLogRepository->create([
+            'letter_id' => $letter->id,
+            'actor_id' => $actor->id,
+            'old_status' => 'pending',
+            'new_status' => 'pending',
+            'reason' => LetterFlowLogReason::HeldForVacantApprover->value,
+        ]);
+
+        foreach ($this->officialService->resolvePetugasDesaUsers($letter->village_id) as $petugas) {
+            $petugas->notify(new LetterStatusNotification(
+                $letter,
+                'Surat Tertahan: Pejabat RT Kosong',
+                'Ada permohonan surat yang tertahan karena RT di wilayah pemohon belum memiliki pejabat aktif. Tetapkan pejabat RT agar surat dapat diproses.',
+                'approver_vacant',
+            ));
+        }
     }
 
     /**
@@ -346,7 +472,13 @@ class LetterService
     {
         $this->guardCanDelete($letter, $user);
 
-        return $this->letterRepository->delete($letter);
+        $deleted = $this->letterRepository->delete($letter);
+
+        if ($deleted) {
+            $this->letterAttachmentService->deleteFilesFor($letter);
+        }
+
+        return $deleted;
     }
 
     private function guardCanDelete(Letter $letter, User $user): void
