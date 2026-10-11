@@ -24,10 +24,12 @@ describe('operator role navigation', () => {
 
     for (const route of [
       '/admin/kelola-wilayah',
+      '/admin/kelola-pekerjaan',
       '/admin/manajemen-user',
       '/admin/pejabat-desa',
       '/admin/kelola-profil-desa',
       '/admin/kelola-berita',
+      '/admin/kelola-peraturan',
       '/admin/approval-settings',
       '/admin/organisasi/bpd',
       '/admin/organisasi/lembaga',

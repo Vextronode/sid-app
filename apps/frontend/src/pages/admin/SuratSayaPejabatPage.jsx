@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, Eye, FilePlus } from 'lucide-react'
+import { ArrowLeft, Eye, FilePlus, Trash2 } from 'lucide-react'
 
 import api from '@/lib/api'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
@@ -73,6 +73,30 @@ export default function SuratSayaPejabatPage() {
     setSelectedCode('')
   }
 
+  const [deletingId, setDeletingId] = useState(null)
+
+  // Surat yang sudah disetujui adalah dokumen terbit, jadi tidak ditawarkan untuk dihapus.
+  const handleDelete = async (item) => {
+    const confirmed = window.confirm(
+      `Hapus permohonan ${item.letter_type?.name ?? 'surat'} ini? Tindakan ini tidak dapat dibatalkan.`,
+    )
+
+    if (!confirmed) return
+
+    setDeletingId(item.id)
+    setMessage('')
+
+    try {
+      await api.delete(`/api/letters/${item.id}`)
+      setMessage('Permohonan surat berhasil dihapus.')
+      await loadLetters()
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || 'Gagal menghapus surat.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   const handleSubmitted = async () => {
     closeForm()
     setMessage('Permohonan surat berhasil dikirim.')
@@ -120,8 +144,13 @@ export default function SuratSayaPejabatPage() {
 
               {typesLoading && <p role="status">Memuat jenis surat...</p>}
               {typesError && <p role="alert">{typesError}</p>}
-              {selectedLetterType?.requirements_info && (
-                <p className="sid-info">Persyaratan: {selectedLetterType.requirements_info}</p>
+              {selectedLetterType && (
+                <p className="sid-info">
+                  Verifikasi: {selectedLetterType.verification_type}
+                  {selectedLetterType.requirements_info
+                    ? ` — Persyaratan: ${selectedLetterType.requirements_info}`
+                    : ''}
+                </p>
               )}
             </div>
 
@@ -130,7 +159,6 @@ export default function SuratSayaPejabatPage() {
                 key={currentConfig.code}
                 config={currentConfig}
                 letterTypes={letterTypes}
-                onSelectType={setSelectedCode}
                 onCancel={closeForm}
                 onSubmit={handleSubmitted}
               />
@@ -205,15 +233,30 @@ export default function SuratSayaPejabatPage() {
                             <StatusBadge status={item.status} />
                           </td>
                           <td className="sid-surat-saya-action-cell">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedSurat(toDetail(item))}
-                              className="sid-surat-saya-detail-button"
-                              aria-label={`Detail ${item.letter_type?.name ?? 'surat'}`}
-                            >
-                              <Eye size={16} />
-                              Detail
-                            </button>
+                            <div className="sid-surat-saya-actions">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedSurat(toDetail(item))}
+                                className="sid-surat-saya-detail-button"
+                                aria-label={`Detail ${item.letter_type?.name ?? 'surat'}`}
+                              >
+                                <Eye size={16} />
+                                Detail
+                              </button>
+
+                              {item.status !== 'approved' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(item)}
+                                  disabled={deletingId === item.id}
+                                  className="sid-surat-saya-delete-button"
+                                  aria-label={`Hapus ${item.letter_type?.name ?? 'surat'}`}
+                                >
+                                  <Trash2 size={16} />
+                                  Hapus
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}

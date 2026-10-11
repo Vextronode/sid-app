@@ -11,6 +11,7 @@ import { useProfilDesa } from '@/features/profil-desa-admin/hooks/useProfilDesa'
 import EditProfilDesaModal from '@/features/profil-desa-admin/components/EditProfilDesaModal'
 import EditVisiMisiModal from '@/features/profil-desa-admin/components/EditVisiMisiModal'
 import EditPerangkatDesaModal from '@/features/profil-desa-admin/components/EditPerangkatDesaModal'
+import PengesahanSuratCard from '@/features/profil-desa-admin/components/PengesahanSuratCard'
 import { FooterOperator } from '@/components/layout/FooterOperator'
 
 function Avatar({ src, name, size = 'medium' }) {
@@ -326,6 +327,12 @@ export default function KelolaProfilDesaPage() {
             </div>
           </div>
         </div>
+
+        {/* ==========================================
+            STEMPEL & TANDA TANGAN KEPALA DESA
+            ========================================== */}
+
+        <PengesahanSuratCard />
 
         {/* ==========================================
             VISI & MISI

@@ -95,25 +95,26 @@ export default function DataWargaReadOnlyPage() {
                   <th className="center">Tempat, Tanggal Lahir</th>
                   <th className="center">No. KK</th>
                   <th className="center">Peran KK</th>
+                  <th className="center">Pekerjaan</th>
                   <th>Alamat</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="empty">
+                    <td colSpan={9} className="empty">
                       Memuat data...
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={8} className="empty sid-admin-error" role="alert">
+                    <td colSpan={9} className="empty sid-admin-error" role="alert">
                       {error}
                     </td>
                   </tr>
                 ) : data.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="empty">
+                    <td colSpan={9} className="empty">
                       Tidak ada data warga.
                     </td>
                   </tr>
@@ -144,6 +145,7 @@ export default function DataWargaReadOnlyPage() {
                       </td>
                       <td className="center">{warga.family?.no_kk_masked ?? '-'}</td>
                       <td className="center">{warga.family_role?.replaceAll('_', ' ') ?? '-'}</td>
+                      <td className="center">{warga.occupation ?? '-'}</td>
                       <td>{warga.address ?? '-'}</td>
                     </tr>
                   ))

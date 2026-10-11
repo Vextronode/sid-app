@@ -5364,6 +5364,32 @@
   opacity: 0.85;
 }
 
+.sid-surat-saya-delete-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--sid-status-rejected-text);
+  border-radius: var(--radius-sm);
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sid-surat-saya-delete-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sid-surat-saya-delete-button svg {
+  width: 14px;
+  height: 14px;
+}
+
 .sid-surat-saya-revision-button svg {
   width: 14px;
   height: 14px;
@@ -20520,6 +20546,23 @@ button.sid-operator-profile {
   color: var(--sid-text-muted);
 }
 
+.sid-wilayah-form-group textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.sid-wilayah-form-group textarea:focus {
+  border-color: var(--sid-primary);
+}
+
 .sid-wilayah-form-help {
   display: block;
   margin-top: 0.3rem;
@@ -21225,4 +21268,111 @@ button.sid-operator-profile {
     margin-right: 1rem;
     margin-left: 1rem;
   }
+}
+
+/* ==========================================
+   PERATURAN DESA (PUBLIK)
+   ========================================== */
+
+.sid-peraturan-page {
+  width: 100%;
+  padding: 2.5rem 1.5rem 3.5rem;
+  background: var(--sid-surface-page);
+}
+
+.sid-peraturan-content {
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.sid-peraturan-description {
+  margin: 0.5rem 0 1.5rem;
+  color: var(--sid-text-secondary);
+  line-height: 1.5;
+}
+
+.sid-peraturan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sid-peraturan-item {
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+  background: var(--sid-surface-card);
+  overflow: hidden;
+}
+
+.sid-peraturan-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--sid-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sid-peraturan-heading {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sid-peraturan-heading strong {
+  color: var(--sid-text-primary);
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.sid-peraturan-heading span {
+  color: var(--sid-text-muted);
+  font-size: 0.8rem;
+}
+
+.sid-peraturan-body {
+  padding: 0 1rem 1rem;
+  border-top: 1px solid var(--sid-border);
+  padding-top: 1rem;
+  color: var(--sid-text-primary);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.sid-beranda-official-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--sid-text-secondary);
+  font-size: 0.95rem;
+}
+
+.sid-beranda-official-contacts li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-transform: capitalize;
+}
+
+.sid-beranda-official-contacts a {
+  color: var(--sid-primary);
+  font-weight: 600;
+  text-transform: none;
 }

@@ -40,3 +40,37 @@ export function rotatePerangkatDesa(id, payload) {
 export function findOfficialCandidate(nik) {
   return api.post('/api/officials/candidates/lookup', { nik })
 }
+
+// Stempel desa dan tanda tangan Kepala Desa disimpan privat: tidak ada URL
+// publik, pratinjau diambil sebagai blob lewat sesi login.
+const multipart = { headers: { 'Content-Type': 'multipart/form-data' } }
+
+export function uploadVillageStamp(file) {
+  const formData = new FormData()
+
+  formData.append('stamp', file)
+
+  return api.post('/api/villages/profile/stamp', formData, multipart)
+}
+
+export async function getVillageStampImage() {
+  const response = await api.get('/api/villages/profile/stamp', { responseType: 'blob' })
+
+  return response.data
+}
+
+export function uploadOfficialSignature(officialId, file) {
+  const formData = new FormData()
+
+  formData.append('signature', file)
+
+  return api.post(`/api/officials/${officialId}/signature`, formData, multipart)
+}
+
+export async function getOfficialSignatureImage(officialId) {
+  const response = await api.get(`/api/officials/${officialId}/signature`, {
+    responseType: 'blob',
+  })
+
+  return response.data
+}
