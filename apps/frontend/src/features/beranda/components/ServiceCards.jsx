@@ -30,7 +30,8 @@ function CardIcon({ icon: Icon, tone }) {
 // Kartu layanan (A14–A18).
 // - Ajukan & Cek status: seluruh kartu adalah link dengan alur login (K4).
 // - Syarat dokumen: belum ada halamannya, jadi bukan link dan tanpa lift (K3).
-// - Pengaduan: kartu tidak bisa diklik; hanya baris WA dan email (K14).
+// - Pengaduan: kartu tidak bisa diklik; hanya baris WA dan email (K14). Baris WA
+//   (D2) membuka menu bagikan AddToAny di tab baru; nama aksesibel = teksnya.
 export function ServiceCards({ content }) {
   const { services, complaint } = content
   const ajukanHref = useLoginAwareHref(HAL_AJUKAN_SURAT)
@@ -69,14 +70,18 @@ export function ServiceCards({ content }) {
             <CardIcon icon={MessageCircle} tone="primary" />
             <span className="bd-service-title">{services.pengaduan.title}</span>
             <a
-              href={`https://wa.me/${complaint.whatsappNumber}`}
+              href={complaint.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="bd-service-contact"
-              aria-label={`${services.pengaduan.whatsappLabel} ${complaint.whatsappLabel}`}
             >
               <span className="bd-service-contact-icon bd-service-contact-icon--accent">
                 <WhatsAppIcon />
               </span>
-              <span>{complaint.whatsappLabel}</span>
+              <span>
+                {complaint.whatsappText}{' '}
+                <span className="bd-visually-hidden">{services.pengaduan.newTabHint}</span>
+              </span>
             </a>
             <a
               href={`mailto:${complaint.email}`}

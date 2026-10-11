@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEV_ONLY_KEYS, getBerandaContent } from './berandaContent'
 
-const PRODUCTION_HIDDEN = ['announcement', 'newsCategories', 'apbdes', 'welcome', 'mapUrl']
+const PRODUCTION_HIDDEN = ['announcement', 'newsCategories', 'apbdes', 'welcome']
 
 describe('getBerandaContent', () => {
   it('marks exactly the K1 items as development-only', () => {
@@ -29,14 +29,21 @@ describe('getBerandaContent', () => {
   it.each([true, false])('keeps manual content and service hours (isDev=%s)', (isDev) => {
     const content = getBerandaContent(isDev)
 
-    expect(content.complaint.whatsappNumber).toMatch(/^\d+$/)
+    // D2 (12 Okt 2026): menu bagikan AddToAny, sementara sampai ada nomor asli.
+    expect(content.complaint.whatsappUrl).toMatch(
+      /^https:\/\/www\.addtoany\.com\/add_to\/whatsapp\?/,
+    )
+    expect(content.complaint.whatsappText).toBe('Bagikan kotak saran via WhatsApp')
     expect(content.complaint.email).toBeTruthy()
+    // D1 (12 Okt 2026): link peta asli, juga di production.
+    expect(content.mapUrl).toBe('https://maps.app.goo.gl/sVU5Xqmasq4UTJ4N6')
     expect(content.contact.hours).toBe('Senin – Jumat, 08.00 – 16.00 WIB')
     expect(content.hero.imageUrl).toBe('/assets/image/beranda/hero-pemandangan.jpg')
-    // Domain dan tanggal pembaruan footer sudah asli (keputusan pemilik, 11 Okt 2026).
+    // Domain dan tanggal pembaruan footer sudah asli (keputusan pemilik, 11 Okt 2026);
+    // tanggal hanya bulan dan tahun (D3, 12 Okt 2026).
     expect(content.site).toEqual({
       domain: 'https://desacibenda.id/',
-      updatedAt: '10 Oktober 2026',
+      updatedAt: 'Oktober 2026',
     })
     // Pita angka: data final dari pemilik proyek (11 Okt 2026).
     expect(content.stats).toEqual({
@@ -66,10 +73,10 @@ describe('getBerandaContent', () => {
     )
   })
 
-  it('opens the dummy APBDes and map links over https', () => {
-    const { apbdes, mapUrl } = getBerandaContent(true)
+  it('opens the dummy APBDes links over https', () => {
+    const { apbdes } = getBerandaContent(true)
 
-    for (const url of [apbdes.documentUrl, apbdes.archiveUrl, mapUrl]) {
+    for (const url of [apbdes.documentUrl, apbdes.archiveUrl]) {
       expect(url).toMatch(/^https:\/\//)
     }
   })

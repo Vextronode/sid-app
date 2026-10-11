@@ -61,7 +61,8 @@ describe('BerandaLayout', () => {
 
     expect(footer.getByText('Pemerintah Desa Cibenda')).toBeInTheDocument()
     expect(footer.getByText('https://desacibenda.id/ · Situs resmi')).toBeInTheDocument()
-    expect(footer.getByText('Terakhir diperbarui 10 Oktober 2026')).toBeInTheDocument()
+    // D3 (12 Okt 2026): bulan dan tahun saja.
+    expect(footer.getByText('Terakhir diperbarui Oktober 2026')).toBeInTheDocument()
   })
 
   it.each([true, false])(
