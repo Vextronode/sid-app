@@ -7,8 +7,13 @@ import {
 } from './roleNavigation'
 
 describe('operator role navigation', () => {
-  it('limits Kasi and Kaur to overview and assigned letters', () => {
-    const expectedRoutes = ['/admin/operator-desa', '/admin/operator-desa/surat']
+  it('limits Kasi and Kaur to overview, assigned letters, and read-only citizen data', () => {
+    const expectedRoutes = [
+      '/admin/operator-desa',
+      '/admin/operator-desa/surat',
+      '/admin/surat-saya',
+      '/admin/data-warga',
+    ]
 
     expect(ROLE_NAVIGATION.kasi_pelayanan).toEqual(expectedRoutes)
     expect(ROLE_NAVIGATION.kaur_tu_umum).toEqual(expectedRoutes)
@@ -18,9 +23,9 @@ describe('operator role navigation', () => {
     const petugasRoutes = ROLE_NAVIGATION.petugas_desa
 
     for (const route of [
-      '/admin/data-warga',
       '/admin/kelola-wilayah',
       '/admin/manajemen-user',
+      '/admin/pejabat-desa',
       '/admin/kelola-profil-desa',
       '/admin/kelola-berita',
       '/admin/approval-settings',

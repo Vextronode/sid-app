@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Eye } from 'lucide-react'
+import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
 
 import { WargaLayout } from '@/components/layout/WargaLayout'
 import { useLetters } from '@/features/surat/hooks/useLetters'
@@ -30,6 +31,21 @@ export default function DaftarSuratSayaPage() {
   const { letters, loading } = useLetters()
 
   const [selectedSurat, setSelectedSurat] = useState(null)
+
+  const toDetail = (item) => ({
+    ...item,
+    noSurat: item.letter_number,
+    pemohon: item.applicant_name,
+    jenis: item.letter_type?.name,
+    tanggal: item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-',
+  })
+
+  // Dibuka dari notifikasi: ?surat=<id>.
+  useLetterDeepLink((letterId) => {
+    const listed = letters.find((item) => String(item.id) === letterId)
+
+    if (listed) setSelectedSurat(toDetail(listed))
+  }, !loading)
 
   // ==========================================
   // FILTER
@@ -145,23 +161,12 @@ export default function DaftarSuratSayaPage() {
 
                           <button
                             type="button"
-                            onClick={() =>
-                              setSelectedSurat({
-                                ...item,
-                                noSurat: item.letter_number,
-                                pemohon: item.applicant_name,
-                                jenis: item.letter_type?.name,
-                                tanggal: item.created_at
-                                  ? new Date(item.created_at).toLocaleDateString('id-ID')
-                                  : '-',
-                              })
-                            }
+                            onClick={() => setSelectedSurat(toDetail(item))}
                             className="sid-surat-saya-detail-button"
                           >
                             <Eye />
                             Detail
                           </button>
-
                         </div>
                       </td>
                     </tr>

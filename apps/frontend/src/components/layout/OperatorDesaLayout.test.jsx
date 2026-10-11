@@ -30,7 +30,10 @@ describe('OperatorDesaLayout role regression', () => {
   it.each(['kasi_pelayanan', 'kaur_tu_umum'])(
     'keeps %s on operator-desa pages and exposes notifications',
     (role) => {
-      useAuth.mockReturnValue({ user: { role, name: 'Operator', role_label: role }, logout: vi.fn() })
+      useAuth.mockReturnValue({
+        user: { role, name: 'Operator', role_label: role },
+        logout: vi.fn(),
+      })
 
       render(
         <MemoryRouter initialEntries={['/admin/operator-desa']}>
@@ -40,7 +43,11 @@ describe('OperatorDesaLayout role regression', () => {
 
       expect(screen.getByRole('link', { name: 'Ringkasan' })).toBeTruthy()
       expect(screen.getByRole('link', { name: 'Permohonan Surat' })).toBeTruthy()
-      expect(screen.queryByRole('link', { name: 'Data Penduduk' })).toBeNull()
+      // Kasi/Kaur boleh melihat data penduduk (khusus-baca), tetapi tidak
+      // mendapat menu pengelolaan milik Petugas Desa.
+      expect(screen.getByRole('link', { name: 'Data Penduduk' })).toBeTruthy()
+      expect(screen.queryByRole('link', { name: 'Manajemen Pengguna' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Kelola Wilayah' })).toBeNull()
 
       fireEvent.click(screen.getByTitle('Notifikasi'))
 

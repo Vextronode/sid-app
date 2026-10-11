@@ -22,14 +22,6 @@ class LetterTypeResource extends JsonResource
             'template' => $this->template,
             'verification_type' => $this->verification_type,
             'requirements_info' => $this->requirement_info,
-            'category_id' => $this->category_id,
-            'category' => $this->when(
-                $this->relationLoaded('category') && $this->category,
-                fn () => [
-                    'code' => $this->category->code,
-                    'name' => $this->category->name,
-                ]
-            ),
             'flow_id' => $this->flow_id,
             'flow' => $this->when(
                 $this->relationLoaded('flow') && $this->flow,
@@ -41,6 +33,12 @@ class LetterTypeResource extends JsonResource
             'assigned_role' => $this->assigned_role,
             'validity_days' => $this->validity_days,
             'is_active' => $this->is_active,
+            'produces_letter' => $this->produces_letter,
+            'data_action' => $this->data_action,
+            'form_fields' => $this->form_fields ?? [],
+            'data_fields' => $this->data_fields ?? [],
+            'signature_slots' => $this->signature_slots ?? [],
+            'has_supporting_document' => $this->supporting_template !== null,
             'status_label' => $this->statusLabel(),
         ];
     }

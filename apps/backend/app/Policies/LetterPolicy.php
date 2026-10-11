@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\LetterDataAction;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
@@ -98,6 +99,30 @@ class LetterPolicy
         }
 
         return false;
+    }
+
+    /**
+     * Terapkan perubahan data: Kasi/Kaur yang ditugaskan pada tipe surat,
+     * atau Petugas Desa sebagai cadangan. Hanya untuk surat final approved
+     * yang tipe suratnya memang punya aksi data.
+     */
+    public function fulfill(User $user, Letter $letter): bool
+    {
+        if (
+            $letter->status->value !== 'approved'
+            || ! $this->isSameVillage($user, $letter)
+            || ($letter->letterType?->data_action ?? LetterDataAction::None) === LetterDataAction::None
+        ) {
+            return false;
+        }
+
+        if ($user->role === 'petugas_desa') {
+            return true;
+        }
+
+        return in_array($user->role, ['kasi_pelayanan', 'kaur_tu_umum'], true)
+            && ($letter->letterType->assigned_role === null
+                || $letter->letterType->assigned_role === $user->role);
     }
 
     public function delete(User $user, Letter $letter): bool

@@ -8,6 +8,9 @@ const { getSuratDetail, previewSuratPDF, generateSuratPDF } = vi.hoisted(() => (
 }))
 
 vi.mock('@/lib/api', () => ({ getSuratDetail }))
+vi.mock('@/features/surat/components/LetterExtrasPanel', () => ({
+  LetterExtrasPanel: () => null,
+}))
 vi.mock('@/features/cetak-surat/utils/generateSuratPDF', () => ({
   previewSuratPDF,
   generateSuratPDF,
@@ -35,11 +38,13 @@ describe('OperatorSuratPreviewModal', () => {
     expect(screen.queryByRole('button', { name: 'Tolak' })).toBeNull()
 
     fireEvent.click(downloadButton)
-    await waitFor(() => expect(generateSuratPDF).toHaveBeenCalledWith({
-      id: 'letter-1',
-      status: 'approved',
-      approvals: [],
-    }))
+    await waitFor(() =>
+      expect(generateSuratPDF).toHaveBeenCalledWith({
+        id: 'letter-1',
+        status: 'approved',
+        approvals: [],
+      }),
+    )
 
     getSuratDetail.mockResolvedValueOnce({
       data: { data: { id: 'letter-2', status: 'in_progress', approvals: [] } },

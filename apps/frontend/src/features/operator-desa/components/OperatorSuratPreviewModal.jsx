@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react'
 import { Download } from 'lucide-react'
 
 import { getSuratDetail } from '@/lib/api'
+import { LetterExtrasPanel } from '@/features/surat/components/LetterExtrasPanel'
 import { previewSuratPDF, generateSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
@@ -177,6 +178,8 @@ export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose 
                   <p className="sid-modal-note-text">{surat.notes}</p>
                 </div>
               )}
+
+              <LetterExtrasPanel letterId={surat.id} />
 
               <section className="sid-modal-note">
                 <p className="sid-modal-note-label">Riwayat Persetujuan</p>

@@ -4,10 +4,10 @@ namespace App\Services;
 
 use App\Enums\LetterStatus;
 use App\Models\Letter;
-use App\Models\Official;
 use App\Models\User;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
+use App\Support\LetterValueFormatter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,6 +17,8 @@ class PdfService
     public function __construct(
         protected OfficialRepository $officialRepository,
         protected LetterRepository $letterRepository,
+        protected LetterSnapshotService $letterSnapshotService,
+        protected LetterSignatureService $letterSignatureService,
     ) {}
 
     public function download(
@@ -44,33 +46,7 @@ class PdfService
             abort(403, 'Masa berlaku surat telah habis.');
         }
 
-        // Tanda tangan dan stempel tetap milik Kepala Desa aktif, termasuk jika Sekdes yang menyetujui surat.
-        $kades = $this->officialRepository->findActiveVillageHeadWithCitizenOrFail($letter->village_id);
-
-        /**
-         * Check if letterType exists
-         */
-        if (! $letter->letterType) {
-            abort(500, 'Template surat tidak ditemukan. Hubungi administrator.');
-        }
-
-        /**
-         * Build letter body from LetterType template
-         */
-        $templateHtml = $this->renderTemplate($letter, $kades, $template);
-
-        $view = match ($template) {
-            'digital' => 'pdf.templates.digital',
-            default => 'pdf.templates.wet',
-        };
-
-        $pdf = Pdf::loadView($view, [
-            'letter' => $letter,
-            'kades' => $kades,
-            'template' => $templateHtml,
-        ]);
-
-        return $pdf->download("surat-{$letter->id}.pdf");
+        return $this->buildPdf($letter, $template)->download("surat-{$letter->id}.pdf");
     }
 
     public function preview(
@@ -81,120 +57,191 @@ class PdfService
 
         $letter = $this->letterRepository->loadForPdf($letter);
 
-        $kades = $this->officialRepository->findActiveVillageHeadWithCitizenOrFail($letter->village_id);
+        return $this->buildPdf($letter, $template)->stream("surat-{$letter->id}.pdf");
+    }
 
-        /**
-         * Check if letterType exists
-         */
+    /**
+     * Dokumen pendukung yang digenerate dari isian form (mis. surat
+     * pernyataan), lengkap dengan tanda tangan pemohon dan pihak terkait.
+     * Dipakai approver dan Kasi/Kaur sebagai bahan pertimbangan.
+     */
+    public function supportingDocument(Letter $letter, bool $download): Response
+    {
+        $letter = $this->letterRepository->loadForPdf($letter);
+        $context = $this->letterSnapshotService->supportingContextFor($letter);
+
+        if (! $context['supporting_template']) {
+            abort(404, 'Jenis surat ini tidak memiliki dokumen pendukung.');
+        }
+
+        $pdf = Pdf::loadView('pdf.templates.digital', [
+            'letter' => $letter,
+            'kades' => null,
+            'template' => $this->renderTemplate($letter, $context, 'digital', $context['supporting_template']),
+        ]);
+        $filename = "dokumen-pendukung-{$letter->id}.pdf";
+
+        return $download ? $pdf->download($filename) : $pdf->stream($filename);
+    }
+
+    private function buildPdf(Letter $letter, string $template): \Barryvdh\DomPDF\PDF
+    {
+        // Surat approved dirender dari snapshot final approve; tanda tangan
+        // dan stempel milik Kepala Desa yang menjabat saat itu, termasuk
+        // jika Sekdes yang menyetujui surat.
+        $context = $this->letterSnapshotService->contextFor($letter);
+        $kades = $this->letterSnapshotService->signerFor($letter, $context);
+
         if (! $letter->letterType) {
             abort(500, 'Template surat tidak ditemukan. Hubungi administrator.');
         }
-
-        /**
-         * Build letter body from LetterType template
-         */
-        $templateHtml = $this->renderTemplate($letter, $kades, $template);
 
         $view = match ($template) {
             'digital' => 'pdf.templates.digital',
             default => 'pdf.templates.wet',
         };
 
-        $pdf = Pdf::loadView($view, [
+        return Pdf::loadView($view, [
             'letter' => $letter,
             'kades' => $kades,
-            'template' => $templateHtml,
+            'template' => $this->renderTemplate($letter, $context, $template),
         ]);
-
-        return $pdf->stream("surat-{$letter->id}.pdf");
     }
 
-    private function renderTemplate(Letter $letter, Official $kades, string $template): string
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function renderTemplate(Letter $letter, array $context, string $template, ?string $source = null): string
     {
-        $replacements = $this->getReplacements($letter, $kades, $template);
+        $replacements = $this->getReplacements($letter, $context, $template);
 
         $templateHtml = str_replace(
             array_keys($replacements),
             array_values($replacements),
-            $letter->letterType->template
+            (string) ($source ?? $context['template'] ?? '')
         );
 
         // Replace any unmapped {{ placeholder }} tags with fallback underline line
         return preg_replace('/\{\{\s*([a-zA-Z0-9_]+)\s*}}/', '________________________', $templateHtml);
     }
 
-    private function getReplacements(Letter $letter, Official $kades, string $template): array
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function getReplacements(Letter $letter, array $context, string $template): array
     {
-        $citizen = $letter->citizen;
-        $gender = '-';
-        if ($citizen && $citizen->gender) {
-            $gender = $citizen->gender === 'L' ? 'Laki-laki' : ($citizen->gender === 'P' ? 'Perempuan' : $citizen->gender);
-        }
-
-        $birthPlaceDate = '-';
-        if ($citizen) {
-            $pob = $citizen->place_of_birth ?? '';
-            $dob = $citizen->date_of_birth ? $citizen->date_of_birth->locale('id')->translatedFormat('d F Y') : '';
-            if ($pob && $dob) {
-                $birthPlaceDate = "{$pob}, {$dob}";
-            } else {
-                $birthPlaceDate = $pob ?: ($dob ?: '-');
-            }
-        }
-
-        $submittedDate = $letter->created_at ? $letter->created_at->locale('id') : now()->locale('id');
-        $submittedAtFormatted = $submittedDate->translatedFormat('d F Y');
+        $signer = $context['signer'];
+        $village = $context['village'];
 
         $signatureHtml = '';
-        $signatureDirectory = "official-signatures/{$kades->village_id}/{$kades->id}/";
-        if (
-            $template === 'digital'
-            && $kades->signature_img
-            && str_starts_with($kades->signature_img, $signatureDirectory)
-            && Storage::disk('private_uploads')->exists($kades->signature_img)
-        ) {
-            $signatureHtml .= '<img src="'.Storage::disk('private_uploads')->path($kades->signature_img).'" style="max-height: 60px; width: auto;">';
+        $signatureDirectory = "official-signatures/{$signer['village_id']}/{$signer['official_id']}/";
+        if ($template === 'digital') {
+            $signatureHtml .= $this->privateImage($signer['signature_img'] ?? null, $signatureDirectory, 'max-height: 60px; width: auto;');
         }
-        $stampDirectory = "village-stamps/{$letter->village_id}/";
-        if (
-            $letter->village->stamp_img
-            && str_starts_with($letter->village->stamp_img, $stampDirectory)
-            && Storage::disk('private_uploads')->exists($letter->village->stamp_img)
-        ) {
-            $signatureHtml .= '<img src="'.Storage::disk('private_uploads')->path($letter->village->stamp_img).'" style="max-height: 45px; width: auto; margin-left: 10px;">';
-        }
+        $signatureHtml .= $this->privateImage(
+            $village['stamp_img'] ?? null,
+            "village-stamps/{$letter->village_id}/",
+            'max-height: 45px; width: auto; margin-left: 10px;',
+        );
 
         $logoPath = public_path('images/logo-pangandaran.png');
         $logoHtml = file_exists($logoPath)
             ? '<img src="'.$logoPath.'" style="width: 75px; height: auto;">'
             : '';
 
-        $replacements = [
-            '{{ logo_img }}' => $logoHtml,
+        // Kop surat dan wilayah administratif diambil dari profil desa.
+        $villageName = (string) ($village['name'] ?? '');
+        $villageShort = preg_replace('/^Desa\s+/i', '', $villageName);
+        $district = (string) ($village['district'] ?? '');
+        $regency = (string) ($village['regency'] ?? '');
+        $province = (string) ($village['province'] ?? '');
+        $villageRegion = implode(' ', array_filter([
+            $villageShort !== '' ? "Desa {$villageShort}" : null,
+            $district !== '' ? "Kecamatan {$district}" : null,
+            $regency !== '' ? "Kabupaten {$regency}" : null,
+            $province !== '' ? $province : null,
+        ]));
+
+        // logo_img dan signature_img adalah HTML buatan sistem; nilai lain
+        // berasal dari data warga/isian form dan wajib di-escape karena
+        // template dirender mentah ({!! $template !!}).
+        $textReplacements = [
             '{{ letter_number }}' => $letter->letter_number ?? '470/      /Des/      /20',
             '{{ applicant_name }}' => $letter->applicant_name ?? '________________________________________',
             '{{ applicant_nik }}' => $letter->applicant_nik ?? '________________________________________',
             '{{ applicant_address }}' => $letter->applicant_address ?? '________________________________________',
-            '{{ applicant_gender }}' => $gender,
-            '{{ applicant_birth_place_date }}' => $birthPlaceDate,
+            '{{ applicant_gender }}' => $context['applicant']['gender'],
+            '{{ applicant_birth_place_date }}' => $context['applicant']['birth_place_date'],
             '{{ purpose }}' => $letter->purpose ?? '________________________________________',
-            '{{ submitted_at }}' => $submittedAtFormatted,
-            '{{ village_name }}' => $letter->village->name ?? 'Cibenda',
-            '{{ village_name_short }}' => preg_replace('/^Desa\s+/i', '', $letter->village->name ?? 'Cibenda'),
-            '{{ village_address }}' => $letter->village->address ?? 'Jl.Raya Cijulang Nomor.173.Tlp.0265.2640613',
-            '{{ village_phone }}' => $letter->village->phone ?? '0265.2640613',
-            '{{ village_head_name }}' => $kades->citizen->name ?? '________________________________________',
-            '{{ signature_img }}' => $signatureHtml,
+            '{{ submitted_at }}' => $context['submitted_at'],
+            '{{ issued_at }}' => $context['issued_at'] ?? $context['submitted_at'],
+            '{{ applicant_resident_phrase }}' => $context['applicant']['resident_phrase']
+                ?? 'benar-benar warga masyarakat Desa kami, dan',
+            '{{ village_name }}' => $villageName,
+            '{{ village_name_short }}' => $villageShort,
+            '{{ village_name_upper }}' => mb_strtoupper($villageShort),
+            '{{ village_district }}' => $district,
+            '{{ village_district_upper }}' => mb_strtoupper($district),
+            '{{ village_regency }}' => $regency,
+            '{{ village_regency_upper }}' => mb_strtoupper($regency),
+            '{{ village_province }}' => $province,
+            '{{ village_region }}' => $villageRegion,
+            '{{ village_address }}' => (string) ($village['address'] ?? ''),
+            '{{ village_phone }}' => (string) ($village['phone'] ?? ''),
+            '{{ village_postal_code }}' => (string) ($village['postal_code'] ?? ''),
+            '{{ village_email }}' => (string) ($village['email'] ?? ''),
+            '{{ village_head_name }}' => $signer['name'] ?? '________________________________________',
         ];
 
-        if (! empty($letter->payload) && is_array($letter->payload)) {
-            foreach ($letter->payload as $key => $value) {
-                if (is_scalar($value) && $value !== null && $value !== '') {
-                    $replacements["{{ {$key} }}"] = (string) $value;
-                }
+        // Slot tanda tangan warga: {{ nama_ttd_<slot> }} dan {{ ttd_<slot> }}.
+        $signatureImages = [];
+        foreach ($this->letterSignatureService->renderData($letter) as $slotKey => $signature) {
+            $textReplacements["{{ nama_ttd_{$slotKey} }}"] = $signature['name'];
+            $signatureImages["{{ ttd_{$slotKey} }}"] = match (true) {
+                $signature['image'] !== null => '<img src="'.$signature['image'].'" style="max-height: 60px; width: auto;">',
+                $signature['method'] === 'wet' => '<em>(tanda tangan basah terlampir)</em>',
+                default => '',
+            };
+        }
+
+        // Isian form diformat menurut tipenya (tanggal, rupiah + terbilang,
+        // pilihan, teks panjang). Isian tidak boleh menimpa placeholder
+        // milik sistem (nomor surat, nama Kades, dsb.).
+        $formatted = LetterValueFormatter::format(
+            $context['form_fields'] ?? $letter->letterType?->form_fields ?? [],
+            is_array($letter->payload) ? $letter->payload : [],
+        );
+        $payloadHtml = [];
+
+        foreach ($formatted['text'] as $key => $value) {
+            if (! isset($textReplacements["{{ {$key} }}"])) {
+                $textReplacements["{{ {$key} }}"] = $value;
             }
         }
 
-        return $replacements;
+        foreach ($formatted['html'] as $key => $value) {
+            if (! isset($textReplacements["{{ {$key} }}"])) {
+                $payloadHtml["{{ {$key} }}"] = $value;
+            }
+        }
+
+        $replacements = array_map(fn ($value) => e((string) $value), $textReplacements);
+        $replacements['{{ logo_img }}'] = $logoHtml;
+        $replacements['{{ signature_img }}'] = $signatureHtml;
+
+        return [...$payloadHtml, ...$replacements, ...$signatureImages];
+    }
+
+    private function privateImage(?string $path, string $directory, string $style): string
+    {
+        if (
+            ! $path
+            || ! str_starts_with($path, $directory)
+            || ! Storage::disk('private_uploads')->exists($path)
+        ) {
+            return '';
+        }
+
+        return '<img src="'.Storage::disk('private_uploads')->path($path).'" style="'.$style.'">';
     }
 }

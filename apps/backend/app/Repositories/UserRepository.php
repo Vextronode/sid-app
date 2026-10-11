@@ -82,6 +82,18 @@ class UserRepository
     }
 
     /**
+     * @return Collection<int, User>
+     */
+    public function allActiveByRoleAndVillage(string $role, string $villageId): Collection
+    {
+        return User::query()
+            ->where('role', $role)
+            ->where('is_active', true)
+            ->where('village_id', $villageId)
+            ->get();
+    }
+
+    /**
      * Dipakai UserService::update() untuk guard "tidak dapat
      * menonaktifkan satu-satunya akun Petugas Desa yang masih aktif".
      */

@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
-import { getSuratSchema } from '../validation/suratSchema'
+import { getSuratSchema, signerFieldNames } from '../validation/suratSchema'
+import { buildLetterFormData } from '../utils/letterFormData'
+import { getMySignature } from '../api/signatureApi'
 
 import { CheckCircle2, ChevronDown } from 'lucide-react'
 
@@ -12,6 +15,20 @@ import { useSubmitSurat } from '../hooks/useSubmitSurat'
 import { AutoFillProfile } from './AutoFillProfile'
 import { FileUploader } from './FileUploader'
 
+const WET_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png'
+
+function firstServerError(error) {
+  const errors = error?.response?.data?.errors
+
+  if (errors && typeof errors === 'object') {
+    const first = Object.values(errors).flat()[0]
+
+    if (first) return first
+  }
+
+  return error?.response?.data?.message ?? 'Gagal mengirim surat.'
+}
+
 export function DynamicSuratForm({
   config,
   onCancel,
@@ -19,9 +36,17 @@ export function DynamicSuratForm({
   initialData = {},
   onSubmitAPI = null,
   letterTypes = [],
+  onSelectType = null,
 }) {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [submitError, setSubmitError] = useState('')
+  const [hasSignature, setHasSignature] = useState(null)
+
+  const signatureSlots = config.signatureSlots ?? []
+  const applicantSlots = signatureSlots.filter((slot) => slot.signer === 'applicant')
+  const otherSlots = signatureSlots.filter((slot) => slot.signer === 'other')
+  const needsOwnSignature = applicantSlots.length > 0
 
   const {
     register,
@@ -31,7 +56,10 @@ export function DynamicSuratForm({
     formState: { errors },
   } = useForm({
     resolver: zodResolver(getSuratSchema(config)),
-    defaultValues: initialData,
+    defaultValues: {
+      ...Object.fromEntries(otherSlots.map((slot) => [signerFieldNames(slot.key).mode, 'digital'])),
+      ...initialData,
+    },
     mode: 'onSubmit',
   })
 
@@ -41,7 +69,25 @@ export function DynamicSuratForm({
 
   const { handleSubmit: submitSurat, loading } = useSubmitSurat()
 
-  const handleFileChange = (e, name) => {
+  useEffect(() => {
+    if (!needsOwnSignature) return undefined
+
+    let active = true
+
+    getMySignature()
+      .then((signature) => {
+        if (active) setHasSignature(Boolean(signature?.has_signature))
+      })
+      .catch(() => {
+        if (active) setHasSignature(null)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [needsOwnSignature])
+
+  const handleFileChange = (e, name, multiple = true) => {
     const files = Array.from(e.target.files || [])
 
     if (!files.length) {
@@ -50,7 +96,7 @@ export function DynamicSuratForm({
 
     const currentFiles = watchedFormData?.[name] || []
 
-    setValue(name, [...currentFiles, ...files], {
+    setValue(name, multiple ? [...currentFiles, ...files] : [files[0]], {
       shouldValidate: true,
       shouldDirty: true,
     })
@@ -73,46 +119,18 @@ export function DynamicSuratForm({
   }
 
   const handleFormSubmit = async (formData) => {
-    const selectedLetterType = letterTypes.find((item) => item.code === config.code) ??
+    const selectedLetterType =
+      letterTypes.find((item) => item.code === config.code) ??
       (config.id ? { id: config.id } : null)
 
     if (!selectedLetterType) {
-      alert('Jenis surat tidak ditemukan.')
+      setSubmitError('Jenis surat tidak ditemukan.')
       return
     }
 
-    const payload = new FormData()
+    setSubmitError('')
 
-    payload.append('letter_type_id', selectedLetterType.id)
-
-    if (formData.keperluan) {
-      payload.append('purpose', formData.keperluan)
-    }
-
-    if (formData.catatan) {
-      payload.append('notes', formData.catatan)
-    }
-
-    if (Array.isArray(formData.dokumen)) {
-      formData.dokumen.forEach((file) => {
-        payload.append('attachments[]', file)
-      })
-    }
-
-    Object.keys(formData).forEach((key) => {
-      if (!['keperluan', 'catatan', 'dokumen'].includes(key)) {
-        const value = formData[key]
-
-        if (
-          value !== undefined &&
-          value !== null &&
-          !(value instanceof File) &&
-          !Array.isArray(value)
-        ) {
-          payload.append(`payload[${key}]`, value)
-        }
-      }
-    })
+    const payload = buildLetterFormData(config, selectedLetterType.id, formData)
 
     try {
       let response
@@ -127,9 +145,16 @@ export function DynamicSuratForm({
     } catch (error) {
       console.error(error)
 
-      alert(error.response?.data?.message ?? 'Gagal mengirim surat.')
+      setSubmitError(firstServerError(error))
     }
   }
+
+  const renderError = (name) =>
+    errors[name]?.message ? (
+      <span className="sid-form-field-error" role="alert">
+        {errors[name].message}
+      </span>
+    ) : null
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="sid-card w-full" noValidate>
@@ -144,7 +169,11 @@ export function DynamicSuratForm({
           <div className="relative">
             <select
               value={config.code}
-              onChange={(e) => navigate(`/pengajuan-surat/${e.target.value}`)}
+              onChange={(e) =>
+                onSelectType
+                  ? onSelectType(e.target.value)
+                  : navigate(`/pengajuan-surat/${e.target.value}`)
+              }
               className="sid-select appearance-none pr-10"
             >
               {(letterTypes.some((item) => item.code === config.code)
@@ -201,6 +230,7 @@ export function DynamicSuratForm({
         >
           {config.fields.map((field) => {
             const fieldError = errors[field.name]
+            const inputClass = `sid-input ${fieldError ? 'sid-input-error' : ''}`
 
             return (
               <div key={field.name} className="sid-form-group">
@@ -225,7 +255,30 @@ export function DynamicSuratForm({
                     type="text"
                     {...register(field.name)}
                     placeholder={field.placeholder}
-                    className={`sid-input ${fieldError ? 'sid-input-error' : ''}`}
+                    className={inputClass}
+                  />
+                )}
+
+                {field.type === 'nik' && (
+                  <input
+                    id={field.name}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={16}
+                    {...register(field.name)}
+                    placeholder={field.placeholder || '16 digit NIK'}
+                    className={inputClass}
+                  />
+                )}
+
+                {field.type === 'number' && (
+                  <input
+                    id={field.name}
+                    type="text"
+                    inputMode="decimal"
+                    {...register(field.name)}
+                    placeholder={field.placeholder}
+                    className={inputClass}
                   />
                 )}
 
@@ -234,29 +287,133 @@ export function DynamicSuratForm({
                     id={field.name}
                     type="date"
                     {...register(field.name)}
-                    className={`sid-input ${fieldError ? 'sid-input-error' : ''}`}
+                    className={inputClass}
                   />
+                )}
+
+                {field.type === 'select' && (
+                  <select
+                    id={field.name}
+                    {...register(field.name)}
+                    className={`sid-select ${fieldError ? 'sid-input-error' : ''}`}
+                  >
+                    <option value="">Pilih...</option>
+                    {field.options.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label ?? option.value}
+                      </option>
+                    ))}
+                  </select>
                 )}
 
                 {field.type === 'file' && (
                   <FileUploader
                     field={field}
                     files={watchedFormData?.[field.name] || []}
-                    onFileChange={handleFileChange}
+                    onFileChange={(e, name) => handleFileChange(e, name, field.multiple)}
                     onRemoveFile={handleRemoveFile}
                   />
                 )}
 
-                {fieldError?.message && (
-                  <span className="sid-form-field-error" role="alert">
-                    {fieldError.message}
-                  </span>
-                )}
+                {renderError(field.name)}
               </div>
             )
           })}
         </div>
       </section>
+
+      {signatureSlots.length > 0 && (
+        <section className="sid-section">
+          <h3 className="sid-section-title">Langkah 3 - Tanda Tangan</h3>
+
+          <div className="flex flex-col gap-4">
+            {applicantSlots.map((slot) => (
+              <div key={slot.key} className="sid-form-group">
+                <span className="sid-label">{slot.label}</span>
+
+                {hasSignature === false ? (
+                  <p className="sid-form-field-error" role="alert">
+                    Anda belum memiliki tanda tangan. <Link to="/profile">Buat tanda tangan</Link>{' '}
+                    terlebih dahulu sebelum mengajukan surat ini.
+                  </p>
+                ) : (
+                  <p className="sid-info">
+                    <CheckCircle2 size={16} />
+                    <span>Memakai tanda tangan yang tersimpan di akun Anda.</span>
+                  </p>
+                )}
+              </div>
+            ))}
+
+            {otherSlots.map((slot) => {
+              const names = signerFieldNames(slot.key)
+              const mode = watchedFormData?.[names.mode] ?? 'digital'
+
+              return (
+                <fieldset key={slot.key} className="sid-form-group">
+                  <legend className="sid-label">
+                    {slot.label} <span className="sid-required">*</span>
+                  </legend>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2">
+                      <input type="radio" value="digital" {...register(names.mode)} />
+                      <span>Minta tanda tangan digital lewat NIK</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input type="radio" value="wet" {...register(names.mode)} />
+                      <span>Unggah dokumen ber-tanda tangan basah (tidak punya akun)</span>
+                    </label>
+                  </div>
+
+                  {mode === 'digital' ? (
+                    <>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={16}
+                        aria-label={`NIK ${slot.label}`}
+                        {...register(names.nik)}
+                        placeholder={`NIK ${slot.label} (16 digit)`}
+                        className={`sid-input ${errors[names.nik] ? 'sid-input-error' : ''}`}
+                      />
+                      <p className="sid-upload-description">
+                        Pemilik NIK akan menerima permintaan dan dapat menyetujui atau menolaknya.
+                        Surat baru diproses setelah disetujui.
+                      </p>
+                      {renderError(names.nik)}
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        aria-label={`Nama ${slot.label}`}
+                        {...register(names.name)}
+                        placeholder={`Nama lengkap ${slot.label}`}
+                        className={`sid-input ${errors[names.name] ? 'sid-input-error' : ''}`}
+                      />
+                      {renderError(names.name)}
+                      <FileUploader
+                        field={{ name: names.file, accept: WET_FILE_ACCEPT, multiple: false }}
+                        files={watchedFormData?.[names.file] || []}
+                        onFileChange={(e, name) => handleFileChange(e, name, false)}
+                        onRemoveFile={handleRemoveFile}
+                      />
+                      {renderError(names.file)}
+                    </>
+                  )}
+                </fieldset>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {submitError && (
+        <p className="sid-form-field-error" role="alert">
+          {submitError}
+        </p>
+      )}
 
       <div
         className="sid-actions pt-4 border-t"
@@ -268,7 +425,11 @@ export function DynamicSuratForm({
           Batal
         </button>
 
-        <button type="submit" disabled={loading} className="sid-btn sid-btn-primary">
+        <button
+          type="submit"
+          disabled={loading || (needsOwnSignature && hasSignature === false)}
+          className="sid-btn sid-btn-primary"
+        >
           {loading ? 'Mengirim...' : 'Kirim'}
         </button>
       </div>

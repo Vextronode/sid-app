@@ -34,6 +34,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
+import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
 import { useApprovalLetterList } from '@/features/approval/hooks/useApprovalLetterList'
 import SuratDetailModalRT from '@/features/approval-rt/components/SuratDetailModalRT'
 
@@ -141,6 +142,18 @@ export default function RTListPage() {
 
     setIsReadOnly(!canProcessAtRt)
   }
+
+  // Dibuka dari notifikasi: ?surat=<id>.
+  useLetterDeepLink((letterId) => {
+    const listed = data.find((surat) => String(surat.id) === letterId)
+
+    if (listed) {
+      handleOpenDetail(listed)
+    } else {
+      setSelectedId(letterId)
+      setIsReadOnly(true)
+    }
+  }, !loading)
 
   // ==========================================
   // RENDER

@@ -18,6 +18,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
+import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
 
 import { useApprovalLetterList } from '@/features/approval/hooks/useApprovalLetterList'
 import SuratDetailModalKadus from '@/features/approval-kadus/components/SuratDetailModalKadus'
@@ -91,6 +92,9 @@ export default function KadusListPage() {
   const handleOpenDetail = (surat) => {
     setSelectedId(surat.id)
   }
+
+  // Dibuka dari notifikasi: ?surat=<id>.
+  useLetterDeepLink((letterId) => setSelectedId(letterId))
 
   // ==========================================
   // RENDER

@@ -4,14 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * EV5-1-S2. Sesuai Class Diagram Core v5 (entity ApprovalFlow).
  *
- * 1 category bisa punya BANYAK flow berbeda — flow baru = tambah row,
- * BUKAN ubah kode (Config over Code, SID-ARCH-SYS-001 S1).
+ * Semua tipe surat memakai satu flow RT -> Kepala Desa/Sekdes. Flow dan
+ * step-nya diset developer lewat seeder; tidak ada endpoint tulis.
  */
 class ApprovalFlow extends Model
 {
@@ -19,7 +18,6 @@ class ApprovalFlow extends Model
 
     protected $fillable = [
         'village_id',
-        'category_id',
         'name',
         'description',
         'is_active',
@@ -28,11 +26,6 @@ class ApprovalFlow extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(LetterCategory::class, 'category_id');
-    }
 
     /**
      * Eager-load ini (findWithSteps pattern di Repository) dipakai

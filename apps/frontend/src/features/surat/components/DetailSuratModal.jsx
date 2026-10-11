@@ -18,6 +18,7 @@ import { ChevronLeft, Download, Eye, FileText, X, Check, Clock } from 'lucide-re
 
 import { downloadSuratPDF, previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { LetterExtrasPanel } from './LetterExtrasPanel'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import {
@@ -521,6 +522,10 @@ export function DetailSuratModal({ data, onClose }) {
         <RejectionReason surat={data} />
 
         {/* PREVIEW */}
+
+        {/* LAMPIRAN, TANDA TANGAN, DOKUMEN PENDUKUNG */}
+
+        <LetterExtrasPanel letterId={data.id} />
 
         <SuratPreview surat={data} />
 

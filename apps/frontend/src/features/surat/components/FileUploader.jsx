@@ -16,7 +16,7 @@ export function FileUploader({ field, files = [], onFileChange, onRemoveFile }) 
     <div className="sid-form-group">
       <input
         type="file"
-        multiple
+        multiple={field.multiple !== false}
         ref={inputRef}
         accept={field.accept}
         onChange={(e) => onFileChange(e, field.name)}
@@ -64,7 +64,7 @@ export function FileUploader({ field, files = [], onFileChange, onRemoveFile }) 
           Klik untuk upload dokumen {files.length > 0 && 'tambahan'}
         </p>
 
-        <p className="sid-upload-description">PDF, DOCX, JPG, PNG - maks. 5MB per file</p>
+        <p className="sid-upload-description">PDF, JPG, PNG - maks. 2MB per file</p>
       </div>
     </div>
   )

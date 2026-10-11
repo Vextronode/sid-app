@@ -10,8 +10,7 @@ class UpdateLetterTypeRequest extends FormRequest
 {
     /**
      * Otorisasi peran ditegakkan middleware `role:petugas_desa` di
-     * routes/api.php. Cross-validation flow_id vs category_id ada di
-     * LetterTypeService::update() (butuh lookup ApprovalFlow).
+     * routes/api.php.
      */
     public function authorize(): bool
     {
@@ -19,9 +18,9 @@ class UpdateLetterTypeRequest extends FormRequest
     }
 
     /**
-     * UC-21 MVP: hanya field ini yang boleh diedit Petugas Desa -
-     * template & requirements_info tetap developer-only (Next Dev
-     * Paket 1), lihat schemas/letter-types/letter-types.yaml#/LetterTypeUpdateRequest.
+     * Hanya field ini yang boleh diedit Petugas Desa. Flow, template,
+     * isian form, slot tanda tangan, dan aksi data diset developer
+     * lewat seeder dan tidak bisa diubah dari sini.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -30,8 +29,6 @@ class UpdateLetterTypeRequest extends FormRequest
         return [
             'validity_days' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'assigned_role' => ['sometimes', 'nullable', Rule::in(['kasi_pelayanan', 'kaur_tu_umum'])],
-            'category_id' => ['sometimes', 'exists:letter_categories,id'],
-            'flow_id' => ['sometimes', 'exists:approval_flows,id'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

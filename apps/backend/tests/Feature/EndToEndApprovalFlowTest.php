@@ -8,7 +8,6 @@ use App\Models\Citizen;
 use App\Models\FlowStep;
 use App\Models\Hamlet;
 use App\Models\Letter;
-use App\Models\LetterCategory;
 use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\Rt;
@@ -329,7 +328,6 @@ class EndToEndApprovalFlowTest extends TestCase
     private function makeFlow(array $steps): ApprovalFlow
     {
         $flow = ApprovalFlow::factory()->create([
-            'category_id' => LetterCategory::factory(),
         ]);
 
         foreach ($steps as $index => $step) {

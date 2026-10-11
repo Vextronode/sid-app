@@ -12,6 +12,11 @@ const EMPTY_FORM = {
   head_name: '',
   address: '',
   phone: '',
+  district: '',
+  regency: '',
+  province: '',
+  postal_code: '',
+  email: '',
   history: '',
 }
 
@@ -32,6 +37,11 @@ export default function EditProfilDesaModal({
       head_name: initialData?.head_name ?? '',
       address: initialData?.address ?? '',
       phone: initialData?.phone ?? '',
+      district: initialData?.district ?? '',
+      regency: initialData?.regency ?? '',
+      province: initialData?.province ?? '',
+      postal_code: initialData?.postal_code ?? '',
+      email: initialData?.email ?? '',
       history: initialData?.history ?? '',
     })
   }, [open, initialData])
@@ -59,6 +69,11 @@ export default function EditProfilDesaModal({
       head_name: form.head_name.trim(),
       address: form.address.trim(),
       phone: form.phone.trim(),
+      district: form.district.trim(),
+      regency: form.regency.trim(),
+      province: form.province.trim(),
+      postal_code: form.postal_code.trim(),
+      email: form.email.trim(),
       history: form.history.trim(),
     })
   }
@@ -128,6 +143,85 @@ export default function EditProfilDesaModal({
                 placeholder="Masukkan nama kepala desa"
                 maxLength={100}
                 required
+                disabled={processing}
+              />
+            </div>
+
+            <p className="sid-profil-desa-form-field-full">
+              Data berikut tercetak di kop surat dan redaksi surat keterangan.
+            </p>
+
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-district">Kecamatan</label>
+
+              <input
+                id="profil-district"
+                name="district"
+                type="text"
+                value={form.district}
+                onChange={handleChange}
+                placeholder="Contoh: Parigi"
+                maxLength={100}
+                disabled={processing}
+              />
+            </div>
+
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-regency">Kabupaten/Kota</label>
+
+              <input
+                id="profil-regency"
+                name="regency"
+                type="text"
+                value={form.regency}
+                onChange={handleChange}
+                placeholder="Contoh: Pangandaran"
+                maxLength={100}
+                disabled={processing}
+              />
+            </div>
+
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-province">Provinsi</label>
+
+              <input
+                id="profil-province"
+                name="province"
+                type="text"
+                value={form.province}
+                onChange={handleChange}
+                placeholder="Contoh: Jawa Barat"
+                maxLength={100}
+                disabled={processing}
+              />
+            </div>
+
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-postal_code">Kode Pos</label>
+
+              <input
+                id="profil-postal_code"
+                name="postal_code"
+                type="text"
+                value={form.postal_code}
+                onChange={handleChange}
+                placeholder="Contoh: 46393"
+                maxLength={10}
+                disabled={processing}
+              />
+            </div>
+
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-email">Email Kantor Desa</label>
+
+              <input
+                id="profil-email"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="Contoh: kantordesa@contoh.id"
+                maxLength={150}
                 disabled={processing}
               />
             </div>

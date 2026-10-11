@@ -8,17 +8,17 @@ use LogicException;
 
 class LetterNumberCounterRepository
 {
-    public function nextNumber(string $villageId, int $letterTypeId, int $year): int
+    public function nextNumber(string $villageId, string $classificationCode, int $year): int
     {
         if (DB::transactionLevel() === 0) {
             throw new LogicException('Nomor surat hanya boleh dibuat di dalam transaksi database.');
         }
 
-        return DB::transaction(function () use ($villageId, $letterTypeId, $year) {
+        return DB::transaction(function () use ($villageId, $classificationCode, $year) {
             $counter = LetterNumberCounter::query()
                 ->firstOrCreate([
                     'village_id' => $villageId,
-                    'letter_type_id' => $letterTypeId,
+                    'classification_code' => $classificationCode,
                     'year' => $year,
                 ], [
                     'last_number' => 0,

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LetterDataAction;
 use App\Enums\LetterStatus;
 use App\Models\FlowStep;
 use App\Models\Letter;
@@ -21,6 +22,7 @@ class KadesApprovalService
         protected LetterFlowService $letterFlowService,
         protected LetterNumberGenerator $letterNumberGenerator,
         protected ApprovalSettingService $approvalSettingService,
+        protected LetterSnapshotService $letterSnapshotService,
     ) {}
 
     /**
@@ -169,6 +171,8 @@ class KadesApprovalService
             'expires_at' => $expiresAt,
             'processed_at' => now(),
         ]);
+
+        $this->letterSnapshotService->captureOnFinalApproval($letter);
     }
 
     private function notifyApplicantRejected(Letter $letter, string $approvalLevel): void
@@ -199,13 +203,22 @@ class KadesApprovalService
             'letter_approved_final',
         ));
 
+        $needsDataAction = ($letter->letterType?->data_action ?? LetterDataAction::None) !== LetterDataAction::None;
+
         foreach ($this->officialService->resolveKasiKaurForLetter($letter) as $official) {
-            $official->user?->notify(new LetterStatusNotification(
-                $letter,
-                'Surat siap diunduh/dicetak untuk warga',
-                'Surat telah disetujui dan siap diunduh atau dicetak untuk warga.',
-                'letter_ready_for_print',
-            ));
+            $official->user?->notify($needsDataAction
+                ? new LetterStatusNotification(
+                    $letter,
+                    'Perubahan data menunggu diterapkan',
+                    'Surat telah disetujui. Tinjau dan terapkan perubahan data kependudukan yang diajukan.',
+                    'letter_needs_fulfillment',
+                )
+                : new LetterStatusNotification(
+                    $letter,
+                    'Surat siap diunduh/dicetak untuk warga',
+                    'Surat telah disetujui dan siap diunduh atau dicetak untuk warga.',
+                    'letter_ready_for_print',
+                ));
         }
     }
 

@@ -144,6 +144,17 @@ class OfficialService
         return $this->userRepository->findByCitizenId($letter->citizen_id);
     }
 
+    /**
+     * Akun Petugas Desa aktif di desa; penerima notifikasi saat surat
+     * tertahan karena jabatan approver kosong.
+     *
+     * @return Collection<int, User>
+     */
+    public function resolvePetugasDesaUsers(string $villageId): Collection
+    {
+        return $this->userRepository->allActiveByRoleAndVillage('petugas_desa', $villageId);
+    }
+
     public function resolveVillageHead(): ?Official
     {
         return $this->officialRepository->findActiveVillageHead();
@@ -228,7 +239,6 @@ class OfficialService
 
         $directory = "official-signatures/{$villageId}/{$official->id}";
         $newPath = $signature->store($directory, 'private_uploads');
-        $oldPath = $official->signature_img;
 
         try {
             $official = $this->officialRepository->update($official, ['signature_img' => $newPath]);
@@ -237,7 +247,8 @@ class OfficialService
             throw $exception;
         }
 
-        $this->deletePreviousSignature($oldPath, $directory);
+        // File lama sengaja tidak dihapus: snapshot surat yang sudah
+        // terbit masih merujuknya.
 
         return $official;
     }
@@ -278,13 +289,6 @@ class OfficialService
             || $official->ended_at !== null
         ) {
             throw new HttpException(404, 'Kepala Desa aktif tidak ditemukan.');
-        }
-    }
-
-    private function deletePreviousSignature(?string $path, string $directory): void
-    {
-        if ($path && str_starts_with($path, $directory.'/')) {
-            Storage::disk('private_uploads')->delete($path);
         }
     }
 

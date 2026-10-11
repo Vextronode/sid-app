@@ -6,10 +6,10 @@
 // ==========================================
 
 import { useState } from 'react'
-import { Search, SquarePen, Eye, EyeOff } from 'lucide-react'
+import { Search, SquarePen, Eye, EyeOff, Eraser } from 'lucide-react'
 
 import { useUserList } from '@/features/manajemen-user/hooks/useUserList'
-import OfficialManagementPanel from '@/features/manajemen-user/components/OfficialManagementPanel'
+import { resetUserSignature } from '@/features/surat/api/signatureApi'
 import { FooterOperator } from '../../components/layout/FooterOperator'
 
 export default function ManajemenUserPage() {
@@ -32,6 +32,34 @@ export default function ManajemenUserPage() {
   const [editingUser, setEditingUser] = useState(null)
   const [editName, setEditName] = useState('')
   const [editError, setEditError] = useState('')
+  const [signatureNotice, setSignatureNotice] = useState(null)
+
+  // Reset darurat tanda tangan akun. Tanda tangan lama tetap tersimpan
+  // untuk dokumen yang sudah terbit; pemilik akun dapat mengisi yang baru.
+  const handleResetSignature = async (user) => {
+    const reason = window.prompt(
+      `Alasan mereset tanda tangan ${user.name} (wajib, minimal 5 karakter):`,
+    )
+
+    if (reason === null) return
+
+    try {
+      const response = await resetUserSignature(user.id, reason.trim())
+
+      setSignatureNotice({
+        type: 'success',
+        text: response.data?.message ?? 'Tanda tangan direset.',
+      })
+    } catch (requestError) {
+      const errors = requestError?.response?.data?.errors
+      const text =
+        (errors && Object.values(errors).flat()[0]) ||
+        requestError?.response?.data?.message ||
+        'Gagal mereset tanda tangan.'
+
+      setSignatureNotice({ type: 'error', text })
+    }
+  }
 
   const handleSearchSubmit = (e) => {
     e.preventDefault()
@@ -107,6 +135,17 @@ export default function ManajemenUserPage() {
         </div>
 
         {/* Table */}
+        {signatureNotice && (
+          <p
+            className={`sid-admin-alert ${
+              signatureNotice.type === 'error' ? 'sid-admin-alert-error' : 'sid-admin-alert-success'
+            }`}
+            role={signatureNotice.type === 'error' ? 'alert' : 'status'}
+          >
+            {signatureNotice.text}
+          </p>
+        )}
+
         <div className="sid-operator-table-card">
           <div className="sid-operator-table-wrapper">
             <table className="sid-operator-table">
@@ -192,6 +231,16 @@ export default function ManajemenUserPage() {
                           >
                             {user.is_active ? <Eye size={16} /> : <EyeOff size={16} />}
                           </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleResetSignature(user)}
+                            className="sid-operator-action edit"
+                            title="Reset tanda tangan"
+                            aria-label={`Reset tanda tangan ${user.name}`}
+                          >
+                            <Eraser size={16} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -237,8 +286,6 @@ export default function ManajemenUserPage() {
             </div>
           </div>
         </div>
-
-        <OfficialManagementPanel />
       </div>
 
       <FooterOperator />

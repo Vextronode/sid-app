@@ -34,6 +34,11 @@ class Letter extends Model
         'expires_at',
         'submitted_at',
         'processed_at',
+        'snapshot',
+        'signed_by_official_id',
+        'fulfilled_at',
+        'fulfilled_by',
+        'fulfillment',
     ];
 
     protected $guarded = [
@@ -54,6 +59,9 @@ class Letter extends Model
         'expires_at' => 'datetime',
         'submitted_at' => 'datetime',
         'processed_at' => 'datetime',
+        'snapshot' => 'array',
+        'fulfilled_at' => 'datetime',
+        'fulfillment' => 'array',
     ];
 
     protected static function booted(): void
@@ -87,6 +95,18 @@ class Letter extends Model
     public function approvals(): HasMany
     {
         return $this->hasMany(LetterApproval::class);
+    }
+
+    /** @return HasMany<LetterAttachment, $this> */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(LetterAttachment::class);
+    }
+
+    /** @return HasMany<LetterSignature, $this> */
+    public function signatures(): HasMany
+    {
+        return $this->hasMany(LetterSignature::class);
     }
 
     public function letterType(): BelongsTo

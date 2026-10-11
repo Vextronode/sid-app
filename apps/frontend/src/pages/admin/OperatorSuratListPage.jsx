@@ -8,6 +8,7 @@
 
 import OperatorSuratPreviewModal from '@/features/operator-desa/components/OperatorSuratPreviewModal'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
 import { Download, Search, Eye } from 'lucide-react'
 
 import { getSuratList } from '@/lib/api'
@@ -32,6 +33,9 @@ export default function OperatorSuratListPage() {
 
   const [previewSurat, setPreviewSurat] = useState(null)
 
+  // Dibuka dari notifikasi: ?surat=<id>. Modal memuat detailnya sendiri.
+  useLetterDeepLink((letterId) => setPreviewSurat({ id: letterId }))
+
   // ==========================================
   // LOAD DATA
   // ==========================================
@@ -41,8 +45,8 @@ export default function OperatorSuratListPage() {
       setLoading(true)
     }
 
-      try {
-        const res = await getSuratList()
+    try {
+      const res = await getSuratList()
 
       const data = Array.isArray(res.data?.data)
         ? res.data.data

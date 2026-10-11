@@ -40,7 +40,6 @@ class VillageProfileService
         $village = $this->getProfile($user);
         $directory = "village-stamps/{$village->id}";
         $newPath = $stamp->store($directory, 'private_uploads');
-        $oldPath = $village->stamp_img;
 
         try {
             $village = $this->repository->update($village, ['stamp_img' => $newPath]);
@@ -49,7 +48,8 @@ class VillageProfileService
             throw $exception;
         }
 
-        $this->deletePreviousFile($oldPath, $directory);
+        // File lama sengaja tidak dihapus: snapshot surat yang sudah
+        // terbit masih merujuknya.
 
         return $village;
     }
@@ -76,13 +76,6 @@ class VillageProfileService
         $response->headers->set('Cache-Control', 'private, no-store');
 
         return $response;
-    }
-
-    private function deletePreviousFile(?string $path, string $directory): void
-    {
-        if ($path && str_starts_with($path, $directory.'/')) {
-            Storage::disk('private_uploads')->delete($path);
-        }
     }
 
     private function assertActivePetugas(User $user): void

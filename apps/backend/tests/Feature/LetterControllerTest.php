@@ -29,7 +29,7 @@ class LetterControllerTest extends TestCase
         $rt = Rt::factory()->create();
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
         Official::factory()->create(['rt_id' => $rt->id, 'position' => 'rt', 'is_active' => true]);
-        $letterType = LetterType::factory()->create();
+        $letterType = LetterType::factory()->create(['flow_id' => $this->flowWithRtStep()->id]);
         $user = User::factory()->create([
             'citizen_id' => $citizen->id,
             'village_id' => $citizen->village_id,
@@ -48,7 +48,7 @@ class LetterControllerTest extends TestCase
     public function test_official_with_citizen_can_submit_letter(): void
     {
         $citizen = Citizen::factory()->create();
-        $letterType = LetterType::factory()->create();
+        $letterType = LetterType::factory()->create(['flow_id' => $this->flowWithRtStep()->id]);
         $user = User::factory()->create([
             'role' => 'petugas_desa',
             'citizen_id' => $citizen->id,
@@ -311,5 +311,18 @@ class LetterControllerTest extends TestCase
         $this->actingAs($user)
             ->getJson('/api/letters/'.Str::uuid())
             ->assertNotFound();
+    }
+
+    private function flowWithRtStep(): ApprovalFlow
+    {
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'rt',
+            'is_final' => false,
+        ]);
+
+        return $flow;
     }
 }

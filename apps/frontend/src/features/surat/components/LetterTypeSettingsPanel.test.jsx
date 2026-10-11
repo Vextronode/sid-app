@@ -21,7 +21,8 @@ describe('LetterTypeSettingsPanel', () => {
         id: 12,
         code: 'A04',
         name: 'Surat Keterangan Domisili',
-        category: { name: 'Administrasi' },
+        produces_letter: true,
+        data_action: 'update_citizen',
         validity_days: 14,
         assigned_role: 'kasi_pelayanan',
       },
@@ -41,7 +42,7 @@ describe('LetterTypeSettingsPanel', () => {
 
     render(<LetterTypeSettingsPanel />)
 
-    expect(await screen.findByText('Administrasi')).toBeInTheDocument()
+    expect(await screen.findByText('Surat + ubah data warga')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Masa berlaku Surat Keterangan Domisili'), {
       target: { value: '30' },
     })

@@ -46,24 +46,11 @@ export function updateApprovalSetting(id, data) {
   return api.patch(`/api/approval-settings/${id}`, data)
 }
 
-export function getApprovalFlows(categoryId) {
-  return api.get('/api/approval-flows', {
-    params: categoryId ? { category_id: categoryId } : undefined,
-  })
-}
-
-export function createApprovalFlow(data) {
-  return api.post('/api/approval-flows', data)
+// Alur persetujuan hanya dapat dibaca; alur dan step-nya diset developer.
+export function getApprovalFlows() {
+  return api.get('/api/approval-flows')
 }
 
 export function getApprovalFlow(id) {
   return api.get(`/api/approval-flows/${id}`)
-}
-
-export function updateApprovalFlowSteps(id, steps) {
-  return api.put(`/api/approval-flows/${id}/steps`, { steps })
-}
-
-export function getLetterCategories() {
-  return api.get('/api/letter-categories')
 }
