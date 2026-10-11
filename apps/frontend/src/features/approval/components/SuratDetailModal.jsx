@@ -5,6 +5,7 @@ import ApprovalStepRenderer from '@/features/approval/components/ApprovalStepRen
 import { getLatestApprovalForLevel } from '@/features/approval/constants/statusFlow'
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { LetterExtrasPanel } from '@/features/surat/components/LetterExtrasPanel'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
 const FIELD_MAP = {
@@ -199,6 +200,8 @@ export default function SuratDetailModal({
                 </div>
               ))}
             </div>
+
+            <LetterExtrasPanel letterId={surat.id} />
 
             {decisions.map((decision) => (
               <DecisionBox
