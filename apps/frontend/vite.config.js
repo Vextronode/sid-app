@@ -52,18 +52,20 @@ export default defineConfig({
       workbox: {
         navigateFallback: '/index.html',
         importScripts: ['/push-handler.js'],
+        // Pratinjau PDF selalu butuh jaringan; tidak perlu ikut precache.
+        globIgnores: ['**/pdfjs-*.js'],
 
         runtimeCaching: [
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
-            handler: 'NetworkFirst',
+            handler: 'StaleWhileRevalidate',
 
             options: {
-              cacheName: 'api-cache',
+              cacheName: 'images',
 
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60,
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7,
               },
 
               cacheableResponse: {
@@ -79,6 +81,31 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+
+  build: {
+    rollupOptions: {
+      output: {
+        // Vendor jarang berubah; dipisah agar tetap ter-cache di browser
+        // walau kode aplikasi dirilis ulang.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          if (id.includes('pdfjs-dist')) return 'pdfjs'
+          if (/[\\/]node_modules[\\/](recharts|d3-[^\\/]+|victory-vendor)[\\/]/.test(id)) {
+            return 'charts'
+          }
+          if (
+            /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(
+              id,
+            )
+          ) {
+            return 'react'
+          }
+
+          return undefined
+        },
+      },
     },
   },
 

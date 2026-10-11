@@ -7,11 +7,11 @@
 // ==========================================
 
 import OperatorSuratPreviewModal from '@/features/operator-desa/components/OperatorSuratPreviewModal'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
 import { Download, Search, Eye } from 'lucide-react'
 
-import { getSuratList } from '@/lib/api'
+import { useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
@@ -23,9 +23,6 @@ import { SURAT_STATUS, SURAT_STATUS_ORDER } from '@/constants/suratStatus'
 const ITEMS_PER_PAGE = 3
 
 export default function OperatorSuratListPage() {
-  const [letters, setLetters] = useState([])
-  const [loading, setLoading] = useState(true)
-
   const [search, setSearch] = useState('')
   const [filterJenis, setFilterJenis] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -40,65 +37,7 @@ export default function OperatorSuratListPage() {
   // LOAD DATA
   // ==========================================
 
-  const loadLetters = useCallback(async (showLoading = true) => {
-    if (showLoading) {
-      setLoading(true)
-    }
-
-    try {
-      const res = await getSuratList()
-
-      const data = Array.isArray(res.data?.data)
-        ? res.data.data
-        : Array.isArray(res.data)
-          ? res.data
-          : []
-
-      setLetters(data)
-    } catch (err) {
-      console.error('GAGAL MENGAMBIL DATA SURAT:', err.response?.data ?? err)
-
-      setLetters([])
-    } finally {
-      if (showLoading) {
-        setLoading(false)
-      }
-    }
-  }, [])
-
-  // ==========================================
-  // LOAD DATA PERTAMA KALI
-  // ==========================================
-
-  useEffect(() => {
-    let isMounted = true
-
-    const loadInitialLetters = async () => {
-      if (!isMounted) {
-        return
-      }
-
-      await loadLetters(true)
-    }
-
-    loadInitialLetters()
-
-    return () => {
-      isMounted = false
-    }
-  }, [loadLetters])
-
-  // ==========================================
-  // AUTO REFRESH DATA SETIAP 5 DETIK
-  // ==========================================
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadLetters(false)
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [loadLetters])
+  const { letters, loading } = useSuratListQuery()
 
   // ==========================================
   // FILTER + SORT

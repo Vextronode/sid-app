@@ -4,10 +4,11 @@
 // Styling menggunakan Global CSS SID.
 // ==========================================
 
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 
 import { getGenderStats } from '@/features/approval/api'
-import { getSuratList } from '@/lib/api'
+import { useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
@@ -21,108 +22,19 @@ import { getGreeting } from '@/lib/utils/greeting'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
+const EMPTY_GENDER_STATS = { total: 0, laki: 0, perempuan: 0 }
+
 export default function OperatorDesaDashboardPage() {
   const { user } = useAuth()
   const greeting = getGreeting()
 
-  const [letters, setLetters] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { letters, loading } = useSuratListQuery()
 
-  const [genderStats, setGenderStats] = useState({
-    total: 0,
-    laki: 0,
-    perempuan: 0,
+  const { data: genderStats = EMPTY_GENDER_STATS } = useQuery({
+    queryKey: ['dashboard', 'gender-stats'],
+    queryFn: async () => (await getGenderStats()).data ?? EMPTY_GENDER_STATS,
+    staleTime: 5 * 60 * 1000,
   })
-
-  const ROLE_ENDPOINT = {
-    rt: 'rt',
-    kasi_pelayanan: 'kasi',
-    kaur_tu_umum: 'kasi',
-    petugas_desa: 'kasi',
-  }
-
-  const roleKey = ROLE_ENDPOINT[user?.role] ?? user?.role
-
-  // ==========================================
-  // LOAD DATA DASHBOARD
-  // ==========================================
-
-  const loadDashboardData = useCallback(
-    async (showLoading = true) => {
-      if (!roleKey) {
-        return
-      }
-
-      if (showLoading) {
-        setLoading(true)
-      }
-
-      try {
-        const [suratRes, genderRes] = await Promise.all([getSuratList(), getGenderStats()])
-
-        const suratData = Array.isArray(suratRes.data?.data)
-          ? suratRes.data.data
-          : Array.isArray(suratRes.data)
-            ? suratRes.data
-            : []
-
-        setLetters(suratData)
-
-        setGenderStats(
-          genderRes.data ?? {
-            total: 0,
-            laki: 0,
-            perempuan: 0,
-          },
-        )
-      } catch (err) {
-        console.error('GET OPERATOR DASHBOARD ERROR:', err.response?.data ?? err)
-      } finally {
-        if (showLoading) {
-          setLoading(false)
-        }
-      }
-    },
-    [roleKey],
-  )
-
-  // ==========================================
-  // LOAD PERTAMA KALI
-  // ==========================================
-
-  useEffect(() => {
-    let isMounted = true
-
-    const loadInitialData = async () => {
-      if (!isMounted) {
-        return
-      }
-
-      await loadDashboardData(true)
-    }
-
-    loadInitialData()
-
-    return () => {
-      isMounted = false
-    }
-  }, [loadDashboardData])
-
-  // ==========================================
-  // AUTO REFRESH DATA SETIAP 5 DETIK
-  // ==========================================
-
-  useEffect(() => {
-    if (!roleKey) {
-      return
-    }
-
-    const interval = setInterval(() => {
-      loadDashboardData(false)
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [roleKey, loadDashboardData])
 
   // ==========================================
   // STATISTIK

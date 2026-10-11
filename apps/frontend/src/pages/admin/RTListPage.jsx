@@ -68,18 +68,6 @@ export default function RTListPage() {
     })
 
   // ==========================================
-  // AUTO REFRESH DATA SURAT
-  // ==========================================
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refresh()
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [refresh])
-
-  // ==========================================
   // RESET PAGINATION
   // ==========================================
 

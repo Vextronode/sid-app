@@ -27,10 +27,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
-import * as pdfjsLib from 'pdfjs-dist'
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
+import { loadPdfjs } from '@/lib/pdfjs'
 
 // ==========================================
 // TRACKING STEPS
@@ -310,6 +307,8 @@ function SuratPreview({ suratId, status }) {
         if (!arrayBuffer || arrayBuffer.byteLength === 0) {
           throw new Error('File PDF kosong.')
         }
+
+        const pdfjsLib = await loadPdfjs()
 
         if (cancelled) {
           return
