@@ -10,15 +10,18 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   Bell,
   LayoutGrid,
+  FilePlus,
   FileText,
   Users,
   UserCog,
+  UserRoundCog,
   Building2,
   MapPinned,
   Newspaper,
   LogOut,
   Network,
   Settings,
+  UserCircle,
 } from 'lucide-react'
 import { WilayahMasterProvider } from '@/features/kelola-wilayah/hooks/WilayahMasterProvider'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
@@ -43,6 +46,12 @@ const MENU_ITEMS = [
     icon: FileText,
   },
   {
+    label: 'Surat Saya',
+    route: '/admin/surat-saya',
+    allowedRoles: getOperatorAllowedRoles('/admin/surat-saya'),
+    icon: FilePlus,
+  },
+  {
     label: 'Data Penduduk',
     route: '/admin/data-warga',
     allowedRoles: getOperatorAllowedRoles('/admin/data-warga'),
@@ -59,6 +68,12 @@ const MENU_ITEMS = [
     route: '/admin/manajemen-user',
     allowedRoles: getOperatorAllowedRoles('/admin/manajemen-user'),
     icon: UserCog,
+  },
+  {
+    label: 'Pejabat Desa',
+    route: '/admin/pejabat-desa',
+    allowedRoles: getOperatorAllowedRoles('/admin/pejabat-desa'),
+    icon: UserRoundCog,
   },
   {
     label: 'Profil Desa',
@@ -98,6 +113,7 @@ export function OperatorDesaLayout({ children }) {
   const visibleRoutes = ROLE_NAVIGATION[user?.role] ?? []
 
   const [notifOpen, setNotifOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const notificationState = useNotifications()
   const { unreadCount, reload } = notificationState
@@ -188,16 +204,55 @@ export function OperatorDesaLayout({ children }) {
 
               {/* PROFILE */}
 
-              <div className="sid-operator-profile">
-                <div className="sid-operator-profile-info">
-                  <p className="sid-operator-profile-name">{user?.name ?? 'Bapak/Ibu'}</p>
+              <div className="sid-operator-profile-menu">
+                <button
+                  type="button"
+                  className="sid-operator-profile"
+                  title="Akun"
+                  aria-haspopup="menu"
+                  aria-expanded={profileOpen}
+                  onClick={() => setProfileOpen((current) => !current)}
+                >
+                  <div className="sid-operator-profile-info">
+                    <p className="sid-operator-profile-name">{user?.name ?? 'Bapak/Ibu'}</p>
 
-                  <p className="sid-operator-profile-role">{user?.role_label ?? 'Operator Desa'}</p>
-                </div>
+                    <p className="sid-operator-profile-role">
+                      {user?.role_label ?? 'Operator Desa'}
+                    </p>
+                  </div>
 
-                <div className="sid-operator-profile-avatar">
-                  {(user?.name ?? 'OP').slice(0, 2).toUpperCase()}
-                </div>
+                  <div className="sid-operator-profile-avatar">
+                    {(user?.name ?? 'OP').slice(0, 2).toUpperCase()}
+                  </div>
+                </button>
+
+                {profileOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
+
+                    <div className="sid-dropdown" role="menu">
+                      <Link
+                        to="/admin/profile"
+                        role="menuitem"
+                        onClick={() => setProfileOpen(false)}
+                        className="sid-dropdown-item"
+                      >
+                        <UserCircle size={18} />
+                        <span>Profil Saya</span>
+                      </Link>
+
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={logout}
+                        className="sid-dropdown-item sid-dropdown-item-danger"
+                      >
+                        <LogOut size={18} />
+                        <span>Keluar</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

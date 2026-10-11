@@ -1,9 +1,13 @@
 export const OPERATOR_ROUTE_CAPABILITIES = {
   '/admin/operator-desa': ['kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa'],
   '/admin/operator-desa/surat': ['kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa'],
-  '/admin/data-warga': ['petugas_desa'],
+  // Pengajuan surat pribadi; Petugas Desa (admin) tidak memerlukannya.
+  '/admin/surat-saya': ['kasi_pelayanan', 'kaur_tu_umum'],
+  // Kasi/Kaur hanya melihat daftar warga; halaman kelola tetap milik Petugas Desa.
+  '/admin/data-warga': ['kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa'],
   '/admin/kelola-wilayah': ['petugas_desa'],
   '/admin/manajemen-user': ['petugas_desa'],
+  '/admin/pejabat-desa': ['petugas_desa'],
   '/admin/kelola-profil-desa': ['petugas_desa'],
   '/admin/kelola-berita': ['petugas_desa'],
   '/admin/approval-settings': ['petugas_desa'],

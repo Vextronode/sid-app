@@ -5,32 +5,45 @@
 // ==========================================
 
 import { useState } from 'react'
-import { Bell, User, Settings, LogOut, UserCircle } from 'lucide-react'
+import { Bell, User, LogOut, UserCircle } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover-Admin'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import useNotifications from '@/features/notifikasi/hooks/useNotifications'
 
-export function AdminLayout({ children, menuItems }) {
+// Menu bawaan per peran: beranda, surat yang diproses, dan surat pribadi.
+const ROLE_MENUS = {
+  rt: ['/admin/dashboard-surat-rt', '/admin/list-rt'],
+  rw: ['/admin/dashboard-surat-rw', '/admin/list-rw'],
+  kadus: ['/admin/dashboard-surat-kadus', '/admin/list-kadus'],
+  kepala_desa: ['/admin/dashboard-surat-kades', '/admin/list-kades'],
+  sekretaris_desa: ['/admin/dashboard-surat-kades', '/admin/list-kades'],
+}
+
+function defaultMenuItems(role) {
+  const routes = ROLE_MENUS[role]
+
+  if (!routes) return null
+
+  return [
+    { label: 'Beranda', path: routes[0] },
+    { label: 'Surat Warga', path: routes[1] },
+    { label: 'Surat Saya', path: '/admin/surat-saya' },
+  ]
+}
+
+export function AdminLayout({ children, menuItems: customMenuItems }) {
   const location = useLocation()
   const navigate = useNavigate()
 
   const { user, logout } = useAuth()
+  const menuItems = customMenuItems ?? defaultMenuItems(user?.role)
   const notificationState = useNotifications()
   const { unreadCount, reload } = notificationState
 
   const [notifOpen, setNotifOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-
-  // Settings digunakan untuk role admin.
-  const showSettingsMenu = [
-    'rt',
-    'rw',
-    'kadus',
-    'kepala_desa',
-    'sekretaris_desa',
-  ].includes(user?.role)
 
   const handleLogout = () => {
     setSettingsOpen(false)
@@ -107,15 +120,18 @@ export function AdminLayout({ children, menuItems }) {
               SETTINGS
               ======================================== */}
 
-          {showSettingsMenu ? (
+          {/* Tombol profil: Profil Saya atau Keluar, untuk semua peran. */}
+          {user ? (
             <div className="relative h-full flex items-center">
               <button
                 type="button"
                 onClick={() => setSettingsOpen((v) => !v)}
                 className="sid-navbar-icon-btn"
-                title="Pengaturan"
+                title="Akun"
+                aria-haspopup="menu"
+                aria-expanded={settingsOpen}
               >
-                <Settings size={19} />
+                <UserCircle size={20} />
               </button>
 
               {settingsOpen && (
@@ -133,7 +149,7 @@ export function AdminLayout({ children, menuItems }) {
                       className="sid-dropdown-item"
                     >
                       <UserCircle size={18} />
-                      <span>Profil</span>
+                      <span>Profil Saya</span>
                     </Link>
 
                     <button

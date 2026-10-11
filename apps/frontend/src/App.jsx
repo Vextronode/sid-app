@@ -14,6 +14,7 @@ import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
 import JenisSuratPage from '@/pages/JenisSuratPage'
 import ProfilePage from '@/pages/ProfilePage'
 import { AdminLayout } from '@/components/layout/AdminLayout'
+import { OfficialLayout } from '@/components/layout/OfficialLayout'
 import { OperatorDesaLayout } from '@/components/layout/OperatorDesaLayout'
 import DaftarSuratSayaPage from '@/pages/DaftarSuratSayaPage'
 import KelolaWilayahPage from '@/pages/admin/KelolaWilayahPage'
@@ -37,7 +38,7 @@ import KadesListPage from '@/pages/admin/KadesListPage'
 // Operator roles share the overview and letter list; management routes
 // are restricted according to their backend capabilities.
 import OperatorDesaDashboardPage from '@/pages/admin/OperatorDesaDashboardPage'
-import DataWargaPage from '@/pages/admin/DataWargaPage'
+import DataWargaAccessPage from '@/pages/admin/DataWargaAccessPage'
 import ManajemenUserPage from '@/pages/admin/ManajemenUserPage'
 import KelolaBeritaPage from '@/pages/admin/KelolaBeritaPage'
 import KelolaProfilDesaPage from '@/pages/admin/KelolaProfilDesaPage'
@@ -47,8 +48,25 @@ import OperatorSuratListPage from '@/pages/admin/OperatorSuratListPage'
 
 import ApprovalSettingPage from '@/pages/admin/ApprovalSettingPage'
 import ApprovalFlowsPage from '@/pages/admin/ApprovalFlowsPage'
+import PejabatDesaPage from '@/pages/admin/PejabatDesaPage'
+import SuratSayaPejabatPage from '@/pages/admin/SuratSayaPejabatPage'
+import {
+  SELF_LETTER_ROLES,
+  SELF_LETTER_ROUTE,
+} from '@/features/notifikasi/utils/notificationTarget'
+import NotificationRedirectPage from '@/pages/NotificationRedirectPage'
 import { getOperatorAllowedRoles } from '@/features/operator-desa/constants/roleNavigation'
 const KADES_APPROVER_ROLES = ['kepala_desa', 'sekretaris_desa']
+// Semua peran pejabat; halaman profil terbuka untuk semuanya.
+const OFFICIAL_ROLES = [
+  'rt',
+  'rw',
+  'kadus',
+  ...KADES_APPROVER_ROLES,
+  'kasi_pelayanan',
+  'kaur_tu_umum',
+  'petugas_desa',
+]
 
 // Route khusus untuk user yang belum login.
 // Jika user sudah login, arahkan ke halaman sesuai role.
@@ -212,12 +230,10 @@ export default function App() {
           <Route
             path="/admin/profile"
             element={
-              <ProtectedRoute
-                allowedRoles={['rt', 'rw', 'kadus', ...KADES_APPROVER_ROLES]}
-              >
-                <AdminLayout>
+              <ProtectedRoute allowedRoles={OFFICIAL_ROLES}>
+                <OfficialLayout>
                   <AdminProfilePage />
-                </AdminLayout>
+                </OfficialLayout>
               </ProtectedRoute>
             }
           />
@@ -306,7 +322,7 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/data-warga')}>
                 <OperatorDesaLayout>
-                  <DataWargaPage />
+                  <DataWargaAccessPage />
                 </OperatorDesaLayout>
               </ProtectedRoute>
             }
@@ -383,6 +399,25 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          {/* Pengajuan surat pribadi oleh pejabat (bukan Petugas Desa). */}
+          <Route
+            path={SELF_LETTER_ROUTE}
+            element={
+              <ProtectedRoute allowedRoles={SELF_LETTER_ROLES}>
+                <SuratSayaPejabatPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/pejabat-desa"
+            element={
+              <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/pejabat-desa')}>
+                <OperatorDesaLayout>
+                  <PejabatDesaPage />
+                </OperatorDesaLayout>
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/admin/approval-settings"
             element={
@@ -418,6 +453,16 @@ export default function App() {
               <GuestRoute>
                 <ForgotPasswordPage />
               </GuestRoute>
+            }
+          />
+
+          {/* Tujuan klik notifikasi push; diteruskan sesuai peran. */}
+          <Route
+            path="/buka-notifikasi"
+            element={
+              <ProtectedRoute>
+                <NotificationRedirectPage />
+              </ProtectedRoute>
             }
           />
 

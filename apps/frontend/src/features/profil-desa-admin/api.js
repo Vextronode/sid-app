@@ -35,3 +35,8 @@ export function demotePerangkatDesa(id, payload = {}) {
 export function rotatePerangkatDesa(id, payload) {
   return api.post(`/api/officials/${id}/rotate`, payload)
 }
+
+// Cari calon pejabat lewat NIK: akun yang terhubung ke warga ber-NIK itu.
+export function findOfficialCandidate(nik) {
+  return api.post('/api/officials/candidates/lookup', { nik })
+}

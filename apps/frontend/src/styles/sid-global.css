@@ -11110,6 +11110,11 @@
 .sid-operator-sidebar-nav {
   flex: 1;
 
+  /* Menu lebih panjang dari layar harus bisa digulir; tanpa min-height: 0
+     item flex ini tidak pernah menyusut dan tombol Keluar terdorong keluar. */
+  min-height: 0;
+  overflow-y: auto;
+
   display: flex;
   flex-direction: column;
 
@@ -11372,6 +11377,19 @@
   align-items: center;
 
   gap: 0.5rem;
+}
+
+.sid-operator-profile-menu {
+  position: relative;
+}
+
+button.sid-operator-profile {
+  padding: 0;
+
+  background: none;
+  border: 0;
+
+  cursor: pointer;
 }
 
 .sid-operator-profile-info {
@@ -20736,7 +20754,9 @@
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .sid-admin-page-actions .sid-operator-secondary:hover {
@@ -20918,7 +20938,9 @@
   background: var(--sid-surface-page);
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .sid-admin-file-dropzone:hover {
