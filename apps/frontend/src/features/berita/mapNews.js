@@ -26,10 +26,16 @@ export function mapNews(raw) {
   if (!title) {
     console.warn('[mapNews] field judul tidak ditemukan. Cek response /api/public/news:', raw)
   }
+  // Kategori dari API (1-2 per berita); `category` = yang pertama, untuk
+  // kartu yang hanya muat satu chip.
+  const categories = Array.isArray(raw.categories)
+    ? raw.categories.map((c) => c?.name).filter(Boolean)
+    : []
   return {
     id: raw.id,
     title: title ?? '(tanpa judul)',
-    category: pick(raw, 'category', 'kategori', 'type'),
+    categories,
+    category: categories[0] ?? pick(raw, 'category', 'kategori', 'type'),
     date: formatDate(pick(raw, 'published_at', 'publish_date', 'created_at', 'date')),
     excerpt: pick(raw, 'excerpt', 'summary', 'description') ?? '',
     imageUrl: pick(raw, 'image_url', 'thumbnail_url', 'thumbnail', 'image', 'cover_image'),

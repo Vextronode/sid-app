@@ -23,11 +23,14 @@
 // ==========================================
 
 import { useState } from 'react'
-import { Plus, Pencil, Send, ChevronLeft, ChevronRight, Newspaper } from 'lucide-react'
+import { Plus, Pencil, Send, ChevronLeft, ChevronRight, Newspaper, Tags } from 'lucide-react'
 
 import { useBeritaList } from '@/features/kelola-berita/hooks/useBeritaList'
 import BeritaFormModal from '@/features/kelola-berita/components/BeritaFormModal'
+import KategoriBeritaModal from '@/features/kelola-berita/components/KategoriBeritaModal'
+import { useNewsCategories } from '@/features/kelola-berita/hooks/useNewsCategories'
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { PageLoader } from '@/components/ui/PageLoader'
 
 export default function KelolaBeritaPage() {
   const {
@@ -43,10 +46,28 @@ export default function KelolaBeritaPage() {
     processing,
     deleteBerita,
     loading,
+    refreshBerita,
   } = useBeritaList()
+
+  const {
+    categories,
+    loading: categoriesLoading,
+    processing: categoriesProcessing,
+    addCategory,
+    renameCategory,
+    removeCategory,
+    refreshCategories,
+  } = useNewsCategories()
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBerita, setEditingBerita] = useState(null)
+  const [kategoriModalOpen, setKategoriModalOpen] = useState(false)
+
+  // Nama kategori ikut tampil di kartu berita, jadi berita dimuat ulang.
+  const handleRenameCategory = async (id, name) => {
+    await renameCategory(id, name)
+    await refreshBerita()
+  }
 
   // ==========================================
   // TAMBAH BERITA
@@ -113,6 +134,9 @@ export default function KelolaBeritaPage() {
       } else {
         await addBerita(formData)
       }
+
+      // news_count kategori berubah setelah berita disimpan.
+      refreshCategories()
 
       setModalOpen(false)
       setEditingBerita(null)
@@ -197,10 +221,7 @@ export default function KelolaBeritaPage() {
     return (
       <div className="sid-profil-desa-page">
         <div className="sid-profil-desa-content">
-          <div className="sid-profil-desa-loading">
-            <div className="sid-profil-desa-loading-spinner" />
-            <p>Memuat Berita...</p>
-          </div>
+          <PageLoader label="Memuat berita..." />
         </div>
 
         <SiteFooter />
@@ -225,15 +246,27 @@ export default function KelolaBeritaPage() {
             <p>Manajemen konten berita dan pengumuman Desa Cibenda.</p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleOpenAdd}
-            disabled={processing}
-            className="sid-kelola-berita-primary"
-          >
-            <Plus size={16} />
-            Tambah Berita
-          </button>
+          <div className="sid-kelola-berita-header-actions">
+            <button
+              type="button"
+              onClick={() => setKategoriModalOpen(true)}
+              disabled={processing}
+              className="sid-kelola-berita-secondary"
+            >
+              <Tags size={16} />
+              Kelola Kategori
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenAdd}
+              disabled={processing}
+              className="sid-kelola-berita-primary"
+            >
+              <Plus size={16} />
+              Tambah Berita
+            </button>
+          </div>
         </div>
 
         {/* ==========================================
@@ -259,7 +292,11 @@ export default function KelolaBeritaPage() {
 
               <div className="sid-kelola-berita-feature-content">
                 <div className="sid-kelola-berita-feature-meta">
-                  <span className="sid-kelola-berita-category featured">Berita</span>
+                  {beritaUtama?.categories?.map((category) => (
+                    <span key={category.id} className="sid-kelola-berita-category featured">
+                      {category.name}
+                    </span>
+                  ))}
 
                   <span className="sid-kelola-berita-date featured">
                     {formatDate(beritaUtama?.published_at)}
@@ -419,7 +456,11 @@ export default function KelolaBeritaPage() {
                   {/* META */}
 
                   <div className="sid-kelola-berita-card-meta">
-                    <span className="sid-kelola-berita-category">Berita</span>
+                    {berita.categories?.map((category) => (
+                      <span key={category.id} className="sid-kelola-berita-category">
+                        {category.name}
+                      </span>
+                    ))}
 
                     <span className="sid-kelola-berita-date">
                       {formatDate(berita.published_at)}
@@ -516,7 +557,19 @@ export default function KelolaBeritaPage() {
         onSubmit={handleSubmitForm}
         onDelete={handleDeleteBerita}
         initialData={editingBerita}
+        categories={categories}
         processing={processing}
+      />
+
+      <KategoriBeritaModal
+        open={kategoriModalOpen}
+        onClose={() => setKategoriModalOpen(false)}
+        categories={categories}
+        loading={categoriesLoading}
+        processing={categoriesProcessing}
+        onAdd={addCategory}
+        onRename={handleRenameCategory}
+        onDelete={removeCategory}
       />
     </div>
   )

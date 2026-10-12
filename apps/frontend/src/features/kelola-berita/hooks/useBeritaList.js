@@ -194,6 +194,7 @@ export function useBeritaList() {
     updateBerita: updateBeritaData,
     publishBerita,
     deleteBerita: removeBerita,
+    refreshBerita: fetchBerita,
 
     processing,
     loading,
