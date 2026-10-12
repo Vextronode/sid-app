@@ -3,6 +3,8 @@
  * Sumber nilai: docs/refactor-beranda/02-design-tokens.md.
  * Semua token dan selektor di-scope ke `.bd-root`; jangan menambah aturan
  * `html`, `body`, atau `:root` di sini agar halaman lain tidak terpengaruh.
+ * `.bd-theme` hanya membawa token + font (tanpa gaya dasar halaman), untuk
+ * bagian lama yang ikut bergaya publik, mis. sidebar operator.
  */
 
 /* Plus Jakarta Sans self-host (K15), hanya bobot 400–800. Browser baru
@@ -13,7 +15,8 @@
 @import '@fontsource/plus-jakarta-sans/700.css';
 @import '@fontsource/plus-jakarta-sans/800.css';
 
-.bd-root {
+.bd-root,
+.bd-theme {
   /* ===== Warna ===== */
   --bd-color-ink: #17212b;
   --bd-color-muted: #4a5563;
@@ -41,6 +44,8 @@
   --bd-color-announce-border: #ead9a6;
   --bd-color-announce-badge: #7a5200;
   --bd-color-announce-link: #5c3d00;
+  /* Badge jumlah notifikasi dan tombol Keluar di header role. */
+  --bd-color-danger: #b42318;
 
   /* ===== Tipografi ===== */
   --bd-font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -164,8 +169,11 @@
   --bd-focus-ring: 3px solid var(--bd-color-primary);
   --bd-focus-offset: 2px;
 
-  /* ===== Dasar halaman beranda ===== */
   font-family: var(--bd-font-family);
+}
+
+/* ===== Dasar halaman beranda ===== */
+.bd-root {
   font-size: var(--bd-text-body);
   line-height: var(--bd-leading-body);
   color: var(--bd-color-ink);
@@ -285,6 +293,14 @@
 /* ===== Layout beranda: header, dropdown, menu ponsel, footer ===== */
 .bd-main {
   flex: 1 0 auto;
+}
+
+/* .bd-root yang hanya membungkus header atau footer di halaman publik lain
+   (MainLayout): bukan kerangka satu layar penuh. */
+.bd-root.bd-chrome {
+  min-height: 0;
+  display: block;
+  background: none;
 }
 
 /* Tombol berbingkai: "Masuk Warga". */
@@ -535,8 +551,95 @@
   font-size: var(--bd-text-body);
 }
 
+/* ----- Header role (AppHeader): menu aktif, notifikasi, akun ----- */
+.bd-root .bd-nav-link[aria-current='page'],
+.bd-root .bd-menu-item--link[aria-current='page'] {
+  background: var(--bd-color-primary-tint);
+  color: var(--bd-color-primary);
+}
+
+.bd-app-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--bd-space-4);
+}
+
+.bd-root .bd-icon-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--bd-tap-min);
+  height: var(--bd-tap-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--bd-radius-menu-item);
+  background: transparent;
+  color: var(--bd-color-ink);
+  cursor: pointer;
+}
+
+.bd-root .bd-icon-button:hover {
+  background: var(--bd-color-primary-tint);
+  color: var(--bd-color-primary);
+}
+
+.bd-badge-count {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--bd-radius-pill);
+  background: var(--bd-color-danger);
+  color: var(--bd-color-on-primary);
+  font-size: 11px;
+  font-weight: var(--bd-font-bold);
+  line-height: 18px;
+  text-align: center;
+}
+
+.bd-app-account-name {
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Panel akun rata kanan agar tidak keluar layar. */
+.bd-dropdown-panel--end {
+  left: auto;
+  right: 0;
+  min-width: 200px;
+}
+
+/* Item menu berupa tombol (Keluar, Pusat Bantuan). */
+.bd-root button.bd-menu-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bd-root .bd-menu-item--danger,
+.bd-root .bd-menu-item--danger:hover,
+.bd-root .bd-mobile-panel > .bd-menu-list > li > .bd-menu-item--danger {
+  color: var(--bd-color-danger);
+}
+
+.bd-root button.bd-menu-item:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 @media (max-width: 767.98px) {
-  .bd-nav {
+  .bd-nav,
+  .bd-app-account,
+  .bd-desktop-only {
     display: none;
   }
 

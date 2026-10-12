@@ -110,7 +110,6 @@
   /* =========================
      MOBILE
      ========================= */
-  --sid-mobile-nav-height: 64px;
 
   /* =========================
      HOME
@@ -864,65 +863,6 @@
   background: var(--sid-status-rejected-bg);
 
   color: var(--sid-status-rejected-text);
-}
-
-/* =========================================================
-   MOBILE BOTTOM NAVIGATION
-   ========================================================= */
-
-.sid-mobile-nav {
-  display: none;
-}
-
-.sid-mobile-nav-inner {
-  width: 100%;
-  height: var(--sid-mobile-nav-height);
-
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-}
-
-.sid-mobile-nav-item {
-  width: 100%;
-  height: 100%;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  color: var(--sid-on-primary);
-
-  text-decoration: none;
-
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.sid-mobile-nav-item:hover {
-  background: var(--sid-primary-hover);
-}
-
-.sid-mobile-nav-item.active {
-  background: var(--sid-surface-card);
-
-  color: var(--sid-vendor-accent);
-}
-
-.sid-mobile-nav-icon {
-  width: 24px;
-  height: 24px;
-
-  margin-bottom: 4px;
-}
-
-.sid-mobile-nav-label {
-  font-size: 10px;
-  font-weight: 500;
-
-  line-height: 1;
 }
 
 /* =========================================================
@@ -2680,37 +2620,6 @@
   }
 
   /* =========================
-     MOBILE NAV
-     ========================= */
-
-  .sid-mobile-nav {
-    position: fixed;
-
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    display: block;
-
-    width: 100%;
-    height: var(--sid-mobile-nav-height);
-
-    background: var(--sid-primary);
-
-    color: var(--sid-on-primary);
-
-    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
-
-    z-index: 50;
-
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-
-  .sid-mobile-footer {
-    padding-bottom: calc(var(--sid-mobile-nav-height) + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* =========================
      MODAL
      ========================= */
 
@@ -2863,7 +2772,7 @@
 
     padding: 0;
 
-    padding-bottom: calc(var(--sid-mobile-nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 
     box-sizing: border-box;
   }
@@ -2873,7 +2782,7 @@
 
     max-width: none;
 
-    max-height: calc(100dvh - var(--sid-mobile-nav-height) - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - env(safe-area-inset-bottom, 0px));
 
     min-height: 0;
 
@@ -4394,6 +4303,26 @@
   background: var(--sid-surface-card);
 
   box-shadow: var(--shadow-card);
+}
+
+/* Tautan "Kembali ke Beranda" di footer kartu login/register,
+   di bawah tautan Daftar/Masuk. */
+.sid-login-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  margin-top: 12px;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.sid-login-back:hover {
+  text-decoration: underline;
 }
 
 /* =========================================================
@@ -11645,6 +11574,148 @@ button.sid-operator-profile {
   }
 }
 
+/* =========================================================
+   OPERATOR: GAYA PUBLIK
+   Sidebar dan topbar memakai token beranda lewat kelas .bd-theme
+   (beranda.css): lambang + nama desa, latar putih, navy publik.
+   ========================================================= */
+
+.sid-operator-sidebar.bd-theme {
+  border-right: 1px solid var(--bd-color-border);
+}
+
+.bd-theme .sid-operator-sidebar-brand {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+
+  padding: 0 1rem;
+
+  background: var(--bd-color-surface);
+
+  border-bottom: 1px solid var(--bd-color-border);
+}
+
+.bd-theme .sid-operator-brand {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 0.625rem;
+
+  color: var(--bd-color-ink);
+
+  text-decoration: none;
+}
+
+.bd-theme .sid-operator-brand .bd-brand-mark {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.bd-theme .sid-operator-brand .bd-brand-name {
+  font-size: 0.9375rem;
+}
+
+.bd-theme .sid-operator-brand .bd-brand-region {
+  font-size: 0.75rem;
+}
+
+.bd-theme .sid-operator-menu-item {
+  color: var(--bd-color-ink);
+
+  font-size: 0.875rem;
+  font-weight: var(--bd-font-semibold);
+}
+
+.bd-theme .sid-operator-menu-item:hover {
+  background: var(--bd-color-primary-tint);
+
+  color: var(--bd-color-primary);
+}
+
+.bd-theme .sid-operator-menu-item.active,
+.bd-theme .sid-operator-menu-item.active:hover {
+  background: var(--bd-color-primary);
+
+  color: var(--bd-color-on-primary);
+}
+
+.bd-theme .sid-operator-sidebar-footer {
+  border-top-color: var(--bd-color-border);
+}
+
+.bd-theme .sid-operator-sidebar-action.logout,
+.bd-theme .sid-operator-sidebar-action.logout:hover {
+  color: var(--bd-color-danger);
+}
+
+.bd-theme .sid-operator-sidebar-action:disabled {
+  opacity: 0.6;
+
+  cursor: wait;
+}
+
+.sid-operator-topbar.bd-theme {
+  background: var(--bd-color-surface);
+
+  border-bottom: 1px solid var(--bd-color-border);
+
+  box-shadow: none;
+}
+
+.bd-theme .sid-operator-notification-btn {
+  width: 2.75rem;
+  height: 2.75rem;
+
+  border-radius: var(--bd-radius-menu-item);
+
+  color: var(--bd-color-ink);
+}
+
+.bd-theme .sid-operator-notification-btn:hover {
+  background: var(--bd-color-primary-tint);
+
+  color: var(--bd-color-primary);
+}
+
+.bd-theme .sid-operator-notification-badge {
+  top: 0.25rem;
+  right: 0.125rem;
+
+  border-color: var(--bd-color-surface);
+
+  background: var(--bd-color-danger);
+}
+
+.bd-theme .sid-operator-profile-name {
+  color: var(--bd-color-ink);
+}
+
+.bd-theme .sid-operator-profile-role {
+  color: var(--bd-color-muted);
+}
+
+.bd-theme .sid-operator-profile-avatar {
+  background: var(--bd-color-primary);
+
+  color: var(--bd-color-on-primary);
+}
+
+@media (max-width: 639px) {
+  /* Sidebar ponsel hanya selebar ikon: tampilkan lambangnya saja. */
+  .bd-theme .sid-operator-sidebar-brand {
+    justify-content: center;
+
+    padding: 0 0.5rem;
+  }
+
+  .bd-theme .sid-operator-brand .bd-brand-text {
+    display: none;
+  }
+}
+
 /* ==========================================
    SID - BERANDA PUBLIK
    ========================================== */
@@ -13312,12 +13383,6 @@ button.sid-operator-profile {
 @media (max-width: 639px) {
   .sid-admin-profile-content {
     padding: 1rem;
-
-    /*
-     * Beri ruang tambahan agar konten terakhir
-     * tidak tertutup MobileBottomNav.
-     */
-    padding-bottom: 5.5rem;
   }
 
   .sid-admin-profile-header,
@@ -15837,6 +15902,16 @@ button.sid-operator-profile {
   position: fixed;
   inset: 0;
   z-index: 40;
+}
+
+/* Header role (AppHeader): panel notifikasi menempel di bawah header. */
+.sid-app-header {
+  position: relative;
+  z-index: 50;
+}
+
+.sid-app-header .sid-notification-popover {
+  top: calc(100% + 0.5rem);
 }
 
 /* ==========================================
