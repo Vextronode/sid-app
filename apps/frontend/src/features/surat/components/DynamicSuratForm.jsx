@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from 'react-router-dom'
@@ -40,6 +40,9 @@ export function DynamicSuratForm({
   const { user } = useAuth()
   const [submitError, setSubmitError] = useState('')
   const [hasSignature, setHasSignature] = useState(null)
+  // Ref = guard sinkron (double tap / Enter + klik); state hanya untuk tampilan tombol.
+  const submittingRef = useRef(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const signatureSlots = config.signatureSlots ?? []
   const applicantSlots = signatureSlots.filter((slot) => slot.signer === 'applicant')
@@ -65,7 +68,7 @@ export function DynamicSuratForm({
     control,
   })
 
-  const { handleSubmit: submitSurat, loading } = useSubmitSurat()
+  const { handleSubmit: submitSurat } = useSubmitSurat()
 
   useEffect(() => {
     if (!needsOwnSignature) return undefined
@@ -117,6 +120,8 @@ export function DynamicSuratForm({
   }
 
   const handleFormSubmit = async (formData) => {
+    if (submittingRef.current) return
+
     const selectedLetterType =
       letterTypes.find((item) => item.code === config.code) ??
       (config.id ? { id: config.id } : null)
@@ -129,6 +134,9 @@ export function DynamicSuratForm({
     setSubmitError('')
 
     const payload = buildLetterFormData(config, selectedLetterType.id, formData)
+
+    submittingRef.current = true
+    setIsSubmitting(true)
 
     try {
       let response
@@ -144,6 +152,9 @@ export function DynamicSuratForm({
       console.error(error)
 
       setSubmitError(firstServerError(error))
+    } finally {
+      submittingRef.current = false
+      setIsSubmitting(false)
     }
   }
 
@@ -155,7 +166,11 @@ export function DynamicSuratForm({
     ) : null
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="sid-card w-full" noValidate>
+    <form
+      onSubmit={(event) => handleSubmit(handleFormSubmit)(event)}
+      className="sid-card w-full"
+      noValidate
+    >
       <section className="sid-section">
         <h3 className="sid-section-title">Langkah 2 - Isi Form</h3>
 
@@ -379,10 +394,11 @@ export function DynamicSuratForm({
 
         <button
           type="submit"
-          disabled={loading || (needsOwnSignature && hasSignature === false)}
+          disabled={isSubmitting || (needsOwnSignature && hasSignature === false)}
+          aria-busy={isSubmitting}
           className="sid-btn sid-btn-primary"
         >
-          {loading ? 'Mengirim...' : 'Kirim'}
+          {isSubmitting ? 'Mengirim...' : 'Kirim'}
         </button>
       </div>
     </form>

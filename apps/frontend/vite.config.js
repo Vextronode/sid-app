@@ -51,6 +51,8 @@ export default defineConfig({
 
       workbox: {
         navigateFallback: '/index.html',
+        // Navigasi langsung ke endpoint backend tidak boleh dijawab index.html.
+        navigateFallbackDenylist: [/^\/api\//, /^\/sanctum\//, /^\/storage\//, /^\/up(?:[/?]|$)/],
         importScripts: ['/push-handler.js'],
         // Pratinjau PDF selalu butuh jaringan; tidak perlu ikut precache.
         globIgnores: ['**/pdfjs-*.js'],
@@ -87,6 +89,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
+        // Hanya berlaku untuk `vite build`: buang console.* dan debugger
+        // (minifier Oxc bawaan Rolldown) agar error/response tidak tampil di console.
+        minify: { compress: { dropConsole: true, dropDebugger: true }, mangle: true },
         // Vendor jarang berubah; dipisah agar tetap ter-cache di browser
         // walau kode aplikasi dirilis ulang.
         manualChunks(id) {
