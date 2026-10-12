@@ -10,6 +10,7 @@ use App\Models\Occupation;
 use App\Models\Rt;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -22,9 +23,9 @@ class CitizenService
         protected CitizenRepository $citizenRepository
     ) {}
 
-    public function getAllWithWilayah(User $user): Collection
+    public function paginateWithWilayah(User $user, array $filters = []): LengthAwarePaginator
     {
-        return $this->citizenRepository->allWithWilayah($this->villageId($user));
+        return $this->citizenRepository->paginateWithWilayah($this->villageId($user), $filters);
     }
 
     /**

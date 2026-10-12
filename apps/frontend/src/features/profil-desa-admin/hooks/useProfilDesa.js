@@ -3,20 +3,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getPerangkatDesa, getProfilDesa, updatePerangkatDesa, updateProfilDesa } from '../api'
 
 // ==========================================
-// POSISI PERANGKAT DESA YANG DIGUNAKAN
+// POSISI YANG TIDAK TAMPIL DI PROFIL DESA
 // ==========================================
+// Selain ini semua jabatan ditampilkan, termasuk jenis jabatan yang
+// ditambahkan Petugas Desa.
 
-const STAFF_POSITIONS = [
-  'kepala_desa',
-  'sekdes',
-  'kasi_pelayanan',
-  'kasi_kesejahteraan',
-  'kasi_pemerintahan',
-  'kaur_tu_umum',
-  'kaur_perencanaan',
-  'kaur_keuangan',
-  'kadus',
-]
+const HIDDEN_POSITIONS = ['rt', 'rw', 'petugas_desa']
 
 // ==========================================
 // DEFAULT PROFIL
@@ -55,6 +47,7 @@ function normalizeOfficial(official) {
   return {
     id: official?.id ?? null,
     position: official?.position ?? '',
+    positionLabel: official?.position_label ?? official?.position ?? '',
     name: official?.citizen?.name ?? '',
     photo: official?.photo_img ?? null,
     phoneWa: official?.phone_wa ?? '',
@@ -118,7 +111,7 @@ export function useProfilDesa() {
 
     const normalizedOfficials = items
       .map(normalizeOfficial)
-      .filter((official) => STAFF_POSITIONS.includes(official.position))
+      .filter((official) => !HIDDEN_POSITIONS.includes(official.position))
 
     // Simpan SEMUA perangkat:
     // aktif maupun nonaktif.
@@ -182,65 +175,20 @@ export function useProfilDesa() {
   )
 
   // ==========================================
-  // SEKRETARIS DESA AKTIF
+  // SEKDES, KASI, KAUR & STAF AKTIF
+  // ==========================================
+  // Semua perangkat selain Kepala Desa dan Kepala Dusun, termasuk jenis
+  // jabatan yang ditambahkan Petugas Desa. Sekretaris Desa selalu pertama.
   // ==========================================
 
-  const sekdes = useMemo(
-    () => activeOfficials.find((official) => official.position === 'sekdes') ?? null,
-    [activeOfficials],
-  )
-
-  // ==========================================
-  // KASI PELAYANAN AKTIF
-  // ==========================================
-
-  const kasiPelayanan = useMemo(
-    () => activeOfficials.find((official) => official.position === 'kasi_pelayanan') ?? null,
-    [activeOfficials],
-  )
-
-  // ==========================================
-  // KASI KESEJAHTERAAN AKTIF
-  // ==========================================
-
-  const kasiKesejahteraan = useMemo(
-    () => activeOfficials.find((official) => official.position === 'kasi_kesejahteraan') ?? null,
-    [activeOfficials],
-  )
-
-  // ==========================================
-  // KASI PEMERINTAHAN AKTIF
-  // ==========================================
-
-  const kasiPemerintahan = useMemo(
-    () => activeOfficials.find((official) => official.position === 'kasi_pemerintahan') ?? null,
-    [activeOfficials],
-  )
-
-  // ==========================================
-  // KAUR TU UMUM AKTIF
-  // ==========================================
-
-  const kaurTuUmum = useMemo(
-    () => activeOfficials.find((official) => official.position === 'kaur_tu_umum') ?? null,
-    [activeOfficials],
-  )
-
-  // ==========================================
-  // KAUR PERENCANAAN AKTIF
-  // ==========================================
-
-  const kaurPerencanaan = useMemo(
-    () => activeOfficials.find((official) => official.position === 'kaur_perencanaan') ?? null,
-    [activeOfficials],
-  )
-
-  // ==========================================
-  // KAUR KEUANGAN AKTIF
-  // ==========================================
-
-  const kaurKeuangan = useMemo(
-    () => activeOfficials.find((official) => official.position === 'kaur_keuangan') ?? null,
+  const perangkatList = useMemo(
+    () =>
+      activeOfficials
+        .filter((official) => !['kepala_desa', 'kadus'].includes(official.position))
+        .sort(
+          (first, second) =>
+            Number(second.position === 'sekdes') - Number(first.position === 'sekdes'),
+        ),
     [activeOfficials],
   )
 
@@ -251,45 +199,6 @@ export function useProfilDesa() {
   const kadusList = useMemo(
     () => activeOfficials.filter((official) => official.position === 'kadus'),
     [activeOfficials],
-  )
-
-  // ==========================================
-  // PERANGKAT UTAMA
-  // ==========================================
-  // Berisi perangkat AKTIF untuk kebutuhan
-  // tampilan utama halaman.
-  // ==========================================
-
-  const perangkatUtama = useMemo(
-    () => ({
-      kepalaDesa,
-      sekdes,
-
-      // Alias kasi lama tetap dipertahankan
-      // agar kode lama tidak langsung rusak.
-      kasi: kasiPelayanan,
-      kasiPelayanan,
-      kasiKesejahteraan,
-      kasiPemerintahan,
-
-      kaurTuUmum,
-      kaurPerencanaan,
-      kaurKeuangan,
-
-      kadus: kadusList,
-      kadusList,
-    }),
-    [
-      kepalaDesa,
-      sekdes,
-      kasiPelayanan,
-      kasiKesejahteraan,
-      kasiPemerintahan,
-      kaurTuUmum,
-      kaurPerencanaan,
-      kaurKeuangan,
-      kadusList,
-    ],
   )
 
   // ==========================================
@@ -448,19 +357,8 @@ export function useProfilDesa() {
     // PERANGKAT UTAMA AKTIF
     // ==========================================
 
-    perangkatUtama,
-
     kepalaDesa,
-    sekdes,
-
-    kasiPelayanan,
-    kasiKesejahteraan,
-    kasiPemerintahan,
-
-    kaurTuUmum,
-    kaurPerencanaan,
-    kaurKeuangan,
-
+    perangkatList,
     kadusList,
 
     // ==========================================

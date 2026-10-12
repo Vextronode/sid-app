@@ -9,6 +9,7 @@
 // Pakai getBerandaContent(); jangan impor DEV_ONLY langsung dari komponen.
 
 import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
+import { HAL_PROFIL } from '@/lib/constants/routes'
 
 const STATIC = {
   header: {
@@ -24,8 +25,13 @@ const STATIC = {
       masuk: 'Masuk Warga',
       menu: 'Menu',
     },
-    // A4–A6: teks biasa, bukan link.
-    profilComingSoon: ['Sejarah & visi misi', 'Perangkat desa', 'Peta wilayah'],
+    // A4–A6: butir dengan `to` menjadi link; sisanya teks biasa berlabel
+    // "Segera hadir".
+    profilItems: [
+      { label: 'Sejarah & visi misi' },
+      { label: 'Perangkat desa', to: `${HAL_PROFIL}#perangkat-desa` },
+      { label: 'Peta wilayah' },
+    ],
     comingSoonBadge: 'Segera hadir',
     // A7: tampil hanya bila section Transparansi tampil.
     transparansi: 'Transparansi APBDes',

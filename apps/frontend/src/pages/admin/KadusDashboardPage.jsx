@@ -15,12 +15,11 @@
 // sama seperti RWDashboardPage.jsx.
 // ==========================================
 
-import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, Eye, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
+import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FooterDesa } from '@/components/layout/FooterDesa'
@@ -39,30 +38,19 @@ export default function KadusDashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const { letters, loading } = useSuratListQuery()
+  // Angka dihitung backend atas scope yang sama dengan daftar surat.
+  const { summary, loading } = useSuratSummaryQuery()
 
   // ==========================================
   // STATISTIK
   // ==========================================
 
-  const stats = useMemo(() => {
-    const menunggu = letters.filter((letter) => letter.status === SURAT_STATUS.PENDING).length
-
-    const sedangDiproses = letters.filter(
-      (letter) => letter.status === SURAT_STATUS.IN_PROGRESS,
-    ).length
-
-    const selesai = letters.filter((letter) => letter.status === SURAT_STATUS.APPROVED).length
-
-    const ditolak = letters.filter((letter) => letter.status === SURAT_STATUS.REJECTED).length
-
-    return {
-      menunggu,
-      sedangDiproses,
-      selesai,
-      ditolak,
-    }
-  }, [letters])
+  const stats = {
+    menunggu: summary.by_status[SURAT_STATUS.PENDING],
+    sedangDiproses: summary.by_status[SURAT_STATUS.IN_PROGRESS],
+    selesai: summary.by_status[SURAT_STATUS.APPROVED],
+    ditolak: summary.by_status[SURAT_STATUS.REJECTED],
+  }
 
   // ==========================================
   // STAT CARDS
@@ -188,7 +176,7 @@ export default function KadusDashboardPage() {
               ====================================== */}
 
           <div className="sid-dashboard-chart">
-            <SuratStatChart letters={letters} />
+            <SuratStatChart letterTypes={summary.by_type} />
           </div>
         </div>
 
@@ -254,7 +242,7 @@ export default function KadusDashboardPage() {
               ====================================== */}
 
           <div className="sid-dashboard-chart-mobile">
-            <SuratStatChart letters={letters} />
+            <SuratStatChart letterTypes={summary.by_type} />
           </div>
         </div>
 

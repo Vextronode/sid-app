@@ -12,7 +12,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Tests\Concerns\BuildsLetterScenario;
 use Tests\TestCase;
@@ -123,13 +125,15 @@ class LetterFlowHardeningTest extends TestCase
             ->assertCreated()
             ->json('data.id');
 
+        Storage::fake('public');
         $this->actingAs($petugas['user'])
-            ->postJson('/api/officials/promote', [
+            ->post('/api/officials/promote', [
                 'user_id' => $candidate['user']->id,
                 'position' => 'rt',
                 'rt_id' => $rt->id,
                 'started_at' => now()->toDateString(),
-            ])
+                'photo' => UploadedFile::fake()->image('foto.jpg'),
+            ], ['Accept' => 'application/json'])
             ->assertSuccessful();
 
         Notification::assertSentTo(

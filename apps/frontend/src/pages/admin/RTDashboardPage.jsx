@@ -18,13 +18,12 @@
 // Tidak ada QuickNavButtons setelah grafik.
 // ==========================================
 
-import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { Mail, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { useSuratListQuery } from '@/features/surat/hooks/useSuratListQuery'
+import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { FooterDesa } from '@/components/layout/FooterDesa'
@@ -45,34 +44,20 @@ export default function RTDashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const { letters, loading } = useSuratListQuery()
+  // Angka dihitung backend atas scope yang sama dengan daftar surat.
+  const { summary, loading } = useSuratSummaryQuery()
 
   // ==========================================
   // STATISTIK
   // ==========================================
 
-  const stats = useMemo(() => {
-    const permohonanBaru = letters.filter((letter) => letter.status === SURAT_STATUS.PENDING).length
-
-    const sedangDiproses = letters.filter(
-      (letter) => letter.status === SURAT_STATUS.IN_PROGRESS,
-    ).length
-
-    const disetujuiFinal = letters.filter(
-      (letter) => letter.status === SURAT_STATUS.APPROVED,
-    ).length
-
-    const ditolak = letters.filter((letter) => letter.status === SURAT_STATUS.REJECTED).length
-    const overdue = letters.filter((letter) => letter.is_overdue === true).length
-
-    return {
-      permohonanBaru,
-      sedangDiproses,
-      disetujuiFinal,
-      ditolak,
-      overdue,
-    }
-  }, [letters])
+  const stats = {
+    permohonanBaru: summary.by_status[SURAT_STATUS.PENDING],
+    sedangDiproses: summary.by_status[SURAT_STATUS.IN_PROGRESS],
+    disetujuiFinal: summary.by_status[SURAT_STATUS.APPROVED],
+    ditolak: summary.by_status[SURAT_STATUS.REJECTED],
+    overdue: summary.overdue,
+  }
 
   // ==========================================
   // STAT CARDS
@@ -202,7 +187,7 @@ export default function RTDashboardPage() {
               ====================================== */}
 
           <div className="sid-dashboard-chart">
-            <SuratStatChart letters={letters} />
+            <SuratStatChart letterTypes={summary.by_type} />
           </div>
         </div>
 
@@ -273,7 +258,7 @@ export default function RTDashboardPage() {
               ====================================== */}
 
           <div className="sid-dashboard-chart-mobile">
-            <SuratStatChart letters={letters} />
+            <SuratStatChart letterTypes={summary.by_type} />
           </div>
         </div>
 

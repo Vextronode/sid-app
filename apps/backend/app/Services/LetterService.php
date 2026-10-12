@@ -12,12 +12,16 @@ use App\Policies\LetterPolicy;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\LetterTypeRepository;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class LetterService
 {
+    public const DEFAULT_PER_PAGE = 20;
+
     /** current_step_order saat surat masih menunggu tanda tangan. */
     public const AWAITING_SIGNATURES_STEP = 0;
 
@@ -295,10 +299,67 @@ class LetterService
      * Daftar role dibatasi per wilayah dan tahap yang telah dicapai;
      * pemohon dapat memilih scope=mine lintas-role.
      */
-    public function getScopedLetters(
-        User $user,
-        array $filters = []
-    ): Collection {
+    public function paginateScopedLetters(User $user, array $filters = []): LengthAwarePaginator
+    {
+        $query = $this->scopedQuery($user, $filters);
+
+        $this->applyFilters($query, $filters);
+
+        $letters = $this->letterRepository
+            ->forListing($query)
+            ->latest()
+            ->paginate((int) ($filters['per_page'] ?? self::DEFAULT_PER_PAGE));
+
+        $this->flagOverdueLetters($letters->getCollection());
+
+        return $letters;
+    }
+
+    /**
+     * Angka ringkasan untuk dashboard, dihitung di database atas scope
+     * yang sama persis dengan daftar surat (per role/wilayah), sehingga
+     * kartu statistik dan daftar selalu konsisten tanpa mengirim
+     * seluruh baris ke klien.
+     *
+     * @return array{total: int, by_status: array<string, int>, overdue: int, by_type: array<int, array{id: int, name: ?string, total: int}>, by_period: array<string, array<string, int>>}
+     */
+    public function summarizeScopedLetters(User $user, array $filters = []): array
+    {
+        $query = $this->scopedQuery($user, $filters);
+
+        $byStatus = $this->letterRepository->countGroupedBy($query, 'status');
+        $byType = $this->letterRepository->countGroupedBy($query, 'letter_type_id');
+        $typeNames = $this->letterTypeRepository->namesByIds(array_keys($byType));
+
+        return [
+            'total' => array_sum($byStatus),
+            'by_status' => collect(LetterStatus::cases())
+                ->mapWithKeys(fn (LetterStatus $status): array => [$status->value => $byStatus[$status->value] ?? 0])
+                ->all(),
+            'overdue' => $this->letterRepository->countOverdue($query),
+            'by_type' => collect($byType)
+                ->map(fn (int $total, int|string $id): array => [
+                    'id' => (int) $id,
+                    'name' => $typeNames[$id] ?? null,
+                    'total' => $total,
+                ])
+                ->sortBy('name')
+                ->values()
+                ->all(),
+            'by_period' => $this->letterRepository->countByPeriodAndStatus($query, [
+                'day' => now()->startOfDay(),
+                'week' => now()->subDays(7),
+                'month' => now()->startOfMonth(),
+            ]),
+        ];
+    }
+
+    /**
+     * Scope daftar surat per role, tanpa filter tampilan maupun eager-load
+     * final; dipakai bersama oleh daftar berpaginasi dan ringkasan.
+     */
+    private function scopedQuery(User $user, array $filters): Builder
+    {
         if (($filters['scope'] ?? null) === 'mine') {
             $query = $this->scopeForWarga($user);
         } else {
@@ -316,15 +377,7 @@ class LetterService
             };
         }
 
-        $this->applyFilters($query, $filters);
-
-        $letters = $query
-            ->latest()
-            ->get();
-
-        $this->flagOverdueLetters($letters);
-
-        return $letters;
+        return $query;
     }
 
     private function scopeForWarga(User $user): Builder
@@ -424,6 +477,20 @@ class LetterService
 
         }
 
+        // Klien mengirim awal/akhir hari menurut zona waktunya sendiri,
+        // sehingga "surat tanggal 10" tepat walau disimpan dalam UTC.
+        if (! empty($filters['submitted_from'])) {
+            $query->where('submitted_at', '>=', $this->toAppTime($filters['submitted_from']));
+        }
+
+        if (! empty($filters['submitted_to'])) {
+            $query->where('submitted_at', '<=', $this->toAppTime($filters['submitted_to']));
+        }
+
+        if (! empty($filters['search'])) {
+            $this->letterRepository->whereMatchesSearch($query, $filters['search']);
+        }
+
         if (! empty($filters['applicant_name'])) {
 
             $query->where(
@@ -433,6 +500,11 @@ class LetterService
             );
 
         }
+    }
+
+    private function toAppTime(string $value): Carbon
+    {
+        return Carbon::parse($value)->setTimezone(config('app.timezone'));
     }
 
     private function flagOverdueLetters(Collection $letters): void

@@ -11,7 +11,7 @@ vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: vi.fn(),
 }))
 
-const COMING_SOON = ['Sejarah & visi misi', 'Perangkat desa', 'Peta wilayah']
+const COMING_SOON = ['Sejarah & visi misi', 'Peta wilayah']
 
 const renderHeader = ({ isDev = true } = {}) => {
   const utils = render(
@@ -130,6 +130,20 @@ describe('BerandaHeader', () => {
       }
     })
 
+    it('links Perangkat desa to its section on the village profile page and closes', async () => {
+      const user = userEvent.setup()
+      const { desktopNav } = renderHeader()
+      const trigger = await openDropdown(user, desktopNav)
+      const link = desktopNav.getByRole('link', { name: 'Perangkat desa' })
+
+      expect(link).toHaveAttribute('href', '/profil-desa#perangkat-desa')
+      expect(link).not.toHaveTextContent('Segera hadir')
+
+      await user.click(link)
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    })
+
     it('closes on a click outside', async () => {
       const user = userEvent.setup()
       const { desktopNav } = renderHeader()
@@ -145,7 +159,7 @@ describe('BerandaHeader', () => {
       const { desktopNav } = renderHeader()
       const trigger = await openDropdown(user, desktopNav)
 
-      await user.click(desktopNav.getByText('Perangkat desa'))
+      await user.click(desktopNav.getByText('Peta wilayah'))
 
       expect(trigger).toHaveAttribute('aria-expanded', 'true')
     })
@@ -155,7 +169,7 @@ describe('BerandaHeader', () => {
       const { desktopNav } = renderHeader()
       const trigger = await openDropdown(user, desktopNav)
       await user.tab()
-      expect(desktopNav.getByRole('link', { name: 'Transparansi APBDes' })).toHaveFocus()
+      expect(desktopNav.getByRole('link', { name: 'Perangkat desa' })).toHaveFocus()
 
       await user.keyboard('{Escape}')
 
@@ -168,6 +182,7 @@ describe('BerandaHeader', () => {
       const { desktopNav } = renderHeader()
       const trigger = await openDropdown(user, desktopNav)
 
+      await user.tab() // Perangkat desa
       await user.tab() // Transparansi APBDes, masih di dalam dropdown
       expect(trigger).toHaveAttribute('aria-expanded', 'true')
 
@@ -231,6 +246,10 @@ describe('BerandaHeader', () => {
         expect(list.queryByRole('link', { name: new RegExp(label) })).toBeNull()
         expect(list.getByText(label)).toBeVisible()
       }
+      expect(list.getByRole('link', { name: 'Perangkat desa' })).toHaveAttribute(
+        'href',
+        '/profil-desa#perangkat-desa',
+      )
       expect(list.getByRole('link', { name: 'Transparansi APBDes' })).toBeVisible()
       expect(list.getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '#kontak')
       expect(list.getByRole('link', { name: 'Masuk Warga' })).toHaveAttribute('href', '/loginpage')

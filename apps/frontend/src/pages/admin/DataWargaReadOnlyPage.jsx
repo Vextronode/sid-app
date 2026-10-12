@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 import { getCitizens } from '@/features/data-warga/api'
+import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
 import { FooterOperator } from '@/components/layout/FooterOperator'
 
 const ITEMS_PER_PAGE = 10
@@ -17,13 +18,21 @@ export default function DataWargaReadOnlyPage() {
   const [error, setError] = useState('')
   const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
 
+  const search = useDebouncedValue(keyword.trim())
+
+  // Pencarian nama dan pagination diproses di server.
   useEffect(() => {
     let active = true
 
-    getCitizens()
+    getCitizens({ page, per_page: ITEMS_PER_PAGE, ...(search ? { search } : {}) })
       .then((response) => {
-        if (active) setCitizens(response.data?.data ?? [])
+        if (!active) return
+
+        setCitizens(response.data?.data ?? [])
+        setTotalItems(response.data?.meta?.total ?? response.data?.total ?? 0)
+        setError('')
       })
       .catch((requestError) => {
         if (active) setError(requestError?.response?.data?.message || 'Gagal memuat data warga.')
@@ -35,19 +44,11 @@ export default function DataWargaReadOnlyPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [page, search])
 
-  const filtered = useMemo(() => {
-    const search = keyword.trim().toLowerCase()
-
-    return search
-      ? citizens.filter((warga) => warga.name?.toLowerCase().includes(search))
-      : citizens
-  }, [citizens, keyword])
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE))
   const currentPage = Math.min(page, totalPages)
-  const data = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+  const data = citizens
 
   return (
     <div className="sid-operator-page">

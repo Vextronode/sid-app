@@ -1,19 +1,32 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowLeftRight, Trash2, UserRoundMinus, UserRoundPlus } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ArrowLeftRight,
+  Camera,
+  ListChecks,
+  Trash2,
+  UserRoundMinus,
+  UserRoundPlus,
+  Users,
+} from 'lucide-react'
 
 import { getHamlets, getRts, getRws } from '@/features/kelola-wilayah/api'
+import OfficialPositionTypeManager from '@/features/profil-desa-admin/components/OfficialPositionTypeManager'
 import {
   demotePerangkatDesa,
   deletePerangkatDesa,
   findOfficialCandidate,
+  getOfficialPositionTypes,
   getPerangkatDesa,
   promotePerangkatDesa,
   rotatePerangkatDesa,
+  uploadOfficialPhoto,
 } from '@/features/profil-desa-admin/api'
 import { FooterOperator } from '@/components/layout/FooterOperator'
 
-// Jabatan yang punya akun login (OfficialPosition::accountPositions di backend).
+// Jabatan yang punya akun login dan peran di aplikasi (OfficialPosition di
+// backend). Jabatan tanpa akun tidak ada di sini: jenisnya dikelola Petugas
+// Desa dan diambil dari API.
 const ACCOUNT_POSITIONS = [
   { value: 'kepala_desa', label: 'Kepala Desa' },
   { value: 'sekdes', label: 'Sekretaris Desa' },
@@ -25,20 +38,25 @@ const ACCOUNT_POSITIONS = [
   { value: 'petugas_desa', label: 'Petugas Desa' },
 ]
 
-const POSITION_LABELS = {
-  ...Object.fromEntries(ACCOUNT_POSITIONS.map((position) => [position.value, position.label])),
-  kasi_kesejahteraan: 'Kasi Kesejahteraan',
-  kasi_pemerintahan: 'Kasi Pemerintahan',
-  kaur_perencanaan: 'Kaur Perencanaan',
-  kaur_keuangan: 'Kaur Keuangan',
-  staf_sipades: 'Staf SIPADES',
-  staf_siskeudes: 'Staf SISKEUDES',
-}
+const findAccountPosition = (value) =>
+  ACCOUNT_POSITIONS.find((position) => position.value === value)
+
+const positionLabel = (official) => official.position_label ?? official.position
+
+// Calon dikirim sebagai akun untuk jabatan berakun, sebagai data warga
+// untuk jabatan tanpa akun.
+const candidateTarget = (position, candidate) =>
+  findAccountPosition(position)
+    ? { user_id: candidate.user_id }
+    : { citizen_id: candidate.citizen_id }
+
+const PHOTO_TYPES = 'image/png,image/jpeg,image/webp'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
 const EMPTY_PROMOTION = {
   candidate: null,
+  photo: null,
   position: '',
   rt_id: '',
   rw_id: '',
@@ -82,11 +100,54 @@ function describeArea(official, rwNumbers) {
   return 'Desa'
 }
 
+function OfficialPhoto({ src, name }) {
+  return (
+    <div className="sid-profil-desa-avatar sid-profil-desa-avatar-tiny">
+      {src ? (
+        <img src={src} alt={`Foto ${name ?? 'pejabat'}`} className="h-full w-full object-cover" />
+      ) : (
+        <Users size={18} className="sid-profil-desa-avatar-placeholder" />
+      )}
+    </div>
+  )
+}
+
+/**
+ * Foto pejabat wajib diunggah saat penetapan dan rotasi; pratinjaunya
+ * tampil begitu berkas dipilih.
+ */
+function PhotoField({ file, onChange, disabled }) {
+  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
+
+  useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview])
+
+  return (
+    <div className="sid-form-group">
+      <label className="sid-form-label" htmlFor="official-photo">
+        Foto pejabat *
+      </label>
+      <div className="flex items-center gap-3">
+        <OfficialPhoto src={preview} name="pejabat baru" />
+        <input
+          id="official-photo"
+          required
+          type="file"
+          accept={PHOTO_TYPES}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+        />
+      </div>
+      <small className="sid-admin-cell-meta">PNG, JPG, atau WEBP. Maksimal 5 MB.</small>
+    </div>
+  )
+}
+
 /**
  * Memilih calon pejabat lewat NIK. Backend mencari warga ber-NIK itu di
- * desa ini beserta akunnya, dan memberi tahu bila ia tidak dapat ditetapkan.
+ * desa ini beserta akunnya, dan memberi tahu bila ia tidak dapat ditetapkan
+ * pada jabatan yang dipilih.
  */
-function CandidatePicker({ candidate, onChange, disabled }) {
+function CandidatePicker({ candidate, position, onChange, disabled }) {
   const [nik, setNik] = useState('')
   const [searching, setSearching] = useState(false)
   const [lookupError, setLookupError] = useState('')
@@ -97,7 +158,7 @@ function CandidatePicker({ candidate, onChange, disabled }) {
     onChange(null)
 
     try {
-      const response = await findOfficialCandidate(nik)
+      const response = await findOfficialCandidate(nik, position)
 
       onChange(response?.data?.data ?? null)
     } catch (requestError) {
@@ -129,7 +190,7 @@ function CandidatePicker({ candidate, onChange, disabled }) {
         <button
           type="button"
           className="sid-button sid-button-outline"
-          disabled={disabled || searching || nik.length !== 16}
+          disabled={disabled || searching || !position || nik.length !== 16}
           onClick={handleLookup}
         >
           {searching ? 'Mencari...' : 'Cari'}
@@ -153,13 +214,16 @@ function CandidatePicker({ candidate, onChange, disabled }) {
 }
 
 /**
- * Penetapan, rotasi, dan pengakhiran jabatan pejabat desa. Menetapkan
- * jabatan mengubah peran akun warga menjadi peran jabatan itu; mengakhiri
- * jabatan mengembalikannya menjadi warga. Rotasi melakukan keduanya
+ * Penetapan, rotasi, dan pengakhiran jabatan pejabat desa. Untuk jabatan
+ * yang punya akun, menetapkan jabatan mengubah peran akun warga menjadi
+ * peran jabatan itu dan mengakhirinya mengembalikan peran warga; jabatan
+ * tanpa akun hanya dicatat pada data warga. Rotasi melakukan keduanya
  * sekaligus untuk jabatan dan wilayah yang sama.
  */
 export default function PejabatDesaPage() {
   const [officials, setOfficials] = useState([])
+  const [positionTypes, setPositionTypes] = useState([])
+  const [managingTypes, setManagingTypes] = useState(false)
   const [areas, setAreas] = useState({ rts: [], rws: [], hamlets: [] })
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
@@ -170,19 +234,26 @@ export default function PejabatDesaPage() {
   const [promotion, setPromotion] = useState(null)
   const [rotation, setRotation] = useState(null)
   const [demotion, setDemotion] = useState(null)
+  // Satu input berkas tersembunyi dipakai bersama oleh tombol "Ganti foto"
+  // tiap baris; pejabat yang dituju disimpan di ref.
+  const photoInput = useRef(null)
+  const photoTarget = useRef(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
 
     try {
-      const [officialResponse, rtResponse, rwResponse, hamletResponse] = await Promise.all([
-        getPerangkatDesa(),
-        getRts(),
-        getRws(),
-        getHamlets(),
-      ])
+      const [officialResponse, typeResponse, rtResponse, rwResponse, hamletResponse] =
+        await Promise.all([
+          getPerangkatDesa(),
+          getOfficialPositionTypes(),
+          getRts(),
+          getRws(),
+          getHamlets(),
+        ])
 
       setOfficials(unwrap(officialResponse))
+      setPositionTypes(unwrap(typeResponse))
       setAreas({
         rts: unwrap(rtResponse),
         rws: unwrap(rwResponse),
@@ -204,6 +275,17 @@ export default function PejabatDesaPage() {
     [areas.rws],
   )
 
+  // Pilihan jabatan: jabatan berakun, lalu jenis jabatan aktif tanpa akun.
+  const positionOptions = useMemo(
+    () => [
+      ...ACCOUNT_POSITIONS,
+      ...positionTypes
+        .filter((type) => type.is_active)
+        .map((type) => ({ value: type.code, label: `${type.label} (tanpa akun)` })),
+    ],
+    [positionTypes],
+  )
+
   const visibleOfficials = useMemo(() => {
     const filtered = officials.filter((official) =>
       statusFilter === 'semua' ? true : official.is_active === (statusFilter === 'aktif'),
@@ -212,7 +294,7 @@ export default function PejabatDesaPage() {
     return [...filtered].sort(
       (first, second) =>
         Number(second.is_active) - Number(first.is_active) ||
-        String(first.position).localeCompare(String(second.position)),
+        String(positionLabel(first)).localeCompare(String(positionLabel(second))),
     )
   }, [officials, statusFilter])
 
@@ -241,18 +323,19 @@ export default function PejabatDesaPage() {
   const handlePromote = (event) => {
     event.preventDefault()
 
-    const scope = ACCOUNT_POSITIONS.find((position) => position.value === promotion.position)?.scope
+    const scope = findAccountPosition(promotion.position)?.scope
 
     return run(
       () =>
         promotePerangkatDesa({
-          user_id: promotion.candidate.user_id,
+          ...candidateTarget(promotion.position, promotion.candidate),
           position: promotion.position,
           ...(scope ? { [scope]: Number(promotion[scope]) } : {}),
           started_at: promotion.started_at,
-          ...(promotion.term_ends_at ? { term_ends_at: promotion.term_ends_at } : {}),
-          ...(promotion.phone_wa ? { phone_wa: promotion.phone_wa } : {}),
-          ...(promotion.notes ? { notes: promotion.notes } : {}),
+          term_ends_at: promotion.term_ends_at,
+          phone_wa: promotion.phone_wa,
+          notes: promotion.notes,
+          photo: promotion.photo,
         }),
       'Pejabat berhasil ditetapkan.',
     )
@@ -264,13 +347,29 @@ export default function PejabatDesaPage() {
     return run(
       () =>
         rotatePerangkatDesa(rotation.official.id, {
-          user_id: rotation.candidate.user_id,
+          ...candidateTarget(rotation.official.position, rotation.candidate),
           started_at: rotation.started_at,
-          ...(rotation.term_ends_at ? { term_ends_at: rotation.term_ends_at } : {}),
-          ...(rotation.notes ? { notes: rotation.notes } : {}),
+          term_ends_at: rotation.term_ends_at,
+          notes: rotation.notes,
+          photo: rotation.photo,
         }),
       'Rotasi pejabat berhasil diproses.',
     )
+  }
+
+  const handlePhotoChange = (event) => {
+    const file = event.target.files?.[0]
+    const official = photoTarget.current
+
+    event.target.value = ''
+    if (!file || !official) return undefined
+
+    return run(() => uploadOfficialPhoto(official.id, file), 'Foto pejabat berhasil diperbarui.')
+  }
+
+  const pickPhotoFor = (official) => {
+    photoTarget.current = official
+    photoInput.current?.click()
   }
 
   const handleDemote = (event) => {
@@ -289,9 +388,7 @@ export default function PejabatDesaPage() {
     return run(() => deletePerangkatDesa(official.id), 'Riwayat jabatan berhasil dihapus.')
   }
 
-  const promotionScope = ACCOUNT_POSITIONS.find(
-    (position) => position.value === promotion?.position,
-  )?.scope
+  const promotionScope = findAccountPosition(promotion?.position)?.scope
 
   return (
     <div className="sid-operator-page">
@@ -305,6 +402,15 @@ export default function PejabatDesaPage() {
           <div className="sid-admin-page-actions">
             <button
               type="button"
+              className="sid-button sid-button-outline"
+              disabled={processing}
+              onClick={() => setManagingTypes(true)}
+            >
+              <ListChecks size={16} />
+              Kelola Jenis Jabatan
+            </button>
+            <button
+              type="button"
               className="sid-operator-primary"
               disabled={processing}
               onClick={() => setPromotion({ ...EMPTY_PROMOTION, started_at: today() })}
@@ -316,11 +422,20 @@ export default function PejabatDesaPage() {
         </div>
 
         <p className="sid-admin-alert" role="note">
-          Menetapkan jabatan mengubah peran akun warga menjadi peran jabatan tersebut. Mengakhiri
-          jabatan mengembalikan akun itu menjadi warga. Rotasi mengganti pejabat pada jabatan dan
-          wilayah yang sama dalam satu langkah. Calon pejabat dipilih lewat NIK-nya dan harus sudah
-          memiliki akun warga aktif.
+          Menetapkan jabatan yang punya akun mengubah peran akun warga menjadi peran jabatan
+          tersebut, dan mengakhirinya mengembalikan akun itu menjadi warga. Jabatan tanpa akun hanya
+          dicatat pada data warga. Rotasi mengganti pejabat pada jabatan dan wilayah yang sama dalam
+          satu langkah. Calon pejabat dipilih lewat NIK-nya dan fotonya wajib diunggah.
         </p>
+
+        <input
+          ref={photoInput}
+          type="file"
+          accept={PHOTO_TYPES}
+          hidden
+          aria-label="Unggah foto pejabat"
+          onChange={handlePhotoChange}
+        />
 
         {error && (
           <p className="sid-admin-alert sid-admin-alert-error" role="alert">
@@ -384,12 +499,20 @@ export default function PejabatDesaPage() {
                   visibleOfficials.map((official) => (
                     <tr key={official.id}>
                       <td className="primary-text">
-                        {official.citizen?.name ?? '-'}
-                        {!official.user_id && (
-                          <small className="sid-admin-cell-meta">Tanpa akun login</small>
-                        )}
+                        <div className="flex items-center gap-3">
+                          <OfficialPhoto src={official.photo_img} name={official.citizen?.name} />
+                          <div>
+                            {official.citizen?.name ?? '-'}
+                            {!official.user_id && (
+                              <small className="sid-admin-cell-meta">Tanpa akun login</small>
+                            )}
+                            {official.is_active && !official.photo_img && (
+                              <small className="sid-admin-cell-meta">Belum ada foto</small>
+                            )}
+                          </div>
+                        </div>
                       </td>
-                      <td>{POSITION_LABELS[official.position] ?? official.position}</td>
+                      <td>{positionLabel(official)}</td>
                       <td>{describeArea(official, rwNumbers)}</td>
                       <td className="center">{formatDate(official.started_at)}</td>
                       <td className="center">
@@ -400,8 +523,18 @@ export default function PejabatDesaPage() {
                       <td className="center">{official.is_active ? 'Menjabat' : 'Berakhir'}</td>
                       <td className="center">
                         <div className="sid-operator-actions">
-                          {official.is_active && official.user_id && (
+                          {official.is_active && (
                             <>
+                              <button
+                                type="button"
+                                className="sid-operator-action detail"
+                                title={official.photo_img ? 'Ganti foto' : 'Unggah foto'}
+                                aria-label={`Ganti foto ${official.citizen?.name ?? 'pejabat'}`}
+                                disabled={processing}
+                                onClick={() => pickPhotoFor(official)}
+                              >
+                                <Camera size={16} />
+                              </button>
                               {official.position !== 'petugas_desa' && (
                                 <button
                                   type="button"
@@ -413,6 +546,7 @@ export default function PejabatDesaPage() {
                                     setRotation({
                                       official,
                                       candidate: null,
+                                      photo: null,
                                       started_at: today(),
                                       term_ends_at: '',
                                       notes: '',
@@ -462,20 +596,17 @@ export default function PejabatDesaPage() {
           <form className="sid-modal" onSubmit={handlePromote}>
             <h2>Tetapkan Pejabat</h2>
 
-            <CandidatePicker
-              candidate={promotion.candidate}
-              disabled={processing}
-              onChange={(candidate) => setPromotion((current) => ({ ...current, candidate }))}
-            />
-
             <label className="sid-form-group">
               <span className="sid-form-label">Jabatan *</span>
               <select
                 required
                 value={promotion.position}
                 onChange={(event) =>
+                  // Kelayakan calon bergantung pada jabatan, jadi calon
+                  // dicari ulang setiap jabatan berganti.
                   setPromotion({
                     ...promotion,
+                    candidate: null,
                     position: event.target.value,
                     rt_id: '',
                     rw_id: '',
@@ -484,13 +615,26 @@ export default function PejabatDesaPage() {
                 }
               >
                 <option value="">Pilih jabatan</option>
-                {ACCOUNT_POSITIONS.map((position) => (
+                {positionOptions.map((position) => (
                   <option key={position.value} value={position.value}>
                     {position.label}
                   </option>
                 ))}
               </select>
             </label>
+
+            <CandidatePicker
+              candidate={promotion.candidate}
+              position={promotion.position}
+              disabled={processing}
+              onChange={(candidate) => setPromotion((current) => ({ ...current, candidate }))}
+            />
+
+            <PhotoField
+              file={promotion.photo}
+              disabled={processing}
+              onChange={(photo) => setPromotion((current) => ({ ...current, photo }))}
+            />
 
             {promotionScope === 'rt_id' && (
               <label className="sid-form-group">
@@ -600,7 +744,7 @@ export default function PejabatDesaPage() {
               <button
                 type="submit"
                 className="sid-button sid-button-primary"
-                disabled={processing || !promotion.candidate?.eligible}
+                disabled={processing || !promotion.candidate?.eligible || !promotion.photo}
               >
                 {processing ? 'Memproses...' : 'Tetapkan'}
               </button>
@@ -612,9 +756,7 @@ export default function PejabatDesaPage() {
       {rotation && (
         <div className="sid-modal-overlay">
           <form className="sid-modal" onSubmit={handleRotate}>
-            <h2>
-              Rotasi {POSITION_LABELS[rotation.official.position] ?? rotation.official.position}
-            </h2>
+            <h2>Rotasi {positionLabel(rotation.official)}</h2>
             <p>
               {rotation.official.citizen?.name ?? 'Pejabat saat ini'} (
               {describeArea(rotation.official, rwNumbers)}) diakhiri jabatannya dan digantikan warga
@@ -623,8 +765,15 @@ export default function PejabatDesaPage() {
 
             <CandidatePicker
               candidate={rotation.candidate}
+              position={rotation.official.position}
               disabled={processing}
               onChange={(candidate) => setRotation((current) => ({ ...current, candidate }))}
+            />
+
+            <PhotoField
+              file={rotation.photo}
+              disabled={processing}
+              onChange={(photo) => setRotation((current) => ({ ...current, photo }))}
             />
 
             <label className="sid-form-group">
@@ -667,7 +816,7 @@ export default function PejabatDesaPage() {
               <button
                 type="submit"
                 className="sid-button sid-button-primary"
-                disabled={processing || !rotation.candidate?.eligible}
+                disabled={processing || !rotation.candidate?.eligible || !rotation.photo}
               >
                 {processing ? 'Memproses...' : 'Rotasi'}
               </button>
@@ -682,9 +831,9 @@ export default function PejabatDesaPage() {
             <h2>Akhiri Jabatan</h2>
             <p>
               {demotion.official.citizen?.name ?? 'Pejabat'} berhenti sebagai{' '}
-              {POSITION_LABELS[demotion.official.position] ?? demotion.official.position} (
-              {describeArea(demotion.official, rwNumbers)}) dan akunnya kembali menjadi warga.
-              Jabatan ini kosong sampai pejabat baru ditetapkan.
+              {positionLabel(demotion.official)} ({describeArea(demotion.official, rwNumbers)})
+              {demotion.official.user_id ? ' dan akunnya kembali menjadi warga' : ''}. Jabatan ini
+              kosong sampai pejabat baru ditetapkan.
             </p>
 
             <label className="sid-form-group">
@@ -710,6 +859,14 @@ export default function PejabatDesaPage() {
             </div>
           </form>
         </div>
+      )}
+
+      {managingTypes && (
+        <OfficialPositionTypeManager
+          types={positionTypes}
+          onChanged={loadData}
+          onClose={() => setManagingTypes(false)}
+        />
       )}
 
       <FooterOperator />

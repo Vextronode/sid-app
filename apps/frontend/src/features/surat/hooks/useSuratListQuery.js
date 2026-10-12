@@ -1,35 +1,108 @@
-import { useQuery } from '@tanstack/react-query'
+import { useCallback, useEffect, useState } from 'react'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import api from '@/lib/api'
 import { queryKeys } from '@/shared/lib/queryKeys'
 
 const EMPTY_LETTERS = []
+const EMPTY_META = { current_page: 1, per_page: 20, total: 0, last_page: 1 }
 
 export const SURAT_REFRESH_INTERVAL = 30 * 1000
 
-// Satu sumber daftar surat untuk dashboard, grafik, dan halaman daftar:
-// komponen yang tampil bersamaan berbagi satu request, penyegaran berkala
-// berhenti saat tab tidak aktif, dan data langsung tersedia saat pindah
-// halaman. Scope data tetap ditentukan backend dari sesi pengguna.
-export function useSuratListQuery(params = null) {
-  const { data, isPending, refetch } = useQuery({
-    queryKey: queryKeys.surat.list(params),
-    queryFn: async () => {
-      const response = await api.get('/api/letters', params ? { params } : undefined)
+// Penyegaran berkala berhenti saat tab tidak aktif dan langsung berjalan
+// lagi saat tab kembali dibuka.
+const LIVE_QUERY_OPTIONS = {
+  staleTime: 0,
+  refetchInterval: SURAT_REFRESH_INTERVAL,
+  refetchIntervalInBackground: false,
+  refetchOnWindowFocus: true,
+}
 
-      return Array.isArray(response.data?.data) ? response.data.data : []
+function cleanParams(params) {
+  return Object.fromEntries(
+    Object.entries(params ?? {}).filter(
+      ([, value]) => value !== undefined && value !== null && value !== '',
+    ),
+  )
+}
+
+// Daftar surat berpaginasi di server. Scope data ditentukan backend dari
+// sesi pengguna; filter, pencarian, dan halaman dikirim sebagai parameter
+// (page, per_page, status, search, letter_type_id, scope, from, to).
+export function useSuratListQuery(params) {
+  const query = cleanParams(params)
+  const queryClient = useQueryClient()
+
+  // Setelah aksi (setujui, tolak, hapus, ajukan) daftar dan ringkasan
+  // dashboard harus sama-sama segar.
+  const refresh = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: queryKeys.surat.all }),
+    [queryClient],
+  )
+
+  const { data, isPending, isFetching } = useQuery({
+    queryKey: queryKeys.surat.list(query),
+    queryFn: async () => {
+      const response = await api.get('/api/letters', { params: query })
+
+      return {
+        letters: Array.isArray(response.data?.data) ? response.data.data : EMPTY_LETTERS,
+        meta: response.data?.meta ?? EMPTY_META,
+      }
     },
-    // Selalu segarkan saat halaman dibuka (mis. setelah mengajukan surat);
-    // cache tetap dipakai agar tampilan tidak kosong selama menunggu.
-    staleTime: 0,
-    refetchInterval: SURAT_REFRESH_INTERVAL,
-    refetchIntervalInBackground: false,
-    refetchOnWindowFocus: true,
+    placeholderData: keepPreviousData,
+    ...LIVE_QUERY_OPTIONS,
   })
 
   return {
-    letters: data ?? EMPTY_LETTERS,
+    letters: data?.letters ?? EMPTY_LETTERS,
+    meta: data?.meta ?? EMPTY_META,
     loading: isPending,
-    refresh: refetch,
+    isFetching,
+    refresh,
   }
+}
+
+const EMPTY_PERIOD = { total: 0, pending: 0, in_progress: 0, approved: 0, rejected: 0 }
+
+const EMPTY_SUMMARY = {
+  total: 0,
+  by_status: { pending: 0, in_progress: 0, approved: 0, rejected: 0 },
+  overdue: 0,
+  by_type: [],
+  by_period: { day: EMPTY_PERIOD, week: EMPTY_PERIOD, month: EMPTY_PERIOD },
+}
+
+// Angka ringkasan dashboard, dihitung backend atas scope yang sama dengan
+// daftar surat sehingga tidak perlu mengunduh seluruh baris.
+export function useSuratSummaryQuery(params) {
+  const query = cleanParams(params)
+
+  const { data, isPending } = useQuery({
+    queryKey: queryKeys.surat.summary(query),
+    queryFn: async () => {
+      const response = await api.get('/api/letters/summary', { params: query })
+
+      return response.data?.data ?? EMPTY_SUMMARY
+    },
+    ...LIVE_QUERY_OPTIONS,
+  })
+
+  return {
+    summary: data ?? EMPTY_SUMMARY,
+    loading: isPending,
+  }
+}
+
+// Menunda nilai pencarian supaya tidak ada request untuk tiap ketikan.
+export function useDebouncedValue(value, delay = 300) {
+  const [debounced, setDebounced] = useState(value)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay)
+
+    return () => clearTimeout(timer)
+  }, [value, delay])
+
+  return debounced
 }

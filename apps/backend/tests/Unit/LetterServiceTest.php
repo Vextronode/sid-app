@@ -171,7 +171,7 @@ class LetterServiceTest extends TestCase
         Official::factory()->forUser($user)->position('petugas_desa')->create([
             'village_id' => $village->id,
         ]);
-        $letters = $this->service->getScopedLetters($user)->keyBy('id');
+        $letters = $this->service->paginateScopedLetters($user)->keyBy('id');
 
         $this->assertFalse($letters[$activeLetter->id]->is_overdue);
         $this->assertFalse($letters[$rejectedLetter->id]->is_overdue);
@@ -355,7 +355,7 @@ class LetterServiceTest extends TestCase
         $ownLetter = Letter::factory()->create(['submitted_by' => $user->id]);
         Letter::factory()->create();
 
-        $result = $this->service->getScopedLetters($user);
+        $result = $this->service->paginateScopedLetters($user);
 
         $this->assertCount(1, $result);
         $this->assertSame($ownLetter->id, $result->first()->id);
@@ -424,7 +424,7 @@ class LetterServiceTest extends TestCase
         $user = User::factory()->create(['role' => 'rt']);
         $user->official()->save($official);
 
-        $result = $this->service->getScopedLetters($user->fresh());
+        $result = $this->service->paginateScopedLetters($user->fresh());
 
         $this->assertCount(2, $result);
         $this->assertContains($letter->id, $result->modelKeys());
@@ -459,7 +459,7 @@ class LetterServiceTest extends TestCase
         $user = User::factory()->create(['role' => 'rw']);
         $user->official()->save($official);
 
-        $result = $this->service->getScopedLetters($user->fresh());
+        $result = $this->service->paginateScopedLetters($user->fresh());
 
         $this->assertCount(2, $result);
         $this->assertContains($approvedLetter->id, $result->pluck('id'));
@@ -479,7 +479,7 @@ class LetterServiceTest extends TestCase
         $user = User::factory()->create(['role' => 'kepala_desa', 'village_id' => $village->id]);
         $user->official()->save($official);
 
-        $result = $this->service->getScopedLetters($user->fresh());
+        $result = $this->service->paginateScopedLetters($user->fresh());
 
         $this->assertCount(1, $result);
         $this->assertSame($letter->id, $result->first()->id);
@@ -495,7 +495,7 @@ class LetterServiceTest extends TestCase
         $user = User::factory()->create(['role' => 'sekretaris_desa', 'village_id' => $village->id]);
         $user->official()->save($official);
 
-        $result = $this->service->getScopedLetters($user->fresh());
+        $result = $this->service->paginateScopedLetters($user->fresh());
 
         $this->assertCount(1, $result);
         $this->assertSame($letter->id, $result->first()->id);
@@ -516,7 +516,7 @@ class LetterServiceTest extends TestCase
         $user = User::factory()->create(['role' => 'kasi_pelayanan']);
         $user->official()->save($official);
 
-        $result = $this->service->getScopedLetters($user->fresh());
+        $result = $this->service->paginateScopedLetters($user->fresh());
 
         $this->assertCount(1, $result);
         $this->assertSame($letter->id, $result->first()->id);
@@ -533,7 +533,7 @@ class LetterServiceTest extends TestCase
             'village_id' => $village->id,
         ]);
 
-        $result = $this->service->getScopedLetters($user);
+        $result = $this->service->paginateScopedLetters($user);
 
         $this->assertCount(1, $result);
         $this->assertSame($ownLetter->id, $result->first()->id);
@@ -551,7 +551,7 @@ class LetterServiceTest extends TestCase
         $user = User::factory()->create(['role' => 'kadus', 'village_id' => $official->village_id]);
         $user->official()->save($official);
 
-        $result = $this->service->getScopedLetters($user->fresh());
+        $result = $this->service->paginateScopedLetters($user->fresh());
 
         $this->assertSame([$ownLetter->id], $result->modelKeys());
         $this->assertNotContains($otherLetter->id, $result->modelKeys());
@@ -566,7 +566,7 @@ class LetterServiceTest extends TestCase
             $user = User::factory()->create(['role' => $role]);
             $ownLetter->update(['submitted_by' => $user->id]);
 
-            $result = $this->service->getScopedLetters($user, ['scope' => 'mine']);
+            $result = $this->service->paginateScopedLetters($user, ['scope' => 'mine']);
 
             $this->assertCount(1, $result);
             $this->assertSame($ownLetter->id, $result->first()->id);
@@ -605,7 +605,7 @@ class LetterServiceTest extends TestCase
             ]);
         }
 
-        $result = $this->service->getScopedLetters($user);
+        $result = $this->service->paginateScopedLetters($user);
 
         $this->assertCount(2, $result);
         $this->assertContains($own->id, $result->modelKeys());
@@ -630,7 +630,7 @@ class LetterServiceTest extends TestCase
             'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
         ]);
 
-        $result = $this->service->getScopedLetters($user);
+        $result = $this->service->paginateScopedLetters($user);
 
         $this->assertCount(1, $result);
         $this->assertSame($allowed->id, $result->first()->id);
@@ -647,7 +647,7 @@ class LetterServiceTest extends TestCase
         Letter::factory()->create(['status' => 'pending', 'village_id' => $village->id]);
         Letter::factory()->create(['status' => 'approved', 'village_id' => $village->id]);
 
-        $result = $this->service->getScopedLetters($user, ['status' => 'approved']);
+        $result = $this->service->paginateScopedLetters($user, ['status' => 'approved']);
 
         $this->assertCount(1, $result);
         $this->assertSame('approved', $result->first()->status->value);

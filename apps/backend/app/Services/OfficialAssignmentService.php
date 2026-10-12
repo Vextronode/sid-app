@@ -12,14 +12,18 @@ use App\Models\User;
 use App\Models\Village;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
+use App\Repositories\OfficialPositionTypeRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\Auth\UsernameGenerator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use RuntimeException;
+use Throwable;
 
 class OfficialAssignmentService
 {
@@ -29,26 +33,27 @@ class OfficialAssignmentService
         protected LetterRepository $letterRepository,
         protected OfficialService $officialService,
         protected UsernameGenerator $usernameGenerator,
+        protected OfficialPositionTypeRepository $positionTypes = new OfficialPositionTypeRepository,
     ) {}
 
     public function promote(User $actor, array $data): Official
     {
-        return DB::transaction(function () use ($actor, $data): Official {
+        return $this->withStoredPhoto($actor, $data, fn (array $data): Official => DB::transaction(function () use ($actor, $data): Official {
             $this->assertActivePetugas($actor);
 
             return $this->promoteInTransaction($actor, $data);
-        });
+        }));
     }
 
     /**
-     * Mencari calon pejabat lewat NIK: akun yang terhubung ke warga
-     * ber-NIK itu di desa Petugas. Dipakai form penetapan dan rotasi,
-     * supaya pejabat dipilih dari identitas kependudukannya, bukan dari
-     * nama akun.
+     * Mencari calon pejabat lewat NIK di desa Petugas. Dipakai form
+     * penetapan dan rotasi, supaya pejabat dipilih dari identitas
+     * kependudukannya, bukan dari nama akun. Jabatan yang punya akun
+     * mensyaratkan akun warga aktif; jabatan tanpa akun cukup data warga.
      *
-     * @return array{user_id: ?string, name: string, username: ?string, eligible: bool, reason: ?string}
+     * @return array{citizen_id: string, user_id: ?string, name: string, username: ?string, eligible: bool, reason: ?string}
      */
-    public function findCandidateByNik(User $actor, string $nik): array
+    public function findCandidateByNik(User $actor, string $nik, ?string $position = null): array
     {
         $this->assertActivePetugas($actor);
 
@@ -62,15 +67,21 @@ class OfficialAssignmentService
         }
 
         $user = $this->userRepository->findByCitizenId($citizen->id);
+        // Tanpa jabatan, diasumsikan jabatan berakun (syarat paling ketat).
+        $needsAccount = $position === null || OfficialPosition::tryFrom($position) !== null;
+        $serving = 'Warga ini sedang menjabat. Akhiri jabatannya lebih dulu.';
 
         $reason = match (true) {
-            $user === null => 'Warga ini belum memiliki akun. Minta yang bersangkutan mendaftar lebih dulu.',
-            ! $user->is_active => 'Akun warga ini sedang nonaktif.',
-            $this->officialRepository->existsActiveForUser($user->id), $user->role !== 'warga' => 'Warga ini sedang menjabat. Akhiri jabatannya lebih dulu.',
+            ! $citizen->is_active => 'Data warga ini sedang nonaktif.',
+            $this->officialRepository->findActiveByCitizenId($citizen->id) !== null => $serving,
+            $user === null => $needsAccount ? 'Warga ini belum memiliki akun. Minta yang bersangkutan mendaftar lebih dulu.' : null,
+            $user->role !== 'warga', $this->officialRepository->existsActiveForUser($user->id) => $serving,
+            ! $user->is_active => $needsAccount ? 'Akun warga ini sedang nonaktif.' : null,
             default => null,
         };
 
         return [
+            'citizen_id' => $citizen->id,
             'user_id' => $user?->id,
             'name' => $citizen->name,
             'username' => $user?->username,
@@ -101,7 +112,7 @@ class OfficialAssignmentService
             abort(422, 'Gunakan promote/demote untuk Petugas Desa.');
         }
 
-        return DB::transaction(function () use ($actor, $old, $data): array {
+        return $this->withStoredPhoto($actor, $data, fn (array $data): array => DB::transaction(function () use ($actor, $old, $data): array {
             $this->assertActivePetugas($actor);
             $this->assertOfficialInActorVillage($actor, $old);
             $demotion = $this->demoteInTransaction($actor, $old, $data['notes'] ?? null);
@@ -126,7 +137,37 @@ class OfficialAssignmentService
                 // demotion warnings about a vacant position no longer apply.
                 'warnings' => [],
             ];
-        });
+        }));
+    }
+
+    /**
+     * Foto pejabat disimpan sebelum transaksi dan dihapus lagi bila
+     * penetapan gagal, supaya tidak ada berkas tanpa baris pejabat.
+     *
+     * @template T
+     *
+     * @param  array<string, mixed>  $data
+     * @param  callable(array<string, mixed>): T  $assign
+     * @return T
+     */
+    private function withStoredPhoto(User $actor, array $data, callable $assign): mixed
+    {
+        $photo = $data['photo'] ?? null;
+        unset($data['photo'], $data['photo_img']);
+
+        if (! $photo instanceof UploadedFile) {
+            return $assign($data);
+        }
+
+        $this->assertActivePetugas($actor);
+        $data['photo_img'] = $this->officialService->storePhoto($photo, $actor->village_id);
+
+        try {
+            return $assign($data);
+        } catch (Throwable $exception) {
+            Storage::disk('public')->delete($data['photo_img']);
+            throw $exception;
+        }
     }
 
     /** Create or reuse a citizen and account, then make the first Petugas Desa. */
@@ -235,36 +276,34 @@ class OfficialAssignmentService
     private function promoteInTransaction(User $actor, array $data): Official
     {
         $this->assertActivePetugas($actor);
-        $target = User::query()->findOrFail($data['user_id']);
-
-        if (
-            ! $target->is_active ||
-            $target->role !== 'warga' ||
-            $target->citizen_id === null ||
-            $target->village_id !== $actor->village_id ||
-            $this->officialRepository->existsActiveForUser($target->id)
-        ) {
-            abort(422, 'Akun target harus warga aktif yang belum menjabat dan terhubung ke data kependudukan.');
-        }
-
+        // Jabatan berakun ada di enum; selain itu harus jenis jabatan aktif
+        // milik desa Petugas.
         $position = OfficialPosition::tryFrom($data['position'] ?? '');
+        $positionCode = $position?->value
+            ?? $this->positionTypes->findByCode($actor->village_id, (string) ($data['position'] ?? ''), activeOnly: true)?->code;
 
-        if ($position === null || ! $position->hasAccount()) {
-            abort(422, 'Posisi jabatan tidak dapat ditetapkan ke akun.');
+        if ($positionCode === null) {
+            abort(422, 'Posisi jabatan tidak dikenal.');
         }
 
-        $scopeColumn = $position->scopeColumn();
+        $target = $position !== null
+            ? $this->resolveAccountTarget($actor, $data)
+            : null;
+        $citizenId = $target?->citizen_id ?? $this->resolveCitizenTarget($actor, $data)->id;
+
+        $scopeColumn = $position?->scopeColumn();
         $officialData = [
-            'citizen_id' => $target->citizen_id,
-            'user_id' => $target->id,
-            'position' => $position->value,
-            'village_id' => $target->village_id,
+            'citizen_id' => $citizenId,
+            'user_id' => $target?->id,
+            'position' => $positionCode,
+            'village_id' => $actor->village_id,
             'rt_id' => $scopeColumn === 'rt_id' ? ($data['rt_id'] ?? null) : null,
             'rw_id' => $scopeColumn === 'rw_id' ? ($data['rw_id'] ?? null) : null,
             'hamlet_id' => $scopeColumn === 'hamlet_id' ? ($data['hamlet_id'] ?? null) : null,
             'started_at' => $data['started_at'],
             'term_ends_at' => $data['term_ends_at'] ?? null,
             'phone_wa' => $data['phone_wa'] ?? null,
+            'photo_img' => $data['photo_img'] ?? null,
             'notes' => $data['notes'] ?? null,
             'is_active' => true,
         ];
@@ -273,23 +312,78 @@ class OfficialAssignmentService
             'rw_id' => Rw::class,
             'hamlet_id' => Hamlet::class,
         ] as $field => $model) {
-            if ($officialData[$field] !== null && ! $model::query()->whereKey($officialData[$field])->where('village_id', $target->village_id)->exists()) {
+            if ($officialData[$field] !== null && ! $model::query()->whereKey($officialData[$field])->where('village_id', $actor->village_id)->exists()) {
                 abort(422, 'Wilayah jabatan harus berasal dari desa akun target.');
             }
         }
         $this->officialService->assertPositionAvailable($officialData);
 
         $official = $this->officialRepository->create($officialData);
-        $this->userRepository->updateRole($target->id, $position->userRole()->value);
+
+        if ($target !== null) {
+            $this->userRepository->updateRole($target->id, $position->userRole()->value);
+        }
 
         $this->logActivity($actor, $official, 'promoted', [
-            'user_id' => $target->id,
-            'position' => $position->value,
+            'user_id' => $target?->id,
+            'position' => $positionCode,
         ]);
 
-        $this->notifyLettersWaitingForNewRt($official, $target);
+        if ($target !== null) {
+            $this->notifyLettersWaitingForNewRt($official, $target);
+        }
 
         return $official;
+    }
+
+    /**
+     * Jabatan yang punya akun: targetnya akun warga aktif yang belum
+     * menjabat, di desa Petugas.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveAccountTarget(User $actor, array $data): User
+    {
+        $target = User::query()->find($data['user_id'] ?? null);
+
+        if (
+            $target === null ||
+            ! $target->is_active ||
+            $target->role !== 'warga' ||
+            $target->citizen_id === null ||
+            $target->village_id !== $actor->village_id ||
+            $this->officialRepository->existsActiveForUser($target->id) ||
+            $this->officialRepository->findActiveByCitizenId($target->citizen_id) !== null
+        ) {
+            abort(422, 'Akun target harus warga aktif yang belum menjabat dan terhubung ke data kependudukan.');
+        }
+
+        return $target;
+    }
+
+    /**
+     * Jabatan tanpa akun: targetnya data warga aktif di desa Petugas
+     * yang belum menjabat. Akun tidak disyaratkan dan perannya tidak berubah.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveCitizenTarget(User $actor, array $data): Citizen
+    {
+        $citizen = Citizen::query()
+            ->where('village_id', $actor->village_id)
+            ->find($data['citizen_id'] ?? null);
+        $account = $citizen ? $this->userRepository->findByCitizenId($citizen->id) : null;
+
+        if (
+            $citizen === null ||
+            ! $citizen->is_active ||
+            $this->officialRepository->findActiveByCitizenId($citizen->id) !== null ||
+            ($account !== null && $account->role !== 'warga')
+        ) {
+            abort(422, 'Warga target harus warga aktif desa ini yang belum menjabat.');
+        }
+
+        return $citizen;
     }
 
     /**
@@ -331,17 +425,20 @@ class OfficialAssignmentService
         bool $skipSelfGuard = false,
         bool $skipLastPetugasGuard = false,
     ): array {
-        if (! $official->is_active || $official->user_id === null) {
-            abort(422, 'Hanya jabatan aktif yang terhubung ke akun yang dapat diturunkan.');
+        if (! $official->is_active) {
+            abort(422, 'Hanya jabatan aktif yang dapat diturunkan.');
         }
 
-        $target = User::query()->findOrFail($official->user_id);
+        // Jabatan tanpa akun tidak punya peran untuk dikembalikan.
+        $target = $official->user_id !== null
+            ? User::query()->findOrFail($official->user_id)
+            : null;
 
-        if ($target->village_id !== $official->village_id) {
+        if ($target !== null && $target->village_id !== $official->village_id) {
             abort(409, 'Akun pejabat tidak sesuai dengan desa jabatannya.');
         }
 
-        if ($official->position === OfficialPosition::PetugasDesa->value) {
+        if ($target !== null && $official->position === OfficialPosition::PetugasDesa->value) {
             $activePetugasCount = $this->userRepository->countActiveByRole(OfficialPosition::PetugasDesa->userRole()->value, $target->village_id);
 
             if (! $skipSelfGuard && $actor?->is($target)) {
@@ -364,11 +461,13 @@ class OfficialAssignmentService
             'ended_at' => today(),
             'notes' => $updatedNotes !== '' ? $updatedNotes : null,
         ]);
-        $this->userRepository->updateRole($target->id, 'warga');
+        if ($target !== null) {
+            $this->userRepository->updateRole($target->id, 'warga');
+        }
 
         $official = $official->fresh();
         $this->logActivity($actor, $official, 'demoted', [
-            'user_id' => $target->id,
+            'user_id' => $target?->id,
             'position' => $official->position,
             'warnings' => $warnings,
         ]);

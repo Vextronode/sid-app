@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-
 // ==========================================
 // RTListPage.jsx
 // Daftar Permohonan Surat RT
@@ -31,7 +29,7 @@
 // SuratDetailModalRT
 // ==========================================
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
@@ -53,7 +51,6 @@ export default function RTListPage() {
 
   const initialStatus = searchParams.get('status') ?? ''
 
-  const [currentPage, setCurrentPage] = useState(1)
   const [selectedId, setSelectedId] = useState(null)
   const [isReadOnly, setIsReadOnly] = useState(false)
 
@@ -61,31 +58,30 @@ export default function RTListPage() {
   // DATA
   // ==========================================
 
-  const { data, loading, search, setSearch, filterStatus, setFilterStatus, refresh } =
-    useApprovalLetterList({
-      role: 'rt',
-      initialStatus,
-    })
-
-  // ==========================================
-  // RESET PAGINATION
-  // ==========================================
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [search, filterStatus])
+  const {
+    data,
+    loading,
+    search,
+    setSearch,
+    filterStatus,
+    setFilterStatus,
+    totalItems,
+    totalPages,
+    currentPage,
+    setCurrentPage,
+    refresh,
+  } = useApprovalLetterList({
+    role: 'rt',
+    initialStatus,
+    perPage: ITEMS_PER_PAGE,
+  })
 
   // ==========================================
   // PAGINATION
   // ==========================================
 
-  const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE))
-
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
-
-    return data.slice(start, start + ITEMS_PER_PAGE)
-  }, [data, currentPage])
+  // Baris yang diterima sudah merupakan satu halaman dari server.
+  const paginatedData = data
 
   // ==========================================
   // APPROVE
@@ -315,7 +311,7 @@ export default function RTListPage() {
               <p className="rw-pagination-info">
                 Menampilkan{' '}
                 {paginatedData.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-
-                {(currentPage - 1) * ITEMS_PER_PAGE + paginatedData.length} dari {data.length} data
+                {(currentPage - 1) * ITEMS_PER_PAGE + paginatedData.length} dari {totalItems} data
               </p>
 
               <div className="rw-pagination-buttons">

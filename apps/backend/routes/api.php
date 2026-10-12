@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OccupationController;
 use App\Http\Controllers\Api\OfficialController;
+use App\Http\Controllers\Api\OfficialPositionTypeController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PublicPageController;
 use App\Http\Controllers\Api\PushSubscriptionController;
@@ -242,6 +243,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         // lewat endpoint ini; scoping di LetterService::getScopedLetters()
         // dan LetterPolicy::view.
         Route::get('/', [LetterController::class, 'index']);
+        // Angka ringkasan atas scope yang sama dengan daftar di atas.
+        Route::get('/summary', [LetterController::class, 'summary']);
         Route::get('/{id}', [LetterController::class, 'show']);
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
         //        Route::patch('/{letter}/resubmit', [LetterController::class, 'resubmit']);
@@ -383,6 +386,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::post('/{official}/signature', [OfficialController::class, 'uploadSignature']);
             Route::get('/{official}/signature', [OfficialController::class, 'signaturePreview']);
+            Route::post('/{official}/photo', [OfficialController::class, 'uploadPhoto']);
             Route::post('/promote', [OfficialController::class, 'promote']);
             // Cari calon pejabat lewat NIK (POST agar NIK tidak tercatat di URL).
             Route::post('/candidates/lookup', [OfficialController::class, 'candidate']);
@@ -430,6 +434,22 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::get('/profile/stamp', [VillageProfileController::class, 'stampPreview']);
         });
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Jenis Jabatan Desa Tanpa Akun
+    |--------------------------------------------------------------------------
+    | Eksklusif Petugas Desa. Jabatan yang punya akun tetap di enum
+    | OfficialPosition dan tidak dikelola dari sini.
+    */
+    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+        ->prefix('official-position-types')
+        ->group(function () {
+            Route::get('/', [OfficialPositionTypeController::class, 'index']);
+            Route::post('/', [OfficialPositionTypeController::class, 'store']);
+            Route::patch('/{id}', [OfficialPositionTypeController::class, 'update']);
+            Route::delete('/{id}', [OfficialPositionTypeController::class, 'destroy']);
+        });
 
     /*
     |--------------------------------------------------------------------------

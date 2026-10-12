@@ -8,10 +8,12 @@ use App\Http\Requests\PromoteOfficialRequest;
 use App\Http\Requests\RotateOfficialRequest;
 use App\Http\Requests\StoreOfficialRequest;
 use App\Http\Requests\UpdateOfficialRequest;
+use App\Http\Requests\UploadOfficialPhotoRequest;
 use App\Http\Requests\UploadOfficialSignatureRequest;
 use App\Http\Resources\OfficialCollection;
 use App\Http\Resources\OfficialResource;
 use App\Models\Official;
+use App\Rules\ValidOfficialPosition;
 use App\Services\OfficialAssignmentService;
 use App\Services\OfficialService;
 use Illuminate\Http\JsonResponse;
@@ -80,14 +82,37 @@ class OfficialController extends Controller
         return $this->officialService->signaturePreview($official, $request->user());
     }
 
+    public function uploadPhoto(UploadOfficialPhotoRequest $request, Official $official): JsonResponse
+    {
+        $this->authorize('update', $official);
+
+        $official = $this->officialService->replacePhoto(
+            $official,
+            $request->user(),
+            $request->file('photo'),
+        );
+
+        return response()->json([
+            'message' => 'Foto pejabat berhasil diperbarui.',
+            'data' => new OfficialResource($official),
+        ]);
+    }
+
     public function candidate(Request $request): JsonResponse
     {
         $this->authorize('create', Official::class);
 
-        $validated = $request->validate(['nik' => ['required', 'digits:16']]);
+        $validated = $request->validate([
+            'nik' => ['required', 'digits:16'],
+            'position' => ['nullable', 'string', new ValidOfficialPosition($request->user()->village_id)],
+        ]);
 
         return response()->json([
-            'data' => $this->assignmentService->findCandidateByNik($request->user(), $validated['nik']),
+            'data' => $this->assignmentService->findCandidateByNik(
+                $request->user(),
+                $validated['nik'],
+                $validated['position'] ?? null,
+            ),
         ]);
     }
 

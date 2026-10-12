@@ -19,8 +19,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Tests\TestCase;
 
@@ -249,13 +251,15 @@ class EndToEndApprovalFlowTest extends TestCase
         $petugas = $this->makeOfficialUser('petugas_desa', $village);
         $target = $this->makeCitizenAccount($village, $rt, 'warga');
 
+        Storage::fake('public');
         $promotion = $this->actingAs($petugas['user'])
-            ->postJson('/api/officials/promote', [
+            ->post('/api/officials/promote', [
                 'user_id' => $target['user']->id,
                 'position' => 'rt',
                 'rt_id' => $rt->id,
                 'started_at' => today()->toDateString(),
-            ])
+                'photo' => UploadedFile::fake()->image('foto.jpg'),
+            ], ['Accept' => 'application/json'])
             ->assertCreated()
             ->assertJsonPath('data.position', 'rt')
             ->assertJsonPath('data.user_id', $target['user']->id);

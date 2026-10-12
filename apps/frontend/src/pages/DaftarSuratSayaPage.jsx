@@ -14,8 +14,15 @@ import { useLetters } from '@/features/surat/hooks/useLetters'
 import { deleteLetter } from '@/features/surat/api/letterApi'
 import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { SimplePagination } from '@/components/ui/SimplePagination'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
+
+// Nilai ?status= di URL -> status surat di backend.
+const STATUS_PARAM = {
+  ditolak: SURAT_STATUS.REJECTED,
+  approved: SURAT_STATUS.APPROVED,
+}
 
 const PAGE_TITLE = {
   '': 'Semua Pengajuan',
@@ -29,7 +36,17 @@ export default function DaftarSuratSayaPage() {
 
   const filterStatus = searchParams.get('status') ?? ''
 
-  const { letters, loading, refresh } = useLetters()
+  // Halaman disimpan bersama filter yang berlaku saat itu, sehingga
+  // berpindah filter otomatis kembali ke halaman pertama.
+  const [pageState, setPageState] = useState({ status: filterStatus, page: 1 })
+  const page = pageState.status === filterStatus ? pageState.page : 1
+  const setPage = (nextPage) => setPageState({ status: filterStatus, page: nextPage })
+
+  // Filter status dan pagination diproses di server.
+  const { letters, meta, loading, refresh } = useLetters({
+    page,
+    status: STATUS_PARAM[filterStatus] ?? filterStatus,
+  })
 
   const [selectedSurat, setSelectedSurat] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
@@ -48,6 +65,10 @@ export default function DaftarSuratSayaPage() {
 
     try {
       await deleteLetter(item.id)
+
+      // Baris terakhir di halaman ini terhapus: mundur satu halaman.
+      if (letters.length === 1 && page > 1) setPage(page - 1)
+
       await refresh()
     } catch (requestError) {
       setDeleteError(requestError?.response?.data?.message || 'Gagal menghapus surat.')
@@ -68,29 +89,11 @@ export default function DaftarSuratSayaPage() {
   useLetterDeepLink((letterId) => {
     const listed = letters.find((item) => String(item.id) === letterId)
 
-    if (listed) setSelectedSurat(toDetail(listed))
+    // Surat di halaman lain tetap bisa dibuka: modal memuat detailnya sendiri.
+    setSelectedSurat(listed ? toDetail(listed) : { id: letterId })
   }, !loading)
 
-  // ==========================================
-  // FILTER
-  // ==========================================
-
-  const filtered = letters.filter((item) => {
-    if (!filterStatus) {
-      return true
-    }
-
-    if (filterStatus === 'ditolak') {
-      return item.status === SURAT_STATUS.REJECTED
-    }
-
-    // Status approved.
-    if (filterStatus === 'approved') {
-      return item.status === SURAT_STATUS.APPROVED
-    }
-
-    return item.status === filterStatus
-  })
+  const filtered = letters
 
   return (
     <WargaLayout>
@@ -218,6 +221,8 @@ export default function DaftarSuratSayaPage() {
               </table>
             </div>
           )}
+
+          <SimplePagination page={page} totalPages={meta.last_page} onChange={setPage} />
         </div>
       </div>
 

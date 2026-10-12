@@ -306,7 +306,7 @@ class LetterRepository
      * findByRtIdAndStatus/findByRwIdAndStatus/dst yang sebelumnya
      * tersebar per Service (nama method sesuai SID-ARCH-BE-001 S2) -
      * murni posisi+status, TANPA scope wilayah/village. Pemanggil
-     * (LetterService::getScopedLetters(), EV5-4-S7) menambahkan scope
+     * (LetterService::scopedQuery(), EV5-4-S7) menambahkan scope
      * tambahan sendiri via whereHas (rt_id untuk RT, village_id untuk
      * Kades/Sekdes/Kasi/Kaur) - pola sama seperti
      * queryPendingAtFlowStepPositions().
@@ -344,7 +344,7 @@ class LetterRepository
     /**
      * EV5-4-S7. Semua surat (TANPA filter status) di wilayah RW
      * tertentu, via citizens.rt.rw_id - dipakai
-     * LetterService::getScopedLetters() case 'rw': read-only histori
+     * LetterService::scopedQuery() case 'rw': read-only histori
      * FYI, BUKAN filter approval aktif (RW bukan approver - lihat
      * api_spec paths/letters/letters.yaml).
      */
@@ -459,6 +459,124 @@ class LetterRepository
             'approvals.flowStep',
             'user',
         ]);
+    }
+
+    /**
+     * Bentuk baris untuk daftar: relasi dan kolom dibatasi pada yang
+     * ditampilkan tabel. Isian form, snapshot, serta NIK/alamat
+     * terenkripsi hanya dimuat di detail surat.
+     */
+    public function forListing(Builder $query): Builder
+    {
+        return $query
+            ->setEagerLoads([])
+            ->select([
+                'letters.id',
+                'letters.village_id',
+                'letters.letter_type_id',
+                'letters.submitted_by',
+                'letters.citizen_id',
+                'letters.letter_number',
+                'letters.applicant_name',
+                'letters.notes',
+                'letters.status',
+                'letters.flow_id',
+                'letters.current_step_order',
+                'letters.rejected_at_step',
+                'letters.is_overdue',
+                'letters.submitted_at',
+                'letters.processed_at',
+                'letters.fulfilled_at',
+                'letters.created_at',
+                'letters.updated_at',
+            ])
+            ->with([
+                'letterType:id,name,code,data_action',
+                'citizen:id,name',
+                'flow:id',
+                'flow.steps:id,flow_id,step_order,approver_position,is_final',
+                'approvals:id,letter_id,flow_step_id,approved_by,deadline_at',
+                'approvals.flowStep:id,step_order',
+            ]);
+    }
+
+    /** Pencarian bebas huruf besar/kecil pada pemohon, nomor surat, dan nama warga. */
+    public function whereMatchesSearch(Builder $query, string $keyword): Builder
+    {
+        $like = '%'.addcslashes(mb_strtolower(trim($keyword)), '\\%_').'%';
+
+        return $query->where(function (Builder $search) use ($like) {
+            $search->whereRaw('LOWER(letters.applicant_name) LIKE ?', [$like])
+                ->orWhereRaw('LOWER(letters.letter_number) LIKE ?', [$like])
+                ->orWhereHas('citizen', fn (Builder $citizen) => $citizen->whereRaw('LOWER(name) LIKE ?', [$like]));
+        });
+    }
+
+    /**
+     * @return array<int|string, int> jumlah surat berkunci nilai kolom
+     */
+    public function countGroupedBy(Builder $query, string $column): array
+    {
+        return (clone $query)
+            ->setEagerLoads([])
+            ->toBase()
+            ->selectRaw("letters.{$column} as group_key, COUNT(*) as aggregate")
+            ->groupBy("letters.{$column}")
+            ->pluck('aggregate', 'group_key')
+            ->map(fn ($count): int => (int) $count)
+            ->all();
+    }
+
+    /**
+     * Surat aktif yang approval pada step berjalannya sudah melewati
+     * tenggat; padanan SQL dari LetterService::flagOverdueLetters().
+     */
+    public function countOverdue(Builder $query): int
+    {
+        return (clone $query)
+            ->setEagerLoads([])
+            ->whereIn('letters.status', [LetterStatus::Pending->value, LetterStatus::InProgress->value])
+            ->whereHas('approvals', fn (Builder $approval) => $approval
+                ->whereNull('approved_by')
+                ->where('deadline_at', '<', now())
+                ->whereHas('flowStep', fn (Builder $step) => $step
+                    ->whereColumn('flow_steps.step_order', 'letters.current_step_order')))
+            ->count();
+    }
+
+    /**
+     * Jumlah surat per periode pengajuan dan status dalam satu query.
+     *
+     * @param  array<string, Carbon>  $periodStarts  nama periode => awal periode
+     * @return array<string, array<string, int>>
+     */
+    public function countByPeriodAndStatus(Builder $query, array $periodStarts): array
+    {
+        $base = (clone $query)->setEagerLoads([])->toBase()->select('letters.status');
+
+        foreach ($periodStarts as $period => $start) {
+            $base->selectRaw("SUM(CASE WHEN letters.submitted_at >= ? THEN 1 ELSE 0 END) as period_{$period}", [$start]);
+        }
+
+        $rows = $base
+            ->where('letters.submitted_at', '>=', collect($periodStarts)->min())
+            ->groupBy('letters.status')
+            ->get();
+
+        $result = [];
+
+        foreach (array_keys($periodStarts) as $period) {
+            $counts = ['total' => 0];
+
+            foreach (LetterStatus::cases() as $status) {
+                $counts[$status->value] = (int) ($rows->firstWhere('status', $status->value)?->{"period_{$period}"} ?? 0);
+                $counts['total'] += $counts[$status->value];
+            }
+
+            $result[$period] = $counts;
+        }
+
+        return $result;
     }
 
     public function whereSubmittedBy(Builder $query, string $userId): Builder

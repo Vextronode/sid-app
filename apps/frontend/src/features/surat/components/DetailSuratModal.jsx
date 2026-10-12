@@ -14,11 +14,14 @@
 // ==========================================
 
 import { useEffect, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, Download, Eye, FileText, X, Check, Clock } from 'lucide-react'
 
 import { downloadSuratPDF, previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { LetterExtrasPanel } from './LetterExtrasPanel'
+import { getLetterDetail } from '../api/letterExtrasApi'
+import { queryKeys } from '@/shared/lib/queryKeys'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import {
@@ -479,6 +482,19 @@ export function DetailSuratModal({ data, onClose }) {
   if (!data) {
     return null
   }
+
+  return <DetailSuratModalContent row={data} onClose={onClose} />
+}
+
+function DetailSuratModalContent({ row, onClose }) {
+  // Baris daftar hanya memuat kolom ringkas; NIK, alamat, dan keperluan
+  // dilengkapi dari detail surat begitu tersedia.
+  const { data: detail } = useQuery({
+    queryKey: queryKeys.surat.detail(row.id),
+    queryFn: () => getLetterDetail(row.id),
+  })
+
+  const data = detail ? { ...row, ...detail } : row
 
   return (
     <div className="sid-modal-overlay">
