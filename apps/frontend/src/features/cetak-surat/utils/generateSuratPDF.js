@@ -3,10 +3,11 @@
 // Generate PDF surat dari backend seeder template
 // ==========================================
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
+// VITE_API_URL kosong/tidak di-build -> same-origin (sama seperti src/lib/api.js)
+const apiUrl = () => (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/+$/, '')
 
 export async function downloadSuratPDF(surat, template = 'wet') {
-  const url = `${API_URL}/api/letters/${surat.id}/download?template=${template}`
+  const url = `${apiUrl()}/api/letters/${surat.id}/download?template=${template}`
   const response = await fetch(url, {
     method: 'GET',
     credentials: 'include',
@@ -36,7 +37,7 @@ export async function downloadSuratPDF(surat, template = 'wet') {
 
 // buka file PDF dari backend
 export async function generateSuratPDF(surat, template = 'wet') {
-  const url = `${API_URL}/api/letters/${surat.id}/download?template=${template}`
+  const url = `${apiUrl()}/api/letters/${surat.id}/download?template=${template}`
 
   // Buka tab SEBELUM await agar tidak diblokir browser
   const pdfTab = window.open('', '_blank')
@@ -97,7 +98,7 @@ export async function generateSuratPDF(surat, template = 'wet') {
 
 // Preview PDF di tab baru dari backend
 export async function previewSuratPDF(surat, template = 'wet') {
-  const url = `${API_URL}/api/letters/${surat.id}/preview?template=${template}`
+  const url = `${apiUrl()}/api/letters/${surat.id}/preview?template=${template}`
 
   const response = await fetch(url, {
     method: 'GET',
