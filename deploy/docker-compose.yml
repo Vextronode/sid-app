@@ -1,0 +1,92 @@
+# Stack SID expo. Jalankan lewat skrip (deploy/scripts/*.sh), bukan langsung:
+# skrip mengatur -p, --env-file compose.env, SID_IMAGE_TAG, SID_ENV_FILE, COMPOSE_PROFILES.
+#   Mode DB local : SID_ENV_FILE=<config>/sid.env       COMPOSE_PROFILES=localdb
+#   Mode DB neon  : SID_ENV_FILE=<config>/sid.neon.env  COMPOSE_PROFILES=(kosong)
+# Perintah compose manual: bash deploy/scripts/lib.sh <argumen docker compose>
+
+name: sid
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  sid_db:
+    image: postgres:18.6-trixie
+    container_name: ${SID_PROJECT:-sid}_db
+    profiles: ["localdb"]
+    restart: unless-stopped
+    env_file:
+      - ${SID_ENV_FILE:-sid.env}
+    command:
+      - postgres
+      - -c
+      - timezone=Asia/Jakarta
+      - -c
+      - log_timezone=Asia/Jakarta
+    volumes:
+      # PostgreSQL 18+: VOLUME di /var/lib/postgresql (PGDATA=/var/lib/postgresql/18/docker).
+      - pgdata:/var/lib/postgresql
+    networks:
+      - sid_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    stop_grace_period: 30s
+    logging: *logging
+
+  sid_api:
+    image: ${SID_REGISTRY:?SID_REGISTRY wajib diisi di compose.env}/sid-api:${SID_IMAGE_TAG:?SID_IMAGE_TAG wajib diisi (mis. v1.2.3)}
+    container_name: ${SID_PROJECT:-sid}_api
+    restart: unless-stopped
+    env_file:
+      - ${SID_ENV_FILE:-sid.env}
+    volumes:
+      - public:/var/www/html/storage/app/public
+      - private:/var/www/html/storage/app/private
+    networks:
+      - sid_net
+      # Keluar internet (DB Neon pada mode neon). Tanpa port ke host.
+      - sid_egress
+    depends_on:
+      sid_db:
+        condition: service_healthy
+        required: false
+    # Healthcheck (ping FPM via cgi-fcgi) didefinisikan di Dockerfile sid-api.
+    stop_grace_period: 20s
+    logging: *logging
+
+  sid_web:
+    image: ${SID_REGISTRY:?SID_REGISTRY wajib diisi di compose.env}/sid-web:${SID_IMAGE_TAG:?SID_IMAGE_TAG wajib diisi (mis. v1.2.3)}
+    container_name: ${SID_PROJECT:-sid}_web
+    restart: unless-stopped
+    ports:
+      # Satu-satunya port host, hanya loopback (proxy/tunnel tim di host).
+      # Hindari 8000, 8080, 3307, 6379 (CiMart).
+      - "127.0.0.1:${SID_HTTP_PORT:-8100}:80"
+    volumes:
+      - public:/var/www/html/storage/app/public:ro
+    networks:
+      - sid_net
+      - sid_egress
+    depends_on:
+      sid_api:
+        condition: service_healthy
+    # Healthcheck (wget /healthz) didefinisikan di Dockerfile sid-web.
+    logging: *logging
+
+networks:
+  sid_net:
+    internal: true
+  # Jaringan biasa: port publish sid_web dan egress sid_api tidak berfungsi di jaringan internal.
+  sid_egress: {}
+
+volumes:
+  pgdata:
+  public:
+  private:
