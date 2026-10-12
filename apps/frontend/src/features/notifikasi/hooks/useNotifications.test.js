@@ -1,3 +1,5 @@
+import { createElement } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -21,6 +23,13 @@ const notifications = [
   { id: 'notification-2', title: 'Surat selesai', read: true },
 ]
 
+function renderNotifications() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const wrapper = ({ children }) => createElement(QueryClientProvider, { client }, children)
+
+  return renderHook(() => useNotifications(), { wrapper })
+}
+
 describe('useNotifications', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -31,7 +40,7 @@ describe('useNotifications', () => {
   })
 
   it('loads notifications and unread count from BE response shapes', async () => {
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderNotifications()
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -42,7 +51,7 @@ describe('useNotifications', () => {
   })
 
   it('updates a notification locally only after mark-read succeeds', async () => {
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderNotifications()
     await waitFor(() => expect(result.current.loading).toBe(false))
     getUnreadNotificationCount.mockResolvedValueOnce({ data: { count: 0 } })
 
@@ -56,9 +65,25 @@ describe('useNotifications', () => {
     expect(result.current.unreadCount).toBe(0)
   })
 
+  it('reuses cached data when another layout mounts the hook', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }) => createElement(QueryClientProvider, { client }, children)
+
+    const first = renderHook(() => useNotifications(), { wrapper })
+    await waitFor(() => expect(first.result.current.loading).toBe(false))
+    first.unmount()
+
+    const second = renderHook(() => useNotifications(), { wrapper })
+
+    expect(second.result.current.loading).toBe(false)
+    expect(second.result.current.notifications).toEqual(notifications)
+    expect(getNotifications).toHaveBeenCalledOnce()
+    expect(getUnreadNotificationCount).toHaveBeenCalledOnce()
+  })
+
   it('does not update notification state when mark-read fails', async () => {
     markNotificationAsRead.mockRejectedValueOnce(new Error('request failed'))
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderNotifications()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -70,7 +95,7 @@ describe('useNotifications', () => {
   })
 
   it('marks all local notifications as read after BE succeeds', async () => {
-    const { result } = renderHook(() => useNotifications())
+    const { result } = renderNotifications()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
