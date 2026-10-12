@@ -16,6 +16,8 @@ import { Users, Building2, Home, Eye, ClipboardList } from 'lucide-react'
 
 import api from '../lib/api' // Integrasi API Axios
 import { publicVillageParams } from '../shared/lib/api/publicVillageParams'
+import { PageLoader } from '@/components/ui/PageLoader'
+import { formatVillageName } from '@/shared/lib/villageName'
 
 // Teks untuk data yang belum dikirim backend
 const NA = 'Belum tersedia'
@@ -121,15 +123,16 @@ function mapProfile(raw, officials = [], hamlets = [], positions = [], stats = n
       : []
 
   return {
-    name: raw?.name || 'Desa Cibenda',
+    // Nama, alamat, dan telepon dari data desa (diatur Petugas Desa).
+    name: formatVillageName(raw?.name),
     address: raw?.address || null,
     phone: raw?.phone || null,
     history: raw?.history || null,
     vision: raw?.vision || null,
     misi: missionList,
 
-    // --- Belum dikirim backend ---
-    heroImage: null,
+    // Foto yang sama dengan hero beranda.
+    heroImage: raw?.hero_image_url || null,
 
     // Penduduk (warga aktif) dan dusun (dusun aktif) dihitung backend dari
     // data; luas wilayah diisi Petugas Desa. Nol atau kosong dianggap
@@ -154,7 +157,7 @@ export function ProfilDesaPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const { hash } = useLocation()
+  const { hash, key } = useLocation()
 
   useEffect(() => {
     let active = true
@@ -193,10 +196,18 @@ export function ProfilDesaPage() {
   }, [])
 
   // Tautan seperti /profil-desa#perangkat-desa baru bisa digulir setelah
-  // datanya tampil.
+  // datanya tampil. Tanpa hash, mulai dari paling atas: router tidak
+  // mengembalikan posisi gulir, jadi posisi halaman sebelumnya ikut terbawa.
+  // `key` membuat klik ulang tautan yang sama tetap menggulir.
   useEffect(() => {
-    if (data && hash) document.getElementById(hash.slice(1))?.scrollIntoView?.()
-  }, [data, hash])
+    if (!data) return
+
+    if (hash) {
+      document.getElementById(hash.slice(1))?.scrollIntoView?.()
+    } else {
+      window.scrollTo(0, 0)
+    }
+  }, [data, hash, key])
 
   // ==========================================
   // STATE LOADING & ERROR
@@ -206,7 +217,7 @@ export function ProfilDesaPage() {
     return (
       <div className="sid-profil-desa-page">
         <div className="sid-profil-desa-content">
-          <p>Memuat profil desa...</p>
+          <PageLoader label="Memuat profil desa..." />
         </div>
       </div>
     )
@@ -231,10 +242,10 @@ export function ProfilDesaPage() {
 
         <div className="sid-profil-desa-header">
           <div className="sid-profil-desa-header-info">
-            <h1>Profil {data.name}</h1>
+            <h1>Profil {data.name ?? 'Desa'}</h1>
 
             <p>
-              Halaman resmi informasi tata kelola, sejarah, dan capaian strategis {data.name} untuk
+              Halaman resmi informasi tata kelola dan capaian strategis {data.name ?? 'desa'} untuk
               transparansi publik.
             </p>
 
@@ -259,7 +270,7 @@ export function ProfilDesaPage() {
             {data.heroImage ? (
               <img
                 src={data.heroImage}
-                alt={`Profil ${data.name}`}
+                alt={`Profil ${data.name ?? 'desa'}`}
                 className="sid-profil-desa-hero-image"
               />
             ) : (
@@ -271,7 +282,7 @@ export function ProfilDesaPage() {
             <div className="sid-profil-desa-hero-content">
               <span className="sid-profil-desa-hero-badge">Profil Desa</span>
 
-              <h2>{data.name}</h2>
+              <h2>{data.name ?? 'Desa'}</h2>
 
               <p>{data.history || `Sejarah desa ${NA.toLowerCase()}.`}</p>
             </div>

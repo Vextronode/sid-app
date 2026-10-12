@@ -12,7 +12,9 @@ import EditProfilDesaModal from '@/features/profil-desa-admin/components/EditPro
 import EditVisiMisiModal from '@/features/profil-desa-admin/components/EditVisiMisiModal'
 import EditPerangkatDesaModal from '@/features/profil-desa-admin/components/EditPerangkatDesaModal'
 import PengesahanSuratCard from '@/features/profil-desa-admin/components/PengesahanSuratCard'
+import TampilanPublikCard from '@/features/profil-desa-admin/components/TampilanPublikCard'
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { PageLoader } from '@/components/ui/PageLoader'
 
 function Avatar({ src, name, size = 'medium' }) {
   return (
@@ -46,6 +48,7 @@ export default function KelolaProfilDesaPage() {
     updateProfile,
     updateVisiMisi,
     updateOfficial,
+    uploadImage,
   } = useProfilDesa()
 
   const [modalProfil, setModalProfil] = useState(false)
@@ -144,10 +147,7 @@ export default function KelolaProfilDesaPage() {
     return (
       <div className="sid-profil-desa-page">
         <div className="sid-profil-desa-content">
-          <div className="sid-profil-desa-loading">
-            <div className="sid-profil-desa-loading-spinner" />
-            <p>Memuat profil desa...</p>
-          </div>
+          <PageLoader label="Memuat profil desa..." />
         </div>
 
         <SiteFooter />
@@ -275,6 +275,17 @@ export default function KelolaProfilDesaPage() {
             </div>
           </div>
         </div>
+
+        {/* ==========================================
+            TAMPILAN HALAMAN PUBLIK
+            ========================================== */}
+
+        <TampilanPublikCard
+          profile={profile}
+          onUpload={uploadImage}
+          onEditText={() => setModalProfil(true)}
+          disabled={processing}
+        />
 
         {/* ==========================================
             STEMPEL & TANDA TANGAN KEPALA DESA

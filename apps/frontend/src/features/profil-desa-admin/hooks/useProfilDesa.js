@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { getPerangkatDesa, getProfilDesa, updatePerangkatDesa, updateProfilDesa } from '../api'
+import { refreshPublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
+import {
+  getPerangkatDesa,
+  getProfilDesa,
+  updatePerangkatDesa,
+  updateProfilDesa,
+  uploadVillageImage,
+} from '../api'
 
 // ==========================================
 // POSISI YANG TIDAK TAMPIL DI PROFIL DESA
@@ -30,6 +37,40 @@ const EMPTY_PROFILE = {
   history: '',
   vision: '',
   mission: '',
+  // Tampilan halaman publik.
+  office_hours: '',
+  map_url: '',
+  hero_photo_credit: '',
+  logo_url: null,
+  hero_image_url: null,
+}
+
+// Teks profil yang dikirim lewat PATCH /villages/profile; kosong = null.
+const TEXT_FIELDS = [
+  'address',
+  'phone',
+  'district',
+  'regency',
+  'province',
+  'postal_code',
+  'email',
+  'history',
+  'vision',
+  'mission',
+  'office_hours',
+  'map_url',
+  'hero_photo_credit',
+]
+
+// Response backend -> state halaman. Nilai null jadi '' agar aman di input.
+function normalizeProfile(village) {
+  const profile = { ...EMPTY_PROFILE }
+
+  for (const key of Object.keys(EMPTY_PROFILE)) {
+    if (village?.[key] !== undefined && village?.[key] !== null) profile[key] = village[key]
+  }
+
+  return profile
 }
 
 // ==========================================
@@ -84,25 +125,7 @@ export function useProfilDesa() {
 
   const fetchProfile = useCallback(async () => {
     const response = await getProfilDesa()
-    const village = unwrap(response)
-
-    setProfile({
-      id: village?.id ?? null,
-      name: village?.name ?? '',
-      code: village?.code ?? '',
-      head_name: village?.head_name ?? '',
-      address: village?.address ?? '',
-      phone: village?.phone ?? '',
-      district: village?.district ?? '',
-      regency: village?.regency ?? '',
-      province: village?.province ?? '',
-      postal_code: village?.postal_code ?? '',
-      email: village?.email ?? '',
-      area_ha: village?.area_ha ?? '',
-      history: village?.history ?? '',
-      vision: village?.vision ?? '',
-      mission: village?.mission ?? '',
-    })
+    setProfile(normalizeProfile(unwrap(response)))
   }, [])
 
   // ==========================================
@@ -233,39 +256,16 @@ export function useProfilDesa() {
       const response = await updateProfilDesa({
         name: nextProfile.name,
         head_name: nextProfile.head_name,
-        address: nextProfile.address || null,
-        phone: nextProfile.phone || null,
-        district: nextProfile.district || null,
-        regency: nextProfile.regency || null,
-        province: nextProfile.province || null,
-        postal_code: nextProfile.postal_code || null,
-        email: nextProfile.email || null,
+        ...Object.fromEntries(TEXT_FIELDS.map((key) => [key, nextProfile[key] || null])),
         // Luas wilayah (hektare); kosong berarti belum diisi.
         area_ha: toNumberOrNull(nextProfile.area_ha),
-        history: nextProfile.history || null,
-        vision: nextProfile.vision || null,
-        mission: nextProfile.mission || null,
       })
 
       const updated = unwrap(response)
 
-      setProfile({
-        id: updated?.id ?? nextProfile.id ?? null,
-        name: updated?.name ?? nextProfile.name,
-        code: updated?.code ?? nextProfile.code,
-        head_name: updated?.head_name ?? nextProfile.head_name,
-        address: updated?.address ?? nextProfile.address,
-        phone: updated?.phone ?? nextProfile.phone,
-        district: updated?.district ?? nextProfile.district,
-        regency: updated?.regency ?? nextProfile.regency,
-        province: updated?.province ?? nextProfile.province,
-        postal_code: updated?.postal_code ?? nextProfile.postal_code,
-        email: updated?.email ?? nextProfile.email,
-        area_ha: updated ? (updated.area_ha ?? '') : nextProfile.area_ha,
-        history: updated?.history ?? nextProfile.history,
-        vision: updated?.vision ?? nextProfile.vision,
-        mission: updated?.mission ?? nextProfile.mission,
-      })
+      setProfile(updated ? normalizeProfile(updated) : nextProfile)
+      // Header dan halaman publik yang sedang terbuka ikut memakai data baru.
+      refreshPublicVillageInfo()
 
       return updated
     } catch (err) {
@@ -289,6 +289,19 @@ export function useProfilDesa() {
   // ==========================================
   // UPDATE VISI & MISI
   // ==========================================
+
+  // ==========================================
+  // UNGGAH LOGO / FOTO BERANDA
+  // ==========================================
+  // kind: 'logo' | 'hero'. Galat dilempar ke komponen agar pesannya tampil
+  // di kartu gambar yang bersangkutan.
+
+  const uploadImage = async (kind, file) => {
+    const response = await uploadVillageImage(kind, file)
+
+    setProfile(normalizeProfile(unwrap(response)))
+    refreshPublicVillageInfo()
+  }
 
   const updateVisiMisi = async (payload) => {
     return updateProfile({
@@ -386,5 +399,6 @@ export function useProfilDesa() {
     updateProfile,
     updateVisiMisi,
     updateOfficial,
+    uploadImage,
   }
 }

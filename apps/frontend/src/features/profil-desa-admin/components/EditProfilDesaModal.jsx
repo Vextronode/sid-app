@@ -19,6 +19,9 @@ const EMPTY_FORM = {
   email: '',
   area_ha: '',
   history: '',
+  office_hours: '',
+  map_url: '',
+  hero_photo_credit: '',
 }
 
 export default function EditProfilDesaModal({
@@ -45,6 +48,9 @@ export default function EditProfilDesaModal({
       email: initialData?.email ?? '',
       area_ha: initialData?.area_ha ?? '',
       history: initialData?.history ?? '',
+      office_hours: initialData?.office_hours ?? '',
+      map_url: initialData?.map_url ?? '',
+      hero_photo_credit: initialData?.hero_photo_credit ?? '',
     })
   }, [open, initialData])
 
@@ -78,6 +84,9 @@ export default function EditProfilDesaModal({
       email: form.email.trim(),
       area_ha: form.area_ha,
       history: form.history.trim(),
+      office_hours: form.office_hours.trim(),
+      map_url: form.map_url.trim(),
+      hero_photo_credit: form.hero_photo_credit.trim(),
     })
   }
 
@@ -271,6 +280,51 @@ export default function EditProfilDesaModal({
                 onChange={handleChange}
                 placeholder="Contoh: 081234567890"
                 maxLength={20}
+                disabled={processing}
+              />
+            </div>
+
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-office-hours">Jam Layanan Kantor</label>
+
+              <input
+                id="profil-office-hours"
+                name="office_hours"
+                type="text"
+                value={form.office_hours}
+                onChange={handleChange}
+                placeholder="Contoh: Senin – Jumat, 08.00 – 16.00 WIB"
+                maxLength={100}
+                disabled={processing}
+              />
+            </div>
+
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-hero-credit">Kredit Foto Beranda</label>
+
+              <input
+                id="profil-hero-credit"
+                name="hero_photo_credit"
+                type="text"
+                value={form.hero_photo_credit}
+                onChange={handleChange}
+                placeholder="Contoh: Dokumentasi Desa (opsional)"
+                maxLength={100}
+                disabled={processing}
+              />
+            </div>
+
+            <div className="sid-profil-desa-form-field sid-profil-desa-form-field-full">
+              <label htmlFor="profil-map-url">Link Google Maps Kantor Desa</label>
+
+              <input
+                id="profil-map-url"
+                name="map_url"
+                type="url"
+                value={form.map_url}
+                onChange={handleChange}
+                placeholder="Contoh: https://maps.app.goo.gl/..."
+                maxLength={500}
                 disabled={processing}
               />
             </div>
