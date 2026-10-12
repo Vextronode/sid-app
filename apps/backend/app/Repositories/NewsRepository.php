@@ -10,7 +10,7 @@ class NewsRepository
 {
     public function allForVillage(string $villageId, ?string $status): Collection
     {
-        $query = News::query()->with('author')->where('village_id', $villageId)->latest();
+        $query = News::query()->with(['author', 'categories'])->where('village_id', $villageId)->latest();
 
         if ($status === 'draft') {
             $query->where('is_published', false);
@@ -28,7 +28,7 @@ class NewsRepository
     public function latestPublishedForVillage(string $villageId, int $limit): Collection
     {
         return News::query()
-            ->with('author')
+            ->with(['author', 'categories'])
             ->where('village_id', $villageId)
             ->where('is_published', true)
             ->latest()
@@ -44,7 +44,7 @@ class NewsRepository
     public function paginatePublishedForVillage(string $villageId, int $perPage = 10): LengthAwarePaginator
     {
         return News::query()
-            ->with('author')
+            ->with(['author', 'categories'])
             ->where('village_id', $villageId)
             ->where('is_published', true)
             ->latest('published_at')
@@ -53,12 +53,12 @@ class NewsRepository
 
     public function findByIdOrFail(int $id): News
     {
-        return News::query()->with('author')->findOrFail($id);
+        return News::query()->with(['author', 'categories'])->findOrFail($id);
     }
 
     public function findByIdForVillageOrFail(int $id, string $villageId): News
     {
-        return News::query()->with('author')->where('village_id', $villageId)->findOrFail($id);
+        return News::query()->with(['author', 'categories'])->where('village_id', $villageId)->findOrFail($id);
     }
 
     public function slugExists(string $slug): bool
@@ -68,7 +68,7 @@ class NewsRepository
 
     public function create(array $data): News
     {
-        return News::create($data)->load('author');
+        return News::create($data);
     }
 
     public function update(News $news, array $data): News
@@ -76,6 +76,14 @@ class NewsRepository
         $news->update($data);
 
         return $news;
+    }
+
+    /**
+     * @param  array<int, int>  $categoryIds
+     */
+    public function syncCategories(News $news, array $categoryIds): void
+    {
+        $news->categories()->sync($categoryIds);
     }
 
     public function delete(News $news): void

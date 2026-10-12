@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\News;
 use App\Models\User;
 use App\Repositories\NewsRepository;
+use App\Support\PublicPageCache;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class NewsService
@@ -38,7 +40,16 @@ class NewsService
             $payload['thumbnail'] = $data['thumbnail']->store('news', 'public');
         }
 
-        return $this->repository->create($payload);
+        $news = DB::transaction(function () use ($payload, $data) {
+            $news = $this->repository->create($payload);
+            $this->repository->syncCategories($news, $data['category_ids']);
+
+            return $news;
+        });
+
+        $this->flushPublicCache($news);
+
+        return $news->load(['author', 'categories']);
     }
 
     public function update(int $id, array $data, User $user): News
@@ -74,10 +85,19 @@ class NewsService
                 : null;
         }
 
-        return $this->repository->update(
-            $news,
-            $payload
-        );
+        $news = DB::transaction(function () use ($news, $payload, $data) {
+            $news = $this->repository->update($news, $payload);
+
+            if (array_key_exists('category_ids', $data)) {
+                $this->repository->syncCategories($news, $data['category_ids']);
+            }
+
+            return $news;
+        });
+
+        $this->flushPublicCache($news);
+
+        return $news->load('categories');
     }
 
     public function delete(int $id, User $user): void
@@ -85,6 +105,15 @@ class NewsService
         $news = $this->repository->findByIdForVillageOrFail($id, $this->villageId($user));
 
         $this->repository->delete($news);
+    }
+
+    /**
+     * sync() kategori tidak memicu event saved milik News, jadi cache
+     * halaman publik digugurkan lagi setelah transaksi selesai.
+     */
+    private function flushPublicCache(News $news): void
+    {
+        PublicPageCache::flush($news->village_id);
     }
 
     private function generateUniqueSlug(string $title): string

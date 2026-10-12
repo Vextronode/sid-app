@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\News;
+use App\Models\NewsCategory;
 use App\Models\User;
 use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -22,6 +24,8 @@ use Tests\TestCase;
  *  - POST /news dengan is_published=true otomatis mengisi published_at.
  *  - PATCH /news/{id} toggle draft->publish mengisi published_at, publish->draft mengosongkannya.
  *  - DELETE /news/{id} soft delete (tidak hilang permanen dari DB).
+ *  - Berita wajib punya 1-2 kategori milik desa sendiri; kategori bisa
+ *    diganti lewat PATCH, dan PATCH publish saja tidak menyentuh kategori.
  */
 class NewsEndpointTest extends TestCase
 {
@@ -34,6 +38,27 @@ class NewsEndpointTest extends TestCase
         return User::factory()->create([
             'village_id' => $village->id,
             'role' => 'petugas_desa',
+        ]);
+    }
+
+    private function category(User $user, ?string $name = null): NewsCategory
+    {
+        return NewsCategory::factory()->create(array_filter([
+            'village_id' => $user->village_id,
+            'name' => $name,
+            'slug' => $name ? Str::slug($name) : null,
+        ]));
+    }
+
+    private function draftNews(User $user, string $slug = 'judul-berita'): News
+    {
+        return News::create([
+            'village_id' => $user->village_id,
+            'author_id' => $user->id,
+            'title' => 'Judul Berita',
+            'slug' => $slug,
+            'content' => 'Konten',
+            'is_published' => false,
         ]);
     }
 
@@ -63,6 +88,7 @@ class NewsEndpointTest extends TestCase
         $response = $this->actingAs($user)->postJson('/api/news', [
             'title' => 'Pengumuman Jadwal Posyandu',
             'content' => 'Posyandu akan dilaksanakan pada tanggal 10 Juli 2026.',
+            'category_ids' => [$this->category($user)->id],
         ]);
 
         $response->assertCreated()
@@ -80,11 +106,13 @@ class NewsEndpointTest extends TestCase
         $this->actingAs($user)->postJson('/api/news', [
             'title' => 'Pengumuman Jadwal Posyandu',
             'content' => 'Konten pertama.',
+            'category_ids' => [$this->category($user)->id],
         ])->assertCreated();
 
         $response = $this->actingAs($user)->postJson('/api/news', [
             'title' => 'Pengumuman Jadwal Posyandu',
             'content' => 'Konten kedua.',
+            'category_ids' => [$this->category($user)->id],
         ]);
 
         $response->assertCreated()
@@ -99,6 +127,7 @@ class NewsEndpointTest extends TestCase
         $response = $this->actingAs($user)->postJson('/api/news', [
             'title' => 'Berita Langsung Terbit',
             'content' => 'Konten berita.',
+            'category_ids' => [$this->category($user)->id],
             'is_published' => true,
         ]);
 
@@ -116,7 +145,7 @@ class NewsEndpointTest extends TestCase
         $response = $this->actingAs($user)->postJson('/api/news', []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['title', 'content']);
+            ->assertJsonValidationErrors(['title', 'content', 'category_ids']);
     }
 
     #[Test]
@@ -246,5 +275,91 @@ class NewsEndpointTest extends TestCase
         $response->assertOk()->assertJsonPath('message', 'Berita berhasil dihapus');
 
         $this->assertSoftDeleted('news', ['id' => $news->id]);
+    }
+
+    #[Test]
+    public function news_can_be_created_with_one_or_two_categories(): void
+    {
+        $user = $this->petugasDesa();
+        $umum = $this->category($user, 'Umum');
+        $budaya = $this->category($user, 'Budaya');
+
+        $this->actingAs($user)->postJson('/api/news', [
+            'title' => 'Satu Kategori',
+            'content' => 'Konten',
+            'category_ids' => [$umum->id],
+        ])->assertCreated()
+            ->assertJsonCount(1, 'data.categories')
+            ->assertJsonPath('data.categories.0.name', 'Umum');
+
+        $response = $this->actingAs($user)->postJson('/api/news', [
+            'title' => 'Dua Kategori',
+            'content' => 'Konten',
+            'category_ids' => [$umum->id, $budaya->id],
+        ])->assertCreated()
+            ->assertJsonCount(2, 'data.categories');
+
+        $this->assertEqualsCanonicalizing(
+            [$umum->id, $budaya->id],
+            News::findOrFail($response->json('data.id'))->categories()->pluck('news_categories.id')->all(),
+        );
+
+        $listed = collect($this->actingAs($user)->getJson('/api/news')->assertOk()->json('data'))
+            ->mapWithKeys(fn (array $item) => [$item['title'] => count($item['categories'])]);
+        $this->assertSame(['Dua Kategori' => 2, 'Satu Kategori' => 1], $listed->sortKeys()->all());
+    }
+
+    #[Test]
+    public function news_category_count_and_ownership_are_validated(): void
+    {
+        $user = $this->petugasDesa();
+        [$a, $b, $c] = [$this->category($user, 'A'), $this->category($user, 'B'), $this->category($user, 'C')];
+        $otherVillage = NewsCategory::factory()->create([
+            'village_id' => Village::create(['name' => 'Desa Lain', 'code' => 'LAIN'])->id,
+        ]);
+
+        $invalid = [
+            [],
+            [$a->id, $b->id, $c->id],
+            [$a->id, $a->id],
+            [$otherVillage->id],
+            [999999],
+        ];
+
+        foreach ($invalid as $ids) {
+            $this->actingAs($user)->postJson('/api/news', [
+                'title' => 'Judul',
+                'content' => 'Konten',
+                'category_ids' => $ids,
+            ])->assertStatus(422);
+        }
+
+        $this->assertSame(0, News::count());
+    }
+
+    #[Test]
+    public function news_categories_can_be_changed_on_update(): void
+    {
+        $user = $this->petugasDesa();
+        $umum = $this->category($user, 'Umum');
+        $budaya = $this->category($user, 'Budaya');
+        $news = $this->draftNews($user);
+        $news->categories()->attach($umum->id);
+
+        $this->actingAs($user)->patchJson("/api/news/{$news->id}", [
+            'category_ids' => [$budaya->id],
+        ])->assertOk()
+            ->assertJsonCount(1, 'data.categories')
+            ->assertJsonPath('data.categories.0.name', 'Budaya');
+
+        // Publish saja tidak mengubah kategori.
+        $this->actingAs($user)->patchJson("/api/news/{$news->id}", ['is_published' => true])
+            ->assertOk()
+            ->assertJsonPath('data.categories.0.name', 'Budaya');
+
+        // Kategori tidak boleh dikosongkan atau lebih dari dua.
+        $this->actingAs($user)->patchJson("/api/news/{$news->id}", ['category_ids' => []])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['category_ids']);
     }
 }

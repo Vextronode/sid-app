@@ -24,6 +24,7 @@ class NewsResource extends JsonResource
             'slug' => $this->slug,
             'content' => $this->content,
             'thumbnail' => $this->thumbnail ? Storage::disk('public')->url($this->thumbnail) : null,
+            'categories' => NewsCategoryResource::collection($this->whenLoaded('categories')),
             'is_published' => $this->is_published,
             'published_at' => $this->published_at,
         ];
