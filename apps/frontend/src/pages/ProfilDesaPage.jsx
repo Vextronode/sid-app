@@ -3,7 +3,7 @@
 // Halaman publik Profil Desa.
 // Isinya sama dengan KelolaProfilDesaPage (tanpa tombol edit),
 // tetapi tampilannya mengikuti halaman publik lain.
-// Gaya dari public.css (kelas pb-*, di bawah .pub milik MainLayout).
+// Ditata dengan utility Tailwind, di bawah .pub milik MainLayout.
 //
 // Data diambil dari API /api/public/village-profile.
 // Field yang belum dikirim backend ditampilkan
@@ -17,50 +17,81 @@ import { Users, Building2, Home } from 'lucide-react'
 import api from '../lib/api' // Integrasi API Axios
 import { publicVillageParams } from '../shared/lib/api/publicVillageParams'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { PublicPageHead } from '@/components/layout/PublicPageHead'
+import { errorBox } from '@/features/beranda/publicClasses'
 import { formatVillageName } from '@/shared/lib/villageName'
 
 // Teks untuk data yang belum dikirim backend
 const NA = 'Belum tersedia'
 
+const page = 'bd-container pt-[clamp(32px,20px+3vw,64px)]'
+const statValue =
+  'mt-0.5 mb-0 font-display text-[clamp(30px,24px+1.2vw,40px)] leading-[1.05] font-bold tracking-tight text-pb-laut-deep tabular-nums'
+const subtitle = 'mt-0 mb-4 text-base font-bold text-pb-laut'
+
 // Tampilan seragam untuk data yang belum dikirim backend (miring, abu-abu).
 function NotAvailable({ text = NA }) {
-  return <p className="pb-na">{text}</p>
+  return <p className="mt-1 mb-0 text-base text-pb-muted italic">{text}</p>
 }
 
-function Avatar({ src, name, size = 'medium' }) {
+// Foto berbingkai gapura (atap setengah lingkaran), sama dengan foto hero.
+function Avatar({ src, name, head }) {
   return (
-    <div className={`pb-avatar pb-avatar--${size}`}>
-      {src ? <img src={src} alt={name} /> : <Users size={28} aria-hidden="true" />}
+    <div
+      className={`mb-3.5 flex items-center justify-center overflow-hidden rounded-t-full rounded-b-xl bg-pb-laut-tint bg-(image:--pb-contour-dark) bg-size-[200px_auto] text-pb-laut ${head ? 'h-35 w-32' : 'h-26 w-24 max-sm:h-20 max-sm:w-18'}`}
+    >
+      {src ? (
+        <img src={src} alt={name} className="size-full object-cover" />
+      ) : (
+        <Users size={28} strokeWidth={1.6} aria-hidden="true" />
+      )}
     </div>
   )
 }
 
-function OfficialCard({ official, className = '' }) {
+// head: kartu Kepala Desa, lebih besar dengan garis padi di atas.
+function OfficialCard({ official, head = false, fluid = false }) {
+  const width = head ? 'w-70' : fluid ? 'w-auto' : 'w-55'
+
   return (
-    <div className={`pb-official ${className}`.trim()}>
-      <Avatar src={official.foto} name={official.nama} size="large" />
+    <div
+      className={`flex flex-col items-center rounded-2xl bg-white px-4.5 pb-5.5 text-center max-sm:w-auto ${width} ${head ? 'pt-7 shadow-[inset_0_4px_0_var(--color-pb-padi),0_0_0_1px_var(--color-pb-laut)]' : 'pt-6 shadow-[0_0_0_1px_var(--color-pb-line)]'}`}
+    >
+      <Avatar src={official.foto} name={official.nama} head={head} />
 
-      {official.nama ? <p className="pb-official-name">{official.nama}</p> : <NotAvailable />}
+      {official.nama ? (
+        <p
+          className={`m-0 font-display leading-tight font-bold ${head ? 'text-[22px]' : 'text-lg'}`}
+        >
+          {official.nama}
+        </p>
+      ) : (
+        <NotAvailable />
+      )}
 
-      <p className="pb-official-role">{official.jabatan}</p>
+      <p className="mt-1 mb-0 text-[15px] leading-snug text-pb-muted">{official.jabatan}</p>
     </div>
   )
 }
 
+// Satu baris statistik; ikon tanpa kotak latar.
 function StatItem({ icon: Icon, label, children }) {
   return (
-    <div className="pb-profile-stat">
-      <div className="pb-profile-stat-icon">
-        <Icon size={22} aria-hidden="true" />
-      </div>
+    <div className="flex flex-1 items-center gap-4.5 px-7 py-6 [&+&]:border-t [&+&]:border-pb-line">
+      <Icon className="flex-none text-pb-laut" size={26} strokeWidth={1.8} aria-hidden="true" />
 
       <div>
-        <p className="pb-profile-stat-label">{label}</p>
+        <p className="m-0 text-[15px] text-pb-muted">{label}</p>
         {children}
       </div>
     </div>
   )
 }
+
+// Satu tingkat bagan perangkat desa. Tingkat kedua dan seterusnya disambung
+// garis tegak ke tingkat di atasnya.
+const orgRow =
+  "relative flex w-full flex-wrap justify-center gap-4 max-sm:flex-col max-sm:items-stretch [&+&]:mt-10 [&+&]:before:absolute [&+&]:before:-top-10 [&+&]:before:left-1/2 [&+&]:before:h-10 [&+&]:before:w-0.5 [&+&]:before:bg-pb-line-strong [&+&]:before:content-['']"
 
 // ==========================================
 // PEMETAAN RESPONSE BACKEND -> DATA HALAMAN
@@ -221,7 +252,7 @@ export function ProfilDesaPage() {
 
   if (loading) {
     return (
-      <div className="pb-container pb-page">
+      <div className={page}>
         <PageLoader label="Memuat profil desa..." />
       </div>
     )
@@ -229,8 +260,8 @@ export function ProfilDesaPage() {
 
   if (error || !data) {
     return (
-      <div className="pb-container pb-page">
-        <p className="pb-state pb-state--error">{error || 'Data profil desa tidak tersedia.'}</p>
+      <div className={page}>
+        <p className={errorBox}>{error || 'Data profil desa tidak tersedia.'}</p>
       </div>
     )
   }
@@ -241,55 +272,61 @@ export function ProfilDesaPage() {
           HEADER
           ========================================== */}
 
-      <header className="pb-pagehead">
-        <div className="pb-container pb-pagehead-inner">
-          <h1>Profil {data.name ?? 'Desa'}</h1>
+      <PublicPageHead title={`Profil ${data.name ?? 'Desa'}`}>
+        <p>
+          Halaman resmi informasi tata kelola dan capaian strategis {data.name ?? 'desa'} untuk
+          transparansi publik.
+        </p>
 
+        {(data.address || data.phone) && (
           <p>
-            Halaman resmi informasi tata kelola dan capaian strategis {data.name ?? 'desa'} untuk
-            transparansi publik.
+            {data.address}
+            {data.address && data.phone ? ' · ' : ''}
+            {data.phone && `Telp. ${data.phone}`}
           </p>
+        )}
+      </PublicPageHead>
 
-          {(data.address || data.phone) && (
-            <p>
-              {data.address}
-              {data.address && data.phone ? ' · ' : ''}
-              {data.phone && `Telp. ${data.phone}`}
-            </p>
-          )}
-        </div>
-      </header>
-
-      <div className="pb-container pb-page">
+      <div className={page}>
         {/* ==========================================
             HERO + STATS
             ========================================== */}
 
-        <section className="pb-profile-hero">
+        <section className="grid items-stretch gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
           {/* HERO */}
 
-          <div className="pb-profile-photo">
-            {data.heroImage && <img src={data.heroImage} alt={`Profil ${data.name ?? 'desa'}`} />}
+          <div className="relative min-h-105 overflow-hidden rounded-3xl bg-pb-laut-deep bg-(image:--pb-contour-light) max-sm:min-h-90">
+            {data.heroImage && (
+              <img
+                src={data.heroImage}
+                alt={`Profil ${data.name ?? 'desa'}`}
+                className="absolute inset-0 size-full object-cover"
+              />
+            )}
 
-            <div className="pb-profile-photo-overlay" />
+            <div className="absolute inset-0 bg-linear-to-b from-pb-laut-deep/0 from-35% to-pb-laut-deep/85" />
 
-            <div className="pb-profile-story">
-              <span className="pb-profile-story-label">Sejarah singkat</span>
+            <div className="absolute inset-x-0 bottom-0 p-8 text-white max-sm:p-5.5">
+              <span className="mb-3 inline-flex items-center gap-2.5 text-[15px] font-bold before:h-0.75 before:w-6 before:rounded-full before:bg-pb-padi before:content-['']">
+                Sejarah singkat
+              </span>
 
-              <h2>{data.name ?? 'Desa'}</h2>
+              <h2 className="m-0 font-display text-[clamp(28px,22px+1.4vw,40px)] leading-[1.05] font-bold tracking-tight">
+                {data.name ?? 'Desa'}
+              </h2>
 
-              <p>{data.history || `Sejarah desa ${NA.toLowerCase()}.`}</p>
+              <p className="mt-2.5 mb-0 max-w-[56ch] text-[17px] leading-relaxed text-[#e3eaf3]">
+                {data.history || `Sejarah desa ${NA.toLowerCase()}.`}
+              </p>
             </div>
           </div>
 
           {/* STATS */}
 
-          <div className="pb-profile-stats">
+          <div className="flex flex-col overflow-hidden rounded-3xl border border-pb-line bg-white">
             <StatItem icon={Users} label="Total Penduduk">
               {data.totalPenduduk != null ? (
-                <p className="pb-profile-stat-value">
-                  {Number(data.totalPenduduk).toLocaleString('id-ID')}
-                </p>
+                <p className={statValue}>{Number(data.totalPenduduk).toLocaleString('id-ID')}</p>
               ) : (
                 <NotAvailable />
               )}
@@ -297,7 +334,7 @@ export function ProfilDesaPage() {
 
             <StatItem icon={Building2} label="Luas Wilayah">
               {data.luasWilayah != null ? (
-                <p className="pb-profile-stat-value">
+                <p className={statValue}>
                   {Number(data.luasWilayah).toLocaleString('id-ID', { maximumFractionDigits: 3 })}{' '}
                   ha
                 </p>
@@ -308,7 +345,7 @@ export function ProfilDesaPage() {
 
             <StatItem icon={Home} label="Jumlah Dusun">
               {data.jumlahDusun != null ? (
-                <p className="pb-profile-stat-value">{String(data.jumlahDusun).padStart(2, '0')}</p>
+                <p className={statValue}>{String(data.jumlahDusun).padStart(2, '0')}</p>
               ) : (
                 <NotAvailable />
               )}
@@ -320,14 +357,16 @@ export function ProfilDesaPage() {
             VISI & MISI
             ========================================== */}
 
-        <section className="pb-section pb-visi-misi">
+        <section className="mt-(--pb-section) grid gap-14 lg:grid-cols-2">
           {/* VISI */}
 
           <div>
-            <h2 className="pb-subtitle">Visi</h2>
+            <h2 className={subtitle}>Visi</h2>
 
             {data.vision ? (
-              <p className="pb-visi-text">&ldquo;{data.vision}&rdquo;</p>
+              <p className="m-0 border-l-[3px] border-pb-padi pl-6 font-display text-[clamp(24px,18px+1.4vw,36px)] leading-[1.22] font-semibold tracking-[-0.02em] text-pretty text-pb-laut-deep">
+                &ldquo;{data.vision}&rdquo;
+              </p>
             ) : (
               <NotAvailable />
             )}
@@ -336,15 +375,20 @@ export function ProfilDesaPage() {
           {/* MISI */}
 
           <div>
-            <h2 className="pb-subtitle">Misi</h2>
+            <h2 className={subtitle}>Misi</h2>
 
             {data.misi.length > 0 ? (
-              <ol className="pb-misi-list">
+              <ol className="m-0 list-none border-t border-pb-line p-0">
                 {data.misi.map((item, i) => (
-                  <li key={i}>
-                    <span aria-hidden="true">{i + 1}</span>
+                  <li key={i} className="flex gap-4.5 border-b border-pb-line py-4">
+                    <span
+                      className="w-8 flex-none font-display text-[22px] leading-[1.3] font-bold text-pb-laut"
+                      aria-hidden="true"
+                    >
+                      {i + 1}
+                    </span>
 
-                    <p>{item}</p>
+                    <p className="m-0 text-lg leading-normal">{item}</p>
                   </li>
                 ))}
               </ol>
@@ -358,25 +402,27 @@ export function ProfilDesaPage() {
             PERANGKAT DESA
             ========================================== */}
 
-        <section id="perangkat-desa" className="pb-section">
-          <h2 className="pb-section-title">Perangkat Desa</h2>
+        <section id="perangkat-desa" className="mt-(--pb-section) scroll-mt-24">
+          <h2 className="mt-0 mb-8 font-display text-[clamp(30px,22px+1.6vw,44px)] leading-[1.08] font-bold tracking-tight">
+            Perangkat Desa
+          </h2>
 
-          <div className="pb-org">
+          <div className="flex flex-col items-center">
             {/* KEPALA DESA */}
 
-            <div className="pb-org-row">
-              <OfficialCard official={data.kepalaDesa} className="pb-official--head" />
+            <div className={orgRow}>
+              <OfficialCard official={data.kepalaDesa} head />
             </div>
 
             {/* SEKRETARIS DESA */}
 
-            <div className="pb-org-row">
+            <div className={orgRow}>
               <OfficialCard official={data.sekretarisDesa} />
             </div>
 
             {/* KASI / KAUR / STAF */}
 
-            <div className="pb-org-row">
+            <div className={orgRow}>
               {data.perangkatList.map((p) => (
                 <OfficialCard key={p.id} official={p} />
               ))}
@@ -385,12 +431,14 @@ export function ProfilDesaPage() {
 
           {/* KADUS */}
 
-          <h3 className="pb-kadus-title">Kepala Dusun (Kadus)</h3>
+          <h3 className="mt-16 mb-5 border-t border-pb-line pt-8 text-center font-display text-2xl font-bold tracking-[-0.01em]">
+            Kepala Dusun (Kadus)
+          </h3>
 
           {data.kadusList.length > 0 ? (
-            <div className="pb-org-grid">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 max-sm:grid-cols-2 max-sm:gap-3">
               {data.kadusList.map((k) => (
-                <OfficialCard key={k.id} official={k} />
+                <OfficialCard key={k.id} official={k} fluid />
               ))}
             </div>
           ) : (
