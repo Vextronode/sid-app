@@ -17,6 +17,7 @@ const EMPTY_FORM = {
   province: '',
   postal_code: '',
   email: '',
+  area_ha: '',
   history: '',
 }
 
@@ -42,6 +43,7 @@ export default function EditProfilDesaModal({
       province: initialData?.province ?? '',
       postal_code: initialData?.postal_code ?? '',
       email: initialData?.email ?? '',
+      area_ha: initialData?.area_ha ?? '',
       history: initialData?.history ?? '',
     })
   }, [open, initialData])
@@ -74,6 +76,7 @@ export default function EditProfilDesaModal({
       province: form.province.trim(),
       postal_code: form.postal_code.trim(),
       email: form.email.trim(),
+      area_ha: form.area_ha,
       history: form.history.trim(),
     })
   }
@@ -222,6 +225,23 @@ export default function EditProfilDesaModal({
                 onChange={handleChange}
                 placeholder="Contoh: kantordesa@contoh.id"
                 maxLength={150}
+                disabled={processing}
+              />
+            </div>
+
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-area_ha">Luas Wilayah (ha)</label>
+
+              <input
+                id="profil-area_ha"
+                name="area_ha"
+                type="number"
+                min={0}
+                step="0.001"
+                inputMode="decimal"
+                value={form.area_ha}
+                onChange={handleChange}
+                placeholder="Contoh: 759.319"
                 disabled={processing}
               />
             </div>

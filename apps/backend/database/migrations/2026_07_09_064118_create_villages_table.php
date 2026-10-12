@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('head_name', 100)->nullable();
             $table->string('address')->nullable();
             $table->string('phone', 20)->nullable();
+            // Luas wilayah dalam hektare, diisi Petugas Desa.
+            $table->decimal('area_ha', 10, 3)->nullable();
             $table->string('stamp_img')->nullable();
             $table->timestamps();
         });

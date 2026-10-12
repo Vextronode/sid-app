@@ -76,6 +76,12 @@ describe('BerandaPage structure and accessibility', () => {
   )
 
   it('renders only real-data sections in production (K1)', () => {
+    // Pita angka hanya tampil bila API mengirim angkanya.
+    usePublicVillageInfo.mockReturnValue({
+      village: null,
+      stats: { total_population: 6080, total_hamlets: 5 },
+      contacts: [],
+    })
     renderPage({ isDev: false })
 
     expect(screen.queryByRole('region', { name: 'Pengumuman' })).toBeNull()
@@ -202,8 +208,13 @@ describe('BerandaPage stats band', () => {
   const band = () => screen.queryByRole('region', { name: 'Desa dalam angka' })
 
   it.each([true, false])(
-    'shows the final figures and links to the village profile (isDev=%s, A19)',
+    'shows the figures from the API and links to the village profile (isDev=%s, A19)',
     (isDev) => {
+      usePublicVillageInfo.mockReturnValue({
+        village: { name: 'Cibenda', area_ha: 759.319 },
+        stats: { total_letter_types: 4, total_population: 6080, total_hamlets: 5 },
+        contacts: [],
+      })
       renderPage({ isDev })
 
       const region = within(band())
@@ -213,7 +224,7 @@ describe('BerandaPage stats band', () => {
       expect(region.getByText('luas wilayah')).toBeInTheDocument()
       expect(region.getByText('5')).toBeInTheDocument()
       expect(region.getByText('dusun')).toBeInTheDocument()
-      expect(region.getByText('Data per Oktober 2026')).toBeInTheDocument()
+      expect(region.queryByText(/Data per/)).toBeNull()
       expect(region.getAllByRole('link')).toHaveLength(1)
       expect(region.getByRole('link', { name: 'Lihat profil desa →' })).toHaveAttribute(
         'href',
@@ -221,6 +232,26 @@ describe('BerandaPage stats band', () => {
       )
     },
   )
+
+  it('leaves out figures without data and hides the band when none is available', () => {
+    usePublicVillageInfo.mockReturnValue({
+      village: { name: 'Cibenda', area_ha: null },
+      stats: { total_letter_types: 4, total_population: 0, total_hamlets: 5 },
+      contacts: [],
+    })
+    const { unmount } = renderPage()
+
+    const region = within(band())
+    expect(region.getByText('dusun')).toBeInTheDocument()
+    expect(region.queryByText('jiwa penduduk')).toBeNull()
+    expect(region.queryByText('luas wilayah')).toBeNull()
+
+    unmount()
+    usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
+    renderPage()
+
+    expect(band()).toBeNull()
+  })
 })
 
 describe('BerandaPage hero', () => {

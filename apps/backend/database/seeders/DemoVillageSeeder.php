@@ -31,6 +31,7 @@ class DemoVillageSeeder extends Seeder
                 'province' => 'Jawa Barat',
                 'postal_code' => '46393',
                 'email' => 'kantordesacibenda@gmail.com',
+                'area_ha' => 759.319,
             ],
         );
 

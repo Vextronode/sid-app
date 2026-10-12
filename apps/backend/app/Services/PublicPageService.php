@@ -7,6 +7,7 @@ use App\Models\Hamlet;
 use App\Models\Official;
 use App\Models\OfficialPositionType;
 use App\Models\Village;
+use App\Repositories\CitizenRepository;
 use App\Repositories\HamletRepository;
 use App\Repositories\LetterTypeRepository;
 use App\Repositories\NewsRepository;
@@ -45,10 +46,11 @@ class PublicPageService
         private readonly OfficialRepository $officialRepository,
         private readonly HamletRepository $hamletRepository,
         private readonly OfficialPositionTypeRepository $positionTypeRepository,
+        private readonly CitizenRepository $citizenRepository,
     ) {}
 
     /**
-     * @return array{village: Village, latest_news: Collection, public_stats: array{total_letter_types: int}}
+     * @return array{village: Village, latest_news: Collection, public_stats: array{total_letter_types: int, total_population: int, total_hamlets: int}}
      */
     public function home(?string $villageCode = null): array
     {
@@ -62,7 +64,25 @@ class PublicPageService
             'latest_news' => $latestNews,
             'public_stats' => [
                 'total_letter_types' => $this->letterTypeRepository->countActiveWithTemplate($village->id),
+                ...$this->publicStats($villageCode),
             ],
+        ];
+    }
+
+    /**
+     * Angka desa yang dihitung dari data, bukan disimpan: warga aktif dan
+     * dusun aktif. Luas wilayah bukan bagian ini karena merupakan kolom
+     * villages yang diisi Petugas Desa.
+     *
+     * @return array{total_population: int, total_hamlets: int}
+     */
+    public function publicStats(?string $villageCode = null): array
+    {
+        $village = $this->requireVillage($villageCode);
+
+        return [
+            'total_population' => $this->citizenRepository->countActiveByVillage($village->id),
+            'total_hamlets' => $this->publicHamlets($villageCode)->count(),
         ];
     }
 

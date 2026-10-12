@@ -43,6 +43,7 @@ class PublicPageController extends Controller
         return $this->cached($request, 'village-profile', fn () => (new VillageResource(
             $this->service->villageProfile($request->query('village_code'))
         ))->additional([
+            'stats' => $this->service->publicStats($request->query('village_code')),
             'officials' => PublicOfficialResource::collection(
                 $this->service->publicOfficials($request->query('village_code'))
             ),
