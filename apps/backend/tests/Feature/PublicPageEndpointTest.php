@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Citizen;
 use App\Models\Hamlet;
 use App\Models\LetterType;
 use App\Models\News;
@@ -89,7 +90,46 @@ class PublicPageEndpointTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.vision', 'Maju Bersama')
+            ->assertJsonPath('data.area_ha', null)
+            ->assertJsonPath('stats', ['total_population' => 0, 'total_hamlets' => 0])
             ->assertJsonPath('officials', []);
+    }
+
+    #[Test]
+    public function village_stats_count_active_citizens_and_hamlets_and_expose_the_area(): void
+    {
+        $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD', 'area_ha' => 759.319]);
+        $hamlet = Hamlet::factory()->create(['village_id' => $village->id, 'is_active' => true]);
+        Hamlet::factory()->create(['village_id' => $village->id, 'is_active' => false]);
+        Citizen::factory()->count(3)->create([
+            'village_id' => $village->id,
+            'hamlet_id' => $hamlet->id,
+            'is_active' => true,
+        ]);
+        // Warga nonaktif dan warga desa lain tidak dihitung.
+        Citizen::factory()->create(['village_id' => $village->id, 'hamlet_id' => $hamlet->id, 'is_active' => false]);
+        Citizen::factory()->create(['village_id' => Village::create(['name' => 'Desa Lain', 'code' => 'LAIN'])->id]);
+
+        $stats = $this->getJson('/api/public/village-profile?village_code=CBD')
+            ->assertOk()
+            ->assertJsonPath('data.area_ha', 759.319)
+            ->json('stats');
+
+        $this->getJson('/api/public/home?village_code=CBD')
+            ->assertOk()
+            ->assertJsonPath('data.village.area_ha', 759.319)
+            ->assertJsonPath('data.public_stats.total_population', $stats['total_population'])
+            ->assertJsonPath('data.public_stats.total_hamlets', $stats['total_hamlets']);
+
+        $this->assertSame(
+            Citizen::query()->where('village_id', $village->id)->where('is_active', true)->count(),
+            $stats['total_population'],
+        );
+        $this->assertSame(
+            Hamlet::query()->where('village_id', $village->id)->where('is_active', true)->count(),
+            $stats['total_hamlets'],
+        );
+        $this->assertGreaterThanOrEqual(3, $stats['total_population']);
     }
 
     #[Test]
