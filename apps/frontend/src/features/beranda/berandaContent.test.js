@@ -46,14 +46,14 @@ describe('getBerandaContent', () => {
       domain: 'https://desacibenda.id/',
       updatedAt: 'Oktober 2026',
     })
-    // Pita angka: data final dari pemilik proyek (11 Okt 2026).
-    expect(content.stats).toEqual({
-      items: [
-        { value: '6.080', label: 'jiwa penduduk' },
-        { value: '759,319 ha', label: 'luas wilayah' },
-        { value: '5', label: 'dusun' },
-      ],
-      asOf: 'Oktober 2026',
+    // Pita angka: hanya label; angkanya dari API, bukan konten statis.
+    expect(content.stats).toBeUndefined()
+    expect(content.statsBand).toEqual({
+      label: 'Desa dalam angka',
+      population: 'jiwa penduduk',
+      area: 'luas wilayah',
+      hamlets: 'dusun',
+      profileLink: 'Lihat profil desa →',
     })
     expect(content.howTo.steps).toHaveLength(4)
     // Logo mitra sudah asli, jadi tampil juga di production. Urut kiri → kanan

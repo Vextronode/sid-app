@@ -108,7 +108,7 @@ function mapKadus(officials, hamlets) {
   )
 }
 
-function mapProfile(raw, officials = [], hamlets = [], positions = []) {
+function mapProfile(raw, officials = [], hamlets = [], positions = [], stats = null) {
   const byPosition = (position) => officials.find((official) => official.position === position)
   const kepalaDesa = byPosition('kepala_desa')
   const missionList = Array.isArray(raw?.mission)
@@ -130,9 +130,13 @@ function mapProfile(raw, officials = [], hamlets = [], positions = []) {
 
     // --- Belum dikirim backend ---
     heroImage: null,
-    totalPenduduk: null,
-    luasWilayah: null,
-    jumlahDusun: null,
+
+    // Penduduk (warga aktif) dan dusun (dusun aktif) dihitung backend dari
+    // data; luas wilayah diisi Petugas Desa. Nol atau kosong dianggap
+    // belum tersedia.
+    totalPenduduk: stats?.total_population || null,
+    luasWilayah: raw?.area_ha || null,
+    jumlahDusun: stats?.total_hamlets || null,
 
     // RT, RW, dan Petugas Desa tidak ditampilkan di halaman publik.
     kepalaDesa: {
@@ -169,6 +173,7 @@ export function ProfilDesaPage() {
               res.data?.officials ?? [],
               res.data?.hamlets ?? [],
               res.data?.positions ?? [],
+              res.data?.stats ?? null,
             ),
           )
         }
@@ -306,7 +311,10 @@ export function ProfilDesaPage() {
                 <p className="sid-profil-desa-stat-label">Luas Wilayah</p>
 
                 {data.luasWilayah != null ? (
-                  <p className="sid-profil-desa-stat-value">{data.luasWilayah} ha</p>
+                  <p className="sid-profil-desa-stat-value">
+                    {Number(data.luasWilayah).toLocaleString('id-ID', { maximumFractionDigits: 3 })}{' '}
+                    ha
+                  </p>
                 ) : (
                   <NotAvailable />
                 )}

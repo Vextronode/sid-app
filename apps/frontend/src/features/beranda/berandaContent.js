@@ -94,22 +94,13 @@ const STATIC = {
     email: 'kantordesacibenda@gmail.com',
   },
 
-  // Label pita angka.
+  // Label pita angka. Angkanya dari API (lihat StatsBand), bukan dari sini.
   statsBand: {
     label: 'Desa dalam angka',
-    asOfPrefix: 'Data per',
+    population: 'jiwa penduduk',
+    area: 'luas wilayah',
+    hamlets: 'dusun',
     profileLink: 'Lihat profil desa →',
-  },
-
-  // Pita angka. Data final dari pemilik proyek, tampil juga di production
-  // (keputusan pemilik, 11 Okt 2026).
-  stats: {
-    items: [
-      { value: '6.080', label: 'jiwa penduduk' },
-      { value: '759,319 ha', label: 'luas wilayah' },
-      { value: '5', label: 'dusun' },
-    ],
-    asOf: 'Oktober 2026',
   },
 
   news: {

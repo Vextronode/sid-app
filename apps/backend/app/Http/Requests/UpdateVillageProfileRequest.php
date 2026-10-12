@@ -39,6 +39,8 @@ class UpdateVillageProfileRequest extends FormRequest
             'province' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:10'],
             'email' => ['nullable', 'email', 'max:150'],
+            // Luas wilayah (hektare); kolomnya decimal(10, 3).
+            'area_ha' => ['nullable', 'numeric', 'min:0', 'max:9999999.999'],
             'history' => ['nullable', 'string'],
             'vision' => ['nullable', 'string'],
             'mission' => ['nullable', 'string'],
@@ -50,6 +52,9 @@ class UpdateVillageProfileRequest extends FormRequest
         return [
             'name.required' => 'Nama desa wajib diisi',
             'head_name.required' => 'Nama Kepala Desa wajib diisi',
+            'area_ha.numeric' => 'Luas wilayah harus berupa angka',
+            'area_ha.min' => 'Luas wilayah tidak boleh negatif',
+            'area_ha.max' => 'Luas wilayah terlalu besar',
         ];
     }
 }

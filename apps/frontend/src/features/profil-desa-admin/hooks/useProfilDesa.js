@@ -26,6 +26,7 @@ const EMPTY_PROFILE = {
   province: '',
   postal_code: '',
   email: '',
+  area_ha: '',
   history: '',
   vision: '',
   mission: '',
@@ -37,6 +38,10 @@ const EMPTY_PROFILE = {
 
 function unwrap(response) {
   return response?.data?.data ?? response?.data ?? null
+}
+
+function toNumberOrNull(value) {
+  return value === '' || value === null || value === undefined ? null : Number(value)
 }
 
 // ==========================================
@@ -93,6 +98,7 @@ export function useProfilDesa() {
       province: village?.province ?? '',
       postal_code: village?.postal_code ?? '',
       email: village?.email ?? '',
+      area_ha: village?.area_ha ?? '',
       history: village?.history ?? '',
       vision: village?.vision ?? '',
       mission: village?.mission ?? '',
@@ -234,6 +240,8 @@ export function useProfilDesa() {
         province: nextProfile.province || null,
         postal_code: nextProfile.postal_code || null,
         email: nextProfile.email || null,
+        // Luas wilayah (hektare); kosong berarti belum diisi.
+        area_ha: toNumberOrNull(nextProfile.area_ha),
         history: nextProfile.history || null,
         vision: nextProfile.vision || null,
         mission: nextProfile.mission || null,
@@ -253,6 +261,7 @@ export function useProfilDesa() {
         province: updated?.province ?? nextProfile.province,
         postal_code: updated?.postal_code ?? nextProfile.postal_code,
         email: updated?.email ?? nextProfile.email,
+        area_ha: updated ? (updated.area_ha ?? '') : nextProfile.area_ha,
         history: updated?.history ?? nextProfile.history,
         vision: updated?.vision ?? nextProfile.vision,
         mission: updated?.mission ?? nextProfile.mission,
