@@ -33,24 +33,22 @@ describe('BerandaLayout', () => {
     expect(root.querySelector('footer.bd-footer')).not.toBeNull()
   })
 
-  it('does not render the MobileBottomNav (K5)', () => {
+  it('does not render a bottom nav (K5)', () => {
     const { container } = renderLayout(true)
 
-    // MobileBottomNav dirender sebagai <nav> fixed di bawah dengan link "Beranda".
+    // Bottom bar lama berupa <nav> fixed di bawah dengan link "Beranda".
     expect(screen.queryByRole('link', { name: /^beranda$/i })).toBeNull()
     expect(container.querySelectorAll('nav')).toHaveLength(3) // header, menu ponsel, footer
   })
 
-  it('links the footer staff login to the login page and hides the draft pages in production (D6)', () => {
+  it('has no staff login link and hides the draft pages in production (D6)', () => {
     renderLayout(false)
     const footer = within(screen.getByRole('contentinfo'))
 
-    expect(footer.getByRole('link', { name: 'Masuk petugas' })).toHaveAttribute(
-      'href',
-      '/loginpage',
-    )
-    // "Masuk petugas" dan logo Widyatama.
-    expect(footer.getAllByRole('link')).toHaveLength(2)
+    // Petugas masuk lewat form login biasa; hanya logo Widyatama yang berupa link.
+    expect(footer.queryByRole('link', { name: 'Masuk petugas' })).toBeNull()
+    expect(footer.getAllByRole('link')).toHaveLength(1)
+    expect(footer.queryByRole('navigation', { name: 'Tautan footer' })).toBeNull()
     expect(footer.queryByText(/privasi|aksesibilitas|PPID/i)).toBeNull()
   })
 
@@ -64,7 +62,6 @@ describe('BerandaLayout', () => {
       ['Kebijakan privasi', '/kebijakan-privasi'],
       ['Aksesibilitas', '/aksesibilitas'],
       ['PPID', '/ppid'],
-      ['Masuk petugas', '/loginpage'],
     ])
     for (const link of nav.getAllByRole('link')) {
       expect(link).toHaveClass('bd-footer-link')

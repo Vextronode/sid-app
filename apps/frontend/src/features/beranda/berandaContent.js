@@ -178,7 +178,6 @@ const STATIC = {
 
   footer: {
     title: 'Pemerintah Desa Cibenda',
-    staffLogin: 'Masuk petugas',
     siteLabel: 'Situs resmi',
     updatedPrefix: 'Terakhir diperbarui',
     supportedBy: 'Didukung oleh',

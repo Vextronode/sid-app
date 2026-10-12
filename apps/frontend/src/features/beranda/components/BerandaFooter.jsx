@@ -1,9 +1,8 @@
 import { Link } from 'react-router-dom'
 
-import { HAL_LOGIN } from '@/lib/constants/routes'
 import { Wave } from './Wave'
 
-// Footer khusus beranda. Halaman lain tetap memakai FooterDesa.
+// Footer beranda, juga dipakai halaman publik lain lewat MainLayout.
 // A33–A35 (privasi, aksesibilitas, PPID) hanya tampil di dev, karena halamannya
 // masih draf dan route-nya hanya terdaftar di dev (D6); di production infoLinks null.
 // Domain/tanggal pembaruan dan logo "Didukung oleh" tampil di semua mode
@@ -29,16 +28,17 @@ export function BerandaFooter({ content }) {
           )}
         </div>
 
-        <nav className="bd-footer-nav" aria-label="Tautan footer">
-          {infoLinks?.map((link) => (
-            <Link key={link.to} to={link.to} className="bd-footer-link">
-              {link.label}
-            </Link>
-          ))}
-          <Link to={HAL_LOGIN} className="bd-footer-link">
-            {footer.staffLogin}
-          </Link>
-        </nav>
+        {/* Tanpa "Masuk petugas": petugas masuk lewat form login biasa dan
+            diarahkan sesuai role. */}
+        {infoLinks && (
+          <nav className="bd-footer-nav" aria-label="Tautan footer">
+            {infoLinks.map((link) => (
+              <Link key={link.to} to={link.to} className="bd-footer-link">
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         {partners.length > 0 && (
           <div className="bd-footer-partners">
