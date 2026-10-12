@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\Village;
 use App\Repositories\VillageRepository;
+use App\Support\VillageImageOptimizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -14,6 +16,7 @@ class VillageProfileService
 {
     public function __construct(
         private readonly VillageRepository $repository,
+        private readonly VillageImageOptimizer $imageOptimizer,
     ) {}
 
     public function getProfile(User $user): Village
@@ -56,15 +59,19 @@ class VillageProfileService
 
     /**
      * Ganti logo atau foto hero desa. Gambar ini tampil di halaman publik,
-     * jadi disimpan di disk public. Berkas lama dihapus hanya bila itu
-     * unggahan sebelumnya, bukan aset frontend dari seeder.
+     * jadi disimpan di disk public, setelah diperkecil (VillageImageOptimizer)
+     * agar beranda cepat dimuat. Berkas lama dihapus hanya bila itu unggahan
+     * sebelumnya, bukan aset frontend dari seeder.
      */
     public function replaceImage(User $user, string $column, UploadedFile $image): Village
     {
         $this->assertActivePetugas($user);
         $village = $this->getProfile($user);
         $oldValue = $village->{$column};
-        $newPath = $image->store("village-media/{$village->id}", 'public');
+
+        $optimized = $this->imageOptimizer->optimize($image, $column);
+        $newPath = "village-media/{$village->id}/".Str::random(40).'.'.$optimized['extension'];
+        Storage::disk('public')->put($newPath, $optimized['contents']);
 
         try {
             $village = $this->repository->update($village, [$column => $newPath]);

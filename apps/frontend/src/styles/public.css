@@ -1,0 +1,289 @@
+/*
+ * Halaman publik (beranda, berita, profil desa, peraturan, info).
+ *
+ * Tampilan isi halaman ditulis dengan utility Tailwind di JSX; token warnanya
+ * (bg-pb-laut, font-display, dst.) ada di @theme index.css. File ini hanya
+ * berisi yang tidak bisa ditangani Tailwind dengan baik:
+ * - font display (@fontsource),
+ * - pola kontur terasering (data URI SVG) sebagai variabel CSS,
+ * - penimpaan header/footer bersama. Kelas bd-* itu ditata beranda.css tanpa
+ *   layer, dan beranda.css juga dipakai header role (AppHeader) serta sidebar
+ *   operator. Aturan tanpa layer selalu menang atas utility Tailwind, jadi
+ *   penimpaannya harus berupa CSS biasa yang di-scope ke `.pub`.
+ *
+ * `.pub` dipasang di BerandaLayout dan MainLayout saja. Awalan `:root .pub`
+ * membuat aturan di sini lebih kuat dari `.bd-root .x` di beranda.css, berapa
+ * pun urutan muat CSS-nya.
+ */
+
+@import '@fontsource-variable/bricolage-grotesque/wght.css';
+
+/* ===== Token ===== */
+:root .pub,
+:root .pub .bd-root {
+  /* Garis kontur terasering (ubin 480x180): di atas latar terang dan di atas
+     biru malam. Dipakai lewat bg-(image:--pb-contour-dark). */
+  --pb-contour-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='180' viewBox='0 0 480 180' fill='none' stroke='%2317457a' stroke-opacity='.13' stroke-width='1.2'%3E%3Cpath d='M0 18c80-14 160 22 240 6s160-18 240-6'/%3E%3Cpath d='M0 48c70-10 150 26 240 10s170-22 240-10'/%3E%3Cpath d='M0 78c90-16 150 22 240 8s150-20 240-8'/%3E%3Cpath d='M0 108c60-12 160 24 240 10s180-20 240-10'/%3E%3Cpath d='M0 138c80-14 170 20 240 6s160-18 240-6'/%3E%3Cpath d='M0 168c70-10 150 22 240 8s170-18 240-8'/%3E%3C/svg%3E");
+  --pb-contour-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='180' viewBox='0 0 480 180' fill='none' stroke='%23ffffff' stroke-opacity='.09' stroke-width='1.2'%3E%3Cpath d='M0 18c80-14 160 22 240 6s160-18 240-6'/%3E%3Cpath d='M0 48c70-10 150 26 240 10s170-22 240-10'/%3E%3Cpath d='M0 78c90-16 150 22 240 8s150-20 240-8'/%3E%3Cpath d='M0 108c60-12 160 24 240 10s180-20 240-10'/%3E%3Cpath d='M0 138c80-14 170 20 240 6s160-18 240-6'/%3E%3Cpath d='M0 168c70-10 150 22 240 8s170-18 240-8'/%3E%3C/svg%3E");
+
+  --bd-gutter: 24px;
+  --bd-container-max: 1200px;
+
+  /* Token beranda.css yang dipakai header/footer bersama. */
+  --bd-color-ink: var(--color-pb-ink);
+  --bd-color-muted: var(--color-pb-muted);
+  --bd-color-bg: var(--color-pb-paper);
+  --bd-color-border: var(--color-pb-line);
+  --bd-color-primary: var(--color-pb-laut);
+  --bd-color-primary-hover: var(--color-pb-laut-hover);
+  --bd-color-primary-tint: var(--color-pb-laut-tint);
+  --bd-color-accent: var(--color-pb-laut);
+  --bd-color-accent-tint: var(--color-pb-laut-tint);
+  --bd-focus-ring: 3px solid var(--color-pb-laut);
+  --bd-shadow-lift: 0 18px 40px -18px rgba(12, 35, 65, 0.35);
+
+  /* Nama lama di penimpaan header/footer di bawah. */
+  --pb-ink: var(--color-pb-ink);
+  --pb-muted: var(--color-pb-muted);
+  --pb-line: var(--color-pb-line);
+  --pb-line-strong: var(--color-pb-line-strong);
+  --pb-laut: var(--color-pb-laut);
+  --pb-laut-hover: var(--color-pb-laut-hover);
+  --pb-laut-deep: var(--color-pb-laut-deep);
+  --pb-laut-tint: var(--color-pb-laut-tint);
+  --pb-padi: var(--color-pb-padi);
+  --pb-padi-soft: var(--color-pb-padi-soft);
+  --pb-on-deep: #ffffff;
+  --pb-on-deep-muted: #bfcde0;
+  --pb-display: var(--font-display);
+  --pb-section: clamp(64px, 40px + 5vw, 120px);
+  --pb-radius-s: 10px;
+  --pb-radius-m: 16px;
+}
+
+@media (max-width: 400px) {
+  :root .pub,
+  :root .pub .bd-root {
+    --bd-gutter: 16px;
+  }
+}
+
+/* ===== Dasar ===== */
+.pub {
+  background: var(--color-pb-paper);
+  color: var(--color-pb-ink);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+.pub ::selection {
+  background: var(--color-pb-padi-soft);
+  color: var(--color-pb-ink);
+}
+
+/* Warna cincin fokus bisa diganti per bagian lewat --pb-focus, mis.
+   [--pb-focus:#fff] di panel biru. */
+.pub :focus-visible {
+  outline: 3px solid var(--pb-focus, var(--color-pb-laut));
+  outline-offset: 2px;
+}
+
+/* bd-lift (beranda.css) mengangkat kartu saat hover. Di halaman publik umpan
+   baliknya cukup warna; kelasnya tetap ada karena dipakai tes. */
+:root .pub .bd-lift,
+:root .pub .bd-lift:hover,
+:root .pub .bd-lift:active {
+  transform: none;
+  box-shadow: none;
+}
+
+:root .pub .bd-root.bd-info {
+  /* Halaman info berada di dalam MainLayout: bukan kerangka satu layar. */
+  display: block;
+  min-height: 0;
+  background: none;
+}
+
+:root .pub .bd-rise,
+:root .pub .bd-rise-2,
+:root .pub .bd-rise-3 {
+  animation-duration: 700ms;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* ===== Header ===== */
+:root .pub .bd-header {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--pb-line);
+}
+
+:root .pub .bd-header-inner {
+  min-height: 72px;
+  padding-block: 10px;
+}
+
+/* Lambang belum termuat: tempatnya berbentuk gapura kecil. */
+:root .pub span.bd-brand-mark {
+  width: 36px;
+  height: 40px;
+  margin-inline: 4px;
+  /* Bentuk gapura: atap setengah lingkaran, kaki tegak. */
+  border-radius: 18px 18px 4px 4px;
+  background: var(--pb-laut) var(--pb-contour-light);
+  background-size: 160px auto;
+}
+
+:root .pub .bd-brand-name {
+  font-family: var(--pb-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+:root .pub .bd-brand-region {
+  font-size: 13px;
+}
+
+:root .pub .bd-nav {
+  gap: 2px;
+}
+
+:root .pub .bd-nav-link {
+  position: relative;
+  padding-inline: 14px;
+  border-radius: var(--pb-radius-s);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--pb-ink);
+}
+
+:root .pub .bd-nav-link:hover {
+  background: var(--pb-laut-tint);
+  color: var(--pb-laut);
+}
+
+/* Halaman aktif: garis padi di bawah label, bukan latar. */
+:root .pub .bd-nav-link[aria-current='page'] {
+  background: transparent;
+  color: var(--pb-laut);
+}
+
+:root .pub .bd-nav-link[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 4px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--pb-padi);
+}
+
+:root .pub .bd-button-outline {
+  border: 0;
+  border-radius: var(--pb-radius-s);
+  background: var(--pb-laut);
+  color: #fff;
+  padding-inline: 20px;
+}
+
+:root .pub .bd-button-outline:hover {
+  background: var(--pb-laut-hover);
+  color: #fff;
+}
+
+:root .pub .bd-nav-login {
+  margin-left: 12px;
+}
+
+:root .pub .bd-dropdown-panel {
+  top: calc(100% + 10px);
+  padding: 8px;
+  border-radius: var(--pb-radius-m);
+  box-shadow: 0 24px 48px -24px rgba(12, 35, 65, 0.4);
+}
+
+:root .pub .bd-menu-item--link {
+  color: var(--pb-ink);
+  font-weight: 600;
+}
+
+:root .pub .bd-menu-item--link:hover {
+  background: var(--pb-laut-tint);
+  color: var(--pb-laut);
+}
+
+:root .pub .bd-badge-soon {
+  background: var(--pb-padi-soft);
+  color: #6b4a00;
+  border-radius: 4px;
+  padding-inline: 8px;
+}
+
+:root .pub .bd-menu-button {
+  border: 1px solid var(--pb-line-strong);
+  border-radius: var(--pb-radius-s);
+  color: var(--pb-ink);
+}
+
+:root .pub .bd-mobile-panel {
+  padding-top: 12px;
+  box-shadow: 0 24px 48px -24px rgba(12, 35, 65, 0.4);
+}
+
+:root .pub .bd-mobile-login {
+  min-height: 52px;
+}
+
+/* ===== Footer ===== */
+:root .pub .bd-wave--footer {
+  background: transparent;
+}
+
+:root .pub .bd-wave--footer path {
+  fill: var(--pb-laut-deep);
+}
+
+:root .pub .bd-footer {
+  margin-top: var(--pb-section);
+  /* 60px teratas transparan agar gelombang di atasnya tampil di atas latar halaman. */
+  background:
+    var(--pb-contour-light) center 60px / 480px 180px no-repeat,
+    linear-gradient(transparent 59px, var(--pb-laut-deep) 59px);
+  background-repeat: repeat, no-repeat;
+  color: var(--pb-on-deep);
+}
+
+:root .pub .bd-footer-inner {
+  padding-top: 32px;
+  padding-bottom: 56px;
+}
+
+:root .pub .bd-footer-title {
+  font-family: var(--pb-display);
+  font-size: clamp(24px, 20px + 1vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  max-width: 14ch;
+}
+
+:root .pub .bd-footer-link {
+  color: var(--pb-on-deep);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+:root .pub .bd-footer-link:hover {
+  color: var(--pb-on-deep);
+  border-bottom-color: var(--pb-padi);
+}
+
+:root .pub .bd-footer-meta {
+  color: var(--pb-on-deep-muted);
+}
+
+:root .pub .bd-partner-logo {
+  border-radius: var(--pb-radius-s);
+  box-shadow: none;
+}
