@@ -8,10 +8,27 @@ Ringkasan arsitektur: CI membangun image `sid-api` (PHP-FPM) dan `sid-web` (Ngin
 
 ---
 
+## 0. Jalan cepat: satu perintah di PC ber-Docker
+
+Syarat: Docker Desktop/Engine sudah berjalan, `bash` (Linux/macOS/WSL2, atau **Git Bash** di Windows), internet saat pertama kali (unduh image dasar + dependency saat build). Tidak perlu PHP, Composer, Node.js, Nginx, atau PostgreSQL di host.
+
+1. Salin **seluruh folder repo** (bukan hanya `deploy/`) ke PC itu, **termasuk** `deploy/compose.env`, `deploy/sid.env`, `deploy/smoke.env` (berisi rahasia, tidak ada di git; salin lewat USB/scp, jangan lewat chat).
+2. Dari root repo:
+   ```bash
+   bash deploy/scripts/setup-expo.sh
+   ```
+   Pertama kali: build image di PC itu (5-15 menit), migrasi, golden DB dari seed, isi DB demo, smoke test. Dijalankan lagi: hanya memastikan stack hidup (data tidak diubah). Setelah reboot, container naik sendiri bila Docker diatur start saat boot.
+3. Buka `http://localhost:8100` di PC itu, atau URL publik lewat proxy/tunnel (bagian 2 langkah 5).
+
+Versi baru: `bash deploy/scripts/deploy.sh <tag> --build` (rollback otomatis bila gagal).
+
+**[BELUM TERUJI]** Alur ini baru diuji dengan Docker tiruan (urutan perintah, state, guard), belum dengan Docker sungguhan.
+
 ## 1. Prasyarat laptop server
 
 - Docker Engine + **Docker Compose v2 ≥ 2.20** (`docker compose version`).
-- `bash`, `curl`, `openssl` (Linux, macOS, atau WSL2). Windows tanpa WSL tidak didukung.
+- `bash` (Linux, macOS, atau WSL2). Windows tanpa WSL tidak didukung.
+- **Tidak perlu** memasang PHP, Composer, Node.js/npm, Nginx, maupun PostgreSQL di server: semuanya ada di dalam image (`sid-api`, `sid-web`, `postgres`) yang dibangun CI dan hanya di-pull. `curl` di host opsional: bila tidak ada, `smoke.sh` memakai container `curlimages/curl` (butuh `--network host`, yaitu Linux).
 - Login GHCR dengan **classic PAT** berizin `read:packages` (token fine-grained belum mendukung paket). Bila organisasi memakai SSO: *Configure SSO → Authorize* untuk token itu.
   ```bash
   echo '<GHCR_PAT>' | docker login ghcr.io -u <GITHUB_USERNAME> --password-stdin
@@ -22,7 +39,7 @@ Ringkasan arsitektur: CI membangun image `sid-api` (PHP-FPM) dan `sid-web` (Ngin
 ## 2. Menyiapkan server pertama kali
 
 1. Salin folder `deploy/` dari repo ke laptop (scp, USB, atau `git clone --filter=blob:none --sparse` + `git sparse-checkout set deploy`). Image tidak berisi skrip/compose.
-2. Buat file konfigurasi dari template dan kunci izinnya:
+2. Bila `compose.env`, `sid.env`, `smoke.env` sudah disiapkan tim (di-ignore git, tidak ikut repo), salin langsung ke `deploy/` di server lewat jalur aman (scp/USB, bukan chat), lalu `chmod 600 compose.env sid.env smoke.env` **di server** dan lanjut ke langkah 5. Bila belum, buat dari template dan kunci izinnya:
    ```bash
    cd deploy
    cp compose.env.example compose.env
@@ -32,11 +49,11 @@ Ringkasan arsitektur: CI membangun image `sid-api` (PHP-FPM) dan `sid-web` (Ngin
    ```
 3. Isi semua `<...>`:
    - `compose.env`: `SID_REGISTRY=ghcr.io/<owner huruf kecil>`, `SID_IMAGE_TAG=<tag pertama>`, `SID_HTTP_PORT=8100`.
-   - `APP_KEY` dibuat **sekali** dan **tidak pernah diganti** (mengganti = semua sesi/cookie tidak valid). Pakai nilai yang sama di `sid.env` dan `sid.neon.env`:
+   - `APP_KEY` dibuat **sekali** dan **tidak pernah diganti** (mengganti = semua sesi/cookie tidak valid). Pakai nilai yang sama di `sid.env` dan `sid.neon.env`. Tanpa openssl/PHP di server, buat lewat container:
      ```bash
-     echo "base64:$(openssl rand -base64 32)"
+     docker run --rm --entrypoint php ghcr.io/<owner>/sid-api:<tag> -r 'echo "base64:".base64_encode(random_bytes(32)), PHP_EOL;'
      ```
-   - Sandi DB: `openssl rand -hex 24`. Isi **sama** di `DB_PASSWORD` dan `POSTGRES_PASSWORD` (deploy menolak bila berbeda).
+   - Sandi DB (alfanumerik): `docker run --rm --entrypoint php ghcr.io/<owner>/sid-api:<tag> -r 'echo bin2hex(random_bytes(24)), PHP_EOL;'`. Isi **sama** di `DB_PASSWORD` dan `POSTGRES_PASSWORD` (deploy menolak bila berbeda).
    - `APP_URL`/`FRONTEND_URL` = `https://<hostname publik>`; `SANCTUM_STATEFUL_DOMAINS` = hostname publik **tanpa** `https://`.
 4. (Opsional, disarankan) `deploy/smoke.env` untuk uji login otomatis (`chmod 600`):
    ```
@@ -63,8 +80,11 @@ Ringkasan arsitektur: CI membangun image `sid-api` (PHP-FPM) dan `sid-web` (Ngin
 ## 4. Deploy
 
 ```bash
-bash deploy/scripts/deploy.sh <tag> [--migrate] [--yes] [--no-pull] [--db local|neon]
+bash deploy/scripts/deploy.sh <tag> [--build] [--migrate] [--yes] [--no-pull] [--db local|neon]
 ```
+
+- `--build`: bangun image di mesin ini dari source repo (tanpa GHCR/CI/PAT; butuh repo lengkap + internet). Tanpa `--build`, image di-pull dari GHCR.
+- Deploy pertama (belum ada `.state/current_tag`, mode local) menjalankan migrasi otomatis tanpa konfirmasi.
 
 - **Deploy pertama** (DB kosong): `bash deploy/scripts/deploy.sh v1.0.0 --migrate`
 - Deploy berikutnya tanpa perubahan skema: `bash deploy/scripts/deploy.sh v1.0.1`

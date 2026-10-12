@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Deploy SID berdasarkan tag image (dibangun CI, di-pull dari registry).
-#   bash deploy/scripts/deploy.sh <tag> [--migrate] [--yes] [--no-pull] [--db local|neon]
+#   bash deploy/scripts/deploy.sh <tag> [--build] [--migrate] [--yes] [--no-pull] [--db local|neon]
 #
+#   --build     bangun image di mesin ini dari source repo (tanpa GHCR/CI); Node/PHP hanya di Docker
 #   --migrate   jalankan migrasi (daftar pending + konfirmasi) dengan image baru sebelum up
+#               (deploy pertama mode local: migrasi otomatis tanpa konfirmasi)
 #   --yes       tanpa konfirmasi interaktif
 #   --no-pull   pakai image yang sudah ada di mesin (uji/offline); tetap dicek keberadaannya
 #   --db MODE   local (default / mode terakhir) atau neon (fallback)
@@ -15,19 +17,22 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 usage() {
-  sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
 TAG=""
 DO_MIGRATE=0
 DO_PULL=1
+DO_BUILD=0
+FIRST_DEPLOY=0
 DB_MODE_ARG=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --migrate) DO_MIGRATE=1 ;;
     --yes) SID_ASSUME_YES=1 ;;
     --no-pull) DO_PULL=0 ;;
+    --build) DO_BUILD=1; DO_PULL=0 ;;
     --db)
       [ "$#" -ge 2 ] || usage
       DB_MODE_ARG="$2"
@@ -57,6 +62,15 @@ PREV_MODE="$(current_db_mode)"
 MODE="${DB_MODE_ARG:-$PREV_MODE}"
 use_db_mode "$MODE"
 use_tag "$TAG"
+
+# Deploy pertama di DB lokal: DB kosong, migrasi wajib dan aman dijalankan otomatis.
+if [ -z "$PREV_TAG" ] && [ "$MODE" = "local" ]; then
+  FIRST_DEPLOY=1
+  if [ "$DO_MIGRATE" -eq 0 ]; then
+    info "deploy pertama (belum ada .state/current_tag): migrasi dijalankan otomatis."
+    DO_MIGRATE=1
+  fi
+fi
 
 require_private_file "$SID_CONFIG_DIR/compose.env"
 require_private_file "$SID_ENV_FILE"
@@ -90,6 +104,19 @@ trap release_lock EXIT
 info "deploy $TAG (mode DB: $MODE, proyek: $SID_PROJECT, sebelumnya: ${PREV_TAG:-tidak ada})"
 log_line "deploy mulai tag=$TAG mode=$MODE prev=${PREV_TAG:-none}"
 
+# ---------- Build lokal (opsional; gagal = berhenti sebelum menyentuh stack) ----------
+if [ "$DO_BUILD" -eq 1 ]; then
+  [ -f "$SID_REPO_DIR/apps/backend/Dockerfile" ] && [ -f "$SID_REPO_DIR/apps/frontend/Dockerfile" ] \
+    || die "--build butuh repo lengkap (apps/backend, apps/frontend) di $SID_REPO_DIR, bukan hanya folder deploy/."
+  info "build sid-api:$TAG (composer di dalam Docker; beberapa menit, butuh internet)..."
+  DOCKER_BUILDKIT=1 docker build -t "$SID_REGISTRY/sid-api:$TAG" "$SID_REPO_DIR/apps/backend" \
+    || die "build sid-api gagal; stack yang berjalan TIDAK disentuh."
+  info "build sid-web:$TAG (npm + vite di dalam Docker)..."
+  DOCKER_BUILDKIT=1 docker build -f "$SID_REPO_DIR/apps/frontend/Dockerfile" -t "$SID_REGISTRY/sid-web:$TAG" "$SID_REPO_DIR" \
+    || die "build sid-web gagal; stack yang berjalan TIDAK disentuh."
+  log_line "build lokal OK tag=$TAG"
+fi
+
 # ---------- Pull (gagal = berhenti sebelum menyentuh stack berjalan) ----------
 if [ "$DO_PULL" -eq 1 ]; then
   info "pull image..."
@@ -98,7 +125,7 @@ else
   for img in "$SID_REGISTRY/sid-api:$TAG" "$SID_REGISTRY/sid-web:$TAG"; do
     docker image inspect "$img" >/dev/null 2>&1 || die "--no-pull: image $img tidak ada di mesin ini."
   done
-  info "--no-pull: memakai image lokal."
+  info "memakai image lokal (tanpa pull)."
 fi
 
 # ---------- Migrasi (opsional) ----------
@@ -114,7 +141,7 @@ if [ "$DO_MIGRATE" -eq 1 ]; then
   info "migrasi pending (image $TAG):"
   dc run --rm --no-deps -T ${run_env[@]+"${run_env[@]}"} sid_api php artisan migrate:status --pending \
     || die "migrate:status gagal; stack aplikasi tidak disentuh."
-  confirm "Jalankan migrate --force dengan image $TAG?" ya || die "migrasi dibatalkan pengguna; stack tidak disentuh."
+  [ "$FIRST_DEPLOY" -eq 1 ] || confirm "Jalankan migrate --force dengan image $TAG?" ya || die "migrasi dibatalkan pengguna; stack tidak disentuh."
   dc run --rm --no-deps -T ${run_env[@]+"${run_env[@]}"} sid_api php artisan migrate --force \
     || die "migrasi gagal; stack aplikasi tidak diganti (periksa log di atas)."
   log_line "migrasi OK tag=$TAG mode=$MODE"

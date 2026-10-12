@@ -23,10 +23,20 @@ TO="${SID_SMOKE_TIMEOUT:-10}"
 # Endpoint publik yang menyentuh DB (cache store database + query jenis surat).
 PUBLIC_DB_ENDPOINT="/api/public/letter-types"
 
-command -v curl >/dev/null 2>&1 || die "curl tidak ditemukan."
-
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/sid-smoke.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
+
+# Server tanpa curl terpasang: jalankan curl dari container (jaringan host, Linux).
+# Folder kerja di-mount di path yang sama dan ditulis dengan uid/gid pengguna ini.
+SID_CURL_IMAGE="${SID_CURL_IMAGE:-curlimages/curl:8.22.0}"
+if ! command -v curl >/dev/null 2>&1; then
+  command -v docker >/dev/null 2>&1 || die "curl maupun docker tidak ditemukan."
+  info "curl tidak terpasang di host; memakai container $SID_CURL_IMAGE."
+  curl() {
+    docker run --rm --network host --user "$(id -u):$(id -g)" \
+      -v "$WORK:$WORK" --entrypoint curl "$SID_CURL_IMAGE" "$@"
+  }
+fi
 
 fails=0
 ok() { printf 'OK     %s\n' "$*"; }

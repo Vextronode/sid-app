@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
+# Variabel global (SID_REPO_DIR, SID_BACKUP_DIR, SID_C_*) dipakai skrip yang men-source file ini.
+# shellcheck disable=SC2034
 # Pustaka bersama skrip operasi SID (di-source oleh deploy.sh, smoke.sh, make-golden.sh, reset-demo.sh).
 #
 # Bila dijalankan langsung, berfungsi sebagai pembungkus docker compose dengan tag dan mode DB aktif:
@@ -10,12 +12,28 @@
 #   SID_CONFIG_DIR  lokasi compose.env, sid.env, sid.neon.env, smoke.env, .state/, backups/ (default: deploy/)
 #   SID_PROJECT     nama proyek compose (default: dari compose.env, lalu "sid")
 
-# Variabel global dipakai skrip yang men-source file ini.
-# shellcheck disable=SC2034
-SID_SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SID_DEPLOY_DIR="$(cd "$SID_SCRIPTS_DIR/.." && pwd)"
+# Git Bash / MSYS di Windows (Docker Desktop).
+is_windows_shell() {
+  case "$(uname -s 2>/dev/null)" in
+    MINGW*|MSYS*|CYGWIN*) return 0 ;;
+  esac
+  return 1
+}
+
+# Path yang dipahami bash DAN docker.exe: di Windows bentuk C:/..., selain itu apa adanya.
+host_path() {
+  if is_windows_shell && command -v cygpath >/dev/null 2>&1; then
+    cygpath -m "$1"
+  else
+    printf '%s' "$1"
+  fi
+}
+
+SID_SCRIPTS_DIR="$(host_path "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")"
+SID_DEPLOY_DIR="$(host_path "$(cd "$SID_SCRIPTS_DIR/.." && pwd)")"
+SID_REPO_DIR="$(host_path "$(cd "$SID_DEPLOY_DIR/.." && pwd)")"
 SID_COMPOSE_FILE="$SID_DEPLOY_DIR/docker-compose.yml"
-SID_CONFIG_DIR="${SID_CONFIG_DIR:-$SID_DEPLOY_DIR}"
+SID_CONFIG_DIR="$(host_path "${SID_CONFIG_DIR:-$SID_DEPLOY_DIR}")"
 SID_STATE_DIR="$SID_CONFIG_DIR/.state"
 SID_BACKUP_DIR="$SID_CONFIG_DIR/backups"
 SID_TAG_RE='^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$'
@@ -48,11 +66,28 @@ file_mode() {
   stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"
 }
 
+# File rahasia harus 600. Dicoba diperbaiki otomatis (chmod 600); di filesystem
+# Windows (NTFS lewat Git Bash) izin unix tidak berlaku -> hanya peringatan.
+# Return 0 = boleh dipakai.
+ensure_private_file() {
+  local f="$1"
+  [ "$(file_mode "$f")" = "600" ] && return 0
+  chmod 600 "$f" 2>/dev/null || true
+  if [ "$(file_mode "$f")" = "600" ]; then
+    info "izin $f diperbaiki menjadi 600."
+    return 0
+  fi
+  if is_windows_shell; then
+    warn "izin $f tidak bisa 600 di filesystem Windows; dilanjutkan (pastikan folder hanya bisa diakses akun ini)."
+    return 0
+  fi
+  return 1
+}
+
 require_private_file() {
-  local f="$1" mode
+  local f="$1"
   [ -f "$f" ] || die "file tidak ada: $f (salin dari template *.example)."
-  mode="$(file_mode "$f")"
-  [ "$mode" = "600" ] || die "izin $f = $mode; harus 600 (chmod 600 $f)."
+  ensure_private_file "$f" || die "izin $f = $(file_mode "$f"); harus 600 dan chmod gagal (pemilik file berbeda?)."
 }
 
 # Membaca nilai KEY dari file env tanpa mengeksekusinya (baris terakhir menang).
@@ -86,9 +121,12 @@ confirm() {
   if [ "${SID_ASSUME_YES:-0}" = "1" ]; then
     return 0
   fi
-  [ -t 0 ] || die "butuh konfirmasi interaktif; jalankan di terminal atau pakai --yes."
-  printf '%s Ketik %s untuk lanjut: ' "$msg" "$word"
-  read -r ans
+  # Tanpa cek tty: mintty (Git Bash) bukan tty tetapi tetap bisa diketik.
+  printf '%s Ketik %s untuk lanjut (atau jalankan dengan --yes): ' "$msg" "$word"
+  if ! read -r ans; then
+    ans=""
+  fi
+  ans="${ans%$'\r'}"
   [ "$ans" = "$word" ]
 }
 

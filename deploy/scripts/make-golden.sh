@@ -53,7 +53,6 @@ mkdir -p "$SID_BACKUP_DIR"
 STAMP="$(date '+%Y%m%d-%H%M%S')"
 BASE_NAME="golden-${TAG}-${STAMP}"
 DUMP="$SID_BACKUP_DIR/$BASE_NAME.dump"
-IN_CONTAINER_DUMP="/tmp/$BASE_NAME.dump"
 CREATED_DB=0
 
 psql_admin() {
@@ -69,7 +68,6 @@ cleanup() {
       warn "gagal menghapus DB sementara $GOLDEN_DB; hapus manual."
     fi
   fi
-  docker exec "$SID_C_DB" rm -f "$IN_CONTAINER_DUMP" >/dev/null 2>&1 || true
   if [ "$rc" -ne 0 ]; then
     # Hanya berkas milik proses ini yang dihapus.
     rm -f "$DUMP" "$DUMP.sha256" "$DUMP.meta"
@@ -98,10 +96,11 @@ docker exec "$SID_C_DB" pg_dump -U "$DB_USER" -d "$GOLDEN_DB" -Fc --no-owner --n
   --exclude-table-data=jobs \
   --exclude-table-data=job_batches \
   --exclude-table-data=failed_jobs \
-  -f "$IN_CONTAINER_DUMP" || die "pg_dump gagal."
+  > "$DUMP" || die "pg_dump gagal."
+[ -s "$DUMP" ] || die "dump kosong."
 
-TABLES="$(docker exec "$SID_C_DB" pg_restore --list "$IN_CONTAINER_DUMP" | grep -c ' TABLE DATA ' || true)"
-docker cp "$SID_C_DB:$IN_CONTAINER_DUMP" "$DUMP" >/dev/null || die "docker cp dump gagal."
+# Dump dialirkan lewat stdout/stdin (biner, tanpa docker cp / path host), aman juga di Windows.
+TABLES="$(docker exec -i "$SID_C_DB" pg_restore --list < "$DUMP" | grep -c ' TABLE DATA ' || true)"
 
 SUM="$(sha256_of "$DUMP")"
 printf '%s  %s\n' "$SUM" "$BASE_NAME.dump" > "$DUMP.sha256"

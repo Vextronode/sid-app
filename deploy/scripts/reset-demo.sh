@@ -45,7 +45,7 @@ ENV_FILE="$SID_CONFIG_DIR/sid.env"
 if [ "$MODE" = "local" ]; then gok "mode DB local"; else gfail "mode DB = '$MODE' (reset hanya untuk local)."; fi
 
 if [ -f "$ENV_FILE" ]; then
-  if [ "$(file_mode "$ENV_FILE")" = "600" ]; then gok "izin sid.env 600"; else gfail "izin $ENV_FILE bukan 600."; fi
+  if ensure_private_file "$ENV_FILE"; then gok "izin sid.env 600 (atau Windows)"; else gfail "izin $ENV_FILE bukan 600."; fi
   ROLE="$(env_get "$ENV_FILE" SID_ROLE)"
   DB_HOST_V="$(env_get "$ENV_FILE" DB_HOST)"
   DB_NAME="$(env_get "$ENV_FILE" DB_DATABASE)"
@@ -122,35 +122,27 @@ confirm "Reset DB '$DB_NAME' ke $(basename "$DUMP")? Semua data demo saat ini HI
   || die "reset dibatalkan pengguna."
 
 acquire_lock
-IN_CONTAINER_DUMP="/tmp/sid-reset-$$.dump"
-cleanup() {
-  docker exec "$SID_C_DB" rm -f "$IN_CONTAINER_DUMP" >/dev/null 2>&1 || true
-  release_lock
-}
-trap cleanup EXIT
+trap release_lock EXIT
 
 psql_admin() {
   docker exec -i "$SID_C_DB" psql -v ON_ERROR_STOP=1 -X -q -U "$DB_USER" -d postgres "$@"
 }
 
 log_line "reset mulai db=$DB_NAME dump=$(basename "$DUMP") tag=$tag"
-info "1/6 hentikan sid_api..."
+info "1/5 hentikan sid_api..."
 dc stop sid_api
 
-info "2/6 salin dump ke container DB..."
-docker cp "$DUMP" "$SID_C_DB:$IN_CONTAINER_DUMP" >/dev/null
-
-info "3/6 DROP DATABASE $DB_NAME WITH (FORCE)..."
+info "2/5 DROP DATABASE $DB_NAME WITH (FORCE)..."
 psql_admin -c "DROP DATABASE IF EXISTS \"$DB_NAME\" WITH (FORCE);"
 
-info "4/6 CREATE DATABASE $DB_NAME OWNER $DB_USER..."
+info "3/5 CREATE DATABASE $DB_NAME OWNER $DB_USER..."
 psql_admin -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";"
 
-info "5/6 pg_restore..."
-docker exec "$SID_C_DB" pg_restore -U "$DB_USER" -d "$DB_NAME" --no-owner --no-acl --exit-on-error "$IN_CONTAINER_DUMP" \
+info "4/5 pg_restore (dump dialirkan lewat stdin)..."
+docker exec -i "$SID_C_DB" pg_restore -U "$DB_USER" -d "$DB_NAME" --no-owner --no-acl --exit-on-error < "$DUMP" \
   || die "pg_restore gagal. DB $DB_NAME mungkin kosong/sebagian; ulangi reset-demo.sh. sid_api masih berhenti."
 
-info "6/6 nyalakan sid_api..."
+info "5/5 nyalakan sid_api..."
 dc start sid_api || dc up -d --no-deps sid_api
 wait_healthy "$SID_C_API" 180 || die "sid_api tidak sehat setelah reset."
 wait_healthy "$SID_C_WEB" 60 || die "sid_web tidak sehat setelah reset."
