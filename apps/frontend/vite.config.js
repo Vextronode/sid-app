@@ -51,6 +51,8 @@ export default defineConfig({
 
       workbox: {
         navigateFallback: '/index.html',
+        // Navigasi langsung ke endpoint backend tidak boleh dijawab index.html.
+        navigateFallbackDenylist: [/^\/api\//, /^\/sanctum\//, /^\/storage\//, /^\/up(?:[/?]|$)/],
         importScripts: ['/push-handler.js'],
         // Pratinjau PDF selalu butuh jaringan; tidak perlu ikut precache.
         globIgnores: ['**/pdfjs-*.js'],
