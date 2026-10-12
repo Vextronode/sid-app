@@ -10,6 +10,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { Landmark, Lock, Eye, EyeOff, KeyRound, LogOut } from 'lucide-react'
 import api from '@/lib/api'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { useLogoutToBeranda } from '@/features/auth/hooks/useLogoutToBeranda'
 
 const EMPTY_FORM = { current_password: '', password: '', password_confirmation: '' }
 
@@ -21,7 +22,8 @@ function firstMessage(error, fallback) {
 
 export default function GantiPasswordPage() {
   const navigate = useNavigate()
-  const { user, isLoading, refreshUser, logout } = useAuth()
+  const { user, isLoading, refreshUser } = useAuth()
+  const { handleLogout, isLoggingOut } = useLogoutToBeranda()
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [showPassword, setShowPassword] = useState(false)
@@ -156,10 +158,11 @@ export default function GantiPasswordPage() {
         <div className="border-t mt-6 pt-4 text-center">
           <button
             type="button"
-            onClick={() => void logout()}
+            onClick={handleLogout}
+            disabled={isLoggingOut}
             className="text-sm text-gray-500 font-medium hover:underline inline-flex items-center justify-center gap-1"
           >
-            <LogOut size={14} /> Keluar
+            <LogOut size={14} /> {isLoggingOut ? 'Keluar…' : 'Keluar'}
           </button>
         </div>
       </div>
