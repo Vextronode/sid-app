@@ -1,7 +1,7 @@
 // ==========================================
 // PeraturanDesaPage.jsx
 // Halaman publik daftar peraturan desa.
-// Gaya dari public.css (kelas pb-*, di bawah .pub milik MainLayout).
+// Ditata dengan utility Tailwind, di bawah .pub milik MainLayout.
 // ==========================================
 
 import { useEffect, useState } from 'react'
@@ -9,6 +9,8 @@ import { ChevronDown, ChevronUp, ScrollText } from 'lucide-react'
 
 import { getPublicRegulations } from '@/features/peraturan/api'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { PublicPageHead } from '@/components/layout/PublicPageHead'
+import { errorBox, stateBox } from '@/features/beranda/publicClasses'
 
 function formatDate(value) {
   if (!value) return null
@@ -47,56 +49,68 @@ export function PeraturanDesaPage() {
 
   return (
     <>
-      <header className="pb-pagehead">
-        <div className="pb-container pb-pagehead-inner">
-          <h1>Peraturan Desa</h1>
-          <p>Daftar peraturan yang berlaku di desa. Ketuk judul untuk membaca isinya.</p>
-        </div>
-      </header>
+      <PublicPageHead title="Peraturan Desa">
+        <p>Daftar peraturan yang berlaku di desa. Ketuk judul untuk membaca isinya.</p>
+      </PublicPageHead>
 
-      <div className="pb-container pb-page">
+      <div className="bd-container pt-[clamp(32px,20px+3vw,64px)]">
         {loading ? (
           <PageLoader label="Memuat peraturan desa..." />
         ) : error ? (
-          <p className="pb-state pb-state--error" role="alert">
+          <p className={errorBox} role="alert">
             {error}
           </p>
         ) : regulations.length === 0 ? (
-          <p className="pb-state" role="status">
+          <p className={stateBox} role="status">
             Belum ada peraturan desa yang dipublikasikan.
           </p>
         ) : (
-          <ul className="pb-reg-list">
+          <ul className="m-0 flex max-w-220 list-none flex-col border-t border-pb-line p-0">
             {regulations.map((item) => {
               const isOpen = openId === item.id
               const enactedDate = formatDate(item.enacted_date)
 
               return (
-                <li key={item.id} className="pb-reg-item">
+                <li key={item.id} className="border-b border-pb-line">
                   <button
                     type="button"
-                    className="pb-reg-toggle"
+                    className="group flex w-full cursor-pointer items-center gap-4.5 border-0 bg-transparent px-2 py-5.5 text-left text-pb-ink hover:bg-white max-sm:gap-3.5 max-sm:px-0"
                     aria-expanded={isOpen}
                     onClick={() => setOpenId(isOpen ? null : item.id)}
                   >
-                    <ScrollText size={20} aria-hidden="true" />
+                    <span
+                      className="flex size-12 flex-none items-center justify-center rounded-[14px] bg-pb-laut-tint text-pb-laut group-aria-expanded:bg-pb-laut group-aria-expanded:text-white"
+                      aria-hidden="true"
+                    >
+                      <ScrollText size={22} strokeWidth={1.8} />
+                    </span>
 
-                    <span className="pb-reg-heading">
-                      <strong>{item.title}</strong>
-                      <span>
+                    <span className="flex min-w-0 flex-1 flex-col gap-1">
+                      <strong className="font-display text-xl leading-tight font-bold">
+                        {item.title}
+                      </strong>
+                      <span className="text-[15px] text-pb-muted">
                         Nomor {item.regulation_number}
                         {enactedDate ? ` · Ditetapkan ${enactedDate}` : ''}
                       </span>
                     </span>
 
                     {isOpen ? (
-                      <ChevronUp size={20} aria-hidden="true" />
+                      <ChevronUp className="flex-none text-pb-muted" size={20} aria-hidden="true" />
                     ) : (
-                      <ChevronDown size={20} aria-hidden="true" />
+                      <ChevronDown
+                        className="flex-none text-pb-muted"
+                        size={20}
+                        aria-hidden="true"
+                      />
                     )}
                   </button>
 
-                  {isOpen && <div className="pb-reg-body">{item.content}</div>}
+                  {isOpen && (
+                    <div className="mr-2 mb-6 ml-18.5 rounded-r-2xl border-l-[3px] border-pb-padi bg-white px-6 py-5 text-[17px] leading-[1.7] whitespace-pre-line max-sm:ml-0">
+                      {item.content}
+                    </div>
+                  )}
                 </li>
               )
             })}

@@ -12,12 +12,12 @@ import { SiteFooter } from './SiteFooter'
 // untuk header, isi, dan footer.
 export function MainLayout({ children, isDev = import.meta.env.DEV }) {
   return (
-    <div className="pub pub-shell">
+    <div className="pub flex min-h-dvh flex-col">
       <div className="bd-root bd-chrome bd-chrome--sticky">
         <BerandaHeader content={getBerandaContent(isDev)} />
       </div>
 
-      <main>{children}</main>
+      <main className="w-full flex-auto">{children}</main>
 
       <SiteFooter isDev={isDev} />
     </div>

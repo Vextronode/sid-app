@@ -209,11 +209,13 @@
   }
 }
 
-.bd-root a {
+/* Halaman publik (.pub) mengatur warna link lewat utility Tailwind; aturan
+   tanpa layer ini akan selalu menang atas utility, jadi .pub dikecualikan. */
+.bd-root a:not(.pub *) {
   color: var(--bd-color-primary);
 }
 
-.bd-root a:hover {
+.bd-root a:not(.pub *):hover {
   color: var(--bd-color-primary-hover);
 }
 
