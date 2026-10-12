@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
@@ -73,7 +73,7 @@ describe('BerandaHeader', () => {
       const { desktopNav } = renderHeader()
 
       expect(desktopNav.getByRole('link', { name: 'Berita' })).toHaveAttribute('href', '/berita')
-      expect(desktopNav.getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '#kontak')
+      expect(desktopNav.getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '/#kontak')
       expect(desktopNav.getByRole('link', { name: 'Masuk Warga' })).toHaveAttribute(
         'href',
         '/loginpage',
@@ -90,6 +90,27 @@ describe('BerandaHeader', () => {
       expect(Element.prototype.scrollIntoView.mock.contexts[0]).toBe(
         document.getElementById('kontak'),
       )
+    })
+
+    it('goes to the home page contact section when Kontak is chosen on another page', async () => {
+      const user = userEvent.setup()
+      const LocationProbe = () => {
+        const { pathname, hash } = useLocation()
+        return <p data-testid="location">{pathname + hash}</p>
+      }
+      const { container } = render(
+        <MemoryRouter initialEntries={['/berita']}>
+          <BerandaHeader content={getBerandaContent(true)} />
+          <LocationProbe />
+        </MemoryRouter>,
+      )
+
+      await user.click(
+        within(container.querySelector('.bd-nav')).getByRole('link', { name: 'Kontak' }),
+      )
+
+      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
+      expect(screen.getByTestId('location')).toHaveTextContent('/#kontak')
     })
   })
 
@@ -207,7 +228,7 @@ describe('BerandaHeader', () => {
       const { desktopNav } = renderHeader()
       const trigger = await openDropdown(user, desktopNav)
       const link = desktopNav.getByRole('link', { name: 'Transparansi APBDes' })
-      expect(link).toHaveAttribute('href', '#transparansi')
+      expect(link).toHaveAttribute('href', '/#transparansi')
 
       await user.click(link)
 
@@ -251,7 +272,7 @@ describe('BerandaHeader', () => {
         '/profil-desa#perangkat-desa',
       )
       expect(list.getByRole('link', { name: 'Transparansi APBDes' })).toBeVisible()
-      expect(list.getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '#kontak')
+      expect(list.getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '/#kontak')
       expect(list.getByRole('link', { name: 'Masuk Warga' })).toHaveAttribute('href', '/loginpage')
     })
 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { HAL_BERITA, HAL_LOGIN, SECTION_KONTAK } from '@/lib/constants/routes'
 import { useDisclosure } from '../hooks/useDisclosure'
-import { sectionLinkProps } from '../utils/sectionLink'
+import { useSectionLink } from '../utils/sectionLink'
 import { ProfilDesaItems } from './ProfilDesaDropdown'
 
 // Navigasi ponsel (K5): tombol berlabel teks "Menu" yang membuka daftar nav.
@@ -11,6 +11,7 @@ import { ProfilDesaItems } from './ProfilDesaDropdown'
 export function MobileMenu({ header, showTransparansi }) {
   const { isOpen, toggle, close, containerRef, triggerRef, panelId, onBlur } = useDisclosure()
   const { nav } = header
+  const sectionLinkProps = useSectionLink()
 
   return (
     <div className="bd-mobile-menu" ref={containerRef} onBlur={onBlur}>
