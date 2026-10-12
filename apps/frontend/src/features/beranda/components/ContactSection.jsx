@@ -26,9 +26,10 @@ function CardContent({ icon: Icon, title, children }) {
 // - Telepon: kartu tidak bisa diklik; satu baris link tel: ke nomor kantor dari
 //   konfigurasi (permintaan pemilik, 11 Okt 2026).
 // - Jam layanan: teks dari konfigurasi, tidak bisa diklik.
-// - Kantor desa: alamat dari village.address; "Buka di peta" (tab baru) hanya
-//   bila link peta ada (dev). Di production kartu ini tidak bisa diklik (K1).
-// Alamat yang belum termuat tidak dirender dan kartunya tanpa link.
+// - Kantor desa: alamat dari village.address; seluruh kartu menjadi link
+//   "Buka di peta" (tab baru) bila mapUrl diisi. Sejak D1 (12 Okt 2026) link
+//   peta asli tampil di dev dan production; tanpa mapUrl kartu tidak bisa diklik.
+// Alamat yang belum termuat tidak dirender.
 export function ContactSection({ content, village }) {
   const { contact: labels, mapUrl } = content
   const telHref = labels.phone ? toTelHref(labels.phone) : null

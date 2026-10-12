@@ -313,18 +313,34 @@ describe('BerandaPage service cards', () => {
     expect(within(card).getByText('Segera hadir')).toBeInTheDocument()
   })
 
-  it('only links the WhatsApp and email rows of the complaint card (K14)', () => {
-    renderPage()
+  it.each([true, false])(
+    'only links the WhatsApp and email rows of the complaint card (K14, D2; isDev=%s)',
+    (isDev) => {
+      renderPage({ isDev })
 
-    const title = cards().getByText('Sampaikan pengaduan')
-    expect(title.closest('a')).toBeNull()
-    const links = within(title.closest('.bd-service-card')).getAllByRole('link')
-    expect(links).toHaveLength(2)
-    expect(links[0].getAttribute('href')).toMatch(/^https:\/\/wa\.me\/\d+$/)
-    expect(links[0]).toHaveAccessibleName(/^WhatsApp pengaduan /)
-    expect(links[1].getAttribute('href')).toMatch(/^mailto:.+@.+/)
-    expect(links[1]).toHaveAccessibleName(/^Email pengaduan /)
-  })
+      const title = cards().getByText('Sampaikan pengaduan')
+      expect(title.closest('a')).toBeNull()
+      const links = within(title.closest('.bd-service-card')).getAllByRole('link')
+      expect(links).toHaveLength(2)
+
+      // D2: menu bagikan AddToAny di tab baru (permintaan pemilik, 12 Okt 2026).
+      const [whatsapp, email] = links
+      expect(whatsapp).toHaveAttribute(
+        'href',
+        'https://www.addtoany.com/add_to/whatsapp?linkurl=https%3A%2F%2Fdesacibenda.id%2Fkotak-saran%2F&linkname=HUBUNGI%20KAMI&linknote=',
+      )
+      expect(whatsapp).toHaveTextContent(/^Bagikan kotak saran via WhatsApp/)
+      expect(whatsapp).toHaveAccessibleName('Bagikan kotak saran via WhatsApp (tab baru)')
+      expect(whatsapp).toHaveAttribute('target', '_blank')
+      expect(whatsapp.getAttribute('rel')).toMatch(/\bnoopener\b/)
+      expect(whatsapp.getAttribute('rel')).toMatch(/\bnoreferrer\b/)
+      expect(screen.queryByText('+62 812-3456-7890')).toBeNull()
+
+      expect(email.getAttribute('href')).toMatch(/^mailto:.+@.+/)
+      expect(email).toHaveAccessibleName(/^Email pengaduan /)
+      expect(email).not.toHaveAttribute('target')
+    },
+  )
 
   it('shows all four cards in production as well', () => {
     renderPage({ isDev: false })
@@ -509,35 +525,30 @@ describe('BerandaPage contact section', () => {
     expect(hours.closest('a')).toBeNull()
   })
 
-  it('opens the dummy map in a new tab in development (A32)', () => {
-    renderPage({ isDev: true })
+  // D1 (12 Okt 2026): link peta asli, tampil di dev dan production.
+  it.each([true, false])('opens the real map in a new tab (A32, D1; isDev=%s)', (isDev) => {
+    renderPage({ isDev })
 
     const link = within(section()).getByRole('link', { name: /Kantor Desa Cibenda/ })
     expect(link).toHaveTextContent('Jl. Raya Cibenda No. 1')
     expect(link).toHaveAccessibleName(/Buka di peta \(tab baru\)$/)
+    expect(link).toHaveAttribute('href', 'https://maps.app.goo.gl/sVU5Xqmasq4UTJ4N6')
     expect(link).toHaveAttribute('target', '_blank')
     expect(link.getAttribute('rel')).toMatch(/\bnoopener\b/)
-    expect(link.getAttribute('href')).toMatch(/^https:\/\//)
+    expect(link.getAttribute('rel')).toMatch(/\bnoreferrer\b/)
+    // Nomor telepon dan peta.
+    expect(within(section()).getAllByRole('link')).toHaveLength(2)
   })
 
-  it('hides "Buka di peta" and keeps the office card unclickable in production (K1)', () => {
-    renderPage({ isDev: false })
-
-    const office = within(section()).getByText('Kantor Desa Cibenda')
-    expect(office.closest('a')).toBeNull()
-    expect(within(section()).getByText('Jl. Raya Cibenda No. 1')).toBeInTheDocument()
-    expect(screen.queryByText(/Buka di peta/)).toBeNull()
-    // Hanya nomor telepon.
-    expect(within(section()).getAllByRole('link')).toHaveLength(1)
-  })
-
-  it('keeps the phone link while village data is missing', () => {
+  it('keeps the phone and map links while village data is missing', () => {
     usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
 
     renderPage({ isDev: false })
 
     expect(within(section()).getByText('Telepon').closest('a')).toBeNull()
-    expect(within(section()).getByText('Kantor Desa Cibenda').closest('a')).toBeNull()
-    expect(within(section()).getAllByRole('link')).toHaveLength(1)
+    const office = within(section()).getByRole('link', { name: /Kantor Desa Cibenda/ })
+    expect(office).toHaveAccessibleName(/Buka di peta \(tab baru\)$/)
+    expect(within(section()).queryByText('Jl. Raya Cibenda No. 1')).toBeNull()
+    expect(within(section()).getAllByRole('link')).toHaveLength(2)
   })
 })

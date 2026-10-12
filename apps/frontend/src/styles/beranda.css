@@ -1573,3 +1573,81 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* ===== Halaman informasi (D6; dev saja) =====
+   Dirender di dalam MainLayout, jadi .bd-root tidak mengisi tinggi layar. */
+.bd-root.bd-info {
+  display: block;
+  min-height: 0;
+}
+
+.bd-info-article {
+  max-width: 72ch;
+  padding-top: var(--bd-space-48);
+  padding-bottom: var(--bd-space-64);
+  overflow-wrap: break-word;
+}
+
+.bd-info-title {
+  margin: 0 0 var(--bd-space-16);
+  font-size: var(--bd-text-h2);
+  font-weight: var(--bd-font-extrabold);
+  line-height: var(--bd-leading-h2);
+}
+
+/* Catatan "Status: draf…" di atas isi. */
+.bd-info-status {
+  margin: 0 0 var(--bd-space-32);
+  padding: var(--bd-space-12) var(--bd-space-16);
+  border: 1px solid var(--bd-color-announce-border);
+  border-radius: var(--bd-radius-button);
+  background: var(--bd-color-announce-bg);
+  font-weight: var(--bd-font-semibold);
+}
+
+.bd-info-h2 {
+  margin: var(--bd-space-40) 0 var(--bd-space-12);
+  font-size: var(--bd-text-h3-feature);
+  font-weight: var(--bd-font-extrabold);
+  line-height: var(--bd-leading-h3-feature);
+}
+
+.bd-info-h3 {
+  margin: var(--bd-space-24) 0 var(--bd-space-8);
+  font-size: var(--bd-text-card-title);
+  font-weight: var(--bd-font-bold);
+  line-height: var(--bd-leading-card-title);
+}
+
+.bd-info-article p {
+  margin: 0 0 var(--bd-space-16);
+}
+
+.bd-info-list {
+  margin: 0 0 var(--bd-space-16);
+  padding-left: var(--bd-space-28);
+}
+
+.bd-info-list--ul {
+  list-style: disc;
+}
+
+.bd-info-list--ol {
+  list-style: decimal;
+}
+
+.bd-info-list > li + li {
+  margin-top: var(--bd-space-8);
+}
+
+/* Slot [TEKS DALAM KURUNG SIKU] yang belum diisi desa: harus terlihat jelas. */
+.bd-info-slot {
+  padding: 0 var(--bd-space-4);
+  border: 1px dashed var(--bd-color-primary);
+  border-radius: var(--bd-radius-chip);
+  background: var(--bd-color-primary-tint);
+  color: var(--bd-color-primary);
+  font-weight: var(--bd-font-semibold);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}

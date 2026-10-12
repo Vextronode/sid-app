@@ -4872,12 +4872,6 @@
   color: var(--sid-primary);
 }
 
-.sid-login-modal-icon-register {
-  background: var(--sid-status-pending-bg);
-
-  color: var(--sid-status-pending-text);
-}
-
 /* =========================================================
    MODAL TEXT
    ========================================================= */

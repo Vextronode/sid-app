@@ -94,3 +94,40 @@ describe('LoginPage redirect after login', () => {
     expect(path.textContent).toBe('/admin/dashboard-surat-rt')
   })
 })
+
+describe('LoginPage links (D4)', () => {
+  function renderLogin() {
+    render(
+      <MemoryRouter initialEntries={['/loginpage']}>
+        <Routes>
+          <Route path="/loginpage" element={<LoginPage />} />
+          <Route path="*" element={<CurrentPath />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+  }
+
+  it('"Daftar sekarang" is a link to /register', () => {
+    renderLogin()
+
+    const link = screen.getByRole('link', { name: 'Daftar sekarang' })
+    expect(link).toHaveAttribute('href', '/register')
+
+    fireEvent.click(link)
+
+    expect(screen.getByTestId('current-path').textContent).toBe('/register')
+    expect(screen.queryByText('Fitur Belum Tersedia')).not.toBeInTheDocument()
+  })
+
+  it('"Lupa password?" stays a button that opens the unavailable-feature modal', () => {
+    renderLogin()
+
+    const button = screen.getByRole('button', { name: 'Lupa password?' })
+    expect(screen.queryByText('Fitur Belum Tersedia')).not.toBeInTheDocument()
+
+    fireEvent.click(button)
+
+    expect(screen.getByRole('heading', { name: 'Fitur Belum Tersedia' })).toBeInTheDocument()
+    expect(screen.getByText(/Reset password masih dalam tahap pengembangan/)).toBeInTheDocument()
+  })
+})

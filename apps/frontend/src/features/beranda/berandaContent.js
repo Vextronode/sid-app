@@ -1,12 +1,14 @@
 // Satu-satunya tempat konten beranda yang tidak berasal dari API (K1).
 //
 // - STATIC: copy final dan konten manual. Tampil di development dan production.
-//   Kontak aduan (K14) masih dummy; pemilik proyek menggantinya langsung di sini.
+//   Baris WhatsApp aduan (K14, D2) masih sementara; pemilik proyek menggantinya
+//   langsung di sini.
 // - DEV_ONLY: dummy dari mockup agar layout terlihat utuh saat development.
 //   Di production nilainya null, dan komponen yang memakainya tidak dirender.
 //
 // Pakai getBerandaContent(); jangan impor DEV_ONLY langsung dari komponen.
 
+import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
 import { HAL_PROFIL } from '@/lib/constants/routes'
 
 const STATIC = {
@@ -72,17 +74,23 @@ const STATIC = {
     },
     pengaduan: {
       title: 'Sampaikan pengaduan',
-      // Awalan nama aksesibel baris kontak, mis. "WhatsApp pengaduan +62 …".
-      whatsappLabel: 'WhatsApp pengaduan',
+      // Awalan nama aksesibel baris email, mis. "Email pengaduan kantor…".
       emailLabel: 'Email pengaduan',
+      // Teks pembaca layar untuk baris WhatsApp yang membuka tab baru.
+      newTabHint: '(tab baru)',
     },
   },
 
-  // K14: dummy dari mockup, tampil juga di production. Ganti dengan kontak asli.
+  // K14: kontak kartu pengaduan, tampil juga di production.
   complaint: {
-    whatsappLabel: '+62 812-3456-7890',
-    // Format wa.me: kode negara tanpa "+" dan tanpa spasi.
-    whatsappNumber: '6281234567890',
+    // D2 (12 Okt 2026), sementara: menu "bagikan ke WhatsApp" AddToAny untuk
+    // halaman kotak saran, bukan chat ke nomor desa. Dibuka di tab baru
+    // (permintaan pemilik). Nanti diganti nomor asli: isi whatsappUrl dengan
+    // https://wa.me/62… dan sesuaikan whatsappText.
+    whatsappUrl:
+      'https://www.addtoany.com/add_to/whatsapp?linkurl=https%3A%2F%2Fdesacibenda.id%2Fkotak-saran%2F&linkname=HUBUNGI%20KAMI&linknote=',
+    // Teks baris, sekaligus awal nama aksesibelnya.
+    whatsappText: 'Bagikan kotak saran via WhatsApp',
     email: 'kantordesacibenda@gmail.com',
   },
 
@@ -172,7 +180,7 @@ const STATIC = {
     // Teks yang sama dengan FooterDesa (FooterDesa sendiri tidak diubah).
     hours: 'Senin – Jumat, 08.00 – 16.00 WIB',
     officeLabel: 'Kantor Desa Cibenda',
-    // A32: hanya tampil bila DEV_ONLY.mapUrl ada.
+    // A32: tampil bila mapUrl diisi.
     mapLink: 'Buka di peta',
     mapHint: '(tab baru)',
   },
@@ -191,8 +199,13 @@ const STATIC = {
   // tampil juga di production (keputusan pemilik, 11 Okt 2026).
   site: {
     domain: 'https://desacibenda.id/',
-    updatedAt: '10 Oktober 2026',
+    // D3 (12 Okt 2026): bulan dan tahun saja.
+    updatedAt: 'Oktober 2026',
   },
+
+  // "Buka di peta" di kartu kantor desa. Link asli, tampil juga di production
+  // (D1, 12 Okt 2026).
+  mapUrl: 'https://maps.app.goo.gl/sVU5Xqmasq4UTJ4N6',
 
   // "Didukung oleh": logo mitra di footer, urut dari kiri ke kanan.
   // Tampil di production karena logonya sudah tersedia (keputusan pemilik, 11 Okt 2026).
@@ -254,8 +267,13 @@ const DEV_ONLY = {
     role: 'Kepala Desa Cibenda',
   },
 
-  // "Buka di peta" di kartu kantor desa.
-  mapUrl: 'https://www.google.com/maps/search/?api=1&query=Kantor+Desa+Cibenda',
+  // A33–A35: link footer ke halaman informasi (D6). Halamannya masih draf dan
+  // route-nya hanya terdaftar di dev, jadi link ikut tersembunyi di production.
+  infoLinks: [
+    { label: 'Kebijakan privasi', to: HAL_KEBIJAKAN_PRIVASI },
+    { label: 'Aksesibilitas', to: HAL_AKSESIBILITAS },
+    { label: 'PPID', to: HAL_PPID },
+  ],
 }
 
 export const DEV_ONLY_KEYS = Object.keys(DEV_ONLY)

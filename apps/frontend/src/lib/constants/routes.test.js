@@ -11,6 +11,12 @@ describe('beranda routes', () => {
     expect(routes.HAL_STATUS_SURAT).toBe('/daftar-surat-saya')
   })
 
+  it('maps the draft information pages (D6)', () => {
+    expect(routes.HAL_KEBIJAKAN_PRIVASI).toBe('/kebijakan-privasi')
+    expect(routes.HAL_AKSESIBILITAS).toBe('/aksesibilitas')
+    expect(routes.HAL_PPID).toBe('/ppid')
+  })
+
   it('builds news detail paths by id', () => {
     expect(routes.HAL_BERITA_DETAIL(12)).toBe('/berita/12')
     expect(routes.HAL_BERITA_DETAIL('a/b')).toBe('/berita/a%2Fb')

@@ -8,6 +8,7 @@ use App\Models\Letter;
 use App\Models\LetterApproval;
 use App\Models\LetterType;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -107,14 +108,15 @@ class LetterListPaginationTest extends TestCase
     public function test_index_filters_by_exact_submission_time_in_the_callers_timezone(): void
     {
         $user = User::factory()->create();
-        // 05.00 WIB tanggal 10 tersimpan sebagai 22.00 UTC tanggal 9.
+        // 05.00 WIB tanggal 10 = 22.00 UTC tanggal 9; disimpan dalam zona aplikasi.
+        $atUtc = fn (string $time) => Carbon::parse($time, 'UTC')->setTimezone(config('app.timezone'));
         $earlyMorning = Letter::factory()->create([
             'submitted_by' => $user->id,
-            'submitted_at' => '2026-10-09 22:00:00',
+            'submitted_at' => $atUtc('2026-10-09 22:00:00'),
         ]);
         Letter::factory()->create([
             'submitted_by' => $user->id,
-            'submitted_at' => '2026-10-09 10:00:00',
+            'submitted_at' => $atUtc('2026-10-09 10:00:00'),
         ]);
 
         $day = fn (string $date): string => http_build_query([
