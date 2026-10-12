@@ -17,7 +17,7 @@ import {
 import { useWargaList } from '../../features/data-warga/hooks/useWargaList'
 import { useFamilyList } from '../../features/data-warga/hooks/useFamilyList'
 import FamilyManagementPanel from '../../features/data-warga/components/FamilyManagementPanel'
-import { FooterOperator } from '../../components/layout/FooterOperator'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getOccupations } from '../../features/pekerjaan/api'
 
 const formatResidencyType = (type) => {
@@ -917,7 +917,7 @@ export default function DataWargaPage() {
         </div>
       )}
 
-      <FooterOperator />
+      <SiteFooter />
     </div>
   )
 }

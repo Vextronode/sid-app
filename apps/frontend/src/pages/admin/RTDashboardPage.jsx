@@ -25,10 +25,8 @@ import { Mail, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
-import { FooterDesa } from '@/components/layout/FooterDesa'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
-import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
 import { getGreeting } from '@/lib/utils/greeting'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
@@ -195,7 +193,7 @@ export default function RTDashboardPage() {
             FOOTER
             ====================================== */}
 
-        <FooterDesa />
+        <SiteFooter />
       </div>
 
       {/* ========================================
@@ -267,16 +265,8 @@ export default function RTDashboardPage() {
             ====================================== */}
 
         <div className="sid-mobile-footer">
-          <FooterDesa />
+          <SiteFooter />
         </div>
-
-        {/* ======================================
-            MOBILE NAVIGATION
-            ====================================== */}
-
-        <MobileBottomNav
-          links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rt', '/admin/list-rt')}
-        />
       </div>
     </>
   )

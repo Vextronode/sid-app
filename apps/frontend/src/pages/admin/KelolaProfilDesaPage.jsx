@@ -12,7 +12,7 @@ import EditProfilDesaModal from '@/features/profil-desa-admin/components/EditPro
 import EditVisiMisiModal from '@/features/profil-desa-admin/components/EditVisiMisiModal'
 import EditPerangkatDesaModal from '@/features/profil-desa-admin/components/EditPerangkatDesaModal'
 import PengesahanSuratCard from '@/features/profil-desa-admin/components/PengesahanSuratCard'
-import { FooterOperator } from '@/components/layout/FooterOperator'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
 function Avatar({ src, name, size = 'medium' }) {
   return (
@@ -150,7 +150,7 @@ export default function KelolaProfilDesaPage() {
           </div>
         </div>
 
-        <FooterOperator />
+        <SiteFooter />
       </div>
     )
   }
@@ -421,7 +421,7 @@ export default function KelolaProfilDesaPage() {
         </div>
       </div>
 
-      <FooterOperator />
+      <SiteFooter />
 
       {/* ==========================================
           MODAL PROFIL
