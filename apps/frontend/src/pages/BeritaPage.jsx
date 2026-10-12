@@ -1,6 +1,7 @@
 // ==========================================
 // BeritaPage.jsx
 // Halaman publik Berita.
+// Gaya dari public.css (kelas pb-*, di bawah .pub milik MainLayout).
 // ==========================================
 
 import { useState } from 'react'
@@ -65,150 +66,142 @@ export function BeritaPage() {
   // STATE LOADING & ERROR
   // ==========================================
 
+  const pageHead = (
+    <header className="pb-pagehead">
+      <div className="pb-container pb-pagehead-inner">
+        <h1>Berita Desa Cibenda</h1>
+        <p>Kabar dan informasi terbaru dari Desa Cibenda.</p>
+      </div>
+    </header>
+  )
+
   if (loading) {
     return (
-      <div className="sid-kelola-berita-page">
-        <main className="sid-kelola-berita-content">
-          <PageLoader label="Memuat berita..." />
-        </main>
+      <div className="pb-container pb-page">
+        <PageLoader label="Memuat berita..." />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="sid-kelola-berita-page">
-        <main className="sid-kelola-berita-content">
-          <p role="alert" style={{ color: '#d32f2f' }}>
+      <>
+        {pageHead}
+        <div className="pb-container pb-page">
+          <p role="alert" className="pb-state pb-state--error">
             {error}
           </p>
-        </main>
-      </div>
+        </div>
+      </>
     )
   }
 
   if (news.length === 0) {
     return (
-      <div className="sid-kelola-berita-page">
-        <main className="sid-kelola-berita-content">
-          <header className="sid-kelola-berita-header">
-            <div className="sid-kelola-berita-header-info">
-              <h1>Berita Desa Cibenda</h1>
-              <p>Kabar dan informasi terbaru dari Desa Cibenda.</p>
-            </div>
-          </header>
-
-          <div className="sid-kelola-berita-empty" role="status">
-            <Newspaper size={28} />
+      <>
+        {pageHead}
+        <div className="pb-container pb-page">
+          <div className="pb-state" role="status">
+            <Newspaper size={32} aria-hidden="true" />
             <p>Belum ada berita yang dipublikasikan.</p>
           </div>
-        </main>
-      </div>
+        </div>
+      </>
     )
   }
 
   return (
-    <div className="sid-kelola-berita-page">
-      <main className="sid-kelola-berita-content">
-        {/* ======================================
-            HEADER
-        ====================================== */}
+    <>
+      {/* ======================================
+          HEADER
+      ====================================== */}
 
-        <header className="sid-kelola-berita-header">
-          <div className="sid-kelola-berita-header-info">
-            <h1>Berita Desa Cibenda</h1>
+      {pageHead}
 
-            <p>Kabar dan informasi terbaru dari Desa Cibenda.</p>
-          </div>
-        </header>
-
+      <div className="pb-container pb-page">
         {/* ======================================
             FEATURE + TERBARU
         ====================================== */}
 
-        <section className="sid-kelola-berita-feature-grid">
+        <section className="pb-feature">
           {/* ====================================
               BERITA UTAMA
           ==================================== */}
 
-          <article className="sid-kelola-berita-feature-card">
-            <div className="sid-kelola-berita-feature-image">
+          <article className="pb-feature-card">
+            <div className="pb-feature-image">
               {beritaUtama?.imageUrl ? (
                 <img src={beritaUtama.imageUrl} alt={beritaUtama.title} />
               ) : (
-                <div className="sid-kelola-berita-image-placeholder">
-                  <Newspaper size={48} />
+                <div className="pb-placeholder">
+                  <Newspaper size={48} aria-hidden="true" />
                 </div>
               )}
-
-              <div className="sid-kelola-berita-feature-overlay" />
-
-              <div className="sid-kelola-berita-feature-content">
-                <div className="sid-kelola-berita-feature-meta">
-                  {beritaUtama?.categories?.map((category) => (
-                    <span key={category} className="sid-kelola-berita-category featured">
-                      {category}
-                    </span>
-                  ))}
-
-                  {beritaUtama?.date && (
-                    <span className="sid-kelola-berita-date featured">{beritaUtama.date}</span>
-                  )}
-                </div>
-
-                <h2>{beritaUtama?.title ?? 'Belum ada berita utama'}</h2>
-              </div>
             </div>
 
-            {/* FEATURE FOOTER */}
+            <div className="pb-feature-body">
+              <div className="pb-meta">
+                {beritaUtama?.categories?.map((category) => (
+                  <span key={category} className="pb-chip">
+                    {category}
+                  </span>
+                ))}
 
-            {beritaUtama && (
-              <div className="sid-kelola-berita-feature-footer">
+                {beritaUtama?.date && <span>{beritaUtama.date}</span>}
+              </div>
+
+              <h2>{beritaUtama?.title ?? 'Belum ada berita utama'}</h2>
+
+              {beritaUtama && (
                 <button
                   type="button"
                   onClick={() => handleDetail(beritaUtama.id)}
-                  className="sid-kelola-berita-read-more"
+                  className="pb-read-more"
                 >
                   Baca Selengkapnya
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </article>
 
           {/* ====================================
               BERITA TERBARU
           ==================================== */}
 
-          <aside className="sid-kelola-berita-latest">
-            <h3 className="sid-kelola-berita-section-title">Terbaru</h3>
+          <aside>
+            <h3 className="pb-aside-title">Terbaru</h3>
 
-            <div className="sid-kelola-berita-latest-list">
+            <div className="pb-latest-list">
               {beritaTerbaru.length === 0 ? (
-                <p className="sid-kelola-berita-empty-small">Belum ada berita terbaru.</p>
+                <p className="pb-meta">Belum ada berita terbaru.</p>
               ) : (
                 beritaTerbaru.map((b) => (
                   <button
                     key={b.id}
                     type="button"
                     onClick={() => handleDetail(b.id)}
-                    className="sid-kelola-berita-latest-item"
+                    className="pb-latest-item"
                   >
-                    <div className="sid-kelola-berita-latest-image">
+                    <div className="pb-latest-image">
                       {b.imageUrl ? (
                         <img src={b.imageUrl} alt={b.title} />
                       ) : (
-                        <div className="sid-kelola-berita-latest-placeholder">
-                          <Newspaper size={20} />
+                        <div className="pb-placeholder">
+                          <Newspaper size={22} aria-hidden="true" />
                         </div>
                       )}
                     </div>
 
-                    <div className="sid-kelola-berita-latest-content">
-                      {b.category && <p className="sid-kelola-berita-category">{b.category}</p>}
+                    <div className="pb-latest-content">
+                      {b.category && (
+                        <span className="pb-meta">
+                          <span className="pb-chip">{b.category}</span>
+                        </span>
+                      )}
 
-                      <p className="sid-kelola-berita-latest-title">{b.title}</p>
+                      <p className="pb-latest-title">{b.title}</p>
 
-                      <span className="sid-kelola-berita-date">{b.date}</span>
+                      <span className="pb-meta">{b.date}</span>
                     </div>
                   </button>
                 ))
@@ -222,7 +215,7 @@ export function BeritaPage() {
         ====================================== */}
 
         <section>
-          <div className="sid-kelola-berita-management-header">
+          <div className="pb-list-head">
             <div>
               <h2>Semua Berita</h2>
 
@@ -231,14 +224,14 @@ export function BeritaPage() {
 
             {/* PAGINATION */}
 
-            <div className="sid-kelola-berita-pagination-buttons">
+            <div className="pb-pager">
               <button
                 type="button"
                 onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                 disabled={safeCurrentPage === 1}
                 aria-label="Halaman sebelumnya"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={20} aria-hidden="true" />
               </button>
 
               <button
@@ -247,7 +240,7 @@ export function BeritaPage() {
                 disabled={safeCurrentPage === totalPages}
                 aria-label="Halaman berikutnya"
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={20} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -256,69 +249,69 @@ export function BeritaPage() {
               BERITA GRID
           ==================================== */}
 
-          <div className="sid-kelola-berita-grid">
-            {paginated.length === 0 ? (
-              <div className="sid-kelola-berita-empty">
-                <Newspaper size={28} />
+          {paginated.length === 0 ? (
+            <div className="pb-state">
+              <Newspaper size={32} aria-hidden="true" />
 
-                <p>Belum ada berita yang dipublikasikan.</p>
-              </div>
-            ) : (
-              paginated.map((b) => (
+              <p>Belum ada berita yang dipublikasikan.</p>
+            </div>
+          ) : (
+            <div className="pb-news-grid">
+              {paginated.map((b) => (
                 <button
                   key={b.id}
                   type="button"
                   onClick={() => handleDetail(b.id)}
-                  className="sid-kelola-berita-card"
+                  className="pb-news-card"
                 >
                   {/* IMAGE */}
 
-                  <div className="sid-kelola-berita-card-image">
+                  <div className="pb-news-card-image">
                     {b.imageUrl ? (
                       <img src={b.imageUrl} alt={b.title} />
                     ) : (
-                      <div className="sid-kelola-berita-card-placeholder">
-                        <Newspaper size={28} />
+                      <div className="pb-placeholder">
+                        <Newspaper size={32} aria-hidden="true" />
                       </div>
                     )}
                   </div>
 
                   {/* CONTENT */}
 
-                  <div className="sid-kelola-berita-card-content">
-                    <div className="sid-kelola-berita-card-meta">
+                  <div className="pb-news-card-content">
+                    <div className="pb-meta">
                       {b.categories?.map((category) => (
-                        <span key={category} className="sid-kelola-berita-category">
+                        <span key={category} className="pb-chip">
                           {category}
                         </span>
                       ))}
 
-                      <span className="sid-kelola-berita-date">{b.date}</span>
+                      <span>{b.date}</span>
                     </div>
 
                     <h3>{b.title}</h3>
 
-                    <p>{b.excerpt}</p>
+                    <p className="pb-news-card-excerpt">{b.excerpt}</p>
 
-                    <span className="sid-kelola-berita-read-more">Baca Selengkapnya</span>
+                    <span className="pb-read-more">Baca Selengkapnya</span>
                   </div>
                 </button>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* ====================================
               PAGINATION INFO
           ==================================== */}
 
           {kelolaList.length > 0 && (
-            <div className="sid-kelola-berita-pagination-info">
+            <div className="pb-pagination-info">
               Menampilkan {start + 1}–{Math.min(start + ITEMS_PER_PAGE, kelolaList.length)} dari{' '}
               {kelolaList.length} berita
             </div>
           )}
         </section>
-      </main>
-    </div>
+      </div>
+    </>
   )
 }

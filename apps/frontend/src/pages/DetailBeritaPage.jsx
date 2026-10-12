@@ -1,7 +1,7 @@
 // ==========================================
 // DetailBeritaPage.jsx
 // Halaman detail berita publik.
-// Styling menggunakan Global CSS SID.
+// Gaya dari public.css (kelas pb-*, di bawah .pub milik MainLayout).
 // ==========================================
 
 import { useParams } from 'react-router-dom'
@@ -23,13 +23,19 @@ export function DetailBeritaPage() {
   // ==========================================
 
   if (loading) {
-    return <PageLoader label="Memuat berita..." />
+    return (
+      <div className="pb-container pb-page">
+        <PageLoader label="Memuat berita..." />
+      </div>
+    )
   }
 
   if (error) {
     return (
-      <div className="sid-detail-berita-not-found">
-        <p role="alert">{error}</p>
+      <div className="pb-container pb-page">
+        <p role="alert" className="pb-state pb-state--error">
+          {error}
+        </p>
       </div>
     )
   }
@@ -54,8 +60,8 @@ export function DetailBeritaPage() {
 
   if (!beritaDetail) {
     return (
-      <div className="sid-detail-berita-not-found">
-        <p>Berita tidak ditemukan.</p>
+      <div className="pb-container pb-page">
+        <p className="pb-state">Berita tidak ditemukan.</p>
       </div>
     )
   }
@@ -65,22 +71,20 @@ export function DetailBeritaPage() {
   // ==========================================
 
   return (
-    <div className="sid-detail-berita-page">
-      <main className="sid-detail-berita-content">
-        <div className="sid-detail-berita-grid">
-          {/* ====================================
+    <div className="pb-container pb-page">
+      <div className="pb-article-grid">
+        {/* ====================================
               KONTEN BERITA
           ==================================== */}
 
-          <MainContent berita={beritaDetail} />
+        <MainContent berita={beritaDetail} />
 
-          {/* ====================================
+        {/* ====================================
               SIDEBAR BERITA
           ==================================== */}
 
-          <SidebarBerita beritaLain={beritaLain} />
-        </div>
-      </main>
+        <SidebarBerita beritaLain={beritaLain} />
+      </div>
     </div>
   )
 }
