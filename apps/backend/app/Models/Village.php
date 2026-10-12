@@ -22,10 +22,15 @@ class Village extends Model
         'province',
         'postal_code',
         'email',
+        'area_ha',
         'stamp_img',
         'history',
         'vision',
         'mission',
+    ];
+
+    protected $casts = [
+        'area_ha' => 'float',
     ];
 
     public function hamlets(): HasMany

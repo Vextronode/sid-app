@@ -26,6 +26,7 @@ class VillageResource extends JsonResource
             'province' => $this->province,
             'postal_code' => $this->postal_code,
             'email' => $this->email,
+            'area_ha' => $this->area_ha,
             'has_stamp_img' => $this->stamp_img !== null,
             'history' => $this->history,
             'vision' => $this->vision,

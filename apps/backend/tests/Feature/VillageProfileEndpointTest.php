@@ -70,12 +70,34 @@ class VillageProfileEndpointTest extends TestCase
             'name' => 'Desa Cibenda Baru',
             'head_name' => 'H. Ridwan Saepudin',
             'vision' => 'Menjadi desa mandiri, maju, dan sejahtera',
+            'area_ha' => 759.319,
         ]);
 
         $response->assertOk()
             ->assertJsonPath('data.name', 'Desa Cibenda Baru')
             ->assertJsonPath('data.vision', 'Menjadi desa mandiri, maju, dan sejahtera')
+            ->assertJsonPath('data.area_ha', 759.319)
             ->assertJsonPath('data.has_stamp_img', false);
+    }
+
+    #[Test]
+    public function village_area_is_optional_and_must_be_a_non_negative_number(): void
+    {
+        [$village, $user] = $this->villageWithUser();
+        $payload = ['name' => 'Desa Cibenda', 'head_name' => 'H. Ridwan Saepudin'];
+
+        foreach (['seluas itu', -1] as $invalid) {
+            $this->actingAs($user)
+                ->patchJson('/api/villages/profile', [...$payload, 'area_ha' => $invalid])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors(['area_ha']);
+        }
+
+        $this->actingAs($user)
+            ->patchJson('/api/villages/profile', [...$payload, 'area_ha' => null])
+            ->assertOk()
+            ->assertJsonPath('data.area_ha', null);
+        $this->assertNull($village->fresh()->area_ha);
     }
 
     #[Test]
