@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom'
 
 export function NewsCard({ data }) {
   return (
@@ -16,7 +16,7 @@ export function NewsCard({ data }) {
       </div>
 
       {/* Judul */}
-      <h3 className="font-bold text-gray-800 text-[11px] md:text-sm text-center mb-2 line-clamp-2 group-hover:text-[#4CAF4F] transition-colors">
+      <h3 className="font-bold text-gray-800 text-[11px] md:text-sm text-center mb-2 line-clamp-2 group-hover:text-[#163e6b] transition-colors">
         {data.title}
       </h3>
 
@@ -31,5 +31,5 @@ export function NewsCard({ data }) {
         <span className="whitespace-nowrap">{data.date}</span>
       </div>
     </Link>
-  );
+  )
 }
