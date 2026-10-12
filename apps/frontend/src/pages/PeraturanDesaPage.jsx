@@ -1,6 +1,7 @@
 // ==========================================
 // PeraturanDesaPage.jsx
 // Halaman publik daftar peraturan desa.
+// Gaya dari public.css (kelas pb-*, di bawah .pub milik MainLayout).
 // ==========================================
 
 import { useEffect, useState } from 'react'
@@ -45,40 +46,42 @@ export function PeraturanDesaPage() {
   }, [])
 
   return (
-    <div className="sid-peraturan-page">
-      <main className="sid-peraturan-content">
-        <h1 className="sid-beranda-section-title">Peraturan Desa</h1>
-        <p className="sid-peraturan-description">
-          Daftar peraturan yang berlaku di desa. Ketuk judul untuk membaca isinya.
-        </p>
+    <>
+      <header className="pb-pagehead">
+        <div className="pb-container pb-pagehead-inner">
+          <h1>Peraturan Desa</h1>
+          <p>Daftar peraturan yang berlaku di desa. Ketuk judul untuk membaca isinya.</p>
+        </div>
+      </header>
 
+      <div className="pb-container pb-page">
         {loading ? (
           <PageLoader label="Memuat peraturan desa..." />
         ) : error ? (
-          <p className="sid-beranda-news-state" role="alert">
+          <p className="pb-state pb-state--error" role="alert">
             {error}
           </p>
         ) : regulations.length === 0 ? (
-          <p className="sid-beranda-news-state" role="status">
+          <p className="pb-state" role="status">
             Belum ada peraturan desa yang dipublikasikan.
           </p>
         ) : (
-          <ul className="sid-peraturan-list">
+          <ul className="pb-reg-list">
             {regulations.map((item) => {
               const isOpen = openId === item.id
               const enactedDate = formatDate(item.enacted_date)
 
               return (
-                <li key={item.id} className="sid-peraturan-item">
+                <li key={item.id} className="pb-reg-item">
                   <button
                     type="button"
-                    className="sid-peraturan-toggle"
+                    className="pb-reg-toggle"
                     aria-expanded={isOpen}
                     onClick={() => setOpenId(isOpen ? null : item.id)}
                   >
                     <ScrollText size={20} aria-hidden="true" />
 
-                    <span className="sid-peraturan-heading">
+                    <span className="pb-reg-heading">
                       <strong>{item.title}</strong>
                       <span>
                         Nomor {item.regulation_number}
@@ -86,16 +89,20 @@ export function PeraturanDesaPage() {
                       </span>
                     </span>
 
-                    {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    {isOpen ? (
+                      <ChevronUp size={20} aria-hidden="true" />
+                    ) : (
+                      <ChevronDown size={20} aria-hidden="true" />
+                    )}
                   </button>
 
-                  {isOpen && <div className="sid-peraturan-body">{item.content}</div>}
+                  {isOpen && <div className="pb-reg-body">{item.content}</div>}
                 </li>
               )
             })}
           </ul>
         )}
-      </main>
-    </div>
+      </div>
+    </>
   )
 }

@@ -1,9 +1,9 @@
 // ==========================================
 // ProfilDesaPage.jsx
 // Halaman publik Profil Desa.
-// Tampilan dibuat SAMA dengan KelolaProfilDesaPage,
-// tetapi tanpa tombol edit.
-// Styling menggunakan Global CSS SID.
+// Isinya sama dengan KelolaProfilDesaPage (tanpa tombol edit),
+// tetapi tampilannya mengikuti halaman publik lain.
+// Gaya dari public.css (kelas pb-*, di bawah .pub milik MainLayout).
 //
 // Data diambil dari API /api/public/village-profile.
 // Field yang belum dikirim backend ditampilkan
@@ -12,7 +12,7 @@
 
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Users, Building2, Home, Eye, ClipboardList } from 'lucide-react'
+import { Users, Building2, Home } from 'lucide-react'
 
 import api from '../lib/api' // Integrasi API Axios
 import { publicVillageParams } from '../shared/lib/api/publicVillageParams'
@@ -22,36 +22,42 @@ import { formatVillageName } from '@/shared/lib/villageName'
 // Teks untuk data yang belum dikirim backend
 const NA = 'Belum tersedia'
 
-// Tampilan seragam untuk data yang belum dikirim backend
-// (italic + abu-abu, sama seperti teks Visi)
+// Tampilan seragam untuk data yang belum dikirim backend (miring, abu-abu).
 function NotAvailable({ text = NA }) {
-  return <p className="sid-profil-desa-visi-text">{text}</p>
+  return <p className="pb-na">{text}</p>
 }
 
 function Avatar({ src, name, size = 'medium' }) {
   return (
-    <div className={`sid-profil-desa-avatar sid-profil-desa-avatar-${size}`}>
-      {src ? (
-        <img src={src} alt={name} />
-      ) : (
-        <Users size={20} className="sid-profil-desa-avatar-placeholder" />
-      )}
+    <div className={`pb-avatar pb-avatar--${size}`}>
+      {src ? <img src={src} alt={name} /> : <Users size={28} aria-hidden="true" />}
     </div>
   )
 }
 
 function OfficialCard({ official, className = '' }) {
   return (
-    <div className={`sid-profil-desa-official-card ${className}`.trim()}>
+    <div className={`pb-official ${className}`.trim()}>
       <Avatar src={official.foto} name={official.nama} size="large" />
 
-      {official.nama ? (
-        <p className="sid-profil-desa-official-name">{official.nama}</p>
-      ) : (
-        <NotAvailable />
-      )}
+      {official.nama ? <p className="pb-official-name">{official.nama}</p> : <NotAvailable />}
 
-      <p className="sid-profil-desa-official-role">{official.jabatan}</p>
+      <p className="pb-official-role">{official.jabatan}</p>
+    </div>
+  )
+}
+
+function StatItem({ icon: Icon, label, children }) {
+  return (
+    <div className="pb-profile-stat">
+      <div className="pb-profile-stat-icon">
+        <Icon size={22} aria-hidden="true" />
+      </div>
+
+      <div>
+        <p className="pb-profile-stat-label">{label}</p>
+        {children}
+      </div>
     </div>
   )
 }
@@ -215,72 +221,60 @@ export function ProfilDesaPage() {
 
   if (loading) {
     return (
-      <div className="sid-profil-desa-page">
-        <div className="sid-profil-desa-content">
-          <PageLoader label="Memuat profil desa..." />
-        </div>
+      <div className="pb-container pb-page">
+        <PageLoader label="Memuat profil desa..." />
       </div>
     )
   }
 
   if (error || !data) {
     return (
-      <div className="sid-profil-desa-page">
-        <div className="sid-profil-desa-content">
-          <p style={{ color: '#d32f2f' }}>{error || 'Data profil desa tidak tersedia.'}</p>
-        </div>
+      <div className="pb-container pb-page">
+        <p className="pb-state pb-state--error">{error || 'Data profil desa tidak tersedia.'}</p>
       </div>
     )
   }
 
   return (
-    <div className="sid-profil-desa-page">
-      <div className="sid-profil-desa-content">
-        {/* ==========================================
-            HEADER
-            ========================================== */}
+    <>
+      {/* ==========================================
+          HEADER
+          ========================================== */}
 
-        <div className="sid-profil-desa-header">
-          <div className="sid-profil-desa-header-info">
-            <h1>Profil {data.name ?? 'Desa'}</h1>
+      <header className="pb-pagehead">
+        <div className="pb-container pb-pagehead-inner">
+          <h1>Profil {data.name ?? 'Desa'}</h1>
 
+          <p>
+            Halaman resmi informasi tata kelola dan capaian strategis {data.name ?? 'desa'} untuk
+            transparansi publik.
+          </p>
+
+          {(data.address || data.phone) && (
             <p>
-              Halaman resmi informasi tata kelola dan capaian strategis {data.name ?? 'desa'} untuk
-              transparansi publik.
+              {data.address}
+              {data.address && data.phone ? ' · ' : ''}
+              {data.phone && `Telp. ${data.phone}`}
             </p>
-
-            {(data.address || data.phone) && (
-              <p>
-                {data.address}
-                {data.address && data.phone ? ' · ' : ''}
-                {data.phone && `Telp. ${data.phone}`}
-              </p>
-            )}
-          </div>
+          )}
         </div>
+      </header>
 
+      <div className="pb-container pb-page">
         {/* ==========================================
             HERO + STATS
             ========================================== */}
 
-        <div className="sid-profil-desa-hero-grid">
+        <section className="pb-profile-hero">
           {/* HERO */}
 
-          <div className="sid-profil-desa-hero">
-            {data.heroImage ? (
-              <img
-                src={data.heroImage}
-                alt={`Profil ${data.name ?? 'desa'}`}
-                className="sid-profil-desa-hero-image"
-              />
-            ) : (
-              <div className="sid-profil-desa-hero-placeholder" />
-            )}
+          <div className="pb-profile-photo">
+            {data.heroImage && <img src={data.heroImage} alt={`Profil ${data.name ?? 'desa'}`} />}
 
-            <div className="sid-profil-desa-hero-overlay" />
+            <div className="pb-profile-photo-overlay" />
 
-            <div className="sid-profil-desa-hero-content">
-              <span className="sid-profil-desa-hero-badge">Profil Desa</span>
+            <div className="pb-profile-story">
+              <span className="pb-profile-story-label">Sejarah singkat</span>
 
               <h2>{data.name ?? 'Desa'}</h2>
 
@@ -290,163 +284,111 @@ export function ProfilDesaPage() {
 
           {/* STATS */}
 
-          <div className="sid-profil-desa-stats">
-            {/* TOTAL PENDUDUK */}
+          <div className="pb-profile-stats">
+            <StatItem icon={Users} label="Total Penduduk">
+              {data.totalPenduduk != null ? (
+                <p className="pb-profile-stat-value">
+                  {Number(data.totalPenduduk).toLocaleString('id-ID')}
+                </p>
+              ) : (
+                <NotAvailable />
+              )}
+            </StatItem>
 
-            <div className="sid-profil-desa-stat-card">
-              <div className="sid-profil-desa-stat-icon population">
-                <Users size={18} />
-              </div>
+            <StatItem icon={Building2} label="Luas Wilayah">
+              {data.luasWilayah != null ? (
+                <p className="pb-profile-stat-value">
+                  {Number(data.luasWilayah).toLocaleString('id-ID', { maximumFractionDigits: 3 })}{' '}
+                  ha
+                </p>
+              ) : (
+                <NotAvailable />
+              )}
+            </StatItem>
 
-              <div className="sid-profil-desa-stat-content">
-                <p className="sid-profil-desa-stat-label">Total Penduduk</p>
-
-                {data.totalPenduduk != null ? (
-                  <p className="sid-profil-desa-stat-value">
-                    {Number(data.totalPenduduk).toLocaleString('id-ID')}
-                  </p>
-                ) : (
-                  <NotAvailable />
-                )}
-              </div>
-            </div>
-
-            {/* LUAS WILAYAH */}
-
-            <div className="sid-profil-desa-stat-card">
-              <div className="sid-profil-desa-stat-icon area">
-                <Building2 size={18} />
-              </div>
-
-              <div className="sid-profil-desa-stat-content">
-                <p className="sid-profil-desa-stat-label">Luas Wilayah</p>
-
-                {data.luasWilayah != null ? (
-                  <p className="sid-profil-desa-stat-value">
-                    {Number(data.luasWilayah).toLocaleString('id-ID', { maximumFractionDigits: 3 })}{' '}
-                    ha
-                  </p>
-                ) : (
-                  <NotAvailable />
-                )}
-              </div>
-            </div>
-
-            {/* JUMLAH DUSUN */}
-
-            <div className="sid-profil-desa-stat-card">
-              <div className="sid-profil-desa-stat-icon hamlet">
-                <Home size={18} />
-              </div>
-
-              <div className="sid-profil-desa-stat-content">
-                <p className="sid-profil-desa-stat-label">Jumlah Dusun</p>
-
-                {data.jumlahDusun != null ? (
-                  <p className="sid-profil-desa-stat-value">
-                    {String(data.jumlahDusun).padStart(2, '0')}
-                  </p>
-                ) : (
-                  <NotAvailable />
-                )}
-              </div>
-            </div>
+            <StatItem icon={Home} label="Jumlah Dusun">
+              {data.jumlahDusun != null ? (
+                <p className="pb-profile-stat-value">{String(data.jumlahDusun).padStart(2, '0')}</p>
+              ) : (
+                <NotAvailable />
+              )}
+            </StatItem>
           </div>
-        </div>
+        </section>
 
         {/* ==========================================
             VISI & MISI
             ========================================== */}
 
-        <div className="sid-profil-desa-card sid-profil-desa-visi-misi">
-          <div className="sid-profil-desa-visi-misi-grid">
-            {/* VISI */}
+        <section className="pb-section pb-visi-misi">
+          {/* VISI */}
 
-            <div className="sid-profil-desa-visi">
-              <div className="sid-profil-desa-section-heading">
-                <div className="sid-profil-desa-section-icon">
-                  <Eye size={16} />
-                </div>
+          <div>
+            <h2 className="pb-subtitle">Visi</h2>
 
-                <h3>Visi</h3>
-              </div>
-
-              {data.vision ? (
-                <p className="sid-profil-desa-visi-text">"{data.vision}"</p>
-              ) : (
-                <NotAvailable />
-              )}
-            </div>
-
-            {/* MISI */}
-
-            <div className="sid-profil-desa-misi">
-              <div className="sid-profil-desa-section-heading">
-                <div className="sid-profil-desa-section-icon">
-                  <ClipboardList size={16} />
-                </div>
-
-                <h3>Misi</h3>
-              </div>
-
-              {data.misi.length > 0 ? (
-                <ol className="sid-profil-desa-misi-list">
-                  {data.misi.map((item, i) => (
-                    <li key={i}>
-                      <span>{i + 1}</span>
-
-                      <p>{item}</p>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <NotAvailable />
-              )}
-            </div>
+            {data.vision ? (
+              <p className="pb-visi-text">&ldquo;{data.vision}&rdquo;</p>
+            ) : (
+              <NotAvailable />
+            )}
           </div>
-        </div>
+
+          {/* MISI */}
+
+          <div>
+            <h2 className="pb-subtitle">Misi</h2>
+
+            {data.misi.length > 0 ? (
+              <ol className="pb-misi-list">
+                {data.misi.map((item, i) => (
+                  <li key={i}>
+                    <span aria-hidden="true">{i + 1}</span>
+
+                    <p>{item}</p>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <NotAvailable />
+            )}
+          </div>
+        </section>
 
         {/* ==========================================
             PERANGKAT DESA
             ========================================== */}
 
-        <div id="perangkat-desa" className="sid-profil-desa-card sid-profil-desa-perangkat">
-          <div className="sid-profil-desa-perangkat-header">
-            <div className="sid-profil-desa-section-heading">
-              <div className="sid-profil-desa-section-icon">
-                <Users size={16} />
-              </div>
+        <section id="perangkat-desa" className="pb-section">
+          <h2 className="pb-section-title">Perangkat Desa</h2>
 
-              <h3>Perangkat Desa</h3>
+          <div className="pb-org">
+            {/* KEPALA DESA */}
+
+            <div className="pb-org-row">
+              <OfficialCard official={data.kepalaDesa} className="pb-official--head" />
             </div>
-          </div>
 
-          {/* KEPALA DESA */}
+            {/* SEKRETARIS DESA */}
 
-          <div className="sid-profil-desa-officials-row">
-            <OfficialCard official={data.kepalaDesa} className="sid-profil-desa-kepala-card" />
-          </div>
+            <div className="pb-org-row">
+              <OfficialCard official={data.sekretarisDesa} />
+            </div>
 
-          {/* SEKRETARIS DESA */}
+            {/* KASI / KAUR / STAF */}
 
-          <div className="sid-profil-desa-officials-row">
-            <OfficialCard official={data.sekretarisDesa} />
-          </div>
-
-          {/* KASI / KAUR / STAF */}
-
-          <div className="sid-profil-desa-officials-row sid-profil-desa-officials-row-last">
-            {data.perangkatList.map((p) => (
-              <OfficialCard key={p.id} official={p} />
-            ))}
+            <div className="pb-org-row">
+              {data.perangkatList.map((p) => (
+                <OfficialCard key={p.id} official={p} />
+              ))}
+            </div>
           </div>
 
           {/* KADUS */}
 
-          <p className="sid-profil-desa-kadus-title">Kepala Dusun (Kadus)</p>
+          <h3 className="pb-kadus-title">Kepala Dusun (Kadus)</h3>
 
           {data.kadusList.length > 0 ? (
-            <div className="sid-profil-desa-officials-row sid-profil-desa-officials-row-end">
+            <div className="pb-org-grid">
               {data.kadusList.map((k) => (
                 <OfficialCard key={k.id} official={k} />
               ))}
@@ -454,8 +396,8 @@ export function ProfilDesaPage() {
           ) : (
             <NotAvailable />
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </>
   )
 }

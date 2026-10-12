@@ -1,22 +1,32 @@
+// Isi detail berita. Gaya dari public.css (kelas pb-*).
 export function MainContent({ berita }) {
   return (
-    <div className="sid-berita-detail-main">
-      <h1 className="sid-berita-detail-title">{berita.title}</h1>
+    <article>
+      <header className="pb-article-head">
+        {(berita.categories?.length > 0 || berita.date) && (
+          <div className="pb-meta">
+            {berita.categories?.map((category) => (
+              <span key={category} className="pb-chip">
+                {category}
+              </span>
+            ))}
+            {berita.date && <span>{berita.date}</span>}
+          </div>
+        )}
+        <h1 className="pb-article-title">{berita.title}</h1>
+      </header>
 
       {berita.imageUrl && (
-        <div className="sid-berita-detail-image-wrapper">
-          <img src={berita.imageUrl} alt={berita.title} className="sid-berita-detail-image" />
+        <div className="pb-article-image">
+          <img src={berita.imageUrl} alt={berita.title} />
         </div>
       )}
 
-      <div className="sid-berita-detail-description">
-        <h3 className="sid-berita-detail-description-title">Deskripsi</h3>
-        <div className="sid-berita-detail-content">
-          {berita.content?.map((text, idx) => (
-            <p key={idx}>{text}</p>
-          ))}
-        </div>
+      <div className="pb-article-body">
+        {berita.content?.map((text, idx) => (
+          <p key={idx}>{text}</p>
+        ))}
       </div>
-    </div>
+    </article>
   )
 }
