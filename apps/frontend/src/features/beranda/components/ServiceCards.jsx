@@ -32,8 +32,10 @@ function CardIcon({ icon: Icon, tone }) {
 // - Syarat dokumen: belum ada halamannya, jadi bukan link dan tanpa lift (K3).
 // - Pengaduan: kartu tidak bisa diklik; hanya baris WA dan email (K14). Baris WA
 //   (D2) membuka menu bagikan AddToAny di tab baru; nama aksesibel = teksnya.
-export function ServiceCards({ content }) {
+//   Email dari data desa (village.email); tanpa email barisnya tidak dirender.
+export function ServiceCards({ content, village }) {
   const { services, complaint } = content
+  const email = village?.email
   const ajukanHref = useLoginAwareHref(HAL_AJUKAN_SURAT)
   const statusHref = useLoginAwareHref(HAL_STATUS_SURAT)
 
@@ -83,16 +85,18 @@ export function ServiceCards({ content }) {
                 <span className="bd-visually-hidden">{services.pengaduan.newTabHint}</span>
               </span>
             </a>
-            <a
-              href={`mailto:${complaint.email}`}
-              className="bd-service-contact"
-              aria-label={`${services.pengaduan.emailLabel} ${complaint.email}`}
-            >
-              <span className="bd-service-contact-icon bd-service-contact-icon--primary">
-                <Mail size={20} aria-hidden="true" />
-              </span>
-              <EmailText email={complaint.email} />
-            </a>
+            {email && (
+              <a
+                href={`mailto:${email}`}
+                className="bd-service-contact"
+                aria-label={`${services.pengaduan.emailLabel} ${email}`}
+              >
+                <span className="bd-service-contact-icon bd-service-contact-icon--primary">
+                  <Mail size={20} aria-hidden="true" />
+                </span>
+                <EmailText email={email} />
+              </a>
+            )}
           </div>
         </li>
       </ul>

@@ -43,7 +43,12 @@ describe('AppHeader', () => {
     vi.clearAllMocks()
     logout.isLoggingOut = false
     usePublicVillageInfo.mockReturnValue({
-      village: { name: 'Cibenda', district: 'Parigi', regency: 'Pangandaran' },
+      village: {
+        name: 'Desa Cibenda',
+        district: 'Parigi',
+        regency: 'Pangandaran',
+        logo_url: '/logo.webp',
+      },
     })
   })
 

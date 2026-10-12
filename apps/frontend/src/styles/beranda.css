@@ -20,9 +20,9 @@
   /* ===== Warna ===== */
   --bd-color-ink: #17212b;
   --bd-color-muted: #4a5563;
-  --bd-color-bg: #f6f7f3;
+  --bd-color-bg: #f5f7fa;
   --bd-color-surface: #ffffff;
-  --bd-color-border: #dde2da;
+  --bd-color-border: #dde3ea;
   --bd-color-primary: #163e6b;
   --bd-color-primary-hover: #0e2a4a;
   --bd-color-primary-tint: #e8eef5;
@@ -30,14 +30,15 @@
   --bd-color-on-primary-muted: #d5e0ec;
   /* Garis putus-putus placeholder logo mitra di footer. */
   --bd-color-on-primary-faint: rgba(255, 255, 255, 0.5);
-  --bd-color-accent: #2e6b34;
-  --bd-color-accent-tint: #eaf0e6;
+  /* Aksen memakai biru publik, bukan hijau (permintaan pemilik, 12 Okt 2026). */
+  --bd-color-accent: #163e6b;
+  --bd-color-accent-tint: #e8eef5;
   --bd-color-on-accent: #ffffff;
-  --bd-color-hero-fallback: #1f3a2e;
-  --bd-color-hero-overlay: rgba(12, 24, 18, 0.45);
+  --bd-color-hero-fallback: #13263d;
+  --bd-color-hero-overlay: rgba(10, 20, 34, 0.45);
   --bd-color-on-hero: #ffffff;
-  /* Paragraf hero, kredit foto, dan pil sapaan (nilai dari mockup). */
-  --bd-color-on-hero-muted: #e6eee8;
+  /* Paragraf hero, kredit foto, dan pil sapaan. */
+  --bd-color-on-hero-muted: #e6ecf3;
   --bd-color-hero-pill-bg: rgba(255, 255, 255, 0.14);
   --bd-color-hero-pill-border: rgba(255, 255, 255, 0.35);
   --bd-color-announce-bg: #fff4d6;
@@ -147,7 +148,7 @@
   --bd-welcome-photo-width: 200px;
   --bd-welcome-photo-height: 240px;
   /* Placeholder foto Kepala Desa (nilai dari mockup). */
-  --bd-color-photo-placeholder: #c8d6c2;
+  --bd-color-photo-placeholder: #c9d4e0;
   --bd-contact-card-min: 260px;
 
   /* Logo mitra di footer. */
@@ -197,7 +198,7 @@
     --bd-welcome-pad: 24px;
     /* Di layar sempit judul hero jatuh di atas langit yang terang: overlay
        dinaikkan agar kontras tetap ≥ 4.5:1 (02-design-tokens.md). */
-    --bd-color-hero-overlay: rgba(12, 24, 18, 0.6);
+    --bd-color-hero-overlay: rgba(10, 20, 34, 0.6);
   }
 }
 
@@ -303,6 +304,18 @@
   background: none;
 }
 
+.bd-root.bd-chrome--sticky {
+  position: sticky;
+  top: 0;
+  z-index: var(--bd-z-menu);
+}
+
+/* Tujuan tautan #section (scrollIntoView) tidak tertutup header yang
+   menempel; scroll-margin-top tiap section menambah jarak di atasnya. */
+html:has(.bd-header) {
+  scroll-padding-top: 72px;
+}
+
 /* Tombol berbingkai: "Masuk Warga". */
 .bd-root .bd-button-outline {
   display: inline-flex;
@@ -326,8 +339,12 @@
 }
 
 /* ----- Header (A1–A9) ----- */
+/* Header tetap terlihat saat halaman digulir. Di MainLayout dan AppHeader
+   header dibungkus elemen sendiri, jadi pembungkus itulah yang menempel
+   (.bd-chrome--sticky, .sid-app-header). */
 .bd-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: var(--bd-z-menu);
   background: var(--bd-color-surface);
   border-bottom: 1px solid var(--bd-color-border);
@@ -517,6 +534,10 @@
   background: var(--bd-color-surface);
   border-bottom: 1px solid var(--bd-color-border);
   box-shadow: var(--bd-shadow-lift);
+  /* Header menempel, jadi menu yang panjang digulir di dalam panel. */
+  max-height: calc(100vh - 72px);
+  max-height: calc(100dvh - 72px);
+  overflow-y: auto;
 }
 
 .bd-mobile-panel .bd-menu-item {
@@ -1293,7 +1314,7 @@
   font-size: var(--bd-text-meta);
 }
 
-/* Chip kategori: dummy, dev saja (K7). */
+/* Chip kategori berita (1-2 per berita, dari API). */
 .bd-news-category {
   color: var(--bd-color-primary);
   font-weight: var(--bd-font-bold);
@@ -1664,6 +1685,31 @@
 
 .bd-root .bd-contact-line:hover {
   color: var(--bd-color-primary);
+}
+
+/* Nomor telepon sebagai tombol salin: tampil seperti teks bergaris bawah
+   dengan ikon salin kecil di kanan. */
+.bd-root .bd-contact-copy {
+  gap: var(--bd-space-8);
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: var(--bd-font-semibold);
+  text-align: left;
+  cursor: pointer;
+}
+
+.bd-contact-copy-icon {
+  flex: none;
+  color: var(--bd-color-primary);
+}
+
+.bd-contact-copy-status {
+  min-height: 1.25em;
+  color: var(--bd-color-primary);
+  font-size: var(--bd-text-meta);
 }
 
 /* "Buka di peta": bergaris bawah sebagai penanda link (dev saja). */

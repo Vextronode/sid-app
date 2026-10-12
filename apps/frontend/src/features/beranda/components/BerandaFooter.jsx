@@ -5,10 +5,11 @@ import { Wave } from './Wave'
 // Footer beranda, juga dipakai halaman publik lain lewat MainLayout.
 // A33–A35 (privasi, aksesibilitas, PPID) hanya tampil di dev, karena halamannya
 // masih draf dan route-nya hanya terdaftar di dev (D6); di production infoLinks null.
-// Domain/tanggal pembaruan dan logo "Didukung oleh" tampil di semua mode
-// karena isinya sudah asli (keputusan pemilik, 11 Okt 2026).
+// Logo "Didukung oleh" tampil di semua mode karena isinya sudah asli
+// (keputusan pemilik, 11 Okt 2026). Domain dan tanggal pembaruan tidak
+// ditampilkan (permintaan pemilik, 12 Okt 2026).
 export function BerandaFooter({ content }) {
-  const { footer, site, partners, infoLinks } = content
+  const { footer, partners, infoLinks } = content
 
   return (
     <footer className="bd-footer">
@@ -16,16 +17,6 @@ export function BerandaFooter({ content }) {
       <div className="bd-container bd-footer-inner">
         <div className="bd-footer-identity">
           <span className="bd-footer-title">{footer.title}</span>
-          {site && (
-            <>
-              <span className="bd-footer-meta">
-                {site.domain} · {footer.siteLabel}
-              </span>
-              <span className="bd-footer-meta bd-footer-meta--small">
-                {footer.updatedPrefix} {site.updatedAt}
-              </span>
-            </>
-          )}
         </div>
 
         {/* Tanpa "Masuk petugas": petugas masuk lewat form login biasa dan

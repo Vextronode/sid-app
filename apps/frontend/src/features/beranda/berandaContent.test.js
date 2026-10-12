@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
 import { DEV_ONLY_KEYS, getBerandaContent } from './berandaContent'
 
-const PRODUCTION_HIDDEN = ['announcement', 'newsCategories', 'apbdes', 'welcome', 'infoLinks']
+const PRODUCTION_HIDDEN = ['announcement', 'apbdes', 'welcome', 'infoLinks']
 
 describe('getBerandaContent', () => {
   it('marks exactly the K1 items as development-only', () => {
@@ -27,7 +27,7 @@ describe('getBerandaContent', () => {
     expect(content.welcome.fallbackName).toBe('Dede Rusliana')
   })
 
-  it.each([true, false])('keeps manual content and service hours (isDev=%s)', (isDev) => {
+  it.each([true, false])('keeps manual content (isDev=%s)', (isDev) => {
     const content = getBerandaContent(isDev)
 
     // D2 (12 Okt 2026): menu bagikan AddToAny, sementara sampai ada nomor asli.
@@ -35,17 +35,18 @@ describe('getBerandaContent', () => {
       /^https:\/\/www\.addtoany\.com\/add_to\/whatsapp\?/,
     )
     expect(content.complaint.whatsappText).toBe('Bagikan kotak saran via WhatsApp')
-    expect(content.complaint.email).toBeTruthy()
-    // D1 (12 Okt 2026): link peta asli, juga di production.
-    expect(content.mapUrl).toBe('https://maps.app.goo.gl/sVU5Xqmasq4UTJ4N6')
-    expect(content.contact.hours).toBe('Senin – Jumat, 08.00 – 16.00 WIB')
-    expect(content.hero.imageUrl).toBe('/assets/image/beranda/hero-pemandangan.jpg')
-    // Domain dan tanggal pembaruan footer sudah asli (keputusan pemilik, 11 Okt 2026);
-    // tanggal hanya bulan dan tahun (D3, 12 Okt 2026).
-    expect(content.site).toEqual({
-      domain: 'https://desacibenda.id/',
-      updatedAt: 'Oktober 2026',
-    })
+    // Identitas desa (nama, logo, foto, telepon, email, jam layanan, link peta)
+    // dari data desa yang diatur Petugas Desa, bukan konten statis.
+    expect(content.header.fallbackName).toBe('Desa')
+    expect(content.header.logoSrc).toBeUndefined()
+    expect(content.hero.imageUrl).toBeUndefined()
+    expect(content.complaint.email).toBeUndefined()
+    expect(content.contact.phone).toBeUndefined()
+    expect(content.contact.hours).toBeUndefined()
+    expect(content.mapUrl).toBeUndefined()
+    expect(JSON.stringify(content)).not.toMatch(/2640613|kantordesacibenda|maps\.app\.goo\.gl/)
+    // Domain dan tanggal pembaruan footer dihapus (permintaan pemilik, 12 Okt 2026).
+    expect(content.site).toBeUndefined()
     // Pita angka: hanya label; angkanya dari API, bukan konten statis.
     expect(content.stats).toBeUndefined()
     expect(content.statsBand).toEqual({

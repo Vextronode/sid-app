@@ -11,7 +11,7 @@ import { SiteFooter } from './SiteFooter'
 export function MainLayout({ children, isDev = import.meta.env.DEV }) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="bd-root bd-chrome">
+      <div className="bd-root bd-chrome bd-chrome--sticky">
         <BerandaHeader content={getBerandaContent(isDev)} />
       </div>
 

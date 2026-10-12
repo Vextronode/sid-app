@@ -37,7 +37,10 @@ describe('BerandaLayout', () => {
     const { container } = renderLayout(true)
 
     // Bottom bar lama berupa <nav> fixed di bawah dengan link "Beranda".
-    expect(screen.queryByRole('link', { name: /^beranda$/i })).toBeNull()
+    // Link Beranda sekarang hanya ada di header (desktop + menu ponsel).
+    for (const link of screen.queryAllByRole('link', { name: /^beranda$/i, hidden: true })) {
+      expect(link.closest('header.bd-header')).not.toBeNull()
+    }
     expect(container.querySelectorAll('nav')).toHaveLength(3) // header, menu ponsel, footer
   })
 
@@ -69,15 +72,15 @@ describe('BerandaLayout', () => {
     }
   })
 
-  // Domain dan tanggal sudah asli, jadi tampil juga di production (keputusan pemilik, 11 Okt 2026).
-  it.each([true, false])('shows the official domain and update date (isDev=%s)', (isDev) => {
+  // Domain dan tanggal pembaruan tidak ditampilkan (permintaan pemilik, 12 Okt 2026).
+  it.each([true, false])('shows the title without domain or update date (isDev=%s)', (isDev) => {
     renderLayout(isDev)
     const footer = within(screen.getByRole('contentinfo'))
 
     expect(footer.getByText('Pemerintah Desa Cibenda')).toBeInTheDocument()
-    expect(footer.getByText('https://desacibenda.id/ · Situs resmi')).toBeInTheDocument()
-    // D3 (12 Okt 2026): bulan dan tahun saja.
-    expect(footer.getByText('Terakhir diperbarui Oktober 2026')).toBeInTheDocument()
+    expect(footer.queryByText(/desacibenda\.id/)).not.toBeInTheDocument()
+    expect(footer.queryByText(/Situs resmi/)).not.toBeInTheDocument()
+    expect(footer.queryByText(/Terakhir diperbarui/)).not.toBeInTheDocument()
   })
 
   it.each([true, false])(

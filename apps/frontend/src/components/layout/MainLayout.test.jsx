@@ -29,11 +29,14 @@ describe('MainLayout', () => {
     expect(within(screen.getByRole('main')).getByText('Isi berita')).toBeInTheDocument()
     expect(screen.getByRole('main').closest('.bd-root')).toBeNull()
     expect(container.querySelector('.bd-root.bd-chrome > header.bd-header')).not.toBeNull()
+    // Pembungkus header yang menempel saat digulir (bukan pembungkus footer).
+    expect(container.querySelector('.bd-root.bd-chrome--sticky > header.bd-header')).not.toBeNull()
+    expect(container.querySelector('.bd-root.bd-chrome--sticky > footer.bd-footer')).toBeNull()
     expect(container.querySelector('.bd-root.bd-chrome > footer.bd-footer')).not.toBeNull()
 
     const desktopNav = within(container.querySelector('.bd-nav'))
     expect(desktopNav.getByRole('link', { name: 'Berita' })).toHaveAttribute('href', '/berita')
-    expect(desktopNav.getByRole('button', { name: 'Profil Desa' })).toBeInTheDocument()
+    expect(desktopNav.getByRole('button', { name: 'Tentang Desa' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument()
   })
 
@@ -41,6 +44,9 @@ describe('MainLayout', () => {
     const { container } = renderLayout()
 
     expect(container.querySelector('.sid-mobile-nav')).toBeNull()
-    expect(screen.queryByRole('link', { name: /^beranda$/i })).toBeNull()
+    // Satu-satunya link Beranda ada di header (desktop + menu ponsel).
+    for (const link of screen.queryAllByRole('link', { name: /^beranda$/i, hidden: true })) {
+      expect(link.closest('header.bd-header')).not.toBeNull()
+    }
   })
 })

@@ -37,8 +37,8 @@ export function BerandaPage({ isDev = import.meta.env.DEV }) {
   return (
     <>
       <AnnouncementBar content={content} />
-      <BerandaHero content={content} />
-      <ServiceCards content={content} />
+      <BerandaHero content={content} village={village} />
+      <ServiceCards content={content} village={village} />
       <StatsBand content={content} />
       <NewsSection content={content} />
       <HowToSteps content={content} />

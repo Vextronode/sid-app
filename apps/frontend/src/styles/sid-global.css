@@ -9869,8 +9869,9 @@
 /* Halaman publik: kartu selebar sepertiga baris, tiga per baris. Baris yang
    tidak penuh (Sekdes sendirian, sisa 2 kartu) berada di tengah. */
 
+/* Jarak header yang menempel sudah lewat scroll-padding-top di html. */
 .sid-profil-desa-perangkat {
-  scroll-margin-top: 5rem;
+  scroll-margin-top: 1.5rem;
 }
 
 .sid-profil-desa-officials-row {
@@ -10133,46 +10134,6 @@
 }
 
 /* =========================================================
-   LOADING
-   ========================================================= */
-
-.sid-profil-desa-loading {
-  min-height: 320px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  gap: 0.75rem;
-}
-
-.sid-profil-desa-loading p {
-  margin: 0;
-
-  color: var(--sid-text-muted);
-
-  font-size: 0.8125rem;
-}
-
-.sid-profil-desa-loading-spinner {
-  width: 32px;
-  height: 32px;
-
-  border: 3px solid var(--sid-border);
-  border-top-color: var(--sid-primary);
-  border-radius: 50%;
-
-  animation: sid-profil-desa-spin 0.8s linear infinite;
-}
-
-@keyframes sid-profil-desa-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* =========================================================
    RESPONSIVE INFORMASI DESA
    ========================================================= */
 
@@ -10303,6 +10264,47 @@
   transform: translateY(1px);
 }
 
+.sid-kelola-berita-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sid-kelola-berita-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.5rem;
+  flex-shrink: 0;
+
+  padding: 0.625rem 1.25rem;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--radius-sm);
+
+  background: transparent;
+  color: var(--sid-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition: background-color 0.15s ease;
+}
+
+.sid-kelola-berita-secondary:hover {
+  background: var(--sid-header-subtext);
+}
+
+.sid-kelola-berita-primary:disabled,
+.sid-kelola-berita-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* =========================================================
    FEATURE GRID
    ========================================================= */
@@ -10384,6 +10386,7 @@
 .sid-kelola-berita-feature-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
 
   gap: 0.5rem;
 
@@ -10990,7 +10993,12 @@
     font-size: 1.25rem;
   }
 
-  .sid-kelola-berita-primary {
+  .sid-kelola-berita-header-actions {
+    flex-direction: column;
+  }
+
+  .sid-kelola-berita-primary,
+  .sid-kelola-berita-secondary {
     width: 100%;
   }
 
@@ -15234,6 +15242,176 @@ button.sid-operator-profile {
 }
 
 /* =========================================================
+   KATEGORI (form berita + modal kelola kategori)
+   ========================================================= */
+
+.sid-berita-category-fieldset {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sid-berita-form-help {
+  margin: 0 0 0.25rem;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.sid-berita-form-error {
+  margin: 0 0 1rem;
+
+  color: var(--sid-danger);
+
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.sid-berita-category-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sid-berita-category-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+
+  padding: 0.375rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 9999px;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.8125rem;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.sid-berita-category-option input {
+  accent-color: var(--sid-primary);
+}
+
+.sid-berita-category-option.is-selected {
+  border-color: var(--sid-primary);
+
+  background: color-mix(in srgb, var(--sid-primary) 10%, transparent);
+  color: var(--sid-primary);
+}
+
+.sid-berita-category-option:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sid-kategori-berita-add {
+  display: flex;
+  gap: 0.5rem;
+
+  margin-bottom: 1rem;
+}
+
+.sid-kategori-berita-list {
+  display: flex;
+  flex-direction: column;
+
+  margin: 0 0 1.5rem;
+  padding: 0;
+
+  list-style: none;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+}
+
+.sid-kategori-berita-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  padding: 0.5rem 0.75rem;
+}
+
+.sid-kategori-berita-item + .sid-kategori-berita-item {
+  border-top: 1px solid var(--sid-border);
+}
+
+.sid-kategori-berita-info,
+.sid-kategori-berita-edit {
+  flex: 1;
+  min-width: 0;
+}
+
+.sid-kategori-berita-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.sid-kategori-berita-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sid-kategori-berita-name {
+  overflow: hidden;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sid-kategori-berita-count {
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+}
+
+.sid-kategori-berita-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 2rem;
+  height: 2rem;
+
+  border: 0;
+  border-radius: var(--radius-sm);
+
+  background: transparent;
+  color: var(--sid-text-secondary);
+
+  cursor: pointer;
+}
+
+.sid-kategori-berita-icon:hover:not(:disabled) {
+  background: var(--sid-header-subtext);
+  color: var(--sid-primary);
+}
+
+.sid-kategori-berita-icon.is-danger:hover:not(:disabled) {
+  color: var(--sid-danger);
+}
+
+.sid-kategori-berita-icon:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* =========================================================
    IMAGE UPLOAD
    ========================================================= */
 
@@ -15906,7 +16084,8 @@ button.sid-operator-profile {
 
 /* Header role (AppHeader): panel notifikasi menempel di bawah header. */
 .sid-app-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 50;
 }
 
@@ -20541,36 +20720,6 @@ button.sid-operator-profile {
   text-align: center;
 }
 
-.sid-kelola-wilayah-loading {
-  min-height: 320px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-}
-
-.sid-kelola-wilayah-loading p {
-  margin: 0;
-  color: var(--sid-text-muted);
-  font-size: 0.8125rem;
-}
-
-.sid-kelola-wilayah-loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--sid-border);
-  border-top-color: var(--sid-primary);
-  border-radius: 50%;
-  animation: sid-kelola-wilayah-spin 0.8s linear infinite;
-}
-
-@keyframes sid-kelola-wilayah-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* =========================================================
    MODAL
    ========================================================= */
@@ -21501,4 +21650,104 @@ button.sid-operator-profile {
   color: var(--sid-primary);
   font-weight: 600;
   text-transform: none;
+}
+
+/* =========================================================
+   PAGE LOADER
+   Loading tingkat halaman: lapisan blur + spinner di tengah.
+   ========================================================= */
+
+.sid-page-loader {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.875rem;
+
+  width: 100%;
+  min-height: 60vh;
+
+  padding: 2rem 1rem;
+
+  background: color-mix(in srgb, var(--sid-surface-card) 55%, transparent);
+
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.sid-page-loader--fullscreen {
+  position: fixed;
+  inset: 0;
+
+  z-index: 1000;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.sid-page-loader-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+
+  border: 3px solid color-mix(in srgb, var(--sid-primary) 18%, transparent);
+  border-top-color: var(--sid-primary);
+  border-radius: 50%;
+
+  animation: sid-page-loader-spin 0.8s linear infinite;
+}
+
+.sid-page-loader-label {
+  color: var(--sid-text-muted);
+
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+@keyframes sid-page-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-page-loader-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* =========================================================
+   TAMPILAN HALAMAN PUBLIK (Kelola Profil Desa)
+   ========================================================= */
+
+.sid-public-media-preview {
+  display: block;
+
+  max-width: 100%;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-surface-card);
+}
+
+.sid-public-media-preview--logo {
+  width: auto;
+  max-height: 6rem;
+
+  padding: 0.5rem;
+
+  object-fit: contain;
+}
+
+.sid-public-media-preview--hero {
+  width: 100%;
+  max-height: 12rem;
+
+  aspect-ratio: 16 / 9;
+
+  object-fit: cover;
 }

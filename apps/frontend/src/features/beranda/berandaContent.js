@@ -13,14 +13,15 @@ import { HAL_PROFIL } from '@/lib/constants/routes'
 
 const STATIC = {
   header: {
-    // Nama dari village.name bila tersedia; ini cadangannya.
-    fallbackName: 'Desa Cibenda',
-    // Lambang di samping nama desa, pengganti monogram "CB" (permintaan pemilik,
-    // 11 Okt 2026). Dekoratif: nama desa sudah menjadi nama link.
-    logoSrc: '/assets/image/lambang-kabupaten-pangandaran.webp',
+    // Nama dan lambang dari data desa (village.name, village.logo_url), diatur
+    // Petugas Desa. Cadangan netral selagi data belum termuat, agar tidak ada
+    // nama desa yang ditulis di kode.
+    fallbackName: 'Desa',
     nav: {
+      beranda: 'Beranda',
       berita: 'Berita',
-      profil: 'Profil Desa',
+      // Judul dropdown; "Profil desa" sendiri menjadi salah satu isinya.
+      profil: 'Tentang Desa',
       kontak: 'Kontak',
       masuk: 'Masuk Warga',
       menu: 'Menu',
@@ -28,7 +29,9 @@ const STATIC = {
     // A4–A6: butir dengan `to` menjadi link; sisanya teks biasa berlabel
     // "Segera hadir".
     profilItems: [
-      { label: 'Sejarah & visi misi' },
+      // Ke bagian paling atas halaman profil (tanpa #); sejarah dan visi misi
+      // ada di halaman yang sama.
+      { label: 'Profil desa', to: HAL_PROFIL },
       { label: 'Perangkat desa', to: `${HAL_PROFIL}#perangkat-desa` },
       { label: 'Peta wilayah' },
     ],
@@ -45,10 +48,8 @@ const STATIC = {
   },
 
   hero: {
-    // File di public/, jadi build tidak gagal bila file tidak ada (K2).
-    imageUrl: '/assets/image/beranda/hero-pemandangan.jpg',
-    // Kredit "Foto: [NAMA]" hanya tampil bila nama diisi.
-    photoCredit: '',
+    // Foto dan kreditnya dari data desa (village.hero_image_url,
+    // village.hero_photo_credit). Kredit "Foto: [NAMA]" hanya tampil bila diisi.
     creditPrefix: 'Foto:',
     greeting: 'Wilujeng Sumping',
     title: 'Urus surat dari rumah, pantau desa dari mana saja.',
@@ -91,7 +92,7 @@ const STATIC = {
       'https://www.addtoany.com/add_to/whatsapp?linkurl=https%3A%2F%2Fdesacibenda.id%2Fkotak-saran%2F&linkname=HUBUNGI%20KAMI&linknote=',
     // Teks baris, sekaligus awal nama aksesibelnya.
     whatsappText: 'Bagikan kotak saran via WhatsApp',
-    email: 'kantordesacibenda@gmail.com',
+    // Alamat email dari data desa (village.email).
   },
 
   // Label pita angka. Angkanya dari API (lihat StatsBand), bukan dari sini.
@@ -163,39 +164,27 @@ const STATIC = {
 
   contact: {
     title: 'Butuh bantuan?',
-    // Judul kartu, juga awalan nama aksesibel link: "Telepon (0265) 2640613".
+    // Telepon, jam layanan, nama kantor, dan link peta dari data desa
+    // (village.phone, office_hours, name, map_url), diatur Petugas Desa.
     phoneLabel: 'Telepon',
-    // Nomor telepon kantor (permintaan pemilik, 11 Okt 2026).
-    phone: '(0265) 2640613',
+    // Tombol salin; nama aksesibel: "Salin nomor telepon (0265) 2640613".
+    copyPhone: 'Salin nomor telepon',
+    phoneCopied: 'Nomor disalin',
+    phoneCopyFailed: 'Gagal menyalin. Salin nomornya secara manual.',
     hoursLabel: 'Jam layanan kantor',
-    // Teks yang sama dengan FooterDesa (FooterDesa sendiri tidak diubah).
-    hours: 'Senin – Jumat, 08.00 – 16.00 WIB',
-    officeLabel: 'Kantor Desa Cibenda',
-    // A32: tampil bila mapUrl diisi.
+    officePrefix: 'Kantor',
+    notAvailable: 'Belum tersedia',
+    // A32: tampil bila village.map_url diisi.
     mapLink: 'Buka di peta',
     mapHint: '(tab baru)',
   },
 
   footer: {
     title: 'Pemerintah Desa Cibenda',
-    siteLabel: 'Situs resmi',
-    updatedPrefix: 'Terakhir diperbarui',
     supportedBy: 'Didukung oleh',
     // Teks pembaca layar untuk logo mitra yang membuka tab baru.
     newTabHint: '(tab baru)',
   },
-
-  // Footer: domain resmi dan tanggal pembaruan. Sudah asli dan final, jadi
-  // tampil juga di production (keputusan pemilik, 11 Okt 2026).
-  site: {
-    domain: 'https://desacibenda.id/',
-    // D3 (12 Okt 2026): bulan dan tahun saja.
-    updatedAt: 'Oktober 2026',
-  },
-
-  // "Buka di peta" di kartu kantor desa. Link asli, tampil juga di production
-  // (D1, 12 Okt 2026).
-  mapUrl: 'https://maps.app.goo.gl/sVU5Xqmasq4UTJ4N6',
 
   // "Didukung oleh": logo mitra di footer, urut dari kiri ke kanan.
   // Tampil di production karena logonya sudah tersedia (keputusan pemilik, 11 Okt 2026).
@@ -231,9 +220,6 @@ const DEV_ONLY = {
     title: '[Satu pengumuman penting, mis. kantor desa tutup / jadwal posyandu]',
     newsId: 1,
   },
-
-  // K7: chip kategori, dipasang berurutan ke kartu berita.
-  newsCategories: ['Lingkungan', 'Pendidikan', 'Kabar Warga', 'Infrastruktur'],
 
   // Transparansi APBDes.
   apbdes: {
