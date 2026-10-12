@@ -1,7 +1,7 @@
 // ==========================================
 // DetailBeritaPage.jsx
 // Halaman detail berita publik.
-// Styling menggunakan Global CSS SID.
+// Ditata dengan utility Tailwind, di bawah .pub milik MainLayout.
 // ==========================================
 
 import { useParams } from 'react-router-dom'
@@ -12,6 +12,7 @@ import { SidebarBerita } from '@/features/berita/components/SidebarBerita'
 // Hook data berita dari API
 import { usePublicNews } from '@/features/berita/usePublicNews'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { errorBox, stateBox } from '@/features/beranda/publicClasses'
 
 export function DetailBeritaPage() {
   const { id } = useParams()
@@ -23,13 +24,19 @@ export function DetailBeritaPage() {
   // ==========================================
 
   if (loading) {
-    return <PageLoader label="Memuat berita..." />
+    return (
+      <div className="bd-container pt-[clamp(32px,20px+3vw,64px)]">
+        <PageLoader label="Memuat berita..." />
+      </div>
+    )
   }
 
   if (error) {
     return (
-      <div className="sid-detail-berita-not-found">
-        <p role="alert">{error}</p>
+      <div className="bd-container pt-[clamp(32px,20px+3vw,64px)]">
+        <p role="alert" className={errorBox}>
+          {error}
+        </p>
       </div>
     )
   }
@@ -54,8 +61,8 @@ export function DetailBeritaPage() {
 
   if (!beritaDetail) {
     return (
-      <div className="sid-detail-berita-not-found">
-        <p>Berita tidak ditemukan.</p>
+      <div className="bd-container pt-[clamp(32px,20px+3vw,64px)]">
+        <p className={stateBox}>Berita tidak ditemukan.</p>
       </div>
     )
   }
@@ -65,22 +72,20 @@ export function DetailBeritaPage() {
   // ==========================================
 
   return (
-    <div className="sid-detail-berita-page">
-      <main className="sid-detail-berita-content">
-        <div className="sid-detail-berita-grid">
-          {/* ====================================
+    <div className="bd-container pt-[clamp(32px,20px+3vw,64px)]">
+      <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] lg:gap-16">
+        {/* ====================================
               KONTEN BERITA
           ==================================== */}
 
-          <MainContent berita={beritaDetail} />
+        <MainContent berita={beritaDetail} />
 
-          {/* ====================================
+        {/* ====================================
               SIDEBAR BERITA
           ==================================== */}
 
-          <SidebarBerita beritaLain={beritaLain} />
-        </div>
-      </main>
+        <SidebarBerita beritaLain={beritaLain} />
+      </div>
     </div>
   )
 }

@@ -22,7 +22,17 @@ export function BerandaBrand({ header, to = HAL_BERANDA, subtitle, className = '
   return (
     <Link to={to} className={className}>
       {village?.logo_url ? (
-        <img className="bd-brand-mark" src={village.logo_url} alt="" decoding="async" />
+        // Lambang ada di atas lipatan di semua halaman: diprioritaskan, dan
+        // ukurannya (44px, sama dengan .bd-brand-mark) dipesan sejak awal.
+        <img
+          className="bd-brand-mark"
+          src={village.logo_url}
+          alt=""
+          width={44}
+          height={44}
+          decoding="async"
+          fetchPriority="high"
+        />
       ) : (
         <span className="bd-brand-mark" aria-hidden="true" />
       )}

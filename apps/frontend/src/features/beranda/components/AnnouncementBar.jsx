@@ -12,13 +12,18 @@ export function AnnouncementBar({ content }) {
   const { date, title, newsId } = announcement
 
   return (
-    <section className="bd-announce" aria-label={labels.label}>
-      <div className="bd-container bd-announce-inner">
-        <span className="bd-announce-badge">{labels.badge}</span>
-        <span className="bd-announce-text">
+    <section className="border-b border-[#ecd9a2] bg-pb-padi-soft" aria-label={labels.label}>
+      <div className="bd-container flex flex-wrap items-center gap-x-3.5 gap-y-1.5 py-2.5 text-[15px] leading-snug">
+        <span className="rounded-sm bg-pb-laut-deep px-2 py-0.5 text-xs font-bold tracking-[0.04em] text-white">
+          {labels.badge}
+        </span>
+        <span className="font-medium text-[#3d2c00]">
           {date} — {title}
         </span>
-        <Link to={HAL_BERITA_DETAIL(newsId)} className="bd-announce-link">
+        <Link
+          to={HAL_BERITA_DETAIL(newsId)}
+          className="inline-flex min-h-11 items-center font-bold text-pb-padi-ink underline underline-offset-4 hover:text-pb-ink"
+        >
           {labels.readMore}
         </Link>
       </div>

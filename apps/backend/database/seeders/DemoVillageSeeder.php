@@ -8,22 +8,39 @@ use App\Models\Hamlet;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\Village;
+use Database\Seeders\Support\DemoData;
 use Illuminate\Database\Seeder;
-use RuntimeException;
 
 class DemoVillageSeeder extends Seeder
 {
-    private const VILLAGE_CODE = '3218032001';
+    /** Visi dan misi dari desacibenda.id/visi-misi. */
+    private const VISION = 'Optimalisasi pemberdayaan, ekonomi kerakyatan menuju Cibenda sejahtera dan mandiri.';
+
+    private const MISSION = [
+        'Menciptakan pemerintah Desa yang solid, akuntabel, professional dan proporsional serta mengedepankan sikap amanah dan ramah dalam pelayanan.',
+        'Melaksanakan pembangunan infrastruktur dan meningkatkan pemberdayaan masyarakat yang terencana serta terukur.',
+        'Meningkatkan kualitas sumberdaya manusia dalam kehidupan dunia Pendidikan, kehidupan beragama, penanganan keamanan dan ketertiban lingkungan serta peningkatan derajat Kesehatan bagi masyarakat.',
+        'Mendorong perekonomian masyarakat desa dengan meningkatkan kapasitas BUMDesa, serta meningkatkan hasil produksi rumah tangga kecil.',
+        'Memberikan fasilitas bagi program kepemudaan agar memiliki kekuatan, berkarakter serta memiliki daya saing yang tinggi dalam pengembangan olah raga, inovasi keterampilan serta potensi kreasi seni dan kebudayaan.',
+    ];
+
+    private const HISTORY = 'Desa Cibenda terletak di Kecamatan Parigi, Kabupaten Pangandaran, Jawa Barat, dengan luas wilayah 759,319 hektare. '
+        .'Di sebelah utara desa berbatasan dengan Desa Bojong dan Desa Cintaratu, di sebelah timur dengan Desa Sukaresik, di sebelah barat dengan Desa Ciliang, '
+        .'dan di sebelah selatan langsung menghadap Samudra Hindia.'
+        ."\n\n"
+        .'Wilayah desa terbagi menjadi lima dusun, yaitu Patrol, Sinargalih, Cibenda, Budiasih, dan Sucen. '
+        .'Lahannya dimanfaatkan untuk persawahan, perkebunan, kolam ikan, dan permukiman, sehingga sebagian besar warga hidup dari bertani, berkebun, dan melaut. '
+        .'Kedekatan dengan pesisir selatan Pangandaran juga membuka peluang usaha di bidang perikanan dan wisata.';
 
     public function run(): void
     {
-        $this->ensureNotProduction();
+        DemoData::ensureNotProduction();
 
         $village = Village::query()->updateOrCreate(
-            ['code' => self::VILLAGE_CODE],
+            ['code' => DemoData::VILLAGE_CODE],
             [
                 'name' => 'Desa Cibenda',
-                'head_name' => 'Kepala Desa Demo',
+                'head_name' => 'Dede Rusliana',
                 'address' => 'Jl. Raya Cibenda, Kecamatan Parigi, Kabupaten Pangandaran',
                 'phone' => '(0265) 2640613',
                 'district' => 'Parigi',
@@ -39,16 +56,20 @@ class DemoVillageSeeder extends Seeder
                 'hero_photo_credit' => null,
                 'office_hours' => 'Senin – Jumat, 08.00 – 16.00 WIB',
                 'map_url' => 'https://maps.app.goo.gl/sVU5Xqmasq4UTJ4N6',
+                'history' => self::HISTORY,
+                'vision' => self::VISION,
+                // Satu butir misi per baris; halaman Profil Desa memecahnya per baris.
+                'mission' => implode("\n", self::MISSION),
             ],
         );
 
         // New village-creation flows must call OccupationService::seedDefaultsForVillage().
-        for ($hamletNumber = 1; $hamletNumber <= 5; $hamletNumber++) {
-            $hamletCode = sprintf('%s%02d', self::VILLAGE_CODE, $hamletNumber);
+        foreach (DemoData::HAMLETS as $hamletNumber => $hamletName) {
+            $hamletCode = sprintf('%s%02d', DemoData::VILLAGE_CODE, $hamletNumber);
             $hamlet = Hamlet::query()->updateOrCreate(
                 ['village_id' => $village->id, 'code' => $hamletCode],
                 [
-                    'name' => 'Dusun Demo '.$hamletNumber,
+                    'name' => $hamletName,
                     'is_active' => true,
                 ],
             );
@@ -76,13 +97,6 @@ class DemoVillageSeeder extends Seeder
                     );
                 }
             }
-        }
-    }
-
-    private function ensureNotProduction(): void
-    {
-        if (app()->environment('production')) {
-            throw new RuntimeException('Demo seeders must not be run in production.');
         }
     }
 }

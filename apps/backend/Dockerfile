@@ -8,6 +8,8 @@ FROM composer:2.10.3 AS composer
 FROM php:8.3.35-fpm-trixie
 
 # Ekstensi tambahan (sisanya bawaan image resmi): pdo_pgsql, gd, zip, opcache.
+# gd dengan WebP: logo dan foto hero desa disimpan sebagai WebP
+# (VillageImageOptimizer).
 # Paket -dev dibuang lagi; pustaka runtime yang dibutuhkan .so ditandai manual
 # (pola docker-library), ditambah libfcgi-bin untuk healthcheck.
 RUN set -eux; \
@@ -15,8 +17,8 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends libfcgi-bin; \
     savedAptMark="$(apt-mark showmanual)"; \
     apt-get install -y --no-install-recommends \
-        libpq-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype-dev; \
-    docker-php-ext-configure gd --with-freetype --with-jpeg; \
+        libpq-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype-dev libwebp-dev; \
+    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
     docker-php-ext-install -j"$(nproc)" pdo_pgsql gd zip opcache; \
     apt-mark auto '.*' > /dev/null; \
     apt-mark manual $savedAptMark > /dev/null; \
@@ -33,6 +35,7 @@ RUN set -eux; \
     command -v cgi-fcgi; \
     php -m | grep -qi '^pdo_pgsql$'; \
     php -m | grep -qi '^gd$'; \
+    php -r 'exit(function_exists("imagewebp") ? 0 : 1);'; \
     php -m | grep -qi '^zip$'
 
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer

@@ -302,4 +302,73 @@ class VillageProfileEndpointTest extends TestCase
             'image' => UploadedFile::fake()->image('logo.png'),
         ], ['Accept' => 'application/json'])->assertStatus(403);
     }
+
+    /** Ukuran [lebar, tinggi] dan tipe berkas yang tersimpan di disk public. */
+    private function storedImage(string $path): array
+    {
+        Storage::disk('public')->assertExists($path);
+
+        return getimagesizefromstring(Storage::disk('public')->get($path));
+    }
+
+    #[Test]
+    public function uploaded_hero_and_logo_are_downscaled_to_webp(): void
+    {
+        Storage::fake('public');
+        [$village, $user] = $this->villageWithUser();
+
+        $this->actingAs($user)->post('/api/villages/profile/hero-image', [
+            'image' => UploadedFile::fake()->image('hero.jpg', 2400, 300),
+        ])->assertOk();
+        $heroPath = $village->fresh()->hero_image;
+        $this->assertStringEndsWith('.webp', $heroPath);
+        [$width, $height, $type] = $this->storedImage($heroPath);
+        $this->assertSame([1920, 240, IMAGETYPE_WEBP], [$width, $height, $type]);
+
+        $this->actingAs($user)->post('/api/villages/profile/logo', [
+            'image' => UploadedFile::fake()->image('logo.png', 800, 100),
+        ])->assertOk();
+        [$width, $height, $type] = $this->storedImage($village->fresh()->logo);
+        $this->assertSame([512, 64, IMAGETYPE_WEBP], [$width, $height, $type]);
+    }
+
+    #[Test]
+    public function small_images_are_never_upscaled(): void
+    {
+        Storage::fake('public');
+        [$village, $user] = $this->villageWithUser();
+
+        $this->actingAs($user)->post('/api/villages/profile/logo', [
+            'image' => UploadedFile::fake()->image('logo.png', 120, 80),
+        ])->assertOk();
+
+        [$width, $height] = $this->storedImage($village->fresh()->logo);
+        $this->assertSame([120, 80], [$width, $height]);
+    }
+
+    #[Test]
+    public function phone_photo_exif_rotation_is_applied_before_saving(): void
+    {
+        Storage::fake('public');
+        [$village, $user] = $this->villageWithUser();
+
+        // JPEG 400x200 bertanda EXIF Orientation 6 (kamera diputar 90°): tampil
+        // tegak 200x400 di browser, jadi hasil simpanan harus 200x400.
+        $canvas = imagecreatetruecolor(400, 200);
+        ob_start();
+        imagejpeg($canvas);
+        $jpeg = ob_get_clean();
+        $tiff = 'II*'."\0".pack('V', 8).pack('v', 1)
+            .pack('v', 0x0112).pack('v', 3).pack('V', 1).pack('v', 6)."\0\0"
+            .pack('V', 0);
+        $app1 = "\xFF\xE1".pack('n', strlen($tiff) + 8)."Exif\0\0".$tiff;
+        $photo = UploadedFile::fake()->createWithContent('hp.jpg', substr($jpeg, 0, 2).$app1.substr($jpeg, 2));
+
+        $this->actingAs($user)->post('/api/villages/profile/hero-image', [
+            'image' => $photo,
+        ])->assertOk();
+
+        [$width, $height] = $this->storedImage($village->fresh()->hero_image);
+        $this->assertSame([200, 400], [$width, $height]);
+    }
 }
