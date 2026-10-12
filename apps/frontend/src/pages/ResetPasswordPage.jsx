@@ -62,8 +62,8 @@ export default function ResetPasswordPage() {
           className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-8 text-center"
           role="status"
         >
-          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 size={28} className="text-green-600" />
+          <div className="w-14 h-14 rounded-full bg-[#e8eef5] flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 size={28} className="text-[#163e6b]" />
           </div>
           <h2 className="font-bold text-gray-800 text-lg mb-1">Kata Sandi Berhasil Diubah</h2>
           <p className="text-sm text-gray-500">Anda akan diarahkan ke halaman login...</p>
@@ -75,7 +75,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-6">
-        <div className="w-11 h-11 rounded-xl bg-green-600 flex items-center justify-center mb-3">
+        <div className="w-11 h-11 rounded-xl bg-[#163e6b] flex items-center justify-center mb-3">
           <Landmark size={22} className="text-white" />
         </div>
         <p className="font-bold text-gray-800">Cibenda</p>
@@ -111,7 +111,7 @@ export default function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Minimal 8 karakter"
-                className="w-full border rounded-lg pl-10 pr-10 py-2.5 text-sm outline-none focus:border-green-500 bg-gray-50"
+                className="w-full border rounded-lg pl-10 pr-10 py-2.5 text-sm outline-none focus:border-[#163e6b] bg-gray-50"
               />
               <button
                 type="button"
@@ -141,7 +141,7 @@ export default function ResetPasswordPage() {
                 value={confirmation}
                 onChange={(e) => setConfirmation(e.target.value)}
                 placeholder="Ulangi kata sandi baru"
-                className="w-full border rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none focus:border-green-500 bg-gray-50"
+                className="w-full border rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none focus:border-[#163e6b] bg-gray-50"
               />
             </div>
           </div>
@@ -149,7 +149,7 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={isLoading || !email || !token}
-            className="w-full bg-green-600 text-white rounded-lg py-3 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full bg-[#163e6b] text-white rounded-lg py-3 text-sm font-medium hover:bg-[#0e2a4a] flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isLoading ? 'Menyimpan...' : 'Simpan Kata Sandi Baru'} <KeyRound size={16} />
           </button>
@@ -158,7 +158,7 @@ export default function ResetPasswordPage() {
         <div className="border-t mt-6 pt-4 text-center">
           <Link
             to="/lupa-password"
-            className="text-sm text-green-600 font-medium hover:underline flex items-center justify-center gap-1"
+            className="text-sm text-[#163e6b] font-medium hover:underline flex items-center justify-center gap-1"
           >
             <ArrowLeft size={14} /> Minta tautan baru
           </Link>

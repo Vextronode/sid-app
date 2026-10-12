@@ -11,6 +11,8 @@ import {
 import { AuthProvider, useAuth } from '@/features/auth/contexts/AuthContext'
 import { buildLoginPath, resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
 import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
+import { PageLoader } from '@/components/ui/PageLoader'
+import { ScrollToTop } from '@/components/layout/ScrollToTop'
 
 // Beranda dan layout publik tetap statis agar halaman pertama tidak
 // menunggu chunk tambahan; halaman lain dimuat per-route.
@@ -107,7 +109,7 @@ export const GuestRoute = ({ children }) => {
   const [searchParams] = useSearchParams()
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return <PageLoader fullscreen />
   }
 
   if (user) {
@@ -151,7 +153,7 @@ export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const location = useLocation()
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return <PageLoader fullscreen />
   }
 
   if (!user) {
@@ -170,7 +172,8 @@ export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   return children
 }
 
-const PageLoading = () => <div className="sid-page">Loading...</div>
+// Pindah halaman: header/sidebar tetap, hanya area konten yang memuat.
+const PageLoading = () => <PageLoader />
 
 // Layout route: layout tetap terpasang saat pindah halaman, hanya isi
 // (Outlet) yang berganti. Suspense di dalam layout membuat header/sidebar
@@ -201,7 +204,8 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Suspense fallback={<div>Loading...</div>}>
+        <ScrollToTop />
+        <Suspense fallback={<PageLoader fullscreen />}>
           <Routes>
             {/* ===== HALAMAN PUBLIK ===== */}
             <Route

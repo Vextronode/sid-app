@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Village;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,6 +29,11 @@ class VillageResource extends JsonResource
             'email' => $this->email,
             'area_ha' => $this->area_ha,
             'has_stamp_img' => $this->stamp_img !== null,
+            'logo_url' => Village::mediaUrl($this->logo),
+            'hero_image_url' => Village::mediaUrl($this->hero_image),
+            'hero_photo_credit' => $this->hero_photo_credit,
+            'office_hours' => $this->office_hours,
+            'map_url' => $this->map_url,
             'history' => $this->history,
             'vision' => $this->vision,
             'mission' => $this->mission,

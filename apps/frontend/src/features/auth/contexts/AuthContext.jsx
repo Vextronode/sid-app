@@ -4,7 +4,15 @@
 // Sanctum cookie-based authentication
 // ==========================================
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import {
+  createContext,
+  startTransition,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
 import api from '@/lib/api'
 import { queryClient } from '@/shared/lib/queryClient'
@@ -80,17 +88,20 @@ export function AuthProvider({ children }) {
     [applySession],
   )
 
-  // onLoggedOut dipanggil tepat sebelum user dikosongkan, di tick yang sama.
-  // Pemanggil bisa pindah ke halaman publik dulu, sehingga ProtectedRoute
-  // tidak sempat mengarahkan ke halaman login.
+  // onLoggedOut (mis. pindah ke beranda) dan pengosongan user dijalankan dalam
+  // satu transition. React Router v7 memindahkan lokasi lewat startTransition;
+  // bila user dikosongkan di luar transition, React me-render user kosong di
+  // halaman lama lebih dulu dan ProtectedRoute membuka halaman login.
   const logout = useCallback(
     async ({ onLoggedOut } = {}) => {
       setIsLoggingOut(true)
       setAuthError('')
 
       const endSession = () => {
-        onLoggedOut?.()
-        applySession(null)
+        startTransition(() => {
+          onLoggedOut?.()
+          applySession(null)
+        })
       }
 
       // Cookie XSRF sudah ada sejak login, jadi langsung POST (satu round-trip).

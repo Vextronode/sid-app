@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Edit, Trash2, X, UserPlus, Repeat, Phone } from 'lucide-react'
 import { useOrganisasi } from '../hooks/useOrganisasi'
+import { PageLoader } from '@/components/ui/PageLoader'
 
 const labelStyle = {
   fontSize: 12,
@@ -409,7 +410,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
       )}
 
       {loading ? (
-        <p>Memuat data...</p>
+        <PageLoader label="Memuat data organisasi..." />
       ) : error ? (
         <div style={{ color: '#d32f2f', backgroundColor: '#fde8e8', padding: 16, borderRadius: 8 }}>
           {error}

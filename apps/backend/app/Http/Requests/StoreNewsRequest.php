@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class StoreNewsRequest extends FormRequest
@@ -46,6 +47,12 @@ class StoreNewsRequest extends FormRequest
             'content' => ['required', 'string'],
             'thumbnail' => ['nullable', 'image', 'max:2048'],
             'is_published' => ['nullable', 'boolean'],
+            'category_ids' => ['required', 'array', 'min:1', 'max:2'],
+            'category_ids.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('news_categories', 'id')->where('village_id', $this->user()?->village_id),
+            ],
         ];
     }
 
@@ -54,6 +61,23 @@ class StoreNewsRequest extends FormRequest
         return [
             'title.required' => 'Judul berita wajib diisi',
             'content.required' => 'Konten berita wajib diisi',
+            ...self::categoryMessages(),
+        ];
+    }
+
+    /**
+     * Dipakai juga oleh UpdateNewsRequest.
+     *
+     * @return array<string, string>
+     */
+    public static function categoryMessages(): array
+    {
+        return [
+            'category_ids.required' => 'Pilih minimal 1 kategori berita.',
+            'category_ids.min' => 'Pilih minimal 1 kategori berita.',
+            'category_ids.max' => 'Pilih maksimal 2 kategori berita.',
+            'category_ids.*.distinct' => 'Kategori yang sama tidak boleh dipilih dua kali.',
+            'category_ids.*.exists' => 'Kategori berita tidak ditemukan.',
         ];
     }
 }

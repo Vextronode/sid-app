@@ -55,6 +55,16 @@ export function findOfficialCandidate(nik, position) {
   return api.post('/api/officials/candidates/lookup', position ? { nik, position } : { nik })
 }
 
+// Logo desa dan foto beranda untuk halaman publik.
+const VILLAGE_IMAGE_PATHS = {
+  logo: '/api/villages/profile/logo',
+  hero: '/api/villages/profile/hero-image',
+}
+
+export function uploadVillageImage(kind, file) {
+  return api.post(VILLAGE_IMAGE_PATHS[kind], toFormData({ image: file }), multipart)
+}
+
 export function uploadOfficialPhoto(officialId, file) {
   return api.post(`/api/officials/${officialId}/photo`, toFormData({ photo: file }), multipart)
 }

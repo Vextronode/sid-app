@@ -11,6 +11,7 @@ import { SidebarBerita } from '@/features/berita/components/SidebarBerita'
 
 // Hook data berita dari API
 import { usePublicNews } from '@/features/berita/usePublicNews'
+import { PageLoader } from '@/components/ui/PageLoader'
 
 export function DetailBeritaPage() {
   const { id } = useParams()
@@ -22,11 +23,7 @@ export function DetailBeritaPage() {
   // ==========================================
 
   if (loading) {
-    return (
-      <div className="sid-detail-berita-not-found">
-        <p role="status">Memuat berita...</p>
-      </div>
-    )
+    return <PageLoader label="Memuat berita..." />
   }
 
   if (error) {

@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class UpdateNewsRequest extends FormRequest
@@ -45,6 +46,21 @@ class UpdateNewsRequest extends FormRequest
             'content' => ['sometimes', 'string'],
             'is_published' => ['sometimes', 'boolean'],
             'thumbnail' => ['nullable', 'image', 'max:2048'],
+            // `sometimes`: PATCH publish/unpublish tidak mengirim kategori.
+            'category_ids' => ['sometimes', 'required', 'array', 'min:1', 'max:2'],
+            'category_ids.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('news_categories', 'id')->where('village_id', $this->user()?->village_id),
+            ],
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return StoreNewsRequest::categoryMessages();
     }
 }

@@ -11,7 +11,7 @@ vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: vi.fn(),
 }))
 
-const COMING_SOON = ['Sejarah & visi misi', 'Peta wilayah']
+const COMING_SOON = ['Peta wilayah']
 
 const renderHeader = ({ isDev = true } = {}) => {
   const utils = render(
@@ -30,7 +30,12 @@ const renderHeader = ({ isDev = true } = {}) => {
 describe('BerandaHeader', () => {
   beforeEach(() => {
     usePublicVillageInfo.mockReturnValue({
-      village: { name: 'Cibenda', district: 'Parigi', regency: 'Pangandaran' },
+      village: {
+        name: 'Cibenda',
+        district: 'Parigi',
+        regency: 'Pangandaran',
+        logo_url: '/assets/image/lambang-kabupaten-pangandaran.webp',
+      },
       stats: null,
       contacts: [],
     })
@@ -51,15 +56,31 @@ describe('BerandaHeader', () => {
       expect(brand).toHaveTextContent('Kec. Parigi · Kab. Pangandaran')
     })
 
-    it('falls back to the configured name and hides the region while data is missing', () => {
+    // Tidak ada nama desa yang ditulis di kode: selagi data belum termuat
+    // tampil nama netral, dan tempat lambang tetap dipesan.
+    it('falls back to a neutral name without emblem or region while data is missing', () => {
       usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
-      renderHeader()
+      const { container } = renderHeader()
 
-      const brand = screen.getByRole('link', { name: 'Desa Cibenda' })
+      const brand = screen.getByRole('link', { name: 'Desa' })
       expect(brand).not.toHaveTextContent('Kec.')
+      expect(container.querySelector('img.bd-brand-mark')).toBeNull()
+      expect(container.querySelector('span.bd-brand-mark')).toHaveAttribute('aria-hidden', 'true')
     })
 
-    it('shows the decorative Pangandaran emblem instead of the "CB" monogram', () => {
+    it('does not double the "Desa" prefix stored by the backend', () => {
+      usePublicVillageInfo.mockReturnValue({
+        village: { name: 'Desa Cibenda' },
+        stats: null,
+        contacts: [],
+      })
+      renderHeader()
+
+      expect(screen.getByRole('link', { name: 'Desa Cibenda' })).toBeInTheDocument()
+      expect(screen.queryByText(/Desa Desa/)).toBeNull()
+    })
+
+    it('shows the village emblem from the API instead of the "CB" monogram', () => {
       const { container } = renderHeader()
 
       const mark = container.querySelector('.bd-brand-mark')
@@ -72,12 +93,38 @@ describe('BerandaHeader', () => {
     it('uses the route constants for the desktop nav links', () => {
       const { desktopNav } = renderHeader()
 
+      expect(desktopNav.getByRole('link', { name: 'Beranda' })).toHaveAttribute('href', '/')
       expect(desktopNav.getByRole('link', { name: 'Berita' })).toHaveAttribute('href', '/berita')
       expect(desktopNav.getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '/#kontak')
       expect(desktopNav.getByRole('link', { name: 'Masuk Warga' })).toHaveAttribute(
         'href',
         '/loginpage',
       )
+    })
+
+    it('marks Beranda as the current page only on the home page', () => {
+      const { desktopNav } = renderHeader()
+      expect(desktopNav.getByRole('link', { name: 'Beranda' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      )
+
+      const { container } = render(
+        <MemoryRouter initialEntries={['/berita']}>
+          <BerandaHeader content={getBerandaContent(true)} />
+        </MemoryRouter>,
+      )
+      const otherNav = within(container.querySelector('.bd-nav'))
+      expect(otherNav.getByRole('link', { name: 'Beranda' })).not.toHaveAttribute('aria-current')
+    })
+
+    it('drops the Sejarah & visi misi item (part of Profil desa)', async () => {
+      const user = userEvent.setup()
+      const { desktopNav } = renderHeader()
+      await user.click(desktopNav.getByRole('button', { name: 'Tentang Desa' }))
+
+      expect(desktopNav.queryByText('Sejarah & visi misi')).toBeNull()
+      expect(desktopNav.queryByRole('button', { name: 'Profil Desa' })).toBeNull()
     })
 
     it('scrolls to the contact section when Kontak is chosen', async () => {
@@ -114,9 +161,9 @@ describe('BerandaHeader', () => {
     })
   })
 
-  describe('dropdown Profil Desa (A3–A7)', () => {
+  describe('dropdown Tentang Desa (A3–A7)', () => {
     const openDropdown = async (user, desktopNav) => {
-      const trigger = desktopNav.getByRole('button', { name: 'Profil Desa' })
+      const trigger = desktopNav.getByRole('button', { name: 'Tentang Desa' })
       await user.click(trigger)
       return trigger
     }
@@ -124,7 +171,7 @@ describe('BerandaHeader', () => {
     it('is a button wired to its panel with aria-expanded and aria-controls', async () => {
       const user = userEvent.setup()
       const { desktopNav } = renderHeader()
-      const trigger = desktopNav.getByRole('button', { name: 'Profil Desa' })
+      const trigger = desktopNav.getByRole('button', { name: 'Tentang Desa' })
       const panel = document.getElementById(trigger.getAttribute('aria-controls'))
 
       expect(trigger).toHaveAttribute('aria-expanded', 'false')
@@ -149,6 +196,19 @@ describe('BerandaHeader', () => {
         expect(item.querySelector('a, button, [tabindex]')).toBeNull()
         expect(desktopNav.queryByRole('link', { name: new RegExp(label) })).toBeNull()
       }
+    })
+
+    it('links Profil desa to the top of the village profile page and closes', async () => {
+      const user = userEvent.setup()
+      const { desktopNav } = renderHeader()
+      const trigger = await openDropdown(user, desktopNav)
+      const link = desktopNav.getByRole('link', { name: 'Profil desa' })
+
+      expect(link).toHaveAttribute('href', '/profil-desa')
+
+      await user.click(link)
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
     })
 
     it('links Perangkat desa to its section on the village profile page and closes', async () => {
@@ -190,7 +250,7 @@ describe('BerandaHeader', () => {
       const { desktopNav } = renderHeader()
       const trigger = await openDropdown(user, desktopNav)
       await user.tab()
-      expect(desktopNav.getByRole('link', { name: 'Perangkat desa' })).toHaveFocus()
+      expect(desktopNav.getByRole('link', { name: 'Profil desa' })).toHaveFocus()
 
       await user.keyboard('{Escape}')
 
@@ -203,6 +263,7 @@ describe('BerandaHeader', () => {
       const { desktopNav } = renderHeader()
       const trigger = await openDropdown(user, desktopNav)
 
+      await user.tab() // Profil desa
       await user.tab() // Perangkat desa
       await user.tab() // Transparansi APBDes, masih di dalam dropdown
       expect(trigger).toHaveAttribute('aria-expanded', 'true')
@@ -262,11 +323,17 @@ describe('BerandaHeader', () => {
       expect(button).toHaveAttribute('aria-expanded', 'true')
       const list = within(panel)
       expect(list.getByRole('link', { name: 'Berita' })).toHaveAttribute('href', '/berita')
-      expect(list.getByText('Profil Desa')).toBeVisible()
+      expect(list.getByRole('link', { name: 'Beranda' })).toHaveAttribute('href', '/')
+      expect(list.getByText('Tentang Desa')).toBeVisible()
+      expect(list.queryByText('Sejarah & visi misi')).toBeNull()
       for (const label of COMING_SOON) {
         expect(list.queryByRole('link', { name: new RegExp(label) })).toBeNull()
         expect(list.getByText(label)).toBeVisible()
       }
+      expect(list.getByRole('link', { name: 'Profil desa' })).toHaveAttribute(
+        'href',
+        '/profil-desa',
+      )
       expect(list.getByRole('link', { name: 'Perangkat desa' })).toHaveAttribute(
         'href',
         '/profil-desa#perangkat-desa',

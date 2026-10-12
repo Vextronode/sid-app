@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Village extends Model
 {
@@ -24,6 +25,11 @@ class Village extends Model
         'email',
         'area_ha',
         'stamp_img',
+        'logo',
+        'hero_image',
+        'hero_photo_credit',
+        'office_hours',
+        'map_url',
         'history',
         'vision',
         'mission',
@@ -32,6 +38,28 @@ class Village extends Model
     protected $casts = [
         'area_ha' => 'float',
     ];
+
+    /**
+     * Logo dan foto hero berisi path aset frontend (/assets/..., dari seeder),
+     * URL lengkap, atau path unggahan di disk public. Hanya yang terakhir
+     * berupa berkas milik backend.
+     */
+    public static function isUploadedMedia(?string $value): bool
+    {
+        return $value !== null
+            && $value !== ''
+            && ! str_starts_with($value, '/')
+            && ! preg_match('#^https?://#i', $value);
+    }
+
+    public static function mediaUrl(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return self::isUploadedMedia($value) ? Storage::disk('public')->url($value) : $value;
+    }
 
     public function hamlets(): HasMany
     {

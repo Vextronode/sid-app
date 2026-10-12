@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp, ScrollText } from 'lucide-react'
 
 import { getPublicRegulations } from '@/features/peraturan/api'
+import { PageLoader } from '@/components/ui/PageLoader'
 
 function formatDate(value) {
   if (!value) return null
@@ -52,9 +53,7 @@ export function PeraturanDesaPage() {
         </p>
 
         {loading ? (
-          <p className="sid-beranda-news-state" role="status">
-            Memuat peraturan desa...
-          </p>
+          <PageLoader label="Memuat peraturan desa..." />
         ) : error ? (
           <p className="sid-beranda-news-state" role="alert">
             {error}

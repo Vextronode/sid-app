@@ -8,6 +8,7 @@ import {
   getOccupations,
   updateOccupation,
 } from '@/features/pekerjaan/api'
+import { PageLoader } from '@/components/ui/PageLoader'
 
 function resolveError(error, fallback) {
   const errors = error?.response?.data?.errors
@@ -202,10 +203,7 @@ export default function KelolaPekerjaanPage() {
     return (
       <div className="sid-kelola-wilayah-page">
         <div className="sid-kelola-wilayah-content">
-          <div className="sid-kelola-wilayah-loading">
-            <div className="sid-kelola-wilayah-loading-spinner" />
-            <p>Memuat katalog pekerjaan...</p>
-          </div>
+          <PageLoader label="Memuat katalog pekerjaan..." />
         </div>
 
         <SiteFooter />

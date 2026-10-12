@@ -11,6 +11,7 @@ import { Landmark, Lock, Eye, EyeOff, KeyRound, LogOut } from 'lucide-react'
 import api from '@/lib/api'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { useLogoutToBeranda } from '@/features/auth/hooks/useLogoutToBeranda'
+import { PageLoader } from '@/components/ui/PageLoader'
 
 const EMPTY_FORM = { current_password: '', password: '', password_confirmation: '' }
 
@@ -31,7 +32,7 @@ export default function GantiPasswordPage() {
   const [saving, setSaving] = useState(false)
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return <PageLoader fullscreen />
   }
 
   if (!user) {
@@ -91,7 +92,7 @@ export default function GantiPasswordPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-6">
-        <div className="w-11 h-11 rounded-xl bg-green-600 flex items-center justify-center mb-3">
+        <div className="w-11 h-11 rounded-xl bg-[#163e6b] flex items-center justify-center mb-3">
           <Landmark size={22} className="text-white" />
         </div>
         <p className="font-bold text-gray-800">Cibenda</p>
@@ -131,7 +132,7 @@ export default function GantiPasswordPage() {
                   value={form[field.id]}
                   onChange={handleChange(field.id)}
                   placeholder={field.placeholder}
-                  className="w-full border rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none focus:border-green-500 bg-gray-50"
+                  className="w-full border rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none focus:border-[#163e6b] bg-gray-50"
                 />
               </div>
             </div>
@@ -149,7 +150,7 @@ export default function GantiPasswordPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-green-600 text-white rounded-lg py-3 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full bg-[#163e6b] text-white rounded-lg py-3 text-sm font-medium hover:bg-[#0e2a4a] flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? 'Menyimpan...' : 'Simpan Kata Sandi Baru'} <KeyRound size={16} />
           </button>

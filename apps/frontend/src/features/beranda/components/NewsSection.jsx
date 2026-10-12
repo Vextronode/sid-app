@@ -25,22 +25,26 @@ function NewsImage({ src, className }) {
   )
 }
 
-function NewsMeta({ category, date, featured }) {
-  if (!category && !date) return null
+function NewsMeta({ categories = [], date, featured }) {
+  if (categories.length === 0 && !date) return null
 
   return (
     <span className={`bd-news-meta${featured ? ' bd-news-meta--feature' : ''}`}>
-      {category && <span className="bd-news-category">{category}</span>}
+      {categories.map((category) => (
+        <span key={category} className="bd-news-category">
+          {category}
+        </span>
+      ))}
       {date && <span className="bd-news-date">{date}</span>}
     </span>
   )
 }
 
 // Kabar desa (A20–A24): satu berita utama + tiga berita ringkas, seluruh kartu
-// adalah link. Data dari usePublicNews (hook bersama, tidak diubah). Chip
-// kategori belum ada datanya: dummy hanya di development (K7).
+// adalah link. Data dari usePublicNews (hook bersama). Chip kategori dari
+// kategori berita yang diatur Petugas Desa (1-2 per berita).
 export function NewsSection({ content }) {
-  const { news: labels, newsCategories } = content
+  const { news: labels } = content
   const { news, loading, error } = usePublicNews()
   const [featured, ...others] = news.slice(0, NEWS_COUNT)
 
@@ -74,7 +78,7 @@ export function NewsSection({ content }) {
         >
           <NewsImage src={featured.imageUrl} className="bd-news-image bd-news-image--feature" />
           <div className="bd-news-body bd-news-body--feature">
-            <NewsMeta category={newsCategories?.[0]} date={featured.date} featured />
+            <NewsMeta categories={featured.categories} date={featured.date} featured />
             <h3 className="bd-news-title bd-news-title--feature">{featured.title}</h3>
             {summary && <p className="bd-news-summary">{summary}</p>}
           </div>
@@ -82,7 +86,7 @@ export function NewsSection({ content }) {
 
         {others.length > 0 && (
           <ul className="bd-news-list">
-            {others.map((item, index) => (
+            {others.map((item) => (
               <li key={item.id}>
                 <Link
                   to={HAL_BERITA_DETAIL(item.id)}
@@ -90,7 +94,7 @@ export function NewsSection({ content }) {
                 >
                   <NewsImage src={item.imageUrl} className="bd-news-image bd-news-image--thumb" />
                   <div className="bd-news-body">
-                    <NewsMeta category={newsCategories?.[index + 1]} date={item.date} />
+                    <NewsMeta categories={item.categories} date={item.date} />
                     <h3 className="bd-news-title">{item.title}</h3>
                   </div>
                 </Link>

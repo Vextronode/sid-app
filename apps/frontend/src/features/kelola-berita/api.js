@@ -6,8 +6,8 @@ function buildNewsFormData(payload, isUpdate = false) {
   formData.append('title', payload.title ?? '')
   formData.append('content', payload.content ?? '')
 
-  if (payload.category) {
-    formData.append('category', payload.category)
+  for (const id of payload.category_ids ?? []) {
+    formData.append('category_ids[]', id)
   }
 
   if (payload.thumbnail instanceof File) {
@@ -45,4 +45,24 @@ export function publishBerita(id) {
   return api.patch(`/api/news/${id}`, {
     is_published: true,
   })
+}
+
+// ==========================================
+// KATEGORI BERITA
+// ==========================================
+
+export function getNewsCategories() {
+  return api.get('/api/news-categories')
+}
+
+export function createNewsCategory(name) {
+  return api.post('/api/news-categories', { name })
+}
+
+export function updateNewsCategory(id, name) {
+  return api.patch(`/api/news-categories/${id}`, { name })
+}
+
+export function deleteNewsCategory(id) {
+  return api.delete(`/api/news-categories/${id}`)
 }

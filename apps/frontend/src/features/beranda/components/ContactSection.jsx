@@ -1,12 +1,11 @@
-import { Clock, ExternalLink, MapPin, Phone } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Check, Clock, Copy, ExternalLink, MapPin, Phone } from 'lucide-react'
 
 import { SECTION_KONTAK } from '@/lib/constants/routes'
+import { copyText } from '@/shared/lib/copyText'
+import { formatVillageName } from '@/shared/lib/villageName'
 
-// Nomor untuk tautan tel:, mis. "0265-639 123" → "0265639123" (tanda + tetap).
-function toTelHref(phone) {
-  const number = String(phone).replace(/(?!^\+)[^\d]/g, '')
-  return number ? `tel:${number}` : null
-}
+const COPY_FEEDBACK_MS = 2000
 
 function CardContent({ icon: Icon, title, children }) {
   return (
@@ -22,18 +21,59 @@ function CardContent({ icon: Icon, title, children }) {
   )
 }
 
-// Kontak (A31, A32; tujuan gulir A8). Tiga kartu (K14):
-// - Telepon: kartu tidak bisa diklik; satu baris link tel: ke nomor kantor dari
-//   konfigurasi (permintaan pemilik, 11 Okt 2026).
-// - Jam layanan: teks dari konfigurasi, tidak bisa diklik.
-// - Kantor desa: alamat dari village.address; seluruh kartu menjadi link
-//   "Buka di peta" (tab baru) bila mapUrl diisi. Sejak D1 (12 Okt 2026) link
-//   peta asli tampil di dev dan production; tanpa mapUrl kartu tidak bisa diklik.
-// Alamat yang belum termuat tidak dirender.
+// Nomor telepon: klik nomor atau ikon salin untuk menyalinnya, bukan memanggil
+// lewat tel: (permintaan pemilik, 12 Okt 2026). Hasilnya diumumkan lewat
+// aria-live agar terdengar juga oleh pembaca layar.
+function CopyPhone({ phone, labels }) {
+  const [status, setStatus] = useState(null) // null | 'copied' | 'failed'
+
+  useEffect(() => {
+    if (!status) return undefined
+    const timer = setTimeout(() => setStatus(null), COPY_FEEDBACK_MS)
+    return () => clearTimeout(timer)
+  }, [status])
+
+  const handleCopy = async () => {
+    setStatus((await copyText(phone)) ? 'copied' : 'failed')
+  }
+
+  const Icon = status === 'copied' ? Check : Copy
+
+  return (
+    <>
+      <button
+        type="button"
+        className="bd-contact-line bd-contact-copy"
+        onClick={handleCopy}
+        aria-label={`${labels.copyPhone} ${phone}`}
+      >
+        {phone}
+        <Icon className="bd-contact-copy-icon" size={18} aria-hidden="true" />
+      </button>
+      <span className="bd-contact-copy-status bd-meta" aria-live="polite">
+        {status === 'copied' && labels.phoneCopied}
+        {status === 'failed' && labels.phoneCopyFailed}
+      </span>
+    </>
+  )
+}
+
+// Kontak (A31, A32; tujuan gulir A8). Tiga kartu (K14), isinya dari data desa
+// yang diatur Petugas Desa di Kelola Profil Desa:
+// - Telepon (village.phone): kartu tidak bisa diklik; nomor bisa disalin.
+// - Jam layanan (village.office_hours): teks, tidak bisa diklik.
+// - Kantor desa: judul dari nama desa, alamat dari village.address; seluruh
+//   kartu menjadi link "Buka di peta" (tab baru) bila village.map_url diisi,
+//   tanpa link peta kartu tidak bisa diklik.
+// Data yang belum termuat atau kosong tampil "Belum tersedia" (telepon, jam)
+// atau tidak dirender (alamat).
 export function ContactSection({ content, village }) {
-  const { contact: labels, mapUrl } = content
-  const telHref = labels.phone ? toTelHref(labels.phone) : null
+  const { contact: labels } = content
+  const phone = village?.phone
+  const hours = village?.office_hours
+  const mapUrl = village?.map_url
   const address = village?.address
+  const officeTitle = `${labels.officePrefix} ${formatVillageName(village?.name) ?? 'Desa'}`
 
   return (
     <section
@@ -49,14 +89,10 @@ export function ContactSection({ content, village }) {
         <li>
           <div className="bd-contact-card">
             <CardContent icon={Phone} title={labels.phoneLabel}>
-              {telHref && (
-                <a
-                  href={telHref}
-                  className="bd-contact-line"
-                  aria-label={`${labels.phoneLabel} ${labels.phone}`}
-                >
-                  {labels.phone}
-                </a>
+              {phone ? (
+                <CopyPhone phone={phone} labels={labels} />
+              ) : (
+                <span className="bd-contact-detail">{labels.notAvailable}</span>
               )}
             </CardContent>
           </div>
@@ -65,7 +101,7 @@ export function ContactSection({ content, village }) {
         <li>
           <div className="bd-contact-card">
             <CardContent icon={Clock} title={labels.hoursLabel}>
-              <span className="bd-contact-detail">{labels.hours}</span>
+              <span className="bd-contact-detail">{hours || labels.notAvailable}</span>
             </CardContent>
           </div>
         </li>
@@ -78,7 +114,7 @@ export function ContactSection({ content, village }) {
               rel="noopener noreferrer"
               className="bd-contact-card bd-contact-card--link bd-lift"
             >
-              <CardContent icon={MapPin} title={labels.officeLabel}>
+              <CardContent icon={MapPin} title={officeTitle}>
                 {address && <span className="bd-contact-detail">{address}</span>}
                 <span className="bd-contact-map">
                   {labels.mapLink} <span className="bd-visually-hidden">{labels.mapHint}</span>
@@ -88,7 +124,7 @@ export function ContactSection({ content, village }) {
             </a>
           ) : (
             <div className="bd-contact-card">
-              <CardContent icon={MapPin} title={labels.officeLabel}>
+              <CardContent icon={MapPin} title={officeTitle}>
                 {address && <span className="bd-contact-detail">{address}</span>}
               </CardContent>
             </div>

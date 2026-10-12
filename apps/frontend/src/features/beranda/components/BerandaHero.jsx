@@ -5,18 +5,21 @@ import { HAL_AJUKAN_SURAT, HAL_STATUS_SURAT } from '@/lib/constants/routes'
 import { useLoginAwareHref } from '../hooks/useLoginAwareHref'
 import { Wave } from './Wave'
 
-// Hero (A12, A13). Foto lewat background-image di atas latar
-// --bd-color-hero-fallback: bila file tidak ada atau gagal dimuat, yang tampil
-// hanya warna latar (K2). Foto dekoratif, jadi tidak ada alt/role="img".
-export function BerandaHero({ content }) {
+// Hero (A12, A13). Foto dan kreditnya dari data desa (diatur Petugas Desa),
+// lewat background-image di atas latar --bd-color-hero-fallback: bila foto
+// kosong atau gagal dimuat, yang tampil hanya warna latar (K2). Foto
+// dekoratif, jadi tidak ada alt/role="img".
+export function BerandaHero({ content, village }) {
   const { hero } = content
+  const imageUrl = village?.hero_image_url
+  const photoCredit = village?.hero_photo_credit
   const ajukanHref = useLoginAwareHref(HAL_AJUKAN_SURAT)
   const statusHref = useLoginAwareHref(HAL_STATUS_SURAT)
 
   return (
     <section
       className="bd-hero"
-      style={hero.imageUrl ? { '--bd-hero-image': `url("${hero.imageUrl}")` } : undefined}
+      style={imageUrl ? { '--bd-hero-image': `url("${imageUrl}")` } : undefined}
     >
       <div className="bd-container bd-hero-inner">
         <span className="bd-hero-greeting bd-rise">{hero.greeting}</span>
@@ -33,9 +36,9 @@ export function BerandaHero({ content }) {
         </div>
       </div>
 
-      {hero.photoCredit && (
+      {photoCredit && (
         <p className="bd-hero-credit">
-          {hero.creditPrefix} {hero.photoCredit}
+          {hero.creditPrefix} {photoCredit}
         </p>
       )}
 

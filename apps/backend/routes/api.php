@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\LetterDownloadController;
 use App\Http\Controllers\Api\LetterFulfillmentController;
 use App\Http\Controllers\Api\LetterSignatureController;
 use App\Http\Controllers\Api\LetterTypeController;
+use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OccupationController;
@@ -288,6 +289,15 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::delete('/{id}', [NewsController::class, 'destroy']);
         });
 
+    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+        ->prefix('news-categories')
+        ->group(function () {
+            Route::get('/', [NewsCategoryController::class, 'index']);
+            Route::post('/', [NewsCategoryController::class, 'store']);
+            Route::patch('/{id}', [NewsCategoryController::class, 'update']);
+            Route::delete('/{id}', [NewsCategoryController::class, 'destroy']);
+        });
+
     /*
     |----------------------------------------------------------------------
     | Notifications
@@ -432,6 +442,11 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::patch('/profile', [VillageProfileController::class, 'update']);
             Route::post('/profile/stamp', [VillageProfileController::class, 'uploadStamp']);
             Route::get('/profile/stamp', [VillageProfileController::class, 'stampPreview']);
+            // Tampilan halaman publik (logo di header, foto di beranda).
+            Route::post('/profile/logo', [VillageProfileController::class, 'uploadImage'])
+                ->defaults('column', 'logo');
+            Route::post('/profile/hero-image', [VillageProfileController::class, 'uploadImage'])
+                ->defaults('column', 'hero_image');
         });
     });
 

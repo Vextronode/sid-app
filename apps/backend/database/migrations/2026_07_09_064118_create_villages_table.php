@@ -21,6 +21,14 @@ return new class extends Migration
             // Luas wilayah dalam hektare, diisi Petugas Desa.
             $table->decimal('area_ha', 10, 3)->nullable();
             $table->string('stamp_img')->nullable();
+            // Tampilan halaman publik, diubah Petugas Desa. Gambar berisi path
+            // aset frontend (/assets/..., dari seeder) atau path unggahan di
+            // disk public.
+            $table->string('logo')->nullable();
+            $table->string('hero_image')->nullable();
+            $table->string('hero_photo_credit', 100)->nullable();
+            $table->string('office_hours', 100)->nullable();
+            $table->string('map_url', 500)->nullable();
             $table->timestamps();
         });
     }

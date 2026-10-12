@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 
-import { HAL_BERITA, HAL_LOGIN, SECTION_KONTAK } from '@/lib/constants/routes'
+import { HAL_BERANDA, HAL_BERITA, HAL_LOGIN, SECTION_KONTAK } from '@/lib/constants/routes'
 import { useSectionLink } from '../utils/sectionLink'
 import { BerandaBrand } from './BerandaBrand'
 import { MobileMenu } from './MobileMenu'
@@ -18,6 +18,10 @@ export function BerandaHeader({ content }) {
         <BerandaBrand header={header} />
 
         <nav className="bd-nav" aria-label="Menu utama">
+          {/* Selain lewat logo. NavLink memberi aria-current di beranda. */}
+          <NavLink to={HAL_BERANDA} end className="bd-nav-link">
+            {header.nav.beranda}
+          </NavLink>
           <Link to={HAL_BERITA} className="bd-nav-link">
             {header.nav.berita}
           </Link>

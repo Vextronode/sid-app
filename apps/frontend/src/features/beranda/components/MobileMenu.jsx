@@ -1,7 +1,7 @@
 import { Menu, X } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 
-import { HAL_BERITA, HAL_LOGIN, SECTION_KONTAK } from '@/lib/constants/routes'
+import { HAL_BERANDA, HAL_BERITA, HAL_LOGIN, SECTION_KONTAK } from '@/lib/constants/routes'
 import { useDisclosure } from '../hooks/useDisclosure'
 import { useSectionLink } from '../utils/sectionLink'
 import { ProfilDesaItems } from './ProfilDesaDropdown'
@@ -33,6 +33,16 @@ export function MobileMenu({ header, showTransparansi }) {
 
       <nav id={panelId} className="bd-mobile-panel" aria-label="Menu utama" hidden={!isOpen}>
         <ul className="bd-menu-list">
+          <li>
+            <NavLink
+              to={HAL_BERANDA}
+              end
+              className="bd-menu-item bd-menu-item--link"
+              onClick={close}
+            >
+              {nav.beranda}
+            </NavLink>
+          </li>
           <li>
             <Link to={HAL_BERITA} className="bd-menu-item bd-menu-item--link" onClick={close}>
               {nav.berita}

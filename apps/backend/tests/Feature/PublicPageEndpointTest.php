@@ -334,4 +334,32 @@ class PublicPageEndpointTest extends TestCase
     {
         $this->getJson('/api/public/news')->assertStatus(404);
     }
+
+    // Identitas desa di halaman publik (logo, foto, kontak) diambil dari data
+    // desa, bukan ditulis di frontend.
+    #[Test]
+    public function home_exposes_the_public_village_identity(): void
+    {
+        Village::create([
+            'name' => 'Desa Cibenda',
+            'code' => 'CBD',
+            'phone' => '(0265) 2640613',
+            'email' => 'kantor@desa.test',
+            'logo' => '/assets/image/lambang.webp',
+            'hero_image' => '/assets/image/hero.jpg',
+            'hero_photo_credit' => 'Warga',
+            'office_hours' => 'Senin – Jumat, 08.00 – 16.00 WIB',
+            'map_url' => 'https://maps.app.goo.gl/abc',
+        ]);
+
+        $this->getJson('/api/public/home')
+            ->assertOk()
+            ->assertJsonPath('data.village.phone', '(0265) 2640613')
+            ->assertJsonPath('data.village.email', 'kantor@desa.test')
+            ->assertJsonPath('data.village.logo_url', '/assets/image/lambang.webp')
+            ->assertJsonPath('data.village.hero_image_url', '/assets/image/hero.jpg')
+            ->assertJsonPath('data.village.hero_photo_credit', 'Warga')
+            ->assertJsonPath('data.village.office_hours', 'Senin – Jumat, 08.00 – 16.00 WIB')
+            ->assertJsonPath('data.village.map_url', 'https://maps.app.goo.gl/abc');
+    }
 }

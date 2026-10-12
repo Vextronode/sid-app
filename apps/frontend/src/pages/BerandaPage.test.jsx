@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -132,6 +132,7 @@ describe('BerandaPage news section', () => {
       excerpt: '',
       content: [`<p>Kalimat pertama berita ${i + 1}. Kalimat kedua tidak ikut.</p>`],
       imageUrl: i % 2 === 0 ? `/foto-${i + 1}.jpg` : null,
+      categories: i === 0 ? ['Lingkungan', 'Pendidikan'] : [`Kategori ${i + 1}`],
     }))
 
   const newsRegion = () => within(screen.getByRole('region', { name: 'Kabar desa' }))
@@ -191,16 +192,13 @@ describe('BerandaPage news section', () => {
     }
   })
 
-  it.each([
-    [true, ['Lingkungan', 'Pendidikan', 'Kabar Warga', 'Infrastruktur']],
-    [false, []],
-  ])('shows dummy category chips only in development (isDev=%s, K7)', (isDev, expected) => {
+  it.each([true, false])('shows the news categories from the API (isDev=%s)', (isDev) => {
     usePublicNews.mockReturnValue({ news: newsItems(4), loading: false, error: null })
 
     const { container } = renderPage({ isDev })
 
     const chips = [...container.querySelectorAll('.bd-news-category')].map((el) => el.textContent)
-    expect(chips).toEqual(expected)
+    expect(chips).toEqual(['Lingkungan', 'Pendidikan', 'Kategori 2', 'Kategori 3', 'Kategori 4'])
   })
 })
 
@@ -299,13 +297,26 @@ describe('BerandaPage hero', () => {
     expect(screen.getByRole('link', { name: 'Cek Status Surat' })).toHaveClass('bd-lift')
   })
 
-  it('uses the hero photo from the content config and hides an empty credit (K2)', () => {
+  // Foto dan kreditnya dari data desa (diatur Petugas Desa).
+  it('uses the hero photo and credit from the village data', () => {
+    usePublicVillageInfo.mockReturnValue({
+      village: { hero_image_url: '/storage/village-media/hero.jpg', hero_photo_credit: 'Warga' },
+      stats: null,
+      contacts: [],
+    })
     const { container } = renderPage()
 
     const hero = container.querySelector('.bd-hero')
     expect(hero.style.getPropertyValue('--bd-hero-image')).toBe(
-      'url("/assets/image/beranda/hero-pemandangan.jpg")',
+      'url("/storage/village-media/hero.jpg")',
     )
+    expect(screen.getByText('Foto: Warga')).toBeInTheDocument()
+  })
+
+  it('falls back to the plain hero colour and hides an empty credit (K2)', () => {
+    const { container } = renderPage()
+
+    expect(container.querySelector('.bd-hero').style.getPropertyValue('--bd-hero-image')).toBe('')
     expect(screen.queryByText(/^Foto:/)).toBeNull()
   })
 })
@@ -347,6 +358,11 @@ describe('BerandaPage service cards', () => {
   it.each([true, false])(
     'only links the WhatsApp and email rows of the complaint card (K14, D2; isDev=%s)',
     (isDev) => {
+      usePublicVillageInfo.mockReturnValue({
+        village: { email: 'kantor@desa.test' },
+        stats: null,
+        contacts: [],
+      })
       renderPage({ isDev })
 
       const title = cards().getByText('Sampaikan pengaduan')
@@ -367,11 +383,20 @@ describe('BerandaPage service cards', () => {
       expect(whatsapp.getAttribute('rel')).toMatch(/\bnoreferrer\b/)
       expect(screen.queryByText('+62 812-3456-7890')).toBeNull()
 
-      expect(email.getAttribute('href')).toMatch(/^mailto:.+@.+/)
-      expect(email).toHaveAccessibleName(/^Email pengaduan /)
+      // Email dari data desa (diatur Petugas Desa).
+      expect(email).toHaveAttribute('href', 'mailto:kantor@desa.test')
+      expect(email).toHaveAccessibleName('Email pengaduan kantor@desa.test')
       expect(email).not.toHaveAttribute('target')
     },
   )
+
+  it('leaves out the email row when the village has no email', () => {
+    renderPage()
+
+    const card = cards().getByText('Sampaikan pengaduan').closest('.bd-service-card')
+    expect(within(card).getAllByRole('link')).toHaveLength(1)
+    expect(within(card).queryByText(/@/)).toBeNull()
+  })
 
   it('shows all four cards in production as well', () => {
     renderPage({ isDev: false })
@@ -512,10 +537,14 @@ describe('BerandaPage Kepala Desa welcome', () => {
 
 describe('BerandaPage contact section', () => {
   const section = () => screen.getByRole('region', { name: 'Butuh bantuan?' })
+  // Seluruh isi kartu kontak dari data desa (diatur Petugas Desa).
   const village = {
-    phone: '0265-639 123',
+    name: 'Desa Cibenda',
+    phone: '(0265) 2640613',
     address: 'Jl. Raya Cibenda No. 1',
     head_name: 'Dede Rusliana',
+    office_hours: 'Senin – Jumat, 08.00 – 16.00 WIB',
+    map_url: 'https://maps.app.goo.gl/sVU5Xqmasq4UTJ4N6',
   }
   const officialContacts = [{ name: 'Petugas Lama', position: 'kasi_pelayanan', wa_link: 'x' }]
 
@@ -533,20 +562,44 @@ describe('BerandaPage contact section', () => {
     expect(screen.queryByRole('link', { name: 'WhatsApp' })).toBeNull()
   })
 
-  // Nomor kantor dari konfigurasi, tanpa WhatsApp (permintaan pemilik, 11 Okt 2026).
-  it('shows only the office phone as a tel: link in the phone card (A31)', () => {
+  // Nomor kantor dari data desa, tanpa WhatsApp (permintaan pemilik, 11 Okt 2026).
+  // Diklik untuk disalin, bukan tel: (permintaan pemilik, 12 Okt 2026).
+  it('shows only the office phone as a copy button in the phone card (A31)', async () => {
+    const writeText = vi.fn().mockResolvedValue()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     renderPage({ isDev: false })
 
     const card = within(section()).getByText('Telepon').closest('.bd-contact-card')
     expect(card.tagName).toBe('DIV')
-    const links = within(card).getAllByRole('link')
-    expect(links).toHaveLength(1)
-    expect(links[0]).toHaveAccessibleName('Telepon (0265) 2640613')
-    expect(links[0]).toHaveAttribute('href', 'tel:02652640613')
-    expect(links[0]).toHaveTextContent('(0265) 2640613')
+    expect(within(card).queryByRole('link')).toBeNull()
+    const button = within(card).getByRole('button', {
+      name: 'Salin nomor telepon (0265) 2640613',
+    })
+    expect(button).toHaveTextContent('(0265) 2640613')
+
+    fireEvent.click(button)
+
+    expect(writeText).toHaveBeenCalledWith('(0265) 2640613')
+    expect(await within(card).findByText('Nomor disalin')).toHaveAttribute('aria-live', 'polite')
 
     expect(within(section()).queryByText(/WhatsApp/)).toBeNull()
-    expect(screen.queryByText('0265-639 123')).toBeNull()
+    delete navigator.clipboard
+  })
+
+  it('tells the user when the phone number could not be copied', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+      configurable: true,
+    })
+    document.execCommand = vi.fn().mockReturnValue(false)
+    renderPage({ isDev: false })
+
+    const card = within(section()).getByText('Telepon').closest('.bd-contact-card')
+    fireEvent.click(within(card).getByRole('button', { name: /Salin nomor telepon/ }))
+
+    expect(await within(card).findByText(/Gagal menyalin/)).toBeInTheDocument()
+    delete navigator.clipboard
+    delete document.execCommand
   })
 
   it('keeps the service hours card unclickable', () => {
@@ -556,7 +609,7 @@ describe('BerandaPage contact section', () => {
     expect(hours.closest('a')).toBeNull()
   })
 
-  // D1 (12 Okt 2026): link peta asli, tampil di dev dan production.
+  // D1 (12 Okt 2026): link peta dari data desa, tampil di dev dan production.
   it.each([true, false])('opens the real map in a new tab (A32, D1; isDev=%s)', (isDev) => {
     renderPage({ isDev })
 
@@ -567,20 +620,24 @@ describe('BerandaPage contact section', () => {
     expect(link).toHaveAttribute('target', '_blank')
     expect(link.getAttribute('rel')).toMatch(/\bnoopener\b/)
     expect(link.getAttribute('rel')).toMatch(/\bnoreferrer\b/)
-    // Nomor telepon dan peta.
-    expect(within(section()).getAllByRole('link')).toHaveLength(2)
+    // Hanya link peta; nomor telepon berupa tombol salin.
+    expect(within(section()).getAllByRole('link')).toHaveLength(1)
   })
 
-  it('keeps the phone and map links while village data is missing', () => {
+  // Tidak ada data desa yang ditulis di kode: tanpa data, kartu menyatakan
+  // "Belum tersedia" dan kartu kantor tidak menjadi link.
+  it('shows neutral placeholders while village data is missing', () => {
     usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
 
     renderPage({ isDev: false })
 
-    expect(within(section()).getByText('Telepon').closest('a')).toBeNull()
-    const office = within(section()).getByRole('link', { name: /Kantor Desa Cibenda/ })
-    expect(office).toHaveAccessibleName(/Buka di peta \(tab baru\)$/)
-    expect(within(section()).queryByText('Jl. Raya Cibenda No. 1')).toBeNull()
-    expect(within(section()).getAllByRole('link')).toHaveLength(2)
+    const phoneCard = within(section()).getByText('Telepon').closest('.bd-contact-card')
+    expect(within(phoneCard).queryByRole('button')).toBeNull()
+    expect(within(phoneCard).getByText('Belum tersedia')).toBeInTheDocument()
+    const hoursCard = within(section()).getByText('Jam layanan kantor').closest('.bd-contact-card')
+    expect(within(hoursCard).getByText('Belum tersedia')).toBeInTheDocument()
+    expect(within(section()).getByText('Kantor Desa')).toBeInTheDocument()
+    expect(within(section()).queryAllByRole('link')).toHaveLength(0)
   })
 })
 

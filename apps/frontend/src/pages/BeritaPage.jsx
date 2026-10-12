@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Newspaper } from 'lucide-react'
 
 import { usePublicNews } from '@/features/berita/usePublicNews'
+import { PageLoader } from '@/components/ui/PageLoader'
 
 const ITEMS_PER_PAGE = 6
 
@@ -68,7 +69,7 @@ export function BeritaPage() {
     return (
       <div className="sid-kelola-berita-page">
         <main className="sid-kelola-berita-content">
-          <p role="status">Memuat berita...</p>
+          <PageLoader label="Memuat berita..." />
         </main>
       </div>
     )
@@ -144,11 +145,11 @@ export function BeritaPage() {
 
               <div className="sid-kelola-berita-feature-content">
                 <div className="sid-kelola-berita-feature-meta">
-                  {beritaUtama?.category && (
-                    <span className="sid-kelola-berita-category featured">
-                      {beritaUtama.category}
+                  {beritaUtama?.categories?.map((category) => (
+                    <span key={category} className="sid-kelola-berita-category featured">
+                      {category}
                     </span>
-                  )}
+                  ))}
 
                   {beritaUtama?.date && (
                     <span className="sid-kelola-berita-date featured">{beritaUtama.date}</span>
@@ -203,7 +204,7 @@ export function BeritaPage() {
                     </div>
 
                     <div className="sid-kelola-berita-latest-content">
-                      <p className="sid-kelola-berita-category">{b.category}</p>
+                      {b.category && <p className="sid-kelola-berita-category">{b.category}</p>}
 
                       <p className="sid-kelola-berita-latest-title">{b.title}</p>
 
@@ -286,7 +287,11 @@ export function BeritaPage() {
 
                   <div className="sid-kelola-berita-card-content">
                     <div className="sid-kelola-berita-card-meta">
-                      <span className="sid-kelola-berita-category">{b.category}</span>
+                      {b.categories?.map((category) => (
+                        <span key={category} className="sid-kelola-berita-category">
+                          {category}
+                        </span>
+                      ))}
 
                       <span className="sid-kelola-berita-date">{b.date}</span>
                     </div>

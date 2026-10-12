@@ -9,20 +9,14 @@
 import { useState, useEffect } from 'react'
 import { Send, Image as ImageIcon } from 'lucide-react'
 
-const KATEGORI_OPTIONS = [
-  'Umum',
-  'Pencapaian Utama',
-  'Community Update',
-  'Infrastruktur',
-  'Sejarah',
-  'Pendidikan',
-  'Lingkungan',
-  'Budaya',
-]
+import { categoryErrorMessage } from '@/features/kelola-berita/hooks/useNewsCategories'
+
+// Satu berita wajib punya 1 kategori, maksimal 2.
+const MAX_KATEGORI = 2
 
 const INITIAL_FORM = {
   title: '',
-  category: 'Umum',
+  category_ids: [],
   content: '',
   thumbnail: null,
 }
@@ -33,10 +27,12 @@ export default function BeritaFormModal({
   onSubmit,
   onDelete,
   initialData,
+  categories = [],
   processing = false,
 }) {
   const [form, setForm] = useState(INITIAL_FORM)
   const [imagePreview, setImagePreview] = useState(null)
+  const [error, setError] = useState('')
 
   // ==========================================
   // INITIAL DATA
@@ -45,18 +41,20 @@ export default function BeritaFormModal({
     if (initialData) {
       setForm({
         title: initialData.title ?? '',
-        category: initialData.category ?? 'Umum',
+        category_ids: (initialData.categories ?? []).map((category) => category.id),
         content: initialData.content ?? '',
         thumbnail: initialData.image ?? null,
       })
 
       setImagePreview(initialData.thumbnail ?? null)
+      setError('')
 
       return
     }
 
     setForm(INITIAL_FORM)
     setImagePreview(null)
+    setError('')
   }, [initialData, open])
 
   if (!open) return null
@@ -69,6 +67,25 @@ export default function BeritaFormModal({
       ...prev,
       [field]: e.target.value,
     }))
+  }
+
+  // ==========================================
+  // HANDLE KATEGORI (1-2)
+  // ==========================================
+  const toggleCategory = (id) => {
+    setError('')
+    setForm((prev) => {
+      const selected = prev.category_ids.includes(id)
+
+      if (!selected && prev.category_ids.length >= MAX_KATEGORI) return prev
+
+      return {
+        ...prev,
+        category_ids: selected
+          ? prev.category_ids.filter((categoryId) => categoryId !== id)
+          : [...prev.category_ids, id],
+      }
+    })
   }
 
   // ==========================================
@@ -101,7 +118,16 @@ export default function BeritaFormModal({
 
     if (processing) return
 
-    await onSubmit(form)
+    if (form.category_ids.length === 0) {
+      setError('Pilih minimal 1 kategori berita.')
+      return
+    }
+
+    try {
+      await onSubmit(form)
+    } catch (submitError) {
+      setError(categoryErrorMessage(submitError, 'Berita gagal disimpan.'))
+    }
   }
 
   return (
@@ -139,25 +165,41 @@ export default function BeritaFormModal({
         {/* ==========================================
             KATEGORI
         ========================================== */}
-        <div className="sid-berita-form-group">
-          <label htmlFor="berita-category" className="sid-berita-form-label">
-            Kategori
-          </label>
+        <fieldset className="sid-berita-form-group sid-berita-category-fieldset">
+          <legend className="sid-berita-form-label">Kategori *</legend>
 
-          <select
-            id="berita-category"
-            value={form.category}
-            onChange={handleChange('category')}
-            className="sid-berita-form-input"
-            disabled={processing}
-          >
-            {KATEGORI_OPTIONS.map((kategori) => (
-              <option key={kategori} value={kategori}>
-                {kategori}
-              </option>
-            ))}
-          </select>
-        </div>
+          <p className="sid-berita-form-help">
+            Pilih 1–{MAX_KATEGORI} kategori ({form.category_ids.length}/{MAX_KATEGORI} dipilih)
+          </p>
+
+          {categories.length === 0 ? (
+            <p className="sid-berita-form-help">
+              Belum ada kategori. Tambahkan lewat tombol Kelola Kategori.
+            </p>
+          ) : (
+            <div className="sid-berita-category-options">
+              {categories.map((category) => {
+                const checked = form.category_ids.includes(category.id)
+                const full = !checked && form.category_ids.length >= MAX_KATEGORI
+
+                return (
+                  <label
+                    key={category.id}
+                    className={`sid-berita-category-option${checked ? ' is-selected' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleCategory(category.id)}
+                      disabled={processing || full}
+                    />
+                    {category.name}
+                  </label>
+                )
+              })}
+            </div>
+          )}
+        </fieldset>
 
         {/* ==========================================
             KONTEN
@@ -208,6 +250,12 @@ export default function BeritaFormModal({
             />
           </label>
         </div>
+
+        {error && (
+          <p className="sid-berita-form-error" role="alert">
+            {error}
+          </p>
+        )}
 
         {/* ==========================================
             ACTION

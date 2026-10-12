@@ -47,9 +47,7 @@ describe('BeritaPage', () => {
 
     renderPage()
 
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Belum ada berita yang dipublikasikan.',
-    )
+    expect(screen.getByRole('status')).toHaveTextContent('Belum ada berita yang dipublikasikan.')
   })
 
   it('renders news supplied by the public API hook', () => {
@@ -58,6 +56,7 @@ describe('BeritaPage', () => {
         {
           id: 1,
           title: 'Pengumuman Posyandu',
+          categories: [],
           category: null,
           date: '1 Juli 2026',
           excerpt: '',
@@ -68,6 +67,7 @@ describe('BeritaPage', () => {
         {
           id: 2,
           title: 'Jadwal Posyandu Bulan Ini',
+          categories: [],
           category: null,
           date: '2 Juli 2026',
           excerpt: 'Jadwal posyandu bulan ini.',

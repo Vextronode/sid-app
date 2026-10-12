@@ -54,6 +54,32 @@ class VillageProfileService
         return $village;
     }
 
+    /**
+     * Ganti logo atau foto hero desa. Gambar ini tampil di halaman publik,
+     * jadi disimpan di disk public. Berkas lama dihapus hanya bila itu
+     * unggahan sebelumnya, bukan aset frontend dari seeder.
+     */
+    public function replaceImage(User $user, string $column, UploadedFile $image): Village
+    {
+        $this->assertActivePetugas($user);
+        $village = $this->getProfile($user);
+        $oldValue = $village->{$column};
+        $newPath = $image->store("village-media/{$village->id}", 'public');
+
+        try {
+            $village = $this->repository->update($village, [$column => $newPath]);
+        } catch (\Throwable $exception) {
+            Storage::disk('public')->delete($newPath);
+            throw $exception;
+        }
+
+        if (Village::isUploadedMedia($oldValue)) {
+            Storage::disk('public')->delete($oldValue);
+        }
+
+        return $village;
+    }
+
     public function stampPreview(User $user): BinaryFileResponse
     {
         $this->assertActivePetugas($user);
