@@ -212,9 +212,6 @@ git pull org dev --rebase
 
 Git akan menandai file seperti berikut:
 
-```text
-Perubahan branch saat ini
-```
 
 ---
 
@@ -223,9 +220,6 @@ Perubahan branch saat ini
 - Pilih perubahan yang ingin dipakai
 - Atau gabungkan keduanya
 - Hapus seluruh marker:
-
-```text
-```
 
 ---
 
