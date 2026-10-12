@@ -91,19 +91,29 @@ php artisan migrate:fresh --seed
 
 > `migrate:fresh` menghapus seluruh tabel beserta datanya. Jangan jalankan pada database yang berisi data yang ingin dipertahankan.
 
-Seeder development membuat satu Desa Cibenda dengan 5 dusun, masing-masing 5 RW dan setiap RW 5 RT, serta satu akun untuk setiap role yang didukung. Setiap akun terhubung ke satu citizen dan menggunakan password demo yang sama:
+Seeder development membuat Desa Cibenda dengan 5 dusun asli (Patrol, Sinargalih, Cibenda, Budiasih, Sucen), masing-masing 5 RW dan setiap RW 5 RT. Seeder juga mengisi profil desa (visi, misi, sejarah), perangkat desa dari desacibenda.id lengkap dengan foto, Ketua RW/RT dengan nama acak, 100 warga dalam beberapa KK, dan 10 berita. Foto perangkat dan berita disalin dari `database/seeders/assets/` ke disk `public`, jadi jalankan `php artisan storage:link` agar foto tampil.
+
+Akun demo untuk mencoba setiap role:
+
+| Role | Username | Keterangan |
+|---|---|---|
+| Petugas Desa (admin) | `demo_admin` | |
+| Warga | `demo_warga` | Kepala keluarga di RT 001/RW 001 Patrol |
+| Kepala Dusun | `demo_kadus` | Aditulloh, Kadus Patrol |
+| RW | `demo_rw` | Ketua RW 001 Patrol |
+| RT | `demo_rt` | Ketua RT 001/RW 001 Patrol |
+
+Pejabat lain yang punya peran di aplikasi juga mendapat akun, supaya surat dari RT mana pun bisa diproses sampai Kepala Desa:
 
 | Role | Username |
 |---|---|
-| Warga | `demo_warga` |
-| RT | `demo_rt` |
-| RW | `demo_rw` |
-| Kepala Dusun | `demo_kadus` |
-| Kasi Pelayanan | `demo_kasi` |
-| Kaur TU Umum | `demo_kaur` |
-| Petugas Desa (admin) | `demo_admin` |
-| Kepala Desa | `demo_kades` |
-| Sekretaris Desa | `demo_sekdes` |
+| Kepala Desa | `dede.rusliana` |
+| Sekretaris Desa | `saeful.millah` |
+| Kasi Pelayanan | `ferdiansyah` |
+| Kaur TU & Umum | `tita.sutiasih` |
+| Kepala Dusun lain | `kadus.<dusun>`, mis. `kadus.sinargalih` |
+| RW lain | `rw.<dusun>.<nn>`, mis. `rw.sucen.03` |
+| RT lain | `rt.<dusun>.<nn>.<nn>` (RW lalu RT), mis. `rt.cibenda.02.05` |
 
 **Password semua akun:** `Password123!`
 
