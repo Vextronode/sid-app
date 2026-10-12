@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateVillageProfileRequest;
+use App\Http\Requests\UploadVillageImageRequest;
 use App\Http\Requests\UploadVillageStampRequest;
 use App\Http\Resources\VillageResource;
 use App\Services\VillageProfileService;
@@ -40,6 +41,22 @@ class VillageProfileController extends Controller
 
         return response()->json([
             'message' => 'Stempel desa berhasil diperbarui.',
+            'data' => new VillageResource($village),
+        ]);
+    }
+
+    /**
+     * POST /villages/profile/logo dan /villages/profile/hero-image; kolomnya
+     * ditetapkan route lewat ->defaults('column', ...).
+     */
+    public function uploadImage(UploadVillageImageRequest $request, string $column): JsonResponse
+    {
+        $village = $this->service->replaceImage($request->user(), $column, $request->file('image'));
+
+        return response()->json([
+            'message' => $column === 'logo'
+                ? 'Logo desa berhasil diperbarui.'
+                : 'Foto beranda berhasil diperbarui.',
             'data' => new VillageResource($village),
         ]);
     }

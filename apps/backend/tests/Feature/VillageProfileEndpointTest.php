@@ -204,4 +204,102 @@ class VillageProfileEndpointTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['name', 'head_name']);
     }
+
+    #[Test]
+    public function petugas_can_update_public_page_texts(): void
+    {
+        [$village, $user] = $this->villageWithUser();
+
+        $this->actingAs($user)->patchJson('/api/villages/profile', [
+            'name' => 'Desa Cibenda',
+            'head_name' => 'H. Ridwan Saepudin',
+            'office_hours' => 'Senin – Jumat, 08.00 – 15.00 WIB',
+            'map_url' => 'https://maps.app.goo.gl/abc',
+            'hero_photo_credit' => 'Dinas Pariwisata',
+        ])->assertOk()
+            ->assertJsonPath('data.office_hours', 'Senin – Jumat, 08.00 – 15.00 WIB')
+            ->assertJsonPath('data.map_url', 'https://maps.app.goo.gl/abc')
+            ->assertJsonPath('data.hero_photo_credit', 'Dinas Pariwisata');
+
+        // Field yang tidak dikirim tidak ikut dikosongkan.
+        $this->actingAs($user)->patchJson('/api/villages/profile', [
+            'name' => 'Desa Cibenda',
+            'head_name' => 'H. Ridwan Saepudin',
+        ])->assertOk()->assertJsonPath('data.map_url', 'https://maps.app.goo.gl/abc');
+
+        $this->actingAs($user)->patchJson('/api/villages/profile', [
+            'name' => 'Desa Cibenda',
+            'head_name' => 'H. Ridwan Saepudin',
+            'map_url' => 'bukan url',
+        ])->assertStatus(422)->assertJsonValidationErrors(['map_url']);
+
+        $this->assertSame('https://maps.app.goo.gl/abc', $village->fresh()->map_url);
+    }
+
+    #[Test]
+    public function seeded_asset_paths_are_returned_as_is(): void
+    {
+        [$village, $user] = $this->villageWithUser();
+        $village->update([
+            'logo' => '/assets/image/lambang.webp',
+            'hero_image' => 'https://cdn.example.com/hero.jpg',
+        ]);
+
+        $this->actingAs($user)->getJson('/api/villages/profile')
+            ->assertOk()
+            ->assertJsonPath('data.logo_url', '/assets/image/lambang.webp')
+            ->assertJsonPath('data.hero_image_url', 'https://cdn.example.com/hero.jpg');
+    }
+
+    #[Test]
+    public function petugas_can_replace_logo_and_hero_image(): void
+    {
+        Storage::fake('public');
+        [$village, $user] = $this->villageWithUser();
+        $village->update(['logo' => '/assets/image/lambang.webp']);
+
+        $first = $this->actingAs($user)->post('/api/villages/profile/logo', [
+            'image' => UploadedFile::fake()->image('logo.png'),
+        ])->assertOk()->assertJsonPath('message', 'Logo desa berhasil diperbarui.');
+
+        $firstPath = $village->fresh()->logo;
+        $this->assertStringStartsWith("village-media/{$village->id}/", $firstPath);
+        Storage::disk('public')->assertExists($firstPath);
+        $this->assertSame(Storage::disk('public')->url($firstPath), $first->json('data.logo_url'));
+
+        // Unggahan kedua menghapus berkas unggahan sebelumnya.
+        $this->actingAs($user)->post('/api/villages/profile/logo', [
+            'image' => UploadedFile::fake()->image('logo2.png'),
+        ])->assertOk();
+        Storage::disk('public')->assertMissing($firstPath);
+
+        $this->actingAs($user)->post('/api/villages/profile/hero-image', [
+            'image' => UploadedFile::fake()->image('hero.jpg', 1600, 900),
+        ])->assertOk()->assertJsonPath('message', 'Foto beranda berhasil diperbarui.');
+        Storage::disk('public')->assertExists($village->fresh()->hero_image);
+    }
+
+    #[Test]
+    public function image_upload_is_validated_and_limited_to_petugas(): void
+    {
+        Storage::fake('public');
+        [$village, $user] = $this->villageWithUser();
+
+        $this->actingAs($user)->post('/api/villages/profile/logo', [
+            'image' => UploadedFile::fake()->create('logo.pdf', 10, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertStatus(422)->assertJsonValidationErrors(['image']);
+
+        // Logo maks 2 MB, foto beranda maks 5 MB.
+        $this->actingAs($user)->post('/api/villages/profile/logo', [
+            'image' => UploadedFile::fake()->image('logo.png')->size(3000),
+        ], ['Accept' => 'application/json'])->assertStatus(422);
+        $this->actingAs($user)->post('/api/villages/profile/hero-image', [
+            'image' => UploadedFile::fake()->image('hero.png')->size(3000),
+        ], ['Accept' => 'application/json'])->assertOk();
+
+        $kades = User::factory()->create(['village_id' => $village->id, 'role' => 'kepala_desa']);
+        $this->actingAs($kades)->post('/api/villages/profile/logo', [
+            'image' => UploadedFile::fake()->image('logo.png'),
+        ], ['Accept' => 'application/json'])->assertStatus(403);
+    }
 }

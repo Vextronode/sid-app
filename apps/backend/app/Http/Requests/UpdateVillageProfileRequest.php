@@ -44,6 +44,10 @@ class UpdateVillageProfileRequest extends FormRequest
             'history' => ['nullable', 'string'],
             'vision' => ['nullable', 'string'],
             'mission' => ['nullable', 'string'],
+            // Tampilan halaman publik (beranda dan kontak).
+            'office_hours' => ['nullable', 'string', 'max:100'],
+            'map_url' => ['nullable', 'url', 'max:500'],
+            'hero_photo_credit' => ['nullable', 'string', 'max:100'],
         ];
     }
 
@@ -55,6 +59,7 @@ class UpdateVillageProfileRequest extends FormRequest
             'area_ha.numeric' => 'Luas wilayah harus berupa angka',
             'area_ha.min' => 'Luas wilayah tidak boleh negatif',
             'area_ha.max' => 'Luas wilayah terlalu besar',
+            'map_url.url' => 'Link peta harus berupa URL lengkap, mis. https://maps.app.goo.gl/...',
         ];
     }
 }
