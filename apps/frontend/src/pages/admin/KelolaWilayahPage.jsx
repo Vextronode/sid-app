@@ -9,6 +9,7 @@ import RtTable from '@/features/kelola-wilayah/components/RtTable'
 import RwTable from '@/features/kelola-wilayah/components/RwTable'
 import WilayahFormModal from '@/features/kelola-wilayah/components/WilayahFormModal'
 import WilayahTabs from '@/features/kelola-wilayah/components/WilayahTabs'
+import { PageLoader } from '@/components/ui/PageLoader'
 
 export default function KelolaWilayahPage() {
   const {
@@ -155,10 +156,7 @@ export default function KelolaWilayahPage() {
     return (
       <div className="sid-kelola-wilayah-page">
         <div className="sid-kelola-wilayah-content">
-          <div className="sid-kelola-wilayah-loading">
-            <div className="sid-kelola-wilayah-loading-spinner" />
-            <p>Memuat data wilayah...</p>
-          </div>
+          <PageLoader label="Memuat data wilayah..." />
         </div>
 
         <SiteFooter />
