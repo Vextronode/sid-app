@@ -243,6 +243,16 @@ export default function KelolaProfilDesaPage() {
               </p>
             </div>
 
+            <div className="sid-profil-desa-info-item">
+              <span className="sid-profil-desa-info-label">Luas Wilayah</span>
+
+              <p className="sid-profil-desa-info-value">
+                {profile.area_ha === '' || profile.area_ha === null
+                  ? '-'
+                  : `${Number(profile.area_ha).toLocaleString('id-ID', { maximumFractionDigits: 3 })} ha`}
+              </p>
+            </div>
+
             <div className="sid-profil-desa-info-item sid-profil-desa-info-item-full">
               <span className="sid-profil-desa-info-label">Alamat</span>
 
