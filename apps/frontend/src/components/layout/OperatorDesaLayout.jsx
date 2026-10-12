@@ -1,9 +1,11 @@
 // ==========================================
 // OperatorDesaLayout.jsx
 // Layout khusus Operator Desa
-// Styling menggunakan Global CSS SID.
-// Logic/auth/routing tidak diubah.
+// Styling menggunakan Global CSS SID; sidebar dan topbar memakai token
+// publik (.bd-theme dari beranda.css) dengan lambang + nama desa.
 // ==========================================
+
+import '@/styles/beranda.css'
 
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -27,6 +29,9 @@ import {
 } from 'lucide-react'
 import { WilayahMasterProvider } from '@/features/kelola-wilayah/hooks/WilayahMasterProvider'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { useLogoutToBeranda } from '@/features/auth/hooks/useLogoutToBeranda'
+import { getBerandaContent } from '@/features/beranda/berandaContent'
+import { BerandaBrand } from '@/features/beranda/components/BerandaBrand'
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover-Admin'
 import useNotifications from '@/features/notifikasi/hooks/useNotifications'
 import {
@@ -123,11 +128,12 @@ const MENU_ITEMS = [
 
 export function OperatorDesaLayout({ children }) {
   const location = useLocation()
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const visibleRoutes = ROLE_NAVIGATION[user?.role] ?? []
 
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const { handleLogout, isLoggingOut } = useLogoutToBeranda()
 
   const notificationState = useNotifications()
   const { unreadCount, reload } = notificationState
@@ -139,13 +145,15 @@ export function OperatorDesaLayout({ children }) {
             SIDEBAR
             ================================================= */}
 
-        <aside className="sid-operator-sidebar">
+        <aside className="sid-operator-sidebar bd-theme">
           {/* BRAND */}
 
           <div className="sid-operator-sidebar-brand">
-            <h1>SIDUTama</h1>
-
-            <p>Admin Petugas Desa</p>
+            <BerandaBrand
+              header={getBerandaContent(import.meta.env.DEV).header}
+              subtitle="Admin Petugas Desa"
+              className="sid-operator-brand"
+            />
           </div>
 
           {/* MENU */}
@@ -173,9 +181,14 @@ export function OperatorDesaLayout({ children }) {
           {/* SIDEBAR FOOTER */}
 
           <div className="sid-operator-sidebar-footer">
-            <button type="button" onClick={logout} className="sid-operator-sidebar-action logout">
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="sid-operator-sidebar-action logout"
+            >
               <LogOut size={16} />
-              <span>Keluar</span>
+              <span>{isLoggingOut ? 'Keluar…' : 'Keluar'}</span>
             </button>
           </div>
         </aside>
@@ -189,7 +202,7 @@ export function OperatorDesaLayout({ children }) {
               TOPBAR
               ================================================= */}
 
-          <header className="sid-operator-topbar">
+          <header className="sid-operator-topbar bd-theme">
             <div className="sid-operator-topbar-spacer" />
 
             {/* TOPBAR RIGHT */}
@@ -258,11 +271,12 @@ export function OperatorDesaLayout({ children }) {
                       <button
                         type="button"
                         role="menuitem"
-                        onClick={logout}
+                        onClick={handleLogout}
+                        disabled={isLoggingOut}
                         className="sid-dropdown-item sid-dropdown-item-danger"
                       >
                         <LogOut size={18} />
-                        <span>Keluar</span>
+                        <span>{isLoggingOut ? 'Keluar…' : 'Keluar'}</span>
                       </button>
                     </div>
                   </>
