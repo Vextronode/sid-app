@@ -107,6 +107,12 @@ describe('LoginPage links (D4)', () => {
     )
   }
 
+  it('"Kembali ke Beranda" is a link to the home page', () => {
+    renderLogin()
+
+    expect(screen.getByRole('link', { name: 'Kembali ke Beranda' })).toHaveAttribute('href', '/')
+  })
+
   it('"Daftar sekarang" is a link to /register', () => {
     renderLogin()
 
