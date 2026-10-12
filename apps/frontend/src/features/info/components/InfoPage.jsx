@@ -6,7 +6,7 @@ import { INFO_PAGES } from '../infoPagesContent'
 
 // Halaman informasi khusus dev (D6): Kebijakan privasi, Aksesibilitas, PPID.
 // Dirender di dalam MainLayout (yang sudah punya <main>), jadi isinya <article>.
-// Gaya dari beranda.css di bawah .bd-root (kelas bd-info-*).
+// Gaya dari public.css di bawah .pub (kelas bd-info-*).
 
 const SLOT_PATTERN = /(\[[^\]]+\])/
 
