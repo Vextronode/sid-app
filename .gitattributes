@@ -1,0 +1,6 @@
+# Skrip dan konfigurasi deployment harus LF di semua OS (bash/Nginx/entrypoint gagal dengan CRLF).
+*.sh text eol=lf
+deploy/** text eol=lf
+apps/backend/docker/** text eol=lf
+apps/frontend/Dockerfile* text eol=lf
+apps/backend/Dockerfile text eol=lf

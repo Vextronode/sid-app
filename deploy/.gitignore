@@ -1,0 +1,7 @@
+# Konfigurasi nyata (berisi rahasia), termasuk compose.env, sid.env, sid.neon.env, smoke.env.
+# Template *.env.example tetap terlacak.
+/*.env
+
+# State deploy dan dump database.
+/.state/
+/backups/

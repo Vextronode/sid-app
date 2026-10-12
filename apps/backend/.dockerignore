@@ -1,0 +1,58 @@
+# Konteks build image sid-api = apps/backend.
+# Jangan ikutkan rahasia, dependency lokal, cache usang, data upload dev, dan tes.
+
+.git
+.gitignore
+.gitattributes
+.editorconfig
+.idea
+.vscode
+.cursor
+.codex
+.zed
+*.log
+README.md
+
+# Rahasia / konfigurasi lokal (termasuk .env.example; image tidak butuh .env)
+.env
+.env.*
+**/.env
+**/.env.*
+auth.json
+.npmrc
+storage/*.key
+
+# Dependency dan cache lokal (provider cache lokal memuat paket dev -> boot gagal)
+vendor
+node_modules
+bootstrap/cache/*
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing
+storage/pail
+storage/fonts/*
+
+# Data upload pengembangan (bisa berisi data pribadi)
+storage/app/public/*
+storage/app/private/*
+storage/app/*.*
+
+# Aset/symlink lokal
+public/hot
+public/storage
+public/build
+
+# Tes dan alat pengembangan
+tests
+phpunit.xml
+.phpunit.result.cache
+.phpunit.cache
+database/*.sqlite
+database/*.sqlite-journal
+
+# Berkas build itu sendiri dan paket kerja Claude
+Dockerfile
+.dockerignore
+claude-*
