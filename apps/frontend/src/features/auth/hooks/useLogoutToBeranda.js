@@ -6,8 +6,9 @@ import { HAL_BERANDA } from '@/lib/constants/routes'
 // Keluar lalu ke beranda publik. Pindah halaman baru setelah server menghapus
 // sesi: bila pindah duluan, tombol "Masuk Warga" yang diklik selagi request
 // berjalan masih melihat user login dan GuestRoute langsung membuka dashboard.
-// Pindahnya lewat onLoggedOut, sebelum user dikosongkan, agar ProtectedRoute
-// tidak sempat mengarahkan ke halaman login.
+// Pindahnya lewat onLoggedOut, yang di-commit bersamaan dengan pengosongan
+// user (lihat AuthContext.logout), agar ProtectedRoute tidak sempat
+// mengarahkan ke halaman login.
 export function useLogoutToBeranda() {
   const navigate = useNavigate()
   const { logout, isLoggingOut } = useAuth()
