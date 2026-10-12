@@ -1,0 +1,30 @@
+get:
+  tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
+  summary: Lihat detail 1 flow beserta steps-nya
+  description: Flow hanya dapat dicari dalam desa akun Petugas Desa yang login; flow desa lain menghasilkan 404.
+  operationId: getApprovalFlow
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 3
+  responses:
+    '200':
+      description: Detail flow berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/letter-categories/letter-categories.yaml#/ApprovalFlow'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

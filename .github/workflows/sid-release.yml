@@ -1,0 +1,212 @@
+# Rilis image SID (sid-api, sid-web) ke GHCR berdasarkan tag git vX.Y.Z di main.
+# Server expo hanya `docker compose pull` tag ini; tidak ada tag latest.
+# Dry-run: Actions -> SID Release -> Run workflow (push=false) = build + smoke, tanpa login/push.
+name: SID Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "Push image ke GHCR (false = dry-run: build + smoke saja)"
+        type: boolean
+        default: false
+      tag:
+        description: "Tag percobaan (vX.Y.Z-label, mis. v0.0.0-dryrun)"
+        type: string
+        default: "v0.0.0-dryrun"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sid-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verifikasi tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      push: ${{ steps.meta.outputs.push }}
+      owner: ${{ steps.meta.outputs.owner }}
+    steps:
+      - name: Checkout (riwayat penuh)
+        if: github.event_name == 'push'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Tentukan tag, mode push, owner
+        id: meta
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_PUSH: ${{ inputs.push }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "push" ]; then
+            tag="$REF_NAME"
+            push=true
+          else
+            tag="$INPUT_TAG"
+            push="$INPUT_PUSH"
+          fi
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$ ]]; then
+            echo "::error::Tag '$tag' tidak valid (harus vX.Y.Z atau vX.Y.Z-label)."
+            exit 1
+          fi
+          # Dispatch tidak diverifikasi "di main", jadi tidak boleh menimpa tag rilis.
+          if [ "$EVENT" != "push" ] && [ "$push" = "true" ] && [[ ! "$tag" =~ -[A-Za-z0-9.]+$ ]]; then
+            echo "::error::workflow_dispatch dengan push=true hanya untuk tag berlabel (mis. v0.1.0-rc1), bukan '$tag'."
+            exit 1
+          fi
+          owner="$(printf '%s' "$OWNER" | tr '[:upper:]' '[:lower:]')"
+          {
+            echo "tag=$tag"
+            echo "push=$push"
+            echo "owner=$owner"
+          } >> "$GITHUB_OUTPUT"
+          echo "Tag: $tag | push: $push | registry: ghcr.io/$owner"
+
+      - name: Tag harus berada di main
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Commit $GITHUB_SHA (tag ${GITHUB_REF_NAME}) bukan leluhur origin/main. Rilis hanya dari main."
+            exit 1
+          fi
+          echo "OK: $GITHUB_SHA ada di riwayat origin/main."
+
+  build:
+    name: Build ${{ matrix.image }}
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - image: sid-api
+            context: apps/backend
+            file: apps/backend/Dockerfile
+          - image: sid-web
+            context: .
+            file: apps/frontend/Dockerfile
+    env:
+      IMAGE: ghcr.io/${{ needs.verify.outputs.owner }}/${{ matrix.image }}
+      SMOKE_IMAGE: sid-smoke.local/${{ matrix.image }}:ci
+      PLATFORMS: ${{ vars.SID_PLATFORMS || 'linux/amd64,linux/arm64' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build smoke (linux/amd64, load)
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ env.SMOKE_IMAGE }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          provenance: false
+          sbom: false
+
+      - name: Smoke test sid-api
+        if: matrix.image == 'sid-api'
+        run: |
+          set -euo pipefail
+          img="$SMOKE_IMAGE"
+          docker run --rm "$img" php -v | head -n 1
+          mods="$(docker run --rm "$img" php -m)"
+          for m in pdo_pgsql gd zip mbstring dom fileinfo curl openssl ctype tokenizer "Zend OPcache"; do
+            grep -qix "$m" <<< "$mods" || { echo "::error::ekstensi $m tidak ada"; exit 1; }
+          done
+          docker run --rm "$img" composer check-platform-reqs --no-dev
+          docker run --rm --entrypoint "" "$img" php artisan --version
+          # Tidak ada .env/tes/dependency dev di image.
+          docker run --rm --entrypoint "" "$img" sh -c \
+            'cd /var/www/html && ! ls -A | grep -q "^\.env" && test ! -d tests && test ! -d vendor/phpunit && test ! -d vendor/laravel/pint'
+          # Entrypoint harus gagal cepat tanpa APP_KEY.
+          if docker run --rm "$img" php artisan --version; then
+            echo "::error::entrypoint tidak menolak APP_KEY kosong"
+            exit 1
+          fi
+
+      - name: Smoke test sid-web
+        if: matrix.image == 'sid-web'
+        run: |
+          set -euo pipefail
+          docker run --rm "$SMOKE_IMAGE" nginx -t
+          docker run --rm --entrypoint "" "$SMOKE_IMAGE" test -f /usr/share/nginx/html/index.html
+
+      - name: Metadata image
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=${{ needs.verify.outputs.tag }}
+            type=sha,prefix=sha-,format=short
+
+      - name: Login GHCR
+        if: needs.verify.outputs.push == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build multi-arch (+ push bila diaktifkan)
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: ${{ env.PLATFORMS }}
+          push: ${{ needs.verify.outputs.push == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          provenance: false
+          sbom: false
+
+      - name: Ringkasan
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          PUSHED: ${{ needs.verify.outputs.push }}
+        run: |
+          {
+            echo "### ${{ matrix.image }}"
+            echo ""
+            echo "- Push: \`$PUSHED\` (platform: \`$PLATFORMS\`)"
+            echo "- Digest: \`${DIGEST:-tidak ada}\`"
+            echo "- Referensi:"
+            while IFS= read -r t; do
+              [ -n "$t" ] && echo "  - \`$t\`"
+            done <<< "$TAGS"
+            if [ "$PUSHED" = "true" ] && [ -n "${DIGEST:-}" ]; then
+              echo "- Pull dengan digest: \`$IMAGE@$DIGEST\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

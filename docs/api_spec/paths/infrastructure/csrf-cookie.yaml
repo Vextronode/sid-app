@@ -1,0 +1,12 @@
+servers:
+  - url: https://api.sid-cibenda.id
+    description: Root host (tanpa prefix /api)
+security: []
+get:
+  tags: [Infrastruktur]
+  summary: Inisialisasi cookie CSRF untuk Sanctum SPA
+  security: []
+  operationId: getSanctumCsrfCookie
+  responses:
+    '204':
+      description: Cookie XSRF-TOKEN disetel; gunakan nilainya pada header X-XSRF-TOKEN untuk request mutasi.

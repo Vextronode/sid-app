@@ -1,34 +1,21 @@
-# Laravel
-/node_modules
-/public/build
-/public/hot
-/public/storage
-/storage/*.key
-/vendor
-.env
-.env.backup
-.env.production
-.phpunit.result.cache
-Homestead.json
-Homestead.yaml
-auth.json
-npm-debug.log
-yarn-error.log
+# Backend (Laravel)
+apps/backend/vendor
+apps/backend/.env
+apps/backend/storage/*.key
+apps/backend/bootstrap/cache/*.php
+apps/backend/.phpunit.cache
+apps/backend/storage/logs/*.log
+apps/backend/storage/framework/cache/*
+apps/backend/storage/framework/sessions/*
+apps/backend/storage/framework/views/*
 
-# Laravel 11+
-/.fleet
-/.idea
-/.nova
-/.vscode
-/.zed
+# Frontend (React/Vite)
+apps/frontend/node_modules
+apps/frontend/dist
+apps/frontend/.env
 
-# SQLite
-*.sqlite
-*.sqlite-journal
-
-# OS
+# Editor/OS
 .DS_Store
-Thumbs.db
-
-# Logs
-storage/logs/*.log
+.vscode
+.idea
+apps/backend/cookies.txt

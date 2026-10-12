@@ -1,0 +1,39 @@
+get:
+  tags: [Epic 7 - Deadline & Reminder Approval]
+  summary: Lihat setting deadline approval per tahap
+  description: |
+    Aktor: Petugas Desa.
+    UC-22. Hanya mengembalikan pengaturan untuk level approver aktif:
+    rt dan kepala_desa. Nilai lain pada ENUM database tetap
+    dipertahankan untuk kompatibilitas namun tidak disajikan/diubah.
+  operationId: listApprovalSettings
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Setting deadline approval per tahap berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/approval-settings/approval-settings.yaml#/ApprovalSetting'
+          example:
+            data:
+              - id: 1
+                approval_level: "rt"
+                deadline_hours: 24
+                reminder_hours: 12
+                is_active: true
+              - id: 2
+                approval_level: "kepala_desa"
+                deadline_hours: 24
+                reminder_hours: 12
+                is_active: true
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'

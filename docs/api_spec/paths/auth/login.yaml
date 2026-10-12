@@ -1,0 +1,63 @@
+servers:
+  - url: https://api.sid-cibenda.id
+    description: Endpoint web autentikasi (tanpa prefix /api)
+security: []
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Login (Sanctum SPA cookie-based)
+  security:
+    - sanctumCookie: []
+  description: |
+    UC-01. Login menggunakan username + password. Session cookie Sanctum
+    dikirim HttpOnly. Respons mencakup `user` beserta role, official aktif,
+    dan `must_change_password`.
+  operationId: login
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/auth/auth.yaml#/LoginRequest'
+  responses:
+    '200':
+      description: Login berhasil, HttpOnly cookie session di-set
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/auth/auth.yaml#/LoginResponse'
+    '422':
+      description: Kredensial salah atau validasi format gagal
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          examples:
+            invalid_credentials:
+              summary: Username atau password salah
+              value:
+                message: "The given data was invalid."
+                errors:
+                  username: ["Username atau kata sandi salah."]
+    '403':
+      description: Akun tidak aktif
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+          examples:
+            inactive_account:
+              summary: Akun nonaktif
+              value:
+                message: "Akun tidak aktif, hubungi administrator"
+    '429':
+      description: Terlalu banyak percobaan login gagal (rate limit)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Too Many Attempts."
+    '500':
+      $ref: '../../responses/common.yaml#/ServerError'

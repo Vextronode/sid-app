@@ -1,0 +1,328 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\ApprovalFlow;
+use App\Models\Citizen;
+use App\Models\FlowStep;
+use App\Models\Hamlet;
+use App\Models\Letter;
+use App\Models\LetterType;
+use App\Models\Official;
+use App\Models\Rt;
+use App\Models\Rw;
+use App\Models\User;
+use App\Models\Village;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
+use Tests\TestCase;
+
+class LetterControllerTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_store_creates_letter_for_authenticated_citizen_user(): void
+    {
+        Notification::fake();
+
+        $rt = Rt::factory()->create();
+        $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
+        Official::factory()->create(['rt_id' => $rt->id, 'position' => 'rt', 'is_active' => true]);
+        $letterType = LetterType::factory()->create(['flow_id' => $this->flowWithRtStep()->id]);
+        $user = User::factory()->create([
+            'citizen_id' => $citizen->id,
+            'village_id' => $citizen->village_id,
+        ]);
+
+        $this->actingAs($user)
+            ->postJson('/api/letters', [
+                'letter_type_id' => $letterType->id,
+                'purpose' => 'Keperluan administrasi',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('message', 'Permohonan berhasil dibuat.')
+            ->assertJsonPath('data.status', 'pending');
+    }
+
+    public function test_official_with_citizen_can_submit_letter(): void
+    {
+        $citizen = Citizen::factory()->create();
+        $letterType = LetterType::factory()->create(['flow_id' => $this->flowWithRtStep()->id]);
+        $user = User::factory()->create([
+            'role' => 'petugas_desa',
+            'citizen_id' => $citizen->id,
+            'village_id' => $citizen->village_id,
+        ]);
+
+        $this->actingAs($user)
+            ->postJson('/api/letters', [
+                'letter_type_id' => $letterType->id,
+                'purpose' => 'Keperluan administrasi',
+            ])
+            ->assertCreated();
+    }
+
+    public function test_user_without_citizen_cannot_submit_letter(): void
+    {
+        $letterType = LetterType::factory()->create();
+        $user = User::factory()->create(['citizen_id' => null]);
+
+        $this->actingAs($user)
+            ->postJson('/api/letters', [
+                'letter_type_id' => $letterType->id,
+                'purpose' => 'Keperluan administrasi',
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_index_returns_letters_scoped_to_user(): void
+    {
+        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa');
+        Letter::factory()->count(2)->create();
+
+        $this->actingAs($user)
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonPath('message', 'Daftar surat berhasil diambil.')
+            ->assertJsonCount(2, 'data');
+    }
+
+    public function test_show_returns_letter_detail(): void
+    {
+        $user = User::factory()->create();
+        $letter = Letter::factory()->create(['submitted_by' => $user->id]);
+
+        $this->actingAs($user)
+            ->getJson("/api/letters/{$letter->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $letter->id);
+    }
+
+    public function test_destroy_deletes_letter_for_owner(): void
+    {
+        $user = User::factory()->create();
+        $letter = Letter::factory()->create(['submitted_by' => $user->id]);
+
+        $this->actingAs($user)
+            ->deleteJson("/api/letters/{$letter->id}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Surat berhasil dihapus.');
+
+        $this->assertDatabaseMissing('letters', ['id' => $letter->id]);
+    }
+
+    public function test_destroy_forbidden_for_unrelated_user(): void
+    {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create(['role' => 'warga']);
+        $letter = Letter::factory()->create(['submitted_by' => $owner->id]);
+
+        $this->actingAs($stranger)
+            ->deleteJson("/api/letters/{$letter->id}")
+            ->assertStatus(403);
+    }
+
+    public function test_destroy_allowed_for_authorized_staff_role(): void
+    {
+        $owner = User::factory()->create();
+        $staff = $this->makeUserWithOfficialAssignment('kasi_pelayanan', 'kasi_pelayanan');
+        $letter = Letter::factory()->create(['submitted_by' => $owner->id]);
+
+        $this->actingAs($staff)
+            ->deleteJson("/api/letters/{$letter->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('letters', ['id' => $letter->id]);
+    }
+
+    public function test_index_requires_authentication(): void
+    {
+        $this->getJson('/api/letters')->assertUnauthorized();
+    }
+
+    /** RT sees the territory's full letter history, including non-flow letters. */
+    public function test_index_for_rt_shows_letters_from_own_rt_history(): void
+    {
+        $rt = Rt::factory()->create();
+        $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
+
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'rt',
+        ]);
+
+        $letter = Letter::factory()->create([
+            'flow_id' => $flow->id,
+            'current_step_order' => 1,
+            'citizen_id' => $citizen->id,
+        ]);
+
+        // surat lain punya citizen di RT yang sama tapi tidak
+        // berhubungan dengan flow/step ini sama sekali - tidak boleh
+        // ikut muncul.
+        Letter::factory()->create(['citizen_id' => $citizen->id]);
+
+        $official = Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
+        $user = User::factory()->create(['role' => 'rt']);
+        $user->official()->save($official);
+
+        $this->actingAs($user->fresh())
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonFragment(['id' => $letter->id]);
+    }
+
+    public function test_index_for_kadus_is_available_with_own_hamlet_scope(): void
+    {
+        Letter::factory()->count(2)->create();
+        $user = $this->makeUserWithOfficialAssignment('kadus', 'kadus', null, ['hamlet_id' => Hamlet::factory()->create()->id]);
+
+        $this->actingAs($user)
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_show_for_rw_includes_citizen_and_rw_id_for_rt_approved_letter(): void
+    {
+        $rw = Rw::factory()->create();
+        $rt = Rt::factory()->create(['rw_id' => $rw->id]);
+        $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
+        $letter = Letter::factory()->create(['citizen_id' => $citizen->id]);
+        $approver = User::factory()->create(['village_id' => $letter->village_id]);
+        $letter->approvals()->create([
+            'approved_by' => $approver->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
+        $official = Official::factory()->create([
+            'position' => 'rw',
+            'rw_id' => $rw->id,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create(['role' => 'rw']);
+        $user->official()->save($official);
+
+        $this->actingAs($user->fresh())
+            ->getJson("/api/letters/{$letter->id}")
+            ->assertOk()
+            ->assertJsonPath('data.citizen.id', $citizen->id)
+            ->assertJsonPath('data.citizen.rw_id', $rw->id);
+    }
+
+    public function test_show_for_kadus_includes_citizen_from_own_hamlet(): void
+    {
+        $hamlet = Hamlet::factory()->create();
+        $citizen = Citizen::factory()->create(['hamlet_id' => $hamlet->id]);
+        $letter = Letter::factory()->create(['citizen_id' => $citizen->id]);
+        $approver = User::factory()->create(['village_id' => $letter->village_id]);
+        $letter->approvals()->create([
+            'approved_by' => $approver->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
+        $user = $this->makeUserWithOfficialAssignment('kadus', 'kadus', null, [
+            'hamlet_id' => $hamlet->id,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson("/api/letters/{$letter->id}")
+            ->assertOk()
+            ->assertJsonPath('data.citizen.id', $citizen->id);
+    }
+
+    public function test_show_for_kadus_forbids_other_hamlet_or_non_rt_approved_letter(): void
+    {
+        $ownHamlet = Hamlet::factory()->create();
+        $otherHamlet = Hamlet::factory()->create();
+        $ownCitizen = Citizen::factory()->create(['hamlet_id' => $ownHamlet->id]);
+        $otherCitizen = Citizen::factory()->create(['hamlet_id' => $otherHamlet->id]);
+        $otherHamletLetter = Letter::factory()->create(['citizen_id' => $otherCitizen->id]);
+        $unapprovedLetter = Letter::factory()->create(['citizen_id' => $ownCitizen->id]);
+        $user = $this->makeUserWithOfficialAssignment('kadus', 'kadus', null, [
+            'hamlet_id' => $ownHamlet->id,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson("/api/letters/{$otherHamletLetter->id}")
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->getJson("/api/letters/{$unapprovedLetter->id}")
+            ->assertForbidden();
+    }
+
+    public function test_index_scope_mine_returns_owned_letters_for_rt_and_kadus(): void
+    {
+        foreach (['rt', 'kadus'] as $role) {
+            $user = User::factory()->create(['role' => $role]);
+            $own = Letter::factory()->create(['submitted_by' => $user->id]);
+            Letter::factory()->create();
+
+            $this->actingAs($user)
+                ->getJson('/api/letters?scope=mine')
+                ->assertOk()
+                ->assertJsonCount(1, 'data')
+                ->assertJsonPath('data.0.id', $own->id);
+        }
+    }
+
+    public function test_index_for_kasi_only_lists_approved_letters_for_assigned_role(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create([
+            'role' => 'kasi_pelayanan',
+            'village_id' => $village->id,
+        ]);
+        Official::factory()->create([
+            'user_id' => $user->id,
+            'position' => 'kasi_pelayanan',
+            'village_id' => $village->id,
+            'is_active' => true,
+        ]);
+        $allowed = Letter::factory()->approved()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+        ]);
+        Letter::factory()->approved()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum'])->id,
+        ]);
+        Letter::factory()->create([
+            'village_id' => $village->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $allowed->id);
+    }
+
+    public function test_show_returns_404_for_unknown_letter(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->getJson('/api/letters/'.Str::uuid())
+            ->assertNotFound();
+    }
+
+    private function flowWithRtStep(): ApprovalFlow
+    {
+        $flow = ApprovalFlow::factory()->create();
+        FlowStep::factory()->create([
+            'flow_id' => $flow->id,
+            'step_order' => 1,
+            'approver_position' => 'rt',
+            'is_final' => false,
+        ]);
+
+        return $flow;
+    }
+}

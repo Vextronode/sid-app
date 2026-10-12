@@ -1,0 +1,119 @@
+# TECHNICAL DESIGN DOCUMENT — BAGIAN 5
+## SISTEM INFORMASI DESA - DESA CIBENDA
+### Roadmap, Asumsi & Risiko, Pertanyaan Terbuka, Known Constraints
+
+| Atribut Dokumen | Keterangan |
+|---|---|
+| Bagian | 5 dari 5 (+ Appendix) |
+| Status | v5.2 — Kependudukan, Stempel & Pekerjaan |
+| Cakupan | Roadmap pengembangan, asumsi & risiko, pertanyaan prioritas (terjawab & belum), known technical constraints |
+| Dokumen terkait | Seluruh bagian TDD 01–04, `TDD-06_Appendix.md`, OpenAPI Spec v5.2 |
+
+> **Cara pakai dokumen ini:** Section 3 (Pertanyaan Prioritas) adalah bagian paling penting untuk dicek berkala — status di sini bisa berubah seiring project jalan, sementara dokumen tidak selalu ikut diperbarui secara real-time. Jika ragu, cek migration/kode terlebih dulu, baru anggap dokumen ini sebagai rujukan kedua.
+
+> **Catatan v5.2:** keputusan alur final Sekdes, otorisasi Kasi/Kaur, akun username, pemohon pejabat, dan guard jabatan yang sudah terkunci pada versi sebelumnya tetap berlaku dan tidak dicatat ulang sebagai pertanyaan terbuka.
+
+---
+
+## 1. Roadmap Pengembangan
+
+Roadmap ini sangat terbuka pada requirement client setelah observasi pertama.
+
+| Tahap | Fokus | Deliverable | Prasyarat |
+|---|---|---|---|
+| Tahap 1 — Core System (MVP) | Register NIK + password dan login username; submit surat oleh pemohon warga/pejabat; flow default RT → Kades/Sekdes final (RW FYI setelah RT approve); Kasi/Kaur notifikasi dan akses download sesuai assigned_role; PDF on-demand; deadline dan penandaan overdue approval; data kependudukan; jabatan, konten, dashboard, notifikasi, queue database | Fitur MVP aktif; pengiriman reminder otomatis belum tersedia | Arsitektur dan setup project selesai, database termigrasi |
+| Tahap 2 — Penguatan Integritas & Keamanan | Aset & Keuangan Desa; Kelayakan Bantuan Sosial; Redis + Laravel Horizon; Docker + Laravel Sail; scheduler/job untuk reminder approval; backup terjadwal; hardening enkripsi field dan key management; benchmarking query lengkap | Reminder otomatis masih Planned; backup terjadwal tidak diverifikasi terhadap source backend; hasil benchmarking terdokumentasi (hash chain & dynamic form **tidak** termasuk — lihat Next Dev di `TDD-06_Appendix.md`) | Tahap 1 stabil |
+| Next Dev — Paket 1 | Dynamic Tipe Surat: create tipe surat baru, WYSIWYG template editor, CRUD field requirement | Petugas Desa mandiri kelola tipe surat tanpa developer | Tahap 1 stabil — lihat detail di Appendix |
+| Next Dev — Paket 2 | Blockchain-inspired hashing | Validasi integritas data surat | Tahap 1 stabil — lihat detail di Appendix |
+| Tahap 3 — Pengembangan Lanjutan | WA Chatbot; cetak surat mandiri untuk Warga; integrasi API eksternal (Dukcapil); AI (opsional) | Multi-channel access, integrasi eksternal | Tahap 2 stabil, validasi kebutuhan client |
+
+---
+
+## 2. Asumsi & Risiko
+
+### 2.1. Asumsi & Risiko Infrastruktur Teknis
+
+| Asumsi | Risiko | Skenario Jika Salah | Mitigasi |
+|---|---|---|---|
+| Kantor desa memiliki akses internet yang stabil | SEDANG | Sistem tidak dapat diakses, data tidak bisa diinput/di-approve real-time | Desain UI toleran koneksi lambat; fitur draft offline-first (future) |
+| Server deployment tersedia dengan spesifikasi minimum: 2 vCPU, 2GB RAM, 20GB SSD | TINGGI | Performa sistem degradasi; implementasi keamanan (HTTPS, fail2ban, firewall) tidak bisa diterapkan penuh | Dokumentasikan minimum server requirement sejak awal; siapkan alternatif managed hosting |
+| Worker/daemon queue dapat dikonfigurasi dan dijaga berjalan di server | **Tidak diverifikasi terhadap source backend** | Topologi worker adalah keputusan deployment | Siapkan runbook jika queue dipakai |
+| PostgreSQL tersedia dan dapat dikonfigurasi di server deployment | RENDAH | Implementasi keamanan tidak bisa diterapkan penuh | Dokumentasikan minimum requirement server; siapkan alternatif shared hosting |
+| Docker belum dipakai di Tahap 1, environment development manual | RENDAH | Environment berbeda antar device developer | Dokumentasikan versi PHP/PostgreSQL/extension; Docker masuk Tahap 2 |
+
+### 2.2. Asumsi & Risiko Operasional & Sosial
+
+| Asumsi | Risiko | Skenario Jika Salah | Mitigasi |
+|---|---|---|---|
+| Admin desa memiliki kemampuan dasar menggunakan aplikasi web | SEDANG | Resistensi adopsi — sistem tidak digunakan meski sudah dibangun | Rancang UI intuitif; sediakan dokumentasi pengguna dan sesi pelatihan |
+| Data NIK/No KK yang diinput sudah tervalidasi secara manual oleh admin desa | RENDAH | Data NIK/No KK salah tersimpan dan terenkripsi, sulit dikoreksi | Validasi format NIK 16 digit dan format No KK di frontend & backend |
+| Kepala desa mendukung implementasi dan penggunaan sistem, termasuk perannya sebagai approver aktif | SEDANG | Resistensi dari level pimpinan; surat mandek karena Kades tidak terbiasa jadi approver aktif | Sosialisasi dan demo sistem sejak awal kepada pemangku kepentingan, khususnya soal perubahan peran dari monitoring-only menjadi approver aktif |
+
+---
+
+## 3. Pertanyaan Prioritas
+
+Bagian ini mendokumentasikan pertanyaan yang perlu dikonfirmasi sebelum atau selama fase pengembangan. Status diperbarui setelah masing-masing pertanyaan terjawab — baik lewat konfirmasi eksplisit dari desa/tim, maupun implisit lewat keputusan yang sudah dieksekusi di kode.
+
+### 3.1. Validasi dengan Pihak Desa / Client
+
+| Pertanyaan | Status | Jawaban |
+|---|---|---|
+| Jenis surat apa saja yang perlu dikelola di fase pertama? (SKD, SKU, SKCK, dll.) | Belum dikonfirmasi | — |
+| Apakah infrastruktur server sudah tersedia, atau perlu disiapkan dari awal oleh tim? | Belum dikonfirmasi | — |
+| Apakah ada sistem eksisting (manual atau digital) yang perlu dipertimbangkan untuk migrasi data? | Belum dikonfirmasi | — |
+| Apakah desa manage jabatan BPD/BUMDES/LPM/Karang Taruna/PKK di app, atau statis? | Menunggu konfirmasi | — |
+| Apakah history jabatan organisasi non-struktural ditampilkan ke publik? | Menunggu konfirmasi | — |
+| Apakah jumlah anggota BPD fix atau dinamis? | Menunggu konfirmasi | — |
+| Struktur BUMDES, LPM, Karang Taruna, PKK — fix atau dinamis? | Menunggu konfirmasi | — |
+
+### 3.2. Keputusan Teknis Internal Tim
+
+| Pertanyaan | Status | Jawaban |
+|---|---|---|
+| Queue driver Tahap 1: database | Sudah diputuskan | Database driver dipakai di Tahap 1, migrasi ke Redis di Tahap 2 |
+| Docker + Laravel Sail masuk Tahap 2 | Sudah diputuskan | Ya |
+| Apakah notifikasi email aktif di MVP atau in-app dulu? | Belum dikonfirmasi | — |
+| React via REST API atau via Inertia | Sudah diputuskan | REST API (lihat OpenAPI Spec v5.2, `SID-ARCH-FE-001`) |
+| Apakah fitur rotasi jabatan organisasi non-struktural diaktifkan di UI MVP? | Menunggu konfirmasi desa | — |
+| Apakah Sekdes ikut menjadi approver tahap final yang sama dengan Kades? | **Sudah diputuskan (K7/K13)** | Ya. Kades dan Sekdes saling menggantikan pada tahap final; pemohon Kades diputuskan Sekdes dan sebaliknya. |
+| Apakah `assigned_role` menjadi penentu akses Kasi/Kaur? | **Sudah diputuskan (K8/A9/A10)** | Ya. Kasi/Kaur bukan approver; `assigned_role` menentukan akses surat selesai, dan NULL berlaku untuk kedua role. |
+| Apa definisi periode untuk `household_income_range`? | Belum diputuskan | Field mengacu pada penghasilan rumah tangga; periode belum ditetapkan. |
+| Bagaimana data sosio-ekonomi untuk warga tanpa KK? | Belum diputuskan | Perilaku saat ini tidak menyediakan record sosio-ekonomi pada tingkat individu. |
+| Apakah `family_socioeconomics` perlu dienkripsi? | Belum diputuskan | Belum menggunakan cast enkripsi. |
+| Apa isi lengkap daftar pekerjaan awal dan bagaimana import memetakan nama pekerjaan ke ID? | Belum diputuskan / ditunda | Seeder awal berisi tiga pekerjaan; pemetaan nama saat import belum dilakukan. |
+| Apakah kolom legacy `officials.stamp_img` akan dihapus? | Belum diputuskan | Kolom masih ada, tetapi PDF mengambil stempel dari `villages.stamp_img`. |
+| Bagaimana daftar pekerjaan per desa dan sumber stempel PDF ditentukan? | Terjawab | Pekerjaan baku disimpan per desa di `occupations`; PDF memakai stempel pada profil desa. |
+| Apakah sosio-ekonomi dicatat pada individu atau keluarga? | Terjawab | Dicatat per KK di `family_socioeconomics`; tidak ada penghasilan individu. |
+| ~~Konsistensi ENUM `approval_settings.approval_level` terhadap `letter_approvals.approval_level`~~ | **✅ Selesai / Closed** | Sudah diselaraskan — ENUM `approval_settings.approval_level` menggunakan 5 nilai yang sama dengan `letter_approvals.approval_level` (`rt`, `kepala_desa`, `sekdes`, `kasi_pelayanan`, `kaur_tu_umum`), dikonfirmasi dari migration project yang berjalan. Riwayat koreksi status ini ada di `TDD-06_Appendix.md`. |
+
+---
+
+## 4. Known Technical Constraints
+
+Bagian ini mendokumentasikan keterbatasan teknis yang sudah dapat diprediksi sebelum development dimulai, beserta solusi yang telah dirancang.
+
+| Constraint | Dampak | Solusi |
+|---|---|---|
+| Kolom AES-256 tidak bisa di-index langsung | Query by NIK/No KK tidak bisa pakai index | Dual-column: encrypted + hash untuk indexing (`nik_hash`, `no_kk_hash`) |
+| Queue worker harus selalu aktif | Notifikasi tidak jalan jika worker mati | Supervisor (Tahap 1) → Laravel Horizon (Tahap 2) |
+| `APP_KEY` tidak boleh berubah di production | Semua data terenkripsi tidak bisa didekripsi | Simpan `APP_KEY` di tempat aman; jangan pernah regenerate di prod |
+| `on_behalf_of` nullable di MVP | Warga submit sendiri di MVP, kolom selalu NULL | Kolom tetap ada untuk future use case di mana petugas mungkin perlu input atas nama warga tertentu |
+| Tabel `officials` sebaiknya punya minimal 1 RT aktif per wilayah | Gate approval bergantung pada RT aktif; resolver tidak melakukan fallback broadcast jika RT tidak ditemukan | Validasi konfigurasi dan pantau wilayah tanpa RT aktif; keputusan approval tetap membutuhkan pejabat RT |
+| Redis belum dipakai di Tahap 1 | Queue & cache belum optimal | Database queue cukup untuk traffic desa kecil, switch hanya ubah `.env` |
+| Docker belum dipakai di Tahap 1 | Environment dev mungkin berbeda antar mesin | Dokumentasikan versi PHP/PostgreSQL, Docker masuk di Tahap 2 |
+| Template surat di MVP diinject developer via seeder | Petugas Desa tidak bisa mandiri tambah tipe surat baru | Petugas contact developer → developer inject template → aktifkan di UC-21 |
+| Tipe surat dengan `template=NULL` tidak bisa dipakai warga | Warga tidak bisa submit surat yang belum ada template | Guard di backend + badge "Draft" di admin page |
+| Reminder otomatis belum diimplementasikan | `reminded_at` dan `reminder_hours` tersedia, tetapi belum ada scheduler/job yang mengirim reminder; surat dapat tertahan tanpa notifikasi pengingat | Badge overdue dihitung dari deadline approval aktif; implementasi reminder via scheduler masih backlog |
+| PDF on-demand: generate setiap klik | Slight latency saat download | Acceptable trade-off — tidak signifikan untuk traffic desa kecil |
+| `village_org_positions` & `village_org_members` pending konfirmasi desa | Fitur rotasi jabatan organisasi belum bisa diaktifkan | Seed hardcode dulu; aktifkan/disable fitur di UI setelah konfirmasi |
+| Blockchain-inspired hashing dikeluarkan dari MVP | Integritas data surat belum tervalidasi di MVP | Detail lengkap dicatat di `TDD-06_Appendix.md` untuk implementasi Next Dev Paket 2 |
+| Keputusan bersamaan oleh Kades dan Sekdes | Kedua user memproses tahap final yang sama hampir bersamaan | Aplikasi menerapkan first-action-wins; keputusan aktual actor tersimpan pada approval. |
+| `assigned_role` mengatur akses Kasi/Kaur | Salah konfigurasi dapat membuka akses role yang tidak dituju | Policy dan repository memfilter surat selesai memakai nilai `assigned_role`; NULL berarti kedua role. |
+| Desa baru memerlukan referensi pekerjaan awal | Dropdown pekerjaan kosong bila seed tidak dijalankan | Jalankan seeder pekerjaan untuk setiap desa baru. |
+| Kecocokan desa antara `citizens` dan `occupations` hanya dijaga di aplikasi | Referensi lintas desa dapat tersimpan bila validasi terlewati | Validasi desa pada service saat assign pekerjaan. |
+| ID pekerjaan berbeda antar desa | Analisis lintas desa tidak dapat membandingkan ID langsung | Bandingkan nama/normalisasi, atau buat pemetaan lintas desa jika kelak dibutuhkan. |
+| Warga pindah desa dengan `occupation_id` terisi | Pekerjaan dapat menunjuk ke katalog desa lama | Kosongkan atau ganti `occupation_id` sesuai katalog desa tujuan saat pindah. |
+| Nama pekerjaan dapat diubah dan dipakai ulang dalam dokumen | Surat yang digenerate ulang menampilkan data terbaru | Cetak ulang surat menggunakan nama pekerjaan dan stempel desa terbaru. |
+| File gambar disimpan private dan tidak ditautkan sebagai URL publik | FE tidak dapat menampilkan path langsung; rotasi jabatan memerlukan record baru | Gunakan endpoint preview terproteksi; upload TTD dilakukan terpisah setelah rotasi Kades. |
+| ~~`approval_settings.approval_level` ENUM belum diselaraskan dengan `letter_approvals.approval_level`~~ | — | **Sudah tidak berlaku** — ENUM sudah diselaraskan. Lihat Section 3.2 dan `TDD-06_Appendix.md` |

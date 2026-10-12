@@ -1,0 +1,44 @@
+servers:
+  - url: https://api.sid-cibenda.id
+    description: Endpoint autentikasi web (tanpa prefix /api)
+security:
+  - sanctumCookie: []
+get:
+  tags: [Epic 3 - Autentikasi]
+  summary: Verifikasi alamat email dengan tautan bertanda tangan
+  security:
+    - sanctumCookie: []
+  operationId: verifyEmail
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    - name: hash
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: expires
+      in: query
+      required: true
+      schema:
+        type: integer
+      description: Waktu kedaluwarsa URL bertanda tangan (Unix timestamp).
+    - name: signature
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Tanda tangan URL yang dibuat Laravel.
+  responses:
+    '302':
+      description: Diarahkan ke frontend setelah verifikasi email berhasil.
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Tanda tangan tidak valid atau tautan telah kedaluwarsa.
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

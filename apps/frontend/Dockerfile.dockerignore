@@ -1,0 +1,28 @@
+# Dibaca BuildKit untuk `docker build -f apps/frontend/Dockerfile .` (konteks = root repo),
+# menggantikan .dockerignore root. Pola: abaikan semua, lalu izinkan yang dibutuhkan.
+*
+!apps/frontend
+!deploy/nginx/sid.conf
+
+# Dikecualikan lagi di dalam yang diizinkan.
+.git
+apps/backend
+claude-expo
+claude-deploy
+deploy/scripts
+docs
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+apps/frontend/cookies.txt
+apps/frontend/Dockerfile
+apps/frontend/Dockerfile.dockerignore
+apps/frontend/README.md
+apps/frontend/.prettierrc
+apps/frontend/.prettierignore
+apps/frontend/eslint.config.js
+apps/frontend/scripts
+apps/frontend/src/test
+apps/frontend/**/*.test.js
+apps/frontend/**/*.test.jsx

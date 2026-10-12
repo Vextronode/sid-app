@@ -1,0 +1,228 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 01_Sequence_InputSurat_v5.puml
+' JUDUL: Sequence - Input Permohonan Surat
+' SUMBER: TDD SID Desa Cibenda v5.1 (Section 5.3.2 UC-03, Section 5.4.2 letters)
+'         + SID-ARCH-BE-001 S3.2 (flow_id snapshot)
+' CATATAN: Menggantikan 01_Sequence_InputSurat_v4.puml.
+'==================================================================================
+
+@startuml 5.3.3a_v5 Sequence - Input Permohonan Surat
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ParticipantFontName Arial
+  ParticipantFontSize 12
+  ActorBackgroundColor #D6E4F7
+  ActorBorderColor #1F3864
+  ActorFontName Arial
+  LifeLineBorderColor #2E5FA3
+  ArrowColor #2E5FA3
+  ArrowFontName Arial
+  ArrowFontSize 11
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+
+title Sequence Diagram - Input Permohonan Surat [v5.1] \n(Akun Aktif dengan Citizen -> Snapshot Flow -> Step Awal Eligible)
+
+actor "Pemohon\n(Akun Aktif + citizen_id)" as WRG
+participant "React\nFrontend" as FE
+participant "LetterController" as CTRL
+participant "Auth:sanctum middleware" as AUTHCTRL
+participant "Form\nRequest" as FREQ
+participant "LetterService" as SVC
+participant "LetterFlowService" as FLSVC
+participant "ApprovalSettingService" as ASSVC
+participant "OfficialService" as OSVC
+participant "LetterTypeRepository" as LTREPO
+participant "ApprovalFlowRepository" as AFREPO
+participant "UserRepository" as UREPO
+participant "LetterRepository" as REPO
+participant "OfficialRepository" as OREPO
+participant "DB::transaction" as TX
+participant "Notification database channel" as Q
+participant "PostgreSQL" as DB
+actor "RT\n(Wilayah Warga)" as RT
+
+== Buka Form & Pilih Jenis Surat ==
+
+WRG -> FE : Buka menu "Ajukan Permohonan Surat"
+FE -> CTRL : GET /api/letter-types?active=true
+CTRL -> SVC : getActiveLetterTypes()
+SVC -> LTREPO : findAllActive()
+LTREPO -> DB : SELECT * FROM letter_types\nWHERE is_active = true\nAND template IS NOT NULL
+note right of DB
+  TIDAK BERUBAH dari v4.2: filter
+  template IS NOT NULL. Tipe surat
+  dengan template = NULL (status:
+  Draft) tidak boleh tampil untuk warga.
+end note
+DB --> LTREPO : collection letter_types
+LTREPO --> SVC : collection
+SVC --> CTRL : LetterTypeCollection
+CTRL --> FE : 200 OK {letter_types[]}
+FE --> WRG : Tampilkan pilihan jenis surat
+
+WRG -> FE : Pilih jenis surat dari daftar
+note right of FE
+  GET /api/letter-types mengembalikan
+  tipe surat aktif beserta konfigurasi
+  yang diperlukan form. Tidak ada route
+  detail GET /letter-types/{id}.
+end note
+
+alt verification_type = "auto"
+  FE --> WRG : Tampilkan form langsung\n(NIK otomatis tervalidasi dari akun)
+else verification_type = "manual"
+  FE --> WRG : Tampilkan checklist persyaratan\n(warga wajib konfirmasi kelengkapan)
+else verification_type = "document"
+  FE --> WRG : Tampilkan form + field\nupload dokumen pendukung (wajib)
+end
+
+== Ambil Data Warga dari Session ==
+
+FE -> AUTHCTRL : GET /api/user
+AUTHCTRL -> UREPO : findByIdWithCitizen(auth()->id())
+UREPO -> DB : SELECT users.*, citizens.*\nFROM users\nLEFT JOIN citizens\nON users.citizen_id = citizens.id\nWHERE users.id = ?
+DB --> UREPO : user + citizen data\n(termasuk family_id, residency_type\njika relevan ditampilkan)
+UREPO --> AUTHCTRL : user model (dengan relasi citizen)
+AUTHCTRL --> FE : 200 OK {nama, nik_masked, alamat,\nrt_id, hamlet_id}
+FE --> WRG : Form terisi otomatis: nama, alamat\n(dari akun login)\nWarga hanya isi: keperluan, catatan
+
+note right of FE
+  TIDAK BERUBAH dari v4.2. Tidak ada
+  step "input NIK manual". Data warga
+  diambil dari auth()->user()->citizen
+  (sudah terautentikasi).
+end note
+
+== Submit Permohonan ==
+
+WRG -> FE : Lengkapi form & klik Submit
+FE -> CTRL : POST /api/letters\n{letter_type_id, purpose, notes,\n dokumen (jika document type)}
+CTRL -> FREQ : validate(request)
+
+alt Validasi Gagal
+  FREQ --> CTRL : ValidationException
+  CTRL --> FE : 422 {errors per field}
+  FE --> WRG : Tampilkan pesan error per field
+
+else Validasi Berhasil
+  FREQ --> CTRL : validated data
+
+  CTRL -> SVC : createLetter(data, auth()->user())
+
+  == Snapshot Flow Sebelum Simpan (BARU v5.0) ==
+
+  SVC -> LTREPO : findById(data.letter_type_id)
+  LTREPO -> DB : SELECT * FROM letter_types WHERE id = ?
+  DB --> LTREPO : letter_type (flow_id, category_id)
+  LTREPO --> SVC : letter_type
+
+  SVC -> AFREPO : findWithSteps(letter_type.flow_id)
+  AFREPO -> DB : SELECT * FROM approval_flows\nWHERE id = ?;\nSELECT * FROM flow_steps\nWHERE flow_id = ?\nORDER BY step_order
+  DB --> AFREPO : flow + steps terurut
+  AFREPO --> SVC : ApprovalFlow (dengan steps)
+  note right of SVC
+    *** BARU v5.0 ***
+    flow_id yang akan disimpan ke
+    letters.flow_id adalah SNAPSHOT,
+    DIKUNCI saat ini juga. Jika admin
+    ubah konfigurasi flow di letter_types
+    di kemudian hari, surat yang sudah
+    berjalan TIDAK terpengaruh/nyasar
+    (SID-ARCH-BE-001 S3.2).
+  end note
+
+  SVC -> TX : DB::transaction() begin
+
+  TX -> REPO : create(letterData)
+  note right of REPO
+    citizen_id   = auth()->user()->citizen_id
+    submitted_by = auth()->user()->id (role apa pun)
+    applicant_nik_hash = SHA-256(nik plaintext)
+    applicant_nik = AES-256 encrypt(nik)
+    status = 'pending'              <<GENERIK v5.0>>
+    flow_id = letter_type.flow_id   <<SNAPSHOT, BARU v5.0>>
+    current_step_order = 1 (sementara)
+    rejected_at_step = NULL         <<BARU v5.0>>
+    submitted_at = now()
+    is_overdue = false
+    expires_at = NULL (diisi nanti saat\nstep is_final=true di-approve)
+  end note
+  note right of REPO
+    Blockchain-inspired hashing TETAP
+    dikeluarkan dari MVP (Next Dev
+    Paket 2). Tidak ada proses hashing
+    di alur ini. TIDAK BERUBAH dari v4.2.
+  end note
+  REPO -> DB : INSERT INTO letters
+  DB --> REPO : letter model (id, ...)
+
+  TX -> REPO : createStatusLog({\n  letter_id, actor_id,\n  old_status: NULL,\n  new_status: 'pending', ip_address\n})
+  REPO -> DB : INSERT INTO letter_status_logs
+  DB --> REPO : log created
+
+  TX -> FLSVC : resolveStartStep(letter)
+  FLSVC -> OSVC : resolveOfficialsForStep(each flow step)
+  OSVC -> OREPO : find active officials by position/scope
+  OREPO -> DB : SELECT active eligible officials
+  DB --> OREPO : approvers per flow step
+  OREPO --> OSVC : raw approvers
+  OSVC --> FLSVC : raw approvers
+  FLSVC -> FLSVC : exclude pemohon sebagai approver;\nlewati step non-final hanya jika\nraw approver ada dan semua eligible\nadalah pemohon
+  FLSVC --> TX : start step + skipped steps
+  TX -> REPO : update current_step_order\n(start.step_order)
+  REPO -> DB : UPDATE letters.current_step_order
+  DB --> REPO : updated
+  TX -> FLSVC : logSkipped(letter, skipped, user)
+  FLSVC -> REPO : create status logs\n(pending -> pending, reason tahap dilewati)
+  REPO -> DB : INSERT INTO letter_status_logs
+  DB --> REPO : skip logs created
+
+  TX -> SVC : createFirstApproval(letter, step)
+  opt step tersedia
+    SVC -> ASSVC : resolveDeadline(position, village_id)
+    ASSVC --> SVC : deadline_at | null
+    SVC -> REPO : createApprovalForLetter(\n  approved_by: null,\n  approval_level: step.approver_position,\n  flow_step_id: step.id,\n  deadline_at)
+    REPO -> DB : INSERT INTO letter_approvals
+    DB --> REPO : placeholder created
+  end
+
+  TX -> SVC : notifyFirstApprovers(letter, step)
+  opt step tersedia
+    SVC -> FLSVC : eligibleApprovers(step, letter)
+    FLSVC -> OSVC : resolveOfficialsForStep(step, letter)
+    OSVC -> OREPO : find active officials by position/scope
+    OREPO -> DB : SELECT active officials for step
+    DB --> OREPO : eligible officials (pemohon dikecualikan)
+    OREPO --> OSVC : eligible officials
+    OSVC --> FLSVC : eligible officials
+    FLSVC --> SVC : eligible officials
+    SVC -> Q : notify each eligible official
+    Q --> RT : Notifikasi bila RT adalah approver aktif awal
+    Q --> KD : Notifikasi bila Kades/Sekdes adalah approver aktif awal
+  end
+
+  TX --> SVC : commit letter, approvals, status log,\nand skipped-step logs
+  SVC --> CTRL : LetterResource
+  CTRL --> FE : 201 Created {letter data, status: 'pending',\ncurrent_step_order: resolved step}
+  FE --> WRG : "Permohonan berhasil dikirim!\nSilakan pantau status di Dashboard."
+end
+
+@enduml
+
+'==================================================================================
+' CATATAN REVISI: 01_Sequence_InputSurat_v4.puml -> 01_Sequence_InputSurat_v5.puml
+'==================================================================================
+'
+' SINKRONISASI v5.1 — Auth & Approval Flow:
+' - Submit diizinkan untuk semua akun aktif ber-citizen_id; pemohon adalah submitted_by.
+' - Flow di-snapshot saat submit; resolveStartStep melewati tahap non-final milik
+'   pemohon hanya jika approver aktif tersedia, lalu menulis log tahap yang dilewati.
+' - Tahap final Kades/Sekdes tidak dilewati dan self-approval ditolak.
+' - Route hanya menyediakan GET /api/letter-types (tidak ada GET detail).
+'
+'==================================================================================

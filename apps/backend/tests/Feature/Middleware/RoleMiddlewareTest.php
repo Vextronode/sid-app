@@ -1,0 +1,416 @@
+<?php
+
+namespace Tests\Feature\Middleware;
+
+use App\Models\Citizen;
+use App\Models\Hamlet;
+use App\Models\Letter;
+use App\Models\LetterType;
+use App\Models\Official;
+use App\Models\Rt;
+use App\Models\Rw;
+use App\Models\User;
+use App\Models\Village;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+/**
+ * EV5-6-S2 — Feature test end-to-end untuk middleware RBAC `role`,
+ * dijalankan lewat route ASLI di routes/api.php (bukan route buatan),
+ * supaya sekaligus menjadi regression guard bagi konfigurasi RBAC
+ * keseluruhan.
+ *
+ * Skenario ini fokus pada ROLE CHECK saja — bukan context check.
+ * Context check (RT wilayah, current_step_order surat, dst) sudah
+ * dites terpisah di *ApprovalServiceTest / *ApprovalControllerTest
+ * yang sudah ada sebelumnya di project ini dan tidak disentuh oleh
+ * task ini.
+ *
+ * Untuk skenario "boleh akses" (200), sebagian endpoint butuh record
+ * `Official` aktif agar tidak berhenti di 404 milik context-check
+ * Service (bukan kesalahan middleware) — fixture minimal disediakan
+ * lewat helper officialForRole(). Untuk skenario "ditolak" (403),
+ * TIDAK ada fixture domain sama sekali dibuat dengan sengaja: itu
+ * justru membuktikan middleware menolak SEBELUM controller/Service
+ * sempat berjalan.
+ */
+class RoleMiddlewareTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function userWithRole(string $role): User
+    {
+        return User::factory()->create(['role' => $role]);
+    }
+
+    /**
+     * Buat user dengan role + record Official aktif yang sesuai, supaya
+     * lolos context-check dasar (OfficialService::findActiveForUserOrFail)
+     * dan benar-benar mencapai response 200 - bukti bahwa middleware
+     * role TIDAK menghalangi role yang sah.
+     */
+    private function officialUser(string $role, string $position, array $officialAttrs = []): User
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => $role, 'village_id' => $village->id]);
+
+        $official = Official::factory()->create(array_merge([
+            'position' => $position,
+            'village_id' => $village->id,
+            'is_active' => true,
+        ], $officialAttrs));
+
+        $user->official()->save($official);
+
+        return $user->fresh();
+    }
+
+    #[Test]
+    public function guest_gets_401_on_any_protected_route(): void
+    {
+        $letter = Letter::factory()->create();
+
+        $this->patchJson("/api/rt/letters/{$letter->id}/decision", ['status' => 'approved'])->assertUnauthorized();
+        $this->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])->assertUnauthorized();
+        $this->getJson('/api/citizens')->assertUnauthorized();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | RT decision endpoint — hanya role 'rt'
+    |--------------------------------------------------------------------------
+    */
+
+    #[Test]
+    public function rt_can_reach_rt_decision_after_middleware(): void
+    {
+        $user = $this->officialUser('rt', 'rt');
+        $rw = Rw::factory()->create(['village_id' => $user->village_id]);
+        $rt = Rt::factory()->create(['rw_id' => $rw->id, 'village_id' => $user->village_id]);
+        $user->official->update(['rt_id' => $rt->id]);
+        $citizen = Citizen::factory()->create([
+            'village_id' => $user->village_id,
+            'rt_id' => $rt->id,
+        ]);
+        $letter = Letter::factory()->create([
+            'village_id' => $user->village_id,
+            'citizen_id' => $citizen->id,
+        ]);
+
+        $this->actingAs($user)
+            ->patchJson("/api/rt/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertStatus(409);
+    }
+
+    #[DataProvider('nonRtRoles')]
+    #[Test]
+    public function non_rt_roles_cannot_access_rt_decision(string $role): void
+    {
+        // Sengaja TANPA fixture Official — membuktikan middleware
+        // menolak di depan, sebelum Service butuh data apa pun.
+        $user = $this->userWithRole($role);
+
+        $letter = Letter::factory()->create();
+
+        $this->actingAs($user)
+            ->patchJson("/api/rt/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertForbidden()
+            ->assertJson(['message' => 'Anda tidak memiliki akses untuk aksi ini.']);
+    }
+
+    public static function nonRtRoles(): array
+    {
+        return [
+            ['warga'], ['rw'], ['kadus'], ['kasi_pelayanan'],
+            ['kaur_tu_umum'], ['petugas_desa'], ['kepala_desa'], ['sekretaris_desa'],
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kades/Sekdes decision endpoint — hanya kepala_desa & sekretaris_desa
+    |--------------------------------------------------------------------------
+    */
+
+    #[Test]
+    public function kepala_desa_can_reach_kades_decision_after_middleware(): void
+    {
+        $user = $this->officialUser('kepala_desa', 'kepala_desa');
+        $letter = Letter::factory()->create(['village_id' => $user->village_id]);
+
+        $this->actingAs($user)
+            ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertStatus(409);
+    }
+
+    #[Test]
+    public function sekretaris_desa_can_reach_kades_decision_after_middleware(): void
+    {
+        $user = $this->officialUser('sekretaris_desa', 'sekdes');
+        $letter = Letter::factory()->create(['village_id' => $user->village_id]);
+
+        $this->actingAs($user)
+            ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertStatus(409);
+    }
+
+    #[DataProvider('nonKadesRoles')]
+    #[Test]
+    public function non_kades_roles_cannot_access_kades_decision(string $role): void
+    {
+        $user = $this->userWithRole($role);
+        $letter = Letter::factory()->create();
+
+        $this->actingAs($user)
+            ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertForbidden();
+    }
+
+    public static function nonKadesRoles(): array
+    {
+        return [
+            ['warga'], ['rt'], ['rw'], ['kadus'],
+            ['kasi_pelayanan'], ['kaur_tu_umum'], ['petugas_desa'],
+        ];
+    }
+
+    #[Test]
+    public function rw_with_valid_rw_id_can_access_generic_letters_index(): void
+    {
+        $rw = Rw::factory()->create();
+        $user = $this->officialUser('rw', 'rw', ['rw_id' => $rw->id]);
+
+        $this->actingAs($user)
+            ->getJson('/api/letters')
+            ->assertOk();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Letters store — akses submit ditentukan kepemilikan citizen, bukan role
+    |--------------------------------------------------------------------------
+    */
+    #[Test]
+    public function account_without_citizen_cannot_submit_letter(): void
+    {
+        $letterType = LetterType::factory()->create();
+        $user = User::factory()->create(['citizen_id' => null]);
+
+        $this->actingAs($user)
+            ->postJson('/api/letters', [
+                'letter_type_id' => $letterType->id,
+                'purpose' => 'Keperluan administrasi',
+            ])
+            ->assertForbidden();
+    }
+
+    #[DataProvider('officialRolesAllowedToSubmit')]
+    #[Test]
+    public function official_with_citizen_can_reach_letter_submission_authorization(string $role): void
+    {
+        $citizen = Citizen::factory()->create();
+        $letterType = LetterType::factory()->create();
+        $user = User::factory()->create([
+            'role' => $role,
+            'citizen_id' => $citizen->id,
+            'village_id' => $citizen->village_id,
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/letters', [
+            'letter_type_id' => $letterType->id,
+            'purpose' => 'Keperluan administrasi',
+        ]);
+
+        $this->assertNotSame(403, $response->getStatusCode());
+    }
+
+    public static function officialRolesAllowedToSubmit(): array
+    {
+        return [
+            ['rt'], ['rw'], ['kadus'], ['kasi_pelayanan'],
+            ['kaur_tu_umum'], ['petugas_desa'], ['kepala_desa'], ['sekretaris_desa'],
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Letters index — lintas-role, termasuk Kadus yang kini mendapat
+    | daftar surat dusunnya melalui LetterService.
+    |--------------------------------------------------------------------------
+    */
+
+    #[DataProvider('rolesAllowedOnLetterIndex')]
+    #[Test]
+    public function every_non_kadus_role_is_not_blocked_by_middleware_on_letters_index(string $role): void
+    {
+        $user = $this->userWithRole($role);
+
+        // Grup ini sengaja tanpa 'role:' guard di routes/api.php - status
+        // akhir ditentukan LetterService berdasarkan scoping per role,
+        // bukan middleware. Yang diverifikasi: middleware TIDAK memotong
+        // request dengan 403 generik untuk role yang sah.
+        $response = $this->actingAs($user)->getJson('/api/letters');
+
+        $this->assertNotSame(403, $response->getStatusCode());
+    }
+
+    public static function rolesAllowedOnLetterIndex(): array
+    {
+        return [
+            ['warga'], ['rt'], ['rw'], ['kasi_pelayanan'],
+            ['kaur_tu_umum'], ['petugas_desa'], ['kepala_desa'], ['sekretaris_desa'],
+        ];
+    }
+
+    #[Test]
+    public function kadus_can_only_list_own_letters_with_scope_mine(): void
+    {
+        $user = $this->makeUserWithOfficialAssignment('kadus', 'kadus', null, [
+            'hamlet_id' => Hamlet::factory()->create()->id,
+        ]);
+        $ownLetter = Letter::factory()->create(['submitted_by' => $user->id]);
+        Letter::factory()->create();
+
+        $this->actingAs($user)->getJson('/api/letters')->assertOk();
+
+        $this->actingAs($user)
+            ->getJson('/api/letters?scope=mine')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $ownLetter->id);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Domain konfigurasi/CMS eksklusif petugas_desa
+    |--------------------------------------------------------------------------
+    */
+
+    #[Test]
+    public function petugas_desa_can_access_citizens_index(): void
+    {
+        $user = $this->userWithRole('petugas_desa');
+
+        $this->actingAs($user)->getJson('/api/citizens')->assertStatus(200);
+    }
+
+    #[DataProvider('rolesWithoutCitizenAccess')]
+    #[Test]
+    public function roles_without_citizen_access_cannot_access_citizens_index(string $role): void
+    {
+        $user = $this->userWithRole($role);
+
+        $this->actingAs($user)->getJson('/api/citizens')->assertForbidden();
+    }
+
+    public static function rolesWithoutCitizenAccess(): array
+    {
+        return [
+            ['warga'], ['rt'], ['rw'], ['kadus'], ['kepala_desa'], ['sekretaris_desa'],
+        ];
+    }
+
+    /**
+     * Kasi/Kaur boleh melihat daftar warga sebagai bahan pertimbangan,
+     * tetapi tidak boleh mengubahnya lewat modul data warga; perubahan
+     * oleh mereka hanya lewat surat (Terapkan).
+     */
+    #[DataProvider('kasiKaurRoles')]
+    #[Test]
+    public function kasi_kaur_can_read_but_not_write_citizens(string $role): void
+    {
+        $user = $this->userWithRole($role);
+        $citizen = Citizen::factory()->create(['village_id' => $user->village_id]);
+
+        $this->actingAs($user)->getJson('/api/citizens')->assertOk();
+        $this->actingAs($user)->postJson('/api/citizens', [])->assertForbidden();
+        $this->actingAs($user)->patchJson("/api/citizens/{$citizen->id}", ['name' => 'Diubah'])->assertForbidden();
+        $this->actingAs($user)->deleteJson("/api/citizens/{$citizen->id}")->assertForbidden();
+        $this->actingAs($user)->postJson('/api/citizens/import', [])->assertForbidden();
+    }
+
+    public static function kasiKaurRoles(): array
+    {
+        return [['kasi_pelayanan'], ['kaur_tu_umum']];
+    }
+
+    #[Test]
+    public function kepala_desa_cannot_update_village_profile_even_though_approver_in_letters_domain(): void
+    {
+        // Regression guard SID-ARCH-SYS-001 S2.3: Kades adalah approver
+        // aktif di domain Surat, tapi TIDAK punya akses domain CMS
+        // (Profil Desa), yang eksklusif petugas_desa.
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'kepala_desa', 'village_id' => $village->id]);
+
+        $this->actingAs($user)
+            ->patchJson('/api/villages/profile', ['name' => 'Desa Cibenda Baru'])
+            ->assertForbidden();
+    }
+
+    #[Test]
+    public function petugas_desa_can_update_village_profile(): void
+    {
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+
+        $this->actingAs($user)
+            ->patchJson('/api/villages/profile', [
+                'name' => 'Desa Cibenda Baru',
+                'head_name' => 'H. Ridwan Saepudin',
+            ])
+            ->assertStatus(200);
+    }
+
+    #[Test]
+    public function any_authenticated_role_can_view_village_profile(): void
+    {
+        // show() lintas-role, hanya update() yang dibatasi petugas_desa.
+        $village = Village::factory()->create();
+        $user = User::factory()->create(['role' => 'warga', 'village_id' => $village->id]);
+
+        $this->actingAs($user)
+            ->getJson('/api/villages/profile')
+            ->assertStatus(200);
+    }
+
+    #[Test]
+    public function petugas_desa_cannot_access_rt_only_approval_route(): void
+    {
+        // Arah sebaliknya: petugas_desa (Tier 2 sama seperti Kades/Sekdes
+        // di label navigasi) tetap TIDAK termasuk approver RT.
+        $user = $this->userWithRole('petugas_desa');
+        $letter = Letter::factory()->create();
+
+        $this->actingAs($user)
+            ->patchJson("/api/rt/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertForbidden();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications — lintas-role, tidak boleh 403 middleware
+    |--------------------------------------------------------------------------
+    */
+
+    #[DataProvider('allNineRoles')]
+    #[Test]
+    public function every_role_can_reach_notifications_index_without_middleware_403(string $role): void
+    {
+        $user = $this->userWithRole($role);
+
+        $response = $this->actingAs($user)->getJson('/api/notifications');
+
+        $this->assertNotSame(403, $response->getStatusCode());
+    }
+
+    public static function allNineRoles(): array
+    {
+        return [
+            ['warga'], ['rt'], ['rw'], ['kadus'], ['kasi_pelayanan'],
+            ['kaur_tu_umum'], ['petugas_desa'], ['kepala_desa'], ['sekretaris_desa'],
+        ];
+    }
+}

@@ -1,0 +1,43 @@
+get:
+  tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
+  summary: Lihat daftar tipe surat
+  description: |
+    Menampilkan tipe surat aktif yang memiliki template, dibatasi ke desa
+    akun yang login. Filter desa diambil dari akun; endpoint tidak menerima
+    `active_only` atau `category_id`. Tipe Draft/Nonaktif dikelola melalui
+    jalur konfigurasi yang saat ini hanya menyediakan update.
+  operationId: listLetterTypes
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar tipe surat berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letter-types/letter-types.yaml#/LetterType'
+          examples:
+            desa_active_types:
+              summary: Tipe surat aktif bertemplate pada desa akun yang login
+              value:
+                data:
+                  - id: 1
+                    code: "SKD"
+                    name: "Surat Keterangan Domisili"
+                    template: "<html>...template...</html>"
+                    verification_type: "auto"
+                    assigned_role: "kasi_pelayanan"
+                    validity_days: 90
+                    category_id: 1
+                    category: { code: "approval_normal", name: "Approval Normal" }
+                    flow_id: 3
+                    flow: { id: 3, name: "RT-Kades (2 Tahap)" }
+                    is_active: true
+                    status_label: "aktif"
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

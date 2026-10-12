@@ -1,0 +1,28 @@
+servers:
+  - url: https://api.sid-cibenda.id
+    description: Endpoint autentikasi web (tanpa prefix /api)
+security:
+  - sanctumCookie: []
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Kirim ulang tautan verifikasi email
+  security:
+    - sanctumCookie: []
+  operationId: sendEmailVerification
+  responses:
+    '200':
+      description: Tautan verifikasi berhasil dikirim (atau redirect jika email telah diverifikasi)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: verification-link-sent
+    '302':
+      description: Email sudah terverifikasi; diarahkan ke dashboard
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '429':
+      description: Batas pengiriman verifikasi terlampaui

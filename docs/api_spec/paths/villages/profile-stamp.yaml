@@ -1,0 +1,75 @@
+post:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Upload atau ganti stempel desa
+  description: |
+    Aktor: Petugas Desa pada desanya. File disimpan pada private storage;
+    database hanya menyimpan path. Format PNG, JPEG, atau WebP, maksimum 5 MB.
+  operationId: uploadVillageStamp
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [stamp]
+          properties:
+            stamp:
+              type: string
+              format: binary
+              description: Gambar PNG, JPEG, atau WebP; maksimum 5 MB.
+  responses:
+    '200':
+      description: Stempel desa berhasil diunggah/diganti
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              data:
+                $ref: '../../schemas/villages/villages.yaml#/Village'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Preview stempel desa
+  description: |
+    Preview binary hanya untuk Petugas Desa yang terautentikasi dan
+    dibatasi pada desa Petugas tersebut. File tidak memiliki URL publik.
+  operationId: previewVillageStamp
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Gambar stempel
+      headers:
+        Cache-Control:
+          schema:
+            type: string
+          example: "private, no-store"
+        X-Content-Type-Options:
+          schema:
+            type: string
+          example: "nosniff"
+      content:
+        image/*:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      description: Stempel desa belum tersedia
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'

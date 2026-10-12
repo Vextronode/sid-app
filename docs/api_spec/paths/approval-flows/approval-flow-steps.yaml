@@ -1,0 +1,106 @@
+put:
+  tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
+  summary: Ganti seluruh urutan step approval untuk 1 flow
+  description: |
+    Replace-all (bukan partial patch) karena step_order antar step saling
+    bergantung. Validasi aplikasi hanya menerima `rt` dan `kepala_desa`;
+    Sekdes bertindak sebagai approver pengganti pada step `kepala_desa`.
+    Database masih menyimpan nilai enum legacy `sekdes`, tetapi nilai itu
+    tidak dapat dipakai untuk membuat atau mengganti step melalui endpoint.
+    Harus ada tepat satu `is_final=true`, step final harus memiliki
+    step_order terbesar dan posisi `kepala_desa`. Flow dicari dalam desa
+    akun Petugas Desa yang login; flow milik desa lain menghasilkan 404.
+  operationId: replaceApprovalFlowSteps
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: flow_id
+      schema:
+        type: integer
+      example: 3
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/letter-categories/letter-categories.yaml#/ApprovalFlowStepsReplaceRequest'
+  responses:
+    '200':
+      description: Steps berhasil diganti
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Urutan approval berhasil diperbarui"
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letter-categories/letter-categories.yaml#/FlowStep'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      description: |
+        Flow sedang dipakai surat yang berjalan (letters.flow_id snapshot) -
+        mengganti steps tidak memengaruhi surat yang sudah submit (flow_id
+        dikunci sebagai snapshot), tapi sistem tetap memperingatkan jika
+        ada surat in_progress yang memakai flow ini agar admin sadar
+        dampaknya untuk surat BARU yang akan submit setelah ini.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ConflictResponse'
+          example:
+            message: "Ada 5 surat sedang berjalan dengan flow ini. Perubahan hanya berlaku untuk surat baru."
+    '422':
+      description: Posisi bukan RT/Kepala Desa, bukan tepat satu step final, posisi final bukan Kepala Desa, atau final bukan step terakhir
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          examples:
+            invalid_position:
+              summary: approver_position tidak valid
+              value:
+                message: "The given data was invalid."
+                errors:
+                  "steps.1.approver_position": ["Posisi approver hanya RT atau Kepala Desa; Sekdes diproses melalui tahap Kepala Desa."]
+            no_final_step:
+              summary: Tidak ada step final
+              value:
+                message: "The given data was invalid."
+                errors:
+                  steps: ["Minimal satu step harus is_final=true"]
+            multiple_final_steps:
+              summary: Lebih dari satu step final
+              value:
+                message: "The given data was invalid."
+                errors:
+                  steps: ["Tepat satu step harus is_final=true."]
+            final_not_last:
+              summary: Step final bukan urutan terakhir
+              value:
+                message: "The given data was invalid."
+                errors:
+                  steps: ["Step final harus memiliki step_order terbesar."]
+            invalid_final_position:
+              summary: Approver step final tidak valid
+              value:
+                message: "The given data was invalid."
+                errors:
+                  steps: ["Approver step final harus Kepala Desa"]
+            duplicate_order:
+              summary: step_order duplikat
+              value:
+                message: "The given data was invalid."
+                errors:
+                  steps: ["step_order harus unik dalam satu flow"]

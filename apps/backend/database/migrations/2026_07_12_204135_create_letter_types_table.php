@@ -1,0 +1,43 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('letter_types', function (Blueprint $table) {
+            $table->id();
+            $table->foreignUuid('village_id')
+                ->constrained('villages')
+                ->cascadeOnDelete();
+            $table->string('code', 20);
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->text('template')->nullable();
+            $table->enum('verification_type', ['manual', 'auto', 'document']);
+            $table->text('requirement_info')->nullable();
+            $table->enum('assigned_role', ['kasi_pelayanan', 'kaur_tu_umum'])->nullable();
+            $table->foreignId('category_id')->after('assigned_role')->constrained('letter_categories');
+            $table->foreignId('flow_id')->after('category_id')->constrained('approval_flows');
+            $table->unsignedInteger('validity_days')->nullable();
+            $table->boolean('is_active');
+            $table->timestamps();
+
+            $table->unique(['village_id', 'code']);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('letter_types');
+    }
+};

@@ -1,0 +1,50 @@
+get:
+  tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
+  summary: Lihat daftar kategori surat (gate awal klasifikasi)
+  description: |
+    BARU v5.0. 4 kategori tetap: approval_normal, upload_mandiri,
+    dokumen_pendukung, update_data (SID-ARCH-BE-001 S3.2). Data ini
+    jarang berubah - tidak ada endpoint create/delete di MVP, murni
+    referensi untuk memilih category_id saat konfigurasi letter_types
+    atau approval_flows.
+  operationId: listLetterCategories
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar kategori surat berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letter-categories/letter-categories.yaml#/LetterCategory'
+          example:
+            data:
+              - id: 1
+                code: "approval_normal"
+                name: "Approval Normal"
+                handler_class: "App\\Services\\Letters\\ApprovalNormalHandler"
+                is_active: true
+              - id: 2
+                code: "upload_mandiri"
+                name: "Upload Mandiri"
+                handler_class: "App\\Services\\Letters\\UploadMandiriHandler"
+                is_active: true
+              - id: 3
+                code: "dokumen_pendukung"
+                name: "Dokumen Pendukung"
+                handler_class: "App\\Services\\Letters\\DokumenPendukungHandler"
+                is_active: true
+              - id: 4
+                code: "update_data"
+                name: "Update Data Kependudukan"
+                handler_class: "App\\Services\\Letters\\UpdateDataHandler"
+                is_active: true
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'

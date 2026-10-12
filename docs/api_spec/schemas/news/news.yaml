@@ -1,0 +1,74 @@
+News:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 12
+    village_id:
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
+    author_id:
+      type: string
+      format: uuid
+      example: "e8aaa421-7fdd-42cf-8c30-993264820afd"
+    author_name:
+      type: string
+      example: "Petugas Desa"
+    title:
+      type: string
+      example: "Pengumuman Jadwal Posyandu Bulan Juli"
+    slug:
+      type: string
+      example: "pengumuman-jadwal-posyandu-bulan-juli"
+    content:
+      type: string
+      example: "Posyandu akan dilaksanakan pada tanggal 10 Juli 2026..."
+    thumbnail:
+      type: string
+      nullable: true
+      example: "https://cdn.example.com/thumbnails/posyandu.jpg"
+    is_published:
+      type: boolean
+      example: true
+    published_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: "2026-07-01T08:00:00Z"
+
+NewsCreateRequest:
+  type: object
+  required: [title, content]
+  properties:
+    title:
+      type: string
+      example: "Pengumuman Jadwal Posyandu Bulan Juli"
+    content:
+      type: string
+      example: "Posyandu akan dilaksanakan pada tanggal 10 Juli 2026..."
+    thumbnail:
+      type: string
+      format: binary
+      nullable: true
+    is_published:
+      type: boolean
+      example: true
+
+NewsUpdateRequest:
+  type: object
+  properties:
+    title:
+      type: string
+      example: "Pengumuman Jadwal Posyandu Bulan Juli (Update)"
+    content:
+      type: string
+      example: "Posyandu diundur menjadi tanggal 12 Juli 2026..."
+    is_published:
+      type: boolean
+      example: false
+    thumbnail:
+      type: string
+      format: binary
+      nullable: true
+      description: "Gambar thumbnail (maks 2048 KB)"

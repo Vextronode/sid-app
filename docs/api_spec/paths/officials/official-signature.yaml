@@ -1,0 +1,89 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Upload atau ganti tanda tangan Kepala Desa aktif
+  description: |
+    Aktor: Petugas Desa pada desa yang sama. Hanya record Kepala Desa
+    aktif yang belum mengakhiri masa jabatan. File disimpan pada private
+    storage; database menyimpan path. Format PNG, JPEG, atau WebP,
+    maksimum 5 MB. Upload terpisah dari rotasi jabatan.
+  operationId: uploadOfficialSignature
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: official
+      in: path
+      required: true
+      schema:
+        type: integer
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [signature]
+          properties:
+            signature:
+              type: string
+              format: binary
+              description: Gambar PNG, JPEG, atau WebP; maksimum 5 MB.
+  responses:
+    '200':
+      description: Tanda tangan berhasil diunggah/diganti
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Tanda tangan Kepala Desa berhasil diperbarui."
+              data:
+                $ref: '../../schemas/users/users.yaml#/Official'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Preview tanda tangan Kepala Desa aktif
+  description: |
+    Preview binary terautentikasi; Petugas Desa hanya dapat melihat tanda
+    tangan record Kepala Desa aktif yang belum mengakhiri masa jabatan pada
+    desanya. File tidak memiliki URL publik.
+  operationId: previewOfficialSignature
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: official
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    '200':
+      description: Gambar tanda tangan
+      headers:
+        Cache-Control:
+          schema:
+            type: string
+          example: "private, no-store"
+        X-Content-Type-Options:
+          schema:
+            type: string
+          example: "nosniff"
+      content:
+        image/*:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

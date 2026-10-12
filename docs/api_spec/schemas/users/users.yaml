@@ -1,0 +1,331 @@
+User:
+  type: object
+  description: |
+    9 nilai role ENUM TIDAK berubah dari v4.2 ke v5.0 - lihat
+    SID-ARCH-BE-001 S4.1. Yang berubah adalah SCOPE OTORISASI di
+    baliknya (kepala_desa/sekretaris_desa jadi approver aktif, bukan
+    lagi read-only), bukan daftar nilai ENUM itu sendiri.
+  properties:
+    id:
+      type: string
+      format: uuid
+    village_id:
+      type: string
+      format: uuid
+    citizen_id:
+      type: string
+      format: uuid
+      nullable: true
+      description: "NULL diizinkan untuk akun teknis tanpa data kependudukan"
+    name:
+      type: string
+      example: "Ahmad Budiman"
+    username:
+      type: string
+      example: "ahmad.1937"
+    email:
+      type: string
+      nullable: true
+      example: "ahmad.budiman@cibenda.desa.id"
+    role:
+      type: string
+      enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, kepala_desa, sekretaris_desa]
+      example: "rt"
+    is_active:
+      type: boolean
+      example: true
+    must_change_password:
+      type: boolean
+      example: false
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+    updated_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+    citizen:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../citizens/citizens.yaml#/Citizen'
+    official:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '#/Official'
+
+UserUpdateRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      example: "Ahmad Budiman"
+    is_active:
+      type: boolean
+      example: true
+
+StoreOfficialRequest:
+  type: object
+  required: [citizen_id, position, started_at]
+  properties:
+    citizen_id:
+      type: string
+      format: uuid
+    user_id:
+      type: string
+      format: uuid
+      nullable: true
+    position:
+      type: string
+      enum: [kepala_desa, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, sekdes, kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes]
+      example: "rt"
+    village_id:
+      type: string
+      format: uuid
+      nullable: true
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
+    rt_id:
+      type: integer
+      nullable: true
+      example: 12
+    rw_id:
+      type: integer
+      nullable: true
+      example: null
+    hamlet_id:
+      type: integer
+      nullable: true
+      example: null
+    phone_wa:
+      type: string
+      nullable: true
+      example: "6281234567890"
+    started_at:
+      type: string
+      format: date
+      example: "2026-01-01"
+    term_ends_at:
+      type: string
+      format: date
+      nullable: true
+    ended_at:
+      type: string
+      format: date
+      nullable: true
+      example: null
+    is_active:
+      type: boolean
+      example: true
+    notes:
+      type: string
+      nullable: true
+      example: "Pelantikan awal periode"
+
+UpdateOfficialRequest:
+  type: object
+  description: |
+    Semua field bersifat opsional. Pada official yang terhubung ke user,
+    position/user_id/citizen_id/is_active/ended_at hanya dapat diubah
+    melalui promote, demote, atau rotate.
+  properties:
+    citizen_id:
+      type: string
+      format: uuid
+    user_id:
+      type: string
+      format: uuid
+      nullable: true
+    position:
+      type: string
+      enum: [kepala_desa, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, sekdes, kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes]
+      example: "rt"
+    village_id:
+      type: string
+      format: uuid
+      nullable: true
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
+    rt_id:
+      type: integer
+      nullable: true
+      example: 12
+    rw_id:
+      type: integer
+      nullable: true
+      example: null
+    hamlet_id:
+      type: integer
+      nullable: true
+      example: null
+    phone_wa:
+      type: string
+      nullable: true
+      example: "6281234567890"
+    started_at:
+      type: string
+      format: date
+      example: "2026-01-01"
+    term_ends_at:
+      type: string
+      format: date
+      nullable: true
+    ended_at:
+      type: string
+      format: date
+      nullable: true
+      example: null
+    is_active:
+      type: boolean
+      example: true
+    notes:
+      type: string
+      nullable: true
+      example: "Catatan tambahan"
+
+RotateOfficialRequest:
+  type: object
+  required: [user_id, started_at]
+  properties:
+    user_id:
+      type: string
+      format: uuid
+      example: "e8aaa421-7fdd-42cf-8c30-993264820afd"
+      description: Akun sistem baru untuk pejabat pengganti
+    started_at:
+      type: string
+      format: date
+      example: "2026-08-01"
+    term_ends_at:
+      type: string
+      format: date
+      nullable: true
+    notes:
+      type: string
+      nullable: true
+      example: "Pergantian rutin akhir periode"
+
+Official:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 5
+    citizen_id:
+      type: string
+      format: uuid
+    user_id:
+      type: string
+      format: uuid
+      nullable: true
+    position:
+      type: string
+      enum: [kepala_desa, kasi_pelayanan, kaur_tu_umum, kadus, petugas_desa, rw, rt, sekdes, kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes]
+      example: "rt"
+    village_id:
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
+    rt_id:
+      type: integer
+      nullable: true
+      example: 12
+    rw_id:
+      type: integer
+      nullable: true
+      example: null
+    hamlet_id:
+      type: integer
+      nullable: true
+      example: null
+    phone_wa:
+      type: string
+      nullable: true
+      example: "6281234567890"
+    started_at:
+      type: string
+      format: date
+      example: "2024-01-01"
+    term_ends_at:
+      type: string
+      format: date
+      nullable: true
+    ended_at:
+      type: string
+      format: date
+      nullable: true
+      example: null
+    is_active:
+      type: boolean
+      example: true
+    has_signature_img:
+      type: boolean
+      example: true
+      description: "Indikator ketersediaan TTD private; preview melalui endpoint terproteksi."
+    stamp_img:
+      type: string
+      nullable: true
+      example: null
+      description: "Kolom legacy; tidak dipakai PDF. PDF mengambil stempel dari villages."
+    photo_img:
+      type: string
+      nullable: true
+      example: null
+      description: "Nilai kolom photo_img apa adanya (tidak ditransformasi Resource)"
+    notes:
+      type: string
+      nullable: true
+      example: "Pelantikan awal periode"
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+    updated_at:
+      type: string
+      format: date-time
+      example: "2026-06-01T08:00:00Z"
+    citizen:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../citizens/citizens.yaml#/Citizen'
+    village:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../villages/villages.yaml#/Village'
+    hamlet:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../wilayah/wilayah.yaml#/Hamlet'
+    rt:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../wilayah/wilayah.yaml#/Rt'
+    rw:
+      nullable: true
+      description: "Included when relation is loaded"
+      $ref: '../wilayah/wilayah.yaml#/Rw'
+
+RotateOfficialResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Rotasi jabatan berhasil diproses"
+    data:
+      type: object
+      properties:
+        old_official:
+          $ref: '#/Official'
+        new_official:
+          $ref: '#/Official'
+    warnings:
+      type: array
+      items:
+        type: object
+        properties:
+          code:
+            type: string
+          position:
+            type: string
+          count:
+            type: integer
+          message:
+            type: string

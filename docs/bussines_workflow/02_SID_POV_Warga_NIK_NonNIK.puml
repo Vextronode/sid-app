@@ -1,0 +1,98 @@
+@startuml
+title SID - POV Warga [Business Workflow]
+
+skinparam activity {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C0A000
+}
+
+|#LightBlue|Warga|
+start
+:Login;
+:Buka Menu "Ajukan Permohonan Surat";
+note right
+  Perubahan/koreksi data kependudukan
+  (citizens) BUKAN kewenangan Warga.
+  Hanya Petugas Desa yang dapat mengubah
+  data warga (UC-09) - lihat
+  04_BWF_PovAdminEksekutifSuperadmin_v2.puml.
+  Kapabilitas "warga ajukan perubahan data
+  sendiri" adalah wacana, belum ada desain
+  (SID-ARCH-BE-001 S10/S5.3).
+end note
+
+:Pilih Jenis Surat (letter_types);
+
+if (letter_categories.code?) then (upload_mandiri)
+  :Unduh Template Surat;
+  note right
+    Tanda tangan terjadi di luar sistem
+    (eksternal). Tidak ada evaluasi
+    approval_flows untuk kategori ini.
+  end note
+  stop
+
+elseif (dokumen_pendukung) then
+  :Bukan output final -\nmenjadi lampiran pada\npermohonan surat kategori lain;
+  stop
+
+elseif (update_data) then
+  :Kategori ini TIDAK dapat diajukan\nWarga saat ini;
+  note right
+    Mekanisme di balik kategori ini
+    (staging self-service) belum
+    didesain - lihat catatan di atas.
+  end note
+  stop
+
+else (approval_normal)
+  :Isi Form Permohonan;
+  :Submit Permohonan;
+endif
+
+|#LightYellow|Database & Backend|
+:Buat row letters (status: pending);
+:Snapshot letters.flow_id\ndari letter_types.flow_id saat ini;
+note right
+  flow_id adalah snapshot, bukan
+  live-reference. Perubahan konfigurasi
+  approval_flows setelah surat disubmit
+  TIDAK memengaruhi surat yang sedang
+  berjalan.
+end note
+:current_step_order = 1;
+:Resolve approver step 1 via OfficialService\n(RT, berdasarkan citizens.rt_id);
+:Kirim notifikasi ke RT wilayah;
+
+|#MistyRose|RT|
+:Terima Notifikasi, Proses Keputusan;
+note right: Lihat 03_BWF_PovRtRwStaffDesa_v2.puml
+
+|#LightYellow|Database & Backend|
+:... (loop approval_flows berjalan,\nlihat file POV RT/RW & Staff Desa,\ndan POV Admin Desa/Eksekutif) ...;
+
+if (Hasil Akhir Pipeline?) then (rejected di step manapun)
+  :Set letters.status = rejected;
+  :Notifikasi ke Warga + alasan;
+  |#LightBlue|Warga|
+  :Terima Notifikasi Penolakan;
+  stop
+else (approved - step final terlewati)
+  :Generate letter_number;
+  :Hitung expires_at (jika validity_days != NULL);
+  :Set letters.status = approved;
+  :Notifikasi ke Warga;
+endif
+
+|#LightBlue|Warga|
+:Terima Notifikasi Surat Selesai;
+:Download PDF (generate on-demand,\ncek expires_at khusus role warga);
+stop
+
+@enduml

@@ -1,0 +1,51 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Rotasi pejabat struktural ke akun warga pengganti
+  description: |
+    Hanya Petugas Desa. Demote pejabat lama lalu promote akun warga baru
+    dalam satu transaksi dengan posisi dan wilayah yang sama. Tidak berlaku
+    untuk petugas_desa. Respons memuat old_official, new_official, warnings.
+  operationId: rotateOfficial
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: official
+      in: path
+      required: true
+      description: ID record official yang sedang aktif (akan diakhiri jabatannya)
+      schema:
+        type: integer
+      example: 5
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/users/users.yaml#/RotateOfficialRequest'
+  responses:
+    '200':
+      description: Rotasi jabatan berhasil diproses
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/users/users.yaml#/RotateOfficialResponse'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      description: Record official yang mau dirotasi tidak ditemukan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
+    '422':
+      description: Akun pengganti atau tanggal jabatan tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "The given data was invalid."
+            errors:
+              user_id: ["Akun target harus warga aktif yang belum menjabat dan terhubung ke data kependudukan."]

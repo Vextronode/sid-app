@@ -1,0 +1,74 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Lihat data sosio-ekonomi keluarga
+  description: |
+    Aktor: Petugas Desa. Data dicatat per KK dan opsional (1:1 dengan
+    families). KK yang belum disurvei atau KK desa lain mengembalikan 404.
+  operationId: getFamilySocioeconomic
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: family_id
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Data sosio-ekonomi keluarga berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/families/families.yaml#/FamilySocioeconomic'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+put:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Buat atau perbarui data sosio-ekonomi keluarga
+  description: |
+    Aktor: Petugas Desa. `surveyed_by` dan `surveyed_at` diisi otomatis
+    oleh server. Survei ulang menggantikan data sebelumnya.
+  operationId: upsertFamilySocioeconomic
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: family_id
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/families/families.yaml#/FamilySocioeconomicUpsertRequest'
+  responses:
+    '200':
+      description: Data sosio-ekonomi keluarga berhasil disimpan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/families/families.yaml#/FamilySocioeconomic'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

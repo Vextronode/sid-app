@@ -1,0 +1,43 @@
+servers:
+  - url: https://api.sid-cibenda.id
+    description: Root host (tanpa prefix /api)
+security: []
+parameters:
+  - name: path
+    in: path
+    required: true
+    description: Jalur file; dapat mencakup subdirektori.
+    schema:
+      type: string
+get:
+  tags: [Infrastruktur]
+  summary: Membaca file dari storage publik
+  security: []
+  operationId: getStoredFile
+  responses:
+    '200':
+      description: Konten file
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    '404':
+      description: File tidak ditemukan
+put:
+  tags: [Infrastruktur]
+  summary: Menulis file ke storage
+  security: []
+  operationId: putStoredFile
+  requestBody:
+    required: true
+    content:
+      application/octet-stream:
+        schema:
+          type: string
+          format: binary
+  responses:
+    '200':
+      description: File berhasil disimpan
+    '422':
+      description: Payload file tidak valid

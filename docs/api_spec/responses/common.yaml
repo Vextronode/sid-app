@@ -1,0 +1,41 @@
+ValidationError:
+  description: Validasi input gagal
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/common/errors.yaml#/ValidationErrorResponse'
+
+Unauthenticated:
+  description: User belum login / session tidak valid
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/common/errors.yaml#/UnauthenticatedResponse'
+
+Forbidden:
+  description: User tidak memiliki wewenang untuk aksi ini (RBAC / Policy context check)
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/common/errors.yaml#/ForbiddenResponse'
+
+NotFound:
+  description: Data yang diminta tidak ditemukan
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/common/errors.yaml#/NotFoundResponse'
+
+Conflict:
+  description: "Konflik state (contoh: surat sudah diproses, current_step_order sudah berubah)"
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/common/errors.yaml#/ConflictResponse'
+
+ServerError:
+  description: Kesalahan tak terduga di server
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/common/errors.yaml#/ServerErrorResponse'

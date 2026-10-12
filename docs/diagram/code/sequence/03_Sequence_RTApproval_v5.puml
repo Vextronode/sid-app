@@ -1,0 +1,330 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 03_Sequence_RTApproval_v5.puml
+' JUDUL: Sequence - RT Approval
+' SUMBER: TDD SID Desa Cibenda v5.1 (Section 5.3.2 UC-04a, Section 5.1.2 Table 6)
+'         + SID-ARCH-BE-001 S3.2, S7
+' CATATAN: Menggantikan 03_Sequence_RTApproval_v4.puml. Perubahan UTAMA:
+'          alur setelah approve memilih step actionable secara dinamis;
+'          RW hanya menerima FYI dan bukan gate approval.
+'==================================================================================
+
+@startuml 5.3.3c_v5 Sequence - RT Approval Rejection Surat
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ParticipantFontName Arial
+  ParticipantFontSize 12
+  ActorBackgroundColor #D6E4F7
+  ActorBorderColor #1F3864
+  ActorFontName Arial
+  LifeLineBorderColor #2E5FA3
+  ArrowColor #2E5FA3
+  ArrowFontName Arial
+  ArrowFontSize 11
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+
+title Sequence Diagram - RT Approval / Rejection Surat [v5.1] \n(UC-04a - RT Step Aktif, Self-Approval Guard, Dynamic Next Step)
+
+actor "RT" as RT
+participant "React\nFrontend" as FE
+participant "LetterController" as LCTRL
+participant "RtApprovalController" as CTRL
+participant "Policy\n(Authorization)" as POL
+participant "LetterService" as LSVC
+participant "Form\nRequest" as FREQ
+participant "RtApprovalService" as SVC
+participant "OfficialService" as OSVC
+participant "ApprovalFlowRepository" as AFREPO
+participant "LetterFlowService" as FLSVC
+participant "LetterRepository" as REPO
+participant "OfficialRepository" as OREPO
+participant "DB::transaction" as TX
+participant "Notification database channel" as Q
+participant "PostgreSQL" as DB
+actor "RW\n(Wilayah Terkait,\nFYI Non-Blocking)" as RW
+actor "Kadus\n(Dusun Citizen,\nFYI Non-Blocking)" as KADUS
+actor "Kepala Desa /\nSekretaris Desa\n(Approver Berikutnya)" as KD
+actor "Warga\n(Pemohon)" as WRG
+
+== Lihat Daftar Surat Wilayah RT ==
+
+RT -> FE : Buka dashboard / menu "Surat Masuk"
+FE -> LCTRL : GET /api/letters
+LCTRL -> POL : authorize('viewAny', Letter::class)
+POL --> LCTRL : allowed
+LCTRL -> LSVC : getScopedLetters(user, filters)
+LSVC -> OSVC : getCurrentRt(user)
+OSVC -> OREPO : cari pejabat RT aktif user
+OREPO -> DB : SELECT official RT
+DB --> OREPO : official (rt_id)
+OREPO --> OSVC : official RT
+OSVC --> LSVC : official RT
+LSVC -> REPO : queryByCitizenRt(rt_id)
+REPO -> DB : SELECT surat milik warga\npada RT tersebut
+DB --> REPO : surat lintas status
+REPO --> LSVC : collection surat
+LSVC --> LCTRL : LetterCollection
+LCTRL --> FE : 200 OK {data: [...]}
+FE --> RT : Tampilkan surat wilayah RT\nlintas status; keputusan hanya\ntersedia saat step RT aktif
+
+== Buka & Periksa Detail Surat ==
+
+RT -> FE : Klik salah satu surat
+FE -> LCTRL : GET /api/letters/{id}
+LCTRL -> LSVC : getForShow(id)
+LSVC -> REPO : findWithApprovalActorForShow(id)
+REPO -> DB : SELECT surat dan relasi detail
+DB --> REPO : letter detail
+REPO --> LSVC : letter
+LSVC --> LCTRL : letter
+LCTRL -> POL : authorize('view', letter)
+
+alt Surat bukan milik/wilayah RT
+  POL --> LCTRL : denied
+  LCTRL --> FE : 403 Forbidden
+  FE --> RT : Tampilkan pesan error
+else Surat dapat dilihat RT
+  POL --> LCTRL : allowed
+  LCTRL --> FE : 200 OK {data: LetterResource}
+  FE --> RT : Tampilkan detail dan riwayat\nsurat yang boleh diakses
+end
+
+== Berikan Keputusan ==
+
+RT -> FE : Klik "Setujui" atau "Tolak",\nisi catatan jika menolak
+FE -> CTRL : PATCH /api/rt/letters/{letter}/decision\n{status: "approved"|"rejected", notes}
+CTRL -> FREQ : validate(request)
+
+alt Memilih "Tolak" tanpa catatan
+  FREQ --> CTRL : ValidationException
+  CTRL --> FE : 422 {error: "Catatan wajib\ndiisi jika menolak"}
+  FE --> RT : Tampilkan pesan error
+
+else Validasi lolos
+  FREQ --> CTRL : validated data
+  CTRL -> SVC : decision(letter, user, validated data)
+  SVC -> OSVC : getCurrentRt(user)
+  OSVC -> OREPO : findActiveByUserId(auth()->id(), 'rt')
+  OREPO -> DB : SELECT * FROM officials\nWHERE user_id = ?\nAND position = 'rt'\nAND is_active = true
+  DB --> OREPO : official RT
+  OREPO --> OSVC : official
+  OSVC --> SVC : active RT official
+  SVC -> FLSVC : isApplicantOfficial(letter, official)
+
+  alt Surat milik RT yang memutuskan
+    SVC --> CTRL : Forbidden
+    CTRL --> FE : 403 "Anda tidak dapat memutuskan\nsurat milik Anda sendiri."
+  else Surat bukan milik RT
+    SVC -> REPO : loadDetailForApproval(letter)
+    REPO -> DB : SELECT letter + citizen
+    DB --> REPO : letter + citizen
+    REPO --> SVC : loaded letter
+    SVC -> SVC : verify citizen.rt_id = official.rt_id
+    SVC -> REPO : findCurrentFlowStep(letter)
+    REPO -> DB : SELECT active flow step
+    DB --> REPO : current step
+    REPO --> SVC : current step
+
+  alt Active flow step bukan posisi RT
+    note right of SVC
+      Gate memeriksa active flow step
+      dan posisi approver, bukan nilai
+      current_step_order tertentu.
+    end note
+    SVC --> CTRL : HTTP 409 Conflict (abort)
+    CTRL --> FE : 409 {error: "Surat sudah\ndiproses sebelumnya"}
+    FE --> RT : Tampilkan pesan error status konflik
+  end
+
+  SVC -> TX : DB::transaction() begin
+  TX -> REPO : findForUpdateOrFail(letter.id)
+  REPO -> DB : SELECT letter FOR UPDATE
+  DB --> REPO : locked letter
+  TX -> REPO : findCurrentFlowStep(locked)
+  REPO -> DB : SELECT active flow step after lock
+  DB --> REPO : current step
+  REPO --> SVC : locked letter + current step
+
+  alt action = "approved"
+    TX -> SVC : nextActionable(letter, step_order)
+    SVC -> AFREPO : get following flow steps
+    AFREPO -> DB : SELECT ordered flow_steps\nafter current step
+    DB --> AFREPO : following steps
+    AFREPO --> SVC : flow steps
+    SVC -> SVC : lewati step non-final hanya bila\napprover aktif ada dan semuanya pemohon
+    SVC --> TX : next step + skipped[]
+    TX -> REPO : update(letter, {\n  status: 'in_progress',\n  current_step_order: next.step_order,\n  processed_at: now()\n})
+    REPO -> DB : UPDATE letters\nSET status = 'in_progress',\ncurrent_step_order = next.step_order,\nprocessed_at = now()
+    DB --> REPO : updated
+
+    TX -> REPO : recordDecisionForLetter({actor, level: 'rt', action: 'approved', flow_step_id: step.id})
+    REPO -> DB : UPDATE pending letter_approvals row (decision fields)
+    DB --> REPO : decision recorded; no pending row remains for this step
+
+    TX -> REPO : createApprovalForLetter(next.step, approved_by: null, action: null, deadline_at)
+    REPO -> DB : INSERT pending approval placeholder for next step
+    TX -> REPO : createStatusLog({\n  letter_id,\n  actor_id: auth()->id(),\n  old_status: oldStatus,\n  new_status: 'in_progress', ip_address\n})
+    REPO -> DB : INSERT INTO letter_status_logs
+    DB --> REPO : log created
+
+    TX -> SVC : logSkipped(next.skipped)
+    SVC -> REPO : create status logs\n(pending/in_progress -> same status)
+    REPO -> DB : INSERT skipped-step logs
+    DB --> REPO : logs created
+    == Notifikasi Setelah RT Approve ==
+
+    note over SVC, KD
+      *** BERBEDA TOTAL DARI v4.2 ***
+      FYI RW/Kadus (jika tersedia) dan notifikasi
+      kepada approver berikutnya berjalan setelah RT approve.
+      RW dan Kadus bukan gate; next step ditentukan oleh
+      nextActionable dan bukan fixed posisi step 2.
+    end note
+
+    group Resolve & Notifikasi FYI ke RW (non-blocking)
+      SVC -> OSVC : resolveRwForCitizen(letter.citizen)
+      note right of OSVC
+        Resolve RW hanya untuk notifikasi FYI;
+        bukan pemeriksaan izin approval.
+        Hasil resolve HANYA dipakai untuk
+        kirim notifikasi, TIDAK ADA
+        pengecekan otorisasi approve.
+      end note
+      OSVC -> OREPO : findActiveByRwId(citizen.rt.rw_id)
+      OREPO -> DB : SELECT * FROM officials\nWHERE rw_id = ?\nAND position = 'rw'\nAND is_active = true\nAND ended_at IS NULL
+      DB --> OREPO : official RW
+      OREPO --> OSVC : Official RW (user_id)
+      OSVC --> SVC : Official RW
+
+      alt RW aktif ditemukan
+        SVC -> Q : notify RW FYI
+        Q -> OREPO : createNotification(RW user)
+        OREPO -> DB : INSERT INTO notifications
+        DB --> OREPO : notification created
+        Q --> RW : FYI: surat di wilayah Anda\ndisetujui RT
+      else RW aktif tidak ditemukan
+        note right of SVC
+          Tidak ada fallback broadcast;
+          notifikasi FYI dilewati.
+        end note
+      end
+      note right of RW
+        Notifikasi FYI READ-ONLY.
+        RW TIDAK PERNAH tercatat sebagai
+        approval_level di letter_approvals.
+        RW TIDAK memiliki tombol approve/
+        reject apapun untuk surat ini.
+      end note
+
+    end
+
+    group Resolve & Notifikasi FYI ke Kadus Dusun Pemohon (non-blocking)
+      SVC -> REPO : findCitizenHamletId(letter)
+      REPO -> DB : SELECT hamlet_id FROM citizens\nWHERE id = letter.citizen_id
+      DB --> REPO : hamlet_id (atau NULL)
+      REPO --> SVC : hamlet_id
+
+      alt hamlet_id tersedia
+        SVC -> OREPO : allActiveKadusByHamletId(hamlet_id)
+        OREPO -> DB : SELECT * FROM officials\nWHERE hamlet_id = ?\nAND position = 'kadus'\nAND is_active = true
+        DB --> OREPO : Kadus aktif dusun terkait
+        OREPO --> SVC : officials (user_id)
+        alt Kadus aktif ditemukan
+          SVC -> Q : notify Kadus FYI
+          Q -> DB : INSERT INTO notifications
+          Q --> KADUS : FYI surat dusun disetujui RT
+        else Kadus aktif tidak ditemukan
+          note right of SVC
+            FYI dilewati; approval tetap berjalan.
+          end note
+        end
+      else hamlet_id tidak tersedia
+        note right of SVC
+          FYI dilewati; approval tetap berjalan.
+        end note
+      end
+      note right of KADUS
+        FYI read-only; Kadus bukan approver,
+        dan tidak ada row letter_approvals untuk Kadus.
+      end note
+    end
+
+    group Notifikasi ke eligible approver pada next step
+      SVC -> SVC : notifyNextApprovers(letter, next.step)
+      note right of OSVC
+        Resolve berdasarkan posisi dan
+        scope step yang aktif; pemohon
+        dikecualikan dari penerima.
+      end note
+      OSVC -> OREPO : resolveOfficialsForStep(next.step, letter)
+      OREPO -> DB : SELECT active officials for configured\nposition and village/scope
+      DB --> OREPO : eligible officials (pemohon dikecualikan)
+      OREPO --> OSVC : Collection<Official>
+      OSVC --> SVC : Collection<Official>
+
+      SVC -> Q : notify eligible officials
+      Q -> OREPO : notify user of each eligible official
+      OREPO -> DB : INSERT notifications for eligible step approvers
+      DB --> OREPO : notifications created
+      Q --> KD : Notifikasi ke official eligible\nuntuk step berikutnya
+      note right of KD
+        Baik Kepala Desa MAUPUN Sekretaris
+        Desa menerima notifikasi ini -
+        keduanya saling menggantikan
+        (first-action-wins). Lihat
+        05_Sequence_KadesSekdesApproval_v5.puml
+        untuk detail proses approval mereka.
+      end note
+      SVC -> Q : notifyApplicant(letter, 'approved')
+      Q --> WRG : Notifikasi surat disetujui RT\n& diteruskan ke tahap berikutnya
+    end
+
+  else action = "rejected"
+    TX -> REPO : update(letter, {\n  status: 'rejected',           <<GENERIK v5.0>>\n        rejected_at_step: step.step_order,\n  processed_at: now()\n})
+    REPO -> DB : UPDATE letters\nSET status = 'rejected',\n    rejected_at_step = step.step_order,\nprocessed_at = now()
+    DB --> REPO : updated
+
+    TX -> REPO : recordDecisionForLetter({actor, level: 'rt', action: 'rejected', flow_step_id: step.id})
+    REPO -> DB : UPDATE pending letter_approvals row (decision fields)
+    DB --> REPO : decision recorded; no pending row remains for this step
+
+    TX -> REPO : createStatusLog({\n  letter_id,\n  actor_id: auth()->id(),\n      old_status: oldStatus,\n  new_status: 'rejected', ip_address\n})
+    REPO -> DB : INSERT INTO letter_status_logs
+    DB --> REPO : log created
+
+    == Notifikasi ke Warga (Ditolak RT - TERMINAL) ==
+
+    SVC -> Q : notify(new LetterStatusNotification(...))
+    Q -> REPO : createNotification({\n  notifiable_id: warga.user_id,\n  data: {letter_id, alasan}\n})
+    REPO -> DB : INSERT INTO notifications
+    DB --> REPO : notification created
+    Q --> WRG : Notifikasi database:\n"Surat Anda ditolak RT\n- [catatan alasan]"
+    note right of WRG
+      Proses SELESAI (TERMINAL).
+      status='rejected', rejected_at_step=step.step_order.
+      RW tidak menerima FYI saat RT
+      menolak surat.
+    end note
+  end
+
+  TX --> SVC : commit
+  SVC --> CTRL : decision completed
+  CTRL --> FE : 200 OK {message: "Surat berhasil diproses."}
+  FE --> RT : Tampilkan konfirmasi keputusan,\nkembali ke daftar surat
+  end
+end
+
+@enduml
+
+'==================================================================================
+' CATATAN SINKRONISASI v5.1
+' RT worklist dicocokkan ke flow step RT yang sedang aktif, bukan nomor
+' step hardcoded. Keputusan berjalan dalam transaksi dengan row lock,
+' applicant self-approval ditolak, dan nextActionable menentukan step
+' berikutnya. RW hanya menerima FYI jika pejabat aktif ditemukan; tidak
+' ada fallback broadcast dan tidak ada jalur approval RW.
+'==================================================================================

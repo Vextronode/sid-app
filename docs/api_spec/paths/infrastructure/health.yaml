@@ -1,0 +1,21 @@
+servers:
+  - url: https://api.sid-cibenda.id
+    description: Root host (tanpa prefix /api)
+security: []
+get:
+  tags: [Infrastruktur]
+  summary: Memeriksa status kesehatan aplikasi
+  security: []
+  operationId: getHealth
+  responses:
+    '200':
+      description: Aplikasi merespons
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
+          example:
+            status: ok
+    '503':
+      description: Aplikasi atau dependency health check tidak tersedia.

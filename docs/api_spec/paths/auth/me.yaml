@@ -1,0 +1,24 @@
+get:
+  tags: [Epic 3 - Autentikasi]
+  summary: Ambil data user yang sedang login
+  description: |
+    Dipakai FE untuk mengisi form otomatis (nama, alamat dari akun login)
+    dan menentukan dashboard/menu sesuai role. `citizen` object kini juga
+    membawa `family_id` dan `residency_type` (v5.0).
+  operationId: getCurrentUser
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Data user berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/auth/auth.yaml#/CurrentUser'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '500':
+      $ref: '../../responses/common.yaml#/ServerError'

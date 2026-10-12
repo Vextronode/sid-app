@@ -1,0 +1,396 @@
+<?php
+
+namespace App\Services;
+
+use App\Enums\LetterStatus;
+use App\Models\Letter;
+use App\Models\Official;
+use App\Models\User;
+use App\Repositories\CitizenRepository;
+use App\Repositories\LetterRepository;
+use App\Repositories\NotificationRepository;
+use App\Repositories\OfficialRepository;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+
+class DashboardService
+{
+    private const VILLAGE_HEAD_POSITIONS = ['kepala_desa'];
+
+    public function __construct(
+        protected CitizenRepository $citizenRepository,
+        protected LetterRepository $letterRepository,
+        protected NotificationRepository $notificationRepository,
+        protected OfficialRepository $officialRepository,
+    ) {}
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getDashboard(User $user): array
+    {
+        return match ($user->role) {
+            'warga' => $this->forWarga($user),
+            'rt' => $this->forRt($user),
+            'rw' => $this->forRw($user),
+            'kadus' => $this->forKadus($user),
+            'kasi_pelayanan', 'kaur_tu_umum' => $this->forKasiKaur($user),
+            'petugas_desa' => $this->forPetugasDesa($user),
+            'kepala_desa', 'sekretaris_desa' => $this->forKadesSekdes($user),
+            default => throw new HttpException(403, 'Dashboard tidak tersedia untuk role ini.'),
+        };
+    }
+
+    /**
+     * @return array{total: int, laki: int, perempuan: int}
+     */
+    public function getGenderStats(User $user): array
+    {
+        [$villageId, $rtId, $rwId] = $this->resolveLegacyScope($user);
+
+        $counts = $this->citizenRepository->countGroupedByGender($villageId, $rtId, $rwId);
+        $laki = $counts['L'] ?? 0;
+        $perempuan = $counts['P'] ?? 0;
+
+        return [
+            'total' => $laki + $perempuan,
+            'laki' => $laki,
+            'perempuan' => $perempuan,
+        ];
+    }
+
+    /**
+     * @return array{chart: array{labels: array<int, string>, values: array<int, int>, maxY: int}}
+     */
+    public function getLetterStats(User $user, ?string $date, ?string $letterType): array
+    {
+        [$villageId, $rtId, $rwId] = $this->resolveLegacyScope($user);
+        $parsedDate = Carbon::parse($date ?: now()->toDateString());
+
+        if ($rtId !== null) {
+            $query = $this->letterRepository->queryByVillageAndRt($villageId, $rtId);
+        } elseif ($rwId !== null) {
+            $query = $this->letterRepository->queryByVillageAndRw($villageId, $rwId);
+        } else {
+            $query = $this->letterRepository->queryByVillage($villageId);
+        }
+
+        if ($letterType && $letterType !== 'all') {
+            $query->where('letter_type_id', $letterType);
+        }
+
+        $labels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+        $startOfWeek = $parsedDate->copy()->startOfWeek(Carbon::MONDAY);
+        $perDay = $this->letterRepository->countSubmittedPerDay(
+            $query,
+            $startOfWeek,
+            $startOfWeek->copy()->addDays(count($labels) - 1),
+        );
+        $values = [];
+
+        foreach (array_keys($labels) as $index) {
+            $values[] = $perDay[$startOfWeek->copy()->addDays($index)->toDateString()] ?? 0;
+        }
+
+        $maxValue = max($values);
+
+        return [
+            'chart' => [
+                'labels' => $labels,
+                'values' => $values,
+                'maxY' => max(50, (int) ceil($maxValue / 5) * 5),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{role: string, my_letters: array<int, array<string, mixed>>, unread_notifications_count: int}
+     */
+    private function forWarga(User $user): array
+    {
+        $letters = $this->letterRepository
+            ->querySubmittedBy($user->id)
+            ->latest()
+            ->get();
+
+        return [
+            'role' => 'warga',
+            'my_letters' => $letters->map(fn (Letter $letter): array => [
+                'id' => $letter->id,
+                'letter_type_name' => $letter->letterType?->name,
+                'status' => $this->statusValue($letter),
+                'current_stage_label' => $this->stageLabel($letter),
+            ])->values()->all(),
+            'unread_notifications_count' => $this->unreadCount($user),
+        ];
+    }
+
+    /**
+     * @return array{role: string, total_pending: int, total_processed: int, pending_letters: array<int, array<string, mixed>>, unread_notifications_count: int}
+     */
+    private function forRt(User $user): array
+    {
+        $official = $this->activeOfficial($user, 'rt');
+        $pending = $this->letterRepository
+            ->queryByStatusesAndCitizenRt(
+                [LetterStatus::Pending->value, LetterStatus::InProgress->value],
+                $official->rt_id,
+            )
+            ->whereHas('flow.steps', function ($query) {
+                $query->whereColumn('step_order', 'letters.current_step_order')
+                    ->where('approver_position', 'rt');
+            })
+            ->latest()
+            ->get();
+
+        $processed = $this->letterRepository
+            ->queryByStatusesAndCitizenRt(
+                [LetterStatus::Approved->value, LetterStatus::Rejected->value],
+                $official->rt_id,
+            )
+            ->count();
+
+        return [
+            'role' => 'rt',
+            'total_pending' => $pending->count(),
+            'total_processed' => $processed,
+            'pending_letters' => $this->letterSummaries($pending),
+            'unread_notifications_count' => $this->unreadCount($user),
+        ];
+    }
+
+    /**
+     * @return array{role: string, fyi_letters: array<int, array<string, mixed>>, unread_notifications_count: int}
+     */
+    private function forRw(User $user): array
+    {
+        $official = $this->activeOfficial($user, 'rw');
+        $letters = $this->letterRepository
+            ->queryByCitizenRw($official->rw_id)
+            ->latest()
+            ->get();
+
+        return [
+            'role' => 'rw',
+            'fyi_letters' => $this->letterSummaries($letters),
+            'unread_notifications_count' => $this->unreadCount($user),
+        ];
+    }
+
+    /**
+     * @return array{role: string, fyi_letters: array<int, array<string, mixed>>, unread_notifications_count: int}
+     */
+    private function forKadus(User $user): array
+    {
+        $official = $this->activeOfficial($user, 'kadus');
+
+        if (! $official->hamlet_id) {
+            throw new HttpException(403, 'Data wilayah dusun tidak ditemukan.');
+        }
+
+        $letters = $this->letterRepository
+            ->queryByCitizenHamlet($official->hamlet_id)
+            ->latest()
+            ->get();
+
+        return [
+            'role' => 'kadus',
+            'fyi_letters' => $this->letterSummaries($letters),
+            'unread_notifications_count' => $this->unreadCount($user),
+        ];
+    }
+
+    /**
+     * @return array{role: string, total_surat_selesai: int, completed_letters: array<int, array<string, mixed>>, unread_notifications_count: int}
+     */
+    private function forKasiKaur(User $user): array
+    {
+        $query = $this->letterRepository
+            ->queryApprovedForAssignedRole($user->role, $this->officialVillageId($user));
+        $total = (clone $query)->count();
+        $letters = $query
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        return [
+            'role' => $user->role,
+            'total_surat_selesai' => $total,
+            'completed_letters' => $this->letterSummaries($letters),
+            'unread_notifications_count' => $this->unreadCount($user),
+        ];
+    }
+
+    /**
+     * @return array{role: string, total_warga: int, total_surat_bulan_ini: int, surat_per_status: array<string, int>, unread_notifications_count: int}
+     */
+    private function forPetugasDesa(User $user): array
+    {
+        $villageId = $this->officialVillageId($user);
+
+        return [
+            'role' => 'petugas_desa',
+            'total_warga' => $this->citizenRepository->countActiveByVillage($villageId),
+            'total_surat_bulan_ini' => $this->letterRepository->countByVillageInMonth($villageId),
+            'surat_per_status' => $this->letterRepository->countByVillageAndStatuses(
+                $villageId,
+                array_map(fn (LetterStatus $status): string => $status->value, LetterStatus::cases()),
+            ),
+            'jabatan_lewat_masa' => $this->officialSummaries(
+                $this->officialRepository->allTermExpiredActive($villageId),
+            ),
+            'jabatan_segera_berakhir' => $this->officialSummaries(
+                $this->officialRepository->allTermEndingWithin($villageId, 30),
+            ),
+            'unread_notifications_count' => $this->unreadCount($user),
+        ];
+    }
+
+    /**
+     * @return array{role: string, total_menunggu_approval: int, pending_letters: array<int, array<string, mixed>>, unread_notifications_count: int}
+     */
+    private function forKadesSekdes(User $user): array
+    {
+        $official = $this->activeOfficial($user, $this->officialPositionForRole($user->role));
+        $letters = $this->letterRepository
+            ->queryPendingAtFlowStepPositions(
+                self::VILLAGE_HEAD_POSITIONS,
+                $official->village_id,
+                $user->id,
+                $official->citizen_id,
+            )
+            ->whereIn('status', [
+                LetterStatus::Pending->value,
+                LetterStatus::InProgress->value,
+            ])
+            ->latest()
+            ->get();
+
+        return [
+            'role' => $user->role,
+            'total_menunggu_approval' => $letters->count(),
+            'pending_letters' => $this->letterSummaries($letters),
+            'unread_notifications_count' => $this->unreadCount($user),
+        ];
+    }
+
+    private function activeOfficial(User $user, string $position): Official
+    {
+        $official = $user->official()
+            ->where('position', $position)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $official) {
+            $positionLabel = match ($position) {
+                'rt', 'rw' => strtoupper($position),
+                default => $position,
+            };
+
+            throw new HttpException(403, "Data official {$positionLabel} tidak ditemukan.");
+        }
+
+        if (! $official->village_id) {
+            throw new HttpException(403, 'Data desa pejabat tidak ditemukan.');
+        }
+
+        return $official;
+    }
+
+    private function officialPositionForRole(string $role): string
+    {
+        return $role === 'sekretaris_desa' ? 'sekdes' : $role;
+    }
+
+    /**
+     * Endpoint statistik legacy; role `kadus` tetap ditolak. Dashboard generik memiliki `forKadus()`.
+     *
+     * @return array{0: string, 1: int|null, 2: int|null}
+     */
+    private function resolveLegacyScope(User $user): array
+    {
+        $regional = in_array($user->role, ['rt', 'rw'], true)
+            ? $this->activeOfficial($user, $user->role)
+            : null;
+
+        return match ($user->role) {
+            'rt' => [$regional->village_id, $regional->rt_id, null],
+            'rw' => [$regional->village_id, null, $regional->rw_id],
+            'kasi_pelayanan', 'kaur_tu_umum' => [$this->officialVillageId($user), null, null],
+            'petugas_desa' => [$this->officialVillageId($user), null, null],
+            default => throw new HttpException(403, 'Tidak memiliki akses.'),
+        };
+    }
+
+    private function officialVillageId(User $user): string
+    {
+        $official = $user->official()->where('is_active', true)->first();
+        if (! $user->is_active || ! $official?->village_id || $official->position !== $this->officialPositionForRole($user->role)) {
+            throw new HttpException(403, 'Data desa pejabat tidak valid.');
+        }
+
+        return $official->village_id;
+    }
+
+    private function unreadCount(User $user): int
+    {
+        return $this->notificationRepository->countUnreadForUser($user);
+    }
+
+    private function statusValue(Letter $letter): string
+    {
+        return $letter->status instanceof LetterStatus
+            ? $letter->status->value
+            : (string) $letter->status;
+    }
+
+    private function stageLabel(Letter $letter): string
+    {
+        if ($this->statusValue($letter) === LetterStatus::Approved->value) {
+            return 'Selesai';
+        }
+
+        if ($this->statusValue($letter) === LetterStatus::Rejected->value) {
+            return 'Ditolak';
+        }
+
+        // flow.steps sudah di-eager-load oleh querySubmittedBy().
+        $step = $letter->flow?->steps->firstWhere('step_order', $letter->current_step_order);
+
+        return match ($step?->approver_position) {
+            'rt' => 'Menunggu RT',
+            'kepala_desa', 'sekdes' => 'Menunggu Kepala Desa / Sekretaris Desa',
+            default => 'Sedang Diproses',
+        };
+    }
+
+    /**
+     * @param  Collection<int, Official>  $officials
+     * @return array<int, array{id: int, position: string, name: ?string, term_ends_at: ?string}>
+     */
+    private function officialSummaries(Collection $officials): array
+    {
+        return $officials->map(fn (Official $official): array => [
+            'id' => $official->id,
+            'position' => $official->position,
+            'name' => $official->citizen?->name ?? $official->user?->name,
+            'term_ends_at' => $official->term_ends_at?->toDateString(),
+        ])->values()->all();
+    }
+
+    /**
+     * @param  Collection<int, Letter>  $letters
+     * @return array<int, array<string, mixed>>
+     */
+    private function letterSummaries(Collection $letters): array
+    {
+        return $letters->map(fn (Letter $letter): array => [
+            'id' => $letter->id,
+            'letter_type_name' => $letter->letterType?->name,
+            'status' => $this->statusValue($letter),
+            'current_step_order' => $letter->current_step_order,
+            'is_overdue' => (bool) $letter->is_overdue,
+        ])->values()->all();
+    }
+}

@@ -1,0 +1,107 @@
+LetterType:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 1
+    code:
+      type: string
+      example: "SKD"
+    name:
+      type: string
+      example: "Surat Keterangan Domisili"
+    description:
+      type: string
+      nullable: true
+      example: "Surat keterangan tempat tinggal warga"
+    template:
+      type: string
+      nullable: true
+      example: "<html>...template blade...</html>"
+      description: "NULL = status Draft, belum bisa dipakai warga"
+    verification_type:
+      type: string
+      enum: [auto, manual, document]
+      example: "auto"
+    requirements_info:
+      type: string
+      nullable: true
+      example: "Fotokopi KTP dan KK"
+    assigned_role:
+      type: string
+      enum: [kasi_pelayanan, kaur_tu_umum]
+      nullable: true
+      example: "kasi_pelayanan"
+      description: |
+        Menentukan Kasi/Kaur yang dapat melihat dan mengunduh surat
+        approved. NULL memberikan akses kepada kedua role; bukan approver flow.
+    validity_days:
+      type: integer
+      nullable: true
+      example: 90
+      description: "NULL = surat tidak pernah expire"
+    category_id:
+      type: integer
+      example: 1
+      description: "BARU v5.0 - gate awal jenis surat, FK ke letter_categories"
+    category:
+      type: object
+      nullable: true
+      properties:
+        code:
+          type: string
+          example: "approval_normal"
+        name:
+          type: string
+          example: "Approval Normal"
+    flow_id:
+      type: integer
+      example: 3
+      description: |
+        BARU v5.0 - selalu diisi, termasuk untuk category upload_mandiri/
+        dokumen_pendukung/update_data (flow "Direct" dengan steps kosong/minimal),
+        demi konsistensi query generik di seluruh sistem.
+    flow:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: integer
+          example: 3
+        name:
+          type: string
+          example: "RT-Kades (2 Tahap)"
+    is_active:
+      type: boolean
+      example: true
+    status_label:
+      type: string
+      enum: [draft, aktif, dinonaktifkan]
+      example: "aktif"
+      description: "Derived: template=NULL+is_active=false -> draft; template!=NULL+is_active=true -> aktif; template!=NULL+is_active=false -> dinonaktifkan"
+
+LetterTypeUpdateRequest:
+  type: object
+  description: |
+    MVP (UC-21 versi sederhana): field yang bisa diedit Petugas Desa.
+    assigned_role NULL diterima dan memberikan akses surat selesai kepada
+    kedua role Kasi/Kaur. Flow aktif hanya menggunakan RT dan Kades/Sekdes.
+  properties:
+    validity_days:
+      type: integer
+      nullable: true
+      example: 90
+    assigned_role:
+      type: string
+      enum: [kasi_pelayanan, kaur_tu_umum]
+      nullable: true
+      example: "kasi_pelayanan"
+    category_id:
+      type: integer
+      example: 1
+    flow_id:
+      type: integer
+      example: 3
+    is_active:
+      type: boolean
+      example: true

@@ -1,0 +1,19 @@
+post:
+  tags: [Epic 6 - Sistem Notifikasi]
+  summary: Tandai semua notifikasi milik user yang login sebagai sudah dibaca
+  operationId: markAllNotificationsRead
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Semua notifikasi berhasil ditandai dibaca
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Semua notifikasi berhasil ditandai dibaca."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

@@ -1,0 +1,57 @@
+get:
+  tags: [Epic 8 - Dashboard & Statistik]
+  summary: Lihat statistik jumlah surat untuk chart dashboard
+  description: |
+    Ditambahkan setelah v5.0 sebagai sub-endpoint dashboard. Mengembalikan
+    data chart (labels, values, maxY) jumlah surat, dengan filter opsional
+    berdasarkan tanggal dan tipe surat.
+  operationId: getDashboardLetterStats
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: date
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+      example: "2026-09-01"
+    - name: letter_type
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 50
+      example: "domisili"
+  responses:
+    '200':
+      description: Statistik surat berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              chart:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Jan", "Feb", "Mar"]
+                  values:
+                    type: array
+                    items:
+                      type: integer
+                    example: [10, 25, 18]
+                  maxY:
+                    type: integer
+                    example: 30
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '422':
+      description: Parameter date atau letter_type tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'

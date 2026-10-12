@@ -1,0 +1,39 @@
+ApprovalSetting:
+  type: object
+  description: API memaparkan pengaturan tahap approval aktif (`rt`, `kepala_desa`) saja.
+  properties:
+    id:
+      type: integer
+      example: 1
+    village_id:
+      type: string
+      format: uuid
+      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
+    approval_level:
+      type: string
+      enum: [rt, kepala_desa]
+      example: "rt"
+      description: Enum database mempertahankan nilai kompatibilitas; API hanya mengembalikan/mengubah `rt` dan `kepala_desa`.
+    deadline_hours:
+      type: integer
+      example: 24
+    reminder_hours:
+      type: integer
+      example: 12
+    is_active:
+      type: boolean
+      example: true
+
+ApprovalSettingUpdateRequest:
+  type: object
+  required: [deadline_hours, reminder_hours]
+  properties:
+    deadline_hours:
+      type: integer
+      minimum: 1
+      example: 48
+    reminder_hours:
+      type: integer
+      minimum: 0
+      example: 24
+      description: "Harus kurang dari deadline_hours"

@@ -1,0 +1,68 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateVillageProfileRequest;
+use App\Http\Requests\UploadVillageImageRequest;
+use App\Http\Requests\UploadVillageStampRequest;
+use App\Http\Resources\VillageResource;
+use App\Services\VillageProfileService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
+class VillageProfileController extends Controller
+{
+    public function __construct(
+        private readonly VillageProfileService $service,
+    ) {}
+
+    public function show(Request $request): JsonResponse
+    {
+        $village = $this->service->getProfile($request->user());
+
+        return (new VillageResource($village))->response();
+    }
+
+    public function update(UpdateVillageProfileRequest $request): JsonResponse
+    {
+        $village = $this->service->updateProfile($request->user(), $request->validated());
+
+        return response()->json([
+            'message' => 'Profil desa berhasil diperbarui',
+            'data' => new VillageResource($village),
+        ]);
+    }
+
+    public function uploadStamp(UploadVillageStampRequest $request): JsonResponse
+    {
+        $village = $this->service->replaceStamp($request->user(), $request->file('stamp'));
+
+        return response()->json([
+            'message' => 'Stempel desa berhasil diperbarui.',
+            'data' => new VillageResource($village),
+        ]);
+    }
+
+    /**
+     * POST /villages/profile/logo dan /villages/profile/hero-image; kolomnya
+     * ditetapkan route lewat ->defaults('column', ...).
+     */
+    public function uploadImage(UploadVillageImageRequest $request, string $column): JsonResponse
+    {
+        $village = $this->service->replaceImage($request->user(), $column, $request->file('image'));
+
+        return response()->json([
+            'message' => $column === 'logo'
+                ? 'Logo desa berhasil diperbarui.'
+                : 'Foto beranda berhasil diperbarui.',
+            'data' => new VillageResource($village),
+        ]);
+    }
+
+    public function stampPreview(Request $request): BinaryFileResponse
+    {
+        return $this->service->stampPreview($request->user());
+    }
+}

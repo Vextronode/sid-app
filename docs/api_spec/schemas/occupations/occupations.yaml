@@ -1,0 +1,51 @@
+Occupation:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 3
+    name:
+      type: string
+      example: "Wiraswasta"
+    is_active:
+      type: boolean
+      example: true
+    sort_order:
+      type: integer
+      example: 0
+    citizens_count:
+      type: integer
+      nullable: true
+      example: 12
+      description: Ditampilkan jika relasi citizens dihitung oleh endpoint.
+
+OccupationCreateRequest:
+  type: object
+  required: [name]
+  properties:
+    name:
+      type: string
+      maxLength: 100
+      example: "Wiraswasta"
+    is_active:
+      type: boolean
+      example: true
+    sort_order:
+      type: integer
+      minimum: 0
+      example: 0
+
+OccupationUpdateRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      maxLength: 100
+      example: "Wiraswasta"
+    is_active:
+      type: boolean
+      example: false
+    sort_order:
+      type: integer
+      minimum: 0
+      example: 5
