@@ -80,39 +80,50 @@ export function AuthProvider({ children }) {
     [applySession],
   )
 
-  const logout = useCallback(async () => {
-    setIsLoggingOut(true)
-    setAuthError('')
+  // onLoggedOut dipanggil tepat sebelum user dikosongkan, di tick yang sama.
+  // Pemanggil bisa pindah ke halaman publik dulu, sehingga ProtectedRoute
+  // tidak sempat mengarahkan ke halaman login.
+  const logout = useCallback(
+    async ({ onLoggedOut } = {}) => {
+      setIsLoggingOut(true)
+      setAuthError('')
 
-    try {
-      await api.get(CSRF_ENDPOINT)
-
-      await api.post(LOGOUT_ENDPOINT)
-
-      applySession(null)
-    } catch (error) {
-      const status = error.response?.status
-
-      if (isAuthFailure(status)) {
+      const endSession = () => {
+        onLoggedOut?.()
         applySession(null)
-        return
       }
 
-      if (status === 419) {
-        await api.get(CSRF_ENDPOINT)
+      // Cookie XSRF sudah ada sejak login, jadi langsung POST (satu round-trip).
+      // Bila token kedaluwarsa (419), ambil cookie baru lalu ulangi di bawah.
+      try {
         await api.post(LOGOUT_ENDPOINT)
 
-        applySession(null)
-        return
+        endSession()
+      } catch (error) {
+        const status = error.response?.status
+
+        if (isAuthFailure(status)) {
+          endSession()
+          return
+        }
+
+        if (status === 419) {
+          await api.get(CSRF_ENDPOINT)
+          await api.post(LOGOUT_ENDPOINT)
+
+          endSession()
+          return
+        }
+
+        setAuthError(error.response?.data?.message ?? 'Logout gagal. Silakan coba lagi.')
+
+        throw error
+      } finally {
+        setIsLoggingOut(false)
       }
-
-      setAuthError(error.response?.data?.message ?? 'Logout gagal. Silakan coba lagi.')
-
-      throw error
-    } finally {
-      setIsLoggingOut(false)
-    }
-  }, [applySession])
+    },
+    [applySession],
+  )
 
   const value = useMemo(
     () => ({

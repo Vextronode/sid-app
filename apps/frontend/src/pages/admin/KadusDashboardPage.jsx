@@ -21,9 +21,7 @@ import { Mail, Eye, CheckCircle2, XCircle } from 'lucide-react'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
-import { FooterDesa } from '@/components/layout/FooterDesa'
-import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getGreeting } from '@/lib/utils/greeting'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
@@ -184,7 +182,7 @@ export default function KadusDashboardPage() {
             FOOTER
             ====================================== */}
 
-        <FooterDesa />
+        <SiteFooter />
       </div>
 
       {/* ========================================
@@ -251,16 +249,8 @@ export default function KadusDashboardPage() {
             ====================================== */}
 
         <div className="sid-mobile-footer">
-          <FooterDesa />
+          <SiteFooter />
         </div>
-
-        {/* ======================================
-            MOBILE NAV
-            ====================================== */}
-
-        <MobileBottomNav
-          links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-kadus', '/admin/list-kadus')}
-        />
       </div>
     </>
   )

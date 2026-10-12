@@ -4,9 +4,10 @@ import { getBerandaContent } from '../berandaContent'
 import { BerandaFooter } from './BerandaFooter'
 import { BerandaHeader } from './BerandaHeader'
 
-// Layout khusus route `/` (menggantikan MainLayout hanya di beranda).
+// Layout khusus route `/`. Halaman publik lain memakai MainLayout dengan
+// header dan footer yang sama.
 // beranda.css (token --bd-* + font Plus Jakarta Sans) hanya berlaku di .bd-root.
-// MobileBottomNav sengaja tidak dirender (K5); komponennya tidak diubah.
+// Tanpa bottom bar (K5): navigasi ponsel lewat tombol "Menu" di header.
 export function BerandaLayout({ children, isDev = import.meta.env.DEV }) {
   const content = getBerandaContent(isDev)
 

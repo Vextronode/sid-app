@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 import { getCitizens } from '@/features/data-warga/api'
 import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
-import { FooterOperator } from '@/components/layout/FooterOperator'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
 const ITEMS_PER_PAGE = 10
 
@@ -178,7 +178,7 @@ export default function DataWargaReadOnlyPage() {
           )}
         </div>
       </div>
-      <FooterOperator />
+      <SiteFooter />
     </div>
   )
 }

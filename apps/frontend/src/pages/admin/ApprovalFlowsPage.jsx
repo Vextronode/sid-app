@@ -3,7 +3,7 @@ import { ListOrdered } from 'lucide-react'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getApprovalFlows } from '@/features/approval/api'
 import LetterTypeSettingsPanel from '@/features/surat/components/LetterTypeSettingsPanel'
-import { FooterDesa } from '@/components/layout/FooterDesa'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
 const POSITION_LABELS = {
   rt: 'Ketua RT',
@@ -121,7 +121,7 @@ export default function ApprovalFlowsPage() {
         </section>
 
         <LetterTypeSettingsPanel />
-        <FooterDesa />
+        <SiteFooter />
       </div>
     </div>
   )

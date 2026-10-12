@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { usePublicNews } from '@/features/berita/usePublicNews'
@@ -581,5 +581,25 @@ describe('BerandaPage contact section', () => {
     expect(office).toHaveAccessibleName(/Buka di peta \(tab baru\)$/)
     expect(within(section()).queryByText('Jl. Raya Cibenda No. 1')).toBeNull()
     expect(within(section()).getAllByRole('link')).toHaveLength(2)
+  })
+})
+
+describe('BerandaPage section hash', () => {
+  afterEach(() => {
+    delete Element.prototype.scrollIntoView
+  })
+
+  it('scrolls to the section named in the URL hash, e.g. Kontak from another page', () => {
+    Element.prototype.scrollIntoView = vi.fn()
+    render(
+      <MemoryRouter initialEntries={['/#kontak']}>
+        <BerandaPage isDev={false} />
+      </MemoryRouter>,
+    )
+
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1)
+    expect(Element.prototype.scrollIntoView.mock.contexts[0]).toBe(
+      document.getElementById('kontak'),
+    )
   })
 })

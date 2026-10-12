@@ -11,7 +11,7 @@ import { Search, SquarePen, Eye, EyeOff, Eraser, KeyRound } from 'lucide-react'
 import { useUserList } from '@/features/manajemen-user/hooks/useUserList'
 import { resetUserPassword } from '@/features/manajemen-user/api'
 import { resetUserSignature } from '@/features/surat/api/signatureApi'
-import { FooterOperator } from '../../components/layout/FooterOperator'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
 export default function ManajemenUserPage() {
   const {
@@ -336,7 +336,7 @@ export default function ManajemenUserPage() {
         </div>
       </div>
 
-      <FooterOperator />
+      <SiteFooter />
 
       {passwordReset && (
         <div className="sid-modal-overlay">

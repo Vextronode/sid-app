@@ -9,8 +9,6 @@ import { useParams } from 'react-router-dom'
 import { MainContent } from '@/features/berita/components/MainContent'
 import { SidebarBerita } from '@/features/berita/components/SidebarBerita'
 
-import { FooterDesa } from '@/components/layout/FooterDesa'
-
 // Hook data berita dari API
 import { usePublicNews } from '@/features/berita/usePublicNews'
 
@@ -86,12 +84,6 @@ export function DetailBeritaPage() {
           <SidebarBerita beritaLain={beritaLain} />
         </div>
       </main>
-
-      {/* ======================================
-          FOOTER
-      ====================================== */}
-
-      <FooterDesa />
     </div>
   )
 }

@@ -11,9 +11,7 @@ import { Mail, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
-import { FooterDesa } from '@/components/layout/FooterDesa'
-import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getGreeting } from '@/lib/utils/greeting'
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
@@ -172,7 +170,7 @@ export default function RWDashboardPage() {
             FOOTER
             ====================================== */}
 
-        <FooterDesa />
+        <SiteFooter />
       </div>
 
       {/* ========================================
@@ -239,16 +237,8 @@ export default function RWDashboardPage() {
             ====================================== */}
 
         <div className="sid-mobile-footer">
-          <FooterDesa />
+          <SiteFooter />
         </div>
-
-        {/* ======================================
-            MOBILE NAV
-            ====================================== */}
-
-        <MobileBottomNav
-          links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rw', '/admin/list-rw')}
-        />
       </div>
     </>
   )

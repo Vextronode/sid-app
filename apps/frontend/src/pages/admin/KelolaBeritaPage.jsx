@@ -27,7 +27,7 @@ import { Plus, Pencil, Send, ChevronLeft, ChevronRight, Newspaper } from 'lucide
 
 import { useBeritaList } from '@/features/kelola-berita/hooks/useBeritaList'
 import BeritaFormModal from '@/features/kelola-berita/components/BeritaFormModal'
-import { FooterOperator } from '@/components/layout/FooterOperator'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
 export default function KelolaBeritaPage() {
   const {
@@ -203,7 +203,7 @@ export default function KelolaBeritaPage() {
           </div>
         </div>
 
-        <FooterOperator />
+        <SiteFooter />
       </div>
     )
   }
@@ -497,7 +497,7 @@ export default function KelolaBeritaPage() {
           FOOTER
           ========================================== */}
 
-      <FooterOperator />
+      <SiteFooter />
 
       {/* ==========================================
           MODAL

@@ -1,7 +1,7 @@
 import { Plus, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 
-import { FooterOperator } from '@/components/layout/FooterOperator'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
 import { useWilayahMaster } from '@/features/kelola-wilayah/hooks/useWilayahMaster'
 import DusunTable from '@/features/kelola-wilayah/components/DusunTable'
@@ -161,7 +161,7 @@ export default function KelolaWilayahPage() {
           </div>
         </div>
 
-        <FooterOperator />
+        <SiteFooter />
       </div>
     )
   }
@@ -224,7 +224,7 @@ export default function KelolaWilayahPage() {
         {renderTable()}
       </div>
 
-      <FooterOperator />
+      <SiteFooter />
 
       {modal.open && (
         <WilayahFormModal

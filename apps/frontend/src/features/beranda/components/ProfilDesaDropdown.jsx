@@ -3,13 +3,15 @@ import { Link } from 'react-router-dom'
 
 import { SECTION_TRANSPARANSI } from '@/lib/constants/routes'
 import { useDisclosure } from '../hooks/useDisclosure'
-import { sectionLinkProps } from '../utils/sectionLink'
+import { useSectionLink } from '../utils/sectionLink'
 
 // Isi Profil Desa, dipakai dropdown desktop dan menu ponsel.
 // A4–A6: butir yang halamannya sudah ada menjadi link; sisanya teks biasa
 // + "Segera hadir" (tidak bisa diklik/difokus).
 // A7 hanya dirender bila section Transparansi tampil.
 export function ProfilDesaItems({ header, showTransparansi, onSelect }) {
+  const sectionLinkProps = useSectionLink()
+
   return (
     <ul className="bd-menu-list">
       {header.profilItems.map(({ label, to }) =>

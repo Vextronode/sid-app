@@ -2,9 +2,6 @@ import { useState } from 'react'
 import { ArrowLeft, Eye, FilePlus, Trash2 } from 'lucide-react'
 
 import api from '@/lib/api'
-import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { AdminLayout } from '@/components/layout/AdminLayout'
-import { OperatorDesaLayout } from '@/components/layout/OperatorDesaLayout'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { SimplePagination } from '@/components/ui/SimplePagination'
 import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal'
@@ -13,8 +10,6 @@ import { useLetters } from '@/features/surat/hooks/useLetters'
 import { useLetterTypes } from '@/features/surat/hooks/useLetterTypes'
 import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig'
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
-
-const OPERATOR_ROLES = ['kasi_pelayanan', 'kaur_tu_umum']
 
 function toDetail(item) {
   return {
@@ -32,7 +27,6 @@ function toDetail(item) {
  * approval milik pemohon sendiri dan melarang memutuskan surat sendiri.
  */
 export default function SuratSayaPejabatPage() {
-  const { user } = useAuth()
   const { letterTypes, loading: typesLoading, error: typesError } = useLetterTypes()
   const [page, setPage] = useState(1)
   const { letters, meta, loading, refresh: loadLetters } = useLetters({ page })
@@ -93,10 +87,8 @@ export default function SuratSayaPejabatPage() {
     await loadLetters()
   }
 
-  const Layout = OPERATOR_ROLES.includes(user?.role) ? OperatorDesaLayout : AdminLayout
-
   return (
-    <Layout>
+    <>
       <div className="sid-page sid-surat-saya-page">
         {applying ? (
           <>
@@ -259,6 +251,6 @@ export default function SuratSayaPejabatPage() {
       {selectedSurat && (
         <DetailSuratModal data={selectedSurat} onClose={() => setSelectedSurat(null)} />
       )}
-    </Layout>
+    </>
   )
 }

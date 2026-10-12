@@ -5,6 +5,9 @@
 // docs/refactor-beranda/03-spesifikasi-beranda.md.
 // ==========================================
 
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
+
 import { getBerandaContent } from '@/features/beranda/berandaContent'
 import { AnnouncementBar } from '@/features/beranda/components/AnnouncementBar'
 import { BerandaHero } from '@/features/beranda/components/BerandaHero'
@@ -15,6 +18,7 @@ import { NewsSection } from '@/features/beranda/components/NewsSection'
 import { ServiceCards } from '@/features/beranda/components/ServiceCards'
 import { StatsBand } from '@/features/beranda/components/StatsBand'
 import { TransparencySection } from '@/features/beranda/components/TransparencySection'
+import { scrollToSection } from '@/features/beranda/utils/scrollToSection'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 
 // isDev: apakah dummy development dirender (K1). Diisi manual hanya di test.
@@ -23,6 +27,12 @@ export function BerandaPage({ isDev = import.meta.env.DEV }) {
   // Daftar petugas + WA (contacts) tidak dipakai lagi di beranda (K14);
   // hook dan endpoint-nya tetap.
   const { village } = usePublicVillageInfo()
+  const { hash } = useLocation()
+
+  // Tautan Kontak/Transparansi dari halaman lain datang sebagai /#kontak.
+  useEffect(() => {
+    if (hash) scrollToSection(hash.slice(1))
+  }, [hash])
 
   return (
     <>

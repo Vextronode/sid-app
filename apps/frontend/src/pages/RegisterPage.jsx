@@ -9,6 +9,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 
 import {
+  ArrowLeft,
   CheckCircle2,
   CreditCard,
   Eye,
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react'
 
 import { useRegisterForm } from '@/features/auth/hooks/useRegisterForm'
+import { HAL_BERANDA } from '@/lib/constants/routes'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -46,32 +48,24 @@ export default function RegisterPage() {
           </div>
 
           <div className="sid-login-header">
-            <h1 className="sid-login-title">
-              Pendaftaran Berhasil
-            </h1>
+            <h1 className="sid-login-title">Pendaftaran Berhasil</h1>
 
             <p className="sid-login-description">
-              Akun warga berhasil dibuat.
-              Silakan login untuk mulai menggunakan sistem.
+              Akun warga berhasil dibuat. Silakan login untuk mulai menggunakan sistem.
             </p>
           </div>
 
           {registeredUsername && (
             <div className="sid-register-username">
-              <span className="sid-register-username-label">
-                Username Anda
-              </span>
+              <span className="sid-register-username-label">Username Anda</span>
 
-              <strong>
-                {registeredUsername}
-              </strong>
+              <strong>{registeredUsername}</strong>
             </div>
           )}
 
           {!registeredUsername && (
             <div className="sid-register-success-info">
-              Username telah dibuat otomatis oleh sistem.
-              Silakan login menggunakan username Anda.
+              Username telah dibuat otomatis oleh sistem. Silakan login menggunakan username Anda.
             </div>
           )}
 
@@ -84,9 +78,7 @@ export default function RegisterPage() {
             }
             className="sid-login-submit"
           >
-            <span>
-              Masuk ke Halaman Login
-            </span>
+            <span>Masuk ke Halaman Login</span>
 
             <UserPlus size={16} />
           </button>
@@ -109,36 +101,20 @@ export default function RegisterPage() {
         </div>
 
         <div className="sid-login-header">
-          <h1 className="sid-login-title">
-            Daftar Akun Warga
-          </h1>
+          <h1 className="sid-login-title">Daftar Akun Warga</h1>
 
-          <p className="sid-login-description">
-            Buat akun menggunakan NIK dan password Anda
-          </p>
+          <p className="sid-login-description">Buat akun menggunakan NIK dan password Anda</p>
         </div>
 
-        {errors.general && (
-          <div className="sid-login-error">
-            {errors.general}
-          </div>
-        )}
+        {errors.general && <div className="sid-login-error">{errors.general}</div>}
 
-        <form
-          onSubmit={handleSubmit}
-          className="sid-login-form"
-        >
+        <form onSubmit={handleSubmit} className="sid-login-form">
           {/* NIK */}
           <div className="sid-login-field">
-            <label className="sid-login-label">
-              Nomor Induk Kependudukan (NIK)
-            </label>
+            <label className="sid-login-label">Nomor Induk Kependudukan (NIK)</label>
 
             <div className="sid-login-input-wrapper">
-              <CreditCard
-                size={16}
-                className="sid-login-input-icon"
-              />
+              <CreditCard size={16} className="sid-login-input-icon" />
 
               <input
                 type="text"
@@ -150,18 +126,12 @@ export default function RegisterPage() {
                 autoComplete="username"
                 placeholder="Masukkan 16 digit NIK"
                 className={`sid-login-input sid-login-input-with-left-icon ${
-                  errors.nik
-                    ? 'sid-login-input-error'
-                    : ''
+                  errors.nik ? 'sid-login-input-error' : ''
                 }`}
               />
             </div>
 
-            {errors.nik && (
-              <span className="sid-login-field-error">
-                {errors.nik}
-              </span>
-            )}
+            {errors.nik && <span className="sid-login-field-error">{errors.nik}</span>}
           </div>
 
           {/* DATE OF BIRTH */}
@@ -177,9 +147,7 @@ export default function RegisterPage() {
               value={formData.date_of_birth}
               onChange={handleChange}
               autoComplete="bday"
-              className={`sid-login-input ${
-                errors.date_of_birth ? 'sid-login-input-error' : ''
-              }`}
+              className={`sid-login-input ${errors.date_of_birth ? 'sid-login-input-error' : ''}`}
               aria-invalid={Boolean(errors.date_of_birth)}
               aria-describedby={errors.date_of_birth ? 'date-of-birth-error' : undefined}
             />
@@ -193,31 +161,20 @@ export default function RegisterPage() {
 
           {/* PASSWORD */}
           <div className="sid-login-field">
-            <label className="sid-login-label">
-              Password
-            </label>
+            <label className="sid-login-label">Password</label>
 
             <div className="sid-login-input-wrapper">
-              <Lock
-                size={16}
-                className="sid-login-input-icon"
-              />
+              <Lock size={16} className="sid-login-input-icon" />
 
               <input
-                type={
-                  showPassword
-                    ? 'text'
-                    : 'password'
-                }
+                type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 autoComplete="new-password"
                 placeholder="Masukkan password"
                 className={`sid-login-input sid-login-input-password ${
-                  errors.password
-                    ? 'sid-login-input-error'
-                    : ''
+                  errors.password ? 'sid-login-input-error' : ''
                 }`}
               />
 
@@ -225,54 +182,31 @@ export default function RegisterPage() {
                 type="button"
                 onClick={togglePassword}
                 className="sid-login-password-toggle"
-                aria-label={
-                  showPassword
-                    ? 'Sembunyikan password'
-                    : 'Tampilkan password'
-                }
+                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
               >
-                {showPassword ? (
-                  <EyeOff size={16} />
-                ) : (
-                  <Eye size={16} />
-                )}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
 
-            {errors.password && (
-              <span className="sid-login-field-error">
-                {errors.password}
-              </span>
-            )}
+            {errors.password && <span className="sid-login-field-error">{errors.password}</span>}
           </div>
 
           {/* PASSWORD CONFIRMATION */}
           <div className="sid-login-field">
-            <label className="sid-login-label">
-              Konfirmasi Password
-            </label>
+            <label className="sid-login-label">Konfirmasi Password</label>
 
             <div className="sid-login-input-wrapper">
-              <Lock
-                size={16}
-                className="sid-login-input-icon"
-              />
+              <Lock size={16} className="sid-login-input-icon" />
 
               <input
-                type={
-                  showPasswordConfirmation
-                    ? 'text'
-                    : 'password'
-                }
+                type={showPasswordConfirmation ? 'text' : 'password'}
                 name="password_confirmation"
                 value={formData.password_confirmation}
                 onChange={handleChange}
                 autoComplete="new-password"
                 placeholder="Ulangi password"
                 className={`sid-login-input sid-login-input-password ${
-                  errors.password_confirmation
-                    ? 'sid-login-input-error'
-                    : ''
+                  errors.password_confirmation ? 'sid-login-input-error' : ''
                 }`}
               />
 
@@ -286,32 +220,18 @@ export default function RegisterPage() {
                     : 'Tampilkan konfirmasi password'
                 }
               >
-                {showPasswordConfirmation ? (
-                  <EyeOff size={16} />
-                ) : (
-                  <Eye size={16} />
-                )}
+                {showPasswordConfirmation ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
 
             {errors.password_confirmation && (
-              <span className="sid-login-field-error">
-                {errors.password_confirmation}
-              </span>
+              <span className="sid-login-field-error">{errors.password_confirmation}</span>
             )}
           </div>
 
           {/* SUBMIT */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="sid-login-submit"
-          >
-            <span>
-              {isLoading
-                ? 'Mendaftarkan...'
-                : 'Daftar Sekarang'}
-            </span>
+          <button type="submit" disabled={isLoading} className="sid-login-submit">
+            <span>{isLoading ? 'Mendaftarkan...' : 'Daftar Sekarang'}</span>
 
             <UserPlus size={16} />
           </button>
@@ -320,14 +240,14 @@ export default function RegisterPage() {
         <div className="sid-login-footer">
           <p className="sid-login-register-text">
             Sudah punya akun?
-
-            <Link
-              to="/loginpage"
-              className="sid-login-register-button"
-            >
+            <Link to="/loginpage" className="sid-login-register-button">
               Masuk di sini
             </Link>
           </p>
+
+          <Link to={HAL_BERANDA} className="sid-login-back">
+            <ArrowLeft size={14} aria-hidden="true" /> Kembali ke Beranda
+          </Link>
 
           <p className="sid-login-copyright">
             Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026

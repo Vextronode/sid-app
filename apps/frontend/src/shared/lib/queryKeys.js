@@ -15,6 +15,11 @@ export const queryKeys = {
       detail: (id) => ['kependudukan', 'families', id],
     },
   },
+  notifications: {
+    all: ['notifications'],
+    list: ['notifications', 'list'],
+    unreadCount: ['notifications', 'unread-count'],
+  },
   cms: {
     news: ['cms', 'news'],
     regulations: ['cms', 'regulations'],

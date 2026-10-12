@@ -15,7 +15,7 @@ import { ClipboardList, ListChecks, CheckCircle2 } from 'lucide-react'
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
 import GenderStatCard from '@/features/operator-desa/components/GenderStatCard'
-import { FooterOperator } from '@/components/layout/FooterOperator'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 import DashboardFlowCard from '@/features/operator-desa/components/DashboardFlowCard'
 import { getGreeting } from '@/lib/utils/greeting'
 
@@ -155,7 +155,7 @@ export default function OperatorDesaDashboardPage() {
           FOOTER
       ====================================== */}
 
-      <FooterOperator />
+      <SiteFooter />
     </div>
   )
 }

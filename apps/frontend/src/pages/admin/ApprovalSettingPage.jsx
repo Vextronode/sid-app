@@ -9,7 +9,7 @@ import {
 } from '@/features/approval/constants/approvalSetting'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { FooterDesa } from '@/components/layout/FooterDesa'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
 export default function ApprovalSettingPage() {
   const { user } = useAuth()
@@ -269,7 +269,7 @@ export default function ApprovalSettingPage() {
         </div>
       </div>
 
-      <FooterDesa />
+      <SiteFooter />
     </div>
   )
 }

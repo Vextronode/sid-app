@@ -22,9 +22,7 @@ import SuratDetailModalRW from '@/features/approval-rw/components/SuratDetailMod
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
-import { FooterDesa } from '@/components/layout/FooterDesa'
-import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
 import { SURAT_STATUS_OPTIONS } from '@/constants/suratStatus'
 
@@ -287,7 +285,7 @@ export default function RWListPage() {
 
         {/* FOOTER */}
 
-        <FooterDesa />
+        <SiteFooter />
       </div>
 
       {/* ========================================
@@ -392,14 +390,8 @@ export default function RWListPage() {
         {/* FOOTER */}
 
         <div className="sid-mobile-footer">
-          <FooterDesa />
+          <SiteFooter />
         </div>
-
-        {/* MOBILE NAV */}
-
-        <MobileBottomNav
-          links={ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rw', '/admin/list-rw')}
-        />
       </div>
 
       {/* ========================================

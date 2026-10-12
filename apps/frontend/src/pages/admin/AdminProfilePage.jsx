@@ -4,7 +4,6 @@
 // Operator Desa dan role admin lainnya.
 //
 // Styling mengikuti SID Global Theme.
-// MobileBottomNav menyesuaikan berdasarkan user.role.
 // ==========================================
 
 import { useState } from 'react'
@@ -17,34 +16,7 @@ import EditProfilWargaModal from '@/features/profil-warga/components/EditProfilW
 import { SignatureCard } from '@/features/surat/components/SignatureCard'
 import { SignatureRequestsCard } from '@/features/surat/components/SignatureRequestsCard'
 
-import { FooterDesa } from '@/components/layout/FooterDesa'
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
-
-import { ADMIN_MOBILE_LINKS } from '@/lib/constants/navigation'
-
-/* =========================================================
-   MOBILE NAVIGATION BERDASARKAN ROLE
-   ========================================================= */
-
-const getAdminMobileLinks = (role) => {
-  switch (role) {
-    case 'rt':
-      return ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rt', '/admin/list-rt')
-
-    case 'rw':
-      return ADMIN_MOBILE_LINKS('/admin/dashboard-surat-rw', '/admin/list-rw')
-
-    case 'kadus':
-      return ADMIN_MOBILE_LINKS('/admin/dashboard-kadus', '/admin/list-kadus')
-
-    case 'kepala_desa':
-    case 'sekretaris_desa':
-      return ADMIN_MOBILE_LINKS('/admin/dashboard-surat-kades', '/admin/list-kades')
-
-    default:
-      return ADMIN_MOBILE_LINKS('/admin/dashboard', '/admin')
-  }
-}
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
 export default function AdminProfilePage() {
   const { user, setUser } = useAuth()
@@ -57,14 +29,6 @@ export default function AdminProfilePage() {
 
   const gender =
     user?.citizen?.gender === 'P' ? 'Perempuan' : user?.citizen?.gender === 'L' ? 'Laki-laki' : '-'
-
-  // ==========================================
-  // MOBILE NAV
-  // ==========================================
-
-  const mobileLinks = getAdminMobileLinks(user?.role)
-  // Kasi/Kaur/Petugas Desa memakai sidebar operator, tanpa navigasi bawah.
-  const showMobileNav = !['kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa'].includes(user?.role)
 
   return (
     <div className="sid-admin-profile-page">
@@ -185,13 +149,7 @@ export default function AdminProfilePage() {
           FOOTER
       ====================================== */}
 
-      <FooterDesa />
-
-      {/* ======================================
-          MOBILE BOTTOM NAV
-      ====================================== */}
-
-      {showMobileNav && <MobileBottomNav links={mobileLinks} />}
+      <SiteFooter />
     </div>
   )
 }

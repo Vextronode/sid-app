@@ -20,7 +20,7 @@ import {
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
-import { FooterOperator } from '../../components/layout/FooterOperator'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
@@ -314,7 +314,7 @@ export default function OperatorSuratListPage() {
           FOOTER
       ========================================== */}
 
-      <FooterOperator />
+      <SiteFooter />
 
       {/* ==========================================
           PREVIEW

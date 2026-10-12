@@ -1,7 +1,7 @@
 import { Pencil, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { FooterOperator } from '@/components/layout/FooterOperator'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 import {
   createRegulation,
   deleteRegulation,
@@ -236,7 +236,7 @@ export default function KelolaPeraturanPage() {
           </div>
         </div>
 
-        <FooterOperator />
+        <SiteFooter />
       </div>
     )
   }
@@ -356,7 +356,7 @@ export default function KelolaPeraturanPage() {
         </div>
       </div>
 
-      <FooterOperator />
+      <SiteFooter />
 
       {modal.open && (
         <RegulationFormModal

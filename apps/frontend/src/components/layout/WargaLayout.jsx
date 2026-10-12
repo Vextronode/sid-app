@@ -1,253 +1,63 @@
 // ==========================================
 // WargaLayout.jsx
+// Header dan footer bergaya publik (AppHeader, SiteFooter).
 // ==========================================
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  Bell,
-  User,
-  HelpCircle,
-  Settings,
-  LogOut,
-  UserCircle,
-} from 'lucide-react';
+import { useState } from 'react'
+import { HelpCircle } from 'lucide-react'
 
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { MobileBottomNav } from './MobileBottomNav';
-import { FooterDesa } from './FooterDesa';
-import { WARGA_MOBILE_LINKS } from '@/lib/constants/navigation';
-import NotificationPopover from '@/features/notifikasi/components/NotificationPopover';
-import HelpCenterModal from '@/features/warga-help/components/HelpCenterModal';
-import useNotifications from '@/features/notifikasi/hooks/useNotifications';
+import NotificationPopover from '@/features/notifikasi/components/NotificationPopover'
+import HelpCenterModal from '@/features/warga-help/components/HelpCenterModal'
+import useNotifications from '@/features/notifikasi/hooks/useNotifications'
+import { AppHeader } from './AppHeader'
+import { SiteFooter } from './SiteFooter'
+
+const WARGA_MENU = [
+  { label: 'Beranda', path: '/daftar-surat' },
+  { label: 'Ajukan Surat', path: '/jenis-surat' },
+]
 
 export function WargaLayout({ children }) {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
-  const notificationState = useNotifications();
-  const { unreadCount, reload } = notificationState;
-
-  const handleLogout = () => {
-    setSettingsOpen(false);
-    logout?.();
-    navigate('/loginpage');
-  };
+  const notificationState = useNotifications()
+  const { unreadCount, reload } = notificationState
 
   return (
     <div
-      className="min-h-screen relative pb-16 md:pb-0"
+      className="min-h-screen relative flex flex-col"
       style={{
         background: 'var(--sid-surface-page)',
         color: 'var(--sid-text-primary)',
       }}
     >
-
-      {/* ==========================================
-          NAVBAR
-          ========================================== */}
-
-      <nav className="sid-navbar sticky top-0 backdrop-blur-sm">
-
-        {/* ==========================================
-            PROFILE / GREETING
-            ========================================== */}
-
-        <Link
-          to="/daftar-surat"
-          className="flex items-center gap-2.5 no-underline"
-        >
-
-          <div className="sid-navbar-avatar">
-            <User size={18} />
-          </div>
-
-          <div>
-
-            <p
-              className="text-xs font-medium leading-none mb-0.5"
-              style={{
-                color: 'var(--sid-vendor-accent)',
-              }}
-            >
-              Selamat datang,
-            </p>
-
-            <p
-              className="text-sm font-bold leading-tight"
-              style={{
-                color: 'var(--sid-primary)',
-              }}
-            >
-              {user?.name ?? 'Warga Desa'}
-            </p>
-
-          </div>
-
-        </Link>
-
-
-        {/* ==========================================
-            NAVBAR ACTIONS
-            ========================================== */}
-
-        <div className="sid-navbar-actions">
-
-          {/* ========================================
-              NOTIFIKASI
-              ======================================== */}
-
-          <button
-            onClick={() => {
-              const opening = !notifOpen;
-              setNotifOpen(opening);
-              if (opening) void reload();
-            }}
-            className="sid-navbar-icon-btn"
-            title="Notifikasi"
-          >
-            <Bell size={18} />
-
-            {unreadCount > 0 && (
-              <span className="sid-notification-badge">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </button>
-
-
-          {/* ========================================
-              PUSAT BANTUAN
-              ======================================== */}
-
-          <button
-            onClick={() => setHelpOpen(true)}
-            className="sid-navbar-icon-btn"
-            title="Pusat Bantuan"
-          >
-            <HelpCircle size={18} />
-          </button>
-
-
-          {/* ========================================
-              SETTINGS
-              ======================================== */}
-
-          <div className="relative flex items-center justify-center">
-
-            <button
-              onClick={() => setSettingsOpen((v) => !v)}
-              className="sid-navbar-icon-btn"
-              title="Pengaturan"
-            >
-              <Settings size={18} />
-            </button>
-
-
-            {/* ======================================
-                SETTINGS DROPDOWN
-                ====================================== */}
-
-            {settingsOpen && (
-              <>
-
-                {/* OVERLAY */}
-
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setSettingsOpen(false)}
-                />
-
-
-                {/* DROPDOWN */}
-
-                <div className="sid-dropdown">
-
-                  {/* PROFIL */}
-
-                  <Link
-                    to="/profile"
-                    onClick={() => setSettingsOpen(false)}
-                    className="sid-dropdown-item"
-                  >
-                    <UserCircle size={18} />
-
-                    Profil
-                  </Link>
-
-
-                  {/* KELUAR */}
-
-                  <button
-                    onClick={handleLogout}
-                    className="sid-dropdown-item sid-dropdown-item-danger"
-                  >
-                    <LogOut size={18} />
-
-                    Keluar
-                  </button>
-
-                </div>
-
-              </>
-            )}
-
-          </div>
-
-        </div>
-
-
-        {/* ==========================================
-            NOTIFICATION POPOVER
-            ========================================== */}
-
-        <NotificationPopover
-          open={notifOpen}
-          onClose={() => setNotifOpen(false)}
-          {...notificationState}
-        />
-
-      </nav>
-
-
-      {/* ==========================================
-          CONTENT
-          ========================================== */}
-
-      <main className="relative">
-        {children}
-      </main>
-
-
-      {/* ==========================================
-          FOOTER
-          ========================================== */}
-
-      <FooterDesa />
-
-
-      {/* ==========================================
-          MOBILE NAVIGATION
-          ========================================== */}
-
-      <MobileBottomNav
-        links={WARGA_MOBILE_LINKS}
+      <AppHeader
+        menuItems={WARGA_MENU}
+        profilePath="/profile"
+        unreadCount={unreadCount}
+        onNotificationClick={() => {
+          const opening = !notifOpen
+          setNotifOpen(opening)
+          if (opening) void reload()
+        }}
+        extraActions={[
+          { label: 'Pusat Bantuan', icon: HelpCircle, onClick: () => setHelpOpen(true) },
+        ]}
+        popover={
+          <NotificationPopover
+            open={notifOpen}
+            onClose={() => setNotifOpen(false)}
+            {...notificationState}
+          />
+        }
       />
 
+      <main className="relative grow">{children}</main>
 
-      {/* ==========================================
-          HELP CENTER
-          ========================================== */}
+      <SiteFooter />
 
-      <HelpCenterModal
-        open={helpOpen}
-        onClose={() => setHelpOpen(false)}
-      />
-
+      <HelpCenterModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
-  );
+  )
 }

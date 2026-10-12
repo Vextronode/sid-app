@@ -7,9 +7,9 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLoginForm } from '@/features/auth/hooks/useLoginForm'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
-import { HAL_DAFTAR } from '@/lib/constants/routes'
+import { HAL_BERANDA, HAL_DAFTAR } from '@/lib/constants/routes'
 
-import { Landmark, User, Lock, Eye, EyeOff, LogIn } from 'lucide-react'
+import { ArrowLeft, Landmark, User, Lock, Eye, EyeOff, LogIn } from 'lucide-react'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -239,6 +239,10 @@ export default function LoginPage() {
               Daftar sekarang
             </Link>
           </p>
+
+          <Link to={HAL_BERANDA} className="sid-login-back">
+            <ArrowLeft size={14} aria-hidden="true" /> Kembali ke Beranda
+          </Link>
 
           <p className="sid-login-copyright">
             Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026

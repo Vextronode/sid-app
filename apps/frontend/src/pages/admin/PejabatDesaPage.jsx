@@ -22,7 +22,7 @@ import {
   rotatePerangkatDesa,
   uploadOfficialPhoto,
 } from '@/features/profil-desa-admin/api'
-import { FooterOperator } from '@/components/layout/FooterOperator'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 
 // Jabatan yang punya akun login dan peran di aplikasi (OfficialPosition di
 // backend). Jabatan tanpa akun tidak ada di sini: jenisnya dikelola Petugas
@@ -869,7 +869,7 @@ export default function PejabatDesaPage() {
         />
       )}
 
-      <FooterOperator />
+      <SiteFooter />
     </div>
   )
 }

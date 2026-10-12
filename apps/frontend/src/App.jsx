@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  Outlet,
   useLocation,
   useSearchParams,
 } from 'react-router-dom'
@@ -16,9 +17,7 @@ import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/consta
 import { BerandaPage } from '@/pages/BerandaPage'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { BerandaLayout } from '@/features/beranda/components/BerandaLayout'
-import { AdminLayout } from '@/components/layout/AdminLayout'
 import { OfficialLayout } from '@/components/layout/OfficialLayout'
-import { OperatorDesaLayout } from '@/components/layout/OperatorDesaLayout'
 import {
   SELF_LETTER_ROLES,
   SELF_LETTER_ROUTE,
@@ -171,6 +170,33 @@ export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   return children
 }
 
+const PageLoading = () => <div className="sid-page">Loading...</div>
+
+// Layout route: layout tetap terpasang saat pindah halaman, hanya isi
+// (Outlet) yang berganti. Suspense di dalam layout membuat header/sidebar
+// tetap tampil selama chunk halaman dimuat.
+function PublicShell() {
+  return (
+    <MainLayout>
+      <Suspense fallback={<PageLoading />}>
+        <Outlet />
+      </Suspense>
+    </MainLayout>
+  )
+}
+
+function OfficialShell() {
+  return (
+    <ProtectedRoute allowedRoles={OFFICIAL_ROLES}>
+      <OfficialLayout>
+        <Suspense fallback={<PageLoading />}>
+          <Outlet />
+        </Suspense>
+      </OfficialLayout>
+    </ProtectedRoute>
+  )
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -186,57 +212,22 @@ export default function App() {
                 </BerandaLayout>
               }
             />
-            <Route
-              path="/berita"
-              element={
-                <MainLayout>
-                  <BeritaPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/berita/:id"
-              element={
-                <MainLayout>
-                  <DetailBeritaPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/profil-desa"
-              element={
-                <MainLayout>
-                  <ProfilDesaPage />
-                </MainLayout>
-              }
-            />
+            <Route element={<PublicShell />}>
+              <Route path="/berita" element={<BeritaPage />} />
+              <Route path="/berita/:id" element={<DetailBeritaPage />} />
+              <Route path="/profil-desa" element={<ProfilDesaPage />} />
+              <Route path="/peraturan-desa" element={<PeraturanDesaPage />} />
 
-            <Route
-              path="/peraturan-desa"
-              element={
-                <MainLayout>
-                  <PeraturanDesaPage />
-                </MainLayout>
-              }
-            />
-
-            {/* Halaman informasi (D6), khusus dev sampai isinya disetujui desa. */}
-            {import.meta.env.DEV &&
-              [
-                [HAL_KEBIJAKAN_PRIVASI, 'kebijakan-privasi'],
-                [HAL_AKSESIBILITAS, 'aksesibilitas'],
-                [HAL_PPID, 'ppid'],
-              ].map(([path, page]) => (
-                <Route
-                  key={path}
-                  path={path}
-                  element={
-                    <MainLayout>
-                      <InfoPage page={page} />
-                    </MainLayout>
-                  }
-                />
-              ))}
+              {/* Halaman informasi (D6), khusus dev sampai isinya disetujui desa. */}
+              {import.meta.env.DEV &&
+                [
+                  [HAL_KEBIJAKAN_PRIVASI, 'kebijakan-privasi'],
+                  [HAL_AKSESIBILITAS, 'aksesibilitas'],
+                  [HAL_PPID, 'ppid'],
+                ].map(([path, page]) => (
+                  <Route key={path} path={path} element={<InfoPage page={page} />} />
+                ))}
+            </Route>
 
             {/* ===== WARGA ===== */}
             <Route
@@ -283,262 +274,220 @@ export default function App() {
               }
             />
 
-            {/* ===== RT — approve tahap 1 ===== */}
-            <Route
-              path="/admin/dashboard-surat-rt"
-              element={
-                <ProtectedRoute allowedRoles={['rt']}>
-                  <AdminLayout>
+            {/* ===== PEJABAT DESA =====
+              Satu layout route untuk semua halaman pejabat: navbar/sidebar,
+              notifikasi, dan data wilayah tetap terpasang saat pindah halaman.
+              OfficialLayout memilih sidebar operator untuk Kasi/Kaur/Petugas
+              Desa dan bilah atas untuk RT/RW/Kadus/Kades/Sekdes. */}
+            <Route element={<OfficialShell />}>
+              {/* RT — approve tahap 1 */}
+              <Route
+                path="/admin/dashboard-surat-rt"
+                element={
+                  <ProtectedRoute allowedRoles={['rt']}>
                     <RTDashboardPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/list-rt"
-              element={
-                <ProtectedRoute allowedRoles={['rt']}>
-                  <AdminLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/list-rt"
+                element={
+                  <ProtectedRoute allowedRoles={['rt']}>
                     <RTListPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/admin/profile"
-              element={
-                <ProtectedRoute allowedRoles={OFFICIAL_ROLES}>
-                  <OfficialLayout>
-                    <AdminProfilePage />
-                  </OfficialLayout>
-                </ProtectedRoute>
-              }
-            />
-
-            {/* ===== RW — monitoring  ===== */}
-            <Route
-              path="/admin/dashboard-surat-rw"
-              element={
-                <ProtectedRoute allowedRoles={['rw']}>
-                  <AdminLayout>
+              {/* RW — monitoring */}
+              <Route
+                path="/admin/dashboard-surat-rw"
+                element={
+                  <ProtectedRoute allowedRoles={['rw']}>
                     <RWDashboardPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/list-rw"
-              element={
-                <ProtectedRoute allowedRoles={['rw']}>
-                  <AdminLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/list-rw"
+                element={
+                  <ProtectedRoute allowedRoles={['rw']}>
                     <RWListPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* ===== Kadus — monitoring saja ===== */}
-            <Route
-              path="/admin/dashboard-surat-kadus"
-              element={
-                <ProtectedRoute allowedRoles={['kadus']}>
-                  <AdminLayout>
+              {/* Kadus — monitoring saja */}
+              <Route
+                path="/admin/dashboard-surat-kadus"
+                element={
+                  <ProtectedRoute allowedRoles={['kadus']}>
                     <KadusDashboardPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/list-kadus"
-              element={
-                <ProtectedRoute allowedRoles={['kadus']}>
-                  <AdminLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/list-kadus"
+                element={
+                  <ProtectedRoute allowedRoles={['kadus']}>
                     <KadusListPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* ===== Kepala Desa — approve ===== */}
-            <Route
-              path="/admin/dashboard-surat-kades"
-              element={
-                <ProtectedRoute allowedRoles={KADES_APPROVER_ROLES}>
-                  <AdminLayout>
+              {/* Kepala Desa — approve */}
+              <Route
+                path="/admin/dashboard-surat-kades"
+                element={
+                  <ProtectedRoute allowedRoles={KADES_APPROVER_ROLES}>
                     <KadesDashboardPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/list-kades"
-              element={
-                <ProtectedRoute allowedRoles={KADES_APPROVER_ROLES}>
-                  <AdminLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/list-kades"
+                element={
+                  <ProtectedRoute allowedRoles={KADES_APPROVER_ROLES}>
                     <KadesListPage />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* ===== OPERATOR DESA — Kasi Pelayanan, Kaur TU Umum, Petugas Desa =====
-              1 role gabungan, 1 tampilan yang sama untuk ketiganya.
-              Hanya bisa print surat yang sudah disetujui final. */}
-            <Route
-              path="/admin/operator-desa"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/operator-desa')}>
-                  <OperatorDesaLayout>
+              {/* Profil terbuka untuk semua pejabat. */}
+              <Route path="/admin/profile" element={<AdminProfilePage />} />
+
+              {/* Pengajuan surat pribadi oleh pejabat (bukan Petugas Desa). */}
+              <Route
+                path={SELF_LETTER_ROUTE}
+                element={
+                  <ProtectedRoute allowedRoles={SELF_LETTER_ROLES}>
+                    <SuratSayaPejabatPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* OPERATOR DESA — Kasi Pelayanan, Kaur TU Umum, Petugas Desa.
+                Halaman pengelolaan dibatasi sesuai kapabilitas backend. */}
+              <Route
+                path="/admin/operator-desa"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/operator-desa')}>
                     <OperatorDesaDashboardPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/data-warga"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/data-warga')}>
-                  <OperatorDesaLayout>
-                    <DataWargaAccessPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/manajemen-user"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/manajemen-user')}>
-                  <OperatorDesaLayout>
-                    <ManajemenUserPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/kelola-berita"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-berita')}>
-                  <OperatorDesaLayout>
-                    <KelolaBeritaPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/kelola-wilayah"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-wilayah')}>
-                  <OperatorDesaLayout>
-                    <KelolaWilayahPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/kelola-pekerjaan"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-pekerjaan')}>
-                  <OperatorDesaLayout>
-                    <KelolaPekerjaanPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/kelola-peraturan"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-peraturan')}>
-                  <OperatorDesaLayout>
-                    <KelolaPeraturanPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/organisasi/bpd"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/organisasi/bpd')}>
-                  <OperatorDesaLayout>
-                    <OrganisasiBpdPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/organisasi/lembaga"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/organisasi/lembaga')}>
-                  <OperatorDesaLayout>
-                    <OrganisasiLembagaPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/admin/kelola-profil-desa"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-profil-desa')}>
-                  <OperatorDesaLayout>
-                    <KelolaProfilDesaPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/admin/operator-desa/surat"
-              element={
-                <ProtectedRoute
-                  allowedRoles={getOperatorAllowedRoles('/admin/operator-desa/surat')}
-                >
-                  <OperatorDesaLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/operator-desa/surat"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={getOperatorAllowedRoles('/admin/operator-desa/surat')}
+                  >
                     <OperatorSuratListPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-            {/* Pengajuan surat pribadi oleh pejabat (bukan Petugas Desa). */}
-            <Route
-              path={SELF_LETTER_ROUTE}
-              element={
-                <ProtectedRoute allowedRoles={SELF_LETTER_ROLES}>
-                  <SuratSayaPejabatPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/pejabat-desa"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/pejabat-desa')}>
-                  <OperatorDesaLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/data-warga"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/data-warga')}>
+                    <DataWargaAccessPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/manajemen-user"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/manajemen-user')}>
+                    <ManajemenUserPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/kelola-berita"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-berita')}>
+                    <KelolaBeritaPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/kelola-wilayah"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-wilayah')}>
+                    <KelolaWilayahPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/kelola-pekerjaan"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-pekerjaan')}>
+                    <KelolaPekerjaanPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/kelola-peraturan"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-peraturan')}>
+                    <KelolaPeraturanPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/organisasi/bpd"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/organisasi/bpd')}>
+                    <OrganisasiBpdPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/organisasi/lembaga"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={getOperatorAllowedRoles('/admin/organisasi/lembaga')}
+                  >
+                    <OrganisasiLembagaPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/kelola-profil-desa"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={getOperatorAllowedRoles('/admin/kelola-profil-desa')}
+                  >
+                    <KelolaProfilDesaPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/pejabat-desa"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/pejabat-desa')}>
                     <PejabatDesaPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/approval-settings"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/approval-settings')}>
-                  <OperatorDesaLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/approval-settings"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={getOperatorAllowedRoles('/admin/approval-settings')}
+                  >
                     <ApprovalSettingPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/approval-flows"
-              element={
-                <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/approval-flows')}>
-                  <OperatorDesaLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/approval-flows"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/approval-flows')}>
                     <ApprovalFlowsPage />
-                  </OperatorDesaLayout>
-                </ProtectedRoute>
-              }
-            />
-
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
             <Route
               path="/register"
               element={

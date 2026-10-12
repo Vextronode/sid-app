@@ -1,6 +1,5 @@
 // Tujuan link yang dipakai beranda. Simpan semua route di sini supaya
 // komponen tidak menulis string path sendiri-sendiri.
-// Catatan: NAV_LINKS (navigation.js) tetap dipakai navbar lama.
 
 export const HAL_BERANDA = '/'
 export const HAL_BERITA = '/berita'

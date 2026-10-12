@@ -36,7 +36,7 @@ describe('AuthContext session regression', () => {
     expect(result.current.user).toEqual({ id: 11, role: 'rt' })
   })
 
-  it('clears the session after CSRF-protected logout', async () => {
+  it('clears the session with a single logout request', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper })
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
@@ -44,9 +44,39 @@ describe('AuthContext session regression', () => {
       await result.current.logout()
     })
 
-    expect(api.get).toHaveBeenCalledWith('/sanctum/csrf-cookie')
+    expect(api.get).not.toHaveBeenCalledWith('/sanctum/csrf-cookie')
+    expect(api.post).toHaveBeenCalledTimes(1)
     expect(api.post).toHaveBeenCalledWith('/logout')
     expect(result.current.user).toBeNull()
     expect(result.current.isLoggingOut).toBe(false)
+  })
+
+  it('runs onLoggedOut while the user is still set, right before clearing it', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    const userAtCallback = []
+
+    await act(async () => {
+      await result.current.logout({
+        onLoggedOut: () => userAtCallback.push(result.current.user),
+      })
+    })
+
+    expect(userAtCallback).toEqual([{ id: 10, role: 'warga' }])
+    expect(result.current.user).toBeNull()
+  })
+
+  it('refreshes the CSRF cookie and retries when logout returns 419', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    api.post.mockRejectedValueOnce({ response: { status: 419 } })
+
+    await act(async () => {
+      await result.current.logout()
+    })
+
+    expect(api.get).toHaveBeenCalledWith('/sanctum/csrf-cookie')
+    expect(api.post).toHaveBeenCalledTimes(2)
+    expect(result.current.user).toBeNull()
   })
 })

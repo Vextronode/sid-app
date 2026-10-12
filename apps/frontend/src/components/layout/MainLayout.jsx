@@ -1,14 +1,23 @@
-import { DesktopNavbar } from "./DesktopNavbar";
-import { MobileBottomNav } from "./MobileBottomNav";
+import '@/styles/beranda.css'
 
-export function MainLayout({ children }) {
+import { getBerandaContent } from '@/features/beranda/berandaContent'
+import { BerandaHeader } from '@/features/beranda/components/BerandaHeader'
+import { SiteFooter } from './SiteFooter'
+
+// Layout halaman publik selain beranda (Berita, Profil Desa, Peraturan, info).
+// Header dan footer sama dengan beranda; masing-masing dibungkus .bd-root
+// sendiri agar gaya beranda tidak mengubah isi halaman. Navigasi ponsel lewat
+// tombol "Menu" di header.
+export function MainLayout({ children, isDev = import.meta.env.DEV }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col pb-16 md:pb-0">
-      <DesktopNavbar />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="bd-root bd-chrome">
+        <BerandaHeader content={getBerandaContent(isDev)} />
+      </div>
 
       <main className="grow w-full">{children}</main>
 
-      <MobileBottomNav />
+      <SiteFooter isDev={isDev} />
     </div>
-  );
+  )
 }
