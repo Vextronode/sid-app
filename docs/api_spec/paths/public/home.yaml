@@ -1,15 +1,19 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
-  summary: Beranda publik (landing page, tanpa login)
+  summary: Beranda publik (tanpa login)
   security: []
   description: |
-    UC-16. Aktor Pengunjung tanpa login. Menampilkan sambutan kepala
-    desa, info singkat desa, statistik publik. Read-only, tidak ada
-    data sensitif warga. Tidak berubah dari v4.2.
+    UC-16. Identitas desa, 5 berita published terbaru (beserta kategori), dan
+    statistik publik. Semua endpoint `/public/*` memakai cache JSON per desa
+    (TTL 10 menit) yang digugurkan otomatis saat data sumber (desa, berita,
+    kategori berita, peraturan, jenis surat, pejabat, dusun, jenis jabatan)
+    berubah.
   operationId: getPublicHome
+  parameters:
+    - $ref: '../../parameters/common.yaml#/VillageCode'
   responses:
     '200':
-      description: Data beranda publik berhasil diambil
+      description: Data beranda
       content:
         application/json:
           schema:
@@ -25,16 +29,14 @@ get:
                     items:
                       $ref: '../../schemas/news/news.yaml#/News'
                   public_stats:
-                    type: object
-                    properties:
-                      total_letter_types:
-                        type: integer
-                        example: 8
+                    allOf:
+                      - $ref: '../../schemas/villages/villages.yaml#/PublicStats'
+                      - type: object
+                        properties:
+                          total_letter_types:
+                            type: integer
+                            description: "Jenis surat aktif ber-template."
     '404':
-      description: Profil desa belum tersedia (data villages belum di-setup)
-      content:
-        application/json:
-          schema:
-            $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
-    '500':
-      $ref: '../../responses/common.yaml#/ServerError'
+      description: Profil desa belum tersedia / village_code tidak dikenal
+    '422':
+      description: village_code wajib pada instalasi multi-desa

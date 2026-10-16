@@ -1,0 +1,50 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Upload atau ganti foto pejabat
+  description: |
+    Aktor: Petugas Desa pada desa yang sama. Dipakai untuk melengkapi
+    pejabat yang belum punya foto atau memperbarui foto tanpa rotasi.
+    File disimpan pada public storage (tampil di Profil Desa publik) dan
+    foto lama dihapus. Format PNG, JPEG, atau WebP, maksimum 5 MB.
+  operationId: uploadOfficialPhoto
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: official
+      in: path
+      required: true
+      schema:
+        type: integer
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [photo]
+          properties:
+            photo:
+              type: string
+              format: binary
+              description: Gambar PNG, JPEG, atau WebP; maksimum 5 MB.
+  responses:
+    '200':
+      description: Foto berhasil diunggah/diganti
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Foto pejabat berhasil diperbarui."
+              data:
+                $ref: '../../schemas/users/users.yaml#/Official'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

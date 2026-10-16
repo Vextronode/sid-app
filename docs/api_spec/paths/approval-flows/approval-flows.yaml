@@ -1,23 +1,16 @@
 get:
   tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
-  summary: Lihat daftar flow approval
+  summary: Lihat daftar flow approval (read-only)
   description: |
-    Realisasi prinsip Config over Code (SID-ARCH-SYS-001 S1): satu kategori
-    dapat memiliki beberapa flow. Daftar otomatis dibatasi ke village_id
-    akun Petugas Desa yang login; village_id tidak dikirim sebagai parameter.
+    Aktor: Petugas Desa. Mengembalikan flow aktif milik desa akun yang
+    login, beserta step-nya. Flow diset developer lewat seeder; tidak ada
+    endpoint tulis (create/update/replace steps sudah dihapus).
   operationId: listApprovalFlows
   security:
     - sanctumCookie: []
-  parameters:
-    - name: category_id
-      in: query
-      required: false
-      schema:
-        type: integer
-      example: 1
   responses:
     '200':
-      description: Daftar flow berhasil diambil (termasuk steps masing-masing)
+      description: Daftar flow aktif berhasil diambil
       content:
         application/json:
           schema:
@@ -26,76 +19,17 @@ get:
               data:
                 type: array
                 items:
-                  $ref: '../../schemas/letter-categories/letter-categories.yaml#/ApprovalFlow'
+                  $ref: '../../schemas/approval-flows/approval-flows.yaml#/ApprovalFlow'
           example:
             data:
-              - id: 3
-                category_id: 1
+              - id: 1
                 name: "RT-Kades/Sekdes (2 Tahap)"
+                description: "Flow default 2 tahap: RT -> Kepala Desa."
                 is_active: true
                 steps:
-                  - id: 12
-                    flow_id: 3
-                    step_order: 1
-                    approver_position: "rt"
-                    is_final: false
-                  - id: 14
-                    flow_id: 3
-                    step_order: 2
-                    approver_position: "kepala_desa"
-                    is_final: true
-              - id: 4
-                category_id: 2
-                name: "Direct - Tanpa Approval Bertingkat"
-                is_active: true
-                steps: []
+                  - { id: 1, flow_id: 1, step_order: 1, approver_position: "rt", is_final: false }
+                  - { id: 2, flow_id: 1, step_order: 2, approver_position: "kepala_desa", is_final: true }
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
       $ref: '../../responses/common.yaml#/Forbidden'
-post:
-  tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
-  summary: Buat flow approval baru
-  description: |
-    Aktor: Petugas Desa.
-    BARU v5.0. Flow baru = tambah row, bukan ubah kode (Config over Code).
-    Flow otomatis dimiliki oleh desa Petugas yang login; client tidak
-    mengirim `village_id`.
-    Untuk category selain approval_normal (upload_mandiri/dokumen_pendukung/
-    update_data), tetap WAJIB dibuatkan 1 row flow (misal "Direct") meski
-    steps-nya kosong/minimal, demi konsistensi pola query generik di
-    seluruh sistem (SID-ARCH-BE-001 S3.4). Setelah flow dibuat, isi
-    steps-nya lewat PUT /approval-flows/{id}/steps.
-  operationId: createApprovalFlow
-  security:
-    - sanctumCookie: []
-  requestBody:
-    required: true
-    content:
-      application/json:
-        schema:
-          $ref: '../../schemas/letter-categories/letter-categories.yaml#/ApprovalFlowCreateRequest'
-  responses:
-    '201':
-      description: Flow berhasil dibuat (steps masih kosong, isi via endpoint terpisah)
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              data:
-                $ref: '../../schemas/letter-categories/letter-categories.yaml#/ApprovalFlow'
-    '401':
-      $ref: '../../responses/common.yaml#/Unauthenticated'
-    '403':
-      $ref: '../../responses/common.yaml#/Forbidden'
-    '422':
-      description: category_id tidak valid / nama kosong
-      content:
-        application/json:
-          schema:
-            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
-          example:
-            message: "The given data was invalid."
-            errors:
-              category_id: ["Kategori surat tidak ditemukan"]

@@ -1,16 +1,17 @@
 servers:
-  - url: https://api.sid-cibenda.id
+  - url: /
     description: Endpoint web autentikasi (tanpa prefix /api)
-security: []
 post:
   tags: [Epic 3 - Autentikasi]
   summary: Register akun warga (self-service)
-  security:
-    - sanctumCookie: []
+  security: []
   description: |
-    UC-17. Request hanya NIK, password, dan konfirmasi password. Sistem
-    memeriksa NIK aktif melalui nik_hash, menghasilkan username otomatis,
-    membuat sesi login, dan mengembalikan username serta nama.
+    UC-17. Request NIK, tanggal lahir, password, dan konfirmasi password
+    (throttle `register`: 5/menit per IP, 10/jam per hash NIK). Sistem
+    memeriksa NIK melalui nik_hash, mencocokkan tanggal lahir dengan
+    `citizens.date_of_birth`, menghasilkan username otomatis, memicu event
+    `Registered`, dan mengembalikan username serta nama. Register tidak
+    membuat sesi; pengguna login terpisah.
   operationId: registerWarga
   requestBody:
     required: true
@@ -26,7 +27,7 @@ post:
           schema:
             $ref: '../../schemas/auth/auth.yaml#/RegisterResponse'
     '422':
-      description: Validasi gagal - NIK tidak ditemukan, NIK sudah punya akun, atau format tidak valid
+      description: Validasi gagal - NIK tidak ditemukan, NIK sudah punya akun, tanggal lahir tidak cocok, atau format tidak valid
       content:
         application/json:
           schema:
@@ -44,6 +45,12 @@ post:
                 message: "The given data was invalid."
                 errors:
                   nik: ["NIK sudah terdaftar, silakan login"]
+            dob_mismatch:
+              summary: Tanggal lahir tidak cocok dengan data kependudukan
+              value:
+                message: "Tanggal lahir tidak sesuai dengan data kependudukan"
+                errors:
+                  date_of_birth: ["Tanggal lahir tidak sesuai dengan data kependudukan"]
             weak_password:
               summary: Password terlalu lemah
               value:

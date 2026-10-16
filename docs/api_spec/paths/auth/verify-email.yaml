@@ -1,8 +1,6 @@
 servers:
-  - url: https://api.sid-cibenda.id
+  - url: /
     description: Endpoint autentikasi web (tanpa prefix /api)
-security:
-  - sanctumCookie: []
 get:
   tags: [Epic 3 - Autentikasi]
   summary: Verifikasi alamat email dengan tautan bertanda tangan
@@ -35,7 +33,9 @@ get:
       description: Tanda tangan URL yang dibuat Laravel.
   responses:
     '302':
-      description: Diarahkan ke frontend setelah verifikasi email berhasil.
+      description: Diarahkan ke frontend setelah verifikasi email berhasil (redirect intended).
+    '200':
+      description: Tidak dipakai; endpoint selalu me-redirect. Dicantumkan agar kontrak memiliki respons 2xx.
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':

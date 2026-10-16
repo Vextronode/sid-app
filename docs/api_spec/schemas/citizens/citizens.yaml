@@ -170,18 +170,18 @@ Citizen:
       type: boolean
       example: true
     village:
-      nullable: true
       description: "Included when relation is loaded"
-      $ref: '../villages/villages.yaml#/Village'
+      allOf:
+        - $ref: '../villages/villages.yaml#/Village'
     rt:
-      nullable: true
-      $ref: '../wilayah/wilayah.yaml#/Rt'
+      allOf:
+        - $ref: '../wilayah/wilayah.yaml#/Rt'
     rw:
-      nullable: true
-      $ref: '../wilayah/wilayah.yaml#/Rw'
+      allOf:
+        - $ref: '../wilayah/wilayah.yaml#/Rw'
     hamlet:
-      nullable: true
-      $ref: '../wilayah/wilayah.yaml#/Hamlet'
+      allOf:
+        - $ref: '../wilayah/wilayah.yaml#/Hamlet'
     rw_id:
       type: integer
       nullable: true

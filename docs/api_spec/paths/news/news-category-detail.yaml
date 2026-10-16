@@ -1,0 +1,74 @@
+patch:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Ubah nama kategori berita
+  description: |
+    UC-19. Aktor HANYA Petugas Desa pada desa yang sama. `slug` ikut
+    diperbarui dari nama baru. Berita yang memakai kategori ini langsung
+    menampilkan nama baru.
+  operationId: updateNewsCategory
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/news/news.yaml#/NewsCategoryRequest'
+  responses:
+    '200':
+      description: Kategori diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/news/news.yaml#/NewsCategory'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+
+delete:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Hapus kategori berita
+  description: |
+    UC-19. Aktor HANYA Petugas Desa pada desa yang sama. Hanya kategori yang
+    belum pernah dipakai berita yang bisa dihapus, termasuk berita yang
+    sudah dihapus (soft delete).
+  operationId: deleteNewsCategory
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    '200':
+      description: Kategori dihapus
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      description: Kategori sudah dipakai berita
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ConflictResponse'
+          example:
+            message: "Kategori ini sudah dipakai berita sehingga tidak dapat dihapus."

@@ -1,0 +1,40 @@
+post:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Upload atau ganti foto beranda desa
+  description: |
+    Aktor: Petugas Desa aktif pada desanya. Foto besar di beranda dan
+    halaman Profil Desa publik, disimpan di disk public. Dioptimasi seperti
+    logo dengan sisi terpanjang maksimum 1920 px (WebP, fallback JPEG).
+    Aturan penggantian sama dengan logo.
+  operationId: uploadVillageHeroImage
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          $ref: '../../schemas/villages/villages.yaml#/VillageImageUpload'
+  responses:
+    '200':
+      description: Foto beranda diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Foto beranda berhasil diperbarui."
+              data:
+                $ref: '../../schemas/villages/villages.yaml#/Village'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: Bukan PNG/JPG/WebP atau lebih dari 5 MB
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'

@@ -1,267 +1,263 @@
 # ARSITEKTUR BACKEND
-## SIDUTama Cibenda (Sistem Informasi Desa) - Program Capstone Cibenda
+## SIDUTama (Sistem Informasi Desa) - Program Capstone Cibenda
 
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Kode Dokumen | SID-ARCH-BE-001 |
-| Status | Berlaku (Aktif) - Versi 1.2 — v5.2 Kependudukan, Stempel & Pekerjaan |
+| Status | Berlaku (Aktif) - Versi 1.3 — v5.3 Surat dinamis, tanda tangan, identitas desa |
 | Audiens | Backend Developer, Reviewer, Tech Lead, QA Coordinator |
-| Sifat Dokumen | Keputusan struktural & alasan di baliknya. Aturan penulisan kode sehari-hari ada di `DEV-CODE-001`. Skema tabel lengkap ada di dokumen skema domain (lihat S10). |
+| Sifat Dokumen | Keputusan struktural & alasan di baliknya, diselaraskan ke source `apps/backend` per 2026-10-16. Aturan penulisan kode ada di `DEV-CODE-001`. Skema tabel lengkap ada di `TDD-03_Database_Schema.md`. |
 | Dokumen Induk | `SID-ARCH-SYS-001` (System Architecture) |
+
+> Bila dokumen ini berbeda dengan source, source yang berlaku. Hal yang pernah didokumentasikan tetapi belum ada di source dicatat di `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md`.
 
 ---
 
 ## 1. Tech Stack
 
-| Layer | Teknologi | Catatan |
+| Layer | Teknologi (dari `composer.json`/config) | Catatan |
 |---|---|---|
-| Framework | Laravel (REST API, pisah repo dari Frontend) | Laravel berperan murni sebagai API provider, tidak merender view |
-| Autentikasi | Laravel Sanctum | SPA cookie-based, HttpOnly cookie - bukan localStorage/Bearer token manual |
-| Otorisasi | Laravel Policy + middleware RBAC kustom | Tidak ada dependency package RBAC pihak ketiga di `composer.json`; role memakai middleware aplikasi dan Laravel Policy. |
-| Database Engine | PostgreSQL (`DB_CONNECTION=pgsql`; versi tidak diverifikasi dari source) | Source menetapkan driver, bukan versi server. **Status: Tidak diverifikasi terhadap source backend** untuk versi PostgreSQL yang dipakai saat deployment. |
-| ORM | Eloquent ORM | Enkripsi field via `$casts`, raw query dilarang |
-| Queue & Jobs | Framework mendukung queue; `.env.example` menetapkan driver database | Tidak ditemukan Job aplikasi untuk notifikasi/reminder. `LetterStatusNotification` memakai kanal database dan dikirim langsung oleh service. |
-| Event System | Tidak ada class Event/Listener aplikasi pada `app/` | Approval service memanggil notifikasi secara langsung. |
-| Scheduler | `routes/console.php` hanya mendaftarkan command `inspire` | Reminder approval otomatis berstatus Planned; backup dan penjadwalan infrastruktur tidak diverifikasi dari source backend. |
-| PDF Generation | `barryvdh/laravel-dompdf` | On-demand, tidak ada file tersimpan di server - lihat S6 |
-| Import Data | `maatwebsite/excel` | Import massal data warga |
-| Audit Trail | `spatie/laravel-activitylog` + tabel `letter_status_logs` kustom | Lihat S8 |
+| Runtime | PHP ^8.3 | Image Docker `sid-api` menjalankan PHP-FPM |
+| Framework | Laravel ^13.8 (REST API murni) | Satu-satunya view adalah template PDF (`resources/views/pdf/templates/{wet,digital}.blade.php`) |
+| Autentikasi | Laravel Sanctum ^4 (SPA cookie-based) | `EnsureFrontendRequestsAreStateful` di depan grup API |
+| Otorisasi | Middleware `role:` (`EnsureUserHasRole`) + Laravel Policy | Tanpa package RBAC pihak ketiga |
+| Database | PostgreSQL (`DB_CONNECTION=pgsql`); stack Docker memakai `postgres:18.6` atau Neon | SQLite dipakai test |
+| ORM | Eloquent | Enkripsi field via `$casts` |
+| Queue | Driver `database` (dev) / `sync` (stack Docker expo) | Hanya kanal Web Push yang diantrekan |
+| Cache & Session | Driver `database` | Cache dipakai halaman publik (`PublicPageCache`) |
+| PDF | `barryvdh/laravel-dompdf` ^3.1 | On-demand; surat approved dari snapshot (S6) |
+| Import Excel | `maatwebsite/excel` ^4 | Import warga |
+| Audit Trail | `spatie/laravel-activitylog` ^4.12 + `letter_status_logs` | S8 |
+| Web Push | `laravel-notification-channels/webpush` ^13 | VAPID; tabel `push_subscriptions` |
+| Hashing password | Argon2id (`HASH_DRIVER=argon2id`) | |
+| Lint/format | Laravel Pint | |
+| Test | PHPUnit ^12.5 | Feature + Unit |
 
+Laravel Telescope **tidak** terpasang (lihat audit docs).
 
-### Komponen backend aktif (ringkasan source)
+### Inventaris komponen (source)
 
-| Lapisan | Komponen yang aktif |
+| Lapisan | Komponen |
 |---|---|
-| Service domain | `FamilySocioeconomicService`, `OccupationService`, `HamletService`, `LetterCategoryService`, `LetterTypeService`, `PublicPageService`, `RtService`, `RwService`, `VillageOrgMemberService`, `VillageOrgPositionService` |
-| Repository domain | `FamilySocioeconomicRepository`, `OccupationRepository`, `HamletRepository`, `LetterApprovalRepository`, `LetterStatusLogRepository`, `RtRepository`, `RwRepository`, `VillageOrgMemberRepository`, `VillageOrgPositionRepository` |
-| Policy dan middleware | `LetterPolicy`, `OfficialPolicy`, `RegionPolicy`, `EnsureUserIsActive` (`account.active`), `EnsureEmailIsVerified` (`verified`) |
-| Integrasi dan operasi | `CitizensImport`, `PetugasFirstCommand` (`petugas:first`), `RegionContainsCitizensException`, `RegionHasActiveCitizensException` |
-
-Daftar ini mencatat komponen publik/domain; bukan inventaris seluruh class framework.
-| API Docs | Postman / Swagger (OpenAPI) | Wajib sebelum handover |
-| Dev Monitoring | Laravel Telescope | Dev/staging only |
-| Data Dummy | Laravel Seeders & Factories | Untuk benchmarking query (10.000-50.000 records) |
+| Controller API (`app/Http/Controllers/Api`) | ApprovalFlow, ApprovalSetting, Citizen, CurrentUser, Dashboard, Family, FamilySocioeconomic, Hamlet, KadesApproval, LetterAttachment, Letter, LetterDownload, LetterFulfillment, LetterSignature, LetterType, NewsCategory, News, Notification, Occupation, Official, OfficialPositionType, Profile, PublicPage, PushSubscription, Regulation, RtApproval, Rt, Rw, SignatureRequest, User, UserSignature, VillageOrgMember, VillageOrgPosition, VillageProfile |
+| Service domain surat | `LetterService`, `LetterFlowService`, `RtApprovalService`, `KadesApprovalService`, `LetterNumberGenerator`, `LetterSnapshotService`, `PdfService`, `LetterAttachmentService`, `LetterSignatureService`, `UserSignatureService`, `LetterFulfillmentService`, `LetterTypeService`, `ApprovalFlowService`, `ApprovalSettingService` |
+| Service domain lain | `CitizenService`, `FamilyService`, `FamilySocioeconomicService`, `OccupationService`, `OfficialService`, `OfficialAssignmentService`, `OfficialPositionTypeService`, `UserService`, `ProfileService`, `Auth\AuthService`, `Auth\UsernameGenerator`, `HamletService`, `RtService`, `RwService`, `NewsService`, `NewsCategoryService`, `RegulationService`, `VillageProfileService`, `PublicPageService`, `DashboardService`, `NotificationService`, `PushSubscriptionService`, `VillageOrgPositionService`, `VillageOrgMemberService` |
+| Support | `LetterFormSchema` (aturan validasi dari `form_fields`), `LetterValueFormatter` (format nilai isian di PDF), `OfficialPositionCatalog` (label jabatan), `PublicPageCache`, `VillageImageOptimizer` |
+| Policy | `LetterPolicy` (view, create, download, fulfill, delete), `OfficialPolicy`, `RegionPolicy` |
+| Middleware | `account.active`, `password.changed`, `role`, `verified` |
+| Rule | `ValidOfficialPosition` |
+| Notifikasi | `LetterStatusNotification` (kanal database + WebPush) |
+| Console | `petugas:first`, `letters:backfill-snapshots` |
+| Enum | `UserRole` (9), `OfficialPosition` (8 jabatan berakun), `LetterStatus`, `LetterDataAction`, `LetterFlowLogReason`, `ApprovalLevel`, `AssignedRole`, enum kependudukan |
 
 ---
 
 ## 2. Pola Arsitektur & Alur Data
 
-**Pola:** Layered Architecture dengan pemisahan tegas per tanggung jawab:
-
 ```
-Controller  →  Form Request  →  Service  →  Repository  →  Eloquent Model  →  DB
-                                     ↓
-                                  Policy (otorisasi)
-                                     ↓
-                             Event → Listener → Job (Queue) → Notification
+Controller → Form Request → Service → Repository → Eloquent Model → DB
+                               │
+                               ├─ Policy (otorisasi per resource)
+                               ├─ Support (LetterFormSchema, PublicPageCache, ...)
+                               └─ Notification (database sinkron + WebPush via queue)
 ```
 
-**Alasan struktural per layer:**
-
-- **Controller** hanya menangani HTTP concern (parsing request, memanggil Service, membentuk response). Tidak pernah berisi query atau business rule.
-- **Form Request** menangani validasi input murni (format, required, unique constraint sederhana). Validasi yang butuh business context (misal "apakah surat ini masih di step yang sesuai") tetap di Service, bukan di Form Request, karena butuh akses ke state lain yang bukan urusan validasi input.
-- **Service** adalah satu-satunya layer yang boleh mengorkestrasi banyak Repository dan menjalankan `DB::transaction()`. Business rule (gate logic, resolusi approver, kalkulasi `expires_at`) hidup di sini, bukan di Controller maupun Model.
-- **Repository** membungkus query Eloquent. Alasan tetap dipertahankan meski proyek berskala capstone (bukan enterprise besar): domain Surat-Menyurat punya query yang sama dipakai lintas Service (`findByFlowStepAndStatus` dipakai dashboard dan notifikasi) - tanpa Repository, query itu akan terduplikasi atau Service saling bergantung ke Model orang lain.
-- **Policy** khusus untuk pertanyaan "bolehkah user ini melakukan aksi ini pada resource ini" - dipisah dari Service supaya aturan otorisasi bisa diaudit di satu tempat per resource, konsisten dengan pola `Gate`/`Policy` bawaan Laravel.
-
-Pola ini **tidak berubah** dari TDD v3.2 s.d. v5.0 (Controller → Service → Repository → Eloquent → DB) - dokumen ini menegaskan ulang sebagai keputusan final, bukan draft.
+- **Controller** hanya urusan HTTP; memanggil `$this->authorize()` bila ada Policy.
+- **Form Request** validasi input. `StoreLetterRequest` membangun aturan secara dinamis dari `letter_types.form_fields` milik desa pemohon (`LetterFormSchema`).
+- **Service** satu-satunya tempat `DB::transaction()`, aturan bisnis, dan pengiriman notifikasi. Keputusan approval mengunci baris surat (`lockForUpdate`) lalu memeriksa ulang status/step.
+- **Repository** membungkus query yang dipakai lintas service (scope daftar surat, resolve pejabat, counter nomor surat).
+- **Tidak ada Event/Listener/Job aplikasi.** Notifikasi dikirim langsung dari service; `LetterStatusNotification` memakai `afterCommit()` sehingga baru terkirim setelah transaksi commit.
+- `Model::preventLazyLoading()` aktif: gagal keras di test, hanya dicatat (warning) di lingkungan lain.
 
 ---
 
-## 3. Arsitektur Domain: Pipeline Approval Dinamis (Config over Code)
+## 3. Domain Surat: Jenis Surat Data-Driven & Pipeline Approval
 
-Ini adalah keputusan arsitektur backend paling penting, karena merealisasikan prinsip *Config over Code* dari `SID-ARCH-SYS-001` S1 dan menjadi sumber data untuk `ApprovalStepRenderer` di Frontend (`SID-ARCH-FE-001` S6).
+### 3.1 Jenis surat (`letter_types`) diset developer lewat seeder
 
-### 3.1 Masalah yang diselesaikan
+Konfigurasi tiap jenis surat adalah data, bukan kode:
 
-Sebelum TDD v5.0, alur approval hardcode 4 tahap (`RT → RW → Kadus → Kasi`), tercermin di `letters.status` sebagai ENUM granular per posisi (`rt_approved`, `kadus_rejected`, dst). Setiap penambahan/pengurangan tahap approval untuk jenis surat tertentu memaksa `ALTER TYPE` enum dan perubahan kode Controller/Service per role. Ini tidak scalable ketika desa punya kebutuhan alur berbeda-beda per jenis surat (misal surat sederhana cukup 2 tahap, surat sensitif tetap 3 tahap).
+| Kolom | Fungsi |
+|---|---|
+| `template` | HTML dengan placeholder `{{ nama }}`; NULL = draft |
+| `form_fields` (JSON) | Definisi isian: `name`, `label`, `type` (text, textarea, date, number, nik, select, file), `required`, `options`, `accept`. Divalidasi di server; isian tak dikenal ditolak |
+| `classification_code` | Kode klasifikasi nomor surat (default `470`) |
+| `data_action`, `data_fields`, `data_subject_field` | Aksi data pasca-approve: `none`, `update_citizen`, `create_citizen` (S3.6) |
+| `signature_slots` (JSON) | Slot tanda tangan pemohon/pihak lain (S3.5) |
+| `supporting_template` | Template dokumen pendukung (mis. surat pernyataan) |
+| `produces_letter` | Penanda; saat ini hanya dikirim ke frontend |
+| `assigned_role` | Kasi/Kaur yang mengakses surat selesai dan menjalankan Terapkan; NULL = keduanya |
+| `validity_days`, `is_active` | Satu-satunya yang dapat diubah Petugas Desa (`PUT /letter-types/{id}`) bersama `assigned_role` |
 
-### 3.2 Solusi struktural: `letter_categories` → `approval_flows` → `flow_steps`
+Seeder membuat 10 jenis surat (A01–A10) per desa. A07 (Penguburan) memakai `update_citizen` untuk menonaktifkan data almarhum; A08 (Kelahiran) memakai `create_citizen` untuk menambah anak. Belum ada jenis surat bawaan yang memakai `signature_slots` atau `supporting_template`.
 
-```
-letter_categories (gate awal, jarang berubah)
-  code: approval_normal | upload_mandiri | dokumen_pendukung | update_data
-  handler_class → menentukan handler/modul yang menangani surat kategori ini
-       │
-       ▼
-approval_flows (anak dari category, urutan step spesifik)
-  1 category bisa punya BANYAK flow (flow baru = tambah row, bukan ubah kode)
-       │
-       ▼
-flow_steps (urutan approver per flow)
-  step_order, approver_position untuk flow baru: 'rt','kepala_desa',
-  is_final
-```
+> `letter_categories`, `letter_types.category_id`, `approval_flows.category_id`, dan `letter_types.verification_type` sudah di-drop (migration `2026_10_10_090000` dan `2026_10_11_090400`). Perilaku per "kategori" kini diturunkan dari kolom-kolom di atas.
 
-**Keputusan desain kunci (dan alasannya):**
+### 3.2 Pipeline approval: `approval_flows` → `flow_steps`
 
-- **`letters.status` generik** (`pending | in_progress | approved | rejected`), bukan granular per posisi. Posisi "sedang di step mana" dibaca dari `letters.current_step_order` di-JOIN ke `flow_steps` - bukan dari nama status. Ini menghilangkan kebutuhan `ALTER TYPE` setiap kali ada flow baru.
-- Enum database `flow_steps.approver_position` masih memuat `sekdes` untuk kompatibilitas data lama, tetapi validasi flow baru hanya menerima `rt` dan `kepala_desa`; step final wajib `kepala_desa`. Kades dan Sekdes sama-sama dapat memutuskan pada step `kepala_desa`.
-- **`letters.flow_id` adalah snapshot**, bukan live-reference ke `letter_types.flow_id`. Diisi saat surat disubmit dan dikunci. Alasan: kalau admin mengubah konfigurasi flow di `letter_types` di tengah proses berjalannya suatu surat, surat yang sedang berjalan tidak boleh "nyasar" (lompat step atau stuck) - kontrak alurnya sudah ditentukan sejak submit.
-- **RW bukan approver** - tidak pernah muncul sebagai `approver_position` di flow aktif. RW menerima notifikasi FYI database yang dikirim langsung oleh `RtApprovalService`. Konsekuensi struktural: endpoint decision/approval **tidak pernah dibuka untuk role RW** di level route, bukan hanya disembunyikan di UI.
-- **Kadus bukan approver.** `officials.position='kadus'` tetap valid sebagai jabatan struktural; setelah RT approve, Kadus aktif menerima FYI non-blocking hanya untuk surat dengan `citizen.hamlet_id` yang sama. Kadus tidak menjadi target resolve step approval dan tidak memiliki endpoint keputusan.
-- **Resolve approver dua pola berbeda, harus dibedakan eksplisit di kode:**
-  - **Berbasis wilayah** (RT): resolve via `citizens.rt_id → rts.id`, lalu cari `officials` aktif dengan `rt_id` yang sama.
-  - **Berbasis posisi murni** (Kepala Desa/Sekdes tahap final): resolve pejabat aktif tanpa join wilayah. Kasi/Kaur bukan approver dan tidak di-resolve dari `flow_steps`.
-- **Tahap yang dilewati:** hanya tahap non-final dengan pejabat aktif dapat dilewati bila seluruh approver eligible merupakan pemohon. Tahap tanpa pejabat aktif tidak dilewati. Tahap final tidak pernah dilewati; tanpa approver lain selain pemohon, submit ditolak. Tahap RT yang dilewati tidak memicu FYI RW.
+- Satu flow default per desa (`ApprovalFlowSeeder`): step 1 `rt`, step 2 `kepala_desa` (final). Flow hanya dapat **dibaca** lewat API; tidak ada endpoint tulis.
+- `letters.status` generik (`pending | in_progress | approved | rejected`); posisi dibaca dari `current_step_order` di-JOIN ke `flow_steps`.
+- `letters.flow_id` adalah snapshot saat submit.
+- `current_step_order = 0` berarti surat masih menunggu tanda tangan dan belum masuk approver mana pun.
+- RW dan Kadus **bukan approver**; menerima FYI setelah RT approve. Kasi/Kaur bukan approver; menerima notifikasi setelah final approve.
+- Resolve approver: RT berbasis wilayah (`citizens.rt_id`), Kades/Sekdes berbasis posisi dalam desa.
+- **Tahap dilewati / ditahan** (`LetterFlowService::resolveFromOrder`):
+  - non-final dengan pejabat aktif tetapi semuanya pemohon → dilewati (log `RtStageSkippedForOfficialApplicant`);
+  - non-final tanpa pejabat aktif (RT kosong) → surat **ditahan** di step itu, log `HeldForVacantApprover`, Petugas Desa dinotifikasi (`approver_vacant`); saat RT ditetapkan (promote), RT baru dinotifikasi tentang surat yang menunggu;
+  - final tanpa approver eligible selain pemohon → submit ditolak 422.
 
-### 3.3 First-Action-Wins: Kades/Sekdes Concurrent Approval
+### 3.3 First-Action-Wins Kades/Sekdes
 
-**Keputusan final (K7/K13):** Kepala Desa dan Sekretaris Desa saling menggantikan pada tahap final yang sama; pemohon Kades diputuskan Sekdes dan sebaliknya. Mekanisme first-action-wins dijalankan pada application layer:
+Keputusan dijalankan di dalam transaksi: `SELECT ... FOR UPDATE` pada surat, cek ulang status aktif dan step `kepala_desa`; request kedua mendapat 409. `approval_level` mencatat `kepala_desa` atau `sekdes` sesuai jabatan aktor.
 
-- Endpoint decision menjalankan `SELECT ... FOR UPDATE` terhadap row surat di dalam `DB::transaction()`, lalu memeriksa ulang status aktif dan step `kepala_desa` sebelum mencatat keputusan.
-- Request kedua menunggu row lock, lalu gagal dengan 409 jika surat sudah terminal atau step aktif sudah berubah. Keputusan pertama yang berhasil diproses menang.
+### 3.4 Final approve: nomor surat & snapshot
 
-### 3.4 Kategori di luar `approval_normal`
+1. `LetterNumberGenerator`: `{classification_code}/{NNN}/Des/{bulan Romawi}/{tahun}` (mis. `470/001/Des/X/2026`). Counter `letter_number_counters` per desa + kode klasifikasi + tahun (unique `uq_letter_counters_classification`); baris lama per jenis surat tetap sebagai riwayat.
+2. `expires_at` dari `validity_days`, `processed_at`.
+3. `LetterSnapshotService::captureOnFinalApproval()` membekukan konteks render ke `letters.snapshot` dan `signed_by_official_id` (Kepala Desa aktif saat itu, juga bila Sekdes yang menyetujui). Bila belum ada Kades aktif, snapshot ditunda sampai unduhan pertama. Command `letters:backfill-snapshots` (dijalankan migration `2026_10_11_090300`) membekukan surat approved lama.
+4. Notifikasi: pemohon `letter_approved_final`; Kasi/Kaur sesuai `assigned_role` mendapat `letter_needs_fulfillment` (bila ada `data_action`) atau `letter_ready_for_print`.
 
-Untuk `upload_mandiri`, `dokumen_pendukung`, dan `update_data`, setiap tetap **wajib** direferensikan ke satu row `approval_flows` (misal flow "Direct - Tanpa Approval Bertingkat" dengan `flow_steps` kosong/minimal), meski secara bisnis tidak melalui approval bertingkat. Alasan: menjaga satu pola query generik (`JOIN flow_steps ON flow_id + current_step_order`) berlaku seragam di seluruh sistem tanpa percabangan kondisi khusus per kategori di level query dashboard.
+### 3.5 Tanda tangan pada surat
 
-`handler_class` di `letter_categories` menentukan Service/Handler mana yang memproses surat kategori tersebut - pola *Strategy* sederhana: Controller men-dispatch ke handler berdasarkan `category.handler_class`, bukan `if/else` bertingkat berdasarkan `category.code` yang tersebar di banyak tempat.
+- **TTD pribadi akun** (`user_signatures`): dibuat sekali oleh pemilik akun, dienkripsi (`Crypt::encryptString`) di disk privat `user-signatures/{user_id}/*.enc`. Tidak dapat diubah sendiri; reset hanya oleh Petugas Desa desa yang sama (baris lama ditandai `revoked_at`, berkas dipertahankan agar dokumen lama tetap dapat dirender; tercatat di activity log `user_signature`).
+- **Slot pada surat** (`letter_signatures`, satu baris per percobaan, baris terbaru = keadaan slot):
+  - `signer: applicant` → otomatis memakai TTD akun pemohon (wajib sudah ada);
+  - `signer: other` → minta ke pemilik NIK (TTD digital; status `pending`, kedaluwarsa `request_ttl_days`=7) atau unggah foto dokumen ber-TTD basah (`wet`, langsung `signed`).
+- Pemilik NIK menyetujui (dengan konfirmasi password) atau menolak; boleh sekaligus memblokir pemohon (`signature_blocks`).
+- Anti-penyalahgunaan: jawaban seragam walau NIK tidak punya akun; pembatasan `max_rejections`=3 penolakan dalam `rejection_window_hours`=24 per pasangan pemohon–NIK (`config/letters.php`).
+- Begitu semua slot `signed`, `LetterService::beginApprovalIfSigned()` memindahkan surat ke step approval pertama.
 
-### 3.5 Isolasi konfigurasi per desa
+### 3.6 Terapkan perubahan data (fulfillment)
 
-`approval_flows` dan `letter_types` memiliki `village_id`. Service mengambil desa dari akun Petugas Desa yang terautentikasi, lalu membatasi daftar, pencarian, dan perubahan konfigurasi ke desa tersebut. Flow atau jenis surat milik desa lain diperlakukan sebagai tidak ditemukan (HTTP 404). Public API memilih data desa melalui `village_code`; ID desa tidak diterima sebagai pengganti scope otorisasi pada endpoint konfigurasi.
+`LetterFulfillmentService` (otorisasi `LetterPolicy::fulfill`: surat approved, `data_action` ≠ `none`, Kasi/Kaur sesuai `assigned_role` atau Petugas Desa):
+- `GET` menyajikan nilai sekarang vs usulan per kolom `data_fields`;
+- `POST` (lock surat, sekali saja) menerapkan nilai akhir (koreksi Kasi/Kaur atau usulan warga) dengan aturan validasi yang sama seperti form data warga Petugas Desa. `update_citizen` dapat menonaktifkan warga sekaligus akun login-nya; `create_citizen` mewarisi RT/dusun/KK/alamat pemohon. Hasil disimpan di `letters.fulfillment`, plus status log, activity log `citizen` (`letter_fulfilled`), dan notifikasi ke pemohon.
+- Hanya kolom yang didefinisikan jenis surat yang boleh disentuh; tidak ada jalur edit bebas data warga dari surat.
 
----
+### 3.7 Lampiran
 
-## 4. Arsitektur RBAC & Otorisasi
+`letter_attachments` (kind `field` | `wet_signature` | `attachment`) di disk `private_uploads` folder `letter-attachments/{village_id}/{letter_id}/`. Dibuka lewat `GET /letters/{letter}/attachments/{attachment}` (LetterPolicy::view). Folder dihapus saat surat dihapus atau pengajuan gagal.
 
-### 4.1 Struktur peran
+### 3.8 Isolasi per desa
 
-Backend mengimplementasikan RBAC sebagai **9 nilai `users.role` ENUM flat** (bukan hierarki tabel terpisah):
-
-```
-warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum,
-petugas_desa, kepala_desa, sekretaris_desa
-```
-
-Pengelompokan "Tier" (Admin Desa/Eksekutif, Staff Desa, RT/RW, Warga) yang dipakai di dokumen SYS/FE adalah **label kelompok untuk kebutuhan navigasi & guard di sisi Frontend**, bukan tabel/kolom terpisah di database. Backend tidak menyimpan "tier" sebagai data - middleware RBAC memetakan `role` ke kelompok otorisasi yang relevan per endpoint secara langsung dari 9 nilai ENUM di atas. Slot "Superadmin" **belum diimplementasikan** - tidak ada role, middleware, atau guard untuk itu di backend hingga kebutuhannya jelas.
-
-**Catatan penting yang harus dijaga konsisten:** pengelompokan "Admin Desa/Eksekutif" di FE/SYS menyatukan `petugas_desa` dengan `kepala_desa`/`sekretaris_desa` untuk kebutuhan label navigasi, **tapi scope otorisasi keduanya di backend tetap terpisah tegas** sesuai TDD:
-- `petugas_desa`: full visibility seluruh pipeline surat, termasuk rejected; pengelolaan jabatan, reset password non-Petugas Desa, dan konfigurasi desa.
-- `kepala_desa` / `sekretaris_desa`: approver pada tahap final; tidak memiliki akses ke domain konfigurasi/CMS milik Petugas Desa. Dashboard mereka mengecualikan surat miliknya sendiri.
-- `kasi_pelayanan` / `kaur_tu_umum`: notifikasi setelah final approve dan akses baca/unduh surat approved sesuai `assigned_role`; bukan approver.
-
-Policy dan middleware harus mengecek `role` secara eksplisit per kebutuhan endpoint, tidak boleh menggunakan pengelompokan tier sebagai basis pengecekan otorisasi di backend.
-
-### 4.2 Segmentasi fungsional di dalam role
-
-Untuk Kasi/Kaur (`kasi_pelayanan`, `kaur_tu_umum`), `letter_types.assigned_role` menentukan surat selesai yang role-nya boleh baca/unduh; nilai NULL memberi akses kepada kedua role. Kasi/Kaur tidak lagi memiliki aksi approval maupun tahap di flow.
-
-### 4.3 Implementasi teknis
-
-- Middleware kustom (bukan murni `middleware RBAC aplikasi`) diperlukan karena kebutuhan gate ganda: **role check** (apakah role user termasuk yang diizinkan endpoint ini) **dan** **context check** (apakah user ini punya wewenang atas *resource spesifik* ini - wilayah untuk RT, posisi untuk Kades/Sekdes/Staff). `middleware RBAC aplikasi` menangani lapisan pertama dengan baik, tapi lapisan kedua tetap harus custom Policy per resource (`LetterPolicy::decide()`), konsisten dengan pola yang sudah dipakai sejak v3.2 (`OfficialService::isOfficialAuthorized()`).
-- Setiap endpoint decision (approve/reject) **selalu** melakukan re-validasi gate di dalam Service sebelum `DB::transaction()`, bukan hanya mengandalkan hasil Policy di awal request - pola *double-check* yang sudah baku sejak sequence diagram RT/RW Approval v4.2, untuk menangani race condition antara buka halaman dan submit keputusan.
+`letter_types`, `approval_flows`, `approval_settings`, `occupations`, `official_position_types`, `news_categories`, dll. ber-`village_id`. Service mengambil desa dari akun login; ID milik desa lain diperlakukan 404. API publik memilih desa lewat `village_code` (opsional bila hanya satu desa).
 
 ---
 
-## 5. Arsitektur Domain: Manajemen Kependudukan
+## 4. RBAC & Otorisasi
 
-### 5.1 Pemisahan KK vs Data Individu
+### 4.1 Peran
 
-Backend mengikuti prinsip *single source of truth* dari skema v5.0: `families` (tipis, hanya fakta level-keluarga: `no_kk`, `family_address`, `family_status`) terpisah dari `citizens` (fakta level-individu, termasuk `address` domisili riil yang bisa berbeda dari `family_address`). Service layer (`CitizenService`, `FamilyService`) **tidak boleh** menyalin data KK ke `citizens` atau sebaliknya sebagai denormalisasi tambahan di luar `families.head_of_family_id` yang memang sudah didefinisikan sebagai denormalisasi opsional terjaga manual.
+`users.role` 9 nilai: `warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, kepala_desa, sekretaris_desa`. Tier navigasi di SYS/FE hanyalah label. Superadmin belum ada.
 
-Pada v5.2, sosio-ekonomi disimpan per keluarga pada `family_socioeconomics`, sementara pekerjaan tetap atribut individu dan direferensikan melalui katalog `occupations` per desa (bukan ENUM DB). Service memvalidasi bahwa pekerjaan dan warga berasal dari desa yang sama.
+### 4.2 Jabatan
 
-### 5.2 Warga Lokal vs Pendatang — Satu Tabel, Bukan Dua
+- **Jabatan berakun** (enum `OfficialPosition`): kepala_desa, sekdes, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa — menentukan `users.role`.
+- **Jabatan tanpa akun**: jenis dikelola Petugas Desa di `official_position_types` (kode dibuat dari label, tidak dapat diubah; seeder: Kasi Kesejahteraan, Kasi Pemerintahan, Kaur Perencanaan, Kaur Keuangan, Staf SIPADES, Staf SISKEUDES). `officials.position` kini VARCHAR(50) berisi nilai enum atau `code` jenis jabatan (`ValidOfficialPosition`).
+- Penetapan via `OfficialAssignmentService` (promote/demote/rotate, transaksional, activity log `official`). Foto pejabat wajib saat penetapan/rotasi (disk public). Calon dicari lewat NIK (`POST /officials/candidates/lookup`).
 
-**Tidak ada kategori "warga Non-NIK" di domain ini.** Ini koreksi eksplisit terhadap draft awal dokumen arsitektur - keputusan final TDD v5.0 (Patch Guide v4.2→v5.0, PATCH 41) menegaskan: **setiap row di `citizens` sudah pasti memiliki NIK** (`nik`/`nik_hash` adalah bagian inti skema sejak v3.2), baik untuk warga lokal maupun pendatang. Tidak ada jalur di mana seseorang menjadi warga tercatat di sistem tanpa NIK terverifikasi.
+### 4.3 Lapisan otorisasi
 
-Pembeda lokal vs pendatang murni kolom `residency_type ENUM('lokal','pendatang')` pada `citizens` yang sama - **bukan** tabel terpisah, **bukan** entitas paralel, dan **bukan** kategori "data transaksional tanpa record master". Backend secara sengaja **tidak** membangun jalur mana pun (baik di `letters` maupun tabel lain) yang memungkinkan seseorang tercatat sebagai pemohon/warga tanpa melalui `citizens` terlebih dahulu - ini untuk mencegah duplikasi logic dan risiko integritas data yang justru menjadi alasan utama keputusan "tidak dipisah tabel" di v5.0.
+1. Middleware grup: `auth:sanctum`, `account.active`, `password.changed`, lalu `role:` per grup endpoint.
+2. Policy/Service untuk konteks resource (wilayah RT, desa, step aktif, assigned_role, pemohon).
+3. Re-validasi di dalam transaksi untuk aksi keputusan.
 
-Alur bagi pendatang yang belum terverifikasi NIK-nya di `citizens` (misal baru pindah, KK belum diproses desa) **bukan** kasus "Non-NIK" - itu murni kasus "belum terdaftar sebagai warga sama sekali", ditangani sama seperti warga mana pun yang NIK-nya belum ada di database: tidak bisa register akun (UC-17, gate NIK harus ditemukan di `citizens`), dan tidak bisa submit surat self-service sampai Petugas Desa mencatatnya lebih dulu ke `citizens` (via UC-09, dengan `residency_type='pendatang'` jika relevan).
-
-### 5.3 Perubahan Data oleh Warga
-
-Sesuai TDD (UC-09), pengelolaan data `citizens` - termasuk koreksi/update - **hanya dilakukan oleh Petugas Desa**. Tidak ada mekanisme di mana warga mengedit data kependudukannya sendiri secara langsung maupun bertahap; ini konsisten dengan prinsip *Human-in-the-Loop* (`SID-ARCH-SYS-001` S1) yang menempatkan Petugas Desa sebagai satu-satunya pencatat resmi data sensitif ini.
-
-> Kapabilitas "warga mengajukan perubahan datanya sendiri" pernah disebut sepintas di `SID-ARCH-SYS-001` S2.2 sebagai *staging perubahan data self-service*, tapi ini **belum punya desain maupun keputusan final** - lihat S12 (Wacana Next Dev - Belum Ada Desain).
-
-### 5.4 Impor Massal
-
-`maatwebsite/excel` dijalankan sinkron per-baris dengan validasi individual (format NIK, duplikasi `nik_hash`), baris gagal di-skip dan dilaporkan dalam ringkasan hasil - bukan all-or-nothing transaction, karena satu file impor bisa berisi ratusan baris dan kegagalan satu baris tidak boleh membatalkan baris lain yang valid.
+Scope ringkas: Petugas Desa = operator penuh di desanya (CMS, kependudukan, jabatan, konfigurasi); Kades/Sekdes = approver final tanpa akses CMS; Kasi/Kaur = baca daftar warga, akses surat selesai, Terapkan; RT = approver wilayah; RW/Kadus = baca FYI.
 
 ---
 
-## 6. PDF Generation: On-Demand, Bukan Persisten
+## 5. Domain Kependudukan
 
-Keputusan final sejak v4.0: **tidak ada kolom path PDF** di `letters`, tidak ada file surat tersimpan permanen di server. Setiap klik tombol download memicu generate ulang dari `letter_types.template` (HTML Blade) + data surat terkini + TTD Kepala Desa aktif (`officials.signature_img`) dan stempel desa (`villages.stamp_img`), lalu langsung di-stream sebagai response binary. Kedua gambar diunggah ke private storage; endpoint preview terproteksi hanya mengembalikan binary bagi Petugas Desa dengan scope desa yang sesuai. Upload TTD terpisah dari rotasi jabatan dan dilakukan pada record Kades aktif yang baru setelah rotasi.
-
-**Alasan struktural (bukan sekadar penghematan storage):** PDF yang persisten berisiko menjadi *stale* jika data surat berubah setelah digenerate (misal koreksi nama pemohon), dan menambah kompleksitas manajemen storage/cleanup yang tidak sepadan untuk traffic desa kecil. Trade-off latency generate-per-klik diterima sebagai biaya yang wajar.
-
-Gate akses berbeda per role: `warga` dicek `expires_at`, role lain (Petugas Desa, Staff, Kades, Sekdes) selalu bisa generate tanpa cek masa berlaku.
-
----
-
-## 7. Arsitektur Notifikasi & Event
-
-Service approval/surat mengirim `LetterStatusNotification` secara langsung melalui kanal database. Source tidak memiliki Event/Listener aplikasi, Job notifikasi, atau kanal email untuk notifikasi status.
-
-**Perubahan struktural v5.0 yang harus dipegang backend:**
-
-- Service keputusan RT/Kades mengirim notifikasi database secara langsung kepada pemohon, approver berikutnya, RW, atau Kadus sesuai hasil proses. Source tidak memiliki `FlowStepAdvanced`, Event/Listener khusus, maupun Job notifikasi.
-- Notifikasi FYI ke RW dan Kadus tetap ada sebagai side-effect non-blocking setelah RT approve; RW dicocokkan melalui wilayah RW citizen, Kadus melalui `citizen.hamlet_id`. Bila tahap RT dilewati, FYI tidak dikirim. Setelah tahap final approve, notifikasi surat selesai dikirim ke Kasi/Kaur yang cocok dengan `assigned_role`.
-- Jika pejabat RT atau RW aktif tidak ditemukan, resolver mengembalikan daftar kosong; tidak ada fallback broadcast ke `petugas_desa`. Approval yang memerlukan RT tetap tidak dapat diputuskan tanpa RT aktif.
+- `families` (KK, tipis) terpisah dari `citizens` (individu). Sosio-ekonomi per KK (`family_socioeconomics`). Pekerjaan dari katalog `occupations` per desa.
+- Tidak ada "warga Non-NIK"; lokal/pendatang dibedakan `residency_type`.
+- Perubahan data warga oleh warga **hanya** lewat jenis surat ber-`data_action`, yang diterapkan Kasi/Kaur/Petugas Desa (S3.6). Tidak ada edit langsung oleh warga.
+- Daftar warga berpaginasi (default 20, maks 100) dengan pencarian nama dan filter RT; Kasi/Kaur dapat membaca daftar.
+- Register warga mewajibkan NIK + tanggal lahir yang cocok dengan `citizens.date_of_birth`.
+- Impor Excel per baris, baris gagal dilewati.
 
 ---
 
-## 8. Audit Trail & Keamanan Data
+## 6. PDF & Dokumen
 
-- **Enkripsi field sensitif**: AES-256-CBC via `$casts` Eloquent untuk `citizens.nik`, `families.no_kk`, `families.family_address`, `letters.applicant_nik`, dan `letters.applicant_address`; `citizens.address` tidak terenkripsi oleh model. Pola dual-column (`nik`/`nik_hash`, `no_kk`/`no_kk_hash`) dipertahankan konsisten untuk semua data yang butuh pencarian tanpa membuka enkripsi - `no_kk_hash` di `families` mengikuti pola yang sama persis dengan `nik_hash` sejak v3.2, bukan pola baru.
-- **Password**: Argon2id, bukan bcrypt.
-- **Authentication & forced password change**: login dengan username, register NIK+password dan rate limit khusus. Password sementara mengaktifkan `must_change_password`; API mengembalikan `password_change_required` sampai password diganti.
-- **Official assignment**: `OfficialAssignmentService` mengorkestrasi promote/demote/rotate/bootstrap dalam transaksi dan mencatat activity log; CLI `petugas:first` hanya untuk bootstrap Petugas pertama, sedangkan demote dan reset password dilakukan melalui dashboard/API.
-- **Audit trail** dua lapis: `spatie/laravel-activitylog` untuk perubahan data model umum (CRUD warga, jabatan, dst), dan `letter_status_logs` sebagai audit trail khusus domain surat (mencatat `old_status`/`new_status` generik + `actor_id` + IP + user agent) - dipisah karena domain surat butuh struktur query spesifik (riwayat per surat, urut kronologis) yang tidak sepenuhnya terlayani oleh log generik.
-- **Data in transit**: HTTPS wajib (TLS 1.2/1.3), Secure cookie + `SameSite=Strict`.
-- **Data at rest**: `APP_KEY` di `.env`, tidak pernah di-commit, tidak boleh diregenerate di production.
-- Standar keamanan lintas program lebih detail ada di `AWG-SEC-001` s.d. `AWG-SEC-007` (lihat S10) - dokumen ini hanya mencakup keputusan yang spesifik untuk domain SIDUTama.
+- Tidak ada file PDF tersimpan; dirender dompdf saat diminta.
+- **Surat approved dirender dari snapshot** (template, definisi isian, identitas & kop desa, path stempel, nama & path TTD Kepala Desa penanda tangan, tanggal terbit). Penggantian Kades, perubahan template, atau data warga tidak mengubah surat lama.
+- Surat belum approved (preview) dirender dari data hidup dengan Kepala Desa aktif saat ini.
+- Template `wet` (default) hanya stempel; `digital` menempelkan TTD Kepala Desa. Gambar privat dibaca dari disk `private_uploads` dengan validasi prefix folder.
+- Placeholder: data pemohon, kop desa (`village_*`, dari profil desa), nomor & tanggal surat, isian form (diformat `LetterValueFormatter`: tanggal, rupiah + terbilang, pilihan), slot TTD (`ttd_{slot}`, `nama_ttd_{slot}`). Nilai teks di-escape; placeholder tak terpetakan diganti garis.
+- Dokumen pendukung (`supporting_template`) dirender tanpa TTD Kades.
+- Pemohon ditolak mengunduh bila `expires_at` lewat.
 
 ---
 
-## 9. Reliabilitas & Constraint Operasional
+## 7. Notifikasi
 
-| Constraint | Dampak | Solusi |
+- `LetterStatusNotification` → kanal `database` (koneksi `sync`, in-app) dan `WebPushChannel` (diantrekan). Payload memuat `context.letter_id`, `letter_no`, `status`, `applicant`, `is_applicant`; Web Push membawa URL `/buka-notifikasi?...`.
+- Langganan Web Push disimpan per perangkat lewat `POST/DELETE /push-subscriptions` (VAPID dari `.env`).
+- Kode status: `pending`, `approver_vacant`, `rt_approved`, `rt_rejected`, `rt_approved_rw_fyi`, `rt_approved_kadus_fyi`, `kepala_desa_approved`, `kepala_desa_rejected`, `letter_approved_final`, `letter_ready_for_print`, `letter_needs_fulfillment`, `letter_fulfilled`, `signature_requested`, `signature_accepted`, `signature_rejected`.
+- Tidak ada notifikasi email status surat dan tidak ada reminder otomatis.
+
+---
+
+## 8. Keamanan Data & Audit
+
+- Enkripsi `$casts encrypted`: `citizens.nik`, `families.no_kk`, `families.family_address`, `letters.applicant_nik`, `letters.applicant_address`. Dual-column hash (`nik_hash`, `no_kk_hash`, `applicant_nik_hash`, `letter_signatures.target_nik_hash`).
+- Berkas privat (disk `private_uploads`): stempel desa, TTD jabatan Kades, TTD akun (terenkripsi), lampiran surat. Disk public: logo & foto beranda desa (dioptimasi WebP), foto pejabat, thumbnail berita.
+- Login: throttle 5 percobaan per `username|IP`, lockout 1 jam, percobaan gagal dicatat `Log::warning`. Register: 5/menit per IP dan 10/jam per hash NIK.
+- `must_change_password` → 403 `password_change_required` kecuali `GET /api/user`, `PUT /api/profile/password`, `/logout`.
+- Audit: `letter_status_logs` (semua transisi status + alasan sistem) dan activity log untuk `official` (promote/demote/rotate), `citizen` (`letter_fulfilled`), `user_signature` (`reset`).
+- `trustProxies('*')` aktif; tidak ada `forceScheme('https')` di aplikasi; cookie session default `SameSite=lax` (`SESSION_SAME_SITE`).
+
+---
+
+## 9. Performa & Cache
+
+- Index performa (migration `2026_10_11_090600`) untuk kolom FK yang dipakai scope wilayah, urutan, dan eager-load (citizens, letters, letter_approvals, rts, rws, officials, users, families, news).
+- Daftar surat & warga berpaginasi di database; ringkasan dashboard (`GET /letters/summary`) dihitung dengan agregasi SQL atas scope yang sama.
+- `PublicPageCache`: JSON respons `/public/*` di-cache per desa 10 menit dengan kunci berversi; event `saved/deleted` pada News, NewsCategory, VillageRegulation, LetterType, Official, Hamlet, Village, OfficialPositionType menggugurkan cache desa terkait.
+- `VillageImageOptimizer`: logo ≤512 px, foto beranda ≤1920 px, EXIF orientation diterapkan, simpan WebP (fallback PNG/JPEG atau berkas asli).
+
+---
+
+## 10. Reliabilitas & Operasional
+
+| Constraint | Kondisi source | Catatan |
 |---|---|---|
-| Queue worker harus selalu aktif | Notifikasi & reminder tidak berjalan jika worker mati | Supervisor (Tahap 1) → Laravel Horizon (Tahap 2) |
-| Deadline approval terlewat tidak auto-reject | Surat bisa mandek jika pejabat tidak action | Saat daftar surat dimuat, backend menghitung overdue dari deadline approval aktif. Scheduler dan pengiriman reminder otomatis belum diimplementasikan. |
-| Kades/Sekdes concurrent approve tanpa DB lock | Kemungkinan kecil race condition di traffic tinggi | Diterima sebagai trade-off sadar (lihat S3.3), bukan bug yang belum ditangani |
-| PDF regenerate setiap klik | Latency kecil per request download | Diterima, lihat S6 |
-| Redis & Docker belum dipakai Tahap 1 | Queue & environment belum optimal/konsisten antar mesin | Queue driver database cukup untuk traffic desa kecil, migrasi terjadwal Tahap 2 |
+| Queue worker | Web Push diantrekan; notifikasi database sinkron | Stack Docker expo memakai `QUEUE_CONNECTION=sync`; panduan VPS memakai Supervisor worker (`docs/deploy`) |
+| Deadline approval | `is_overdue` dihitung saat daftar dimuat | Reminder otomatis belum ada |
+| Konkurensi keputusan | Row lock + cek ulang | 409 untuk request kedua |
+| Surat tertahan | RT kosong → ditahan + notifikasi Petugas | Dilepas saat RT ditetapkan |
+| Deployment | Docker image `sid-api` (PHP-FPM) + `sid-web` (Nginx + SPA), entrypoint tidak menjalankan migrate/seed | `deploy/docker-compose.yml` |
 
 ---
 
-## 10. Wacana Next Dev — Belum Ada Desain
+## 11. Wacana Next Dev — Belum Ada Desain
 
-Tiga istilah berikut disebut sepintas di `SID-ARCH-SYS-001` S2.1/S2.2 sebagai bagian scope domain, tapi **tidak punya skema tabel, UC, maupun keputusan teknis apa pun** di TDD v3.2 s.d. v5.0 manapun. Bagian ini sengaja hanya mencatat *bahwa istilah ini pernah disebut*, bukan mendesainnya - mendesain tanpa keputusan sumber akan berisiko menciptakan skema baru yang tidak pernah disepakati. Jangan mulai implementasi apa pun untuk ketiganya sebelum ada keputusan eksplisit dari pemilik proyek.
-
-| Istilah | Disebut di | Pertanyaan terbuka yang harus dijawab lebih dulu |
-|---|---|---|
-| **QR Verification** | `SID-ARCH-SYS-001` S2.1 (mekanisme operasional pendukung), S3 (kotak "Endpoint Verifikasi QR" di diagram komponen) | Token disimpan di kolom mana pada `letters`? Digenerate kapan (saat `kasi_approved`, atau setiap kali PDF di-generate ulang - ingat PDF bersifat on-demand, S6)? Halaman verifikasi publik menampilkan data apa saja (risiko privasi NIK)? Berlaku untuk kategori surat mana saja? |
-| **Void/Cancel Surat** | `SID-ARCH-SYS-001` S2.1 (mekanisme operasional pendukung) | Status baru di `letters.status` (saat ini hanya 4 nilai: `pending/in_progress/approved/rejected`) atau kolom terpisah? Siapa yang berwenang void - Petugas Desa saja, atau approver terkait? Berlaku untuk surat yang sudah `approved` saja, atau juga `in_progress`? Apakah `letter_number` yang sudah terbit ikut dibatalkan/dicatat sebagai riwayat? |
-| **Staging Perubahan Data Self-Service** | `SID-ARCH-SYS-001` S2.2 (scope domain Kependudukan) | Bertentangan langsung dengan UC-09 TDD saat ini (aktor hanya Petugas Desa) - apakah ini kapabilitas baru yang perlu UC baru? Field mana saja yang boleh diajukan warga? Siapa yang approve staging ini (Petugas Desa saja, atau ada gate lain)? |
+| Istilah | Status |
+|---|---|
+| QR Verification | Belum ada desain/implementasi |
+| Void/Cancel Surat | Belum ada; `letters.status` tetap 4 nilai |
+| Staging perubahan data self-service | Sebagian terealisasi lewat jenis surat ber-`data_action` (S3.6). Pengajuan perubahan bebas di luar definisi jenis surat tetap tidak ada |
 
 ---
 
-## 11. Referensi Silang
+## 12. Referensi Silang
 
 | Kebutuhan | Dokumen |
 |---|---|
-| Aturan penulisan kode (naming, struktur folder detail, konvensi PSR-12) | `DEV-CODE-001` |
-| Strategi & cakupan pengujian Backend | `DEV-TEST-001` |
-| Alur kerja Git & review | `DEV-GIT-001` |
-| Skema lengkap domain Surat & Pipeline (`letter_categories`, `approval_flows`, `flow_steps`, `letters`, dst) | `SID_Arsitektur_RoleSegmentation_Pipeline_Kependudukan_Tahap2.md`, `SID_Addendum_KategoriLetterType_OperasionalPipeline_Verifikasi.md` |
-| Skema lengkap domain Kependudukan (`families`, `citizens`, `family_socioeconomics`, `occupations`) | TDD-03 Database Schema |
-| Alur interaksi per aktor (Business Workflow) | `01_BWF_Overview_v1.puml` s.d. `05_BWF_SistemOtomatis_v1.puml` |
-| Standar keamanan lintas program | `AWG-SEC-001` s.d. `AWG-SEC-007` |
-| Standar observability lintas program | `AWG-OBS-001`, `AWG-OBS-002` |
-| Komponen Frontend yang bergantung pada struktur pipeline ini | `SID-ARCH-FE-001` S6 (`ApprovalStepRenderer`) |
+| Kontrak API | `docs/api_spec/openapi.yaml`, `00_INDEX.md` |
+| Skema DB | `TDD-03_Database_Schema.md` |
+| Use case | `TDD-02_UseCase_Descriptions.md` |
+| Diagram | `docs/diagram/code/*` |
+| Deployment | `deploy/`, `docs/deploy/`, `docs/EXPO_RUNBOOK.md` |
+| Audit docs | `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md` |
 
 ---
 
-## 12. Riwayat Revisi
+## 13. Riwayat Revisi
 
 | Versi | Tanggal | Perubahan |
 |---|---|---|
-| 1.0 | - | Penyusunan awal, disusun selaras dengan `SID-ARCH-SYS-001` v1.0 dan skema TDD v5.0 |
-| 1.1 | - | v5.1 Auth & Approval Flow: keputusan Kades/Sekdes ditutup, Kasi/Kaur menjadi read-only, tahap submit pejabat, password change guard, OfficialAssignmentService, dashboard dan notifikasi diselaraskan. |
-| 1.2 | - | v5.2: sosio-ekonomi per KK, pekerjaan baku per desa, stempel PDF dari desa, serta upload/preview privat TTD dan stempel. |
+| 1.0 | - | Penyusunan awal, selaras `SID-ARCH-SYS-001` v1.0 dan TDD v5.0 |
+| 1.1 | - | v5.1 Auth & Approval Flow |
+| 1.2 | 2026-10-06 | v5.2: sosio-ekonomi per KK, pekerjaan baku, stempel desa, upload privat |
+| 1.3 | 2026-10-16 | v5.3: kategori surat & verification_type dihapus; jenis surat data-driven (form_fields, data_action, signature_slots, supporting_template, classification_code); snapshot render; nomor surat per kode klasifikasi; TTD akun & permintaan TTD; lampiran; Terapkan; surat ditahan saat RT kosong; Web Push; jabatan tanpa akun dinamis & foto pejabat; kategori berita; identitas desa & cache halaman publik; register dengan tanggal lahir; paginasi; index performa; Docker |

@@ -1,7 +1,11 @@
 patch:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Edit berita (termasuk toggle Draft <-> Publikasikan)
-  description: "Aktor: Petugas Desa."
+  description: |
+    Aktor: Petugas Desa. Untuk mengganti thumbnail, frontend mengirim
+    `POST /news/{id}` multipart dengan `_method=PATCH` (method spoofing
+    Laravel); tanpa berkas cukup PATCH JSON. `category_ids` opsional (PATCH publish/unpublish tidak
+    mengirimnya); bila dikirim, kategori disinkronkan ulang (1-2 kategori).
   operationId: updateNews
   security:
     - sanctumCookie: []
@@ -15,6 +19,9 @@ patch:
   requestBody:
     required: true
     content:
+      multipart/form-data:
+        schema:
+          $ref: '../../schemas/news/news.yaml#/NewsUpdateRequest'
       application/json:
         schema:
           $ref: '../../schemas/news/news.yaml#/NewsUpdateRequest'

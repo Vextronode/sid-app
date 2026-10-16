@@ -5,14 +5,14 @@ patch:
     Aktor: Petugas Desa.
     UC-23. Untuk rotasi anggota (mengakhiri masa jabatan lama +
     menambah anggota baru), gunakan `POST
-    /village-org-positions/{positionId}/members`, bukan endpoint ini.
+    /village-org-positions/{position}/members`, bukan endpoint ini.
     Endpoint ini murni untuk koreksi/pembaruan data anggota yang sudah
     tercatat.
   operationId: updateVillageOrgMember
   security:
     - sanctumCookie: []
   parameters:
-    - name: positionId
+    - name: position
       in: path
       required: true
       schema:
@@ -75,7 +75,7 @@ delete:
   security:
     - sanctumCookie: []
   parameters:
-    - name: positionId
+    - name: position
       in: path
       required: true
       schema:

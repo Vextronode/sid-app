@@ -1,6 +1,11 @@
 get:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Preview PDF surat sesuai kewenangan view
+  summary: Preview PDF surat (inline) sesuai kewenangan view
+  description: |
+    Diotorisasi LetterPolicy::view (tidak mensyaratkan status approved).
+    Surat yang belum approved dirender dari data hidup dengan Kepala Desa
+    aktif saat ini; surat approved dirender dari snapshot. Di-stream inline
+    (`surat-{id}.pdf`).
   operationId: previewLetterPdf
   security:
     - sanctumCookie: []
@@ -16,10 +21,11 @@ get:
       required: false
       schema:
         type: string
-        enum: [wet, dry]
+        enum: [wet, digital]
+        default: wet
   responses:
     '200':
-      description: PDF preview berhasil digenerate
+      description: PDF preview
       content:
         application/pdf:
           schema:
@@ -28,6 +34,6 @@ get:
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: User tidak berwenang melihat surat
+      $ref: '../../responses/common.yaml#/Forbidden'
     '404':
-      $ref: '../../responses/common.yaml#/NotFound'
+      description: Surat tidak ditemukan atau belum ada Kepala Desa aktif

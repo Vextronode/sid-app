@@ -5,25 +5,25 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 2 dari 5 (+ Appendix) |
-| Status | v5.2 — Kependudukan, Stempel & Pekerjaan |
-| Cakupan | Deskripsi seluruh Use Case aktif MVP (UC-01 s/d UC-24, kecuali yang dipindah ke Appendix) |
+| Status | v5.3 — Surat dinamis, tanda tangan, identitas desa (diselaraskan ke source 2026-10-16) |
+| Cakupan | Deskripsi seluruh Use Case aktif MVP (UC-01 s/d UC-26, kecuali yang dipindah ke Appendix) |
 | UC Next Dev / Tahap 2 (UC-07, UC-11, UC-12, UC-13) | Lihat `TDD-06_Appendix.md` |
-| Dokumen terkait | `TDD-01_Overview_Scope_Roles.md`, `TDD-03_Database_Schema.md`, OpenAPI Spec v5.2 |
+| Dokumen terkait | `TDD-01_Overview_Scope_Roles.md`, `TDD-03_Database_Schema.md`, OpenAPI Spec v5.3 |
 
-> **v5.2 — Kependudukan, Stempel & Pekerjaan:** UC-08, UC-09, dan UC-18 mencerminkan stempel desa, sosio-ekonomi per KK, serta katalog pekerjaan per desa.
-> Referensi kontrak endpoint (request/response, error handling) untuk setiap UC ada di OpenAPI Spec v5.2 — dokumen ini fokus pada alur bisnis.
+> **v5.3:** UC-03 (form dinamis & penanda tangan), UC-04a/04c (surat ditahan, snapshot, notifikasi Terapkan), UC-05/06/08, UC-09 (paginasi), UC-14 (jabatan tanpa akun, foto, reset TTD), UC-16/18/19 (identitas desa, kategori berita), UC-17 (tanggal lahir), UC-21 (field yang dapat diubah) diperbarui. UC baru: **UC-25** Kelola Tanda Tangan & Permintaan Tanda Tangan, **UC-26** Terapkan Perubahan Data Kependudukan dari Surat.
+> Kontrak endpoint ada di OpenAPI Spec v5.3 — dokumen ini fokus pada alur bisnis. Hal yang pernah tertulis tetapi belum ada di source dicatat di `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md`.
 
 ---
 
 ## Ringkasan Use Case
 
-Sistem ini mendefinisikan **22 Use Case aktif di MVP**. Total keseluruhan UC yang pernah didefinisikan sepanjang proyek — termasuk yang dipindah keluar MVP tapi nomornya dipertahankan untuk konsistensi referensi — adalah **26 UC**.
+Sistem ini mendefinisikan **24 Use Case aktif di MVP**. Total UC yang pernah didefinisikan — termasuk yang dipindah keluar MVP tetapi nomornya dipertahankan — adalah **28 UC**.
 
 | Kategori | Jumlah | Daftar |
 |---|---|---|
-| ✅ Aktif di MVP | 22 UC | UC-01, 02, 03, 04a (+ sub-flow notif RW), 04c, 04d, 05, 06, 08, 09, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24 |
+| ✅ Aktif di MVP | 24 UC | UC-01, 02, 03, 04a (+ sub-flow notif RW/Kadus), 04c, 04d, 05, 06, 08, 09, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 |
 | ❌ Non-MVP (nomor dipertahankan, lihat Appendix) | 4 UC | UC-07, UC-11, UC-12, UC-13 |
-| **Total** | **26 UC** | — |
+| **Total** | **28 UC** | — |
 
 > UC-10 sudah terintegrasi ke UC-03. UC-04b (RW Approval) dan UC-04c versi lama (Kadus Approval) sudah dihapus total — perannya digantikan sub-flow notifikasi pasif (dalam UC-04a) dan UC-04c versi baru (Kades/Sekdes Approval).
 
@@ -49,8 +49,8 @@ Main Flow:
 7. Jika `must_change_password=true`, endpoint yang dilindungi mengembalikan 403 berkode `password_change_required` sampai password diganti
 
 Alternative Flow:
-- 3a. Terlalu banyak percobaan gagal → sistem terapkan rate limiting (throttle)
-- 4a. Kredensial salah → sistem tampilkan pesan error, catat failed login attempt ke log
+- 3a. 5 percobaan gagal per kombinasi `username|IP` → login dikunci 1 jam (RateLimiter)
+- 4a. Kredensial salah → pesan error; percobaan gagal dicatat ke log aplikasi (`Log::warning('Failed login attempt')` beserta username, IP, user agent)
 - 4b. Akun nonaktif → sistem tampilkan "Akun tidak aktif, hubungi administrator"
 
 ---
@@ -69,8 +69,9 @@ Main Flow:
 1. User menekan tombol Logout
 2. Sistem menghapus token Sanctum dari sisi server
 3. Sistem menghapus HttpOnly cookie dari browser
-4. Sistem mencatat event logout (timestamp, IP, user agent)
-5. Sistem mengarahkan user ke halaman login
+4. Frontend membersihkan cache data dan mengarahkan user ke beranda/halaman login
+
+> Pencatatan event logout ke audit log **belum diimplementasi** (lihat audit docs).
 
 ---
 
@@ -80,43 +81,33 @@ Main Flow:
 |---|---|
 | Use Case ID | UC-03 |
 | Nama | Input Permohonan Surat |
-| Aktor | Pengguna aktif dengan `citizen_id`, termasuk pejabat yang mengajukan untuk dirinya |
-| Pre-condition | User sudah login, akun aktif dan terhubung ke citizen; jenis surat tersedia (`template != NULL` + `is_active = true`) |
-| Post-condition | Permohonan tersimpan dengan status `pending`, `flow_id` di-snapshot, dan `current_step_order` menunjuk tahap actionable pertama |
+| Aktor | Pengguna aktif dengan `citizen_id` (warga, atau pejabat untuk dirinya) |
+| Pre-condition | Login, akun aktif dan terhubung ke citizen; jenis surat aktif ber-template milik desanya. Bila jenis surat punya slot TTD pemohon, akun sudah membuat tanda tangan (UC-25) |
+| Post-condition | Surat `pending` tersimpan dengan `flow_id` di-snapshot; `current_step_order` = 0 (menunggu tanda tangan) atau step actionable pertama |
 
 Main Flow:
-1. Pemohon membuka menu "Ajukan Permohonan Surat"
-2. Pemohon memilih jenis surat (hanya tampil yang `template != NULL AND is_active = true`)
-3. Sistem menampilkan persyaratan berdasarkan `verification_type` jenis surat:
-   - `auto` → sistem otomatis validasi jika NIK warga terdaftar, lanjut submit
-   - `manual` → sistem tampilkan checklist persyaratan, warga wajib konfirmasi kelengkapan
-   - `document` → sistem tampilkan form upload dokumen pendukung; wajib diisi sebelum submit
-4. Sistem mengambil data pemohon dari `auth()->user()->citizen` secara otomatis
-5. Pemohon melengkapi form (keperluan, catatan tambahan)
-6. Jika `verification_type = document` → pemohon upload dokumen pendukung
-7. Warga submit permohonan
-8. Sistem memvalidasi semua input (field wajib, format)
-
-> **Catatan (diverifikasi terhadap source 2026-10-06):** `letter_types.verification_type` hanya disimpan sebagai atribut (`LetterType::$fillable`); `StoreLetterRequest`/`LetterService` tidak memberlakukan perilaku `auto`/`manual`/`document` di server, dan `attachments` hanya divalidasi (pdf/jpg/jpeg/png, maks 2048 KB) tanpa disimpan. Langkah 3 dan 6 di atas adalah perilaku yang diharapkan dari sisi klien dan **belum ditegakkan backend** (Planned).
-9. Sistem memilih tahap awal: tahap non-final dilewati hanya bila approver aktif tersedia dan seluruh approver eligible adalah pemohon; tahap kosong tidak dilewati. Tahap final tidak pernah dilewati dan harus memiliki approver eligible selain pemohon.
-10. Sistem mengambil `letter_types.flow_id` dan meng-*snapshot*-nya ke `letters.flow_id` (dikunci, bukan live-reference — lihat `TDD-03_Database_Schema.md` Section 3)
-11. Sistem menyimpan data dalam `DB::transaction()`:
-    - `citizen_id` = `auth()->user()->citizen_id`
-    - `submitted_by` = `auth()->user()->id` (role apa pun yang memenuhi syarat)
-    - NIK dienkripsi AES-256 → `applicant_nik`
-    - SHA-256 dari NIK plaintext → `applicant_nik_hash`
-    - `status = pending`, `submitted_at = now()`
-    - `flow_id` = snapshot, `current_step_order` = tahap actionable pertama
-    - Membuat placeholder `letter_approvals` untuk step aktif dengan `approved_by = NULL`, `action = NULL`, dan deadline sesuai setting level
-    - INSERT ke `letter_status_logs` (status: pending, actor_id, IP)
-12. Sistem men-dispatch notifikasi ke approver tahap awal
-13. Sistem menampilkan konfirmasi sukses kepada pemohon
+1. Pemohon membuka "Ajukan Surat" dan memilih jenis surat (hanya `template != NULL AND is_active = true`, desa yang sama).
+2. Frontend membangun form dari `letter_types.form_fields` (text, textarea, date, number, nik, select, file) dan `signature_slots`.
+3. Data pemohon (nama, NIK, alamat) diambil otomatis dari citizen akun; `purpose` dan `notes` tidak lagi diisi (keperluan menjadi isian bila diperlukan jenis surat).
+4. Pemohon mengisi isian, mengunggah berkas isian bertipe file (PDF/JPG/PNG, atau JPG/PNG bila `accept: image`; maks 2 MB), dan untuk tiap slot pihak lain mengisi NIK penanda tangan **atau** nama + foto dokumen ber-TTD basah.
+5. Server memvalidasi isian terhadap definisi jenis surat (isian tak dikenal ditolak; tipe dan wajib diperiksa).
+6. Dalam `DB::transaction()` sistem:
+   - menyimpan surat (`status = pending`, `submitted_at`, `flow_id` snapshot, NIK terenkripsi + hash) dan log "Permohonan surat dibuat";
+   - menyimpan berkas isian ke disk privat (`letter_attachments`, kind `field`);
+   - mengisi slot TTD: slot pemohon langsung `signed` dari TTD akun; slot pihak lain → permintaan TTD digital ke pemilik NIK (`pending`, kedaluwarsa 7 hari, notifikasi `signature_requested`) atau TTD basah (`signed`).
+7. Bila masih ada slot belum `signed` → `current_step_order = 0` + log "Menunggu tanda tangan pihak terkait"; surat belum terlihat approver. Setelah semua slot terisi (UC-25), langkah 8 dijalankan otomatis.
+8. Sistem memilih tahap awal: tahap non-final yang semua pejabat eligible-nya adalah pemohon dilewati (log); bila RT wilayah pemohon **kosong**, surat ditahan di step RT (log "Surat ditahan…") dan Petugas Desa menerima notifikasi `approver_vacant`; bila tahap final tidak punya approver selain pemohon → 422.
+9. Sistem membuat placeholder `letter_approvals` untuk step aktif (deadline dari `approval_settings`) dan mengirim notifikasi `pending` ke approver.
+10. Respons 201 berisi detail surat.
 
 Alternative Flow:
-- 6a. Ukuran file dokumen melebihi batas → error "File terlalu besar"
-- 8a. Validasi gagal → tampilkan pesan error per field; tidak menyimpan data
-- 9a. Tidak ada approver eligible pada tahap final → submit ditolak; pemohon tidak boleh menyetujui suratnya sendiri
-- 9b. Jika tahap RT dilewati, RW dan Kadus tidak menerima FYI
+- 5a. Validasi gagal → 422 per field; tidak ada data/berkas tersimpan.
+- 6a. TTD pemohon belum dibuat untuk slot `applicant` → 422.
+- 6b. NIK penanda tangan = NIK pemohon, pemohon diblokir pemilik NIK, atau sudah 3× ditolak NIK itu dalam 24 jam → 422 dengan pesan seragam ("tidak dapat dikirim saat ini").
+- 6c. Kegagalan di tengah transaksi → berkas yang sudah tertulis dihapus.
+- 8a. Jika tahap RT dilewati, RW dan Kadus tidak menerima FYI.
+
+> Jenis surat bawaan seeder (A01–A10) belum memakai `signature_slots`; alur tanda tangan aktif begitu developer menambahkan slot pada jenis surat.
 
 ---
 
@@ -131,9 +122,9 @@ Alternative Flow:
 | Post-condition | Status surat berubah (`in_progress` / `rejected`), log tercatat, notifikasi terkirim |
 
 Main Flow:
-1. RT membuka daftar seluruh surat dari wilayahnya; keputusan hanya tersedia untuk surat yang step aktifnya masih RT
+1. RT membuka daftar seluruh surat dari wilayahnya (berpaginasi); keputusan hanya tersedia untuk surat yang step aktifnya masih RT
 2. RT membuka detail permohonan
-3. RT memeriksa data pemohon dan keperluan surat
+3. RT memeriksa data pemohon, isian form, lampiran, status tanda tangan, dan dokumen pendukung (bila ada)
 4. RT memilih tindakan: Setujui atau Tolak
 5. RT mengisi catatan keputusan (wajib jika menolak)
 6. Sistem memvalidasi bahwa RT berwenang atas wilayah surat ini (via OfficialService, cek `rt_id`)
@@ -141,12 +132,13 @@ Main Flow:
    - Jika SETUJUI: perbarui placeholder approval step RT dengan aktor/aksi; pindahkan `current_step_order` ke step berikutnya, set `status = in_progress`, dan buat placeholder approval berikutnya beserta deadline
    - Jika TOLAK: perbarui placeholder approval RT; set `status = rejected`, `rejected_at_step` = step RT, isi `processed_at` (terminal)
    - INSERT ke `letter_status_logs` (old: pending, new: in_progress/rejected, actor_id, IP)
-8. Jika approve pada tahap RT: sistem mengirim FYI ke RW dan Kadus sesuai wilayah surat, serta notifikasi ke tahap berikutnya; tidak ada FYI jika tahap RT dilewati
-9. Jika reject: sistem dispatch notifikasi ke Warga (TERMINAL)
+8. Jika approve pada tahap RT: sistem mengirim FYI ke RW (`rt_approved_rw_fyi`) dan Kadus (`rt_approved_kadus_fyi`) sesuai wilayah pemohon, notifikasi ke approver berikutnya dan ke pemohon (`rt_approved`); tidak ada FYI jika tahap RT dilewati
+9. Jika reject: notifikasi `rt_rejected` ke pemohon (TERMINAL)
 10. Sistem menampilkan konfirmasi keputusan ke RT
 
 Authorization:
-- Hanya RT yang `rt_id`-nya sesuai dengan wilayah warga pemohon yang boleh approve
+- Hanya RT yang `rt_id`-nya sesuai dengan wilayah warga pemohon yang boleh approve; RT tidak dapat memutuskan surat miliknya sendiri
+- Surat yang ditahan karena RT kosong menunggu sampai Petugas Desa menetapkan RT (UC-14); RT baru langsung menerima notifikasi surat yang menunggunya
 - 5a. RT memilih Tolak tanpa catatan → sistem meminta catatan wajib diisi
 
 ### Sub-flow: Notifikasi RW (Side-Effect, Non-Blocking)
@@ -183,9 +175,9 @@ Main Flow:
 3. User memilih Setujui/Tolak, isi catatan jika menolak
 4. Sistem mengunci row surat di dalam transaksi dan memeriksa ulang status serta step aktif `kepala_desa`; keputusan kedua ditolak dengan 409.
 5. Sistem memperbarui placeholder `letter_approvals` untuk step aktif dengan aktor, level, aksi, dan catatan keputusan.
-6. Jika SETUJUI pada step final: tetapkan `letter_number`, hitung `expires_at` dari `validity_days`, lalu status `approved`.
-7. Jika TOLAK: status jadi `rejected`, `rejected_at_step` dicatat (TERMINAL).
-8. Notifikasi hasil akhir kepada pemohon serta notifikasi siap cetak kepada Kasi/Kaur terkait
+6. Jika SETUJUI pada step final: status `approved`, `letter_number` = `{classification_code}/{NNN}/Des/{bulan Romawi}/{tahun}` (counter per desa + kode klasifikasi + tahun), `expires_at` dari `validity_days`, `processed_at`; lalu **snapshot render** dibekukan (`letters.snapshot`, `signed_by_official_id` = Kepala Desa aktif, juga bila Sekdes yang menyetujui).
+7. Jika TOLAK: status jadi `rejected`, `rejected_at_step` dicatat (TERMINAL), notifikasi `kepala_desa_rejected`.
+8. Notifikasi `letter_approved_final` ke pemohon; Kasi/Kaur sesuai `assigned_role` menerima `letter_needs_fulfillment` (jenis surat ber-`data_action`, lanjut UC-26) atau `letter_ready_for_print`.
 
 Catatan:
 1. Keputusan Kades/Sekdes memakai row lock (`lockForUpdate`) di dalam transaksi; keputusan pertama yang berhasil diproses menang dan request berikutnya ditolak dengan 409.
@@ -209,9 +201,10 @@ Main Flow:
 1. Setelah final approve, sistem memilih penerima Kasi/Kaur dari `letter_types.assigned_role`; nilai NULL berarti kedua role.
 2. Kasi/Kaur membuka daftar surat selesai sesuai assignment.
 3. Kasi/Kaur membaca detail dan mengunduh PDF bila diperlukan.
+4. Bila surat menandai `needs_fulfillment`, Kasi/Kaur menjalankan UC-26 (Terapkan).
 
 Authorization:
-- Hanya surat approved sesuai assignment dapat diakses Kasi/Kaur
+- Hanya surat approved di desanya sesuai assignment dapat diakses Kasi/Kaur
 - Tidak tersedia aksi approve/reject bagi Kasi/Kaur
 
 ---
@@ -222,23 +215,22 @@ Authorization:
 |---|---|
 | Use Case ID | UC-05 |
 | Nama | Lihat Daftar Surat |
-| Aktor | Warga, RT, RW, Kadus (read-only, tanpa hak approval), Kasi Pelayanan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
+| Aktor | Warga, RT, RW, Kadus, Kasi Pelayanan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
 | Pre-condition | User sudah login |
-| Post-condition | Sistem menampilkan daftar surat sesuai hak akses dan filter yang dipilih |
+| Post-condition | Daftar surat berpaginasi sesuai scope role dan filter |
 
 Main Flow:
-1. User membuka menu Daftar Surat
-2. Sistem mengambil data surat
-3. Filter tampilan berdasarkan role:
-    - RT: surat wilayahnya, status `pending` (step aktif = rt)
-    - RW: surat yang lewat FYI (read-only, tidak ada filter status aktif — RW bukan approver)
-    - Kepala Desa / Sekretaris Desa: surat yang menunggu tahap final; surat milik user dikecualikan dari dashboard
-    - Kasi/Kaur: surat `approved` sesuai `letter_types.assigned_role`; NULL memberi akses ke kedua role
-    - Petugas Desa: SEMUA surat tanpa filter status (full visibility pipeline)
-    - Kadus: tidak memiliki filter approval khusus; jika ditampilkan sama sekali, hanya sebagai referensi struktur wilayah non-approval
-4. User dapat memfilter berdasarkan: status (sesuai role), jenis surat, periode, nama pemohon
-5. Sistem menampilkan daftar dengan informasi: nomor surat, pemohon, jenis, status, tanggal
-6. Sistem menampilkan badge 'overdue' jika `is_overdue = true`
+1. User membuka menu Daftar Surat (atau "Surat Saya" dengan `scope=mine`).
+2. Backend menerapkan scope role:
+    - Warga / `scope=mine`: surat yang diajukan sendiri
+    - RT: semua surat warga di RT-nya
+    - RW / Kadus: surat di wilayah RW / dusunnya yang sudah di-approve RT (read-only)
+    - Kepala Desa / Sekretaris Desa: surat di desanya yang sudah di-approve RT atau melewati tahap RT
+    - Kasi/Kaur: surat `approved` sesuai `letter_types.assigned_role` (NULL = keduanya)
+    - Petugas Desa: semua surat di desanya
+3. Filter: status, jenis surat, rentang tanggal (`from`/`to` atau `submitted_from`/`submitted_to` dengan zona waktu klien), pencarian (nama pemohon, nomor surat, nama warga), nama pemohon; paginasi `page`/`per_page` (default 20, maks 100).
+4. Sistem menampilkan nomor surat, pemohon, jenis, status, tahap aktif, tanggal, badge overdue (`is_overdue` dihitung saat dimuat), penanda "menunggu tanda tangan" dan "perlu diterapkan".
+5. Kartu ringkasan dashboard memakai `GET /letters/summary` (total, per status, overdue, per jenis, per periode hari/minggu/bulan) atas scope yang sama.
 
 ---
 
@@ -254,7 +246,7 @@ Main Flow:
 
 Main Flow:
 1. User memilih surat dari daftar
-2. Sistem mengambil data surat beserta relasi (`letter_type`, `statusLogs`, `approvals`)
+2. Sistem mengambil data surat beserta relasi (`letter_type`, `statusLogs`, `approvals`, `attachments`, `signatures`, `flow.steps`); otorisasi LetterPolicy::view
 3. Sistem menampilkan:
    - Detail data pemohon (nama, NIK ter-mask, keperluan)
    - Status terkini dengan badge warna (`pending` / `in_progress` / `approved` / `rejected`) — detail "sedang di step mana" dilihat dari `current_step_order` + JOIN ke `flow_steps`
@@ -264,7 +256,10 @@ Main Flow:
    - Timeline riwayat: setiap perubahan status + timestamp + aktor + catatan + IP
    - Badge 'overdue' jika deadline terlewati
    - Informasi approval Kades/Sekdes (jika sudah diproses)
-4. Tombol Download PDF muncul jika status = `approved`. Pemohon (role apa pun) ditolak jika `expires_at` telah lewat; role lain tetap mengikuti Policy.
+   - Isian form (`payload`), lampiran (dibuka lewat endpoint terproteksi), status tiap slot tanda tangan
+   - Tombol dokumen pendukung bila `has_supporting_document`
+4. Tombol Download PDF muncul jika status = `approved`. Pemohon (role apa pun) ditolak jika `expires_at` telah lewat; role lain mengikuti LetterPolicy::download.
+5. Bila `awaiting_signatures`, pemohon dapat mengisi ulang slot yang ditolak/kedaluwarsa (UC-25).
 
 ---
 
@@ -284,17 +279,18 @@ Main Flow:
 3. Backend melakukan pengecekan:
    - Jika user adalah pemohon (`submitted_by = user.id`): cek `expires_at` tanpa membedakan role
    - Kasi/Kaur hanya dapat mengakses surat approved yang sesuai `assigned_role`
-4. Sistem mengambil template dari `letter_types.template` (HTML Blade)
-5. Sistem inject data: nomor surat, data pemohon, keperluan, tanggal
-6. Sistem mengambil TTD dari Kepala Desa aktif (termasuk jika Sekdes yang menyetujui) dan stempel dari `villages.stamp_img`.
-7. `barryvdh/laravel-dompdf` generate PDF dari template yang sudah diisi data
-8. Sistem mengembalikan binary PDF langsung (tidak disimpan file di server)
+4. Sistem mengambil konteks render dari **`letters.snapshot`** (dibekukan saat final approve: template, definisi isian, kop & identitas desa, path stempel, nama & path TTD Kepala Desa penanda tangan, tanggal terbit). Surat approved lama tanpa snapshot dibekukan saat unduhan pertama.
+5. Sistem mengganti placeholder: nomor surat, data pemohon, kop desa, isian form (diformat: tanggal, rupiah + terbilang, pilihan), slot TTD (`ttd_{slot}`, `nama_ttd_{slot}`); nilai teks di-escape.
+6. Template `wet` (default) hanya stempel desa; `digital` juga menempelkan TTD Kepala Desa.
+7. `barryvdh/laravel-dompdf` generate PDF; binary dikirim langsung (tidak disimpan).
 
 Alternative Flow:
 - 3a. Status bukan `approved` → tombol Download tidak muncul
 - 3b. Pemohon dengan `expires_at` sudah lewat → 403, apa pun role pemohon
 
-**Alasan struktural (bukan sekadar hemat storage):** PDF yang persisten berisiko menjadi *stale* jika data surat berubah setelah digenerate (misal koreksi nama pemohon), dan menambah kompleksitas manajemen storage/cleanup yang tidak sepadan untuk traffic desa kecil.
+**Alasan struktural:** PDF tidak disimpan, tetapi isi surat approved dibekukan lewat snapshot sehingga penggantian Kepala Desa/TTD, perubahan template, atau perubahan data warga tidak mengubah surat yang sudah terbit.
+
+**Sub-flow - Dokumen Pendukung:** bila jenis surat memiliki `supporting_template`, siapa pun yang berhak melihat surat dapat mempratinjau/mengunduh dokumen pendukung (mis. surat pernyataan) yang digenerate dari isian dan tanda tangan, tanpa TTD Kepala Desa.
 
 ---
 
@@ -304,7 +300,7 @@ Alternative Flow:
 |---|---|
 | Use Case ID | UC-09 |
 | Nama | Kelola Data Warga (CRUD Citizens) |
-| Aktor | Petugas Desa |
+| Aktor | Petugas Desa (kelola); Kasi Pelayanan & Kaur TU & Umum hanya melihat daftar |
 | Pre-condition | Petugas Desa sudah login |
 | Post-condition | Data warga berhasil dibuat / diupdate di tabel `citizens` |
 
@@ -328,9 +324,13 @@ Alternative Flow:
 3. Sistem menyimpan perubahan
 
 **Main Flow - Lihat & Cari Warga:**
-1. Petugas membuka menu "Data Warga"
-2. Petugas dapat mencari berdasarkan: nama (LIKE) atau NIK (di-convert ke hash)
-3. Sistem menampilkan daftar dengan: nama, NIK ter-mask, alamat, status
+1. Petugas (atau Kasi/Kaur, read-only) membuka menu "Data Warga"
+2. Daftar berpaginasi di database (default 20, maks 100 per halaman); dapat dicari berdasarkan nama (case-insensitive) dan difilter per RT
+3. Sistem menampilkan daftar dengan: nama, NIK ter-mask, wilayah, pekerjaan, KK, status; `total` = jumlah seluruh hasil
+
+> Pencarian berdasarkan NIK pada daftar warga belum diimplementasi (lihat audit docs).
+
+**Catatan perubahan data lewat surat:** perubahan tertentu yang diajukan warga (mis. meninggal dunia, kelahiran anak) masuk lewat jenis surat ber-`data_action` dan diterapkan Kasi/Kaur/Petugas di UC-26; aturan nilainya sama dengan form data warga ini.
 
 **Main Flow - Import Excel:**
 1. Petugas memilih "Import Data Warga dari Excel"
@@ -388,10 +388,23 @@ Main Flow:
 - File PNG/JPEG/WebP maksimum 5 MB disimpan pada private storage; preview binary melalui `GET` pada endpoint yang sama hanya tersedia bagi Petugas Desa desa terkait dan Kepala Desa aktif yang belum mengakhiri masa jabatan.
 - Upload ulang mengganti file TTD pada record aktif yang sama. Alur upload terpisah dari operasi rotasi.
 
+**Sub-flow - Penetapan pejabat (promote) & rotasi:**
+- Petugas mencari calon lewat NIK (`POST /officials/candidates/lookup`); sistem menilai kelayakan (warga aktif, belum menjabat; jabatan berakun mensyaratkan akun warga aktif).
+- Jabatan **berakun** (Kepala Desa, Sekdes, RT, RW, Kadus, Kasi Pelayanan, Kaur TU & Umum, Petugas Desa) ditetapkan ke akun warga dan mengubah `users.role`. Jabatan **tanpa akun** (jenis dari `official_position_types`) ditetapkan ke data warga tanpa mengubah role.
+- Foto pejabat **wajib** (PNG/JPG/WebP maks 5 MB, disk publik, tampil di Profil Desa); dapat diganti tanpa rotasi lewat `POST /officials/{official}/photo`.
+- Jabatan satu-pemegang per wilayah ditolak 409 bila sudah terisi.
+- Rotasi: pengganti mengikuti jenis jabatan lama (akun atau data warga), posisi & wilayah disalin.
+
+**Sub-flow - Kelola Jenis Jabatan Tanpa Akun:**
+- Petugas menambah jenis jabatan (kode dibuat otomatis dari label dan tidak dapat diubah), mengubah label/urutan/satu-pemegang/aktif, atau menghapus.
+- Menonaktifkan ditolak selama masih dijabat; menjadi satu-pemegang ditolak bila dijabat lebih dari 1 orang; hapus ditolak bila pernah dipakai (nonaktifkan saja).
+
+**Sub-flow - Reset Tanda Tangan Akun:**
+- Petugas Desa mereset TTD pribadi akun di desanya dengan alasan (5-500 karakter). Baris lama ditandai revoked (berkas dipertahankan), dicatat di activity log; pemilik akun dapat membuat TTD baru.
+
 Alternative Flow:
-- Email sudah terdaftar → error "Email sudah digunakan"
-- `citizen_id` tidak ditemukan → error "Data kependudukan tidak ditemukan"
-- Guard: Petugas Desa tidak bisa nonaktifkan diri sendiri, dan tidak bisa nonaktifkan satu-satunya `petugas_desa` aktif yang tersisa
+- NIK calon tidak ditemukan di desa → 404; calon tidak memenuhi syarat → `eligible: false` beserta alasan
+- Guard: Petugas Desa tidak bisa nonaktifkan diri sendiri, dan tidak bisa menurunkan/menonaktifkan satu-satunya `petugas_desa` aktif yang tersisa
 
 > Meski Kadus tetap dicantumkan dalam daftar jabatan yang dikelola di UC-14, Kadus tidak lagi punya relevansi terhadap `flow_steps.approver_position`.
 
@@ -425,6 +438,8 @@ Main Flow:
 
 **Dashboard Kepala Desa / Sekretaris Desa:** Menampilkan surat yang menunggu tahap final, dengan surat milik user dikecualikan.
 
+**Kartu ringkasan:** semua role memakai `GET /letters/summary` (total, per status, overdue, per jenis, per periode) atas scope daftar suratnya. Statistik gender (`/dashboard/gender-stats`) dan grafik surat mingguan (`/dashboard/letter-stats`) tersedia per scope wilayah.
+
 > Daftar dan detail surat Kadus memakai endpoint bersama. Scope wilayah dibatasi ke dusun pejabat aktif dan hanya mencakup surat yang sudah disetujui RT; `scope=mine` juga tersedia.
 
 ---
@@ -443,17 +458,19 @@ Main Flow:
 1. Pengunjung membuka URL sistem
 2. Sistem menampilkan halaman beranda sebagai landing page (tanpa memerlukan login)
 3. Pengunjung dapat mengakses:
-   - Beranda — sambutan kepala desa, info singkat desa, statistik publik
-   - Profil Desa — sejarah, visi misi, struktur pemerintahan desa
-   - Pengumuman & Berita — daftar berita/pengumuman yang sudah dipublikasikan
+   - Beranda — identitas desa (logo, foto beranda, kontak, jam layanan, peta), 5 berita terbaru, statistik publik (jenis surat aktif, jumlah warga aktif, jumlah dusun aktif)
+   - Profil Desa — sejarah, visi misi, luas wilayah, statistik, perangkat desa (Kepala Desa, Sekdes, grup Kasi/Kaur/Staf termasuk slot kosong, Kepala Dusun per dusun) dengan foto
+   - Pengumuman & Berita — berita yang sudah dipublikasikan beserta kategorinya (10 per halaman)
    - Info Jenis Surat — daftar jenis surat yang tersedia beserta persyaratannya
    - Peraturan Desa — daftar peraturan desa yang sudah dibuat
    - Hubungi Kami — nomor WA dari `officials` dengan `position IN ('kasi_pelayanan', 'kaur_tu_umum')` yang `is_active=true`
 4. Semua konten halaman publik hanya dapat dibaca (read-only)
 
 Notes:
-- Konten diambil dari tabel `news` (`is_published = true`) dan `letter_types` (`is_active = true`)
-- Tidak ada data sensitif warga yang ditampilkan di halaman publik
+- Konten diambil dari `villages`, `news` (`is_published = true`), `letter_types` (aktif ber-template), `village_regulations`, `officials` aktif
+- Respons di-cache per desa 10 menit dan digugurkan otomatis saat data sumber berubah
+- Instalasi multi-desa wajib `village_code`; instalasi satu desa tidak
+- Tidak ada data sensitif warga (NIK, kontak pejabat selain WA Kasi/Kaur) yang ditampilkan
 
 ---
 
@@ -465,17 +482,18 @@ Notes:
 | Nama | Register Akun Warga |
 | Aktor | Calon pengguna (Warga Cibenda) |
 | Pre-condition | Calon pengguna belum memiliki akun; NIK aktif terdaftar di tabel `citizens` |
-| Post-condition | Akun aktif tercipta dan sesi dimulai; respons 201 menampilkan username otomatis |
+| Post-condition | Akun aktif tercipta; respons 201 menampilkan username otomatis. Register tidak membuat sesi — warga login dengan username (UC-01) |
 
 Main Flow:
 1. Warga membuka halaman registrasi
-2. Warga mengisi NIK (16 digit), password, dan konfirmasi password
-3. Sistem memvalidasi NIK, password, dan rate limit registrasi
+2. Warga mengisi NIK (16 digit), tanggal lahir, password, dan konfirmasi password
+3. Sistem memvalidasi input dan rate limit registrasi (5/menit per IP, 10/jam per hash NIK)
 4. Sistem generate SHA-256 dari NIK → cari di `citizens.nik_hash`
 5. Jika NIK tidak ditemukan → error "NIK tidak terdaftar sebagai warga Desa Cibenda"
 6. Jika NIK ditemukan tapi sudah punya akun → error "NIK sudah terdaftar, silakan login"
-7. Jika NIK ditemukan dan belum punya akun: INSERT user dengan nama dari citizen, role `warga`, username otomatis unik `namadepan.NNNN`, dan aktif
-8. Sistem membuat sesi dan mengembalikan 201 berisi `username` dan `name`
+6a. Jika tanggal lahir tidak sama dengan `citizens.date_of_birth` → error "Tanggal lahir tidak sesuai dengan data kependudukan" (verifikasi kedua selain NIK)
+7. Jika NIK ditemukan, tanggal lahir cocok, dan belum punya akun: INSERT user dengan nama dari citizen, role `warga`, username otomatis unik `namadepan.NNNN`, dan aktif
+8. Sistem memicu event `Registered` dan mengembalikan 201 berisi `username` dan `name` (tanpa membuat sesi)
 9. User dapat mengganti username melalui `PATCH /api/profile`; email bersifat opsional. Password dapat diganti melalui `PUT /api/profile/password`.
 
 Alternatif Flow:
@@ -499,8 +517,9 @@ Alternatif Flow:
 
 Main Flow:
 1. User membuka menu "Profil Desa"
-2. Sistem menampilkan data profil desa saat ini: nama desa, kode desa, nama Kepala Desa, sejarah singkat, visi misi, alamat kantor, nomor telepon, struktur pemerintahan, dan indikator ketersediaan stempel.
-3. User memilih "Edit Profil Desa", mengubah data profil, lalu menyimpan form profil (field gambar tidak diisi melalui form ini).
+2. Sistem menampilkan data profil desa saat ini: nama, kode, nama Kepala Desa, alamat, telepon, email, kecamatan/kabupaten/provinsi/kode pos (kop surat), luas wilayah (ha), sejarah, visi, misi, jam layanan, tautan peta, kredit foto, logo, foto beranda, dan indikator stempel.
+3. User mengubah data profil lalu menyimpan (gambar diunggah lewat operasi terpisah). Data kop surat dipakai PDF; identitas dipakai header/footer aplikasi dan halaman publik.
+3a. Logo (maks 2 MB) dan foto beranda (maks 5 MB) diunggah terpisah, disimpan di disk publik setelah dioptimasi (diperkecil, WebP); unggahan lama dihapus, aset bawaan seeder tidak disentuh.
 4. Untuk menambah atau mengganti stempel, User mengunggah file PNG/JPEG/WebP maksimum 5 MB melalui operasi upload terpisah.
 5. File disimpan di private storage; API menyimpan path dan menyediakan preview binary melalui endpoint yang memerlukan autentikasi serta scope Petugas Desa pada desanya.
 6. Sistem menampilkan konfirmasi; profil publik hanya menerima indikator `has_stamp_img`, bukan path private atau URL file.
@@ -529,7 +548,7 @@ Notes:
 
 **Main Flow - Tambah Berita:**
 1. User membuka menu "Berita & Informasi" → "Tambah Berita Baru"
-2. User mengisi form: judul (wajib), konten (wajib, rich text), thumbnail (opsional), status Draft/Publikasikan
+2. User mengisi form: judul (wajib), konten (wajib), 1-2 kategori berita (wajib), thumbnail (opsional, maks 2 MB), status Draft/Publikasikan
 3. Sistem generate slug otomatis dari judul
 4. Sistem memvalidasi: judul & konten wajib diisi, slug unik
 5. Sistem menyimpan ke tabel `news` (`author_id` = user login, `is_published`, `published_at` jika langsung dipublikasikan)
@@ -537,7 +556,9 @@ Notes:
 
 **Main Flow - Edit / Hapus Berita:** Toggle status Draft ↔ Publikasikan; hapus = soft delete, berita tidak lagi tampil di publik.
 
-**Main Flow - Lihat Daftar Berita:** Semua berita (Draft & Publikasi) milik desa, dapat difilter berdasarkan status dan periode.
+**Main Flow - Lihat Daftar Berita:** Semua berita (Draft & Publikasi) milik desa, dapat difilter berdasarkan status (`draft`/`published`). Filter periode belum diimplementasi.
+
+**Sub-flow - Kelola Kategori Berita:** tambah/ubah nama (slug otomatis, unik per desa), hapus hanya bila belum pernah dipakai berita (termasuk berita yang sudah dihapus); kategori menampilkan jumlah pemakaian. Seeder menyediakan 8 kategori default.
 
 Alternatif Flow:
 - Judul kosong → error "Judul berita wajib diisi"
@@ -578,12 +599,12 @@ Catatan: 5 Dusun Desa Cibenda (Patrol, Sinargalih, Cibenda, Budiasih, Sucen) di-
 | Catatan Penting | Template HTML dan form field adalah developer-only via seeder. Tambah/hapus/ubah template → Next Dev Paket 1 (lihat Appendix). |
 
 Main Flow:
-- Petugas membuka menu "Tipe Surat" — sistem menampilkan daftar dengan badge Draft/Aktif/Nonaktif
-- Petugas memilih tipe surat → klik Edit
-- Petugas hanya bisa mengubah: `validity_days`, `assigned_role`, `category_id`, `flow_id`, toggle `is_active`
-- Sistem menyimpan perubahan ke `letter_types`
+- Petugas membuka pengaturan jenis surat; daftar berasal dari `GET /letter-types` yang hanya berisi jenis aktif ber-template
+- Petugas mengubah: `validity_days` (minimal 1 atau kosong), `assigned_role` (Kasi Pelayanan / Kaur TU & Umum / keduanya), toggle `is_active`
+- Sistem menyimpan perubahan ke `letter_types` dan menggugurkan cache halaman publik
+- Petugas dapat melihat flow approval (read-only) di halaman Approval Flows
 
-> `category_id`/`flow_id` sudah bisa diedit Petugas Desa (agar bisa memindahkan tipe surat ke flow approval lain tanpa developer), namun pembuatan tipe surat baru dan `template` tetap developer-only via seeder di MVP.
+> Flow, template, isian form, slot tanda tangan, aksi data, dokumen pendukung, dan kode klasifikasi diset developer lewat seeder; tidak ada endpoint untuk mengubahnya. Daftar dengan badge Draft/Nonaktif untuk mengaktifkan kembali jenis surat yang dinonaktifkan belum tersedia (lihat audit docs).
 
 ---
 
@@ -616,13 +637,13 @@ Catatan: Jika deadline terlewat, surat **tidak** auto-reject — hanya `is_overd
 | Nama | Kelola Data Organisasi Desa |
 | Aktor | Petugas Desa |
 | Pre-condition | Petugas Desa sudah login |
-| Catatan Pending | Fitur rotasi jabatan aktif/nonaktif ditentukan setelah konfirmasi dari desa (statis atau dinamis). Tabel sudah ada, implementasi fitur menyusul. |
+| Catatan | Rotasi sudah diimplementasi; dapat dimatikan per jabatan dengan menonaktifkan jabatan (`is_active=false` → 403 "menunggu konfirmasi desa"). Keputusan desa soal struktur statis/dinamis tetap terbuka (TDD-05). |
 
 Main Flow:
-- Petugas membuka menu "Organisasi Desa" — UI menampilkan grouping BPD/BUMDES/LPM/Karang Taruna/PKK
-- Petugas klik group → tampil daftar jabatan beserta pemegang jabatan aktif
-- Petugas dapat edit nama, foto, nomor WA pemegang jabatan
-- Jika fitur rotasi aktif: ganti pemegang jabatan (INSERT baru + UPDATE lama `ended_at`)
+- Petugas membuka menu "Organisasi" — halaman BPD dan halaman Lembaga (BUMDES/LPM/Karang Taruna/PKK)
+- Petugas mengelola jabatan per organisasi (label, satu/banyak pemegang, urutan, aktif)
+- Petugas menambah anggota (`POST /village-org-positions/{position}/members`): pada jabatan satu-pemegang, anggota aktif lama otomatis diakhiri (`ended_at` = tanggal mulai anggota baru) dalam satu transaksi
+- Petugas dapat mengubah data anggota (nama, foto, WA, status) atau menghapusnya
 
 ---
 
@@ -643,3 +664,66 @@ Main Flow:
 - Sistem menyimpan ke `village_regulations` dengan `created_by` = user yang login
 
 Catatan: Tidak ada file lampiran di MVP, murni teks.
+
+---
+
+## UC-25: Kelola Tanda Tangan & Permintaan Tanda Tangan
+
+| Field | Keterangan |
+|---|---|
+| Use Case ID | UC-25 |
+| Nama | Kelola Tanda Tangan Pribadi & Permintaan Tanda Tangan |
+| Aktor | Semua pengguna login (pemilik akun, pemohon surat, pemilik NIK yang dimintai tanda tangan) |
+| Pre-condition | User sudah login |
+| Post-condition | TTD pribadi tersimpan; slot tanda tangan surat terisi / ditolak; surat lanjut ke approval bila semua slot terisi |
+
+**Main Flow - Buat Tanda Tangan Pribadi:**
+1. User membuka profil → Tanda Tangan.
+2. User mengunggah gambar TTD (PNG/JPG, maks 512 KB). Sistem menyimpan berkas terenkripsi di disk privat.
+3. TTD tidak dapat diubah sendiri (409 bila sudah ada); reset hanya oleh Petugas Desa (UC-14).
+
+**Main Flow - Menanggapi Permintaan Tanda Tangan:**
+1. Pemilik NIK menerima notifikasi `signature_requested` dan membuka daftar permintaan (`GET /signature-requests`): jenis surat, nama pemohon, label slot, batas waktu.
+2. **Setujui:** pemilik memasukkan kata sandi; TTD pribadinya dibubuhkan ke slot (status `signed`); pemohon menerima `signature_accepted`.
+3. **Tolak:** opsional catatan dan opsi blokir pemohon; slot `rejected`; pemohon menerima `signature_rejected` tanpa identitas penolak.
+4. Bila semua slot surat sudah `signed`, surat otomatis masuk tahap approval pertama (UC-03 langkah 8).
+
+**Main Flow - Pemohon Mengisi Ulang Slot:**
+1. Selama surat `pending` dengan `current_step_order = 0`, pemohon dapat meminta ke NIK lain atau mengunggah foto dokumen ber-TTD basah (nama penanda tangan wajib).
+2. Permintaan yang masih menunggu pada slot itu dibatalkan (`cancelled`).
+
+**Main Flow - Kelola Blokir:** pemilik melihat daftar akun yang diblokir dan dapat mencabut blokir.
+
+Alternative Flow:
+- Kata sandi salah → 422; belum punya TTD pribadi → 422
+- Permintaan sudah kedaluwarsa/dibatalkan → 409
+- Permintaan bukan untuk NIK akun ini → 404
+- Pemohon diblokir atau sudah 3 kali ditolak NIK yang sama dalam 24 jam → permintaan baru ditolak dengan pesan seragam
+
+---
+
+## UC-26: Terapkan Perubahan Data Kependudukan dari Surat
+
+| Field | Keterangan |
+|---|---|
+| Use Case ID | UC-26 |
+| Nama | Terapkan Perubahan Data Kependudukan |
+| Aktor | Kasi Pelayanan / Kaur TU & Umum sesuai `assigned_role` (NULL = keduanya); Petugas Desa sebagai cadangan |
+| Pre-condition | Surat `approved` di desa aktor; jenis surat memiliki `data_action` = `update_citizen` atau `create_citizen`; belum pernah diterapkan |
+| Post-condition | Data `citizens` diubah/ditambah; `letters.fulfilled_at/by` dan `fulfillment` terisi; jejak audit tercatat |
+
+Main Flow:
+1. Aktor menerima notifikasi `letter_needs_fulfillment` dan membuka surat yang ditandai "perlu diterapkan".
+2. Sistem menampilkan usulan: per kolom `data_fields` nilai sekarang (untuk update) dan nilai usulan dari isian warga; kolom bernilai tetap ditandai tidak dapat dikoreksi. Bila subjek bukan pemohon (`data_subject_field`, mis. NIK almarhum), sistem menampilkan apakah warga ber-NIK itu ditemukan.
+3. Aktor mengoreksi nilai bila perlu (termasuk NIK subjek) lalu menekan **Terapkan**.
+4. Sistem mengunci surat, memvalidasi nilai dengan aturan yang sama seperti form data warga, lalu:
+   - `update_citizen`: mengubah kolom yang diizinkan pada warga subjek; bila `is_active` menjadi false (mis. meninggal), akun login warga itu ikut dinonaktifkan dan sesinya dicabut;
+   - `create_citizen`: menambah warga baru (mewarisi RT, dusun, KK, alamat pemohon bila tidak diisi).
+5. Sistem mencatat hasil di `letters.fulfillment`, status log "Perubahan data kependudukan diterapkan", activity log `citizen` (`letter_fulfilled`), dan mengirim notifikasi `letter_fulfilled` ke pemohon.
+
+Alternative Flow:
+- Kolom di luar definisi jenis surat → 422
+- NIK subjek tidak ditemukan di desa → 422 (`subject_nik`)
+- Surat belum approved atau sudah diterapkan → 409
+
+Contoh jenis surat bawaan: **A07 Surat Keterangan Penguburan** (`update_citizen`, menonaktifkan data almarhum) dan **A08 Surat Keterangan Kelahiran** (`create_citizen`, menambah data anak).

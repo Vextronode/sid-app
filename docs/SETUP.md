@@ -18,7 +18,7 @@ Panduan clone dan jalanin project di lokal. Command ditulis untuk **Windows (Pow
 
 - PHP 8.3+ dengan extension `pdo_pgsql` aktif
 - Composer
-- Node.js 18+ (includes npm)
+- Node.js 20.19+ atau 22.12+ (dibutuhkan Vite 8; `docs/deploy` memakai Node 22)
 - PostgreSQL (versi tidak ditetapkan oleh source backend; `DB_CONNECTION=pgsql` saja yang dapat diverifikasi)
 - Git
 
@@ -136,6 +136,12 @@ php artisan serve
 ```
 
 Backend jalan di `http://localhost:8000`.
+
+**Opsional - notifikasi Web Push.** Notifikasi in-app berjalan tanpa konfigurasi tambahan. Untuk push browser: isi `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` di `apps/backend/.env` (buat dengan `php artisan webpush:vapid`), isi `VITE_VAPID_PUBLIC_KEY` yang sama di `apps/frontend/.env`, lalu jalankan worker antrean karena kanal push diantrekan (`QUEUE_CONNECTION=database`):
+
+```powershell
+php artisan queue:work
+```
 
 ---
 

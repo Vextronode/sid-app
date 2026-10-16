@@ -1,0 +1,102 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 01_UC_Warga_v6.puml
+' JUDUL: Use Case - Warga & Pengunjung Publik
+' SUMBER: TDD-02 v5.3 (UC-01/02/03/05/06/08/15/16/17/25) + routes (2026-10-16)
+' CATATAN: Menggantikan 01_UC_Warga_v5.puml. Tambah: tanda tangan & permintaan
+'          tanda tangan (UC-25), notifikasi push, tanggal lahir saat register.
+'==================================================================================
+@startuml UC_Warga_v6
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+  FontName Arial
+}
+title Use Case Diagram - Warga & Pengunjung Publik [v6]
+
+actor "Warga" as WRG
+actor "Pengunjung\n(Publik)" as PUB
+
+rectangle "SIDUTama" {
+  rectangle "Registrasi & Autentikasi" #F0F4FF {
+    usecase "UC-17: Register\n(NIK + tanggal lahir)" as UC_REG
+    usecase "UC-01: Login" as UC_LOGIN
+    usecase "UC-02: Logout" as UC_LOGOUT
+    usecase "Lupa / Reset /\nGanti Password" as UC_PWD
+  }
+  rectangle "UC-16: Halaman Publik" #FCE4EC {
+    usecase "Beranda\n(statistik, berita terbaru)" as UC_P1
+    usecase "Profil Desa\n(perangkat desa)" as UC_P2
+    usecase "Berita berkategori" as UC_P3
+    usecase "Info Jenis Surat" as UC_P4
+    usecase "Peraturan Desa" as UC_P5
+    usecase "Hubungi Kami\n(WA Kasi/Kaur)" as UC_P6
+  }
+  rectangle "Surat" #E8F0FF {
+    usecase "UC-03: Ajukan Surat\n(isian dinamis, berkas,\npenanda tangan)" as UC_SUBMIT
+    usecase "UC-05: Daftar Surat Saya" as UC_LIST
+    usecase "UC-06: Detail & Status\n(lampiran, status TTD)" as UC_DETAIL
+    usecase "UC-08: Unduh PDF" as UC_DL
+  }
+  rectangle "UC-25: Tanda Tangan" #E0F2F1 {
+    usecase "Buat TTD Pribadi (sekali)" as UC_SIG
+    usecase "Setujui / Tolak\nPermintaan TTD" as UC_SIGREQ
+    usecase "Isi Ulang Slot TTD\n(NIK lain / TTD basah)" as UC_REFILL
+    usecase "Kelola Blokir" as UC_BLOCK
+  }
+  rectangle "Notifikasi & Dashboard" #FFF8E1 {
+    usecase "Notifikasi in-app" as UC_NOTIF
+    usecase "Aktifkan Web Push" as UC_PUSH
+    usecase "UC-15: Dashboard" as UC_DASH
+  }
+}
+
+PUB -- UC_P1
+PUB -- UC_P2
+PUB -- UC_P3
+PUB -- UC_P4
+PUB -- UC_P5
+PUB -- UC_P6
+PUB -- UC_REG
+WRG -- UC_LOGIN
+WRG -- UC_LOGOUT
+WRG -- UC_PWD
+WRG -- UC_SUBMIT
+WRG -- UC_LIST
+WRG -- UC_DETAIL
+WRG -- UC_DL
+WRG -- UC_SIG
+WRG -- UC_SIGREQ
+WRG -- UC_REFILL
+WRG -- UC_BLOCK
+WRG -- UC_NOTIF
+WRG -- UC_PUSH
+WRG -- UC_DASH
+
+UC_SUBMIT ..> UC_SIG : <<include>>\n(bila slot pemohon)
+UC_REFILL ..> UC_DETAIL : <<extend>>
+UC_LIST ..> UC_DETAIL : <<include>>
+UC_DETAIL ..> UC_DL : <<extend>>
+UC_SIGREQ ..> UC_BLOCK : <<extend>>
+
+note bottom of UC_SUBMIT
+  Hanya jenis surat aktif ber-template.
+  Pejabat juga dapat mengajukan untuk
+  dirinya (Surat Saya). Surat menunggu
+  semua slot TTD sebelum masuk RT.
+end note
+note right of UC_DL
+  Status approved; pemohon ditolak bila
+  expires_at lewat. PDF dari snapshot
+  (TTD & stempel Kades saat final).
+end note
+@enduml

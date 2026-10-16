@@ -1,0 +1,60 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 04_Sequence_Notifikasi_FYI_WebPush_v6.puml
+' JUDUL: Sequence - Notifikasi FYI RW/Kadus & pengiriman Web Push
+' SUMBER: RtApprovalService::notifyRwFyi/notifyKadusFyi, LetterStatusNotification,
+'         PushSubscriptionController, useWebPushSubscription, push-handler.js
+' CATATAN: Menggantikan 04_Sequence_NotifikasiRW_SideEffect_v5.puml.
+'==================================================================================
+@startuml Sequence_Notifikasi_v6
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ActorBackgroundColor #D6E4F7
+  ArrowColor #2E5FA3
+  ArrowFontSize 10
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+title Sequence - Notifikasi FYI (RW/Kadus) & Web Push [v6]
+
+actor "RW / Kadus" as U
+participant "Browser\n(WebPushControls)" as FE
+participant "Service Worker\n(push-handler.js)" as SW
+participant "PushSubscriptionController" as PSC
+participant "RtApprovalService" as RTS
+participant "OfficialRepository" as OREPO
+participant "LetterStatusNotification" as N
+database "notifications" as NDB
+queue "Queue (database/sync)" as Q
+participant "WebPushChannel" as WP
+participant "Layanan push browser" as PS
+
+== Berlangganan (sekali per perangkat) ==
+U -> FE : Aktifkan notifikasi
+FE -> FE : Notification.requestPermission()\nPushManager.subscribe(VITE_VAPID_PUBLIC_KEY)
+FE -> PSC : POST /api/push-subscriptions {endpoint, keys, content_encoding}
+PSC -> PSC : updatePushSubscription (upsert per endpoint)
+
+== Setelah RT menyetujui ==
+RTS -> OREPO : allActiveRwByRwId(citizen.rt.rw_id)
+RTS -> OREPO : allActiveKadusByHamletId(citizen.hamlet_id)
+loop tiap pejabat aktif
+  RTS -> N : notify(rt_approved_rw_fyi | rt_approved_kadus_fyi)
+end
+note right of RTS
+  Non-blocking: RW/Kadus kosong → dilewati,
+  tidak ada fallback broadcast. Tidak dikirim
+  bila tahap RT dilewati.
+end note
+N -> NDB : kanal database (koneksi sync) setelah commit
+N -> Q : kanal WebPush diantrekan
+Q -> WP : toWebPush(): title, body, tag letter-{id},\ndata.url /buka-notifikasi?surat=..&status=..&mine=..
+WP -> PS : kirim (VAPID)
+PS -> SW : event push
+SW -> U : showNotification
+U -> SW : klik notifikasi
+SW -> FE : buka URL same-origin\n(/buka-notifikasi → daftar surat sesuai peran)
+FE -> FE : GET /api/notifications (in-app tetap tersedia)
+@enduml

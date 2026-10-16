@@ -1,0 +1,45 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Buka lampiran surat
+  description: |
+    Diotorisasi LetterPolicy::view. Lampiran harus milik surat yang sama dan
+    berada di folder surat tersebut pada disk privat
+    (`letter-attachments/{village_id}/{letter_id}/`). Dilayani inline dengan
+    `Content-Type` asli, `X-Content-Type-Options: nosniff`, cache private.
+  operationId: showLetterAttachment
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letter
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    - name: attachment
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    '200':
+      description: Isi berkas
+      content:
+        application/pdf:
+          schema:
+            type: string
+            format: binary
+        image/jpeg:
+          schema:
+            type: string
+            format: binary
+        image/png:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      description: Lampiran tidak ditemukan

@@ -5,8 +5,10 @@ get:
   description: |
     UC-16 extended. Berbeda dengan news, TIDAK ADA konsep is_published -
     begitu dibuat oleh Petugas Desa, selalu tampil di halaman publik.
-    Tidak berubah dari v4.2.
+    Cache per desa (10 menit); 404 bila belum ada peraturan.
   operationId: getPublicRegulations
+  parameters:
+    - $ref: '../../parameters/common.yaml#/VillageCode'
   responses:
     '200':
       description: Daftar peraturan desa berhasil diambil

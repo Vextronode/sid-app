@@ -64,17 +64,17 @@ Family:
       nullable: true
       example: 5
     village:
-      nullable: true
-      $ref: '../villages/villages.yaml#/Village'
+      allOf:
+        - $ref: '../villages/villages.yaml#/Village'
     rt:
-      nullable: true
-      $ref: '../wilayah/wilayah.yaml#/Rt'
+      allOf:
+        - $ref: '../wilayah/wilayah.yaml#/Rt'
     rw:
-      nullable: true
-      $ref: '../wilayah/wilayah.yaml#/Rw'
+      allOf:
+        - $ref: '../wilayah/wilayah.yaml#/Rw'
     hamlet:
-      nullable: true
-      $ref: '../wilayah/wilayah.yaml#/Hamlet'
+      allOf:
+        - $ref: '../wilayah/wilayah.yaml#/Hamlet'
     created_at:
       type: string
       format: date-time
@@ -134,22 +134,6 @@ FamilyUpdateRequest:
       type: integer
       nullable: true
       example: 1
-
-FamilyMemberAddRequest:
-  type: object
-  required: [citizen_id, family_role]
-  description: |
-    Menautkan warga (sudah ada di citizens) ke KK ini. Sistem otomatis
-    validasi hanya 1 family_role='kepala_keluarga' per family_id aktif.
-  properties:
-    citizen_id:
-      type: string
-      format: uuid
-      example: "e3b6a9c4-2d58-4f71-a0c3-9d1e7b5a2f84"
-    family_role:
-      type: string
-      enum: [kepala_keluarga, istri, suami, anak, famili_lain]
-      example: "anak"
 
 FamilySocioeconomic:
   type: object

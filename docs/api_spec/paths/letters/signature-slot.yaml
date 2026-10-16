@@ -1,0 +1,64 @@
+post:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Isi ulang slot tanda tangan pihak lain (pemohon)
+  description: |
+    Hanya pemohon surat. Surat harus `pending` dengan `current_step_order = 0`
+    (menunggu tanda tangan). Dipakai setelah permintaan ditolak/kedaluwarsa,
+    atau untuk beralih ke TTD basah. Permintaan yang masih menunggu pada slot
+    itu dibatalkan (`cancelled`).
+    - `nik`: minta TTD digital ke pemilik NIK (berlaku `config/letters.php`
+      `request_ttl_days`, default 7 hari). Jawaban sengaja seragam walau NIK
+      tidak punya akun. Ditolak bila NIK milik pemohon, pemohon diblokir oleh
+      pemilik NIK, atau sudah ditolak `max_rejections` kali (default 3) dalam
+      `rejection_window_hours` (default 24 jam).
+    - `file` + `name`: unggah foto dokumen ber-TTD basah; slot langsung `signed`.
+    Setelah slot terisi dan semua slot lengkap, surat otomatis masuk step
+    approval pertama.
+  operationId: refillLetterSignatureSlot
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letter
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    - name: slot
+      in: path
+      required: true
+      description: "`key` slot pada `letter_types.signature_slots` dengan signer=other."
+      schema:
+        type: string
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          $ref: '../../schemas/letters/letters.yaml#/SignatureRefillRequest'
+      application/json:
+        schema:
+          $ref: '../../schemas/letters/letters.yaml#/SignatureRefillRequest'
+  responses:
+    '200':
+      description: Slot diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Tanda tangan untuk slot ini diperbarui."
+              data:
+                $ref: '../../schemas/letters/letters.yaml#/LetterSignature'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Bukan pemohon surat
+    '404':
+      description: Slot tidak ditemukan / bukan slot pihak lain
+    '409':
+      description: Surat tidak sedang menunggu tanda tangan, atau slot sudah ditandatangani
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

@@ -1,19 +1,18 @@
 get:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Download PDF surat (generate on-demand)
+  summary: Download PDF surat
   description: |
-    UC-08. Trigger status generik `approved` (BUKAN lagi `kasi_approved` -
-    ENUM granular sudah dihapus total di v5.0). PDF digenerate on-demand
-    (barryvdh/laravel-dompdf) saat request, tidak disimpan di server
-    (keputusan final struktural, SID-ARCH-BE-001 S6 - bukan sekadar hemat
-    storage, tapi menghindari PDF stale jika data surat berubah setelah
-    digenerate). TTD diambil dari officials (Kades aktif:
-    is_active=true AND ended_at IS NULL), sedangkan stempel berasal dari
-    villages.stamp_img. Untuk role warga, dicek
-    expires_at bagi pemohon (`submitted_by = user.id`) tanpa membedakan
-    role. Kasi/Kaur juga wajib sesuai assigned_role. TTD berasal dari
-    Kepala Desa aktif; stempel berasal dari profil desa. Gambar berada di
-    private storage dan tidak diekspos sebagai URL publik.
+    UC-08. LetterPolicy::download: surat harus `approved`; boleh diunduh oleh
+    pemohon, Petugas Desa / Kepala Desa / Sekretaris Desa di desa yang sama,
+    dan Kasi/Kaur di desa yang sama sesuai `assigned_role` (NULL = keduanya).
+    Pemohon ditolak bila `expires_at` sudah lewat.
+
+    PDF dirender on-demand (dompdf) dan tidak disimpan. Surat approved
+    dirender dari **snapshot** yang dibekukan saat final approve
+    (`letters.snapshot`: template, definisi isian, kop/identitas desa,
+    stempel, nama & TTD Kepala Desa yang menjabat saat itu, tanggal terbit).
+    Surat approved lama tanpa snapshot dibekukan saat unduhan pertama
+    (memerlukan Kepala Desa aktif). TTD/stempel dibaca dari private storage.
   operationId: downloadLetterPdf
   security:
     - sanctumCookie: []
@@ -24,9 +23,17 @@ get:
       schema:
         type: string
         format: uuid
+    - name: template
+      in: query
+      required: false
+      description: "`digital` menempelkan gambar TTD Kepala Desa; selain itu (default `wet`) hanya stempel, untuk ditandatangani basah."
+      schema:
+        type: string
+        enum: [wet, digital]
+        default: wet
   responses:
     '200':
-      description: File PDF berhasil digenerate dan di-stream sebagai response
+      description: File PDF (attachment `surat-{id}.pdf`)
       content:
         application/pdf:
           schema:
@@ -35,25 +42,16 @@ get:
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: Status belum approved, pemohon telah melewati expires_at, atau Policy menolak
+      description: Belum approved, masa berlaku habis (pemohon), atau Policy menolak
       content:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
           examples:
-            not_final:
-              summary: Surat belum berstatus approved
-              value:
-                message: "Surat baru dapat diunduh setelah seluruh proses persetujuan selesai."
             expired_for_applicant:
-              summary: Pemohon mencoba download setelah masa berlaku habis
               value:
                 message: "Masa berlaku surat telah habis."
     '404':
-      $ref: '../../responses/common.yaml#/NotFound'
+      description: Surat tidak ditemukan, atau belum ada Kepala Desa aktif untuk membekukan snapshot
     '500':
-      description: Kesalahan server saat proses generate PDF.
-      content:
-        application/json:
-          schema:
-            $ref: '../../schemas/common/errors.yaml#/ServerErrorResponse'
+      description: Data penanda tangan snapshot tidak ditemukan atau template tidak ada

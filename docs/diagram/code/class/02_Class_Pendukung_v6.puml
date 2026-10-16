@@ -1,0 +1,181 @@
+'==================================================================================
+' SECTION: CLASS DIAGRAM
+' FILE: 02_Class_Pendukung_v6.puml
+' JUDUL: Class Diagram - Pendukung [2/2] (CMS, Publik, Notifikasi/Web Push,
+'        Wilayah, Organisasi, Dashboard, Akun)
+' SUMBER: apps/backend/app per 2026-10-16
+' CATATAN: Menggantikan 02_Class_Pendukung_v5.puml.
+'==================================================================================
+
+@startuml Class_Pendukung_v6
+skinparam backgroundColor #FFFFFF
+skinparam class {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 10
+  HeaderBackgroundColor #2E5FA3
+  HeaderFontColor #FFFFFF
+  ArrowColor #2E5FA3
+}
+skinparam packageStyle rectangle
+hide empty members
+
+title Class Diagram [2/2: PENDUKUNG] - SIDUTama v5.3\nCMS & halaman publik, notifikasi + Web Push, wilayah, organisasi, dashboard, akun
+
+package "Controller (Api)" #F0F4FF {
+  class PublicPageController {
+    +home() / villageProfile() / newsList()
+    +letterTypeList() / regulationList() / contactUs()
+    -cached(request, section, build)
+  }
+  class VillageProfileController {
+    +show() / update()
+    +uploadStamp() / stampPreview()
+    +uploadImage(UploadVillageImageRequest, column)
+  }
+  class NewsController {
+    +index() / store() / update() / destroy()
+  }
+  class NewsCategoryController {
+    +index() / store() / update() / destroy()
+  }
+  class RegulationController
+  class NotificationController {
+    +index() / unreadCount() / readAll() / read(id)
+  }
+  class PushSubscriptionController {
+    +store(StorePushSubscriptionRequest)
+    +destroy(DestroyPushSubscriptionRequest)
+  }
+  class DashboardController {
+    +index() / genderStats() / letterStats()
+  }
+  class "Hamlet/Rw/RtController" as RegionControllers
+  class "VillageOrgPosition/MemberController" as OrgControllers
+  class UserController {
+    +index() / update() / updateStatus() / resetPassword()
+  }
+  class "Family/FamilySocioeconomic/OccupationController" as KependudukanControllers
+  class "CurrentUser/ProfileController" as ProfileControllers
+  class "Auth\\* (Login, Register, Logout, Password, VerifyEmail)" as AuthControllers
+}
+
+package "Service" #E8F5E9 {
+  class PublicPageService {
+    +home(villageCode) / publicStats(villageCode)
+    +villageProfile() / publicStaffPositions()
+    +publicOfficials() / publicHamlets()
+    +paginatedNews() / letterTypeList()
+    +regulationList() / contactUs()
+    +requireVillage(villageCode) : Village
+  }
+  class VillageProfileService {
+    +getProfile(user) / updateProfile(user, data)
+    +replaceStamp(user, file) / stampPreview(user)
+    +replaceImage(user, column, file)
+  }
+  class NewsService {
+    +list() / create() / update() / delete()
+  }
+  class NewsCategoryService {
+    +list() / create() / update() / delete()
+  }
+  class RegulationService
+  class NotificationService {
+    +getForUser() / markAsRead() / markAllAsRead() / getUnreadCount()
+  }
+  class PushSubscriptionService {
+    +subscribe(user, data)
+    +unsubscribe(user, endpoint)
+  }
+  class DashboardService {
+    +getDashboard(user) / getGenderStats() / getLetterStats()
+  }
+  class "Hamlet/Rw/RtService" as RegionServices
+  class "VillageOrgPosition/MemberService" as OrgServices
+  class UserService {
+    +toggleActive() / update() / resetPassword()
+  }
+  class "Family/FamilySocioeconomic/OccupationService" as KependudukanServices
+  class ProfileService {
+    +updateProfile() / updatePassword()
+  }
+}
+
+package "Support" #EFFAF0 {
+  class PublicPageCache {
+    -TTL_SECONDS = 600
+    +{static} remember(villageId, section, build) : string
+    +{static} flush(villageId)
+  }
+  class VillageImageOptimizer {
+    +MAX_SIDE = {logo: 512, hero_image: 1920}
+    +optimize(file, column) : {contents, extension}
+  }
+}
+
+package "Notifikasi" #FCE4EC {
+  class LetterStatusNotification <<ShouldQueue>> {
+    +via() : [database, WebPushChannel]
+    +viaConnections() : {database: sync}
+    +toArray(notifiable)
+    +toWebPush(notifiable) : WebPushMessage
+  }
+  class "NotificationChannels\\WebPush\\WebPushChannel" as WebPushChannel
+}
+
+package "Provider" #ECEFF1 {
+  class AppServiceProvider {
+    +boot() : rate limiter register, preventLazyLoading,
+    event saved/deleted -> PublicPageCache::flush,
+    OfficialPositionCatalog::forget
+  }
+}
+
+package "Model" #FFFDE7 {
+  class Village {
+    +{static} isUploadedMedia(value) : bool
+    +{static} mediaUrl(value) : ?string
+  }
+  class News
+  class NewsCategory
+  class VillageRegulation
+  class Hamlet
+  class Rw
+  class Rt
+  class VillageOrgPosition
+  class VillageOrgMember
+  class User <<HasPushSubscriptions, Notifiable>>
+}
+
+PublicPageController --> PublicPageService
+PublicPageController ..> PublicPageCache
+VillageProfileController --> VillageProfileService
+VillageProfileService --> VillageImageOptimizer
+NewsController --> NewsService
+NewsService ..> PublicPageCache
+NewsCategoryController --> NewsCategoryService
+RegulationController --> RegulationService
+NotificationController --> NotificationService
+PushSubscriptionController --> PushSubscriptionService
+PushSubscriptionService --> User
+DashboardController --> DashboardService
+RegionControllers --> RegionServices
+OrgControllers --> OrgServices
+UserController --> UserService
+KependudukanControllers --> KependudukanServices
+ProfileControllers --> ProfileService
+LetterStatusNotification ..> WebPushChannel
+LetterStatusNotification ..> User : notify
+AppServiceProvider ..> PublicPageCache
+
+News "*" -- "1..2" NewsCategory
+Village "1" -- "*" News
+Village "1" -- "*" NewsCategory
+Village "1" -- "*" VillageRegulation
+Village "1" -- "*" Hamlet
+Hamlet "1" -- "*" Rw
+Rw "1" -- "*" Rt
+VillageOrgPosition "1" -- "*" VillageOrgMember
+@enduml

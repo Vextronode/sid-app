@@ -1,141 +1,120 @@
-# Index API Spec (OpenAPI 3.0.3) — SIDUTama Cibenda v5.2
+# Index API Spec (OpenAPI 3.0.3) — SIDUTama v5.3
 
-**Status:** Kontrak API mengikuti route dan perilaku backend aktif v5.2.
-Untuk endpoint dan bentuk data, `openapi.yaml` beserta path/schema yang
-direferensikan menjadi acuan.
+**Status:** Kontrak API mengikuti route dan perilaku backend aktif per
+2026-10-16. Bila spec dan source berbeda, **source yang berlaku**.
 
 **Basis referensi:**
-1. Route aktif `apps/backend/routes/api.php`
-2. Controller, request, resource, policy, dan service backend aktif
+1. Route aktif `apps/backend/routes/api.php` dan `routes/auth.php`
+2. Controller, Form Request, Resource, Policy, dan Service backend
 3. Migration dan model backend untuk kontrak data
+
+**Verifikasi terakhir (2026-10-16):**
+- 134 pasangan method+path dari `php artisan route:list` cocok 1:1 dengan
+  `paths` di `openapi.yaml` (tidak ada route yang belum terdokumentasi,
+  tidak ada path terdokumentasi yang tidak ada di source).
+- `redocly lint openapi.yaml` (@redocly/cli 1.34.5): **valid**, 0 error,
+  3 warning `operation-4xx-response` pada `/`, `/up`, dan
+  `/sanctum/csrf-cookie` (endpoint itu memang tidak punya respons 4xx).
+
+Fitur yang pernah ada di spec tetapi tidak ada di source dicatat di
+`../audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md`.
 
 ## Struktur Folder
 
-Identik dengan v4 — hanya isi yang berubah:
-
 ```
-api_spec_v5/
-├── openapi.yaml          <- SATU PINTU.
+api_spec/
+├── openapi.yaml            <- SATU PINTU
+├── parameters/common.yaml  <- parameter bersama (village_code)
+├── responses/common.yaml
 ├── paths/
-│   ├── auth/, wilayah/, citizens/, users/, officials/
-│   ├── families/
-│   ├── occupations/
-│   ├── letter-types/, letter-categories/, approval-flows/
-│   ├── letters/                                                    daftar/detail surat bersama semua role
-│   ├── rt/, kades/                                                  operasi keputusan saja
-│   ├── notifications/, approval-settings/, dashboard/
+│   ├── infrastructure/, auth/
+│   ├── wilayah/, citizens/, families/, occupations/, users/, officials/
+│   ├── letter-types/, approval-flows/          (approval flow read-only)
+│   ├── letters/      daftar, ringkasan, detail, PDF, lampiran, dokumen
+│   │                 pendukung, slot TTD, fulfillment
+│   ├── rt/, kades/   aksi keputusan saja
+│   ├── signatures/   TTD pribadi akun, permintaan TTD, blokir
+│   ├── notifications/, push-subscriptions/
+│   ├── approval-settings/, dashboard/
 │   ├── public/, villages/, news/, regulations/
 │   └── village-org/
-├── schemas/
-│   ├── families/                                                  BARU
-│   ├── occupations/                                               BARU
-│   └── letter-categories/                                         BARU (LetterCategory, ApprovalFlow, FlowStep)
-└── responses/
+└── schemas/
+    ├── approval-flows/   ApprovalFlow, FlowStep
+    ├── letter-types/     LetterType, LetterFormField, LetterDataField,
+    │                     LetterSignatureSlot, PublicLetterType
+    ├── letters/          Letter, LetterListItem, LetterSummary,
+    │                     LetterAttachment, LetterSignature, Fulfillment*,
+    │                     SignatureRequest, SignatureBlock, UserSignatureStatus
+    ├── users/            User, Official, OfficialPositionType,
+    │                     OfficialCandidate, PublicOfficial
+    ├── news/             News, NewsCategory
+    ├── villages/         Village, PublicStats, VillageImageUpload
+    └── ... (auth, citizens, families, occupations, dashboard, dst)
 ```
 
-## Perilaku Endpoint Surat Aktif
+## Ringkasan Endpoint per Domain
 
-| Operasi | Implementasi aktif | Scope/perilaku |
+| Domain | Endpoint | Aktor |
 |---|---|---|
-| `GET /letters` | Daftar dan filter surat | Scope otomatis berdasarkan role; `scope=mine` memilih surat yang diajukan user login. |
-| `GET /letters/{id}` | Detail surat | Diotorisasi oleh policy berdasarkan pemohon, role, desa, dan wilayah surat. |
-| `PATCH /rt/letters/{letter}/decision` | Keputusan RT | Hanya untuk step aktif RT dan wilayah RT terkait. |
-| `PATCH /kades/letters/{letter}/decision` | Keputusan Kades/Sekdes | Keduanya dapat memutuskan step aktif `kepala_desa`; first-action-wins. |
+| Auth & profil | `POST /register` (NIK + tanggal lahir + password), `POST /login`, `POST /logout`, `POST /forgot-password`, `POST /reset-password`, `GET /user`, `PATCH /profile`, `PUT /profile/password` | Publik / semua user |
+| TTD pribadi | `GET/POST /profile/signature`, `GET /profile/signature/image` | Semua user |
+| Permintaan TTD | `GET /signature-requests`, `POST /signature-requests/{id}/accept\|reject`, `GET /signature-blocks`, `DELETE /signature-blocks/{id}` | Pemilik NIK yang dituju |
+| Surat | `GET/POST /letters`, `GET /letters/summary`, `GET/DELETE /letters/{id}`, `GET /letters/{letter}/download\|preview\|supporting-document`, `GET /letters/{letter}/attachments/{attachment}`, `POST /letters/{letter}/signatures/{slot}`, `GET/POST /letters/{letter}/fulfillment` | Sesuai LetterPolicy |
+| Keputusan | `PATCH /rt/letters/{letter}/decision`, `PATCH /kades/letters/{letter}/decision` | RT; Kades/Sekdes |
+| Konfigurasi surat | `GET /letter-types`, `PUT /letter-types/{id}`, `GET /approval-flows`, `GET /approval-flows/{id}`, `GET/PATCH /approval-settings` | Petugas Desa (GET letter-types lintas-role) |
+| Kependudukan | `/citizens` (GET juga untuk Kasi/Kaur), `/citizens/import`, `/citizens/wilayah`, `/families`, `/families/{id}/socioeconomic`, `/occupations` | Petugas Desa |
+| Akun & jabatan | `/users`, `/users/{user}/reset-password`, `/users/{user}/signature/reset`, `/users/{user}/toggle-status`, `/officials` (+ promote, candidates/lookup, demote, rotate, signature, photo), `/official-position-types` | Petugas Desa |
+| Wilayah | `/hamlets`, `/rws`, `/rts` | Petugas Desa |
+| Notifikasi | `/notifications`, `/notifications/unread-count`, `/notifications/read-all`, `/notifications/{id}/read`, `POST/DELETE /push-subscriptions` | Semua user |
+| Dashboard | `/dashboard`, `/dashboard/gender-stats`, `/dashboard/letter-stats` | Semua role (data di-scope) |
+| CMS | `/villages/profile` (GET semua user; PATCH Petugas), `/villages/profile/stamp\|logo\|hero-image`, `/news`, `/news-categories`, `/regulations`, `/village-org-positions` (+ members) | Petugas Desa |
+| Publik | `/public/home`, `/public/village-profile`, `/public/news`, `/public/letter-types`, `/public/regulations`, `/public/contact-us` (opsional `?village_code=`; cache 10 menit per desa) | Tanpa login |
 
-Tidak ada operasi GET khusus `/rt/letters`, `/rw/letters`, `/kades/letters`,
-atau `/kasi/letters`. RW dan Kadus membaca melalui endpoint bersama sesuai
-scope wilayah, tanpa hak keputusan. Kasi/Kaur membaca surat approved sesuai
-`assigned_role` melalui endpoint bersama.
+## Alur Surat (ringkas)
 
-## Pekerjaan, sosio-ekonomi, dan gambar privat
+1. `POST /letters`: payload divalidasi terhadap `letter_types.form_fields`;
+   berkas isian disimpan privat; slot TTD diisi (pemohon otomatis, pihak
+   lain lewat NIK atau TTD basah).
+2. Slot belum lengkap → `current_step_order = 0` (`awaiting_signatures`).
+   Pemilik NIK menyetujui/menolak lewat `/signature-requests`; pemohon dapat
+   mengisi ulang slot lewat `POST /letters/{letter}/signatures/{slot}`.
+3. Slot lengkap → step 1 (RT). RT kosong → surat ditahan dan Petugas Desa
+   dinotifikasi. Tahap non-final milik pemohon dilewati.
+4. RT approve → FYI RW & Kadus, notifikasi Kades/Sekdes → Kades/Sekdes
+   approve (first-action-wins) → nomor surat, `expires_at`, snapshot render.
+5. Kasi/Kaur (sesuai `assigned_role`) diberi tahu: siap cetak, atau
+   perlu Terapkan (`data_action`). Terapkan mengubah/menambah data warga.
 
-- Sosio-ekonomi per KK tersedia pada `GET/PUT /families/{id}/socioeconomic`.
-- Katalog pekerjaan per desa tersedia melalui `GET/POST /occupations` dan
-  `PATCH/DELETE /occupations/{id}`; hanya Petugas Desa yang berwenang.
-- Stempel: upload `POST /villages/profile/stamp`, preview `GET` pada path
-  yang sama. TTD Kades: upload `POST /officials/{official}/signature`,
-  preview `GET` pada path yang sama. Upload memakai multipart field `stamp`
-  atau `signature`; format PNG/JPEG/WebP, maksimum 5 MB.
-- Gambar disimpan secara private. Preview mengharuskan autentikasi Petugas
-  Desa dan scope desa; resource memberi `has_stamp_img` atau
-  `has_signature_img`, bukan URL media aktif. `OfficialResource` masih
-  membawa field legacy `officials.stamp_img` apa adanya; field itu bukan
-  sumber PDF. Rotasi Kades tetap operasi terpisah; TTD diunggah pada record
-  pejabat aktif yang baru.
+## Keputusan yang Tercermin di Kontrak
 
-## Audit Bug Fix yang Tercermin di Kontrak v5.0
+- Flow default satu per desa: RT (step 1) → `kepala_desa` (step 2, final).
+  Kades dan Sekdes memutuskan step yang sama (first-action-wins);
+  `approval_level` mencatat aktor sebenarnya.
+- RW dan Kadus hanya FYI; Kasi/Kaur bukan approver.
+- `assigned_role` NULL berarti Kasi Pelayanan dan Kaur TU & Umum.
+- PDF approved dirender dari snapshot; TTD/stempel selalu milik Kepala
+  Desa yang menjabat saat final approve.
+- Gambar privat (stempel desa, TTD jabatan, TTD akun, lampiran) hanya
+  dilayani lewat endpoint terautentikasi; logo/foto beranda/foto pejabat/
+  thumbnail berita berada di disk publik.
 
-Filter Kasi/Kaur aktif memakai `letter_types.assigned_role`; nilai `NULL`
-berlaku untuk kedua role. Filter tersebut berjalan di dalam scope daftar
-bersama `GET /letters`, bukan endpoint Kasi/Kaur tersendiri.
+## Scope Eksklusi
 
-## Keputusan approval yang sudah diterapkan
-
-- Kades dan Sekdes dapat memutuskan pada step `kepala_desa` yang sama dengan first-action-wins. Flow baru hanya menerima posisi step `rt` dan `kepala_desa`, dengan step final wajib `kepala_desa`.
-- ENUM database `approval_settings.approval_level` tetap lima nilai untuk kompatibilitas; API hanya mengekspos setting level approver aktif (`rt`, `kepala_desa`). Sekdes memutuskan pada step `kepala_desa`; Kasi/Kaur bukan approver.
-
-## Scope Eksklusi Eksplisit (TIDAK ada di spec ini)
-
-Sesuai `SID-ARCH-BE-001` S10 dan Rencana Migrasi — ketiganya berstatus "wacana
-belum berdesain", dilarang diimplementasikan sebelum keputusan eksplisit:
-
-- **QR Verification** — tidak ada endpoint verifikasi publik berbasis token di spec ini.
-- **Void/Cancel Surat** — tidak ada endpoint void/cancel, `letters.status` tetap 4 nilai.
-- **Staging Perubahan Data Self-Service** — tidak ada endpoint warga edit data sendiri; UC-09 tetap eksklusif Petugas Desa (`SID-ARCH-BE-001` S5.3).
-
-## Fitur MVP v5.0 yang Belum Distabilkan sebagai Endpoint (Next Dev / Tahap 2)
-
-Sama seperti v4.2 — tidak berubah statusnya, sengaja tidak dimasukkan ke spec:
-- Blockchain-inspired hashing (`letter_hashes`, UC-07) — Next Dev Paket 2
-- Dynamic Tipe Surat (WYSIWYG, `letter_type_fields`, `letter_field_values`) — Next Dev Paket 1
-- `village_assets`, `village_finances` — Tahap 2
-- `citizen_aid_eligibility`, `citizen_aid_history`, `aid_programs` — Next Dev / Tahap 2
+- **QR Verification** dan **Void/Cancel Surat** — tidak ada endpoint.
+- Blockchain-inspired hashing, aset & keuangan desa, bansos — Next Dev/Tahap 2
+  (`TDD-06_Appendix.md`).
 
 ## Cara Membuka / Validasi
 
 ```bash
-npm install -g @redocly/cli
-redocly lint openapi.yaml
-redocly bundle openapi.yaml -o bundled.yaml
-redocly preview-docs openapi.yaml
+npx @redocly/cli@1.34.5 lint openapi.yaml
+npx @redocly/cli@1.34.5 bundle openapi.yaml -o bundled.yaml
+npx @redocly/cli@1.34.5 preview-docs openapi.yaml
 ```
 
-## Pengelompokan Endpoint per Epic
+## Rujukan Silang
 
-| Epic | Nama | Perubahan Struktural v5.0 | UC Terkait |
-|---|---|---|---|
-| E0 | Fondasi Proyek | Tambah Repository/Policy layer ke arsitektur (tidak menghasilkan endpoint) | - |
-| E1 | Struktur Wilayah | Tidak berubah | UC-20 |
-| E2 | Users, Citizens, Officials, Families, Occupations | family_socioeconomics, occupations, katalog pekerjaan desa | UC-09, UC-14, UC-17 |
-| E3 | Autentikasi | Tidak berubah struktural | UC-01, UC-02, UC-17 |
-| E4 | Konfigurasi Tipe Surat & Pipeline Approval | +letter_categories, +approval_flows, +flow_steps | UC-21 |
-| E5 | Alur Pengajuan & Approval Surat | Dirombak total (lihat tabel di atas) | UC-03, UC-04a, UC-04c(baru), UC-04d, UC-05, UC-06, UC-08 |
-| E6 | Sistem Notifikasi | `LetterStatusNotification` dikirim langsung dari service melalui kanal database | - |
-| E7 | Deadline & Reminder Approval | Enum approval_level konsisten dengan migration; reminder otomatis belum aktif | UC-22 |
-| E8 | Dashboard & Statistik | Dashboard tetap menyediakan scope role Kadus dan RW read-only; Kades/Sekdes aktif pada tahap final | UC-15 |
-| E9 | Halaman Publik & Konten | Upload dan preview privat stempel desa; profil hanya menampilkan indikator gambar | UC-16, UC-18, UC-19, UC-24 |
-| E10 | Organisasi Non-Struktural Desa | Tidak berubah | UC-23 |
-| E11 | Security, Audit & Compliance | Dual-column enkripsi meluas ke families.no_kk | - |
-| E12 | Testing, QA & Deployment | Tidak berubah | - |
-
-## Audit Konsistensi dengan Knowledge (checklist manual sebelum dianggap final)
-
-| Item yang Dicek | Hasil |
-|---|---|
-| Residu endpoint `/kadus/*` | ✅ Nol — dihapus total dari openapi.yaml dan folder paths/ |
-| Residu endpoint approval RW (`decision`) | ✅ Nol — tidak ada file `rw/letter-decision.yaml` sama sekali |
-| Residu status granular (`rt_approved`, `kadus_approved`, dst) di schema aktif | ✅ Nol di `schemas/letters/letters.yaml` (hanya disebut di deskripsi sebagai referensi historis) |
-| Residu `no_kk` di `CitizenCreateRequest` | ✅ Nol — dipindah ke `FamilyCreateRequest` |
-| Residu `letter_hashes`/`HashingService`/dst | ✅ Nol (Next Dev, di luar MVP) |
-| Residu `village_assets`/`village_finances` | ✅ Nol (Tahap 2) |
-| Konsistensi 9 role di semua enum | ✅ Identik — ENUM tidak berubah dari v4.2 |
-| flow_steps.approver_position tidak pernah berisi 'rw'/'kadus' | ✅ Ditegaskan di schema & validasi endpoint `PUT /approval-flows/{id}/steps` |
-
-## Rujukan Silang Knowledge
-
-- **UC & alur bisnis v5.0**: TDD v5.0 Section 5.3.2 (UC Description), khususnya UC-04a/c/d dan sub-flow notifikasi RW
-- **Skema pipeline dinamis**: TDD v5.0 Section 5.4.2 (`letter_categories`, `approval_flows`, `flow_steps`), `SID-ARCH-BE-001` S3
-- **Skema kependudukan v5.2**: TDD v5.2 (`families`, `citizens`, `family_socioeconomics`, `occupations`), `SID-ARCH-BE-001` S5
-- **RBAC & scope otorisasi**: `SID-ARCH-SYS-001` S4, `SID-ARCH-BE-001` S4
-- **Bug fix kontrak Kasi**: `AUDIT_PROGRESS_SID_CIBENDA.md` §3.4
-- **Urutan migrasi & keputusan terbuka**: `RENCANA_MIGRASI_v4_ke_v5_SID_CIBENDA.md` Fase 1–7 dan bagian "Hal yang Wajib Dikonfirmasi"
+- Use case: `../technical_design/TDD-02_UseCase_Descriptions.md`
+- Skema DB: `../technical_design/TDD-03_Database_Schema.md`
+- Arsitektur: `../architecture/SID-ARCH-BE-001_Backend_Architecture.md`
+- Audit fitur belum diimplementasi: `../audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md`

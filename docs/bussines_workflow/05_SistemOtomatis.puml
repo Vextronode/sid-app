@@ -1,9 +1,5 @@
 @startuml
-note top
-**Status: Belum diimplementasi (Planned)** ??? scheduler/job pengiriman reminder otomatis belum ada pada source backend; alur diagram ini adalah rancangan target.
-end note
-
-title SID - Rancangan Target: Overdue/Reminder [Belum Diimplementasikan]
+title SID - Proses Otomatis Sistem (aktif di source 2026-10-16) + Reminder (belum diimplementasi)
 
 skinparam activity {
   BackgroundColor #EBF3FB
@@ -11,66 +7,49 @@ skinparam activity {
   FontName Arial
   FontSize 11
 }
-
 skinparam note {
   BackgroundColor #FFF8E1
   BorderColor #C0A000
 }
 
-|#LightYellow|Rencana Scheduler (belum ada di source)|
-
+|#LightYellow|Sistem (dipicu request)|
 start
 
 fork
-
-  :Cek seluruh letter_approvals aktif\nyang belum di-action;
-
-  if (deadline_at (approval_settings.deadline_hours)\nterlewati?) then (ya)
-
-    :Set letters.is_overdue = true;
-
-    note right
-      TIDAK auto-reject.
-      Murni penanda visual
-      (badge overdue) -
-      keputusan final sejak UC-22.
-    end note
-
-  endif
-
-  if (Mendekati reminder_hours\nsebelum deadline?) then (ya)
-
-    |#LightGreen|Approver aktif pada step tersebut|
-
-    :Terima Notifikasi Reminder;
-
-  endif
-
-
+  :Daftar surat dimuat;
+  :Hitung is_overdue dari deadline_at\napproval pending pada step aktif;
+  note right
+    Tidak auto-reject; murni penanda.
+  end note
+fork again
+  :Permintaan tanda tangan dibaca;
+  :Tandai pending yang lewat expires_at\nmenjadi expired;
+fork again
+  :Slot tanda tangan terakhir terisi;
+  :Pindahkan surat ke step approval pertama;
+fork again
+  :Step awal tanpa RT aktif;
+  :Tahan surat + notifikasi Petugas Desa;
+  :Saat RT ditetapkan → notifikasi RT baru;
+fork again
+  :Final approve;
+  :Nomor surat, expires_at, snapshot render;
+fork again
+  :Data publik berubah (desa, berita, kategori,\nperaturan, jenis surat, pejabat, dusun,\njenis jabatan);
+  :Gugurkan cache halaman publik desa;
+fork again
+  :Notifikasi dibuat (setelah commit);
+  :Simpan in-app (sinkron);
+  :Antrekan Web Push → kirim ke browser;
 end fork
 
-
-stop
-
-
-floating note right
-  Diagram ini rancangan target. Source saat ini
-  menghitung overdue saat daftar surat dimuat,
-  tetapi belum memiliki scheduler/job reminder.
-
-  Void/Cancel Surat dan Verifikasi QR
-  SENGAJA TIDAK digambarkan di sini.
-
-  Keduanya berstatus:
-  "Wacana Next Dev - Belum Ada Desain"
-
-  (SID-ARCH-BE-001 S10)
-
-  Tidak punya skema tabel maupun
-  keputusan teknis apa pun di TDD.
-
-  Jangan diimplementasikan sebelum ada
-  keputusan eksplisit dari pemilik proyek.
+|#LightGray|Rencana (belum ada di source)|
+:Scheduler reminder berdasarkan reminder_hours;
+note right
+  Belum ada scheduler/job; kolom
+  reminder_hours dan reminded_at
+  belum dipakai. Lihat audit docs.
 end note
+stop
 
 @enduml

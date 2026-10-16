@@ -1,0 +1,51 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 06_UC_RT_v6.puml
+' JUDUL: Use Case - RT (approver berbasis wilayah)
+' SUMBER: TDD-02 v5.3 (UC-04a/05/06/15) + routes (2026-10-16)
+' CATATAN: Menggantikan 06_UC_RT_v5.puml.
+'==================================================================================
+@startuml UC_RT_v6
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+}
+title Use Case Diagram - RT [v6]
+
+actor "RT" as RT
+
+rectangle "SIDUTama" {
+  usecase "UC-01/02: Login / Logout" as UC_AUTH
+  usecase "UC-05: Daftar Surat Wilayah RT\n(semua status)" as UC_LIST
+  usecase "UC-06: Detail Surat\n(isian, lampiran, TTD,\ndokumen pendukung)" as UC_DETAIL
+  usecase "UC-04a: Approve / Reject\n(step rt, wilayah sama)" as UC_DECIDE
+  usecase "UC-15: Dashboard RT\n(menunggu, diproses, overdue)" as UC_DASH
+  usecase "Notifikasi in-app & Web Push\n(surat baru, termasuk yang\nsempat tertahan)" as UC_NOTIF
+  usecase "Ajukan Surat untuk Diri Sendiri" as UC_SELF
+}
+
+RT -- UC_AUTH
+RT -- UC_LIST
+RT -- UC_DETAIL
+RT -- UC_DECIDE
+RT -- UC_DASH
+RT -- UC_NOTIF
+RT -- UC_SELF
+UC_LIST ..> UC_DETAIL : <<include>>
+UC_DETAIL ..> UC_DECIDE : <<extend>>
+
+note bottom of UC_DECIDE
+  Approve → FYI ke RW & Kadus, notifikasi
+  Kades/Sekdes & pemohon. Reject terminal.
+  Surat milik RT sendiri: tahap RT dilewati.
+end note
+@enduml

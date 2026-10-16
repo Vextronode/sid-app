@@ -1,0 +1,78 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Daftar jenis jabatan desa tanpa akun
+  description: |
+    Aktor: Petugas Desa. Jenis jabatan tanpa akun (mis. Kasi Kesejahteraan,
+    Kaur Keuangan, Staf) milik desa Petugas, urut `sort_order`, termasuk
+    yang nonaktif. Jabatan yang punya akun (kepala_desa, sekdes,
+    kasi_pelayanan, kaur_tu_umum, kadus, rw, rt, petugas_desa) bersifat tetap
+    dan tidak dikelola di sini.
+  operationId: listOfficialPositionTypes
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar jenis jabatan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/users/users.yaml#/OfficialPositionType'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Tambah jenis jabatan desa tanpa akun
+  description: |
+    Aktor: Petugas Desa. `code` dibuat otomatis dari `label` (huruf kecil,
+    garis bawah) dan tidak dapat diubah, karena disimpan di
+    `officials.position`. Label ditolak bila kodenya bentrok dengan jabatan
+    berakun atau jenis jabatan lain di desa yang sama. Tanpa `sort_order`,
+    jabatan baru ditaruh paling akhir.
+  operationId: createOfficialPositionType
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [label]
+          properties:
+            label:
+              type: string
+              maxLength: 100
+              example: "Kasi Ketentraman"
+            is_single_occupant:
+              type: boolean
+              default: true
+            sort_order:
+              type: integer
+              minimum: 0
+            is_active:
+              type: boolean
+              default: true
+  responses:
+    '201':
+      description: Jenis jabatan dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/users/users.yaml#/OfficialPositionType'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

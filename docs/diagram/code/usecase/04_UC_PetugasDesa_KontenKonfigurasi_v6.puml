@@ -1,0 +1,66 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 04_UC_PetugasDesa_KontenKonfigurasi_v6.puml
+' JUDUL: Use Case - Petugas Desa (3/3: Konten Publik & Konfigurasi Surat)
+' SUMBER: TDD-02 v5.3 (UC-18/19/21/24) + routes (2026-10-16)
+' CATATAN: Menggantikan 04_UC_PetugasDesa_KontenKonfigurasi_v5.puml. Tambah: kop
+'          surat, logo, foto beranda, kategori berita, lihat flow (read-only).
+'==================================================================================
+@startuml UC_PetugasDesa_Konten_v6
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+}
+title Use Case Diagram - Petugas Desa (3/3: Konten Publik & Konfigurasi Surat) [v6]
+
+actor "Petugas Desa" as PD
+
+rectangle "SIDUTama" {
+  rectangle "UC-18: Profil Desa" #F0F4FF {
+    usecase "Edit identitas, kop surat,\nluas, jam layanan, peta,\nsejarah, visi misi" as UC_DESA
+    usecase "Upload logo / foto beranda\n(dioptimasi WebP)" as UC_IMG
+    usecase "Upload / preview stempel" as UC_STAMP
+  }
+  rectangle "UC-19: Berita" #E8F5E9 {
+    usecase "Kelola Berita\n(draft/publish, 1-2 kategori)" as UC_NEWS
+    usecase "Kelola Kategori Berita" as UC_NEWSCAT
+  }
+  rectangle "UC-24: Peraturan Desa" #FFF8E1 {
+    usecase "Kelola Peraturan Desa" as UC_REG
+  }
+  rectangle "UC-21: Konfigurasi Jenis Surat" #FDF2F8 {
+    usecase "Ubah masa berlaku,\npenugasan Kasi/Kaur,\nstatus aktif" as UC_LT
+    usecase "Lihat Flow Approval\n(read-only)" as UC_FLOW
+  }
+}
+
+PD -- UC_DESA
+PD -- UC_IMG
+PD -- UC_STAMP
+PD -- UC_NEWS
+PD -- UC_NEWSCAT
+PD -- UC_REG
+PD -- UC_LT
+PD -- UC_FLOW
+UC_NEWS ..> UC_NEWSCAT : <<include>>
+
+note bottom of UC_LT
+  Template, isian form, slot TTD, aksi data,
+  flow, dan kode klasifikasi diset developer
+  lewat seeder (tidak ada endpoint).
+end note
+note right of UC_DESA
+  Perubahan konten menggugurkan cache
+  halaman publik desa. Kades/Sekdes tidak
+  memiliki akses CMS.
+end note
+@enduml

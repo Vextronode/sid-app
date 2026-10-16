@@ -1,10 +1,14 @@
 post:
   tags: [Epic 2 - Users, Citizens, Officials]
-  summary: Rotasi pejabat struktural ke akun warga pengganti
+  summary: Rotasi pejabat ke pengganti (akun warga atau data warga)
   description: |
-    Hanya Petugas Desa. Demote pejabat lama lalu promote akun warga baru
-    dalam satu transaksi dengan posisi dan wilayah yang sama. Tidak berlaku
-    untuk petugas_desa. Respons memuat old_official, new_official, warnings.
+    Hanya Petugas Desa. Demote pejabat lama lalu promote pengganti dalam
+    satu transaksi dengan posisi dan wilayah yang sama. Jabatan berakun
+    memakai `user_id`; jabatan tanpa akun memakai `citizen_id`. Foto
+    pengganti wajib (multipart) dan disimpan sebelum transaksi, dihapus lagi
+    bila rotasi gagal. Tidak berlaku untuk petugas_desa (422). Respons memuat
+    old_official, new_official, warnings (kosong). Setelah rotasi Kepala Desa,
+    TTD jabatan diunggah ulang ke record baru.
   operationId: rotateOfficial
   security:
     - sanctumCookie: []
@@ -19,7 +23,7 @@ post:
   requestBody:
     required: true
     content:
-      application/json:
+      multipart/form-data:
         schema:
           $ref: '../../schemas/users/users.yaml#/RotateOfficialRequest'
   responses:

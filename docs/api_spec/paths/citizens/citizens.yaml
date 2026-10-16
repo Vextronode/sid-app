@@ -1,9 +1,12 @@
 get:
   tags: [Epic 2 - Users, Citizens, Officials]
-  summary: Lihat & cari daftar warga
+  summary: Lihat & cari daftar warga (berpaginasi)
   description: |
-    UC-09 (Main Flow - Lihat & Cari Warga). Aktor Petugas Desa.
-    Tambahan filter `residency_type` (v5.0).
+    UC-09. Aktor: Petugas Desa, Kasi Pelayanan, Kaur TU & Umum (Kasi/Kaur
+    hanya membaca). Warga satu desa akun login, urut id, berpaginasi di
+    database. Pencarian nama case-insensitive (LIKE) dan filter RT.
+    Respons ResourceCollection berpaginasi: `data`, `total` (jumlah seluruh
+    hasil), serta `links`/`meta` paginator Laravel.
   operationId: listCitizens
   security:
     - sanctumCookie: []
@@ -11,35 +14,32 @@ get:
     - name: search
       in: query
       required: false
-      description: Cari berdasarkan nama (LIKE) atau NIK (dikonversi ke hash di server)
+      description: Cari nama warga (maks 100 karakter).
       schema:
         type: string
-      example: "Siti"
-    - name: residency_type
+        maxLength: 100
+    - name: rt_id
       in: query
       required: false
-      description: "BARU v5.0 - filter warga lokal vs pendatang"
       schema:
-        type: string
-        enum: [lokal, pendatang]
-      example: "lokal"
-    - name: family_id
-      in: query
-      required: false
-      description: "BARU v5.0 - filter anggota satu KK"
-      schema:
-        type: string
-        format: uuid
-      example: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
+        type: integer
     - name: page
       in: query
       required: false
       schema:
         type: integer
-      example: 1
+        minimum: 1
+    - name: per_page
+      in: query
+      required: false
+      description: Default 20, maksimum 100.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
   responses:
     '200':
-      description: Daftar warga berhasil diambil (NIK selalu ter-mask)
+      description: Daftar warga (NIK ter-mask)
       content:
         application/json:
           schema:
@@ -49,12 +49,18 @@ get:
                 type: array
                 items:
                   $ref: '../../schemas/citizens/citizens.yaml#/Citizen'
+              total:
+                type: integer
+              links:
+                type: object
               meta:
                 $ref: '../../schemas/common/errors.yaml#/PaginationMeta'
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
       $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
 post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Tambah warga baru

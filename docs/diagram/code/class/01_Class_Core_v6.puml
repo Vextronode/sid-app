@@ -1,0 +1,389 @@
+'==================================================================================
+' SECTION: CLASS DIAGRAM
+' FILE: 01_Class_Core_v6.puml
+' JUDUL: Class Diagram - Core [1/2] (Surat, Approval, Tanda Tangan, Kependudukan, Jabatan)
+' SUMBER: apps/backend/app (Controllers, Requests, Services, Repositories, Models,
+'         Policies, Support) per 2026-10-16
+' CATATAN: Menggantikan 01_Class_Core_v5.puml. Atribut model ringkas; definisi kolom
+'          lengkap di ERD v8 / TDD-03. Method yang ditampilkan adalah method publik.
+'==================================================================================
+
+@startuml Class_Core_v6
+skinparam backgroundColor #FFFFFF
+skinparam class {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 10
+  HeaderBackgroundColor #2E5FA3
+  HeaderFontColor #FFFFFF
+  ArrowColor #2E5FA3
+}
+skinparam packageStyle rectangle
+skinparam arrow {
+  Color #2E5FA3
+  FontName Arial
+  FontSize 9
+}
+hide empty members
+
+title Class Diagram [1/2: CORE] - SIDUTama v5.3\nController -> Form Request -> Service -> Repository -> Model (Policy & Support di samping Service)
+
+package "Controller (Api)" #F0F4FF {
+  class LetterController {
+    +index(LetterIndexRequest)
+    +summary(LetterIndexRequest)
+    +show(id)
+    +store(StoreLetterRequest)
+    +destroy(letter)
+  }
+  class LetterDownloadController {
+    +download(letter)
+    +preview(letter)
+    +supportingDocument(letter)
+  }
+  class LetterAttachmentController {
+    +show(letter, attachment)
+  }
+  class LetterSignatureController {
+    +store(RefillLetterSignatureRequest, letter, slot)
+  }
+  class LetterFulfillmentController {
+    +show(letter)
+    +store(ApplyLetterFulfillmentRequest, letter)
+  }
+  class SignatureRequestController {
+    +index()
+    +accept(AcceptSignatureRequestRequest, signatureRequest)
+    +reject(RejectSignatureRequestRequest, signatureRequest)
+    +blocks()
+    +unblock(signatureBlock)
+  }
+  class UserSignatureController {
+    +show()
+    +store(StoreUserSignatureRequest)
+    +image()
+    +reset(ResetUserSignatureRequest, user)
+  }
+  class RtApprovalController {
+    +decision(RtDecisionRequest, letter)
+  }
+  class KadesApprovalController {
+    +decision(KadesDecisionRequest, letter)
+  }
+  class LetterTypeController {
+    +index()
+    +update(UpdateLetterTypeRequest, letterType)
+  }
+  class ApprovalFlowController {
+    +index()
+    +show(id)
+  }
+  class OfficialController {
+    +index() / show() / store() / update() / destroy()
+    +promote(PromoteOfficialRequest)
+    +candidate(request)
+    +demote() / rotate()
+    +uploadSignature() / signaturePreview()
+    +uploadPhoto(UploadOfficialPhotoRequest)
+  }
+  class OfficialPositionTypeController {
+    +index() / store() / update() / destroy()
+  }
+  class CitizenController {
+    +index(IndexCitizenRequest) / store() / update()
+    +destroy() / import() / wilayah()
+  }
+}
+
+package "Form Request" #FFF7E6 {
+  class StoreLetterRequest {
+    +rules() : aturan dinamis dari LetterFormSchema
+  }
+  class LetterIndexRequest
+  class RefillLetterSignatureRequest
+  class AcceptSignatureRequestRequest
+  class ApplyLetterFulfillmentRequest
+  class UpdateLetterTypeRequest {
+    validity_days, assigned_role, is_active
+  }
+  class PromoteOfficialRequest
+}
+
+package "Support" #EFFAF0 {
+  class LetterFormSchema {
+    +FIELD_TYPES
+    +isDefined() : bool
+    +valueFields() / fileFields()
+    +payloadRules() : array
+    +attributeLabels() : array
+    +{static} fileRules(field) / typeRules(field)
+  }
+  class LetterValueFormatter {
+    +{static} format(fields, payload) : {text, html}
+  }
+  class OfficialPositionCatalog {
+    +label(position, villageId) : ?string
+    +forget(villageId)
+  }
+}
+
+package "Service" #E8F5E9 {
+  class LetterService {
+    +AWAITING_SIGNATURES_STEP = 0
+    +createLetter(data) : Letter
+    +beginApprovalIfSigned(letter, actor) : Letter
+    +paginateScopedLetters(user, filters)
+    +summarizeScopedLetters(user, filters) : array
+    +getForShow(id) : Letter
+    +delete(letter, user) : bool
+  }
+  class LetterFlowService {
+    +isApplicantOfficial(letter, official) : bool
+    +eligibleApprovers(step, letter)
+    +resolveStartStep(letter) : {step, skipped, vacant}
+    +nextActionable(letter, afterOrder)
+    +logSkipped(letter, skipped, actor)
+  }
+  class RtApprovalService {
+    +decision(letter, user, data)
+  }
+  class KadesApprovalService {
+    +decision(letter, user, data)
+  }
+  class LetterNumberGenerator {
+    +next(letter) : string
+  }
+  class LetterSnapshotService {
+    +contextFor(letter) : array
+    +supportingContextFor(letter) : array
+    +captureOnFinalApproval(letter)
+    +signerFor(letter, context) : Official
+  }
+  class PdfService {
+    +download(letter, user, template)
+    +preview(letter, user, template)
+    +supportingDocument(letter, download)
+  }
+  class LetterAttachmentService {
+    +store(letter, file, uploader, kind, field)
+    +storeSubmission(letter, uploader, files)
+    +response(letter, attachment)
+    +deleteFilesFor(letter)
+  }
+  class LetterSignatureService {
+    +slots(letter) / current(letter)
+    +openForSubmission(letter, applicant, signers, wetFiles)
+    +refillSlot(letter, requester, slotKey, input, wetFile)
+    +isComplete(letter) : bool
+    +pendingFor(user)
+    +accept(request, user) / reject(request, user, notes, block)
+    +renderData(letter) : array
+  }
+  class UserSignatureService {
+    +active(user) : ?UserSignature
+    +create(user, file)
+    +reset(actor, target, reason)
+    +imageResponse(signature) / dataUri(signature)
+  }
+  class LetterFulfillmentService {
+    +proposal(letter) : array
+    +apply(letter, actor, values, subjectNik) : Letter
+  }
+  class LetterTypeService {
+    +getActiveWithTemplate(user)
+    +update(letterType, data, user)
+  }
+  class ApprovalFlowService {
+    +list(user) / findWithStepsOrFail(id, user)
+  }
+  class ApprovalSettingService {
+    +list() / update() / resolveDeadline(level, villageId)
+  }
+  class OfficialService {
+    +getCurrentOfficial/Rt/Rw(user)
+    +resolveOfficialsForStep(step, letter)
+    +resolveCitizenUser(letter)
+    +resolvePetugasDesaUsers(villageId)
+    +resolveKasiKaurForLetter(letter)
+    +storePhoto() / replacePhoto() / replaceSignature()
+    +assertPositionAvailable(data)
+  }
+  class OfficialAssignmentService {
+    +promote(actor, data)
+    +findCandidateByNik(actor, nik, position)
+    +demote(actor, official, notes)
+    +rotate(actor, official, data)
+    +bootstrapFirstPetugas(data)
+  }
+  class OfficialPositionTypeService {
+    +list() / create() / update() / delete()
+  }
+  class CitizenService {
+    +paginateWithWilayah(user, filters)
+    +create() / update() / delete() / importFromExcel()
+  }
+  class "Auth\\AuthService" as AuthService {
+    +registerWarga(data) (cek NIK + tanggal lahir)
+  }
+}
+
+package "Policy" #FDECEA {
+  class LetterPolicy {
+    +viewAny() / view() / create()
+    +download() / fulfill() / delete()
+  }
+  class OfficialPolicy
+}
+
+package "Repository" #F3E5F5 {
+  class LetterRepository {
+    +findForUpdateOrFail(id)
+    +findCurrentFlowStep(letter)
+    +createApprovalForLetter() / recordDecisionForLetter()
+    +createStatusLogForLetter()
+    +queryByCitizenRt/Rw/Hamlet()
+    +queryRtApprovedInVillage() / queryApprovedForAssignedRole()
+    +forListing() / whereMatchesSearch()
+    +countGroupedBy() / countOverdue() / countByPeriodAndStatus()
+    +findWithApprovalActorForShow(id)
+  }
+  class LetterNumberCounterRepository {
+    +nextNumber(villageId, classificationCode, year)
+  }
+  class LetterTypeRepository
+  class ApprovalFlowRepository
+  class OfficialRepository {
+    +findActiveVillageHeadWithCitizen(OrFail)()
+    +allActiveRwByRwId() / allActiveKadusByHamletId()
+    +existsActiveByPositionAndScope()
+  }
+  class OfficialPositionTypeRepository
+  class CitizenRepository {
+    +paginateWithWilayah(villageId, filters)
+    +findByNikHash(hash)
+  }
+  class UserRepository {
+    +findByCitizenId(id)
+  }
+}
+
+package "Model (Eloquent)" #FFFDE7 {
+  class Letter
+  class LetterType {
+    data_action : LetterDataAction
+    form_fields / data_fields / signature_slots : array
+  }
+  class ApprovalFlow
+  class FlowStep
+  class LetterApproval
+  class LetterStatusLog
+  class LetterAttachment {
+    KIND_ATTACHMENT / KIND_FIELD / KIND_WET_SIGNATURE
+  }
+  class LetterSignature {
+    SIGNER_APPLICANT / SIGNER_OTHER
+    METHOD_DIGITAL / METHOD_WET
+    STATUS_* ; +isPending()
+  }
+  class UserSignature
+  class SignatureBlock
+  class LetterNumberCounter
+  class Official
+  class OfficialPositionType
+  class Citizen
+  class User
+  class Village
+}
+
+package "Enum" #ECEFF1 {
+  enum LetterStatus {
+    pending
+    in_progress
+    approved
+    rejected
+  }
+  enum LetterDataAction {
+    none
+    update_citizen
+    create_citizen
+  }
+  enum LetterFlowLogReason {
+    RtStageSkippedForOfficialApplicant
+    AwaitingSignatures
+    HeldForVacantApprover
+  }
+  enum OfficialPosition {
+    kepala_desa, sekdes, rt, rw, kadus,
+    kasi_pelayanan, kaur_tu_umum, petugas_desa
+  }
+}
+
+' Controller -> Service
+LetterController --> LetterService
+LetterDownloadController --> PdfService
+LetterAttachmentController --> LetterAttachmentService
+LetterSignatureController --> LetterSignatureService
+LetterSignatureController --> LetterService
+LetterFulfillmentController --> LetterFulfillmentService
+SignatureRequestController --> LetterSignatureService
+SignatureRequestController --> LetterService
+UserSignatureController --> UserSignatureService
+RtApprovalController --> RtApprovalService
+KadesApprovalController --> KadesApprovalService
+LetterTypeController --> LetterTypeService
+ApprovalFlowController --> ApprovalFlowService
+OfficialController --> OfficialService
+OfficialController --> OfficialAssignmentService
+OfficialPositionTypeController --> OfficialPositionTypeService
+CitizenController --> CitizenService
+StoreLetterRequest ..> LetterFormSchema
+LetterController ..> LetterPolicy
+LetterDownloadController ..> LetterPolicy
+LetterFulfillmentController ..> LetterPolicy
+
+' Service collaboration
+LetterService --> LetterFlowService
+LetterService --> LetterAttachmentService
+LetterService --> LetterSignatureService
+LetterService --> ApprovalSettingService
+LetterService --> OfficialService
+LetterService --> LetterRepository
+LetterSignatureService --> UserSignatureService
+LetterSignatureService --> LetterAttachmentService
+LetterSignatureService --> CitizenRepository
+LetterSignatureService --> UserRepository
+RtApprovalService --> LetterFlowService
+KadesApprovalService --> LetterFlowService
+KadesApprovalService --> LetterNumberGenerator
+KadesApprovalService --> LetterSnapshotService
+LetterNumberGenerator --> LetterNumberCounterRepository
+LetterSnapshotService --> OfficialRepository
+PdfService --> LetterSnapshotService
+PdfService --> LetterSignatureService
+PdfService ..> LetterValueFormatter
+LetterFulfillmentService --> CitizenService
+LetterFulfillmentService --> LetterRepository
+LetterFlowService --> OfficialService
+LetterFlowService --> ApprovalFlowRepository
+OfficialAssignmentService --> OfficialService
+OfficialAssignmentService --> OfficialPositionTypeRepository
+OfficialService ..> OfficialPositionCatalog
+
+' Model relations
+LetterType "1" -- "*" Letter
+ApprovalFlow "1" -- "*" FlowStep
+ApprovalFlow "1" -- "*" LetterType
+Letter "1" -- "*" LetterApproval
+Letter "1" -- "*" LetterStatusLog
+Letter "1" -- "*" LetterAttachment
+Letter "1" -- "*" LetterSignature
+LetterSignature "*" -- "0..1" UserSignature
+User "1" -- "*" UserSignature
+User "1" -- "*" SignatureBlock
+Official "*" -- "1" Citizen
+Letter ..> LetterStatus
+LetterType ..> LetterDataAction
+Official ..> OfficialPosition
+Official ..> OfficialPositionType : position = code
+@enduml

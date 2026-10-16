@@ -1,0 +1,36 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Ringkasan angka surat untuk dashboard
+  description: |
+    Dihitung di database atas scope yang sama persis dengan GET /letters
+    (per role/wilayah; `scope=mine` didukung), sehingga kartu statistik dan
+    daftar selalu konsisten. Menerima parameter yang sama dengan GET /letters,
+    namun hanya `scope` yang memengaruhi hasil; filter tampilan lain tidak
+    diterapkan.
+  operationId: summarizeLetters
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: scope
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [mine]
+  responses:
+    '200':
+      description: Ringkasan surat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Ringkasan surat berhasil diambil."
+              data:
+                $ref: '../../schemas/letters/letters.yaml#/LetterSummary'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'

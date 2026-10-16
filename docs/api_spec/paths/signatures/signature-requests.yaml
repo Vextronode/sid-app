@@ -1,0 +1,24 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Daftar permintaan tanda tangan untuk akun ini
+  description: |
+    Lintas-role. Permintaan TTD digital berstatus pending yang belum
+    kedaluwarsa dan ditujukan ke NIK citizen akun login
+    (`letter_signatures.target_nik_hash`). Akun tanpa citizen → daftar kosong.
+  operationId: listSignatureRequests
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar permintaan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letters/letters.yaml#/SignatureRequest'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

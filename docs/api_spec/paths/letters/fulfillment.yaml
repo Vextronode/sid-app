@@ -1,0 +1,94 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Lihat usulan perubahan data kependudukan dari surat
+  description: |
+    LetterPolicy::fulfill: surat `approved` di desa yang sama dan jenis
+    suratnya memiliki `data_action` selain `none`; aktor Petugas Desa
+    (cadangan) atau Kasi/Kaur sesuai `assigned_role`. Mengembalikan tiap
+    kolom `data_fields` dengan nilai sekarang dan nilai usulan dari payload.
+  operationId: showLetterFulfillment
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letter
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Usulan perubahan data
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Usulan perubahan data berhasil diambil."
+              data:
+                $ref: '../../schemas/letters/letters.yaml#/FulfillmentProposal'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+
+post:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Terapkan perubahan data kependudukan (Terapkan)
+  description: |
+    Otorisasi sama dengan GET. Dalam satu transaksi dengan row lock:
+    - update_citizen: mengubah kolom `data_fields` pada warga subjek (pemohon,
+      atau warga ber-NIK `payload[data_subject_field]` / `subject_nik`). Bila
+      `is_active` diset false (mis. meninggal), akun login warga itu ikut
+      dinonaktifkan dan token-nya dihapus.
+    - create_citizen: menambah warga baru; `rt_id`, `hamlet_id`, `family_id`,
+      `address` diwarisi dari pemohon bila tidak diisi.
+    Mengisi `fulfilled_at`, `fulfilled_by`, `fulfillment`, menulis status log
+    "Perubahan data kependudukan diterapkan", activity log `citizen`
+    (event `letter_fulfilled`), dan notifikasi `letter_fulfilled` ke pemohon.
+    Hanya dapat dilakukan sekali per surat.
+  operationId: applyLetterFulfillment
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letter
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/letters/letters.yaml#/FulfillmentApplyRequest'
+  responses:
+    '200':
+      description: Perubahan diterapkan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Perubahan data berhasil diterapkan."
+              data:
+                $ref: '../../schemas/letters/letters.yaml#/Letter'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '409':
+      description: Surat belum approved, atau perubahan sudah diterapkan
+    '422':
+      description: Kolom di luar definisi, nilai tidak valid, NIK subjek tidak ditemukan, atau tidak ada nilai untuk diterapkan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'

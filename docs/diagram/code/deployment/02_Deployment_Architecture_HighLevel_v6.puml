@@ -1,0 +1,70 @@
+'==================================================================================
+' SECTION: DEPLOYMENT ARCHITECTURE
+' FILE: 02_Deployment_Architecture_HighLevel_v6.puml
+' JUDUL: Deployment Architecture v6 (High-Level, dua mode)
+' SUMBER: deploy/ (Docker), docs/deploy/README.md (VPS Nginx + PHP-FPM),
+'         apps/frontend/vite.config.js (dev proxy) per 2026-10-16
+' CATATAN: Menggantikan 02_Deployment_Architecture_HighLevel_v5.puml.
+'==================================================================================
+@startuml Deployment_HighLevel_v6
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam node {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+}
+skinparam database {
+  BackgroundColor #D5F5E3
+  BorderColor #1E8449
+}
+skinparam note {
+  BackgroundColor #FFF9C4
+  BorderColor #F9A825
+  FontSize 10
+}
+title Deployment High-Level - SIDUTama v5.3
+
+actor "Warga / Pejabat / Petugas /\nPengunjung publik" as USER
+cloud "Layanan push browser" as PUSHSVC
+
+rectangle "Mode A - Docker (expo/demo)" #F1F8E9 {
+  node "Host ber-Docker" as DHOST {
+    node "sid_web (Nginx + SPA)" as DWEB
+    node "sid_api (PHP-FPM + Laravel)" as DAPI
+    database "sid_db (PostgreSQL 18)\natau Neon" as DDB
+  }
+}
+
+rectangle "Mode B - VPS (docs/deploy)" #E3F2FD {
+  node "VPS" as VPS {
+    node "Nginx + TLS (certbot)\nSPA statis + PHP-FPM 8.3\nopcache" as VNGX
+    node "Supervisor\nqueue:work (Web Push)" as VQ
+    database "PostgreSQL" as VDB
+  }
+}
+
+USER --> DWEB : HTTPS via proxy/tunnel tim
+USER --> VNGX : HTTPS
+DWEB --> DAPI : FastCGI
+DAPI --> DDB
+VNGX --> VDB
+VQ --> PUSHSVC
+PUSHSVC --> USER : notifikasi push
+
+note right of DHOST
+  Satu port loopback; QUEUE=sync;
+  tanpa VAPID (push nonaktif).
+  Image dibangun CI per tag atau --build lokal.
+end note
+note right of VPS
+  Dua (sub)domain app & api di bawah
+  domain induk yang sama (cookie Sanctum).
+  VAPID diset di backend & build frontend.
+end note
+note bottom
+  Development: Vite 127.0.0.1:5173 mem-proxy /api & /sanctum ke
+  php artisan serve 127.0.0.1:8000; PostgreSQL lokal.
+  Firewall, SSH, fail2ban, backup: di luar source.
+end note
+@enduml

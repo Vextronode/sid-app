@@ -1,24 +1,21 @@
 get:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Lihat daftar surat (scoped otomatis sesuai role login)
+  summary: Lihat daftar surat (berpaginasi, scoped otomatis sesuai role login)
   description: |
-    UC-05. Scope ditentukan otomatis. `scope=mine` mengembalikan surat yang
-    diajukan oleh user login untuk semua role. Peran Kasi/Kaur hanya dapat
-    melihat surat approved sesuai `letter_types.assigned_role`; NULL
-    berlaku bagi keduanya.
+    UC-05. Scope ditentukan otomatis dari role user login; `scope=mine`
+    mengembalikan surat yang diajukan user login untuk semua role.
 
     Scope per role:
-    - role apa pun dengan `scope=mine`: hanya surat yang diajukan user tersebut
-    - rt: seluruh surat dari wilayahnya (via citizens.rt_id), termasuk riwayat approve/reject
-    - rw: surat di wilayahnya yang memiliki keputusan approve RT, read-only, semua status berikutnya
-    - kadus: surat di dusunnya yang sudah melewati tahap RT, read-only
-    - kepala_desa/sekretaris_desa: surat di desanya yang sudah disetujui RT atau tercatat melewati tahap RT; Sekdes dapat memutuskan step aktif `kepala_desa`
-    - kasi_pelayanan/kaur_tu_umum: surat approved sesuai assigned_role, read-only
-    - petugas_desa: SEMUA surat tanpa filter status (full visibility pipeline, termasuk rejected di step manapun)
-    - scope=mine tetap dapat dipakai semua role untuk melihat surat yang diajukan sendiri
+    - warga: surat yang diajukan sendiri
+    - rt: seluruh surat dari warga di RT-nya (via citizens.rt_id), semua status
+    - rw: surat dari warga di RW-nya yang memiliki keputusan approve RT, read-only
+    - kadus: surat dari warga di dusunnya yang memiliki keputusan approve RT, read-only
+    - kepala_desa/sekretaris_desa: surat di desanya yang sudah di-approve RT atau tercatat melewati tahap RT
+    - kasi_pelayanan/kaur_tu_umum: surat `approved` di desanya sesuai `letter_types.assigned_role` (NULL = keduanya)
+    - petugas_desa: semua surat di desanya
 
-    Daftar RT, RW, Kadus, Kades/Sekdes, dan Kasi/Kaur disajikan melalui
-    endpoint bersama ini. Hanya RT dan Kades/Sekdes memiliki endpoint keputusan.
+    Respons memakai bentuk ringkas `LetterListItem` dan diurutkan dari
+    yang terbaru. `is_overdue` dihitung ulang saat daftar dimuat.
   operationId: listLetters
   security:
     - sanctumCookie: []
@@ -26,7 +23,6 @@ get:
     - name: scope
       in: query
       required: false
-      description: Gunakan mine untuk mengambil surat yang diajukan user login.
       schema:
         type: string
         enum: [mine]
@@ -36,7 +32,6 @@ get:
       schema:
         type: string
         enum: [pending, in_progress, approved, rejected]
-      example: "pending"
     - name: letter_type_id
       in: query
       required: false
@@ -45,79 +40,109 @@ get:
     - name: from
       in: query
       required: false
-      description: Batas awal tanggal pengajuan (`submitted_at`, filter `whereDate >=`). Format tanggal.
+      description: Batas awal tanggal `submitted_at` (perbandingan tanggal, `whereDate >=`).
       schema:
         type: string
         format: date
     - name: to
       in: query
       required: false
-      description: Batas akhir tanggal pengajuan (`submitted_at`, filter `whereDate <=`). Harus sama dengan atau setelah `from` (`after_or_equal:from`).
+      description: Batas akhir tanggal `submitted_at`; harus >= `from`.
       schema:
         type: string
         format: date
+    - name: submitted_from
+      in: query
+      required: false
+      description: Batas awal waktu persis (ISO 8601 dengan zona waktu klien), dikonversi ke zona waktu aplikasi.
+      schema:
+        type: string
+        format: date-time
+    - name: submitted_to
+      in: query
+      required: false
+      description: Batas akhir waktu persis; harus >= `submitted_from`.
+      schema:
+        type: string
+        format: date-time
+    - name: search
+      in: query
+      required: false
+      description: Cari (case-insensitive) pada nama pemohon, nomor surat, atau nama warga. Maks 100 karakter.
+      schema:
+        type: string
+        maxLength: 100
     - name: applicant_name
       in: query
       required: false
-      description: Filter nama pemohon (string, maks 255 karakter).
       schema:
         type: string
         maxLength: 255
+    - name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+    - name: per_page
+      in: query
+      required: false
+      description: Default 20, maksimum 100.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
   responses:
     '200':
-      description: Daftar surat berhasil diambil (sudah terfilter sesuai scope role)
+      description: Daftar surat berpaginasi
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: "Daftar surat berhasil diambil."
-              data:
-                type: array
-                items:
-                  $ref: '../../schemas/letters/letters.yaml#/Letter'
-          examples:
-            warga_view:
-              summary: Warga - hanya surat sendiri
-              value:
-                message: "Daftar surat berhasil diambil."
-                data:
-                  - id: "550e8400-e29b-41d4-a716-446655440501"
-                    letter_type_id: 1
-                    letter_type: { code: "SKD", name: "Surat Keterangan Domisili" }
-                    status: "in_progress"
-                    current_step_order: 2
-                    current_step: { step_order: 2, approver_position: "kepala_desa", is_final: false }
-                    is_overdue: false
-                    submitted_at: "2026-07-01T09:00:00Z"
-            petugas_desa_view:
-              summary: Petugas Desa - semua status termasuk rejected
-              value:
-                message: "Daftar surat berhasil diambil."
-                data:
-                  - id: "550e8400-e29b-41d4-a716-446655440501"
-                    status: "in_progress"
-                    current_step_order: 2
-                  - id: "550e8400-e29b-41d4-a716-446655440498"
-                    status: "rejected"
-                    rejected_at_step: 1
+            $ref: '../../schemas/letters/letters.yaml#/LetterListResponse'
+          example:
+            message: "Daftar surat berhasil diambil."
+            data:
+              - id: "550e8400-e29b-41d4-a716-446655440501"
+                letter_type_id: 1
+                letter_number: null
+                applicant_name: "Siti Aminah"
+                status: "in_progress"
+                current_step_order: 2
+                current_step: { step_order: 2, approver_position: "kepala_desa", is_final: true }
+                is_overdue: false
+                awaiting_signatures: false
+                needs_fulfillment: false
+                submitted_at: "2026-10-01T09:00:00Z"
+                letter_type: { id: 1, name: "Surat Keterangan Usaha", code: "A01" }
+                citizen: { id: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731", name: "Siti Aminah" }
+            meta: { current_page: 1, per_page: 20, total: 1, last_page: 1 }
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Role tidak dikenal, atau pejabat tanpa jabatan/wilayah aktif yang sesuai
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+
 post:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
   summary: Ajukan permohonan surat baru (self-service)
   description: |
-    UC-03.     Pengguna aktif yang mempunyai citizen_id, termasuk pejabat, dapat
-    mengajukan surat untuk dirinya sendiri. Hanya tipe surat dengan
-    template != NULL dan is_active = true yang boleh diajukan.
+    UC-03. Akun aktif yang terhubung ke citizen (warga maupun pejabat) dapat
+    mengajukan surat untuk dirinya sendiri (LetterPolicy::create). Data
+    pemohon diambil dari citizen akun; `purpose` dan `notes` disimpan NULL.
 
-    BARU v5.0: saat submit, sistem melakukan snapshot `letter_types.flow_id`
-    ke `letters.flow_id` (dikunci, bukan live-reference). Hanya tahap
-    non-final milik pemohon yang dapat dilewati; tahap final tidak dilewati
-    dan self-approval dilarang. Status awal `pending`. TIDAK ADA proses hashing (blockchain hashing = Next
-    Dev, di luar MVP).
+    Urutan di dalam satu transaksi:
+    1. Simpan surat `pending`, snapshot `flow_id`, log "Permohonan surat dibuat".
+    2. Simpan berkas isian bertipe file ke disk privat (`letter_attachments`, kind=field).
+    3. Isi slot tanda tangan (`signature_slots`): slot pemohon memakai TTD akun
+       (wajib sudah dibuat); slot pihak lain diminta ke NIK (TTD digital,
+       notifikasi ke pemilik NIK) atau diisi TTD basah.
+    4. Bila masih ada slot kosong → `current_step_order = 0`, log
+       "Menunggu tanda tangan pihak terkait", tidak ada approver yang dinotifikasi.
+    5. Bila lengkap → masuk step actionable pertama: tahap non-final milik
+       pemohon dilewati; bila step RT belum memiliki pejabat aktif, surat
+       ditahan di step itu dan Petugas Desa dinotifikasi (`approver_vacant`).
+    Bila transaksi gagal, berkas yang sudah tertulis dihapus.
   operationId: createLetter
   security:
     - sanctumCookie: []
@@ -132,7 +157,7 @@ post:
           $ref: '../../schemas/letters/letters.yaml#/LetterCreateRequest'
   responses:
     '201':
-      description: Permohonan berhasil disimpan dengan status pending
+      description: Permohonan tersimpan
       content:
         application/json:
           schema:
@@ -146,21 +171,25 @@ post:
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: Akun tidak aktif, tidak memiliki citizen, atau tahap final tidak mempunyai approver eligible lain
-      content:
-        application/json:
-          schema:
-            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+      description: Akun tidak aktif atau tidak terhubung ke citizen
     '422':
-      description: Tipe surat tidak tersedia atau field wajib tidak valid (`letter_type_id`, `purpose`, format `attachments`)
+      description: |
+        Validasi gagal: isian tak dikenal/tidak valid, berkas tidak sesuai,
+        TTD pemohon belum dibuat, NIK penanda tangan kosong/milik pemohon
+        sendiri/sedang diblokir atau dibatasi, flow tanpa step, atau tidak ada
+        pejabat berwenang pada tahap final.
       content:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
           examples:
-            letter_type_draft:
-              summary: Tipe surat masih Draft / nonaktif
+            unknown_field:
               value:
-                message: "The given data was invalid."
+                message: "Isian tidak dikenal untuk jenis surat ini: foo."
                 errors:
-                  letter_type_id: ["Tipe surat ini belum tersedia untuk diajukan"]
+                  payload: ["Isian tidak dikenal untuk jenis surat ini: foo."]
+            no_signature:
+              value:
+                message: "Buat tanda tangan Anda terlebih dahulu sebelum mengajukan surat ini."
+                errors:
+                  signers.pemohon: ["Buat tanda tangan Anda terlebih dahulu sebelum mengajukan surat ini."]

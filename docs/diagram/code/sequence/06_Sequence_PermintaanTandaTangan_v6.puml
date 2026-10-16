@@ -1,0 +1,73 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 06_Sequence_PermintaanTandaTangan_v6.puml
+' JUDUL: Sequence - Tanda Tangan Pribadi & Permintaan Tanda Tangan (UC-25)
+' SUMBER: UserSignatureController/Service, SignatureRequestController,
+'         LetterSignatureController, LetterSignatureService,
+'         LetterService::beginApprovalIfSigned (2026-10-16)
+' CATATAN: FILE BARU v6.
+'==================================================================================
+@startuml Sequence_TandaTangan_v6
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ActorBackgroundColor #D6E4F7
+  ArrowColor #2E5FA3
+  ArrowFontSize 10
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+title Sequence - Tanda Tangan Pihak Terkait [v6]
+
+actor "Pemilik NIK" as T
+actor "Pemohon" as P
+participant "React" as FE
+participant "UserSignatureController" as USC
+participant "UserSignatureService" as USS
+participant "SignatureRequestController" as SRC
+participant "LetterSignatureController" as LSC
+participant "LetterSignatureService" as LSS
+participant "LetterService" as LS
+database "PostgreSQL" as DB
+collections "Disk private_uploads" as DISK
+
+== Membuat TTD pribadi (sekali) ==
+T -> FE : unggah gambar TTD (PNG/JPG ≤ 512 KB)
+FE -> USC : POST /api/profile/signature
+USC -> USS : create(user, file)
+USS -> USS : sudah ada TTD aktif? → 409
+USS -> DISK : put user-signatures/{user}/{uuid}.enc\n(Crypt::encryptString)
+USS -> DB : INSERT user_signatures
+USC --> FE : 201 {has_signature: true}
+
+== Menanggapi permintaan ==
+FE -> SRC : GET /api/signature-requests
+SRC -> LSS : pendingFor(user) (target_nik_hash, pending, belum kedaluwarsa)
+alt setujui
+  T -> FE : masukkan kata sandi
+  FE -> SRC : POST /api/signature-requests/{id}/accept {password}
+  SRC -> SRC : current_password (422 bila salah)
+  SRC -> LSS : accept(request, user)
+  LSS -> LSS : guardIsTarget (404) & isPending (409);\nTTD aktif wajib (422)
+  LSS -> DB : UPDATE letter_signatures signed,\nsigner_user_id, user_signature_id
+  LSS -> P : signature_accepted
+  SRC -> LS : beginApprovalIfSigned(letter)
+  LS -> DB : lock letter; semua slot signed?
+  LS -> LS : startApproval → step awal, placeholder, notifikasi approver
+else tolak
+  FE -> SRC : POST /api/signature-requests/{id}/reject {notes?, block?}
+  SRC -> LSS : reject(request, user, notes, block)
+  LSS -> DB : UPDATE rejected (+ INSERT signature_blocks bila block)
+  LSS -> P : signature_rejected (tanpa identitas penolak)
+end
+
+== Pemohon mengisi ulang slot ==
+P -> FE : NIK lain atau unggah TTD basah + nama
+FE -> LSC : POST /api/letters/{letter}/signatures/{slot}
+LSC -> LSC : hanya pemohon (403); surat pending & step 0 (409)
+LSC -> LSS : refillSlot() — batalkan pending lama (cancelled)
+LSS -> DB : INSERT letter_signatures baru
+LSC -> LS : beginApprovalIfSigned(letter)
+LSC --> FE : 200 {LetterSignatureResource}
+@enduml

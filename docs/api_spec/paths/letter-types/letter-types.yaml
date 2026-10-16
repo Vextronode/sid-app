@@ -2,10 +2,9 @@ get:
   tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
   summary: Lihat daftar tipe surat
   description: |
-    Menampilkan tipe surat aktif yang memiliki template, dibatasi ke desa
-    akun yang login. Filter desa diambil dari akun; endpoint tidak menerima
-    `active_only` atau `category_id`. Tipe Draft/Nonaktif dikelola melalui
-    jalur konfigurasi yang saat ini hanya menyediakan update.
+    Lintas-role (semua user login). Mengembalikan tipe surat milik desa akun
+    yang login yang `template != NULL` dan `is_active = true`, urut nama.
+    Tipe Draft/Nonaktif tidak ikut dikembalikan (lihat audit docs).
   operationId: listLetterTypes
   security:
     - sanctumCookie: []
@@ -17,27 +16,38 @@ get:
           schema:
             type: object
             properties:
+              message:
+                type: string
+                example: "Daftar jenis surat berhasil diambil."
               data:
                 type: array
                 items:
                   $ref: '../../schemas/letter-types/letter-types.yaml#/LetterType'
-          examples:
-            desa_active_types:
-              summary: Tipe surat aktif bertemplate pada desa akun yang login
-              value:
-                data:
-                  - id: 1
-                    code: "SKD"
-                    name: "Surat Keterangan Domisili"
-                    template: "<html>...template...</html>"
-                    verification_type: "auto"
-                    assigned_role: "kasi_pelayanan"
-                    validity_days: 90
-                    category_id: 1
-                    category: { code: "approval_normal", name: "Approval Normal" }
-                    flow_id: 3
-                    flow: { id: 3, name: "RT-Kades (2 Tahap)" }
-                    is_active: true
-                    status_label: "aktif"
+          example:
+            message: "Daftar jenis surat berhasil diambil."
+            data:
+              - id: 1
+                code: "A01"
+                name: "Surat Keterangan Usaha"
+                template: "<div>...</div>"
+                requirements_info: null
+                flow_id: 1
+                assigned_role: "kasi_pelayanan"
+                validity_days: 365
+                is_active: true
+                produces_letter: true
+                data_action: "none"
+                form_fields:
+                  - { name: "nama_usaha", label: "Nama Usaha", type: "text", required: true }
+                data_fields: []
+                signature_slots: []
+                has_supporting_document: false
+                status_label: "aktif"
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Akun tidak aktif atau tidak memiliki desa
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ErrorResponse'

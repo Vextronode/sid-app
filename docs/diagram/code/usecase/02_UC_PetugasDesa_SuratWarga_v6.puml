@@ -1,0 +1,75 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 02_UC_PetugasDesa_SuratWarga_v6.puml
+' JUDUL: Use Case - Petugas Desa (1/3: Surat & Data Warga)
+' SUMBER: TDD-02 v5.3 (UC-05/06/08/09/15/26) + routes (2026-10-16)
+' CATATAN: Menggantikan 02_UC_PetugasDesa_SuratWarga_v5.puml.
+'==================================================================================
+@startuml UC_PetugasDesa_Surat_v6
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+}
+title Use Case Diagram - Petugas Desa (1/3: Surat & Data Warga) [v6]
+
+actor "Petugas Desa" as PD
+
+rectangle "SIDUTama" {
+  rectangle "Autentikasi" #F0F4FF {
+    usecase "UC-01: Login" as UC_LOGIN
+    usecase "UC-02: Logout" as UC_LOGOUT
+  }
+  rectangle "Monitoring Surat (seluruh surat desa)" #E8F0FF {
+    usecase "UC-05: Daftar Surat\n(semua status, paginasi, pencarian)" as UC_LIST
+    usecase "Ringkasan Surat\n(GET /letters/summary)" as UC_SUM
+    usecase "UC-06: Detail Surat\n(lampiran, TTD, dokumen pendukung)" as UC_DETAIL
+    usecase "UC-08: Unduh PDF" as UC_DL
+    usecase "Hapus Surat" as UC_DEL
+    usecase "UC-26: Terapkan Perubahan Data\n(cadangan Kasi/Kaur)" as UC_FULFILL
+    usecase "Terima notifikasi\nsurat tertahan (RT kosong)" as UC_VACANT
+  }
+  rectangle "UC-09: Kependudukan" #E8F5E9 {
+    usecase "Kelola Data Warga\n(CRUD, paginasi, cari nama, filter RT)" as UC_CIT
+    usecase "Import Warga (Excel)" as UC_IMPORT
+    usecase "Kelola KK (families)" as UC_FAM
+    usecase "Survei Sosio-Ekonomi per KK" as UC_FSE
+    usecase "Kelola Daftar Pekerjaan" as UC_OCC
+  }
+  usecase "UC-15: Dashboard Operasional" as UC_DASH
+}
+
+PD -- UC_LOGIN
+PD -- UC_LOGOUT
+PD -- UC_LIST
+PD -- UC_SUM
+PD -- UC_DETAIL
+PD -- UC_DL
+PD -- UC_DEL
+PD -- UC_FULFILL
+PD -- UC_VACANT
+PD -- UC_CIT
+PD -- UC_IMPORT
+PD -- UC_FAM
+PD -- UC_FSE
+PD -- UC_OCC
+PD -- UC_DASH
+UC_LIST ..> UC_DETAIL : <<include>>
+UC_DETAIL ..> UC_DL : <<extend>>
+UC_DETAIL ..> UC_FULFILL : <<extend>>
+UC_FAM ..> UC_FSE : <<extend>>
+
+note right of UC_VACANT
+  Ditindaklanjuti dengan menetapkan RT
+  (diagram 2/3); RT baru langsung
+  diberi tahu surat yang menunggu.
+end note
+@enduml

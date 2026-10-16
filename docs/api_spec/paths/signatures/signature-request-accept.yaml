@@ -1,0 +1,46 @@
+post:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Setujui permintaan tanda tangan
+  description: |
+    Hanya pemilik NIK yang dituju dan selama permintaan masih pending.
+    Kata sandi diminta ulang. TTD pribadi akun (wajib sudah dibuat)
+    dibubuhkan ke slot; pemohon menerima notifikasi `signature_accepted`.
+    Bila semua slot surat lengkap, surat otomatis masuk step approval pertama.
+  operationId: acceptSignatureRequest
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: signatureRequest
+      in: path
+      required: true
+      description: ID baris `letter_signatures`.
+      schema:
+        type: integer
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [password]
+          properties:
+            password:
+              type: string
+              format: password
+  responses:
+    '200':
+      description: Disetujui
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/SuccessMessage'
+          example:
+            message: "Permintaan tanda tangan disetujui."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '404':
+      description: Permintaan tidak ditujukan ke akun ini
+    '409':
+      description: Permintaan sudah tidak aktif
+    '422':
+      description: Kata sandi salah, atau akun belum memiliki tanda tangan

@@ -1,0 +1,86 @@
+'==================================================================================
+' SECTION: DEPLOYMENT ARCHITECTURE
+' FILE: 01_Deployment_Architecture_Detail_v6.puml
+' JUDUL: Deployment Architecture v6 (Detail - Stack Docker)
+' SUMBER: deploy/docker-compose.yml, deploy/nginx/sid.conf, deploy/scripts/*,
+'         apps/backend/Dockerfile + docker/entrypoint.sh, apps/frontend/Dockerfile,
+'         docs/EXPO_RUNBOOK.md (per 2026-10-16)
+' CATATAN: Menggantikan 01_Deployment_Architecture_Detail_v5.puml yang masih
+'          mengasumsikan "Docker belum dipakai Tahap 1".
+'==================================================================================
+@startuml Deployment_Detail_v6
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam node {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+}
+skinparam database {
+  BackgroundColor #D5F5E3
+  BorderColor #1E8449
+}
+skinparam component {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+}
+skinparam note {
+  BackgroundColor #FFF9C4
+  BorderColor #F9A825
+  FontSize 10
+}
+title Deployment Detail - Stack Docker SIDUTama (compose project "sid")
+
+actor "Pengguna\n(browser / PWA)" as USER
+cloud "Proxy / tunnel tim\n(TLS termination)" as PROXY
+cloud "GHCR\n(image sid-api, sid-web\nper tag vX.Y.Z)" as GHCR
+cloud "Neon PostgreSQL\n(mode db=neon, opsional)" as NEON
+
+node "Host (laptop/server ber-Docker)" as HOST {
+  component "deploy/scripts\n(setup-expo.sh, deploy.sh,\nreset-demo.sh, make-golden.sh, smoke.sh)" as SCRIPTS
+  port "127.0.0.1:${SID_HTTP_PORT:-8100}" as PORT
+
+  node "network sid_net (internal)" as NET {
+    node "sid_web\n(image sid-web: Nginx + build SPA)" as WEB {
+      component "SPA statis + PWA\n(sw.js, push-handler.js,\nmanifest)" as SPA
+      component "Routing Nginx:\n/api, /sanctum, /up, auth POST,\n/verify-email → FastCGI\n/storage → volume public (ro)\n/healthz" as NGX
+    }
+    node "sid_api\n(image sid-api: PHP 8.3-FPM)" as API {
+      component "Laravel 13 API\n(index.php front controller)" as LARAVEL
+      component "entrypoint.sh:\nvalidasi APP_KEY & DB_*,\nconfig:cache, view:cache,\nstorage:link\n(tanpa migrate/seed)" as ENTRY
+      component "Healthcheck FPM ping" as HC
+    }
+    database "sid_db\npostgres:18.6 (profil localdb)\nTZ Asia/Jakarta" as PG
+  }
+  storage "volume public\n(storage/app/public)" as VPUB
+  storage "volume private\n(storage/app/private)" as VPRIV
+  storage "volume pgdata" as VPG
+}
+
+USER --> PROXY : HTTPS
+PROXY --> PORT : HTTP
+PORT --> NGX
+NGX --> SPA
+NGX --> LARAVEL : FastCGI sid_api:9000
+NGX --> VPUB : read-only
+LARAVEL --> PG : pgsql (mode local)
+LARAVEL ..> NEON : pgsql via sid_egress (mode neon)
+LARAVEL --> VPUB
+LARAVEL --> VPRIV
+PG --> VPG
+SCRIPTS ..> GHCR : pull (atau --build lokal)
+SCRIPTS ..> API : migrate (opsional) + smoke
+
+note right of LARAVEL
+  .env (sid.env / sid.neon.env):
+  QUEUE_CONNECTION=sync, CACHE_STORE=database,
+  SESSION_DRIVER=database.
+  VAPID kosong pada image expo → Web Push nonaktif.
+end note
+note bottom of NET
+  sid_net internal: hanya sid_web yang
+  membuka port ke host (loopback).
+  sid_api memakai jaringan sid_egress
+  hanya untuk keluar (DB Neon).
+end note
+@enduml

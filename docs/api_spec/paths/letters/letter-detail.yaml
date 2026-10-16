@@ -2,18 +2,22 @@ get:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
   summary: Lihat detail & timeline status surat
   description: |
-    UC-06. Menampilkan detail data pemohon, status generik dengan badge,
-    indikator tahap aktif (derived dari current_step_order + JOIN
-    flow_steps, bukan lagi status granular RT/RW/Kadus/Kasi terpisah),
-    informasi approval per tahap, dan timeline riwayat lengkap
-    (letter_status_logs). `rw_fyi_notified` bernilai true jika surat memiliki
-    keputusan approve RT; field ini bukan bukti bahwa notifikasi berhasil
-    terkirim. RW tidak pernah punya row di approvals.
+    UC-06. Diotorisasi LetterPolicy::view:
+    - pemohon selalu dapat melihat suratnya;
+    - rt: surat warga di RT-nya;
+    - rw / kadus: surat di wilayahnya yang sudah di-approve RT;
+    - petugas_desa: surat di desanya;
+    - kasi_pelayanan / kaur_tu_umum: surat approved di desanya sesuai assigned_role;
+    - kepala_desa / sekretaris_desa: surat di desanya yang sudah di-approve RT
+      atau step aktifnya bukan RT.
+    Memuat approvals, status_logs, attachments, signatures (keadaan terkini
+    per slot), current_step, serta indikator `awaiting_signatures`,
+    `needs_fulfillment`, `has_supporting_document`, `rw_fyi_notified`.
   operationId: getLetterDetail
   security:
     - sanctumCookie: []
   parameters:
-    - name: letter
+    - name: id
       in: path
       required: true
       schema:
@@ -38,43 +42,55 @@ get:
               id: "550e8400-e29b-41d4-a716-446655440501"
               status: "in_progress"
               current_step_order: 2
-              current_step: { step_order: 2, approver_position: "kepala_desa", is_final: false }
+              current_step: { step_order: 2, approver_position: "kepala_desa", is_final: true }
+              awaiting_signatures: false
+              needs_fulfillment: false
+              has_supporting_document: false
               rw_fyi_notified: true
-              is_overdue: false
               applicant_name: "Siti Aminah"
               applicant_nik_masked: "************0001"
+              payload: { nama_usaha: "Warung Sembako Berkah" }
+              attachments:
+                - id: 15
+                  kind: "field"
+                  field: "foto_usaha"
+                  original_name: "warung.jpg"
+                  mime_type: "image/jpeg"
+                  size: 204800
+                  url: "/api/letters/550e8400-e29b-41d4-a716-446655440501/attachments/15"
+              signatures: []
               approvals:
                 - approval_level: "rt"
                   action: "approved"
                   approver_name: "Pak RT Ujang"
-                  flow_step_id: 12
-                  created_at: "2026-07-01T14:00:00Z"
+                  flow_step_id: 1
               status_logs:
-                - new_status: "pending"
-                  created_at: "2026-07-01T09:00:00Z"
                 - old_status: "pending"
                   new_status: "in_progress"
-                  created_at: "2026-07-01T14:00:00Z"
+                  actor_name: "Pak RT Ujang"
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: Surat bukan milik/wewenang user ini
-      content:
-        application/json:
-          schema:
-            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
+      $ref: '../../responses/common.yaml#/Forbidden'
     '404':
       $ref: '../../responses/common.yaml#/NotFound'
+
 delete:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Hapus surat sesuai policy
+  summary: Hapus surat
+  description: |
+    LetterPolicy::delete: pemohon dapat menghapus suratnya sendiri (status
+    apa pun); kepala_desa, sekretaris_desa, kasi_pelayanan, kaur_tu_umum, dan
+    petugas_desa dapat menghapus surat di desanya. Folder lampiran surat di
+    disk privat ikut dihapus.
   operationId: deleteLetter
   security:
     - sanctumCookie: []
   parameters:
-    - name: letter
+    - name: id
       in: path
       required: true
+      description: "UUID surat (route parameter `{letter}`)."
       schema:
         type: string
         format: uuid
@@ -83,11 +99,13 @@ delete:
       description: Surat dihapus
       content:
         application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/SuccessMessage'
           example:
             message: "Surat berhasil dihapus."
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: User tidak berwenang menghapus surat
+      $ref: '../../responses/common.yaml#/Forbidden'
     '404':
       $ref: '../../responses/common.yaml#/NotFound'

@@ -1,0 +1,63 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 07_Sequence_TerapkanPerubahanData_v6.puml
+' JUDUL: Sequence - Terapkan Perubahan Data Kependudukan (UC-26)
+' SUMBER: LetterFulfillmentController, LetterPolicy::fulfill,
+'         LetterFulfillmentService, CitizenService (2026-10-16)
+' CATATAN: FILE BARU v6.
+'==================================================================================
+@startuml Sequence_Terapkan_v6
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ActorBackgroundColor #D6E4F7
+  ArrowColor #2E5FA3
+  ArrowFontSize 10
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+title Sequence - Terapkan Perubahan Data [v6]
+
+actor "Kasi/Kaur (assigned_role)\natau Petugas Desa" as K
+participant "React\n(FulfillmentPanel)" as FE
+participant "LetterFulfillmentController" as CTRL
+participant "LetterPolicy::fulfill" as POL
+participant "LetterFulfillmentService" as SVC
+participant "CitizenService" as CIT
+participant "UserRepository" as UREPO
+database "PostgreSQL" as DB
+actor "Pemohon" as P
+
+K -> FE : buka surat "perlu diterapkan"
+FE -> CTRL : GET /api/letters/{letter}/fulfillment
+CTRL -> POL : approved, desa sama, data_action != none,\nrole sesuai assigned_role / petugas_desa
+CTRL -> SVC : proposal(letter)
+SVC -> DB : warga subjek (pemohon atau NIK payload[data_subject_field])
+SVC --> FE : {action, subject, fields[column, current, proposed, fixed]}
+
+K -> FE : koreksi nilai / NIK subjek → Terapkan
+FE -> CTRL : POST /api/letters/{letter}/fulfillment {values, subject_nik}
+CTRL -> POL : authorize
+CTRL -> SVC : apply(letter, actor, values, subjectNik)
+group DB::transaction
+  SVC -> DB : SELECT letter FOR UPDATE
+  SVC -> SVC : approved? belum diterapkan? (409)
+  SVC -> SVC : finalValues — kolom di luar data_fields → 422
+  alt update_citizen
+    SVC -> SVC : validasi (aturan UpdateCitizenRequest)
+    opt is_active = false
+      SVC -> UREPO : nonaktifkan akun warga + hapus token
+    end
+    SVC -> CIT : update(citizen, values)
+  else create_citizen
+    SVC -> SVC : warisi rt/hamlet/family/address pemohon;\nvalidasi (aturan StoreCitizenRequest)
+    SVC -> CIT : create(values)
+  end
+  SVC -> DB : UPDATE letters fulfilled_at, fulfilled_by, fulfillment
+  SVC -> DB : INSERT status log "Perubahan data kependudukan diterapkan"
+  SVC -> DB : activity_log citizen / letter_fulfilled
+  SVC -> P : letter_fulfilled
+end
+CTRL --> FE : 200 {LetterResource}
+@enduml

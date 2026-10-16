@@ -28,6 +28,7 @@
 | 5.0.1 | (revisi dokumen) | Revisi kerapian dokumen: koreksi judul tabel yang salah label, pemisahan section Next Dev jadi sub-section terpisah, update daftar sequence diagram, klarifikasi peran Kadus sebagai aktor non-approval. Tidak ada perubahan keputusan teknis/skema — murni penyelarasan dokumen. | — |
 | 5.0.2 (pecahan ini) | (tanggal pemecahan dokumen) | **Pemecahan TDD menjadi 6 file** (TDD-01 s/d TDD-05 + Appendix ini) untuk penggunaan sebagai knowledge base AI. **Koreksi substantif**: status ENUM `approval_settings.approval_level` yang sebelumnya dicatat "belum diselaraskan/technical debt" dikoreksi menjadi "sudah diselaraskan" berdasarkan migration project yang berjalan (lihat Section A.2 di bawah). Riwayat versi v1–v5.0.1 dipindah ke Appendix ini; detail Next Dev/Tahap 2 dipindah ke Appendix ini. Badan dokumen utama (TDD-01–05) difokuskan pada state final v5.0, bebas dari jejak historis patch-per-patch. | — |
 | 5.2 | 2026-10-06 | Sosio-ekonomi dipindahkan ke level KK (`family_socioeconomics`); katalog pekerjaan per desa (`occupations`) menggantikan teks pekerjaan warga; stempel PDF berasal dari desa. Ditambahkan upload dan preview terproteksi untuk stempel desa serta TTD Kepala Desa aktif pada private storage. | — |
+| 5.3 | 2026-10-16 | Dokumen diselaraskan ke source: `letter_categories` dan `verification_type` di-drop; jenis surat data-driven (`form_fields`, `data_action`/`data_fields`, `signature_slots`, `supporting_template`, `classification_code`, `produces_letter`); lampiran surat; tanda tangan akun & permintaan tanda tangan; snapshot render & nomor surat per kode klasifikasi; Terapkan perubahan data (UC-26); surat ditahan saat RT kosong; Web Push; jenis jabatan tanpa akun (`official_position_types`) & foto pejabat; kategori berita; identitas desa (kop, logo, foto beranda) & cache halaman publik; register dengan tanggal lahir; paginasi daftar surat/warga; index performa; stack Docker. Fitur yang tertulis tetapi belum ada di source dipindah ke `docs/audit-docs/`. | — |
 
 ## A.2. Riwayat Koreksi Spesifik: `approval_settings.approval_level`
 
@@ -159,7 +160,7 @@ Urutan ini penting untuk konsistensi dengan mekanisme hashing saat fitur ini dik
 
 ## B.2. Next Dev — Paket 1: Dynamic Tipe Surat (Create + WYSIWYG + Field Requirement)
 
-**Status:** Next Dev Paket 1. Digabung jadi satu paket karena ketiga kebutuhan (create tipe surat baru, WYSIWYG template editor, edit field requirement) butuh infrastruktur tabel yang sama persis — memisahnya hanya akan membangun setengah infrastruktur yang harus dilengkapi nanti.
+**Status:** Next Dev Paket 1 — **sebagian infrastruktur sudah ada (v5.3)**. Source sudah memiliki isian form dinamis per jenis surat dalam bentuk kolom JSON `letter_types.form_fields` (tipe text, textarea, date, number, nik, select, file) dengan validasi server (`LetterFormSchema`), jawaban di `letters.payload`, berkas isian di `letter_attachments`, serta slot tanda tangan, aksi data, dan dokumen pendukung. Semuanya **diisi developer lewat seeder**. Yang belum ada: UI/endpoint bagi Petugas Desa untuk membuat jenis surat, mengedit template (WYSIWYG), dan CRUD isian. Rancangan tabel `letter_type_fields`/`letter_field_values` di bawah **tidak dipakai** source; bila paket ini dikerjakan, pertimbangkan membangun di atas kolom JSON yang sudah ada.
 
 ### Scope Next Dev Paket 1
 
@@ -218,16 +219,16 @@ Cek "sudah dipakai": `LetterFieldValue::where('field_id', $fieldId)->exists()`
 
 | Kolom | MVP (Saat Ini) | Next Dev Paket 1 (Rencana) |
 |---|---|---|
-| `template` | Diisi developer via seeder, NULL = Draft | Petugas Desa bisa buat/edit via WYSIWYG |
+| `template`, `form_fields`, `signature_slots`, `data_action`, `supporting_template` | Diisi developer via seeder, `template` NULL = Draft | Petugas Desa bisa buat/edit via UI |
 | `validity_days` | Petugas Desa bisa edit | Tetap bisa edit |
 | `assigned_role` | Petugas Desa bisa edit | Tetap bisa edit |
 | `is_active` | Petugas Desa bisa toggle | Tetap bisa toggle |
 | Buat tipe surat baru | Developer-only | Petugas Desa bisa |
-| Field requirement (dokumen/checklist) | Fix, developer-only via seeder | Petugas Desa CRUD bebas (dengan constraint di atas) |
+| Isian form (termasuk unggahan dokumen) | Developer-only via seeder (`form_fields` JSON) | Petugas Desa CRUD (dengan constraint di atas) |
 
 ### Use Case Terkait: UC-21 (Versi Lengkap — Rencana)
 
-Saat ini UC-21 di MVP hanya versi sederhana (edit `validity_days`, `assigned_role`, `category_id`, `flow_id`, toggle `is_active` — lihat `TDD-02_UseCase_Descriptions.md`). Versi lengkap Next Dev akan menambah kemampuan create tipe surat baru dari nol beserta WYSIWYG editor dan field requirement dinamis.
+Saat ini UC-21 di MVP hanya versi sederhana (edit `validity_days`, `assigned_role`, toggle `is_active` — lihat `TDD-02_UseCase_Descriptions.md`; flow tidak dapat diubah lewat API). Versi lengkap Next Dev akan menambah kemampuan create tipe surat baru dari nol beserta WYSIWYG editor dan field requirement dinamis.
 
 ---
 

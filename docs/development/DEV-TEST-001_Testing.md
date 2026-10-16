@@ -17,11 +17,11 @@ Mengingat batasan waktu program (target stabilitas ±2 bulan untuk SIDUTama seba
 
 ## 2. Frontend
 
-**Tools yang direkomendasikan:** Vitest + React Testing Library - pasangan yang umum digunakan untuk proyek berbasis Vite. *(Rekomendasi ini masih menunggu konfirmasi/ACC eksplisit sebelum ditetapkan sebagai wajib.)*
+**Tools yang digunakan:** Vitest (environment jsdom, setup `src/test/setup.js`) + React Testing Library + `@testing-library/user-event`; jalankan `npm run test` / `npm run test:run`. Test ditempatkan berdampingan dengan berkasnya (`*.test.js(x)`). Playwright terpasang untuk skrip screenshot (`npm run shot:beranda`), belum untuk suite E2E.
 
 **Wajib diuji (unit test):**
 - Logic render `ApprovalStepRenderer` berdasarkan kombinasi `approver_ref` dan `authority_type` - memastikan tombol Reject hanya muncul saat `reject_capable`.
-- Validasi schema-driven form (React Hook Form + Zod) - memastikan pesan error muncul sesuai skema field requirement per `LetterType`.
+- Validasi schema-driven form (React Hook Form + Zod) - memastikan pesan error muncul sesuai `form_fields` per jenis surat.
 
 **Tidak wajib pada tahap ini:** pengujian end-to-end (E2E) menyeluruh terhadap seluruh alur pipeline.
 

@@ -1,6 +1,10 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
-  summary: Lihat data profil desa (untuk form edit)
+  summary: Lihat data profil desa milik akun login
+  description: |
+    Lintas-role (semua user login). Dipakai halaman mana pun yang perlu
+    menampilkan identitas desa (nama, logo, kontak, kop) dan form Kelola
+    Profil Desa. Desa diambil dari `users.village_id`.
   operationId: getVillageProfile
   security:
     - sanctumCookie: []
