@@ -289,8 +289,8 @@ Official:
     position_label:
       type: string
       nullable: true
-      example: "RT"
-      description: "Label enum untuk jabatan berakun, `label` jenis jabatan desa untuk sisanya."
+      example: "Ketua RT"
+      description: "Label enum untuk jabatan berakun (mis. Ketua RT, Ketua RW, Staf {SID_APP_NAME}), `label` jenis jabatan desa untuk sisanya."
     village_id:
       type: string
       format: uuid

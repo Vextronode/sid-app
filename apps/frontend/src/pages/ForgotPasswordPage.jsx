@@ -112,8 +112,7 @@ export default function ForgotPasswordPage() {
 
         <p className="text-xs text-gray-500 bg-gray-50 border rounded-lg px-3 py-2 mt-5">
           Tidak punya email atau belum mendaftarkannya? Datang ke kantor desa dan minta{' '}
-          {STAF_APP_LABEL}
-          mengatur ulang kata sandi Anda.
+          {STAF_APP_LABEL} mengatur ulang kata sandi Anda.
         </p>
 
         <div className="border-t mt-6 pt-4 text-center">
