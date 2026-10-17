@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\User;
+use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\UserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,7 +21,7 @@ class UserServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new UserService(new UserRepository);
+        $this->service = new UserService(new UserRepository, new OfficialRepository);
     }
 
     public function test_get_all_with_citizen_and_official_returns_users(): void
