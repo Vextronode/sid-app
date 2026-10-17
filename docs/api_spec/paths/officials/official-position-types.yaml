@@ -6,7 +6,10 @@ get:
     Kaur Keuangan, Staf) milik desa Petugas, urut `sort_order`, termasuk
     yang nonaktif. Jabatan yang punya akun (kepala_desa, sekdes,
     kasi_pelayanan, kaur_tu_umum, kadus, rw, rt, staf_sid) bersifat tetap
-    dan tidak dikelola di sini.
+    dan tidak dikelola di sini; daftarnya ikut dikirim di
+    `account_positions` (urutan pilihan "Tetapkan Pejabat", label dari backend
+    termasuk "Staf {SID_APP_NAME}", dan `scope` = kolom wilayah wajib) supaya
+    dashboard tidak menulis label sendiri.
   operationId: listOfficialPositionTypes
   security:
     - sanctumCookie: []
@@ -22,6 +25,22 @@ get:
                 type: array
                 items:
                   $ref: '../../schemas/users/users.yaml#/OfficialPositionType'
+              account_positions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                      example: "rt"
+                    label:
+                      type: string
+                      example: "Ketua RT"
+                    scope:
+                      type: string
+                      nullable: true
+                      enum: [rt_id, rw_id, hamlet_id, null]
+                      example: "rt_id"
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
