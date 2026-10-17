@@ -25,7 +25,7 @@
 ## 2. Peta Domain Bisnis
 
 ### 2.1 Pelayanan Surat-Menyurat
-Warga (atau pejabat untuk dirinya) mengajukan surat dengan isian form dinamis per jenis surat, termasuk unggahan berkas dan tanda tangan pihak terkait (digital lewat persetujuan pemilik NIK, atau TTD basah). Alur default: **RT → Kepala Desa/Sekdes (final)**; RW & Kadus menerima FYI, Kasi/Kaur menerima notifikasi setelah final. Saat final approve sistem menerbitkan nomor surat (`{kode klasifikasi}/{urut}/Des/{bulan Romawi}/{tahun}`) dan membekukan **snapshot** render agar PDF tidak berubah. Jenis surat tertentu membawa **aksi data** (mis. menonaktifkan warga meninggal, menambah anak lahir) yang diterapkan Kasi/Kaur. Overdue dihitung dari deadline approval; reminder otomatis belum ada.
+Warga (atau pejabat untuk dirinya) mengajukan surat dengan isian form dinamis per jenis surat, termasuk unggahan berkas dan tanda tangan pihak terkait (digital lewat persetujuan pemilik NIK, atau TTD basah). Alur default: **RT → Kepala Desa/Sekdes (final)**; RW & Kadus menerima FYI, Kasi/Kaur menerima notifikasi setelah final. Saat final approve sistem menerbitkan nomor surat (`{kode klasifikasi}/{urut}/Des/{bulan Romawi}/{tahun}`) dan membekukan **snapshot** render agar PDF tidak berubah. Jenis surat tertentu membawa **aksi data** (mis. menonaktifkan warga meninggal, menambah anak lahir) yang diterapkan Kasi/Kaur. Overdue dihitung dari deadline approval; scheduler mengirim satu pengingat ke approver `reminder_hours` sebelum deadline.
 
 ### 2.2 Manajemen Kependudukan
 Data warga (individu) dan KK, sosio-ekonomi per KK, katalog pekerjaan per desa, impor Excel. Warga tidak mengedit datanya langsung; perubahan diajukan lewat surat ber-aksi data.

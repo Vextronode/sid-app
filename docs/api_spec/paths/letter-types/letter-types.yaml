@@ -2,12 +2,24 @@ get:
   tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
   summary: Lihat daftar tipe surat
   description: |
-    Lintas-role (semua user login). Mengembalikan tipe surat milik desa akun
-    yang login yang `template != NULL` dan `is_active = true`, urut nama.
-    Tipe Draft/Nonaktif tidak ikut dikembalikan (lihat audit docs).
+    Lintas-role (semua user login). Default: tipe surat milik desa akun yang
+    login yang `template != NULL` dan `is_active = true`, urut nama (dipakai
+    warga saat memilih jenis surat).
+
+    `include_inactive=true` (khusus Petugas Desa / `staf_sid`): semua tipe
+    surat desa termasuk Draft dan Nonaktif, urut nama, untuk halaman
+    pengaturan (UC-21). Badge diturunkan dari `status_label`.
   operationId: listLetterTypes
   security:
     - sanctumCookie: []
+  parameters:
+    - name: include_inactive
+      in: query
+      required: false
+      description: Sertakan tipe Draft dan Nonaktif. Selain `staf_sid` -> 403.
+      schema:
+        type: boolean
+        default: false
   responses:
     '200':
       description: Daftar tipe surat berhasil diambil
@@ -46,7 +58,10 @@ get:
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: Akun tidak aktif atau tidak memiliki desa
+      description: |
+        Akun tidak aktif atau tidak memiliki desa, atau `include_inactive=true`
+        dikirim oleh role selain `staf_sid` ("Hanya <label staf_sid> yang
+        berwenang.", label dari `UserRole::stafSidLabel()`).
       content:
         application/json:
           schema:

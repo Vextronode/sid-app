@@ -67,10 +67,11 @@
 | Promote/demote/rotate jabatan | activity log `official` | **Aktif** |
 | Perubahan data warga dari surat (Terapkan) | activity log `citizen`, event `letter_fulfilled` | **Aktif** |
 | Reset tanda tangan akun | activity log `user_signature`, event `reset` | **Aktif** |
+| Pemulihan kata sandi staf aplikasi lewat CLI (`staf-sid:recover`) | activity log `user`, event `staf_sid_recovered` (tanpa causer, `via: cli`) | **Aktif** |
 | Percobaan login gagal | `Log::warning('Failed login attempt')` | **Aktif** |
 | Login/logout sukses | — | **Belum diimplementasi** |
 | Akses data sensitif (NIK, No KK) | — | **Belum diimplementasi** |
-| CRUD data warga/KK manual | — (tidak ada `LogsActivity`) | **Belum diimplementasi** |
+| CRUD data warga/KK manual, impor Excel, data sosio-ekonomi KK | activity log `citizen` / `family` (`PopulationAuditService`), event `created`/`updated`/`deleted`/`imported`/`socioeconomic_updated`; field berubah + nilai lama/baru, NIK/No KK/alamat KK disamarkan; dilihat di menu **Log Aktivitas**; retensi 365 hari (`activitylog:clean` harian) | **Aktif** |
 
 **Backup & Recovery** — **Di luar source** (jadwal, enkripsi, dan lokasi backup tidak diatur aplikasi).
 

@@ -73,7 +73,7 @@ Fokus utama MVP adalah fitur inti yang membentuk alur kerja administrasi surat.
   - Kasi Pelayanan / Kaur TU & Umum: daftar surat yang sudah `approved` sesuai `assigned_role`; unduh dan Terapkan perubahan data, membaca daftar warga; bukan approver
 - Halaman Publik (beranda dengan statistik terhitung, profil desa dengan perangkat desa, berita berkategori, info surat, peraturan desa, hubungi kami), di-cache per desa
 - Registrasi Akun Warga (self-service, validasi NIK + tanggal lahir terhadap data kependudukan desa)
-- Sistem Notifikasi in-app (database) dan **Web Push** (PWA) dengan chain approval dinamis; penandaan overdue berdasarkan deadline aktif. Notifikasi email status surat dan reminder otomatis: **Belum diimplementasi** (lihat audit docs)
+- Sistem Notifikasi in-app (database) dan **Web Push** (PWA) dengan chain approval dinamis; penandaan overdue berdasarkan deadline aktif; pengingat approval terjadwal `reminder_hours` sebelum deadline. Notifikasi email status surat: **Belum diimplementasi** (lihat audit docs)
 
 > Jabatan struktural Kadus tetap ada di `officials.position`. Kadus tidak memiliki dashboard approval, tetapi dashboard read-only menampilkan surat di dusunnya yang sudah melewati tahap RT.
 

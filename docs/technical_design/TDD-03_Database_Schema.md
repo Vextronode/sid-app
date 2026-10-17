@@ -431,7 +431,7 @@ Record keputusan approval per surat per tahap. Satu surat dapat memiliki beberap
 | flow_step_id | BIGINT | FK → flow_steps.id, NULL | Referensi step spesifik yang dieksekusi, untuk audit trail granular |
 | notes | TEXT | NULL | Wajib jika `rejected` |
 | deadline_at | TIMESTAMP | NULL | Dihitung dari `approval_settings.deadline_hours` |
-| reminded_at | TIMESTAMP | NULL | Waktu reminder terakhir dikirim |
+| reminded_at | TIMESTAMP | NULL | Waktu pengingat dikirim (`approvals:send-reminders`); sekali per approval |
 | created_at | TIMESTAMP | NULL | |
 | updated_at | TIMESTAMP | NULL | |
 
@@ -532,7 +532,7 @@ Unique `uq_signature_blocks_pair (user_id, blocked_user_id)`.
 | village_id | UUID | FK → villages.id, NOT NULL | |
 | approval_level | ENUM | NOT NULL | `rt` \| `kepala_desa` \| `sekdes` \| `kasi_pelayanan` \| `kaur_tu_umum` |
 | deadline_hours | UNSIGNED INT | NOT NULL, DEFAULT 24 | Berapa jam pejabat punya waktu untuk action |
-| reminder_hours | UNSIGNED INT | NOT NULL, DEFAULT 12 | Konfigurasi target reminder; **Status: Belum diimplementasi (Planned)** — tidak ada task/job pengiriman reminder aktif |
+| reminder_hours | UNSIGNED INT | NOT NULL, DEFAULT 12 | Jam sebelum `deadline_at` saat pengingat dikirim ke approver (0 = tepat saat deadline) |
 | is_active | BOOLEAN | DEFAULT true | |
 | created_at, updated_at | TIMESTAMP | NULL | |
 
@@ -738,7 +738,7 @@ Status: ✅ Aktif = ada di migration; 📋 Planned = rencana, belum di migration
 | Index | Kolom | Status | Alasan |
 |---|---|---|---|
 | idx_approvals_letter | letter_id | ✅ Aktif | Semua approval satu surat |
-| idx_approvals_deadline | deadline_at | ✅ Aktif | Lookup deadline (reminder otomatis belum ada) |
+| idx_approvals_deadline | deadline_at | ✅ Aktif | Lookup deadline (overdue & pengingat) |
 | idx_approvals_level | (letter_id, approval_level) | ✅ Aktif | Cek keputusan level tertentu |
 | idx_approvals_flow_step | flow_step_id | ✅ Aktif (performa) | Cocokkan approval pending ke step |
 
