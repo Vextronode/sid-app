@@ -1,30 +1,32 @@
 # SIDUTama Cibenda
 
-**Sistem Informasi Desa (SID)** untuk Desa Cibenda. Aplikasi web ini mendigitalisasi layanan administrasi surat, pengelolaan data kependudukan, informasi publik desa, dan alur kerja petugas desa.
+**Sistem Informasi Desa (SID)** untuk Desa Cibenda. Aplikasi web ini mendigitalisasi layanan administrasi surat, pengelolaan data kependudukan, informasi publik desa, dan alur kerja perangkat desa.
 
-> Status: pengembangan aktif. Kontrak autentikasi dan alur persetujuan mengikuti revisi v5.1; gunakan kode, migration, dan route yang berjalan sebagai sumber kebenaran implementasi.
+> Status: pengembangan aktif. Kode, migration, dan route yang berjalan adalah sumber kebenaran implementasi; dokumen di `docs/` diselaraskan dengannya.
+
+Nama aplikasi yang tampil ke pengguna (judul, `<title>`, manifest PWA, label peran staf) dapat diganti lewat `SID_APP_NAME` (backend) dan `VITE_APP_NAME` (frontend). Default-nya **SIDUTama**, sehingga peran staf aplikasi tampil sebagai "Staf SIDUTama".
 
 ## Fitur utama
 
-- Warga dapat mendaftar, masuk, mengajukan surat, memantau status, dan mengunduh surat PDF yang telah disetujui.
-- Persetujuan surat ditargetkan memakai alur dinamis berbasis kategori, flow, dan langkah approval (`letter_categories`, `approval_flows`, dan `flow_steps`).
-- Data warga, kartu keluarga, wilayah Dusun/RW/RT, pengguna, jabatan, berita, peraturan desa, dan profil desa adalah domain utama aplikasi.
-- Halaman publik mencakup beranda, profil desa, berita, peraturan, serta informasi jenis surat.
-- Notifikasi in-app merupakan bagian dari alur; pengiriman email masih menunggu keputusan aktivasi MVP.
-
-Alur default surat adalah **Warga → RT → Kepala Desa/Sekretaris Desa (final)**. RW menerima notifikasi FYI setelah persetujuan RT dan bukan approver. Kasi Pelayanan/Kaur TU & Umum menerima notifikasi surat yang telah disetujui dan dapat melihat/mengunduh surat sesuai `assigned_role`; keduanya bukan approver. Flow lain dapat memiliki tahapan berbeda sesuai konfigurasi.
+- **Surat online:** warga (atau pejabat untuk dirinya sendiri) mengajukan surat dengan form dinamis per jenis surat, unggahan berkas, dan tanda tangan pihak terkait; status dipantau sampai PDF dapat diunduh.
+- **Persetujuan:** alur default **RT → Kepala Desa/Sekretaris Desa (final)**. RW dan Kadus menerima pemberitahuan setelah RT menyetujui; Kasi Pelayanan / Kaur TU & Umum menerima surat yang sudah final sesuai penugasan jenis suratnya. Saat final, sistem menerbitkan nomor surat dan membekukan snapshot render PDF.
+- **Deadline & pengingat:** tiap tahap punya batas waktu; surat yang lewat deadline ditandai overdue, dan scheduler mengirim satu pengingat ke approver `reminder_hours` sebelum deadline.
+- **Masa berlaku surat:** dicap saat final approve dari pengaturan jenis surat. Surat yang kedaluwarsa tetap tampil sebagai riwayat, tetapi pemohon tidak dapat lagi mengunduh atau mem-preview PDF-nya.
+- **Data kependudukan:** warga, Kartu Keluarga, data sosio-ekonomi KK, wilayah Dusun/RW/RT, dan katalog pekerjaan. NIK dan No KK disimpan terenkripsi.
+- **Log Aktivitas:** setiap perubahan data warga/KK oleh staf tercatat (nilai lama → baru, data sensitif disamarkan), bersama riwayat status semua surat, dalam satu halaman khusus staf aplikasi.
+- **Konten publik:** beranda, profil desa, berita berkategori, peraturan desa, struktur pemerintahan, BPD, LPM/Karang Taruna/PKK, dan informasi jenis surat.
+- **Notifikasi:** in-app (lonceng) dan Web Push (PWA).
 
 ## Role
 
 | Role | Tanggung jawab utama |
 | --- | --- |
 | Warga | Mengajukan, melacak, dan mengunduh surat miliknya |
-| RT | Memverifikasi pengajuan pada wilayahnya |
-| RW | Menerima notifikasi FYI, Melihat Surat yang masuk ke wilayahnya |
-| Kadus | Menerima notifikasi FYI, Melihat Surat yang masuk ke wilayahnya |
-| Kepala Desa / Sekretaris Desa | Approver pada tahap pemeriksaan desa |
-| Kasi Pelayanan / Kaur TU & Umum | Menerima notifikasi dan melihat/mengunduh surat yang telah disetujui sesuai penugasannya |
-| Petugas Desa | Mengelola data master, konten desa, wilayah, pengguna, dan memantau seluruh surat |
+| RT | Approver tahap pertama untuk warga di wilayahnya |
+| RW / Kadus | Menerima pemberitahuan dan melihat surat di wilayahnya setelah disetujui RT |
+| Kepala Desa / Sekretaris Desa | Approver final |
+| Kasi Pelayanan / Kaur TU & Umum | Menerima, mengunduh, dan menerapkan perubahan data dari surat yang sudah final sesuai penugasan |
+| Staf aplikasi (`staf_sid`, tampil "Staf {nama aplikasi}") | Mengelola akun, jabatan, data kependudukan, wilayah, konten desa, konfigurasi jenis surat & deadline, serta memantau seluruh surat dan Log Aktivitas. Hanya **satu per desa**; pergantian lewat Rotasi |
 
 ## Arsitektur
 
@@ -35,26 +37,26 @@ sid-app/
 ├── apps/
 │   ├── backend/     Laravel REST API
 │   └── frontend/    React SPA (Vite)
+├── deploy/          docker compose + skrip deploy stack expo
 ├── docs/            desain teknis, arsitektur, spesifikasi API, dan panduan tim
 └── README.md
 ```
 
-- **Backend:** PHP 8.3+, Laravel 13, Laravel Sanctum, DomPDF, queue database, dan PHPUnit.
-- **Frontend:** React 19, Vite, React Router, TanStack Query, Axios, Tailwind CSS, Zod, Vitest, dan React Testing Library.
-- **Autentikasi:** Laravel Sanctum berbasis session/cookie HttpOnly. Token tidak disimpan pada `localStorage` atau `sessionStorage`.
-
-### Database
-
-Project menggunakan **PostgreSQL 18**. Gunakan konfigurasi `pgsql` yang sama pada setiap environment dan dokumentasikan environment variable baru di `.env.example`.
+- **Backend:** PHP 8.3+, Laravel 13, Laravel Sanctum, DomPDF, spatie/laravel-activitylog, queue & scheduler Laravel, PHPUnit.
+- **Frontend:** React 19, Vite 8, React Router, TanStack Query, Axios, Tailwind CSS v4, Vitest, React Testing Library.
+- **Autentikasi:** Laravel Sanctum berbasis session/cookie HttpOnly. Token tidak disimpan di `localStorage` atau `sessionStorage`.
+- **Database:** PostgreSQL (`DB_CONNECTION=pgsql`). Test backend memakai SQLite in-memory.
 
 ## Prasyarat
 
-- PHP 8.3+ beserta ekstensi `pdo_pgsql`
+- PHP 8.3+ dengan ekstensi `pdo_pgsql` (dan `gd` dengan dukungan WebP untuk optimasi gambar)
 - Composer
-- Node.js 18+ dan npm
-- PostgreSQL 18
+- Node.js 20.19+ atau 22.12+ (syarat Vite 8)
+- PostgreSQL
 
 ## Menjalankan secara lokal
+
+Langkah lengkap ada di [`docs/SETUP.md`](docs/SETUP.md). Ringkasnya:
 
 ### 1. Backend
 
@@ -65,79 +67,79 @@ copy .env.example .env
 php artisan key:generate
 ```
 
-Buat database PostgreSQL, kemudian sesuaikan `apps/backend/.env`:
+Buat database PostgreSQL, lalu sesuaikan `apps/backend/.env`:
 
 ```env
+SID_APP_NAME=SIDUTama
+
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
-DB_DATABASE=sid_cibenda
+DB_DATABASE=sidutama
 DB_USERNAME=postgres
 DB_PASSWORD=isi_password_postgresql_anda
 
 FRONTEND_URL=http://localhost:5173
-SANCTUM_STATEFUL_DOMAINS=localhost:5173
-SESSION_DOMAIN=localhost
+SANCTUM_STATEFUL_DOMAINS=localhost:5173,127.0.0.1:5173
+
+QUEUE_CONNECTION=database
 ```
 
-Jalankan migration:
+> `.env.example` default-nya menunjuk ke `vite preview` (port 4173). Untuk `npm run dev`, pakai port 5173 seperti di atas (versi yang di-comment di `.env.example`).
+
+Isi database. Untuk database lokal yang boleh di-reset, pakai seeder demo:
 
 ```powershell
-php artisan migrate --force
+php artisan migrate:fresh --seed
+php artisan storage:link
 ```
 
-Bootstrap Petugas pertama sekaligus membuat citizen, akun, dan jabatan dalam satu transaksi. Untuk citizen baru, sertakan data wajib sesuai form tambah warga (termasuk UUID desa dan ID RT):
+Seeder membuat Desa Cibenda lengkap dengan wilayah, perangkat desa, warga, berita, dan akun demo (mis. `demo_admin` untuk staf aplikasi, `demo_warga` untuk warga; kata sandi `Password123!`). Daftar lengkap akun ada di SETUP. Seeder demo menolak berjalan di `APP_ENV=production`.
 
-```powershell
-php artisan staf-sid:first --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas" --village="<UUID_DESA>" --rt=1
-```
+Untuk database tanpa data demo, buat staf aplikasi pertama dengan `php artisan staf-sid:first` (lihat SETUP).
 
-Jika citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Username dibuat otomatis dan password sementara acak hanya dicetak sekali. Petugas wajib menggantinya saat login pertama. Command gagal jika Petugas Desa aktif sudah ada. Setelah Petugas pertama aktif, promosi berikutnya dilakukan melalui endpoint manajemen jabatan.
+### 2. Proses backend yang dijalankan
 
-Untuk lingkungan lokal, `--force` dapat dihilangkan. Setelah akun awal siap, jalankan server API:
+Jalankan di `apps\backend`, masing-masing di terminal terpisah dan biarkan terbuka:
 
-```powershell
-php artisan serve
-```
+| Terminal | Perintah | Fungsi | Wajib? |
+| --- | --- | --- | --- |
+| 1 | `php artisan serve` | API di `http://localhost:8000` | Ya |
+| 2 | `php artisan schedule:work` | Scheduler: pengingat approval tiap 5 menit, pembersihan log aktivitas harian | Untuk fitur pengingat |
+| 3 | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push | Untuk push browser |
 
-API tersedia di `http://localhost:8000`.
+- Notifikasi in-app (lonceng) selalu masuk tanpa worker. Dengan `QUEUE_CONNECTION=database`, Web Push diantrekan dan baru terkirim saat `queue:work` jalan; yang tertunda langsung terkirim begitu worker dinyalakan.
+- Alternatif lokal paling ringkas: set `QUEUE_CONNECTION=sync` agar push dikirim langsung tanpa worker (tombol submit/approve sedikit lebih lambat).
+- Setelah mengubah kode backend atau `.env`, restart `queue:work` dan `schedule:work` (Ctrl+C lalu jalankan lagi).
+- Script `composer dev` / `composer setup` bawaan template Laravel menjalankan `npm` di folder backend yang tidak punya `package.json`; jangan dipakai, jalankan perintah di atas secara manual.
 
-Jika Anda menguji notifikasi asynchronous atau reminder deadline, jalankan worker dan scheduler pada terminal terpisah:
-
-```powershell
-cd apps\backend
-php artisan queue:work
-php artisan schedule:work
-```
-
-### 2. Frontend
-
-Buka terminal kedua:
+### 3. Frontend
 
 ```powershell
 cd apps\frontend
 npm install
+copy .env.example .env
 npm run dev
 ```
 
-Jika frontend dan backend dijalankan pada origin berbeda, buat `apps/frontend/.env.local`:
+`apps/frontend/.env`:
 
 ```env
 VITE_API_URL=http://localhost:8000
 VITE_API_BASE_URL=http://localhost:8000/api
+VITE_APP_NAME=SIDUTama
 VITE_VAPID_PUBLIC_KEY=
 ```
 
-Set `VITE_VAPID_PUBLIC_KEY` to the public VAPID key configured by the backend to enable browser push notifications.
+Samakan `VITE_APP_NAME` dengan `SID_APP_NAME`, dan `VITE_VAPID_PUBLIC_KEY` dengan `VAPID_PUBLIC_KEY` backend bila Web Push dipakai. Gunakan host yang sama dengan `SANCTUM_STATEFUL_DOMAINS` (jangan campur `localhost` dan `127.0.0.1`). Frontend tersedia di `http://localhost:5173`.
 
-Frontend tersedia di `http://localhost:5173`.
-
-### 3. Menjalankan test dan pemeriksaan kode
+### 4. Test dan pemeriksaan kode
 
 ```powershell
-# Backend
+# Backend (memakai SQLite in-memory, tidak menyentuh database .env)
 cd apps\backend
 php artisan test
+.\vendor\bin\pint --test
 
 # Frontend
 cd apps\frontend
@@ -146,12 +148,25 @@ npm run test:run
 npm run build
 ```
 
+## Perintah artisan khusus aplikasi
+
+| Perintah | Kegunaan |
+| --- | --- |
+| `php artisan staf-sid:first --nik=... [data citizen]` | Bootstrap staf aplikasi pertama (ditolak bila sudah ada staf aktif) |
+| `php artisan staf-sid:recover --username=... [--force]` | Pemulihan darurat bila staf aplikasi lupa kata sandi: kata sandi sementara, wajib ganti saat login, sesi lama dicabut, tercatat |
+| `php artisan approvals:send-reminders` | Kirim pengingat approval yang jatuh tempo sekarang (normalnya otomatis lewat `schedule:work`) |
+| `php artisan letters:backfill-snapshots` | Bekukan snapshot render untuk surat approved lama yang belum punya snapshot |
+
+## Deploy (stack expo Docker)
+
+Stack Docker (`sid_db`, `sid_api`, `sid_scheduler`, `sid_web`) dijalankan lewat skrip di `deploy/scripts/` dengan image yang dibangun CI. Di Docker, `QUEUE_CONNECTION=sync` (push dikirim langsung) dan scheduler berjalan otomatis di service `sid_scheduler`, jadi tidak perlu menjalankan worker atau scheduler manual. Panduan operasional ada di [`docs/EXPO_RUNBOOK.md`](docs/EXPO_RUNBOOK.md).
+
 ## Konvensi penting
 
-- Seluruh endpoint backend berada di `apps/backend/routes/api.php`; kontrak API ada di [`docs/api_spec/openapi.yaml`](docs/api_spec/openapi.yaml).
+- Seluruh endpoint backend berada di `apps/backend/routes/api.php`; jadwal scheduler di `apps/backend/routes/console.php`; kontrak API di [`docs/api_spec/openapi.yaml`](docs/api_spec/openapi.yaml).
 - Kode frontend dikelompokkan per domain di `src/features/`; halaman route berada di `src/pages/`.
 - Request browser harus mengirim cookie (`withCredentials`) dan mengambil CSRF cookie Sanctum sebelum login.
-- Data sensitif seperti NIK, nomor KK, dan alamat dirancang memakai enkripsi field-level serta hash terpisah untuk pencarian.
+- Identitas desa (nama, kontak, logo) berasal dari database dan dikelola lewat Kelola Profil Desa, bukan di-hardcode di frontend.
 - Jangan memasukkan secret atau file `.env` ke Git. Jika menambah environment variable, tambahkan juga ke `.env.example` dan dokumentasikan perubahannya.
 
 ## Kontribusi
@@ -162,15 +177,17 @@ Gunakan branch dari `dev` dengan format `feature/deskripsi`, `fix/deskripsi`, at
 
 | Dokumen | Kegunaan |
 | --- | --- |
+| [`docs/SETUP.md`](docs/SETUP.md) | Panduan setup lokal (Windows) yang lebih rinci |
+| [`docs/EXPO_RUNBOOK.md`](docs/EXPO_RUNBOOK.md) | Deploy dan operasional stack Docker expo |
 | [`docs/technical_design/TDD-01_Overview_Scope_Roles.md`](docs/technical_design/TDD-01_Overview_Scope_Roles.md) | Tujuan, ruang lingkup MVP, role, dan alur surat |
 | [`docs/technical_design/TDD-02_UseCase_Descriptions.md`](docs/technical_design/TDD-02_UseCase_Descriptions.md) | Aturan bisnis dan use case |
 | [`docs/technical_design/TDD-03_Database_Schema.md`](docs/technical_design/TDD-03_Database_Schema.md) | Skema data, enkripsi, dan strategi indexing |
-| [`docs/technical_design/TDD-04_Security_NFR_Compliance.md`](docs/technical_design/TDD-04_Security_NFR_Compliance.md) | Keamanan, kebutuhan nonfungsional, dan compliance |
+| [`docs/technical_design/TDD-04_Security_NFR_Compliance.md`](docs/technical_design/TDD-04_Security_NFR_Compliance.md) | Keamanan, audit trail, kebutuhan nonfungsional, dan compliance |
 | [`docs/technical_design/TDD-05_Roadmap_Risks_OpenQuestions.md`](docs/technical_design/TDD-05_Roadmap_Risks_OpenQuestions.md) | Roadmap, risiko, dan keputusan terbuka |
 | [`docs/architecture/SID-ARCH-SYS-001_System_Architecture_v1.1.md`](docs/architecture/SID-ARCH-SYS-001_System_Architecture_v1.1.md) | Titik masuk arsitektur sistem dan pemetaan RBAC |
-| [`docs/architecture/SID-ARCH-BE-001_Backend_Architecture.md`](docs/architecture/SID-ARCH-BE-001_Backend_Architecture.md) | Pola backend, pipeline, notifikasi, dan audit trail |
+| [`docs/architecture/SID-ARCH-BE-001_Backend_Architecture.md`](docs/architecture/SID-ARCH-BE-001_Backend_Architecture.md) | Pola backend, pipeline, notifikasi, scheduler, dan audit trail |
 | [`docs/architecture/SID-ARCH-FE-001_Frontend_Architecture_v1.1.md`](docs/architecture/SID-ARCH-FE-001_Frontend_Architecture_v1.1.md) | Pola frontend, routing, API client, dan design system |
-| [`docs/SETUP.md`](docs/SETUP.md) | Panduan setup Windows yang lebih rinci |
+| [`docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md`](docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md) | Fitur yang terdokumentasi tetapi belum diimplementasi |
 | [`docs/STRUKTUR_FOLDER.md`](docs/STRUKTUR_FOLDER.md) | Struktur dan aturan organisasi kode |
 | [`docs/api_spec/00_INDEX.md`](docs/api_spec/00_INDEX.md) | Indeks spesifikasi API |
 | [`docs/development/DEV-CODE-001_Code_Guidelines.md`](docs/development/DEV-CODE-001_Code_Guidelines.md) | Konvensi kode frontend dan automasi kualitas |
@@ -181,4 +198,4 @@ Gunakan branch dari `dev` dengan format `feature/deskripsi`, `fix/deskripsi`, at
 
 ## Batasan MVP
 
-Modul aset dan keuangan desa, integrasi Dukcapil, WhatsApp Bot, blockchain penuh, serta editor dinamis tipe/template surat belum termasuk MVP. Rencana pengembangannya dicatat pada [appendix desain teknis](docs/technical_design/TDD-06_Appendix.md).
+Modul aset dan keuangan desa, integrasi Dukcapil, WhatsApp Bot, blockchain penuh, notifikasi email status surat, serta editor dinamis tipe/template surat belum termasuk MVP. Rencana pengembangannya dicatat pada [appendix desain teknis](docs/technical_design/TDD-06_Appendix.md) dan [audit docs](docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md).
