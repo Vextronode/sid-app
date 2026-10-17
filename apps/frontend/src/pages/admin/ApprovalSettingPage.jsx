@@ -132,7 +132,9 @@ export default function ApprovalSettingPage() {
           <h1 className="sid-page-title">Pengaturan Deadline Approval</h1>
 
           <p className="sid-page-description">
-            Atur batas waktu proses dan waktu pengingat untuk setiap tahap approval surat.
+            Atur batas waktu proses dan waktu pengingat untuk setiap tahap approval surat. Pengingat
+            dikirim sekali ke approver saat sisa waktu tinggal sejumlah jam reminder (0 = tepat saat
+            deadline).
           </p>
         </div>
 
@@ -217,7 +219,7 @@ export default function ApprovalSettingPage() {
 
                   <label className="block">
                     <span className="mb-1.5 block text-xs font-medium text-gray-600">
-                      Reminder Hours
+                      Reminder Hours (sebelum deadline)
                     </span>
 
                     <div className="relative">
@@ -256,7 +258,7 @@ export default function ApprovalSettingPage() {
                     type="button"
                     onClick={() => handleSave(setting)}
                     disabled={savingId === setting.id}
-                    className="sid-button-primary inline-flex items-center justify-center gap-2"
+                    className="sid-button-primary inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium disabled:opacity-60"
                   >
                     <Save size={16} />
 
