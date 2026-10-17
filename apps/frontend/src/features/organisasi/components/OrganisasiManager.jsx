@@ -1,608 +1,912 @@
-import { useState } from 'react'
-import { Plus, Edit, Trash2, X, UserPlus, Repeat, Phone } from 'lucide-react'
-import { useOrganisasi } from '../hooks/useOrganisasi'
-import { PageLoader } from '@/components/ui/PageLoader'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ArrowUpCircle,
+  Camera,
+  ImageOff,
+  Pencil,
+  Phone,
+  Repeat,
+  Trash2,
+  UserPlus,
+  UserRoundMinus,
+  Users,
+  UserX,
+} from 'lucide-react'
 
-const labelStyle = {
-  fontSize: 12,
-  fontWeight: 600,
-  color: '#374151',
-  display: 'block',
-  marginBottom: 4,
-}
-const inputStyle = { width: '100%', padding: 8, borderRadius: 6, border: '1px solid #D1D5DB' }
-const primaryBtn = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-  backgroundColor: '#106D20',
-  color: '#fff',
-  padding: '8px 14px',
-  borderRadius: 8,
-  border: 'none',
-  fontWeight: 600,
-  cursor: 'pointer',
-  fontSize: 13,
-}
-const ghostBtn = {
-  padding: '8px 16px',
-  borderRadius: 6,
-  border: '1px solid #D1D5DB',
-  backgroundColor: '#fff',
-  cursor: 'pointer',
-}
-const iconBtn = { background: 'none', border: 'none', cursor: 'pointer', padding: 0 }
+import { SiteFooter } from '@/components/layout/SiteFooter'
+import { PageLoader } from '@/components/ui/PageLoader'
+import { useOrganisasi } from '../hooks/useOrganisasi'
+
+const LEADER_SLOTS = [
+  { key: 'ketua', label: 'Ketua' },
+  { key: 'wakil_ketua', label: 'Wakil Ketua' },
+]
+
+const SLOT_LABEL = { ketua: 'Ketua', wakil_ketua: 'Wakil Ketua', anggota: 'Anggota' }
 
 const today = () => new Date().toISOString().slice(0, 10)
+
+const formatDate = (value) =>
+  value
+    ? new Date(`${value}T00:00:00`).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '-'
 
 const getErrorMessage = (err, fallback) => {
   const errs = err?.response?.data?.errors
   return (errs && Object.values(errs)[0]?.[0]) || err?.response?.data?.message || fallback
 }
 
-function Modal({ title, onClose, children }) {
+const activeOf = (position) => (position?.members ?? []).filter((m) => m.is_active)
+const historyOf = (position) => (position?.members ?? []).filter((m) => !m.is_active)
+
+const PHOTO_TYPES = 'image/png,image/jpeg,image/webp'
+
+function MemberPhoto({ src, name, size = 'tiny' }) {
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 999,
-        padding: 16,
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: '#fff',
-          borderRadius: 10,
-          padding: 24,
-          width: '100%',
-          maxWidth: 480,
-          maxHeight: '90vh',
-          overflowY: 'auto',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 16,
-          }}
-        >
-          <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{title}</h2>
-          <button type="button" onClick={onClose} style={iconBtn}>
-            <X size={20} />
-          </button>
-        </div>
-        {children}
-      </div>
+    <div className={`sid-profil-desa-avatar sid-profil-desa-avatar-${size}`}>
+      {src ? (
+        <img src={src} alt={`Foto ${name ?? 'anggota'}`} className="h-full w-full object-cover" />
+      ) : (
+        <Users size={size === 'tiny' ? 18 : 24} className="sid-profil-desa-avatar-placeholder" />
+      )}
     </div>
   )
 }
 
-function PositionForm({ initial, submitting, error, onCancel, onSubmit }) {
-  const [form, setForm] = useState({
-    position_label: initial?.position_label ?? '',
-    is_single_occupant: initial?.is_single_occupant ?? true,
-    sort_order: initial?.sort_order ?? 0,
-    is_active: initial?.is_active ?? true,
-  })
+// Foto opsional di form; pratinjau tampil begitu berkas dipilih.
+function PhotoField({ file, currentSrc, onChange }) {
+  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
+
+  useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview])
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        onSubmit({ ...form, sort_order: Number(form.sort_order) || 0 })
-      }}
-      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-    >
-      <div>
-        <label style={labelStyle}>Nama Jabatan</label>
+    <div className="sid-form-group">
+      <label className="sid-form-label" htmlFor="org-member-photo">
+        Foto profil
+      </label>
+      <div className="flex items-center gap-3">
+        <MemberPhoto src={preview ?? currentSrc} name="anggota" size="small" />
+        <input
+          id="org-member-photo"
+          type="file"
+          accept={PHOTO_TYPES}
+          onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+        />
+      </div>
+      <small className="sid-admin-cell-meta">Opsional. PNG, JPG, atau WEBP. Maksimal 5 MB.</small>
+    </div>
+  )
+}
+
+// Tombol ganti/hapus foto, dipakai di kartu pimpinan dan tabel anggota.
+function PhotoActions({ member, processing, onPick, onRemove }) {
+  return (
+    <>
+      <button
+        type="button"
+        className="sid-operator-action detail"
+        title={member.photo_img ? 'Ganti foto' : 'Unggah foto'}
+        aria-label={`${member.photo_img ? 'Ganti' : 'Unggah'} foto ${member.member_name}`}
+        disabled={processing}
+        onClick={() => onPick(member)}
+      >
+        <Camera size={16} />
+      </button>
+      {member.photo_img && (
+        <button
+          type="button"
+          className="sid-operator-action delete"
+          title="Hapus foto"
+          aria-label={`Hapus foto ${member.member_name}`}
+          disabled={processing}
+          onClick={() => onRemove(member)}
+        >
+          <ImageOff size={16} />
+        </button>
+      )}
+    </>
+  )
+}
+
+function ModalError({ error }) {
+  if (!error) return null
+
+  return (
+    <p className="sid-admin-alert sid-admin-alert-error" role="alert">
+      {error}
+    </p>
+  )
+}
+
+function ModalActions({ submitting, submitLabel, onCancel }) {
+  return (
+    <div className="sid-modal-actions">
+      <button type="button" className="sid-button sid-button-outline" onClick={onCancel}>
+        Batal
+      </button>
+      <button type="submit" className="sid-button sid-button-primary" disabled={submitting}>
+        {submitting ? 'Menyimpan...' : submitLabel}
+      </button>
+    </div>
+  )
+}
+
+function HistoryList({ members, processing, onDelete }) {
+  if (members.length === 0) return null
+
+  return (
+    <details className="sid-org-history">
+      <summary>Riwayat ({members.length})</summary>
+      <ul>
+        {members.map((m) => (
+          <li key={m.id}>
+            <span>
+              {m.member_name}
+              <small>
+                {formatDate(m.started_at)} – {formatDate(m.ended_at)}
+              </small>
+            </span>
+            <button
+              type="button"
+              className="sid-operator-action delete"
+              title="Hapus riwayat"
+              aria-label={`Hapus riwayat ${m.member_name}`}
+              disabled={processing}
+              onClick={() => onDelete(m)}
+            >
+              <Trash2 size={14} />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </details>
+  )
+}
+
+function LeaderCard({
+  label,
+  position,
+  processing,
+  onFill,
+  onEdit,
+  onEnd,
+  onDeleteHistory,
+  onPickPhoto,
+  onRemovePhoto,
+}) {
+  const holder = activeOf(position)[0]
+
+  return (
+    <article className="sid-org-slot">
+      <div className="sid-org-slot-head">
+        <span className="sid-org-slot-label">{label}</span>
+        {holder && (
+          <div className="sid-operator-actions">
+            <PhotoActions
+              member={holder}
+              processing={processing}
+              onPick={onPickPhoto}
+              onRemove={onRemovePhoto}
+            />
+            <button
+              type="button"
+              className="sid-operator-action edit"
+              title="Edit data"
+              aria-label={`Edit data ${label}`}
+              disabled={processing}
+              onClick={() => onEdit(holder)}
+            >
+              <Pencil size={16} />
+            </button>
+            <button
+              type="button"
+              className="sid-operator-action toggle"
+              title="Turunkan jadi Anggota"
+              aria-label={`Turunkan ${label} jadi Anggota`}
+              disabled={processing}
+              onClick={() => onEnd(holder, true)}
+            >
+              <UserRoundMinus size={16} />
+            </button>
+            <button
+              type="button"
+              className="sid-operator-action delete"
+              title="Kosongkan jabatan"
+              aria-label={`Kosongkan jabatan ${label}`}
+              disabled={processing}
+              onClick={() => onEnd(holder, false)}
+            >
+              <UserX size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {holder ? (
+        <div className="sid-org-slot-body">
+          <MemberPhoto src={holder.photo_img} name={holder.member_name} size="medium" />
+          <div>
+            <p className="sid-org-slot-name">{holder.member_name}</p>
+            <p className="sid-org-slot-meta">
+              Sejak {formatDate(holder.started_at)}
+              {holder.phone_wa && (
+                <>
+                  {' · '}
+                  <Phone size={12} aria-hidden="true" /> {holder.phone_wa}
+                </>
+              )}
+            </p>
+            {holder.notes && <p className="sid-org-slot-meta">{holder.notes}</p>}
+          </div>
+        </div>
+      ) : (
+        <p className="sid-org-slot-empty">Belum diisi</p>
+      )}
+
+      <button
+        type="button"
+        className={`sid-button ${holder ? 'sid-button-outline' : 'sid-button-primary'}`}
+        disabled={processing || !position}
+        onClick={onFill}
+      >
+        {holder ? <Repeat size={16} /> : <UserPlus size={16} />}
+        {holder ? `Ganti ${label}` : `Isi ${label}`}
+      </button>
+
+      <HistoryList
+        members={historyOf(position)}
+        processing={processing}
+        onDelete={onDeleteHistory}
+      />
+    </article>
+  )
+}
+
+// Mengisi/mengganti Ketua atau Wakil Ketua, dari anggota yang sudah ada
+// (promosi) atau orang baru.
+function FillLeaderForm({ initial, slots, submitting, error, onCancel, onSubmit }) {
+  const [form, setForm] = useState(initial)
+  const [photo, setPhoto] = useState(null)
+
+  const target = slots[form.slot]
+  const holder = activeOf(target)[0]
+  const candidates = ['ketua', 'wakil_ketua', 'anggota']
+    .filter((key) => key !== form.slot)
+    .flatMap((key) => activeOf(slots[key]).map((m) => ({ ...m, slotLabel: SLOT_LABEL[key] })))
+
+  const set = (patch) => setForm((current) => ({ ...current, ...patch }))
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    const isExisting = form.source === 'existing'
+    // Anggota yang dipromosikan membawa fotonya sendiri.
+    onSubmit(
+      target.id,
+      {
+        started_at: form.started_at,
+        notes: form.notes || null,
+        previous_holder: form.previous_holder,
+        ...(isExisting
+          ? { from_member_id: Number(form.from_member_id) }
+          : { member_name: form.member_name.trim(), phone_wa: form.phone_wa || null }),
+      },
+      isExisting ? null : photo,
+    )
+  }
+
+  return (
+    <form className="sid-modal" onSubmit={handleSubmit}>
+      <h2>{holder ? 'Ganti' : 'Isi'} Pimpinan</h2>
+
+      {initial.lockSlot ? null : (
+        <label className="sid-form-group">
+          <span className="sid-form-label">Jabatan *</span>
+          <select value={form.slot} onChange={(e) => set({ slot: e.target.value })}>
+            {LEADER_SLOTS.map((s) => (
+              <option key={s.key} value={s.key}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <div className="sid-form-group">
+        <span className="sid-form-label">Diisi oleh</span>
+        <div className="sid-org-choice">
+          <label>
+            <input
+              type="radio"
+              name="source"
+              checked={form.source === 'existing'}
+              disabled={candidates.length === 0}
+              onChange={() => set({ source: 'existing' })}
+            />
+            Anggota yang sudah ada
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="source"
+              checked={form.source === 'new'}
+              onChange={() => set({ source: 'new' })}
+            />
+            Orang baru
+          </label>
+        </div>
+      </div>
+
+      {form.source === 'existing' ? (
+        <label className="sid-form-group">
+          <span className="sid-form-label">Pilih anggota *</span>
+          <select
+            required
+            value={form.from_member_id}
+            onChange={(e) => set({ from_member_id: e.target.value })}
+          >
+            <option value="">Pilih anggota</option>
+            {candidates.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.member_name} ({m.slotLabel})
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <>
+          <label className="sid-form-group">
+            <span className="sid-form-label">Nama lengkap *</span>
+            <input
+              required
+              maxLength={150}
+              value={form.member_name}
+              onChange={(e) => set({ member_name: e.target.value })}
+            />
+          </label>
+          <label className="sid-form-group">
+            <span className="sid-form-label">Nomor WhatsApp</span>
+            <input
+              maxLength={20}
+              value={form.phone_wa}
+              onChange={(e) => set({ phone_wa: e.target.value })}
+            />
+          </label>
+          <PhotoField file={photo} onChange={setPhoto} />
+        </>
+      )}
+
+      <label className="sid-form-group">
+        <span className="sid-form-label">Mulai menjabat *</span>
         <input
           required
-          maxLength={100}
-          value={form.position_label}
-          placeholder="Contoh: Ketua"
-          onChange={(e) => setForm({ ...form, position_label: e.target.value })}
-          style={inputStyle}
+          type="date"
+          value={form.started_at}
+          onChange={(e) => set({ started_at: e.target.value })}
         />
-      </div>
-      <div>
-        <label style={labelStyle}>Urutan Tampil</label>
-        <input
-          type="number"
-          min="0"
-          value={form.sort_order}
-          onChange={(e) => setForm({ ...form, sort_order: e.target.value })}
-          style={inputStyle}
-        />
-      </div>
-      <label style={{ fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input
-          type="checkbox"
-          checked={form.is_single_occupant}
-          onChange={(e) => setForm({ ...form, is_single_occupant: e.target.checked })}
-        />
-        Hanya satu pemegang jabatan (mis. Ketua)
       </label>
-      <label style={{ fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input
-          type="checkbox"
-          checked={form.is_active}
-          onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-        />
-        Jabatan aktif
-      </label>
-      {error && (
-        <div
-          style={{
-            color: '#d32f2f',
-            backgroundColor: '#fde8e8',
-            padding: '8px 12px',
-            borderRadius: 6,
-            fontSize: 13,
-          }}
-        >
-          {error}
+
+      {holder && (
+        <div className="sid-form-group">
+          <span className="sid-form-label">
+            {SLOT_LABEL[form.slot]} saat ini, {holder.member_name}, akan
+          </span>
+          <div className="sid-org-choice">
+            <label>
+              <input
+                type="radio"
+                name="previous_holder"
+                checked={form.previous_holder === 'end'}
+                onChange={() => set({ previous_holder: 'end' })}
+              />
+              Selesai menjabat (masuk riwayat)
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="previous_holder"
+                checked={form.previous_holder === 'to_member'}
+                onChange={() => set({ previous_holder: 'to_member' })}
+              />
+              Menjadi Anggota
+            </label>
+          </div>
         </div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-        <button type="button" onClick={onCancel} style={ghostBtn}>
-          Batal
-        </button>
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{ ...primaryBtn, opacity: submitting ? 0.7 : 1 }}
-        >
-          {submitting ? 'Menyimpan...' : 'Simpan'}
-        </button>
-      </div>
+
+      <label className="sid-form-group">
+        <span className="sid-form-label">Catatan</span>
+        <textarea rows={2} value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
+      </label>
+
+      <ModalError error={error} />
+      <ModalActions
+        submitting={submitting}
+        submitLabel={holder ? 'Ganti' : 'Simpan'}
+        onCancel={onCancel}
+      />
     </form>
   )
 }
 
-function MemberForm({ position, initial, submitting, error, onCancel, onSubmit }) {
+// Tambah anggota baru, atau edit data siapa pun (termasuk Ketua/Wakil).
+function MemberForm({ member, submitting, error, onCancel, onSubmit }) {
   const [form, setForm] = useState({
-    member_name: initial?.member_name ?? '',
-    phone_wa: initial?.phone_wa ?? '',
-    started_at: initial?.started_at ?? today(),
-    notes: initial?.notes ?? '',
+    member_name: member?.member_name ?? '',
+    phone_wa: member?.phone_wa ?? '',
+    started_at: member?.started_at ?? today(),
+    notes: member?.notes ?? '',
   })
+  const [photo, setPhoto] = useState(null)
 
-  const activeHolder = (position.members ?? []).find((m) => m.is_active)
-  const willRotate = !initial && position.is_single_occupant && activeHolder
+  const set = (patch) => setForm((current) => ({ ...current, ...patch }))
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        onSubmit({
-          member_name: form.member_name,
-          phone_wa: form.phone_wa || null,
-          started_at: form.started_at,
-          notes: form.notes || null,
-        })
+      className="sid-modal"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSubmit(
+          {
+            member_name: form.member_name.trim(),
+            phone_wa: form.phone_wa || null,
+            notes: form.notes || null,
+            ...(member ? {} : { started_at: form.started_at }),
+          },
+          photo,
+        )
       }}
-      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
     >
-      {willRotate && (
-        <div
-          style={{
-            backgroundColor: '#FFF7E6',
-            border: '1px solid #F5D08A',
-            padding: '8px 12px',
-            borderRadius: 6,
-            fontSize: 12,
-            color: '#8a5a00',
-          }}
-        >
-          Jabatan ini hanya untuk satu orang. Pemegang saat ini (
-          <strong>{activeHolder.member_name}</strong>) akan digantikan.
-        </div>
-      )}
-      <div>
-        <label style={labelStyle}>Nama Anggota</label>
+      <h2>{member ? 'Edit Data' : 'Tambah Anggota'}</h2>
+
+      <label className="sid-form-group">
+        <span className="sid-form-label">Nama lengkap *</span>
         <input
           required
           maxLength={150}
           value={form.member_name}
-          placeholder="Nama lengkap"
-          onChange={(e) => setForm({ ...form, member_name: e.target.value })}
-          style={inputStyle}
+          onChange={(e) => set({ member_name: e.target.value })}
         />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>No. WhatsApp</label>
+      </label>
+      <label className="sid-form-group">
+        <span className="sid-form-label">Nomor WhatsApp</span>
+        <input
+          maxLength={20}
+          value={form.phone_wa}
+          onChange={(e) => set({ phone_wa: e.target.value })}
+        />
+      </label>
+      <PhotoField file={photo} currentSrc={member?.photo_img} onChange={setPhoto} />
+      {!member && (
+        <label className="sid-form-group">
+          <span className="sid-form-label">Mulai menjabat *</span>
           <input
-            maxLength={20}
-            value={form.phone_wa}
-            placeholder="Opsional"
-            onChange={(e) => setForm({ ...form, phone_wa: e.target.value })}
-            style={inputStyle}
-          />
-        </div>
-        <div>
-          <label style={labelStyle}>Mulai Menjabat</label>
-          <input
-            type="date"
             required
+            type="date"
             value={form.started_at}
-            onChange={(e) => setForm({ ...form, started_at: e.target.value })}
-            style={inputStyle}
+            onChange={(e) => set({ started_at: e.target.value })}
           />
-        </div>
-      </div>
-      <div>
-        <label style={labelStyle}>Catatan</label>
-        <textarea
-          rows={2}
-          value={form.notes}
-          placeholder="Opsional"
-          onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          style={inputStyle}
-        />
-      </div>
-      {error && (
-        <div
-          style={{
-            color: '#d32f2f',
-            backgroundColor: '#fde8e8',
-            padding: '8px 12px',
-            borderRadius: 6,
-            fontSize: 13,
-          }}
-        >
-          {error}
-        </div>
+        </label>
       )}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-        <button type="button" onClick={onCancel} style={ghostBtn}>
-          Batal
-        </button>
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{ ...primaryBtn, opacity: submitting ? 0.7 : 1 }}
-        >
-          {submitting ? 'Menyimpan...' : 'Simpan'}
-        </button>
-      </div>
+      <label className="sid-form-group">
+        <span className="sid-form-label">Catatan</span>
+        <textarea rows={2} value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
+      </label>
+
+      <ModalError error={error} />
+      <ModalActions submitting={submitting} submitLabel="Simpan" onCancel={onCancel} />
+    </form>
+  )
+}
+
+function EndForm({ label, member, toMember, submitting, error, onCancel, onSubmit }) {
+  const [endedAt, setEndedAt] = useState(today())
+
+  return (
+    <form
+      className="sid-modal"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSubmit({ ended_at: endedAt, to_member: toMember })
+      }}
+    >
+      <h2>{toMember ? 'Turunkan jadi Anggota' : `Kosongkan ${label}`}</h2>
+      <p>
+        {member.member_name} berhenti sebagai {label}
+        {toMember ? ' dan dicatat sebagai Anggota.' : '. Jabatan ini kosong sampai diisi lagi.'}
+      </p>
+
+      <label className="sid-form-group">
+        <span className="sid-form-label">Tanggal berakhir *</span>
+        <input required type="date" value={endedAt} onChange={(e) => setEndedAt(e.target.value)} />
+      </label>
+
+      <ModalError error={error} />
+      <ModalActions
+        submitting={submitting}
+        submitLabel={toMember ? 'Turunkan' : 'Kosongkan'}
+        onCancel={onCancel}
+      />
     </form>
   )
 }
 
 /**
+ * Struktur organisasi: Ketua dan Wakil Ketua (slot tetap, satu orang,
+ * bisa dirotasi) serta Anggota yang jumlahnya bebas.
+ *
  * Props:
  *  - title, subtitle
- *  - orgTypes: [{ value: 'bpd', label: 'BPD' }, ...]  (kalau lebih dari satu, tampil sebagai tab)
+ *  - orgTypes: [{ value: 'bpd', label: 'BPD' }, ...]  (lebih dari satu → tab)
  */
 export default function OrganisasiManager({ title, subtitle, orgTypes }) {
   const [activeType, setActiveType] = useState(orgTypes[0].value)
   const {
-    positions,
+    slots,
     loading,
     error,
-    addPosition,
-    editPosition,
-    removePosition,
-    addOrRotateMember,
+    fillSlot,
     editMember,
+    endMember,
     removeMember,
+    uploadPhoto,
+    removePhoto,
   } = useOrganisasi(activeType)
 
-  // modal: null | { kind: 'position', item? } | { kind: 'member', position, item? }
+  // Satu input berkas tersembunyi dipakai bersama oleh tombol kamera di
+  // kartu pimpinan dan tabel anggota; tujuannya disimpan di ref.
+  const photoInput = useRef(null)
+  const photoTarget = useRef(null)
+
+  // modal: null
+  //  | { kind: 'fill', initial }                 Isi/Ganti Ketua atau Wakil
+  //  | { kind: 'member', position, member? }     Tambah anggota / edit data
+  //  | { kind: 'end', position, member, toMember }
   const [modal, setModal] = useState(null)
-  const [submitting, setSubmitting] = useState(false)
+  const [processing, setProcessing] = useState(false)
   const [formError, setFormError] = useState(null)
+  const [actionError, setActionError] = useState(null)
+  const [success, setSuccess] = useState(null)
+
+  const openModal = (next) => {
+    setFormError(null)
+    setModal(next)
+  }
 
   const closeModal = () => {
     setModal(null)
     setFormError(null)
   }
-  const openModal = (m) => {
-    setFormError(null)
-    setModal(m)
-  }
 
-  const run = async (action, fallback) => {
-    setSubmitting(true)
+  const run = async (action, successMessage, fallback) => {
+    setProcessing(true)
     setFormError(null)
+    setActionError(null)
+    setSuccess(null)
     try {
       await action()
       closeModal()
+      setSuccess(successMessage)
     } catch (err) {
-      setFormError(getErrorMessage(err, fallback))
+      const message = getErrorMessage(err, fallback)
+      if (modal) setFormError(message)
+      else setActionError(message)
     } finally {
-      setSubmitting(false)
+      setProcessing(false)
     }
   }
 
-  const submitPosition = (payload) =>
-    run(
-      () => (modal.item ? editPosition(modal.item.id, payload) : addPosition(payload)),
-      'Gagal menyimpan jabatan.',
-    )
+  const openFill = (slot, { fromMemberId, lockSlot = true } = {}) =>
+    openModal({
+      kind: 'fill',
+      initial: {
+        slot,
+        lockSlot,
+        source: fromMemberId ? 'existing' : 'new',
+        from_member_id: fromMemberId ? String(fromMemberId) : '',
+        member_name: '',
+        phone_wa: '',
+        notes: '',
+        started_at: today(),
+        previous_holder: 'end',
+      },
+    })
 
-  const submitMember = (payload) =>
+  const handleDelete = (position, member, label) => {
+    if (!window.confirm(`Hapus ${label} "${member.member_name}"?`)) return
     run(
-      () =>
-        modal.item
-          ? editMember(modal.position.id, modal.item.id, payload)
-          : addOrRotateMember(modal.position.id, payload),
-      'Gagal menyimpan anggota.',
+      () => removeMember(position.id, member.id),
+      'Data berhasil dihapus.',
+      'Gagal menghapus data.',
     )
-
-  const handleDeletePosition = async (p) => {
-    if (!window.confirm(`Hapus jabatan "${p.position_label}"?`)) return
-    try {
-      await removePosition(p.id)
-    } catch (err) {
-      alert(getErrorMessage(err, 'Gagal menghapus jabatan.'))
-    }
   }
 
-  const handleDeleteMember = async (p, m) => {
-    if (!window.confirm(`Hapus anggota "${m.member_name}"?`)) return
-    try {
-      await removeMember(p.id, m.id)
-    } catch (err) {
-      alert(getErrorMessage(err, 'Gagal menghapus anggota.'))
-    }
+  const pickPhotoFor = (position) => (member) => {
+    photoTarget.current = { position, member }
+    photoInput.current?.click()
+  }
+
+  const handlePhotoChange = (event) => {
+    const file = event.target.files?.[0]
+    const target = photoTarget.current
+
+    event.target.value = ''
+    if (!file || !target) return
+
+    run(
+      () => uploadPhoto(target.position.id, target.member.id, file),
+      'Foto berhasil disimpan.',
+      'Gagal mengunggah foto.',
+    )
+  }
+
+  const removePhotoOf = (position) => (member) => {
+    if (!window.confirm(`Hapus foto "${member.member_name}"?`)) return
+    run(
+      () => removePhoto(position.id, member.id),
+      'Foto berhasil dihapus.',
+      'Gagal menghapus foto.',
+    )
+  }
+
+  const switchType = (value) => {
+    setActiveType(value)
+    setSuccess(null)
+    setActionError(null)
   }
 
   const activeLabel = orgTypes.find((t) => t.value === activeType)?.label
+  const anggota = slots.anggota
+  const activeAnggota = activeOf(anggota)
 
   return (
-    <div style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 20,
-          gap: 12,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: 0 }}>{title}</h1>
-          {subtitle && (
-            <p style={{ color: '#6B7280', fontSize: 14, margin: '4px 0 0' }}>{subtitle}</p>
-          )}
+    <div className="sid-operator-page">
+      <div className="sid-operator-content">
+        <p className="sid-operator-breadcrumb">
+          Admin / <span>{title}</span>
+        </p>
+
+        <div className="sid-operator-header">
+          <div>
+            <h1>{title}</h1>
+            {subtitle && <p className="sid-org-subtitle">{subtitle}</p>}
+          </div>
         </div>
-        <button
-          type="button"
-          style={{ ...primaryBtn, padding: '10px 18px', fontSize: 14 }}
-          onClick={() => openModal({ kind: 'position' })}
-        >
-          <Plus size={18} /> Tambah Jabatan
-        </button>
+
+        {orgTypes.length > 1 && (
+          <div className="sid-wilayah-tabs" role="tablist" aria-label="Pilih lembaga">
+            {orgTypes.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                role="tab"
+                aria-selected={t.value === activeType}
+                className={`sid-wilayah-tab${t.value === activeType ? ' sid-wilayah-tab-active' : ''}`}
+                onClick={() => switchType(t.value)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <input
+          ref={photoInput}
+          type="file"
+          accept={PHOTO_TYPES}
+          hidden
+          aria-label="Unggah foto anggota"
+          onChange={handlePhotoChange}
+        />
+
+        {actionError && (
+          <p className="sid-admin-alert sid-admin-alert-error" role="alert">
+            {actionError}
+          </p>
+        )}
+        {success && (
+          <p className="sid-admin-alert sid-admin-alert-success" role="status">
+            {success}
+          </p>
+        )}
+
+        {loading ? (
+          <PageLoader label="Memuat data organisasi..." />
+        ) : error ? (
+          <p className="sid-admin-alert sid-admin-alert-error" role="alert">
+            {error}
+          </p>
+        ) : (
+          <>
+            <h2 className="sid-org-section-title">Pimpinan {activeLabel}</h2>
+            <div className="sid-org-leaders">
+              {LEADER_SLOTS.map((s) => (
+                <LeaderCard
+                  key={s.key}
+                  label={s.label}
+                  position={slots[s.key]}
+                  processing={processing}
+                  onFill={() => openFill(s.key)}
+                  onEdit={(member) => openModal({ kind: 'member', position: slots[s.key], member })}
+                  onEnd={(member, toMember) =>
+                    openModal({ kind: 'end', position: slots[s.key], member, toMember })
+                  }
+                  onDeleteHistory={(member) => handleDelete(slots[s.key], member, 'riwayat')}
+                  onPickPhoto={pickPhotoFor(slots[s.key])}
+                  onRemovePhoto={removePhotoOf(slots[s.key])}
+                />
+              ))}
+            </div>
+
+            <div className="sid-org-section-head">
+              <h2 className="sid-org-section-title">
+                Anggota {activeLabel} <span>({activeAnggota.length})</span>
+              </h2>
+              <button
+                type="button"
+                className="sid-operator-primary"
+                disabled={processing || !anggota}
+                onClick={() => openModal({ kind: 'member', position: anggota })}
+              >
+                <UserPlus size={16} />
+                Tambah Anggota
+              </button>
+            </div>
+
+            <div className="sid-operator-table-card">
+              <div className="sid-operator-table-wrapper">
+                <table className="sid-operator-table">
+                  <thead>
+                    <tr>
+                      <th>Nama</th>
+                      <th>No. WhatsApp</th>
+                      <th className="center">Mulai</th>
+                      <th>Catatan</th>
+                      <th className="center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeAnggota.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="empty">
+                          Belum ada anggota. Klik "Tambah Anggota" untuk menambahkan.
+                        </td>
+                      </tr>
+                    ) : (
+                      activeAnggota.map((m) => (
+                        <tr key={m.id}>
+                          <td className="primary-text">
+                            <div className="flex items-center gap-3">
+                              <MemberPhoto src={m.photo_img} name={m.member_name} />
+                              {m.member_name}
+                            </div>
+                          </td>
+                          <td>{m.phone_wa || '-'}</td>
+                          <td className="center">{formatDate(m.started_at)}</td>
+                          <td>{m.notes || '-'}</td>
+                          <td className="center">
+                            <div className="sid-operator-actions">
+                              <button
+                                type="button"
+                                className="sid-operator-action detail"
+                                title="Jadikan Ketua/Wakil Ketua"
+                                aria-label={`Jadikan ${m.member_name} Ketua atau Wakil Ketua`}
+                                disabled={processing}
+                                onClick={() =>
+                                  openFill('ketua', { fromMemberId: m.id, lockSlot: false })
+                                }
+                              >
+                                <ArrowUpCircle size={16} />
+                              </button>
+                              <PhotoActions
+                                member={m}
+                                processing={processing}
+                                onPick={pickPhotoFor(anggota)}
+                                onRemove={removePhotoOf(anggota)}
+                              />
+                              <button
+                                type="button"
+                                className="sid-operator-action edit"
+                                title="Edit anggota"
+                                aria-label={`Edit ${m.member_name}`}
+                                disabled={processing}
+                                onClick={() =>
+                                  openModal({ kind: 'member', position: anggota, member: m })
+                                }
+                              >
+                                <Pencil size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                className="sid-operator-action delete"
+                                title="Hapus anggota"
+                                aria-label={`Hapus ${m.member_name}`}
+                                disabled={processing}
+                                onClick={() => handleDelete(anggota, m, 'anggota')}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <HistoryList
+              members={historyOf(anggota)}
+              processing={processing}
+              onDelete={(member) => handleDelete(anggota, member, 'riwayat')}
+            />
+          </>
+        )}
       </div>
 
-      {orgTypes.length > 1 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          {orgTypes.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              onClick={() => setActiveType(t.value)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: 20,
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: 13,
-                border: '1px solid #106D20',
-                backgroundColor: t.value === activeType ? '#106D20' : '#fff',
-                color: t.value === activeType ? '#fff' : '#106D20',
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
+      {modal && (
+        <div className="sid-modal-overlay">
+          {modal.kind === 'fill' && (
+            <FillLeaderForm
+              initial={modal.initial}
+              slots={slots}
+              submitting={processing}
+              error={formError}
+              onCancel={closeModal}
+              onSubmit={(positionId, payload, photo) =>
+                run(
+                  () => fillSlot(positionId, payload, photo),
+                  'Pimpinan berhasil disimpan.',
+                  'Gagal menyimpan pimpinan.',
+                )
+              }
+            />
+          )}
+
+          {modal.kind === 'member' && (
+            <MemberForm
+              member={modal.member}
+              submitting={processing}
+              error={formError}
+              onCancel={closeModal}
+              onSubmit={(payload, photo) =>
+                run(
+                  () =>
+                    modal.member
+                      ? editMember(modal.position.id, modal.member.id, payload, photo)
+                      : fillSlot(modal.position.id, payload, photo),
+                  modal.member ? 'Data berhasil diperbarui.' : 'Anggota berhasil ditambahkan.',
+                  'Gagal menyimpan data.',
+                )
+              }
+            />
+          )}
+
+          {modal.kind === 'end' && (
+            <EndForm
+              label={SLOT_LABEL[modal.position.slot]}
+              member={modal.member}
+              toMember={modal.toMember}
+              submitting={processing}
+              error={formError}
+              onCancel={closeModal}
+              onSubmit={(payload) =>
+                run(
+                  () => endMember(modal.position.id, modal.member.id, payload),
+                  modal.toMember ? 'Berhasil diturunkan jadi Anggota.' : 'Jabatan dikosongkan.',
+                  'Gagal mengakhiri jabatan.',
+                )
+              }
+            />
+          )}
         </div>
       )}
 
-      {loading ? (
-        <PageLoader label="Memuat data organisasi..." />
-      ) : error ? (
-        <div style={{ color: '#d32f2f', backgroundColor: '#fde8e8', padding: 16, borderRadius: 8 }}>
-          {error}
-        </div>
-      ) : positions.length === 0 ? (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: 40,
-            backgroundColor: '#fff',
-            borderRadius: 8,
-            border: '1px solid #E5E7EB',
-            color: '#6B7280',
-          }}
-        >
-          Belum ada jabatan untuk {activeLabel}. Klik "Tambah Jabatan" untuk memulai.
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {positions.map((p) => {
-            const members = p.members ?? []
-            const active = members.filter((m) => m.is_active)
-            const history = members.filter((m) => !m.is_active)
-            const isRotate = p.is_single_occupant && active.length > 0
-
-            return (
-              <div
-                key={p.id}
-                style={{
-                  backgroundColor: '#fff',
-                  borderRadius: 10,
-                  border: '1px solid #E5E7EB',
-                  padding: 20,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 8,
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{p.position_label}</h3>
-                    <p style={{ fontSize: 12, color: '#6B7280', margin: '2px 0 0' }}>
-                      {p.is_single_occupant
-                        ? 'Satu pemegang jabatan'
-                        : 'Bisa lebih dari satu anggota'}
-                      {p.is_active === false && ' · Nonaktif'}
-                    </p>
-                  </div>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      style={primaryBtn}
-                      onClick={() => openModal({ kind: 'member', position: p })}
-                    >
-                      {isRotate ? <Repeat size={14} /> : <UserPlus size={14} />}
-                      {isRotate ? 'Ganti Pemegang' : 'Tambah Anggota'}
-                    </button>
-                    <button
-                      type="button"
-                      title="Edit jabatan"
-                      style={{ ...iconBtn, color: '#F59E0B' }}
-                      onClick={() => openModal({ kind: 'position', item: p })}
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      title="Hapus jabatan"
-                      style={{ ...iconBtn, color: '#EF4444' }}
-                      onClick={() => handleDeletePosition(p)}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {active.length === 0 ? (
-                    <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>
-                      Belum ada pemegang jabatan.
-                    </p>
-                  ) : (
-                    active.map((m) => (
-                      <div
-                        key={m.id}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          backgroundColor: '#F3F8F3',
-                          borderRadius: 8,
-                          padding: '10px 12px',
-                        }}
-                      >
-                        <div style={{ fontSize: 13 }}>
-                          <div style={{ fontWeight: 600 }}>{m.member_name}</div>
-                          <div style={{ color: '#6B7280', fontSize: 12 }}>
-                            Sejak {m.started_at}
-                            {m.phone_wa && (
-                              <>
-                                {' '}
-                                · <Phone size={11} style={{ verticalAlign: 'middle' }} />{' '}
-                                {m.phone_wa}
-                              </>
-                            )}
-                          </div>
-                          {m.notes && (
-                            <div style={{ color: '#6B7280', fontSize: 12 }}>{m.notes}</div>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <button
-                            type="button"
-                            title="Edit anggota"
-                            style={{ ...iconBtn, color: '#F59E0B' }}
-                            onClick={() => openModal({ kind: 'member', position: p, item: m })}
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            title="Hapus anggota"
-                            style={{ ...iconBtn, color: '#EF4444' }}
-                            onClick={() => handleDeleteMember(p, m)}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-
-                  {history.length > 0 && (
-                    <details style={{ fontSize: 12, color: '#6B7280' }}>
-                      <summary style={{ cursor: 'pointer' }}>
-                        Riwayat pemegang jabatan ({history.length})
-                      </summary>
-                      <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
-                        {history.map((m) => (
-                          <li key={m.id}>
-                            {m.member_name} ({m.started_at} s/d {m.ended_at ?? '-'})
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {modal?.kind === 'position' && (
-        <Modal
-          title={modal.item ? 'Edit Jabatan' : `Tambah Jabatan ${activeLabel}`}
-          onClose={closeModal}
-        >
-          <PositionForm
-            initial={modal.item}
-            submitting={submitting}
-            error={formError}
-            onCancel={closeModal}
-            onSubmit={submitPosition}
-          />
-        </Modal>
-      )}
-
-      {modal?.kind === 'member' && (
-        <Modal
-          title={
-            modal.item
-              ? 'Edit Anggota'
-              : `${modal.position.is_single_occupant && (modal.position.members ?? []).some((m) => m.is_active) ? 'Ganti Pemegang' : 'Tambah Anggota'} · ${modal.position.position_label}`
-          }
-          onClose={closeModal}
-        >
-          <MemberForm
-            position={modal.position}
-            initial={modal.item}
-            submitting={submitting}
-            error={formError}
-            onCancel={closeModal}
-            onSubmit={submitMember}
-          />
-        </Modal>
-      )}
+      <SiteFooter />
     </div>
   )
 }
