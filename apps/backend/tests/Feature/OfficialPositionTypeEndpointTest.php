@@ -81,6 +81,32 @@ class OfficialPositionTypeEndpointTest extends TestCase
             ->assertCreated();
     }
 
+    public function test_list_includes_account_positions_with_labels_and_scope(): void
+    {
+        $staf = User::factory()->create(['role' => 'staf_sid', 'village_id' => $this->village->id]);
+
+        $this->actingAs($staf)
+            ->getJson('/api/official-position-types')
+            ->assertOk()
+            ->assertJsonPath('account_positions', [
+                ['code' => 'kepala_desa', 'label' => 'Kepala Desa', 'scope' => null],
+                ['code' => 'sekdes', 'label' => 'Sekretaris Desa', 'scope' => null],
+                ['code' => 'kasi_pelayanan', 'label' => 'Kasi Pelayanan', 'scope' => null],
+                ['code' => 'kaur_tu_umum', 'label' => 'Kaur TU & Umum', 'scope' => null],
+                ['code' => 'kadus', 'label' => 'Kepala Dusun', 'scope' => 'hamlet_id'],
+                ['code' => 'rw', 'label' => 'Ketua RW', 'scope' => 'rw_id'],
+                ['code' => 'rt', 'label' => 'Ketua RT', 'scope' => 'rt_id'],
+                ['code' => 'staf_sid', 'label' => 'Staf SIDUTama', 'scope' => null],
+            ]);
+
+        // Label staf aplikasi mengikuti nama aplikasi yang diatur (SID_APP_NAME).
+        config(['sid.app_name' => 'SIPANDESA']);
+
+        $this->actingAs($staf)
+            ->getJson('/api/official-position-types')
+            ->assertJsonPath('account_positions.7.label', 'Staf SIPANDESA');
+    }
+
     public function test_position_types_are_limited_to_staf_sid_of_the_same_village(): void
     {
         $type = OfficialPositionType::factory()->create(['village_id' => $this->village->id]);

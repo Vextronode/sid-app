@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\OfficialPosition;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOfficialPositionTypeRequest;
 use App\Http\Requests\UpdateOfficialPositionTypeRequest;
@@ -18,7 +19,18 @@ class OfficialPositionTypeController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        return OfficialPositionTypeResource::collection($this->service->list($request->user()))->response();
+        // account_positions: jabatan berakun (enum) beserta labelnya, supaya
+        // dashboard tidak menulis label sendiri. Label staf aplikasi mengikuti
+        // SID_APP_NAME; scope = kolom wilayah yang wajib diisi saat penetapan.
+        return OfficialPositionTypeResource::collection($this->service->list($request->user()))
+            ->additional([
+                'account_positions' => array_map(fn (OfficialPosition $position) => [
+                    'code' => $position->value,
+                    'label' => $position->label(),
+                    'scope' => $position->scopeColumn(),
+                ], OfficialPosition::assignable()),
+            ])
+            ->response();
     }
 
     public function store(StoreOfficialPositionTypeRequest $request): JsonResponse
