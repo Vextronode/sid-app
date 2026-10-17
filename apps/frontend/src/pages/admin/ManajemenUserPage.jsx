@@ -5,11 +5,21 @@
 // Logic/API tidak diubah.
 // ==========================================
 
-import { useState } from 'react'
-import { Search, SquarePen, Eye, EyeOff, Eraser, KeyRound } from 'lucide-react'
+import { useRef, useState } from 'react'
+import {
+  Search,
+  SquarePen,
+  Eye,
+  EyeOff,
+  Eraser,
+  KeyRound,
+  Camera,
+  ImageOff,
+  User as UserIcon,
+} from 'lucide-react'
 
 import { useUserList } from '@/features/manajemen-user/hooks/useUserList'
-import { resetUserPassword } from '@/features/manajemen-user/api'
+import { deleteUserPhoto, resetUserPassword, uploadUserPhoto } from '@/features/manajemen-user/api'
 import { resetUserSignature } from '@/features/surat/api/signatureApi'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 
@@ -27,6 +37,7 @@ export default function ManajemenUserPage() {
     totalItems,
     toggleStatus,
     updateUser,
+    patchUser,
   } = useUserList()
 
   const [keyword, setKeyword] = useState('')
@@ -96,6 +107,60 @@ export default function ManajemenUserPage() {
     }
   }
 
+  // Foto profil akun warga. Satu input berkas tersembunyi dipakai bersama;
+  // akun yang dituju disimpan di ref. Foto akun yang menjabat diatur di
+  // halaman Pejabat Desa.
+  const photoInput = useRef(null)
+  const photoTarget = useRef(null)
+
+  const runPhoto = async (request, user, successText, fallback) => {
+    try {
+      const response = await request()
+
+      patchUser(user.id, { photo_url: response.data?.data?.photo_url ?? null })
+      setSignatureNotice({ type: 'success', text: successText })
+    } catch (requestError) {
+      const errors = requestError?.response?.data?.errors
+      const text =
+        (errors && Object.values(errors).flat()[0]) ||
+        requestError?.response?.data?.message ||
+        fallback
+
+      setSignatureNotice({ type: 'error', text })
+    }
+  }
+
+  const pickPhotoFor = (user) => {
+    photoTarget.current = user
+    photoInput.current?.click()
+  }
+
+  const handlePhotoChange = (event) => {
+    const file = event.target.files?.[0]
+    const user = photoTarget.current
+
+    event.target.value = ''
+    if (!file || !user) return
+
+    runPhoto(
+      () => uploadUserPhoto(user.id, file),
+      user,
+      `Foto profil ${user.name} berhasil disimpan.`,
+      'Gagal mengunggah foto.',
+    )
+  }
+
+  const handleDeletePhoto = (user) => {
+    if (!window.confirm(`Hapus foto profil ${user.name}?`)) return
+
+    runPhoto(
+      () => deleteUserPhoto(user.id),
+      user,
+      `Foto profil ${user.name} berhasil dihapus.`,
+      'Gagal menghapus foto.',
+    )
+  }
+
   const handleSearchSubmit = (e) => {
     e.preventDefault()
     setSearch(keyword)
@@ -131,6 +196,15 @@ export default function ManajemenUserPage() {
         <div className="sid-operator-header">
           <h1>Manajemen Pengguna</h1>
         </div>
+
+        <input
+          ref={photoInput}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          hidden
+          aria-label="Unggah foto pengguna"
+          onChange={handlePhotoChange}
+        />
 
         {/* Search & Filter */}
         <div className="sid-operator-filter-card">
@@ -218,14 +292,29 @@ export default function ManajemenUserPage() {
                   data.map((user) => (
                     <tr key={user.id}>
                       {/* Nama */}
-                      <td className="primary-text">{user.name}</td>
+                      <td className="primary-text">
+                        <div className="flex items-center gap-3">
+                          <div className="sid-profil-desa-avatar sid-profil-desa-avatar-tiny">
+                            {user.photo_url ? (
+                              <img
+                                src={user.photo_url}
+                                alt={`Foto ${user.name}`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <UserIcon size={18} className="sid-profil-desa-avatar-placeholder" />
+                            )}
+                          </div>
+                          {user.name}
+                        </div>
+                      </td>
 
                       {/* Email */}
                       <td className="center">{user.email}</td>
 
                       {/* Jabatan */}
                       <td className="center">
-                        <span className="sid-operator-role">{user.role}</span>
+                        <span className="sid-operator-role">{user.role_label ?? user.role}</span>
                       </td>
 
                       {/* Wilayah */}
@@ -258,6 +347,32 @@ export default function ManajemenUserPage() {
                             <SquarePen size={16} />
                           </button>
 
+                          {/* Foto akun pejabat diatur di halaman Pejabat Desa. */}
+                          {user.role === 'warga' && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => pickPhotoFor(user)}
+                                className="sid-operator-action detail"
+                                title={user.photo_url ? 'Ganti foto' : 'Unggah foto'}
+                                aria-label={`${user.photo_url ? 'Ganti' : 'Unggah'} foto ${user.name}`}
+                              >
+                                <Camera size={16} />
+                              </button>
+                              {user.photo_url && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeletePhoto(user)}
+                                  className="sid-operator-action delete"
+                                  title="Hapus foto"
+                                  aria-label={`Hapus foto ${user.name}`}
+                                >
+                                  <ImageOff size={16} />
+                                </button>
+                              )}
+                            </>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => toggleStatus(user.id)}
@@ -278,7 +393,7 @@ export default function ManajemenUserPage() {
                           </button>
 
                           {/* Backend menolak reset kata sandi sesama Petugas Desa. */}
-                          {user.role !== 'petugas_desa' && (
+                          {user.role !== 'staf_sid' && (
                             <button
                               type="button"
                               onClick={() => handleResetPassword(user)}
