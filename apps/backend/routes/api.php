@@ -31,10 +31,12 @@ use App\Http\Controllers\Api\RtController;
 use App\Http\Controllers\Api\RwController;
 use App\Http\Controllers\Api\SignatureRequestController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\UserPhotoController;
 use App\Http\Controllers\Api\UserSignatureController;
 use App\Http\Controllers\Api\VillageOrgMemberController;
 use App\Http\Controllers\Api\VillageOrgPositionController;
 use App\Http\Controllers\Api\VillageProfileController;
+use App\Models\VillageOrgPosition;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -46,6 +48,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('public')->group(function () {
     Route::get('/home', [PublicPageController::class, 'home']);
     Route::get('/village-profile', [PublicPageController::class, 'villageProfile']);
+    Route::get('/village-orgs/{orgType}', [PublicPageController::class, 'villageOrganization'])
+        ->whereIn('orgType', VillageOrgPosition::ORG_TYPES);
     Route::get('/news', [PublicPageController::class, 'newsList']);
     Route::get('/letter-types', [PublicPageController::class, 'letterTypeList']);
     Route::get('/regulations', [PublicPageController::class, 'regulationList']);
@@ -86,6 +90,10 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::get('/user', [CurrentUserController::class, 'show']);
     Route::patch('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
+    // Foto profil akun warga; akun yang menjabat ditolak (foto pejabat
+    // dikelola Petugas Desa).
+    Route::post('/profile/photo', [UserPhotoController::class, 'storeOwn']);
+    Route::delete('/profile/photo', [UserPhotoController::class, 'destroyOwn']);
 
     // Tanda tangan pribadi akun: diisi sekali, tidak dapat diubah sendiri.
     Route::get('/profile/signature', [UserSignatureController::class, 'show']);
@@ -107,7 +115,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | RT -> Kepala Desa/Sekdes yang diset developer lewat seeder; tidak
     | ada endpoint tulis.
     */
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('approval-flows')
         ->group(function () {
             Route::get('/', [ApprovalFlowController::class, 'index']);
@@ -120,7 +128,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Eksklusif Petugas Desa.
     */
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('approval-settings')
         ->group(function () {
             Route::get('/', [ApprovalSettingController::class, 'index']);
@@ -136,10 +144,10 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | warga sebagai bahan pertimbangan; perubahan data oleh mereka hanya
     | lewat surat (POST /letters/{letter}/fulfillment).
     */
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa, UserRole::KasiPelayanan, UserRole::KaurTuUmum))
+    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPelayanan, UserRole::KaurTuUmum))
         ->get('/citizens', [CitizenController::class, 'index']);
 
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('citizens')
         ->group(function () {
             Route::post('/', [CitizenController::class, 'store']);
@@ -156,7 +164,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Eksklusif Petugas Desa, sama seperti Citizens.
     */
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('families')
         ->group(function () {
             Route::get('/', [FamilyController::class, 'index']);
@@ -168,7 +176,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::delete('/{family}', [FamilyController::class, 'destroy']);
         });
 
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('occupations')
         ->group(function () {
             Route::get('/', [OccupationController::class, 'index']);
@@ -198,7 +206,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Eksklusif Petugas Desa.
     */
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))->group(function () {
+    Route::middleware(UserRole::middleware(UserRole::StafSid))->group(function () {
         Route::prefix('hamlets')->group(function () {
             Route::get('/', [HamletController::class, 'index']);
             Route::post('/', [HamletController::class, 'store']);
@@ -233,7 +241,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     // UC-21: edit konfigurasi tipe surat eksklusif Petugas Desa.
     // PUT (bukan PATCH) mengikuti backlog - beda dari api_spec yang
     // menulis PATCH untuk endpoint ini.
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->put('/letter-types/{letterType}', [LetterTypeController::class, 'update']);
 
     Route::prefix('letters')->group(function () {
@@ -280,7 +288,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | Eksklusif Petugas Desa (SID-ARCH-SYS-001 S2.3 - domain CMS tidak
     | meluas ke Kades/Sekdes meski satu "Tier" navigasi).
     */
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('news')
         ->group(function () {
             Route::get('/', [NewsController::class, 'index']);
@@ -289,7 +297,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::delete('/{id}', [NewsController::class, 'destroy']);
         });
 
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('news-categories')
         ->group(function () {
             Route::get('/', [NewsCategoryController::class, 'index']);
@@ -337,7 +345,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Eksklusif Petugas Desa.
     */
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('regulations')
         ->group(function () {
             Route::get('/', [RegulationController::class, 'index']);
@@ -386,17 +394,18 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | Role-check di sini SENGAJA dilonggarkan ke seluruh role
     | authenticated - context check granular (siapa boleh apa) tetap
     | didelegasikan ke OfficialPolicy lewat $this->authorize() di
-    | OfficialController (MANAGER_ROLES: petugas_desa). Ini contoh sah:
+    | OfficialController (MANAGER_ROLES: staf_sid). Ini contoh sah:
     | Policy tetap dipertahankan sebagai
     | defense-in-depth kedua di belakang middleware yang lebih permisif,
     | bukan duplikasi peran.
     */
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('officials')
         ->group(function () {
             Route::post('/{official}/signature', [OfficialController::class, 'uploadSignature']);
             Route::get('/{official}/signature', [OfficialController::class, 'signaturePreview']);
             Route::post('/{official}/photo', [OfficialController::class, 'uploadPhoto']);
+            Route::delete('/{official}/photo', [OfficialController::class, 'destroyPhoto']);
             Route::post('/promote', [OfficialController::class, 'promote']);
             // Cari calon pejabat lewat NIK (POST agar NIK tidak tercatat di URL).
             Route::post('/candidates/lookup', [OfficialController::class, 'candidate']);
@@ -415,12 +424,14 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Eksklusif Petugas Desa (Kelola User & Role).
     */
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('users')
         ->group(function () {
             Route::get('/', [UserController::class, 'index']);
             Route::post('/{user}/reset-password', [UserController::class, 'resetPassword']);
             Route::post('/{user}/signature/reset', [UserSignatureController::class, 'reset']);
+            Route::post('/{user}/photo', [UserPhotoController::class, 'store']);
+            Route::delete('/{user}/photo', [UserPhotoController::class, 'destroy']);
             Route::patch('/{user}', [UserController::class, 'update']);
             Route::patch('/{user}/toggle-status', [UserController::class, 'updateStatus']);
         });
@@ -438,7 +449,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::prefix('villages')->group(function () {
         Route::get('/profile', [VillageProfileController::class, 'show']);
 
-        Route::middleware(UserRole::middleware(UserRole::PetugasDesa))->group(function () {
+        Route::middleware(UserRole::middleware(UserRole::StafSid))->group(function () {
             Route::patch('/profile', [VillageProfileController::class, 'update']);
             Route::post('/profile/stamp', [VillageProfileController::class, 'uploadStamp']);
             Route::get('/profile/stamp', [VillageProfileController::class, 'stampPreview']);
@@ -457,7 +468,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | Eksklusif Petugas Desa. Jabatan yang punya akun tetap di enum
     | OfficialPosition dan tidak dikelola dari sini.
     */
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('official-position-types')
         ->group(function () {
             Route::get('/', [OfficialPositionTypeController::class, 'index']);
@@ -470,21 +481,22 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |--------------------------------------------------------------------------
     | Village Org (Organisasi Non-Struktural: BPD/BUMDES/LPM/Karang Taruna/PKK)
     |--------------------------------------------------------------------------
-    | UC-23. Eksklusif Petugas Desa. Route resource untuk jabatan
-    | (village_org_positions) dan anggota (village_org_members) mengikuti
-    | struktur nested sesuai api_spec_v5 paths/village-org/*.yaml.
+    | UC-23. Eksklusif Petugas Desa. Jabatan (village_org_positions) berupa
+    | slot tetap Ketua/Wakil Ketua/Anggota yang dibuat otomatis, jadi hanya
+    | bisa dibaca; anggota (village_org_members) dikelola lewat route nested
+    | sesuai api_spec paths/village-org/*.yaml.
     */
-    Route::middleware(UserRole::middleware(UserRole::PetugasDesa))
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('village-org-positions')
         ->group(function () {
             Route::get('/', [VillageOrgPositionController::class, 'index']);
-            Route::post('/', [VillageOrgPositionController::class, 'store']);
             Route::get('/{id}', [VillageOrgPositionController::class, 'show']);
-            Route::patch('/{id}', [VillageOrgPositionController::class, 'update']);
-            Route::delete('/{id}', [VillageOrgPositionController::class, 'destroy']);
 
             Route::post('/{position}/members', [VillageOrgMemberController::class, 'store']);
             Route::patch('/{position}/members/{id}', [VillageOrgMemberController::class, 'update']);
+            Route::post('/{position}/members/{id}/end', [VillageOrgMemberController::class, 'end']);
+            Route::post('/{position}/members/{id}/photo', [VillageOrgMemberController::class, 'uploadPhoto']);
+            Route::delete('/{position}/members/{id}/photo', [VillageOrgMemberController::class, 'destroyPhoto']);
             Route::delete('/{position}/members/{id}', [VillageOrgMemberController::class, 'destroy']);
         });
 });
