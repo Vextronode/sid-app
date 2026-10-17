@@ -124,6 +124,8 @@ class LetterStatusNotification extends Notification implements ShouldQueue
 
             'letter_ready_for_print' => 'document',
 
+            'approval_reminder' => 'bell',
+
             default => 'document',
         };
     }
@@ -138,7 +140,8 @@ class LetterStatusNotification extends Notification implements ShouldQueue
             'kasi_approved',
             'letter_approved_final' => 'green',
 
-            'letter_ready_for_print' => 'blue',
+            'letter_ready_for_print',
+            'approval_reminder' => 'blue',
 
             'waiting_revision_warga' => 'amber',
 
