@@ -12,7 +12,7 @@ use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class PetugasCommandsTest extends TestCase
+class StafSidCommandsTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -21,18 +21,18 @@ class PetugasCommandsTest extends TestCase
         $village = Village::factory()->create();
         $user = $this->residentAccount($village, 'petugas.pertama');
 
-        $this->artisan('petugas:first', ['--nik' => $user->citizen->nik])
+        $this->artisan('staf-sid:first', ['--nik' => $user->citizen->nik])
             ->expectsOutputToContain("Akun {$user->username} berhasil")
             ->expectsOutputToContain('Password sementara')
             ->assertExitCode(0);
 
         $user->refresh();
-        $this->assertSame('petugas_desa', $user->role);
+        $this->assertSame('staf_sid', $user->role);
         $this->assertTrue($user->must_change_password);
         $official = Official::query()->where('user_id', $user->id)->firstOrFail();
         $this->assertSame($user->citizen_id, $official->citizen_id);
         $this->assertSame($village->id, $official->village_id);
-        $this->assertSame('petugas_desa', $official->position);
+        $this->assertSame('staf_sid', $official->position);
         $this->assertTrue($official->is_active);
         $this->assertDatabaseHas('activity_log', [
             'log_name' => 'official',
@@ -44,11 +44,11 @@ class PetugasCommandsTest extends TestCase
 
     public function test_petugas_first_rejects_when_an_active_petugas_already_exists(): void
     {
-        User::factory()->create(['role' => 'petugas_desa', 'village_id' => Village::factory()->create()->id]);
+        User::factory()->create(['role' => 'staf_sid', 'village_id' => Village::factory()->create()->id]);
         $village = Village::factory()->create();
         $resident = $this->residentAccount($village, 'petugas.kedua');
 
-        $this->artisan('petugas:first', ['--nik' => $resident->citizen->nik])->assertExitCode(1);
+        $this->artisan('staf-sid:first', ['--nik' => $resident->citizen->nik])->assertExitCode(1);
         $this->assertSame('warga', $resident->fresh()->role);
     }
 
@@ -56,7 +56,7 @@ class PetugasCommandsTest extends TestCase
     {
         [$village, $rt] = $this->villageWithRt();
 
-        $this->artisan('petugas:first', [
+        $this->artisan('staf-sid:first', [
             '--nik' => '3201010101010001',
             '--name' => 'Budi Santoso',
             '--dob' => '1980-01-02',
@@ -71,13 +71,13 @@ class PetugasCommandsTest extends TestCase
         $this->assertSame($rt->id, $citizen->rt_id);
         $this->assertSame('manual_input_desa', $citizen->data_source->value);
         $user = User::query()->where('citizen_id', $citizen->id)->firstOrFail();
-        $this->assertSame('petugas_desa', $user->role);
+        $this->assertSame('staf_sid', $user->role);
         $this->assertMatchesRegularExpression('/^budi\.\d{4,5}$/', $user->username);
         $this->assertTrue($user->must_change_password);
         $this->assertNotSame('3201010101010001', $citizen->getRawOriginal('nik'));
         $this->assertDatabaseHas('officials', [
             'user_id' => $user->id,
-            'position' => 'petugas_desa',
+            'position' => 'staf_sid',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
@@ -92,10 +92,10 @@ class PetugasCommandsTest extends TestCase
             'hamlet_id' => null,
         ]);
 
-        $this->artisan('petugas:first', ['--nik' => $citizen->nik])->assertExitCode(0);
+        $this->artisan('staf-sid:first', ['--nik' => $citizen->nik])->assertExitCode(0);
 
         $user = User::query()->where('citizen_id', $citizen->id)->firstOrFail();
-        $this->assertSame('petugas_desa', $user->role);
+        $this->assertSame('staf_sid', $user->role);
         $this->assertSame($citizen->name, $user->name);
         $this->assertTrue($user->must_change_password);
     }

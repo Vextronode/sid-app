@@ -23,7 +23,7 @@ class OfficialFactory extends Factory
         return [
             'citizen_id' => Citizen::factory(),
             'user_id' => null,
-            'position' => 'petugas_desa',
+            'position' => 'staf_sid',
             'village_id' => fn () => Village::query()->value('id') ?? Village::factory()->create()->id,
             'rt_id' => null,
             'rw_id' => null,

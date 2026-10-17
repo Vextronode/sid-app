@@ -38,6 +38,8 @@ import {
   getOperatorAllowedRoles,
   ROLE_NAVIGATION,
 } from '@/features/operator-desa/constants/roleNavigation'
+import { UserAvatar } from '@/components/ui/UserAvatar'
+import { STAF_APP_LABEL } from '@/lib/constants/app'
 
 const MENU_ITEMS = [
   {
@@ -151,7 +153,7 @@ export function OperatorDesaLayout({ children }) {
           <div className="sid-operator-sidebar-brand">
             <BerandaBrand
               header={getBerandaContent(import.meta.env.DEV).header}
-              subtitle="Admin Petugas Desa"
+              subtitle={`Admin ${STAF_APP_LABEL}`}
               className="sid-operator-brand"
             />
           </div>
@@ -248,9 +250,7 @@ export function OperatorDesaLayout({ children }) {
                     </p>
                   </div>
 
-                  <div className="sid-operator-profile-avatar">
-                    {(user?.name ?? 'OP').slice(0, 2).toUpperCase()}
-                  </div>
+                  <UserAvatar user={user} className="sid-operator-profile-avatar" />
                 </button>
 
                 {profileOpen && (

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -13,7 +14,7 @@ class DestroyRwRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->role === 'petugas_desa';
+        return $this->user()?->role === 'staf_sid';
     }
 
     /**
@@ -30,7 +31,7 @@ class DestroyRwRequest extends FormRequest
     {
         throw new HttpException(
             403,
-            'Hanya Petugas Desa yang berwenang menghapus data RW.'
+            'Hanya '.UserRole::stafSidLabel().' yang berwenang menghapus data RW.'
         );
     }
 }

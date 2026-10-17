@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Landmark, Mail, KeyRound, CheckCircle2, ArrowLeft } from 'lucide-react'
 import api from '@/lib/api'
+import { STAF_APP_LABEL } from '@/lib/constants/app'
 
 function firstMessage(error, fallback) {
   const errors = error?.response?.data?.errors
@@ -110,7 +111,8 @@ export default function ForgotPasswordPage() {
         )}
 
         <p className="text-xs text-gray-500 bg-gray-50 border rounded-lg px-3 py-2 mt-5">
-          Tidak punya email atau belum mendaftarkannya? Datang ke kantor desa dan minta Petugas Desa
+          Tidak punya email atau belum mendaftarkannya? Datang ke kantor desa dan minta{' '}
+          {STAF_APP_LABEL}
           mengatur ulang kata sandi Anda.
         </p>
 

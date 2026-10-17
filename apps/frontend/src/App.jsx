@@ -10,7 +10,13 @@ import {
 } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/features/auth/contexts/AuthContext'
 import { buildLoginPath, resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
-import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
+import {
+  HAL_AKSESIBILITAS,
+  HAL_BPD,
+  HAL_KEBIJAKAN_PRIVASI,
+  HAL_LEMBAGA,
+  HAL_PPID,
+} from '@/lib/constants/routes'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
 
@@ -33,6 +39,10 @@ const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const DetailBeritaPage = lazyNamed(() => import('@/pages/DetailBeritaPage'), 'DetailBeritaPage')
 const BeritaPage = lazyNamed(() => import('@/pages/BeritaPage'), 'BeritaPage')
 const ProfilDesaPage = lazyNamed(() => import('@/pages/ProfilDesaPage'), 'ProfilDesaPage')
+const OrganisasiDesaPage = lazyNamed(
+  () => import('@/pages/OrganisasiDesaPage'),
+  'OrganisasiDesaPage',
+)
 const PengajuanSuratPage = lazyNamed(
   () => import('@/pages/PengajuanSuratPage'),
   'PengajuanSuratPage',
@@ -98,7 +108,7 @@ const OFFICIAL_ROLES = [
   ...KADES_APPROVER_ROLES,
   'kasi_pelayanan',
   'kaur_tu_umum',
-  'petugas_desa',
+  'staf_sid',
 ]
 
 // Route khusus untuk user yang belum login.
@@ -134,7 +144,7 @@ export const GuestRoute = ({ children }) => {
         return <Navigate to="/admin/dashboard-surat-kades" replace />
       case 'kasi_pelayanan':
       case 'kaur_tu_umum':
-      case 'petugas_desa':
+      case 'staf_sid':
         return <Navigate to="/admin/operator-desa" replace />
       case 'warga':
         return <Navigate to="/daftar-surat" replace />
@@ -220,6 +230,8 @@ export default function App() {
               <Route path="/berita" element={<BeritaPage />} />
               <Route path="/berita/:id" element={<DetailBeritaPage />} />
               <Route path="/profil-desa" element={<ProfilDesaPage />} />
+              <Route path={HAL_BPD} element={<OrganisasiDesaPage variant="bpd" />} />
+              <Route path={HAL_LEMBAGA} element={<OrganisasiDesaPage variant="lembaga" />} />
               <Route path="/peraturan-desa" element={<PeraturanDesaPage />} />
 
               {/* Halaman informasi (D6), khusus dev sampai isinya disetujui desa. */}

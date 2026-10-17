@@ -69,7 +69,11 @@ describe('ProfilDesaPage scroll target', () => {
         'Halaman resmi informasi tata kelola dan capaian strategis Desa Cibenda untuk transparansi publik.',
       ),
     ).toBeInTheDocument()
-    expect(screen.getByText('Jl. Raya Cibenda · Telp. (0265) 2640613')).toBeInTheDocument()
+    expect(screen.getByText('Jl. Raya Cibenda')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Telp. (0265) 2640613' })).toHaveAttribute(
+      'href',
+      'tel:02652640613',
+    )
     expect(screen.getByRole('img', { name: 'Profil Desa Cibenda' })).toHaveAttribute(
       'src',
       '/assets/image/beranda/hero-pemandangan.jpg',

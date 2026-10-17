@@ -34,10 +34,6 @@ patch:
             member_name:
               type: string
               example: "Budi Santoso"
-            photo_img:
-              type: string
-              nullable: true
-              example: null
             phone_wa:
               type: string
               nullable: true
@@ -70,7 +66,11 @@ patch:
 delete:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Hapus data anggota organisasi
-  description: "Aktor: Petugas Desa."
+  description: |
+    Aktor: Petugas Desa. Pemegang aktif slot `ketua`/`wakil_ketua`
+    tidak bisa dihapus (422); akhiri dulu lewat
+    `POST /village-org-positions/{position}/members/{id}/end`.
+    Baris riwayat dan anggota biasa boleh dihapus permanen.
   operationId: deleteVillageOrgMember
   security:
     - sanctumCookie: []

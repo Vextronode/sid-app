@@ -248,7 +248,7 @@ class EndToEndApprovalFlowTest extends TestCase
     {
         $village = Village::factory()->create();
         ['rt' => $rt] = $this->makeArea($village);
-        $petugas = $this->makeOfficialUser('petugas_desa', $village);
+        $petugas = $this->makeOfficialUser('staf_sid', $village);
         $target = $this->makeCitizenAccount($village, $rt, 'warga');
 
         Storage::fake('public');

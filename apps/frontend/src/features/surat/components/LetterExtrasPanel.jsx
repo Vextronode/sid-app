@@ -9,7 +9,7 @@ import {
 import { refillLetterSignature } from '../api/signatureApi'
 import { FulfillmentPanel } from './FulfillmentPanel'
 
-const FULFILLMENT_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa']
+const FULFILLMENT_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'staf_sid']
 
 const SIGNATURE_STATUS_LABELS = {
   signed: 'Sudah ditandatangani',

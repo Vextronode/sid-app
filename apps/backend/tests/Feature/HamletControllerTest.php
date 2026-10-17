@@ -13,18 +13,18 @@ class HamletControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function petugasDesa(Village $village): User
+    private function stafSid(Village $village): User
     {
         return User::factory()->create([
             'village_id' => $village->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
         ]);
     }
 
-    public function test_petugas_desa_can_create_list_and_update_hamlets(): void
+    public function test_staf_sid_can_create_list_and_update_hamlets(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
 
         $this->actingAs($user)
             ->postJson('/api/hamlets', ['name' => 'Dusun Patrol', 'code' => 'PTR'])
@@ -44,7 +44,7 @@ class HamletControllerTest extends TestCase
             ->assertJsonPath('data.name', 'Dusun Patrol Baru');
     }
 
-    public function test_non_petugas_desa_cannot_create_hamlet(): void
+    public function test_non_staf_sid_cannot_create_hamlet(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = User::factory()->create(['village_id' => $village->id, 'role' => 'rt']);
@@ -57,7 +57,7 @@ class HamletControllerTest extends TestCase
     public function test_duplicate_hamlet_code_is_rejected(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
 
         $this->actingAs($user)
@@ -69,7 +69,7 @@ class HamletControllerTest extends TestCase
     public function test_deactivating_hamlet_with_active_citizens_is_blocked(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
 
         Citizen::create([
@@ -94,7 +94,7 @@ class HamletControllerTest extends TestCase
     public function test_deactivating_hamlet_without_active_citizens_succeeds(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
 
         $this->actingAs($user)

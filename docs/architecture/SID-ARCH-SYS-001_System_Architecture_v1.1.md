@@ -31,7 +31,7 @@ Warga (atau pejabat untuk dirinya) mengajukan surat dengan isian form dinamis pe
 Data warga (individu) dan KK, sosio-ekonomi per KK, katalog pekerjaan per desa, impor Excel. Warga tidak mengedit datanya langsung; perubahan diajukan lewat surat ber-aksi data.
 
 ### 2.3 Manajemen Informasi Desa (CMS)
-Profil desa (identitas, kop surat, luas, jam layanan, peta, logo, foto beranda, stempel), berita berkategori, peraturan desa, organisasi non-struktural. **Eksklusif `petugas_desa`.** Halaman publik menampilkan profil, statistik terhitung (jumlah warga, dusun), perangkat desa, berita, info jenis surat, peraturan, kontak.
+Profil desa (identitas, kop surat, luas, jam layanan, peta, logo, foto beranda, stempel), berita berkategori, peraturan desa, organisasi non-struktural (BPD, LPM, Karang Taruna, PKK: Ketua, Wakil Ketua, Anggota). **Eksklusif `staf_sid`.** Halaman publik menampilkan profil, statistik terhitung (jumlah warga, dusun), perangkat desa (termasuk staf aplikasi), struktur BPD dan Lembaga Desa, berita, info jenis surat, peraturan, kontak.
 
 ### 2.4 Governance & RBAC
 Struktur wilayah (Dusun/RW/RT), jabatan berakun dan jenis jabatan tanpa akun yang dapat dikelola, akun pengguna, reset password & reset tanda tangan akun.
@@ -71,7 +71,7 @@ Tier hanyalah label navigasi/guard frontend di atas `users.role` (9 nilai).
 | Tier | Label | `users.role` | Scope |
 |---|---|---|---|
 | 1 | Superadmin | *(belum ada)* | Tidak diimplementasikan |
-| 2 | Admin Desa / Eksekutif | `petugas_desa`, `kepala_desa`, `sekretaris_desa` | Petugas Desa = operator penuh desanya (CMS, kependudukan, jabatan, konfigurasi, semua surat). Kades/Sekdes = approver final tanpa akses CMS |
+| 2 | Admin Desa / Eksekutif | `staf_sid`, `kepala_desa`, `sekretaris_desa` | Petugas Desa (`staf_sid`, tampil "Staf {nama aplikasi}", satu per desa, diganti lewat rotasi) = operator penuh desanya (CMS, kependudukan, jabatan, konfigurasi, semua surat). Kades/Sekdes = approver final tanpa akses CMS |
 | 3 | Staff Desa | `kasi_pelayanan`, `kaur_tu_umum` | Notifikasi & akses surat selesai sesuai `assigned_role`, menerapkan aksi data, membaca daftar warga; bukan approver |
 | 4 | RT/RW/Kadus | `rt`, `rw`, `kadus` | RT approver wilayah; RW & Kadus hanya FYI read-only |
 | 5 | Warga | `warga` | Ajukan surat, TTD pribadi, setujui/tolak permintaan TTD, unduh surat sendiri |

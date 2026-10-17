@@ -6,14 +6,14 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-class DestroyVillageOrgPositionRequest extends FormRequest
+class EndVillageOrgMemberRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return $this->user()?->role === 'petugas_desa';
+        return $this->user()?->role === 'staf_sid';
     }
 
     public function failedAuthorization(): void
@@ -28,6 +28,9 @@ class DestroyVillageOrgPositionRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [];
+        return [
+            'ended_at' => ['nullable', 'date'],
+            'to_member' => ['sometimes', 'boolean'],
+        ];
     }
 }

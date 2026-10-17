@@ -45,7 +45,7 @@ export default function ApprovalFlowsPage() {
     }
   }, [])
 
-  if (user?.role !== 'petugas_desa') {
+  if (user?.role !== 'staf_sid') {
     return null
   }
 

@@ -16,7 +16,7 @@ enum OfficialPosition: string
     case Kadus = 'kadus';
     case KasiPelayanan = 'kasi_pelayanan';
     case KaurTuUmum = 'kaur_tu_umum';
-    case PetugasDesa = 'petugas_desa';
+    case StafSid = 'staf_sid';
     case Sekdes = 'sekdes';
 
     public function userRole(): UserRole
@@ -28,7 +28,7 @@ enum OfficialPosition: string
             self::Kadus => UserRole::Kadus,
             self::KasiPelayanan => UserRole::KasiPelayanan,
             self::KaurTuUmum => UserRole::KaurTuUmum,
-            self::PetugasDesa => UserRole::PetugasDesa,
+            self::StafSid => UserRole::StafSid,
             self::Sekdes => UserRole::SekretarisDesa,
         };
     }
@@ -43,9 +43,14 @@ enum OfficialPosition: string
         };
     }
 
+    /**
+     * Setiap jabatan berakun dipegang satu orang per wilayahnya, termasuk
+     * staf aplikasi (staf_sid) yang hanya satu per desa; penggantinya lewat
+     * rotasi.
+     */
     public function isSingleHolderPerScope(): bool
     {
-        return $this !== self::PetugasDesa;
+        return true;
     }
 
     /**
@@ -65,7 +70,7 @@ enum OfficialPosition: string
             self::Kadus => 'Kepala Dusun',
             self::KasiPelayanan => 'Kasi Pelayanan',
             self::KaurTuUmum => 'Kaur TU & Umum',
-            self::PetugasDesa => 'Petugas Desa',
+            self::StafSid => UserRole::stafSidLabel(),
             self::Sekdes => 'Sekretaris Desa',
         };
     }

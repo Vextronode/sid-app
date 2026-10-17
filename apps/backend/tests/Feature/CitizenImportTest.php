@@ -25,7 +25,7 @@ class CitizenImportTest extends TestCase
     {
         $village ??= Village::query()->first() ?? Village::factory()->create();
 
-        return User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        return User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
     }
 
     /**
@@ -209,7 +209,7 @@ class CitizenImportTest extends TestCase
             ->assertJsonValidationErrors(['file']);
     }
 
-    public function test_import_forbidden_for_non_petugas_desa(): void
+    public function test_import_forbidden_for_non_staf_sid(): void
     {
         $file = $this->makeXlsx(['nik', 'name', 'date_of_birth', 'gender', 'address', 'rt_id'], []);
 

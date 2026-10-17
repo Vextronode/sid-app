@@ -1,9 +1,10 @@
 import { Menu, X } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 
-import { HAL_BERANDA, HAL_BERITA, HAL_LOGIN, SECTION_KONTAK } from '@/lib/constants/routes'
+import { HAL_BERANDA, HAL_BERITA, SECTION_KONTAK } from '@/lib/constants/routes'
 import { useDisclosure } from '../hooks/useDisclosure'
 import { useSectionLink } from '../utils/sectionLink'
+import { AccountNavLink } from './AccountNavLink'
 import { ProfilDesaItems } from './ProfilDesaDropdown'
 
 // Navigasi ponsel (K5): tombol berlabel teks "Menu" yang membuka daftar nav.
@@ -61,9 +62,11 @@ export function MobileMenu({ header, showTransparansi }) {
             </a>
           </li>
           <li>
-            <Link to={HAL_LOGIN} className="bd-button-outline bd-mobile-login" onClick={close}>
-              {nav.masuk}
-            </Link>
+            <AccountNavLink
+              nav={nav}
+              className="bd-button-outline bd-mobile-login"
+              onClick={close}
+            />
           </li>
         </ul>
       </nav>

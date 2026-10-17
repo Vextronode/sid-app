@@ -117,7 +117,7 @@ class DemoDataSeederTest extends TestCase
     public function the_five_demo_accounts_log_in_with_the_demo_password(): void
     {
         $expectedRoles = [
-            'demo_admin' => 'petugas_desa',
+            'demo_admin' => 'staf_sid',
             'demo_warga' => 'warga',
             'demo_kadus' => 'kadus',
             'demo_rw' => 'rw',

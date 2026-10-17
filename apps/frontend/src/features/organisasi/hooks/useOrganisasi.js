@@ -1,17 +1,19 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  getPositions,
-  createPosition,
-  updatePosition,
-  deletePosition,
   addMember,
-  updateMember,
   deleteMember,
+  deleteMemberPhoto,
+  endMember,
+  getPositions,
+  updateMember,
+  uploadMemberPhoto,
 } from '../api'
 
+const EMPTY_SLOTS = { ketua: null, wakil_ketua: null, anggota: null }
+
 export function useOrganisasi(orgType) {
-  const [positions, setPositions] = useState([])
+  const [slots, setSlots] = useState(EMPTY_SLOTS)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const requestId = useRef(0)
@@ -24,7 +26,11 @@ export function useOrganisasi(orgType) {
       const res = await getPositions(orgType)
       if (current !== requestId.current) return // abaikan response lama (ganti tab cepat)
       const list = res.data?.data ?? []
-      setPositions([...list].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
+      setSlots({
+        ketua: list.find((p) => p.slot === 'ketua') ?? null,
+        wakil_ketua: list.find((p) => p.slot === 'wakil_ketua') ?? null,
+        anggota: list.find((p) => p.slot === 'anggota') ?? null,
+      })
     } catch (err) {
       if (current !== requestId.current) return
       setError(err?.response?.data?.message || 'Gagal memuat data organisasi.')
@@ -37,46 +43,38 @@ export function useOrganisasi(orgType) {
     fetchList()
   }, [fetchList])
 
-  const addPosition = async (payload) => {
-    await createPosition({ ...payload, org_type: orgType })
-    await fetchList()
+  const withRefresh =
+    (request) =>
+    async (...args) => {
+      try {
+        await request(...args)
+      } finally {
+        // Tetap muat ulang bila foto gagal diunggah setelah data tersimpan.
+        await fetchList()
+      }
+    }
+
+  // Foto opsional diunggah setelah data anggota tersimpan.
+  const fillSlot = async (positionId, payload, photo) => {
+    const res = await addMember(positionId, payload)
+    if (photo) await uploadMemberPhoto(positionId, res.data.data.id, photo)
   }
 
-  const editPosition = async (id, payload) => {
-    await updatePosition(id, payload)
-    await fetchList()
-  }
-
-  const removePosition = async (id) => {
-    await deletePosition(id)
-    await fetchList()
-  }
-
-  const addOrRotateMember = async (positionId, payload) => {
-    await addMember(positionId, payload)
-    await fetchList()
-  }
-
-  const editMember = async (positionId, memberId, payload) => {
+  const editMember = async (positionId, memberId, payload, photo) => {
     await updateMember(positionId, memberId, payload)
-    await fetchList()
-  }
-
-  const removeMember = async (positionId, memberId) => {
-    await deleteMember(positionId, memberId)
-    await fetchList()
+    if (photo) await uploadMemberPhoto(positionId, memberId, photo)
   }
 
   return {
-    positions,
+    slots,
     loading,
     error,
     refresh: fetchList,
-    addPosition,
-    editPosition,
-    removePosition,
-    addOrRotateMember,
-    editMember,
-    removeMember,
+    fillSlot: withRefresh(fillSlot),
+    editMember: withRefresh(editMember),
+    endMember: withRefresh(endMember),
+    removeMember: withRefresh(deleteMember),
+    uploadPhoto: withRefresh(uploadMemberPhoto),
+    removePhoto: withRefresh(deleteMemberPhoto),
   }
 }

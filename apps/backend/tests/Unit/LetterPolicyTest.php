@@ -269,22 +269,22 @@ class LetterPolicyTest extends TestCase
         ]);
     }
 
-    public function test_view_allowed_for_petugas_desa_in_own_village(): void
+    public function test_view_allowed_for_staf_sid_in_own_village(): void
     {
         $village = Village::factory()->create();
         $letter = Letter::factory()->create(['village_id' => $village->id]);
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
-        Official::factory()->forUser($user)->position('petugas_desa')->create();
+        $user = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('staf_sid')->create();
 
         $this->assertTrue($this->policy->view($user, $letter));
     }
 
-    public function test_view_forbidden_for_petugas_desa_in_another_village(): void
+    public function test_view_forbidden_for_staf_sid_in_another_village(): void
     {
         $letter = Letter::factory()->create(['village_id' => Village::factory()->create()->id]);
         $otherVillage = Village::factory()->create();
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $otherVillage->id]);
-        Official::factory()->forUser($user)->position('petugas_desa')->create();
+        $user = User::factory()->create(['role' => 'staf_sid', 'village_id' => $otherVillage->id]);
+        Official::factory()->forUser($user)->position('staf_sid')->create();
 
         $this->assertFalse($this->policy->view($user, $letter));
     }
@@ -360,24 +360,24 @@ class LetterPolicyTest extends TestCase
         $this->assertTrue($this->policy->download($owner, $approved));
     }
 
-    public function test_download_allows_petugas_desa_for_approved_letter(): void
+    public function test_download_allows_staf_sid_for_approved_letter(): void
     {
         $village = Village::factory()->create();
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
-        Official::factory()->forUser($user)->position('petugas_desa')->create();
+        $user = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('staf_sid')->create();
         $letter = Letter::factory()->approved()->create(['village_id' => $village->id]);
 
         $this->assertTrue($this->policy->download($user, $letter));
     }
 
-    public function test_download_forbidden_for_petugas_desa_in_another_village(): void
+    public function test_download_forbidden_for_staf_sid_in_another_village(): void
     {
         $letter = Letter::factory()->approved()->create([
             'village_id' => Village::factory()->create()->id,
         ]);
         $otherVillage = Village::factory()->create();
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $otherVillage->id]);
-        Official::factory()->forUser($user)->position('petugas_desa')->create();
+        $user = User::factory()->create(['role' => 'staf_sid', 'village_id' => $otherVillage->id]);
+        Official::factory()->forUser($user)->position('staf_sid')->create();
 
         $this->assertFalse($this->policy->download($user, $letter));
     }
@@ -456,7 +456,7 @@ class LetterPolicyTest extends TestCase
         $this->assertTrue($this->policy->delete($staff, $letter));
     }
 
-    public function test_delete_forbidden_for_petugas_desa_in_another_village(): void
+    public function test_delete_forbidden_for_staf_sid_in_another_village(): void
     {
         $owner = User::factory()->create();
         $letter = Letter::factory()->create([
@@ -464,8 +464,8 @@ class LetterPolicyTest extends TestCase
             'village_id' => Village::factory()->create()->id,
         ]);
         $otherVillage = Village::factory()->create();
-        $staff = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $otherVillage->id]);
-        Official::factory()->forUser($staff)->position('petugas_desa')->create();
+        $staff = User::factory()->create(['role' => 'staf_sid', 'village_id' => $otherVillage->id]);
+        Official::factory()->forUser($staff)->position('staf_sid')->create();
 
         $this->assertFalse($this->policy->delete($staff, $letter));
     }
@@ -477,7 +477,7 @@ class LetterPolicyTest extends TestCase
             ['sekretaris_desa'],
             ['kasi_pelayanan'],
             ['kaur_tu_umum'],
-            ['petugas_desa'],
+            ['staf_sid'],
         ];
     }
 

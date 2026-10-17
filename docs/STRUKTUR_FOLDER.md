@@ -93,7 +93,7 @@ Struktur berikut merangkum lapisan yang benar-benar ada di source. Route API ber
 ```text
 apps/backend/
 ├── app/
-│   ├── Console/Commands/        # petugas:first, letters:backfill-snapshots
+│   ├── Console/Commands/        # staf-sid:first, letters:backfill-snapshots
 │   ├── Enums/
 │   ├── Exceptions/
 │   ├── Http/

@@ -47,7 +47,7 @@ Laravel Telescope **tidak** terpasang (lihat audit docs).
 | Middleware | `account.active`, `password.changed`, `role`, `verified` |
 | Rule | `ValidOfficialPosition` |
 | Notifikasi | `LetterStatusNotification` (kanal database + WebPush) |
-| Console | `petugas:first`, `letters:backfill-snapshots` |
+| Console | `staf-sid:first`, `letters:backfill-snapshots` |
 | Enum | `UserRole` (9), `OfficialPosition` (8 jabatan berakun), `LetterStatus`, `LetterDataAction`, `LetterFlowLogReason`, `ApprovalLevel`, `AssignedRole`, enum kependudukan |
 
 ---
@@ -148,11 +148,11 @@ Keputusan dijalankan di dalam transaksi: `SELECT ... FOR UPDATE` pada surat, cek
 
 ### 4.1 Peran
 
-`users.role` 9 nilai: `warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, kepala_desa, sekretaris_desa`. Tier navigasi di SYS/FE hanyalah label. Superadmin belum ada.
+`users.role` 9 nilai: `warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, staf_sid, kepala_desa, sekretaris_desa`. Tier navigasi di SYS/FE hanyalah label. Superadmin belum ada.
 
 ### 4.2 Jabatan
 
-- **Jabatan berakun** (enum `OfficialPosition`): kepala_desa, sekdes, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa — menentukan `users.role`.
+- **Jabatan berakun** (enum `OfficialPosition`): kepala_desa, sekdes, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, staf_sid — menentukan `users.role`.
 - **Jabatan tanpa akun**: jenis dikelola Petugas Desa di `official_position_types` (kode dibuat dari label, tidak dapat diubah; seeder: Kasi Kesejahteraan, Kasi Pemerintahan, Kaur Perencanaan, Kaur Keuangan, Staf SIPADES, Staf SISKEUDES). `officials.position` kini VARCHAR(50) berisi nilai enum atau `code` jenis jabatan (`ValidOfficialPosition`).
 - Penetapan via `OfficialAssignmentService` (promote/demote/rotate, transaksional, activity log `official`). Foto pejabat wajib saat penetapan/rotasi (disk public). Calon dicari lewat NIK (`POST /officials/candidates/lookup`).
 
@@ -201,9 +201,11 @@ Scope ringkas: Petugas Desa = operator penuh di desanya (CMS, kependudukan, jaba
 ## 8. Keamanan Data & Audit
 
 - Enkripsi `$casts encrypted`: `citizens.nik`, `families.no_kk`, `families.family_address`, `letters.applicant_nik`, `letters.applicant_address`. Dual-column hash (`nik_hash`, `no_kk_hash`, `applicant_nik_hash`, `letter_signatures.target_nik_hash`).
-- Berkas privat (disk `private_uploads`): stempel desa, TTD jabatan Kades, TTD akun (terenkripsi), lampiran surat. Disk public: logo & foto beranda desa (dioptimasi WebP), foto pejabat, thumbnail berita.
+- Berkas privat (disk `private_uploads`): stempel desa, TTD jabatan Kades, TTD akun (terenkripsi), lampiran surat. Disk public: logo & foto beranda desa (dioptimasi WebP), foto pejabat, foto anggota organisasi desa (`org-member-photos/`), foto profil akun warga (`user-photos/`), thumbnail berita.
 - Login: throttle 5 percobaan per `username|IP`, lockout 1 jam, percobaan gagal dicatat `Log::warning`. Register: 5/menit per IP dan 10/jam per hash NIK.
 - `must_change_password` → 403 `password_change_required` kecuali `GET /api/user`, `PUT /api/profile/password`, `/logout`.
+- Role tidak cocok dengan grup endpoint → 403 `role_forbidden` (`EnsureUserHasRole`). Role dibaca ulang dari DB setiap request, jadi rotasi/turun jabatan langsung berlaku pada sesi yang masih terbuka.
+- Label peran `staf_sid` = "Staf " + `config('sid.app_name')` (`config/sid.php`, env `SID_APP_NAME`) lewat `UserRole::stafSidLabel()`; dipakai juga untuk pesan error.
 - Audit: `letter_status_logs` (semua transisi status + alasan sistem) dan activity log untuk `official` (promote/demote/rotate), `citizen` (`letter_fulfilled`), `user_signature` (`reset`).
 - `trustProxies('*')` aktif; tidak ada `forceScheme('https')` di aplikasi; cookie session default `SameSite=lax` (`SESSION_SAME_SITE`).
 

@@ -1,0 +1,93 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Ganti foto profil akun warga (oleh Petugas Desa)
+  description: |
+    Aktor: Petugas Desa, untuk akun warga di desa yang sama. Akun yang
+    sedang menjabat ditolak 422; fotonya diganti lewat
+    `POST /officials/{official}/photo`. Akun desa lain: 404.
+  operationId: uploadUserPhoto
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: user
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [photo]
+          properties:
+            photo:
+              type: string
+              format: binary
+              description: PNG, JPG, atau WEBP. Maksimal 5 MB.
+  responses:
+    '200':
+      description: Foto profil disimpan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Foto profil berhasil disimpan."
+              data:
+                $ref: '../../schemas/users/users.yaml#/User'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      description: Validasi gagal, atau akun sedang menjabat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Akun ini sedang menjabat. Ganti fotonya di halaman Pejabat Desa."
+delete:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Hapus foto profil akun warga (oleh Petugas Desa)
+  description: Aturan akses sama dengan POST.
+  operationId: deleteUserPhoto
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: user
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Foto profil dihapus
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Foto profil berhasil dihapus."
+              data:
+                $ref: '../../schemas/users/users.yaml#/User'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      description: Akun sedang menjabat

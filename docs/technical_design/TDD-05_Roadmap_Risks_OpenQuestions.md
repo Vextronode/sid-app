@@ -62,10 +62,10 @@ Bagian ini mendokumentasikan pertanyaan yang perlu dikonfirmasi sebelum atau sel
 | Jenis surat apa saja yang perlu dikelola di fase pertama? (SKD, SKU, SKCK, dll.) | Belum dikonfirmasi | — |
 | Apakah infrastruktur server sudah tersedia, atau perlu disiapkan dari awal oleh tim? | Belum dikonfirmasi | — |
 | Apakah ada sistem eksisting (manual atau digital) yang perlu dipertimbangkan untuk migrasi data? | Belum dikonfirmasi | — |
-| Apakah desa manage jabatan BPD/BUMDES/LPM/Karang Taruna/PKK di app, atau statis? | Menunggu konfirmasi | — |
-| Apakah history jabatan organisasi non-struktural ditampilkan ke publik? | Menunggu konfirmasi | — |
-| Apakah jumlah anggota BPD fix atau dinamis? | Menunggu konfirmasi | — |
-| Struktur BUMDES, LPM, Karang Taruna, PKK — fix atau dinamis? | Menunggu konfirmasi | — |
+| Apakah desa manage jabatan BPD/BUMDES/LPM/Karang Taruna/PKK di app, atau statis? | Terjawab (source) | Dikelola di app oleh Petugas Desa untuk BPD, LPM, Karang Taruna, PKK (UC-23). BUMDES belum dikelola di UI |
+| Apakah history jabatan organisasi non-struktural ditampilkan ke publik? | Terjawab (source) | Tidak. Halaman publik `/bpd` dan `/lembaga-desa` hanya menampilkan pemegang aktif (nama dan foto); riwayat hanya terlihat di dashboard Petugas |
+| Apakah jumlah anggota BPD fix atau dinamis? | Terjawab (source) | Pimpinan tetap (satu Ketua, satu Wakil Ketua), anggota dinamis (jumlah bebas) |
+| Struktur BUMDES, LPM, Karang Taruna, PKK — fix atau dinamis? | Terjawab (source) | LPM, Karang Taruna, PKK sama dengan BPD: slot tetap Ketua dan Wakil Ketua, anggota dinamis. BUMDES belum dikelola |
 
 ### 3.2. Keputusan Teknis Internal Tim
 
@@ -80,7 +80,8 @@ Bagian ini mendokumentasikan pertanyaan yang perlu dikonfirmasi sebelum atau sel
 | Apa makna `produces_letter` bagi alur? | Belum diputuskan | Kolom ada dan dikirim ke frontend, tetapi belum mengubah alur backend |
 | Jenis surat mana yang membutuhkan slot tanda tangan / dokumen pendukung? | Belum diputuskan | Fitur siap, belum ada jenis surat seed yang memakainya |
 | React via REST API atau via Inertia | Sudah diputuskan | REST API (lihat OpenAPI Spec v5.3, `SID-ARCH-FE-001`) |
-| Apakah fitur rotasi jabatan organisasi non-struktural diaktifkan di UI MVP? | Terjawab sebagian (source) | Rotasi tersedia dan dijaga status aktif jabatan; konfirmasi desa soal struktur tetap terbuka |
+| Apakah fitur rotasi jabatan organisasi non-struktural diaktifkan di UI MVP? | Terjawab (source) | Ya. Ketua/Wakil Ketua dapat diganti, dipromosikan dari anggota, diturunkan jadi anggota, atau dikosongkan; rotasi tetap dapat dimatikan per slot dengan `is_active=false` |
+| Apakah Petugas Desa boleh lebih dari satu? | Terjawab (source) | Tidak. Peran `staf_sid` (tampil "Staf {nama aplikasi}") hanya satu per desa; pergantian lewat rotasi, termasuk oleh staf itu sendiri. Pemulihan bila staf tidak bisa login tetap backlog (audit A-18) |
 | Apakah Sekdes ikut menjadi approver tahap final yang sama dengan Kades? | **Sudah diputuskan (K7/K13)** | Ya. Kades dan Sekdes saling menggantikan pada tahap final; pemohon Kades diputuskan Sekdes dan sebaliknya. |
 | Apakah `assigned_role` menjadi penentu akses Kasi/Kaur? | **Sudah diputuskan (K8/A9/A10)** | Ya. Kasi/Kaur bukan approver; `assigned_role` menentukan akses surat selesai, dan NULL berlaku untuk kedua role. |
 | Apa definisi periode untuk `household_income_range`? | Belum diputuskan | Field mengacu pada penghasilan rumah tangga; periode belum ditetapkan. |
@@ -118,7 +119,7 @@ Bagian ini mendokumentasikan keterbatasan teknis yang sudah dapat diprediksi seb
 | Tipe surat dengan `template=NULL` tidak bisa dipakai warga | Warga tidak bisa submit surat yang belum ada template | Guard di backend + badge "Draft" di admin page |
 | Reminder otomatis belum diimplementasikan | `reminded_at` dan `reminder_hours` tersedia, tetapi belum ada scheduler/job yang mengirim reminder; surat dapat tertahan tanpa notifikasi pengingat | Badge overdue dihitung dari deadline approval aktif; implementasi reminder via scheduler masih backlog |
 | PDF on-demand: generate setiap klik | Slight latency saat download | Acceptable trade-off — tidak signifikan untuk traffic desa kecil |
-| Struktur organisasi non-struktural menunggu konfirmasi desa | Rotasi anggota sudah tersedia, tetapi struktur jabatan (statis/dinamis) belum dikonfirmasi | Jabatan di-seed; rotasi dapat dimatikan per jabatan dengan menonaktifkan jabatan |
+| Hanya satu staf aplikasi (`staf_sid`) per desa | Bila satu-satunya staf terkunci atau lupa password, tidak ada akun lain yang dapat mengelola sistem | Pergantian rutin lewat rotasi; bootstrap awal `staf-sid:first`; command pemulihan darurat masih backlog (audit A-18) |
 | Blockchain-inspired hashing dikeluarkan dari MVP | Integritas data surat belum tervalidasi di MVP | Detail lengkap dicatat di `TDD-06_Appendix.md` untuk implementasi Next Dev Paket 2 |
 | Keputusan bersamaan oleh Kades dan Sekdes | Kedua user memproses tahap final yang sama hampir bersamaan | Aplikasi menerapkan first-action-wins; keputusan aktual actor tersimpan pada approval. |
 | `assigned_role` mengatur akses Kasi/Kaur | Salah konfigurasi dapat membuka akses role yang tidak dituju | Policy dan repository memfilter surat selesai memakai nilai `assigned_role`; NULL berarti kedua role. |

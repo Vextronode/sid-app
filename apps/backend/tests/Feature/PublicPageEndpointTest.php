@@ -170,6 +170,8 @@ class PublicPageEndpointTest extends TestCase
                 ['code' => 'kaur_tu_umum', 'label' => 'Kaur TU & Umum'],
                 ['code' => 'kaur_keuangan', 'label' => 'Kaur Keuangan'],
                 ['code' => 'staf_arsip', 'label' => 'Staf Arsip'],
+                // Staf aplikasi desa paling akhir di grup staf.
+                ['code' => 'staf_sid', 'label' => 'Staf SIDUTama'],
             ])
             ->assertJsonPath('officials.1.position_label', 'Kaur Keuangan')
             ->assertJsonCount(2, 'officials')

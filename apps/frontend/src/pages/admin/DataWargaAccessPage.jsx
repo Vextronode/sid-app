@@ -8,5 +8,5 @@ import DataWargaReadOnlyPage from './DataWargaReadOnlyPage'
 export default function DataWargaAccessPage() {
   const { user } = useAuth()
 
-  return user?.role === 'petugas_desa' ? <DataWargaPage /> : <DataWargaReadOnlyPage />
+  return user?.role === 'staf_sid' ? <DataWargaPage /> : <DataWargaReadOnlyPage />
 }

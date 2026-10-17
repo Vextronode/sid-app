@@ -13,7 +13,7 @@ class StoreRwRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->role === 'petugas_desa';
+        return $this->user()?->role === 'staf_sid';
     }
 
     /**

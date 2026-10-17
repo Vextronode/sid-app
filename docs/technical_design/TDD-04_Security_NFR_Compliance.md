@@ -20,7 +20,7 @@
 **Authentication & Authorization (Aktif)**
 
 - Laravel Sanctum SPA cookie (HttpOnly) + XSRF token (`X-XSRF-TOKEN`); frontend tidak menyimpan token di localStorage.
-- Middleware grup: `auth:sanctum`, `account.active` (403 `account_inactive`), `password.changed` (403 `password_change_required` kecuali `GET /api/user`, `PUT /api/profile/password`, `/logout`), lalu `role:` per grup. Konteks resource di Policy (`LetterPolicy`, `OfficialPolicy`, `RegionPolicy`) dan Service.
+- Middleware grup: `auth:sanctum`, `account.active` (403 `account_inactive`), `password.changed` (403 `password_change_required` kecuali `GET /api/user`, `PUT /api/profile/password`, `/logout`), lalu `role:` per grup (403 `role_forbidden`). Role dibaca dari DB setiap request, sehingga perubahan peran (rotasi/turun jabatan) langsung berlaku tanpa memutus sesi; FE memakai `role_forbidden` untuk mengalihkan ke dashboard peran baru. Konteks resource di Policy (`LetterPolicy`, `OfficialPolicy`, `RegionPolicy`) dan Service.
 - Login dengan username; throttle 5 percobaan gagal per `username|IP`, lockout 1 jam; percobaan gagal dicatat `Log::warning` (username, IP, user agent).
 - Register: rate limit 5/menit per IP dan 10/jam per hash NIK; wajib NIK terdaftar **dan** tanggal lahir yang cocok dengan data kependudukan.
 - Session lifetime 120 menit (`SESSION_LIFETIME`), driver database.
@@ -38,14 +38,14 @@
 - Field terenkripsi (`$casts encrypted`, AES-256-CBC): `citizens.nik`, `families.no_kk`, `families.family_address`, `letters.applicant_nik`, `letters.applicant_address`. `citizens.address` tidak dienkripsi.
 - Berkas TTD pribadi akun dienkripsi (`Crypt::encryptString`) sebelum disimpan.
 - Berkas privat di disk `private_uploads` (stempel desa, TTD jabatan Kades, TTD akun, lampiran surat) hanya dilayani lewat endpoint terautentikasi dengan cek path folder, `Cache-Control: private, no-store` (TTD/stempel) dan `X-Content-Type-Options: nosniff`.
-- Berkas publik (disk `public`): logo & foto beranda desa, foto pejabat, thumbnail berita — sengaja publik untuk halaman publik.
+- Berkas publik (disk `public`): logo & foto beranda desa, foto pejabat, foto anggota organisasi desa, foto profil akun warga, thumbnail berita — sengaja publik untuk halaman publik dan avatar header. Halaman publik organisasi hanya mengirim nama dan foto (tanpa WA/catatan).
 - `family_socioeconomics` belum dienkripsi (keputusan terbuka).
 - `APP_KEY` di `.env`; entrypoint Docker gagal bila kosong dan tidak pernah membuat ulang key.
 
 **Backend Security (Aktif)**
 
 - CSRF via Sanctum; semua input divalidasi Form Request (isian surat divalidasi terhadap definisi jenis surat; isian tak dikenal ditolak).
-- Upload: tipe & ukuran dibatasi (lampiran/TTD basah PDF/JPG/PNG ≤ 2 MB; TTD akun PNG/JPG ≤ 512 KB; stempel/TTD jabatan/foto pejabat ≤ 5 MB; logo ≤ 2 MB; foto beranda ≤ 5 MB; thumbnail berita ≤ 2 MB).
+- Upload: tipe & ukuran dibatasi (lampiran/TTD basah PDF/JPG/PNG ≤ 2 MB; TTD akun PNG/JPG ≤ 512 KB; stempel/TTD jabatan/foto pejabat/foto anggota organisasi/foto profil akun ≤ 5 MB; logo ≤ 2 MB; foto beranda ≤ 5 MB; thumbnail berita ≤ 2 MB).
 - Template PDF dirender mentah, sehingga semua nilai dari data warga/isian di-escape (`e()`); hanya HTML buatan sistem (logo, TTD, stempel) yang tidak di-escape.
 - Permintaan tanda tangan tahan enumerasi: jawaban sama apakah NIK punya akun atau tidak; pembatasan 3 penolakan per pasangan pemohon–NIK dalam 24 jam; pemilik NIK dapat memblokir pemohon; identitas penolak tidak diberitahukan.
 - Keputusan approval dan Terapkan memakai row lock (`lockForUpdate`) + cek ulang status di dalam transaksi.
@@ -101,7 +101,7 @@
 |---|---|---|
 | Sangat Sensitif | NIK, No. KK, data pemohon surat, tanda tangan pribadi, lampiran surat, data sosio-ekonomi | Enkripsi field/berkas sesuai TDD-03; berkas privat; RBAC + Policy |
 | Sensitif Sedang | Nama, alamat, email, no. HP pengguna | RBAC; tidak tampil di halaman publik |
-| Rendah | Profil desa, berita, peraturan, foto pejabat, logo | Publik, di-cache |
+| Rendah | Profil desa, berita, peraturan, foto pejabat, struktur & foto organisasi desa, logo | Publik, di-cache |
 
 ### 2.2. Threat Modeling
 
@@ -122,7 +122,7 @@
 
 - Jabatan berakun hanya berubah lewat promote/demote/rotate (transaksional, audit).
 - Akun tidak dapat menonaktifkan dirinya; Petugas Desa aktif terakhir tidak dapat diturunkan.
-- Petugas pertama dibuat sekali lewat `php artisan petugas:first --nik=...` (password sementara dicetak sekali, wajib diganti).
+- Petugas pertama dibuat sekali lewat `php artisan staf-sid:first --nik=...` (password sementara dicetak sekali, wajib diganti).
 - Belum ada prosedur pemulihan darurat bila tidak ada Petugas Desa yang dapat login.
 
 ---

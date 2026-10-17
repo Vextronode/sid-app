@@ -30,7 +30,7 @@ class OfficialSignatureEndpointTest extends TestCase
         ]);
     }
 
-    private function petugas(Village $village, string $role = 'petugas_desa'): User
+    private function petugas(Village $village, string $role = 'staf_sid'): User
     {
         return User::factory()->create(['village_id' => $village->id, 'role' => $role]);
     }
@@ -147,7 +147,7 @@ class OfficialSignatureEndpointTest extends TestCase
         $official = $this->headOfVillage($village);
         $user = User::factory()->create([
             'village_id' => $village->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
             'is_active' => false,
         ]);
 

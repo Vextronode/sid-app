@@ -21751,3 +21751,253 @@ button.sid-operator-profile {
 
   object-fit: cover;
 }
+
+/* ==========================================
+   ORGANISASI (BPD / LPM / Karang Taruna / PKK)
+   Slot Ketua & Wakil Ketua + daftar Anggota
+   ========================================== */
+
+.sid-org-subtitle {
+  margin: 0.15rem 0 0;
+  color: var(--sid-text-secondary);
+  font-size: 0.875rem;
+}
+
+.sid-org-section-title {
+  margin: 0 0 0.75rem;
+  color: var(--sid-text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sid-org-section-title span {
+  color: var(--sid-text-muted);
+  font-weight: 500;
+}
+
+.sid-org-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 2rem 0 0.75rem;
+}
+
+.sid-org-section-head .sid-org-section-title {
+  margin: 0;
+}
+
+/* Pejabat Desa: satu tabel per tingkat (desa, dusun, RW, RT). */
+.sid-pejabat-group {
+  margin-top: 2rem;
+}
+
+.sid-pejabat-group .sid-org-section-title {
+  margin-bottom: 0.25rem;
+}
+
+.sid-pejabat-group-hint {
+  margin-bottom: 0.75rem;
+}
+
+.sid-pejabat-group .sid-org-section-title + .sid-operator-table-card {
+  margin-top: 0.75rem;
+}
+
+.sid-org-leaders {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.sid-org-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--sid-border);
+  border-top: 3px solid var(--sid-primary);
+  border-radius: var(--radius-lg);
+  background: var(--sid-surface-card);
+  box-shadow: var(--shadow-card);
+}
+
+.sid-org-slot-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2rem;
+}
+
+.sid-org-slot-label {
+  color: var(--sid-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sid-org-slot-body {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-width: 0;
+}
+
+.sid-org-slot-name {
+  margin: 0;
+  color: var(--sid-text-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.sid-org-slot-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.2rem 0 0;
+  color: var(--sid-text-secondary);
+  font-size: 0.8rem;
+}
+
+.sid-org-slot-empty {
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px dashed var(--sid-border);
+  border-radius: var(--radius-md);
+  color: var(--sid-text-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.sid-org-slot > .sid-button {
+  align-self: flex-start;
+}
+
+.sid-org-history {
+  margin-top: 0.75rem;
+  color: var(--sid-text-secondary);
+  font-size: 0.8rem;
+}
+
+.sid-org-history summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sid-org-history ul {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sid-org-history li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--sid-border);
+}
+
+.sid-org-history li small {
+  display: block;
+  color: var(--sid-text-muted);
+}
+
+.sid-org-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+}
+
+.sid-org-choice label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .sid-org-leaders {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sid-org-section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ==========================================
+   FOTO PROFIL AKUN (ProfilePhoto)
+   ========================================== */
+
+.sid-profile-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.sid-profile-photo-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.sid-profile-photo-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--sid-border);
+  border-radius: 9999px;
+  background: var(--sid-surface-card);
+  color: var(--sid-primary);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.sid-profile-photo-actions button:hover:not(:disabled) {
+  border-color: var(--sid-primary);
+}
+
+.sid-profile-photo-actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.sid-profile-photo-note {
+  max-width: 7rem;
+  margin: 0;
+  color: var(--sid-text-muted);
+  font-size: 0.65rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.sid-profile-photo .sid-form-field-error {
+  max-width: 10rem;
+  margin: 0;
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+/* Foto akun yang login di header (UserAvatar). */
+.sid-user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--sid-border);
+  border-radius: 50%;
+  background: var(--sid-status-progress-bg);
+  color: var(--sid-primary);
+}

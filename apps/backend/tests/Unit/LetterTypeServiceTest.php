@@ -30,7 +30,7 @@ class LetterTypeServiceTest extends TestCase
         LetterType::factory()->create(['is_active' => true, 'template' => 'tpl']);
         LetterType::factory()->create(['is_active' => false, 'template' => 'tpl']);
 
-        $result = $this->service->getActiveWithTemplate($this->makePetugasDesaActor());
+        $result = $this->service->getActiveWithTemplate($this->makeStafSidActor());
 
         $this->assertCount(1, $result);
     }
@@ -42,7 +42,7 @@ class LetterTypeServiceTest extends TestCase
         $result = $this->service->update($letterType, [
             'validity_days' => 90,
             'is_active' => false,
-        ], $this->makePetugasDesaActor($letterType->village_id));
+        ], $this->makeStafSidActor($letterType->village_id));
 
         $this->assertSame(90, $result->validity_days);
         $this->assertFalse($result->is_active);

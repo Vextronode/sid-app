@@ -25,7 +25,7 @@ elseif (rt / rw / kadus) then
 elseif (kasi_pelayanan / kaur_tu_umum) then
   :Lihat **03_SID_POV_RTRW_StaffDesa.puml**\n(notifikasi surat final, unduh,\nTerapkan perubahan data; bukan approver);
   stop
-elseif (petugas_desa) then
+elseif (staf_sid) then
   :Lihat **04_SID_POV_Admin_Eksekutif_Superadmin.puml**\n(CMS, kependudukan, jabatan,\nkonfigurasi, seluruh surat desa);
   stop
 elseif (kepala_desa / sekretaris_desa) then

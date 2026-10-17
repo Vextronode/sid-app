@@ -21,7 +21,7 @@ class OfficialCandidateLookupTest extends TestCase
     {
         $village = Village::factory()->create();
         ['rt' => $rt] = $this->makeArea($village);
-        $petugas = $this->makeOfficialUser('petugas_desa', $village);
+        $petugas = $this->makeOfficialUser('staf_sid', $village);
         $currentRt = $this->makeOfficialUser('rt', $village, ['rt_id' => $rt->id]);
         $candidate = $this->makeCitizenAccount($village, $rt, 'warga', ['nik' => self::NIK]);
 
@@ -53,7 +53,7 @@ class OfficialCandidateLookupTest extends TestCase
     {
         $village = Village::factory()->create();
         ['rt' => $rt] = $this->makeArea($village);
-        $petugas = $this->makeOfficialUser('petugas_desa', $village);
+        $petugas = $this->makeOfficialUser('staf_sid', $village);
         $serving = $this->makeOfficialUser('rt', $village, ['rt_id' => $rt->id]);
         $serving['citizen']->update(['nik' => '3207010101900002']);
         $inactive = $this->makeCitizenAccount($village, $rt, 'warga', ['nik' => '3207010101900003']);
@@ -92,13 +92,13 @@ class OfficialCandidateLookupTest extends TestCase
         $lookup('123')->assertStatus(422)->assertJsonValidationErrors(['nik']);
     }
 
-    public function test_lookup_is_limited_to_petugas_desa_and_their_own_village(): void
+    public function test_lookup_is_limited_to_staf_sid_and_their_own_village(): void
     {
         $village = Village::factory()->create();
         ['rt' => $rt] = $this->makeArea($village);
         $this->makeCitizenAccount($village, $rt, 'warga', ['nik' => self::NIK]);
         $rtOfficial = $this->makeOfficialUser('rt', $village, ['rt_id' => $rt->id]);
-        $foreignPetugas = $this->makeOfficialUser('petugas_desa', Village::factory()->create());
+        $foreignPetugas = $this->makeOfficialUser('staf_sid', Village::factory()->create());
 
         $this->actingAs($rtOfficial['user'])
             ->postJson('/api/officials/candidates/lookup', ['nik' => self::NIK])

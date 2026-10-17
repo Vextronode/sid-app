@@ -14,11 +14,11 @@ class FamilySocioeconomicEndpointTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function petugasDesa(Village $village): User
+    private function stafSid(Village $village): User
     {
         return User::factory()->create([
             'village_id' => $village->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
         ]);
     }
 
@@ -31,7 +31,7 @@ class FamilySocioeconomicEndpointTest extends TestCase
     }
 
     #[Test]
-    public function non_petugas_desa_cannot_view_or_upsert_family_socioeconomic_data(): void
+    public function non_staf_sid_cannot_view_or_upsert_family_socioeconomic_data(): void
     {
         $family = Family::factory()->create();
         $user = User::factory()->create(['village_id' => $family->village_id, 'role' => 'warga']);
@@ -50,7 +50,7 @@ class FamilySocioeconomicEndpointTest extends TestCase
     {
         $family = Family::factory()->create();
 
-        $this->actingAs($this->petugasDesa(Village::findOrFail($family->village_id)))
+        $this->actingAs($this->stafSid(Village::findOrFail($family->village_id)))
             ->getJson("/api/families/{$family->id}/socioeconomic")
             ->assertNotFound()
             ->assertJsonPath('message', 'Data sosio-ekonomi belum tersedia untuk keluarga ini.');
@@ -60,7 +60,7 @@ class FamilySocioeconomicEndpointTest extends TestCase
     public function petugas_can_upsert_family_socioeconomic_data(): void
     {
         $family = Family::factory()->create();
-        $user = $this->petugasDesa(Village::findOrFail($family->village_id));
+        $user = $this->stafSid(Village::findOrFail($family->village_id));
 
         $response = $this->actingAs($user)
             ->putJson("/api/families/{$family->id}/socioeconomic", [
@@ -90,7 +90,7 @@ class FamilySocioeconomicEndpointTest extends TestCase
     public function upserting_twice_updates_the_same_family_row(): void
     {
         $family = Family::factory()->create();
-        $user = $this->petugasDesa(Village::findOrFail($family->village_id));
+        $user = $this->stafSid(Village::findOrFail($family->village_id));
         $endpoint = "/api/families/{$family->id}/socioeconomic";
 
         $this->actingAs($user)->putJson($endpoint, ['household_income_range' => '<1jt'])->assertOk();
@@ -105,7 +105,7 @@ class FamilySocioeconomicEndpointTest extends TestCase
     public function invalid_income_enum_is_rejected_and_old_citizen_route_is_gone(): void
     {
         $family = Family::factory()->create();
-        $user = $this->petugasDesa(Village::findOrFail($family->village_id));
+        $user = $this->stafSid(Village::findOrFail($family->village_id));
 
         $this->actingAs($user)
             ->putJson("/api/families/{$family->id}/socioeconomic", ['household_income_range' => 'jutaan-banget'])
@@ -122,7 +122,7 @@ class FamilySocioeconomicEndpointTest extends TestCase
     {
         $family = Family::factory()->create();
         $otherVillage = Village::factory()->create();
-        $user = $this->petugasDesa($otherVillage);
+        $user = $this->stafSid($otherVillage);
 
         $this->actingAs($user)
             ->getJson("/api/families/{$family->id}/socioeconomic")

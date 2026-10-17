@@ -8,9 +8,9 @@ use Illuminate\Foundation\Http\FormRequest;
 class UpdateUserRequest extends FormRequest
 {
     /**
-     * Otorisasi peran sudah ditegakkan middleware `role:petugas_desa`
+     * Otorisasi peran sudah ditegakkan middleware `role:staf_sid`
      * di routes/api.php (grup 'users'). Guard bisnis (tidak boleh
-     * menonaktifkan diri sendiri / satu-satunya petugas_desa aktif)
+     * menonaktifkan diri sendiri / satu-satunya staf_sid aktif)
      * ada di UserService::update().
      */
     public function authorize(): bool

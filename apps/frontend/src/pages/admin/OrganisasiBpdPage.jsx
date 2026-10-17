@@ -4,7 +4,7 @@ export default function OrganisasiBpdPage() {
   return (
     <OrganisasiManager
       title="Badan Permusyawaratan Desa (BPD)"
-      subtitle="Kelola jabatan dan anggota BPD."
+      subtitle="Kelola ketua, wakil ketua, dan anggota BPD."
       orgTypes={[{ value: 'bpd', label: 'BPD' }]}
     />
   )

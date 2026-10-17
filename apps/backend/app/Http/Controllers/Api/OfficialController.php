@@ -98,6 +98,18 @@ class OfficialController extends Controller
         ]);
     }
 
+    public function destroyPhoto(Request $request, Official $official): JsonResponse
+    {
+        $this->authorize('update', $official);
+
+        $official = $this->officialService->deletePhoto($official, $request->user());
+
+        return response()->json([
+            'message' => 'Foto pejabat berhasil dihapus.',
+            'data' => new OfficialResource($official),
+        ]);
+    }
+
     public function candidate(Request $request): JsonResponse
     {
         $this->authorize('create', Official::class);

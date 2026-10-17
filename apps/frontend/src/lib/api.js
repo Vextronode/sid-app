@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import { ROLE_FORBIDDEN_EVENT } from '@/lib/authEvents'
 import { queryClient } from '@/shared/lib/queryClient'
 import { queryKeys } from '@/shared/lib/queryKeys'
 
@@ -22,6 +23,14 @@ const PASSWORD_CHANGE_PATH = '/ganti-password'
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.code === 'role_forbidden' &&
+      typeof window !== 'undefined'
+    ) {
+      window.dispatchEvent(new Event(ROLE_FORBIDDEN_EVENT))
+    }
+
     if (
       error.response?.status === 403 &&
       error.response?.data?.code === 'password_change_required' &&

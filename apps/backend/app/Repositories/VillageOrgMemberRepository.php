@@ -59,6 +59,18 @@ class VillageOrgMemberRepository
         $member->delete();
     }
 
+    /**
+     * Promosi dan turun jabatan menyalin photo_img ke baris baru, jadi satu
+     * berkas foto bisa dipakai beberapa baris (termasuk riwayat).
+     */
+    public function photoUsedByOthers(string $path, int $exceptMemberId): bool
+    {
+        return VillageOrgMember::query()
+            ->where('photo_img', $path)
+            ->whereKeyNot($exceptMemberId)
+            ->exists();
+    }
+
     public function belongsToPosition(VillageOrgMember $member, VillageOrgPosition $position): bool
     {
         return $member->position_id === $position->id;

@@ -9,7 +9,7 @@ use Illuminate\Validation\Rule;
 class UpdateLetterTypeRequest extends FormRequest
 {
     /**
-     * Otorisasi peran ditegakkan middleware `role:petugas_desa` di
+     * Otorisasi peran ditegakkan middleware `role:staf_sid` di
      * routes/api.php.
      */
     public function authorize(): bool

@@ -59,7 +59,7 @@ describe('resolveLoginRedirect', () => {
     expect(resolveLoginRedirect(path, 'warga')).toBeNull()
   })
 
-  it.each([['rt'], ['rw'], ['kadus'], ['kepala_desa'], ['petugas_desa'], [undefined]])(
+  it.each([['rt'], ['rw'], ['kadus'], ['kepala_desa'], ['staf_sid'], [undefined]])(
     'rejects warga pages for role %s',
     (role) => {
       expect(resolveLoginRedirect('/jenis-surat', role)).toBeNull()

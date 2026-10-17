@@ -295,7 +295,7 @@ class SeededLetterRenderingTest extends TestCase
 
     public function test_own_nik_is_shown_in_full_to_its_owner_only(): void
     {
-        $petugas = $this->makeOfficialUser('petugas_desa', $this->village);
+        $petugas = $this->makeOfficialUser('staf_sid', $this->village);
         $nik = $this->applicant['citizen']->nik;
 
         $this->actingAs($this->applicant['user'])

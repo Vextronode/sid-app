@@ -25,7 +25,7 @@ class OfficialPositionTypeEndpointTest extends TestCase
         parent::setUp();
 
         $this->village = Village::factory()->create();
-        $this->petugas = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $this->village->id]);
+        $this->petugas = User::factory()->create(['role' => 'staf_sid', 'village_id' => $this->village->id]);
     }
 
     public function test_petugas_can_create_list_and_update_a_position_type(): void
@@ -75,16 +75,16 @@ class OfficialPositionTypeEndpointTest extends TestCase
             ->assertJsonValidationErrors(['label']);
 
         // Desa lain boleh memakai nama yang sama.
-        $other = User::factory()->create(['role' => 'petugas_desa', 'village_id' => Village::factory()]);
+        $other = User::factory()->create(['role' => 'staf_sid', 'village_id' => Village::factory()]);
         $this->actingAs($other)
             ->postJson('/api/official-position-types', ['label' => 'Kaur Keuangan'])
             ->assertCreated();
     }
 
-    public function test_position_types_are_limited_to_petugas_desa_of_the_same_village(): void
+    public function test_position_types_are_limited_to_staf_sid_of_the_same_village(): void
     {
         $type = OfficialPositionType::factory()->create(['village_id' => $this->village->id]);
-        $foreign = User::factory()->create(['role' => 'petugas_desa', 'village_id' => Village::factory()]);
+        $foreign = User::factory()->create(['role' => 'staf_sid', 'village_id' => Village::factory()]);
 
         $this->getJson('/api/official-position-types')->assertUnauthorized();
         $this->actingAs(User::factory()->create(['role' => 'kepala_desa', 'village_id' => $this->village->id]))

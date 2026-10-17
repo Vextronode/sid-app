@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\OfficialPosition;
+use App\Enums\UserRole;
 use App\Models\Citizen;
 use App\Models\Hamlet;
 use App\Models\Official;
@@ -108,14 +109,23 @@ class OfficialAssignmentService
      */
     public function rotate(User $actor, Official $old, array $data): array
     {
-        if ($old->position === OfficialPosition::PetugasDesa->value) {
-            abort(422, 'Gunakan promote/demote untuk Petugas Desa.');
-        }
-
         return $this->withStoredPhoto($actor, $data, fn (array $data): array => DB::transaction(function () use ($actor, $old, $data): array {
             $this->assertActivePetugas($actor);
             $this->assertOfficialInActorVillage($actor, $old);
-            $demotion = $this->demoteInTransaction($actor, $old, $data['notes'] ?? null);
+
+            // Staf aplikasi hanya satu dan boleh menyerahkan jabatannya
+            // sendiri: penggantinya dipromosikan di transaksi ini juga, jadi
+            // jabatan tidak pernah kosong. $actor di memori tetap berperan
+            // staf_sid (updateRole memakai query), sehingga promosi di bawah
+            // tetap lolos assertActivePetugas meski ia merotasi dirinya.
+            $isStafSid = $old->position === OfficialPosition::StafSid->value;
+            $demotion = $this->demoteInTransaction(
+                $actor,
+                $old,
+                $data['notes'] ?? null,
+                skipSelfGuard: $isStafSid,
+                skipLastPetugasGuard: $isStafSid,
+            );
 
             $newOfficial = $this->promoteInTransaction($actor, array_merge($data, [
                 'position' => $old->position,
@@ -178,8 +188,8 @@ class OfficialAssignmentService
             // including when no Petugas Desa row exists yet.
             Village::query()->orderBy('id')->lockForUpdate()->get(['id']);
 
-            if ($this->userRepository->countActiveByRole(OfficialPosition::PetugasDesa->userRole()->value) > 0) {
-                throw new RuntimeException('Petugas Desa aktif sudah tersedia.');
+            if ($this->userRepository->countActiveByRole(OfficialPosition::StafSid->userRole()->value) > 0) {
+                throw new RuntimeException(UserRole::stafSidLabel().' aktif sudah tersedia.');
             }
 
             $citizen = Citizen::query()
@@ -256,16 +266,16 @@ class OfficialAssignmentService
             $official = $this->officialRepository->create([
                 'citizen_id' => $target->citizen_id,
                 'user_id' => $target->id,
-                'position' => OfficialPosition::PetugasDesa->value,
+                'position' => OfficialPosition::StafSid->value,
                 'village_id' => $citizen->village_id,
                 'started_at' => today(),
                 'is_active' => true,
             ]);
 
-            $this->userRepository->updateRole($target->id, OfficialPosition::PetugasDesa->userRole()->value);
+            $this->userRepository->updateRole($target->id, OfficialPosition::StafSid->userRole()->value);
             $this->logActivity(null, $official, 'promoted', [
                 'user_id' => $target->id,
-                'position' => OfficialPosition::PetugasDesa->value,
+                'position' => OfficialPosition::StafSid->value,
                 'bootstrap' => true,
             ]);
 
@@ -438,8 +448,8 @@ class OfficialAssignmentService
             abort(409, 'Akun pejabat tidak sesuai dengan desa jabatannya.');
         }
 
-        if ($target !== null && $official->position === OfficialPosition::PetugasDesa->value) {
-            $activePetugasCount = $this->userRepository->countActiveByRole(OfficialPosition::PetugasDesa->userRole()->value, $target->village_id);
+        if ($target !== null && $official->position === OfficialPosition::StafSid->value) {
+            $activePetugasCount = $this->userRepository->countActiveByRole(OfficialPosition::StafSid->userRole()->value, $target->village_id);
 
             if (! $skipSelfGuard && $actor?->is($target)) {
                 if ($activePetugasCount <= 1 && ! $skipLastPetugasGuard) {
@@ -450,7 +460,7 @@ class OfficialAssignmentService
             }
 
             if ($activePetugasCount <= 1 && ! $skipLastPetugasGuard) {
-                abort(409, 'Aksi gagal karena petugas desa tidak boleh kosong.');
+                abort(409, 'Aksi gagal karena '.UserRole::stafSidLabel().' tidak boleh kosong.');
             }
         }
 
@@ -509,8 +519,8 @@ class OfficialAssignmentService
 
     private function assertActivePetugas(User $actor): void
     {
-        if ($actor->role !== OfficialPosition::PetugasDesa->userRole()->value || ! $actor->is_active || ! $actor->village_id) {
-            abort(403, 'Aksi ini hanya dapat dilakukan oleh Petugas Desa aktif.');
+        if ($actor->role !== OfficialPosition::StafSid->userRole()->value || ! $actor->is_active || ! $actor->village_id) {
+            abort(403, 'Aksi ini hanya dapat dilakukan oleh '.UserRole::stafSidLabel().' aktif.');
         }
     }
 

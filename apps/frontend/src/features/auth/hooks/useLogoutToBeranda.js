@@ -4,7 +4,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { HAL_BERANDA } from '@/lib/constants/routes'
 
 // Keluar lalu ke beranda publik. Pindah halaman baru setelah server menghapus
-// sesi: bila pindah duluan, tombol "Masuk Warga" yang diklik selagi request
+// sesi: bila pindah duluan, tombol "Masuk" yang diklik selagi request
 // berjalan masih melihat user login dan GuestRoute langsung membuka dashboard.
 // Pindahnya lewat onLoggedOut, yang di-commit bersamaan dengan pengosongan
 // user (lihat AuthContext.logout), agar ProtectedRoute tidak sempat

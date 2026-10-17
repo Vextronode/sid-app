@@ -18,7 +18,7 @@ use Tests\TestCase;
  * ApprovalFlowStepsEndpointTest.php agar cakupan endpoint tetap terfokus.
  *
  * Asumsi role otorisasi: StoreApprovalFlowRequest::authorize() mengizinkan
- * HANYA user dengan role 'petugas_desa' (sesuai TDD Table 4 & kolom
+ * HANYA user dengan role 'staf_sid' (sesuai TDD Table 4 & kolom
  * users.role ENUM 9 nilai). Test ini mengasumsikan tabel `users` sudah
  * punya kolom `role` string/enum standar proyek — sesuaikan factory user
  * di bawah jika UserFactory di repo asli berbeda.
@@ -58,8 +58,8 @@ class ApprovalFlowEndpointTest extends TestCase
     #[Test]
     public function authenticated_user_receives_only_active_flows_by_default(): void
     {
-        // EV5-6-S2: /approval-flows eksklusif petugas_desa.
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        // EV5-6-S2: /approval-flows eksklusif staf_sid.
+        $user = User::factory()->create(['role' => 'staf_sid']);
         $this->makeFlow('Flow Aktif', true);
         $this->makeFlow('Flow Nonaktif', false);
 
@@ -73,9 +73,9 @@ class ApprovalFlowEndpointTest extends TestCase
     #[Test]
     public function show_returns_404_for_nonexistent_flow(): void
     {
-        // EV5-6-S2: harus role petugas_desa agar lolos middleware role
+        // EV5-6-S2: harus role staf_sid agar lolos middleware role
         // sebelum sampai ke pengecekan 404 di controller/service.
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = User::factory()->create(['role' => 'staf_sid']);
 
         $response = $this->actingAs($user)->getJson('/api/approval-flows/99999');
 
@@ -85,8 +85,8 @@ class ApprovalFlowEndpointTest extends TestCase
     #[Test]
     public function show_returns_flow_with_its_steps(): void
     {
-        // EV5-6-S2: endpoint approval-flows eksklusif petugas_desa.
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        // EV5-6-S2: endpoint approval-flows eksklusif staf_sid.
+        $user = User::factory()->create(['role' => 'staf_sid']);
         $flow = $this->makeFlow('Flow Detail');
 
         $response = $this->actingAs($user)->getJson('/api/approval-flows/'.$flow->id);
@@ -108,7 +108,7 @@ class ApprovalFlowEndpointTest extends TestCase
     #[Test]
     public function flow_write_endpoints_are_not_available(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = User::factory()->create(['role' => 'staf_sid']);
         $flow = $this->makeFlow('Flow Terkunci');
 
         $this->actingAs($user, 'sanctum')

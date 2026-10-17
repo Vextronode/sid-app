@@ -89,7 +89,7 @@ php artisan migrate --force
 Bootstrap Petugas pertama sekaligus membuat citizen, akun, dan jabatan dalam satu transaksi. Untuk citizen baru, sertakan data wajib sesuai form tambah warga (termasuk UUID desa dan ID RT):
 
 ```powershell
-php artisan petugas:first --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas" --village="<UUID_DESA>" --rt=1
+php artisan staf-sid:first --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas" --village="<UUID_DESA>" --rt=1
 ```
 
 Jika citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Username dibuat otomatis dan password sementara acak hanya dicetak sekali. Petugas wajib menggantinya saat login pertama. Command gagal jika Petugas Desa aktif sudah ada. Setelah Petugas pertama aktif, promosi berikutnya dilakukan melalui endpoint manajemen jabatan.

@@ -18,6 +18,7 @@ class VillageOrgPositionResource extends JsonResource
             'id' => $this->id,
             'village_id' => $this->village_id,
             'org_type' => $this->org_type,
+            'slot' => $this->slot,
             'position_label' => $this->position_label,
             'is_single_occupant' => $this->is_single_occupant,
             'sort_order' => $this->sort_order,

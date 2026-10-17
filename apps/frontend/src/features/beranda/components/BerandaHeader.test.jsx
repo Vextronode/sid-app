@@ -3,12 +3,17 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { getBerandaContent } from '../berandaContent'
 import { BerandaHeader } from './BerandaHeader'
 
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: vi.fn(),
+}))
+
+vi.mock('@/features/auth/contexts/AuthContext', () => ({
+  useAuth: vi.fn(),
 }))
 
 const COMING_SOON = ['Peta wilayah']
@@ -39,6 +44,7 @@ describe('BerandaHeader', () => {
       stats: null,
       contacts: [],
     })
+    useAuth.mockReturnValue({ user: null, isLoading: false })
     Element.prototype.scrollIntoView = vi.fn()
   })
 
@@ -96,7 +102,23 @@ describe('BerandaHeader', () => {
       expect(desktopNav.getByRole('link', { name: 'Beranda' })).toHaveAttribute('href', '/')
       expect(desktopNav.getByRole('link', { name: 'Berita' })).toHaveAttribute('href', '/berita')
       expect(desktopNav.getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '/#kontak')
-      expect(desktopNav.getByRole('link', { name: 'Masuk Warga' })).toHaveAttribute(
+      expect(desktopNav.getByRole('link', { name: 'Masuk' })).toHaveAttribute('href', '/loginpage')
+    })
+
+    // Sudah login: tombol akun menuju dashboard (lewat GuestRoute di /loginpage).
+    it('shows "Dashboard Saya" instead of "Masuk" for a logged-in user', async () => {
+      useAuth.mockReturnValue({ user: { role: 'staf_sid' }, isLoading: false })
+      const user = userEvent.setup()
+      const { desktopNav, mobileMenu } = renderHeader()
+
+      expect(desktopNav.getByRole('link', { name: 'Dashboard Saya' })).toHaveAttribute(
+        'href',
+        '/loginpage',
+      )
+      expect(desktopNav.queryByRole('link', { name: 'Masuk' })).toBeNull()
+
+      await user.click(mobileMenu.getByRole('button', { name: 'Menu' }))
+      expect(mobileMenu.getByRole('link', { name: 'Dashboard Saya' })).toHaveAttribute(
         'href',
         '/loginpage',
       )
@@ -225,6 +247,25 @@ describe('BerandaHeader', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'false')
     })
 
+    it('links BPD and Lembaga Desa to their organisation pages', async () => {
+      const user = userEvent.setup()
+      const { desktopNav, mobileMenu } = renderHeader()
+      await openDropdown(user, desktopNav)
+
+      expect(desktopNav.getByRole('link', { name: 'BPD' })).toHaveAttribute('href', '/bpd')
+      expect(desktopNav.getByRole('link', { name: 'Lembaga Desa' })).toHaveAttribute(
+        'href',
+        '/lembaga-desa',
+      )
+
+      await user.click(mobileMenu.getByRole('button', { name: 'Menu' }))
+      expect(mobileMenu.getByRole('link', { name: 'BPD' })).toHaveAttribute('href', '/bpd')
+      expect(mobileMenu.getByRole('link', { name: 'Lembaga Desa' })).toHaveAttribute(
+        'href',
+        '/lembaga-desa',
+      )
+    })
+
     it('closes on a click outside', async () => {
       const user = userEvent.setup()
       const { desktopNav } = renderHeader()
@@ -265,6 +306,8 @@ describe('BerandaHeader', () => {
 
       await user.tab() // Profil desa
       await user.tab() // Perangkat desa
+      await user.tab() // BPD
+      await user.tab() // Lembaga Desa
       await user.tab() // Transparansi APBDes, masih di dalam dropdown
       expect(trigger).toHaveAttribute('aria-expanded', 'true')
 
@@ -340,7 +383,7 @@ describe('BerandaHeader', () => {
       )
       expect(list.getByRole('link', { name: 'Transparansi APBDes' })).toBeVisible()
       expect(list.getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '/#kontak')
-      expect(list.getByRole('link', { name: 'Masuk Warga' })).toHaveAttribute('href', '/loginpage')
+      expect(list.getByRole('link', { name: 'Masuk' })).toHaveAttribute('href', '/loginpage')
     })
 
     it('closes on Escape and returns focus to the Menu button', async () => {

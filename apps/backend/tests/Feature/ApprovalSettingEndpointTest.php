@@ -15,7 +15,7 @@ use Tests\TestCase;
  *
  * Cakupan kondisi:
  *  - Seluruh endpoint butuh login (401 untuk guest).
- *  - Seluruh endpoint ditolak (403) untuk role selain petugas_desa.
+ *  - Seluruh endpoint ditolak (403) untuk role selain staf_sid.
  *  - GET mengembalikan seluruh setting milik desa user yang login.
  *  - PATCH sukses mengubah deadline_hours/reminder_hours.
  *  - PATCH gagal validasi (422) jika deadline_hours <= 0.
@@ -25,13 +25,13 @@ class ApprovalSettingEndpointTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function petugasDesa(): array
+    private function stafSid(): array
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
 
         $user = User::factory()->create([
             'village_id' => $village->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
         ]);
 
         return [$village, $user];
@@ -46,9 +46,9 @@ class ApprovalSettingEndpointTest extends TestCase
     }
 
     #[Test]
-    public function non_petugas_desa_cannot_list_or_update_approval_settings(): void
+    public function non_staf_sid_cannot_list_or_update_approval_settings(): void
     {
-        [$village] = $this->petugasDesa();
+        [$village] = $this->stafSid();
         $setting = ApprovalSetting::create([
             'village_id' => $village->id,
             'approval_level' => 'rt',
@@ -67,9 +67,9 @@ class ApprovalSettingEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_list_approval_settings(): void
+    public function staf_sid_can_list_approval_settings(): void
     {
-        [$village, $user] = $this->petugasDesa();
+        [$village, $user] = $this->stafSid();
 
         ApprovalSetting::create([
             'village_id' => $village->id,
@@ -92,9 +92,9 @@ class ApprovalSettingEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_update_approval_setting(): void
+    public function staf_sid_can_update_approval_setting(): void
     {
-        [$village, $user] = $this->petugasDesa();
+        [$village, $user] = $this->stafSid();
 
         $setting = ApprovalSetting::create([
             'village_id' => $village->id,
@@ -114,9 +114,9 @@ class ApprovalSettingEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_cannot_update_a_non_approver_setting(): void
+    public function staf_sid_cannot_update_a_non_approver_setting(): void
     {
-        [$village, $user] = $this->petugasDesa();
+        [$village, $user] = $this->stafSid();
         $setting = ApprovalSetting::create([
             'village_id' => $village->id,
             'approval_level' => 'kasi_pelayanan',
@@ -137,7 +137,7 @@ class ApprovalSettingEndpointTest extends TestCase
     #[Test]
     public function update_fails_validation_when_deadline_hours_is_not_positive(): void
     {
-        [$village, $user] = $this->petugasDesa();
+        [$village, $user] = $this->stafSid();
 
         $setting = ApprovalSetting::create([
             'village_id' => $village->id,
@@ -157,7 +157,7 @@ class ApprovalSettingEndpointTest extends TestCase
     #[Test]
     public function update_fails_validation_when_reminder_hours_is_not_less_than_deadline_hours(): void
     {
-        [$village, $user] = $this->petugasDesa();
+        [$village, $user] = $this->stafSid();
 
         $setting = ApprovalSetting::create([
             'village_id' => $village->id,

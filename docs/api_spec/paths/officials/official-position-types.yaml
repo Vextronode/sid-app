@@ -5,7 +5,7 @@ get:
     Aktor: Petugas Desa. Jenis jabatan tanpa akun (mis. Kasi Kesejahteraan,
     Kaur Keuangan, Staf) milik desa Petugas, urut `sort_order`, termasuk
     yang nonaktif. Jabatan yang punya akun (kepala_desa, sekdes,
-    kasi_pelayanan, kaur_tu_umum, kadus, rw, rt, petugas_desa) bersifat tetap
+    kasi_pelayanan, kaur_tu_umum, kadus, rw, rt, staf_sid) bersifat tetap
     dan tidak dikelola di sini.
   operationId: listOfficialPositionTypes
   security:

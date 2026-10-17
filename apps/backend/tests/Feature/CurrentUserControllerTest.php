@@ -27,4 +27,20 @@ class CurrentUserControllerTest extends TestCase
             ->assertJsonPath('data.must_change_password', false)
             ->assertJsonMissingPath('data.password');
     }
+
+    public function test_show_returns_role_label_following_configured_app_name(): void
+    {
+        $staf = User::factory()->create(['role' => 'staf_sid']);
+
+        $this->actingAs($staf)
+            ->getJson('/api/user')
+            ->assertJsonPath('data.role', 'staf_sid')
+            ->assertJsonPath('data.role_label', 'Staf SIDUTama');
+
+        config(['sid.app_name' => 'SIPANDESA']);
+
+        $this->actingAs($staf)
+            ->getJson('/api/user')
+            ->assertJsonPath('data.role_label', 'Staf SIPANDESA');
+    }
 }

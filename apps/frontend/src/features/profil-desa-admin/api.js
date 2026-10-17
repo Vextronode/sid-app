@@ -69,6 +69,10 @@ export function uploadOfficialPhoto(officialId, file) {
   return api.post(`/api/officials/${officialId}/photo`, toFormData({ photo: file }), multipart)
 }
 
+export function deleteOfficialPhoto(officialId) {
+  return api.delete(`/api/officials/${officialId}/photo`)
+}
+
 // Jenis jabatan desa tanpa akun (Kasi/Kaur/Staf), dikelola Petugas Desa.
 export function getOfficialPositionTypes() {
   return api.get('/api/official-position-types')

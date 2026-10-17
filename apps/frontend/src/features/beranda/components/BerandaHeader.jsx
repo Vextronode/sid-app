@@ -1,7 +1,8 @@
 import { Link, NavLink } from 'react-router-dom'
 
-import { HAL_BERANDA, HAL_BERITA, HAL_LOGIN, SECTION_KONTAK } from '@/lib/constants/routes'
+import { HAL_BERANDA, HAL_BERITA, SECTION_KONTAK } from '@/lib/constants/routes'
 import { useSectionLink } from '../utils/sectionLink'
+import { AccountNavLink } from './AccountNavLink'
 import { BerandaBrand } from './BerandaBrand'
 import { MobileMenu } from './MobileMenu'
 import { ProfilDesaDropdown } from './ProfilDesaDropdown'
@@ -29,9 +30,7 @@ export function BerandaHeader({ content }) {
           <a className="bd-nav-link" {...sectionLinkProps(SECTION_KONTAK)}>
             {header.nav.kontak}
           </a>
-          <Link to={HAL_LOGIN} className="bd-button-outline bd-nav-login">
-            {header.nav.masuk}
-          </Link>
+          <AccountNavLink nav={header.nav} className="bd-button-outline bd-nav-login" />
         </nav>
 
         <MobileMenu header={header} showTransparansi={showTransparansi} />

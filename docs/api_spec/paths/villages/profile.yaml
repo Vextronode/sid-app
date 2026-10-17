@@ -26,7 +26,7 @@ patch:
   description: |
     UC-18. Aktor HANYA Petugas Desa. Guard ini ditegaskan ulang secara
     eksplisit di SID-ARCH-SYS-001 S2.3: domain CMS (Profil Desa, Berita,
-    Peraturan Desa) dimiliki EKSKLUSIF oleh petugas_desa - Kepala Desa
+    Peraturan Desa) dimiliki EKSKLUSIF oleh staf_sid - Kepala Desa
     dan Sekretaris Desa TIDAK memiliki akses ke domain ini meski v5.0
     menjadikan keduanya approver aktif di domain Surat-Menyurat. Dua
     domain ini terpisah tegas meski sama-sama berada di "Tier 2" untuk

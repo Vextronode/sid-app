@@ -54,6 +54,17 @@ class PublicPageController extends Controller
         ])->response());
     }
 
+    /**
+     * GET /public/village-orgs/{orgType}: struktur BPD, LPM, Karang Taruna,
+     * atau PKK (orgType dibatasi di route).
+     */
+    public function villageOrganization(Request $request, string $orgType): JsonResponse
+    {
+        return $this->cached($request, "org:{$orgType}", fn () => response()->json([
+            'data' => $this->service->publicOrganization($orgType, $request->query('village_code')),
+        ]));
+    }
+
     public function newsList(PublicNewsListRequest $request): JsonResponse
     {
         // Paginator membaca nomor halaman dari request, jadi tiap halaman

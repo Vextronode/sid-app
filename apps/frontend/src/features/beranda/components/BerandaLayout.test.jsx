@@ -9,6 +9,10 @@ vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: vi.fn(),
 }))
 
+vi.mock('@/features/auth/contexts/AuthContext', () => ({
+  useAuth: () => ({ user: null, isLoading: false }),
+}))
+
 const renderLayout = (isDev) =>
   render(
     <MemoryRouter>

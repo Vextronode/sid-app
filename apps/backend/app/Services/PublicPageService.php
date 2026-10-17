@@ -7,6 +7,7 @@ use App\Models\Hamlet;
 use App\Models\Official;
 use App\Models\OfficialPositionType;
 use App\Models\Village;
+use App\Models\VillageOrgMember;
 use App\Repositories\CitizenRepository;
 use App\Repositories\HamletRepository;
 use App\Repositories\LetterTypeRepository;
@@ -14,9 +15,11 @@ use App\Repositories\NewsRepository;
 use App\Repositories\OfficialPositionTypeRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\RegulationRepository;
+use App\Repositories\VillageOrgPositionRepository;
 use App\Repositories\VillageRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PublicPageService
@@ -47,7 +50,39 @@ class PublicPageService
         private readonly HamletRepository $hamletRepository,
         private readonly OfficialPositionTypeRepository $positionTypeRepository,
         private readonly CitizenRepository $citizenRepository,
+        private readonly VillageOrgPositionRepository $orgPositionRepository,
     ) {}
+
+    /**
+     * Struktur organisasi (BPD, LPM, Karang Taruna, PKK) untuk halaman
+     * publik: pemegang aktif Ketua dan Wakil Ketua (null bila kosong) dan
+     * daftar Anggota aktif. Hanya nama dan foto; nomor WA dan catatan tidak
+     * ikut dipublikasikan.
+     *
+     * @return array{org_type: string, ketua: ?array, wakil_ketua: ?array, anggota: array<int, array>}
+     */
+    public function publicOrganization(string $orgType, ?string $villageCode = null): array
+    {
+        $village = $this->requireVillage($villageCode);
+        $slots = $this->orgPositionRepository->allForVillage($village->id, $orgType)->keyBy('slot');
+
+        $activeMembers = fn (string $slot) => ($slots->get($slot)?->members ?? collect())
+            ->where('is_active', true)
+            ->sortBy('started_at')
+            ->values()
+            ->map(fn (VillageOrgMember $member) => [
+                'id' => $member->id,
+                'name' => $member->member_name,
+                'photo_url' => $member->photo_img ? Storage::disk('public')->url($member->photo_img) : null,
+            ]);
+
+        return [
+            'org_type' => $orgType,
+            'ketua' => $activeMembers('ketua')->first(),
+            'wakil_ketua' => $activeMembers('wakil_ketua')->first(),
+            'anggota' => $activeMembers('anggota')->all(),
+        ];
+    }
 
     /**
      * @return array{village: Village, latest_news: Collection, public_stats: array{total_letter_types: int, total_population: int, total_hamlets: int}}
@@ -93,8 +128,9 @@ class PublicPageService
 
     /**
      * Slot grup Kasi/Kaur/Staf di Profil Desa, berurutan: jabatan berakun
-     * lebih dulu, lalu jenis jabatan aktif menurut urutan yang diatur
-     * Petugas Desa. Jabatan yang belum terisi tetap punya slot.
+     * Kasi Pelayanan dan Kaur TU, lalu jenis jabatan aktif menurut urutan
+     * yang diatur staf aplikasi, lalu staf aplikasi itu sendiri (staf_sid).
+     * Jabatan yang belum terisi tetap punya slot.
      *
      * @return array<int, array{code: string, label: string}>
      */
@@ -102,22 +138,24 @@ class PublicPageService
     {
         $village = $this->requireVillage($villageCode);
 
+        $accountSlot = fn (OfficialPosition $position) => ['code' => $position->value, 'label' => $position->label()];
+
         return [
-            ...array_map(
-                fn (OfficialPosition $position) => ['code' => $position->value, 'label' => $position->label()],
-                self::PUBLIC_STAFF_POSITIONS,
-            ),
+            ...array_map($accountSlot, self::PUBLIC_STAFF_POSITIONS),
             ...$this->positionTypeRepository
                 ->allForVillage($village->id, activeOnly: true)
                 ->map(fn (OfficialPositionType $type) => ['code' => $type->code, 'label' => $type->label])
                 ->all(),
+            // Staf aplikasi desa tampil paling akhir, setelah staf lain
+            // seperti Staf SIPADES dan Staf SISKEUDES.
+            $accountSlot(OfficialPosition::StafSid),
         ];
     }
 
     /**
      * Perangkat desa aktif untuk halaman Profil Desa: Kepala Desa, Sekdes,
-     * grup Kasi/Kaur/Staf, lalu Kepala Dusun. RT, RW, dan Petugas Desa tidak
-     * ditampilkan. Boleh kosong: profil desa tetap tampil walau belum ada
+     * grup Kasi/Kaur/Staf (termasuk staf aplikasi), lalu Kepala Dusun. RT dan
+     * RW tidak ditampilkan. Boleh kosong: profil desa tetap tampil walau belum ada
      * pejabat yang ditetapkan.
      *
      * @return Collection<int, Official>
