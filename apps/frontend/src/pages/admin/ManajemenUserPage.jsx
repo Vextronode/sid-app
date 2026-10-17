@@ -22,6 +22,7 @@ import { useUserList } from '@/features/manajemen-user/hooks/useUserList'
 import { deleteUserPhoto, resetUserPassword, uploadUserPhoto } from '@/features/manajemen-user/api'
 import { resetUserSignature } from '@/features/surat/api/signatureApi'
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { PageNumbers } from '@/components/ui/PageNumbers'
 
 export default function ManajemenUserPage() {
   const {
@@ -428,16 +429,11 @@ export default function ManajemenUserPage() {
                 Sebelumnya
               </button>
 
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  type="button"
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={page === currentPage ? 'active' : ''}
-                >
-                  {page}
-                </button>
-              ))}
+              <PageNumbers
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onChange={setCurrentPage}
+              />
 
               <button
                 type="button"

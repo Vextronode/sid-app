@@ -258,7 +258,7 @@ Main Flow:
    - Informasi approval Kades/Sekdes (jika sudah diproses)
    - Isian form (`payload`), lampiran (dibuka lewat endpoint terproteksi), status tiap slot tanda tangan
    - Tombol dokumen pendukung bila `has_supporting_document`
-4. Tombol Download PDF muncul jika status = `approved`. Pemohon (role apa pun) ditolak jika `expires_at` telah lewat; role lain mengikuti LetterPolicy::download.
+4. Tombol Download PDF dan Preview muncul jika status = `approved`, disertai keterangan "Berlaku sampai {tanggal}" bila `expires_at` terisi. Bila `is_expired`, kedua tombol tetap tampil tetapi nonaktif (abu-abu) dengan badge "Kedaluwarsa"; surat hanya tersimpan sebagai riwayat. Backend menolak unduh **dan preview** oleh pemohon (role apa pun) jika `expires_at` telah lewat; role lain mengikuti LetterPolicy::download/view.
 5. Bila `awaiting_signatures`, pemohon dapat mengisi ulang slot yang ditolak/kedaluwarsa (UC-25).
 
 ---
@@ -286,7 +286,8 @@ Main Flow:
 
 Alternative Flow:
 - 3a. Status bukan `approved` → tombol Download tidak muncul
-- 3b. Pemohon dengan `expires_at` sudah lewat → 403, apa pun role pemohon
+- 3b. Pemohon dengan `expires_at` sudah lewat → 403, apa pun role pemohon (berlaku juga untuk `GET /letters/{id}/preview`); di UI tombol tampil nonaktif. Petugas Desa, Kades/Sekdes, dan Kasi/Kaur yang berwenang tetap dapat mengunduh untuk arsip.
+- 3c. `validity_days` jenis surat diubah Petugas (UC-21) → hanya berlaku untuk surat yang final approve setelahnya; `expires_at` surat yang sudah terbit tidak berubah.
 
 **Alasan struktural:** PDF tidak disimpan, tetapi isi surat approved dibekukan lewat snapshot sehingga penggantian Kepala Desa/TTD, perubahan template, atau perubahan data warga tidak mengubah surat yang sudah terbit.
 
@@ -331,6 +332,8 @@ Alternative Flow:
 > Pencarian berdasarkan NIK pada daftar warga belum diimplementasi (lihat audit docs).
 
 **Catatan perubahan data lewat surat:** perubahan tertentu yang diajukan warga (mis. meninggal dunia, kelahiran anak) masuk lewat jenis surat ber-`data_action` dan diterapkan Kasi/Kaur/Petugas di UC-26; aturan nilainya sama dengan form data warga ini.
+
+**Riwayat perubahan (S-05):** setiap tambah/ubah/hapus warga dan KK, impor Excel, serta survei sosio-ekonomi KK tercatat di activity log (aktor, field yang berubah, nilai lama → baru; NIK, No KK, dan alamat KK disamarkan). Petugas melihatnya di menu **Log Aktivitas** (`/admin/log-aktivitas`), tab *Data Warga & KK*, termasuk data yang sudah dihapus; ikon riwayat di tiap baris warga/KK membuka log yang sudah difilter ke data tersebut. Tab *Surat* pada halaman yang sama menampilkan seluruh perubahan status surat desa (`letter_status_logs`).
 
 **Main Flow - Import Excel:**
 1. Petugas memilih "Import Data Warga dari Excel"
@@ -612,12 +615,12 @@ Catatan: 5 Dusun Desa Cibenda (Patrol, Sinargalih, Cibenda, Budiasih, Sucen) di-
 | Catatan Penting | Template HTML dan form field adalah developer-only via seeder. Tambah/hapus/ubah template → Next Dev Paket 1 (lihat Appendix). |
 
 Main Flow:
-- Petugas membuka pengaturan jenis surat; daftar berasal dari `GET /letter-types` yang hanya berisi jenis aktif ber-template
-- Petugas mengubah: `validity_days` (minimal 1 atau kosong), `assigned_role` (Kasi Pelayanan / Kaur TU & Umum / keduanya), toggle `is_active`
+- Petugas membuka pengaturan jenis surat lewat menu **Alur & Jenis Surat** (`/admin/approval-flows`); daftar berasal dari `GET /letter-types?include_inactive=1` (khusus Petugas Desa) yang berisi semua jenis surat desa dengan badge Draft / Aktif / Nonaktif
+- Petugas mengubah: `validity_days` (minimal 1 atau kosong), `assigned_role` (Kasi Pelayanan / Kaur TU & Umum / keduanya), toggle `is_active` (Aktifkan / Nonaktifkan). Jenis Draft (belum ber-template) tidak bisa diaktifkan (422)
 - Sistem menyimpan perubahan ke `letter_types` dan menggugurkan cache halaman publik
 - Petugas dapat melihat flow approval (read-only) di halaman Approval Flows
 
-> Flow, template, isian form, slot tanda tangan, aksi data, dokumen pendukung, dan kode klasifikasi diset developer lewat seeder; tidak ada endpoint untuk mengubahnya. Daftar dengan badge Draft/Nonaktif untuk mengaktifkan kembali jenis surat yang dinonaktifkan belum tersedia (lihat audit docs).
+> Flow, template, isian form, slot tanda tangan, aksi data, dokumen pendukung, dan kode klasifikasi diset developer lewat seeder; tidak ada endpoint untuk mengubahnya. Daftar untuk warga (`GET /letter-types` tanpa parameter) tetap hanya jenis aktif ber-template.
 
 ---
 
@@ -638,7 +641,7 @@ Main Flow:
 - Sistem memvalidasi: `deadline_hours > 0`, `reminder_hours < deadline_hours`
 - Sistem menyimpan ke `approval_settings` (UNIQUE per `village_id` + `approval_level`)
 
-Catatan: Jika deadline terlewat, surat **tidak** auto-reject — hanya `is_overdue = true` (dihitung saat daftar surat dimuat). Notifikasi reminder otomatis **Belum diimplementasi (Planned)**: tidak ada scheduler/job yang memakai `reminder_hours`/`reminded_at`.
+Catatan: Jika deadline terlewat, surat **tidak** auto-reject — hanya `is_overdue = true` (dihitung saat daftar surat dimuat). Pengingat dikirim sekali per tahap per surat ke approver berwenang (in-app + Web Push) saat `now() >= deadline_at - reminder_hours` (0 = tepat saat deadline); `reminded_at` diisi. Dijalankan `approvals:send-reminders` tiap 5 menit lewat scheduler; nilai `reminder_hours` dibaca saat run sehingga perubahan Petugas langsung berlaku untuk surat yang sedang menunggu. Setting `is_active = false` tidak mengirim pengingat; tidak ada notifikasi overdue terpisah.
 
 ---
 

@@ -86,7 +86,7 @@ tags:
   - name: Epic 6 - Sistem Notifikasi
     description: Notifikasi in-app (database) dan Web Push.
   - name: Epic 7 - Deadline & Reminder Approval
-    description: Setting deadline per level approver. UC-22. Reminder otomatis belum diimplementasi.
+    description: Setting deadline & pengingat per level approver. UC-22. Pengingat dikirim scheduler (approvals:send-reminders) reminder_hours sebelum deadline.
   - name: Epic 8 - Dashboard & Statistik
     description: Dashboard adaptif per role. UC-15.
   - name: Epic 9 - Halaman Publik & Konten
@@ -172,6 +172,10 @@ paths:
     $ref: 'paths/families/family-detail.yaml'
   /families/{id}/socioeconomic:
     $ref: 'paths/families/family-socioeconomics.yaml'
+  /activity-logs/population:
+    $ref: 'paths/activity-logs/population.yaml'
+  /activity-logs/letters:
+    $ref: 'paths/activity-logs/letters.yaml'
   /occupations:
     $ref: 'paths/occupations/occupations.yaml'
   /occupations/{id}:

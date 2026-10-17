@@ -48,6 +48,8 @@ describe('OperatorDesaLayout role regression', () => {
       expect(screen.getByRole('link', { name: 'Data Penduduk' })).toBeTruthy()
       expect(screen.queryByRole('link', { name: 'Manajemen Pengguna' })).toBeNull()
       expect(screen.queryByRole('link', { name: 'Kelola Wilayah' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Alur & Jenis Surat' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Log Aktivitas' })).toBeNull()
 
       fireEvent.click(screen.getByTitle('Notifikasi'))
 
@@ -55,4 +57,26 @@ describe('OperatorDesaLayout role regression', () => {
       expect(reload).toHaveBeenCalledOnce()
     },
   )
+
+  it('shows the letter type configuration menu to staf_sid', () => {
+    useAuth.mockReturnValue({
+      user: { role: 'staf_sid', name: 'Petugas', role_label: 'Petugas Desa' },
+      logout: vi.fn(),
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/admin/operator-desa']}>
+        <OperatorDesaLayout>Operator page</OperatorDesaLayout>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: 'Alur & Jenis Surat' })).toHaveAttribute(
+      'href',
+      '/admin/approval-flows',
+    )
+    expect(screen.getByRole('link', { name: 'Log Aktivitas' })).toHaveAttribute(
+      'href',
+      '/admin/log-aktivitas',
+    )
+  })
 })

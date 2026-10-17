@@ -23,6 +23,7 @@ import { OverdueBadge } from '@/components/ui/OverdueBadge'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import { PageNumbers } from '@/components/ui/PageNumbers'
 
 const ITEMS_PER_PAGE = 3
 
@@ -287,16 +288,11 @@ export default function OperatorSuratListPage() {
                 Sebelumnya
               </button>
 
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => setCurrentPage(page)}
-                  className={page === currentPage ? 'active' : ''}
-                >
-                  {page}
-                </button>
-              ))}
+              <PageNumbers
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onChange={setCurrentPage}
+              />
 
               <button
                 type="button"

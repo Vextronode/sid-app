@@ -1,0 +1,119 @@
+ActivityActor:
+  type: object
+  nullable: true
+  description: Pelaku aksi; null bila dijalankan sistem/CLI.
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    role:
+      type: string
+    role_label:
+      type: string
+      nullable: true
+
+ActivityPageMeta:
+  type: object
+  properties:
+    current_page:
+      type: integer
+    per_page:
+      type: integer
+      example: 20
+    total:
+      type: integer
+    last_page:
+      type: integer
+
+PopulationLog:
+  type: object
+  properties:
+    id:
+      type: integer
+    log_name:
+      type: string
+      enum: [citizen, family]
+    event:
+      type: string
+      enum: [created, updated, deleted, imported, socioeconomic_updated, letter_fulfilled]
+    description:
+      type: string
+    subject_id:
+      type: string
+      nullable: true
+    subject_label:
+      type: string
+      nullable: true
+      example: "KK •••• 0001"
+    source:
+      type: string
+      nullable: true
+      enum: [manual, import]
+    letter_number:
+      type: string
+      nullable: true
+      description: Hanya untuk event `letter_fulfilled`.
+    summary:
+      type: object
+      nullable: true
+      description: Hanya untuk event `imported`.
+      properties:
+        total_rows:
+          type: integer
+        success_count:
+          type: integer
+        error_count:
+          type: integer
+    changes:
+      type: object
+      description: "{field: {old, new}} hanya untuk field yang berubah; NIK, No KK, dan alamat KK bernilai `(disamarkan)`."
+      additionalProperties:
+        type: object
+        properties:
+          old: {}
+          new: {}
+    actor:
+      $ref: '#/ActivityActor'
+    created_at:
+      type: string
+      format: date-time
+
+LetterActivityLog:
+  type: object
+  properties:
+    id:
+      type: integer
+    letter:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+          format: uuid
+        letter_number:
+          type: string
+          nullable: true
+        applicant_name:
+          type: string
+        letter_type:
+          type: string
+          nullable: true
+    actor:
+      $ref: '#/ActivityActor'
+    old_status:
+      type: string
+      nullable: true
+    new_status:
+      type: string
+      enum: [pending, in_progress, approved, rejected]
+    reason:
+      type: string
+      nullable: true
+    ip_address:
+      type: string
+      nullable: true
+    created_at:
+      type: string
+      format: date-time

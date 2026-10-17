@@ -41,6 +41,7 @@ import { OverdueBadge } from '@/components/ui/OverdueBadge'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 
 import { SURAT_STATUS, SURAT_STATUS_OPTIONS } from '@/constants/suratStatus'
+import { PageNumbers } from '@/components/ui/PageNumbers'
 
 const ITEMS_PER_PAGE = 5
 
@@ -322,18 +323,13 @@ export default function RTListPage() {
                   Sebelumnya
                 </button>
 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    onClick={() => setCurrentPage(page)}
-                    className={`rw-pagination-page ${
-                      page === currentPage ? 'rw-pagination-page-active' : ''
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
+                <PageNumbers
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onChange={setCurrentPage}
+                  buttonClassName="rw-pagination-page"
+                  activeClassName="rw-pagination-page-active"
+                />
 
                 <button
                   type="button"
@@ -439,18 +435,13 @@ export default function RTListPage() {
           {/* MOBILE PAGINATION */}
 
           <div className="rw-mobile-pagination">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => setCurrentPage(page)}
-                className={`rw-mobile-page-button ${
-                  page === currentPage ? 'rw-mobile-page-button-active' : ''
-                }`}
-              >
-                {page}
-              </button>
-            ))}
+            <PageNumbers
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onChange={setCurrentPage}
+              buttonClassName="rw-mobile-page-button"
+              activeClassName="rw-mobile-page-button-active"
+            />
           </div>
         </div>
 

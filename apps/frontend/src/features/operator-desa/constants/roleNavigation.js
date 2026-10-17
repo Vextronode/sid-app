@@ -14,6 +14,7 @@ export const OPERATOR_ROUTE_CAPABILITIES = {
   '/admin/kelola-peraturan': ['staf_sid'],
   '/admin/approval-settings': ['staf_sid'],
   '/admin/approval-flows': ['staf_sid'],
+  '/admin/log-aktivitas': ['staf_sid'],
   '/admin/organisasi/bpd': ['staf_sid'],
   '/admin/organisasi/lembaga': ['staf_sid'],
 }

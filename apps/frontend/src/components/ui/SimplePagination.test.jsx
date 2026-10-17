@@ -18,6 +18,11 @@ describe('SimplePagination', () => {
 
     expect(screen.getByText('Halaman 1 dari 3')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Sebelumnya' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '1' })).toHaveAttribute('aria-current', 'page')
+
+    await userEvent.click(screen.getByRole('button', { name: '3' }))
+
+    expect(onChange).toHaveBeenCalledWith(3)
 
     await userEvent.click(screen.getByRole('button', { name: 'Berikutnya' }))
 

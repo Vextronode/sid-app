@@ -61,6 +61,31 @@ services:
     stop_grace_period: 20s
     logging: *logging
 
+  # Scheduler Laravel (pengingat approval UC-22, approvals:send-reminders).
+  # Image & env sama dengan sid_api; entrypoint menjalankannya sebagai www-data.
+  sid_scheduler:
+    image: ${SID_REGISTRY:?SID_REGISTRY wajib diisi di compose.env}/sid-api:${SID_IMAGE_TAG:?SID_IMAGE_TAG wajib diisi (mis. v1.2.3)}
+    container_name: ${SID_PROJECT:-sid}_scheduler
+    restart: unless-stopped
+    command: ["php", "artisan", "schedule:work"]
+    env_file:
+      - ${SID_ENV_FILE:-sid.env}
+    volumes:
+      - public:/var/www/html/storage/app/public
+      - private:/var/www/html/storage/app/private
+    networks:
+      - sid_net
+      # Web push dikirim langsung (QUEUE_CONNECTION=sync) ke layanan push browser.
+      - sid_egress
+    depends_on:
+      sid_api:
+        condition: service_healthy
+    # Healthcheck image (ping PHP-FPM) tidak berlaku untuk proses scheduler.
+    healthcheck:
+      disable: true
+    stop_grace_period: 20s
+    logging: *logging
+
   sid_web:
     image: ${SID_REGISTRY:?SID_REGISTRY wajib diisi di compose.env}/sid-web:${SID_IMAGE_TAG:?SID_IMAGE_TAG wajib diisi (mis. v1.2.3)}
     container_name: ${SID_PROJECT:-sid}_web

@@ -1,5 +1,5 @@
 @startuml
-title SID - Proses Otomatis Sistem (aktif di source 2026-10-16) + Reminder (belum diimplementasi)
+title SID - Proses Otomatis Sistem (aktif di source 2026-10-18)
 
 skinparam activity {
   BackgroundColor #EBF3FB
@@ -43,12 +43,21 @@ fork again
   :Antrekan Web Push → kirim ke browser;
 end fork
 
-|#LightGray|Rencana (belum ada di source)|
-:Scheduler reminder berdasarkan reminder_hours;
+|#LightGreen|Scheduler (tiap 5 menit)|
+:approvals:send-reminders;
+:Ambil approval tahap aktif yang belum
+diputuskan & reminded_at kosong;
+if (now >= deadline_at - reminder_hours
+dan setting aktif?) then (ya)
+  :Klaim reminded_at (atomik);
+  :Notifikasi "Pengingat Persetujuan Surat"
+ke approver berwenang (in-app + Web Push);
+else (belum)
+endif
 note right
-  Belum ada scheduler/job; kolom
-  reminder_hours dan reminded_at
-  belum dipakai. Lihat audit docs.
+  Sekali per tahap per surat.
+  Tahap tanpa pejabat aktif tetap
+  ditandai agar tidak dicoba ulang.
 end note
 stop
 

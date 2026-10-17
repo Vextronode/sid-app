@@ -105,6 +105,18 @@ Letter:
       format: date-time
       nullable: true
       example: null
+      description: |
+        Dicap saat final approve dari `letter_types.validity_days`
+        (NULL = berlaku tanpa batas). Perubahan masa berlaku jenis surat
+        tidak mengubah surat yang sudah approved.
+    is_expired:
+      type: boolean
+      example: false
+      description: |
+        true bila `expires_at` sudah lewat. Pemohon tidak lagi dapat
+        mengunduh maupun mem-preview PDF surat ini (403); surat tetap
+        tampil sebagai riwayat. Pejabat dan Petugas Desa tetap dapat
+        membukanya.
     submitted_at:
       type: string
       format: date-time
@@ -255,6 +267,12 @@ LetterListItem:
     awaiting_signatures:
       type: boolean
     needs_fulfillment:
+      type: boolean
+    expires_at:
+      type: string
+      format: date-time
+      nullable: true
+    is_expired:
       type: boolean
     submitted_at:
       type: string
@@ -415,7 +433,7 @@ LetterApproval:
       type: string
       format: date-time
       nullable: true
-      description: "Belum diisi oleh proses apa pun; reminder otomatis belum diimplementasi."
+      description: "Waktu pengingat approval dikirim (approvals:send-reminders); NULL bila belum. Juga diisi bila tahap tidak punya pejabat aktif agar tidak dicoba ulang."
     created_at:
       type: string
       format: date-time

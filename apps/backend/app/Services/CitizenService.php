@@ -20,7 +20,8 @@ use Maatwebsite\Excel\Facades\Excel;
 class CitizenService
 {
     public function __construct(
-        protected CitizenRepository $citizenRepository
+        protected CitizenRepository $citizenRepository,
+        protected PopulationAuditService $audit,
     ) {}
 
     public function paginateWithWilayah(User $user, array $filters = []): LengthAwarePaginator
@@ -32,8 +33,11 @@ class CitizenService
      * UC-09 Tambah Warga. NIK dienkripsi + di-hash lewat cast/observer
      * di model Citizen; keunikan dicek lewat nik_hash. rw_id diturunkan
      * dari rt_id (request tidak mengirim rw_id).
+     *
+     * $auditSource: `manual` / `import` dicatat di Log Aktivitas (S-05);
+     * null untuk pemanggil yang mencatat sendiri (Terapkan surat).
      */
-    public function create(array $data, User $user): Citizen
+    public function create(array $data, User $user, ?string $auditSource = 'manual'): Citizen
     {
         if (! $user->village_id) {
             abort(403, 'Data wilayah desa tidak ditemukan.');
@@ -43,21 +47,27 @@ class CitizenService
         $this->guardSingleFamilyHead($data['family_id'] ?? null, $data['family_role'] ?? null);
         $this->guardRelatedRecords($data, $user);
 
-        return DB::transaction(function () use ($data, $user) {
+        return DB::transaction(function () use ($data, $user, $auditSource) {
             $citizen = $this->citizenRepository->create(array_merge($data, [
                 'village_id' => $user->village_id,
                 'data_source' => 'manual_input_desa',
             ]));
+            $citizen->refresh();
 
-            return $citizen->refresh()->load(['family', 'rt', 'rw', 'hamlet', 'village', 'occupation']);
+            if ($auditSource !== null) {
+                $this->audit->created($citizen, $user, ['source' => $auditSource]);
+            }
+
+            return $citizen->load(['family', 'rt', 'rw', 'hamlet', 'village', 'occupation']);
         });
     }
 
     /**
      * UC-09 Edit Warga. NIK tidak bisa diubah (ditolak di
      * UpdateCitizenRequest). Perubahan rt_id menurunkan ulang rw_id.
+     * $audit = false bila pemanggil mencatat sendiri (Terapkan surat).
      */
-    public function update(Citizen $citizen, array $data, User $user): Citizen
+    public function update(Citizen $citizen, array $data, User $user, bool $audit = true): Citizen
     {
         if ($citizen->village_id !== $user->village_id) {
             abort(403, 'Anda tidak berwenang mengubah data warga ini.');
@@ -70,8 +80,13 @@ class CitizenService
 
         $this->guardSingleFamilyHead($familyId, $familyRole, $citizen->id);
 
-        return DB::transaction(function () use ($citizen, $data) {
+        return DB::transaction(function () use ($citizen, $data, $user, $audit) {
+            $before = clone $citizen;
             $citizen = $this->citizenRepository->update($citizen, $data);
+
+            if ($audit) {
+                $this->audit->updated($before, $citizen, $user);
+            }
 
             return $citizen->load(['family', 'rt', 'rw', 'hamlet', 'village', 'occupation']);
         });
@@ -90,19 +105,27 @@ class CitizenService
 
         Excel::import($import, $file);
 
-        return [
+        $summary = [
             'total_rows' => $import->successCount() + count($import->errorList()),
             'success_count' => $import->successCount(),
             'error_count' => count($import->errorList()),
             'errors' => $import->errorList(),
         ];
+
+        $this->audit->citizensImported($user, $summary, $file->getClientOriginalName());
+
+        return $summary;
     }
 
     public function delete(Citizen $citizen, User $user): bool
     {
         $this->guardCitizenVillage($citizen, $user);
 
-        return $this->citizenRepository->delete($citizen);
+        return DB::transaction(function () use ($citizen, $user) {
+            $this->audit->deleted($citizen, $user);
+
+            return $this->citizenRepository->delete($citizen);
+        });
     }
 
     public function getDistinctWilayah(User $user): Collection

@@ -220,7 +220,7 @@ entity "approval_settings" as APS {
   * village_id : UUID
   * approval_level : ENUM(5)
   deadline_hours : UINT = 24
-  reminder_hours : UINT = 12 (belum dipakai)
+  reminder_hours : UINT = 12 (jam sebelum deadline)
   is_active : BOOLEAN = true
   UNIQUE(village_id, approval_level)
 }

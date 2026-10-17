@@ -193,8 +193,9 @@ Scope ringkas: Petugas Desa = operator penuh di desanya (CMS, kependudukan, jaba
 
 - `LetterStatusNotification` → kanal `database` (koneksi `sync`, in-app) dan `WebPushChannel` (diantrekan). Payload memuat `context.letter_id`, `letter_no`, `status`, `applicant`, `is_applicant`; Web Push membawa URL `/buka-notifikasi?...`.
 - Langganan Web Push disimpan per perangkat lewat `POST/DELETE /push-subscriptions` (VAPID dari `.env`).
-- Kode status: `pending`, `approver_vacant`, `rt_approved`, `rt_rejected`, `rt_approved_rw_fyi`, `rt_approved_kadus_fyi`, `kepala_desa_approved`, `kepala_desa_rejected`, `letter_approved_final`, `letter_ready_for_print`, `letter_needs_fulfillment`, `letter_fulfilled`, `signature_requested`, `signature_accepted`, `signature_rejected`.
-- Tidak ada notifikasi email status surat dan tidak ada reminder otomatis.
+- Kode status: `pending`, `approver_vacant`, `approval_reminder`, `rt_approved`, `rt_rejected`, `rt_approved_rw_fyi`, `rt_approved_kadus_fyi`, `kepala_desa_approved`, `kepala_desa_rejected`, `letter_approved_final`, `letter_ready_for_print`, `letter_needs_fulfillment`, `letter_fulfilled`, `signature_requested`, `signature_accepted`, `signature_rejected`.
+- Pengingat approval: `ApprovalReminderService` lewat command `approvals:send-reminders` yang dijadwalkan tiap 5 menit di `routes/console.php` (butuh `php artisan schedule:work`; di Docker service `sid_scheduler`). Dikirim sekali per tahap per surat ke approver berwenang (in-app + Web Push) saat `now() >= deadline_at - reminder_hours` (0 = tepat saat deadline); `reminded_at` diisi.
+- Tidak ada notifikasi email status surat.
 
 ---
 
@@ -206,7 +207,8 @@ Scope ringkas: Petugas Desa = operator penuh di desanya (CMS, kependudukan, jaba
 - `must_change_password` → 403 `password_change_required` kecuali `GET /api/user`, `PUT /api/profile/password`, `/logout`.
 - Role tidak cocok dengan grup endpoint → 403 `role_forbidden` (`EnsureUserHasRole`). Role dibaca ulang dari DB setiap request, jadi rotasi/turun jabatan langsung berlaku pada sesi yang masih terbuka.
 - Label peran `staf_sid` = "Staf " + `config('sid.app_name')` (`config/sid.php`, env `SID_APP_NAME`) lewat `UserRole::stafSidLabel()`; dipakai juga untuk pesan error.
-- Audit: `letter_status_logs` (semua transisi status + alasan sistem) dan activity log untuk `official` (promote/demote/rotate), `citizen` (`letter_fulfilled`), `user_signature` (`reset`).
+- Audit: `letter_status_logs` (semua transisi status + alasan sistem) dan activity log untuk `official` (promote/demote/rotate), `citizen` (`letter_fulfilled`, serta `created`/`updated`/`deleted`/`imported` manual), `family` (`created`/`updated`/`deleted`/`socioeconomic_updated`), `user_signature` (`reset`), `user` (`staf_sid_recovered`). Pencatatan data kependudukan manual lewat `PopulationAuditService` (properti `village_id`, `subject_label`, `changes` {field: {old,new}}; NIK/No KK/alamat KK disamarkan). Dibaca Petugas Desa lewat `GET /activity-logs/population` dan `GET /activity-logs/letters` (`ActivityLogController`). Retensi: `activitylog:clean` harian (365 hari).
+- Pemulihan darurat staf aplikasi: `php artisan staf-sid:recover --username=...` (`UserService::recoverStafSid`) hanya untuk `staf_sid` aktif; reset kata sandi sementara, `must_change_password`, cabut token & sesi DB.
 - `trustProxies('*')` aktif; tidak ada `forceScheme('https')` di aplikasi; cookie session default `SameSite=lax` (`SESSION_SAME_SITE`).
 
 ---
@@ -225,7 +227,7 @@ Scope ringkas: Petugas Desa = operator penuh di desanya (CMS, kependudukan, jaba
 | Constraint | Kondisi source | Catatan |
 |---|---|---|
 | Queue worker | Web Push diantrekan; notifikasi database sinkron | Stack Docker expo memakai `QUEUE_CONNECTION=sync`; panduan VPS memakai Supervisor worker (`docs/deploy`) |
-| Deadline approval | `is_overdue` dihitung saat daftar dimuat | Reminder otomatis belum ada |
+| Deadline approval | `is_overdue` dihitung saat daftar dimuat; pengingat terjadwal `reminder_hours` sebelum deadline | Satu pengingat per tahap; tidak ada notifikasi overdue terpisah |
 | Konkurensi keputusan | Row lock + cek ulang | 409 untuk request kedua |
 | Surat tertahan | RT kosong → ditahan + notifikasi Petugas | Dilepas saat RT ditetapkan |
 | Deployment | Docker image `sid-api` (PHP-FPM) + `sid-web` (Nginx + SPA), entrypoint tidak menjalankan migrate/seed | `deploy/docker-compose.yml` |

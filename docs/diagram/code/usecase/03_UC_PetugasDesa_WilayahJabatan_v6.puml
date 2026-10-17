@@ -74,7 +74,8 @@ note bottom of UC_PROMOTE
   tidak. Satu-pemegang per wilayah → 409.
 end note
 note bottom of UC_DEADLINE
-  Reminder otomatis belum diimplementasi;
-  hanya penanda overdue saat daftar dimuat.
+  Scheduler mengirim 1 pengingat ke approver
+  reminder_hours sebelum deadline; overdue
+  tetap penanda saat daftar dimuat.
 end note
 @enduml

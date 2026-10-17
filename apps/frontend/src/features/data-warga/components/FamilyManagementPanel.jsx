@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { History, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 
 import { getFamily, getFamilySocioeconomic, saveFamilySocioeconomic } from '../api'
+import { PageNumbers } from '@/components/ui/PageNumbers'
 
 const EMPTY_FAMILY = {
   no_kk: '',
@@ -33,6 +35,7 @@ function responseData(response) {
 }
 
 export default function FamilyManagementPanel({ familyList }) {
+  const navigate = useNavigate()
   const {
     families,
     loading,
@@ -272,6 +275,17 @@ export default function FamilyManagementPanel({ familyList }) {
                       >
                         <RefreshCw size={16} />
                       </button>
+                      <button
+                        type="button"
+                        title="Riwayat perubahan"
+                        onClick={() =>
+                          navigate(
+                            `/admin/log-aktivitas?tab=penduduk&type=family&subject=${encodeURIComponent(family.id)}`,
+                          )
+                        }
+                      >
+                        <History size={16} />
+                      </button>
                       <button type="button" title="Hapus KK" onClick={() => handleDelete(family)}>
                         <Trash2 size={16} />
                       </button>
@@ -296,9 +310,11 @@ export default function FamilyManagementPanel({ familyList }) {
           >
             Sebelumnya
           </button>
-          <span>
-            {currentPage} / {totalPages}
-          </span>
+          <PageNumbers
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onChange={setCurrentPage}
+          />
           <button
             type="button"
             disabled={currentPage >= totalPages}

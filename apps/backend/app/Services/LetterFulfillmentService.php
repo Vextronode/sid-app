@@ -127,6 +127,9 @@ class LetterFulfillmentService
                 ->causedBy($actor)
                 ->event('letter_fulfilled')
                 ->withProperties([
+                    // Scoping halaman Log Aktivitas (S-05).
+                    'village_id' => $citizen->village_id,
+                    'subject_label' => $citizen->name,
                     'letter_id' => $locked->id,
                     'letter_number' => $locked->letter_number,
                     'actor_role' => $actor->role,
@@ -192,7 +195,8 @@ class LetterFulfillmentService
             }
         }
 
-        $citizen = $this->citizenService->update($citizen, $validated, $actor);
+        // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
+        $citizen = $this->citizenService->update($citizen, $validated, $actor, audit: false);
 
         return [$citizen, $changes];
     }
@@ -215,7 +219,7 @@ class LetterFulfillmentService
         $rules = Arr::only($this->createRules(), [...$allowed, 'nik', 'name', 'date_of_birth', 'gender', 'address', 'rt_id']);
         $validated = $this->validate($final, $rules);
 
-        $citizen = $this->citizenService->create($validated, $actor);
+        $citizen = $this->citizenService->create($validated, $actor, auditSource: null);
 
         $changes = [];
         foreach ($validated as $column => $value) {

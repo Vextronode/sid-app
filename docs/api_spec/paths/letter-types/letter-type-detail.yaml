@@ -39,7 +39,10 @@ put:
     '404':
       $ref: '../../responses/common.yaml#/NotFound'
     '422':
-      description: validity_days < 1 atau assigned_role tidak valid
+      description: |
+        validity_days < 1, assigned_role tidak valid, atau `is_active=true`
+        untuk tipe Draft (template NULL): "Jenis surat draft belum memiliki
+        template sehingga tidak dapat diaktifkan."
       content:
         application/json:
           schema:

@@ -6,7 +6,11 @@ patch:
     UC-22. Hanya record tahap approval aktif (rt, kepala_desa)
     dapat diubah. Validasi: deadline_hours > 0, reminder_hours < deadline_hours.
     Jika deadline terlewat: surat TIDAK auto-reject; flag overdue dihitung
-    saat daftar dimuat. Pengiriman reminder otomatis belum diimplementasikan.
+    saat daftar dimuat. Pengingat dikirim sekali ke approver tahap aktif
+    saat sisa waktu tinggal `reminder_hours` (0 = tepat saat deadline) oleh
+    command terjadwal `approvals:send-reminders` (tiap 5 menit). Nilai baru
+    langsung berlaku untuk surat yang sedang menunggu. Setting dengan
+    `is_active = false` tidak mengirim pengingat.
   operationId: updateApprovalSetting
   security:
     - sanctumCookie: []

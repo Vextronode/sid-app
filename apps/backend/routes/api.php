@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\ApprovalSettingController;
 use App\Http\Controllers\Api\CitizenController;
@@ -176,6 +177,18 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::delete('/{family}', [FamilyController::class, 'destroy']);
         });
 
+    /*
+    |----------------------------------------------------------------------
+    | Log Aktivitas (S-05): riwayat data warga & KK dan status surat desa
+    |----------------------------------------------------------------------
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
+        ->prefix('activity-logs')
+        ->group(function () {
+            Route::get('/population', [ActivityLogController::class, 'population']);
+            Route::get('/letters', [ActivityLogController::class, 'letters']);
+        });
+
     Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('occupations')
         ->group(function () {
@@ -235,7 +248,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     */
     // Lintas-role: dipakai warga saat submit (pilih jenis surat) dan
-    // Petugas Desa saat konfigurasi - tidak ada role-guard sempit.
+    // Petugas Desa saat konfigurasi. ?include_inactive=1 (semua jenis
+    // termasuk Draft/Nonaktif) khusus Petugas Desa - IndexLetterTypeRequest.
     Route::get('/letter-types', [LetterTypeController::class, 'index']);
 
     // UC-21: edit konfigurasi tipe surat eksklusif Petugas Desa.
