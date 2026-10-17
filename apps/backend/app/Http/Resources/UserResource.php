@@ -2,8 +2,10 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\UserRole;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class UserResource extends JsonResource
 {
@@ -21,6 +23,9 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'username' => $this->username,
             'role' => $this->role,
+            'role_label' => UserRole::tryFrom((string) $this->role)?->label(),
+            // Foto akun warga. Akun yang menjabat memakai official.photo_img.
+            'photo_url' => $this->photo_img ? Storage::disk('public')->url($this->photo_img) : null,
             'email' => $this->email,
             // NIK utuh hanya untuk pemilik akun sendiri; orang lain hanya
             // mendapat citizen.nik_masked.
