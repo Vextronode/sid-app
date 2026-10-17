@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Calendar, Check, ChevronLeft, ChevronRight, Clock, FileText, X } from 'lucide-react'
 
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import { LetterValidityNote } from '@/features/surat/components/LetterValidityNote'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
@@ -244,7 +245,7 @@ function getPreviewTemplate(status) {
 // PREVIEW PDF
 // ==========================================
 
-function SuratPreview({ suratId, status }) {
+function SuratPreview({ suratId, status, isExpired = false }) {
   const [showPreview, setShowPreview] = useState(false)
 
   const [loadingPreview, setLoadingPreview] = useState(false)
@@ -253,7 +254,9 @@ function SuratPreview({ suratId, status }) {
 
   const [pages, setPages] = useState([])
 
-  const canPreview = canPreviewSurat(status)
+  // Surat kedaluwarsa tinggal riwayat: tombol tetap tampil tetapi nonaktif.
+  const expired = canPreviewSurat(status) && isExpired
+  const canPreview = canPreviewSurat(status) && !expired
 
   useEffect(() => {
     setShowPreview(false)
@@ -397,6 +400,7 @@ function SuratPreview({ suratId, status }) {
       <button
         type="button"
         disabled={!canPreview}
+        title={expired ? 'Masa berlaku surat telah habis' : undefined}
         onClick={() => {
           if (!canPreview) {
             return
@@ -414,7 +418,9 @@ function SuratPreview({ suratId, status }) {
           ? showPreview
             ? 'Sembunyikan Preview Surat'
             : 'Lihat Preview Surat'
-          : 'Preview tersedia setelah disetujui'}
+          : expired
+            ? 'Lihat Preview Surat'
+            : 'Preview tersedia setelah disetujui'}
       </button>
 
       {showPreview && (
@@ -674,7 +680,14 @@ export default function SuratDateTracker() {
 
           {/* PREVIEW PDF */}
 
-          <SuratPreview suratId={activeSurat?.id} status={activeSurat?.status} />
+          {activeSurat?.status === SURAT_STATUS.APPROVED && (
+            <LetterValidityNote surat={activeSurat} />
+          )}
+          <SuratPreview
+            suratId={activeSurat?.id}
+            status={activeSurat?.status}
+            isExpired={activeSurat?.is_expired === true}
+          />
         </>
       )}
     </div>

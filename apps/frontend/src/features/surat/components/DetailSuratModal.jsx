@@ -32,6 +32,7 @@ import {
 } from '../utils/letterDetails'
 
 import { loadPdfjs } from '@/lib/pdfjs'
+import { LetterValidityNote } from './LetterValidityNote'
 
 // ==========================================
 // FIELD MAP
@@ -175,7 +176,11 @@ function SuratPreview({ surat }) {
 
   const status = surat?.status
 
-  const canPreview = status === SURAT_STATUS.APPROVED
+  const isApproved = status === SURAT_STATUS.APPROVED
+  // Surat kedaluwarsa tinggal riwayat: tombol tetap tampil tetapi
+  // nonaktif (backend juga menolak unduh/preview oleh pemohon).
+  const isExpired = isApproved && surat?.is_expired === true
+  const canPreview = isApproved && !isExpired
 
   const handleDownload = async () => {
     setDownloading(true)
@@ -350,12 +355,15 @@ function SuratPreview({ surat }) {
 
   return (
     <>
-      {canPreview && (
+      {isApproved && <LetterValidityNote surat={surat} />}
+
+      {isApproved && (
         <button
           type="button"
           onClick={handleDownload}
-          disabled={downloading}
-          className="sid-modal-preview"
+          disabled={downloading || isExpired}
+          title={isExpired ? 'Masa berlaku surat telah habis' : undefined}
+          className={`sid-modal-preview ${isExpired ? 'sid-preview-disabled' : ''}`}
         >
           <Download size={16} />
           {downloading ? 'Menyiapkan unduhan...' : 'Download Surat'}
@@ -378,6 +386,7 @@ function SuratPreview({ surat }) {
           setShowPreview((prev) => !prev)
         }}
         disabled={!canPreview}
+        title={isExpired ? 'Masa berlaku surat telah habis' : undefined}
         className={`sid-modal-preview ${!canPreview ? 'sid-preview-disabled' : ''}`}
       >
         <Eye size={16} />
@@ -386,7 +395,9 @@ function SuratPreview({ surat }) {
           ? showPreview
             ? 'Sembunyikan Preview'
             : 'Lihat Dokumen (Preview)'
-          : 'Preview tersedia setelah surat disetujui'}
+          : isExpired
+            ? 'Lihat Dokumen (Preview)'
+            : 'Preview tersedia setelah surat disetujui'}
       </button>
 
       {showPreview && (
