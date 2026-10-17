@@ -16,6 +16,7 @@ import {
   LayoutGrid,
   FilePlus,
   FileText,
+  History,
   Users,
   UserCog,
   UserRoundCog,
@@ -26,6 +27,7 @@ import {
   Network,
   Settings,
   UserCircle,
+  Workflow,
 } from 'lucide-react'
 import { WilayahMasterProvider } from '@/features/kelola-wilayah/hooks/WilayahMasterProvider'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
@@ -113,6 +115,18 @@ const MENU_ITEMS = [
     route: '/admin/approval-settings',
     allowedRoles: getOperatorAllowedRoles('/admin/approval-settings'),
     icon: Settings,
+  },
+  {
+    label: 'Alur & Jenis Surat',
+    route: '/admin/approval-flows',
+    allowedRoles: getOperatorAllowedRoles('/admin/approval-flows'),
+    icon: Workflow,
+  },
+  {
+    label: 'Log Aktivitas',
+    route: '/admin/log-aktivitas',
+    allowedRoles: getOperatorAllowedRoles('/admin/log-aktivitas'),
+    icon: History,
   },
   {
     label: 'Organisasi BPD',

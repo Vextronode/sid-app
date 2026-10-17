@@ -11,14 +11,17 @@ import {
   AlertCircle,
   Download,
   Edit,
+  History,
   Trash2,
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { useWargaList } from '../../features/data-warga/hooks/useWargaList'
 import { useFamilyList } from '../../features/data-warga/hooks/useFamilyList'
 import FamilyManagementPanel from '../../features/data-warga/components/FamilyManagementPanel'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getOccupations } from '../../features/pekerjaan/api'
+import { PageNumbers } from '@/components/ui/PageNumbers'
 
 const formatResidencyType = (type) => {
   if (!type) return '-'
@@ -71,6 +74,7 @@ const emptyForm = {
 const emptyImportStatus = { loading: false, success: null, error: null, result: null }
 
 export default function DataWargaPage() {
+  const navigate = useNavigate()
   const familyList = useFamilyList()
   const {
     data,
@@ -410,6 +414,18 @@ export default function DataWargaPage() {
                           </button>
                           <button
                             type="button"
+                            title="Riwayat perubahan"
+                            className="sid-operator-action detail"
+                            onClick={() =>
+                              navigate(
+                                `/admin/log-aktivitas?tab=penduduk&type=citizen&subject=${encodeURIComponent(warga.id)}`,
+                              )
+                            }
+                          >
+                            <History size={16} />
+                          </button>
+                          <button
+                            type="button"
                             title="Hapus"
                             className="sid-operator-action delete"
                             onClick={() => handleDeleteWarga(warga.id, warga.name)}
@@ -438,16 +454,11 @@ export default function DataWargaPage() {
               >
                 Sebelumnya
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  type="button"
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={page === currentPage ? 'active' : ''}
-                >
-                  {page}
-                </button>
-              ))}
+              <PageNumbers
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onChange={setCurrentPage}
+              />
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
