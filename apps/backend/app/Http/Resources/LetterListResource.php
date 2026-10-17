@@ -43,6 +43,8 @@ class LetterListResource extends JsonResource
             'needs_fulfillment' => $status === 'approved'
                 && $this->fulfilled_at === null
                 && ! in_array($dataAction, [null, 'none'], true),
+            'expires_at' => $this->expires_at,
+            'is_expired' => $this->resource->isExpired(),
             'submitted_at' => $this->submitted_at,
             'processed_at' => $this->processed_at,
             'created_at' => $this->created_at,

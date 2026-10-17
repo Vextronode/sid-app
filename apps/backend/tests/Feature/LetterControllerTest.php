@@ -271,6 +271,33 @@ class LetterControllerTest extends TestCase
         }
     }
 
+    public function test_index_scope_mine_reports_expired_letters(): void
+    {
+        $user = User::factory()->create(['role' => 'warga']);
+        $expired = Letter::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'approved',
+            'expires_at' => now()->subDay(),
+            'submitted_at' => now()->subDays(2),
+        ]);
+        $valid = Letter::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'approved',
+            'expires_at' => now()->addDay(),
+            'submitted_at' => now()->subDays(3),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/letters?scope=mine')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $rows = collect($response->json('data'))->keyBy('id');
+        $this->assertTrue($rows[$expired->id]['is_expired']);
+        $this->assertNotNull($rows[$expired->id]['expires_at']);
+        $this->assertFalse($rows[$valid->id]['is_expired']);
+    }
+
     public function test_index_for_kasi_only_lists_approved_letters_for_assigned_role(): void
     {
         $village = Village::factory()->create();

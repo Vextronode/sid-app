@@ -484,6 +484,7 @@ class LetterRepository
                 'letters.current_step_order',
                 'letters.rejected_at_step',
                 'letters.is_overdue',
+                'letters.expires_at',
                 'letters.submitted_at',
                 'letters.processed_at',
                 'letters.fulfilled_at',

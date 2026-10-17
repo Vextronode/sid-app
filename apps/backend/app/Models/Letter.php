@@ -109,6 +109,15 @@ class Letter extends Model
         return $this->hasMany(LetterSignature::class);
     }
 
+    /**
+     * Masa berlaku dicap saat final approve dari `letter_types.validity_days`;
+     * surat tanpa `expires_at` berlaku tanpa batas.
+     */
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && now()->greaterThan($this->expires_at);
+    }
+
     public function letterType(): BelongsTo
     {
         return $this->belongsTo(LetterType::class);

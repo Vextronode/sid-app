@@ -38,13 +38,7 @@ class PdfService
             abort(403, 'Surat baru dapat diunduh setelah seluruh proses persetujuan selesai.');
         }
 
-        if (
-            $letter->submitted_by === $user->id &&
-            $letter->expires_at &&
-            now()->greaterThan($letter->expires_at)
-        ) {
-            abort(403, 'Masa berlaku surat telah habis.');
-        }
+        $this->abortIfExpiredForApplicant($letter, $user);
 
         return $this->buildPdf($letter, $template)->download("surat-{$letter->id}.pdf");
     }
@@ -56,6 +50,8 @@ class PdfService
     ): Response {
 
         $letter = $this->letterRepository->loadForPdf($letter);
+
+        $this->abortIfExpiredForApplicant($letter, $user);
 
         return $this->buildPdf($letter, $template)->stream("surat-{$letter->id}.pdf");
     }
@@ -82,6 +78,17 @@ class PdfService
         $filename = "dokumen-pendukung-{$letter->id}.pdf";
 
         return $download ? $pdf->download($filename) : $pdf->stream($filename);
+    }
+
+    /**
+     * Surat kedaluwarsa hanya tersimpan sebagai riwayat bagi pemohon;
+     * pejabat dan Petugas Desa tetap dapat membuka PDF untuk arsip.
+     */
+    private function abortIfExpiredForApplicant(Letter $letter, User $user): void
+    {
+        if ($letter->submitted_by === $user->id && $letter->isExpired()) {
+            abort(403, 'Masa berlaku surat telah habis.');
+        }
     }
 
     private function buildPdf(Letter $letter, string $template): \Barryvdh\DomPDF\PDF
