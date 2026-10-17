@@ -90,7 +90,7 @@ class DemoOfficialSeeder extends Seeder
         }
 
         $this->seedVillageOfficials($hamlets);
-        $this->seedPetugasDesa($hamlets[1]);
+        $this->seedStafSid($hamlets[1]);
         $this->seedNeighbourhoodChairs($hamlets);
     }
 
@@ -117,12 +117,12 @@ class DemoOfficialSeeder extends Seeder
         }
     }
 
-    private function seedPetugasDesa(Hamlet $hamlet): void
+    private function seedStafSid(Hamlet $hamlet): void
     {
         $rw = $hamlet->rws->first();
         $citizen = $this->seedCitizen('Admin Desa Demo', 'L', $hamlet, $rw, $rw->rts->first(), 'Perangkat desa', 25, 35);
-        $user = $this->seedUser(self::PETUGAS_USERNAME, $citizen, OfficialPosition::PetugasDesa);
-        $this->seedOfficial($citizen, $user, OfficialPosition::PetugasDesa->value, []);
+        $user = $this->seedUser(self::PETUGAS_USERNAME, $citizen, OfficialPosition::StafSid);
+        $this->seedOfficial($citizen, $user, OfficialPosition::StafSid->value, []);
     }
 
     /**

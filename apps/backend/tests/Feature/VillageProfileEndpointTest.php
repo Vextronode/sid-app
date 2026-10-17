@@ -16,8 +16,8 @@ use Tests\TestCase;
  * Cakupan kondisi:
  *  - GET /villages/profile butuh login (401 untuk guest).
  *  - GET /villages/profile mengembalikan profil desa milik user yang login.
- *  - PATCH /villages/profile sukses (200) untuk petugas_desa dengan payload valid.
- *  - PATCH /villages/profile ditolak (403) untuk role selain petugas_desa
+ *  - PATCH /villages/profile sukses (200) untuk staf_sid dengan payload valid.
+ *  - PATCH /villages/profile ditolak (403) untuk role selain staf_sid
  *    (termasuk kepala_desa/sekretaris_desa - SID-ARCH-SYS-001 S2.3).
  *  - PATCH /villages/profile gagal validasi (422) jika name/head_name kosong.
  */
@@ -25,7 +25,7 @@ class VillageProfileEndpointTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function villageWithUser(string $role = 'petugas_desa'): array
+    private function villageWithUser(string $role = 'staf_sid'): array
     {
         $village = Village::create([
             'name' => 'Desa Cibenda',
@@ -62,7 +62,7 @@ class VillageProfileEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_update_village_profile(): void
+    public function staf_sid_can_update_village_profile(): void
     {
         [, $user] = $this->villageWithUser();
 

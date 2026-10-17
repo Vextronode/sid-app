@@ -13,18 +13,18 @@ class FamilyControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function petugasDesa(Village $village): User
+    private function stafSid(Village $village): User
     {
         return User::factory()->create([
             'village_id' => $village->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
         ]);
     }
 
-    public function test_petugas_desa_can_create_list_show_and_update_family(): void
+    public function test_staf_sid_can_create_list_show_and_update_family(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
 
         $created = $this->actingAs($user)
             ->postJson('/api/families', [
@@ -59,7 +59,7 @@ class FamilyControllerTest extends TestCase
     public function test_no_kk_is_never_returned_as_plaintext(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
 
         $response = $this->actingAs($user)
             ->postJson('/api/families', [
@@ -75,7 +75,7 @@ class FamilyControllerTest extends TestCase
     public function test_family_list_includes_head_citizen_from_family_role(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $family = Family::factory()->create(['village_id' => $village->id]);
         Citizen::factory()->create([
             'village_id' => $village->id,
@@ -100,7 +100,7 @@ class FamilyControllerTest extends TestCase
     public function test_no_kk_hash_is_generated_automatically(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
 
         $this->actingAs($user)->postJson('/api/families', [
             'no_kk' => '3201011234560001',
@@ -115,7 +115,7 @@ class FamilyControllerTest extends TestCase
     public function test_duplicate_no_kk_is_rejected(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
 
         Family::factory()->create([
             'village_id' => $village->id,
@@ -135,7 +135,7 @@ class FamilyControllerTest extends TestCase
     public function test_invalid_no_kk_format_is_rejected(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
 
         $this->actingAs($user)
             ->postJson('/api/families', [
@@ -149,7 +149,7 @@ class FamilyControllerTest extends TestCase
     public function test_no_kk_cannot_be_changed_on_update(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $family = Family::factory()->create([
             'village_id' => $village->id,
             'no_kk' => '3201011234560001',
@@ -166,7 +166,7 @@ class FamilyControllerTest extends TestCase
         $this->assertSame('3201011234560001', $family->fresh()->no_kk);
     }
 
-    public function test_non_petugas_desa_cannot_create_family(): void
+    public function test_non_staf_sid_cannot_create_family(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = User::factory()->create(['village_id' => $village->id, 'role' => 'rt']);
@@ -182,7 +182,7 @@ class FamilyControllerTest extends TestCase
     public function test_family_without_members_can_be_deleted(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $family = Family::factory()->create(['village_id' => $village->id]);
 
         $this->actingAs($user)

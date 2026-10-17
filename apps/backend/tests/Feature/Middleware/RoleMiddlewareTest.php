@@ -124,7 +124,7 @@ class RoleMiddlewareTest extends TestCase
     {
         return [
             ['warga'], ['rw'], ['kadus'], ['kasi_pelayanan'],
-            ['kaur_tu_umum'], ['petugas_desa'], ['kepala_desa'], ['sekretaris_desa'],
+            ['kaur_tu_umum'], ['staf_sid'], ['kepala_desa'], ['sekretaris_desa'],
         ];
     }
 
@@ -172,7 +172,7 @@ class RoleMiddlewareTest extends TestCase
     {
         return [
             ['warga'], ['rt'], ['rw'], ['kadus'],
-            ['kasi_pelayanan'], ['kaur_tu_umum'], ['petugas_desa'],
+            ['kasi_pelayanan'], ['kaur_tu_umum'], ['staf_sid'],
         ];
     }
 
@@ -230,7 +230,7 @@ class RoleMiddlewareTest extends TestCase
     {
         return [
             ['rt'], ['rw'], ['kadus'], ['kasi_pelayanan'],
-            ['kaur_tu_umum'], ['petugas_desa'], ['kepala_desa'], ['sekretaris_desa'],
+            ['kaur_tu_umum'], ['staf_sid'], ['kepala_desa'], ['sekretaris_desa'],
         ];
     }
 
@@ -260,7 +260,7 @@ class RoleMiddlewareTest extends TestCase
     {
         return [
             ['warga'], ['rt'], ['rw'], ['kasi_pelayanan'],
-            ['kaur_tu_umum'], ['petugas_desa'], ['kepala_desa'], ['sekretaris_desa'],
+            ['kaur_tu_umum'], ['staf_sid'], ['kepala_desa'], ['sekretaris_desa'],
         ];
     }
 
@@ -284,14 +284,14 @@ class RoleMiddlewareTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | Domain konfigurasi/CMS eksklusif petugas_desa
+    | Domain konfigurasi/CMS eksklusif staf_sid
     |--------------------------------------------------------------------------
     */
 
     #[Test]
-    public function petugas_desa_can_access_citizens_index(): void
+    public function staf_sid_can_access_citizens_index(): void
     {
-        $user = $this->userWithRole('petugas_desa');
+        $user = $this->userWithRole('staf_sid');
 
         $this->actingAs($user)->getJson('/api/citizens')->assertStatus(200);
     }
@@ -341,7 +341,7 @@ class RoleMiddlewareTest extends TestCase
     {
         // Regression guard SID-ARCH-SYS-001 S2.3: Kades adalah approver
         // aktif di domain Surat, tapi TIDAK punya akses domain CMS
-        // (Profil Desa), yang eksklusif petugas_desa.
+        // (Profil Desa), yang eksklusif staf_sid.
         $village = Village::factory()->create();
         $user = User::factory()->create(['role' => 'kepala_desa', 'village_id' => $village->id]);
 
@@ -351,10 +351,10 @@ class RoleMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_update_village_profile(): void
+    public function staf_sid_can_update_village_profile(): void
     {
         $village = Village::factory()->create();
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        $user = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
 
         $this->actingAs($user)
             ->patchJson('/api/villages/profile', [
@@ -367,7 +367,7 @@ class RoleMiddlewareTest extends TestCase
     #[Test]
     public function any_authenticated_role_can_view_village_profile(): void
     {
-        // show() lintas-role, hanya update() yang dibatasi petugas_desa.
+        // show() lintas-role, hanya update() yang dibatasi staf_sid.
         $village = Village::factory()->create();
         $user = User::factory()->create(['role' => 'warga', 'village_id' => $village->id]);
 
@@ -377,11 +377,11 @@ class RoleMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_cannot_access_rt_only_approval_route(): void
+    public function staf_sid_cannot_access_rt_only_approval_route(): void
     {
-        // Arah sebaliknya: petugas_desa (Tier 2 sama seperti Kades/Sekdes
+        // Arah sebaliknya: staf_sid (Tier 2 sama seperti Kades/Sekdes
         // di label navigasi) tetap TIDAK termasuk approver RT.
-        $user = $this->userWithRole('petugas_desa');
+        $user = $this->userWithRole('staf_sid');
         $letter = Letter::factory()->create();
 
         $this->actingAs($user)
@@ -410,7 +410,7 @@ class RoleMiddlewareTest extends TestCase
     {
         return [
             ['warga'], ['rt'], ['rw'], ['kadus'], ['kasi_pelayanan'],
-            ['kaur_tu_umum'], ['petugas_desa'], ['kepala_desa'], ['sekretaris_desa'],
+            ['kaur_tu_umum'], ['staf_sid'], ['kepala_desa'], ['sekretaris_desa'],
         ];
     }
 }

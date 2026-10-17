@@ -87,13 +87,13 @@ class LetterSignatureTest extends TestCase
         $this->assertSame(1, UserSignature::query()->where('user_id', $user->id)->count());
     }
 
-    public function test_only_petugas_desa_of_the_same_village_can_reset_a_signature_and_old_file_is_kept(): void
+    public function test_only_staf_sid_of_the_same_village_can_reset_a_signature_and_old_file_is_kept(): void
     {
         $user = $this->applicant['user'];
         $this->giveSignature($user);
         $old = UserSignature::query()->where('user_id', $user->id)->firstOrFail();
-        $petugas = $this->makeOfficialUser('petugas_desa', $this->village);
-        $foreignPetugas = $this->makeOfficialUser('petugas_desa', Village::factory()->create());
+        $petugas = $this->makeOfficialUser('staf_sid', $this->village);
+        $foreignPetugas = $this->makeOfficialUser('staf_sid', Village::factory()->create());
 
         $this->actingAs($this->rtApprover['user'])
             ->postJson("/api/users/{$user->id}/signature/reset", ['reason' => 'Salah unggah gambar'])

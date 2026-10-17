@@ -39,10 +39,10 @@ class DashboardServiceTest extends TestCase
         );
     }
 
-    public function test_gender_stats_for_petugas_desa_counts_all_citizens_in_village(): void
+    public function test_gender_stats_for_staf_sid_counts_all_citizens_in_village(): void
     {
         $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $village->id);
         $user->citizen->update(['gender' => 'L']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'L']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'P']);
@@ -111,7 +111,7 @@ class DashboardServiceTest extends TestCase
     public function test_letter_stats_returns_chart_with_seven_days_and_min_max_y_of_50(): void
     {
         $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $village->id);
         Letter::factory()->create([
             'village_id' => $user->village_id,
             'submitted_at' => now(),
@@ -128,7 +128,7 @@ class DashboardServiceTest extends TestCase
     public function test_letter_stats_filters_by_letter_type_when_given(): void
     {
         $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $village->id);
         $letter = Letter::factory()->create([
             'village_id' => $user->village_id,
             'submitted_at' => now(),
@@ -242,7 +242,7 @@ class DashboardServiceTest extends TestCase
     public function test_petugas_dashboard_includes_expired_and_ending_official_terms(): void
     {
         $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $village->id);
         $expiredCitizen = Citizen::factory()->create([
             'village_id' => $village->id,
             'name' => 'Pejabat Lewat Masa',

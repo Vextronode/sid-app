@@ -98,7 +98,7 @@ class EnsureUserHasRoleTest extends TestCase
         // sama sekali (bug route) harus fail-closed (403), bukan
         // meloloskan siapa pun yang login (fail-open).
         $request = Request::create('/api/some-endpoint', 'GET');
-        $request->setUserResolver(fn () => $this->userWithRole('petugas_desa'));
+        $request->setUserResolver(fn () => $this->userWithRole('staf_sid'));
 
         $middleware = new EnsureUserHasRole;
         $response = $middleware->handle($request, $this->passthroughNext());

@@ -18,7 +18,7 @@ class OccupationEndpointTest extends TestCase
     {
         return User::factory()->create([
             'village_id' => $village->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
         ]);
     }
 

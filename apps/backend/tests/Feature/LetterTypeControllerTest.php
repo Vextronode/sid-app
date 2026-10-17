@@ -30,7 +30,7 @@ class LetterTypeControllerTest extends TestCase
 
     public function test_update_changes_validity_days_and_toggles_active(): void
     {
-        $admin = User::factory()->create(['role' => 'petugas_desa']);
+        $admin = User::factory()->create(['role' => 'staf_sid']);
         $letterType = LetterType::factory()->create(['validity_days' => 30, 'is_active' => true]);
 
         $this->actingAs($admin)
@@ -47,7 +47,7 @@ class LetterTypeControllerTest extends TestCase
 
     public function test_update_accepts_null_assigned_role_for_letters_available_to_both_roles(): void
     {
-        $admin = User::factory()->create(['role' => 'petugas_desa']);
+        $admin = User::factory()->create(['role' => 'staf_sid']);
         $letterType = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
 
         $this->actingAs($admin)
@@ -63,7 +63,7 @@ class LetterTypeControllerTest extends TestCase
 
     public function test_update_rejects_non_positive_validity_days(): void
     {
-        $admin = User::factory()->create(['role' => 'petugas_desa']);
+        $admin = User::factory()->create(['role' => 'staf_sid']);
         $letterType = LetterType::factory()->create();
 
         $this->actingAs($admin)
@@ -72,7 +72,7 @@ class LetterTypeControllerTest extends TestCase
             ->assertJsonPath('errors.validity_days.0', 'Masa berlaku harus lebih dari 0 hari');
     }
 
-    public function test_update_forbidden_for_non_petugas_desa(): void
+    public function test_update_forbidden_for_non_staf_sid(): void
     {
         $letterType = LetterType::factory()->create();
 
@@ -91,7 +91,7 @@ class LetterTypeControllerTest extends TestCase
 
     public function test_update_returns_404_for_unknown_letter_type(): void
     {
-        $admin = User::factory()->create(['role' => 'petugas_desa']);
+        $admin = User::factory()->create(['role' => 'staf_sid']);
 
         $this->actingAs($admin)
             ->putJson('/api/letter-types/999999', ['validity_days' => 60])

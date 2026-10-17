@@ -75,7 +75,7 @@ class LetterFlowHardeningTest extends TestCase
         ['rt' => $rt] = $this->makeArea($village);
         $applicant = $this->makeCitizenAccount($village, $rt);
         $kades = $this->makeOfficialUser('kepala_desa', $village);
-        $petugas = $this->makeOfficialUser('petugas_desa', $village);
+        $petugas = $this->makeOfficialUser('staf_sid', $village);
         $letterType = LetterType::factory()->create(['flow_id' => $this->makeDefaultFlow()->id]);
 
         $letterId = $this->actingAs($applicant['user'])
@@ -113,7 +113,7 @@ class LetterFlowHardeningTest extends TestCase
         ['rt' => $rt] = $this->makeArea($village);
         $applicant = $this->makeCitizenAccount($village, $rt);
         $this->makeOfficialUser('kepala_desa', $village);
-        $petugas = $this->makeOfficialUser('petugas_desa', $village);
+        $petugas = $this->makeOfficialUser('staf_sid', $village);
         $candidate = $this->makeCitizenAccount($village, $rt);
         $letterType = LetterType::factory()->create(['flow_id' => $this->makeDefaultFlow()->id]);
 

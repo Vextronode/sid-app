@@ -39,7 +39,7 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function find_with_steps_or_fail_returns_flow_with_steps(): void
     {
-        $user = $this->makePetugasDesaActor();
+        $user = $this->makeStafSidActor();
         $flow = $this->makeFlow('Flow Detail', true, $user->village_id);
 
         $found = $this->service->findWithStepsOrFail($flow->id, $user);
@@ -51,7 +51,7 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function find_with_steps_or_fail_aborts_404_for_nonexistent_flow(): void
     {
-        $user = $this->makePetugasDesaActor();
+        $user = $this->makeStafSidActor();
         $this->expectException(NotFoundHttpException::class);
 
         $this->service->findWithStepsOrFail(99999, $user);
@@ -60,7 +60,7 @@ class ApprovalFlowServiceTest extends TestCase
     private function makeFlow(string $name, bool $isActive = true, ?string $villageId = null): ApprovalFlow
     {
         return ApprovalFlow::query()->create([
-            'village_id' => $villageId ?? $this->makePetugasDesaActor()->village_id,
+            'village_id' => $villageId ?? $this->makeStafSidActor()->village_id,
             'name' => $name,
             'description' => null,
             'is_active' => $isActive,
@@ -70,7 +70,7 @@ class ApprovalFlowServiceTest extends TestCase
     #[Test]
     public function list_returns_only_active_flows(): void
     {
-        $user = $this->makePetugasDesaActor();
+        $user = $this->makeStafSidActor();
         $this->makeFlow('Flow Aktif', true, $user->village_id);
         $this->makeFlow('Flow Nonaktif', false, $user->village_id);
 

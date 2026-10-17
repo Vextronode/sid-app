@@ -36,7 +36,7 @@ class DashboardService
             'rw' => $this->forRw($user),
             'kadus' => $this->forKadus($user),
             'kasi_pelayanan', 'kaur_tu_umum' => $this->forKasiKaur($user),
-            'petugas_desa' => $this->forPetugasDesa($user),
+            'staf_sid' => $this->forStafSid($user),
             'kepala_desa', 'sekretaris_desa' => $this->forKadesSekdes($user),
             default => throw new HttpException(403, 'Dashboard tidak tersedia untuk role ini.'),
         };
@@ -225,12 +225,12 @@ class DashboardService
     /**
      * @return array{role: string, total_warga: int, total_surat_bulan_ini: int, surat_per_status: array<string, int>, unread_notifications_count: int}
      */
-    private function forPetugasDesa(User $user): array
+    private function forStafSid(User $user): array
     {
         $villageId = $this->officialVillageId($user);
 
         return [
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
             'total_warga' => $this->citizenRepository->countActiveByVillage($villageId),
             'total_surat_bulan_ini' => $this->letterRepository->countByVillageInMonth($villageId),
             'surat_per_status' => $this->letterRepository->countByVillageAndStatuses(
@@ -318,7 +318,7 @@ class DashboardService
             'rt' => [$regional->village_id, $regional->rt_id, null],
             'rw' => [$regional->village_id, null, $regional->rw_id],
             'kasi_pelayanan', 'kaur_tu_umum' => [$this->officialVillageId($user), null, null],
-            'petugas_desa' => [$this->officialVillageId($user), null, null],
+            'staf_sid' => [$this->officialVillageId($user), null, null],
             default => throw new HttpException(403, 'Tidak memiliki akses.'),
         };
     }

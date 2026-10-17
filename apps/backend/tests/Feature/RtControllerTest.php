@@ -15,18 +15,18 @@ class RtControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function petugasDesa(Village $village): User
+    private function stafSid(Village $village): User
     {
         return User::factory()->create([
             'village_id' => $village->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
         ]);
     }
 
-    public function test_petugas_desa_can_create_list_update_and_delete_rts(): void
+    public function test_staf_sid_can_create_list_update_and_delete_rts(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
         $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
 
@@ -54,7 +54,7 @@ class RtControllerTest extends TestCase
         $this->assertNull(Rt::find($rt->id));
     }
 
-    public function test_non_petugas_desa_cannot_create_rt(): void
+    public function test_non_staf_sid_cannot_create_rt(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = User::factory()->create(['village_id' => $village->id, 'role' => 'rt']);
@@ -69,7 +69,7 @@ class RtControllerTest extends TestCase
     public function test_duplicate_rt_number_within_same_rw_is_rejected(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
         $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
         Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
@@ -83,7 +83,7 @@ class RtControllerTest extends TestCase
     public function test_deactivating_rt_with_active_citizens_is_blocked(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
         $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
         $rt = Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);

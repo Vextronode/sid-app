@@ -33,7 +33,7 @@ class ApprovalSettingService
     {
         $setting = $this->repository->findByIdOrFail($id);
 
-        if (! $user->is_active || $user->role !== 'petugas_desa' || ! $user->village_id || $setting->village_id !== $user->village_id) {
+        if (! $user->is_active || $user->role !== 'staf_sid' || ! $user->village_id || $setting->village_id !== $user->village_id) {
             abort(404, 'Pengaturan approval tidak ditemukan.');
         }
 

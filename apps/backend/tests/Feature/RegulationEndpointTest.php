@@ -15,7 +15,7 @@ use Tests\TestCase;
  *
  * Cakupan kondisi:
  *  - Seluruh endpoint butuh login (401 untuk guest).
- *  - Seluruh endpoint ditolak (403) untuk role selain petugas_desa.
+ *  - Seluruh endpoint ditolak (403) untuk role selain staf_sid.
  *  - POST /regulations sukses (201) dengan payload lengkap.
  *  - POST /regulations gagal validasi (422) jika regulation_number/title/content kosong.
  *  - PATCH /regulations/{id} sukses (200), tetap mewajibkan
@@ -26,13 +26,13 @@ class RegulationEndpointTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function petugasDesa(): User
+    private function stafSid(): User
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
 
         return User::factory()->create([
             'village_id' => $village->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
         ]);
     }
 
@@ -45,7 +45,7 @@ class RegulationEndpointTest extends TestCase
     }
 
     #[Test]
-    public function non_petugas_desa_cannot_list_regulations(): void
+    public function non_staf_sid_cannot_list_regulations(): void
     {
         $user = User::factory()->create(['role' => 'warga']);
 
@@ -55,9 +55,9 @@ class RegulationEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_create_regulation(): void
+    public function staf_sid_can_create_regulation(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $response = $this->actingAs($user)->postJson('/api/regulations', [
             'regulation_number' => '01/PERDES/2026',
@@ -74,7 +74,7 @@ class RegulationEndpointTest extends TestCase
     }
 
     #[Test]
-    public function non_petugas_desa_cannot_create_regulation(): void
+    public function non_staf_sid_cannot_create_regulation(): void
     {
         $user = User::factory()->create(['role' => 'warga']);
 
@@ -90,7 +90,7 @@ class RegulationEndpointTest extends TestCase
     #[Test]
     public function creating_regulation_without_required_fields_fails_validation(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $response = $this->actingAs($user)->postJson('/api/regulations', []);
 
@@ -99,9 +99,9 @@ class RegulationEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_update_regulation(): void
+    public function staf_sid_can_update_regulation(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $regulation = VillageRegulation::create([
             'village_id' => $user->village_id,
@@ -127,7 +127,7 @@ class RegulationEndpointTest extends TestCase
     #[Test]
     public function updating_regulation_without_required_fields_fails_validation(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $regulation = VillageRegulation::create([
             'village_id' => $user->village_id,
@@ -146,9 +146,9 @@ class RegulationEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_delete_regulation_permanently(): void
+    public function staf_sid_can_delete_regulation_permanently(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $regulation = VillageRegulation::create([
             'village_id' => $user->village_id,

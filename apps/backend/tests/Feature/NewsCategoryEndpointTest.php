@@ -22,7 +22,7 @@ class NewsCategoryEndpointTest extends TestCase
         parent::setUp();
 
         $this->village = Village::factory()->create();
-        $this->petugas = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $this->village->id]);
+        $this->petugas = User::factory()->create(['role' => 'staf_sid', 'village_id' => $this->village->id]);
     }
 
     private function newsWith(NewsCategory $category): News
@@ -86,7 +86,7 @@ class NewsCategoryEndpointTest extends TestCase
             ->assertJsonValidationErrors(['name']);
 
         // Desa lain boleh memakai nama yang sama.
-        $otherPetugas = User::factory()->create(['role' => 'petugas_desa', 'village_id' => Village::factory()]);
+        $otherPetugas = User::factory()->create(['role' => 'staf_sid', 'village_id' => Village::factory()]);
         $this->actingAs($otherPetugas)
             ->postJson('/api/news-categories', ['name' => 'Umum'])
             ->assertCreated();
@@ -139,7 +139,7 @@ class NewsCategoryEndpointTest extends TestCase
         $this->actingAs($this->petugas)->deleteJson("/api/news-categories/{$foreign->id}")->assertNotFound();
     }
 
-    public function test_only_petugas_desa_can_manage_categories(): void
+    public function test_only_staf_sid_can_manage_categories(): void
     {
         $this->getJson('/api/news-categories')->assertUnauthorized();
 

@@ -20,10 +20,10 @@ class DashboardControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_gender_stats_returns_counts_for_petugas_desa(): void
+    public function test_gender_stats_returns_counts_for_staf_sid(): void
     {
         $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $village->id);
         $user->citizen->update(['gender' => 'L']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'L']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'P']);
@@ -51,7 +51,7 @@ class DashboardControllerTest extends TestCase
     public function test_letter_stats_returns_chart_structure(): void
     {
         $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $village->id);
 
         $this->actingAs($user)
             ->getJson('/api/dashboard/letter-stats')
@@ -181,7 +181,7 @@ class DashboardControllerTest extends TestCase
 
     public function test_letter_stats_rejects_invalid_date(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = User::factory()->create(['role' => 'staf_sid']);
 
         $this->actingAs($user)
             ->getJson('/api/dashboard/letter-stats?date=not-a-date')
@@ -189,10 +189,10 @@ class DashboardControllerTest extends TestCase
             ->assertJsonValidationErrors(['date']);
     }
 
-    public function test_generic_dashboard_includes_petugas_desa_term_summaries(): void
+    public function test_generic_dashboard_includes_staf_sid_term_summaries(): void
     {
         $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $village->id);
         $expiredCitizen = Citizen::factory()->create(['village_id' => $village->id, 'name' => 'Pejabat Expired']);
         $endingCitizen = Citizen::factory()->create(['village_id' => $village->id, 'name' => 'Pejabat Akan Berakhir']);
         Official::factory()->create([

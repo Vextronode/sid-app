@@ -71,7 +71,7 @@ class PdfServiceTest extends TestCase
 
     public function test_download_blocked_for_any_applicant_role_when_letter_expired(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = User::factory()->create(['role' => 'staf_sid']);
         $letter = Letter::factory()->create([
             'status' => 'approved',
             'submitted_by' => $user->id,
@@ -103,7 +103,7 @@ class PdfServiceTest extends TestCase
             'letter_type_id' => $letterType->id,
             'expires_at' => now()->addDays(10),
         ]);
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = User::factory()->create(['role' => 'staf_sid']);
 
         $response = $this->service->download($letter, $user);
 
@@ -117,7 +117,7 @@ class PdfServiceTest extends TestCase
             'status' => 'approved',
             'letter_type_id' => $letterType->id,
         ]);
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = User::factory()->create(['role' => 'staf_sid']);
 
         $this->expectException(ModelNotFoundException::class);
 
@@ -168,7 +168,7 @@ class PdfServiceTest extends TestCase
             ))
             ->andReturn($pdf);
 
-        $this->service->download($letter, User::factory()->create(['role' => 'petugas_desa']));
+        $this->service->download($letter, User::factory()->create(['role' => 'staf_sid']));
     }
 
     public function test_pdf_uses_village_stamp_and_ignores_official_stamp(): void
@@ -207,7 +207,7 @@ class PdfServiceTest extends TestCase
             }))
             ->andReturn($pdf);
 
-        $this->service->download($letter, User::factory()->create(['role' => 'petugas_desa']), 'digital');
+        $this->service->download($letter, User::factory()->create(['role' => 'staf_sid']), 'digital');
     }
 
     public function test_pdf_omits_stamp_when_village_stamp_is_null_even_if_official_has_one(): void
@@ -238,6 +238,6 @@ class PdfServiceTest extends TestCase
             ))
             ->andReturn($pdf);
 
-        $this->service->download($letter, User::factory()->create(['role' => 'petugas_desa']));
+        $this->service->download($letter, User::factory()->create(['role' => 'staf_sid']));
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserRole;
 use App\Exceptions\RegionContainsCitizensException;
 use App\Exceptions\RegionHasActiveCitizensException;
 use App\Models\Rt;
@@ -73,8 +74,8 @@ class RtService
 
     private function villageId(User $user): string
     {
-        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) {
-            abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        if ($user->role !== 'staf_sid' || ! $user->is_active || ! $user->village_id) {
+            abort(403, UserRole::stafSidLabel().' aktif dengan desa yang valid diperlukan.');
         }
 
         return $user->village_id;

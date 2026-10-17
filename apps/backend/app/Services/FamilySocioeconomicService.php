@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserRole;
 use App\Models\FamilySocioeconomic;
 use App\Models\User;
 use App\Repositories\FamilyRepository;
@@ -44,8 +45,8 @@ class FamilySocioeconomicService
 
     private function villageId(User $user): string
     {
-        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) {
-            throw new HttpException(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        if ($user->role !== 'staf_sid' || ! $user->is_active || ! $user->village_id) {
+            throw new HttpException(403, UserRole::stafSidLabel().' aktif dengan desa yang valid diperlukan.');
         }
 
         return $user->village_id;

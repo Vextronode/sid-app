@@ -44,7 +44,7 @@ class OccupationServiceTest extends TestCase
     {
         $village = Village::factory()->create();
         $occupation = Occupation::factory()->create(['village_id' => $village->id]);
-        $user = User::factory()->create(['village_id' => $village->id, 'role' => 'petugas_desa']);
+        $user = User::factory()->create(['village_id' => $village->id, 'role' => 'staf_sid']);
         Citizen::factory()->create(['village_id' => $village->id, 'occupation_id' => $occupation->id, 'is_active' => false]);
 
         try {
@@ -82,7 +82,7 @@ class OccupationServiceTest extends TestCase
     {
         $village = Village::factory()->create();
         $occupation = Occupation::factory()->create(['village_id' => $village->id]);
-        $user = User::factory()->create(['village_id' => $village->id, 'role' => 'petugas_desa']);
+        $user = User::factory()->create(['village_id' => $village->id, 'role' => 'staf_sid']);
         $repository = \Mockery::mock(OccupationRepository::class)->makePartial();
         $repository->shouldReceive('findForVillageOrFail')->once()->andReturn($occupation);
         $repository->shouldReceive('delete')->once()->andReturnUsing(function (Occupation $occupation) use ($village) {

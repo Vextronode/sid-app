@@ -45,8 +45,12 @@ class EnsureUserHasRole
         }
 
         if (! $allowedRoles->contains($user->role)) {
+            // code: FE memakai ini untuk memuat ulang akun, mis. bila peran
+            // pengguna baru saja diubah (rotasi/turun jabatan) saat ia
+            // masih membuka dashboard lama.
             return new JsonResponse([
                 'message' => 'Anda tidak memiliki akses untuk aksi ini.',
+                'code' => 'role_forbidden',
             ], Response::HTTP_FORBIDDEN);
         }
 

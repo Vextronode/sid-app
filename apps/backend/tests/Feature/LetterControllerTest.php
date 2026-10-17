@@ -50,7 +50,7 @@ class LetterControllerTest extends TestCase
         $citizen = Citizen::factory()->create();
         $letterType = LetterType::factory()->create(['flow_id' => $this->flowWithRtStep()->id]);
         $user = User::factory()->create([
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
             'citizen_id' => $citizen->id,
             'village_id' => $citizen->village_id,
         ]);
@@ -78,7 +78,7 @@ class LetterControllerTest extends TestCase
 
     public function test_index_returns_letters_scoped_to_user(): void
     {
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa');
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid');
         Letter::factory()->count(2)->create();
 
         $this->actingAs($user)

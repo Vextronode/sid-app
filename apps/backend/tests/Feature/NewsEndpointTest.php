@@ -16,7 +16,7 @@ use Tests\TestCase;
  *
  * Cakupan kondisi:
  *  - Seluruh endpoint butuh login (401 untuk guest).
- *  - Seluruh endpoint ditolak (403) untuk role selain petugas_desa.
+ *  - Seluruh endpoint ditolak (403) untuk role selain staf_sid.
  *  - GET /news bisa difilter status=draft|published.
  *  - POST /news sukses (201), slug digenerate otomatis dari judul.
  *  - POST /news dengan judul yang sama menghasilkan slug alternatif (suffix angka).
@@ -31,13 +31,13 @@ class NewsEndpointTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function petugasDesa(): User
+    private function stafSid(): User
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
 
         return User::factory()->create([
             'village_id' => $village->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
         ]);
     }
 
@@ -71,7 +71,7 @@ class NewsEndpointTest extends TestCase
     }
 
     #[Test]
-    public function non_petugas_desa_cannot_list_news(): void
+    public function non_staf_sid_cannot_list_news(): void
     {
         $user = User::factory()->create(['role' => 'warga']);
 
@@ -81,9 +81,9 @@ class NewsEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_create_news_with_auto_generated_slug(): void
+    public function staf_sid_can_create_news_with_auto_generated_slug(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $response = $this->actingAs($user)->postJson('/api/news', [
             'title' => 'Pengumuman Jadwal Posyandu',
@@ -101,7 +101,7 @@ class NewsEndpointTest extends TestCase
     #[Test]
     public function duplicate_title_generates_alternative_slug(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $this->actingAs($user)->postJson('/api/news', [
             'title' => 'Pengumuman Jadwal Posyandu',
@@ -122,7 +122,7 @@ class NewsEndpointTest extends TestCase
     #[Test]
     public function creating_published_news_sets_published_at(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $response = $this->actingAs($user)->postJson('/api/news', [
             'title' => 'Berita Langsung Terbit',
@@ -140,7 +140,7 @@ class NewsEndpointTest extends TestCase
     #[Test]
     public function creating_news_without_required_fields_fails_validation(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $response = $this->actingAs($user)->postJson('/api/news', []);
 
@@ -149,7 +149,7 @@ class NewsEndpointTest extends TestCase
     }
 
     #[Test]
-    public function non_petugas_desa_cannot_create_news(): void
+    public function non_staf_sid_cannot_create_news(): void
     {
         $user = User::factory()->create(['role' => 'warga']);
 
@@ -162,9 +162,9 @@ class NewsEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_filter_news_by_status(): void
+    public function staf_sid_can_filter_news_by_status(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         News::create([
             'village_id' => $user->village_id,
@@ -197,9 +197,9 @@ class NewsEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_toggle_publish_status(): void
+    public function staf_sid_can_toggle_publish_status(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $news = News::create([
             'village_id' => $user->village_id,
@@ -232,7 +232,7 @@ class NewsEndpointTest extends TestCase
         // Regresi: klien form-data/Postman mengirim "true"/"false" sebagai
         // teks, bukan boolean asli - rule `boolean` bawaan Laravel menolak
         // string ini kalau tidak dinormalisasi dulu di prepareForValidation().
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $news = News::create([
             'village_id' => $user->village_id,
@@ -257,9 +257,9 @@ class NewsEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_soft_delete_news(): void
+    public function staf_sid_can_soft_delete_news(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
 
         $news = News::create([
             'village_id' => $user->village_id,
@@ -280,7 +280,7 @@ class NewsEndpointTest extends TestCase
     #[Test]
     public function news_can_be_created_with_one_or_two_categories(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
         $umum = $this->category($user, 'Umum');
         $budaya = $this->category($user, 'Budaya');
 
@@ -312,7 +312,7 @@ class NewsEndpointTest extends TestCase
     #[Test]
     public function news_category_count_and_ownership_are_validated(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
         [$a, $b, $c] = [$this->category($user, 'A'), $this->category($user, 'B'), $this->category($user, 'C')];
         $otherVillage = NewsCategory::factory()->create([
             'village_id' => Village::create(['name' => 'Desa Lain', 'code' => 'LAIN'])->id,
@@ -340,7 +340,7 @@ class NewsEndpointTest extends TestCase
     #[Test]
     public function news_categories_can_be_changed_on_update(): void
     {
-        $user = $this->petugasDesa();
+        $user = $this->stafSid();
         $umum = $this->category($user, 'Umum');
         $budaya = $this->category($user, 'Budaya');
         $news = $this->draftNews($user);

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\LetterFlowLogReason;
 use App\Enums\LetterStatus;
+use App\Enums\UserRole;
 use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\User;
@@ -198,7 +199,7 @@ class LetterService
         if ($step === null) {
             // Flow tanpa step tidak punya approver; surat akan menggantung
             // selamanya bila tetap dibuat.
-            abort(422, 'Jenis surat ini belum memiliki alur persetujuan. Hubungi Petugas Desa.');
+            abort(422, 'Jenis surat ini belum memiliki alur persetujuan. Hubungi '.UserRole::stafSidLabel().'.');
         }
 
         $letter = $this->letterRepository->update($letter, [
@@ -250,7 +251,7 @@ class LetterService
             'reason' => LetterFlowLogReason::HeldForVacantApprover->value,
         ]);
 
-        foreach ($this->officialService->resolvePetugasDesaUsers($letter->village_id) as $petugas) {
+        foreach ($this->officialService->resolveStafSidUsers($letter->village_id) as $petugas) {
             $petugas->notify(new LetterStatusNotification(
                 $letter,
                 'Surat Tertahan: Pejabat RT Kosong',
@@ -293,7 +294,7 @@ class LetterService
 
     /**
      * EV5-4-S7. Rewrite total dari switch lama yang salah menggabungkan
-     * kasi_pelayanan/kaur_tu_umum/petugas_desa/sekretaris_desa/
+     * kasi_pelayanan/kaur_tu_umum/staf_sid/sekretaris_desa/
      * kepala_desa jadi satu case "lihat semua surat" (TDD-01 Table 3 -
      * Scope Monitoring Surat per Role, paths/letters/letters.yaml).
      * Daftar role dibatasi per wilayah dan tahap yang telah dicapai;
@@ -370,7 +371,7 @@ class LetterService
                 'kadus' => $this->scopeForKadus($user),
                 'kepala_desa', 'sekretaris_desa' => $this->scopeForKadesSekdes($user),
                 'kasi_pelayanan', 'kaur_tu_umum' => $this->scopeForKasiKaur($user),
-                'petugas_desa' => $this->letterRepository
+                'staf_sid' => $this->letterRepository
                     ->queryForList()
                     ->where('village_id', $user->official?->village_id),
                 default => abort(403, 'Anda tidak berwenang mengakses daftar surat ini.'),

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Models\Village;
 use App\Repositories\VillageRepository;
@@ -113,8 +114,8 @@ class VillageProfileService
 
     private function assertActivePetugas(User $user): void
     {
-        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) {
-            throw new HttpException(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        if ($user->role !== 'staf_sid' || ! $user->is_active || ! $user->village_id) {
+            throw new HttpException(403, UserRole::stafSidLabel().' aktif dengan desa yang valid diperlukan.');
         }
     }
 }
