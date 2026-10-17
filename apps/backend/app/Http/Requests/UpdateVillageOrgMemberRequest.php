@@ -13,7 +13,7 @@ class UpdateVillageOrgMemberRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->role === 'petugas_desa';
+        return $this->user()?->role === 'staf_sid';
     }
 
     protected function failedAuthorization(): void
@@ -30,7 +30,6 @@ class UpdateVillageOrgMemberRequest extends FormRequest
     {
         return [
             'member_name' => ['sometimes', 'string', 'max:150'],
-            'photo_img' => ['nullable', 'string', 'max:255'],
             'phone_wa' => ['nullable', 'string', 'max:20'],
             'notes' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],

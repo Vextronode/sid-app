@@ -13,39 +13,21 @@ class VillageOrgPositionService
         private readonly VillageOrgPositionRepository $repository,
     ) {}
 
+    /**
+     * Slot Ketua/Wakil Ketua/Anggota dibuat dulu bila belum ada, supaya
+     * setiap organisasi selalu tampil lengkap meski belum pernah diisi.
+     */
     public function list(User $user, ?string $orgType = null): Collection
     {
-        return $this->repository->allForVillage($user->village_id, $orgType);
-    }
+        foreach ($orgType !== null ? [$orgType] : VillageOrgPosition::ORG_TYPES as $type) {
+            $this->repository->ensureSlots($user->village_id, $type);
+        }
 
-    public function create(User $user, array $data): VillageOrgPosition
-    {
-        return $this->repository->create([
-            'village_id' => $user->village_id,
-            'org_type' => $data['org_type'],
-            'position_label' => $data['position_label'],
-            'is_single_occupant' => $data['is_single_occupant'] ?? true,
-            'sort_order' => $data['sort_order'] ?? 0,
-            'is_active' => $data['is_active'] ?? true,
-        ]);
+        return $this->repository->allForVillage($user->village_id, $orgType);
     }
 
     public function find(User $user, int $id): VillageOrgPosition
     {
         return $this->repository->findByIdForVillageOrFail($id, $user->village_id);
-    }
-
-    public function update(User $user, int $id, array $data): VillageOrgPosition
-    {
-        $position = $this->repository->findByIdForVillageOrFail($id, $user->village_id);
-
-        return $this->repository->update($position, $data);
-    }
-
-    public function delete(User $user, int $id): void
-    {
-        $position = $this->repository->findByIdForVillageOrFail($id, $user->village_id);
-
-        $this->repository->delete($position);
     }
 }

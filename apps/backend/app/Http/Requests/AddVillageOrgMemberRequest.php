@@ -13,7 +13,7 @@ class AddVillageOrgMemberRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->role === 'petugas_desa';
+        return $this->user()?->role === 'staf_sid';
     }
 
     protected function failedAuthorization(): void
@@ -29,8 +29,9 @@ class AddVillageOrgMemberRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'member_name' => ['required', 'string', 'max:150'],
-            'photo_img' => ['nullable', 'string', 'max:255'],
+            'member_name' => ['required_without:from_member_id', 'nullable', 'string', 'max:150'],
+            'from_member_id' => ['nullable', 'integer', 'exists:village_org_members,id'],
+            'previous_holder' => ['sometimes', 'string', 'in:end,to_member'],
             'phone_wa' => ['nullable', 'string', 'max:20'],
             'started_at' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
@@ -40,7 +41,9 @@ class AddVillageOrgMemberRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'member_name.required' => 'Nama anggota wajib diisi',
+            'member_name.required_without' => 'Nama anggota wajib diisi',
+            'from_member_id.exists' => 'Anggota yang dipilih tidak ditemukan',
+            'previous_holder.in' => 'Pilihan pemegang jabatan lama tidak valid',
             'started_at.required' => 'Tanggal mulai menjabat wajib diisi',
         ];
     }

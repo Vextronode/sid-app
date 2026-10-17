@@ -12,6 +12,36 @@ class VillageOrgPositionRepository
         //
     }
 
+    /**
+     * Membuat slot Ketua/Wakil Ketua/Anggota yang belum ada untuk organisasi
+     * desa. Aman dipanggil berulang.
+     */
+    public function ensureSlots(string $villageId, string $orgType): void
+    {
+        foreach (VillageOrgPosition::SLOTS as $slot => $definition) {
+            VillageOrgPosition::query()->firstOrCreate(
+                ['village_id' => $villageId, 'org_type' => $orgType, 'slot' => $slot],
+                [
+                    'position_label' => $definition['label'],
+                    'is_single_occupant' => $definition['single'],
+                    'sort_order' => $definition['order'],
+                    'is_active' => true,
+                ],
+            );
+        }
+    }
+
+    public function findSlot(string $villageId, string $orgType, string $slot): VillageOrgPosition
+    {
+        $this->ensureSlots($villageId, $orgType);
+
+        return VillageOrgPosition::query()
+            ->where('village_id', $villageId)
+            ->where('org_type', $orgType)
+            ->where('slot', $slot)
+            ->firstOrFail();
+    }
+
     public function allForVillage(string $villageId, ?string $orgType = null): Collection
     {
         return VillageOrgPosition::query()
@@ -34,22 +64,5 @@ class VillageOrgPositionRepository
             ->with(['members' => fn ($query) => $query->orderByDesc('started_at')])
             ->where('village_id', $villageId)
             ->findOrFail($id);
-    }
-
-    public function create(array $data): VillageOrgPosition
-    {
-        return VillageOrgPosition::create($data);
-    }
-
-    public function update(VillageOrgPosition $position, array $data): VillageOrgPosition
-    {
-        $position->update($data);
-
-        return $position;
-    }
-
-    public function delete(VillageOrgPosition $position): void
-    {
-        $position->delete();
     }
 }

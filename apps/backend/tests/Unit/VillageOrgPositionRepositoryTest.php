@@ -22,6 +22,40 @@ class VillageOrgPositionRepositoryTest extends TestCase
         $this->repository = new VillageOrgPositionRepository;
     }
 
+    public function test_ensure_slots_creates_ketua_wakil_and_anggota(): void
+    {
+        $village = Village::factory()->create();
+
+        $this->repository->ensureSlots($village->id, 'bpd');
+
+        $slots = VillageOrgPosition::query()->orderBy('sort_order')->get();
+        $this->assertSame(['ketua', 'wakil_ketua', 'anggota'], $slots->pluck('slot')->all());
+        $this->assertSame(['Ketua', 'Wakil Ketua', 'Anggota'], $slots->pluck('position_label')->all());
+        $this->assertSame([true, true, false], $slots->pluck('is_single_occupant')->all());
+    }
+
+    public function test_ensure_slots_is_idempotent_and_keeps_existing_slot(): void
+    {
+        $village = Village::factory()->create();
+        $ketua = VillageOrgPosition::factory()->create(['village_id' => $village->id, 'org_type' => 'pkk']);
+
+        $this->repository->ensureSlots($village->id, 'pkk');
+        $this->repository->ensureSlots($village->id, 'pkk');
+
+        $this->assertSame(3, VillageOrgPosition::query()->count());
+        $this->assertDatabaseHas('village_org_positions', ['id' => $ketua->id, 'slot' => 'ketua']);
+    }
+
+    public function test_find_slot_creates_missing_slots(): void
+    {
+        $village = Village::factory()->create();
+
+        $anggota = $this->repository->findSlot($village->id, 'lpm', 'anggota');
+
+        $this->assertSame('anggota', $anggota->slot);
+        $this->assertFalse($anggota->is_single_occupant);
+    }
+
     public function test_all_for_village_returns_only_positions_of_that_village(): void
     {
         $village = Village::factory()->create();
@@ -53,60 +87,12 @@ class VillageOrgPositionRepositoryTest extends TestCase
     {
         $village = Village::factory()->create();
 
-        VillageOrgPosition::factory()->create([
-            'village_id' => $village->id,
-            'org_type' => 'bpd',
-            'sort_order' => 2,
-            'position_label' => 'Sekretaris BPD',
-        ]);
-        VillageOrgPosition::factory()->create([
-            'village_id' => $village->id,
-            'org_type' => 'bpd',
-            'sort_order' => 1,
-            'position_label' => 'Ketua BPD',
-        ]);
+        VillageOrgPosition::factory()->multiOccupant()->create(['village_id' => $village->id, 'org_type' => 'bpd']);
+        VillageOrgPosition::factory()->create(['village_id' => $village->id, 'org_type' => 'bpd']);
 
         $result = $this->repository->allForVillage($village->id);
 
-        $this->assertSame('Ketua BPD', $result->first()->position_label);
-    }
-
-    public function test_create_persists_position(): void
-    {
-        $village = Village::factory()->create();
-
-        $position = $this->repository->create([
-            'village_id' => $village->id,
-            'org_type' => 'bpd',
-            'position_label' => 'Ketua BPD',
-            'is_single_occupant' => true,
-            'sort_order' => 1,
-            'is_active' => true,
-        ]);
-
-        $this->assertDatabaseHas('village_org_positions', [
-            'id' => $position->id,
-            'position_label' => 'Ketua BPD',
-        ]);
-    }
-
-    public function test_update_persists_changes(): void
-    {
-        $position = VillageOrgPosition::factory()->create(['position_label' => 'Lama']);
-
-        $updated = $this->repository->update($position, ['position_label' => 'Baru']);
-
-        $this->assertSame('Baru', $updated->position_label);
-        $this->assertDatabaseHas('village_org_positions', ['id' => $position->id, 'position_label' => 'Baru']);
-    }
-
-    public function test_delete_removes_position(): void
-    {
-        $position = VillageOrgPosition::factory()->create();
-
-        $this->repository->delete($position);
-
-        $this->assertDatabaseMissing('village_org_positions', ['id' => $position->id]);
+        $this->assertSame('ketua', $result->first()->slot);
     }
 
     public function test_find_by_id_or_fail_throws_when_not_found(): void
