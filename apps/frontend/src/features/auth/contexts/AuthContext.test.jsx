@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const api = vi.hoisted(() => ({
   get: vi.fn(),
@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
 
 vi.mock('@/lib/api', () => ({ default: api }))
 
+import { ROLE_FORBIDDEN_EVENT } from '@/lib/authEvents'
 import { AuthProvider, useAuth } from './AuthContext'
 
 function wrapper({ children }) {
@@ -78,5 +79,45 @@ describe('AuthContext session regression', () => {
     expect(api.get).toHaveBeenCalledWith('/sanctum/csrf-cookie')
     expect(api.post).toHaveBeenCalledTimes(2)
     expect(result.current.user).toBeNull()
+  })
+})
+
+describe('AuthContext role_forbidden handling', () => {
+  const assign = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.stubGlobal('location', { ...window.location, assign })
+    api.get.mockResolvedValue({ data: { user: { id: 10, role: 'rt' } } })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const forbid = () => act(async () => window.dispatchEvent(new Event(ROLE_FORBIDDEN_EVENT)))
+
+  it('reloads to the login page (which redirects to the new dashboard) when the role changed', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.user?.role).toBe('rt'))
+
+    // Akun RT ini baru saja dirotasi menjadi warga.
+    api.get.mockResolvedValueOnce({ data: { user: { id: 10, role: 'warga' } } })
+    await forbid()
+
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('/loginpage'))
+    // Pemeriksaan tidak memunculkan loader layar penuh.
+    expect(result.current.isLoading).toBe(false)
+  })
+
+  it('does nothing when the role is unchanged (an ordinary forbidden request)', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.user?.role).toBe('rt'))
+
+    await forbid()
+
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2))
+    expect(assign).not.toHaveBeenCalled()
+    expect(result.current.user).toEqual({ id: 10, role: 'rt' })
   })
 })

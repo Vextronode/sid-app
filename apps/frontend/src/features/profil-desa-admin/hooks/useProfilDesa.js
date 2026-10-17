@@ -15,7 +15,8 @@ import {
 // Selain ini semua jabatan ditampilkan, termasuk jenis jabatan yang
 // ditambahkan Petugas Desa.
 
-const HIDDEN_POSITIONS = ['rt', 'rw', 'petugas_desa']
+// Staf aplikasi (staf_sid) ikut tampil, sama seperti di halaman publik.
+const HIDDEN_POSITIONS = ['rt', 'rw']
 
 // ==========================================
 // DEFAULT PROFIL
@@ -216,7 +217,9 @@ export function useProfilDesa() {
         .filter((official) => !['kepala_desa', 'kadus'].includes(official.position))
         .sort(
           (first, second) =>
-            Number(second.position === 'sekdes') - Number(first.position === 'sekdes'),
+            Number(second.position === 'sekdes') - Number(first.position === 'sekdes') ||
+            // Staf aplikasi paling akhir, seperti urutan di halaman publik.
+            Number(first.position === 'staf_sid') - Number(second.position === 'staf_sid'),
         ),
     [activeOfficials],
   )

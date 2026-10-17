@@ -60,7 +60,7 @@ describe('LoginPage redirect after login', () => {
     ['kepala_desa', '/admin/dashboard-surat-kades'],
     ['kasi_pelayanan', '/admin/operator-desa'],
     ['kaur_tu_umum', '/admin/operator-desa'],
-    ['petugas_desa', '/admin/operator-desa'],
+    ['staf_sid', '/admin/operator-desa'],
     ['warga', '/daftar-surat'],
     ['sekretaris_desa', '/daftar-surat'],
   ])('without ?redirect=, role %s goes to %s as before', async (role, expected) => {

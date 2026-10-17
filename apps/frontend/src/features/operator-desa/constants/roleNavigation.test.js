@@ -20,7 +20,7 @@ describe('operator role navigation', () => {
   })
 
   it('reserves village administration and configuration routes for Petugas Desa', () => {
-    const petugasRoutes = ROLE_NAVIGATION.petugas_desa
+    const petugasRoutes = ROLE_NAVIGATION.staf_sid
 
     for (const route of [
       '/admin/kelola-wilayah',
@@ -35,7 +35,7 @@ describe('operator role navigation', () => {
       '/admin/organisasi/lembaga',
     ]) {
       expect(petugasRoutes).toContain(route)
-      expect(getOperatorAllowedRoles(route)).toEqual(['petugas_desa'])
+      expect(getOperatorAllowedRoles(route)).toEqual(['staf_sid'])
     }
   })
 

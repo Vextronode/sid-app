@@ -1,23 +1,17 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom'
 
-import { useAuth } from "@/features/auth/contexts/AuthContext";
-import { useLoginForm } from "@/features/auth/hooks/useLoginForm";
+import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { useLoginForm } from '@/features/auth/hooks/useLoginForm'
 
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 
 export function LoginForm() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
-  const {
-    formData,
-    errors,
-    isLoading,
-    handleChange,
-    handleSubmit,
-  } = useLoginForm();
+  const { formData, errors, isLoading, handleChange, handleSubmit } = useLoginForm()
 
-  const { login } = useAuth();
+  const { login } = useAuth()
 
   // ==========================================
   // LOGIN SUCCESS
@@ -26,12 +20,12 @@ export function LoginForm() {
   const handleLoginSuccess = async (loggedUser) => {
     try {
       // Simpan user hasil login ke AuthContext.
-      const user = await login(loggedUser);
+      const user = await login(loggedUser)
 
       if (!user?.role) {
-        console.error("USER ROLE TIDAK DITEMUKAN:", user);
+        console.error('USER ROLE TIDAK DITEMUKAN:', user)
 
-        return;
+        return
       }
 
       // ==========================================
@@ -39,75 +33,72 @@ export function LoginForm() {
       // ==========================================
 
       switch (user.role) {
-        case "rt":
-          navigate("/admin/dashboard-surat-rt", {
+        case 'rt':
+          navigate('/admin/dashboard-surat-rt', {
             replace: true,
-          });
-          break;
+          })
+          break
 
-        case "rw":
-          navigate("/admin/dashboard-surat-rw", {
+        case 'rw':
+          navigate('/admin/dashboard-surat-rw', {
             replace: true,
-          });
-          break;
+          })
+          break
 
-        case "kadus":
-          navigate("/admin/dashboard-surat-kadus", {
+        case 'kadus':
+          navigate('/admin/dashboard-surat-kadus', {
             replace: true,
-          });
-          break;
+          })
+          break
 
-        case "petugas_desa":
-          navigate("/admin/dashboard-surat-petugas-desa", {
+        case 'staf_sid':
+          navigate('/admin/dashboard-surat-petugas-desa', {
             replace: true,
-          });
-          break;
+          })
+          break
 
-        case "kepala_desa":
-          navigate("/admin/dashboard-surat-kades", {
+        case 'kepala_desa':
+          navigate('/admin/dashboard-surat-kades', {
             replace: true,
-          });
-          break;
+          })
+          break
 
-        case "kasi":
-        case "kasi_pelayanan":
-          navigate("/admin/operator-desa", {
+        case 'kasi':
+        case 'kasi_pelayanan':
+          navigate('/admin/operator-desa', {
             replace: true,
-          });
-          break;
+          })
+          break
 
-        case "kaur_tu_umum":
-          navigate("/admin/operator-desa", {
+        case 'kaur_tu_umum':
+          navigate('/admin/operator-desa', {
             replace: true,
-          });
-          break;
+          })
+          break
 
-        case "sekretaris_desa":
-          navigate("/admin/dashboard-surat-kades", {
+        case 'sekretaris_desa':
+          navigate('/admin/dashboard-surat-kades', {
             replace: true,
-          });
-          break;
+          })
+          break
 
-        case "warga":
-          navigate("/daftar-surat", {
+        case 'warga':
+          navigate('/daftar-surat', {
             replace: true,
-          });
-          break;
+          })
+          break
 
         default:
-          console.warn(
-            "ROLE BELUM MEMILIKI REDIRECT:",
-            user.role,
-          );
+          console.warn('ROLE BELUM MEMILIKI REDIRECT:', user.role)
 
-          navigate("/", {
+          navigate('/', {
             replace: true,
-          });
+          })
       }
     } catch (error) {
-      console.error("LOGIN SUCCESS ERROR:", error);
+      console.error('LOGIN SUCCESS ERROR:', error)
     }
-  };
+  }
 
   return (
     <div className="sid-login-form">
@@ -115,20 +106,14 @@ export function LoginForm() {
           GENERAL ERROR
           ========================================== */}
 
-      {errors.general && (
-        <div className="sid-login-form-error">
-          {errors.general}
-        </div>
-      )}
+      {errors.general && <div className="sid-login-form-error">{errors.general}</div>}
 
       {/* ==========================================
           FORM
           ========================================== */}
 
       <form
-        onSubmit={(e) =>
-          handleSubmit(e, handleLoginSuccess)
-        }
+        onSubmit={(e) => handleSubmit(e, handleLoginSuccess)}
         className="sid-login-form-content"
       >
         {/* ==========================================
@@ -165,13 +150,10 @@ export function LoginForm() {
             SUBMIT
             ========================================== */}
 
-        <Button
-          type="submit"
-          disabled={isLoading}
-        >
-          {isLoading ? "Memproses..." : "Masuk"}
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? 'Memproses...' : 'Masuk'}
         </Button>
       </form>
     </div>
-  );
+  )
 }

@@ -15,6 +15,8 @@ import {
 } from 'react'
 
 import api from '@/lib/api'
+import { ROLE_FORBIDDEN_EVENT } from '@/lib/authEvents'
+import { HAL_LOGIN as LOGIN_PATH } from '@/lib/constants/routes'
 import { queryClient } from '@/shared/lib/queryClient'
 
 const AuthContext = createContext(null)
@@ -64,6 +66,41 @@ export function AuthProvider({ children }) {
     } finally {
       setIsLoading(false)
     }
+  }, [])
+
+  // Peran akun berubah di tempat lain (rotasi/turun jabatan oleh Staf) saat
+  // pengguna masih membuka dashboard lama: endpoint menolak dengan
+  // role_forbidden. Periksa akun tanpa loader; bila perannya memang berubah,
+  // muat ulang ke halaman login, yang meneruskan ke dashboard peran baru.
+  // Bila perannya sama (penolakan biasa), tidak ada yang dilakukan.
+  const userRole = user?.role
+  useEffect(() => {
+    if (!userRole) return undefined
+
+    let checking = false
+    const handleRoleForbidden = async () => {
+      if (checking) return
+      checking = true
+      try {
+        const currentRole = resolveUser(await api.get(SESSION_ENDPOINT))?.role
+        if (currentRole && currentRole !== userRole) {
+          window.location.assign(LOGIN_PATH)
+        }
+      } catch {
+        // Sesi berakhir ditangani pemanggil (401) atau pemeriksaan berikutnya.
+      } finally {
+        checking = false
+      }
+    }
+
+    window.addEventListener(ROLE_FORBIDDEN_EVENT, handleRoleForbidden)
+    return () => window.removeEventListener(ROLE_FORBIDDEN_EVENT, handleRoleForbidden)
+  }, [userRole])
+
+  // Memperbarui sebagian field akun di layar (mis. photo_url setelah ganti
+  // foto) tanpa memeriksa ulang sesi, yang akan memunculkan loader.
+  const patchUser = useCallback((fields) => {
+    setUser((current) => (current ? { ...current, ...fields } : current))
   }, [])
 
   useEffect(() => {
@@ -145,8 +182,9 @@ export function AuthProvider({ children }) {
       login,
       logout,
       refreshUser,
+      patchUser,
     }),
-    [user, isLoading, isLoggingOut, authError, login, logout, refreshUser],
+    [user, isLoading, isLoggingOut, authError, login, logout, refreshUser, patchUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

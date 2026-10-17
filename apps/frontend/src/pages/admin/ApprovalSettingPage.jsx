@@ -38,7 +38,7 @@ export default function ApprovalSettingPage() {
       }
     }
 
-    if (user?.role === 'petugas_desa') {
+    if (user?.role === 'staf_sid') {
       loadSettings()
     }
   }, [user?.role])
@@ -117,7 +117,7 @@ export default function ApprovalSettingPage() {
     settings.find((setting) => setting.approval_level === level),
   ).filter(Boolean)
 
-  if (user?.role !== 'petugas_desa') {
+  if (user?.role !== 'staf_sid') {
     return null
   }
 

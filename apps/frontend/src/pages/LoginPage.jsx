@@ -10,6 +10,7 @@ import { resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
 import { HAL_BERANDA, HAL_DAFTAR } from '@/lib/constants/routes'
 
 import { ArrowLeft, Landmark, User, Lock, Eye, EyeOff, LogIn } from 'lucide-react'
+import { APP_NAME } from '@/lib/constants/app'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -83,7 +84,7 @@ export default function LoginPage() {
 
         case 'kasi_pelayanan':
         case 'kaur_tu_umum':
-        case 'petugas_desa':
+        case 'staf_sid':
           navigate('/admin/operator-desa', {
             replace: true,
           })
@@ -120,7 +121,7 @@ export default function LoginPage() {
         {/* HEADER */}
 
         <div className="sid-login-header">
-          <h1 className="sid-login-title">Masuk ke SIDUTama</h1>
+          <h1 className="sid-login-title">Masuk ke {APP_NAME}</h1>
 
           <p className="sid-login-description">Masukkan Username dan Password Anda</p>
         </div>

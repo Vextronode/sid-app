@@ -6,6 +6,7 @@ import {
   deleteOfficialPositionType,
   updateOfficialPositionType,
 } from '../api'
+import { STAF_APP_LABEL } from '@/lib/constants/app'
 
 const EMPTY_FORM = { id: null, label: '', sort_order: '', is_single_occupant: true }
 
@@ -78,7 +79,7 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
         <p>
           Jenis jabatan di sini adalah jabatan desa tanpa akun login. Jabatan yang punya akun
           (Kepala Desa, Sekretaris Desa, Kasi Pelayanan, Kaur TU &amp; Umum, Kepala Dusun, RW, RT,
-          Petugas Desa) bersifat tetap.
+          {STAF_APP_LABEL}) bersifat tetap.
         </p>
 
         {error && (
