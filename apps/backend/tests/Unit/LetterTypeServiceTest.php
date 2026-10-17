@@ -25,14 +25,25 @@ class LetterTypeServiceTest extends TestCase
         );
     }
 
-    public function test_get_active_with_template_returns_only_valid_letter_types(): void
+    public function test_list_returns_only_valid_letter_types_by_default(): void
     {
         LetterType::factory()->create(['is_active' => true, 'template' => 'tpl']);
         LetterType::factory()->create(['is_active' => false, 'template' => 'tpl']);
 
-        $result = $this->service->getActiveWithTemplate($this->makeStafSidActor());
+        $result = $this->service->list($this->makeStafSidActor());
 
         $this->assertCount(1, $result);
+    }
+
+    public function test_list_with_include_inactive_returns_draft_and_inactive_types(): void
+    {
+        LetterType::factory()->create(['is_active' => true, 'template' => 'tpl']);
+        LetterType::factory()->create(['is_active' => false, 'template' => 'tpl']);
+        LetterType::factory()->create(['is_active' => false, 'template' => null]);
+
+        $result = $this->service->list($this->makeStafSidActor(), includeInactive: true);
+
+        $this->assertCount(3, $result);
     }
 
     public function test_update_changes_editable_fields(): void

@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\IndexLetterTypeRequest;
 use App\Http\Requests\UpdateLetterTypeRequest;
 use App\Http\Resources\LetterTypeCollection;
 use App\Http\Resources\LetterTypeResource;
 use App\Models\LetterType;
 use App\Services\LetterTypeService;
-use Illuminate\Http\Request;
 
 class LetterTypeController extends Controller
 {
@@ -16,9 +16,12 @@ class LetterTypeController extends Controller
         protected LetterTypeService $letterTypeService
     ) {}
 
-    public function index(Request $request)
+    public function index(IndexLetterTypeRequest $request)
     {
-        $letterTypes = $this->letterTypeService->getActiveWithTemplate($request->user());
+        $letterTypes = $this->letterTypeService->list(
+            $request->user(),
+            $request->boolean('include_inactive'),
+        );
 
         return response()->json([
             'message' => 'Daftar jenis surat berhasil diambil.',
