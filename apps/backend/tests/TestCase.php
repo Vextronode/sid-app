@@ -10,10 +10,10 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
-    protected function makePetugasDesaActor(?string $villageId = null): User
+    protected function makeStafSidActor(?string $villageId = null): User
     {
         return User::factory()->create([
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
             'village_id' => $villageId ?? Village::query()->value('id') ?? Village::factory()->create()->id,
         ]);
     }

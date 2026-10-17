@@ -2,15 +2,16 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\UserRole;
 use App\Services\OfficialAssignmentService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
-class PetugasFirstCommand extends Command
+class StafSidFirstCommand extends Command
 {
-    protected $signature = 'petugas:first
-        {--nik= : NIK calon Petugas Desa (16 digit)}
+    protected $signature = 'staf-sid:first
+        {--nik= : NIK calon staf aplikasi desa (16 digit)}
         {--name= : Nama lengkap}
         {--dob= : Tanggal lahir (YYYY-MM-DD)}
         {--gender= : Jenis kelamin (L atau P)}
@@ -19,7 +20,7 @@ class PetugasFirstCommand extends Command
         {--rt= : ID RT, wajib jika citizen belum terdaftar}
         {--hamlet= : ID dusun (opsional)}';
 
-    protected $description = 'Membuat akun dan mempromosikan Petugas Desa pertama.';
+    protected $description = 'Membuat akun dan mempromosikan staf aplikasi desa (staf_sid) pertama.';
 
     public function handle(OfficialAssignmentService $assignmentService): int
     {
@@ -56,7 +57,7 @@ class PetugasFirstCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info("Akun {$result['user']->username} berhasil menjadi Petugas Desa pertama.");
+        $this->info("Akun {$result['user']->username} berhasil menjadi ".UserRole::stafSidLabel().' pertama.');
         $this->line('Password sementara (simpan sekarang, hanya ditampilkan sekali): '.$result['temporary_password']);
 
         return self::SUCCESS;
