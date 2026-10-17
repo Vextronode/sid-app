@@ -63,5 +63,13 @@ as_www php artisan config:cache || fail "config:cache gagal (periksa nilai env).
 as_www php artisan view:cache || fail "view:cache gagal."
 as_www php artisan storage:link >/dev/null 2>&1 || echo "[entrypoint] PERINGATAN: storage:link gagal (tidak fatal)." >&2
 
-# 5. Jalankan perintah (CMD default: php-fpm).
+# 5. Jalankan perintah (CMD default: php-fpm). Proses artisan yang
+#    berjalan terus (service sid_scheduler) dijalankan sebagai www-data
+#    agar log/cache yang ditulisnya tetap bisa ditulis ulang oleh FPM.
+if [ "${1:-}" = "php" ] && [ "${2:-}" = "artisan" ]; then
+  case "${3:-}" in
+    schedule:work|queue:work) exec runuser -u www-data -- "$@" ;;
+  esac
+fi
+
 exec "$@"
