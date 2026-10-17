@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeftRight,
   Camera,
+  ImageOff,
   ListChecks,
   Trash2,
   UserRoundMinus,
@@ -10,10 +11,12 @@ import {
   Users,
 } from 'lucide-react'
 
+import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getHamlets, getRts, getRws } from '@/features/kelola-wilayah/api'
 import OfficialPositionTypeManager from '@/features/profil-desa-admin/components/OfficialPositionTypeManager'
 import {
   demotePerangkatDesa,
+  deleteOfficialPhoto,
   deletePerangkatDesa,
   findOfficialCandidate,
   getOfficialPositionTypes,
@@ -23,6 +26,7 @@ import {
   uploadOfficialPhoto,
 } from '@/features/profil-desa-admin/api'
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { STAF_APP_LABEL } from '@/lib/constants/app'
 
 // Jabatan yang punya akun login dan peran di aplikasi (OfficialPosition di
 // backend). Jabatan tanpa akun tidak ada di sini: jenisnya dikelola Petugas
@@ -35,7 +39,63 @@ const ACCOUNT_POSITIONS = [
   { value: 'kadus', label: 'Kepala Dusun', scope: 'hamlet_id' },
   { value: 'rw', label: 'Ketua RW', scope: 'rw_id' },
   { value: 'rt', label: 'Ketua RT', scope: 'rt_id' },
-  { value: 'petugas_desa', label: 'Petugas Desa' },
+  { value: 'staf_sid', label: STAF_APP_LABEL },
+]
+
+// Tabel pejabat dipisah per tingkat. Jabatan yang bukan Kadus/RW/RT
+// (Kades, Sekdes, Kasi, Kaur, staf, Petugas Desa) masuk tabel pertama,
+// diurutkan sesuai DESA_ORDER lalu abjad.
+const DESA_ORDER = ['kepala_desa', 'sekdes', 'kasi_pelayanan', 'kaur_tu_umum']
+
+const areaNumber = (value) => Number(value) || 0
+
+const OFFICIAL_GROUPS = [
+  {
+    key: 'desa',
+    title: 'Perangkat Desa',
+    hint: 'Kepala Desa, Sekretaris Desa, Kasi, Kaur, dan staf',
+    match: (official) => !['kadus', 'rw', 'rt'].includes(official.position),
+    compare: (first, second) => {
+      const rank = (official) => {
+        const index = DESA_ORDER.indexOf(official.position)
+        return index === -1 ? DESA_ORDER.length : index
+      }
+
+      return (
+        rank(first) - rank(second) ||
+        String(positionLabel(first)).localeCompare(String(positionLabel(second)))
+      )
+    },
+  },
+  {
+    key: 'kadus',
+    title: 'Kepala Dusun',
+    areaLabel: 'Dusun',
+    match: (official) => official.position === 'kadus',
+    compare: (first, second) =>
+      String(first.hamlet?.name ?? '').localeCompare(String(second.hamlet?.name ?? '')),
+  },
+  {
+    key: 'rw',
+    title: 'Ketua RW',
+    areaLabel: 'RW',
+    match: (official) => official.position === 'rw',
+    compare: (first, second) => areaNumber(first.rw?.number) - areaNumber(second.rw?.number),
+  },
+  {
+    key: 'rt',
+    title: 'Ketua RT',
+    areaLabel: 'RT / RW',
+    match: (official) => official.position === 'rt',
+    compare: (first, second, rwNumbers) => {
+      const rwOf = (official) =>
+        areaNumber(official.rw?.number ?? rwNumbers.get(String(official.rt?.rw_id)))
+
+      return (
+        rwOf(first) - rwOf(second) || areaNumber(first.rt?.number) - areaNumber(second.rt?.number)
+      )
+    },
+  },
 ]
 
 const findAccountPosition = (value) =>
@@ -51,6 +111,9 @@ const candidateTarget = (position, candidate) =>
     : { citizen_id: candidate.citizen_id }
 
 const PHOTO_TYPES = 'image/png,image/jpeg,image/webp'
+
+// Dashboard warga, tujuan staf aplikasi setelah menyerahkan jabatannya.
+const WARGA_HOME = '/daftar-surat'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -221,6 +284,7 @@ function CandidatePicker({ candidate, position, onChange, disabled }) {
  * sekaligus untuk jabatan dan wilayah yang sama.
  */
 export default function PejabatDesaPage() {
+  const { user } = useAuth()
   const [officials, setOfficials] = useState([])
   const [positionTypes, setPositionTypes] = useState([])
   const [managingTypes, setManagingTypes] = useState(false)
@@ -276,29 +340,39 @@ export default function PejabatDesaPage() {
   )
 
   // Pilihan jabatan: jabatan berakun, lalu jenis jabatan aktif tanpa akun.
+  // Staf aplikasi hanya satu; selama sudah terisi, gantinya lewat rotasi.
+  const hasActiveStafSid = officials.some(
+    (official) => official.is_active && official.position === 'staf_sid',
+  )
   const positionOptions = useMemo(
     () => [
-      ...ACCOUNT_POSITIONS,
+      ...ACCOUNT_POSITIONS.filter((position) => position.value !== 'staf_sid' || !hasActiveStafSid),
       ...positionTypes
         .filter((type) => type.is_active)
         .map((type) => ({ value: type.code, label: `${type.label} (tanpa akun)` })),
     ],
-    [positionTypes],
+    [positionTypes, hasActiveStafSid],
   )
 
-  const visibleOfficials = useMemo(() => {
+  const officialGroups = useMemo(() => {
     const filtered = officials.filter((official) =>
       statusFilter === 'semua' ? true : official.is_active === (statusFilter === 'aktif'),
     )
 
-    return [...filtered].sort(
-      (first, second) =>
-        Number(second.is_active) - Number(first.is_active) ||
-        String(positionLabel(first)).localeCompare(String(positionLabel(second))),
-    )
-  }, [officials, statusFilter])
+    return OFFICIAL_GROUPS.map((group) => ({
+      ...group,
+      officials: filtered
+        .filter(group.match)
+        .sort(
+          (first, second) =>
+            Number(second.is_active) - Number(first.is_active) ||
+            group.compare(first, second, rwNumbers),
+        ),
+    }))
+  }, [officials, statusFilter, rwNumbers])
 
-  const run = async (request, successMessage) => {
+  // afterSuccess: langkah setelah berhasil; bawaannya memuat ulang daftar.
+  const run = async (request, successMessage, afterSuccess = loadData) => {
     setProcessing(true)
     setError('')
     setSuccess('')
@@ -312,7 +386,7 @@ export default function PejabatDesaPage() {
       setPromotion(null)
       setRotation(null)
       setDemotion(null)
-      await loadData()
+      await afterSuccess()
     } catch (requestError) {
       setError(serverMessage(requestError, 'Aksi pejabat gagal diproses.'))
     } finally {
@@ -344,6 +418,14 @@ export default function PejabatDesaPage() {
   const handleRotate = (event) => {
     event.preventDefault()
 
+    // Staf aplikasi yang menyerahkan jabatannya sendiri langsung menjadi
+    // warga: buka dashboard warga dengan memuat ulang halaman, supaya data
+    // akun (peran warga) dibaca ulang dari server tanpa menunggu logout.
+    // Memuat ulang lewat AuthContext di sini akan memicu ProtectedRoute
+    // halaman staf lebih dulu, jadi tidak dipakai.
+    const handsOverOwnPosition = rotation.official.user_id === user?.id
+    const afterSuccess = handsOverOwnPosition ? () => window.location.assign(WARGA_HOME) : loadData
+
     return run(
       () =>
         rotatePerangkatDesa(rotation.official.id, {
@@ -354,6 +436,7 @@ export default function PejabatDesaPage() {
           photo: rotation.photo,
         }),
       'Rotasi pejabat berhasil diproses.',
+      afterSuccess,
     )
   }
 
@@ -365,6 +448,12 @@ export default function PejabatDesaPage() {
     if (!file || !official) return undefined
 
     return run(() => uploadOfficialPhoto(official.id, file), 'Foto pejabat berhasil diperbarui.')
+  }
+
+  const handleDeletePhoto = (official) => {
+    if (!window.confirm(`Hapus foto ${official.citizen?.name ?? 'pejabat'}?`)) return undefined
+
+    return run(() => deleteOfficialPhoto(official.id), 'Foto pejabat berhasil dihapus.')
   }
 
   const pickPhotoFor = (official) => {
@@ -468,127 +557,159 @@ export default function PejabatDesaPage() {
           </div>
         </div>
 
-        <div className="sid-operator-table-card">
-          <div className="sid-operator-table-wrapper">
-            <table className="sid-operator-table">
-              <thead>
-                <tr>
-                  <th>Nama</th>
-                  <th>Jabatan</th>
-                  <th>Wilayah</th>
-                  <th className="center">Mulai</th>
-                  <th className="center">Akhir Masa Jabatan</th>
-                  <th className="center">Status</th>
-                  <th className="center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="empty">
-                      Memuat data pejabat...
-                    </td>
-                  </tr>
-                ) : visibleOfficials.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="empty">
-                      Tidak ada data pejabat.
-                    </td>
-                  </tr>
-                ) : (
-                  visibleOfficials.map((official) => (
-                    <tr key={official.id}>
-                      <td className="primary-text">
-                        <div className="flex items-center gap-3">
-                          <OfficialPhoto src={official.photo_img} name={official.citizen?.name} />
-                          <div>
-                            {official.citizen?.name ?? '-'}
-                            {!official.user_id && (
-                              <small className="sid-admin-cell-meta">Tanpa akun login</small>
-                            )}
-                            {official.is_active && !official.photo_img && (
-                              <small className="sid-admin-cell-meta">Belum ada foto</small>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td>{positionLabel(official)}</td>
-                      <td>{describeArea(official, rwNumbers)}</td>
-                      <td className="center">{formatDate(official.started_at)}</td>
-                      <td className="center">
-                        {official.is_active
-                          ? formatDate(official.term_ends_at)
-                          : `Berakhir ${formatDate(official.ended_at)}`}
-                      </td>
-                      <td className="center">{official.is_active ? 'Menjabat' : 'Berakhir'}</td>
-                      <td className="center">
-                        <div className="sid-operator-actions">
-                          {official.is_active && (
-                            <>
-                              <button
-                                type="button"
-                                className="sid-operator-action detail"
-                                title={official.photo_img ? 'Ganti foto' : 'Unggah foto'}
-                                aria-label={`Ganti foto ${official.citizen?.name ?? 'pejabat'}`}
-                                disabled={processing}
-                                onClick={() => pickPhotoFor(official)}
-                              >
-                                <Camera size={16} />
-                              </button>
-                              {official.position !== 'petugas_desa' && (
+        {officialGroups.map((group) => (
+          <section
+            key={group.key}
+            className="sid-pejabat-group"
+            aria-labelledby={`pejabat-${group.key}`}
+          >
+            <h2 id={`pejabat-${group.key}`} className="sid-org-section-title">
+              {group.title} <span>({loading ? '…' : group.officials.length})</span>
+            </h2>
+            {group.hint && <p className="sid-org-subtitle sid-pejabat-group-hint">{group.hint}</p>}
+
+            <div className="sid-operator-table-card">
+              <div className="sid-operator-table-wrapper">
+                <table className="sid-operator-table">
+                  <thead>
+                    <tr>
+                      <th>Nama</th>
+                      <th>{group.areaLabel ?? 'Jabatan'}</th>
+                      <th className="center">Mulai</th>
+                      <th className="center">Akhir Masa Jabatan</th>
+                      <th className="center">Status</th>
+                      <th className="center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={6} className="empty">
+                          Memuat data pejabat...
+                        </td>
+                      </tr>
+                    ) : group.officials.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="empty">
+                          Tidak ada data {group.title}.
+                        </td>
+                      </tr>
+                    ) : (
+                      group.officials.map((official) => (
+                        <tr key={official.id}>
+                          <td className="primary-text">
+                            <div className="flex items-center gap-3">
+                              <OfficialPhoto
+                                src={official.photo_img}
+                                name={official.citizen?.name}
+                              />
+                              <div>
+                                {official.citizen?.name ?? '-'}
+                                {!official.user_id && (
+                                  <small className="sid-admin-cell-meta">Tanpa akun login</small>
+                                )}
+                                {official.is_active && !official.photo_img && (
+                                  <small className="sid-admin-cell-meta">Belum ada foto</small>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            {group.areaLabel
+                              ? describeArea(official, rwNumbers)
+                              : positionLabel(official)}
+                          </td>
+                          <td className="center">{formatDate(official.started_at)}</td>
+                          <td className="center">
+                            {official.is_active
+                              ? formatDate(official.term_ends_at)
+                              : `Berakhir ${formatDate(official.ended_at)}`}
+                          </td>
+                          <td className="center">{official.is_active ? 'Menjabat' : 'Berakhir'}</td>
+                          <td className="center">
+                            <div className="sid-operator-actions">
+                              {official.is_active && (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="sid-operator-action detail"
+                                    title={official.photo_img ? 'Ganti foto' : 'Unggah foto'}
+                                    aria-label={`Ganti foto ${official.citizen?.name ?? 'pejabat'}`}
+                                    disabled={processing}
+                                    onClick={() => pickPhotoFor(official)}
+                                  >
+                                    <Camera size={16} />
+                                  </button>
+                                  {official.photo_img && (
+                                    <button
+                                      type="button"
+                                      className="sid-operator-action delete"
+                                      title="Hapus foto"
+                                      aria-label={`Hapus foto ${official.citizen?.name ?? 'pejabat'}`}
+                                      disabled={processing}
+                                      onClick={() => handleDeletePhoto(official)}
+                                    >
+                                      <ImageOff size={16} />
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className="sid-operator-action edit"
+                                    title="Rotasi: ganti dengan pejabat baru"
+                                    aria-label={`Rotasi ${official.citizen?.name ?? 'pejabat'}`}
+                                    disabled={processing}
+                                    onClick={() =>
+                                      setRotation({
+                                        official,
+                                        candidate: null,
+                                        photo: null,
+                                        started_at: today(),
+                                        term_ends_at: '',
+                                        notes: '',
+                                      })
+                                    }
+                                  >
+                                    <ArrowLeftRight size={16} />
+                                  </button>
+                                  {/* Staf aplikasi hanya satu dan tidak boleh kosong:
+                                      penggantinya lewat rotasi. */}
+                                  {official.position !== 'staf_sid' && (
+                                    <button
+                                      type="button"
+                                      className="sid-operator-action toggle"
+                                      title="Akhiri jabatan"
+                                      aria-label={`Akhiri jabatan ${official.citizen?.name ?? 'pejabat'}`}
+                                      disabled={processing}
+                                      onClick={() => setDemotion({ official, notes: '' })}
+                                    >
+                                      <UserRoundMinus size={16} />
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                              {!official.is_active && (
                                 <button
                                   type="button"
-                                  className="sid-operator-action edit"
-                                  title="Rotasi: ganti dengan pejabat baru"
-                                  aria-label={`Rotasi ${official.citizen?.name ?? 'pejabat'}`}
+                                  className="sid-operator-action delete"
+                                  title="Hapus riwayat jabatan"
+                                  aria-label={`Hapus riwayat ${official.citizen?.name ?? 'pejabat'}`}
                                   disabled={processing}
-                                  onClick={() =>
-                                    setRotation({
-                                      official,
-                                      candidate: null,
-                                      photo: null,
-                                      started_at: today(),
-                                      term_ends_at: '',
-                                      notes: '',
-                                    })
-                                  }
+                                  onClick={() => handleDelete(official)}
                                 >
-                                  <ArrowLeftRight size={16} />
+                                  <Trash2 size={16} />
                                 </button>
                               )}
-                              <button
-                                type="button"
-                                className="sid-operator-action toggle"
-                                title="Akhiri jabatan"
-                                aria-label={`Akhiri jabatan ${official.citizen?.name ?? 'pejabat'}`}
-                                disabled={processing}
-                                onClick={() => setDemotion({ official, notes: '' })}
-                              >
-                                <UserRoundMinus size={16} />
-                              </button>
-                            </>
-                          )}
-                          {!official.is_active && (
-                            <button
-                              type="button"
-                              className="sid-operator-action delete"
-                              title="Hapus riwayat jabatan"
-                              aria-label={`Hapus riwayat ${official.citizen?.name ?? 'pejabat'}`}
-                              disabled={processing}
-                              onClick={() => handleDelete(official)}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        ))}
       </div>
 
       {promotion && (
@@ -762,6 +883,12 @@ export default function PejabatDesaPage() {
               {describeArea(rotation.official, rwNumbers)}) diakhiri jabatannya dan digantikan warga
               ber-NIK berikut, pada jabatan dan wilayah yang sama.
             </p>
+            {rotation.official.user_id === user?.id && (
+              <p className="sid-warning-box" role="note">
+                Anda menyerahkan jabatan Anda sendiri. Setelah rotasi, akun Anda kembali menjadi
+                warga dan Anda langsung dialihkan ke dashboard warga.
+              </p>
+            )}
 
             <CandidatePicker
               candidate={rotation.candidate}
