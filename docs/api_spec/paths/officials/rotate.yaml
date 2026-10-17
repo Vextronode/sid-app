@@ -6,7 +6,10 @@ post:
     satu transaksi dengan posisi dan wilayah yang sama. Jabatan berakun
     memakai `user_id`; jabatan tanpa akun memakai `citizen_id`. Foto
     pengganti wajib (multipart) dan disimpan sebelum transaksi, dihapus lagi
-    bila rotasi gagal. Tidak berlaku untuk petugas_desa (422). Respons memuat
+    bila rotasi gagal. Berlaku juga untuk staf aplikasi `staf_sid` (hanya
+    satu per desa), termasuk staf yang menyerahkan jabatannya sendiri: ia
+    langsung kembali menjadi warga, dan request berikutnya ke endpoint staf
+    ditolak 403 `code: role_forbidden`. Respons memuat
     old_official, new_official, warnings (kosong). Setelah rotasi Kepala Desa,
     TTD jabatan diunggah ulang ke record baru.
   operationId: rotateOfficial

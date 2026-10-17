@@ -12,7 +12,7 @@ skinparam note {
   BorderColor #C0A000
 }
 
-|#Wheat|Admin Desa (petugas_desa)|
+|#Wheat|Admin Desa (staf_sid)|
 start
 :Login;
 if (Aktivitas?) then (Kependudukan)

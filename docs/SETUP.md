@@ -122,12 +122,12 @@ Akun dan identitas tersebut hanya untuk development/testing. Seeder demo menolak
 Petugas pertama yang sebenarnya dapat diinisialisasi langsung pada database yang belum memiliki Petugas Desa aktif. Untuk citizen baru, berikan data wajib citizen sesuai form dashboard, UUID desa, dan ID RT:
 
 ```powershell
-php artisan petugas:first --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas" --village="<UUID_DESA>" --rt=1
+php artisan staf-sid:first --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas" --village="<UUID_DESA>" --rt=1
 ```
 
-Ganti `--rt=1` dengan ID RT yang benar-benar ada di desa tersebut. Jika citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Username dibuat otomatis dan password sementara acak hanya ditampilkan sekali. Akun wajib menggantinya saat login pertama. Command menolak jika Petugas Desa aktif sudah ada. Pada database demo hasil `migrate:fresh --seed`, gunakan `demo_admin` untuk login atau reset database tanpa seeder demo sebelum menggunakan `petugas:first`. Petugas selanjutnya dipromosikan dari dashboard.
+Ganti `--rt=1` dengan ID RT yang benar-benar ada di desa tersebut. Jika citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Username dibuat otomatis dan password sementara acak hanya ditampilkan sekali. Akun wajib menggantinya saat login pertama. Command menolak jika staf aplikasi (`staf_sid`) aktif sudah ada. Pada database demo hasil `migrate:fresh --seed`, gunakan `demo_admin` untuk login atau reset database tanpa seeder demo sebelum menggunakan `staf-sid:first`. Staf aplikasi hanya satu per desa; penggantinya diproses lewat Rotasi di halaman Pejabat Desa (boleh oleh staf itu sendiri). Label perannya di aplikasi mengikuti `SID_APP_NAME` (backend) dan `VITE_APP_NAME` (frontend), default "Staf SIDUTama".
 
-`petugas:first` hanya untuk bootstrap pertama, bukan command pemulihan akun Petugas yang sudah ada. Belum ada command pemulihan darurat bawaan jika tidak ada Petugas Desa yang dapat login; siapkan prosedur operasional terkontrol sebelum production dan jangan mengatasi kondisi tersebut dengan menjalankan ulang command pada akun Petugas.
+`staf-sid:first` hanya untuk bootstrap pertama, bukan command pemulihan akun Petugas yang sudah ada. Belum ada command pemulihan darurat bawaan jika tidak ada Petugas Desa yang dapat login; siapkan prosedur operasional terkontrol sebelum production dan jangan mengatasi kondisi tersebut dengan menjalankan ulang command pada akun Petugas.
 
 Jalankan backend:
 
@@ -136,6 +136,8 @@ php artisan serve
 ```
 
 Backend jalan di `http://localhost:8000`.
+
+**Opsional - nama aplikasi.** Nama yang tampil ke pengguna (judul login, `<title>`, manifest PWA, label peran "Staf {nama aplikasi}") diatur lewat `SID_APP_NAME` di `apps/backend/.env` dan `VITE_APP_NAME` di `apps/frontend/.env`; samakan keduanya. Bila kosong, dipakai `SIDUTama`.
 
 **Opsional - notifikasi Web Push.** Notifikasi in-app berjalan tanpa konfigurasi tambahan. Untuk push browser: isi `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` di `apps/backend/.env` (buat dengan `php artisan webpush:vapid`), isi `VITE_VAPID_PUBLIC_KEY` yang sama di `apps/frontend/.env`, lalu jalankan worker antrean karena kanal push diantrekan (`QUEUE_CONNECTION=database`):
 

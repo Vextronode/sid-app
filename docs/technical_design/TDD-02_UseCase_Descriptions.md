@@ -377,7 +377,7 @@ Alternative Flow:
 | Post-condition | Akun/jabatan diperbarui atau password sementara diterbitkan sesuai operasi |
 
 Main Flow:
-1. CLI `petugas:first --nik=...` mencari citizen; jika belum ada, Petugas awal memasukkan data wajib citizen beserta desa dan RT. Command membuat atau menggunakan citizen, membuat atau mempromosikan akun, lalu membuat jabatan Petugas Desa dalam satu transaksi. Username otomatis dan password sementara acak ditampilkan sekali; akun wajib menggantinya saat login pertama. Demote dan reset password selanjutnya dilakukan Petugas melalui dashboard.
+1. CLI `staf-sid:first --nik=...` mencari citizen; jika belum ada, Petugas awal memasukkan data wajib citizen beserta desa dan RT. Command membuat atau menggunakan citizen, membuat atau mempromosikan akun, lalu membuat jabatan Petugas Desa dalam satu transaksi. Username otomatis dan password sementara acak ditampilkan sekali; akun wajib menggantinya saat login pertama. Demote dan reset password selanjutnya dilakukan Petugas melalui dashboard.
 2. Petugas Desa menjalankan promote, demote, rotate, update non-sensitif, toggle status, atau reset password melalui endpoint yang sesuai.
 3. Promote menghubungkan akun warga aktif dengan citizen ke jabatan/wilayah valid; demote dan rotate mengubah akun serta official secara transaksional.
 4. Reset password hanya untuk akun non-Petugas Desa selain diri sendiri; password acak 12 karakter ditandai `must_change_password=true` dan hanya ditampilkan sekali.
@@ -391,9 +391,20 @@ Main Flow:
 **Sub-flow - Penetapan pejabat (promote) & rotasi:**
 - Petugas mencari calon lewat NIK (`POST /officials/candidates/lookup`); sistem menilai kelayakan (warga aktif, belum menjabat; jabatan berakun mensyaratkan akun warga aktif).
 - Jabatan **berakun** (Kepala Desa, Sekdes, RT, RW, Kadus, Kasi Pelayanan, Kaur TU & Umum, Petugas Desa) ditetapkan ke akun warga dan mengubah `users.role`. Jabatan **tanpa akun** (jenis dari `official_position_types`) ditetapkan ke data warga tanpa mengubah role.
-- Foto pejabat **wajib** (PNG/JPG/WebP maks 5 MB, disk publik, tampil di Profil Desa); dapat diganti tanpa rotasi lewat `POST /officials/{official}/photo`.
-- Jabatan satu-pemegang per wilayah ditolak 409 bila sudah terisi.
-- Rotasi: pengganti mengikuti jenis jabatan lama (akun atau data warga), posisi & wilayah disalin.
+- Foto pejabat **wajib** (PNG/JPG/WebP maks 5 MB, disk publik, tampil di Profil Desa); dapat diganti tanpa rotasi lewat `POST /officials/{official}/photo` dan dihapus lewat `DELETE /officials/{official}/photo` (Profil Desa lalu menampilkan placeholder).
+- Jabatan satu-pemegang per wilayah ditolak 409 bila sudah terisi. Semua jabatan berakun satu-pemegang, termasuk staf aplikasi (`staf_sid`) yang hanya satu per desa.
+- Rotasi: pengganti mengikuti jenis jabatan lama (akun atau data warga), posisi & wilayah disalin. Berlaku juga untuk `staf_sid`, termasuk staf yang merotasi dirinya sendiri: ia langsung menjadi warga dan FE memindahkannya ke dashboard warga tanpa menunggu logout.
+- Halaman Pejabat Desa memisahkan pejabat ke empat tabel: Perangkat Desa (Kades, Sekdes, Kasi, Kaur, staf), Kepala Dusun, Ketua RW, dan Ketua RT.
+
+**Sub-flow - Foto Profil Akun Warga:**
+- Akun berperan `warga` mengunggah, mengganti, atau menghapus foto profilnya sendiri di halaman Profil (`POST`/`DELETE /profile/photo`).
+- Petugas Desa dapat mengganti atau menghapus foto akun warga di desanya dari Manajemen User (`POST`/`DELETE /users/{user}/photo`).
+- Selama akun menjabat, foto yang dipakai adalah foto pejabat (`officials.photo_img`) yang hanya diatur Petugas Desa: jalur mandiri ditolak 403, jalur Petugas untuk akun itu ditolak 422. Setelah kembali menjadi warga, foto akun (`users.photo_img`) dipakai dan dapat diubah lagi.
+- Foto tampil di samping nama akun pada header semua dashboard; bila kosong, tampil avatar default.
+
+**Sub-flow - Peran berubah saat sesi masih terbuka:**
+- Sesi tidak diputus saat peran berubah, tetapi role dibaca dari DB setiap request: endpoint peran lama ditolak 403 `code: role_forbidden`.
+- FE memeriksa ulang akun saat menerima kode itu; bila perannya memang berubah, pengguna dialihkan ke dashboard peran baru.
 
 **Sub-flow - Kelola Jenis Jabatan Tanpa Akun:**
 - Petugas menambah jenis jabatan (kode dibuat otomatis dari label dan tidak dapat diubah), mengubah label/urutan/satu-pemegang/aktif, atau menghapus.
@@ -404,7 +415,7 @@ Main Flow:
 
 Alternative Flow:
 - NIK calon tidak ditemukan di desa → 404; calon tidak memenuhi syarat → `eligible: false` beserta alasan
-- Guard: Petugas Desa tidak bisa nonaktifkan diri sendiri, dan tidak bisa menurunkan/menonaktifkan satu-satunya `petugas_desa` aktif yang tersisa
+- Guard: staf aplikasi (`staf_sid`, hanya satu per desa) tidak bisa menonaktifkan atau menurunkan dirinya sendiri, dan `staf_sid` aktif tidak boleh kosong. Penggantinya lewat rotasi (boleh dilakukan staf itu sendiri); setelah rotasi ia langsung menjadi warga
 
 > Meski Kadus tetap dicantumkan dalam daftar jabatan yang dikelola di UC-14, Kadus tidak lagi punya relevansi terhadap `flow_steps.approver_position`.
 
@@ -459,7 +470,8 @@ Main Flow:
 2. Sistem menampilkan halaman beranda sebagai landing page (tanpa memerlukan login)
 3. Pengunjung dapat mengakses:
    - Beranda — identitas desa (logo, foto beranda, kontak, jam layanan, peta), 5 berita terbaru, statistik publik (jenis surat aktif, jumlah warga aktif, jumlah dusun aktif)
-   - Profil Desa — sejarah, visi misi, luas wilayah, statistik, perangkat desa (Kepala Desa, Sekdes, grup Kasi/Kaur/Staf termasuk slot kosong, Kepala Dusun per dusun) dengan foto
+   - Profil Desa — sejarah (foto di samping teks), visi misi, luas wilayah, statistik, perangkat desa (Kepala Desa, Sekdes, grup Kasi/Kaur/Staf termasuk slot kosong dan staf aplikasi di urutan terakhir, Kepala Dusun per dusun) dengan foto
+   - BPD (`/bpd`) dan Lembaga Desa (`/lembaga-desa`, tab LPM/Karang Taruna/PKK tersimpan di `?lembaga=`) — bagan Ketua, Wakil Ketua, dan Anggota dengan foto; diakses dari dropdown "Tentang Desa"
    - Pengumuman & Berita — berita yang sudah dipublikasikan beserta kategorinya (10 per halaman)
    - Info Jenis Surat — daftar jenis surat yang tersedia beserta persyaratannya
    - Peraturan Desa — daftar peraturan desa yang sudah dibuat
@@ -467,7 +479,8 @@ Main Flow:
 4. Semua konten halaman publik hanya dapat dibaca (read-only)
 
 Notes:
-- Konten diambil dari `villages`, `news` (`is_published = true`), `letter_types` (aktif ber-template), `village_regulations`, `officials` aktif
+- Konten diambil dari `villages`, `news` (`is_published = true`), `letter_types` (aktif ber-template), `village_regulations`, `officials` aktif, dan anggota aktif `village_org_members`
+- Tombol akun di header bertuliskan "Masuk", atau "Dashboard Saya" bila pengunjung sudah login
 - Respons di-cache per desa 10 menit dan digugurkan otomatis saat data sumber berubah
 - Instalasi multi-desa wajib `village_code`; instalasi satu desa tidak
 - Tidak ada data sensitif warga (NIK, kontak pejabat selain WA Kasi/Kaur) yang ditampilkan
@@ -530,7 +543,7 @@ Alternatif Flow:
 - File bukan PNG/JPEG/WebP atau melebihi 5 MB → 422.
 
 Notes:
-- Domain CMS (Profil Desa, Berita, Peraturan Desa) dimiliki **eksklusif** oleh `petugas_desa`. Kepala Desa dan Sekretaris Desa **tidak** memiliki akses ke domain ini meski keduanya adalah approver aktif di domain surat — dua domain ini terpisah tegas.
+- Domain CMS (Profil Desa, Berita, Peraturan Desa) dimiliki **eksklusif** oleh `staf_sid`. Kepala Desa dan Sekretaris Desa **tidak** memiliki akses ke domain ini meski keduanya adalah approver aktif di domain surat — dua domain ini terpisah tegas.
 - Tidak ada approval bertingkat; perubahan langsung tersimpan
 - Upload stempel terpisah dari rotasi jabatan; alur upload TTD Kepala Desa dijelaskan pada UC-14.
 
@@ -629,7 +642,7 @@ Catatan: Jika deadline terlewat, surat **tidak** auto-reject — hanya `is_overd
 
 ---
 
-## UC-23: Kelola Data Organisasi Desa (BPD, BUMDES, LPM, Karang Taruna, PKK)
+## UC-23: Kelola Data Organisasi Desa (BPD, LPM, Karang Taruna, PKK)
 
 | Field | Keterangan |
 |---|---|
@@ -637,13 +650,24 @@ Catatan: Jika deadline terlewat, surat **tidak** auto-reject — hanya `is_overd
 | Nama | Kelola Data Organisasi Desa |
 | Aktor | Petugas Desa |
 | Pre-condition | Petugas Desa sudah login |
-| Catatan | Rotasi sudah diimplementasi; dapat dimatikan per jabatan dengan menonaktifkan jabatan (`is_active=false` → 403 "menunggu konfirmasi desa"). Keputusan desa soal struktur statis/dinamis tetap terbuka (TDD-05). |
+| Post-condition | Susunan Ketua, Wakil Ketua, dan Anggota organisasi tersimpan beserta riwayatnya; halaman publik ikut diperbarui |
+| Catatan | Struktur tetap: setiap organisasi punya tiga slot (`slot`): `ketua` dan `wakil_ketua` (satu pemegang, dirotasi) serta `anggota` (jumlah bebas). Slot dibuat otomatis saat daftar dibuka dan tidak dapat dibuat, diubah, atau dihapus lewat API. `bumdes` masih ada di enum `org_type` tetapi tidak dikelola di UI. Rotasi dapat dimatikan per slot dengan `is_active=false` (403 "menunggu konfirmasi desa"). |
 
 Main Flow:
-- Petugas membuka menu "Organisasi" — halaman BPD dan halaman Lembaga (BUMDES/LPM/Karang Taruna/PKK)
-- Petugas mengelola jabatan per organisasi (label, satu/banyak pemegang, urutan, aktif)
-- Petugas menambah anggota (`POST /village-org-positions/{position}/members`): pada jabatan satu-pemegang, anggota aktif lama otomatis diakhiri (`ended_at` = tanggal mulai anggota baru) dalam satu transaksi
-- Petugas dapat mengubah data anggota (nama, foto, WA, status) atau menghapusnya
+1. Petugas membuka menu "Organisasi BPD" (`/admin/organisasi/bpd`) atau "LPM/Karang Taruna/PKK" (`/admin/organisasi/lembaga`, satu tab per lembaga). Sistem menampilkan kartu Ketua dan Wakil Ketua beserta riwayatnya, serta tabel Anggota (`GET /village-org-positions?org_type=`).
+2. **Isi/Ganti Ketua atau Wakil Ketua** (`POST /village-org-positions/{position}/members`): pengisi berupa orang baru (nama, WA, foto opsional) atau anggota/wakil aktif organisasi yang sama (`from_member_id`, promosi: jabatan lamanya diakhiri dan nama/WA/foto disalin). Bila slot sudah terisi, pemegang lama diakhiri (`previous_holder=end`, masuk riwayat) atau dipindah menjadi Anggota (`previous_holder=to_member`). Semua langkah dalam satu transaksi, sehingga Ketua dan Wakil dapat ditukar dalam satu aksi.
+3. **Kosongkan / turunkan** pemegang Ketua/Wakil (`POST /village-org-positions/{position}/members/{id}/end`, opsional `to_member=true` agar dicatat sebagai Anggota).
+4. **Anggota**: tambah, ubah (nama, WA, catatan), dan hapus anggota; anggota dapat dijadikan Ketua/Wakil dari tabel.
+5. **Foto**: unggah/ganti (`POST .../members/{id}/photo`, PNG/JPG/WebP maks 5 MB, disk publik) dan hapus (`DELETE .../members/{id}/photo`). Berkas foto hanya dihapus bila tidak dipakai baris lain (riwayat hasil promosi berbagi berkas yang sama).
+
+Alternative Flow:
+- Pemegang aktif Ketua/Wakil dihapus langsung → 422; harus dikosongkan atau diganti dulu. Baris riwayat boleh dihapus.
+- `from_member_id` dari organisasi/desa lain, dari slot yang sama, atau sudah tidak aktif → 422.
+- `/end` pada slot Anggota atau pemegang yang sudah berakhir → 422.
+- Slot milik desa lain → 404.
+
+Notes:
+- Struktur tampil di halaman publik `/bpd` dan `/lembaga-desa` (UC-16) lewat `GET /public/village-orgs/{orgType}`: hanya nama dan foto; WA dan catatan tidak dipublikasikan.
 
 ---
 

@@ -1,0 +1,89 @@
+post:
+  tags: [Epic 10 - Organisasi Non-Struktural Desa]
+  summary: Unggah atau ganti foto profil anggota organisasi
+  description: |
+    Aktor: Petugas Desa. Foto disimpan di disk public. Berkas lama dihapus
+    bila tidak lagi dipakai baris lain (promosi dan turun jabatan menyalin
+    foto ke baris baru, sehingga riwayat bisa memakai berkas yang sama).
+  operationId: uploadVillageOrgMemberPhoto
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: position
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [photo]
+          properties:
+            photo:
+              type: string
+              format: binary
+              description: PNG, JPG, atau WEBP. Maksimal 5 MB.
+  responses:
+    '200':
+      description: Foto berhasil disimpan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/village-org/village-org.yaml#/VillageOrgMember'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+delete:
+  tags: [Epic 10 - Organisasi Non-Struktural Desa]
+  summary: Hapus foto profil anggota organisasi
+  description: "Aktor: Petugas Desa. photo_img menjadi null."
+  operationId: deleteVillageOrgMemberPhoto
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: position
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+  responses:
+    '200':
+      description: Foto berhasil dihapus
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/village-org/village-org.yaml#/VillageOrgMember'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

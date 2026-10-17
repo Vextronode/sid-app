@@ -23,8 +23,22 @@ User:
       example: "ahmad.1937"
     role:
       type: string
-      enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, kepala_desa, sekretaris_desa]
+      enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, staf_sid, kepala_desa, sekretaris_desa]
       example: "rt"
+    role_label:
+      type: string
+      nullable: true
+      description: |
+        Nama peran untuk ditampilkan. `staf_sid` mengikuti nama aplikasi di
+        config `sid.app_name` (env SID_APP_NAME), mis. "Staf SIDUTama".
+      example: "RT"
+    photo_url:
+      type: string
+      nullable: true
+      description: |
+        URL foto profil akun warga. Selama akun menjabat, foto yang dipakai
+        adalah `official.photo_img` (dikelola Petugas Desa).
+      example: null
     email:
       type: string
       nullable: true
@@ -65,7 +79,7 @@ OfficialPositionCode:
   type: string
   description: |
     Jabatan berakun (enum `OfficialPosition`): kepala_desa, sekdes, rt, rw,
-    kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa. Selain itu harus
+    kadus, kasi_pelayanan, kaur_tu_umum, staf_sid. Selain itu harus
     `code` jenis jabatan tanpa akun yang aktif milik desa
     (`official_position_types`), mis. kasi_kesejahteraan, kaur_keuangan,
     staf_sipades. Kolom `officials.position` kini VARCHAR(50), bukan ENUM.
@@ -226,7 +240,7 @@ RotateOfficialRequest:
   description: |
     multipart/form-data. Pengganti mengikuti jenis jabatan lama: `user_id`
     untuk jabatan berakun, `citizen_id` untuk jabatan tanpa akun. Posisi
-    dan wilayah disalin dari jabatan lama. Tidak berlaku untuk petugas_desa.
+    dan wilayah disalin dari jabatan lama. Tidak berlaku untuk staf_sid.
   required: [started_at, photo]
   properties:
     user_id:

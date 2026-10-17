@@ -136,6 +136,8 @@ paths:
     $ref: 'paths/auth/profile-v51.yaml'
   /profile/password:
     $ref: 'paths/auth/profile-password-v51.yaml'
+  /profile/photo:
+    $ref: 'paths/auth/profile-photo.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 1 - Struktur Wilayah
@@ -184,6 +186,8 @@ paths:
     $ref: 'paths/users/reset-password-v51.yaml'
   /users/{user}/signature/reset:
     $ref: 'paths/users/user-signature-reset.yaml'
+  /users/{user}/photo:
+    $ref: 'paths/users/user-photo.yaml'
   /officials:
     $ref: 'paths/officials/officials.yaml'
   /officials/promote:
@@ -296,6 +300,8 @@ paths:
     $ref: 'paths/public/home.yaml'
   /public/village-profile:
     $ref: 'paths/public/village-profile.yaml'
+  /public/village-orgs/{orgType}:
+    $ref: 'paths/public/village-orgs.yaml'
   /public/news:
     $ref: 'paths/public/news.yaml'
   /public/letter-types:
@@ -336,3 +342,7 @@ paths:
     $ref: 'paths/village-org/members.yaml'
   /village-org-positions/{position}/members/{id}:
     $ref: 'paths/village-org/member-detail.yaml'
+  /village-org-positions/{position}/members/{id}/end:
+    $ref: 'paths/village-org/member-end.yaml'
+  /village-org-positions/{position}/members/{id}/photo:
+    $ref: 'paths/village-org/member-photo.yaml'

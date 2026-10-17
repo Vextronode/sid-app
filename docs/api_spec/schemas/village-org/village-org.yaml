@@ -12,15 +12,20 @@ VillageOrgPosition:
       type: string
       enum: [bpd, bumdes, lpm, karang_taruna, pkk]
       example: "bpd"
+    slot:
+      type: string
+      enum: [ketua, wakil_ketua, anggota]
+      example: "ketua"
     position_label:
       type: string
-      example: "Ketua BPD"
+      example: "Ketua"
     is_single_occupant:
       type: boolean
+      description: true untuk ketua dan wakil_ketua, false untuk anggota
       example: true
     sort_order:
       type: integer
-      example: 1
+      example: 0
     is_active:
       type: boolean
       example: true
@@ -44,7 +49,8 @@ VillageOrgMember:
     photo_img:
       type: string
       nullable: true
-      example: null
+      description: URL publik foto profil; diatur lewat endpoint .../members/{id}/photo.
+      example: "http://localhost:8000/storage/org-member-photos/0b7a9c52/ketua.webp"
     phone_wa:
       type: string
       nullable: true
@@ -66,31 +72,28 @@ VillageOrgMember:
       nullable: true
       example: null
 
-VillageOrgPositionCreateRequest:
-  type: object
-  required: [org_type, position_label]
-  properties:
-    org_type:
-      type: string
-      enum: [bpd, bumdes, lpm, karang_taruna, pkk]
-      example: "bpd"
-    position_label:
-      type: string
-      example: "Ketua BPD"
-    is_single_occupant:
-      type: boolean
-      example: true
-    sort_order:
-      type: integer
-      example: 1
-
 VillageOrgMemberCreateRequest:
   type: object
-  required: [member_name, started_at]
+  required: [started_at]
   properties:
     member_name:
       type: string
+      description: Wajib bila from_member_id tidak diisi.
       example: "Budi Santoso"
+    from_member_id:
+      type: integer
+      nullable: true
+      description: |
+        Promosi anggota/wakil aktif organisasi yang sama ke slot ini.
+        Jabatan lamanya diakhiri dan datanya disalin.
+      example: null
+    previous_holder:
+      type: string
+      enum: [end, to_member]
+      description: |
+        Nasib pemegang lama slot ketua/wakil_ketua: `end` (default, masuk
+        riwayat) atau `to_member` (dicatat sebagai Anggota aktif).
+      example: "end"
     phone_wa:
       type: string
       example: "6281111222333"

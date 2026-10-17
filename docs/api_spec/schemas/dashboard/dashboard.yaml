@@ -117,14 +117,14 @@ DashboardKasi:
       type: integer
       example: 3
 
-DashboardPetugasDesa:
+DashboardStafSid:
   type: object
   required: [role]
   properties:
     role:
       type: string
-      enum: [petugas_desa]
-      example: "petugas_desa"
+      enum: [staf_sid]
+      example: "staf_sid"
     total_warga:
       type: integer
       example: 2450

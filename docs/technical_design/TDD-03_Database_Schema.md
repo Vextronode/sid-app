@@ -107,9 +107,10 @@ Password menggunakan Argon2id. Seluruh role sistem disimpan di tabel ini.
 | name | VARCHAR(255) | NOT NULL | Nama lengkap pengguna |
 | username | VARCHAR(30) | UNIQUE, NOT NULL | Identifier login; dibuat saat registrasi dan dapat diubah di profil |
 | email | VARCHAR(255) | UNIQUE, NULL | Email opsional; bukan identifier login |
+| photo_img | VARCHAR(255) | NULL | Path foto profil akun di disk public (`user-photos/{village_id}/...`). Hanya dipakai dan dapat diubah selama role `warga` (oleh pemilik atau Petugas Desa); akun yang menjabat memakai `officials.photo_img` |
 | password | VARCHAR(255) | NOT NULL | Hash Argon2id |
 | must_change_password | BOOLEAN | DEFAULT false | Memaksa penggantian setelah reset password sementara |
-| role | ENUM | NULL | `warga` \| `rt` \| `rw` \| `kadus` \| `kasi_pelayanan` \| `kaur_tu_umum` \| `petugas_desa` \| `kepala_desa` \| `sekretaris_desa`. Nullable di migration; diisi saat registrasi atau assignment jabatan |
+| role | ENUM | NULL | `warga` \| `rt` \| `rw` \| `kadus` \| `kasi_pelayanan` \| `kaur_tu_umum` \| `staf_sid` \| `kepala_desa` \| `sekretaris_desa`. Nullable di migration; diisi saat registrasi atau assignment jabatan |
 | village_id | UUID | FK → villages.id, NULL | NULL untuk akun lintas desa |
 | citizen_id | UUID | FK → citizens.id, NULL | Link ke data kependudukan; NULL untuk akun teknis tanpa data kependudukan |
 | is_active | BOOLEAN | NOT NULL | Status akun aktif/nonaktif; tidak ada default di migration, wajib diisi saat create |
@@ -119,6 +120,7 @@ Password menggunakan Argon2id. Seluruh role sistem disimpan di tabel ini.
 
 - `sekretaris_desa`: diberikan saat Petugas Desa assign jabatan Sekdes di `officials`. Scope dashboard identik `kepala_desa`. Saat rotasi jabatan Sekdes, `users.role` otomatis diupdate.
 - `kadus`: tetap ada di ENUM untuk kompatibilitas akun (login/logout/lihat status), tidak lagi punya relevansi terhadap `flow_steps.approver_position`.
+- `staf_sid`: staf pemegang aplikasi desa (dulu `petugas_desa`), hanya satu aktif per desa dan diganti lewat rotasi. Label tampilannya "Staf {nama aplikasi}" dari `config('sid.app_name')` (env `SID_APP_NAME`), sehingga nama aplikasi dapat diganti tanpa mengubah data.
 
 **Tabel: citizens**
 
@@ -224,7 +226,7 @@ Rekam jejak jabatan struktural desa per periode. Digunakan untuk resolusi wilaya
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | citizen_id | UUID | FK → citizens.id, NOT NULL | Warga yang menjabat |
 | user_id | UUID | FK → users.id, NULL | Akun sistem pejabat; NULL untuk jabatan tanpa akun |
-| position | VARCHAR(50) | NOT NULL | Nilai enum aplikasi `OfficialPosition` (jabatan berakun: `kepala_desa`, `sekdes`, `rt`, `rw`, `kadus`, `kasi_pelayanan`, `kaur_tu_umum`, `petugas_desa`) atau `code` dari `official_position_types` desa (jabatan tanpa akun). Divalidasi rule `ValidOfficialPosition`, bukan ENUM DB |
+| position | VARCHAR(50) | NOT NULL | Nilai enum aplikasi `OfficialPosition` (jabatan berakun: `kepala_desa`, `sekdes`, `rt`, `rw`, `kadus`, `kasi_pelayanan`, `kaur_tu_umum`, `staf_sid`) atau `code` dari `official_position_types` desa (jabatan tanpa akun). Divalidasi rule `ValidOfficialPosition`, bukan ENUM DB |
 | village_id | UUID | FK → villages.id, NULL | |
 | rt_id | BIGINT | FK → rts.id, NULL | Diisi untuk jabatan RT |
 | rw_id | BIGINT | FK → rws.id, NULL | Diisi untuk jabatan RW |
@@ -252,7 +254,7 @@ Rekam jejak jabatan struktural desa per periode. Digunakan untuk resolusi wilaya
 | kasi_pelayanan | kasi_pelayanan | NOT NULL |
 | kaur_tu_umum | kaur_tu_umum | NOT NULL |
 | kadus | kadus | NOT NULL |
-| petugas_desa | petugas_desa | NOT NULL |
+| staf_sid | staf_sid | NOT NULL |
 | rw | rw | NOT NULL |
 | rt | rt | NOT NULL |
 | sekdes | sekretaris_desa | NOT NULL |
@@ -542,18 +544,21 @@ Constraint: `UNIQUE(village_id, approval_level)`
 
 **Tabel: village_org_positions**
 
-Master jabatan per organisasi non-struktural.
+Slot jabatan tetap per organisasi non-struktural: setiap organisasi punya tepat tiga baris (Ketua, Wakil Ketua, Anggota), dibuat otomatis oleh `VillageOrgPositionRepository::ensureSlots()` (saat daftar dibuka atau lewat `VillageOrgPositionSeeder`) dan tidak dapat dibuat/diubah/dihapus lewat API.
 
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | village_id | UUID | FK → villages.id, NOT NULL | |
-| org_type | ENUM | NOT NULL | `bpd` \| `bumdes` \| `lpm` \| `karang_taruna` \| `pkk` |
-| position_label | VARCHAR(100) | NOT NULL | |
-| is_single_occupant | BOOLEAN | DEFAULT true | false = bisa diisi banyak orang |
-| sort_order | INT | DEFAULT 0 | |
-| is_active | BOOLEAN | DEFAULT true | |
+| org_type | ENUM | NOT NULL | `bpd` \| `bumdes` \| `lpm` \| `karang_taruna` \| `pkk`. UI mengelola `bpd`, `lpm`, `karang_taruna`, `pkk` |
+| slot | ENUM | NOT NULL | `ketua` \| `wakil_ketua` \| `anggota` |
+| position_label | VARCHAR(100) | NOT NULL | Diisi dari slot: Ketua / Wakil Ketua / Anggota |
+| is_single_occupant | BOOLEAN | DEFAULT true | true untuk `ketua` dan `wakil_ketua` (rotasi), false untuk `anggota` |
+| sort_order | INT | DEFAULT 0 | 0, 1, 2 sesuai slot |
+| is_active | BOOLEAN | DEFAULT true | false = rotasi dimatikan untuk slot tsb |
 | created_at, updated_at | TIMESTAMP | NULL | |
+
+Index: `UNIQUE (village_id, org_type, slot)`.
 
 **Tabel: village_org_members**
 
@@ -564,7 +569,7 @@ History pemegang jabatan organisasi non-struktural.
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | position_id | BIGINT | FK → village_org_positions.id, NOT NULL | |
 | member_name | VARCHAR(150) | NOT NULL | |
-| photo_img | VARCHAR(255) | NULL | |
+| photo_img | VARCHAR(255) | NULL | Path foto di disk public (`org-member-photos/{village_id}/...`), diatur lewat endpoint foto anggota. Promosi/turun jabatan menyalin path ke baris baru, sehingga satu berkas dapat dipakai beberapa baris; berkas hanya dihapus bila tidak dipakai baris lain |
 | phone_wa | VARCHAR(20) | NULL | |
 | started_at | DATE | NOT NULL | |
 | ended_at | DATE | NULL | NULL = masih aktif |

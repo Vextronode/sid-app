@@ -54,22 +54,30 @@ src/
     ui/                   Button, Input, StatusBadge, OverdueBadge, SimplePagination, PageLoader, NewsCard
   constants/              suratStatus
   features/
-    auth/                 AuthContext, form login/register, loginRedirect
+    auth/                 AuthContext (patchUser, pemeriksaan role_forbidden), form login/register,
+                          loginRedirect, userPhoto (foto akun vs foto jabatan)
     surat/                API surat/tipe/tanda tangan, DynamicSuratForm, FileUploader,
                           SignatureCard, SignatureRequestsCard, FulfillmentPanel,
                           LetterTypeSettingsPanel, DetailSuratModal, util letterTypeConfig
-    warga-surat/, warga-help/, profil-warga/
+    warga-surat/, warga-help/
+    profil-warga/         EditProfilWargaModal, ProfilePhoto (foto profil akun di halaman Profil)
     approval/             ApprovalStepRenderer, ApprovalStepper, SuratDetailModal, api keputusan
     approval-rt/, approval-rw/, approval-kadus/, approval-kades/
     operator-desa/        roleNavigation (kapabilitas route operator), kartu dashboard
-    data-warga/, pekerjaan/, kelola-wilayah/, manajemen-user/, organisasi/
+    data-warga/, pekerjaan/, kelola-wilayah/, manajemen-user/
+    organisasi/           OrganisasiManager (slot Ketua/Wakil/Anggota, promosi, foto anggota)
     kelola-berita/        berita + kategori berita
     profil-desa-admin/    Kelola Profil Desa (identitas, kop, logo, foto beranda, stempel)
     peraturan/, notifikasi/ (popover, WebPushControls, deep link), dashboard-mobile/
-    beranda/, berita/, profil-desa/, info-desa/, info/ (halaman informasi, dev-only)
+    beranda/              header publik (AccountNavLink: Masuk / Dashboard Saya), konten beranda
+    profil-desa/          OrgChart (bagan Perangkat Desa, BPD, Lembaga Desa)
+    berita/, info-desa/, info/ (halaman informasi, dev-only)
     cetak-surat/
   pages/                  halaman publik & warga; pages/admin untuk pejabat/operator
-  lib/                    api.js (instance Axios + submitDecision), pdfjs.js, constants/routes
+  components/ui/          PageLoader, UserAvatar (foto akun di header, avatar default)
+  lib/                    api.js (instance Axios + submitDecision; memancarkan event role_forbidden),
+                          authEvents.js, pdfjs.js, constants/routes, constants/app (APP_NAME dari
+                          VITE_APP_NAME, STAF_APP_LABEL)
   shared/lib/             queryClient, queryKeys, publicVillageParams, villageName, copyText
   styles/                 sid-global.css, public.css, beranda.css
   test/                   setup Vitest
@@ -102,10 +110,12 @@ Semua route didefinisikan di `App.jsx`:
 - Halaman selain beranda dimuat lazy (`React.lazy` + `Suspense`).
 - `/buka-notifikasi` adalah tujuan klik Web Push; meneruskan ke daftar surat yang sesuai peran (atau "Surat Saya" bila penerima adalah pemohon).
 - Halaman informasi (Kebijakan Privasi, Aksesibilitas, PPID) hanya didaftarkan di mode dev.
+- Respons 403 `code: role_forbidden` memancarkan event `sid:role-forbidden`; AuthContext memeriksa `/api/user` tanpa loader dan, bila perannya berubah (mis. dirotasi), memuat ulang ke `/loginpage` sehingga `GuestRoute` meneruskan ke dashboard peran baru. Staf aplikasi yang merotasi dirinya sendiri langsung dibawa ke `/daftar-surat`.
+- Nama aplikasi (`VITE_APP_NAME`, default SIDUTama) dipakai di judul login, `<title>` (plugin kecil di `vite.config.js`), manifest PWA, dan label peran `staf_sid` ("Staf {nama aplikasi}").
 
 | Kelompok | Route utama |
 |---|---|
-| Publik | `/`, `/berita`, `/berita/:id`, `/profil-desa`, `/peraturan-desa` |
+| Publik | `/`, `/berita`, `/berita/:id`, `/profil-desa`, `/bpd`, `/lembaga-desa` (`?lembaga=lpm\|karang_taruna\|pkk`), `/peraturan-desa` |
 | Auth | `/loginpage`, `/register`, `/lupa-password`, `/password-reset/:token`, `/ganti-password` |
 | Warga | `/daftar-surat`, `/jenis-surat`, `/pengajuan-surat/:kode?`, `/daftar-surat-saya`, `/profile` |
 | RT/RW/Kadus/Kades | `/admin/dashboard-surat-{rt,rw,kadus,kades}`, `/admin/list-{rt,rw,kadus,kades}` |

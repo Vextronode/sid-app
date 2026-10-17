@@ -20,7 +20,7 @@ get:
               - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardRw'
               - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardKadus'
               - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardKasi'
-              - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardPetugasDesa'
+              - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardStafSid'
               - $ref: '../../schemas/dashboard/dashboard.yaml#/DashboardKadesSekdes'
             discriminator:
               propertyName: role
@@ -31,7 +31,7 @@ get:
                 kadus: '../../schemas/dashboard/dashboard.yaml#/DashboardKadus'
                 kasi_pelayanan: '../../schemas/dashboard/dashboard.yaml#/DashboardKasi'
                 kaur_tu_umum: '../../schemas/dashboard/dashboard.yaml#/DashboardKasi'
-                petugas_desa: '../../schemas/dashboard/dashboard.yaml#/DashboardPetugasDesa'
+                staf_sid: '../../schemas/dashboard/dashboard.yaml#/DashboardStafSid'
                 kepala_desa: '../../schemas/dashboard/dashboard.yaml#/DashboardKadesSekdes'
                 sekretaris_desa: '../../schemas/dashboard/dashboard.yaml#/DashboardKadesSekdes'
           examples:
@@ -72,10 +72,10 @@ get:
                 total_surat_selesai: 4
                 completed_letters: []
                 unread_notifications_count: 3
-            petugas_desa:
+            staf_sid:
               summary: Dashboard Petugas Desa (full visibility)
               value:
-                role: "petugas_desa"
+                role: "staf_sid"
                 total_warga: 2450
                 total_surat_bulan_ini: 87
                 surat_per_status:
