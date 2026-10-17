@@ -3,6 +3,7 @@ import { Search } from 'lucide-react'
 import { getCitizens } from '@/features/data-warga/api'
 import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { PageNumbers } from '@/components/ui/PageNumbers'
 
 const ITEMS_PER_PAGE = 10
 
@@ -157,23 +158,26 @@ export default function DataWargaReadOnlyPage() {
 
           {totalPages > 1 && (
             <div className="sid-operator-pagination">
-              <button
-                type="button"
-                disabled={currentPage === 1}
-                onClick={() => setPage(currentPage - 1)}
-              >
-                Sebelumnya
-              </button>
-              <span>
+              <p>
                 Halaman {currentPage} dari {totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => setPage(currentPage + 1)}
-              >
-                Berikutnya
-              </button>
+              </p>
+              <div>
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setPage(currentPage - 1)}
+                >
+                  Sebelumnya
+                </button>
+                <PageNumbers currentPage={currentPage} totalPages={totalPages} onChange={setPage} />
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setPage(currentPage + 1)}
+                >
+                  Berikutnya
+                </button>
+              </div>
             </div>
           )}
         </div>

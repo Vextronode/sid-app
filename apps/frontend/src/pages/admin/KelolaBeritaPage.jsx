@@ -31,6 +31,7 @@ import KategoriBeritaModal from '@/features/kelola-berita/components/KategoriBer
 import { useNewsCategories } from '@/features/kelola-berita/hooks/useNewsCategories'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { PageNumbers } from '@/components/ui/PageNumbers'
 
 export default function KelolaBeritaPage() {
   const {
@@ -399,6 +400,13 @@ export default function KelolaBeritaPage() {
             >
               <ChevronLeft size={16} />
             </button>
+
+            <PageNumbers
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onChange={setCurrentPage}
+              disabled={processing}
+            />
 
             <button
               type="button"

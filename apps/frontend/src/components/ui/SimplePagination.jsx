@@ -1,3 +1,5 @@
+import { PageNumbers } from './PageNumbers'
+
 // Navigasi halaman ringkas untuk daftar berpaginasi di server.
 // Tidak dirender bila hanya ada satu halaman.
 export function SimplePagination({ page, totalPages, onChange }) {
@@ -15,6 +17,8 @@ export function SimplePagination({ page, totalPages, onChange }) {
         <button type="button" disabled={page <= 1} onClick={() => onChange(page - 1)}>
           Sebelumnya
         </button>
+
+        <PageNumbers currentPage={page} totalPages={totalPages} onChange={onChange} />
 
         <button type="button" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
           Berikutnya
