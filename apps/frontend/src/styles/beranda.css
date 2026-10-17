@@ -433,6 +433,16 @@ html:has(.bd-header) {
   margin-left: var(--bd-space-8);
 }
 
+/* Ikon dashboard di tombol akun (AccountNavLink) bagi pengguna yang login. */
+.bd-root .bd-nav-login,
+.bd-root .bd-mobile-login {
+  gap: var(--bd-space-8);
+}
+
+.bd-root .bd-account-icon {
+  flex: none;
+}
+
 /* ----- Dropdown Profil Desa (A3–A7) ----- */
 .bd-dropdown {
   position: relative;
@@ -659,6 +669,16 @@ html:has(.bd-header) {
   cursor: wait;
 }
 
+/* Foto akun di menu akun (desktop); di ponsel tampil sendiri di samping
+   tombol Menu karena nama akun disembunyikan. */
+.bd-root .bd-app-account .bd-nav-trigger {
+  gap: var(--bd-space-8);
+}
+
+.bd-root .bd-mobile-avatar {
+  display: none;
+}
+
 @media (max-width: 767.98px) {
   .bd-nav,
   .bd-app-account,
@@ -668,6 +688,10 @@ html:has(.bd-header) {
 
   .bd-mobile-menu {
     display: block;
+  }
+
+  .bd-root .bd-mobile-avatar {
+    display: inline-flex;
   }
 }
 

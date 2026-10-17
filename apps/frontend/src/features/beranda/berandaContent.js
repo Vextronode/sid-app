@@ -9,7 +9,7 @@
 // Pakai getBerandaContent(); jangan impor DEV_ONLY langsung dari komponen.
 
 import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
-import { HAL_PROFIL } from '@/lib/constants/routes'
+import { HAL_BPD, HAL_LEMBAGA, HAL_PROFIL } from '@/lib/constants/routes'
 
 const STATIC = {
   header: {
@@ -23,7 +23,9 @@ const STATIC = {
       // Judul dropdown; "Profil desa" sendiri menjadi salah satu isinya.
       profil: 'Tentang Desa',
       kontak: 'Kontak',
-      masuk: 'Masuk Warga',
+      masuk: 'Masuk',
+      // Pengganti "Masuk" bagi pengguna yang sudah login.
+      dashboard: 'Dashboard Saya',
       menu: 'Menu',
     },
     // A4–A6: butir dengan `to` menjadi link; sisanya teks biasa berlabel
@@ -33,6 +35,8 @@ const STATIC = {
       // ada di halaman yang sama.
       { label: 'Profil desa', to: HAL_PROFIL },
       { label: 'Perangkat desa', to: `${HAL_PROFIL}#perangkat-desa` },
+      { label: 'BPD', to: HAL_BPD },
+      { label: 'Lembaga Desa', to: HAL_LEMBAGA },
       { label: 'Peta wilayah' },
     ],
     comingSoonBadge: 'Segera hadir',

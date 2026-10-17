@@ -5,6 +5,9 @@ export const HAL_BERANDA = '/'
 export const HAL_BERITA = '/berita'
 export const HAL_BERITA_DETAIL = (id) => `/berita/${encodeURIComponent(id)}`
 export const HAL_PROFIL = '/profil-desa'
+// Struktur organisasi desa. Lembaga Desa memilih LPM/Karang Taruna/PKK lewat ?lembaga=.
+export const HAL_BPD = '/bpd'
+export const HAL_LEMBAGA = '/lembaga-desa'
 export const HAL_LOGIN = '/loginpage'
 export const HAL_DAFTAR = '/register'
 

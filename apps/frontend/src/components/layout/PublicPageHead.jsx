@@ -8,7 +8,7 @@ export function PublicPageHead({ title, children }) {
         <h1 className="m-0 max-w-[18ch] font-display text-[clamp(34px,24px+2.4vw,56px)] leading-[1.02] font-bold tracking-[-0.03em] text-balance text-pb-laut-deep">
           {title}
         </h1>
-        <div className="max-w-[60ch] text-lg leading-relaxed text-pb-muted [&>p]:mt-4 [&>p]:mb-0 [&>p+p]:mt-1.5 [&>p+p]:text-base">
+        <div className="max-w-[60ch] text-lg leading-relaxed text-pb-ink/85 [&>p]:mt-4 [&>p]:mb-0 [&>p+p]:mt-1.5 [&>p+p]:text-base">
           {children}
         </div>
       </div>
