@@ -26,21 +26,6 @@ import {
   uploadOfficialPhoto,
 } from '@/features/profil-desa-admin/api'
 import { SiteFooter } from '@/components/layout/SiteFooter'
-import { STAF_APP_LABEL } from '@/lib/constants/app'
-
-// Jabatan yang punya akun login dan peran di aplikasi (OfficialPosition di
-// backend). Jabatan tanpa akun tidak ada di sini: jenisnya dikelola Petugas
-// Desa dan diambil dari API.
-const ACCOUNT_POSITIONS = [
-  { value: 'kepala_desa', label: 'Kepala Desa' },
-  { value: 'sekdes', label: 'Sekretaris Desa' },
-  { value: 'kasi_pelayanan', label: 'Kasi Pelayanan' },
-  { value: 'kaur_tu_umum', label: 'Kaur TU & Umum' },
-  { value: 'kadus', label: 'Kepala Dusun', scope: 'hamlet_id' },
-  { value: 'rw', label: 'Ketua RW', scope: 'rw_id' },
-  { value: 'rt', label: 'Ketua RT', scope: 'rt_id' },
-  { value: 'staf_sid', label: STAF_APP_LABEL },
-]
 
 // Tabel pejabat dipisah per tingkat. Jabatan yang bukan Kadus/RW/RT
 // (Kades, Sekdes, Kasi, Kaur, staf, Petugas Desa) masuk tabel pertama,
@@ -98,15 +83,26 @@ const OFFICIAL_GROUPS = [
   },
 ]
 
-const findAccountPosition = (value) =>
-  ACCOUNT_POSITIONS.find((position) => position.value === value)
+// Jabatan yang punya akun login dan peran di aplikasi (OfficialPosition di
+// backend), beserta labelnya, dari GET /official-position-types
+// (`account_positions`). Label tidak ditulis di FE supaya sama dengan tabel
+// pejabat; label staf aplikasi mengikuti SID_APP_NAME di backend.
+const toAccountPositions = (response) =>
+  (response?.data?.account_positions ?? []).map((position) => ({
+    value: position.code,
+    label: position.label,
+    scope: position.scope ?? undefined,
+  }))
+
+const findAccountPosition = (accountPositions, value) =>
+  accountPositions.find((position) => position.value === value)
 
 const positionLabel = (official) => official.position_label ?? official.position
 
 // Calon dikirim sebagai akun untuk jabatan berakun, sebagai data warga
 // untuk jabatan tanpa akun.
-const candidateTarget = (position, candidate) =>
-  findAccountPosition(position)
+const candidateTarget = (accountPositions, position, candidate) =>
+  findAccountPosition(accountPositions, position)
     ? { user_id: candidate.user_id }
     : { citizen_id: candidate.citizen_id }
 
@@ -287,6 +283,7 @@ export default function PejabatDesaPage() {
   const { user } = useAuth()
   const [officials, setOfficials] = useState([])
   const [positionTypes, setPositionTypes] = useState([])
+  const [accountPositions, setAccountPositions] = useState([])
   const [managingTypes, setManagingTypes] = useState(false)
   const [areas, setAreas] = useState({ rts: [], rws: [], hamlets: [] })
   const [loading, setLoading] = useState(true)
@@ -318,6 +315,7 @@ export default function PejabatDesaPage() {
 
       setOfficials(unwrap(officialResponse))
       setPositionTypes(unwrap(typeResponse))
+      setAccountPositions(toAccountPositions(typeResponse))
       setAreas({
         rts: unwrap(rtResponse),
         rws: unwrap(rwResponse),
@@ -346,12 +344,12 @@ export default function PejabatDesaPage() {
   )
   const positionOptions = useMemo(
     () => [
-      ...ACCOUNT_POSITIONS.filter((position) => position.value !== 'staf_sid' || !hasActiveStafSid),
+      ...accountPositions.filter((position) => position.value !== 'staf_sid' || !hasActiveStafSid),
       ...positionTypes
         .filter((type) => type.is_active)
         .map((type) => ({ value: type.code, label: `${type.label} (tanpa akun)` })),
     ],
-    [positionTypes, hasActiveStafSid],
+    [accountPositions, positionTypes, hasActiveStafSid],
   )
 
   const officialGroups = useMemo(() => {
@@ -397,12 +395,12 @@ export default function PejabatDesaPage() {
   const handlePromote = (event) => {
     event.preventDefault()
 
-    const scope = findAccountPosition(promotion.position)?.scope
+    const scope = findAccountPosition(accountPositions, promotion.position)?.scope
 
     return run(
       () =>
         promotePerangkatDesa({
-          ...candidateTarget(promotion.position, promotion.candidate),
+          ...candidateTarget(accountPositions, promotion.position, promotion.candidate),
           position: promotion.position,
           ...(scope ? { [scope]: Number(promotion[scope]) } : {}),
           started_at: promotion.started_at,
@@ -429,7 +427,7 @@ export default function PejabatDesaPage() {
     return run(
       () =>
         rotatePerangkatDesa(rotation.official.id, {
-          ...candidateTarget(rotation.official.position, rotation.candidate),
+          ...candidateTarget(accountPositions, rotation.official.position, rotation.candidate),
           started_at: rotation.started_at,
           term_ends_at: rotation.term_ends_at,
           notes: rotation.notes,
@@ -477,7 +475,7 @@ export default function PejabatDesaPage() {
     return run(() => deletePerangkatDesa(official.id), 'Riwayat jabatan berhasil dihapus.')
   }
 
-  const promotionScope = findAccountPosition(promotion?.position)?.scope
+  const promotionScope = findAccountPosition(accountPositions, promotion?.position)?.scope
 
   return (
     <div className="sid-operator-page">
