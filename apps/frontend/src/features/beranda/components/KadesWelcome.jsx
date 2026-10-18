@@ -1,13 +1,18 @@
 import { UserRound } from 'lucide-react'
 
+import { formatVillageName } from '@/shared/lib/villageName'
 import { sectionGap } from '../publicClasses'
 
-// Sambutan Kepala Desa. Teks sambutan dan foto belum ada, jadi seluruh blok
-// hanya dirender di development (K1). Nama asli dari village.head_name.
+// Sambutan Kepala Desa. Teksnya diisi Petugas Desa (village.welcome_message,
+// Kelola Profil Desa); bila kosong, seluruh blok tidak dirender.
+// Nama dari village.head_name, jabatan dari nama desa.
 // Link Sejarah/Perangkat/Peta dari mockup sengaja tidak dipasang (01, P9).
-export function KadesWelcome({ content, headName }) {
-  const { welcome, welcomeBlock: labels } = content
-  if (!welcome) return null
+export function KadesWelcome({ content, village }) {
+  const labels = content.welcomeBlock
+  const message = village?.welcome_message?.trim()
+  if (!message) return null
+
+  const villageName = formatVillageName(village?.name)
 
   return (
     <section className={`bd-container ${sectionGap}`} aria-labelledby="bd-welcome-title">
@@ -26,13 +31,15 @@ export function KadesWelcome({ content, headName }) {
             {labels.label}
           </h2>
           <blockquote className="m-0">
-            <p className="m-0 max-w-[34ch] font-display text-[clamp(24px,18px+1.4vw,36px)] leading-tight font-semibold tracking-[-0.02em] text-pretty text-pb-laut-deep">
-              “{welcome.quote}”
+            <p className="m-0 max-w-[34ch] font-display text-[clamp(24px,18px+1.4vw,36px)] leading-tight font-semibold tracking-[-0.02em] text-pretty whitespace-pre-line text-pb-laut-deep">
+              “{message}”
             </p>
           </blockquote>
           <figcaption className="mt-5.5 flex flex-col border-l-[3px] border-pb-padi pl-4">
-            <span className="font-bold">{headName || welcome.fallbackName}</span>
-            <span className="text-base text-pb-muted">{welcome.role}</span>
+            {village?.head_name && <span className="font-bold">{village.head_name}</span>}
+            <span className="text-base text-pb-muted">
+              {labels.rolePrefix} {villageName ?? 'Desa'}
+            </span>
           </figcaption>
         </figure>
       </div>

@@ -25,9 +25,8 @@ export function AppHeader({
   onNotificationClick,
   extraActions = [],
   popover,
-  isDev = import.meta.env.DEV,
 }) {
-  const { header } = getBerandaContent(isDev)
+  const { header } = getBerandaContent()
   const { pathname } = useLocation()
   const { user } = useAuth()
   const { handleLogout, isLoggingOut } = useLogoutToBeranda()

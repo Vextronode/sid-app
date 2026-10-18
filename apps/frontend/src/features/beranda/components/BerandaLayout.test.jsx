@@ -13,10 +13,10 @@ vi.mock('@/features/auth/contexts/AuthContext', () => ({
   useAuth: () => ({ user: null, isLoading: false }),
 }))
 
-const renderLayout = (isDev) =>
+const renderLayout = () =>
   render(
     <MemoryRouter>
-      <BerandaLayout isDev={isDev}>
+      <BerandaLayout>
         <p>Isi beranda</p>
       </BerandaLayout>
     </MemoryRouter>,
@@ -28,7 +28,7 @@ describe('BerandaLayout', () => {
   })
 
   it('wraps the page in .bd-root with the new header, main and footer', () => {
-    const { container } = renderLayout(true)
+    const { container } = renderLayout()
 
     const root = container.firstChild
     expect(root).toHaveClass('bd-root')
@@ -38,7 +38,7 @@ describe('BerandaLayout', () => {
   })
 
   it('does not render a bottom nav (K5)', () => {
-    const { container } = renderLayout(true)
+    const { container } = renderLayout()
 
     // Bottom bar lama berupa <nav> fixed di bawah dengan link "Beranda".
     // Link Beranda sekarang hanya ada di header (desktop + menu ponsel).
@@ -48,19 +48,16 @@ describe('BerandaLayout', () => {
     expect(container.querySelectorAll('nav')).toHaveLength(3) // header, menu ponsel, footer
   })
 
-  it('has no staff login link and hides the draft pages in production (D6)', () => {
-    renderLayout(false)
+  it('has no staff login link (D6)', () => {
+    renderLayout()
     const footer = within(screen.getByRole('contentinfo'))
 
-    // Petugas masuk lewat form login biasa; hanya logo Widyatama yang berupa link.
+    // Petugas masuk lewat form login biasa.
     expect(footer.queryByRole('link', { name: 'Masuk petugas' })).toBeNull()
-    expect(footer.getAllByRole('link')).toHaveLength(1)
-    expect(footer.queryByRole('navigation', { name: 'Tautan footer' })).toBeNull()
-    expect(footer.queryByText(/privasi|aksesibilitas|PPID/i)).toBeNull()
   })
 
-  it('links the three draft information pages from the footer in development (D6)', () => {
-    renderLayout(true)
+  it('links the three information pages from the footer (D6)', () => {
+    renderLayout()
     const nav = within(screen.getByRole('navigation', { name: 'Tautan footer' }))
 
     expect(
@@ -77,8 +74,8 @@ describe('BerandaLayout', () => {
   })
 
   // Domain dan tanggal pembaruan tidak ditampilkan (permintaan pemilik, 12 Okt 2026).
-  it.each([true, false])('shows the title without domain or update date (isDev=%s)', (isDev) => {
-    renderLayout(isDev)
+  it('shows the title without domain or update date', () => {
+    renderLayout()
     const footer = within(screen.getByRole('contentinfo'))
 
     expect(footer.getByText('Pemerintah Desa Cibenda')).toBeInTheDocument()
@@ -87,25 +84,22 @@ describe('BerandaLayout', () => {
     expect(footer.queryByText(/Terakhir diperbarui/)).not.toBeInTheDocument()
   })
 
-  it.each([true, false])(
-    'shows the three partner logos left to right, lazily loaded (isDev=%s)',
-    (isDev) => {
-      renderLayout(isDev)
-      const footer = within(screen.getByRole('contentinfo'))
+  it('shows the three partner logos left to right, lazily loaded', () => {
+    renderLayout()
+    const footer = within(screen.getByRole('contentinfo'))
 
-      expect(footer.getByText('Didukung oleh')).toBeInTheDocument()
-      const logos = footer.getAllByRole('img')
-      expect(logos.map((img) => img.getAttribute('alt'))).toEqual([
-        'Universitas Widyatama',
-        'Lambang Kabupaten Pangandaran',
-        'Diktisaintek Berdampak',
-      ])
-      for (const img of logos) expect(img).toHaveAttribute('loading', 'lazy')
-    },
-  )
+    expect(footer.getByText('Didukung oleh')).toBeInTheDocument()
+    const logos = footer.getAllByRole('img')
+    expect(logos.map((img) => img.getAttribute('alt'))).toEqual([
+      'Universitas Widyatama',
+      'Lambang Kabupaten Pangandaran',
+      'Diktisaintek Berdampak',
+    ])
+    for (const img of logos) expect(img).toHaveAttribute('loading', 'lazy')
+  })
 
   it('opens the Widyatama website in a new tab from its logo only', () => {
-    renderLayout(false)
+    renderLayout()
     const partners = within(screen.getByText('Didukung oleh').parentElement)
 
     const links = partners.getAllByRole('link')
@@ -114,5 +108,46 @@ describe('BerandaLayout', () => {
     expect(links[0]).toHaveAttribute('href', 'https://www.widyatama.ac.id/')
     expect(links[0]).toHaveAttribute('target', '_blank')
     expect(links[0].getAttribute('rel')).toMatch(/\bnoopener\b/)
+  })
+
+  // Bar pengumuman menempel di bawah header di semua halaman publik.
+  describe('announcement bar', () => {
+    const bar = () => screen.queryByRole('region', { name: 'Pengumuman desa' })
+    const withAnnouncement = (announcement) =>
+      usePublicVillageInfo.mockReturnValue({
+        village: null,
+        stats: null,
+        contacts: [],
+        announcement,
+      })
+
+    it('shows the active announcement inside the sticky header area', () => {
+      withAnnouncement({
+        title: 'Kantor desa tutup Jumat siang',
+        body: null,
+        link_url: null,
+        expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+      })
+
+      const { container } = renderLayout()
+
+      const region = bar()
+      expect(region).toHaveTextContent('Kantor desa tutup Jumat siang')
+      expect(region.closest('.bd-chrome--sticky')).toBe(
+        container.querySelector('.bd-chrome--sticky'),
+      )
+      expect(region.closest('main')).toBeNull()
+    })
+
+    it('is not rendered without an announcement or after it expires', () => {
+      withAnnouncement(null)
+      const { unmount } = renderLayout()
+      expect(bar()).toBeNull()
+      unmount()
+
+      withAnnouncement({ title: 'Lewat', expires_at: new Date(Date.now() - 1000).toISOString() })
+      renderLayout()
+      expect(bar()).toBeNull()
+    })
   })
 })

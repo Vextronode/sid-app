@@ -1,34 +1,28 @@
 import { describe, expect, it } from 'vitest'
 import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
-import { DEV_ONLY_KEYS, getBerandaContent } from './berandaContent'
-
-const PRODUCTION_HIDDEN = ['announcement', 'apbdes', 'welcome', 'infoLinks']
+import { getBerandaContent } from './berandaContent'
 
 describe('getBerandaContent', () => {
-  it('marks exactly the K1 items as development-only', () => {
-    expect([...DEV_ONLY_KEYS].sort()).toEqual([...PRODUCTION_HIDDEN].sort())
-  })
+  // Tidak ada lagi dummy khusus development: dev dan production sama. Isi khas
+  // desa (pengumuman, sambutan, APBDes) dari data, bukan konten statis.
+  it('has no development-only dummies', () => {
+    const content = getBerandaContent()
 
-  it('hides every dummy item in production', () => {
-    const content = getBerandaContent(false)
-
-    for (const key of PRODUCTION_HIDDEN) {
-      expect(content[key], key).toBeNull()
+    for (const key of ['announcement', 'apbdes', 'welcome', 'transparency']) {
+      expect(content[key], key).toBeUndefined()
     }
+    expect(JSON.stringify(content)).not.toMatch(/\[[A-Z ]+\]|example\.com|Dede Rusliana/)
   })
 
-  it('shows the mockup dummies in development', () => {
-    const content = getBerandaContent(true)
+  it('lists Transparansi APBDes as coming soon in the Tentang Desa menu', () => {
+    const { header } = getBerandaContent()
 
-    for (const key of PRODUCTION_HIDDEN) {
-      expect(content[key], key).toBeTruthy()
-    }
-    expect(content.announcement.newsId).toBe(1)
-    expect(content.welcome.fallbackName).toBe('Dede Rusliana')
+    expect(header.profilItems.at(-1)).toEqual({ label: 'Transparansi APBDes' })
+    expect(header.transparansi).toBeUndefined()
   })
 
-  it.each([true, false])('keeps manual content (isDev=%s)', (isDev) => {
-    const content = getBerandaContent(isDev)
+  it('keeps manual content', () => {
+    const content = getBerandaContent()
 
     // D2 (12 Okt 2026): menu bagikan AddToAny, sementara sampai ada nomor asli.
     expect(content.complaint.whatsappUrl).toMatch(
@@ -44,7 +38,9 @@ describe('getBerandaContent', () => {
     expect(content.contact.phone).toBeUndefined()
     expect(content.contact.hours).toBeUndefined()
     expect(content.mapUrl).toBeUndefined()
-    expect(JSON.stringify(content)).not.toMatch(/2640613|kantordesacibenda|maps\.app\.goo\.gl/)
+    expect(JSON.stringify(content)).not.toMatch(
+      /2640613|kantordesacibenda|maps\.app\.goo\.gl|google\.com\/maps|108\.55/,
+    )
     // Domain dan tanggal pembaruan footer dihapus (permintaan pemilik, 12 Okt 2026).
     expect(content.site).toBeUndefined()
     // Pita angka: hanya label; angkanya dari API, bukan konten statis.
@@ -67,7 +63,7 @@ describe('getBerandaContent', () => {
   })
 
   it('uses the copy decided in K10 and K11', () => {
-    const content = getBerandaContent(false)
+    const content = getBerandaContent()
 
     expect(content.howTo.steps[0].title).toBe('Masuk ke akun warga')
     expect(content.services.ajukan.description).toBe(
@@ -75,21 +71,13 @@ describe('getBerandaContent', () => {
     )
   })
 
-  it('links the dev-only information pages through the route constants (D6)', () => {
-    const { infoLinks } = getBerandaContent(true)
+  it('links the information pages through the route constants (D6)', () => {
+    const { infoLinks } = getBerandaContent()
 
     expect(infoLinks).toEqual([
       { label: 'Kebijakan privasi', to: HAL_KEBIJAKAN_PRIVASI },
       { label: 'Aksesibilitas', to: HAL_AKSESIBILITAS },
       { label: 'PPID', to: HAL_PPID },
     ])
-  })
-
-  it('opens the dummy APBDes links over https', () => {
-    const { apbdes } = getBerandaContent(true)
-
-    for (const url of [apbdes.documentUrl, apbdes.archiveUrl]) {
-      expect(url).toMatch(/^https:\/\//)
-    }
   })
 })
