@@ -162,7 +162,7 @@ class EndToEndApprovalFlowTest extends TestCase
         $village = Village::factory()->create();
         $applicant = $this->makeCitizenAccount($village, null, 'kepala_desa');
         $kadesOfficial = $this->makeOfficial($applicant['user'], 'kepala_desa', $village);
-        $sekdes = $this->makeOfficialUser('sekdes', $village);
+        $sekdes = $this->makeOfficialUser('sekretaris_desa', $village);
         $flow = $this->makeFlow([
             ['position' => 'kepala_desa', 'final' => true],
         ]);
@@ -191,7 +191,7 @@ class EndToEndApprovalFlowTest extends TestCase
         $this->assertDatabaseHas('letter_approvals', [
             'letter_id' => $letterId,
             'approved_by' => $sekdes['user']->id,
-            'approval_level' => 'sekdes',
+            'approval_level' => 'sekretaris_desa',
             'action' => 'approved',
         ]);
         $this->assertSame('approved', Letter::query()->findOrFail($letterId)->status->value);
@@ -208,7 +208,7 @@ class EndToEndApprovalFlowTest extends TestCase
         $village = Village::factory()->create();
         $applicant = $this->makeCitizenAccount($village, null, 'warga');
         $kades = $this->makeOfficialUser('kepala_desa', $village);
-        $sekdes = $this->makeOfficialUser('sekdes', $village);
+        $sekdes = $this->makeOfficialUser('sekretaris_desa', $village);
         $flow = $this->makeFlow([
             ['position' => 'kepala_desa', 'final' => true],
         ]);
@@ -232,7 +232,7 @@ class EndToEndApprovalFlowTest extends TestCase
         $this->assertDatabaseHas('letter_approvals', [
             'letter_id' => $letterId,
             'approved_by' => $sekdes['user']->id,
-            'approval_level' => 'sekdes',
+            'approval_level' => 'sekretaris_desa',
             'action' => 'approved',
         ]);
         $this->assertSame('approved', Letter::query()->findOrFail($letterId)->status->value);
@@ -388,12 +388,8 @@ class EndToEndApprovalFlowTest extends TestCase
     private function makeOfficialUser(string $position, Village $village, array $area = []): array
     {
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
-        $role = match ($position) {
-            'sekdes' => 'sekretaris_desa',
-            default => $position,
-        };
         $user = User::factory()->create([
-            'role' => $role,
+            'role' => $position,
             'village_id' => $village->id,
             'citizen_id' => $citizen->id,
         ]);

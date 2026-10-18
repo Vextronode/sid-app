@@ -51,7 +51,7 @@ class KadesApprovalControllerTest extends TestCase
             'citizen_id' => $citizen->id,
         ]);
         Official::factory()->create([
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
@@ -67,7 +67,7 @@ class KadesApprovalControllerTest extends TestCase
             'is_active' => true,
         ]);
         $user = User::factory()->create([
-            'role' => $position === 'sekdes' ? 'sekretaris_desa' : 'kepala_desa',
+            'role' => $position,
             'village_id' => $village->id,
         ]);
         $user->official()->save($official);
@@ -93,7 +93,7 @@ class KadesApprovalControllerTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesStep($village);
-        $sekdes = $this->makeUserWithPosition('sekdes', $village);
+        $sekdes = $this->makeUserWithPosition('sekretaris_desa', $village);
 
         $this->actingAs($sekdes)
             ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
@@ -132,7 +132,7 @@ class KadesApprovalControllerTest extends TestCase
         $village = Village::factory()->create();
         $letter = $this->makeFinalLetter($village, LetterType::factory()->create());
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
-        $sekdes = $this->makeUserWithPosition('sekdes', $village);
+        $sekdes = $this->makeUserWithPosition('sekretaris_desa', $village);
 
         $this->actingAs($kades)
             ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
@@ -316,7 +316,7 @@ class KadesApprovalControllerTest extends TestCase
         $village = Village::factory()->create();
         $letter = $this->makeFinalLetter($village, LetterType::factory()->create());
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
-        $sekdes = $this->makeUserWithPosition('sekdes', $village);
+        $sekdes = $this->makeUserWithPosition('sekretaris_desa', $village);
         $letter->update(['submitted_by' => $kades->id]);
 
         $this->actingAs($sekdes)
@@ -326,7 +326,7 @@ class KadesApprovalControllerTest extends TestCase
         $this->assertDatabaseHas('letter_approvals', [
             'letter_id' => $letter->id,
             'approved_by' => $sekdes->id,
-            'approval_level' => 'sekdes',
+            'approval_level' => 'sekretaris_desa',
             'action' => 'approved',
         ]);
     }

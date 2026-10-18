@@ -167,7 +167,7 @@ class PublicPageService
         $village = $this->requireVillage($villageCode);
         $positions = [
             OfficialPosition::KepalaDesa->value,
-            OfficialPosition::Sekdes->value,
+            OfficialPosition::SekretarisDesa->value,
             ...array_column($this->publicStaffPositions($villageCode), 'code'),
             OfficialPosition::Kadus->value,
         ];

@@ -89,7 +89,7 @@ trait BuildsLetterScenario
     {
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
         $user = User::factory()->create([
-            'role' => $position === 'sekdes' ? 'sekretaris_desa' : $position,
+            'role' => $position,
             'village_id' => $village->id,
             'citizen_id' => $citizen->id,
         ]);

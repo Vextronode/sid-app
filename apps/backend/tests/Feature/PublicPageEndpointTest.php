@@ -151,7 +151,7 @@ class PublicPageEndpointTest extends TestCase
         $kades = Official::factory()->position('kepala_desa')->create(['village_id' => $village->id]);
         // RT dan pejabat yang sudah berakhir tidak tampil di halaman publik.
         Official::factory()->position('rt')->create(['village_id' => $village->id]);
-        Official::factory()->position('sekdes')->create(['village_id' => $village->id, 'is_active' => false]);
+        Official::factory()->position('sekretaris_desa')->create(['village_id' => $village->id, 'is_active' => false]);
         // Dusun aktif dikirim walau belum punya Kepala Dusun.
         $hamlet = Hamlet::factory()->create(['village_id' => $village->id, 'is_active' => true]);
         $inactiveHamlet = Hamlet::factory()->create(['village_id' => $village->id, 'is_active' => false]);

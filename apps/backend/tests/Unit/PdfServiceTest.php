@@ -155,7 +155,7 @@ class PdfServiceTest extends TestCase
         LetterApproval::query()->create([
             'letter_id' => $letter->id,
             'approved_by' => $sekdes->id,
-            'approval_level' => 'sekdes',
+            'approval_level' => 'sekretaris_desa',
             'action' => 'approved',
         ]);
 

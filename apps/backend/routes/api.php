@@ -406,7 +406,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | Kades Approvals (UC-04c)
     |----------------------------------------------------------------------
     | Diakses oleh official position 'kepala_desa' ATAU
-    | 'sekdes' — keduanya saling menggantikan (first-action-wins),
+    | 'sekretaris_desa' — keduanya saling menggantikan (first-action-wins),
     | lihat docblock KadesApprovalService dan SID-ARCH-BE-001 S3.3.
     | Status keputusan ini masih rekomendasi/asumsi default (belum
     | keputusan final eksplisit dari desa) - lihat

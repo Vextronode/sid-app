@@ -176,7 +176,7 @@ class OfficialServiceTest extends TestCase
     {
         return [
             ['kepala_desa'],
-            ['sekdes'],
+            ['sekretaris_desa'],
             ['kasi_pelayanan'],
             ['kaur_tu_umum'],
         ];
@@ -247,7 +247,7 @@ class OfficialServiceTest extends TestCase
             'is_active' => true,
         ]);
         $sekdes = Official::factory()->create([
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
@@ -287,7 +287,7 @@ class OfficialServiceTest extends TestCase
             'is_active' => true,
         ]);
         Official::factory()->create([
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'village_id' => $otherVillage->id,
             'is_active' => true,
         ]);
@@ -317,7 +317,7 @@ class OfficialServiceTest extends TestCase
         $village = Village::factory()->create();
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
         Official::factory()->create([
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'village_id' => $village->id,
             'is_active' => true,
         ]);

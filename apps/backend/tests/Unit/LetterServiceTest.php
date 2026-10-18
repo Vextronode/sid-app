@@ -274,7 +274,7 @@ class LetterServiceTest extends TestCase
             'rt_id' => $rt->id,
         ]);
         $sekdesUser = User::factory()->create(['village_id' => $citizen->village_id]);
-        Official::factory()->forUser($sekdesUser)->position('sekdes')->create();
+        Official::factory()->forUser($sekdesUser)->position('sekretaris_desa')->create();
 
         $this->actingAs($user);
 
@@ -491,7 +491,7 @@ class LetterServiceTest extends TestCase
         $village = Village::factory()->create();
         [$letter] = $this->makeLetterAtStep('kepala_desa', 1, ['village_id' => $village->id, 'status' => 'in_progress']);
 
-        $official = Official::factory()->create(['position' => 'sekdes', 'village_id' => $village->id]);
+        $official = Official::factory()->create(['position' => 'sekretaris_desa', 'village_id' => $village->id]);
         $user = User::factory()->create(['role' => 'sekretaris_desa', 'village_id' => $village->id]);
         $user->official()->save($official);
 

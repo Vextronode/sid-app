@@ -102,7 +102,7 @@ class OfficialPromoteDemoteTest extends TestCase
         $this->actingAs($actor)
             ->post('/api/officials/promote', [
                 'user_id' => $target->id,
-                'position' => 'sekdes',
+                'position' => 'sekretaris_desa',
                 'started_at' => today()->toDateString(),
                 'photo' => UploadedFile::fake()->image('foto.jpg'),
             ], self::JSON)
@@ -187,7 +187,7 @@ class OfficialPromoteDemoteTest extends TestCase
     {
         $village = Village::factory()->create();
         $actor = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
-        $official = Official::factory()->position('sekdes')->create(['village_id' => $village->id]);
+        $official = Official::factory()->position('sekretaris_desa')->create(['village_id' => $village->id]);
 
         $upload = fn (string $name) => $this->actingAs($actor)
             ->post("/api/officials/{$official->id}/photo", [
@@ -222,7 +222,7 @@ class OfficialPromoteDemoteTest extends TestCase
         $village = Village::factory()->create();
         $actor = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
         Storage::disk('public')->put('official-photos/lama.jpg', 'x');
-        $official = Official::factory()->position('sekdes')->create([
+        $official = Official::factory()->position('sekretaris_desa')->create([
             'village_id' => $village->id,
             'photo_img' => 'official-photos/lama.jpg',
         ]);
@@ -253,7 +253,7 @@ class OfficialPromoteDemoteTest extends TestCase
             'village_id' => $village->id,
             'citizen_id' => $citizen->id,
         ]);
-        $official = Official::factory()->forUser($target)->position('sekdes')->create([
+        $official = Official::factory()->forUser($target)->position('sekretaris_desa')->create([
             'village_id' => $village->id,
         ]);
 
@@ -297,7 +297,7 @@ class OfficialPromoteDemoteTest extends TestCase
         $village = Village::factory()->create();
         $actor = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
         $oldUser = User::factory()->create(['role' => 'sekretaris_desa', 'village_id' => $village->id]);
-        $old = Official::factory()->forUser($oldUser)->position('sekdes')->create(['village_id' => $village->id]);
+        $old = Official::factory()->forUser($oldUser)->position('sekretaris_desa')->create(['village_id' => $village->id]);
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
         $newUser = User::factory()->create([
             'role' => 'warga',

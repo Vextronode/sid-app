@@ -185,7 +185,7 @@ class LetterPolicyTest extends TestCase
         $user = User::factory()->create(['role' => $role]);
         Official::factory()->create([
             'user_id' => $user->id,
-            'position' => $role === 'sekretaris_desa' ? 'sekdes' : $role,
+            'position' => $role,
             'village_id' => $letter->village_id,
             'is_active' => true,
         ]);
@@ -240,7 +240,7 @@ class LetterPolicyTest extends TestCase
         $user = User::factory()->create(['role' => $role]);
         Official::factory()->create([
             'user_id' => $user->id,
-            'position' => $role === 'sekretaris_desa' ? 'sekdes' : $role,
+            'position' => $role,
             'village_id' => $otherVillage->id,
             'is_active' => true,
         ]);
@@ -393,7 +393,7 @@ class LetterPolicyTest extends TestCase
             ]);
             Official::factory()->create([
                 'user_id' => $user->id,
-                'position' => $role === 'sekretaris_desa' ? 'sekdes' : $role,
+                'position' => $role,
                 'village_id' => $letter->village_id,
                 'is_active' => true,
             ]);
@@ -446,7 +446,7 @@ class LetterPolicyTest extends TestCase
         $owner = User::factory()->create();
         $staff = User::factory()->create(['role' => $role, 'village_id' => $village->id]);
         Official::factory()->forUser($staff)
-            ->position($role === 'sekretaris_desa' ? 'sekdes' : $role)
+            ->position($role)
             ->create();
         $letter = Letter::factory()->create([
             'submitted_by' => $owner->id,

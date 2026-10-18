@@ -148,7 +148,7 @@ class RoleMiddlewareTest extends TestCase
     #[Test]
     public function sekretaris_desa_can_reach_kades_decision_after_middleware(): void
     {
-        $user = $this->officialUser('sekretaris_desa', 'sekdes');
+        $user = $this->officialUser('sekretaris_desa', 'sekretaris_desa');
         $letter = Letter::factory()->create(['village_id' => $user->village_id]);
 
         $this->actingAs($user)

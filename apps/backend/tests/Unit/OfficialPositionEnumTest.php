@@ -20,7 +20,7 @@ class OfficialPositionEnumTest extends TestCase
             OfficialPosition::KasiPelayanan->value => UserRole::KasiPelayanan,
             OfficialPosition::KaurTuUmum->value => UserRole::KaurTuUmum,
             OfficialPosition::StafSid->value => UserRole::StafSid,
-            OfficialPosition::Sekdes->value => UserRole::SekretarisDesa,
+            OfficialPosition::SekretarisDesa->value => UserRole::SekretarisDesa,
         ];
 
         foreach ($expected as $position => $role) {
@@ -46,7 +46,7 @@ class OfficialPositionEnumTest extends TestCase
             'kasi_pelayanan',
             'kaur_tu_umum',
             'staf_sid',
-            'sekdes',
+            'sekretaris_desa',
         ], OfficialPosition::accountPositions());
     }
 
