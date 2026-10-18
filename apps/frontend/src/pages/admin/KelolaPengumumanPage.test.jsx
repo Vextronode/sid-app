@@ -9,7 +9,10 @@ const api = vi.hoisted(() => ({
   deleteAnnouncement: vi.fn(),
 }))
 
+const beritaApi = vi.hoisted(() => ({ getBeritaList: vi.fn() }))
+
 vi.mock('@/features/pengumuman/api', () => api)
+vi.mock('@/features/kelola-berita/api', () => beritaApi)
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   refreshPublicVillageInfo: vi.fn(),
 }))
@@ -25,6 +28,11 @@ const ACTIVE = {
   updated_at: '2026-10-20T09:00:00+07:00',
 }
 
+const PUBLISHED = [
+  { id: 12, title: 'Jadwal posyandu Oktober' },
+  { id: 7, title: 'Hasil musyawarah desa' },
+]
+
 const renderPage = () =>
   render(
     <MemoryRouter>
@@ -35,6 +43,8 @@ const renderPage = () =>
 describe('KelolaPengumumanPage', () => {
   beforeEach(() => {
     Object.values(api).forEach((fn) => fn.mockReset())
+    beritaApi.getBeritaList.mockReset()
+    beritaApi.getBeritaList.mockResolvedValue({ data: { data: PUBLISHED } })
   })
 
   it('creates an announcement with a preset duration', async () => {
@@ -135,10 +145,87 @@ describe('KelolaPengumumanPage', () => {
     renderPage()
 
     await user.type(await screen.findByLabelText('Judul'), 'Info')
-    await user.type(screen.getByLabelText('Link (opsional)'), 'http://contoh.id')
+    await user.click(screen.getByRole('button', { name: 'Link lain' }))
+    await user.type(screen.getByLabelText('Alamat link'), 'http://contoh.id')
     await user.click(screen.getByRole('button', { name: '1 hari' }))
     await user.click(screen.getByRole('button', { name: 'Tayangkan pengumuman' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Link harus diawali https://')
+  })
+
+  it('links a published news item picked from the dropdown', async () => {
+    const user = userEvent.setup()
+    api.getAnnouncement.mockResolvedValue({ data: { data: null } })
+    api.saveAnnouncement.mockResolvedValue({ data: { data: ACTIVE } })
+    renderPage()
+
+    await user.type(await screen.findByLabelText('Judul'), 'Posyandu')
+    await user.click(screen.getByRole('button', { name: 'Berita desa' }))
+    expect(beritaApi.getBeritaList).toHaveBeenCalledWith({ status: 'published' })
+    await user.selectOptions(await screen.findByLabelText('Berita'), 'Jadwal posyandu Oktober')
+    await user.click(screen.getByRole('button', { name: '1 hari' }))
+    await user.click(screen.getByRole('button', { name: 'Tayangkan pengumuman' }))
+
+    expect(api.saveAnnouncement).toHaveBeenCalledWith(
+      expect.objectContaining({ link_url: '/berita/12' }),
+    )
+  })
+
+  it('requires a news item when "Berita desa" is chosen', async () => {
+    const user = userEvent.setup()
+    api.getAnnouncement.mockResolvedValue({ data: { data: null } })
+    renderPage()
+
+    await user.type(await screen.findByLabelText('Judul'), 'Posyandu')
+    await user.click(screen.getByRole('button', { name: 'Berita desa' }))
+    await user.click(screen.getByRole('button', { name: '1 hari' }))
+    await user.click(screen.getByRole('button', { name: 'Tayangkan pengumuman' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Pilih berita yang ingin ditautkan.')
+    expect(api.saveAnnouncement).not.toHaveBeenCalled()
+  })
+
+  it('preselects the linked news item when editing', async () => {
+    const user = userEvent.setup()
+    api.getAnnouncement.mockResolvedValue({ data: { data: { ...ACTIVE, link_url: '/berita/7' } } })
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Ubah' }))
+
+    expect(screen.getByRole('button', { name: 'Berita desa' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await waitFor(() => expect(screen.getByLabelText('Berita')).toHaveValue('7'))
+  })
+
+  it('warns when the linked news item is no longer published', async () => {
+    const user = userEvent.setup()
+    api.getAnnouncement.mockResolvedValue({ data: { data: { ...ACTIVE, link_url: '/berita/99' } } })
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Ubah' }))
+
+    expect(
+      await screen.findByText('Berita yang ditautkan sudah tidak tersedia. Pilih berita lain.'),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Berita')).toHaveValue('')
+  })
+
+  it('keeps an external link under "Link lain"', async () => {
+    const user = userEvent.setup()
+    api.getAnnouncement.mockResolvedValue({
+      data: { data: { ...ACTIVE, link_url: 'https://pangandarankab.go.id/info' } },
+    })
+    api.saveAnnouncement.mockResolvedValue({ data: { data: ACTIVE } })
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Ubah' }))
+    expect(screen.getByLabelText('Alamat link')).toHaveValue('https://pangandarankab.go.id/info')
+    await user.click(screen.getByRole('button', { name: 'Simpan perubahan' }))
+
+    expect(api.saveAnnouncement).toHaveBeenCalledWith(
+      expect.objectContaining({ link_url: 'https://pangandarankab.go.id/info' }),
+    )
   })
 })
