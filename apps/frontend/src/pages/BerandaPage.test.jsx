@@ -511,7 +511,7 @@ describe('BerandaPage contact section', () => {
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     renderPage()
 
-    const card = within(section()).getByText('Telepon & email').closest('.bd-contact-card')
+    const card = within(section()).getByText('Telepon').closest('.bd-contact-card')
     expect(card.tagName).toBe('DIV')
     expect(within(card).queryByRole('link')).toBeNull()
     const button = within(card).getByRole('button', {
@@ -528,12 +528,12 @@ describe('BerandaPage contact section', () => {
     delete navigator.clipboard
   })
 
-  it('shows the village email under the phone, also copied on click', async () => {
+  it('shows the village email in its own card, also copied on click', async () => {
     const writeText = vi.fn().mockResolvedValue()
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     renderPage()
 
-    const card = within(section()).getByText('Telepon & email').closest('.bd-contact-card')
+    const card = within(section()).getByText('Email').closest('.bd-contact-card')
     const button = within(card).getByRole('button', {
       name: 'Salin email kantordesacibenda@gmail.com',
     })
@@ -547,7 +547,7 @@ describe('BerandaPage contact section', () => {
     delete navigator.clipboard
   })
 
-  it('shows only the phone when the village has no email', () => {
+  it('marks the email card unavailable when the village has no email', () => {
     usePublicVillageInfo.mockReturnValue({
       village: { ...village, email: null },
       stats: null,
@@ -555,9 +555,12 @@ describe('BerandaPage contact section', () => {
     })
     renderPage()
 
-    const card = within(section()).getByText('Telepon & email').closest('.bd-contact-card')
-    expect(within(card).getAllByRole('button')).toHaveLength(1)
-    expect(within(card).queryByText('Belum tersedia')).toBeNull()
+    const phoneCard = within(section()).getByText('Telepon').closest('.bd-contact-card')
+    expect(within(phoneCard).getAllByRole('button')).toHaveLength(1)
+    expect(within(phoneCard).queryByText('Belum tersedia')).toBeNull()
+    const emailCard = within(section()).getByText('Email').closest('.bd-contact-card')
+    expect(within(emailCard).queryByRole('button')).toBeNull()
+    expect(within(emailCard).getByText('Belum tersedia')).toBeInTheDocument()
   })
 
   it('tells the user when the phone number could not be copied', async () => {
@@ -568,7 +571,7 @@ describe('BerandaPage contact section', () => {
     document.execCommand = vi.fn().mockReturnValue(false)
     renderPage()
 
-    const card = within(section()).getByText('Telepon & email').closest('.bd-contact-card')
+    const card = within(section()).getByText('Telepon').closest('.bd-contact-card')
     fireEvent.click(within(card).getByRole('button', { name: /Salin nomor telepon/ }))
 
     expect(await within(card).findByText(/Gagal menyalin/)).toBeInTheDocument()
@@ -612,9 +615,11 @@ describe('BerandaPage contact section', () => {
 
     renderPage()
 
-    const phoneCard = within(section()).getByText('Telepon & email').closest('.bd-contact-card')
+    const phoneCard = within(section()).getByText('Telepon').closest('.bd-contact-card')
     expect(within(phoneCard).queryByRole('button')).toBeNull()
     expect(within(phoneCard).getByText('Belum tersedia')).toBeInTheDocument()
+    const emailCard = within(section()).getByText('Email').closest('.bd-contact-card')
+    expect(within(emailCard).getByText('Belum tersedia')).toBeInTheDocument()
     const hoursCard = within(section()).getByText('Jam layanan kantor').closest('.bd-contact-card')
     expect(within(hoursCard).getByText('Belum tersedia')).toBeInTheDocument()
     expect(within(section()).getByText('Kantor Desa')).toBeInTheDocument()

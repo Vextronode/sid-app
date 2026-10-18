@@ -45,10 +45,11 @@ function AnnouncementLink({ href, labels }) {
   )
 }
 
-// Bar pengumuman (A10), desain "papan pengumuman": selembar kertas yang
-// ditempel di papan balai desa, dengan tepi kiri kuning padi sebagai "pin".
-// Satu pengumuman dari Petugas Desa (menu Pengumuman), tampil sampai waktunya
-// habis. Isi dan link (opsional) terbuka lewat "Baca selengkapnya".
+// Bar pengumuman (A10), desain "pita kentongan": pita biru laut tua selebar
+// layar dengan tiga garis kuning padi di kiri, seperti tiga pukulan kentongan
+// yang memanggil warga. Satu pengumuman dari Petugas Desa (menu Pengumuman),
+// tampil sampai waktunya habis. Isi dan link (opsional) terbuka lewat
+// "Baca selengkapnya" di panel terang di bawah pita.
 // containerClassName: pembungkus lebar konten (bd-container di beranda).
 export function AnnouncementBar({ content, announcement, containerClassName = 'bd-container' }) {
   const labels = content.announcementBar
@@ -62,27 +63,37 @@ export function AnnouncementBar({ content, announcement, containerClassName = 'b
   const hasMore = Boolean(body || linkUrl)
 
   return (
-    <section className="border-b border-[#ecd9a2] bg-pb-padi-soft" aria-label={labels.label}>
-      <div className={containerClassName}>
-        <div className="border-l-[6px] border-pb-padi py-3.5 pl-4.5 min-[721px]:pl-5.5">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <div className="min-w-0 flex-1 basis-[30ch]">
-              <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[15px] leading-snug text-pb-padi-ink">
-                <span className="font-bold">{labels.label}</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock size={15} strokeWidth={2} aria-hidden="true" />
-                  {labels.until} {formatAnnouncementUntil(expiresAt)}
-                </span>
-              </p>
-              <p className="mt-1 mb-0 font-display text-[clamp(18px,16px+0.4vw,21px)] leading-tight font-bold tracking-[-0.01em] text-pretty text-pb-ink">
-                {title}
-              </p>
+    <section aria-label={labels.label}>
+      <div className="bg-pb-laut-deep text-white">
+        <div className={containerClassName}>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3">
+            <div className="flex min-w-0 flex-1 basis-[30ch] items-center gap-4 min-[721px]:gap-5">
+              <span
+                className="bd-kentongan flex flex-none items-center gap-[5px]"
+                aria-hidden="true"
+              >
+                <span />
+                <span />
+                <span />
+              </span>
+              <div className="min-w-0">
+                <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[15px] leading-snug">
+                  <span className="font-bold text-pb-padi">{labels.label}</span>
+                  <span className="inline-flex items-center gap-1.5 text-white/80">
+                    <Clock size={15} strokeWidth={2} aria-hidden="true" />
+                    {labels.until} {formatAnnouncementUntil(expiresAt)}
+                  </span>
+                </p>
+                <p className="mt-0.5 mb-0 font-display text-[clamp(18px,16px+0.4vw,21px)] leading-tight font-bold tracking-[-0.01em] text-pretty text-white">
+                  {title}
+                </p>
+              </div>
             </div>
 
             {hasMore && (
               <button
                 type="button"
-                className="group inline-flex min-h-11 flex-none cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent px-2 text-base font-bold text-pb-laut underline decoration-pb-padi decoration-2 underline-offset-[6px] hover:decoration-current focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pb-laut max-[720px]:-ml-2"
+                className="group inline-flex min-h-11 flex-none cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent px-2 text-base font-bold text-white underline decoration-pb-padi decoration-2 underline-offset-[6px] hover:decoration-white focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pb-padi max-[720px]:ml-[30px]"
                 aria-expanded={open}
                 aria-controls={panelId}
                 onClick={() => setOpen((value) => !value)}
@@ -97,26 +108,37 @@ export function AnnouncementBar({ content, announcement, containerClassName = 'b
               </button>
             )}
           </div>
-
-          {hasMore && open && (
-            <div
-              id={panelId}
-              className="bd-announcement-panel mt-3 border-t border-[#ecd9a2] pt-3.5"
-            >
-              {body && (
-                <p className="m-0 max-w-[68ch] text-[17px] leading-relaxed whitespace-pre-line text-pb-ink">
-                  {body}
-                </p>
-              )}
-              {linkUrl && (
-                <div className={body ? 'mt-4' : undefined}>
-                  <AnnouncementLink href={linkUrl} labels={labels} />
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
+
+      {hasMore && open && (
+        <div className="border-b border-pb-line-strong bg-pb-laut-tint bg-(image:--pb-contour-dark) bg-size-[480px_180px] shadow-[inset_0_10px_12px_-10px_rgb(12_35_65/0.45)]">
+          <div className={containerClassName}>
+            <div id={panelId} className="bd-announcement-panel">
+              {/* Baris ini setinggi isinya (bukan setinggi area gulir), jadi
+                  garis gema memanjang sampai akhir teks. */}
+              <div className="flex gap-4 py-5 min-[721px]:gap-5">
+                {/* Gema tiga pukulan kentongan: garis padi lurus di bawahnya. */}
+                <span className="flex w-[22px] flex-none justify-center" aria-hidden="true">
+                  <span className="bd-kentongan-gema w-[3px] rounded-full bg-pb-padi" />
+                </span>
+                <div className="min-w-0">
+                  {body && (
+                    <p className="m-0 max-w-[68ch] text-[17px] leading-relaxed whitespace-pre-line text-pb-ink">
+                      {body}
+                    </p>
+                  )}
+                  {linkUrl && (
+                    <div className={body ? 'mt-4' : undefined}>
+                      <AnnouncementLink href={linkUrl} labels={labels} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

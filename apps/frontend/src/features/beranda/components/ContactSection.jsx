@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Clock, Copy, ExternalLink, MapPin, Phone } from 'lucide-react'
+import { Check, Clock, Copy, ExternalLink, Mail, MapPin, Phone } from 'lucide-react'
 
 import { SECTION_KONTAK } from '@/lib/constants/routes'
 import { copyText } from '@/shared/lib/copyText'
@@ -9,8 +9,11 @@ import { sectionGap, sectionTitle } from '../publicClasses'
 
 const COPY_FEEDBACK_MS = 2000
 
+// Di layar lebar isi kartu di tengah secara tegak (tinggi ketiga kartu sama).
 const cardClass =
-  'bd-contact-card flex flex-1 gap-4 px-6.5 py-7 text-pb-ink no-underline max-[900px]:px-5 max-[900px]:py-5.5'
+  'bd-contact-card flex flex-1 gap-4 px-6.5 py-7 text-pb-ink no-underline max-[900px]:px-5 max-[900px]:py-5.5 min-[901px]:items-center'
+// Telepon dan email berbagi satu kolom: dua kartu bertumpuk yang lebih rapat.
+const stackedCardClass = cardClass.replace('py-7', 'py-5')
 const detailClass = 'text-base leading-normal text-pb-muted'
 
 // Ikon tanpa kotak latar, sama seperti panel layanan.
@@ -84,8 +87,8 @@ function CopyValue({ value, copyLabel, copiedLabel, failedLabel, email = false }
 // Kontak (A31, A32; tujuan gulir A8). Tiga kolom dalam satu panel "loket"
 // (sama dengan panel layanan), isinya dari data desa yang diatur Petugas Desa
 // di Kelola Profil Desa:
-// - Telepon & email (village.phone, village.email): kartu tidak bisa diklik;
-//   nomor dan email bisa disalin.
+// - Telepon (village.phone) dan email (village.email): dua kartu bertumpuk di
+//   kolom pertama, tidak bisa diklik; nomor dan email bisa disalin.
 // - Jam layanan (village.office_hours): teks, tidak bisa diklik.
 // - Kantor desa: judul dari nama desa, alamat dari village.address. Kartu tidak
 //   bisa diklik; hanya link "Buka di peta" (tab baru) yang membuka Google Maps,
@@ -114,34 +117,43 @@ export function ContactSection({ content, village }) {
 
       <ul className="m-0 grid list-none grid-cols-1 overflow-hidden rounded-3xl border border-pb-line bg-white p-0 min-[901px]:grid-cols-3">
         <li className={item}>
-          <div className={cardClass}>
-            <CardContent icon={Phone} title={labels.phoneLabel}>
-              {phone && (
-                <CopyValue
-                  value={phone}
-                  copyLabel={labels.copyPhone}
-                  copiedLabel={labels.phoneCopied}
-                  failedLabel={labels.phoneCopyFailed}
-                />
-              )}
-              {email && (
-                <CopyValue
-                  value={email}
-                  copyLabel={labels.copyEmail}
-                  copiedLabel={labels.emailCopied}
-                  failedLabel={labels.emailCopyFailed}
-                  email
-                />
-              )}
-              {!phone && !email && <span className={detailClass}>{labels.notAvailable}</span>}
-            </CardContent>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className={stackedCardClass}>
+              <CardContent icon={Phone} title={labels.phoneLabel}>
+                {phone ? (
+                  <CopyValue
+                    value={phone}
+                    copyLabel={labels.copyPhone}
+                    copiedLabel={labels.phoneCopied}
+                    failedLabel={labels.phoneCopyFailed}
+                  />
+                ) : (
+                  <span className={detailClass}>{labels.notAvailable}</span>
+                )}
+              </CardContent>
+            </div>
+
+            <div className={`${stackedCardClass} border-t border-pb-line`}>
+              <CardContent icon={Mail} title={labels.emailLabel}>
+                {email ? (
+                  <CopyValue
+                    value={email}
+                    copyLabel={labels.copyEmail}
+                    copiedLabel={labels.emailCopied}
+                    failedLabel={labels.emailCopyFailed}
+                    email
+                  />
+                ) : (
+                  <span className={detailClass}>{labels.notAvailable}</span>
+                )}
+              </CardContent>
+            </div>
           </div>
         </li>
 
         <li className={item}>
-          {/* Di layar lebar isi kartu di tengah, mendatar dan tegak; di ponsel
-              rata kiri seperti kartu lain yang bertumpuk. */}
-          <div className={`${cardClass} min-[901px]:items-center min-[901px]:justify-center`}>
+          {/* Di layar lebar kartu jam layanan juga di tengah secara mendatar. */}
+          <div className={`${cardClass} min-[901px]:justify-center`}>
             <CardContent icon={Clock} title={labels.hoursLabel} centered>
               <span className={detailClass}>{hours || labels.notAvailable}</span>
             </CardContent>

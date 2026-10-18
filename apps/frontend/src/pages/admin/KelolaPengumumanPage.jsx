@@ -8,6 +8,7 @@ import { PageLoader } from '@/components/ui/PageLoader'
 import { getBerandaContent } from '@/features/beranda/berandaContent'
 import { AnnouncementBar } from '@/features/beranda/components/AnnouncementBar'
 import { formatAnnouncementUntil } from '@/features/beranda/utils/announcement'
+import { getBeritaList } from '@/features/kelola-berita/api'
 import { deleteAnnouncement, getAnnouncement, saveAnnouncement } from '@/features/pengumuman/api'
 import { refreshPublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 
@@ -28,6 +29,56 @@ const UNIT_LABELS = { hour: 'jam', day: 'hari', week: 'minggu' }
 const KEEP = 'keep'
 const CUSTOM = 'custom'
 
+// Jenis link pengumuman. Berita desa dipilih dari daftar, disimpan sebagai
+// alamat halaman detailnya (/berita/{id}).
+const LINK_MODES = [
+  { id: 'none', label: 'Tanpa link' },
+  { id: 'news', label: 'Berita desa' },
+  { id: 'other', label: 'Link lain' },
+]
+const NEWS_LINK = /^\/berita\/(\d+)$/
+
+function chipClass(active) {
+  return `min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors ${
+    active
+      ? 'border-[#185fa5] bg-[#185fa5] text-white'
+      : 'border-gray-300 bg-white text-gray-700 hover:border-[#185fa5]'
+  }`
+}
+
+function initialLink(linkUrl) {
+  if (!linkUrl) return { mode: 'none', newsId: '', url: '' }
+
+  const match = linkUrl.match(NEWS_LINK)
+  if (match) return { mode: 'news', newsId: match[1], url: '' }
+
+  return { mode: 'other', newsId: '', url: linkUrl }
+}
+
+// Berita yang sudah terbit, terbaru dulu, untuk dropdown link.
+function usePublishedNews() {
+  const [state, setState] = useState({ status: 'loading', items: [] })
+
+  const load = useCallback(async () => {
+    setState({ status: 'loading', items: [] })
+
+    try {
+      const response = await getBeritaList({ status: 'published' })
+      setState({ status: 'ready', items: response.data?.data ?? [] })
+    } catch {
+      setState({ status: 'error', items: [] })
+    }
+  }, [])
+
+  useEffect(() => {
+    // Muat awal menyinkronkan state dengan data backend.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load()
+  }, [load])
+
+  return { ...state, reload: load }
+}
+
 function resolveError(error, fallback) {
   const errors = error?.response?.data?.errors
 
@@ -46,13 +97,6 @@ function remainingLabel(expiresAt) {
 }
 
 function DurationPicker({ choice, custom, onChoice, onCustom, current, disabled }) {
-  const chip = (active) =>
-    `min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors ${
-      active
-        ? 'border-[#185fa5] bg-[#185fa5] text-white'
-        : 'border-gray-300 bg-white text-gray-700 hover:border-[#185fa5]'
-    }`
-
   return (
     <fieldset className="m-0 border-0 p-0" disabled={disabled}>
       <legend className="mb-2 text-sm font-semibold text-gray-800">Lama tayang</legend>
@@ -61,7 +105,7 @@ function DurationPicker({ choice, custom, onChoice, onCustom, current, disabled 
         {current && (
           <button
             type="button"
-            className={chip(choice === KEEP)}
+            className={chipClass(choice === KEEP)}
             aria-pressed={choice === KEEP}
             onClick={() => onChoice(KEEP)}
           >
@@ -73,7 +117,7 @@ function DurationPicker({ choice, custom, onChoice, onCustom, current, disabled 
           <button
             key={preset.id}
             type="button"
-            className={chip(choice === preset.id)}
+            className={chipClass(choice === preset.id)}
             aria-pressed={choice === preset.id}
             onClick={() => onChoice(preset.id)}
           >
@@ -83,7 +127,7 @@ function DurationPicker({ choice, custom, onChoice, onCustom, current, disabled 
 
         <button
           type="button"
-          className={chip(choice === CUSTOM)}
+          className={chipClass(choice === CUSTOM)}
           aria-pressed={choice === CUSTOM}
           onClick={() => onChoice(CUSTOM)}
         >
@@ -126,21 +170,133 @@ function DurationPicker({ choice, custom, onChoice, onCustom, current, disabled 
   )
 }
 
+function LinkPicker({ link, onChange, news, missing, disabled }) {
+  return (
+    <fieldset className="m-0 border-0 p-0" disabled={disabled}>
+      <legend className="mb-2 text-sm font-semibold text-gray-800">Link (opsional)</legend>
+
+      <div className="flex flex-wrap gap-2">
+        {LINK_MODES.map((mode) => (
+          <button
+            key={mode.id}
+            type="button"
+            className={chipClass(link.mode === mode.id)}
+            aria-pressed={link.mode === mode.id}
+            onClick={() => onChange({ ...link, mode: mode.id })}
+          >
+            {mode.label}
+          </button>
+        ))}
+      </div>
+
+      {link.mode === 'news' && (
+        <div className="sid-wilayah-form-group mt-3">
+          <label htmlFor="pengumuman-news">Berita</label>
+          <select
+            id="pengumuman-news"
+            value={missing ? '' : link.newsId}
+            onChange={(event) => onChange({ ...link, newsId: event.target.value })}
+            disabled={news.status !== 'ready' || news.items.length === 0}
+          >
+            <option value="">
+              {news.status === 'loading' ? 'Memuat berita…' : 'Pilih berita…'}
+            </option>
+            {news.items.map((item) => (
+              <option key={item.id} value={String(item.id)}>
+                {item.title}
+              </option>
+            ))}
+          </select>
+
+          {news.status === 'error' && (
+            <span className="flex flex-wrap items-center gap-2 text-xs text-red-700">
+              Daftar berita gagal dimuat.
+              <button
+                type="button"
+                onClick={news.reload}
+                className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-[#185fa5] underline"
+              >
+                Coba lagi
+              </button>
+            </span>
+          )}
+          {news.status === 'ready' && news.items.length === 0 && (
+            <span className="text-xs text-gray-500">
+              Belum ada berita yang terbit. Terbitkan berita dulu di Kelola Berita, atau pakai Link
+              lain.
+            </span>
+          )}
+          {missing && (
+            <span className="text-xs text-amber-800">
+              Berita yang ditautkan sudah tidak tersedia. Pilih berita lain.
+            </span>
+          )}
+          {news.status === 'ready' && news.items.length > 0 && !missing && (
+            <span className="text-xs text-gray-500">
+              Warga membuka berita ini lewat tombol Lihat selengkapnya.
+            </span>
+          )}
+        </div>
+      )}
+
+      {link.mode === 'other' && (
+        <div className="sid-wilayah-form-group mt-3">
+          <label htmlFor="pengumuman-link">Alamat link</label>
+          <input
+            id="pengumuman-link"
+            type="text"
+            value={link.url}
+            onChange={(event) => onChange({ ...link, url: event.target.value })}
+            maxLength={500}
+            placeholder="Contoh: https://pangandarankab.go.id/..."
+          />
+          <span className="text-xs text-gray-500">
+            Link lengkap diawali https://, atau alamat halaman di situs ini diawali /.
+          </span>
+        </div>
+      )}
+    </fieldset>
+  )
+}
+
 function AnnouncementForm({ current, processing, error, onSubmit, onCancel }) {
   const [form, setForm] = useState({
     title: current?.title ?? '',
     body: current?.body ?? '',
-    link_url: current?.link_url ?? '',
   })
+  const [link, setLink] = useState(() => initialLink(current?.link_url))
+  const news = usePublishedNews()
   const [choice, setChoice] = useState(current ? KEEP : null)
   const [custom, setCustom] = useState({ value: '2', unit: 'hour' })
   const [durationError, setDurationError] = useState('')
+  const [linkError, setLinkError] = useState('')
+
+  // Berita yang ditautkan sudah dihapus atau ditarik jadi draf.
+  const missing =
+    news.status === 'ready' &&
+    link.newsId !== '' &&
+    !news.items.some((item) => String(item.id) === link.newsId)
 
   const change = (field) => (event) =>
     setForm((value) => ({ ...value, [field]: event.target.value }))
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+
+    let linkUrl = null
+
+    if (link.mode === 'news') {
+      if (!link.newsId || missing) {
+        setLinkError('Pilih berita yang ingin ditautkan.')
+        return
+      }
+
+      linkUrl = `/berita/${link.newsId}`
+    } else if (link.mode === 'other') {
+      linkUrl = link.url.trim() || null
+    }
+
+    setLinkError('')
 
     let duration = {}
 
@@ -166,7 +322,7 @@ function AnnouncementForm({ current, processing, error, onSubmit, onCancel }) {
     await onSubmit({
       title: form.title.trim(),
       body: form.body.trim() || null,
-      link_url: form.link_url.trim() || null,
+      link_url: linkUrl,
       ...duration,
     })
   }
@@ -203,21 +359,16 @@ function AnnouncementForm({ current, processing, error, onSubmit, onCancel }) {
         />
       </div>
 
-      <div className="sid-wilayah-form-group">
-        <label htmlFor="pengumuman-link">Link (opsional)</label>
-        <input
-          id="pengumuman-link"
-          type="text"
-          value={form.link_url}
-          onChange={change('link_url')}
-          maxLength={500}
-          placeholder="Contoh: /berita/12 atau https://pangandarankab.go.id/..."
-          disabled={processing}
-        />
-        <span className="text-xs text-gray-500">
-          Alamat halaman di situs ini (diawali /) atau link lengkap diawali https://.
-        </span>
-      </div>
+      <LinkPicker
+        link={link}
+        news={news}
+        missing={missing}
+        disabled={processing}
+        onChange={(value) => {
+          setLink(value)
+          setLinkError('')
+        }}
+      />
 
       <DurationPicker
         choice={choice}
@@ -231,9 +382,9 @@ function AnnouncementForm({ current, processing, error, onSubmit, onCancel }) {
         onCustom={setCustom}
       />
 
-      {(durationError || error) && (
+      {(linkError || durationError || error) && (
         <div className="sid-wilayah-form-error" role="alert">
-          {durationError || error}
+          {linkError || durationError || error}
         </div>
       )}
 

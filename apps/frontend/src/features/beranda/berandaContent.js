@@ -154,7 +154,8 @@ const STATIC = {
     // Telepon, email, jam layanan, nama kantor, dan link peta dari data desa
     // (village.phone, email, office_hours, name, latitude/longitude), diatur
     // Petugas Desa.
-    phoneLabel: 'Telepon & email',
+    phoneLabel: 'Telepon',
+    emailLabel: 'Email',
     // Tombol salin; nama aksesibel: "Salin nomor telepon (0265) 2640613".
     copyPhone: 'Salin nomor telepon',
     phoneCopied: 'Nomor disalin',
