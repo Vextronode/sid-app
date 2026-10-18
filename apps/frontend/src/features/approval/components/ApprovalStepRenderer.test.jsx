@@ -69,23 +69,26 @@ describe('ApprovalStepRenderer regression', () => {
   })
 
   it.each([
-    ['kepala_desa', 'sekdes'],
+    ['kepala_desa', 'sekretaris_desa'],
     ['sekretaris_desa', 'kepala_desa'],
-  ])('makes the final stage read-only for %s after the other final approver decides', (role, level) => {
-    render(
-      <ApprovalStepRenderer
-        currentStep={finalStep}
-        approvals={[{ approval_level: level, action: 'approved' }]}
-        letterStatus="in_progress"
-        currentUserRole={role}
-        apiRole="kades"
-        letterId="letter-1"
-      />,
-    )
+  ])(
+    'makes the final stage read-only for %s after the other final approver decides',
+    (role, level) => {
+      render(
+        <ApprovalStepRenderer
+          currentStep={finalStep}
+          approvals={[{ approval_level: level, action: 'approved' }]}
+          letterStatus="in_progress"
+          currentUserRole={role}
+          apiRole="kades"
+          letterId="letter-1"
+        />,
+      )
 
-    expect(screen.queryByRole('button', { name: 'Setuju' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Tolak' })).toBeNull()
-  })
+      expect(screen.queryByRole('button', { name: 'Setuju' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Tolak' })).toBeNull()
+    },
+  )
 
   it.each(['rw', 'kadus', 'kasi_pelayanan', 'kaur_tu_umum'])(
     'renders the approval as read-only for %s',

@@ -18,7 +18,7 @@ export default function SuratDetailModalKadus({ suratId, onClose }) {
           title: 'Keputusan RT',
         },
         {
-          levels: ['kepala_desa', 'sekdes'],
+          levels: ['kepala_desa', 'sekretaris_desa'],
           title: 'Keputusan Kepala Desa',
         },
       ]}

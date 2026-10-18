@@ -50,7 +50,7 @@ function getApprovalTimestamp(surat, stepKey) {
   // Map step keys to approval_level values coming from BE
   const STEP_TO_LEVELS = {
     rt: ['rt'],
-    kades: ['kepala_desa', 'sekdes', 'sekretaris_desa'],
+    kades: ['kepala_desa', 'sekretaris_desa'],
     selesai: [],
   }
 
