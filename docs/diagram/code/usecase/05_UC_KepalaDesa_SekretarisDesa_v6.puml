@@ -61,6 +61,6 @@ note bottom of UC_DECIDE
   expires_at, snapshot (TTD & stempel Kepala Desa
   aktif, juga bila Sekdes yang menyetujui),
   notifikasi ke pemohon & Kasi/Kaur.
-  approval_level mencatat kepala_desa / sekdes.
+  approval_level mencatat kepala_desa / sekretaris_desa.
 end note
 @enduml

@@ -40,7 +40,7 @@ class DemoOfficialSeeder extends Seeder
      */
     private const VILLAGE_OFFICIALS = [
         ['name' => 'Dede Rusliana', 'gender' => 'L', 'position' => 'kepala_desa', 'photo' => 'dede-rusliana', 'username' => 'dede.rusliana'],
-        ['name' => 'Saeful Millah', 'gender' => 'L', 'position' => 'sekdes', 'photo' => 'saeful-millah', 'username' => 'saeful.millah'],
+        ['name' => 'Saeful Millah', 'gender' => 'L', 'position' => 'sekretaris_desa', 'photo' => 'saeful-millah', 'username' => 'saeful.millah'],
         ['name' => 'Sakim Hidayat', 'gender' => 'L', 'position' => 'kasi_pemerintahan', 'photo' => 'sakim-hidayat'],
         ['name' => 'Wahyu Munazat, S.Pd, M.Pd', 'gender' => 'L', 'position' => 'kasi_kesejahteraan', 'photo' => 'wahyu-munazat'],
         ['name' => 'Ferdiansyah', 'gender' => 'L', 'position' => 'kasi_pelayanan', 'photo' => 'ferdiansyah', 'username' => 'ferdiansyah'],

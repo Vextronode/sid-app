@@ -9,7 +9,7 @@ const APPROVER_ROLES_BY_POSITION = {
 
 const APPROVAL_LEVELS_BY_POSITION = {
   rt: ['rt'],
-  kepala_desa: ['kepala_desa', 'sekdes', 'sekretaris_desa'],
+  kepala_desa: ['kepala_desa', 'sekretaris_desa'],
 }
 
 /**

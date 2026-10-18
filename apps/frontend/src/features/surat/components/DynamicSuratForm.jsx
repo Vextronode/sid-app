@@ -299,7 +299,7 @@ export function DynamicSuratForm({
                 <span className="sid-label">{slot.label}</span>
 
                 {hasSignature === false ? (
-                  <p className="sid-form-field-error" role="alert">
+                  <p className="sid-admin-alert sid-admin-alert-error" role="alert">
                     Anda belum memiliki tanda tangan. <Link to="/profile">Buat tanda tangan</Link>{' '}
                     terlebih dahulu sebelum mengajukan surat ini.
                   </p>
@@ -377,7 +377,7 @@ export function DynamicSuratForm({
       )}
 
       {submitError && (
-        <p className="sid-form-field-error" role="alert">
+        <p className="sid-admin-alert sid-admin-alert-error" role="alert">
           {submitError}
         </p>
       )}

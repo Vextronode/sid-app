@@ -28,7 +28,7 @@ use Tests\TestCase;
  *    keputusan bisnis soal Sekdes (pertanyaan itu MASIH TERBUKA, lihat
  *    EV5-1-S4_OPEN_QUESTION_SEKDES.md — blocking untuk EV5-4-S5, bukan
  *    ditentukan di sini).
- *  - resolvablePositions() untuk step 'kepala_desa' TIDAK mengandung 'sekdes'
+ *  - resolvablePositions() untuk step 'kepala_desa' TIDAK mengandung 'sekretaris_desa'
  *    — karena memang tidak pernah ada di kolom itu sendiri (satu row =
  *    satu value), bukan karena logic resolve officials sudah diputuskan.
  *  - is_final di-cast ke boolean.
@@ -71,7 +71,7 @@ class FlowStepModelTest extends TestCase
     {
         return [
             'kepala_desa' => ['kepala_desa'],
-            'sekdes' => ['sekdes'],
+            'sekretaris_desa' => ['sekretaris_desa'],
             'kasi_pelayanan' => ['kasi_pelayanan'],
             'kaur_tu_umum' => ['kaur_tu_umum'],
         ];
@@ -109,7 +109,7 @@ class FlowStepModelTest extends TestCase
             'approver_position' => 'kepala_desa', 'is_final' => false,
         ]);
 
-        $this->assertNotContains('sekdes', $step->resolvablePositions());
+        $this->assertNotContains('sekretaris_desa', $step->resolvablePositions());
     }
 
     #[Test]

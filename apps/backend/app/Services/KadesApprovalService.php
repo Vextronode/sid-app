@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 class KadesApprovalService
 {
-    private const AUTHORIZED_POSITIONS = ['kepala_desa', 'sekdes'];
+    private const AUTHORIZED_POSITIONS = ['kepala_desa', 'sekretaris_desa'];
 
     public function __construct(
         protected LetterRepository $letterRepository,
@@ -75,7 +75,8 @@ class KadesApprovalService
                 abort(409, 'Surat ini sudah diproses oleh Kepala Desa/Sekdes lain sebelum Anda.');
             }
 
-            $approvalLevel = $official->position === 'sekdes' ? 'sekdes' : 'kepala_desa';
+            // Jabatan yang berwenang (kepala_desa/sekretaris_desa) sekaligus approval level-nya.
+            $approvalLevel = $official->position;
 
             $this->letterRepository->recordDecisionForLetter($locked, [
                 'approved_by' => $user->id,
@@ -183,7 +184,7 @@ class KadesApprovalService
             return;
         }
 
-        $actorLabel = $approvalLevel === 'sekdes' ? 'Sekretaris Desa' : 'Kepala Desa';
+        $actorLabel = $approvalLevel === 'sekretaris_desa' ? 'Sekretaris Desa' : 'Kepala Desa';
 
         $citizenUser->notify(new LetterStatusNotification(
             $letter,

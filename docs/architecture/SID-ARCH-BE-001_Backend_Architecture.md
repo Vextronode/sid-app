@@ -108,7 +108,7 @@ Seeder membuat 10 jenis surat (A01–A10) per desa. A07 (Penguburan) memakai `up
 
 ### 3.3 First-Action-Wins Kades/Sekdes
 
-Keputusan dijalankan di dalam transaksi: `SELECT ... FOR UPDATE` pada surat, cek ulang status aktif dan step `kepala_desa`; request kedua mendapat 409. `approval_level` mencatat `kepala_desa` atau `sekdes` sesuai jabatan aktor.
+Keputusan dijalankan di dalam transaksi: `SELECT ... FOR UPDATE` pada surat, cek ulang status aktif dan step `kepala_desa`; request kedua mendapat 409. `approval_level` mencatat `kepala_desa` atau `sekretaris_desa` sesuai jabatan aktor.
 
 ### 3.4 Final approve: nomor surat & snapshot
 
@@ -152,7 +152,7 @@ Keputusan dijalankan di dalam transaksi: `SELECT ... FOR UPDATE` pada surat, cek
 
 ### 4.2 Jabatan
 
-- **Jabatan berakun** (enum `OfficialPosition`): kepala_desa, sekdes, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, staf_sid — menentukan `users.role`.
+- **Jabatan berakun** (enum `OfficialPosition`): kepala_desa, sekretaris_desa, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, staf_sid — menentukan `users.role`.
 - **Jabatan tanpa akun**: jenis dikelola Petugas Desa di `official_position_types` (kode dibuat dari label, tidak dapat diubah; seeder: Kasi Kesejahteraan, Kasi Pemerintahan, Kaur Perencanaan, Kaur Keuangan, Staf SIPADES, Staf SISKEUDES). `officials.position` kini VARCHAR(50) berisi nilai enum atau `code` jenis jabatan (`ValidOfficialPosition`).
 - Penetapan via `OfficialAssignmentService` (promote/demote/rotate, transaksional, activity log `official`). Foto pejabat wajib saat penetapan/rotasi (disk public). Calon dicari lewat NIK (`POST /officials/candidates/lookup`).
 

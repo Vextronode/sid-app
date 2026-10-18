@@ -114,7 +114,7 @@ class OfficialSignatureEndpointTest extends TestCase
         $user = $this->petugas($village);
         $inactiveHead = $this->headOfVillage($village, ['is_active' => false]);
         $endedHead = $this->headOfVillage($village, ['ended_at' => today()]);
-        $otherOfficial = $this->headOfVillage($village, ['position' => 'sekdes']);
+        $otherOfficial = $this->headOfVillage($village, ['position' => 'sekretaris_desa']);
 
         foreach ([$inactiveHead, $endedHead, $otherOfficial] as $official) {
             $this->actingAs($user)->post("/api/officials/{$official->id}/signature", [

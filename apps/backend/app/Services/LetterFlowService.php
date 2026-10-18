@@ -73,7 +73,7 @@ class LetterFlowService
         $labels = [
             'rt' => 'RT',
             'kepala_desa' => 'Kepala Desa/Sekretaris Desa',
-            'sekdes' => 'Kepala Desa/Sekretaris Desa',
+            'sekretaris_desa' => 'Kepala Desa/Sekretaris Desa',
         ];
         $status = $letter->status->value;
 

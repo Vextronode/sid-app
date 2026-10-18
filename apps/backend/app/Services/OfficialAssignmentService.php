@@ -495,9 +495,9 @@ class OfficialAssignmentService
 
         if ($position === OfficialPosition::Rt->value) {
             $count = $this->letterRepository->countWaitingAtStep(['rt'], $official->village_id, $official->rt_id);
-        } elseif (in_array($position, [OfficialPosition::KepalaDesa->value, OfficialPosition::Sekdes->value], true)) {
+        } elseif (in_array($position, [OfficialPosition::KepalaDesa->value, OfficialPosition::SekretarisDesa->value], true)) {
             $hasOtherApprover = $this->officialRepository
-                ->allActiveByPositionsAndVillage(['kepala_desa', 'sekdes'], $official->village_id)
+                ->allActiveByPositionsAndVillage(['kepala_desa', 'sekretaris_desa'], $official->village_id)
                 ->contains(fn (Official $candidate) => $candidate->id !== $official->id);
 
             if (! $hasOtherApprover) {

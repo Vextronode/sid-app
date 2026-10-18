@@ -46,7 +46,7 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
       subtitle="Tahap Final (Kades/Sekdes)"
       decisionLevels={[
         {
-          levels: ['kepala_desa', 'sekdes'],
+          levels: ['kepala_desa', 'sekretaris_desa'],
           title: 'Keputusan Tahap Final',
         },
       ]}

@@ -39,7 +39,7 @@ FlowStep:
       example: 1
     approver_position:
       type: string
-      enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+      enum: [rt, kepala_desa, sekretaris_desa, kasi_pelayanan, kaur_tu_umum]
       description: "Enum database; seeder hanya memakai rt (step 1) dan kepala_desa (step 2, final)."
       example: "rt"
     is_final:

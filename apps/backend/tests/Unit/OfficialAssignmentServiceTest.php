@@ -67,7 +67,7 @@ class OfficialAssignmentServiceTest extends TestCase
         try {
             $this->service()->promote($actor, [
                 'user_id' => $target->id,
-                'position' => 'sekdes',
+                'position' => 'sekretaris_desa',
                 'started_at' => today()->toDateString(),
             ]);
             $this->fail('Non-Petugas Desa actor must be rejected.');
@@ -81,7 +81,7 @@ class OfficialAssignmentServiceTest extends TestCase
         try {
             $this->service()->promote($actor, [
                 'user_id' => $target->id,
-                'position' => 'sekdes',
+                'position' => 'sekretaris_desa',
                 'started_at' => today()->toDateString(),
             ]);
             $this->fail('Non-warga target must be rejected.');
@@ -98,7 +98,7 @@ class OfficialAssignmentServiceTest extends TestCase
         $this->expectException(HttpException::class);
         $this->service()->promote($actor, [
             'user_id' => $target->id,
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'started_at' => today()->toDateString(),
         ]);
     }

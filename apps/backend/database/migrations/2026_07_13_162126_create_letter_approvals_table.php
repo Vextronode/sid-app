@@ -23,7 +23,7 @@ return new class extends Migration
             $table->enum('approval_level', [
                 'rt',
                 'kepala_desa',
-                'sekdes',
+                'sekretaris_desa',
                 'kasi_pelayanan',
                 'kaur_tu_umum',
             ]);

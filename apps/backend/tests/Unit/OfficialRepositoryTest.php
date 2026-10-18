@@ -212,7 +212,7 @@ class OfficialRepositoryTest extends TestCase
         $official = Official::factory()->create([
             'user_id' => $user->id,
             'citizen_id' => $citizen->id,
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
@@ -220,6 +220,6 @@ class OfficialRepositoryTest extends TestCase
         $this->assertSame($official->id, $this->repository->findActiveByUserId($user->id)->id);
         $this->assertTrue($this->repository->existsActiveForUser($user->id));
         $this->assertSame($official->id, $this->repository->findActiveByCitizenId($citizen->id)->id);
-        $this->assertSame(1, $this->repository->countActiveByPositionAndVillage('sekdes', $village->id));
+        $this->assertSame(1, $this->repository->countActiveByPositionAndVillage('sekretaris_desa', $village->id));
     }
 }

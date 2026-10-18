@@ -143,7 +143,7 @@ function mapProfile(raw, officials = [], hamlets = [], positions = [], stats = n
       jabatan: 'Kepala Desa',
       foto: kepalaDesa?.photo_url || null,
     },
-    sekretarisDesa: toSlot('sekdes', 'Sekretaris Desa', byPosition('sekdes')),
+    sekretarisDesa: toSlot('sekretaris_desa', 'Sekretaris Desa', byPosition('sekretaris_desa')),
     perangkatList: mapStaff(officials, positions),
     kadusList: mapKadus(officials, hamlets),
   }

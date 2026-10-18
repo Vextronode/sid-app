@@ -22,7 +22,6 @@ function formatApprovalLevel(level) {
   const labels = {
     rt: 'RT',
     kepala_desa: 'Kepala Desa',
-    sekdes: 'Sekretaris Desa',
     sekretaris_desa: 'Sekretaris Desa',
   }
 

@@ -108,7 +108,7 @@ function SignatureRefill({ letterId, slot, onDone }) {
       )}
 
       {error && (
-        <p role="alert" className="sid-form-field-error">
+        <p role="alert" className="sid-admin-alert sid-admin-alert-error">
           {error}
         </p>
       )}

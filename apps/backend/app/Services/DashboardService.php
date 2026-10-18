@@ -91,11 +91,6 @@ class DashboardService
         return $official;
     }
 
-    private function officialPositionForRole(string $role): string
-    {
-        return $role === 'sekretaris_desa' ? 'sekdes' : $role;
-    }
-
     /**
      * Scope statistik warga: RT/RW ke wilayahnya, Kasi/Kaur/Petugas ke
      * seluruh desa; role lain (termasuk kadus) ditolak.
@@ -120,7 +115,7 @@ class DashboardService
     private function officialVillageId(User $user): string
     {
         $official = $user->official()->where('is_active', true)->first();
-        if (! $user->is_active || ! $official?->village_id || $official->position !== $this->officialPositionForRole($user->role)) {
+        if (! $user->is_active || ! $official?->village_id || $official->position !== $user->role) {
             throw new HttpException(403, 'Data desa pejabat tidak valid.');
         }
 

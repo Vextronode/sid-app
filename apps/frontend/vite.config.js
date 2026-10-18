@@ -31,7 +31,8 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: appName,
           short_name: appName,
-          description: 'Pelayanan Terpadu Satu Pintu Desa Cibenda',
+          // Generik: nama desa datang dari DB, sedangkan manifest dibuat saat build.
+          description: `Layanan surat dan informasi desa - ${appName}`,
           theme_color: '#ffffff',
           background_color: '#ffffff',
           display: 'standalone',

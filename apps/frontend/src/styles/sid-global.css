@@ -63,12 +63,10 @@
    FORM ERROR
    ========================= */
 
-  :root {
-    --sid-danger: #c53030;
-    --sid-danger-hover: #9b2c2c;
-    --sid-danger-soft: #fcebeb;
-    --sid-danger-border: #e80f0f;
-  }
+  --sid-danger: #c53030;
+  --sid-danger-hover: #9b2c2c;
+  --sid-danger-soft: #fcebeb;
+  --sid-danger-border: #e80f0f;
   /* =========================
      ACCENT
      ========================= */
@@ -21498,6 +21496,27 @@ button.sid-operator-profile {
   border-color: var(--sid-danger-border);
   background: var(--sid-danger-soft);
   color: var(--sid-danger);
+}
+
+/* Pesan error tingkat panel/form di fitur lain memakai kartu yang sama
+   dengan .sid-admin-alert-error agar seragam; margin bawaan tiap kelas
+   tetap dipakai. Error per kolom input (.sid-form-field-error,
+   .sid-login-field-error) sengaja tetap teks kecil di bawah kolomnya. */
+.sid-login-error,
+.sid-login-form-error,
+.sid-modal-error,
+.sid-profil-desa-error,
+.sid-berita-form-error,
+.sid-webpush-error,
+.sid-kelola-wilayah-error,
+.sid-wilayah-form-error {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--sid-danger-border);
+  border-radius: var(--radius-sm);
+  background: var(--sid-danger-soft);
+  color: var(--sid-danger);
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .sid-admin-alert-success {

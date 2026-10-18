@@ -220,7 +220,8 @@ export function useProfilDesa() {
         .filter((official) => !['kepala_desa', 'kadus'].includes(official.position))
         .sort(
           (first, second) =>
-            Number(second.position === 'sekdes') - Number(first.position === 'sekdes') ||
+            Number(second.position === 'sekretaris_desa') -
+              Number(first.position === 'sekretaris_desa') ||
             // Staf aplikasi paling akhir, seperti urutan di halaman publik.
             Number(first.position === 'staf_sid') - Number(second.position === 'staf_sid'),
         ),

@@ -134,7 +134,7 @@ class OfficialService
     private function resolvablePositionsFor(FlowStep $step): array
     {
         if ($step->approver_position === 'kepala_desa') {
-            return ['kepala_desa', 'sekdes'];
+            return ['kepala_desa', 'sekretaris_desa'];
         }
 
         return $step->resolvablePositions();

@@ -17,7 +17,7 @@ enum OfficialPosition: string
     case KasiPelayanan = 'kasi_pelayanan';
     case KaurTuUmum = 'kaur_tu_umum';
     case StafSid = 'staf_sid';
-    case Sekdes = 'sekdes';
+    case SekretarisDesa = 'sekretaris_desa';
 
     public function userRole(): UserRole
     {
@@ -29,7 +29,7 @@ enum OfficialPosition: string
             self::KasiPelayanan => UserRole::KasiPelayanan,
             self::KaurTuUmum => UserRole::KaurTuUmum,
             self::StafSid => UserRole::StafSid,
-            self::Sekdes => UserRole::SekretarisDesa,
+            self::SekretarisDesa => UserRole::SekretarisDesa,
         };
     }
 
@@ -70,7 +70,7 @@ enum OfficialPosition: string
     {
         return [
             self::KepalaDesa,
-            self::Sekdes,
+            self::SekretarisDesa,
             self::KasiPelayanan,
             self::KaurTuUmum,
             self::Kadus,
@@ -90,7 +90,7 @@ enum OfficialPosition: string
             self::KasiPelayanan => 'Kasi Pelayanan',
             self::KaurTuUmum => 'Kaur TU & Umum',
             self::StafSid => UserRole::stafSidLabel(),
-            self::Sekdes => 'Sekretaris Desa',
+            self::SekretarisDesa => 'Sekretaris Desa',
         };
     }
 }

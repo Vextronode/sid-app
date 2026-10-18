@@ -86,7 +86,7 @@ class KadesApprovalServiceTest extends TestCase
             'citizen_id' => $citizen->id,
         ]);
         Official::factory()->create([
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
@@ -126,7 +126,7 @@ class KadesApprovalServiceTest extends TestCase
             'is_active' => true,
         ]);
         $user = User::factory()->create([
-            'role' => $position === 'sekdes' ? 'sekretaris_desa' : 'kepala_desa',
+            'role' => $position,
             'village_id' => $village->id,
         ]);
         $user->official()->save($official);
@@ -139,14 +139,14 @@ class KadesApprovalServiceTest extends TestCase
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesStep($village);
         $letter->update(['current_step_order' => 2]);
-        $sekdes = $this->makeUserWithPosition('sekdes', $village);
+        $sekdes = $this->makeUserWithPosition('sekretaris_desa', $village);
 
         $this->service->decision($letter, $sekdes, ['status' => 'approved']);
 
         $this->assertSame('approved', $letter->fresh()->status->value);
         $this->assertDatabaseHas('letter_approvals', [
             'letter_id' => $letter->id,
-            'approval_level' => 'sekdes',
+            'approval_level' => 'sekretaris_desa',
             'action' => 'approved',
             'approved_by' => $sekdes->id,
         ]);
@@ -171,7 +171,7 @@ class KadesApprovalServiceTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesStep($village);
-        $sekdes = $this->makeUserWithPosition('sekdes', $village);
+        $sekdes = $this->makeUserWithPosition('sekretaris_desa', $village);
 
         $this->service->decision($letter, $sekdes, ['status' => 'approved']);
 
@@ -182,13 +182,13 @@ class KadesApprovalServiceTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesStep($village);
-        $sekdes = $this->makeUserWithPosition('sekdes', $village);
+        $sekdes = $this->makeUserWithPosition('sekretaris_desa', $village);
 
         $this->service->decision($letter, $sekdes, ['status' => 'approved']);
 
         $this->assertDatabaseHas('letter_approvals', [
             'letter_id' => $letter->id,
-            'approval_level' => 'sekdes',
+            'approval_level' => 'sekretaris_desa',
             'action' => 'approved',
             'approved_by' => $sekdes->id,
         ]);
@@ -354,7 +354,7 @@ class KadesApprovalServiceTest extends TestCase
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesFinalStep($village);
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
-        $sekdes = $this->makeUserWithPosition('sekdes', $village);
+        $sekdes = $this->makeUserWithPosition('sekretaris_desa', $village);
 
         $this->service->decision($letter, $kades, ['status' => 'approved']);
 
@@ -368,7 +368,7 @@ class KadesApprovalServiceTest extends TestCase
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesFinalStep($village);
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
-        $sekdes = $this->makeUserWithPosition('sekdes', $village);
+        $sekdes = $this->makeUserWithPosition('sekretaris_desa', $village);
 
         $this->service->decision($letter, $kades, ['status' => 'approved']);
 

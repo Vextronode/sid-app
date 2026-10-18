@@ -124,7 +124,7 @@ export default function DaftarSuratSayaPage() {
         ========================================== */}
 
         {deleteError && (
-          <p className="sid-form-field-error" role="alert">
+          <p className="sid-admin-alert sid-admin-alert-error" role="alert">
             {deleteError}
           </p>
         )}

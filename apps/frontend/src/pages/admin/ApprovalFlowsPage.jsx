@@ -8,7 +8,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 const POSITION_LABELS = {
   rt: 'Ketua RT',
   kepala_desa: 'Kepala Desa / Sekretaris Desa',
-  sekdes: 'Kepala Desa / Sekretaris Desa',
+  sekretaris_desa: 'Kepala Desa / Sekretaris Desa',
 }
 
 /**

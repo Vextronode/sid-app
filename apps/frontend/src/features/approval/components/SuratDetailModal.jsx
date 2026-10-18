@@ -40,7 +40,6 @@ function getApproverName(approval) {
 function getApproverRole(approval) {
   const roleLabels = {
     kepala_desa: 'Kepala Desa',
-    sekdes: 'Sekretaris Desa',
     sekretaris_desa: 'Sekretaris Desa',
     rt: 'RT',
   }
