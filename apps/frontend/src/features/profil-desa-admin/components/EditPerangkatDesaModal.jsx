@@ -5,6 +5,7 @@
 // ==========================================
 
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Save, X, User, Phone, FileText, Power } from 'lucide-react'
 
 const EMPTY_OFFICIAL = {
@@ -227,8 +228,9 @@ export default function EditPerangkatDesaModal({
               ========================================== */}
 
           <div className="sid-profil-desa-device-notice">
-            Nama dan foto perangkat berasal dari data backend dan tidak diedit dari modal ini. Foto
-            diunggah saat penetapan atau rotasi, dan dapat diganti di halaman Pejabat Desa.
+            Nama dan foto perangkat diambil dari data pejabat yang tercatat di sistem, jadi tidak
+            bisa diubah di sini. Untuk mengganti nama, foto, atau menetapkan pejabat baru, buka
+            halaman <Link to="/admin/pejabat-desa">Pejabat Desa</Link>.
           </div>
 
           {/* ==========================================

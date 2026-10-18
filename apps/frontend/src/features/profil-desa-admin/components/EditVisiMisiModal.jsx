@@ -113,7 +113,7 @@ export default function EditVisiMisiModal({
             />
 
             <span className="sid-profil-desa-form-help">
-              Misi disimpan sebagai satu teks sesuai format backend.
+              Tulis satu butir misi per baris; tiap baris tampil sebagai satu nomor misi.
             </span>
           </div>
 
