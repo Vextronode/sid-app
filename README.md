@@ -159,7 +159,7 @@ npm run build
 
 ## Deploy (stack expo Docker)
 
-Stack Docker (`sid_db`, `sid_api`, `sid_scheduler`, `sid_web`) dijalankan lewat skrip di `deploy/scripts/` dengan image yang dibangun CI. Di Docker, `QUEUE_CONNECTION=sync` (push dikirim langsung) dan scheduler berjalan otomatis di service `sid_scheduler`, jadi tidak perlu menjalankan worker atau scheduler manual. Panduan operasional ada di [`docs/EXPO_RUNBOOK.md`](docs/EXPO_RUNBOOK.md).
+Stack Docker (`sid_db`, `sid_api`, `sid_scheduler`, `sid_worker`, `sid_web`) dijalankan lewat skrip di `deploy/scripts/` dengan image yang dibangun CI. Di Docker, `QUEUE_CONNECTION=database`: push diantrekan dan dikirim service `sid_worker`, sedangkan scheduler berjalan di service `sid_scheduler`, jadi tidak perlu menjalankan worker atau scheduler manual. Panduan operasional ada di [`docs/EXPO_RUNBOOK.md`](docs/EXPO_RUNBOOK.md).
 
 ## Konvensi penting
 

@@ -176,7 +176,7 @@ Jalankan di `apps\backend`, masing-masing di **terminal terpisah** dan biarkan t
 | Terminal | Perintah | Fungsi | Wajib? |
 |---|---|---|---|
 | 1 | `php artisan serve` | API di `http://localhost:8000` | Ya |
-| 2 | `php artisan schedule:work` | Scheduler: tiap 5 menit menjalankan `approvals:send-reminders`, tiap hari `activitylog:clean` | Untuk pengingat approval |
+| 2 | `php artisan schedule:work` | Scheduler: tiap 5 menit menjalankan `approvals:send-reminders`, tiap menit `announcements:prune`, tiap hari `activitylog:clean` | Untuk pengingat approval |
 | 3 | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push | Untuk push browser (bila `QUEUE_CONNECTION=database`) |
 
 ```powershell
@@ -197,8 +197,8 @@ php artisan approvals:send-reminders
 
 Notifikasi surat dikirim lewat dua jalur: **in-app** (lonceng) ditulis langsung ke database dan selalu masuk, sedangkan **Web Push** harus menghubungi layanan push browser di internet.
 
-- `QUEUE_CONNECTION=database` (default lokal): push dicatat dulu di tabel `jobs`, lalu dikirim `queue:work` di belakang layar. Tombol Ajukan/Setujui tetap cepat. Tanpa worker, push tertahan (lonceng tetap masuk) dan langsung terkirim saat worker dinyalakan.
-- `QUEUE_CONNECTION=sync`: push dikirim saat itu juga di dalam request, tanpa worker. Lebih praktis untuk lokal, tetapi tombol menunggu push selesai. Stack Docker expo memakai mode ini.
+- `QUEUE_CONNECTION=database` (default lokal dan stack Docker): push dicatat dulu di tabel `jobs`, lalu dikirim `queue:work` di belakang layar. Tombol Ajukan/Setujui tetap cepat. Tanpa worker, push tertahan (lonceng tetap masuk) dan langsung terkirim saat worker dinyalakan. Di Docker, worker berjalan otomatis di service `sid_worker`.
+- `QUEUE_CONNECTION=sync`: push dikirim saat itu juga di dalam request, tanpa worker. Lebih praktis untuk lokal, tetapi tombol menunggu push selesai.
 
 Cek push yang gagal: `php artisan queue:failed`; coba lagi: `php artisan queue:retry all`.
 
