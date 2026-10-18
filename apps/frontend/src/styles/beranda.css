@@ -259,6 +259,18 @@
   animation-delay: var(--bd-rise-delay-3);
 }
 
+/* Isi pengumuman yang dibuka "Baca selengkapnya": satu gerakan pendek
+   sebagai jawaban atas klik. */
+.bd-announcement-panel {
+  animation: bd-rise 180ms ease-out both;
+  --bd-rise-distance: -6px;
+  /* Bar menempel di atas layar: isi panjang digulir di dalam panel agar
+     tidak menutupi halaman, terutama di ponsel. */
+  max-height: min(50vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .bd-lift {
   transition:
     transform var(--bd-lift-duration) ease,
@@ -279,7 +291,8 @@
 @media (prefers-reduced-motion: reduce) {
   .bd-rise,
   .bd-rise-2,
-  .bd-rise-3 {
+  .bd-rise-3,
+  .bd-announcement-panel {
     animation: none;
   }
 
@@ -315,7 +328,8 @@
 /* Tujuan tautan #section (scrollIntoView) tidak tertutup header yang
    menempel; scroll-margin-top tiap section menambah jarak di atasnya. */
 html:has(.bd-header) {
-  scroll-padding-top: 72px;
+  /* Tinggi header + bar pengumuman, diukur PublicStickyChrome. */
+  scroll-padding-top: var(--bd-sticky-offset, 72px);
 }
 
 /* Tombol berbingkai: "Masuk Warga". */

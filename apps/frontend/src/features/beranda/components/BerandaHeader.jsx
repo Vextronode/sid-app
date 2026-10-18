@@ -10,7 +10,6 @@ import { ProfilDesaDropdown } from './ProfilDesaDropdown'
 // Header beranda (A1–A9), juga dipakai halaman publik lain lewat MainLayout.
 export function BerandaHeader({ content }) {
   const { header } = content
-  const showTransparansi = Boolean(content.apbdes)
   const sectionLinkProps = useSectionLink()
 
   return (
@@ -26,14 +25,14 @@ export function BerandaHeader({ content }) {
           <Link to={HAL_BERITA} className="bd-nav-link">
             {header.nav.berita}
           </Link>
-          <ProfilDesaDropdown header={header} showTransparansi={showTransparansi} />
+          <ProfilDesaDropdown header={header} />
           <a className="bd-nav-link" {...sectionLinkProps(SECTION_KONTAK)}>
             {header.nav.kontak}
           </a>
           <AccountNavLink nav={header.nav} className="bd-button-outline bd-nav-login" />
         </nav>
 
-        <MobileMenu header={header} showTransparansi={showTransparansi} />
+        <MobileMenu header={header} />
       </div>
     </header>
   )

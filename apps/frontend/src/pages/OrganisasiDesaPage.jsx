@@ -3,7 +3,8 @@
 // Halaman publik struktur organisasi desa:
 // - /bpd           : Badan Permusyawaratan Desa
 // - /lembaga-desa  : LPM, Karang Taruna, dan PKK (dipilih lewat tab,
-//                    tersimpan di ?lembaga= agar bisa dibagikan)
+//                    tersimpan di ?lembaga= agar bisa dibagikan); BUMDesa
+//                    tampil "Segera hadir" dan tidak bisa dipilih
 // Bagannya sama dengan Perangkat Desa di Profil Desa (OrgChart).
 // Data dari /api/public/village-orgs/{orgType}, dikelola Petugas Desa.
 // ==========================================
@@ -42,6 +43,8 @@ const VARIANTS = {
       { value: 'karang_taruna', label: 'Karang Taruna', name: 'Karang Taruna' },
       { value: 'pkk', label: 'PKK', name: 'Pemberdayaan Kesejahteraan Keluarga' },
     ],
+    // Belum ada datanya: tampil sebagai "Segera hadir", tidak bisa dipilih.
+    comingSoon: [{ label: 'BUMDesa' }],
   },
 }
 
@@ -53,6 +56,11 @@ const tabClass = (active) =>
       ? 'border-pb-laut bg-pb-laut text-white'
       : 'border-pb-line-strong bg-white text-pb-laut hover:border-pb-laut hover:bg-pb-laut-tint'
   }`
+
+// Lembaga yang belum tersedia: bentuk sama dengan tab, tetapi bukan tombol.
+const soonClass =
+  'inline-flex min-h-11 cursor-default items-center gap-2 rounded-full border border-dashed border-pb-line-strong bg-white px-5 text-base font-bold text-pb-muted'
+const soonBadge = 'rounded-full bg-pb-padi-soft px-2 py-0.5 text-xs font-bold text-pb-padi-ink'
 
 const toCard = (member, jabatan) => ({
   nama: member?.name ?? null,
@@ -149,22 +157,28 @@ export function OrganisasiDesaPage({ variant }) {
 
       <div className={page}>
         {config.orgs.length > 1 && (
-          <div
-            className="mb-10 flex flex-wrap gap-2.5"
-            role="tablist"
-            aria-label="Pilih lembaga desa"
-          >
-            {config.orgs.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                role="tab"
-                aria-selected={o.value === org.value}
-                className={tabClass(o.value === org.value)}
-                onClick={() => setSearchParams({ lembaga: o.value }, { replace: true })}
-              >
+          <div className="mb-10 flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap gap-2.5" role="tablist" aria-label="Pilih lembaga desa">
+              {config.orgs.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={o.value === org.value}
+                  className={tabClass(o.value === org.value)}
+                  onClick={() => setSearchParams({ lembaga: o.value }, { replace: true })}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Di luar tablist: bukan tab yang bisa dipilih. */}
+            {config.comingSoon?.map((o) => (
+              <span key={o.label} className={soonClass}>
                 {o.label}
-              </button>
+                <span className={soonBadge}>Segera hadir</span>
+              </span>
             ))}
           </div>
         )}

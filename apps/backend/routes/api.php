@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\ApprovalSettingController;
 use App\Http\Controllers\Api\CitizenController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\FamilySocioeconomicController;
 use App\Http\Controllers\Api\HamletController;
+use App\Http\Controllers\Api\InfoPageController;
 use App\Http\Controllers\Api\KadesApprovalController;
 use App\Http\Controllers\Api\LetterAttachmentController;
 use App\Http\Controllers\Api\LetterController;
@@ -38,6 +40,7 @@ use App\Http\Controllers\Api\VillageOrgMemberController;
 use App\Http\Controllers\Api\VillageOrgPositionController;
 use App\Http\Controllers\Api\VillageProfileController;
 use App\Models\VillageOrgPosition;
+use App\Support\InfoPageFields;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -55,6 +58,8 @@ Route::prefix('public')->group(function () {
     Route::get('/letter-types', [PublicPageController::class, 'letterTypeList']);
     Route::get('/regulations', [PublicPageController::class, 'regulationList']);
     Route::get('/contact-us', [PublicPageController::class, 'contactUs']);
+    Route::get('/info-pages/{page}', [PublicPageController::class, 'infoPage'])
+        ->whereIn('page', array_keys(InfoPageFields::PAGES));
 });
 
 /*
@@ -370,6 +375,22 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
 
     /*
     |----------------------------------------------------------------------
+    | Pengumuman beranda & Halaman Informasi
+    |----------------------------------------------------------------------
+    | Eksklusif Petugas Desa. Satu pengumuman per desa (PUT menggantikan).
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))->group(function () {
+        Route::get('/announcement', [AnnouncementController::class, 'show']);
+        Route::put('/announcement', [AnnouncementController::class, 'save']);
+        Route::delete('/announcement', [AnnouncementController::class, 'destroy']);
+
+        Route::get('/info-pages', [InfoPageController::class, 'index']);
+        Route::put('/info-pages/{page}', [InfoPageController::class, 'update'])
+            ->whereIn('page', array_keys(InfoPageFields::PAGES));
+    });
+
+    /*
+    |----------------------------------------------------------------------
     | RT Approvals (UC-04a - Tahap 1)
     |----------------------------------------------------------------------
     | Daftar/detail surat dibaca lewat /letters; section ini hanya untuk
@@ -465,6 +486,9 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
 
         Route::middleware(UserRole::middleware(UserRole::StafSid))->group(function () {
             Route::patch('/profile', [VillageProfileController::class, 'update']);
+            // Titik kantor dari link Google Maps (server membuka link Google).
+            Route::post('/profile/resolve-map-link', [VillageProfileController::class, 'resolveMapLink'])
+                ->middleware('throttle:10,1');
             Route::post('/profile/stamp', [VillageProfileController::class, 'uploadStamp']);
             Route::get('/profile/stamp', [VillageProfileController::class, 'stampPreview']);
             // Tampilan halaman publik (logo di header, foto di beranda).

@@ -67,7 +67,7 @@ api_spec/
 | Wilayah | `/hamlets`, `/rws`, `/rts` | Petugas Desa |
 | Notifikasi | `/notifications`, `/notifications/unread-count`, `/notifications/read-all`, `/notifications/{id}/read`, `POST/DELETE /push-subscriptions` | Semua user |
 | Dashboard | `/dashboard`, `/dashboard/gender-stats`, `/dashboard/letter-stats` | Semua role (data di-scope) |
-| CMS | `/villages/profile` (GET semua user; PATCH Petugas), `/villages/profile/stamp\|logo\|hero-image`, `/news`, `/news-categories`, `/regulations`, `/village-org-positions` (GET slot tetap; + members, members/{id}/end, members/{id}/photo) | Petugas Desa |
+| CMS | `/villages/profile` (GET semua user; PATCH Petugas), `/villages/profile/stamp\|logo\|hero-image\|resolve-map-link`, `/news`, `/news-categories`, `/regulations`, `/announcement` (GET/PUT/DELETE, satu per desa), `/info-pages` (+ `/{page}`), `/village-org-positions` (GET slot tetap; + members, members/{id}/end, members/{id}/photo) | Petugas Desa |
 | Publik | `/public/home`, `/public/village-profile`, `/public/news`, `/public/letter-types`, `/public/regulations`, `/public/contact-us`, `/public/village-orgs/{orgType}` (opsional `?village_code=`; cache 10 menit per desa) | Tanpa login |
 
 ## Alur Surat (ringkas)

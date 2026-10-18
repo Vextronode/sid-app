@@ -1,0 +1,79 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Pengumuman beranda yang sedang tayang
+  description: Aktor Petugas Desa. `data` bernilai null bila tidak ada pengumuman aktif.
+  operationId: getAnnouncement
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Pengumuman aktif atau null
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                nullable: true
+                allOf:
+                  - $ref: '../../schemas/announcements/announcements.yaml#/Announcement'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+
+put:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Tayangkan atau ubah pengumuman beranda
+  description: |
+    Aktor Petugas Desa. Satu pengumuman per desa: menyimpan menggantikan yang
+    lama. expires_at = sekarang + durasi. Saat mengubah pengumuman yang masih
+    tayang, durasi boleh dikosongkan untuk mempertahankan waktu berakhir.
+    Pengumuman yang lewat waktu tidak tampil dan dihapus perintah terjadwal
+    `announcements:prune` (tiap menit). Cache beranda publik ikut segar.
+  operationId: saveAnnouncement
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/announcements/announcements.yaml#/SaveAnnouncementRequest'
+  responses:
+    '200':
+      description: Pengumuman disimpan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Pengumuman ditayangkan"
+              data:
+                $ref: '../../schemas/announcements/announcements.yaml#/Announcement'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: Judul kosong, link tidak valid, atau durasi tidak diisi/lebih dari satu tahun
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+
+delete:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Hapus pengumuman beranda
+  operationId: deleteAnnouncement
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Pengumuman dihapus
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'

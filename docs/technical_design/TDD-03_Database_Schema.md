@@ -42,7 +42,9 @@ ERD mencakup 29 tabel domain inti. Sumber kebenaran adalah migration di `apps/ba
 | hero_image | VARCHAR(255) | NULL | Foto beranda; aturan nilai sama dengan `logo` |
 | hero_photo_credit | VARCHAR(100) | NULL | Kredit foto beranda |
 | office_hours | VARCHAR(100) | NULL | Jam layanan kantor desa |
-| map_url | VARCHAR(500) | NULL | Tautan peta |
+| welcome_message | TEXT | NULL | Sambutan Kepala Desa di beranda; NULL = blok tidak tampil |
+| latitude | DECIMAL(10,7) | NULL | Lintang titik kantor desa (link "Buka di peta" Google Maps) |
+| longitude | DECIMAL(10,7) | NULL | Bujur titik kantor desa |
 | history | TEXT | NULL | Sejarah desa untuk profil publik |
 | vision | TEXT | NULL | Visi desa |
 | mission | TEXT | NULL | Misi desa |
@@ -592,6 +594,33 @@ History pemegang jabatan organisasi non-struktural.
 
 Tidak ada kolom `is_published` — semua peraturan yang disimpan langsung tampil di halaman publik.
 
+**Tabel: announcements**
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | BIGINT | PK, AUTO INCREMENT | Primary key |
+| village_id | UUID | FK → villages.id, NOT NULL, UNIQUE | Satu pengumuman per desa |
+| title | VARCHAR(150) | NOT NULL | Tampil di bar beranda |
+| body | TEXT | NULL | Isi saat "Baca selengkapnya" |
+| link_url | VARCHAR(500) | NULL | `https://...` atau path internal `/...` |
+| expires_at | TIMESTAMP | NOT NULL, INDEX | Batas tayang (wajib diisi lewat durasi) |
+| created_by | UUID | FK → users.id, NULL ON DELETE | |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+Pengumuman yang lewat `expires_at` tidak dibaca (scope `active`) dan dihapus perintah terjadwal `announcements:prune` (tiap menit).
+
+**Tabel: village_info_pages**
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | BIGINT | PK, AUTO INCREMENT | Primary key |
+| village_id | UUID | FK → villages.id, NOT NULL | |
+| page | VARCHAR(30) | NOT NULL | `ppid`, `kebijakan-privasi`, `aksesibilitas` |
+| fields | JSON | NOT NULL | Isian khas desa; kunci per halaman di `App\Support\InfoPageFields` |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+UNIQUE (`village_id`, `page`). Teks baku halaman ada di frontend (`features/info/infoPagesContent.js`).
+
 **Tabel: notifications**
 
 | Kolom | Tipe | Constraint | Keterangan |
@@ -679,7 +708,7 @@ Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 29 tabel dom
 
 ## 3. Ringkasan Tabel
 
-Ada **29 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **32 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
+Ada **31 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **34 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
 
 ```
 Wilayah (4): villages, hamlets, rws, rts
@@ -691,11 +720,12 @@ Surat (6): letter_types, letters, letter_approvals, letter_status_logs,
            letter_attachments, letter_signatures
 Tanda Tangan Akun (2): user_signatures, signature_blocks
 Konfigurasi (1): approval_settings
-Konten & Komunikasi (5): notifications, news, news_categories,
-                         news_category_news, village_regulations
+Konten & Komunikasi (7): notifications, news, news_categories,
+                         news_category_news, village_regulations,
+                         announcements, village_info_pages
 Referensi (1): occupations
 
-Total domain inti: 4 + 4 + 2 + 2 + 2 + 6 + 2 + 1 + 5 + 1 = 29 tabel
+Total domain inti: 4 + 4 + 2 + 2 + 2 + 6 + 2 + 1 + 7 + 1 = 31 tabel
 Operasional: letter_number_counters, activity_log, push_subscriptions (3 tabel)
 Total aplikasi non-framework: 32 tabel
 Di-drop: letter_categories (v5.3)

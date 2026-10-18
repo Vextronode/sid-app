@@ -9,7 +9,7 @@ import { ProfilDesaItems } from './ProfilDesaDropdown'
 
 // Navigasi ponsel (K5): tombol berlabel teks "Menu" yang membuka daftar nav.
 // Aturan tutupnya sama dengan dropdown Profil Desa (useDisclosure).
-export function MobileMenu({ header, showTransparansi }) {
+export function MobileMenu({ header }) {
   const { isOpen, toggle, close, containerRef, triggerRef, panelId, onBlur } = useDisclosure()
   const { nav } = header
   const sectionLinkProps = useSectionLink()
@@ -51,7 +51,7 @@ export function MobileMenu({ header, showTransparansi }) {
           </li>
           <li className="bd-mobile-group">
             <span className="bd-mobile-group-title">{nav.profil}</span>
-            <ProfilDesaItems header={header} showTransparansi={showTransparansi} onSelect={close} />
+            <ProfilDesaItems header={header} onSelect={close} />
           </li>
           <li>
             <a

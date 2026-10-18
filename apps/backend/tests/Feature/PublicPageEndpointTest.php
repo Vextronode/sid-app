@@ -351,7 +351,8 @@ class PublicPageEndpointTest extends TestCase
             'hero_image' => '/assets/image/hero.jpg',
             'hero_photo_credit' => 'Warga',
             'office_hours' => 'Senin – Jumat, 08.00 – 16.00 WIB',
-            'map_url' => 'https://maps.app.goo.gl/abc',
+            'latitude' => -7.6803137,
+            'longitude' => 108.5513816,
         ]);
 
         $this->getJson('/api/public/home')
@@ -362,6 +363,7 @@ class PublicPageEndpointTest extends TestCase
             ->assertJsonPath('data.village.hero_image_url', '/assets/image/hero.jpg')
             ->assertJsonPath('data.village.hero_photo_credit', 'Warga')
             ->assertJsonPath('data.village.office_hours', 'Senin – Jumat, 08.00 – 16.00 WIB')
-            ->assertJsonPath('data.village.map_url', 'https://maps.app.goo.gl/abc');
+            ->assertJsonPath('data.village.latitude', -7.6803137)
+            ->assertJsonPath('data.village.longitude', 108.5513816);
     }
 }

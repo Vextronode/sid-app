@@ -67,18 +67,23 @@ src/
     data-warga/, pekerjaan/, kelola-wilayah/, manajemen-user/
     organisasi/           OrganisasiManager (slot Ketua/Wakil/Anggota, promosi, foto anggota)
     kelola-berita/        berita + kategori berita
-    profil-desa-admin/    Kelola Profil Desa (identitas, kop, logo, foto beranda, stempel)
+    profil-desa-admin/    Kelola Profil Desa (identitas, kop, logo, foto beranda, stempel, titik kantor
+                          dari koordinat/link Google Maps, sambutan Kepala Desa)
+    pengumuman/           API pengumuman beranda (halaman Kelola Pengumuman)
+    info-admin/           Kelola Halaman Informasi (ListField: isian daftar dinamis)
     peraturan/, notifikasi/ (popover, WebPushControls, deep link), dashboard-mobile/
-    beranda/              header publik (AccountNavLink: Masuk / Dashboard Saya), konten beranda
+    beranda/              header publik (AccountNavLink: Masuk / Dashboard Saya), konten beranda,
+                          PublicStickyChrome (header + bar pengumuman menempel di semua halaman publik)
     profil-desa/          OrgChart (bagan Perangkat Desa, BPD, Lembaga Desa)
-    berita/, info-desa/, info/ (halaman informasi, dev-only)
+    berita/, info-desa/, info/ (halaman informasi: template + isian dari menu Halaman Informasi)
     cetak-surat/
   pages/                  halaman publik & warga; pages/admin untuk pejabat/operator
   components/ui/          PageLoader, UserAvatar (foto akun di header, avatar default)
   lib/                    api.js (instance Axios + submitDecision; memancarkan event role_forbidden),
                           authEvents.js, pdfjs.js, constants/routes, constants/app (APP_NAME dari
                           VITE_APP_NAME, STAF_APP_LABEL)
-  shared/lib/             queryClient, queryKeys, publicVillageParams, villageName, copyText
+  shared/lib/             queryClient, queryKeys, publicVillageParams, villageName, copyText,
+                          villageMap (koordinat kantor → link Google Maps)
   styles/                 sid-global.css, public.css, beranda.css
   test/                   setup Vitest
 public/
@@ -109,17 +114,17 @@ Semua route didefinisikan di `App.jsx`:
 - Halaman operator dibatasi lewat `features/operator-desa/constants/roleNavigation.js` (`OPERATOR_ROUTE_CAPABILITIES`), mis. `/admin/data-warga` untuk Petugas, Kasi, Kaur; halaman kelola lain hanya Petugas Desa; `/admin/surat-saya` untuk pejabat non-Petugas.
 - Halaman selain beranda dimuat lazy (`React.lazy` + `Suspense`).
 - `/buka-notifikasi` adalah tujuan klik Web Push; meneruskan ke daftar surat yang sesuai peran (atau "Surat Saya" bila penerima adalah pemohon).
-- Halaman informasi (Kebijakan Privasi, Aksesibilitas, PPID) hanya didaftarkan di mode dev.
+- Halaman informasi (Kebijakan Privasi, Aksesibilitas, PPID) aktif di produksi; isian khas desa dari menu Halaman Informasi. Tidak ada konten atau route khusus mode dev.
 - Respons 403 `code: role_forbidden` memancarkan event `sid:role-forbidden`; AuthContext memeriksa `/api/user` tanpa loader dan, bila perannya berubah (mis. dirotasi), memuat ulang ke `/loginpage` sehingga `GuestRoute` meneruskan ke dashboard peran baru. Staf aplikasi yang merotasi dirinya sendiri langsung dibawa ke `/daftar-surat`.
 - Nama aplikasi (`VITE_APP_NAME`, default SIDUTama) dipakai di judul login, `<title>` (plugin kecil di `vite.config.js`), manifest PWA, dan label peran `staf_sid` ("Staf {nama aplikasi}").
 
 | Kelompok | Route utama |
 |---|---|
-| Publik | `/`, `/berita`, `/berita/:id`, `/profil-desa`, `/bpd`, `/lembaga-desa` (`?lembaga=lpm\|karang_taruna\|pkk`), `/peraturan-desa` |
+| Publik | `/`, `/berita`, `/berita/:id`, `/profil-desa` (`#peraturan-desa`, `#perangkat-desa`), `/bpd`, `/lembaga-desa` (`?lembaga=lpm\|karang_taruna\|pkk`), `/kebijakan-privasi`, `/aksesibilitas`, `/ppid`; `/peraturan-desa` diarahkan ke `/profil-desa#peraturan-desa` |
 | Auth | `/loginpage`, `/register`, `/lupa-password`, `/password-reset/:token`, `/ganti-password` |
 | Warga | `/daftar-surat`, `/jenis-surat`, `/pengajuan-surat/:kode?`, `/daftar-surat-saya`, `/profile` |
 | RT/RW/Kadus/Kades | `/admin/dashboard-surat-{rt,rw,kadus,kades}`, `/admin/list-{rt,rw,kadus,kades}` |
-| Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/approval-{settings,flows}`, `/admin/log-aktivitas`, `/admin/organisasi/{bpd,lembaga}` |
+| Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/approval-{settings,flows}`, `/admin/log-aktivitas`, `/admin/organisasi/{bpd,lembaga}`, `/admin/pengumuman`, `/admin/halaman-informasi` |
 | Pejabat (umum) | `/admin/profile`, `/admin/surat-saya` |
 
 ---

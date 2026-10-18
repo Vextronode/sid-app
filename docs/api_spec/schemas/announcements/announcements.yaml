@@ -1,0 +1,49 @@
+Announcement:
+  type: object
+  description: Pengumuman beranda (satu per desa), tampil sampai expires_at.
+  properties:
+    title:
+      type: string
+      maxLength: 150
+      example: "Kantor desa tutup Jumat siang untuk rapat musdes"
+    body:
+      type: string
+      nullable: true
+      maxLength: 1000
+    link_url:
+      type: string
+      nullable: true
+      description: URL https:// lengkap atau path internal yang diawali "/" (mis. /berita/12).
+    expires_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+SaveAnnouncementRequest:
+  type: object
+  required: [title]
+  properties:
+    title:
+      type: string
+      maxLength: 150
+    body:
+      type: string
+      nullable: true
+      maxLength: 1000
+    link_url:
+      type: string
+      nullable: true
+      maxLength: 500
+      pattern: '^(https://\S+|/[^\s/]\S*)$'
+    duration_value:
+      type: integer
+      minimum: 1
+      maximum: 999
+      nullable: true
+      description: Wajib bersama duration_unit saat belum ada pengumuman aktif. Total paling lama satu tahun.
+    duration_unit:
+      type: string
+      enum: [hour, day, week]
+      nullable: true

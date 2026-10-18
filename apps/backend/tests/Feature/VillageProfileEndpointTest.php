@@ -214,26 +214,48 @@ class VillageProfileEndpointTest extends TestCase
             'name' => 'Desa Cibenda',
             'head_name' => 'H. Ridwan Saepudin',
             'office_hours' => 'Senin – Jumat, 08.00 – 15.00 WIB',
-            'map_url' => 'https://maps.app.goo.gl/abc',
+            'latitude' => -7.6803137,
+            'longitude' => 108.5513816,
             'hero_photo_credit' => 'Dinas Pariwisata',
+            'welcome_message' => 'Selamat datang di situs resmi desa.',
         ])->assertOk()
+            ->assertJsonPath('data.welcome_message', 'Selamat datang di situs resmi desa.')
             ->assertJsonPath('data.office_hours', 'Senin – Jumat, 08.00 – 15.00 WIB')
-            ->assertJsonPath('data.map_url', 'https://maps.app.goo.gl/abc')
+            ->assertJsonPath('data.latitude', -7.6803137)
+            ->assertJsonPath('data.longitude', 108.5513816)
             ->assertJsonPath('data.hero_photo_credit', 'Dinas Pariwisata');
 
         // Field yang tidak dikirim tidak ikut dikosongkan.
         $this->actingAs($user)->patchJson('/api/villages/profile', [
             'name' => 'Desa Cibenda',
             'head_name' => 'H. Ridwan Saepudin',
-        ])->assertOk()->assertJsonPath('data.map_url', 'https://maps.app.goo.gl/abc');
+        ])->assertOk()->assertJsonPath('data.latitude', -7.6803137);
 
         $this->actingAs($user)->patchJson('/api/villages/profile', [
             'name' => 'Desa Cibenda',
             'head_name' => 'H. Ridwan Saepudin',
-            'map_url' => 'bukan url',
-        ])->assertStatus(422)->assertJsonValidationErrors(['map_url']);
+            'latitude' => -91,
+            'longitude' => 181,
+        ])->assertStatus(422)->assertJsonValidationErrors(['latitude', 'longitude']);
 
-        $this->assertSame('https://maps.app.goo.gl/abc', $village->fresh()->map_url);
+        // Koordinat hanya berarti bila keduanya ada.
+        $this->actingAs($user)->patchJson('/api/villages/profile', [
+            'name' => 'Desa Cibenda',
+            'head_name' => 'H. Ridwan Saepudin',
+            'latitude' => -7.5,
+        ])->assertStatus(422)->assertJsonValidationErrors(['longitude']);
+
+        $this->assertSame(-7.6803137, $village->fresh()->latitude);
+
+        // Lokasi bisa dihapus dengan mengosongkan keduanya.
+        $this->actingAs($user)->patchJson('/api/villages/profile', [
+            'name' => 'Desa Cibenda',
+            'head_name' => 'H. Ridwan Saepudin',
+            'latitude' => null,
+            'longitude' => null,
+        ])->assertOk()
+            ->assertJsonPath('data.latitude', null)
+            ->assertJsonPath('data.longitude', null);
     }
 
     #[Test]

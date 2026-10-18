@@ -1,12 +1,8 @@
-// Satu-satunya tempat konten beranda yang tidak berasal dari API (K1).
-//
-// - STATIC: copy final dan konten manual. Tampil di development dan production.
-//   Baris WhatsApp aduan (K14, D2) masih sementara; pemilik proyek menggantinya
-//   langsung di sini.
-// - DEV_ONLY: dummy dari mockup agar layout terlihat utuh saat development.
-//   Di production nilainya null, dan komponen yang memakainya tidak dirender.
-//
-// Pakai getBerandaContent(); jangan impor DEV_ONLY langsung dari komponen.
+// Satu-satunya tempat konten beranda yang tidak berasal dari API (K1): copy
+// final dan label. Tampil sama di development dan production; isi yang khas
+// desa (pengumuman, sambutan, kontak) datang dari data desa.
+// Baris WhatsApp aduan (K14, D2) masih sementara; pemilik proyek menggantinya
+// langsung di sini.
 
 import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
 import { HAL_BPD, HAL_LEMBAGA, HAL_PROFIL } from '@/lib/constants/routes'
@@ -28,27 +24,30 @@ const STATIC = {
       dashboard: 'Dashboard Saya',
       menu: 'Menu',
     },
-    // A4–A6: butir dengan `to` menjadi link; sisanya teks biasa berlabel
+    // A4–A7: butir dengan `to` menjadi link; sisanya teks biasa berlabel
     // "Segera hadir".
     profilItems: [
       // Ke bagian paling atas halaman profil (tanpa #); sejarah dan visi misi
       // ada di halaman yang sama.
       { label: 'Profil desa', to: HAL_PROFIL },
       { label: 'Perangkat desa', to: `${HAL_PROFIL}#perangkat-desa` },
+      { label: 'Peraturan desa', to: `${HAL_PROFIL}#peraturan-desa` },
       { label: 'BPD', to: HAL_BPD },
       { label: 'Lembaga Desa', to: HAL_LEMBAGA },
-      { label: 'Peta wilayah' },
+      // Data APBDes belum tersedia.
+      { label: 'Transparansi APBDes' },
     ],
     comingSoonBadge: 'Segera hadir',
-    // A7: tampil hanya bila section Transparansi tampil.
-    transparansi: 'Transparansi APBDes',
   },
 
-  // Label bar pengumuman. Isinya dummy (DEV_ONLY.announcement).
+  // Label bar pengumuman. Isinya dari Petugas Desa (menu Pengumuman).
   announcementBar: {
-    label: 'Pengumuman',
-    badge: 'PENGUMUMAN',
-    readMore: 'Selengkapnya',
+    label: 'Pengumuman desa',
+    until: 'berlaku sampai',
+    readMore: 'Baca selengkapnya',
+    close: 'Tutup',
+    openLink: 'Lihat selengkapnya',
+    newTabHint: '(tab baru)',
   },
 
   hero: {
@@ -143,42 +142,30 @@ const STATIC = {
     ],
   },
 
-  // Label section Transparansi. Angkanya dummy (DEV_ONLY.apbdes).
-  transparency: {
-    // Ditampilkan kapital lewat CSS: "TRANSPARANSI".
-    label: 'Transparansi',
-    titlePrefix: 'APBDes Cibenda',
-    documentLink: 'Unduh dokumen APBDes (PDF)',
-    archiveLink: 'Arsip tahun sebelumnya',
-    // Teks pembaca layar untuk link yang membuka tab baru (03, Persyaratan umum).
-    documentHint: '(tab baru)',
-    archiveHint: '(PDF, tab baru)',
-    income: 'Pendapatan',
-    spending: 'Belanja',
-    realization: 'Realisasi belanja',
-    sourcePrefix: 'Sumber:',
-    updatedPrefix: 'Diperbarui',
-  },
-
-  // Label blok Sambutan Kepala Desa. Isinya dummy (DEV_ONLY.welcome).
+  // Label blok Sambutan Kepala Desa. Isinya dari village.welcome_message;
+  // blok tidak tampil bila kosong.
   welcomeBlock: {
-    // Ditampilkan kapital lewat CSS: "SAMBUTAN KEPALA DESA".
     label: 'Sambutan Kepala Desa',
+    rolePrefix: 'Kepala',
   },
 
   contact: {
     title: 'Butuh bantuan?',
-    // Telepon, jam layanan, nama kantor, dan link peta dari data desa
-    // (village.phone, office_hours, name, map_url), diatur Petugas Desa.
-    phoneLabel: 'Telepon',
+    // Telepon, email, jam layanan, nama kantor, dan link peta dari data desa
+    // (village.phone, email, office_hours, name, latitude/longitude), diatur
+    // Petugas Desa.
+    phoneLabel: 'Telepon & email',
     // Tombol salin; nama aksesibel: "Salin nomor telepon (0265) 2640613".
     copyPhone: 'Salin nomor telepon',
     phoneCopied: 'Nomor disalin',
     phoneCopyFailed: 'Gagal menyalin. Salin nomornya secara manual.',
+    copyEmail: 'Salin email',
+    emailCopied: 'Email disalin',
+    emailCopyFailed: 'Gagal menyalin. Salin emailnya secara manual.',
     hoursLabel: 'Jam layanan kantor',
     officePrefix: 'Kantor',
     notAvailable: 'Belum tersedia',
-    // A32: tampil bila village.map_url diisi.
+    // A32: tampil bila titik kantor (village.latitude/longitude) diatur.
     mapLink: 'Buka di peta',
     mapHint: '(tab baru)',
   },
@@ -189,6 +176,14 @@ const STATIC = {
     // Teks pembaca layar untuk logo mitra yang membuka tab baru.
     newTabHint: '(tab baru)',
   },
+
+  // A33–A35: link footer ke halaman informasi (D6). Isian khas desa diatur
+  // Petugas Desa di menu Halaman Informasi.
+  infoLinks: [
+    { label: 'Kebijakan privasi', to: HAL_KEBIJAKAN_PRIVASI },
+    { label: 'Aksesibilitas', to: HAL_AKSESIBILITAS },
+    { label: 'PPID', to: HAL_PPID },
+  ],
 
   // "Didukung oleh": logo mitra di footer, urut dari kiri ke kanan.
   // Tampil di production karena logonya sudah tersedia (keputusan pemilik, 11 Okt 2026).
@@ -215,56 +210,6 @@ const STATIC = {
   ],
 }
 
-// Dummy dari reference/mockup.html. Jangan mengarang angka: placeholder
-// bertanda kurung siku tetap dibiarkan apa adanya.
-const DEV_ONLY = {
-  // K6: bar pengumuman.
-  announcement: {
-    date: '[TANGGAL]',
-    title: '[Satu pengumuman penting, mis. kantor desa tutup / jadwal posyandu]',
-    newsId: 1,
-  },
-
-  // Transparansi APBDes.
-  apbdes: {
-    year: '2026',
-    description: 'Ke mana dana desa digunakan, dalam angka yang bisa dibaca semua warga.',
-    income: 'Rp [JUMLAH]',
-    spending: 'Rp [JUMLAH]',
-    realizationLabel: '[XX]%',
-    // Lebar bilah placeholder di mockup.
-    realizationPercent: 50,
-    source: 'Siskeudes Desa Cibenda',
-    updatedAt: '[TANGGAL]',
-    documentUrl: 'https://example.com/apbdes-2026.pdf',
-    archiveUrl: 'https://example.com/apbdes-arsip.pdf',
-  },
-
-  // Sambutan Kepala Desa. Nama asli dari village.head_name; ini hanya cadangan.
-  welcome: {
-    quote: '[Dua kalimat sambutan dari Kepala Desa tentang arah pembangunan dan layanan Cibenda.]',
-    fallbackName: 'Dede Rusliana',
-    role: 'Kepala Desa Cibenda',
-  },
-
-  // A33–A35: link footer ke halaman informasi (D6). Halamannya masih draf dan
-  // route-nya hanya terdaftar di dev, jadi link ikut tersembunyi di production.
-  infoLinks: [
-    { label: 'Kebijakan privasi', to: HAL_KEBIJAKAN_PRIVASI },
-    { label: 'Aksesibilitas', to: HAL_AKSESIBILITAS },
-    { label: 'PPID', to: HAL_PPID },
-  ],
-}
-
-export const DEV_ONLY_KEYS = Object.keys(DEV_ONLY)
-
-/**
- * Konten beranda untuk mode yang diberikan.
- * isDev = false (production): semua kunci DEV_ONLY bernilai null.
- */
-export function getBerandaContent(isDev = import.meta.env.DEV) {
-  const devContent = Object.fromEntries(
-    DEV_ONLY_KEYS.map((key) => [key, isDev ? DEV_ONLY[key] : null]),
-  )
-  return { ...STATIC, ...devContent }
+export function getBerandaContent() {
+  return STATIC
 }

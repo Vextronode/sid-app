@@ -143,6 +143,7 @@ note right of QUEUE
   Docker expo: QUEUE_CONNECTION=sync.
   VPS: Supervisor queue:work.
   Scheduler: schedule:work (service sid_scheduler)
-  menjalankan approvals:send-reminders tiap 5 menit.
+  menjalankan approvals:send-reminders tiap 5 menit
+  dan announcements:prune tiap menit.
 end note
 @enduml

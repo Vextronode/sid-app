@@ -17,14 +17,26 @@ const renderAt = (entry) =>
     </MemoryRouter>,
   )
 
+const REGULATION = {
+  id: 1,
+  title: 'Pungutan Desa',
+  regulation_number: '01/2026',
+  enacted_date: '2026-01-15',
+  content: 'Isi peraturan.',
+}
+
 describe('ProfilDesaPage scroll target', () => {
   let scrollTo
   let scrollIntoView
 
   beforeEach(() => {
-    api.get.mockResolvedValue({
-      data: { data: { name: 'Desa Cibenda' }, officials: [], hamlets: [], positions: [] },
-    })
+    api.get.mockImplementation((url) =>
+      Promise.resolve(
+        url === '/api/public/regulations'
+          ? { data: { data: [REGULATION] } }
+          : { data: { data: { name: 'Desa Cibenda' }, officials: [], hamlets: [], positions: [] } },
+      ),
+    )
     scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
     scrollIntoView = vi.fn()
     Element.prototype.scrollIntoView = scrollIntoView
@@ -88,5 +100,50 @@ describe('ProfilDesaPage scroll target', () => {
     await waitFor(() => expect(scrollIntoView).toHaveBeenCalledOnce())
     expect(scrollIntoView.mock.contexts[0]).toHaveAttribute('id', 'perangkat-desa')
     expect(scrollTo).not.toHaveBeenCalled()
+  })
+
+  it('scrolls to the regulations section for #peraturan-desa', async () => {
+    renderAt('/profil-desa#peraturan-desa')
+
+    await screen.findByRole('heading', { name: 'Profil Desa Cibenda' })
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledOnce())
+    expect(scrollIntoView.mock.contexts[0]).toHaveAttribute('id', 'peraturan-desa')
+  })
+})
+
+describe('ProfilDesaPage peraturan desa', () => {
+  beforeEach(() => {
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const mockApi = (regulations) =>
+    api.get.mockImplementation((url) =>
+      url === '/api/public/regulations'
+        ? regulations()
+        : Promise.resolve({
+            data: { data: { name: 'Desa Cibenda' }, officials: [], hamlets: [], positions: [] },
+          }),
+    )
+
+  it('lists the published regulations', async () => {
+    mockApi(() => Promise.resolve({ data: { data: [REGULATION] } }))
+    renderAt('/profil-desa')
+
+    expect(await screen.findByRole('heading', { name: 'Peraturan Desa' })).toBeInTheDocument()
+    expect(await screen.findByText('Pungutan Desa')).toBeInTheDocument()
+  })
+
+  it('shows the empty state when the backend has none (404)', async () => {
+    mockApi(() => Promise.reject({ response: { status: 404, data: { message: 'Belum ada' } } }))
+    renderAt('/profil-desa')
+
+    expect(
+      await screen.findByText('Belum ada peraturan desa yang dipublikasikan.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 })

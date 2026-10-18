@@ -62,10 +62,10 @@ Bagian ini mendokumentasikan pertanyaan yang perlu dikonfirmasi sebelum atau sel
 | Jenis surat apa saja yang perlu dikelola di fase pertama? (SKD, SKU, SKCK, dll.) | Belum dikonfirmasi | — |
 | Apakah infrastruktur server sudah tersedia, atau perlu disiapkan dari awal oleh tim? | Belum dikonfirmasi | — |
 | Apakah ada sistem eksisting (manual atau digital) yang perlu dipertimbangkan untuk migrasi data? | Belum dikonfirmasi | — |
-| Apakah desa manage jabatan BPD/BUMDES/LPM/Karang Taruna/PKK di app, atau statis? | Terjawab (source) | Dikelola di app oleh Petugas Desa untuk BPD, LPM, Karang Taruna, PKK (UC-23). BUMDES belum dikelola di UI |
+| Apakah desa manage jabatan BPD/BUMDES/LPM/Karang Taruna/PKK di app, atau statis? | Terjawab (source) | Dikelola di app oleh Petugas Desa untuk BPD, LPM, Karang Taruna, PKK (UC-23). BUMDES belum dikelola di UI; di halaman publik Lembaga Desa tampil "Segera hadir" |
 | Apakah history jabatan organisasi non-struktural ditampilkan ke publik? | Terjawab (source) | Tidak. Halaman publik `/bpd` dan `/lembaga-desa` hanya menampilkan pemegang aktif (nama dan foto); riwayat hanya terlihat di dashboard Petugas |
 | Apakah jumlah anggota BPD fix atau dinamis? | Terjawab (source) | Pimpinan tetap (satu Ketua, satu Wakil Ketua), anggota dinamis (jumlah bebas) |
-| Struktur BUMDES, LPM, Karang Taruna, PKK — fix atau dinamis? | Terjawab (source) | LPM, Karang Taruna, PKK sama dengan BPD: slot tetap Ketua dan Wakil Ketua, anggota dinamis. BUMDES belum dikelola |
+| Struktur BUMDES, LPM, Karang Taruna, PKK — fix atau dinamis? | Terjawab (source) | LPM, Karang Taruna, PKK sama dengan BPD: slot tetap Ketua dan Wakil Ketua, anggota dinamis. BUMDES belum dikelola (tampil "Segera hadir") |
 
 ### 3.2. Keputusan Teknis Internal Tim
 

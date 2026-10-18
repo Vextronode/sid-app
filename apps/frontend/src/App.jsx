@@ -58,13 +58,11 @@ const DaftarSuratSayaPage = lazy(() => import('@/pages/DaftarSuratSayaPage'))
 const KelolaWilayahPage = lazy(() => import('@/pages/admin/KelolaWilayahPage'))
 const KelolaPekerjaanPage = lazy(() => import('@/pages/admin/KelolaPekerjaanPage'))
 const KelolaPeraturanPage = lazy(() => import('@/pages/admin/KelolaPeraturanPage'))
-const PeraturanDesaPage = lazyNamed(() => import('@/pages/PeraturanDesaPage'), 'PeraturanDesaPage')
+const KelolaPengumumanPage = lazy(() => import('@/pages/admin/KelolaPengumumanPage'))
+const KelolaHalamanInfoPage = lazy(() => import('@/pages/admin/KelolaHalamanInfoPage'))
 
-// Halaman informasi (D6) masih draf: hanya ada di mode dev. Saat build,
-// import.meta.env.DEV menjadi false sehingga route dan chunk-nya tidak ikut.
-const InfoPage = import.meta.env.DEV
-  ? lazyNamed(() => import('@/features/info/components/InfoPage'), 'InfoPage')
-  : null
+// Halaman informasi (D6): Kebijakan privasi, Aksesibilitas, PPID.
+const InfoPage = lazyNamed(() => import('@/features/info/components/InfoPage'), 'InfoPage')
 
 // RT — approver tahap 1
 // RW — monitoring
@@ -233,17 +231,19 @@ export default function App() {
               <Route path="/profil-desa" element={<ProfilDesaPage />} />
               <Route path={HAL_BPD} element={<OrganisasiDesaPage variant="bpd" />} />
               <Route path={HAL_LEMBAGA} element={<OrganisasiDesaPage variant="lembaga" />} />
-              <Route path="/peraturan-desa" element={<PeraturanDesaPage />} />
+              <Route
+                path="/peraturan-desa"
+                element={<Navigate to="/profil-desa#peraturan-desa" replace />}
+              />
 
-              {/* Halaman informasi (D6), khusus dev sampai isinya disetujui desa. */}
-              {import.meta.env.DEV &&
-                [
-                  [HAL_KEBIJAKAN_PRIVASI, 'kebijakan-privasi'],
-                  [HAL_AKSESIBILITAS, 'aksesibilitas'],
-                  [HAL_PPID, 'ppid'],
-                ].map(([path, page]) => (
-                  <Route key={path} path={path} element={<InfoPage page={page} />} />
-                ))}
+              {/* Halaman informasi (D6); isian khas desa dari menu Halaman Informasi. */}
+              {[
+                [HAL_KEBIJAKAN_PRIVASI, 'kebijakan-privasi'],
+                [HAL_AKSESIBILITAS, 'aksesibilitas'],
+                [HAL_PPID, 'ppid'],
+              ].map(([path, page]) => (
+                <Route key={path} path={path} element={<InfoPage page={page} />} />
+              ))}
             </Route>
 
             {/* ===== WARGA ===== */}
@@ -447,6 +447,24 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/kelola-peraturan')}>
                     <KelolaPeraturanPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/pengumuman"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/pengumuman')}>
+                    <KelolaPengumumanPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/halaman-informasi"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={getOperatorAllowedRoles('/admin/halaman-informasi')}
+                  >
+                    <KelolaHalamanInfoPage />
                   </ProtectedRoute>
                 }
               />

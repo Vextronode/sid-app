@@ -42,7 +42,8 @@ entity "villages" as VIL {
   hero_image : VARCHAR(255)
   hero_photo_credit : VARCHAR(100)
   office_hours : VARCHAR(100)
-  map_url : VARCHAR(500)
+  welcome_message : TEXT
+  latitude / longitude : DECIMAL(10,7)
   history / vision / mission : TEXT
   district / regency / province : VARCHAR(100)
   postal_code : VARCHAR(10)
@@ -418,7 +419,7 @@ USR ||--o{ SBL
 ' - Tabel baru: letter_attachments, letter_signatures, user_signatures,
 '   signature_blocks, official_position_types.
 ' - officials.position ENUM -> VARCHAR(50).
-' - villages: area_ha, logo, hero_image, hero_photo_credit, office_hours, map_url,
+' - villages: area_ha, logo, hero_image, hero_photo_credit, office_hours, latitude/longitude,
 '   district, regency, province, postal_code, email.
 ' - letter_number_counters: classification_code; letter_type_id nullable.
 ' - Ukuran kolom wilayah dikoreksi ke migration (VARCHAR(255)).

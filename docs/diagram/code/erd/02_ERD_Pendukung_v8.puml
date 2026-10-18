@@ -132,6 +132,31 @@ entity "village_regulations" as REG {
   * created_by : UUID <<FK users>>
 }
 
+entity "announcements" as ANN {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>> <<UNIQUE>>
+  * title : VARCHAR(150)
+  body : TEXT
+  link_url : VARCHAR(500)
+  * expires_at : TIMESTAMP
+  created_by : UUID <<FK users>>
+}
+
+note right of ANN
+  Satu pengumuman per desa; dihapus
+  announcements:prune setelah expires_at.
+end note
+
+entity "village_info_pages" as VIP {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * page : VARCHAR(30) (ppid | kebijakan-privasi | aksesibilitas)
+  * fields : JSON
+  UNIQUE (village_id, page)
+}
+
 ' ─────────────── AUDIT ───────────────
 entity "activity_log" as ALG {
   * id : BIGINT <<PK>>
@@ -156,6 +181,8 @@ VIL ||--o{ NCT
 NWS ||--o{ NCN
 NCT ||--o{ NCN
 VIL ||--o{ REG
+VIL ||--o| ANN
+VIL ||--o{ VIP
 USR ||--o{ REG : "created_by"
 USR |o--o{ ALG : "causer"
 

@@ -2,7 +2,7 @@
 ' SECTION: USE CASE DIAGRAM
 ' FILE: 04_UC_PetugasDesa_KontenKonfigurasi_v6.puml
 ' JUDUL: Use Case - Petugas Desa (3/3: Konten Publik & Konfigurasi Surat)
-' SUMBER: TDD-02 v5.3 (UC-18/19/21/24) + routes (2026-10-16)
+' SUMBER: TDD-02 v5.3 (UC-18/19/21/24/27/28) + routes (2026-10-18)
 ' CATATAN: Menggantikan 04_UC_PetugasDesa_KontenKonfigurasi_v5.puml. Tambah: kop
 '          surat, logo, foto beranda, kategori berita, lihat flow (read-only).
 '==================================================================================
@@ -26,7 +26,8 @@ actor "Petugas Desa" as PD
 
 rectangle "SIDUTama" {
   rectangle "UC-18: Profil Desa" #F0F4FF {
-    usecase "Edit identitas, kop surat,\nluas, jam layanan, peta,\nsejarah, visi misi" as UC_DESA
+    usecase "Edit identitas, kop surat,\nluas, jam layanan, sejarah,\nvisi misi, sambutan Kades" as UC_DESA
+    usecase "Atur titik kantor\n(koordinat / link Google Maps)" as UC_LOC
     usecase "Upload logo / foto beranda\n(dioptimasi WebP)" as UC_IMG
     usecase "Upload / preview stempel" as UC_STAMP
   }
@@ -37,6 +38,12 @@ rectangle "SIDUTama" {
   rectangle "UC-24: Peraturan Desa" #FFF8E1 {
     usecase "Kelola Peraturan Desa" as UC_REG
   }
+  rectangle "UC-27: Pengumuman Beranda" #FFF3E0 {
+    usecase "Tayangkan / ubah / hapus\npengumuman (durasi wajib)" as UC_ANN
+  }
+  rectangle "UC-28: Halaman Informasi" #EDE7F6 {
+    usecase "Isi PPID, Kebijakan Privasi,\nAksesibilitas (field tunggal\n& daftar dinamis)" as UC_INFO
+  }
   rectangle "UC-21: Konfigurasi Jenis Surat" #FDF2F8 {
     usecase "Ubah masa berlaku,\npenugasan Kasi/Kaur,\nstatus aktif" as UC_LT
     usecase "Lihat Flow Approval\n(read-only)" as UC_FLOW
@@ -44,11 +51,14 @@ rectangle "SIDUTama" {
 }
 
 PD -- UC_DESA
+PD -- UC_LOC
 PD -- UC_IMG
 PD -- UC_STAMP
 PD -- UC_NEWS
 PD -- UC_NEWSCAT
 PD -- UC_REG
+PD -- UC_ANN
+PD -- UC_INFO
 PD -- UC_LT
 PD -- UC_FLOW
 UC_NEWS ..> UC_NEWSCAT : <<include>>
@@ -57,6 +67,11 @@ note bottom of UC_LT
   Template, isian form, slot TTD, aksi data,
   flow, dan kode klasifikasi diset developer
   lewat seeder (tidak ada endpoint).
+end note
+note bottom of UC_ANN
+  Satu pengumuman per desa. Lewat expires_at
+  tidak tampil; dihapus announcements:prune
+  (scheduler tiap menit).
 end note
 note right of UC_DESA
   Perubahan konten menggugurkan cache

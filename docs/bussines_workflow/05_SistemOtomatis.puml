@@ -35,7 +35,7 @@ fork again
   :Final approve;
   :Nomor surat, expires_at, snapshot render;
 fork again
-  :Data publik berubah (desa, berita, kategori,\nperaturan, jenis surat, pejabat, dusun,\njenis jabatan);
+  :Data publik berubah (desa, berita, kategori,\nperaturan, jenis surat, pejabat, dusun,\njenis jabatan, pengumuman, halaman informasi);
   :Gugurkan cache halaman publik desa;
 fork again
   :Notifikasi dibuat (setelah commit);
@@ -58,6 +58,16 @@ note right
   Sekali per tahap per surat.
   Tahap tanpa pejabat aktif tetap
   ditandai agar tidak dicoba ulang.
+end note
+
+|#LightYellow|Scheduler (tiap menit)|
+:announcements:prune;
+:Hapus pengumuman yang lewat expires_at
+(per model → cache beranda ikut segar);
+note right
+  Pembacaan publik sudah menyaring
+  expires_at, jadi pengumuman basi
+  tidak tampil walau scheduler terlambat.
 end note
 stop
 

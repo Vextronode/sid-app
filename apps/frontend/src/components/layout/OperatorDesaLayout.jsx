@@ -24,6 +24,8 @@ import {
   MapPinned,
   Newspaper,
   LogOut,
+  BookOpenText,
+  Megaphone,
   Network,
   Settings,
   UserCircle,
@@ -111,6 +113,18 @@ const MENU_ITEMS = [
     icon: ScrollText,
   },
   {
+    label: 'Pengumuman',
+    route: '/admin/pengumuman',
+    allowedRoles: getOperatorAllowedRoles('/admin/pengumuman'),
+    icon: Megaphone,
+  },
+  {
+    label: 'Halaman Informasi',
+    route: '/admin/halaman-informasi',
+    allowedRoles: getOperatorAllowedRoles('/admin/halaman-informasi'),
+    icon: BookOpenText,
+  },
+  {
     label: 'Pengaturan Deadline',
     route: '/admin/approval-settings',
     allowedRoles: getOperatorAllowedRoles('/admin/approval-settings'),
@@ -166,7 +180,7 @@ export function OperatorDesaLayout({ children }) {
 
           <div className="sid-operator-sidebar-brand">
             <BerandaBrand
-              header={getBerandaContent(import.meta.env.DEV).header}
+              header={getBerandaContent().header}
               subtitle={`Admin ${STAF_APP_LABEL}`}
               className="sid-operator-brand"
             />

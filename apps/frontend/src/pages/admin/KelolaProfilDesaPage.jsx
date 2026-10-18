@@ -5,7 +5,7 @@
 // ==========================================
 
 import { useState } from 'react'
-import { Pencil, Users, Building2, Eye, ClipboardList, MapPin, Phone } from 'lucide-react'
+import { Pencil, Users, Building2, Eye, ClipboardList, Mail, MapPin, Phone } from 'lucide-react'
 
 import { useProfilDesa } from '@/features/profil-desa-admin/hooks/useProfilDesa'
 import EditProfilDesaModal from '@/features/profil-desa-admin/components/EditProfilDesaModal'
@@ -242,6 +242,35 @@ export default function KelolaProfilDesaPage() {
                 )}
               </p>
             </div>
+
+            <div className="sid-profil-desa-info-item">
+              <span className="sid-profil-desa-info-label">Email Kantor Desa</span>
+
+              <p className="sid-profil-desa-info-value">
+                {profile.email ? (
+                  <>
+                    <Mail size={14} />
+                    {profile.email}
+                  </>
+                ) : (
+                  '-'
+                )}
+              </p>
+            </div>
+
+            {/* Wilayah administratif (juga tercetak di kop surat). */}
+            {[
+              ['Kecamatan', profile.district],
+              ['Kabupaten/Kota', profile.regency],
+              ['Provinsi', profile.province],
+              ['Kode Pos', profile.postal_code],
+            ].map(([label, value]) => (
+              <div key={label} className="sid-profil-desa-info-item">
+                <span className="sid-profil-desa-info-label">{label}</span>
+
+                <p className="sid-profil-desa-info-value">{formatValue(value)}</p>
+              </div>
+            ))}
 
             <div className="sid-profil-desa-info-item">
               <span className="sid-profil-desa-info-label">Luas Wilayah</span>

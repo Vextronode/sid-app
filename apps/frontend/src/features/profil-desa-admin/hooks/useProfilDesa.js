@@ -40,8 +40,11 @@ const EMPTY_PROFILE = {
   mission: '',
   // Tampilan halaman publik.
   office_hours: '',
-  map_url: '',
   hero_photo_credit: '',
+  welcome_message: '',
+  // Titik kantor desa; null bila belum diatur.
+  latitude: null,
+  longitude: null,
   logo_url: null,
   hero_image_url: null,
 }
@@ -59,8 +62,8 @@ const TEXT_FIELDS = [
   'vision',
   'mission',
   'office_hours',
-  'map_url',
   'hero_photo_credit',
+  'welcome_message',
 ]
 
 // Response backend -> state halaman. Nilai null jadi '' agar aman di input.
@@ -262,6 +265,8 @@ export function useProfilDesa() {
         ...Object.fromEntries(TEXT_FIELDS.map((key) => [key, nextProfile[key] || null])),
         // Luas wilayah (hektare); kosong berarti belum diisi.
         area_ha: toNumberOrNull(nextProfile.area_ha),
+        latitude: nextProfile.latitude ?? null,
+        longitude: nextProfile.longitude ?? null,
       })
 
       const updated = unwrap(response)

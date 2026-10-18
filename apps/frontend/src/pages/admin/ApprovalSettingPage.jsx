@@ -242,7 +242,7 @@ export default function ApprovalSettingPage() {
                   </label>
 
                   <div>
-                    <p className="mb-1.5 text-xs font-medium text-gray-600">Active</p>
+                    <p className="mb-1.5 text-xs font-medium text-gray-600">Status</p>
                     <span
                       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
                         setting.is_active
