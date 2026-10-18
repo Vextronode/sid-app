@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import api from '@/lib/api'
 import { publicVillageParams } from '@/shared/lib/api/publicVillageParams'
 
-const EMPTY_INFO = { village: null, stats: null, contacts: [] }
+const EMPTY_INFO = { village: null, stats: null, contacts: [], announcement: null }
 
 // Identitas dan kontak desa dipakai beberapa komponen publik sekaligus
 // (beranda, header, footer, pusat bantuan), jadi satu permintaan dibagi bersama.
@@ -64,7 +64,8 @@ function loadPublicVillageInfo() {
           stats: response?.data?.data?.public_stats ?? null,
         }
         if (identity.village) writeCache(identity)
-        publish(identity)
+        // Pengumuman punya batas waktu, jadi tidak ikut disimpan di cache.
+        publish({ ...identity, announcement: response?.data?.data?.announcement ?? null })
       })
       // Gagal: identitas dari cache (bila ada) tetap dipakai.
       .catch(() => null)
