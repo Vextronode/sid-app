@@ -86,26 +86,6 @@ class OfficialRepository
             ->exists();
     }
 
-    public function allTermExpiredActive(string $villageId): Collection
-    {
-        return Official::query()
-            ->with(['citizen.occupation', 'user'])
-            ->where('village_id', $villageId)
-            ->active()
-            ->termExpired()
-            ->get();
-    }
-
-    public function allTermEndingWithin(string $villageId, int $days): Collection
-    {
-        return Official::query()
-            ->with(['citizen.occupation', 'user'])
-            ->where('village_id', $villageId)
-            ->active()
-            ->termEndingWithin($days)
-            ->get();
-    }
-
     public function findActiveForUserOrFail(User $user, ?string $position = null): Official
     {
         $query = Official::query()

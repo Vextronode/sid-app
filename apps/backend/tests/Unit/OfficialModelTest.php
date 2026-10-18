@@ -22,59 +22,6 @@ class OfficialModelTest extends TestCase
     }
 
     #[Test]
-    public function expired_term_scope_only_includes_active_terms_before_today(): void
-    {
-        $expired = Official::factory()->create([
-            'is_active' => true,
-            'term_ends_at' => today()->subDay(),
-        ]);
-        Official::factory()->create([
-            'is_active' => false,
-            'term_ends_at' => today()->subDay(),
-        ]);
-        Official::factory()->create([
-            'is_active' => true,
-            'term_ends_at' => today(),
-        ]);
-        Official::factory()->create([
-            'is_active' => true,
-            'term_ends_at' => null,
-        ]);
-
-        $this->assertSame([$expired->id], Official::termExpired()->pluck('id')->all());
-    }
-
-    #[Test]
-    public function term_ending_within_scope_includes_today_through_limit_and_active_only(): void
-    {
-        $today = Official::factory()->create([
-            'is_active' => true,
-            'term_ends_at' => today(),
-        ]);
-        $within = Official::factory()->create([
-            'is_active' => true,
-            'term_ends_at' => today()->addDays(30),
-        ]);
-        Official::factory()->create([
-            'is_active' => true,
-            'term_ends_at' => today()->addDays(31),
-        ]);
-        Official::factory()->create([
-            'is_active' => false,
-            'term_ends_at' => today()->addDays(5),
-        ]);
-        Official::factory()->create([
-            'is_active' => true,
-            'term_ends_at' => null,
-        ]);
-
-        $this->assertEqualsCanonicalizing(
-            [$today->id, $within->id],
-            Official::termEndingWithin(30)->pluck('id')->all(),
-        );
-    }
-
-    #[Test]
     public function term_end_date_is_cast_to_date(): void
     {
         $official = Official::factory()->create([
