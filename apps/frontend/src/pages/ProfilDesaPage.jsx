@@ -28,6 +28,7 @@ import {
   orgGrid,
   orgRow,
 } from '@/features/profil-desa/components/OrgChart'
+import { PeraturanList } from '@/features/peraturan/components/PeraturanList'
 
 const page = 'bd-container pt-[clamp(32px,20px+3vw,64px)]'
 const statValue =
@@ -368,6 +369,18 @@ export function ProfilDesaPage() {
               <NotAvailable />
             )}
           </div>
+        </section>
+
+        {/* ==========================================
+            PERATURAN DESA
+            ========================================== */}
+
+        <section id="peraturan-desa" className="mt-(--pb-section) scroll-mt-24">
+          <h2 className="mt-0 mb-8 font-display text-[clamp(30px,22px+1.6vw,44px)] leading-[1.08] font-bold tracking-tight">
+            Peraturan Desa
+          </h2>
+
+          <PeraturanList />
         </section>
 
         {/* ==========================================
