@@ -84,7 +84,7 @@ Pejabat dengan citizen juga dapat mengajukan surat untuk dirinya (menu "Surat Sa
 
 | Mode | Isi | Rujukan |
 |---|---|---|
-| Docker (expo/demo) | `sid_web` (Nginx + SPA, satu-satunya port host loopback), `sid_api` (PHP-FPM), `sid_db` (PostgreSQL 18, profil `localdb`) atau DB Neon; volume `public`/`private`; `QUEUE_CONNECTION=sync`, Web Push nonaktif bila VAPID kosong | `deploy/docker-compose.yml`, `docs/EXPO_RUNBOOK.md` |
+| Docker (expo/demo) | `sid_web` (Nginx + SPA, satu-satunya port host loopback), `sid_api` (PHP-FPM), `sid_scheduler` (`schedule:work`), `sid_worker` (`queue:work`), `sid_db` (PostgreSQL 18, profil `localdb`) atau DB Neon; volume `public`/`private`; `QUEUE_CONNECTION=database`, Web Push nonaktif bila VAPID kosong | `deploy/docker-compose.yml`, `docs/EXPO_RUNBOOK.md` |
 | VPS (Nginx + PHP-FPM) | SPA statis + Laravel, Supervisor queue worker untuk Web Push, opcache | `docs/deploy/README.md` |
 | Development | Vite dev server (proxy `/api`, `/sanctum` ke `127.0.0.1:8000`) + `php artisan serve` + PostgreSQL lokal | `docs/SETUP.md` |
 

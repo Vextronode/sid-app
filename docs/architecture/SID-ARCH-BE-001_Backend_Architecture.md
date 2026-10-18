@@ -228,7 +228,7 @@ Scope ringkas: Petugas Desa = operator penuh di desanya (CMS, kependudukan, jaba
 
 | Constraint | Kondisi source | Catatan |
 |---|---|---|
-| Queue worker | Web Push diantrekan; notifikasi database sinkron | Stack Docker expo memakai `QUEUE_CONNECTION=sync`; panduan VPS memakai Supervisor worker (`docs/deploy`) |
+| Queue worker | Web Push diantrekan; notifikasi database sinkron | Stack Docker memakai `QUEUE_CONNECTION=database` dengan service `sid_worker` (`queue:work`); panduan VPS memakai Supervisor worker (`docs/deploy`) |
 | Deadline approval | `is_overdue` dihitung saat daftar dimuat; pengingat terjadwal `reminder_hours` sebelum deadline | Satu pengingat per tahap; tidak ada notifikasi overdue terpisah |
 | Konkurensi keputusan | Row lock + cek ulang | 409 untuk request kedua |
 | Surat tertahan | RT kosong → ditahan + notifikasi Petugas | Dilepas saat RT ditetapkan |

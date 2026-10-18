@@ -140,7 +140,8 @@ note bottom of TABLES
   letter_field_values (Next Dev/Tahap 2).
 end note
 note right of QUEUE
-  Docker expo: QUEUE_CONNECTION=sync.
+  Docker: QUEUE_CONNECTION=database,
+  queue:work di service sid_worker.
   VPS: Supervisor queue:work.
   Scheduler: schedule:work (service sid_scheduler)
   menjalankan approvals:send-reminders tiap 5 menit
