@@ -88,6 +88,38 @@ describe('OrganisasiDesaPage', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('/lembaga-desa?lembaga=pkk')
   })
 
+  it('shows BUMDesa after PKK as "Segera hadir", not as a selectable tab', async () => {
+    const user = userEvent.setup()
+    renderPage('lembaga', '/lembaga-desa')
+    await screen.findByText('Rahmat Hidayat')
+
+    const tabs = within(screen.getByRole('tablist', { name: 'Pilih lembaga desa' }))
+    expect(tabs.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'LPM',
+      'Karang Taruna',
+      'PKK',
+    ])
+
+    const bumdes = screen.getByText('BUMDesa')
+    expect(bumdes).toHaveTextContent('BUMDesaSegera hadir')
+    expect(bumdes.closest('button, a, [tabindex], [role="tab"]')).toBeNull()
+    // Urutan tampil: setelah PKK.
+    expect(
+      tabs.getByRole('tab', { name: 'PKK' }).compareDocumentPosition(bumdes) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+
+    await user.click(bumdes)
+    expect(tabs.getByRole('tab', { name: 'LPM' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/lembaga-desa$/)
+  })
+
+  it('ignores ?lembaga=bumdes and opens LPM', async () => {
+    renderPage('lembaga', '/lembaga-desa?lembaga=bumdes')
+
+    expect(await screen.findByText('Rahmat Hidayat')).toBeInTheDocument()
+  })
+
   it('opens the organisation named in ?lembaga=', async () => {
     renderPage('lembaga', '/lembaga-desa?lembaga=pkk')
 
