@@ -207,13 +207,12 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Dashboard (UC-15)
     |----------------------------------------------------------------------
-    | Lintas-role: setiap role punya dashboard sendiri. Scoping data
-    | (rt_id/rw_id/posisi) dilakukan di DashboardService berdasarkan
-    | $user->role. Middleware role TIDAK dipasang sempit di sini karena
-    | semua 9 role berhak mengakses endpoint ini (hanya datanya beda).
+    | Statistik widget dashboard. Angka kartu surat diambil dari
+    | /letters/summary; grafik letter-stats memakai scope yang sama
+    | (LetterService::scopedQuery). Scoping per role dilakukan di
+    | DashboardService, bukan lewat middleware role.
     */
     Route::prefix('dashboard')->group(function () {
-        Route::get('/', [DashboardController::class, 'index']);
         Route::get('/gender-stats', [DashboardController::class, 'genderStats']);
         Route::get('/letter-stats', [DashboardController::class, 'letterStats']);
     });
