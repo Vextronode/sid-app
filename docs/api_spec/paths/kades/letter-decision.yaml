@@ -3,11 +3,11 @@ patch:
   summary: Keputusan approve/reject Kepala Desa / Sekretaris Desa (tahap final)
   description: |
     UC-04c. Aktor role `kepala_desa` atau `sekretaris_desa` dengan jabatan
-    aktif `kepala_desa`/`sekdes` di desa surat, bukan pemohon sendiri. Step
+    aktif `kepala_desa`/`sekretaris_desa` di desa surat, bukan pemohon sendiri. Step
     aktif harus `kepala_desa`. First-action-wins: surat dikunci
     (`lockForUpdate`), lalu status dan step diperiksa ulang; request kedua
     mendapat 409. `approval_level` mencatat aktor sebenarnya (`kepala_desa`
-    atau `sekdes`).
+    atau `sekretaris_desa`).
 
     **Approve pada step final**: status `approved`, `letter_number` dibuat
     (`{classification_code}/{NNN}/Des/{bulan Romawi}/{tahun}`, counter per

@@ -212,7 +212,7 @@ CurrentStep:
       example: 1
     approver_position:
       type: string
-      enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+      enum: [rt, kepala_desa, sekretaris_desa, kasi_pelayanan, kaur_tu_umum]
       example: "rt"
       description: "Flow seeder hanya memakai rt dan kepala_desa; nilai lain hanya mungkin pada data legacy."
     is_final:
@@ -411,9 +411,9 @@ LetterApproval:
         - $ref: '../users/users.yaml#/User'
     approval_level:
       type: string
-      enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+      enum: [rt, kepala_desa, sekretaris_desa, kasi_pelayanan, kaur_tu_umum]
       example: "rt"
-      description: "Level step untuk row pending; setelah keputusan berisi posisi aktor sebenarnya (sekdes bila Sekdes yang memutuskan step kepala_desa)."
+      description: "Level step untuk row pending; setelah keputusan berisi posisi aktor sebenarnya (sekretaris_desa bila Sekdes yang memutuskan step kepala_desa)."
     flow_step_id:
       type: integer
       nullable: true

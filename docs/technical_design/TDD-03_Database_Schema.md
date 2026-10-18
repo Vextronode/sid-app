@@ -228,7 +228,7 @@ Rekam jejak jabatan struktural desa per periode. Digunakan untuk resolusi wilaya
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | citizen_id | UUID | FK → citizens.id, NOT NULL | Warga yang menjabat |
 | user_id | UUID | FK → users.id, NULL | Akun sistem pejabat; NULL untuk jabatan tanpa akun |
-| position | VARCHAR(50) | NOT NULL | Nilai enum aplikasi `OfficialPosition` (jabatan berakun: `kepala_desa`, `sekdes`, `rt`, `rw`, `kadus`, `kasi_pelayanan`, `kaur_tu_umum`, `staf_sid`) atau `code` dari `official_position_types` desa (jabatan tanpa akun). Divalidasi rule `ValidOfficialPosition`, bukan ENUM DB |
+| position | VARCHAR(50) | NOT NULL | Nilai enum aplikasi `OfficialPosition` (jabatan berakun: `kepala_desa`, `sekretaris_desa`, `rt`, `rw`, `kadus`, `kasi_pelayanan`, `kaur_tu_umum`, `staf_sid`) atau `code` dari `official_position_types` desa (jabatan tanpa akun). Divalidasi rule `ValidOfficialPosition`, bukan ENUM DB |
 | village_id | UUID | FK → villages.id, NULL | |
 | rt_id | BIGINT | FK → rts.id, NULL | Diisi untuk jabatan RT |
 | rw_id | BIGINT | FK → rws.id, NULL | Diisi untuk jabatan RW |
@@ -259,7 +259,7 @@ Rekam jejak jabatan struktural desa per periode. Digunakan untuk resolusi wilaya
 | staf_sid | staf_sid | NOT NULL |
 | rw | rw | NOT NULL |
 | rt | rt | NOT NULL |
-| sekdes | sekretaris_desa | NOT NULL |
+| sekretaris_desa | sekretaris_desa | NOT NULL |
 | `code` jenis jabatan tanpa akun (seed: kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes) | — (role akun tidak berubah) | NULL |
 
 **Tabel: official_position_types**
@@ -305,7 +305,7 @@ Urutan approver per flow.
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | flow_id | BIGINT | FK → approval_flows.id, NOT NULL | |
 | step_order | INT | NOT NULL | Urutan step dalam flow |
-| approver_position | ENUM | NOT NULL | DB enum memuat `rt`, `kepala_desa`, `sekdes`, `kasi_pelayanan`, `kaur_tu_umum`; flow baru hanya menerima `rt` dan `kepala_desa`, final harus `kepala_desa` |
+| approver_position | ENUM | NOT NULL | DB enum memuat `rt`, `kepala_desa`, `sekretaris_desa`, `kasi_pelayanan`, `kaur_tu_umum`; flow baru hanya menerima `rt` dan `kepala_desa`, final harus `kepala_desa` |
 | is_final | BOOLEAN | DEFAULT false | true jika step ini step terakhir |
 | created_at, updated_at | TIMESTAMP | NULL | |
 
@@ -428,7 +428,7 @@ Record keputusan approval per surat per tahap. Satu surat dapat memiliki beberap
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | letter_id | UUID | FK → letters.id, NOT NULL | |
 | approved_by | UUID | FK → users.id, NULL | NULL pada placeholder pending; diisi user yang memutuskan |
-| approval_level | ENUM | NOT NULL | ENUM kompatibilitas 5 nilai; flow baru memakai step RT/Kepala Desa. Aktor Sekdes tercatat sebagai `sekdes` bila ia memutuskan step `kepala_desa` |
+| approval_level | ENUM | NOT NULL | ENUM kompatibilitas 5 nilai; flow baru memakai step RT/Kepala Desa. Aktor Sekdes tercatat sebagai `sekretaris_desa` bila ia memutuskan step `kepala_desa` |
 | action | ENUM | NULL | `approved` \| `rejected`; NULL selama placeholder menunggu keputusan |
 | flow_step_id | BIGINT | FK → flow_steps.id, NULL | Referensi step spesifik yang dieksekusi, untuk audit trail granular |
 | notes | TEXT | NULL | Wajib jika `rejected` |
@@ -532,7 +532,7 @@ Unique `uq_signature_blocks_pair (user_id, blocked_user_id)`.
 |---|---|---|---|
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | village_id | UUID | FK → villages.id, NOT NULL | |
-| approval_level | ENUM | NOT NULL | `rt` \| `kepala_desa` \| `sekdes` \| `kasi_pelayanan` \| `kaur_tu_umum` |
+| approval_level | ENUM | NOT NULL | `rt` \| `kepala_desa` \| `sekretaris_desa` \| `kasi_pelayanan` \| `kaur_tu_umum` |
 | deadline_hours | UNSIGNED INT | NOT NULL, DEFAULT 24 | Berapa jam pejabat punya waktu untuk action |
 | reminder_hours | UNSIGNED INT | NOT NULL, DEFAULT 12 | Jam sebelum `deadline_at` saat pengingat dikirim ke approver (0 = tepat saat deadline) |
 | is_active | BOOLEAN | DEFAULT true | |
@@ -540,7 +540,7 @@ Unique `uq_signature_blocks_pair (user_id, blocked_user_id)`.
 
 Constraint: `UNIQUE(village_id, approval_level)`
 
-> ENUM kolom tetap berisi lima nilai untuk kompatibilitas skema. Service/repository dan seeder hanya memakai tahap aktif (`rt`, `kepala_desa`). Nilai `sekdes`/Kasi/Kaur tetap di enum DB, tetapi tidak ditampilkan, di-seed, atau dapat diubah lewat endpoint settings.
+> ENUM kolom tetap berisi lima nilai untuk kompatibilitas skema. Service/repository dan seeder hanya memakai tahap aktif (`rt`, `kepala_desa`). Nilai `sekretaris_desa`/Kasi/Kaur tetap di enum DB, tetapi tidak ditampilkan, di-seed, atau dapat diubah lewat endpoint settings.
 
 ### 2.5. Organisasi Non-Struktural, Notifikasi, Konten Publik
 

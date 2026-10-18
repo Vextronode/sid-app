@@ -34,13 +34,13 @@ actor "Kasi / Kaur\n(assigned_role)" as KK
 KD -> FE : Setujui / Tolak
 FE -> CTRL : PATCH /api/kades/letters/{letter}/decision
 CTRL -> SVC : decision()
-SVC -> OFF : getCurrentOfficial → posisi kepala_desa | sekdes, desa sama
+SVC -> OFF : getCurrentOfficial → posisi kepala_desa | sekretaris_desa, desa sama
 SVC -> SVC : bukan pemohon sendiri (403); step aktif kepala_desa (409)
 
 group DB::transaction
   SVC -> REPO : findForUpdateOrFail (row lock)
   SVC -> SVC : cek ulang status & step (keputusan lain lebih dulu → 409)
-  SVC -> DB : UPDATE placeholder approval\n(approval_level = kepala_desa | sekdes)
+  SVC -> DB : UPDATE placeholder approval\n(approval_level = kepala_desa | sekretaris_desa)
   alt approved & is_final
     SVC -> NUM : next(letter)
     NUM -> DB : counter (village, classification_code, year) +1

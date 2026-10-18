@@ -314,7 +314,7 @@ package "Enum" #ECEFF1 {
     HeldForVacantApprover
   }
   enum OfficialPosition {
-    kepala_desa, sekdes, rt, rw, kadus,
+    kepala_desa, sekretaris_desa, rt, rw, kadus,
     kasi_pelayanan, kaur_tu_umum, petugas_desa
   }
 }
