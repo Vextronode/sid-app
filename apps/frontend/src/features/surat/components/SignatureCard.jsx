@@ -147,7 +147,7 @@ export function SignatureCard() {
       </h2>
 
       {error && (
-        <p role="alert" className="sid-form-field-error">
+        <p role="alert" className="sid-admin-alert sid-admin-alert-error">
           {error}
         </p>
       )}

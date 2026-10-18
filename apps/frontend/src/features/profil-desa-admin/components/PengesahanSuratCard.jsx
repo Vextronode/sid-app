@@ -132,7 +132,7 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
       )}
 
       {error && (
-        <p className="sid-form-field-error" role="alert">
+        <p className="sid-admin-alert sid-admin-alert-error" role="alert">
           {error}
         </p>
       )}
