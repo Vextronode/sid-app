@@ -195,6 +195,7 @@ Scope ringkas: Petugas Desa = operator penuh di desanya (CMS, kependudukan, jaba
 - Langganan Web Push disimpan per perangkat lewat `POST/DELETE /push-subscriptions` (VAPID dari `.env`).
 - Kode status: `pending`, `approver_vacant`, `approval_reminder`, `rt_approved`, `rt_rejected`, `rt_approved_rw_fyi`, `rt_approved_kadus_fyi`, `kepala_desa_approved`, `kepala_desa_rejected`, `letter_approved_final`, `letter_ready_for_print`, `letter_needs_fulfillment`, `letter_fulfilled`, `signature_requested`, `signature_accepted`, `signature_rejected`.
 - Pengingat approval: `ApprovalReminderService` lewat command `approvals:send-reminders` yang dijadwalkan tiap 5 menit di `routes/console.php` (butuh `php artisan schedule:work`; di Docker service `sid_scheduler`). Dikirim sekali per tahap per surat ke approver berwenang (in-app + Web Push) saat `now() >= deadline_at - reminder_hours` (0 = tepat saat deadline); `reminded_at` diisi.
+- Pengumuman beranda: command `announcements:prune` dijadwalkan tiap menit di `routes/console.php` dan menghapus pengumuman yang lewat `expires_at` per model (event `deleted` ikut menggugurkan cache publik). Pembacaan memakai scope `active()`, jadi pengumuman basi tidak tampil walau scheduler terlambat.
 - Tidak ada notifikasi email status surat.
 
 ---
@@ -217,7 +218,8 @@ Scope ringkas: Petugas Desa = operator penuh di desanya (CMS, kependudukan, jaba
 
 - Index performa (migration `2026_10_11_090600`) untuk kolom FK yang dipakai scope wilayah, urutan, dan eager-load (citizens, letters, letter_approvals, rts, rws, officials, users, families, news).
 - Daftar surat & warga berpaginasi di database; ringkasan dashboard (`GET /letters/summary`) dihitung dengan agregasi SQL atas scope yang sama.
-- `PublicPageCache`: JSON respons `/public/*` di-cache per desa 10 menit dengan kunci berversi; event `saved/deleted` pada News, NewsCategory, VillageRegulation, LetterType, Official, Hamlet, Village, OfficialPositionType menggugurkan cache desa terkait.
+- `PublicPageCache`: JSON respons `/public/*` di-cache per desa 10 menit dengan kunci berversi; event `saved/deleted` pada News, NewsCategory, VillageRegulation, LetterType, Official, Hamlet, Village, OfficialPositionType, Announcement, VillageInfoPage menggugurkan cache desa terkait.
+- `GoogleMapsLinkResolver` (`POST /villages/profile/resolve-map-link`): mengambil titik kantor dari link Google Maps. Redirect diikuti manual maks. 5 hop dengan timeout 5 detik, hanya ke host Google Maps di setiap hop (pencegahan SSRF); body respons tidak dibaca. Urutan pembacaan: pin `!3d..!4d..`, lalu `@lat,lng`, lalu parameter `q`/`query`/`ll`/`center`.
 - `VillageImageOptimizer`: logo ≤512 px, foto beranda ≤1920 px, EXIF orientation diterapkan, simpan WebP (fallback PNG/JPEG atau berkas asli).
 
 ---

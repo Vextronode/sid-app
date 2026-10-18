@@ -6,24 +6,25 @@
 |---|---|
 | Bagian | 2 dari 5 (+ Appendix) |
 | Status | v5.3 — Surat dinamis, tanda tangan, identitas desa (diselaraskan ke source 2026-10-16) |
-| Cakupan | Deskripsi seluruh Use Case aktif MVP (UC-01 s/d UC-26, kecuali yang dipindah ke Appendix) |
+| Cakupan | Deskripsi seluruh Use Case aktif MVP (UC-01 s/d UC-28, kecuali yang dipindah ke Appendix) |
 | UC Next Dev / Tahap 2 (UC-07, UC-11, UC-12, UC-13) | Lihat `TDD-06_Appendix.md` |
 | Dokumen terkait | `TDD-01_Overview_Scope_Roles.md`, `TDD-03_Database_Schema.md`, OpenAPI Spec v5.3 |
 
 > **v5.3:** UC-03 (form dinamis & penanda tangan), UC-04a/04c (surat ditahan, snapshot, notifikasi Terapkan), UC-05/06/08, UC-09 (paginasi), UC-14 (jabatan tanpa akun, foto, reset TTD), UC-16/18/19 (identitas desa, kategori berita), UC-17 (tanggal lahir), UC-21 (field yang dapat diubah) diperbarui. UC baru: **UC-25** Kelola Tanda Tangan & Permintaan Tanda Tangan, **UC-26** Terapkan Perubahan Data Kependudukan dari Surat.
+> **Pembaruan 2026-10-18:** UC-16 (bar pengumuman di semua halaman publik, sambutan Kepala Desa, kontak telepon/email yang bisa disalin, Peraturan Desa sebagai section Profil Desa, halaman informasi aktif di produksi, BUMDesa/APBDes "Segera hadir") dan UC-18 (titik kantor berupa koordinat, sambutan Kepala Desa) diperbarui. UC baru: **UC-27** Kelola Pengumuman Beranda, **UC-28** Kelola Halaman Informasi.
 > Kontrak endpoint ada di OpenAPI Spec v5.3 — dokumen ini fokus pada alur bisnis. Hal yang pernah tertulis tetapi belum ada di source dicatat di `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md`.
 
 ---
 
 ## Ringkasan Use Case
 
-Sistem ini mendefinisikan **24 Use Case aktif di MVP**. Total UC yang pernah didefinisikan — termasuk yang dipindah keluar MVP tetapi nomornya dipertahankan — adalah **28 UC**.
+Sistem ini mendefinisikan **26 Use Case aktif di MVP**. Total UC yang pernah didefinisikan — termasuk yang dipindah keluar MVP tetapi nomornya dipertahankan — adalah **30 UC**.
 
 | Kategori | Jumlah | Daftar |
 |---|---|---|
-| ✅ Aktif di MVP | 24 UC | UC-01, 02, 03, 04a (+ sub-flow notif RW/Kadus), 04c, 04d, 05, 06, 08, 09, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 |
+| ✅ Aktif di MVP | 26 UC | UC-01, 02, 03, 04a (+ sub-flow notif RW/Kadus), 04c, 04d, 05, 06, 08, 09, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28 |
 | ❌ Non-MVP (nomor dipertahankan, lihat Appendix) | 4 UC | UC-07, UC-11, UC-12, UC-13 |
-| **Total** | **28 UC** | — |
+| **Total** | **30 UC** | — |
 
 > UC-10 sudah terintegrasi ke UC-03. UC-04b (RW Approval) dan UC-04c versi lama (Kadus Approval) sudah dihapus total — perannya digantikan sub-flow notifikasi pasif (dalam UC-04a) dan UC-04c versi baru (Kades/Sekdes Approval).
 
@@ -472,17 +473,19 @@ Main Flow:
 1. Pengunjung membuka URL sistem
 2. Sistem menampilkan halaman beranda sebagai landing page (tanpa memerlukan login)
 3. Pengunjung dapat mengakses:
-   - Beranda — identitas desa (logo, foto beranda, kontak, jam layanan, peta), 5 berita terbaru, statistik publik (jenis surat aktif, jumlah warga aktif, jumlah dusun aktif)
-   - Profil Desa — sejarah (foto di samping teks), visi misi, luas wilayah, statistik, perangkat desa (Kepala Desa, Sekdes, grup Kasi/Kaur/Staf termasuk slot kosong dan staf aplikasi di urutan terakhir, Kepala Dusun per dusun) dengan foto
-   - BPD (`/bpd`) dan Lembaga Desa (`/lembaga-desa`, tab LPM/Karang Taruna/PKK tersimpan di `?lembaga=`) — bagan Ketua, Wakil Ketua, dan Anggota dengan foto; diakses dari dropdown "Tentang Desa"
-   - Pengumuman & Berita — berita yang sudah dipublikasikan beserta kategorinya (10 per halaman)
+   - Beranda — identitas desa (logo, foto beranda), 5 berita terbaru, statistik publik (jenis surat aktif, jumlah warga aktif, jumlah dusun aktif), sambutan Kepala Desa (hanya bila diisi), dan kontak: telepon & email kantor (diklik untuk disalin), jam layanan, alamat dengan link "Buka di peta" ke Google Maps (dari titik koordinat kantor)
+   - Pengumuman — bar di bawah header yang menempel di **semua** halaman publik selama pengumuman masih tayang (UC-27); "Baca selengkapnya" membuka isi dan link
+   - Profil Desa — sejarah (foto di samping teks), visi misi, luas wilayah, statistik, **Peraturan Desa** (section `#peraturan-desa`; `/peraturan-desa` diarahkan ke sana), perangkat desa (Kepala Desa, Sekdes, grup Kasi/Kaur/Staf termasuk slot kosong dan staf aplikasi di urutan terakhir, Kepala Dusun per dusun) dengan foto
+   - BPD (`/bpd`) dan Lembaga Desa (`/lembaga-desa`, tab LPM/Karang Taruna/PKK tersimpan di `?lembaga=`; BUMDesa tampil "Segera hadir" dan tidak bisa dipilih) — bagan Ketua, Wakil Ketua, dan Anggota dengan foto; diakses dari dropdown "Tentang Desa" (Transparansi APBDes tampil "Segera hadir")
+   - Berita — berita yang sudah dipublikasikan beserta kategorinya (10 per halaman)
    - Info Jenis Surat — daftar jenis surat yang tersedia beserta persyaratannya
-   - Peraturan Desa — daftar peraturan desa yang sudah dibuat
+   - Halaman informasi — Kebijakan Privasi, Aksesibilitas, PPID (link di footer). Teks baku dari aplikasi; bagian khas desa dari UC-28 dan identitas desa. Isian yang belum diisi tampil sebagai penanda kuning `[...]`; telepon/email bisa disalin
    - Hubungi Kami — nomor WA dari `officials` dengan `position IN ('kasi_pelayanan', 'kaur_tu_umum')` yang `is_active=true`
 4. Semua konten halaman publik hanya dapat dibaca (read-only)
 
 Notes:
-- Konten diambil dari `villages`, `news` (`is_published = true`), `letter_types` (aktif ber-template), `village_regulations`, `officials` aktif, dan anggota aktif `village_org_members`
+- Konten diambil dari `villages`, `news` (`is_published = true`), `letter_types` (aktif ber-template), `village_regulations`, `officials` aktif, anggota aktif `village_org_members`, `announcements` yang belum lewat `expires_at`, dan `village_info_pages`
+- Tidak ada konten khusus mode development: tampilan dev dan produksi sama
 - Tombol akun di header bertuliskan "Masuk", atau "Dashboard Saya" bila pengunjung sudah login
 - Respons di-cache per desa 10 menit dan digugurkan otomatis saat data sumber berubah
 - Instalasi multi-desa wajib `village_code`; instalasi satu desa tidak
@@ -533,8 +536,9 @@ Alternatif Flow:
 
 Main Flow:
 1. User membuka menu "Profil Desa"
-2. Sistem menampilkan data profil desa saat ini: nama, kode, nama Kepala Desa, alamat, telepon, email, kecamatan/kabupaten/provinsi/kode pos (kop surat), luas wilayah (ha), sejarah, visi, misi, jam layanan, tautan peta, kredit foto, logo, foto beranda, dan indikator stempel.
+2. Sistem menampilkan data profil desa saat ini: nama, kode, nama Kepala Desa, alamat, telepon, email, kecamatan/kabupaten/provinsi/kode pos (kop surat), luas wilayah (ha), sejarah, visi, misi, jam layanan, titik kantor (koordinat), sambutan Kepala Desa (opsional), kredit foto, logo, foto beranda, dan indikator stempel.
 3. User mengubah data profil lalu menyimpan (gambar diunggah lewat operasi terpisah). Data kop surat dipakai PDF; identitas dipakai header/footer aplikasi dan halaman publik.
+3b. Titik kantor diisi dengan menempel koordinat (`lat, lng`) atau link Google Maps, termasuk short link `maps.app.goo.gl`. Link diurai server (`POST /villages/profile/resolve-map-link`): redirect diikuti hanya ke host Google Maps, lalu titik pin diambil dan diisikan ke form sebelum disimpan sebagai `latitude`/`longitude`. Link "Buka di peta" di beranda dibuat dari koordinat ini.
 3a. Logo (maks 2 MB) dan foto beranda (maks 5 MB) diunggah terpisah, disimpan di disk publik setelah dioptimasi (diperkecil, WebP); unggahan lama dihapus, aset bawaan seeder tidak disentuh.
 4. Untuk menambah atau mengganti stempel, User mengunggah file PNG/JPEG/WebP maksimum 5 MB melalui operasi upload terpisah.
 5. File disimpan di private storage; API menyimpan path dan menyediakan preview binary melalui endpoint yang memerlukan autentikasi serta scope Petugas Desa pada desanya.
@@ -542,6 +546,8 @@ Main Flow:
 
 Alternatif Flow:
 - Field wajib kosong (nama desa, nama Kepala Desa) → error validasi per field
+- Koordinat hanya salah satu (lat tanpa lng) atau di luar rentang → 422
+- Link bukan Google Maps atau titiknya tidak ditemukan → 422 "Titik lokasi tidak ditemukan dari link ini"
 - Stempel belum tersedia → indikator bernilai `false`; endpoint preview memberi 404.
 - File bukan PNG/JPEG/WebP atau melebihi 5 MB → 422.
 
@@ -754,3 +760,58 @@ Alternative Flow:
 - Surat belum approved atau sudah diterapkan → 409
 
 Contoh jenis surat bawaan: **A07 Surat Keterangan Penguburan** (`update_citizen`, menonaktifkan data almarhum) dan **A08 Surat Keterangan Kelahiran** (`create_citizen`, menambah data anak).
+
+---
+
+## UC-27: Kelola Pengumuman Beranda
+
+| Field | Keterangan |
+|---|---|
+| Use Case ID | UC-27 |
+| Nama | Kelola Pengumuman Beranda |
+| Aktor | Petugas Desa |
+| Pre-condition | Petugas Desa sudah login |
+| Post-condition | Pengumuman tayang di bar halaman publik sampai waktunya habis, atau dihapus |
+
+Main Flow:
+1. Petugas membuka menu "Pengumuman" (`/admin/pengumuman`). Sistem menampilkan pengumuman yang sedang tayang beserta waktu berakhir dan sisa waktunya, atau keadaan kosong.
+2. Petugas mengisi judul (wajib, maks. 150), isi (opsional, maks. 1000), link (opsional; `https://...` atau path internal seperti `/berita/12`), dan **lama tayang wajib**: 1 jam, 12 jam, 1 hari, 1 minggu, atau "Lainnya" (angka 1–999 + jam/hari/minggu, total maks. 1 tahun).
+3. Sistem menyimpan pengumuman dengan `expires_at = sekarang + durasi` (`PUT /announcement`). **Satu pengumuman per desa**: menyimpan menggantikan yang lama.
+4. Pengumuman tampil di bar halaman publik (UC-16) sampai `expires_at`.
+5. Petugas dapat mengubah pengumuman yang masih tayang; bila durasi tidak dipilih ulang, waktu berakhir dipertahankan. Petugas dapat menghapusnya (`DELETE /announcement`).
+
+Alternatif Flow:
+- Durasi tidak dipilih saat membuat → 422
+- Link bukan `https://` atau path internal → 422
+- Durasi lebih dari satu tahun → 422
+
+Notes:
+- Pengumuman yang lewat waktu tidak dibaca lagi (query hanya mengambil yang aktif) dan barisnya dihapus perintah terjadwal `announcements:prune` tiap menit (`schedule:work`). Tidak memakai queue.
+- Bar di browser juga hilang tepat saat waktunya habis tanpa perlu memuat ulang halaman.
+- Penghapusan permanen; tidak ada arsip pengumuman.
+
+---
+
+## UC-28: Kelola Halaman Informasi
+
+| Field | Keterangan |
+|---|---|
+| Use Case ID | UC-28 |
+| Nama | Kelola Halaman Informasi |
+| Aktor | Petugas Desa |
+| Pre-condition | Petugas Desa sudah login |
+| Post-condition | Isian khas desa pada halaman PPID, Kebijakan Privasi, atau Aksesibilitas tersimpan dan tampil di halaman publik |
+
+Main Flow:
+1. Petugas membuka menu "Halaman Informasi" (`/admin/halaman-informasi`). Sistem menampilkan tab PPID, Kebijakan Privasi, dan Aksesibilitas beserta isian dan skemanya (`GET /info-pages`).
+2. Petugas mengisi field tunggal (teks, email, tanggal) dan field daftar yang bisa ditambah, dihapus, dan diurutkan. Contoh: PPID Desa dan atasannya, dasar penetapan, daftar informasi berkala/serta-merta/setiap saat/dikecualikan, pengelola server dan jangka waktu penyimpanan data, keterbatasan aksesibilitas, jangka waktu tanggapan.
+3. Petugas menyimpan per halaman (`PUT /info-pages/{page}`). Butir daftar kosong dan kunci yang tidak dikenal dibuang.
+4. Halaman publik (`GET /public/info-pages/{page}`) memakai isian ini; isian yang masih kosong tampil sebagai penanda kuning `[...]`.
+
+Alternatif Flow:
+- Format email/tanggal salah, teks lebih dari 300 karakter, atau daftar lebih dari 30 butir → 422
+- Halaman di luar ketiga halaman tersebut → 404
+
+Notes:
+- Skema field didefinisikan di `App\Support\InfoPageFields`; teks baku halaman ada di frontend.
+- Nama, kecamatan, kabupaten, provinsi, telepon, jam layanan, dan email kantor diambil dari Profil Desa (UC-18), bukan diisi ulang di sini. Email khusus yang kosong memakai email kantor desa.

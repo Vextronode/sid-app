@@ -40,6 +40,8 @@ rectangle "SIDUTama" {
     usecase "Info Jenis Surat" as UC_P4
     usecase "Peraturan Desa" as UC_P5
     usecase "Hubungi Kami\n(WA Kasi/Kaur)" as UC_P6
+    usecase "Bar Pengumuman\n(semua halaman publik)" as UC_P7
+    usecase "Halaman Informasi\n(PPID, Privasi, Aksesibilitas)" as UC_P8
   }
   rectangle "Surat" #E8F0FF {
     usecase "UC-03: Ajukan Surat\n(isian dinamis, berkas,\npenanda tangan)" as UC_SUBMIT
@@ -66,6 +68,8 @@ PUB -- UC_P3
 PUB -- UC_P4
 PUB -- UC_P5
 PUB -- UC_P6
+PUB -- UC_P7
+PUB -- UC_P8
 PUB -- UC_REG
 WRG -- UC_LOGIN
 WRG -- UC_LOGOUT

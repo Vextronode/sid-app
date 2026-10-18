@@ -31,7 +31,7 @@ Warga (atau pejabat untuk dirinya) mengajukan surat dengan isian form dinamis pe
 Data warga (individu) dan KK, sosio-ekonomi per KK, katalog pekerjaan per desa, impor Excel. Warga tidak mengedit datanya langsung; perubahan diajukan lewat surat ber-aksi data.
 
 ### 2.3 Manajemen Informasi Desa (CMS)
-Profil desa (identitas, kop surat, luas, jam layanan, peta, logo, foto beranda, stempel), berita berkategori, peraturan desa, organisasi non-struktural (BPD, LPM, Karang Taruna, PKK: Ketua, Wakil Ketua, Anggota). **Eksklusif `staf_sid`.** Halaman publik menampilkan profil, statistik terhitung (jumlah warga, dusun), perangkat desa (termasuk staf aplikasi), struktur BPD dan Lembaga Desa, berita, info jenis surat, peraturan, kontak.
+Profil desa (identitas, kop surat, luas, jam layanan, titik kantor berupa koordinat, sambutan Kepala Desa, logo, foto beranda, stempel), berita berkategori, peraturan desa, pengumuman beranda berdurasi (dihapus otomatis), halaman informasi (PPID, Kebijakan Privasi, Aksesibilitas), organisasi non-struktural (BPD, LPM, Karang Taruna, PKK: Ketua, Wakil Ketua, Anggota). **Eksklusif `staf_sid`.** Halaman publik menampilkan profil, statistik terhitung (jumlah warga, dusun), perangkat desa (termasuk staf aplikasi), peraturan (section Profil Desa), struktur BPD dan Lembaga Desa, berita, info jenis surat, kontak, bar pengumuman, dan halaman informasi. BUMDesa dan Transparansi APBDes tampil "Segera hadir".
 
 ### 2.4 Governance & RBAC
 Struktur wilayah (Dusun/RW/RT), jabatan berakun dan jenis jabatan tanpa akun yang dapat dikelola, akun pengguna, reset password & reset tanda tangan akun.

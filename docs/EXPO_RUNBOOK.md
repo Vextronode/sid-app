@@ -4,7 +4,7 @@ Panduan operasional tim untuk menjalankan SID di laptop server selama pameran. S
 
 > **Status pengujian.** Skrip, Nginx, dan compose sudah diperiksa statis dan sebagian diuji perilakunya di mesin pengembang, **tetapi belum pernah dijalankan dengan Docker sungguhan, belum di laptop server, dan belum di GitHub Actions.** Bagian bertanda **[BELUM TERUJI]** wajib dibuktikan saat gladi H-3.
 
-Ringkasan arsitektur: CI membangun image `sid-api` (PHP-FPM) dan `sid-web` (Nginx + SPA) dari tag git `vX.Y.Z` di `main` lalu mendorongnya ke GHCR. Laptop hanya menarik image berdasarkan tag. Stack: `sid_db` (PostgreSQL 18, mode local), `sid_api`, `sid_scheduler` (image `sid-api` yang menjalankan `schedule:work` untuk pengingat approval), `sid_web`. Satu-satunya port: `127.0.0.1:<SID_HTTP_PORT>` (default 8100). Proxy/tunnel tim (di host laptop) meneruskan HTTPS publik ke port itu.
+Ringkasan arsitektur: CI membangun image `sid-api` (PHP-FPM) dan `sid-web` (Nginx + SPA) dari tag git `vX.Y.Z` di `main` lalu mendorongnya ke GHCR. Laptop hanya menarik image berdasarkan tag. Stack: `sid_db` (PostgreSQL 18, mode local), `sid_api`, `sid_scheduler` (image `sid-api` yang menjalankan `schedule:work` untuk pengingat approval dan penghapusan pengumuman kedaluwarsa), `sid_web`. Satu-satunya port: `127.0.0.1:<SID_HTTP_PORT>` (default 8100). Proxy/tunnel tim (di host laptop) meneruskan HTTPS publik ke port itu.
 
 ---
 
@@ -115,7 +115,7 @@ bash deploy/scripts/smoke.sh
 
 Staf aplikasi lupa kata sandi: `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan staf-sid:recover --username=<username> --force`, lalu serahkan kata sandi sementara yang tercetak (hanya tampil sekali).
 
-Scheduler (pengingat approval tiap 5 menit, pembersihan log aktivitas harian) tidak punya healthcheck; cek dengan `ps` (status `Up`) dan `logs --tail 50 sid_scheduler`. Uji manual: `bash deploy/scripts/lib.sh exec -u www-data sid_scheduler php artisan approvals:send-reminders`.
+Scheduler (pengingat approval tiap 5 menit, penghapusan pengumuman kedaluwarsa tiap menit, pembersihan log aktivitas harian) tidak punya healthcheck; cek dengan `ps` (status `Up`) dan `logs --tail 50 sid_scheduler`. Uji manual: `bash deploy/scripts/lib.sh exec -u www-data sid_scheduler php artisan approvals:send-reminders` atau `... php artisan announcements:prune`.
 
 ## 5. Golden DB dan reset demo
 
