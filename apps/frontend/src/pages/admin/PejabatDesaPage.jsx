@@ -31,7 +31,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 // Tabel pejabat dipisah per tingkat. Jabatan yang bukan Kadus/RW/RT
 // (Kades, Sekdes, Kasi, Kaur, staf, Petugas Desa) masuk tabel pertama,
 // diurutkan sesuai DESA_ORDER lalu abjad.
-const DESA_ORDER = ['kepala_desa', 'sekdes', 'kasi_pelayanan', 'kaur_tu_umum']
+const DESA_ORDER = ['kepala_desa', 'sekretaris_desa', 'kasi_pelayanan', 'kaur_tu_umum']
 
 const areaNumber = (value) => Number(value) || 0
 
@@ -258,12 +258,15 @@ function CandidatePicker({ candidate, position, onChange, disabled }) {
       </div>
 
       {lookupError && (
-        <p className="sid-form-field-error" role="alert">
+        <p className="sid-admin-alert sid-admin-alert-error" role="alert">
           {lookupError}
         </p>
       )}
       {candidate && (
-        <p className={candidate.eligible ? 'sid-info' : 'sid-form-field-error'} role="status">
+        <p
+          className={candidate.eligible ? 'sid-info' : 'sid-admin-alert sid-admin-alert-error'}
+          role="status"
+        >
           {candidate.name}
           {candidate.username ? ` (@${candidate.username})` : ''}
           {candidate.eligible ? ' dapat ditetapkan.' : ` — ${candidate.reason}`}
@@ -338,20 +341,52 @@ export default function PejabatDesaPage() {
     [areas.rws],
   )
 
+  // Jabatan dan wilayah yang sedang dijabat. Backend menolak pejabat kedua
+  // (409), jadi pilihannya dibuat buram; penggantinya lewat rotasi.
+  const occupied = useMemo(() => {
+    const keys = new Set()
+    officials
+      .filter((official) => official.is_active)
+      .forEach((official) => {
+        const areaId = official.rt_id ?? official.rw_id ?? official.hamlet_id
+        keys.add(areaId ? `${official.position}:${areaId}` : official.position)
+      })
+    return keys
+  }, [officials])
+
   // Pilihan jabatan: jabatan berakun, lalu jenis jabatan aktif tanpa akun.
-  // Staf aplikasi hanya satu; selama sudah terisi, gantinya lewat rotasi.
-  const hasActiveStafSid = officials.some(
-    (official) => official.is_active && official.position === 'staf_sid',
-  )
-  const positionOptions = useMemo(
-    () => [
-      ...accountPositions.filter((position) => position.value !== 'staf_sid' || !hasActiveStafSid),
+  // Jabatan berwilayah (RT/RW/Kadus) dicek per wilayah di pilihan wilayahnya.
+  const positionOptions = useMemo(() => {
+    const withStatus = (option, single) => {
+      const taken = single && occupied.has(option.value)
+      return {
+        ...option,
+        disabled: taken,
+        label: taken ? `${option.label} (sudah dijabat)` : option.label,
+      }
+    }
+
+    return [
+      ...accountPositions.map((position) => withStatus(position, !position.scope)),
       ...positionTypes
         .filter((type) => type.is_active)
-        .map((type) => ({ value: type.code, label: `${type.label} (tanpa akun)` })),
-    ],
-    [accountPositions, positionTypes, hasActiveStafSid],
-  )
+        .map((type) =>
+          withStatus(
+            { value: type.code, label: `${type.label} (tanpa akun)` },
+            type.is_single_occupant,
+          ),
+        ),
+    ]
+  }, [accountPositions, positionTypes, occupied])
+
+  const areaOption = (areaId, label) => {
+    const taken = occupied.has(`${promotion?.position}:${areaId}`)
+    return (
+      <option key={areaId} value={areaId} disabled={taken}>
+        {taken ? `${label} (sudah ada)` : label}
+      </option>
+    )
+  }
 
   const officialGroups = useMemo(() => {
     const filtered = officials.filter((official) =>
@@ -478,6 +513,19 @@ export default function PejabatDesaPage() {
 
   const promotionScope = findAccountPosition(accountPositions, promotion?.position)?.scope
 
+  // Selama modal terbuka, error aksi tampil di dalam modal; di halaman ia
+  // tertutup overlay. Pesan lama dibersihkan saat modal dibuka.
+  const modalOpen = Boolean(promotion || rotation || demotion)
+  const openModal = (open) => {
+    setError('')
+    open()
+  }
+  const errorAlert = error && (
+    <p className="sid-admin-alert sid-admin-alert-error" role="alert">
+      {error}
+    </p>
+  )
+
   return (
     <div className="sid-operator-page">
       <div className="sid-operator-content">
@@ -501,7 +549,9 @@ export default function PejabatDesaPage() {
               type="button"
               className="sid-operator-primary"
               disabled={processing}
-              onClick={() => setPromotion({ ...EMPTY_PROMOTION, started_at: today() })}
+              onClick={() =>
+                openModal(() => setPromotion({ ...EMPTY_PROMOTION, started_at: today() }))
+              }
             >
               <UserRoundPlus size={16} />
               Tetapkan Pejabat
@@ -525,11 +575,7 @@ export default function PejabatDesaPage() {
           onChange={handlePhotoChange}
         />
 
-        {error && (
-          <p className="sid-admin-alert sid-admin-alert-error" role="alert">
-            {error}
-          </p>
-        )}
+        {!modalOpen && errorAlert}
         {success && (
           <p className="sid-admin-alert sid-admin-alert-success" role="status">
             {success}
@@ -663,14 +709,16 @@ export default function PejabatDesaPage() {
                                     aria-label={`Rotasi ${official.citizen?.name ?? 'pejabat'}`}
                                     disabled={processing}
                                     onClick={() =>
-                                      setRotation({
-                                        official,
-                                        candidate: null,
-                                        photo: null,
-                                        started_at: today(),
-                                        term_ends_at: '',
-                                        notes: '',
-                                      })
+                                      openModal(() =>
+                                        setRotation({
+                                          official,
+                                          candidate: null,
+                                          photo: null,
+                                          started_at: today(),
+                                          term_ends_at: '',
+                                          notes: '',
+                                        }),
+                                      )
                                     }
                                   >
                                     <ArrowLeftRight size={16} />
@@ -684,7 +732,9 @@ export default function PejabatDesaPage() {
                                       title="Akhiri jabatan"
                                       aria-label={`Akhiri jabatan ${official.citizen?.name ?? 'pejabat'}`}
                                       disabled={processing}
-                                      onClick={() => setDemotion({ official, notes: '' })}
+                                      onClick={() =>
+                                        openModal(() => setDemotion({ official, notes: '' }))
+                                      }
                                     >
                                       <UserRoundMinus size={16} />
                                     </button>
@@ -720,6 +770,7 @@ export default function PejabatDesaPage() {
         <div className="sid-modal-overlay">
           <form className="sid-modal" onSubmit={handlePromote}>
             <h2>Tetapkan Pejabat</h2>
+            {errorAlert}
 
             <label className="sid-form-group">
               <span className="sid-form-label">Jabatan *</span>
@@ -741,11 +792,14 @@ export default function PejabatDesaPage() {
               >
                 <option value="">Pilih jabatan</option>
                 {positionOptions.map((position) => (
-                  <option key={position.value} value={position.value}>
+                  <option key={position.value} value={position.value} disabled={position.disabled}>
                     {position.label}
                   </option>
                 ))}
               </select>
+              <span className="sid-form-help">
+                Jabatan yang sudah dijabat diganti lewat tombol Rotasi.
+              </span>
             </label>
 
             <CandidatePicker
@@ -770,11 +824,12 @@ export default function PejabatDesaPage() {
                   onChange={(event) => setPromotion({ ...promotion, rt_id: event.target.value })}
                 >
                   <option value="">Pilih RT</option>
-                  {areas.rts.map((rt) => (
-                    <option key={rt.id} value={rt.id}>
-                      RT {rt.number} / RW {rwNumbers.get(String(rt.rw_id)) ?? '-'}
-                    </option>
-                  ))}
+                  {areas.rts.map((rt) =>
+                    areaOption(
+                      rt.id,
+                      `RT ${rt.number} / RW ${rwNumbers.get(String(rt.rw_id)) ?? '-'}`,
+                    ),
+                  )}
                 </select>
               </label>
             )}
@@ -788,11 +843,7 @@ export default function PejabatDesaPage() {
                   onChange={(event) => setPromotion({ ...promotion, rw_id: event.target.value })}
                 >
                   <option value="">Pilih RW</option>
-                  {areas.rws.map((rw) => (
-                    <option key={rw.id} value={rw.id}>
-                      RW {rw.number}
-                    </option>
-                  ))}
+                  {areas.rws.map((rw) => areaOption(rw.id, `RW ${rw.number}`))}
                 </select>
               </label>
             )}
@@ -808,11 +859,7 @@ export default function PejabatDesaPage() {
                   }
                 >
                   <option value="">Pilih dusun</option>
-                  {areas.hamlets.map((hamlet) => (
-                    <option key={hamlet.id} value={hamlet.id}>
-                      {hamlet.name}
-                    </option>
-                  ))}
+                  {areas.hamlets.map((hamlet) => areaOption(hamlet.id, hamlet.name))}
                 </select>
               </label>
             )}
@@ -882,6 +929,7 @@ export default function PejabatDesaPage() {
         <div className="sid-modal-overlay">
           <form className="sid-modal" onSubmit={handleRotate}>
             <h2>Rotasi {positionLabel(rotation.official)}</h2>
+            {errorAlert}
             <p>
               {rotation.official.citizen?.name ?? 'Pejabat saat ini'} (
               {describeArea(rotation.official, rwNumbers)}) diakhiri jabatannya dan digantikan warga
@@ -960,6 +1008,7 @@ export default function PejabatDesaPage() {
         <div className="sid-modal-overlay">
           <form className="sid-modal" onSubmit={handleDemote}>
             <h2>Akhiri Jabatan</h2>
+            {errorAlert}
             <p>
               {demotion.official.citizen?.name ?? 'Pejabat'} berhenti sebagai{' '}
               {positionLabel(demotion.official)} ({describeArea(demotion.official, rwNumbers)})
