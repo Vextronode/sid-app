@@ -14,5 +14,11 @@ Schedule::command('approvals:send-reminders')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+// Pengumuman beranda yang lewat waktu tayang dihapus (cache beranda ikut
+// segar lewat event deleted).
+Schedule::command('announcements:prune')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 // Retensi activity log (config activitylog.delete_records_older_than_days).
 Schedule::command('activitylog:clean')->daily();

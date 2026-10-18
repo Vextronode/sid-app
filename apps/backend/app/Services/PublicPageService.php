@@ -51,6 +51,7 @@ class PublicPageService
         private readonly OfficialPositionTypeRepository $positionTypeRepository,
         private readonly CitizenRepository $citizenRepository,
         private readonly VillageOrgPositionRepository $orgPositionRepository,
+        private readonly AnnouncementService $announcementService,
     ) {}
 
     /**
@@ -101,6 +102,7 @@ class PublicPageService
                 'total_letter_types' => $this->letterTypeRepository->countActiveWithTemplate($village->id),
                 ...$this->publicStats($villageCode),
             ],
+            'announcement' => $this->announcementService->activeForVillage($village->id),
         ];
     }
 
