@@ -30,6 +30,8 @@ describe('operator role navigation', () => {
       '/admin/kelola-profil-desa',
       '/admin/kelola-berita',
       '/admin/kelola-peraturan',
+      '/admin/pengumuman',
+      '/admin/halaman-informasi',
       '/admin/approval-settings',
       '/admin/organisasi/bpd',
       '/admin/organisasi/lembaga',

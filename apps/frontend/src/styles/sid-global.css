@@ -20191,6 +20191,24 @@ button.sid-operator-profile {
   min-height: 96px;
 }
 
+/* Titik kantor desa: input koordinat (link "Buka di peta" di beranda). */
+.sid-profil-desa-location-input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sid-profil-desa-location-input button {
+  flex: none;
+}
+
+.sid-profil-desa-location-hint {
+  margin: 0;
+
+  color: var(--sid-text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
 .sid-profil-desa-form-field input:focus,
 .sid-profil-desa-form-field textarea:focus {
   border-color: var(--sid-primary);
@@ -20285,6 +20303,12 @@ button.sid-operator-profile {
 
   font-size: 0.75rem;
   line-height: 1.6;
+}
+
+.sid-profil-desa-device-notice a {
+  color: var(--sid-primary);
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .sid-profil-desa-device-sections {
@@ -20592,8 +20616,15 @@ button.sid-operator-profile {
   color: var(--sid-text-primary);
 }
 
-.sid-wilayah-tab-active {
+/* Spesifisitas setara :hover agar tab terpilih tidak tertimpa warna hover
+   tab biasa; saat di-hover, tab terpilih sedikit lebih gelap. */
+.sid-wilayah-tab.sid-wilayah-tab-active {
   background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-wilayah-tab.sid-wilayah-tab-active:hover {
+  background: var(--sid-primary-hover);
   color: var(--sid-on-primary);
 }
 
@@ -20603,6 +20634,21 @@ button.sid-operator-profile {
   border-radius: var(--radius-lg);
   background: var(--sid-surface-card);
   box-shadow: var(--shadow-card);
+}
+
+/* Isi kartu selain tabel (form, pratinjau, tab) di bawah toolbar. */
+.sid-wilayah-card-body {
+  padding: 1.1rem;
+}
+
+.sid-wilayah-card-body > .sid-wilayah-tabs {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .sid-wilayah-card-body {
+    padding: 0.9rem;
+  }
 }
 
 .sid-wilayah-table-toolbar {
