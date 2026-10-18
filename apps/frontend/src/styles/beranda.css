@@ -271,6 +271,53 @@
   overscroll-behavior: contain;
 }
 
+/* Tiga garis "pukulan kentongan" di kiri pita pengumuman. Saat pita muncul,
+   garis menyala bergantian sekali (tok, tok, tok), lalu diam. */
+.bd-kentongan > span {
+  display: block;
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--color-pb-padi);
+  transform: skewX(-14deg);
+  animation: bd-kentongan-tok 260ms ease-out both;
+}
+
+.bd-kentongan > span:nth-child(2) {
+  animation-delay: 220ms;
+}
+
+.bd-kentongan > span:nth-child(3) {
+  animation-delay: 440ms;
+}
+
+@keyframes bd-kentongan-tok {
+  from {
+    opacity: 0.25;
+    transform: skewX(-14deg) scaleY(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: skewX(-14deg);
+  }
+}
+
+/* Garis padi di panel isi pengumuman, tepat di bawah tiga garis kentongan:
+   memanjang ke bawah saat panel dibuka. */
+.bd-kentongan-gema {
+  transform-origin: top;
+  animation: bd-kentongan-gema 280ms ease-out both;
+}
+
+@keyframes bd-kentongan-gema {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: none;
+  }
+}
+
 .bd-lift {
   transition:
     transform var(--bd-lift-duration) ease,
@@ -292,7 +339,9 @@
   .bd-rise,
   .bd-rise-2,
   .bd-rise-3,
-  .bd-announcement-panel {
+  .bd-announcement-panel,
+  .bd-kentongan > span,
+  .bd-kentongan-gema {
     animation: none;
   }
 
