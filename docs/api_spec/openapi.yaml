@@ -294,8 +294,6 @@ paths:
   # ─────────────────────────────────────────────
   # EPIC 8 - Dashboard & Statistik
   # ─────────────────────────────────────────────
-  /dashboard:
-    $ref: 'paths/dashboard/dashboard.yaml'
   /dashboard/gender-stats:
     $ref: 'paths/dashboard/gender-stats.yaml'
   /dashboard/letter-stats:
