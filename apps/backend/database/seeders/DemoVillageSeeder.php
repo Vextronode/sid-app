@@ -55,7 +55,9 @@ class DemoVillageSeeder extends Seeder
                 'hero_image' => '/assets/image/beranda/hero-pemandangan.jpg',
                 'hero_photo_credit' => null,
                 'office_hours' => 'Senin – Jumat, 08.00 – 16.00 WIB',
-                'map_url' => 'https://maps.app.goo.gl/sVU5Xqmasq4UTJ4N6',
+                // Titik "Kantor Pemerintahan Desa Cibenda" di Google Maps.
+                'latitude' => -7.6803137,
+                'longitude' => 108.5513816,
                 'history' => self::HISTORY,
                 'vision' => self::VISION,
                 // Satu butir misi per baris; halaman Profil Desa memecahnya per baris.
