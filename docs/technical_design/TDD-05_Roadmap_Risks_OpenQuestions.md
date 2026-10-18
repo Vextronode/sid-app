@@ -37,7 +37,7 @@ Roadmap ini sangat terbuka pada requirement client setelah observasi pertama.
 |---|---|---|---|
 | Kantor desa memiliki akses internet yang stabil | SEDANG | Sistem tidak dapat diakses, data tidak bisa diinput/di-approve real-time | Desain UI toleran koneksi lambat; fitur draft offline-first (future) |
 | Server deployment tersedia dengan spesifikasi minimum: 2 vCPU, 2GB RAM, 20GB SSD | TINGGI | Performa sistem degradasi; implementasi keamanan (HTTPS, fail2ban, firewall) tidak bisa diterapkan penuh | Dokumentasikan minimum server requirement sejak awal; siapkan alternatif managed hosting |
-| Worker queue dijaga berjalan bila Web Push diaktifkan | SEDANG | Push tidak terkirim (notifikasi in-app tetap) | Stack Docker expo memakai `QUEUE_CONNECTION=sync`; panduan VPS menyediakan konfigurasi Supervisor |
+| Worker queue dijaga berjalan bila Web Push diaktifkan | SEDANG | Push tertunda (notifikasi in-app tetap) | Stack Docker: service `sid_worker` dengan `restart: unless-stopped`; panduan VPS menyediakan konfigurasi Supervisor |
 | PostgreSQL tersedia dan dapat dikonfigurasi di server deployment | RENDAH | Implementasi keamanan tidak bisa diterapkan penuh | Dokumentasikan minimum requirement server; siapkan alternatif shared hosting |
 | Docker dipakai untuk stack expo/demo; development tetap manual | RENDAH | Environment dev berbeda antar mesin | `deploy/docker-compose.yml` + `docs/SETUP.md`; PHP ^8.3, PostgreSQL |
 
@@ -103,7 +103,7 @@ Bagian ini mendokumentasikan keterbatasan teknis yang sudah dapat diprediksi seb
 | Constraint | Dampak | Solusi |
 |---|---|---|
 | Kolom AES-256 tidak bisa di-index langsung | Query by NIK/No KK tidak bisa pakai index | Dual-column: encrypted + hash untuk indexing (`nik_hash`, `no_kk_hash`) |
-| Queue worker untuk Web Push | Push tertunda bila worker mati (in-app tetap jalan karena sinkron) | Supervisor (VPS) atau `QUEUE_CONNECTION=sync` (Docker expo); Horizon di Tahap 2 |
+| Queue worker untuk Web Push | Push tertunda bila worker mati (in-app tetap jalan karena sinkron) | Supervisor (VPS) atau service `sid_worker` (Docker); pantau `lib.sh ps`/`logs sid_worker`, `queue:failed`; Horizon di Tahap 2 |
 | `APP_KEY` tidak boleh berubah di production | Semua data terenkripsi tidak bisa didekripsi | Simpan `APP_KEY` di tempat aman; jangan pernah regenerate di prod |
 | `on_behalf_of` nullable di MVP | Warga submit sendiri di MVP, kolom selalu NULL | Kolom tetap ada untuk future use case di mana petugas mungkin perlu input atas nama warga tertentu |
 | Tabel `officials` sebaiknya punya minimal 1 RT aktif per wilayah | Gate approval bergantung pada RT aktif; resolver tidak melakukan fallback broadcast jika RT tidak ditemukan | Validasi konfigurasi dan pantau wilayah tanpa RT aktif; keputusan approval tetap membutuhkan pejabat RT |

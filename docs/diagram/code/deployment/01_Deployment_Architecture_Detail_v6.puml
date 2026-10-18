@@ -50,6 +50,8 @@ node "Host (laptop/server ber-Docker)" as HOST {
       component "entrypoint.sh:\nvalidasi APP_KEY & DB_*,\nconfig:cache, view:cache,\nstorage:link\n(tanpa migrate/seed)" as ENTRY
       component "Healthcheck FPM ping" as HC
     }
+    node "sid_scheduler\n(image sid-api)\nphp artisan schedule:work" as SCHED
+    node "sid_worker\n(image sid-api)\nphp artisan queue:work\n(kirim Web Push dari tabel jobs)" as WORKER
     database "sid_db\npostgres:18.6 (profil localdb)\nTZ Asia/Jakarta" as PG
   }
   storage "volume public\n(storage/app/public)" as VPUB
@@ -64,6 +66,9 @@ NGX --> SPA
 NGX --> LARAVEL : FastCGI sid_api:9000
 NGX --> VPUB : read-only
 LARAVEL --> PG : pgsql (mode local)
+SCHED --> PG : jadwal (reminder, prune)
+WORKER --> PG : ambil job (tabel jobs)
+WORKER ..> USER : Web Push via sid_egress
 LARAVEL ..> NEON : pgsql via sid_egress (mode neon)
 LARAVEL --> VPUB
 LARAVEL --> VPRIV
@@ -73,14 +78,16 @@ SCRIPTS ..> API : migrate (opsional) + smoke
 
 note right of LARAVEL
   .env (sid.env / sid.neon.env):
-  QUEUE_CONNECTION=sync, CACHE_STORE=database,
+  QUEUE_CONNECTION=database (dikirim sid_worker),
+  CACHE_STORE=database,
   SESSION_DRIVER=database.
   VAPID kosong pada image expo → Web Push nonaktif.
 end note
 note bottom of NET
   sid_net internal: hanya sid_web yang
   membuka port ke host (loopback).
-  sid_api memakai jaringan sid_egress
-  hanya untuk keluar (DB Neon).
+  sid_api/sid_scheduler/sid_worker memakai
+  jaringan sid_egress hanya untuk keluar
+  (DB Neon, layanan push browser).
 end note
 @enduml
