@@ -14,6 +14,7 @@ import {
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getHamlets, getRts, getRws } from '@/features/kelola-wilayah/api'
 import OfficialPositionTypeManager from '@/features/profil-desa-admin/components/OfficialPositionTypeManager'
+import { TermEndBadge } from '@/features/profil-desa-admin/components/TermEndBadge'
 import {
   demotePerangkatDesa,
   deleteOfficialPhoto,
@@ -619,9 +620,14 @@ export default function PejabatDesaPage() {
                           </td>
                           <td className="center">{formatDate(official.started_at)}</td>
                           <td className="center">
-                            {official.is_active
-                              ? formatDate(official.term_ends_at)
-                              : `Berakhir ${formatDate(official.ended_at)}`}
+                            {official.is_active ? (
+                              <div className="flex flex-col items-center gap-1">
+                                {formatDate(official.term_ends_at)}
+                                <TermEndBadge termEndsAt={official.term_ends_at} />
+                              </div>
+                            ) : (
+                              `Berakhir ${formatDate(official.ended_at)}`
+                            )}
                           </td>
                           <td className="center">{official.is_active ? 'Menjabat' : 'Berakhir'}</td>
                           <td className="center">
