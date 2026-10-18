@@ -164,6 +164,7 @@ class CitizenRepository
     {
         return Citizen::query()
             ->where('village_id', $villageId)
+            ->where('is_active', true)
             ->when($rtId !== null, fn ($query) => $query->where('rt_id', $rtId))
             ->when($rwId !== null, fn ($query) => $query->whereHas('rt', fn ($rtQuery) => $rtQuery->where('rw_id', $rwId)))
             ->selectRaw('gender, COUNT(*) as aggregate')

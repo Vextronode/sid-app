@@ -356,8 +356,26 @@ class LetterService
     }
 
     /**
+     * Jumlah surat yang diajukan per tanggal dalam rentang, atas scope yang
+     * sama dengan daftar dan ringkasan surat, supaya grafik dashboard
+     * cocok dengan kartu angkanya.
+     *
+     * @return array<string, int> tanggal (Y-m-d) => jumlah
+     */
+    public function countSubmittedPerDayForUser(User $user, Carbon $from, Carbon $to, ?string $letterTypeId = null): array
+    {
+        $query = $this->scopedQuery($user, []);
+
+        if ($letterTypeId && $letterTypeId !== 'all') {
+            $query->where('letters.letter_type_id', $letterTypeId);
+        }
+
+        return $this->letterRepository->countSubmittedPerDay($query, $from, $to);
+    }
+
+    /**
      * Scope daftar surat per role, tanpa filter tampilan maupun eager-load
-     * final; dipakai bersama oleh daftar berpaginasi dan ringkasan.
+     * final; dipakai bersama oleh daftar berpaginasi, ringkasan, dan grafik.
      */
     private function scopedQuery(User $user, array $filters): Builder
     {

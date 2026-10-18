@@ -42,20 +42,6 @@ class Official extends Model
         return $query->where('is_active', true);
     }
 
-    public function scopeTermExpired(Builder $query): Builder
-    {
-        return $query->active()
-            ->whereNotNull('term_ends_at')
-            ->whereDate('term_ends_at', '<', today());
-    }
-
-    public function scopeTermEndingWithin(Builder $query, int $days): Builder
-    {
-        return $query->active()
-            ->whereNotNull('term_ends_at')
-            ->whereBetween('term_ends_at', [today(), today()->addDays($days)]);
-    }
-
     public function citizen(): BelongsTo
     {
         return $this->belongsTo(Citizen::class);

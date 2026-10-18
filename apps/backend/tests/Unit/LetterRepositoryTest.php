@@ -95,16 +95,6 @@ class LetterRepositoryTest extends TestCase
         $this->assertDatabaseMissing('letters', ['id' => $letter->id]);
     }
 
-    public function test_query_by_village_filters_correctly(): void
-    {
-        $letterA = Letter::factory()->create();
-        Letter::factory()->create(['village_id' => Village::factory()->create()->id]);
-
-        $result = $this->repository->queryByVillage($letterA->village_id)->get();
-
-        $this->assertCount(1, $result);
-    }
-
     public function test_where_citizen_rt_id_filters_via_relation(): void
     {
         $rt = Rt::factory()->create();

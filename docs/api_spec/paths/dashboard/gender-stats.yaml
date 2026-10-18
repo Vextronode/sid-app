@@ -2,9 +2,9 @@ get:
   tags: [Epic 8 - Dashboard & Statistik]
   summary: Lihat statistik jumlah warga berdasarkan jenis kelamin
   description: |
-    Ditambahkan setelah v5.0 sebagai sub-endpoint dashboard. Menyediakan
-    ringkasan jumlah warga laki-laki/perempuan untuk keperluan chart di
-    dashboard Petugas Desa.
+    Jumlah warga aktif (is_active = true) laki-laki/perempuan untuk kartu
+    gender di dashboard. Scope: RT = warga RT-nya, RW = warga RW-nya,
+    Kasi/Kaur/Petugas Desa = seluruh desa. Role lain mendapat 403.
   operationId: getDashboardGenderStats
   security:
     - sanctumCookie: []

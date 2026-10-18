@@ -25,7 +25,7 @@ class PasswordChangeMiddlewareTest extends TestCase
             ]);
 
         $this->actingAs($user)
-            ->getJson('/api/dashboard')
+            ->getJson('/api/notifications/unread-count')
             ->assertForbidden()
             ->assertJsonPath('code', 'password_change_required');
 
