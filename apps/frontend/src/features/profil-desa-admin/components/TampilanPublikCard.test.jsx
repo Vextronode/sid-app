@@ -7,7 +7,8 @@ const profile = {
   logo_url: '/assets/image/lambang.webp',
   hero_image_url: null,
   office_hours: 'Senin – Jumat, 08.00 – 16.00 WIB',
-  map_url: 'https://maps.app.goo.gl/abc',
+  latitude: -7.6803137,
+  longitude: 108.5513816,
   hero_photo_credit: '',
 }
 
@@ -37,9 +38,9 @@ describe('TampilanPublikCard', () => {
       '/assets/image/lambang.webp',
     )
     expect(screen.getByText('Senin – Jumat, 08.00 – 16.00 WIB')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /maps\.app\.goo\.gl/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /-7\.6803137, 108\.5513816/ })).toHaveAttribute(
       'href',
-      'https://maps.app.goo.gl/abc',
+      'https://www.google.com/maps/search/?api=1&query=-7.6803137,108.5513816',
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit Teks' }))

@@ -8,6 +8,12 @@ export function updateProfilDesa(payload) {
   return api.patch('/api/villages/profile', payload)
 }
 
+// Titik kantor desa dari link Google Maps (termasuk short link maps.app.goo.gl).
+// Hanya membaca titiknya; penyimpanan tetap lewat updateProfilDesa.
+export function resolveMapLink(url) {
+  return api.post('/api/villages/profile/resolve-map-link', { url })
+}
+
 export function getPerangkatDesa() {
   return api.get('/api/officials')
 }

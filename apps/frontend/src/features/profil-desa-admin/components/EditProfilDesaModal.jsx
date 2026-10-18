@@ -7,6 +7,15 @@
 import { useEffect, useState } from 'react'
 import { X, Save } from 'lucide-react'
 
+import { formatCoords, parseCoords, villageCoords } from '@/shared/lib/villageMap'
+import { resolveMapLink } from '../api'
+
+// Isian lokasi berupa link (Google Maps), bukan koordinat.
+const isLink = (text) => /^https?:\/\//i.test(text.trim())
+
+const COORDS_FORMAT_ERROR =
+  'Tempel link Google Maps, atau koordinat dengan format: latitude, longitude. Contoh: -7.6803137, 108.5513816'
+
 const EMPTY_FORM = {
   name: '',
   head_name: '',
@@ -20,8 +29,10 @@ const EMPTY_FORM = {
   area_ha: '',
   history: '',
   office_hours: '',
-  map_url: '',
+  // Titik kantor desa sebagai teks "lat, lng".
+  coords: '',
   hero_photo_credit: '',
+  welcome_message: '',
 }
 
 export default function EditProfilDesaModal({
@@ -32,6 +43,9 @@ export default function EditProfilDesaModal({
   processing = false,
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
+  const [coordsError, setCoordsError] = useState('')
+  const [coordsFound, setCoordsFound] = useState(false)
+  const [resolving, setResolving] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -49,12 +63,17 @@ export default function EditProfilDesaModal({
       area_ha: initialData?.area_ha ?? '',
       history: initialData?.history ?? '',
       office_hours: initialData?.office_hours ?? '',
-      map_url: initialData?.map_url ?? '',
+      coords: formatCoords(villageCoords(initialData)),
       hero_photo_credit: initialData?.hero_photo_credit ?? '',
+      welcome_message: initialData?.welcome_message ?? '',
     })
+    setCoordsError('')
+    setCoordsFound(false)
   }, [open, initialData])
 
   if (!open) return null
+
+  const busy = processing || resolving
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -63,12 +82,60 @@ export default function EditProfilDesaModal({
       ...current,
       [name]: value,
     }))
+
+    if (name === 'coords') {
+      setCoordsError('')
+      setCoordsFound(false)
+    }
+  }
+
+  const clearCoords = () => {
+    setForm((current) => ({ ...current, coords: '' }))
+    setCoordsError('')
+    setCoordsFound(false)
+  }
+
+  // Link Google Maps -> titik kantor (dibaca backend, termasuk short link).
+  // Isian diganti koordinat hasilnya agar terlihat sebelum disimpan.
+  // Mengembalikan [lat, lng], atau undefined bila gagal.
+  const resolveLink = async () => {
+    setResolving(true)
+    setCoordsError('')
+
+    try {
+      const response = await resolveMapLink(form.coords.trim())
+      const { latitude, longitude } = response.data?.data ?? {}
+      const coords = parseCoords(`${latitude}, ${longitude}`)
+
+      if (!coords) throw new Error('invalid')
+
+      setForm((current) => ({ ...current, coords: formatCoords(coords) }))
+      setCoordsFound(true)
+
+      return coords
+    } catch (err) {
+      setCoordsError(
+        err?.response?.data?.message || 'Gagal mengambil titik dari link. Coba lagi sebentar.',
+      )
+
+      return undefined
+    } finally {
+      setResolving(false)
+    }
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
 
     if (!form.name.trim() || !form.head_name.trim()) {
+      return
+    }
+
+    // Link yang belum diubah menjadi titik diproses dulu saat menyimpan.
+    const coords = isLink(form.coords) ? await resolveLink() : parseCoords(form.coords)
+
+    if (coords === undefined) {
+      if (!isLink(form.coords)) setCoordsError(COORDS_FORMAT_ERROR)
       return
     }
 
@@ -85,8 +152,10 @@ export default function EditProfilDesaModal({
       area_ha: form.area_ha,
       history: form.history.trim(),
       office_hours: form.office_hours.trim(),
-      map_url: form.map_url.trim(),
+      latitude: coords?.[0] ?? null,
+      longitude: coords?.[1] ?? null,
       hero_photo_credit: form.hero_photo_credit.trim(),
+      welcome_message: form.welcome_message.trim(),
     })
   }
 
@@ -315,18 +384,82 @@ export default function EditProfilDesaModal({
             </div>
 
             <div className="sid-profil-desa-form-field sid-profil-desa-form-field-full">
-              <label htmlFor="profil-map-url">Link Google Maps Kantor Desa</label>
+              <label htmlFor="profil-welcome">Sambutan Kepala Desa (opsional)</label>
 
-              <input
-                id="profil-map-url"
-                name="map_url"
-                type="url"
-                value={form.map_url}
+              <textarea
+                id="profil-welcome"
+                name="welcome_message"
+                value={form.welcome_message}
                 onChange={handleChange}
-                placeholder="Contoh: https://maps.app.goo.gl/..."
-                maxLength={500}
+                placeholder="Dua sampai tiga kalimat sambutan untuk warga"
+                rows={3}
+                maxLength={600}
+                aria-describedby="profil-welcome-hint"
                 disabled={processing}
               />
+
+              <p id="profil-welcome-hint" className="sid-profil-desa-location-hint">
+                Tampil di beranda bersama nama Kepala Desa. Kosongkan untuk menyembunyikan blok
+                sambutan.
+              </p>
+            </div>
+
+            <div className="sid-profil-desa-form-field sid-profil-desa-form-field-full">
+              <label htmlFor="profil-coords">Lokasi Kantor Desa</label>
+
+              <div className="sid-profil-desa-location-input">
+                <input
+                  id="profil-coords"
+                  name="coords"
+                  type="text"
+                  value={form.coords}
+                  onChange={handleChange}
+                  placeholder="Tempel link Google Maps atau koordinat, mis. -7.6803137, 108.5513816"
+                  aria-describedby="profil-coords-hint"
+                  aria-invalid={coordsError ? 'true' : undefined}
+                  disabled={busy}
+                />
+
+                {isLink(form.coords) && (
+                  <button
+                    type="button"
+                    className="sid-profil-desa-modal-secondary"
+                    onClick={resolveLink}
+                    disabled={busy}
+                  >
+                    {resolving ? 'Mengambil titik...' : 'Ambil titik dari link'}
+                  </button>
+                )}
+
+                {form.coords && !isLink(form.coords) && (
+                  <button
+                    type="button"
+                    className="sid-profil-desa-modal-secondary"
+                    onClick={clearCoords}
+                    disabled={busy}
+                  >
+                    Hapus lokasi
+                  </button>
+                )}
+              </div>
+
+              <p id="profil-coords-hint" className="sid-profil-desa-location-hint">
+                Di Google Maps, pilih titik kantor desa → Bagikan → Salin link, lalu tempel di sini.
+                Bisa juga menempel koordinatnya langsung. Dipakai untuk tombol &ldquo;Buka di
+                peta&rdquo; di beranda.
+              </p>
+
+              {coordsFound && (
+                <p className="sid-profil-desa-location-hint" role="status">
+                  Titik ditemukan. Simpan untuk memakai lokasi ini.
+                </p>
+              )}
+
+              {coordsError && (
+                <p className="sid-form-field-error" role="alert">
+                  {coordsError}
+                </p>
+              )}
             </div>
 
             <div className="sid-profil-desa-form-field sid-profil-desa-form-field-full">
@@ -357,7 +490,7 @@ export default function EditProfilDesaModal({
             <button
               type="submit"
               className="sid-profil-desa-modal-primary"
-              disabled={processing || !form.name.trim() || !form.head_name.trim()}
+              disabled={busy || !form.name.trim() || !form.head_name.trim()}
             >
               <Save size={15} />
 
