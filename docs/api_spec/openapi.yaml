@@ -35,8 +35,12 @@ info:
     - **Kategori berita** (`/news-categories`, berita wajib 1-2 kategori).
     - **Identitas desa dari DB:** kop surat (kecamatan, kabupaten, provinsi,
       kode pos, email), luas wilayah, logo & foto beranda (upload,
-      dioptimasi WebP), jam layanan, peta. Halaman publik di-cache per desa
-      dan menyajikan statistik serta perangkat desa.
+      dioptimasi WebP), jam layanan, titik kantor (`latitude`/`longitude`,
+      bisa diisi dari link Google Maps), sambutan Kepala Desa. Halaman publik
+      di-cache per desa dan menyajikan statistik serta perangkat desa.
+    - **Pengumuman beranda** (`/announcement`, satu per desa, durasi wajib,
+      dihapus otomatis) dan **halaman informasi** (`/info-pages`: PPID,
+      Kebijakan Privasi, Aksesibilitas).
     - **Register** mewajibkan `date_of_birth` yang cocok dengan data warga.
     - **Daftar warga** berpaginasi dengan pencarian & filter RT.
 
@@ -312,10 +316,14 @@ paths:
     $ref: 'paths/public/letter-types.yaml'
   /public/regulations:
     $ref: 'paths/public/regulations.yaml'
+  /public/info-pages/{page}:
+    $ref: 'paths/public/info-pages.yaml'
   /public/contact-us:
     $ref: 'paths/public/contact-us.yaml'
   /villages/profile:
     $ref: 'paths/villages/profile.yaml'
+  /villages/profile/resolve-map-link:
+    $ref: 'paths/villages/profile-resolve-map-link.yaml'
   /villages/profile/stamp:
     $ref: 'paths/villages/profile-stamp.yaml'
   /villages/profile/logo:
@@ -330,6 +338,12 @@ paths:
     $ref: 'paths/news/news-categories.yaml'
   /news-categories/{id}:
     $ref: 'paths/news/news-category-detail.yaml'
+  /announcement:
+    $ref: 'paths/announcement/announcement.yaml'
+  /info-pages:
+    $ref: 'paths/info-pages/info-pages.yaml'
+  /info-pages/{page}:
+    $ref: 'paths/info-pages/info-page-detail.yaml'
   /regulations:
     $ref: 'paths/regulations/regulations.yaml'
   /regulations/{id}:

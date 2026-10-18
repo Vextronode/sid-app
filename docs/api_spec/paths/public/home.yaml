@@ -36,6 +36,11 @@ get:
                           total_letter_types:
                             type: integer
                             description: "Jenis surat aktif ber-template."
+                  announcement:
+                    description: Pengumuman yang masih tayang (menu Pengumuman), atau null.
+                    nullable: true
+                    allOf:
+                      - $ref: '../../schemas/announcements/announcements.yaml#/Announcement'
     '404':
       description: Profil desa belum tersedia / village_code tidak dikenal
     '422':

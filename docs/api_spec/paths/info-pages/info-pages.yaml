@@ -1,0 +1,63 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Isian ketiga halaman informasi beserta skemanya
+  description: |
+    Aktor Petugas Desa (menu Halaman Informasi). Urutan: ppid,
+    kebijakan-privasi, aksesibilitas. `schema` menjelaskan field tiap halaman
+    (key, type: text|email|date|list, label, hint).
+  operationId: getInfoPages
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar halaman informasi
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    page:
+                      type: string
+                      enum: [ppid, kebijakan-privasi, aksesibilitas]
+                    title:
+                      type: string
+                    schema:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key: { type: string }
+                          type: { type: string, enum: [text, email, date, list] }
+                          label: { type: string }
+                          hint: { type: string }
+                    fields:
+                      type: object
+                      description: |
+                        Isian khas desa. Kunci per halaman (App\Support\InfoPageFields):
+                        - ppid: ppid_officer, ppid_supervisor, decree_number, request_channel,
+                          copy_fee, ppid_email (teks); periodic_info, immediate_info,
+                          available_info, excluded_info (daftar)
+                        - kebijakan-privasi: effective_date (Y-m-d), server_manager,
+                          retention_period, contact_email (teks); registration_data (daftar)
+                        - aksesibilitas: contact_email, response_time (teks); known_limitations (daftar)
+                        Teks kosong bernilai null, daftar kosong [].
+                      additionalProperties:
+                        oneOf:
+                          - type: string
+                            nullable: true
+                          - type: array
+                            items:
+                              type: string
+                    updated_at:
+                      type: string
+                      format: date-time
+                      nullable: true
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'

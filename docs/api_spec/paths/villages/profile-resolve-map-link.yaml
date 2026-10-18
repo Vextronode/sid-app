@@ -1,0 +1,60 @@
+post:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Ambil titik kantor desa dari link Google Maps
+  description: |
+    Aktor: Petugas Desa. Menerima link Google Maps yang ditempel di Edit
+    Profil Desa, baik link panjang (koordinat dibaca langsung dari URL) maupun
+    short link `maps.app.goo.gl` (server mengikuti redirect-nya, maks. 5 hop,
+    timeout 5 detik). Hanya host Google Maps yang dihubungi, termasuk di
+    setiap redirect (pencegahan SSRF); isi respons tidak dibaca. Urutan
+    pembacaan titik: pin tempat (`!3d..!4d..`), lalu `@lat,lng`, lalu
+    parameter `q`/`query`/`ll`/`center`.
+
+    Tidak menyimpan apa pun: hasilnya diisikan ke form lalu disimpan sebagai
+    `latitude`/`longitude` lewat `PATCH /villages/profile`. Dibatasi 10
+    permintaan per menit.
+  operationId: resolveVillageMapLink
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [url]
+          properties:
+            url:
+              type: string
+              format: uri
+              maxLength: 2000
+              example: "https://maps.app.goo.gl/sVU5Xqmasq4UTJ4N6"
+  responses:
+    '200':
+      description: Titik ditemukan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  latitude:
+                    type: number
+                    example: -7.6803137
+                  longitude:
+                    type: number
+                    example: 108.5513816
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: Bukan URL, bukan link Google Maps, atau titiknya tidak ditemukan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+    '429':
+      description: Terlalu banyak permintaan

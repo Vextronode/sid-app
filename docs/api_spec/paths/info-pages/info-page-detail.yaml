@@ -1,0 +1,54 @@
+put:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Simpan isian satu halaman informasi
+  description: |
+    Aktor Petugas Desa. Kunci yang tidak dikenal dibuang; butir daftar kosong
+    dibuang. Teks maks. 300 karakter; daftar maks. 30 butir @ 300 karakter.
+    Cache halaman publik ikut segar.
+  operationId: saveInfoPage
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: page
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [ppid, kebijakan-privasi, aksesibilitas]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          description: |
+            Isian khas desa. Kunci per halaman (App\Support\InfoPageFields):
+            - ppid: ppid_officer, ppid_supervisor, decree_number, request_channel,
+              copy_fee, ppid_email (teks); periodic_info, immediate_info,
+              available_info, excluded_info (daftar)
+            - kebijakan-privasi: effective_date (Y-m-d), server_manager,
+              retention_period, contact_email (teks); registration_data (daftar)
+            - aksesibilitas: contact_email, response_time (teks); known_limitations (daftar)
+            Teks kosong bernilai null, daftar kosong [].
+          additionalProperties:
+            oneOf:
+              - type: string
+                nullable: true
+              - type: array
+                items:
+                  type: string
+  responses:
+    '200':
+      description: Isian disimpan
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      description: Halaman tidak dikenal
+    '422':
+      description: Format email/tanggal/daftar tidak valid atau terlalu panjang
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
