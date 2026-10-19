@@ -32,7 +32,7 @@ export default function OperatorDesaDashboardPage() {
 
   const { data: genderStats = EMPTY_GENDER_STATS } = useQuery({
     queryKey: ['dashboard', 'gender-stats'],
-    queryFn: async () => (await getGenderStats()).data ?? EMPTY_GENDER_STATS,
+    queryFn: async () => (await getGenderStats()).data?.data ?? EMPTY_GENDER_STATS,
     staleTime: 5 * 60 * 1000,
   })
 

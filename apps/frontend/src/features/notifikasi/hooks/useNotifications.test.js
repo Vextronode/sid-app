@@ -34,7 +34,7 @@ describe('useNotifications', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getNotifications.mockResolvedValue({ data: { data: notifications } })
-    getUnreadNotificationCount.mockResolvedValue({ data: { count: 1 } })
+    getUnreadNotificationCount.mockResolvedValue({ data: { data: { count: 1 } } })
     markNotificationAsRead.mockResolvedValue({ data: { message: 'ok' } })
     markAllNotificationsAsRead.mockResolvedValue({ data: { message: 'ok' } })
   })
@@ -53,7 +53,7 @@ describe('useNotifications', () => {
   it('updates a notification locally only after mark-read succeeds', async () => {
     const { result } = renderNotifications()
     await waitFor(() => expect(result.current.loading).toBe(false))
-    getUnreadNotificationCount.mockResolvedValueOnce({ data: { count: 0 } })
+    getUnreadNotificationCount.mockResolvedValueOnce({ data: { data: { count: 0 } } })
 
     await act(async () => {
       await result.current.markAsRead('notification-1')

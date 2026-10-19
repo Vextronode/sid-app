@@ -27,7 +27,7 @@ export default function SuratStatChart({ letterTypes = [] }) {
         },
       })
 
-      return response?.data?.chart ?? null
+      return response?.data?.data?.chart ?? null
     },
     placeholderData: keepPreviousData,
     refetchInterval: 60 * 1000,
