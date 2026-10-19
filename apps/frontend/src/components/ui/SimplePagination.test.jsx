@@ -11,6 +11,24 @@ describe('SimplePagination', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
+  it('keeps the page size choice visible on a single page', async () => {
+    const onPageSizeChange = vi.fn()
+
+    render(
+      <SimplePagination
+        page={1}
+        totalPages={1}
+        onChange={vi.fn()}
+        pageSize={10}
+        onPageSizeChange={onPageSizeChange}
+      />,
+    )
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Baris per halaman' }), '25')
+
+    expect(onPageSizeChange).toHaveBeenCalledWith(25)
+  })
+
   it('disables the previous button on the first page and moves forward', async () => {
     const onChange = vi.fn()
 
