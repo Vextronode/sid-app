@@ -10,6 +10,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import {
   ArrowLeft,
+  CalendarDays,
   CheckCircle2,
   CreditCard,
   Eye,
@@ -142,17 +143,23 @@ export default function RegisterPage() {
               Tanggal Lahir
             </label>
 
-            <input
-              id="date_of_birth"
-              type="date"
-              name="date_of_birth"
-              value={formData.date_of_birth}
-              onChange={handleChange}
-              autoComplete="bday"
-              className={`sid-login-input ${errors.date_of_birth ? 'sid-login-input-error' : ''}`}
-              aria-invalid={Boolean(errors.date_of_birth)}
-              aria-describedby={errors.date_of_birth ? 'date-of-birth-error' : undefined}
-            />
+            <div className="sid-login-input-wrapper">
+              <CalendarDays size={16} className="sid-login-input-icon" />
+
+              <input
+                id="date_of_birth"
+                type="date"
+                name="date_of_birth"
+                value={formData.date_of_birth}
+                onChange={handleChange}
+                autoComplete="bday"
+                className={`sid-login-input sid-login-input-with-left-icon ${
+                  errors.date_of_birth ? 'sid-login-input-error' : ''
+                }`}
+                aria-invalid={Boolean(errors.date_of_birth)}
+                aria-describedby={errors.date_of_birth ? 'date-of-birth-error' : undefined}
+              />
+            </div>
 
             {errors.date_of_birth && (
               <span id="date-of-birth-error" className="sid-login-field-error">
