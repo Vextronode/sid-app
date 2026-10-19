@@ -29,11 +29,11 @@ class DashboardControllerTest extends TestCase
         $this->actingAs($user)
             ->getJson('/api/dashboard/gender-stats')
             ->assertOk()
-            ->assertJson([
+            ->assertJson(['data' => [
                 'total' => 3,
                 'laki' => 2,
                 'perempuan' => 1,
-            ]);
+            ]]);
     }
 
     public function test_gender_stats_forbidden_for_unauthorized_role(): void
@@ -64,7 +64,7 @@ class DashboardControllerTest extends TestCase
             ->getJson('/api/dashboard/letter-stats')
             ->assertOk()
             ->assertJsonStructure([
-                'chart' => ['labels', 'values', 'maxY'],
+                'data' => ['chart' => ['labels', 'values', 'maxY']],
             ]);
     }
 
@@ -163,6 +163,6 @@ class DashboardControllerTest extends TestCase
             ->getJson('/api/dashboard/letter-stats'.($letterType ? "?letter_type={$letterType}" : ''))
             ->assertOk();
 
-        return array_sum($response->json('chart.values'));
+        return array_sum($response->json('data.chart.values'));
     }
 }

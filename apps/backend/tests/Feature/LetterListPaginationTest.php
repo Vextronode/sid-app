@@ -217,6 +217,24 @@ class LetterListPaginationTest extends TestCase
             ->assertJsonPath('data.overdue', 1);
     }
 
+    public function test_summary_week_period_is_the_current_monday_to_sunday_week(): void
+    {
+        Carbon::setTestNow('2026-10-21 10:00:00'); // Rabu
+
+        $user = User::factory()->create();
+        Letter::factory()->create(['submitted_by' => $user->id, 'status' => 'pending', 'submitted_at' => '2026-10-19 08:00:00']);
+        // Minggu lalu, masih dalam 7 hari terakhir tetapi di luar minggu kalender ini.
+        Letter::factory()->create(['submitted_by' => $user->id, 'status' => 'pending', 'submitted_at' => '2026-10-18 20:00:00']);
+
+        $this->actingAs($user)
+            ->getJson('/api/letters/summary')
+            ->assertOk()
+            ->assertJsonPath('data.by_period.week.total', 1)
+            ->assertJsonPath('data.by_period.week.pending', 1);
+
+        Carbon::setTestNow();
+    }
+
     public function test_summary_requires_authentication(): void
     {
         $this->getJson('/api/letters/summary')->assertUnauthorized();
