@@ -4,12 +4,26 @@ import { StatusPill } from '@/components/ui/StatusPill'
 
 export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggle, onDelete }) {
   const [search, setSearch] = useState('')
+  const [filterHamlet, setFilterHamlet] = useState('')
   const [filterRw, setFilterRw] = useState('')
+
+  // Pilihan RW mengikuti dusun yang dipilih.
+  const rwOptions = useMemo(
+    () => (filterHamlet ? rws.filter((rw) => String(rw.hamletId) === filterHamlet) : rws),
+    [rws, filterHamlet],
+  )
+
+  const changeHamlet = (value) => {
+    setFilterHamlet(value)
+    setFilterRw('')
+  }
 
   const data = useMemo(() => {
     const keyword = search.trim().toLowerCase()
+    const rwIdsInHamlet = new Set(rwOptions.map((rw) => String(rw.id)))
 
     return rts.filter((rt) => {
+      const matchesHamlet = filterHamlet ? rwIdsInHamlet.has(String(rt.rwId)) : true
       const matchesRw = filterRw ? String(rt.rwId) === String(filterRw) : true
 
       const matchesSearch =
@@ -17,9 +31,9 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggl
         String(rt.number).toLowerCase().includes(keyword) ||
         String(rt.fullLabel).toLowerCase().includes(keyword)
 
-      return matchesRw && matchesSearch
+      return matchesHamlet && matchesRw && matchesSearch
     })
-  }, [rts, search, filterRw])
+  }, [rts, rwOptions, search, filterHamlet, filterRw])
 
   const getRw = (rwId) => rws.find((rw) => rw.id === rwId)
 
@@ -34,7 +48,7 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggl
       <div className="sid-wilayah-table-toolbar">
         <div>
           <h3>Master Data RT</h3>
-          <p>Kelola RT berdasarkan RW.</p>
+          <p>Kelola RT berdasarkan dusun dan RW.</p>
         </div>
 
         <div className="sid-wilayah-toolbar-controls">
@@ -49,16 +63,33 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggl
           </div>
 
           <select
+            value={filterHamlet}
+            onChange={(event) => changeHamlet(event.target.value)}
+            className="sid-wilayah-filter"
+            aria-label="Filter dusun"
+          >
+            <option value="">Semua Dusun</option>
+
+            {hamlets.map((hamlet) => (
+              <option key={hamlet.id} value={hamlet.id}>
+                {hamlet.name}
+              </option>
+            ))}
+          </select>
+
+          <select
             value={filterRw}
             onChange={(event) => setFilterRw(event.target.value)}
             className="sid-wilayah-filter"
+            aria-label="Filter RW"
           >
             <option value="">Semua RW</option>
 
-            {rws.map((rw) => (
+            {rwOptions.map((rw) => (
               <option key={rw.id} value={rw.id}>
-                RW {rw.number} —{' '}
-                {hamlets.find((hamlet) => hamlet.id === rw.hamletId)?.name ?? 'Dusun'}
+                RW {rw.number}
+                {!filterHamlet &&
+                  ` — ${hamlets.find((hamlet) => hamlet.id === rw.hamletId)?.name ?? 'Dusun'}`}
               </option>
             ))}
           </select>
@@ -82,7 +113,11 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggl
             {data.length === 0 ? (
               <tr>
                 <td colSpan="6">
-                  <div className="sid-wilayah-empty">Belum ada data RT.</div>
+                  <div className="sid-wilayah-empty">
+                    {rts.length === 0
+                      ? 'Belum ada data RT.'
+                      : 'Tidak ada RT yang cocok dengan filter.'}
+                  </div>
                 </td>
               </tr>
             ) : (

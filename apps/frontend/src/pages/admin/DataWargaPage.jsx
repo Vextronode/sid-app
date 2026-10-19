@@ -22,6 +22,8 @@ import FamilyManagementPanel from '../../features/data-warga/components/FamilyMa
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getOccupations } from '../../features/pekerjaan/api'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { formatPageRange } from '@/components/ui/pageRange'
 import { downloadErrorMessage, downloadFile } from '@/lib/downloadFile'
 import {
   BLOOD_TYPE_LABELS,
@@ -111,12 +113,17 @@ export default function DataWargaPage() {
     error,
     totalItems,
     setSearch,
-    filterWilayah,
-    setFilterWilayah,
+    filters,
+    setFilter,
+    hamletOptions,
+    rwOptions,
+    rtOptions,
     wilayahOptions,
     currentPage,
     setCurrentPage,
     totalPages,
+    pageSize,
+    setPageSize,
     addCitizen,
     editCitizen,
     deleteWarga,
@@ -444,17 +451,27 @@ export default function DataWargaPage() {
                   </div>
                 </div>
 
-                <div className="sid-operator-filter-field">
-                  <p>Wilayah</p>
-                  <select value={filterWilayah} onChange={(e) => setFilterWilayah(e.target.value)}>
-                    <option value="">Semua RT/RW</option>
-                    {wilayahOptions.map((item) => (
-                      <option key={item.id} value={String(item.id)}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {[
+                  { level: 'hamletId', label: 'Dusun', all: 'Semua Dusun', options: hamletOptions },
+                  { level: 'rwId', label: 'RW', all: 'Semua RW', options: rwOptions },
+                  { level: 'rtId', label: 'RT', all: 'Semua RT', options: rtOptions },
+                ].map((filter) => (
+                  <div key={filter.level} className="sid-operator-filter-field">
+                    <p>{filter.label}</p>
+                    <select
+                      aria-label={`Filter ${filter.label}`}
+                      value={filters[filter.level]}
+                      onChange={(e) => setFilter(filter.level, e.target.value)}
+                    >
+                      <option value="">{filter.all}</option>
+                      {filter.options.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
               </form>
             </div>
 
@@ -569,9 +586,10 @@ export default function DataWargaPage() {
 
               {/* Pagination */}
               <div className="sid-operator-pagination">
-                <p>
-                  Menampilkan {data.length} dari {totalItems} data
-                </p>
+                <div className="sid-pagination-meta">
+                  <p>{formatPageRange(currentPage, pageSize, totalItems)}</p>
+                  <PageSizeSelect value={pageSize} onChange={setPageSize} />
+                </div>
                 <div>
                   <button
                     type="button"
