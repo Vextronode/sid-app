@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Support\ApiExceptionMessages;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -49,5 +50,15 @@ return Application::configure(basePath: dirname(__DIR__))
             return response()->json([
                 'message' => $exception->getMessage(),
             ], $exception->getStatusCode());
+        });
+
+        // Pesan bawaan framework (401/403/404/419/429/5xx) dalam bahasa
+        // Indonesia untuk permintaan API; pesan kustom tetap dipakai.
+        $exceptions->render(function (Throwable $exception, Request $request): ?JsonResponse {
+            if (! ($request->is('api/*') || $request->expectsJson())) {
+                return null;
+            }
+
+            return ApiExceptionMessages::render($exception);
         });
     })->create();
