@@ -31,6 +31,7 @@ import {
   SELF_LETTER_ROUTE,
 } from '@/features/notifikasi/utils/notificationTarget'
 import { getOperatorAllowedRoles } from '@/features/operator-desa/constants/roleNavigation'
+import { letterTargetForRole, roleHomePath } from '@/features/auth/utils/letterLinks'
 
 const lazyNamed = (loader, name) =>
   lazy(() => loader().then((module) => ({ default: module[name] })))
@@ -131,25 +132,7 @@ export const GuestRoute = ({ children }) => {
       return <Navigate to={redirectTo} replace />
     }
 
-    switch (user.role) {
-      case 'rt':
-        return <Navigate to="/admin/dashboard-surat-rt" replace />
-      case 'rw':
-        return <Navigate to="/admin/dashboard-surat-rw" replace />
-      case 'kadus':
-        return <Navigate to="/admin/dashboard-surat-kadus" replace />
-      case 'kepala_desa':
-      case 'sekretaris_desa':
-        return <Navigate to="/admin/dashboard-surat-kades" replace />
-      case 'kasi_pelayanan':
-      case 'kaur_tu_umum':
-      case 'staf_sid':
-        return <Navigate to="/admin/operator-desa" replace />
-      case 'warga':
-        return <Navigate to="/daftar-surat" replace />
-      default:
-        return <Navigate to="/" replace />
-    }
+    return <Navigate to={roleHomePath(user.role)} replace />
   }
 
   return children
@@ -174,8 +157,14 @@ export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/ganti-password" replace />
   }
 
+  // Peran lain: halaman surat warga ke padanannya (Surat Saya pejabat),
+  // selain itu ke halaman awal perannya, bukan ke beranda publik.
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />
+    const fallback = letterTargetForRole(location.pathname, user.role)
+
+    return (
+      <Navigate to={fallback === location.pathname ? roleHomePath(user.role) : fallback} replace />
+    )
   }
 
   return children

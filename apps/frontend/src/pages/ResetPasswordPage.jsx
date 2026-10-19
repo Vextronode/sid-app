@@ -81,7 +81,7 @@ export default function ResetPasswordPage() {
         <p className="font-bold text-gray-800">Cibenda</p>
         <h1 className="text-xl font-bold text-gray-800 mt-1">Buat Kata Sandi Baru</h1>
         <p className="text-sm text-gray-500 mb-6">
-          {email ? `Untuk akun ${email}` : 'Tautan reset tidak lengkap. Minta tautan baru.'}
+          {email ? `Untuk akun ${email}` : 'Tautan atur ulang tidak lengkap. Minta tautan baru.'}
         </p>
 
         {error && (

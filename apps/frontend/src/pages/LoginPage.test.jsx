@@ -4,6 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const auth = vi.hoisted(() => ({ login: vi.fn() }))
 const form = vi.hoisted(() => ({ user: null }))
+const villageInfo = vi.hoisted(() => ({ village: null }))
+
+vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
+  usePublicVillageInfo: () => villageInfo,
+}))
 
 vi.mock('@/features/auth/contexts/AuthContext', () => ({
   useAuth: () => ({ login: auth.login }),
@@ -89,8 +94,13 @@ describe('LoginPage redirect after login', () => {
     expect(path.textContent).toBe('/daftar-surat')
   })
 
-  it('ignores a warga redirect for other roles', async () => {
+  it('maps a warga letter redirect to the official letter page for other roles', async () => {
     const path = await loginAs('rt', '/loginpage?redirect=%2Fjenis-surat')
+    expect(path.textContent).toBe('/admin/surat-saya')
+  })
+
+  it('ignores a non-letter warga redirect for other roles', async () => {
+    const path = await loginAs('rt', '/loginpage?redirect=%2Fprofile')
     expect(path.textContent).toBe('/admin/dashboard-surat-rt')
   })
 })
@@ -135,5 +145,30 @@ describe('LoginPage links (D4)', () => {
 
     expect(screen.getByRole('heading', { name: 'Fitur Belum Tersedia' })).toBeInTheDocument()
     expect(screen.getByText(/Reset password masih dalam tahap pengembangan/)).toBeInTheDocument()
+  })
+})
+
+describe('LoginPage background', () => {
+  const renderLogin = () =>
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    )
+
+  it('uses the village hero photo set by the app staff', () => {
+    villageInfo.village = { hero_image_url: '/storage/hero/sawah.jpg' }
+    const { container } = renderLogin()
+
+    const root = container.querySelector('.sid-login')
+    expect(root).toHaveClass('sid-login--photo')
+    expect(root.style.getPropertyValue('--sid-login-bg')).toBe('url("/storage/hero/sawah.jpg")')
+  })
+
+  it('falls back to the plain background without a hero photo', () => {
+    villageInfo.village = null
+    const { container } = renderLogin()
+
+    expect(container.querySelector('.sid-login')).not.toHaveClass('sid-login--photo')
   })
 })

@@ -57,9 +57,7 @@ describe('ProfilDesaPage scroll target', () => {
     expect(scrollIntoView).not.toHaveBeenCalled()
   })
 
-  // Nama, alamat, dan telepon dari data desa; kalimatnya statis tanpa kata
-  // "sejarah" (permintaan pemilik, 12 Okt 2026).
-  it('builds the header from the village data', async () => {
+  it('builds the header from the village name only', async () => {
     api.get.mockResolvedValue({
       data: {
         data: {
@@ -76,16 +74,11 @@ describe('ProfilDesaPage scroll target', () => {
     renderAt('/profil-desa')
 
     expect(await screen.findByRole('heading', { name: 'Profil Desa Cibenda' })).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'Halaman resmi informasi tata kelola dan capaian strategis Desa Cibenda untuk transparansi publik.',
-      ),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Jl. Raya Cibenda')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Telp. (0265) 2640613' })).toHaveAttribute(
-      'href',
-      'tel:02652640613',
-    )
+    // Kepala halaman hanya judul; langsung ke foto dan sejarah tanpa
+    // kalimat pembuka, alamat, dan telepon (permintaan pemilik, 19 Okt 2026).
+    expect(screen.queryByText(/tata kelola dan capaian strategis/)).toBeNull()
+    expect(screen.queryByText('Jl. Raya Cibenda')).toBeNull()
+    expect(screen.queryByRole('link', { name: /Telp\./ })).toBeNull()
     expect(screen.getByRole('img', { name: 'Profil Desa Cibenda' })).toHaveAttribute(
       'src',
       '/assets/image/beranda/hero-pemandangan.jpg',

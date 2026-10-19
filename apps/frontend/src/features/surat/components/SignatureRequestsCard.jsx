@@ -8,6 +8,8 @@ import {
   rejectSignatureRequest,
   removeSignatureBlock,
 } from '../api/signatureApi'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
 
 function serverMessage(error, fallback) {
   const errors = error?.response?.data?.errors
@@ -36,7 +38,6 @@ export function SignatureRequestsCard() {
   const sectionRef = useRef(null)
   const { hash } = useLocation()
   const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
 
   const load = useCallback(async () => {
     try {
@@ -69,11 +70,10 @@ export function SignatureRequestsCard() {
   const run = async (id, action, successMessage) => {
     setBusyId(id)
     setError('')
-    setMessage('')
 
     try {
       await action()
-      setMessage(successMessage)
+      notifySuccess(successMessage)
       await load()
     } catch (requestError) {
       setError(serverMessage(requestError, 'Aksi gagal diproses.'))
@@ -82,7 +82,7 @@ export function SignatureRequestsCard() {
     }
   }
 
-  if (loading || (requests.length === 0 && blocks.length === 0 && !error && !message)) {
+  if (loading || (requests.length === 0 && blocks.length === 0 && !error)) {
     return null
   }
 
@@ -102,7 +102,6 @@ export function SignatureRequestsCard() {
           {error}
         </p>
       )}
-      {message && <p role="status">{message}</p>}
 
       {requests.length === 0 ? (
         <p className="sid-upload-description">Tidak ada permintaan yang menunggu.</p>
@@ -156,7 +155,17 @@ export function SignatureRequestsCard() {
                   type="button"
                   className="sid-btn sid-btn-secondary"
                   disabled={busyId !== null}
-                  onClick={() =>
+                  onClick={async () => {
+                    const confirmed = await confirmDialog({
+                      title: `Tolak permintaan tanda tangan dari ${request.applicant_name}?`,
+                      message: `${
+                        blockOnReject[request.id] ? 'Pemohon juga akan diblokir. ' : ''
+                      }Surat tidak dapat diproses tanpa tanda tangan Anda.`,
+                      confirmLabel: 'Tolak',
+                    })
+
+                    if (!confirmed) return
+
                     run(
                       request.id,
                       () =>
@@ -165,7 +174,7 @@ export function SignatureRequestsCard() {
                         }),
                       'Permintaan ditolak.',
                     )
-                  }
+                  }}
                 >
                   Tolak
                 </button>

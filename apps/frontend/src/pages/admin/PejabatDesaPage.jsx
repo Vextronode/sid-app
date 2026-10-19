@@ -27,6 +27,10 @@ import {
   uploadOfficialPhoto,
 } from '@/features/profil-desa-admin/api'
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { notifySuccess } from '@/shared/lib/toast'
 
 // Tabel pejabat dipisah per tingkat. Jabatan yang bukan Kadus/RW/RT
 // (Kades, Sekdes, Kasi, Kaur, staf, Petugas Desa) masuk tabel pertama,
@@ -293,7 +297,6 @@ export default function PejabatDesaPage() {
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [warnings, setWarnings] = useState([])
   const [statusFilter, setStatusFilter] = useState('aktif')
   const [promotion, setPromotion] = useState(null)
@@ -409,13 +412,12 @@ export default function PejabatDesaPage() {
   const run = async (request, successMessage, afterSuccess = loadData) => {
     setProcessing(true)
     setError('')
-    setSuccess('')
     setWarnings([])
 
     try {
       const response = await request()
 
-      setSuccess(response?.data?.message ?? successMessage)
+      notifySuccess(response?.data?.message ?? successMessage)
       setWarnings(response?.data?.warnings ?? [])
       setPromotion(null)
       setRotation(null)
@@ -484,8 +486,15 @@ export default function PejabatDesaPage() {
     return run(() => uploadOfficialPhoto(official.id, file), 'Foto pejabat berhasil diperbarui.')
   }
 
-  const handleDeletePhoto = (official) => {
-    if (!window.confirm(`Hapus foto ${official.citizen?.name ?? 'pejabat'}?`)) return undefined
+  const handleDeletePhoto = async (official) => {
+    if (
+      !(await confirmDialog({
+        title: `Hapus foto ${official.citizen?.name ?? 'pejabat'}?`,
+        message: 'Tindakan ini tidak dapat dibatalkan.',
+        confirmLabel: 'Hapus',
+      }))
+    )
+      return undefined
 
     return run(() => deleteOfficialPhoto(official.id), 'Foto pejabat berhasil dihapus.')
   }
@@ -505,8 +514,15 @@ export default function PejabatDesaPage() {
     )
   }
 
-  const handleDelete = (official) => {
-    if (!window.confirm(`Hapus riwayat jabatan ${official.citizen?.name ?? ''}?`)) return undefined
+  const handleDelete = async (official) => {
+    if (
+      !(await confirmDialog({
+        title: `Hapus riwayat jabatan ${official.citizen?.name ?? ''}?`,
+        message: 'Tindakan ini tidak dapat dibatalkan.',
+        confirmLabel: 'Hapus',
+      }))
+    )
+      return undefined
 
     return run(() => deletePerangkatDesa(official.id), 'Riwayat jabatan berhasil dihapus.')
   }
@@ -516,6 +532,36 @@ export default function PejabatDesaPage() {
   // Selama modal terbuka, error aksi tampil di dalam modal; di halaman ia
   // tertutup overlay. Pesan lama dibersihkan saat modal dibuka.
   const modalOpen = Boolean(promotion || rotation || demotion)
+  // Peringatan "Buang perubahan?" untuk modal Tetapkan, Rotasi, dan Akhiri
+  // Jabatan: isian dianggap berubah bila ada kolom yang sudah diisi.
+  const closePromotion = () => setPromotion(null)
+  const closeRotation = () => setRotation(null)
+  const closeDemotion = () => setDemotion(null)
+  const promotionDirty = Boolean(
+    promotion &&
+    (promotion.candidate ||
+      promotion.photo ||
+      promotion.position ||
+      promotion.term_ends_at ||
+      promotion.phone_wa ||
+      promotion.notes),
+  )
+  const rotationDirty = Boolean(
+    rotation && (rotation.candidate || rotation.photo || rotation.term_ends_at || rotation.notes),
+  )
+  const demotionDirty = Boolean(demotion?.notes)
+  const openCloser = promotion
+    ? closePromotion
+    : rotation
+      ? closeRotation
+      : demotion
+        ? closeDemotion
+        : null
+  const requestClose = useConfirmDiscard(promotionDirty || rotationDirty || demotionDirty, {
+    disabled: processing,
+    escapeClose: openCloser,
+  })
+
   const openModal = (open) => {
     setError('')
     open()
@@ -576,11 +622,6 @@ export default function PejabatDesaPage() {
         />
 
         {!modalOpen && errorAlert}
-        {success && (
-          <p className="sid-admin-alert sid-admin-alert-success" role="status">
-            {success}
-          </p>
-        )}
         {warnings.map((warning) => (
           <p key={warning.code ?? warning.message} className="sid-warning-box" role="alert">
             {warning.message}
@@ -591,7 +632,7 @@ export default function PejabatDesaPage() {
           <div className="sid-operator-filter-field">
             <p>Status</p>
             <select
-              aria-label="Filter status jabatan"
+              aria-label="Saring status jabatan"
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
             >
@@ -675,7 +716,11 @@ export default function PejabatDesaPage() {
                               `Berakhir ${formatDate(official.ended_at)}`
                             )}
                           </td>
-                          <td className="center">{official.is_active ? 'Menjabat' : 'Berakhir'}</td>
+                          <td className="center">
+                            <StatusPill active={official.is_active}>
+                              {official.is_active ? 'Menjabat' : 'Berakhir'}
+                            </StatusPill>
+                          </td>
                           <td className="center">
                             <div className="sid-operator-actions">
                               {official.is_active && (
@@ -909,7 +954,7 @@ export default function PejabatDesaPage() {
               <button
                 type="button"
                 className="sid-button sid-button-outline"
-                onClick={() => setPromotion(null)}
+                onClick={() => requestClose(closePromotion)}
               >
                 Batal
               </button>
@@ -988,7 +1033,7 @@ export default function PejabatDesaPage() {
               <button
                 type="button"
                 className="sid-button sid-button-outline"
-                onClick={() => setRotation(null)}
+                onClick={() => requestClose(closeRotation)}
               >
                 Batal
               </button>
@@ -1029,7 +1074,7 @@ export default function PejabatDesaPage() {
               <button
                 type="button"
                 className="sid-button sid-button-outline"
-                onClick={() => setDemotion(null)}
+                onClick={() => requestClose(closeDemotion)}
               >
                 Batal
               </button>

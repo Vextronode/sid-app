@@ -168,10 +168,14 @@ paths:
     $ref: 'paths/citizens/citizen-detail.yaml'
   /citizens/import:
     $ref: 'paths/citizens/import.yaml'
+  /citizens/import-template:
+    $ref: 'paths/citizens/import-template.yaml'
   /citizens/wilayah:
     $ref: 'paths/citizens/citizens-wilayah.yaml'
   /families:
     $ref: 'paths/families/families.yaml'
+  /families/options:
+    $ref: 'paths/families/family-options.yaml'
   /families/{family}:
     $ref: 'paths/families/family-detail.yaml'
   /families/{id}/socioeconomic:
@@ -236,6 +240,8 @@ paths:
     $ref: 'paths/letters/letters.yaml'
   /letters/summary:
     $ref: 'paths/letters/summary.yaml'
+  /letters/export:
+    $ref: 'paths/letters/export.yaml'
   /letters/{id}:
     $ref: 'paths/letters/letter-detail.yaml'
   /letters/{letter}/download:

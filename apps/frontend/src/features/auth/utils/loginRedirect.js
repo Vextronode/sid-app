@@ -1,7 +1,9 @@
 import { HAL_LOGIN } from '@/lib/constants/routes'
+import { isWargaLetterPath, letterTargetForRole } from './letterLinks'
 
 // Tujuan ?redirect= yang boleh dipakai setelah login (K4).
-// Hanya halaman warga; role lain tetap memakai pengalihan per role.
+// Halaman warga; untuk pejabat, halaman surat warga dipetakan ke padanannya
+// (letterTargetForRole), selain itu memakai pengalihan per role.
 const WARGA_REDIRECT_PATTERNS = [
   /^\/jenis-surat$/,
   /^\/pengajuan-surat$/,
@@ -30,7 +32,11 @@ export function isSafeInternalPath(path) {
 // Mengembalikan path tujuan bila redirect aman dan diizinkan untuk role,
 // selain itu null (pemanggil memakai pengalihan per role yang lama).
 export function resolveLoginRedirect(redirect, role) {
-  if (role !== 'warga' || !isSafeInternalPath(redirect)) return null
+  if (!role || !isSafeInternalPath(redirect)) return null
+
+  if (role !== 'warga') {
+    return isWargaLetterPath(redirect) ? letterTargetForRole(redirect, role) : null
+  }
 
   const pathname = redirect.split(/[?#]/)[0]
   const allowed = WARGA_REDIRECT_PATTERNS.some((pattern) => pattern.test(pathname))

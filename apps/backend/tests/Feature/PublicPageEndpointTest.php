@@ -366,4 +366,43 @@ class PublicPageEndpointTest extends TestCase
             ->assertJsonPath('data.village.latitude', -7.6803137)
             ->assertJsonPath('data.village.longitude', 108.5513816);
     }
+
+    // Sambutan Kepala Desa di beranda memakai nama dan foto pejabat Kepala
+    // Desa aktif, bukan kolom teks head_name.
+    #[Test]
+    public function home_exposes_the_active_village_head_for_the_welcome_block(): void
+    {
+        Storage::fake('public');
+        $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
+        $citizen = Citizen::factory()->create(['village_id' => $village->id, 'name' => 'Asep Saepudin']);
+        Official::factory()->create([
+            'citizen_id' => $citizen->id,
+            'village_id' => $village->id,
+            'position' => 'kepala_desa',
+            'photo_img' => 'officials/kades.jpg',
+        ]);
+        // Kepala Desa sebelumnya yang sudah berakhir tidak ikut.
+        Official::factory()->create([
+            'village_id' => $village->id,
+            'position' => 'kepala_desa',
+            'is_active' => false,
+            'ended_at' => now()->subYear(),
+        ]);
+
+        $this->getJson('/api/public/home')
+            ->assertOk()
+            ->assertJsonPath('data.village_head.name', 'Asep Saepudin')
+            ->assertJsonPath('data.village_head.position', 'kepala_desa')
+            ->assertJsonPath('data.village_head.photo_url', Storage::disk('public')->url('officials/kades.jpg'));
+    }
+
+    #[Test]
+    public function home_returns_null_village_head_when_the_position_is_empty(): void
+    {
+        Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
+
+        $this->getJson('/api/public/home')
+            ->assertOk()
+            ->assertJsonPath('data.village_head', null);
+    }
 }

@@ -1,6 +1,13 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const { confirmDialog, notifySuccess } = vi.hoisted(() => ({
+  confirmDialog: vi.fn(),
+  notifySuccess: vi.fn(),
+}))
+vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, alertDialog: vi.fn() }))
+vi.mock('@/shared/lib/toast', () => ({ notifySuccess }))
+
 const { getLetterTypes, updateLetterType } = vi.hoisted(() => ({
   getLetterTypes: vi.fn(),
   updateLetterType: vi.fn(),
@@ -16,6 +23,7 @@ import LetterTypeSettingsPanel from './LetterTypeSettingsPanel'
 describe('LetterTypeSettingsPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    confirmDialog.mockResolvedValue(true)
     getLetterTypes.mockResolvedValue([
       {
         id: 12,
@@ -72,7 +80,9 @@ describe('LetterTypeSettingsPanel', () => {
     await waitFor(() => {
       expect(updateLetterType).toHaveBeenCalledWith(13, { is_active: true })
     })
-    expect(await screen.findByRole('status')).toHaveTextContent('berhasil diaktifkan')
+    await waitFor(() =>
+      expect(notifySuccess).toHaveBeenCalledWith(expect.stringContaining('berhasil diaktifkan')),
+    )
     expect(within(inactiveRow).getByText('Aktif')).toBeInTheDocument()
     expect(within(inactiveRow).getByRole('button', { name: 'Nonaktifkan' })).toBeInTheDocument()
   })
@@ -106,6 +116,8 @@ describe('LetterTypeSettingsPanel', () => {
         assigned_role: 'kaur_tu_umum',
       })
     })
-    expect(await screen.findByRole('status')).toHaveTextContent('berhasil disimpan')
+    await waitFor(() =>
+      expect(notifySuccess).toHaveBeenCalledWith(expect.stringContaining('berhasil disimpan')),
+    )
   })
 })

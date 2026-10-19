@@ -10,6 +10,12 @@ patch:
     perlu approval flow apapun, cukup CRUD biasa lewat endpoint ini.
     `family_id`/`family_role` bisa diubah di sini untuk memindahkan warga
     antar KK.
+
+    Bila `name` berubah, `users.name` akun yang tertaut ke warga ini ikut
+    diperbarui dalam transaksi yang sama, agar Manajemen Pengguna tidak
+    menampilkan nama lama. Perubahan warga juga menggugurkan cache halaman
+    publik desa (nama pejabat dan jumlah penduduk publik dibaca dari data
+    warga).
   operationId: updateCitizen
   security:
     - sanctumCookie: []

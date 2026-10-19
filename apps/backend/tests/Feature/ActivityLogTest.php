@@ -201,6 +201,26 @@ class ActivityLogTest extends TestCase
             ->assertJsonValidationErrors(['type', 'to']);
     }
 
+    public function test_activity_log_endpoints_accept_a_page_size(): void
+    {
+        foreach (['population', 'letters'] as $endpoint) {
+            $this->actingAs($this->staf)
+                ->getJson("/api/activity-logs/{$endpoint}")
+                ->assertOk()
+                ->assertJsonPath('meta.per_page', 20);
+
+            $this->actingAs($this->staf)
+                ->getJson("/api/activity-logs/{$endpoint}?per_page=10")
+                ->assertOk()
+                ->assertJsonPath('meta.per_page', 10);
+
+            $this->actingAs($this->staf)
+                ->getJson("/api/activity-logs/{$endpoint}?per_page=500")
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['per_page']);
+        }
+    }
+
     public function test_letter_fulfillment_log_is_visible_and_not_duplicated(): void
     {
         activity('citizen')

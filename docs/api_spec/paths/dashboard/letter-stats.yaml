@@ -38,22 +38,25 @@ get:
           schema:
             type: object
             properties:
-              chart:
+              data:
                 type: object
                 properties:
-                  labels:
-                    type: array
-                    items:
-                      type: string
-                    example: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
-                  values:
-                    type: array
-                    items:
-                      type: integer
-                    example: [4, 7, 2, 0, 5, 1, 0]
-                  maxY:
-                    type: integer
-                    example: 50
+                  chart:
+                    type: object
+                    properties:
+                      labels:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
+                      values:
+                        type: array
+                        items:
+                          type: integer
+                        example: [4, 7, 2, 0, 5, 1, 0]
+                      maxY:
+                        type: integer
+                        example: 50
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '422':

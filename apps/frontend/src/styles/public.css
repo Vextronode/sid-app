@@ -11,7 +11,8 @@
  *   operator. Aturan tanpa layer selalu menang atas utility Tailwind, jadi
  *   penimpaannya harus berupa CSS biasa yang di-scope ke `.pub`.
  *
- * `.pub` dipasang di BerandaLayout dan MainLayout saja. Awalan `:root .pub`
+ * `.pub` dipasang di BerandaLayout, MainLayout, dan SiteFooter (agar footer
+ * halaman role sama dengan footer publik). Awalan `:root .pub`
  * membuat aturan di sini lebih kuat dari `.bd-root .x` di beranda.css, berapa
  * pun urutan muat CSS-nya.
  */

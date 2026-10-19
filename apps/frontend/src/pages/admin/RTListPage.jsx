@@ -42,8 +42,8 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 
 import { SURAT_STATUS, SURAT_STATUS_OPTIONS } from '@/constants/suratStatus'
 import { PageNumbers } from '@/components/ui/PageNumbers'
-
-const ITEMS_PER_PAGE = 5
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { formatPageRange } from '@/components/ui/pageRange'
 
 export default function RTListPage() {
   const [searchParams] = useSearchParams()
@@ -68,11 +68,12 @@ export default function RTListPage() {
     totalPages,
     currentPage,
     setCurrentPage,
+    pageSize,
+    setPageSize,
     refresh,
   } = useApprovalLetterList({
     role: 'rt',
     initialStatus,
-    perPage: ITEMS_PER_PAGE,
   })
 
   // ==========================================
@@ -307,11 +308,13 @@ export default function RTListPage() {
                 ================================== */}
 
             <div className="rw-pagination">
-              <p className="rw-pagination-info">
-                Menampilkan{' '}
-                {paginatedData.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-
-                {(currentPage - 1) * ITEMS_PER_PAGE + paginatedData.length} dari {totalItems} data
-              </p>
+              <div className="sid-pagination-meta">
+                <p className="rw-pagination-info">
+                  {formatPageRange(currentPage, pageSize, totalItems)}
+                </p>
+
+                <PageSizeSelect value={pageSize} onChange={setPageSize} />
+              </div>
 
               <div className="rw-pagination-buttons">
                 <button
@@ -435,6 +438,8 @@ export default function RTListPage() {
           {/* MOBILE PAGINATION */}
 
           <div className="rw-mobile-pagination">
+            <PageSizeSelect value={pageSize} onChange={setPageSize} />
+
             <PageNumbers
               currentPage={currentPage}
               totalPages={totalPages}

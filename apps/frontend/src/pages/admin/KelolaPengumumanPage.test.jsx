@@ -18,6 +18,9 @@ vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
 }))
 vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: () => null }))
 
+const { confirmDialog } = vi.hoisted(() => ({ confirmDialog: vi.fn() }))
+vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, alertDialog: vi.fn() }))
+
 import KelolaPengumumanPage from './KelolaPengumumanPage'
 
 const ACTIVE = {
@@ -125,14 +128,17 @@ describe('KelolaPengumumanPage', () => {
 
   it('deletes the announcement after confirmation', async () => {
     const user = userEvent.setup()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    confirmDialog.mockResolvedValue(true)
     api.getAnnouncement.mockResolvedValue({ data: { data: ACTIVE } })
     api.deleteAnnouncement.mockResolvedValue({})
     renderPage()
 
     await user.click(await screen.findByRole('button', { name: 'Hapus' }))
 
-    expect(api.deleteAnnouncement).toHaveBeenCalled()
+    expect(confirmDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ title: `Hapus pengumuman "${ACTIVE.title}"?` }),
+    )
+    await waitFor(() => expect(api.deleteAnnouncement).toHaveBeenCalled())
     await waitFor(() => expect(screen.getByText(/Belum ada pengumuman/)).toBeInTheDocument())
   })
 

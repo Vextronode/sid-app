@@ -64,7 +64,7 @@ export default function ProfilePage() {
           {/* FULL NAME */}
 
           <div className="sid-profile-field">
-            <p className="sid-profile-field-label">Full Name</p>
+            <p className="sid-profile-field-label">Nama Lengkap</p>
 
             <div className="sid-profile-field-value">
               <span>{user?.name ?? '-'}</span>
@@ -88,7 +88,7 @@ export default function ProfilePage() {
           {/* GENDER */}
 
           <div className="sid-profile-field">
-            <p className="sid-profile-field-label">Gender</p>
+            <p className="sid-profile-field-label">Jenis Kelamin</p>
 
             <div className="sid-profile-field-value">
               <span>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { removePushSubscription, savePushSubscription } from '../api'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 function decodeApplicationServerKey(key) {
   const padding = '='.repeat((4 - (key.length % 4)) % 4)
@@ -35,7 +36,9 @@ export default function useWebPushSubscription() {
       })
       .catch((requestError) => {
         if (active) {
-          setError(requestError.message || 'Status notifikasi push tidak dapat diperiksa.')
+          setError(
+            getApiErrorMessage(requestError, 'Status notifikasi push tidak dapat diperiksa.'),
+          )
         }
       })
 
@@ -81,11 +84,7 @@ export default function useWebPushSubscription() {
       setSubscribed(true)
       return true
     } catch (requestError) {
-      setError(
-        requestError.response?.data?.message ??
-          requestError.message ??
-          'Gagal mengaktifkan notifikasi push.',
-      )
+      setError(getApiErrorMessage(requestError, 'Gagal mengaktifkan notifikasi push.'))
       return false
     } finally {
       setLoading(false)
@@ -112,11 +111,7 @@ export default function useWebPushSubscription() {
       setSubscribed(false)
       return true
     } catch (requestError) {
-      setError(
-        requestError.response?.data?.message ??
-          requestError.message ??
-          'Gagal menonaktifkan notifikasi push.',
-      )
+      setError(getApiErrorMessage(requestError, 'Gagal menonaktifkan notifikasi push.'))
       return false
     } finally {
       setLoading(false)

@@ -1,4 +1,4 @@
-import { Link, NavLink } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 
 import { HAL_BERANDA, HAL_BERITA, SECTION_KONTAK } from '@/lib/constants/routes'
 import { useSectionLink } from '../utils/sectionLink'
@@ -18,13 +18,15 @@ export function BerandaHeader({ content }) {
         <BerandaBrand header={header} />
 
         <nav className="bd-nav" aria-label="Menu utama">
-          {/* Selain lewat logo. NavLink memberi aria-current di beranda. */}
+          {/* NavLink memberi aria-current (garis padi) pada menu halaman
+              aktif; Berita juga aktif di detail berita. Kontak tidak, karena
+              hanya bagian dari beranda. */}
           <NavLink to={HAL_BERANDA} end className="bd-nav-link">
             {header.nav.beranda}
           </NavLink>
-          <Link to={HAL_BERITA} className="bd-nav-link">
+          <NavLink to={HAL_BERITA} className="bd-nav-link">
             {header.nav.berita}
-          </Link>
+          </NavLink>
           <ProfilDesaDropdown header={header} />
           <a className="bd-nav-link" {...sectionLinkProps(SECTION_KONTAK)}>
             {header.nav.kontak}

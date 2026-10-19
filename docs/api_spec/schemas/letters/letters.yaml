@@ -369,7 +369,7 @@ LetterSummary:
             example: 12
     by_period:
       type: object
-      description: "Kunci day (sejak awal hari), week (7 hari terakhir), month (sejak awal bulan)."
+      description: "Kunci day (sejak awal hari), week (sejak Senin minggu kalender berjalan, Senin-Minggu, sama dengan /dashboard/letter-stats), month (sejak awal bulan)."
       additionalProperties:
         type: object
         properties:

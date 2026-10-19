@@ -317,6 +317,24 @@ class LetterService
     }
 
     /**
+     * Seluruh surat (tanpa paginasi) atas scope dan filter yang sama
+     * dengan daftar, untuk laporan ekspor Excel.
+     *
+     * @return Collection<int, Letter>
+     */
+    public function exportScopedLetters(User $user, array $filters = []): Collection
+    {
+        $query = $this->scopedQuery($user, $filters);
+
+        $this->applyFilters($query, $filters);
+
+        return $this->letterRepository
+            ->forListing($query)
+            ->latest('submitted_at')
+            ->get();
+    }
+
+    /**
      * Angka ringkasan untuk dashboard, dihitung di database atas scope
      * yang sama persis dengan daftar surat (per role/wilayah), sehingga
      * kartu statistik dan daftar selalu konsisten tanpa mengirim
@@ -349,7 +367,7 @@ class LetterService
                 ->all(),
             'by_period' => $this->letterRepository->countByPeriodAndStatus($query, [
                 'day' => now()->startOfDay(),
-                'week' => now()->subDays(7),
+                'week' => now()->startOfWeek(Carbon::MONDAY),
                 'month' => now()->startOfMonth(),
             ]),
         ];

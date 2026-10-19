@@ -1,5 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi, beforeEach } from 'vitest'
+
+const { confirmDialog, notifySuccess } = vi.hoisted(() => ({
+  confirmDialog: vi.fn(),
+  notifySuccess: vi.fn(),
+}))
+vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, alertDialog: vi.fn() }))
+vi.mock('@/shared/lib/toast', () => ({ notifySuccess }))
 
 import TampilanPublikCard from './TampilanPublikCard'
 
@@ -23,6 +30,10 @@ const renderCard = (props = {}) => {
 
 const pick = (label, file) =>
   fireEvent.change(screen.getByLabelText(label), { target: { files: [file] } })
+
+beforeEach(() => {
+  confirmDialog.mockResolvedValue(true)
+})
 
 describe('TampilanPublikCard', () => {
   beforeAll(() => {
@@ -56,7 +67,9 @@ describe('TampilanPublikCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Simpan' }))
 
     await waitFor(() => expect(onUpload).toHaveBeenCalledWith('hero', file))
-    expect(await screen.findByText('Foto Beranda berhasil disimpan.')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(notifySuccess).toHaveBeenCalledWith('Foto Beranda berhasil disimpan.'),
+    )
   })
 
   it('rejects files that are too large or not images before uploading', () => {

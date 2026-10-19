@@ -33,6 +33,55 @@
   }
 }
 
+/* Dasar elemen interaktif. Preflight Tailwind v4 tidak lagi memberi
+   cursor: pointer pada tombol dan menghapus tampilan tombol "Choose file"
+   bawaan browser. Ditaruh di layer base agar tetap kalah dari gaya
+   komponen (sid-global.css, tanpa layer) maupun utility Tailwind. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  label[for],
+  summary {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  input[type='file'] {
+    max-width: 100%;
+    color: var(--sid-text-secondary, #5f5e5a);
+    font-size: 0.875rem;
+  }
+
+  input[type='file']::file-selector-button {
+    margin-inline-end: 0.75rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--sid-primary, #185fa5);
+    border-radius: var(--radius-sm, 8px);
+    background: var(--sid-surface-card, #fff);
+    color: var(--sid-primary, #185fa5);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  input[type='file']:hover:not(:disabled)::file-selector-button {
+    background: var(--sid-status-progress-bg, #e6f1fb);
+  }
+
+  input[type='file']:disabled::file-selector-button {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  input[type='file']:focus-visible {
+    outline: 2px solid var(--sid-primary, #185fa5);
+    outline-offset: 2px;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

@@ -1,0 +1,51 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Lihat pilihan KK untuk form warga
+  description: |
+    Aktor: Petugas Desa. Semua KK di desa user login tanpa halaman, untuk
+    dropdown pilihan KK di form tambah/ubah warga, diurutkan dari yang
+    terbaru dibuat. Hanya memuat field yang dibutuhkan pilihan: `id`,
+    `no_kk_masked`, `family_address`, `head_of_family` (`id`, `name`).
+    `head_of_family` tidak dikirim bila KK belum punya kepala keluarga.
+    Untuk daftar lengkap berhalaman pakai GET /families.
+  operationId: listFamilyOptions
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Pilihan KK berhasil diambil (No KK selalu ter-mask)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    no_kk_masked:
+                      type: string
+                    family_address:
+                      type: string
+                    head_of_family:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+          example:
+            data:
+              - id: "d4a7c0e3-9b26-4815-b3f7-6a2d8e1c5f09"
+                no_kk_masked: "************0001"
+                family_address: "Jl. Merdeka No. 10"
+                head_of_family: { id: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731", name: "Ahmad Budiman" }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'

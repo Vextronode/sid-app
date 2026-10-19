@@ -33,6 +33,10 @@ class PublicPageController extends Controller
             return response()->json([
                 'data' => [
                     'village' => new VillageResource($home['village']),
+                    // Kepala Desa aktif untuk Sambutan Kepala Desa, atau null.
+                    'village_head' => $home['village_head']
+                        ? new PublicOfficialResource($home['village_head'])
+                        : null,
                     'latest_news' => NewsResource::collection($home['latest_news']),
                     'public_stats' => $home['public_stats'],
                     // Pengumuman yang masih tayang, atau null.

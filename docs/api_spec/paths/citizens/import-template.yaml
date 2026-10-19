@@ -1,0 +1,41 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Unduh template Excel impor warga
+  description: |
+    Aktor: Petugas Desa (`staf_sid`).
+    UC-09. Template dibuat server (`CitizensTemplateExport`) sehingga
+    header kolomnya selalu sama dengan key yang divalidasi
+    `CitizensImport::rules()` (heading row, snake_case). Dipakai sebagai
+    file untuk POST /citizens/import.
+
+    Header (urut): nik, name, date_of_birth, place_of_birth, gender,
+    blood_type, address, rt_id, hamlet_id, family_id, family_role,
+    father_id, mother_id, father_name_text, mother_name_text,
+    marital_status, religion, last_education, domicile_status,
+    current_domicile, residency_type, origin_region.
+
+    Baris kedua berisi satu contoh isian (NIK fiktif `3201010101900001`,
+    `Contoh Nama Warga`, `1990-01-01`, gender `L`, family_role
+    `kepala_keluarga`, marital_status `kawin`, religion `islam`,
+    last_education `sma`, domicile_status `menetap`, residency_type
+    `lokal`, dst). Hapus baris contoh sebelum mengimpor data asli.
+  operationId: downloadCitizenImportTemplate
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: File Excel (attachment `template_impor_warga.xlsx`)
+      headers:
+        Content-Disposition:
+          schema:
+            type: string
+          example: 'attachment; filename=template_impor_warga.xlsx'
+      content:
+        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'

@@ -137,6 +137,46 @@ describe('BerandaHeader', () => {
       expect(otherNav.getByRole('link', { name: 'Beranda' })).not.toHaveAttribute('aria-current')
     })
 
+    const navAt = (path) => {
+      const { container } = render(
+        <MemoryRouter initialEntries={[path]}>
+          <BerandaHeader content={getBerandaContent(true)} />
+        </MemoryRouter>,
+      )
+      return within(container.querySelector('.bd-nav'))
+    }
+
+    it('marks Berita as the current page on the news list and a news detail', () => {
+      expect(navAt('/berita').getByRole('link', { name: 'Berita' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      )
+      expect(navAt('/berita/kerja-bakti').getByRole('link', { name: 'Berita' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      )
+    })
+
+    it.each(['/profil-desa', '/bpd', '/lembaga-desa'])(
+      'marks Tentang Desa as the current section on %s, not Kontak',
+      (path) => {
+        const nav = navAt(path)
+
+        expect(nav.getByRole('button', { name: 'Tentang Desa' })).toHaveAttribute(
+          'aria-current',
+          'page',
+        )
+        expect(nav.getByRole('link', { name: 'Berita' })).not.toHaveAttribute('aria-current')
+        expect(nav.getByText('Kontak')).not.toHaveAttribute('aria-current')
+      },
+    )
+
+    it('does not mark Tentang Desa on the home page', () => {
+      expect(navAt('/').getByRole('button', { name: 'Tentang Desa' })).not.toHaveAttribute(
+        'aria-current',
+      )
+    })
+
     it('drops the Sejarah & visi misi item (part of Profil desa)', async () => {
       const user = userEvent.setup()
       const { desktopNav } = renderHeader()

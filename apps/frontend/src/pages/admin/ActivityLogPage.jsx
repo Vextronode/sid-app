@@ -11,6 +11,9 @@ import { X } from 'lucide-react'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { formatPageRange } from '@/components/ui/pageRange'
+import { usePageSize } from '@/components/ui/usePageSize'
 import { SURAT_STATUS_OPTIONS, STATUS_LABELS } from '@/constants/suratStatus'
 import { getLetterActivityLogs, getPopulationLogs } from '@/features/activity-log/api'
 import {
@@ -29,17 +32,18 @@ const TABS = [
 
 const EMPTY_META = { current_page: 1, last_page: 1, total: 0 }
 
-function Pagination({ meta, onChange }) {
+function Pagination({ meta, onChange, pageSize, onPageSizeChange }) {
   const totalPages = Math.max(1, meta.last_page ?? 1)
   const currentPage = meta.current_page ?? 1
 
-  if (totalPages <= 1) return null
+  if (!meta.total) return null
 
   return (
     <div className="sid-operator-pagination">
-      <p>
-        Halaman {currentPage} dari {totalPages} · {meta.total} entri
-      </p>
+      <div className="sid-pagination-meta">
+        <p>{formatPageRange(currentPage, pageSize, meta.total, 'entri')}</p>
+        <PageSizeSelect value={pageSize} onChange={onPageSizeChange} />
+      </div>
       <div>
         <button type="button" disabled={currentPage <= 1} onClick={() => onChange(currentPage - 1)}>
           Sebelumnya
@@ -86,8 +90,8 @@ function ChangeList({ log }) {
     <ul className="sid-activity-log-changes">
       {entries.map(([field, change]) => (
         <li key={field}>
-          <strong>{fieldLabel(field)}:</strong> {formatChangeValue(change?.old)} →{' '}
-          {formatChangeValue(change?.new)}
+          <strong>{fieldLabel(field)}:</strong> {formatChangeValue(change?.old, field)} →{' '}
+          {formatChangeValue(change?.new, field)}
         </li>
       ))}
     </ul>
@@ -119,7 +123,7 @@ function DateRangeFields({ from, to, onChange }) {
   )
 }
 
-function PopulationTab({ params, setParam }) {
+function PopulationTab({ params, setParam, pageSize, onPageSizeChange }) {
   const filters = {
     type: params.get('type') ?? '',
     event: params.get('event') ?? '',
@@ -127,6 +131,7 @@ function PopulationTab({ params, setParam }) {
     from: params.get('from') ?? '',
     to: params.get('to') ?? '',
     page: Number(params.get('page') ?? 1),
+    per_page: pageSize,
   }
 
   const { data, isPending, isError } = useQuery({
@@ -239,18 +244,24 @@ function PopulationTab({ params, setParam }) {
             </tbody>
           </table>
         </div>
-        <Pagination meta={meta} onChange={(page) => setParam('page', String(page), false)} />
+        <Pagination
+          meta={meta}
+          onChange={(page) => setParam('page', String(page), false)}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+        />
       </div>
     </>
   )
 }
 
-function LetterTab({ params, setParam }) {
+function LetterTab({ params, setParam, pageSize, onPageSizeChange }) {
   const filters = {
     new_status: params.get('status') ?? '',
     from: params.get('from') ?? '',
     to: params.get('to') ?? '',
     page: Number(params.get('page') ?? 1),
+    per_page: pageSize,
   }
 
   const { data, isPending, isError } = useQuery({
@@ -352,7 +363,12 @@ function LetterTab({ params, setParam }) {
             </tbody>
           </table>
         </div>
-        <Pagination meta={meta} onChange={(page) => setParam('page', String(page), false)} />
+        <Pagination
+          meta={meta}
+          onChange={(page) => setParam('page', String(page), false)}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+        />
       </div>
     </>
   )
@@ -378,6 +394,12 @@ export default function ActivityLogPage() {
   }
 
   const switchTab = (tab) => setParams({ tab }, { replace: true })
+
+  const [pageSize, setPageSizeState] = usePageSize('activity-log')
+  const setPageSize = (value) => {
+    setPageSizeState(value)
+    setParam('page', '')
+  }
 
   return (
     <div className="sid-operator-page">
@@ -409,9 +431,19 @@ export default function ActivityLogPage() {
         </div>
 
         {activeTab === 'surat' ? (
-          <LetterTab params={params} setParam={setParam} />
+          <LetterTab
+            params={params}
+            setParam={setParam}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
         ) : (
-          <PopulationTab params={params} setParam={setParam} />
+          <PopulationTab
+            params={params}
+            setParam={setParam}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
         )}
       </div>
 

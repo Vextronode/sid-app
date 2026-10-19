@@ -1,14 +1,29 @@
-import { Pencil, Search, Trash2 } from 'lucide-react'
+import { Pencil, Power, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { StatusPill } from '@/components/ui/StatusPill'
 
-export default function RtTable({ rts, rws, hamlets, processing, onEdit, onDelete }) {
+export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggle, onDelete }) {
   const [search, setSearch] = useState('')
+  const [filterHamlet, setFilterHamlet] = useState('')
   const [filterRw, setFilterRw] = useState('')
+
+  // Pilihan RW mengikuti dusun yang dipilih.
+  const rwOptions = useMemo(
+    () => (filterHamlet ? rws.filter((rw) => String(rw.hamletId) === filterHamlet) : rws),
+    [rws, filterHamlet],
+  )
+
+  const changeHamlet = (value) => {
+    setFilterHamlet(value)
+    setFilterRw('')
+  }
 
   const data = useMemo(() => {
     const keyword = search.trim().toLowerCase()
+    const rwIdsInHamlet = new Set(rwOptions.map((rw) => String(rw.id)))
 
     return rts.filter((rt) => {
+      const matchesHamlet = filterHamlet ? rwIdsInHamlet.has(String(rt.rwId)) : true
       const matchesRw = filterRw ? String(rt.rwId) === String(filterRw) : true
 
       const matchesSearch =
@@ -16,9 +31,9 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onDelet
         String(rt.number).toLowerCase().includes(keyword) ||
         String(rt.fullLabel).toLowerCase().includes(keyword)
 
-      return matchesRw && matchesSearch
+      return matchesHamlet && matchesRw && matchesSearch
     })
-  }, [rts, search, filterRw])
+  }, [rts, rwOptions, search, filterHamlet, filterRw])
 
   const getRw = (rwId) => rws.find((rw) => rw.id === rwId)
 
@@ -33,7 +48,7 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onDelet
       <div className="sid-wilayah-table-toolbar">
         <div>
           <h3>Master Data RT</h3>
-          <p>Kelola RT berdasarkan RW.</p>
+          <p>Kelola RT berdasarkan dusun dan RW.</p>
         </div>
 
         <div className="sid-wilayah-toolbar-controls">
@@ -48,16 +63,33 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onDelet
           </div>
 
           <select
+            value={filterHamlet}
+            onChange={(event) => changeHamlet(event.target.value)}
+            className="sid-wilayah-filter"
+            aria-label="Filter dusun"
+          >
+            <option value="">Semua Dusun</option>
+
+            {hamlets.map((hamlet) => (
+              <option key={hamlet.id} value={hamlet.id}>
+                {hamlet.name}
+              </option>
+            ))}
+          </select>
+
+          <select
             value={filterRw}
             onChange={(event) => setFilterRw(event.target.value)}
             className="sid-wilayah-filter"
+            aria-label="Filter RW"
           >
             <option value="">Semua RW</option>
 
-            {rws.map((rw) => (
+            {rwOptions.map((rw) => (
               <option key={rw.id} value={rw.id}>
-                RW {rw.number} —{' '}
-                {hamlets.find((hamlet) => hamlet.id === rw.hamletId)?.name ?? 'Dusun'}
+                RW {rw.number}
+                {!filterHamlet &&
+                  ` — ${hamlets.find((hamlet) => hamlet.id === rw.hamletId)?.name ?? 'Dusun'}`}
               </option>
             ))}
           </select>
@@ -81,7 +113,11 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onDelet
             {data.length === 0 ? (
               <tr>
                 <td colSpan="6">
-                  <div className="sid-wilayah-empty">Belum ada data RT.</div>
+                  <div className="sid-wilayah-empty">
+                    {rts.length === 0
+                      ? 'Belum ada data RT.'
+                      : 'Tidak ada RT yang cocok dengan filter.'}
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -95,13 +131,9 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onDelet
                     <td>{rw ? `RW ${rw.number}` : '-'}</td>
                     <td>{getHamletName(rt.rwId)}</td>
                     <td>
-                      <span
-                        className={`sid-wilayah-status ${
-                          rt.isActive ? 'sid-wilayah-status-active' : 'sid-wilayah-status-inactive'
-                        }`}
-                      >
+                      <StatusPill active={rt.isActive}>
                         {rt.isActive ? 'Aktif' : 'Nonaktif'}
-                      </span>
+                      </StatusPill>
                     </td>
                     <td>
                       <div className="sid-wilayah-actions">
@@ -112,6 +144,17 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onDelet
                           title="Edit RT"
                         >
                           <Pencil size={15} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onToggle(rt)}
+                          className="sid-wilayah-action sid-wilayah-action-toggle"
+                          title={rt.isActive ? 'Nonaktifkan RT' : 'Aktifkan RT'}
+                          aria-label={rt.isActive ? 'Nonaktifkan RT' : 'Aktifkan RT'}
+                          disabled={processing === `update-rt-${rt.id}`}
+                        >
+                          <Power size={15} />
                         </button>
 
                         <button

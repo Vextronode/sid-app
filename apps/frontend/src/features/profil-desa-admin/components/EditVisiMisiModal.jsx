@@ -6,6 +6,8 @@
 
 import { useEffect, useState } from 'react'
 import { X, Save } from 'lucide-react'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
 
 export default function EditVisiMisiModal({
   open,
@@ -13,20 +15,28 @@ export default function EditVisiMisiModal({
   onSubmit,
   initialData,
   processing = false,
+  error = '',
 }) {
   const [form, setForm] = useState({
     vision: '',
     mission: '',
   })
+  const [baseline, setBaseline] = useState(null)
+  const requestClose = useConfirmDiscard(open && isFormDirty(form, baseline), {
+    disabled: processing,
+    escapeClose: open ? onClose : null,
+  })
 
   useEffect(() => {
     if (!open) return
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setForm({
+    const initialForm = {
       vision: initialData?.vision ?? '',
       mission: initialData?.mission ?? '',
-    })
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setForm(initialForm)
+    setBaseline(initialForm)
   }, [open, initialData])
 
   if (!open) return null
@@ -54,7 +64,7 @@ export default function EditVisiMisiModal({
       className="sid-profil-desa-modal-backdrop"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !processing) {
-          onClose()
+          requestClose(onClose)
         }
       }}
     >
@@ -75,7 +85,7 @@ export default function EditVisiMisiModal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => requestClose(onClose)}
             className="sid-profil-desa-modal-close"
             disabled={processing}
             aria-label="Tutup"
@@ -117,10 +127,16 @@ export default function EditVisiMisiModal({
             </span>
           </div>
 
+          {error && (
+            <div className="sid-profil-desa-error" role="alert">
+              {error}
+            </div>
+          )}
+
           <div className="sid-profil-desa-modal-actions">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => requestClose(onClose)}
               className="sid-profil-desa-modal-secondary"
               disabled={processing}
             >

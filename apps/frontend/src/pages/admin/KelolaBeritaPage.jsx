@@ -25,13 +25,20 @@
 import { useState } from 'react'
 import { Plus, Pencil, Send, ChevronLeft, ChevronRight, Newspaper, Tags } from 'lucide-react'
 
-import { useBeritaList } from '@/features/kelola-berita/hooks/useBeritaList'
+import {
+  BERITA_PAGE_SIZE_OPTIONS,
+  useBeritaList,
+} from '@/features/kelola-berita/hooks/useBeritaList'
 import BeritaFormModal from '@/features/kelola-berita/components/BeritaFormModal'
 import KategoriBeritaModal from '@/features/kelola-berita/components/KategoriBeritaModal'
 import { useNewsCategories } from '@/features/kelola-berita/hooks/useNewsCategories'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { alertDialog, confirmDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
 
 export default function KelolaBeritaPage() {
   const {
@@ -41,6 +48,8 @@ export default function KelolaBeritaPage() {
     currentPage,
     setCurrentPage,
     totalPages,
+    pageSize,
+    setPageSize,
     addBerita,
     updateBerita,
     publishBerita,
@@ -88,9 +97,11 @@ export default function KelolaBeritaPage() {
       return
     }
 
-    const confirmed = window.confirm(
-      `Hapus berita "${berita.title}"?\n\nData berita akan dihapus secara permanen.`,
-    )
+    const confirmed = await confirmDialog({
+      title: `Hapus berita "${berita.title}"?`,
+      message: 'Data berita akan dihapus secara permanen.',
+      confirmLabel: 'Hapus',
+    })
 
     if (!confirmed) {
       return
@@ -98,6 +109,7 @@ export default function KelolaBeritaPage() {
 
     try {
       await deleteBerita(berita.id)
+      notifySuccess(`Berita "${berita.title}" berhasil dihapus.`)
 
       setModalOpen(false)
       setEditingBerita(null)
@@ -109,7 +121,10 @@ export default function KelolaBeritaPage() {
         method: error.config?.method,
       })
 
-      window.alert(error.response?.data?.message ?? 'Berita gagal dihapus.')
+      alertDialog({
+        title: 'Terjadi kesalahan',
+        message: error.response?.data?.message ?? 'Berita gagal dihapus.',
+      })
     }
   }
   // ==========================================
@@ -138,6 +153,7 @@ export default function KelolaBeritaPage() {
 
       // news_count kategori berubah setelah berita disimpan.
       refreshCategories()
+      notifySuccess(editingBerita ? 'Berita berhasil diperbarui.' : 'Berita berhasil ditambahkan.')
 
       setModalOpen(false)
       setEditingBerita(null)
@@ -162,7 +178,12 @@ export default function KelolaBeritaPage() {
       return
     }
 
-    const confirmed = window.confirm(`Publikasikan "${berita.title}"?`)
+    const confirmed = await confirmDialog({
+      title: `Publikasikan "${berita.title}"?`,
+      message: 'Berita akan tampil di halaman publik.',
+      confirmLabel: 'Publikasikan',
+      tone: 'primary',
+    })
 
     if (!confirmed) {
       return
@@ -170,8 +191,12 @@ export default function KelolaBeritaPage() {
 
     try {
       await publishBerita(berita.id)
+      notifySuccess(`"${berita.title}" berhasil dipublikasikan.`)
     } catch (error) {
-      window.alert(error.response?.data?.message ?? 'Berita gagal dipublikasikan.')
+      alertDialog({
+        title: 'Terjadi kesalahan',
+        message: error.response?.data?.message ?? 'Berita gagal dipublikasikan.',
+      })
     }
   }
 
@@ -480,15 +505,9 @@ export default function KelolaBeritaPage() {
                   <div className="flex items-center justify-between gap-2">
                     <h3>{berita.title}</h3>
 
-                    <span
-                      className={
-                        isPublished(berita)
-                          ? 'sid-status-badge sid-status-badge-success'
-                          : 'sid-status-badge sid-status-badge-warning'
-                      }
-                    >
+                    <StatusPill tone={isPublished(berita) ? 'active' : 'warning'}>
                       {isPublished(berita) ? 'Publikasi' : 'Draft'}
-                    </span>
+                    </StatusPill>
                   </div>
 
                   {/* CONTENT */}
@@ -538,6 +557,12 @@ export default function KelolaBeritaPage() {
             <span>
               Halaman {currentPage} dari {totalPages}
             </span>
+            <PageSizeSelect
+              value={pageSize}
+              onChange={setPageSize}
+              options={BERITA_PAGE_SIZE_OPTIONS}
+              disabled={processing}
+            />
           </div>
         )}
       </div>

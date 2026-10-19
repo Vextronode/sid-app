@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { useDisclosure } from '../hooks/useDisclosure'
 
@@ -27,8 +27,16 @@ export function ProfilDesaItems({ header, onSelect }) {
   )
 }
 
+// Halaman Tentang Desa sedang dibuka bila path-nya sama dengan salah satu
+// butir menu (tanpa #, mis. /profil-desa#perangkat-desa -> /profil-desa).
+function isProfilPage(pathname, items) {
+  return items.some(({ to }) => to && to.split('#')[0] === pathname)
+}
+
 export function ProfilDesaDropdown({ header }) {
   const { isOpen, toggle, close, containerRef, triggerRef, panelId, onBlur } = useDisclosure()
+  const { pathname } = useLocation()
+  const active = isProfilPage(pathname, header.profilItems)
 
   return (
     <div className="bd-dropdown" ref={containerRef} onBlur={onBlur}>
@@ -38,6 +46,7 @@ export function ProfilDesaDropdown({ header }) {
         className="bd-nav-link bd-nav-trigger"
         aria-expanded={isOpen}
         aria-controls={panelId}
+        aria-current={active ? 'page' : undefined}
         onClick={toggle}
       >
         {header.nav.profil}

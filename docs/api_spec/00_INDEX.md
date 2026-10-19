@@ -30,7 +30,7 @@ api_spec/
 │   ├── infrastructure/, auth/
 │   ├── wilayah/, citizens/, families/, occupations/, users/, officials/
 │   ├── letter-types/, approval-flows/          (approval flow read-only)
-│   ├── letters/      daftar, ringkasan, detail, PDF, lampiran, dokumen
+│   ├── letters/      daftar, ringkasan, ekspor Excel, detail, PDF, lampiran, dokumen
 │   │                 pendukung, slot TTD, fulfillment
 │   ├── rt/, kades/   aksi keputusan saja
 │   ├── signatures/   TTD pribadi akun, permintaan TTD, blokir
@@ -59,16 +59,16 @@ api_spec/
 | Auth & profil | `POST /register` (NIK + tanggal lahir + password), `POST /login`, `POST /logout`, `POST /forgot-password`, `POST /reset-password`, `GET /user` (memuat `role_label`, `photo_url`), `PATCH /profile`, `PUT /profile/password`, `POST/DELETE /profile/photo` (hanya role warga) | Publik / semua user |
 | TTD pribadi | `GET/POST /profile/signature`, `GET /profile/signature/image` | Semua user |
 | Permintaan TTD | `GET /signature-requests`, `POST /signature-requests/{id}/accept\|reject`, `GET /signature-blocks`, `DELETE /signature-blocks/{id}` | Pemilik NIK yang dituju |
-| Surat | `GET/POST /letters`, `GET /letters/summary`, `GET/DELETE /letters/{id}`, `GET /letters/{letter}/download\|preview\|supporting-document`, `GET /letters/{letter}/attachments/{attachment}`, `POST /letters/{letter}/signatures/{slot}`, `GET/POST /letters/{letter}/fulfillment` | Sesuai LetterPolicy |
+| Surat | `GET/POST /letters`, `GET /letters/summary`, `GET /letters/export` (Excel, filter sama dengan daftar), `GET/DELETE /letters/{id}`, `GET /letters/{letter}/download\|preview\|supporting-document`, `GET /letters/{letter}/attachments/{attachment}`, `POST /letters/{letter}/signatures/{slot}`, `GET/POST /letters/{letter}/fulfillment` | Sesuai LetterPolicy |
 | Keputusan | `PATCH /rt/letters/{letter}/decision`, `PATCH /kades/letters/{letter}/decision` | RT; Kades/Sekdes |
 | Konfigurasi surat | `GET /letter-types`, `PUT /letter-types/{id}`, `GET /approval-flows`, `GET /approval-flows/{id}`, `GET/PATCH /approval-settings` | Petugas Desa (GET letter-types lintas-role) |
-| Kependudukan | `/citizens` (GET juga untuk Kasi/Kaur), `/citizens/import`, `/citizens/wilayah`, `/families`, `/families/{id}/socioeconomic`, `/occupations` | Petugas Desa |
+| Kependudukan | `/citizens` (GET juga untuk Kasi/Kaur), `/citizens/import`, `GET /citizens/import-template`, `/citizens/wilayah`, `/families` (berhalaman), `GET /families/options`, `/families/{id}/socioeconomic`, `/occupations` | Petugas Desa |
 | Akun & jabatan | `/users`, `/users/{user}/reset-password`, `/users/{user}/signature/reset`, `/users/{user}/toggle-status`, `/users/{user}/photo` (POST/DELETE, akun warga), `/officials` (+ promote, candidates/lookup, demote, rotate, signature, photo POST/DELETE), `/official-position-types` | Petugas Desa (`staf_sid`, satu per desa) |
 | Wilayah | `/hamlets`, `/rws`, `/rts` | Petugas Desa |
-| Notifikasi | `/notifications`, `/notifications/unread-count`, `/notifications/read-all`, `/notifications/{id}/read`, `POST/DELETE /push-subscriptions` | Semua user |
-| Dashboard | `/dashboard`, `/dashboard/gender-stats`, `/dashboard/letter-stats` | Semua role (data di-scope) |
+| Notifikasi | `/notifications`, `/notifications/unread-count` (`{ data: { count } }`), `/notifications/read-all`, `/notifications/{id}/read`, `POST/DELETE /push-subscriptions` | Semua user |
+| Dashboard | `/dashboard`, `/dashboard/gender-stats`, `/dashboard/letter-stats` (keduanya dibungkus `data`) | Semua role (data di-scope) |
 | CMS | `/villages/profile` (GET semua user; PATCH Petugas), `/villages/profile/stamp\|logo\|hero-image\|resolve-map-link`, `/news`, `/news-categories`, `/regulations`, `/announcement` (GET/PUT/DELETE, satu per desa), `/info-pages` (+ `/{page}`), `/village-org-positions` (GET slot tetap; + members, members/{id}/end, members/{id}/photo) | Petugas Desa |
-| Publik | `/public/home`, `/public/village-profile`, `/public/news`, `/public/letter-types`, `/public/regulations`, `/public/contact-us`, `/public/village-orgs/{orgType}` (opsional `?village_code=`; cache 10 menit per desa) | Tanpa login |
+| Publik | `/public/home` (+ `village_head`), `/public/village-profile`, `/public/news`, `/public/letter-types`, `/public/regulations`, `/public/contact-us`, `/public/village-orgs/{orgType}` (opsional `?village_code=`; cache 10 menit per desa) | Tanpa login |
 
 ## Alur Surat (ringkas)
 

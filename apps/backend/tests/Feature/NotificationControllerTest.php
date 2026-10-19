@@ -53,7 +53,7 @@ class NotificationControllerTest extends TestCase
 
         $this->actingAs($user)
             ->getJson('/api/notifications/unread-count')
-            ->assertJsonPath('count', 0);
+            ->assertJsonPath('data.count', 0);
     }
 
     public function test_unread_count_returns_correct_number(): void
@@ -65,6 +65,6 @@ class NotificationControllerTest extends TestCase
         $this->actingAs($user)
             ->getJson('/api/notifications/unread-count')
             ->assertOk()
-            ->assertJsonPath('count', 1);
+            ->assertJsonPath('data.count', 1);
     }
 }

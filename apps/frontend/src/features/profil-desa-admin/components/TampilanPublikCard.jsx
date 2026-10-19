@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { ExternalLink, Image as ImageIcon, Pencil } from 'lucide-react'
 
 import { formatCoords, googleMapsUrl, villageCoords } from '@/shared/lib/villageMap'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 
@@ -39,7 +41,6 @@ function PublicImageField({ field, currentUrl, onUpload }) {
   const [draftUrl, setDraftUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const inputId = `village-${field.kind}-upload`
 
   useEffect(
@@ -53,7 +54,6 @@ function PublicImageField({ field, currentUrl, onUpload }) {
     const file = event.target.files?.[0] ?? null
 
     event.target.value = ''
-    setSuccess('')
 
     if (!file) return
 
@@ -78,6 +78,17 @@ function PublicImageField({ field, currentUrl, onUpload }) {
   }
 
   const handleSave = async () => {
+    if (currentUrl) {
+      const confirmed = await confirmDialog({
+        title: `Ganti ${field.label.toLowerCase()}?`,
+        message: 'Gambar lama diganti dan langsung tampil di halaman publik.',
+        confirmLabel: 'Ganti',
+        tone: 'primary',
+      })
+
+      if (!confirmed) return
+    }
+
     setSaving(true)
     setError('')
 
@@ -85,7 +96,7 @@ function PublicImageField({ field, currentUrl, onUpload }) {
       await onUpload(field.kind, draft)
       setDraft(null)
       setDraftUrl('')
-      setSuccess(`${field.label} berhasil disimpan.`)
+      notifySuccess(`${field.label} berhasil disimpan.`)
     } catch (requestError) {
       setError(serverMessage(requestError, `Gagal menyimpan ${field.label.toLowerCase()}.`))
     } finally {
@@ -114,11 +125,6 @@ function PublicImageField({ field, currentUrl, onUpload }) {
       {error && (
         <p className="sid-admin-alert sid-admin-alert-error" role="alert">
           {error}
-        </p>
-      )}
-      {success && (
-        <p className="sid-upload-description" role="status">
-          {success}
         </p>
       )}
 

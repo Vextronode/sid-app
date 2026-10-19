@@ -25,6 +25,11 @@ export function getFamilies(params = {}) {
   return api.get('/api/families', { params })
 }
 
+// Semua KK desa (tanpa halaman) untuk pilihan KK di form warga.
+export function getFamilyOptions() {
+  return api.get('/api/families/options')
+}
+
 export function getFamily(id) {
   return api.get(`/api/families/${id}`)
 }

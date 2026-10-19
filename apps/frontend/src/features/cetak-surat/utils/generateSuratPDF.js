@@ -3,6 +3,8 @@
 // Generate PDF surat dari backend seeder template
 // ==========================================
 
+import { responseError, userFacingError } from '@/shared/lib/apiError'
+
 // VITE_API_URL kosong/tidak di-build -> same-origin (sama seperti src/lib/api.js)
 const apiUrl = () => (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/+$/, '')
 
@@ -17,8 +19,7 @@ export async function downloadSuratPDF(surat, template = 'wet') {
   })
 
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`${response.status} ${response.statusText}: ${text}`)
+    throw await responseError(response, 'Gagal mengunduh surat.')
   }
 
   const blob = await response.blob()
@@ -43,7 +44,9 @@ export async function generateSuratPDF(surat, template = 'wet') {
   const pdfTab = window.open('', '_blank')
 
   if (!pdfTab) {
-    throw new Error('Popup diblokir browser. Silakan izinkan popup untuk website ini.')
+    throw userFacingError(
+      'Jendela baru diblokir browser. Izinkan pop-up untuk situs ini lalu coba lagi.',
+    )
   }
 
   try {
@@ -74,9 +77,7 @@ export async function generateSuratPDF(surat, template = 'wet') {
     })
 
     if (!response.ok) {
-      const text = await response.text()
-
-      throw new Error(`${response.status} ${response.statusText}: ${text}`)
+      throw await responseError(response, 'Gagal membuka surat.')
     }
 
     const blob = await response.blob()
@@ -109,8 +110,7 @@ export async function previewSuratPDF(surat, template = 'wet') {
   })
 
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(text)
+    throw await responseError(response, 'Gagal memuat pratinjau surat.')
   }
 
   const blob = await response.blob()

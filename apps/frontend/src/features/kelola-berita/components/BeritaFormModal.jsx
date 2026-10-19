@@ -10,6 +10,8 @@ import { useState, useEffect } from 'react'
 import { Send, Image as ImageIcon } from 'lucide-react'
 
 import { categoryErrorMessage } from '@/features/kelola-berita/hooks/useNewsCategories'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
 
 // Satu berita wajib punya 1 kategori, maksimal 2.
 const MAX_KATEGORI = 2
@@ -33,18 +35,25 @@ export default function BeritaFormModal({
   const [form, setForm] = useState(INITIAL_FORM)
   const [imagePreview, setImagePreview] = useState(null)
   const [error, setError] = useState('')
+  const [baseline, setBaseline] = useState(INITIAL_FORM)
+  const requestClose = useConfirmDiscard(open && isFormDirty(form, baseline), {
+    disabled: processing,
+    escapeClose: open ? onClose : null,
+  })
 
   // ==========================================
   // INITIAL DATA
   // ==========================================
   useEffect(() => {
     if (initialData) {
-      setForm({
+      const initialForm = {
         title: initialData.title ?? '',
         category_ids: (initialData.categories ?? []).map((category) => category.id),
         content: initialData.content ?? '',
         thumbnail: initialData.image ?? null,
-      })
+      }
+      setForm(initialForm)
+      setBaseline(initialForm)
 
       setImagePreview(initialData.thumbnail ?? null)
       setError('')
@@ -53,6 +62,7 @@ export default function BeritaFormModal({
     }
 
     setForm(INITIAL_FORM)
+    setBaseline(INITIAL_FORM)
     setImagePreview(null)
     setError('')
   }, [initialData, open])
@@ -231,13 +241,13 @@ export default function BeritaFormModal({
             {imagePreview ? (
               <img
                 src={imagePreview}
-                alt="Preview thumbnail berita"
+                alt="Pratinjau gambar berita"
                 className="sid-berita-upload-preview"
               />
             ) : (
               <>
                 <ImageIcon size={20} />
-                <span>Upload gambar</span>
+                <span>Unggah gambar</span>
               </>
             )}
 
@@ -275,7 +285,7 @@ export default function BeritaFormModal({
           <div className="sid-berita-modal-actions-right">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => requestClose(onClose)}
               className="sid-berita-modal-cancel"
               disabled={processing}
             >

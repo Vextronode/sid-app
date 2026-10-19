@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exports\LettersExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LetterIndexRequest;
+use App\Http\Requests\LetterSummaryRequest;
 use App\Http\Requests\StoreLetterRequest;
 use App\Http\Resources\LetterListResource;
 use App\Http\Resources\LetterResource;
 use App\Models\Letter;
 use App\Services\LetterService;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LetterController extends Controller
 {
@@ -51,7 +54,7 @@ class LetterController extends Controller
         ]);
     }
 
-    public function summary(LetterIndexRequest $request)
+    public function summary(LetterSummaryRequest $request)
     {
         $this->authorize('viewAny', Letter::class);
 
@@ -62,6 +65,31 @@ class LetterController extends Controller
                 $request->validated()
             ),
         ]);
+    }
+
+    /**
+     * Laporan Excel atas scope dan filter yang sama dengan daftar surat.
+     * Hasil kosong ditolak (422) agar klien tidak mengunduh file kosong.
+     */
+    public function export(LetterIndexRequest $request)
+    {
+        $this->authorize('viewAny', Letter::class);
+
+        $letters = $this->letterService->exportScopedLetters(
+            $request->user(),
+            $request->validated()
+        );
+
+        if ($letters->isEmpty()) {
+            return response()->json([
+                'message' => 'Data surat kosong, laporan tidak dapat diunduh.',
+            ], 422);
+        }
+
+        return Excel::download(
+            new LettersExport($letters),
+            'laporan-surat-'.now()->format('Y-m-d').'.xlsx'
+        );
     }
 
     public function show($id)

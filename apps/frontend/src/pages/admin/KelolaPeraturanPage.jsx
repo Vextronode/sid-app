@@ -9,6 +9,10 @@ import {
   updateRegulation,
 } from '@/features/peraturan/api'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
+import { notifySuccess } from '@/shared/lib/toast'
 
 function resolveError(error, fallback) {
   const errors = error?.response?.data?.errors
@@ -28,11 +32,16 @@ function formatDate(value) {
 
 function RegulationFormModal({ item, processing, error, onClose, onSubmit }) {
   const isEdit = Boolean(item?.id)
-  const [form, setForm] = useState({
+  const [initialForm] = useState(() => ({
     regulation_number: item?.regulation_number ?? '',
     title: item?.title ?? '',
     content: item?.content ?? '',
     enacted_date: item?.enacted_date ?? '',
+  }))
+  const [form, setForm] = useState(initialForm)
+  const requestClose = useConfirmDiscard(isFormDirty(form, initialForm), {
+    disabled: processing,
+    escapeClose: onClose,
   })
 
   const handleChange = (field, value) => {
@@ -49,7 +58,10 @@ function RegulationFormModal({ item, processing, error, onClose, onSubmit }) {
       enacted_date: form.enacted_date || null,
     })
 
-    if (success) onClose()
+    if (success) {
+      notifySuccess(`Peraturan desa berhasil ${isEdit ? 'diperbarui' : 'ditambahkan'}.`)
+      onClose()
+    }
   }
 
   return (
@@ -57,7 +69,7 @@ function RegulationFormModal({ item, processing, error, onClose, onSubmit }) {
       className="sid-wilayah-modal-backdrop"
       role="presentation"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
+        if (event.target === event.currentTarget) requestClose(onClose)
       }}
     >
       <div className="sid-wilayah-modal">
@@ -67,7 +79,12 @@ function RegulationFormModal({ item, processing, error, onClose, onSubmit }) {
             <h2>{isEdit ? 'Edit' : 'Tambah'} Peraturan</h2>
           </div>
 
-          <button type="button" onClick={onClose} className="sid-wilayah-modal-close">
+          <button
+            type="button"
+            onClick={() => requestClose(onClose)}
+            className="sid-wilayah-modal-close"
+            aria-label="Tutup"
+          >
             <X size={18} />
           </button>
         </div>
@@ -124,7 +141,7 @@ function RegulationFormModal({ item, processing, error, onClose, onSubmit }) {
           <div className="sid-wilayah-modal-footer">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => requestClose(onClose)}
               className="sid-wilayah-btn sid-wilayah-btn-secondary"
             >
               Batal
@@ -213,13 +230,21 @@ export default function KelolaPeraturanPage() {
   }
 
   const handleDelete = async (item) => {
-    if (!window.confirm(`Hapus peraturan "${item.title}"?`)) return
+    if (
+      !(await confirmDialog({
+        title: `Hapus peraturan "${item.title}"?`,
+        message: 'Tindakan ini tidak dapat dibatalkan.',
+        confirmLabel: 'Hapus',
+      }))
+    )
+      return
 
     setProcessing(true)
 
     try {
       await deleteRegulation(item.id)
       await load()
+      notifySuccess(`Peraturan "${item.title}" berhasil dihapus.`)
     } catch (requestError) {
       setError(resolveError(requestError, 'Gagal menghapus peraturan desa.'))
     } finally {

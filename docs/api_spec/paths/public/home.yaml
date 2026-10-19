@@ -3,9 +3,10 @@ get:
   summary: Beranda publik (tanpa login)
   security: []
   description: |
-    UC-16. Identitas desa, 5 berita published terbaru (beserta kategori), dan
-    statistik publik. Semua endpoint `/public/*` memakai cache JSON per desa
-    (TTL 10 menit) yang digugurkan otomatis saat data sumber (desa, berita,
+    UC-16. Identitas desa, Kepala Desa aktif (blok Sambutan Kepala Desa),
+    5 berita published terbaru (beserta kategori), dan statistik publik.
+    Semua endpoint `/public/*` memakai cache JSON per desa (TTL 10 menit)
+    yang digugurkan otomatis saat data sumber (desa, warga, berita,
     kategori berita, peraturan, jenis surat, pejabat, dusun, jenis jabatan)
     berubah.
   operationId: getPublicHome
@@ -24,6 +25,27 @@ get:
                 properties:
                   village:
                     $ref: '../../schemas/villages/villages.yaml#/Village'
+                  village_head:
+                    description: |
+                      Kepala Desa aktif (`position = kepala_desa`, `is_active`,
+                      belum `ended_at`) untuk blok Sambutan Kepala Desa, atau
+                      null bila belum ada. Bentuk `PublicOfficial`: hanya
+                      nama, jabatan, dusun, dan `photo_url`, tanpa kontak
+                      maupun NIK. Teks sambutannya tetap dari
+                      `village.welcome_message`; field ini hanya memberi
+                      nama dan foto.
+                    type: object
+                    nullable: true
+                    allOf:
+                      - $ref: '../../schemas/users/users.yaml#/PublicOfficial'
+                    example:
+                      id: 3
+                      position: "kepala_desa"
+                      position_label: "Kepala Desa"
+                      name: "Ahmad Budiman"
+                      hamlet_id: null
+                      hamlet_name: null
+                      photo_url: "http://localhost:8000/storage/official-photos/1d6f0a3e-5b28-4c97-a1e4-7f2b8c9d0e35/contoh.jpg"
                   latest_news:
                     type: array
                     items:
@@ -38,6 +60,7 @@ get:
                             description: "Jenis surat aktif ber-template."
                   announcement:
                     description: Pengumuman yang masih tayang (menu Pengumuman), atau null.
+                    type: object
                     nullable: true
                     allOf:
                       - $ref: '../../schemas/announcements/announcements.yaml#/Announcement'

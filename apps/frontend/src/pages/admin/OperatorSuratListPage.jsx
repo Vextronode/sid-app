@@ -21,11 +21,16 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { downloadErrorMessage, downloadFile } from '@/lib/downloadFile'
+import { alertDialog } from '@/shared/lib/dialog'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { formatPageRange } from '@/components/ui/pageRange'
+import { usePageSize } from '@/components/ui/usePageSize'
 
-const ITEMS_PER_PAGE = 3
+const EMPTY_EXPORT_MESSAGE = 'Tidak ada data surat untuk diunduh. Unduhan laporan gagal.'
 
 const STATUS_FILTER_PARAM = {
   verification: SURAT_STATUS.IN_PROGRESS,
@@ -38,8 +43,15 @@ export default function OperatorSuratListPage() {
   const [filterJenis, setFilterJenis] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSizeState] = usePageSize('surat-operator')
+
+  const setPageSize = (value) => {
+    setPageSizeState(value)
+    setCurrentPage(1)
+  }
 
   const [previewSurat, setPreviewSurat] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // Dibuka dari notifikasi: ?surat=<id>. Modal memuat detailnya sendiri.
   useLetterDeepLink((letterId) => setPreviewSurat({ id: letterId }))
@@ -58,7 +70,7 @@ export default function OperatorSuratListPage() {
     loading,
   } = useSuratListQuery({
     page: currentPage,
-    per_page: ITEMS_PER_PAGE,
+    per_page: pageSize,
     status: STATUS_FILTER_PARAM[filterStatus],
     letter_type_id: filterJenis,
     search: debouncedSearch,
@@ -66,6 +78,38 @@ export default function OperatorSuratListPage() {
 
   const totalItems = meta.total
   const totalPages = Math.max(1, meta.last_page)
+
+  // Ekspor memakai filter yang sama dengan daftar. Daftar kosong langsung
+  // diberi peringatan tanpa memanggil server; backend juga menolak (422)
+  // bila hasilnya ternyata kosong.
+  const handleExport = async () => {
+    if (!loading && totalItems === 0) {
+      alertDialog({ title: 'Data kosong', message: EMPTY_EXPORT_MESSAGE, tone: 'warning' })
+      return
+    }
+
+    setExporting(true)
+    try {
+      const today = new Date().toISOString().slice(0, 10)
+      await downloadFile('/api/letters/export', `laporan-surat-${today}.xlsx`, {
+        status: STATUS_FILTER_PARAM[filterStatus],
+        letter_type_id: filterJenis || undefined,
+        search: debouncedSearch || undefined,
+      })
+    } catch (error) {
+      const isEmpty = error?.response?.status === 422
+      alertDialog({
+        title: isEmpty ? 'Data kosong' : 'Unduhan gagal',
+        tone: isEmpty ? 'warning' : 'error',
+        message: await downloadErrorMessage(
+          error,
+          isEmpty ? EMPTY_EXPORT_MESSAGE : 'Laporan gagal diunduh. Coba lagi.',
+        ),
+      })
+    } finally {
+      setExporting(false)
+    }
+  }
 
   // ==========================================
   // JENIS SURAT OPTIONS
@@ -92,9 +136,14 @@ export default function OperatorSuratListPage() {
         <div className="sid-operator-header">
           <h1>Daftar Permohonan Surat</h1>
 
-          <button className="sid-operator-export">
+          <button
+            type="button"
+            className="sid-operator-export"
+            disabled={exporting}
+            onClick={handleExport}
+          >
             <Download size={16} />
-            Ekspor Laporan
+            {exporting ? 'Mengunduh...' : 'Ekspor Laporan'}
           </button>
         </div>
 
@@ -274,10 +323,11 @@ export default function OperatorSuratListPage() {
           ========================================== */}
 
           <div className="sid-operator-pagination">
-            <p>
-              Menampilkan {paginated.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-
-              {(currentPage - 1) * ITEMS_PER_PAGE + paginated.length} dari {totalItems} data
-            </p>
+            <div className="sid-pagination-meta">
+              <p>{formatPageRange(currentPage, pageSize, totalItems)}</p>
+
+              <PageSizeSelect value={pageSize} onChange={setPageSize} />
+            </div>
 
             <div>
               <button

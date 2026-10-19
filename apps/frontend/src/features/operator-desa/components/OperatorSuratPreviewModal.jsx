@@ -15,8 +15,10 @@ import { Download } from 'lucide-react'
 import { getSuratDetail } from '@/lib/api'
 import { LetterExtrasPanel } from '@/features/surat/components/LetterExtrasPanel'
 import { previewSuratPDF, generateSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
-import { SURAT_STATUS } from '@/constants/suratStatus'
+import { SURAT_STATUS, getStatusLabel } from '@/constants/suratStatus'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
+import { alertDialog } from '@/shared/lib/dialog'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 function formatApprovalLevel(level) {
   const labels = {
@@ -91,7 +93,7 @@ export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose 
       } catch (error) {
         if (isMounted) {
           console.error('Gagal preview PDF:', error.response?.data ?? error)
-          setPreviewError(error.response?.data?.message ?? error.message ?? 'Gagal memuat preview.')
+          setPreviewError(getApiErrorMessage(error, 'Gagal memuat pratinjau.'))
           setPreviewUrl(null)
         }
       }
@@ -116,7 +118,10 @@ export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose 
       await generateSuratPDF(surat)
     } catch (error) {
       console.error('Gagal mengunduh surat:', error.response?.data ?? error)
-      alert(error.response?.data?.message ?? error.message ?? 'Gagal mengunduh surat.')
+      alertDialog({
+        title: 'Unduhan gagal',
+        message: getApiErrorMessage(error, 'Gagal mengunduh surat.'),
+      })
     } finally {
       setLoadingDownload(false)
     }
@@ -168,7 +173,7 @@ export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose 
 
               <div className="sid-modal-note">
                 <p className="sid-modal-note-label">Status</p>
-                <p className="sid-modal-note-text">{surat.status}</p>
+                <p className="sid-modal-note-text">{getStatusLabel(surat.status)}</p>
               </div>
 
               {surat.notes && (
@@ -207,7 +212,7 @@ export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose 
                       <>
                         <iframe
                           src={previewUrl + '#toolbar=0&navpanes=0&scrollbar=0'}
-                          title="Preview Surat"
+                          title="Pratinjau Surat"
                           className="sid-pdf-frame"
                         />
 
@@ -218,7 +223,7 @@ export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose 
                         {previewError}
                       </p>
                     ) : (
-                      <div className="sid-pdf-loading">Memuat preview...</div>
+                      <div className="sid-pdf-loading">Memuat pratinjau...</div>
                     )}
                   </div>
 

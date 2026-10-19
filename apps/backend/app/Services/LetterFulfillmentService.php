@@ -370,9 +370,20 @@ class LetterFulfillmentService
      */
     private function validate(array $data, array $rules): array
     {
+        // Nama atribut memakai label kolom (lang/id/validation.php), bukan
+        // "values.nik", supaya pesan validasi terbaca wajar.
+        $attributes = collect($rules)
+            ->mapWithKeys(function ($rule, string $column) {
+                $key = "validation.attributes.{$column}";
+                $label = trans($key);
+
+                return ["values.{$column}" => $label === $key ? str_replace('_', ' ', $column) : $label];
+            })
+            ->all();
+
         $validator = Validator::make(['values' => $data], collect($rules)
             ->mapWithKeys(fn ($rule, string $column) => ["values.{$column}" => $rule])
-            ->all());
+            ->all(), [], $attributes);
 
         return $validator->validate()['values'] ?? [];
     }

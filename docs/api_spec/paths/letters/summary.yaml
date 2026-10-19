@@ -4,9 +4,9 @@ get:
   description: |
     Dihitung di database atas scope yang sama persis dengan GET /letters
     (per role/wilayah; `scope=mine` didukung), sehingga kartu statistik dan
-    daftar selalu konsisten. Menerima parameter yang sama dengan GET /letters,
-    namun hanya `scope` yang memengaruhi hasil; filter tampilan lain tidak
-    diterapkan.
+    daftar selalu konsisten. Satu-satunya parameter yang divalidasi dan
+    dipakai adalah `scope` (hanya `mine`); parameter lain (status, search,
+    letter_type_id, tanggal, dst) diabaikan.
   operationId: summarizeLetters
   security:
     - sanctumCookie: []
@@ -34,3 +34,9 @@ get:
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
       $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: Nilai `scope` selain `mine`
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'

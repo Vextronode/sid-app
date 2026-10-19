@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { ChevronDown, X } from 'lucide-react'
 import { submitDecision } from '../api'
+import { alertDialog, confirmDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
 
 const APPROVER_ROLES_BY_POSITION = {
   rt: ['rt'],
@@ -57,6 +59,26 @@ export default function ApprovalStepRenderer({
   const handleApprove = async () => {
     if (isProcessing) return
 
+    // Tahap final menerbitkan surat resmi, jadi minta konfirmasi dulu.
+    const confirmed = await confirmDialog(
+      currentStep?.is_final
+        ? {
+            title: 'Setujui dan terbitkan surat?',
+            message:
+              'Surat akan diterbitkan dengan tanda tangan dan stempel desa, dan tidak dapat dibatalkan.',
+            confirmLabel: 'Setujui & Terbitkan',
+            tone: 'primary',
+          }
+        : {
+            title: 'Setujui permohonan surat ini?',
+            message: 'Permohonan akan diteruskan ke tahap berikutnya.',
+            confirmLabel: 'Setujui',
+            tone: 'primary',
+          },
+    )
+
+    if (!confirmed) return
+
     try {
       setIsProcessing(true)
 
@@ -66,13 +88,21 @@ export default function ApprovalStepRenderer({
         await onApprove(response)
       }
 
+      notifySuccess(
+        currentStep?.is_final
+          ? 'Surat disetujui dan diterbitkan.'
+          : 'Permohonan disetujui dan diteruskan ke tahap berikutnya.',
+      )
       if (closeOnDecision && onClose) onClose()
     } catch (error) {
       console.error('APPROVE ERROR:', error.response?.data ?? error)
       if (error.response?.status === 409 && onConflict) {
         await onConflict()
       }
-      alert(error.response?.data?.message ?? 'Gagal menyetujui surat.')
+      alertDialog({
+        title: 'Gagal menyetujui',
+        message: error.response?.data?.message ?? 'Gagal menyetujui surat.',
+      })
     } finally {
       setIsProcessing(false)
     }
@@ -93,13 +123,17 @@ export default function ApprovalStepRenderer({
 
       setAlasan('')
       setShowRejectBox(false)
+      notifySuccess('Penolakan surat berhasil dikirim ke pemohon.')
       if (closeOnDecision && onClose) onClose()
     } catch (error) {
       console.error('REJECT ERROR:', error.response?.data ?? error)
       if (error.response?.status === 409 && onConflict) {
         await onConflict()
       }
-      alert(error.response?.data?.message ?? 'Gagal menolak surat.')
+      alertDialog({
+        title: 'Gagal menolak',
+        message: error.response?.data?.message ?? 'Gagal menolak surat.',
+      })
     } finally {
       setIsProcessing(false)
     }
@@ -154,7 +188,22 @@ export default function ApprovalStepRenderer({
             </button>
             <button
               type="button"
-              onClick={() => setShowRejectBox(false)}
+              onClick={async () => {
+                // Alasan yang sudah diketik jangan hilang tanpa konfirmasi.
+                if (
+                  alasan.trim() &&
+                  !(await confirmDialog({
+                    title: 'Buang perubahan?',
+                    message: 'Alasan penolakan yang sudah ditulis akan hilang.',
+                    confirmLabel: 'Buang perubahan',
+                    cancelLabel: 'Lanjut mengisi',
+                  }))
+                ) {
+                  return
+                }
+                setAlasan('')
+                setShowRejectBox(false)
+              }}
               disabled={isProcessing}
               className="sid-approval-action-bar__back"
             >

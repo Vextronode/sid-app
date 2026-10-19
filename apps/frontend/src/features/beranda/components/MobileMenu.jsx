@@ -1,5 +1,5 @@
 import { Menu, X } from 'lucide-react'
-import { Link, NavLink } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 
 import { HAL_BERANDA, HAL_BERITA, SECTION_KONTAK } from '@/lib/constants/routes'
 import { useDisclosure } from '../hooks/useDisclosure'
@@ -45,9 +45,9 @@ export function MobileMenu({ header }) {
             </NavLink>
           </li>
           <li>
-            <Link to={HAL_BERITA} className="bd-menu-item bd-menu-item--link" onClick={close}>
+            <NavLink to={HAL_BERITA} className="bd-menu-item bd-menu-item--link" onClick={close}>
               {nav.berita}
-            </Link>
+            </NavLink>
           </li>
           <li className="bd-mobile-group">
             <span className="bd-mobile-group-title">{nav.profil}</span>

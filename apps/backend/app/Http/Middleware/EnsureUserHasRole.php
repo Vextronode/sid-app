@@ -26,7 +26,7 @@ class EnsureUserHasRole
 
         if (! $user) {
             return new JsonResponse([
-                'message' => 'Unauthenticated.',
+                'message' => 'Sesi Anda telah berakhir. Silakan masuk kembali.',
             ], Response::HTTP_UNAUTHORIZED);
         }
 

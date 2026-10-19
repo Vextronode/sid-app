@@ -136,10 +136,10 @@ export function LoginForm() {
             ========================================== */}
 
         <Input
-          label="Password"
+          label="Kata Sandi"
           name="password"
           type="password"
-          placeholder="Masukkan password"
+          placeholder="Masukkan kata sandi"
           value={formData.password}
           onChange={handleChange}
           error={errors.password}

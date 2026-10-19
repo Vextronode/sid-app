@@ -4,8 +4,8 @@ get:
   description: |
     S-05. Aktor: Petugas Desa (`staf_sid`). Daftar activity log `citizen` dan
     `family` milik desa akun yang login (disaring lewat `properties.village_id`,
-    sehingga data yang sudah dihapus tetap terlihat), terbaru dulu, 20 per
-    halaman. Dicatat oleh `PopulationAuditService` saat Petugas menambah,
+    sehingga data yang sudah dihapus tetap terlihat), terbaru dulu, berpaginasi
+    (`per_page`, default 20). Dicatat oleh `PopulationAuditService` saat Petugas menambah,
     mengubah, menghapus, atau mengimpor warga, KK, dan data sosio-ekonomi KK;
     perubahan lewat Terapkan surat tercatat sebagai `letter_fulfilled`.
   operationId: listPopulationActivityLogs
@@ -49,6 +49,14 @@ get:
       schema:
         type: integer
         minimum: 1
+    - name: per_page
+      in: query
+      required: false
+      description: Jumlah baris per halaman. Default 20, maksimum 100.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
   responses:
     '200':
       description: Riwayat data kependudukan

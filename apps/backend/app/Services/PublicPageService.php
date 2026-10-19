@@ -86,7 +86,10 @@ class PublicPageService
     }
 
     /**
-     * @return array{village: Village, latest_news: Collection, public_stats: array{total_letter_types: int, total_population: int, total_hamlets: int}}
+     * village_head: Kepala Desa aktif (nama dan foto untuk Sambutan Kepala
+     * Desa di beranda), atau null bila jabatannya belum diisi.
+     *
+     * @return array{village: Village, village_head: ?Official, latest_news: Collection, public_stats: array{total_letter_types: int, total_population: int, total_hamlets: int}}
      */
     public function home(?string $villageCode = null): array
     {
@@ -97,6 +100,9 @@ class PublicPageService
 
         return [
             'village' => $village,
+            'village_head' => $this->officialRepository
+                ->findActiveVillageHeadWithCitizen($village->id)
+                ?->loadMissing('hamlet'),
             'latest_news' => $latestNews,
             'public_stats' => [
                 'total_letter_types' => $this->letterTypeRepository->countActiveWithTemplate($village->id),

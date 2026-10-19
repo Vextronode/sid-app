@@ -1,6 +1,8 @@
 // Label tampilan halaman Log Aktivitas. Nilai yang disamarkan backend
 // ("(disamarkan)") ditampilkan apa adanya.
 
+import { FIELD_VALUE_LABELS, humanize } from '@/shared/lib/labels'
+
 export const POPULATION_TYPE_OPTIONS = [
   { value: 'citizen', label: 'Data Warga' },
   { value: 'family', label: 'Kartu Keluarga' },
@@ -63,10 +65,12 @@ const FIELD_LABELS = {
 }
 
 export function fieldLabel(field) {
-  return FIELD_LABELS[field] ?? field.replaceAll('_', ' ')
+  return FIELD_LABELS[field] ?? humanize(field)
 }
 
-export function formatChangeValue(value) {
+// `field` (opsional) memetakan nilai enum ke labelnya, mis. family_role
+// `kepala_keluarga` -> "Kepala Keluarga".
+export function formatChangeValue(value, field) {
   if (value === null || value === undefined || value === '') return '—'
   if (value === true) return 'Ya'
   if (value === false) return 'Tidak'
@@ -77,7 +81,9 @@ export function formatChangeValue(value) {
     return entries.length ? entries.map(([key, item]) => `${key}: ${item}`).join(', ') : '—'
   }
 
-  return String(value)
+  const labels = field ? FIELD_VALUE_LABELS[field] : null
+
+  return labels?.[value] ?? String(value)
 }
 
 export function formatDateTime(value) {

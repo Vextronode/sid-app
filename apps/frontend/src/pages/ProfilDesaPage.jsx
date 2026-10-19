@@ -12,7 +12,7 @@
 
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Users, Building2, Home, MapPin, Phone } from 'lucide-react'
+import { Users, Building2, Home } from 'lucide-react'
 
 import api from '../lib/api' // Integrasi API Axios
 import { publicVillageParams } from '../shared/lib/api/publicVillageParams'
@@ -34,10 +34,6 @@ const page = 'bd-container pt-[clamp(32px,20px+3vw,64px)]'
 const statValue =
   'mt-0.5 mb-0 font-display text-[clamp(30px,24px+1.2vw,40px)] leading-[1.05] font-bold tracking-tight text-pb-laut-deep tabular-nums'
 const subtitle = 'mt-0 mb-4 text-base font-bold text-pb-laut'
-// Alamat dan telepon di kepala halaman.
-const headChip =
-  'inline-flex items-center gap-2 rounded-full border border-pb-line bg-white px-4 py-2 text-base leading-snug text-pb-ink shadow-sm'
-
 // Satu baris statistik; ikon tanpa kotak latar.
 function StatItem({ icon: Icon, label, children }) {
   return (
@@ -231,33 +227,7 @@ export function ProfilDesaPage() {
           HEADER
           ========================================== */}
 
-      <PublicPageHead title={`Profil ${data.name ?? 'Desa'}`}>
-        <p>
-          Halaman resmi informasi tata kelola dan capaian strategis {data.name ?? 'desa'} untuk
-          transparansi publik.
-        </p>
-
-        {(data.address || data.phone) && (
-          <div className="mt-6 flex flex-wrap gap-2.5">
-            {data.address && (
-              <span className={headChip}>
-                <MapPin className="flex-none text-pb-laut" size={18} aria-hidden="true" />
-                {data.address}
-              </span>
-            )}
-
-            {data.phone && (
-              <a
-                href={`tel:${data.phone.replace(/[^\d+]/g, '')}`}
-                className={`${headChip} font-semibold text-pb-laut no-underline hover:border-pb-laut hover:bg-pb-laut-tint`}
-              >
-                <Phone className="flex-none" size={18} aria-hidden="true" />
-                Telp. {data.phone}
-              </a>
-            )}
-          </div>
-        )}
-      </PublicPageHead>
+      <PublicPageHead title={`Profil ${data.name ?? 'Desa'}`} />
 
       <div className={page}>
         {/* ==========================================

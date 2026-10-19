@@ -17,6 +17,11 @@ import { FileUploader } from './FileUploader'
 
 const WET_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png'
 
+const DEFAULT_HEADINGS = {
+  fields: 'Langkah 2 - Isi Form',
+  signatures: 'Langkah 3 - Tanda Tangan',
+}
+
 function firstServerError(error) {
   const errors = error?.response?.data?.errors
 
@@ -36,6 +41,8 @@ export function DynamicSuratForm({
   initialData = {},
   onSubmitAPI = null,
   letterTypes = [],
+  headings = DEFAULT_HEADINGS,
+  className = '',
 }) {
   const { user } = useAuth()
   const [submitError, setSubmitError] = useState('')
@@ -168,11 +175,11 @@ export function DynamicSuratForm({
   return (
     <form
       onSubmit={(event) => handleSubmit(handleFormSubmit)(event)}
-      className="sid-card w-full"
+      className={`sid-card w-full ${className}`.trim()}
       noValidate
     >
       <section className="sid-section">
-        <h3 className="sid-section-title">Langkah 2 - Isi Form</h3>
+        <h3 className="sid-section-title">{headings.fields}</h3>
 
         <AutoFillProfile user={user} />
 
@@ -291,7 +298,7 @@ export function DynamicSuratForm({
 
       {signatureSlots.length > 0 && (
         <section className="sid-section">
-          <h3 className="sid-section-title">Langkah 3 - Tanda Tangan</h3>
+          <h3 className="sid-section-title">{headings.signatures}</h3>
 
           <div className="flex flex-col gap-4">
             {applicantSlots.map((slot) => (

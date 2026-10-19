@@ -10,6 +10,8 @@ import RwTable from '@/features/kelola-wilayah/components/RwTable'
 import WilayahFormModal from '@/features/kelola-wilayah/components/WilayahFormModal'
 import WilayahTabs from '@/features/kelola-wilayah/components/WilayahTabs'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
 
 export default function KelolaWilayahPage() {
   const {
@@ -90,28 +92,70 @@ export default function KelolaWilayahPage() {
     return false
   }
 
+  // Aktif/nonaktif langsung dari baris tabel, dengan konfirmasi.
+  const confirmToggle = (item, label) =>
+    confirmDialog(
+      item.isActive
+        ? {
+            title: `Nonaktifkan ${label}?`,
+            message: 'Wilayah nonaktif tidak dapat dipilih pada data warga baru.',
+            confirmLabel: 'Nonaktifkan',
+          }
+        : {
+            title: `Aktifkan ${label}?`,
+            message: 'Wilayah dapat dipilih kembali pada data warga.',
+            confirmLabel: 'Aktifkan',
+            tone: 'primary',
+          },
+    )
+
+  const toggleWith = (update, labelOf) => async (item) => {
+    const label = labelOf(item)
+    if (!(await confirmToggle(item, label))) return
+
+    if (await update(item.id, { is_active: !item.isActive })) {
+      notifySuccess(`${label} berhasil ${item.isActive ? 'dinonaktifkan' : 'diaktifkan'}.`)
+    }
+  }
+
+  const handleToggleHamlet = toggleWith(updateHamlet, (item) => `dusun ${item.name}`)
+  const handleToggleRw = toggleWith(updateRw, (item) => `RW ${item.number}`)
+  const handleToggleRt = toggleWith(updateRt, (item) => `RT ${item.number}`)
+
   const handleDeleteHamlet = async (item) => {
-    const confirmed = window.confirm(`Hapus dusun "${item.name}"?`)
+    const confirmed = await confirmDialog({
+      title: `Hapus dusun "${item.name}"?`,
+      message: 'Tindakan ini tidak dapat dibatalkan.',
+      confirmLabel: 'Hapus',
+    })
 
     if (!confirmed) return
 
-    await deleteHamlet(item.id)
+    if (await deleteHamlet(item.id)) notifySuccess(`Dusun ${item.name} berhasil dihapus.`)
   }
 
   const handleDeleteRw = async (item) => {
-    const confirmed = window.confirm(`Hapus RW ${item.number}?`)
+    const confirmed = await confirmDialog({
+      title: `Hapus RW ${item.number}?`,
+      message: 'Tindakan ini tidak dapat dibatalkan.',
+      confirmLabel: 'Hapus',
+    })
 
     if (!confirmed) return
 
-    await deleteRw(item.id)
+    if (await deleteRw(item.id)) notifySuccess(`RW ${item.number} berhasil dihapus.`)
   }
 
   const handleDeleteRt = async (item) => {
-    const confirmed = window.confirm(`Hapus RT ${item.number}?`)
+    const confirmed = await confirmDialog({
+      title: `Hapus RT ${item.number}?`,
+      message: 'Tindakan ini tidak dapat dibatalkan.',
+      confirmLabel: 'Hapus',
+    })
 
     if (!confirmed) return
 
-    await deleteRt(item.id)
+    if (await deleteRt(item.id)) notifySuccess(`RT ${item.number} berhasil dihapus.`)
   }
 
   const renderTable = () => {
@@ -123,6 +167,7 @@ export default function KelolaWilayahPage() {
           rts={rts}
           processing={processing}
           onEdit={(item) => openEdit('dusun', item)}
+          onToggle={handleToggleHamlet}
           onDelete={handleDeleteHamlet}
         />
       )
@@ -135,6 +180,7 @@ export default function KelolaWilayahPage() {
           hamlets={hamlets}
           processing={processing}
           onEdit={(item) => openEdit('rw', item)}
+          onToggle={handleToggleRw}
           onDelete={handleDeleteRw}
         />
       )
@@ -147,6 +193,7 @@ export default function KelolaWilayahPage() {
         hamlets={hamlets}
         processing={processing}
         onEdit={(item) => openEdit('rt', item)}
+        onToggle={handleToggleRt}
         onDelete={handleDeleteRt}
       />
     )

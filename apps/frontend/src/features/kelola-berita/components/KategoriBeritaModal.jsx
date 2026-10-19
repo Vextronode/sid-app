@@ -8,6 +8,9 @@ import { useState } from 'react'
 import { Check, Pencil, Plus, Trash2, X } from 'lucide-react'
 
 import { categoryErrorMessage } from '@/features/kelola-berita/hooks/useNewsCategories'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { notifySuccess } from '@/shared/lib/toast'
 
 export default function KategoriBeritaModal({
   open,
@@ -23,6 +26,20 @@ export default function KategoriBeritaModal({
   const [editingId, setEditingId] = useState(null)
   const [editingName, setEditingName] = useState('')
   const [error, setError] = useState('')
+
+  const closeModal = () => {
+    setEditingId(null)
+    setEditingName('')
+    setNewName('')
+    setError('')
+    onClose()
+  }
+
+  // Nama kategori baru yang belum ditambahkan atau rename yang belum disimpan.
+  const requestClose = useConfirmDiscard(
+    open && (newName.trim() !== '' || (editingId !== null && editingName.trim() !== '')),
+    { disabled: processing, escapeClose: open ? closeModal : null },
+  )
 
   if (!open) return null
 
@@ -45,6 +62,7 @@ export default function KategoriBeritaModal({
     if (!name || processing) return
 
     if (await attempt(() => onAdd(name), 'Kategori gagal ditambahkan.')) {
+      notifySuccess(`Kategori "${name}" berhasil ditambahkan.`)
       setNewName('')
     }
   }
@@ -67,6 +85,7 @@ export default function KategoriBeritaModal({
     if (!name || processing) return
 
     if (await attempt(() => onRename(editingId, name), 'Kategori gagal diubah.')) {
+      notifySuccess(`Kategori berhasil diubah menjadi "${name}".`)
       cancelEdit()
     }
   }
@@ -74,19 +93,21 @@ export default function KategoriBeritaModal({
   const handleDelete = async (category) => {
     if (processing || !category.can_delete) return
 
-    if (!window.confirm(`Hapus kategori "${category.name}"?`)) return
+    if (
+      !(await confirmDialog({
+        title: `Hapus kategori "${category.name}"?`,
+        message: 'Tindakan ini tidak dapat dibatalkan.',
+        confirmLabel: 'Hapus',
+      }))
+    )
+      return
 
-    await attempt(() => onDelete(category.id), 'Kategori gagal dihapus.')
+    if (await attempt(() => onDelete(category.id), 'Kategori gagal dihapus.')) {
+      notifySuccess(`Kategori "${category.name}" berhasil dihapus.`)
+    }
   }
 
-  const handleClose = () => {
-    if (processing) return
-
-    cancelEdit()
-    setNewName('')
-    setError('')
-    onClose()
-  }
+  const handleClose = () => requestClose(closeModal)
 
   return (
     <div className="sid-berita-modal-overlay">

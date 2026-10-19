@@ -51,7 +51,8 @@ src/
   components/
     layout/               MainLayout, OfficialLayout, OperatorDesaLayout, WargaLayout,
                           AdminLayout, AppHeader, SiteFooter, PublicPageHead, ScrollToTop
-    ui/                   Button, Input, StatusBadge, OverdueBadge, SimplePagination, PageLoader, NewsCard
+    ui/                   Button, Input, StatusBadge, OverdueBadge, SimplePagination, PageNumbers,
+                          PageSizeSelect, usePageSize, pageRange, PageLoader, NewsCard
   constants/              suratStatus
   features/
     auth/                 AuthContext (patchUser, pemeriksaan role_forbidden), form login/register,
@@ -143,6 +144,12 @@ Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, n
 ### 6.4 Web Push
 `useWebPushSubscription` + `WebPushControls`: meminta izin, `PushManager.subscribe()` dengan `VITE_VAPID_PUBLIC_KEY`, lalu `POST /api/push-subscriptions`; menonaktifkan memanggil `DELETE`. `push-handler.js` menampilkan notifikasi dan membuka URL same-origin saat diklik.
 
+### 6.5 Daftar berhalaman
+Bar pagination memakai `PageNumbers` (jendela tiga nomor bergeser dengan elipsis, `pageWindow.js`), teks rentang `formatPageRange` ("1–50 dari 266 data"), dan `PageSizeSelect`. Pilihan baris per halaman (10/25/50; Kelola Berita 6/12/24) disimpan per daftar oleh `usePageSize` di `localStorage` (`sid-page-size:<daftar>`) dan dikirim sebagai `per_page` untuk daftar yang berpaginasi di server; mengganti pilihan kembali ke halaman 1.
+
+### 6.6 Surat Saya
+`MyLettersList` dipakai halaman Surat Saya pejabat (`/admin/surat-saya`) dan warga (`/daftar-surat-saya`): filter status dengan jumlah dari `GET /letters/summary?scope=mine`, dan jalur tahapan per surat (Diajukan → RT → Desa → Terbit) yang dihitung `letterProgress.js` dari `status`, `current_step`, dan `rejected_at_step`. Halaman ajukan surat pejabat memakai `LetterTypePicker` (kartu jenis surat) sebelum `DynamicSuratForm`.
+
 ---
 
 ## 7. Design System
@@ -178,3 +185,4 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 | 1.0 | - | Penyusunan awal |
 | 1.1 | - | Terminologi `flow_steps`, RW tanpa tombol keputusan, catatan scope Tier 2 |
 | 1.2 | 2026-10-16 | Diselaraskan ke source: stack aktual (React 19, Vite 8, Tailwind 4, PWA), struktur folder aktual, API client & format error Laravel, routing berbasis layout route + `roleNavigation`, komponen form dinamis/TTD/Terapkan/Web Push, token desain `pb-*` |
+| 1.3 | 2026-10-20 | Komponen daftar berhalaman (pilihan baris per halaman, teks rentang) dan Surat Saya (`MyLettersList`, `LetterTypePicker`) |

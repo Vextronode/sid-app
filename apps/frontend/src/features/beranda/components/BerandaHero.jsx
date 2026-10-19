@@ -44,7 +44,7 @@ export function BerandaHero({ content, village }) {
       className="bd-hero relative overflow-hidden bg-pb-paper bg-(image:--pb-contour-dark) bg-position-[left_40px]"
       style={imageUrl ? { '--bd-hero-image': `url("${imageUrl}")` } : undefined}
     >
-      <div className="bd-container grid items-center gap-x-16 gap-y-12 pt-12 pb-28 min-[901px]:grid-cols-[minmax(0,1fr)_min(440px,38%)] min-[901px]:pt-14 min-[901px]:pb-36">
+      <div className="bd-container grid items-center gap-x-16 gap-y-12 pt-12 pb-16 min-[901px]:grid-cols-[minmax(0,1fr)_min(440px,38%)] min-[901px]:pt-14 min-[901px]:pb-20">
         <div className="flex flex-col items-start">
           <span className="bd-rise mb-5 inline-flex items-center gap-2.5 text-base font-bold text-pb-laut before:h-0.75 before:w-7 before:rounded-full before:bg-pb-padi before:content-['']">
             {hero.greeting}

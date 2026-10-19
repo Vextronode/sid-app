@@ -23,7 +23,7 @@ export function BerandaPage() {
   const content = getBerandaContent()
   // Daftar petugas + WA (contacts) tidak dipakai lagi di beranda (K14);
   // hook dan endpoint-nya tetap.
-  const { village } = usePublicVillageInfo()
+  const { village, villageHead } = usePublicVillageInfo()
   const { hash } = useLocation()
 
   // Tautan Kontak dari halaman lain datang sebagai /#kontak.
@@ -34,11 +34,13 @@ export function BerandaPage() {
   return (
     <>
       <BerandaHero content={content} village={village} />
+      {/* Sambutan tepat setelah hero, sebelum kartu layanan (permintaan
+          pemilik, 19 Okt 2026). */}
+      <KadesWelcome content={content} village={village} head={villageHead} />
       <ServiceCards content={content} village={village} />
       <StatsBand content={content} />
       <NewsSection content={content} />
       <HowToSteps content={content} />
-      <KadesWelcome content={content} village={village} />
       <ContactSection content={content} village={village} />
     </>
   )

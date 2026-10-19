@@ -88,7 +88,7 @@ class EnsureUserHasRoleTest extends TestCase
         $response = $middleware->handle($request, $this->passthroughNext(), 'rt');
 
         $this->assertSame(401, $response->getStatusCode());
-        $this->assertSame('Unauthenticated.', json_decode($response->getContent(), true)['message']);
+        $this->assertSame('Sesi Anda telah berakhir. Silakan masuk kembali.', json_decode($response->getContent(), true)['message']);
     }
 
     #[Test]

@@ -91,7 +91,7 @@ function getApiErrorMessage(error) {
     }
   }
 
-  return response?.message ?? error?.message ?? 'Terjadi kesalahan saat memproses data wilayah.'
+  return response?.message ?? 'Terjadi kesalahan saat memproses data wilayah.'
 }
 
 export function WilayahMasterProvider({ children }) {

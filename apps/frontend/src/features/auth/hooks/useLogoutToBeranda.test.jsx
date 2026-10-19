@@ -4,9 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const auth = vi.hoisted(() => ({ logout: vi.fn(), isLoggingOut: false }))
 
+const { alertDialog } = vi.hoisted(() => ({ alertDialog: vi.fn() }))
+
 vi.mock('@/features/auth/contexts/AuthContext', () => ({
   useAuth: () => auth,
 }))
+vi.mock('@/shared/lib/dialog', () => ({ alertDialog }))
 
 import { useLogoutToBeranda } from './useLogoutToBeranda'
 
@@ -21,7 +24,6 @@ describe('useLogoutToBeranda', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     auth.isLoggingOut = false
-    vi.spyOn(window, 'alert').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -62,7 +64,7 @@ describe('useLogoutToBeranda', () => {
 
     await act(() => result.current.handleLogout())
 
-    expect(window.alert).toHaveBeenCalledWith('Server sibuk')
+    expect(alertDialog).toHaveBeenCalledWith(expect.objectContaining({ message: 'Server sibuk' }))
     expect(result.current.location.pathname).toBe(DASHBOARD)
   })
 

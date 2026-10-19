@@ -23,6 +23,12 @@ import { deleteUserPhoto, resetUserPassword, uploadUserPhoto } from '@/features/
 import { resetUserSignature } from '@/features/surat/api/signatureApi'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { formatPageRange } from '@/components/ui/pageRange'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { confirmDialog, promptDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 
 export default function ManajemenUserPage() {
   const {
@@ -36,6 +42,8 @@ export default function ManajemenUserPage() {
     setCurrentPage,
     totalPages,
     totalItems,
+    pageSize,
+    setPageSize,
     toggleStatus,
     updateUser,
     patchUser,
@@ -50,27 +58,53 @@ export default function ManajemenUserPage() {
   // Reset darurat tanda tangan akun. Tanda tangan lama tetap tersimpan
   // untuk dokumen yang sudah terbit; pemilik akun dapat mengisi yang baru.
   const handleResetSignature = async (user) => {
-    const reason = window.prompt(
-      `Alasan mereset tanda tangan ${user.name} (wajib, minimal 5 karakter):`,
-    )
+    const reason = await promptDialog({
+      title: `Atur ulang tanda tangan ${user.name}?`,
+      message: 'Tanda tangan lama tetap tersimpan untuk dokumen yang sudah terbit.',
+      label: 'Alasan atur ulang (minimal 5 karakter)',
+      minLength: 5,
+      confirmLabel: 'Atur ulang tanda tangan',
+    })
 
     if (reason === null) return
 
     try {
       const response = await resetUserSignature(user.id, reason.trim())
 
-      setSignatureNotice({
-        type: 'success',
-        text: response.data?.message ?? 'Tanda tangan direset.',
-      })
+      setSignatureNotice(null)
+      notifySuccess(response.data?.message ?? 'Tanda tangan berhasil diatur ulang.')
     } catch (requestError) {
       const errors = requestError?.response?.data?.errors
       const text =
         (errors && Object.values(errors).flat()[0]) ||
         requestError?.response?.data?.message ||
-        'Gagal mereset tanda tangan.'
+        'Gagal mengatur ulang tanda tangan.'
 
       setSignatureNotice({ type: 'error', text })
+    }
+  }
+
+  const handleToggleStatus = async (user) => {
+    const deactivating = user.is_active
+    const confirmed = await confirmDialog(
+      deactivating
+        ? {
+            title: `Nonaktifkan akun ${user.name}?`,
+            message: 'Pengguna tidak dapat masuk ke aplikasi sampai akunnya diaktifkan kembali.',
+            confirmLabel: 'Nonaktifkan',
+          }
+        : {
+            title: `Aktifkan akun ${user.name}?`,
+            message: 'Pengguna dapat masuk kembali ke aplikasi.',
+            confirmLabel: 'Aktifkan',
+            tone: 'primary',
+          },
+    )
+
+    if (!confirmed) return
+
+    if (await toggleStatus(user.id)) {
+      notifySuccess(`Akun ${user.name} berhasil ${deactivating ? 'dinonaktifkan' : 'diaktifkan'}.`)
     }
   }
 
@@ -80,9 +114,11 @@ export default function ManajemenUserPage() {
   const [copied, setCopied] = useState(false)
 
   const handleResetPassword = async (user) => {
-    const confirmed = window.confirm(
-      `Reset kata sandi ${user.name}? Kata sandi lama tidak dapat dipakai lagi.`,
-    )
+    const confirmed = await confirmDialog({
+      title: `Atur ulang kata sandi ${user.name}?`,
+      message: 'Kata sandi lama tidak dapat dipakai lagi.',
+      confirmLabel: 'Atur ulang kata sandi',
+    })
 
     if (!confirmed) return
 
@@ -94,7 +130,7 @@ export default function ManajemenUserPage() {
     } catch (requestError) {
       setSignatureNotice({
         type: 'error',
-        text: requestError?.response?.data?.message || 'Gagal mereset kata sandi.',
+        text: requestError?.response?.data?.message || 'Gagal mengatur ulang kata sandi.',
       })
     }
   }
@@ -119,7 +155,8 @@ export default function ManajemenUserPage() {
       const response = await request()
 
       patchUser(user.id, { photo_url: response.data?.data?.photo_url ?? null })
-      setSignatureNotice({ type: 'success', text: successText })
+      setSignatureNotice(null)
+      notifySuccess(successText)
     } catch (requestError) {
       const errors = requestError?.response?.data?.errors
       const text =
@@ -151,8 +188,15 @@ export default function ManajemenUserPage() {
     )
   }
 
-  const handleDeletePhoto = (user) => {
-    if (!window.confirm(`Hapus foto profil ${user.name}?`)) return
+  const handleDeletePhoto = async (user) => {
+    if (
+      !(await confirmDialog({
+        title: `Hapus foto profil ${user.name}?`,
+        message: 'Tindakan ini tidak dapat dibatalkan.',
+        confirmLabel: 'Hapus',
+      }))
+    )
+      return
 
     runPhoto(
       () => deleteUserPhoto(user.id),
@@ -167,6 +211,12 @@ export default function ManajemenUserPage() {
     setSearch(keyword)
   }
 
+  const closeEdit = () => setEditingUser(null)
+  const requestCloseEdit = useConfirmDiscard(
+    Boolean(editingUser) && editName !== (editingUser?.name ?? ''),
+    { escapeClose: editingUser ? closeEdit : null },
+  )
+
   const handleOpenEdit = (user) => {
     setEditingUser(user)
     setEditName(user.name ?? '')
@@ -179,6 +229,7 @@ export default function ManajemenUserPage() {
     setEditError('')
     try {
       await updateUser(editingUser.id, editName)
+      notifySuccess('Nama pengguna berhasil diperbarui.')
       setEditingUser(null)
     } catch (err) {
       setEditError(err?.response?.data?.message || 'Gagal memperbarui nama pengguna.')
@@ -327,13 +378,9 @@ export default function ManajemenUserPage() {
 
                       {/* Status */}
                       <td className="center">
-                        <span
-                          className={`sid-operator-status ${
-                            user.is_active ? 'active' : 'inactive'
-                          }`}
-                        >
+                        <StatusPill active={user.is_active}>
                           {user.is_active ? 'Aktif' : 'Nonaktif'}
-                        </span>
+                        </StatusPill>
                       </td>
 
                       {/* Aksi */}
@@ -376,7 +423,7 @@ export default function ManajemenUserPage() {
 
                           <button
                             type="button"
-                            onClick={() => toggleStatus(user.id)}
+                            onClick={() => handleToggleStatus(user)}
                             className="sid-operator-action toggle"
                             title={user.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                           >
@@ -387,8 +434,8 @@ export default function ManajemenUserPage() {
                             type="button"
                             onClick={() => handleResetSignature(user)}
                             className="sid-operator-action edit"
-                            title="Reset tanda tangan"
-                            aria-label={`Reset tanda tangan ${user.name}`}
+                            title="Atur ulang tanda tangan"
+                            aria-label={`Atur ulang tanda tangan ${user.name}`}
                           >
                             <Eraser size={16} />
                           </button>
@@ -399,8 +446,8 @@ export default function ManajemenUserPage() {
                               type="button"
                               onClick={() => handleResetPassword(user)}
                               className="sid-operator-action edit"
-                              title="Reset kata sandi"
-                              aria-label={`Reset kata sandi ${user.name}`}
+                              title="Atur ulang kata sandi"
+                              aria-label={`Atur ulang kata sandi ${user.name}`}
                             >
                               <KeyRound size={16} />
                             </button>
@@ -416,9 +463,10 @@ export default function ManajemenUserPage() {
 
           {/* Pagination */}
           <div className="sid-operator-pagination">
-            <p>
-              Menampilkan {data.length} dari {totalItems} pengguna
-            </p>
+            <div className="sid-pagination-meta">
+              <p>{formatPageRange(currentPage, pageSize, totalItems, 'pengguna')}</p>
+              <PageSizeSelect value={pageSize} onChange={setPageSize} />
+            </div>
 
             <div>
               <button
@@ -510,7 +558,7 @@ export default function ManajemenUserPage() {
               <button
                 type="button"
                 className="sid-button sid-button-outline"
-                onClick={() => setEditingUser(null)}
+                onClick={() => requestCloseEdit(closeEdit)}
               >
                 Batal
               </button>
