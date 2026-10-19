@@ -4,6 +4,9 @@ import { Power, Save } from 'lucide-react'
 
 import { getLetterTypes, updateLetterType } from '../api/letterTypeApi'
 import { describeLetterTypeOutput } from '../utils/letterTypeConfig'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
 
 const ASSIGNED_ROLE_OPTIONS = [
   ['', 'Tidak ditentukan'],
@@ -12,9 +15,9 @@ const ASSIGNED_ROLE_OPTIONS = [
 ]
 
 const STATUS_BADGES = {
-  aktif: ['Aktif', 'sid-status-approved'],
-  dinonaktifkan: ['Nonaktif', 'sid-status-rejected'],
-  draft: ['Draft', 'sid-status-default'],
+  aktif: ['Aktif', 'active'],
+  dinonaktifkan: ['Nonaktif', 'inactive'],
+  draft: ['Draft', 'warning'],
 }
 
 function getResponseData(response) {
@@ -37,7 +40,6 @@ export default function LetterTypeSettingsPanel() {
   const [savingId, setSavingId] = useState(null)
   const [togglingId, setTogglingId] = useState(null)
   const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
 
   const loadLetterTypes = useCallback(async () => {
     setLoading(true)
@@ -80,7 +82,6 @@ export default function LetterTypeSettingsPanel() {
     const draft = drafts[letterType.id]
     setSavingId(letterType.id)
     setError('')
-    setMessage('')
 
     try {
       const response = await updateLetterType(letterType.id, {
@@ -91,7 +92,7 @@ export default function LetterTypeSettingsPanel() {
       setLetterTypes((current) =>
         current.map((type) => (type.id === letterType.id ? { ...type, ...updatedType } : type)),
       )
-      setMessage(`Konfigurasi ${letterType.name} berhasil disimpan.`)
+      notifySuccess(`Konfigurasi ${letterType.name} berhasil disimpan.`)
     } catch (requestError) {
       setError(getRequestErrorMessage(requestError, 'Gagal menyimpan konfigurasi jenis surat.'))
     } finally {
@@ -101,9 +102,25 @@ export default function LetterTypeSettingsPanel() {
 
   const toggleLetterType = async (letterType) => {
     const nextActive = !letterType.is_active
+    const confirmed = await confirmDialog(
+      nextActive
+        ? {
+            title: `Aktifkan ${letterType.name}?`,
+            message: 'Jenis surat ini akan tersedia untuk diajukan warga.',
+            confirmLabel: 'Aktifkan',
+            tone: 'primary',
+          }
+        : {
+            title: `Nonaktifkan ${letterType.name}?`,
+            message: 'Warga tidak dapat lagi mengajukan jenis surat ini.',
+            confirmLabel: 'Nonaktifkan',
+          },
+    )
+
+    if (!confirmed) return
+
     setTogglingId(letterType.id)
     setError('')
-    setMessage('')
 
     try {
       const response = await updateLetterType(letterType.id, { is_active: nextActive })
@@ -111,7 +128,7 @@ export default function LetterTypeSettingsPanel() {
       setLetterTypes((current) =>
         current.map((type) => (type.id === letterType.id ? { ...type, ...updatedType } : type)),
       )
-      setMessage(`${letterType.name} berhasil ${nextActive ? 'diaktifkan' : 'dinonaktifkan'}.`)
+      notifySuccess(`${letterType.name} berhasil ${nextActive ? 'diaktifkan' : 'dinonaktifkan'}.`)
     } catch (requestError) {
       setError(getRequestErrorMessage(requestError, 'Gagal mengubah status jenis surat.'))
     } finally {
@@ -133,11 +150,6 @@ export default function LetterTypeSettingsPanel() {
       {error && (
         <p className="sid-admin-alert sid-admin-alert-error" role="alert">
           {error}
-        </p>
-      )}
-      {message && (
-        <p className="sid-admin-alert sid-admin-alert-success" role="status">
-          {message}
         </p>
       )}
 
@@ -168,7 +180,7 @@ export default function LetterTypeSettingsPanel() {
               </tr>
             ) : (
               letterTypes.map((letterType) => {
-                const [statusText, statusClass] =
+                const [statusText, statusTone] =
                   STATUS_BADGES[letterType.status_label] ?? STATUS_BADGES.draft
                 const isDraft = letterType.status_label === 'draft'
 
@@ -179,7 +191,7 @@ export default function LetterTypeSettingsPanel() {
                       <small className="sid-admin-cell-meta">{letterType.code}</small>
                     </td>
                     <td>
-                      <span className={`sid-status-badge ${statusClass}`}>{statusText}</span>
+                      <StatusPill tone={statusTone}>{statusText}</StatusPill>
                     </td>
                     <td>{describeLetterTypeOutput(letterType)}</td>
                     <td>

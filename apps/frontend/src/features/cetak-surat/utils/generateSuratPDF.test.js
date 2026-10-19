@@ -47,10 +47,11 @@ describe('downloadSuratPDF', () => {
       ok: false,
       status: 403,
       statusText: 'Forbidden',
-      text: vi.fn().mockResolvedValue('Surat belum final'),
+      text: vi.fn().mockResolvedValue(JSON.stringify({ message: 'Surat belum final.' })),
     })
 
-    await expect(downloadSuratPDF({ id: 7 })).rejects.toThrow('403 Forbidden: Surat belum final')
+    // Pesan backend (Indonesia) yang dipakai, bukan "403 Forbidden: {...}".
+    await expect(downloadSuratPDF({ id: 7 })).rejects.toThrow('Surat belum final.')
     expect(window.URL.createObjectURL).not.toHaveBeenCalled()
   })
 })

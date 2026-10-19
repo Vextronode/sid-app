@@ -416,11 +416,11 @@ function SuratPreview({ suratId, status, isExpired = false }) {
 
         {canPreview
           ? showPreview
-            ? 'Sembunyikan Preview Surat'
-            : 'Lihat Preview Surat'
+            ? 'Sembunyikan Pratinjau Surat'
+            : 'Lihat Pratinjau Surat'
           : expired
-            ? 'Lihat Preview Surat'
-            : 'Preview tersedia setelah disetujui'}
+            ? 'Lihat Pratinjau Surat'
+            : 'Pratinjau tersedia setelah disetujui'}
       </button>
 
       {showPreview && (
@@ -429,7 +429,7 @@ function SuratPreview({ suratId, status, isExpired = false }) {
             <div className="sid-date-preview-loading">
               <div className="sid-date-preview-spinner" />
 
-              <p>Memuat preview surat...</p>
+              <p>Memuat pratinjau surat...</p>
             </div>
           )}
 
@@ -437,7 +437,7 @@ function SuratPreview({ suratId, status, isExpired = false }) {
             <div className="sid-date-preview-error">
               <FileText className="sid-date-preview-error-icon" />
 
-              <p>Gagal memuat preview surat</p>
+              <p>Gagal memuat pratinjau surat</p>
 
               <p className="sid-date-preview-error-description">Silakan coba lagi.</p>
 
@@ -463,7 +463,7 @@ function SuratPreview({ suratId, status, isExpired = false }) {
                 <div key={page.pageNumber} className="sid-date-preview-page">
                   <img
                     src={page.dataUrl}
-                    alt={`Preview halaman ${page.pageNumber}`}
+                    alt={`Pratinjau halaman ${page.pageNumber}`}
                     className="sid-date-preview-image"
                     draggable={false}
                   />

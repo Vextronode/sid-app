@@ -10,6 +10,8 @@ import { useLetters } from '@/features/surat/hooks/useLetters'
 import { useLetterTypes } from '@/features/surat/hooks/useLetterTypes'
 import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig'
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
 
 function toDetail(item) {
   return {
@@ -31,7 +33,6 @@ export default function SuratSayaPejabatPage() {
   const [page, setPage] = useState(1)
   const { letters, meta, loading, refresh: loadLetters } = useLetters({ page })
   const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
   const [applying, setApplying] = useState(false)
   const [selectedCode, setSelectedCode] = useState('')
   const [selectedSurat, setSelectedSurat] = useState(null)
@@ -56,18 +57,19 @@ export default function SuratSayaPejabatPage() {
 
   // Surat yang sudah disetujui adalah dokumen terbit, jadi tidak ditawarkan untuk dihapus.
   const handleDelete = async (item) => {
-    const confirmed = window.confirm(
-      `Hapus permohonan ${item.letter_type?.name ?? 'surat'} ini? Tindakan ini tidak dapat dibatalkan.`,
-    )
+    const confirmed = await confirmDialog({
+      title: `Hapus permohonan ${item.letter_type?.name ?? 'surat'}?`,
+      message: 'Tindakan ini tidak dapat dibatalkan.',
+      confirmLabel: 'Hapus',
+    })
 
     if (!confirmed) return
 
     setDeletingId(item.id)
-    setMessage('')
 
     try {
       await api.delete(`/api/letters/${item.id}`)
-      setMessage('Permohonan surat berhasil dihapus.')
+      notifySuccess('Permohonan surat berhasil dihapus.')
 
       // Baris terakhir di halaman ini terhapus: mundur satu halaman.
       if (letters.length === 1 && page > 1) setPage(page - 1)
@@ -82,7 +84,7 @@ export default function SuratSayaPejabatPage() {
 
   const handleSubmitted = async () => {
     closeForm()
-    setMessage('Permohonan surat berhasil dikirim.')
+    notifySuccess('Permohonan surat berhasil dikirim.')
     setPage(1)
     await loadLetters()
   }
@@ -158,21 +160,13 @@ export default function SuratSayaPejabatPage() {
               <button
                 type="button"
                 className="sid-btn sid-btn-primary inline-flex items-center gap-2"
-                onClick={() => {
-                  setMessage('')
-                  setApplying(true)
-                }}
+                onClick={() => setApplying(true)}
               >
                 <FilePlus size={16} />
                 Ajukan Surat
               </button>
             </div>
 
-            {message && (
-              <p className="sid-admin-alert sid-admin-alert-success" role="status">
-                {message}
-              </p>
-            )}
             {error && (
               <p className="sid-admin-alert sid-admin-alert-error" role="alert">
                 {error}

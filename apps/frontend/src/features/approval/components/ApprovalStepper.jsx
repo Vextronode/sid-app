@@ -24,7 +24,7 @@ import { SURAT_STATUS } from '@/constants/suratStatus'
 const STEPS = [
   {
     key: 'submit',
-    label: 'Submit',
+    label: 'Diajukan',
   },
   {
     key: 'rt',

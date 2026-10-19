@@ -7,6 +7,8 @@ import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { LetterExtrasPanel } from '@/features/surat/components/LetterExtrasPanel'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import { alertDialog } from '@/shared/lib/dialog'
 
 const FIELD_MAP = {
   noSurat: (s) => s?.letter_number ?? '-',
@@ -145,6 +147,25 @@ export default function SuratDetailModal({
 
   const canPreview = showPreview && surat && (!previewWhen || surat.status === previewWhen)
 
+  // Pratinjau dibuka di tab baru. Tab dibuka sebelum menunggu respons agar
+  // tidak diblokir browser; gagal → tab ditutup dan kartu peringatan tampil.
+  const handlePreview = async () => {
+    const tab = window.open('', '_blank')
+
+    try {
+      const url = await previewSuratPDF(surat)
+
+      if (tab) tab.location.href = url
+      else window.open(url, '_blank', 'noopener')
+    } catch (error) {
+      tab?.close()
+      alertDialog({
+        title: 'Pratinjau gagal',
+        message: getApiErrorMessage(error, 'Gagal memuat pratinjau surat.'),
+      })
+    }
+  }
+
   const handleApprove = async (response) => {
     if (onApprove) {
       await onApprove(response)
@@ -227,13 +248,9 @@ export default function SuratDetailModal({
             )}
 
             {canPreview && (
-              <button
-                type="button"
-                onClick={() => previewSuratPDF(surat)}
-                className="sid-modal-preview"
-              >
+              <button type="button" onClick={handlePreview} className="sid-modal-preview">
                 <Eye size={16} />
-                Lihat Dokumen (Preview)
+                Lihat Dokumen (Pratinjau)
               </button>
             )}
 

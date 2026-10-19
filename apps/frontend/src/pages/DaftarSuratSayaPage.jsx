@@ -17,6 +17,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { SimplePagination } from '@/components/ui/SimplePagination'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import { confirmDialog } from '@/shared/lib/dialog'
 
 // Nilai ?status= di URL -> status surat di backend.
 const STATUS_PARAM = {
@@ -54,9 +55,11 @@ export default function DaftarSuratSayaPage() {
 
   // Surat yang sudah disetujui adalah dokumen terbit, jadi tidak ditawarkan untuk dihapus.
   const handleDelete = async (item) => {
-    const confirmed = window.confirm(
-      `Hapus permohonan ${item.letter_type?.name ?? 'surat'} ini? Tindakan ini tidak dapat dibatalkan.`,
-    )
+    const confirmed = await confirmDialog({
+      title: `Hapus permohonan ${item.letter_type?.name ?? 'surat'}?`,
+      message: 'Tindakan ini tidak dapat dibatalkan.',
+      confirmLabel: 'Hapus',
+    })
 
     if (!confirmed) return
 

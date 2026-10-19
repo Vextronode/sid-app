@@ -33,6 +33,7 @@ import {
 
 import { loadPdfjs } from '@/lib/pdfjs'
 import { LetterValidityNote } from './LetterValidityNote'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // ==========================================
 // FIELD MAP
@@ -188,7 +189,7 @@ function SuratPreview({ surat }) {
     try {
       await downloadSuratPDF(surat)
     } catch (error) {
-      setDownloadError(error?.message || 'Gagal mengunduh surat.')
+      setDownloadError(getApiErrorMessage(error, 'Gagal mengunduh surat.'))
     } finally {
       setDownloading(false)
     }
@@ -393,11 +394,11 @@ function SuratPreview({ surat }) {
 
         {canPreview
           ? showPreview
-            ? 'Sembunyikan Preview'
-            : 'Lihat Dokumen (Preview)'
+            ? 'Sembunyikan Pratinjau'
+            : 'Lihat Dokumen (Pratinjau)'
           : isExpired
-            ? 'Lihat Dokumen (Preview)'
-            : 'Preview tersedia setelah surat disetujui'}
+            ? 'Lihat Dokumen (Pratinjau)'
+            : 'Pratinjau tersedia setelah surat disetujui'}
       </button>
 
       {showPreview && (
@@ -406,7 +407,7 @@ function SuratPreview({ surat }) {
             <div className="sid-preview-loading">
               <div className="sid-loading-spinner" />
 
-              <p>Memuat preview...</p>
+              <p>Memuat pratinjau...</p>
             </div>
           )}
 
@@ -414,7 +415,7 @@ function SuratPreview({ surat }) {
             <div className="sid-preview-error">
               <FileText size={32} />
 
-              <p>Gagal memuat preview surat.</p>
+              <p>Gagal memuat pratinjau surat.</p>
 
               <button
                 type="button"
