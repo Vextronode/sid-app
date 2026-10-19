@@ -1,0 +1,1112 @@
+/* =========================================================
+   surat-dokumen.css
+   - Menu unduh surat (DownloadSuratMenu): satu tombol, dua format.
+   - Tabel daftar surat pejabat + tombol aksi baris (LetterTable,
+     LetterRowActions).
+   - Popup detail surat "meja dokumen" untuk semua peran
+     (LetterDossierModal).
+   Semua warna lewat token --sid-* dari sid-global.css.
+   ========================================================= */
+
+/* ---------- Menu unduh ---------- */
+
+.sid-download-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  height: 2.5rem;
+  padding: 0 0.875rem 0 1rem;
+
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-download-trigger.primary,
+.sid-download-trigger.block {
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-download-trigger.primary:hover:not(:disabled),
+.sid-download-trigger.block:hover:not(:disabled) {
+  background: var(--sid-primary-hover);
+}
+
+.sid-download-trigger.block {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.sid-download-trigger.compact {
+  height: 2.125rem;
+  padding: 0 0.625rem 0 0.75rem;
+
+  background: var(--sid-primary-soft);
+  color: var(--sid-primary-hover);
+
+  font-size: 0.8125rem;
+}
+
+.sid-download-trigger.compact:hover:not(:disabled) {
+  border-color: var(--sid-primary);
+}
+
+.sid-download-trigger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sid-download-trigger:focus-visible,
+.sid-download-option:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+.sid-download-chevron {
+  opacity: 0.8;
+  transition: transform 0.15s ease;
+}
+
+.sid-download-trigger[aria-expanded='true'] .sid-download-chevron {
+  transform: rotate(180deg);
+}
+
+.sid-download-menu {
+  position: fixed;
+  z-index: 1000;
+
+  display: grid;
+  gap: 2px;
+
+  padding: 0.375rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+
+  background: var(--sid-surface-card);
+  box-shadow: var(--sid-shadow-lg);
+}
+
+.sid-download-option {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr;
+  align-items: center;
+  gap: 0.75rem;
+
+  width: 100%;
+  padding: 0.625rem;
+
+  border: 0;
+  border-radius: var(--radius-sm);
+
+  background: transparent;
+  color: var(--sid-text-primary);
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.sid-download-option:hover,
+.sid-download-option:focus-visible {
+  background: var(--sid-primary-soft);
+}
+
+.sid-download-option-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.25rem;
+  height: 2.25rem;
+
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-surface-page);
+  color: var(--sid-primary);
+}
+
+.sid-download-option-text {
+  display: grid;
+  gap: 2px;
+}
+
+.sid-download-option-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.sid-download-option-hint {
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-download-trigger,
+  .sid-download-chevron {
+    transition: none;
+  }
+}
+
+/* ---------- Tabel daftar surat & tombol aksi baris ---------- */
+
+.sid-letter-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.sid-letter-table {
+  width: 100%;
+  min-width: 52rem;
+
+  border-collapse: collapse;
+
+  color: var(--sid-text-secondary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.sid-letter-table th,
+.sid-letter-table td {
+  padding: 0.875rem 1.25rem;
+
+  text-align: left;
+  vertical-align: middle;
+}
+
+.sid-letter-table th {
+  border-bottom: 1px solid var(--sid-border);
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sid-letter-table tbody tr {
+  border-bottom: 1px solid var(--sid-border);
+
+  transition: background-color 0.15s ease;
+}
+
+.sid-letter-table tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.sid-letter-table tbody tr:hover {
+  background: color-mix(in srgb, var(--sid-primary-soft) 45%, transparent);
+}
+
+.sid-letter-table th.sid-letter-table-actions,
+.sid-letter-table td.sid-letter-table-actions {
+  text-align: right;
+}
+
+.sid-letter-table-number span {
+  color: var(--sid-text-primary);
+
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sid-letter-table-number small {
+  display: block;
+
+  margin-top: 0.125rem;
+
+  color: var(--sid-status-pending-text);
+
+  font-size: 0.75rem;
+}
+
+.sid-letter-table-applicant {
+  color: var(--sid-text-primary);
+
+  font-weight: 600;
+}
+
+.sid-letter-table-date {
+  white-space: nowrap;
+}
+
+.sid-letter-table-status {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.375rem;
+}
+
+.sid-letter-table td.sid-letter-table-message {
+  padding: 2.5rem 1.25rem;
+
+  color: var(--sid-text-muted);
+
+  text-align: center;
+}
+
+.sid-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.sid-row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+
+  height: 2.125rem;
+  padding: 0 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-row-action:hover:not(:disabled) {
+  border-color: var(--sid-primary);
+  color: var(--sid-primary);
+}
+
+/* "Proses": giliran pengguna memutuskan surat ini. */
+.sid-row-action.primary {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-row-action.primary:hover:not(:disabled) {
+  border-color: var(--sid-primary-hover);
+
+  background: var(--sid-primary-hover);
+  color: var(--sid-on-primary);
+}
+
+.sid-row-action.danger {
+  border-color: transparent;
+
+  background: transparent;
+  color: var(--sid-danger);
+}
+
+.sid-row-action.danger:hover:not(:disabled) {
+  border-color: var(--sid-danger-soft);
+
+  background: var(--sid-danger-soft);
+  color: var(--sid-danger-hover);
+}
+
+.sid-row-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sid-row-action:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-letter-table tbody tr,
+  .sid-row-action {
+    transition: none;
+  }
+}
+
+/* Layar sempit: setiap baris menjadi kartu agar kolom Aksi tidak
+   terpotong di luar layar. */
+@media (max-width: 767px) {
+  .sid-letter-table {
+    min-width: 0;
+  }
+
+  .sid-letter-table thead {
+    display: none;
+  }
+
+  .sid-letter-table,
+  .sid-letter-table tbody {
+    display: block;
+  }
+
+  .sid-letter-table tbody tr {
+    display: grid;
+    gap: 0.5rem;
+
+    padding: 1rem;
+  }
+
+  .sid-letter-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .sid-letter-table tbody tr:hover {
+    background: transparent;
+  }
+
+  .sid-letter-table tbody td {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+
+    padding: 0;
+  }
+
+  .sid-letter-table tbody td[data-label]::before {
+    content: attr(data-label);
+
+    color: var(--sid-text-muted);
+
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .sid-letter-table tbody td.sid-letter-table-actions {
+    grid-template-columns: minmax(0, 1fr);
+
+    margin-top: 0.25rem;
+  }
+
+  .sid-letter-table tbody td.sid-letter-table-actions::before {
+    display: none;
+  }
+
+  .sid-letter-table .sid-row-actions > * {
+    flex: 1;
+  }
+
+  .sid-letter-table tbody td.sid-letter-table-message {
+    display: block;
+
+    padding: 2rem 1rem;
+  }
+}
+
+/* ---------- Popup detail surat ("meja dokumen") ----------
+   Kiri: surat sebagai fokus utama di atas bidang abu-abu.
+   Kanan: berkas permohonan. Header & footer tetap; isi bergulir. */
+
+.sid-dossier-overlay {
+  padding: 1.5rem;
+}
+
+.sid-dossier {
+  --sid-dossier-desk: color-mix(in srgb, var(--sid-surface-page) 82%, var(--sid-border));
+  --sid-dossier-ok: #3b6d11;
+
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+
+  width: 100%;
+  max-width: 74rem;
+  height: min(92vh, 60rem);
+
+  overflow: hidden;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+  box-shadow:
+    0 8px 30px rgba(44, 44, 42, 0.12),
+    0 24px 64px rgba(44, 44, 42, 0.16);
+}
+
+.sid-dossier-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+
+  padding: 1.25rem 1.5rem;
+
+  border-bottom: 1px solid var(--sid-border);
+}
+
+.sid-dossier-heading h2 {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.sid-dossier-heading-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+
+  margin-top: 0.5rem;
+}
+
+.sid-dossier-number {
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sid-dossier-close {
+  flex-shrink: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.5rem;
+  height: 2.5rem;
+
+  border: 0;
+  border-radius: 999px;
+
+  background: transparent;
+  color: var(--sid-text-secondary);
+
+  cursor: pointer;
+}
+
+.sid-dossier-close:hover {
+  background: var(--sid-surface-page);
+  color: var(--sid-text-primary);
+}
+
+.sid-dossier-close:focus-visible,
+.sid-dossier-button-quiet:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+.sid-dossier-state {
+  margin: 0;
+  padding: 2rem 1.5rem;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.9375rem;
+}
+
+.sid-dossier-state-error {
+  color: var(--sid-danger);
+}
+
+.sid-dossier-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 23.5rem;
+
+  min-height: 0;
+}
+
+.sid-dossier-document {
+  min-height: 0;
+  overflow-y: auto;
+
+  padding: 1.5rem;
+
+  background: var(--sid-dossier-desk);
+}
+
+/* Pratinjau di atas meja: tanpa bingkai dan tanpa gulir ganda. */
+.sid-dossier-document .sid-preview-container {
+  max-width: 52rem;
+  margin: 0 auto;
+
+  overflow: visible;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sid-dossier-document .sid-pdf-container {
+  max-height: none;
+  overflow: visible;
+
+  padding: 0;
+
+  background: transparent;
+}
+
+.sid-dossier-document .sid-pdf-canvas {
+  box-shadow:
+    0 1px 2px rgba(44, 44, 42, 0.08),
+    0 12px 32px rgba(44, 44, 42, 0.14);
+}
+
+.sid-dossier-document .sid-preview-loading,
+.sid-dossier-document .sid-preview-error {
+  min-height: 24rem;
+
+  background: transparent;
+}
+
+.sid-dossier-document-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  min-height: 100%;
+  padding: 2rem;
+
+  color: var(--sid-text-secondary);
+
+  text-align: center;
+}
+
+.sid-dossier-document-empty p {
+  max-width: 34ch;
+  margin: 0;
+
+  font-size: 0.9375rem;
+}
+
+.sid-dossier-document-empty .sid-dossier-document-empty-title {
+  color: var(--sid-text-primary);
+
+  font-weight: 600;
+}
+
+.sid-dossier-panel {
+  min-height: 0;
+  overflow-y: auto;
+
+  padding: 0 1.5rem 1.5rem;
+
+  border-left: 1px solid var(--sid-border);
+}
+
+.sid-dossier-section,
+.sid-dossier-extras .sid-modal-note {
+  margin: 0;
+  padding: 1.25rem 0;
+
+  border: 0;
+  border-bottom: 1px solid var(--sid-border);
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sid-dossier-extras > :last-child,
+.sid-dossier-panel > .sid-dossier-section:last-child {
+  border-bottom: 0;
+}
+
+.sid-dossier-section h3,
+.sid-dossier-extras .sid-modal-note-label {
+  margin: 0 0 0.75rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.sid-dossier-muted {
+  margin: 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.sid-dossier-facts {
+  display: grid;
+  gap: 0.625rem;
+
+  margin: 0;
+}
+
+.sid-dossier-facts > div {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.sid-dossier-facts dt {
+  color: var(--sid-text-muted);
+
+  font-size: 0.8125rem;
+}
+
+.sid-dossier-facts dd {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.sid-dossier-quote {
+  margin: 0;
+  padding-left: 0.75rem;
+
+  border-left: 3px solid var(--sid-border);
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.sid-dossier-quote.danger {
+  border-left-color: var(--sid-danger);
+
+  color: var(--sid-text-primary);
+}
+
+/* Riwayat persetujuan dan tahapan alur memang berurutan, jadi tampil
+   sebagai garis waktu. Titik: selesai (hijau), sedang diproses (biru),
+   menunggu (kosong), ditolak (merah). */
+.sid-dossier-timeline {
+  display: grid;
+  gap: 1rem;
+
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.sid-dossier-timeline li {
+  position: relative;
+
+  padding-left: 1.5rem;
+}
+
+.sid-dossier-timeline li::before {
+  content: '';
+
+  position: absolute;
+  top: 0.3rem;
+  left: 0;
+
+  box-sizing: border-box;
+  width: 0.625rem;
+  height: 0.625rem;
+
+  border: 2px solid var(--sid-border);
+  border-radius: 999px;
+
+  background: var(--sid-surface-card);
+}
+
+.sid-dossier-timeline li.done::before {
+  border-color: var(--sid-dossier-ok);
+
+  background: var(--sid-dossier-ok);
+  box-shadow: 0 0 0 3px var(--sid-status-done-bg);
+}
+
+.sid-dossier-timeline li.current::before {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-primary);
+  box-shadow: 0 0 0 3px var(--sid-primary-soft);
+}
+
+.sid-dossier-timeline li.rejected::before {
+  border-color: var(--sid-danger);
+
+  background: var(--sid-danger);
+  box-shadow: 0 0 0 3px var(--sid-danger-soft);
+}
+
+.sid-dossier-timeline li.waiting .sid-dossier-timeline-title {
+  color: var(--sid-text-muted);
+}
+
+.sid-dossier-timeline li:not(:last-child)::after {
+  content: '';
+
+  position: absolute;
+  top: 1.25rem;
+  bottom: -0.875rem;
+  left: calc(0.3125rem - 1px);
+
+  width: 2px;
+
+  background: var(--sid-border);
+}
+
+.sid-dossier-timeline-title {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.sid-dossier-timeline-title span {
+  color: var(--sid-text-secondary);
+
+  font-weight: 400;
+}
+
+.sid-dossier-timeline-meta {
+  margin: 0.125rem 0 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.8125rem;
+}
+
+.sid-dossier-timeline-note {
+  margin: 0.375rem 0 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.8125rem;
+  font-style: italic;
+}
+
+/* Panel tambahan (isian, tanda tangan, lampiran, perubahan data)
+   mengikuti gaya berkas, tanpa kotak biru. */
+.sid-dossier-extras .sid-modal-note-text {
+  color: var(--sid-text-primary);
+}
+
+.sid-dossier-extras .sid-modal-note-text strong {
+  color: var(--sid-text-secondary);
+
+  font-weight: 500;
+}
+
+.sid-dossier-extras ul.sid-modal-note-text {
+  display: grid;
+  gap: 0.375rem;
+
+  padding: 0;
+
+  list-style: none;
+}
+
+.sid-dossier-extras .sid-warning-box {
+  margin: 1rem 0 0;
+}
+
+.sid-dossier-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+
+  padding: 0.875rem 1.5rem;
+
+  border-top: 1px solid var(--sid-border);
+
+  background: var(--sid-surface-card);
+}
+
+.sid-dossier-hint {
+  flex: 1 1 16rem;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.sid-dossier-hint:empty {
+  display: none;
+}
+
+.sid-dossier-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+
+  margin-left: auto;
+}
+
+.sid-dossier-button-quiet {
+  height: 2.5rem;
+  padding: 0 1rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.sid-dossier-button-quiet:hover {
+  background: var(--sid-surface-page);
+}
+
+@media (max-width: 900px) {
+  .sid-dossier-overlay {
+    padding: 0;
+  }
+
+  .sid-dossier {
+    height: 100%;
+
+    border: 0;
+    border-radius: 0;
+  }
+
+  .sid-dossier-body {
+    display: flex;
+    flex-direction: column;
+
+    overflow-y: auto;
+  }
+
+  .sid-dossier-panel,
+  .sid-dossier-document {
+    flex-shrink: 0;
+  }
+
+  .sid-dossier-panel {
+    order: -1;
+
+    overflow: visible;
+
+    padding: 0 1rem 0.5rem;
+
+    border-left: 0;
+  }
+
+  .sid-dossier-document {
+    overflow: visible;
+
+    padding: 1rem;
+  }
+
+  .sid-dossier-header {
+    padding: 1rem;
+  }
+
+  .sid-dossier-heading h2 {
+    font-size: 1.0625rem;
+  }
+
+  .sid-dossier-footer {
+    padding: 0.75rem 1rem;
+  }
+
+  .sid-dossier-hint {
+    flex-basis: 100%;
+  }
+
+  .sid-dossier-footer-actions {
+    flex: 1;
+
+    margin-left: 0;
+  }
+
+  .sid-dossier-footer-actions > * {
+    flex: 1;
+  }
+}
+
+/* ---------- Aksi keputusan approver di footer ---------- */
+
+.sid-decision-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sid-decision-approve,
+.sid-decision-reject,
+.sid-decision-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  height: 2.5rem;
+  padding: 0 1rem;
+
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sid-decision-approve {
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-decision-approve:hover:not(:disabled) {
+  background: var(--sid-primary-hover);
+}
+
+.sid-decision-reject {
+  border-color: var(--sid-danger);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-danger);
+}
+
+.sid-decision-reject:hover:not(:disabled) {
+  background: var(--sid-danger-soft);
+}
+
+.sid-decision-reject.solid {
+  background: var(--sid-danger);
+  color: #fff;
+}
+
+.sid-decision-reject.solid:hover:not(:disabled) {
+  border-color: var(--sid-danger-hover);
+
+  background: var(--sid-danger-hover);
+}
+
+.sid-decision-cancel {
+  border-color: var(--sid-border);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+}
+
+.sid-decision-cancel:hover:not(:disabled) {
+  background: var(--sid-surface-page);
+}
+
+.sid-decision-approve:disabled,
+.sid-decision-reject:disabled,
+.sid-decision-cancel:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sid-decision-approve:focus-visible,
+.sid-decision-reject:focus-visible,
+.sid-decision-cancel:focus-visible,
+.sid-decision-reject-box textarea:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+/* Kotak alasan penolakan membentang selebar footer. */
+.sid-dossier-footer-actions:has(.sid-decision-reject-box) {
+  flex: 1 1 100%;
+}
+
+.sid-decision-reject-box {
+  display: grid;
+  gap: 0.5rem;
+
+  width: 100%;
+}
+
+.sid-decision-reject-box label {
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.sid-decision-reject-box textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  padding: 0.625rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.5;
+
+  resize: vertical;
+}
+
+.sid-decision-reject-box .sid-decision-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .sid-decision-actions {
+    flex: 1;
+  }
+
+  .sid-decision-actions > * {
+    flex: 1;
+  }
+}
+
+/* Kartu "Surat Saya" pemohon: tombol membentang penuh di layar sempit. */
+@media (max-width: 639px) {
+  .sid-my-letters-actions .sid-row-actions {
+    width: 100%;
+  }
+
+  .sid-my-letters-actions .sid-row-actions > * {
+    flex: 1;
+  }
+}
