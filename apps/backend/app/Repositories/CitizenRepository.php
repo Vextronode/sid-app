@@ -16,10 +16,11 @@ class CitizenRepository
     }
 
     /**
-     * Daftar warga satu desa, berpaginasi; pencarian nama dan filter RT
-     * dijalankan di database.
+     * Daftar warga satu desa, berpaginasi; pencarian nama dan filter
+     * Dusun/RW/RT dijalankan di database. RW dan Dusun dibaca lewat RT
+     * warga agar mengikuti hierarki wilayah.
      *
-     * @param  array{search?: ?string, rt_id?: int|string|null, per_page?: int|string|null}  $filters
+     * @param  array{search?: ?string, hamlet_id?: int|string|null, rw_id?: int|string|null, rt_id?: int|string|null, per_page?: int|string|null}  $filters
      */
     public function paginateWithWilayah(string $villageId, array $filters = []): LengthAwarePaginator
     {
@@ -30,6 +31,14 @@ class CitizenRepository
             ->when($search !== '', fn ($query) => $query->whereRaw(
                 'LOWER(name) LIKE ?',
                 ['%'.addcslashes(mb_strtolower($search), '\\%_').'%'],
+            ))
+            ->when(! empty($filters['hamlet_id']), fn ($query) => $query->whereHas(
+                'rt.rw',
+                fn ($rwQuery) => $rwQuery->where('hamlet_id', $filters['hamlet_id']),
+            ))
+            ->when(! empty($filters['rw_id']), fn ($query) => $query->whereHas(
+                'rt',
+                fn ($rtQuery) => $rtQuery->where('rw_id', $filters['rw_id']),
             ))
             ->when(! empty($filters['rt_id']), fn ($query) => $query->where('rt_id', $filters['rt_id']))
             ->with(['rt', 'rw', 'hamlet', 'village', 'occupation', 'family'])
