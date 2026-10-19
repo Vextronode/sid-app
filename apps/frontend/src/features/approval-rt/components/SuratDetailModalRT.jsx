@@ -37,13 +37,7 @@ export default function SuratDetailModalRT({
       onClose={onClose}
       surat={surat}
       notFound={notFound}
-      subtitle="Surat masuk RT"
-      decisionLevels={[
-        {
-          levels: ['rt'],
-          title: 'Keputusan RT',
-        },
-      ]}
+      viewerRole="rt"
       currentUserRole={currentUserRole}
       apiRole={currentUserRole}
       onApprove={onApprove}

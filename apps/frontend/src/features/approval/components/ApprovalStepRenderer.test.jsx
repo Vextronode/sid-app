@@ -51,7 +51,7 @@ describe('ApprovalStepRenderer regression', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Setuju' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Setujui & terbitkan' })).toBeTruthy()
   })
 
   it.each([
@@ -69,7 +69,7 @@ describe('ApprovalStepRenderer regression', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Setuju' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Setujui & terbitkan' }))
 
     await waitFor(() =>
       expect(submitDecision).toHaveBeenCalledWith('kades', 'letter-1', 'approved'),
@@ -129,13 +129,13 @@ describe('ApprovalStepRenderer regression', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Setuju' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Setujui & terbitkan' }))
 
     await waitFor(() =>
       expect(confirmDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Setujui dan terbitkan surat?',
-          confirmLabel: 'Setujui & Terbitkan',
+          confirmLabel: 'Setujui & terbitkan',
         }),
       ),
     )

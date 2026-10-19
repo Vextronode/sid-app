@@ -11,17 +11,7 @@ export default function SuratDetailModalKadus({ suratId, onClose }) {
       onClose={onClose}
       surat={surat}
       notFound={notFound}
-      subtitle="Surat warga"
-      decisionLevels={[
-        {
-          levels: ['rt'],
-          title: 'Keputusan RT',
-        },
-        {
-          levels: ['kepala_desa', 'sekretaris_desa'],
-          title: 'Keputusan Kepala Desa',
-        },
-      ]}
+      viewerRole="kadus"
     />
   )
 }

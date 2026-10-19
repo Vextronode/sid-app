@@ -21,10 +21,9 @@ import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink
 import { useApprovalLetterList } from '@/features/approval/hooks/useApprovalLetterList'
 import SuratDetailModalKadus from '@/features/approval-kadus/components/SuratDetailModalKadus'
 
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { OverdueBadge } from '@/components/ui/OverdueBadge'
-
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { LetterTable } from '@/features/surat/components/LetterTable'
+import { LetterRowActions } from '@/features/surat/components/LetterRowActions'
 
 import { SURAT_STATUS_OPTIONS } from '@/constants/suratStatus'
 import { PageNumbers } from '@/components/ui/PageNumbers'
@@ -156,88 +155,11 @@ export default function KadusListPage() {
               ====================================== */}
 
           <div className="sid-card rw-table-card">
-            <table className="rw-table">
-              <thead>
-                <tr className="rw-table-header">
-                  <th>No. Surat</th>
-
-                  <th>Pemohon</th>
-
-                  <th>Jenis</th>
-
-                  <th>Tanggal</th>
-
-                  <th>Status</th>
-
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="rw-table-message">
-                      Memuat data surat...
-                    </td>
-                  </tr>
-                ) : paginatedData.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="rw-table-message">
-                      Belum ada surat.
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedData.map((s) => (
-                    <tr key={s.id} className="rw-table-row">
-                      {/* NO SURAT */}
-
-                      <td className="rw-letter-number">#{s.letter_number ?? '-'}</td>
-
-                      {/* PEMOHON */}
-
-                      <td className="rw-table-center">{s.applicant_name ?? '-'}</td>
-
-                      {/* JENIS */}
-
-                      <td className="rw-table-center">{s.letter_type?.name ?? '-'}</td>
-
-                      {/* TANGGAL */}
-
-                      <td className="rw-table-date">
-                        {s.submitted_at
-                          ? new Date(s.submitted_at).toLocaleDateString('id-ID', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                            })
-                          : '-'}
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td className="rw-table-center">
-                        <div className="flex flex-col items-center gap-1.5">
-                          <StatusBadge status={s.status} />
-                          <OverdueBadge isOverdue={s.is_overdue} />
-                        </div>
-                      </td>
-
-                      {/* AKSI */}
-
-                      <td className="rw-table-center">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDetail(s)}
-                          className="rw-action-button"
-                        >
-                          Lihat
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+            <LetterTable
+              letters={paginatedData}
+              loading={loading}
+              renderActions={(s) => <LetterRowActions surat={s} onOpen={handleOpenDetail} />}
+            />
 
             {/* ==================================
                 PAGINATION DESKTOP
@@ -333,40 +255,11 @@ export default function KadusListPage() {
           {/* MOBILE TABLE */}
 
           <div className="sid-card rw-mobile-table-card">
-            <div className="rw-mobile-table-header">
-              <span>No.Surat</span>
-
-              <span>Pemohon</span>
-
-              <span>Jenis</span>
-
-              <span>Tanggal</span>
-            </div>
-
-            {loading ? (
-              <p className="rw-mobile-message">Memuat...</p>
-            ) : paginatedData.length === 0 ? (
-              <p className="rw-mobile-message">Belum ada surat.</p>
-            ) : (
-              paginatedData.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => handleOpenDetail(s)}
-                  className="rw-mobile-row"
-                >
-                  <span>{s.letter_number ?? '-'}</span>
-
-                  <span className="rw-mobile-applicant">{s.applicant_name ?? '-'}</span>
-
-                  <span>{s.letter_type?.name ?? '-'}</span>
-
-                  <span className="rw-mobile-date">
-                    {s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID') : '-'}
-                  </span>
-                </button>
-              ))
-            )}
+            <LetterTable
+              letters={paginatedData}
+              loading={loading}
+              renderActions={(s) => <LetterRowActions surat={s} onOpen={handleOpenDetail} />}
+            />
           </div>
 
           {/* MOBILE PAGINATION */}
