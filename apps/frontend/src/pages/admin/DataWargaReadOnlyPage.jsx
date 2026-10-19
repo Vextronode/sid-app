@@ -4,6 +4,7 @@ import { getCitizens } from '@/features/data-warga/api'
 import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { FAMILY_ROLE_LABELS, labelOf } from '@/shared/lib/labels'
 
 const ITEMS_PER_PAGE = 10
 
@@ -146,7 +147,7 @@ export default function DataWargaReadOnlyPage() {
                           .join(', ') || '-'}
                       </td>
                       <td className="center">{warga.family?.no_kk_masked ?? '-'}</td>
-                      <td className="center">{warga.family_role?.replaceAll('_', ' ') ?? '-'}</td>
+                      <td className="center">{labelOf(FAMILY_ROLE_LABELS, warga.family_role)}</td>
                       <td className="center">{warga.occupation ?? '-'}</td>
                       <td>{warga.address ?? '-'}</td>
                     </tr>

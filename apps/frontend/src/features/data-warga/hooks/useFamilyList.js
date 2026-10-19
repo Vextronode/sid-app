@@ -1,11 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useState } from 'react'
-import {
-  createFamily,
-  deleteFamily,
-  getFamilies,
-  updateFamily,
-} from '../api'
+import { createFamily, deleteFamily, getFamilies, getFamilyOptions, updateFamily } from '../api'
 
 export function useFamilyList() {
   const [families, setFamilies] = useState([])
@@ -15,6 +10,8 @@ export function useFamilyList() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+  // Pilihan KK di form warga: semua KK, terpisah dari daftar berhalaman.
+  const [options, setOptions] = useState([])
 
   const loadFamilies = useCallback(async () => {
     setLoading(true)
@@ -35,9 +32,25 @@ export function useFamilyList() {
     }
   }, [currentPage, search])
 
+  const loadOptions = useCallback(async () => {
+    try {
+      const response = await getFamilyOptions()
+      const result = response.data?.data
+      setOptions(Array.isArray(result) ? result : [])
+    } catch {
+      setOptions([])
+    }
+  }, [])
+
   useEffect(() => {
     loadFamilies()
   }, [loadFamilies])
+
+  useEffect(() => {
+    loadOptions()
+  }, [loadOptions])
+
+  const reloadAll = () => Promise.all([loadFamilies(), loadOptions()])
 
   const searchFamilies = (value) => {
     setSearch(value)
@@ -46,21 +59,22 @@ export function useFamilyList() {
 
   const addFamily = async (payload) => {
     await createFamily(payload)
-    await loadFamilies()
+    await reloadAll()
   }
 
   const editFamily = async (id, payload) => {
     await updateFamily(id, payload)
-    await loadFamilies()
+    await reloadAll()
   }
 
   const removeFamily = async (id) => {
     await deleteFamily(id)
-    await loadFamilies()
+    await reloadAll()
   }
 
   return {
     families,
+    options,
     loading,
     error,
     totalItems,
@@ -71,6 +85,6 @@ export function useFamilyList() {
     addFamily,
     editFamily,
     removeFamily,
-    reload: loadFamilies,
+    reload: reloadAll,
   }
 }

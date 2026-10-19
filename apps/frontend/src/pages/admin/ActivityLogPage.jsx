@@ -86,8 +86,8 @@ function ChangeList({ log }) {
     <ul className="sid-activity-log-changes">
       {entries.map(([field, change]) => (
         <li key={field}>
-          <strong>{fieldLabel(field)}:</strong> {formatChangeValue(change?.old)} →{' '}
-          {formatChangeValue(change?.new)}
+          <strong>{fieldLabel(field)}:</strong> {formatChangeValue(change?.old, field)} →{' '}
+          {formatChangeValue(change?.new, field)}
         </li>
       ))}
     </ul>

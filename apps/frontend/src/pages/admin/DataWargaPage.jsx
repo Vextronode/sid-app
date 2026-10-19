@@ -14,7 +14,7 @@ import {
   History,
   Trash2,
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useWargaList } from '../../features/data-warga/hooks/useWargaList'
 import { useFamilyList } from '../../features/data-warga/hooks/useFamilyList'
@@ -22,6 +22,23 @@ import FamilyManagementPanel from '../../features/data-warga/components/FamilyMa
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getOccupations } from '../../features/pekerjaan/api'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { downloadErrorMessage, downloadFile } from '@/lib/downloadFile'
+import {
+  BLOOD_TYPE_LABELS,
+  DATA_SOURCE_LABELS,
+  DOMICILE_STATUS_LABELS,
+  FAMILY_ROLE_LABELS,
+  LAST_EDUCATION_LABELS,
+  MARITAL_STATUS_LABELS,
+  RELIGION_LABELS,
+  SYNC_STATUS_LABELS,
+  labelOf,
+  optionsOf,
+} from '@/shared/lib/labels'
+import { alertDialog, confirmDialog } from '@/shared/lib/dialog'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
+import { notifySuccess } from '@/shared/lib/toast'
 
 const formatResidencyType = (type) => {
   if (!type) return '-'
@@ -73,8 +90,20 @@ const emptyForm = {
 
 const emptyImportStatus = { loading: false, success: null, error: null, result: null }
 
+// Dua bagian halaman, ditampilkan sebagai tab seperti halaman Lembaga
+// Kemasyarakatan. Tab aktif disimpan di ?tab= agar tetap saat kembali
+// dari halaman lain.
+const SECTIONS = [
+  { value: 'penduduk', label: 'Data Penduduk' },
+  { value: 'kk', label: 'Kartu Keluarga' },
+]
+
 export default function DataWargaPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeSection = searchParams.get('tab') === 'kk' ? 'kk' : 'penduduk'
+  const switchSection = (value) =>
+    setSearchParams(value === 'penduduk' ? {} : { tab: value }, { replace: true })
   const familyList = useFamilyList()
   const {
     data,
@@ -133,9 +162,24 @@ export default function DataWargaPage() {
     setSearch(keyword)
   }
 
+  // Isian saat modal dibuka, pembanding untuk peringatan "Buang perubahan?".
+  const [formBaseline, setFormBaseline] = useState(null)
+
+  const openForm = (initial) => {
+    setFormData(initial)
+    setFormBaseline(initial)
+  }
+
+  const closeFormModal = () => setIsFormModalOpen(false)
+
+  const requestCloseForm = useConfirmDiscard(
+    isFormModalOpen && isFormDirty(formData, formBaseline),
+    { disabled: formSubmitting, escapeClose: isFormModalOpen ? closeFormModal : null },
+  )
+
   const handleOpenAddModal = () => {
     setEditingCitizen(null)
-    setFormData({
+    openForm({
       ...emptyForm,
       rt_id: wilayahOptions[0]?.id ? String(wilayahOptions[0].id) : '',
     })
@@ -145,7 +189,7 @@ export default function DataWargaPage() {
 
   const handleOpenEditModal = (warga) => {
     setEditingCitizen(warga)
-    setFormData({
+    openForm({
       nik: '',
       name: warga.name || '',
       date_of_birth: warga.date_of_birth ? String(warga.date_of_birth).slice(0, 10) : '',
@@ -201,6 +245,11 @@ export default function DataWargaPage() {
       } else {
         await addCitizen(citizenFields)
       }
+      notifySuccess(
+        editingCitizen
+          ? `Data warga ${formData.name} berhasil diperbarui.`
+          : `Warga ${formData.name} berhasil ditambahkan.`,
+      )
       setIsFormModalOpen(false)
     } catch (err) {
       const errs = err?.response?.data?.errors
@@ -215,12 +264,30 @@ export default function DataWargaPage() {
   }
 
   const handleDeleteWarga = async (id, name) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus data warga: ${name}?`)) {
+    if (
+      await confirmDialog({
+        title: `Hapus data warga ${name}?`,
+        message: 'Tindakan ini tidak dapat dibatalkan.',
+        confirmLabel: 'Hapus',
+      })
+    ) {
       try {
         await deleteWarga(id)
+        notifySuccess(`Data warga ${name} berhasil dihapus.`)
       } catch {
-        alert('Gagal menghapus data warga')
+        alertDialog({ title: 'Terjadi kesalahan', message: 'Gagal menghapus data warga.' })
       }
+    }
+  }
+
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadFile('/api/citizens/import-template', 'template_impor_warga.xlsx')
+    } catch (err) {
+      alertDialog({
+        title: 'Unduhan gagal',
+        message: await downloadErrorMessage(err, 'Gagal mengunduh templat Excel.'),
+      })
     }
   }
 
@@ -245,9 +312,28 @@ export default function DataWargaPage() {
     setImportStatus(emptyImportStatus)
   }
 
+  // Berkas sudah dipilih tetapi belum diimpor: tanya dulu sebelum menutup.
+  const requestCloseImport = useConfirmDiscard(
+    isImportModalOpen && Boolean(selectedFile) && !importStatus.result,
+    {
+      disabled: importStatus.loading,
+      escapeClose: isImportModalOpen ? closeImportModal : null,
+    },
+  )
+
   const handleImportSubmit = async (e) => {
     e.preventDefault()
     if (!selectedFile) return
+
+    const confirmed = await confirmDialog({
+      title: `Impor data dari ${selectedFile.name}?`,
+      message:
+        'Setiap baris yang valid langsung ditambahkan sebagai data warga baru dan baris yang gagal dilewati. Impor tidak dapat dibatalkan sekaligus.',
+      confirmLabel: 'Mulai Impor',
+      tone: 'primary',
+    })
+
+    if (!confirmed) return
 
     setImportStatus({ ...emptyImportStatus, loading: true })
 
@@ -266,6 +352,7 @@ export default function DataWargaPage() {
 
       // Tutup otomatis hanya kalau semua baris berhasil.
       if (!failed) {
+        notifySuccess(`${result?.success_count ?? 0} data warga berhasil diimpor.`)
         setTimeout(closeImportModal, 1200)
       }
     } catch (err) {
@@ -286,189 +373,230 @@ export default function DataWargaPage() {
 
         <div className="sid-operator-header">
           <h1>Data Penduduk &amp; Kartu Keluarga</h1>
-          <div className="sid-admin-page-actions">
-            <button
-              type="button"
-              className="sid-operator-secondary"
-              onClick={() => setIsImportModalOpen(true)}
-            >
-              <FileSpreadsheet size={16} />
-              Impor Excel
-            </button>
+          {activeSection === 'penduduk' && (
+            <div className="sid-admin-page-actions">
+              <button
+                type="button"
+                className="sid-operator-secondary"
+                onClick={() => setIsImportModalOpen(true)}
+              >
+                <FileSpreadsheet size={16} />
+                Impor Excel
+              </button>
 
-            <button type="button" className="sid-operator-primary" onClick={handleOpenAddModal}>
-              <UserPlus size={16} />
-              Tambah Warga
-            </button>
-          </div>
+              <button type="button" className="sid-operator-primary" onClick={handleOpenAddModal}>
+                <UserPlus size={16} />
+                Tambah Warga
+              </button>
+            </div>
+          )}
         </div>
 
-        <FamilyManagementPanel familyList={familyList} />
+        <div className="sid-wilayah-tabs" role="tablist" aria-label="Pilih bagian data">
+          {SECTIONS.map((section) => (
+            <button
+              key={section.value}
+              id={`data-tab-${section.value}`}
+              type="button"
+              role="tab"
+              aria-selected={section.value === activeSection}
+              aria-controls={`data-panel-${section.value}`}
+              className={`sid-wilayah-tab${section.value === activeSection ? ' sid-wilayah-tab-active' : ''}`}
+              onClick={() => switchSection(section.value)}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
 
-        {/* Filter */}
-        <div className="sid-operator-filter-card">
-          <form onSubmit={handleSearchSubmit} className="sid-operator-filter-grid warga-filter">
-            <div className="sid-operator-filter-field">
-              <p>Pencarian Cepat</p>
-              <div className="sid-operator-search">
-                <Search size={16} />
-                <input
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  placeholder="Cari nama warga..."
-                />
+        {activeSection === 'kk' && (
+          <div id="data-panel-kk" role="tabpanel" aria-labelledby="data-tab-kk">
+            <FamilyManagementPanel familyList={familyList} />
+          </div>
+        )}
+
+        {activeSection === 'penduduk' && (
+          <section
+            id="data-panel-penduduk"
+            role="tabpanel"
+            className="sid-operator-table-card sid-admin-section-panel"
+            aria-labelledby="citizens-heading"
+          >
+            <div className="sid-operator-header">
+              <div>
+                <h2 id="citizens-heading">Data Penduduk</h2>
+                <p>Kelola data individu warga beserta status domisili dan keanggotaan KK.</p>
               </div>
             </div>
 
-            <div className="sid-operator-filter-field">
-              <p>Wilayah</p>
-              <select value={filterWilayah} onChange={(e) => setFilterWilayah(e.target.value)}>
-                <option value="">Semua RT/RW</option>
-                {wilayahOptions.map((item) => (
-                  <option key={item.id} value={String(item.id)}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
+            {/* Filter */}
+            <div className="sid-operator-filter-card">
+              <form onSubmit={handleSearchSubmit} className="sid-operator-filter-grid warga-filter">
+                <div className="sid-operator-filter-field">
+                  <p>Pencarian Cepat</p>
+                  <div className="sid-operator-search">
+                    <Search size={16} />
+                    <input
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      placeholder="Cari nama warga..."
+                    />
+                  </div>
+                </div>
+
+                <div className="sid-operator-filter-field">
+                  <p>Wilayah</p>
+                  <select value={filterWilayah} onChange={(e) => setFilterWilayah(e.target.value)}>
+                    <option value="">Semua RT/RW</option>
+                    {wilayahOptions.map((item) => (
+                      <option key={item.id} value={String(item.id)}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </form>
             </div>
-          </form>
-        </div>
 
-        {/* Tabel Data */}
-        <div className="sid-operator-table-card">
-          <div className="sid-operator-table-wrapper">
-            <table className="sid-operator-table">
-              <thead>
-                <tr>
-                  <th>Nama</th>
-                  <th className="center">NIK</th>
-                  <th className="center">RT/RW</th>
-                  <th className="center">Jenis Kelamin</th>
-                  <th className="center">Status Domisili</th>
-                  <th className="center">No. KK</th>
-                  <th className="center">Peran KK</th>
-                  <th className="center">Sinkronisasi</th>
-                  <th className="center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={9} className="empty">
-                      Memuat data...
-                    </td>
-                  </tr>
-                ) : error ? (
-                  <tr>
-                    <td colSpan={9} className="empty sid-admin-error">
-                      {error}
-                    </td>
-                  </tr>
-                ) : data.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="empty">
-                      Belum ada data warga.
-                    </td>
-                  </tr>
-                ) : (
-                  data.map((warga) => (
-                    <tr key={warga.id}>
-                      <td className="primary-text">{warga.name}</td>
-                      <td className="center">{warga.nik_masked ?? '-'}</td>
-                      <td className="center">
-                        RT {warga.rt?.number ?? '-'} / RW {warga.rw?.number ?? '-'}
-                      </td>
-                      <td className="center">
-                        {warga.gender === 'L'
-                          ? 'Laki-Laki'
-                          : warga.gender === 'P'
-                            ? 'Perempuan'
-                            : '-'}
-                      </td>
-                      <td className="center">{formatResidencyType(warga.residency_type)}</td>
-                      <td className="center">{warga.family?.no_kk_masked ?? '-'}</td>
-                      <td className="center">{warga.family_role?.replaceAll('_', ' ') ?? '-'}</td>
-                      <td className="center">
-                        {warga.sync_status ? warga.sync_status.replaceAll('_', ' ') : '-'}
-                        {warga.data_source && (
-                          <small className="sid-admin-cell-meta">
-                            {warga.data_source.replaceAll('_', ' ')}
-                          </small>
-                        )}
-                        {warga.last_verified_at && (
-                          <small className="sid-admin-cell-meta">
-                            Diverifikasi{' '}
-                            {new Date(warga.last_verified_at).toLocaleDateString('id-ID')}
-                          </small>
-                        )}
-                      </td>
-                      <td className="center">
-                        <div className="sid-operator-actions">
-                          <button
-                            type="button"
-                            title="Edit"
-                            className="sid-operator-action edit"
-                            onClick={() => handleOpenEditModal(warga)}
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            title="Riwayat perubahan"
-                            className="sid-operator-action detail"
-                            onClick={() =>
-                              navigate(
-                                `/admin/log-aktivitas?tab=penduduk&type=citizen&subject=${encodeURIComponent(warga.id)}`,
-                              )
-                            }
-                          >
-                            <History size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            title="Hapus"
-                            className="sid-operator-action delete"
-                            onClick={() => handleDeleteWarga(warga.id, warga.name)}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          <div className="sid-operator-pagination">
-            <p>
-              Menampilkan {data.length} dari {totalItems} data
-            </p>
+            {/* Tabel Data */}
             <div>
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                Sebelumnya
-              </button>
-              <PageNumbers
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onChange={setCurrentPage}
-              />
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Selanjutnya
-              </button>
+              <div className="sid-operator-table-wrapper">
+                <table className="sid-operator-table">
+                  <thead>
+                    <tr>
+                      <th>Nama</th>
+                      <th className="center">NIK</th>
+                      <th className="center">RT/RW</th>
+                      <th className="center">Jenis Kelamin</th>
+                      <th className="center">Status Domisili</th>
+                      <th className="center">No. KK</th>
+                      <th className="center">Peran KK</th>
+                      <th className="center">Sinkronisasi</th>
+                      <th className="center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={9} className="empty">
+                          Memuat data...
+                        </td>
+                      </tr>
+                    ) : error ? (
+                      <tr>
+                        <td colSpan={9} className="empty sid-admin-error">
+                          {error}
+                        </td>
+                      </tr>
+                    ) : data.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="empty">
+                          Belum ada data warga.
+                        </td>
+                      </tr>
+                    ) : (
+                      data.map((warga) => (
+                        <tr key={warga.id}>
+                          <td className="primary-text">{warga.name}</td>
+                          <td className="center">{warga.nik_masked ?? '-'}</td>
+                          <td className="center">
+                            RT {warga.rt?.number ?? '-'} / RW {warga.rw?.number ?? '-'}
+                          </td>
+                          <td className="center">
+                            {warga.gender === 'L'
+                              ? 'Laki-Laki'
+                              : warga.gender === 'P'
+                                ? 'Perempuan'
+                                : '-'}
+                          </td>
+                          <td className="center">{formatResidencyType(warga.residency_type)}</td>
+                          <td className="center">{warga.family?.no_kk_masked ?? '-'}</td>
+                          <td className="center">
+                            {labelOf(FAMILY_ROLE_LABELS, warga.family_role)}
+                          </td>
+                          <td className="center">
+                            {labelOf(SYNC_STATUS_LABELS, warga.sync_status)}
+                            {warga.data_source && (
+                              <small className="sid-admin-cell-meta">
+                                {labelOf(DATA_SOURCE_LABELS, warga.data_source)}
+                              </small>
+                            )}
+                            {warga.last_verified_at && (
+                              <small className="sid-admin-cell-meta">
+                                Diverifikasi{' '}
+                                {new Date(warga.last_verified_at).toLocaleDateString('id-ID')}
+                              </small>
+                            )}
+                          </td>
+                          <td className="center">
+                            <div className="sid-operator-actions">
+                              <button
+                                type="button"
+                                title="Edit"
+                                className="sid-operator-action edit"
+                                onClick={() => handleOpenEditModal(warga)}
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                title="Riwayat perubahan"
+                                className="sid-operator-action detail"
+                                onClick={() =>
+                                  navigate(
+                                    `/admin/log-aktivitas?tab=penduduk&type=citizen&subject=${encodeURIComponent(warga.id)}`,
+                                  )
+                                }
+                              >
+                                <History size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                title="Hapus"
+                                className="sid-operator-action delete"
+                                onClick={() => handleDeleteWarga(warga.id, warga.name)}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="sid-operator-pagination">
+                <p>
+                  Menampilkan {data.length} dari {totalItems} data
+                </p>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Sebelumnya
+                  </button>
+                  <PageNumbers
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onChange={setCurrentPage}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </section>
+        )}
       </div>
 
       {/* Modal Tambah / Edit Warga */}
@@ -479,7 +607,7 @@ export default function DataWargaPage() {
               <h2>{editingCitizen ? 'Edit Data Warga' : 'Tambah Warga Baru'}</h2>
               <button
                 type="button"
-                onClick={() => setIsFormModalOpen(false)}
+                onClick={() => requestCloseForm(closeFormModal)}
                 className="sid-admin-icon-button"
                 aria-label="Tutup formulir"
               >
@@ -588,7 +716,7 @@ export default function DataWargaPage() {
                   style={inputStyle}
                 >
                   <option value="">Belum terhubung ke KK</option>
-                  {familyList.families.map((family) => (
+                  {familyList.options.map((family) => (
                     <option key={family.id} value={family.id}>
                       {family.no_kk_masked} — {family.head_of_family?.name ?? family.family_address}
                     </option>
@@ -605,9 +733,9 @@ export default function DataWargaPage() {
                     style={inputStyle}
                   >
                     <option value="">Pilih peran</option>
-                    {['kepala_keluarga', 'istri', 'suami', 'anak', 'famili_lain'].map((role) => (
-                      <option key={role} value={role}>
-                        {role.replaceAll('_', ' ')}
+                    {optionsOf(FAMILY_ROLE_LABELS).map(({ value, label }) => (
+                      <option key={value} value={value}>
+                        {label}
                       </option>
                     ))}
                   </select>
@@ -637,9 +765,9 @@ export default function DataWargaPage() {
                       style={inputStyle}
                     >
                       <option value="">Belum diketahui</option>
-                      {['A', 'B', 'AB', 'O', 'tidak_tahu'].map((value) => (
+                      {optionsOf(BLOOD_TYPE_LABELS).map(({ value, label }) => (
                         <option key={value} value={value}>
-                          {value}
+                          {label}
                         </option>
                       ))}
                     </select>
@@ -652,9 +780,9 @@ export default function DataWargaPage() {
                       style={inputStyle}
                     >
                       <option value="">Pilih</option>
-                      {['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati'].map((value) => (
+                      {optionsOf(MARITAL_STATUS_LABELS).map(({ value, label }) => (
                         <option key={value} value={value}>
-                          {value.replaceAll('_', ' ')}
+                          {label}
                         </option>
                       ))}
                     </select>
@@ -674,7 +802,7 @@ export default function DataWargaPage() {
                         .map((item) => (
                           <option key={item.id} value={item.id}>
                             {item.name}
-                            {item.is_active ? '' : ' (nonaktif)'}
+                            {item.is_active ? '' : ' (Nonaktif)'}
                           </option>
                         ))}
                     </select>
@@ -687,13 +815,11 @@ export default function DataWargaPage() {
                       style={inputStyle}
                     >
                       <option value="">Pilih</option>
-                      {['islam', 'kristen', 'katolik', 'hindu', 'buddha', 'konghucu'].map(
-                        (value) => (
-                          <option key={value} value={value}>
-                            {value}
-                          </option>
-                        ),
-                      )}
+                      {optionsOf(RELIGION_LABELS).map(({ value, label }) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -704,13 +830,11 @@ export default function DataWargaPage() {
                       style={inputStyle}
                     >
                       <option value="">Pilih</option>
-                      {['tidak_sekolah', 'sd', 'smp', 'sma', 'diploma', 's1', 's2', 's3'].map(
-                        (value) => (
-                          <option key={value} value={value}>
-                            {value.replaceAll('_', ' ').toUpperCase()}
-                          </option>
-                        ),
-                      )}
+                      {optionsOf(LAST_EDUCATION_LABELS).map(({ value, label }) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -722,13 +846,11 @@ export default function DataWargaPage() {
                       }
                       style={inputStyle}
                     >
-                      {['menetap', 'merantau_dalam_negeri', 'merantau_luar_negeri', 'tki'].map(
-                        (value) => (
-                          <option key={value} value={value}>
-                            {value.replaceAll('_', ' ')}
-                          </option>
-                        ),
-                      )}
+                      {optionsOf(DOMICILE_STATUS_LABELS).map(({ value, label }) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   {formData.domicile_status !== 'menetap' && (
@@ -804,7 +926,7 @@ export default function DataWargaPage() {
               <div className="sid-modal-actions">
                 <button
                   type="button"
-                  onClick={() => setIsFormModalOpen(false)}
+                  onClick={() => requestCloseForm(closeFormModal)}
                   className="sid-button sid-button-outline"
                 >
                   Batal
@@ -833,7 +955,7 @@ export default function DataWargaPage() {
               </div>
               <button
                 type="button"
-                onClick={closeImportModal}
+                onClick={() => requestCloseImport(closeImportModal)}
                 className="sid-admin-icon-button"
                 aria-label="Tutup impor"
               >
@@ -846,13 +968,13 @@ export default function DataWargaPage() {
                 <strong>Belum punya formatnya?</strong>
                 <p>Unduh templat Excel standar di sini.</p>
               </div>
-              <a
-                href="/templates/template_impor_warga.xlsx"
-                download
+              <button
+                type="button"
                 className="sid-admin-template-link"
+                onClick={handleDownloadTemplate}
               >
                 <Download size={14} /> Templat
-              </a>
+              </button>
             </div>
 
             <form onSubmit={handleImportSubmit} className="sid-admin-import-form">
@@ -910,7 +1032,7 @@ export default function DataWargaPage() {
               <div className="sid-modal-actions">
                 <button
                   type="button"
-                  onClick={closeImportModal}
+                  onClick={() => requestCloseImport(closeImportModal)}
                   className="sid-button sid-button-outline"
                 >
                   {importStatus.result ? 'Tutup' : 'Batal'}
