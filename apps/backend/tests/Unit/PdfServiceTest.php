@@ -240,4 +240,97 @@ class PdfServiceTest extends TestCase
 
         $this->service->download($letter, User::factory()->create(['role' => 'staf_sid']));
     }
+
+    public function test_preview_omits_signature_and_stamp_before_final_approval(): void
+    {
+        [$letter, $applicant] = $this->makeSealedFixture('pending');
+
+        $this->expectPreviewTemplate(fn (string $template): bool => $template === '');
+
+        $this->service->preview($letter, $applicant, 'digital');
+    }
+
+    public function test_preview_omits_signature_and_stamp_for_viewer_without_download_right(): void
+    {
+        [$letter] = $this->makeSealedFixture('approved');
+        $rt = User::factory()->create(['role' => 'rt', 'village_id' => $letter->village_id]);
+
+        $this->expectPreviewTemplate(fn (string $template): bool => $template === '');
+
+        $this->service->preview($letter, $rt, 'digital');
+    }
+
+    public function test_preview_places_stamp_over_left_half_of_centered_signature(): void
+    {
+        [$letter, $applicant, $signature, $stamp] = $this->makeSealedFixture('approved');
+
+        // TTD 240x100 -> 144x60; stempel 200x200 -> 80x80. Tepi kanan
+        // stempel di tengah TTD: left = 144/2 - 80 = -8, top = (60-80)/2.
+        $this->expectPreviewTemplate(fn (string $template): bool => str_contains($template, 'width: 144px; height: 60px; margin: 0 auto;')
+            && str_contains($template, '<img src="'.$signature.'" style="width: 144px; height: 60px;">')
+            && str_contains($template, '<img src="'.$stamp.'" style="position: absolute; left: -8px; top: -10px; width: 80px; height: 80px;">'));
+
+        $this->service->preview($letter, $applicant, 'digital');
+    }
+
+    public function test_wet_download_leaves_signature_area_empty_for_manual_signing(): void
+    {
+        [$letter, $applicant] = $this->makeSealedFixture('approved');
+
+        $pdf = Mockery::mock(DomPdf::class);
+        $pdf->shouldReceive('download')->once()->andReturn(new LaravelResponse);
+        Pdf::shouldReceive('loadView')
+            ->once()
+            ->with('pdf.templates.wet', Mockery::on(fn (array $data): bool => $data['template'] === ''))
+            ->andReturn($pdf);
+
+        $this->service->download($letter, $applicant, 'wet');
+    }
+
+    /**
+     * @return array{0: Letter, 1: User, 2: string, 3: string}
+     */
+    private function makeSealedFixture(string $status): array
+    {
+        Storage::fake('private_uploads');
+        $village = Village::factory()->create(['stamp_img' => null]);
+        $stamp = UploadedFile::fake()->image('stamp.png', 200, 200)
+            ->store("village-stamps/{$village->id}", 'private_uploads');
+        $village->update(['stamp_img' => $stamp]);
+        $kades = Official::factory()->create([
+            'position' => 'kepala_desa',
+            'village_id' => $village->id,
+            'citizen_id' => Citizen::factory()->create(['village_id' => $village->id])->id,
+            'is_active' => true,
+            'ended_at' => null,
+        ]);
+        $signature = UploadedFile::fake()->image('signature.png', 240, 100)
+            ->store("official-signatures/{$village->id}/{$kades->id}", 'private_uploads');
+        $kades->update(['signature_img' => $signature]);
+        $applicant = User::factory()->create(['role' => 'warga', 'village_id' => $village->id]);
+        $letter = Letter::factory()->create([
+            'status' => $status,
+            'village_id' => $village->id,
+            'submitted_by' => $applicant->id,
+            'letter_type_id' => LetterType::factory()->create(['template' => '{{ signature_img }}'])->id,
+            'expires_at' => now()->addDays(10),
+        ]);
+
+        return [
+            $letter,
+            $applicant,
+            Storage::disk('private_uploads')->path($signature),
+            Storage::disk('private_uploads')->path($stamp),
+        ];
+    }
+
+    private function expectPreviewTemplate(callable $matches): void
+    {
+        $pdf = Mockery::mock(DomPdf::class);
+        $pdf->shouldReceive('stream')->once()->andReturn(new LaravelResponse);
+        Pdf::shouldReceive('loadView')
+            ->once()
+            ->with('pdf.templates.digital', Mockery::on(fn (array $data): bool => $matches($data['template'])))
+            ->andReturn($pdf);
+    }
 }
