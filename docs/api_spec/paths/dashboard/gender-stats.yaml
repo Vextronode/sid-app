@@ -16,14 +16,17 @@ get:
           schema:
             type: object
             properties:
-              total:
-                type: integer
-                example: 2450
-              laki:
-                type: integer
-                example: 1230
-              perempuan:
-                type: integer
-                example: 1220
+              data:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 2450
+                  laki:
+                    type: integer
+                    example: 1230
+                  perempuan:
+                    type: integer
+                    example: 1220
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'

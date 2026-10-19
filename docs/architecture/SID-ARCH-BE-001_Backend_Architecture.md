@@ -69,6 +69,28 @@ Controller → Form Request → Service → Repository → Eloquent Model → DB
 - **Tidak ada Event/Listener/Job aplikasi.** Notifikasi dikirim langsung dari service; `LetterStatusNotification` memakai `afterCommit()` sehingga baru terkirim setelah transaksi commit.
 - `Model::preventLazyLoading()` aktif: gagal keras di test, hanya dicatat (warning) di lingkungan lain.
 
+### Penanganan error & bahasa pesan
+
+Locale aplikasi `id` (`APP_LOCALE`, `APP_FALLBACK_LOCALE`; `APP_FAKER_LOCALE=id_ID`), lihat `docs/SETUP.md`. Request `api/*` atau yang mengharapkan JSON selalu dirender sebagai JSON (`bootstrap/app.php`, `withExceptions`).
+
+- **Validasi (422):** pesan dari `lang/id/validation.php`, dengan nama field diterjemahkan lewat `attributes` (mis. `date_of_birth` → "tanggal lahir"), jadi pesan tidak menyebut nama kolom mentah. `message` berisi pesan error pertama, ditambah "(dan :count kesalahan lainnya)" bila ada lebih dari satu (`lang/id.json`); `errors` memuat semua pesan per field. Pesan kustom di `messages()` Form Request tetap dipakai.
+- **Exception domain** (`RegionHasActiveCitizensException`, `RegionContainsCitizensException`, `OccupationInUseException`) dirender dengan pesan dan status code miliknya sendiri.
+- **Exception bawaan framework** diganti pesan Indonesia oleh `App\Support\ApiExceptionMessages`:
+
+| Status | Pesan |
+|---|---|
+| 401 | Sesi Anda telah berakhir. Silakan masuk kembali. |
+| 403 | Anda tidak memiliki akses untuk aksi ini. |
+| 404 | Data tidak ditemukan. |
+| 405 | Metode permintaan tidak didukung. |
+| 413 | Ukuran data yang dikirim terlalu besar. |
+| 419 | Sesi keamanan kedaluwarsa. Muat ulang halaman lalu coba lagi. |
+| 429 | Terlalu banyak percobaan. Silakan coba lagi nanti. |
+| 500 (dan 5xx lain) | Terjadi kesalahan pada server. Silakan coba lagi beberapa saat. |
+| 503 | Layanan sedang tidak tersedia. Silakan coba lagi beberapa saat. |
+
+  Penggantian hanya terjadi bila pesannya kosong atau masih pesan bawaan Inggris ("Unauthenticated.", "This action is unauthorized.", "No query results for model ...", "CSRF token mismatch.", dst.). Pesan kustom dari `abort()` atau Policy (mis. `abort(404, 'Data pejabat tidak ditemukan.')`) tetap dipakai apa adanya. Untuk 5xx: dengan `APP_DEBUG=false` pesan selalu diganti; dengan `APP_DEBUG=true` error tak terduga dirender bawaan Laravel (detail debug) dan pesan kustom 5xx tidak diganti.
+
 ---
 
 ## 3. Domain Surat: Jenis Surat Data-Driven & Pipeline Approval
@@ -218,7 +240,7 @@ Scope ringkas: Petugas Desa = operator penuh di desanya (CMS, kependudukan, jaba
 
 - Index performa (migration `2026_10_11_090600`) untuk kolom FK yang dipakai scope wilayah, urutan, dan eager-load (citizens, letters, letter_approvals, rts, rws, officials, users, families, news).
 - Daftar surat & warga berpaginasi di database; ringkasan dashboard (`GET /letters/summary`) dihitung dengan agregasi SQL atas scope yang sama.
-- `PublicPageCache`: JSON respons `/public/*` di-cache per desa 10 menit dengan kunci berversi; event `saved/deleted` pada News, NewsCategory, VillageRegulation, LetterType, Official, Hamlet, Village, OfficialPositionType, Announcement, VillageInfoPage menggugurkan cache desa terkait.
+- `PublicPageCache`: JSON respons `/public/*` di-cache per desa 10 menit dengan kunci berversi; event `saved/deleted` pada Citizen, News, NewsCategory, VillageRegulation, LetterType, Official, Hamlet, Village, OfficialPositionType, Announcement, VillageInfoPage, VillageOrgPosition, VillageOrgMember menggugurkan cache desa terkait (`AppServiceProvider::boot`). Citizen ikut karena nama pejabat (Sambutan Kepala Desa di `/public/home`, kontak) dan jumlah penduduk publik (`total_population`) dibaca dari data warga.
 - `GoogleMapsLinkResolver` (`POST /villages/profile/resolve-map-link`): mengambil titik kantor dari link Google Maps. Redirect diikuti manual maks. 5 hop dengan timeout 5 detik, hanya ke host Google Maps di setiap hop (pencegahan SSRF); body respons tidak dibaca. Urutan pembacaan: pin `!3d..!4d..`, lalu `@lat,lng`, lalu parameter `q`/`query`/`ll`/`center`.
 - `VillageImageOptimizer`: logo ≤512 px, foto beranda ≤1920 px, EXIF orientation diterapkan, simpan WebP (fallback PNG/JPEG atau berkas asli).
 

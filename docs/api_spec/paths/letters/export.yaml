@@ -1,0 +1,108 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Ekspor laporan surat ke Excel
+  description: |
+    Tombol Ekspor Laporan di halaman Permohonan Surat. Memakai scope per
+    role dan filter yang sama persis dengan GET /letters (validasi lewat
+    `LetterIndexRequest`), tetapi tidak berpaginasi: seluruh baris yang
+    cocok diekspor, diurutkan dari `submitted_at` terbaru. `page` dan
+    `per_page` tetap divalidasi namun tidak berpengaruh.
+
+    Kolom lembar kerja (`LettersExport`): No. Surat, Jenis Surat, Pemohon,
+    Tanggal Diajukan (`d-m-Y H:i`, zona waktu aplikasi), Status (label
+    Indonesia: Menunggu, Sedang Diproses, Disetujui, Ditolak), Tahap Saat
+    Ini (label jabatan step berjalan; `Selesai` untuk surat approved atau
+    rejected). Nilai kosong ditulis `-`.
+
+    Bila tidak ada surat yang cocok, server menolak dengan 422 agar klien
+    tidak mengunduh file kosong.
+  operationId: exportLetters
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: scope
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [mine]
+    - name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [pending, in_progress, approved, rejected]
+    - name: letter_type_id
+      in: query
+      required: false
+      description: Harus ada di `letter_types`.
+      schema:
+        type: integer
+    - name: from
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+    - name: to
+      in: query
+      required: false
+      description: Harus >= `from`.
+      schema:
+        type: string
+        format: date
+    - name: submitted_from
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    - name: submitted_to
+      in: query
+      required: false
+      description: Harus >= `submitted_from`.
+      schema:
+        type: string
+        format: date-time
+    - name: search
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 100
+    - name: applicant_name
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 255
+  responses:
+    '200':
+      description: File Excel (attachment `laporan-surat-YYYY-MM-DD.xlsx`, tanggal hari ekspor)
+      headers:
+        Content-Disposition:
+          schema:
+            type: string
+          example: 'attachment; filename=laporan-surat-2026-10-19.xlsx'
+      content:
+        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '422':
+      description: Tidak ada surat yang cocok dengan scope dan filter, atau parameter tidak valid
+      content:
+        application/json:
+          schema:
+            anyOf:
+              - type: object
+                properties:
+                  message:
+                    type: string
+              - $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          examples:
+            empty_result:
+              value:
+                message: "Data surat kosong, laporan tidak dapat diunduh."

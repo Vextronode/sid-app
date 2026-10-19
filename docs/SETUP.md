@@ -78,6 +78,11 @@ SID_APP_NAME=SIDUTama
 
 APP_TIMEZONE=Asia/Jakarta
 
+# Pesan validasi dan error API berbahasa Indonesia (lang/id).
+APP_LOCALE=id
+APP_FALLBACK_LOCALE=id
+APP_FAKER_LOCALE=id_ID
+
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
@@ -101,6 +106,7 @@ CACHE_STORE=file
 | Variabel | Fungsi | Catatan |
 |---|---|---|
 | `SID_APP_NAME` | Nama aplikasi untuk pengguna: judul login, `<title>`, manifest PWA, dan label peran staf ("Staf {nama}") | Default `SIDUTama`. Samakan dengan `VITE_APP_NAME` |
+| `APP_LOCALE`, `APP_FALLBACK_LOCALE`, `APP_FAKER_LOCALE` | Bahasa pesan validasi (`lang/id/validation.php`), pesan bawaan framework (`lang/id.json`, `lang/id/*.php`), email reset kata sandi, dan data palsu factory/seeder | Wajib `id`, `id` dan `id_ID` (sudah begitu di `.env.example`; `phpunit.xml` memaksa `APP_LOCALE` dan `APP_FALLBACK_LOCALE` = `id` untuk test). Nilai `en` membuat pesan validasi kembali berbahasa Inggris. Setelah mengubah, jalankan `php artisan config:clear` |
 | `QUEUE_CONNECTION` | Cara mengirim pekerjaan antrean (Web Push) | `database` = diantrekan, butuh `queue:work`; `sync` = langsung dikirim tanpa worker. Lihat bagian 3 |
 | `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Kunci Web Push | Buat dengan `php artisan webpush:vapid`. Kosong = push nonaktif, in-app tetap jalan |
 | `SESSION_DRIVER` | Penyimpanan sesi | `file` untuk lokal. Dengan `database`, `staf-sid:recover` juga menghapus sesi DB staf |
@@ -294,6 +300,7 @@ npm run build
 | `419 Page Expired` saat login | CSRF token tidak sync, atau host frontend/API berbeda (`localhost` vs `127.0.0.1`) | Panggil `GET /sanctum/csrf-cookie` dulu, pastikan `withCredentials: true`, samakan host |
 | `401 Unauthenticated` setelah login | `SANCTUM_STATEFUL_DOMAINS` tidak sesuai host:port frontend | Samakan persis dengan alamat `npm run dev`, lalu `php artisan config:clear` |
 | Env baru tidak terbaca | Config di-cache | `php artisan config:clear` |
+| Pesan validasi/error API masih berbahasa Inggris ("The name field is required.") | `APP_LOCALE`/`APP_FALLBACK_LOCALE` di `.env` masih `en` (dari `.env.example` lama) atau config ter-cache | Set `APP_LOCALE=id`, `APP_FALLBACK_LOCALE=id`, `APP_FAKER_LOCALE=id_ID`, lalu `php artisan config:clear` |
 | CORS error | `allowed_origins` tidak sesuai `FRONTEND_URL` | Cek `config/cors.php`, pastikan `supports_credentials: true` |
 | Foto perangkat/berita tidak tampil | Link storage belum dibuat | `php artisan storage:link` |
 | Push browser tidak muncul, lonceng muncul | Worker tidak jalan (`QUEUE_CONNECTION=database`) atau VAPID kosong | Jalankan `php artisan queue:work`; cek `VAPID_*` dan `VITE_VAPID_PUBLIC_KEY` |
