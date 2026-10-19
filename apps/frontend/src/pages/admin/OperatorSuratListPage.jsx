@@ -7,18 +7,17 @@
 // ==========================================
 
 import OperatorSuratPreviewModal from '@/features/operator-desa/components/OperatorSuratPreviewModal'
+import { LetterTable } from '@/features/surat/components/LetterTable'
+import { LetterRowActions } from '@/features/surat/components/LetterRowActions'
 import { useState } from 'react'
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
-import { Download, Search, Eye } from 'lucide-react'
+import { Download, Search } from 'lucide-react'
 
 import {
   useDebouncedValue,
   useSuratListQuery,
   useSuratSummaryQuery,
 } from '@/features/surat/hooks/useSuratListQuery'
-
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { downloadErrorMessage, downloadFile } from '@/lib/downloadFile'
@@ -223,100 +222,17 @@ export default function OperatorSuratListPage() {
         ========================================== */}
 
         <div className="sid-operator-table-card">
-          <div className="sid-operator-table-wrapper">
-            <table className="sid-operator-table">
-              <thead>
-                <tr>
-                  <th>No. Surat</th>
-                  <th className="center">Pemohon</th>
-                  <th className="center">Jenis</th>
-                  <th className="center">Tanggal</th>
-                  <th className="center">Status</th>
-                  <th className="center">Aksi</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="sid-operator-table-message">
-                      Memuat data surat...
-                    </td>
-                  </tr>
-                ) : paginated.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="sid-operator-table-message">
-                      Belum ada surat.
-                    </td>
-                  </tr>
-                ) : (
-                  paginated.map((surat) => (
-                    <tr key={surat.id}>
-                      {/* NO SURAT */}
-
-                      <td className="sid-operator-letter-number">
-                        <div>
-                          <span>#{surat.letter_number ?? '-'}</span>
-
-                          {surat.revision_count > 0 && <small>Hasil Revisi</small>}
-                        </div>
-                      </td>
-
-                      {/* PEMOHON */}
-
-                      <td>
-                        <span className="sid-operator-applicant">
-                          {surat.applicant_name ?? '-'}
-                        </span>
-                      </td>
-
-                      {/* JENIS */}
-
-                      <td className="center">{surat.letter_type?.name ?? '-'}</td>
-
-                      {/* TANGGAL */}
-
-                      <td className="center">
-                        {surat.submitted_at
-                          ? new Date(surat.submitted_at).toLocaleDateString('id-ID', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                            })
-                          : '-'}
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td className="center">
-                        <div className="flex flex-col items-center gap-1.5">
-                          <StatusBadge status={surat.status} />
-                          <OverdueBadge isOverdue={surat.is_overdue} />
-                        </div>
-                      </td>
-
-                      {/* AKSI */}
-
-                      <td>
-                        <div className="sid-operator-actions">
-                          {/* DETAIL */}
-
-                          <button
-                            type="button"
-                            onClick={() => setPreviewSurat(surat)}
-                            className="sid-operator-action detail"
-                            title="Detail Surat"
-                          >
-                            <Eye size={17} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <LetterTable
+            letters={paginated}
+            loading={loading}
+            renderActions={(surat) => (
+              <LetterRowActions
+                surat={surat}
+                onOpen={setPreviewSurat}
+                canDownload={surat.status === SURAT_STATUS.APPROVED}
+              />
+            )}
+          />
 
           {/* ==========================================
               PAGINATION
