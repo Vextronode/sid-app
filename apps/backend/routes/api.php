@@ -158,6 +158,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::post('/', [CitizenController::class, 'store']);
             Route::post('/import', [CitizenController::class, 'import']);
+            Route::get('/import-template', [CitizenController::class, 'importTemplate']);
             //            Route::put('/{citizen}', [CitizenController::class, 'update']);
             Route::patch('/{citizen}', [CitizenController::class, 'update']);
             Route::delete('/{citizen}', [CitizenController::class, 'destroy']);
@@ -175,6 +176,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::get('/', [FamilyController::class, 'index']);
             Route::post('/', [FamilyController::class, 'store']);
+            Route::get('/options', [FamilyController::class, 'options']);
             Route::get('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'show']);
             Route::put('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'upsert']);
             Route::get('/{family}', [FamilyController::class, 'show']);
@@ -272,6 +274,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         Route::get('/', [LetterController::class, 'index']);
         // Angka ringkasan atas scope yang sama dengan daftar di atas.
         Route::get('/summary', [LetterController::class, 'summary']);
+        // Laporan Excel atas scope dan filter yang sama dengan daftar.
+        Route::get('/export', [LetterController::class, 'export']);
         Route::get('/{id}', [LetterController::class, 'show']);
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
         //        Route::patch('/{letter}/resubmit', [LetterController::class, 'resubmit']);
