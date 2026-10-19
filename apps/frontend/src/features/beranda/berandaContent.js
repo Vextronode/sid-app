@@ -71,10 +71,11 @@ const STATIC = {
       title: 'Cek status permohonan',
       description: 'Lihat apakah surat Anda sudah disetujui RT, RW, dan desa.',
     },
-    syarat: {
-      title: 'Syarat dokumen',
-      description: 'Siapkan berkas yang benar sebelum datang ke kantor.',
-      badge: 'Segera hadir',
+    // Pengganti "Syarat dokumen": pengajuan sudah daring, tidak perlu membawa
+    // berkas ke kantor (permintaan pemilik, 19 Okt 2026).
+    unduh: {
+      title: 'Unduh surat selesai',
+      description: 'Unduh surat yang sudah disetujui kapan saja dari rumah.',
     },
     pengaduan: {
       title: 'Sampaikan pengaduan',

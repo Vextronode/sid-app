@@ -39,7 +39,8 @@ describe('BerandaPage structure and accessibility', () => {
     [
       'with a welcome message',
       { welcome_message: 'Selamat datang.' },
-      ['Kabar desa', 'Cara mengajukan surat', 'Sambutan Kepala Desa', 'Butuh bantuan?'],
+      // Sambutan tepat setelah hero dan kartu layanan.
+      ['Sambutan Kepala Desa', 'Kabar desa', 'Cara mengajukan surat', 'Butuh bantuan?'],
     ],
   ])('has one h1 and an h2 for every titled section (%s, Ak3)', (_, village, expected) => {
     usePublicVillageInfo.mockReturnValue({ village, stats: null, contacts: [] })
@@ -322,6 +323,9 @@ describe('BerandaPage service cards', () => {
       '/loginpage?redirect=%2Fdaftar-surat-saya',
     ],
     ['warga', { role: 'warga' }, '/jenis-surat', '/daftar-surat-saya'],
+    // Pejabat tidak lagi terlempar ke beranda publik: ke Surat Saya pejabat.
+    ['rt', { role: 'rt' }, '/admin/surat-saya', '/admin/surat-saya'],
+    ['staf_sid', { role: 'staf_sid' }, '/admin/operator-desa', '/admin/operator-desa'],
   ])('makes the whole Ajukan and Status cards links (%s)', (_, user, ajukan, status) => {
     useAuth.mockReturnValue({ user, isLoading: false })
 
@@ -334,15 +338,16 @@ describe('BerandaPage service cards', () => {
     )
   })
 
-  it('shows Syarat dokumen as "Segera hadir" without a link (K3)', () => {
+  it.each([
+    ['guest', null, '/loginpage?redirect=%2Fdaftar-surat-saya%3Fstatus%3Dapproved'],
+    ['warga', { role: 'warga' }, '/daftar-surat-saya?status=approved'],
+  ])('links Unduh surat selesai to the approved letters (%s)', (_, user, href) => {
+    useAuth.mockReturnValue({ user, isLoading: false })
+
     renderPage()
 
-    const syarat = cards().getByText('Syarat dokumen')
-    expect(syarat.closest('a')).toBeNull()
-    const card = syarat.closest('.bd-service-card')
-    expect(card).not.toHaveClass('bd-lift')
-    expect(card).not.toHaveAttribute('tabindex')
-    expect(within(card).getByText('Segera hadir')).toBeInTheDocument()
+    expect(cards().getByRole('link', { name: /Unduh surat selesai/ })).toHaveAttribute('href', href)
+    expect(cards().queryByText('Syarat dokumen')).toBeNull()
   })
 
   it('only links the WhatsApp and email rows of the complaint card (K14, D2)', () => {
