@@ -59,10 +59,15 @@ src/
                           loginRedirect, userPhoto (foto akun vs foto jabatan)
     surat/                API surat/tipe/tanda tangan, DynamicSuratForm, FileUploader,
                           SignatureCard, SignatureRequestsCard, FulfillmentPanel,
-                          LetterTypeSettingsPanel, DetailSuratModal, util letterTypeConfig
+                          LetterTypeSettingsPanel, DetailSuratModal (pemohon), LetterTable,
+                          LetterRowActions, dossier/ (LetterDossierModal, FlowTimeline,
+                          DossierParts), util letterTypeConfig
+    cetak-surat/          PdfCanvasPreview (pratinjau canvas pdf.js), DownloadSuratMenu
+                          (unduh digital / tanda tangan basah), generateSuratPDF
     warga-surat/, warga-help/
     profil-warga/         EditProfilWargaModal, ProfilePhoto (foto profil akun di halaman Profil)
-    approval/             ApprovalStepRenderer, ApprovalStepper, SuratDetailModal, api keputusan
+    approval/             ApprovalStepRenderer, SuratDetailModal (approver), canDecideOnLetter,
+                          api keputusan
     approval-rt/, approval-rw/, approval-kadus/, approval-kades/
     operator-desa/        roleNavigation (kapabilitas route operator), kartu dashboard
     data-warga/, pekerjaan/, kelola-wilayah/, manajemen-user/
@@ -123,7 +128,7 @@ Semua route didefinisikan di `App.jsx`:
 |---|---|
 | Publik | `/`, `/berita`, `/berita/:id`, `/profil-desa` (`#peraturan-desa`, `#perangkat-desa`), `/bpd`, `/lembaga-desa` (`?lembaga=lpm\|karang_taruna\|pkk`), `/kebijakan-privasi`, `/aksesibilitas`, `/ppid`; `/peraturan-desa` diarahkan ke `/profil-desa#peraturan-desa` |
 | Auth | `/loginpage`, `/register`, `/lupa-password`, `/password-reset/:token`, `/ganti-password` |
-| Warga | `/daftar-surat`, `/jenis-surat`, `/pengajuan-surat/:kode?`, `/daftar-surat-saya`, `/profile` |
+| Warga | `/daftar-surat` (Beranda: ringkasan Surat Saya), `/jenis-surat` (Ajukan Surat: form pengajuan), `/pengajuan-surat/:kode?`, `/daftar-surat-saya`, `/profile` |
 | RT/RW/Kadus/Kades | `/admin/dashboard-surat-{rt,rw,kadus,kades}`, `/admin/list-{rt,rw,kadus,kades}` |
 | Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/approval-{settings,flows}`, `/admin/log-aktivitas`, `/admin/organisasi/{bpd,lembaga}`, `/admin/pengumuman`, `/admin/halaman-informasi` |
 | Pejabat (umum) | `/admin/profile`, `/admin/surat-saya` |
@@ -133,7 +138,7 @@ Semua route didefinisikan di `App.jsx`:
 ## 6. Komponen Kunci
 
 ### 6.1 `ApprovalStepRenderer`
-Merender tombol Setujui/Tolak hanya bila: step aktif (`current_step.approver_position`) cocok dengan role user (`rt` → rt; `kepala_desa` → kepala_desa/sekretaris_desa), status surat masih dapat diputuskan, dan belum ada keputusan untuk level itu. RW, Kadus, Kasi/Kaur tidak pernah mendapat tombol. Tidak ada logika per-role di luar pemetaan posisi → role tersebut.
+Merender tombol Setuju/Tolak (tahap final: "Setujui & terbitkan") di footer popup detail hanya bila `canDecideOnLetter` terpenuhi: step aktif (`current_step.approver_position`) cocok dengan role user (`rt` → rt; `kepala_desa` → kepala_desa/sekretaris_desa), status surat masih dapat diputuskan, dan belum ada keputusan untuk level itu. RW, Kadus, Kasi/Kaur tidak pernah mendapat tombol. Tolak membuka kotak alasan wajib; Escape/Batal meminta konfirmasi bila alasan sudah diketik.
 
 ### 6.2 `DynamicSuratForm`
 Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file) dan slot tanda tangan (`signature_slots`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`, `signers[...]`, `signature_files[...]`). Validasi akhir tetap di backend.
@@ -147,7 +152,14 @@ Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, n
 ### 6.5 Daftar berhalaman
 Bar pagination memakai `PageNumbers` (jendela tiga nomor bergeser dengan elipsis, `pageWindow.js`), teks rentang `formatPageRange` ("1–50 dari 266 data"), dan `PageSizeSelect`. Pilihan baris per halaman (10/25/50; Kelola Berita 6/12/24) disimpan per daftar oleh `usePageSize` di `localStorage` (`sid-page-size:<daftar>`) dan dikirim sebagai `per_page` untuk daftar yang berpaginasi di server; mengganti pilihan kembali ke halaman 1.
 
-### 6.6 Surat Saya
+### 6.6 Daftar & popup detail surat
+- `LetterTable` dipakai semua daftar surat pejabat (RT, RW, Kadus, Kades/Sekdes, Kasi/Kaur/Petugas). Header dan sel memakai perataan yang sama; di ≤767px baris menjadi kartu. Halaman tabel selebar kontainer navbar (1200px), Kasi/Kaur selebar area konten di samping sidebar.
+- `LetterRowActions` mengisi kolom Aksi sesuai peran: **Proses** (primer) bila giliran pengguna memutus (RT di tahap RT, Kades/Sekdes di tahap final), selain itu **Detail**; **Unduh** hanya bagi yang lolos LetterPolicy::download (pemohon, Kades/Sekdes, Kasi/Kaur, Petugas) untuk surat final; pemohon juga mendapat **Hapus** untuk surat yang belum terbit.
+- `LetterDossierModal` adalah kerangka popup "meja dokumen": surat di kiri (`PdfCanvasPreview`), panel berkas di kanan, aksi di footer. Isinya per peran: pemohon (`DetailSuratModal`) melihat progres generik tanpa nama pejabat, alasan penolakan, masa berlaku, dan keadaan kosong bila surat belum terbit/kedaluwarsa; approver dan pemantau (`SuratDetailModal`) melihat pratinjau draf, tahapan lengkap dengan pemutus dan catatan, serta Setuju/Tolak bila berwenang; Kasi/Kaur (`OperatorSuratPreviewModal`) melihat riwayat persetujuan dan menu unduh.
+- Pratinjau selalu dirender sebagai canvas pdf.js di dalam halaman (klik kanan diblok), tidak pernah di tab/iframe viewer PDF browser yang punya tombol unduh. TTD dan stempel hanya muncul bila backend mengizinkan (lihat `GET /letters/{letter}/preview`).
+- `DownloadSuratMenu`: **TTD & stempel digital** atau **Untuk tanda tangan basah** (area tanda tangan kosong, nama file berakhiran `-ttd-basah`).
+
+### 6.7 Surat Saya
 `MyLettersList` dipakai halaman Surat Saya pejabat (`/admin/surat-saya`) dan warga (`/daftar-surat-saya`): filter status dengan jumlah dari `GET /letters/summary?scope=mine`, dan jalur tahapan per surat (Diajukan → RT → Desa → Terbit) yang dihitung `letterProgress.js` dari `status`, `current_step`, dan `rejected_at_step`. Halaman ajukan surat pejabat memakai `LetterTypePicker` (kartu jenis surat) sebelum `DynamicSuratForm`.
 
 ---

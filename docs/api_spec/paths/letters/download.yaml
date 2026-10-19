@@ -26,7 +26,7 @@ get:
     - name: template
       in: query
       required: false
-      description: "`digital` menempelkan gambar TTD Kepala Desa; selain itu (default `wet`) hanya stempel, untuk ditandatangani basah."
+      description: "`digital` menempelkan TTD Kepala Desa dan stempel desa; selain itu (default `wet`) area tanda tangan dikosongkan (tanpa TTD dan stempel) untuk dicetak lalu ditandatangani dan distempel basah."
       schema:
         type: string
         enum: [wet, digital]

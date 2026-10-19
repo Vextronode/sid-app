@@ -204,7 +204,7 @@ Scope ringkas: Petugas Desa = operator penuh di desanya (CMS, kependudukan, jaba
 - Tidak ada file PDF tersimpan; dirender dompdf saat diminta.
 - **Surat approved dirender dari snapshot** (template, definisi isian, identitas & kop desa, path stempel, nama & path TTD Kepala Desa penanda tangan, tanggal terbit). Penggantian Kades, perubahan template, atau data warga tidak mengubah surat lama.
 - Surat belum approved (preview) dirender dari data hidup dengan Kepala Desa aktif saat ini.
-- Template `wet` (default) hanya stempel; `digital` menempelkan TTD Kepala Desa. Gambar privat dibaca dari disk `private_uploads` dengan validasi prefix folder.
+- Template `wet` (default) mengosongkan area tanda tangan (tanpa TTD dan stempel) untuk ditandatangani basah; `digital` menempelkan TTD Kepala Desa dan stempel desa (stempel menimpa separuh kiri TTD). Pratinjau hanya memuat TTD/stempel untuk surat final dan bagi pihak yang berhak mengunduh. Gambar privat dibaca dari disk `private_uploads` dengan validasi prefix folder.
 - Placeholder: data pemohon, kop desa (`village_*`, dari profil desa), nomor & tanggal surat, isian form (diformat `LetterValueFormatter`: tanggal, rupiah + terbilang, pilihan), slot TTD (`ttd_{slot}`, `nama_ttd_{slot}`). Nilai teks di-escape; placeholder tak terpetakan diganti garis.
 - Dokumen pendukung (`supporting_template`) dirender tanpa TTD Kades.
 - Pemohon ditolak mengunduh bila `expires_at` lewat.

@@ -7,6 +7,14 @@ get:
     aktif saat ini; surat approved dirender dari snapshot. Di-stream inline
     (`surat-{id}.pdf`).
 
+    TTD Kepala Desa dan stempel desa hanya dipasang bila surat sudah
+    `approved` **dan** pengguna lolos LetterPolicy::download (pemohon,
+    Kades/Sekdes, Kasi/Kaur yang ditugaskan, Petugas Desa). Surat yang
+    belum final, atau surat final yang dilihat pihak lain (mis. RT/RW/
+    Kadus), dirender tanpa TTD dan stempel. FE menampilkan pratinjau
+    sebagai canvas di dalam popup (bukan viewer PDF browser), sehingga
+    tidak ada tombol unduh/cetak dari pratinjau.
+
     Pemohon ditolak (403 "Masa berlaku surat telah habis.") bila
     `expires_at` sudah lewat, sama seperti download; surat tetap tampil
     sebagai riwayat. Pejabat dan Petugas Desa tetap dapat mem-preview.
@@ -23,6 +31,7 @@ get:
     - name: template
       in: query
       required: false
+      description: "`digital` memuat TTD Kepala Desa + stempel (bila berhak, lihat di atas); `wet` mengosongkan area tanda tangan. FE selalu meminta `digital`."
       schema:
         type: string
         enum: [wet, digital]

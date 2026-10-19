@@ -259,7 +259,7 @@ Main Flow:
    - Informasi approval Kades/Sekdes (jika sudah diproses)
    - Isian form (`payload`), lampiran (dibuka lewat endpoint terproteksi), status tiap slot tanda tangan
    - Tombol dokumen pendukung bila `has_supporting_document`
-4. Tombol Download PDF dan Preview muncul jika status = `approved`, disertai keterangan "Berlaku sampai {tanggal}" bila `expires_at` terisi. Bila `is_expired`, kedua tombol tetap tampil tetapi nonaktif (abu-abu) dengan badge "Kedaluwarsa"; surat hanya tersimpan sebagai riwayat. Backend menolak unduh **dan preview** oleh pemohon (role apa pun) jika `expires_at` telah lewat; role lain mengikuti LetterPolicy::download/view.
+4. Jika status = `approved`, popup detail menampilkan pratinjau surat (canvas di dalam popup, tanpa tombol unduh/cetak browser) dan menu **Unduh surat** dengan dua format: TTD & stempel digital, atau untuk tanda tangan basah (area tanda tangan kosong), disertai keterangan "Berlaku sampai {tanggal}" bila `expires_at` terisi. Bila `is_expired`, pratinjau diganti keterangan kedaluwarsa, menu unduh tetap tampil tetapi nonaktif, dan badge "Kedaluwarsa" muncul; surat hanya tersimpan sebagai riwayat. Sebelum terbit, area dokumen menjelaskan status (sedang diproses/ditolak). Backend menolak unduh **dan preview** oleh pemohon (role apa pun) jika `expires_at` telah lewat; role lain mengikuti LetterPolicy::download/view, dan TTD/stempel di pratinjau hanya dipasang untuk surat final bagi pihak yang berhak mengunduh.
 5. Bila `awaiting_signatures`, pemohon dapat mengisi ulang slot yang ditolak/kedaluwarsa (UC-25).
 
 ---
