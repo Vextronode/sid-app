@@ -240,7 +240,7 @@ export default function App() {
               path="/daftar-surat"
               element={
                 <ProtectedRoute allowedRoles={['warga']}>
-                  <DaftarSurat />
+                  <JenisSuratPage />
                 </ProtectedRoute>
               }
             />
@@ -249,7 +249,7 @@ export default function App() {
               path="/jenis-surat"
               element={
                 <ProtectedRoute allowedRoles={['warga']}>
-                  <JenisSuratPage />
+                  <DaftarSurat />
                 </ProtectedRoute>
               }
             />
