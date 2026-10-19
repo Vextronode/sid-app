@@ -248,6 +248,40 @@ class CitizenStoreUpdateTest extends TestCase
             ->assertJsonPath('data.residency_type', 'pendatang');
     }
 
+    public function test_update_name_also_renames_linked_account(): void
+    {
+        $village = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id, 'name' => 'Nama Lama']);
+        $account = User::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'name' => 'Nama Lama',
+        ]);
+
+        $this->actingAs($this->petugas($village))
+            ->patchJson("/api/citizens/{$citizen->id}", ['name' => 'Nama Baru'])
+            ->assertOk();
+
+        $this->assertSame('Nama Baru', $account->fresh()->name);
+    }
+
+    public function test_update_other_fields_keeps_linked_account_name(): void
+    {
+        $village = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id, 'name' => 'Nama Warga']);
+        $account = User::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'name' => 'Nama Akun',
+        ]);
+
+        $this->actingAs($this->petugas($village))
+            ->patchJson("/api/citizens/{$citizen->id}", ['address' => 'Jl. Baru No. 1'])
+            ->assertOk();
+
+        $this->assertSame('Nama Akun', $account->fresh()->name);
+    }
+
     public function test_update_rejects_nik_change(): void
     {
         $village = Village::factory()->create();

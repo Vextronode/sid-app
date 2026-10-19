@@ -84,6 +84,13 @@ class CitizenService
             $before = clone $citizen;
             $citizen = $this->citizenRepository->update($citizen, $data);
 
+            // users.name hanya salinan citizens.name saat akun dibuat;
+            // ikut diperbarui agar Manajemen Pengguna tidak menampilkan
+            // nama lama.
+            if ($before->name !== $citizen->name) {
+                $citizen->user()->update(['name' => $citizen->name]);
+            }
+
             if ($audit) {
                 $this->audit->updated($before, $citizen, $user);
             }

@@ -8,6 +8,7 @@ use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
 use App\Repositories\FamilyRepository;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -19,9 +20,14 @@ class FamilyService
         protected PopulationAuditService $audit,
     ) {}
 
-    public function getAllWithWilayah(User $user): Collection
+    public function paginateWithWilayah(User $user, array $filters = []): LengthAwarePaginator
     {
-        return $this->familyRepository->allWithWilayah($this->villageId($user));
+        return $this->familyRepository->paginateWithWilayah($this->villageId($user), $filters);
+    }
+
+    public function options(User $user): Collection
+    {
+        return $this->familyRepository->optionsForVillage($this->villageId($user));
     }
 
     public function find(string $id, User $user): Family
