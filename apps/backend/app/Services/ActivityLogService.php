@@ -23,12 +23,18 @@ class ActivityLogService
 
     public function population(User $user, array $filters): LengthAwarePaginator
     {
-        return $this->activityLogRepository->paginatePopulation($this->villageId($user), $filters, self::PER_PAGE);
+        return $this->activityLogRepository->paginatePopulation($this->villageId($user), $filters, $this->perPage($filters));
     }
 
     public function letters(User $user, array $filters): LengthAwarePaginator
     {
-        return $this->letterStatusLogRepository->paginateForVillage($this->villageId($user), $filters, self::PER_PAGE);
+        return $this->letterStatusLogRepository->paginateForVillage($this->villageId($user), $filters, $this->perPage($filters));
+    }
+
+    /** Jumlah baris per halaman pilihan pengguna; tanpa pilihan memakai PER_PAGE. */
+    private function perPage(array $filters): int
+    {
+        return (int) ($filters['per_page'] ?? self::PER_PAGE);
     }
 
     private function villageId(User $user): string
