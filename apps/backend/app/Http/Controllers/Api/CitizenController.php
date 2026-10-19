@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exports\CitizensTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ImportCitizensRequest;
 use App\Http\Requests\IndexCitizenRequest;
@@ -12,6 +13,7 @@ use App\Http\Resources\CitizenResource;
 use App\Models\Citizen;
 use App\Services\CitizenService;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CitizenController extends Controller
 {
@@ -56,6 +58,14 @@ class CitizenController extends Controller
             'message' => 'Import selesai diproses',
             'data' => $result,
         ]);
+    }
+
+    /**
+     * Template Excel impor warga; header mengikuti CitizensImport.
+     */
+    public function importTemplate()
+    {
+        return Excel::download(new CitizensTemplateExport, 'template_impor_warga.xlsx');
     }
 
     public function destroy(Request $request, Citizen $citizen)
