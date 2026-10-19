@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Citizen;
 use App\Models\News;
+use App\Models\Official;
 use App\Models\User;
 use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,6 +48,23 @@ class PublicPageCacheTest extends TestCase
         $news->delete();
 
         $this->getJson('/api/public/home')->assertJsonCount(0, 'data.latest_news');
+    }
+
+    public function test_renaming_the_village_head_citizen_invalidates_cached_home(): void
+    {
+        $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
+        $citizen = Citizen::factory()->create(['village_id' => $village->id, 'name' => 'Nama Lama']);
+        Official::factory()->create([
+            'citizen_id' => $citizen->id,
+            'village_id' => $village->id,
+            'position' => 'kepala_desa',
+        ]);
+
+        $this->getJson('/api/public/home')->assertJsonPath('data.village_head.name', 'Nama Lama');
+
+        $citizen->update(['name' => 'Nama Baru']);
+
+        $this->getJson('/api/public/home')->assertJsonPath('data.village_head.name', 'Nama Baru');
     }
 
     public function test_updating_village_profile_invalidates_cache(): void

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Announcement;
+use App\Models\Citizen;
 use App\Models\Hamlet;
 use App\Models\LetterType;
 use App\Models\News;
@@ -68,8 +69,10 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Konten halaman publik di-cache; perubahan pada sumber datanya
-        // langsung menggugurkan cache desa yang bersangkutan.
-        foreach ([News::class, NewsCategory::class, VillageRegulation::class, LetterType::class, Official::class, Hamlet::class, Announcement::class, VillageInfoPage::class] as $publicSource) {
+        // langsung menggugurkan cache desa yang bersangkutan. Citizen ikut
+        // karena nama pejabat (Sambutan Kepala Desa, kontak) dan jumlah
+        // penduduk publik dibaca dari data warga.
+        foreach ([Citizen::class, News::class, NewsCategory::class, VillageRegulation::class, LetterType::class, Official::class, Hamlet::class, Announcement::class, VillageInfoPage::class] as $publicSource) {
             $publicSource::saved(fn (Model $model) => PublicPageCache::flush($model->village_id));
             $publicSource::deleted(fn (Model $model) => PublicPageCache::flush($model->village_id));
         }
