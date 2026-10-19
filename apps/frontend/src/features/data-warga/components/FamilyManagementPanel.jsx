@@ -4,6 +4,8 @@ import { History, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 
 import { getFamily, getFamilySocioeconomic, saveFamilySocioeconomic } from '../api'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { formatPageRange } from '@/components/ui/pageRange'
 import { StatusPill } from '@/components/ui/StatusPill'
 import {
   ELECTRICITY_SOURCE_LABELS,
@@ -63,6 +65,8 @@ export default function FamilyManagementPanel({ familyList }) {
     currentPage,
     setCurrentPage,
     totalPages,
+    pageSize,
+    setPageSize,
     addFamily,
     editFamily,
     removeFamily,
@@ -367,9 +371,10 @@ export default function FamilyManagementPanel({ familyList }) {
       </div>
 
       <div className="sid-operator-pagination">
-        <p>
-          Menampilkan {families.length} dari {totalItems} data KK
-        </p>
+        <div className="sid-pagination-meta">
+          <p>{formatPageRange(currentPage, pageSize, totalItems, 'KK')}</p>
+          <PageSizeSelect value={pageSize} onChange={setPageSize} />
+        </div>
         <div>
           <button
             type="button"

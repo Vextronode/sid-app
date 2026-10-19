@@ -23,6 +23,8 @@ import { deleteUserPhoto, resetUserPassword, uploadUserPhoto } from '@/features/
 import { resetUserSignature } from '@/features/surat/api/signatureApi'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { formatPageRange } from '@/components/ui/pageRange'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { confirmDialog, promptDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
@@ -40,6 +42,8 @@ export default function ManajemenUserPage() {
     setCurrentPage,
     totalPages,
     totalItems,
+    pageSize,
+    setPageSize,
     toggleStatus,
     updateUser,
     patchUser,
@@ -459,9 +463,10 @@ export default function ManajemenUserPage() {
 
           {/* Pagination */}
           <div className="sid-operator-pagination">
-            <p>
-              Menampilkan {data.length} dari {totalItems} pengguna
-            </p>
+            <div className="sid-pagination-meta">
+              <p>{formatPageRange(currentPage, pageSize, totalItems, 'pengguna')}</p>
+              <PageSizeSelect value={pageSize} onChange={setPageSize} />
+            </div>
 
             <div>
               <button

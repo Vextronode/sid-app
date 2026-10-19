@@ -26,8 +26,9 @@ import { alertDialog } from '@/shared/lib/dialog'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import { PageNumbers } from '@/components/ui/PageNumbers'
-
-const ITEMS_PER_PAGE = 3
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { formatPageRange } from '@/components/ui/pageRange'
+import { usePageSize } from '@/components/ui/usePageSize'
 
 const EMPTY_EXPORT_MESSAGE = 'Tidak ada data surat untuk diunduh. Unduhan laporan gagal.'
 
@@ -42,6 +43,12 @@ export default function OperatorSuratListPage() {
   const [filterJenis, setFilterJenis] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSizeState] = usePageSize('surat-operator')
+
+  const setPageSize = (value) => {
+    setPageSizeState(value)
+    setCurrentPage(1)
+  }
 
   const [previewSurat, setPreviewSurat] = useState(null)
   const [exporting, setExporting] = useState(false)
@@ -63,7 +70,7 @@ export default function OperatorSuratListPage() {
     loading,
   } = useSuratListQuery({
     page: currentPage,
-    per_page: ITEMS_PER_PAGE,
+    per_page: pageSize,
     status: STATUS_FILTER_PARAM[filterStatus],
     letter_type_id: filterJenis,
     search: debouncedSearch,
@@ -316,10 +323,11 @@ export default function OperatorSuratListPage() {
           ========================================== */}
 
           <div className="sid-operator-pagination">
-            <p>
-              Menampilkan {paginated.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-
-              {(currentPage - 1) * ITEMS_PER_PAGE + paginated.length} dari {totalItems} data
-            </p>
+            <div className="sid-pagination-meta">
+              <p>{formatPageRange(currentPage, pageSize, totalItems)}</p>
+
+              <PageSizeSelect value={pageSize} onChange={setPageSize} />
+            </div>
 
             <div>
               <button

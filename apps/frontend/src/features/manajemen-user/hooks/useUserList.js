@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import { usePageSize } from '@/components/ui/usePageSize'
 import { getUsers, toggleUserStatus, updateUser as updateUserRequest } from '../api'
-
-const ITEMS_PER_PAGE = 10
 
 export function useUserList() {
   const [users, setUsers] = useState([])
@@ -12,6 +11,12 @@ export function useUserList() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSizeState] = usePageSize('manajemen-user')
+
+  const setPageSize = (value) => {
+    setPageSizeState(value)
+    setCurrentPage(1)
+  }
 
   useEffect(() => {
     loadUsers()
@@ -54,13 +59,13 @@ export function useUserList() {
     return result
   }, [users, search, filterStatus])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
 
   const data = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    const start = (currentPage - 1) * pageSize
 
-    return filtered.slice(start, start + ITEMS_PER_PAGE)
-  }, [filtered, currentPage])
+    return filtered.slice(start, start + pageSize)
+  }, [filtered, currentPage, pageSize])
 
   async function toggleStatus(id) {
     try {
@@ -101,6 +106,8 @@ export function useUserList() {
 
     totalPages,
     totalItems: filtered.length,
+    pageSize,
+    setPageSize,
 
     toggleStatus,
 

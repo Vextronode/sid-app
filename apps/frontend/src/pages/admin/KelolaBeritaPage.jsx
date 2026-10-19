@@ -25,13 +25,17 @@
 import { useState } from 'react'
 import { Plus, Pencil, Send, ChevronLeft, ChevronRight, Newspaper, Tags } from 'lucide-react'
 
-import { useBeritaList } from '@/features/kelola-berita/hooks/useBeritaList'
+import {
+  BERITA_PAGE_SIZE_OPTIONS,
+  useBeritaList,
+} from '@/features/kelola-berita/hooks/useBeritaList'
 import BeritaFormModal from '@/features/kelola-berita/components/BeritaFormModal'
 import KategoriBeritaModal from '@/features/kelola-berita/components/KategoriBeritaModal'
 import { useNewsCategories } from '@/features/kelola-berita/hooks/useNewsCategories'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { alertDialog, confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
@@ -44,6 +48,8 @@ export default function KelolaBeritaPage() {
     currentPage,
     setCurrentPage,
     totalPages,
+    pageSize,
+    setPageSize,
     addBerita,
     updateBerita,
     publishBerita,
@@ -551,6 +557,12 @@ export default function KelolaBeritaPage() {
             <span>
               Halaman {currentPage} dari {totalPages}
             </span>
+            <PageSizeSelect
+              value={pageSize}
+              onChange={setPageSize}
+              options={BERITA_PAGE_SIZE_OPTIONS}
+              disabled={processing}
+            />
           </div>
         )}
       </div>

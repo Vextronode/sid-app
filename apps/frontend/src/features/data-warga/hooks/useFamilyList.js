@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useState } from 'react'
+import { usePageSize } from '@/components/ui/usePageSize'
 import { createFamily, deleteFamily, getFamilies, getFamilyOptions, updateFamily } from '../api'
 
 export function useFamilyList() {
@@ -8,6 +9,7 @@ export function useFamilyList() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSizeState] = usePageSize('data-kk')
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
   // Pilihan KK di form warga: semua KK, terpisah dari daftar berhalaman.
@@ -19,6 +21,7 @@ export function useFamilyList() {
     try {
       const response = await getFamilies({
         page: currentPage,
+        per_page: pageSize,
         ...(search ? { search } : {}),
       })
       const result = response.data?.data
@@ -30,7 +33,7 @@ export function useFamilyList() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, search])
+  }, [currentPage, pageSize, search])
 
   const loadOptions = useCallback(async () => {
     try {
@@ -54,6 +57,11 @@ export function useFamilyList() {
 
   const searchFamilies = (value) => {
     setSearch(value)
+    setCurrentPage(1)
+  }
+
+  const setPageSize = (value) => {
+    setPageSizeState(value)
     setCurrentPage(1)
   }
 
@@ -82,6 +90,8 @@ export function useFamilyList() {
     currentPage,
     setCurrentPage,
     totalPages,
+    pageSize,
+    setPageSize,
     addFamily,
     editFamily,
     removeFamily,

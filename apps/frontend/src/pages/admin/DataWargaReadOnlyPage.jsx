@@ -4,9 +4,10 @@ import { getCitizens } from '@/features/data-warga/api'
 import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { formatPageRange } from '@/components/ui/pageRange'
+import { usePageSize } from '@/components/ui/usePageSize'
 import { FAMILY_ROLE_LABELS, labelOf } from '@/shared/lib/labels'
-
-const ITEMS_PER_PAGE = 10
 
 /**
  * Daftar warga khusus-baca untuk Kasi/Kaur sebagai bahan pertimbangan
@@ -20,6 +21,7 @@ export default function DataWargaReadOnlyPage() {
   const [error, setError] = useState('')
   const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSizeState] = usePageSize('data-penduduk')
   const [totalItems, setTotalItems] = useState(0)
 
   const search = useDebouncedValue(keyword.trim())
@@ -28,7 +30,7 @@ export default function DataWargaReadOnlyPage() {
   useEffect(() => {
     let active = true
 
-    getCitizens({ page, per_page: ITEMS_PER_PAGE, ...(search ? { search } : {}) })
+    getCitizens({ page, per_page: pageSize, ...(search ? { search } : {}) })
       .then((response) => {
         if (!active) return
 
@@ -46,9 +48,14 @@ export default function DataWargaReadOnlyPage() {
     return () => {
       active = false
     }
-  }, [page, search])
+  }, [page, pageSize, search])
 
-  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE))
+  const setPageSize = (value) => {
+    setPageSizeState(value)
+    setPage(1)
+  }
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
   const currentPage = Math.min(page, totalPages)
   const data = citizens
 
@@ -157,11 +164,12 @@ export default function DataWargaReadOnlyPage() {
             </table>
           </div>
 
-          {totalPages > 1 && (
+          {totalItems > 0 && (
             <div className="sid-operator-pagination">
-              <p>
-                Halaman {currentPage} dari {totalPages}
-              </p>
+              <div className="sid-pagination-meta">
+                <p>{formatPageRange(currentPage, pageSize, totalItems)}</p>
+                <PageSizeSelect value={pageSize} onChange={setPageSize} />
+              </div>
               <div>
                 <button
                   type="button"
