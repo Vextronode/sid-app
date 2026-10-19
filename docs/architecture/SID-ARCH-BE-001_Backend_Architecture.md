@@ -193,7 +193,7 @@ Scope ringkas: Petugas Desa = operator penuh di desanya (CMS, kependudukan, jaba
 - `families` (KK, tipis) terpisah dari `citizens` (individu). Sosio-ekonomi per KK (`family_socioeconomics`). Pekerjaan dari katalog `occupations` per desa.
 - Tidak ada "warga Non-NIK"; lokal/pendatang dibedakan `residency_type`.
 - Perubahan data warga oleh warga **hanya** lewat jenis surat ber-`data_action`, yang diterapkan Kasi/Kaur/Petugas Desa (S3.6). Tidak ada edit langsung oleh warga.
-- Daftar warga berpaginasi (default 20, maks 100) dengan pencarian nama dan filter RT; Kasi/Kaur dapat membaca daftar.
+- Daftar warga berpaginasi (default 20, maks 100) dengan pencarian nama dan filter Dusun/RW/RT (RW dan Dusun lewat RT warga); Kasi/Kaur dapat membaca daftar.
 - Register warga mewajibkan NIK + tanggal lahir yang cocok dengan `citizens.date_of_birth`.
 - Impor Excel per baris, baris gagal dilewati.
 

@@ -327,7 +327,7 @@ Alternative Flow:
 
 **Main Flow - Lihat & Cari Warga:**
 1. Petugas (atau Kasi/Kaur, read-only) membuka menu "Data Warga"
-2. Daftar berpaginasi di database (default 20, maks 100 per halaman); dapat dicari berdasarkan nama (case-insensitive) dan difilter per RT
+2. Daftar berpaginasi di database (default 20, maks 100 per halaman); dapat dicari berdasarkan nama (case-insensitive) dan difilter bertingkat per Dusun, RW, dan RT (`hamlet_id`, `rw_id`, `rt_id`; RW dan Dusun dibaca lewat RT warga)
 3. Sistem menampilkan daftar dengan: nama, NIK ter-mask, wilayah, pekerjaan, KK, status; `total` = jumlah seluruh hasil
 
 > Pencarian berdasarkan NIK pada daftar warga belum diimplementasi (lihat audit docs).

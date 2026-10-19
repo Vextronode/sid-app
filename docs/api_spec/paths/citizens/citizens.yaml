@@ -3,8 +3,10 @@ get:
   summary: Lihat & cari daftar warga (berpaginasi)
   description: |
     UC-09. Aktor: Petugas Desa, Kasi Pelayanan, Kaur TU & Umum (Kasi/Kaur
-    hanya membaca). Warga satu desa akun login, urut id, berpaginasi di
-    database. Pencarian nama case-insensitive (LIKE) dan filter RT.
+    hanya membaca). Warga satu desa akun login, urut nama lalu id, berpaginasi
+    di database. Pencarian nama case-insensitive (LIKE) dan filter wilayah
+    bertingkat Dusun/RW/RT; RW dan Dusun dibaca lewat RT warga. Filter yang
+    diisi bersamaan digabung dengan AND.
     Respons ResourceCollection berpaginasi: `data`, `total` (jumlah seluruh
     hasil), serta `links`/`meta` paginator Laravel.
   operationId: listCitizens
@@ -18,6 +20,18 @@ get:
       schema:
         type: string
         maxLength: 100
+    - name: hamlet_id
+      in: query
+      required: false
+      description: ID dusun; warga yang RT-nya berada di RW dusun ini.
+      schema:
+        type: integer
+    - name: rw_id
+      in: query
+      required: false
+      description: ID RW; warga yang RT-nya berada di RW ini.
+      schema:
+        type: integer
     - name: rt_id
       in: query
       required: false
