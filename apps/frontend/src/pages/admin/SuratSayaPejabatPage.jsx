@@ -1,17 +1,21 @@
 import { useState } from 'react'
-import { ArrowLeft, Eye, FilePlus, Trash2 } from 'lucide-react'
+import { ArrowLeft, FilePlus } from 'lucide-react'
 
 import api from '@/lib/api'
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { SimplePagination } from '@/components/ui/SimplePagination'
+import { usePageSize } from '@/components/ui/usePageSize'
 import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal'
 import { DynamicSuratForm } from '@/features/surat/components/DynamicSuratForm'
+import { LetterTypePicker } from '@/features/surat/components/LetterTypePicker'
+import { MyLettersList } from '@/features/surat/components/MyLettersList'
 import { useLetters } from '@/features/surat/hooks/useLetters'
 import { useLetterTypes } from '@/features/surat/hooks/useLetterTypes'
 import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig'
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+
+// Nomor langkah ditambahkan CSS (.sid-apply), jadi judul cukup isinya.
+const APPLY_HEADINGS = { fields: 'Isi data surat', signatures: 'Tanda tangan' }
 
 function toDetail(item) {
   return {
@@ -31,7 +35,14 @@ function toDetail(item) {
 export default function SuratSayaPejabatPage() {
   const { letterTypes, loading: typesLoading, error: typesError } = useLetterTypes()
   const [page, setPage] = useState(1)
-  const { letters, meta, loading, refresh: loadLetters } = useLetters({ page })
+  const [statusFilter, setStatusFilter] = useState('')
+  const [pageSize, setPageSize] = usePageSize('surat-saya')
+  const {
+    letters,
+    meta,
+    loading,
+    refresh: loadLetters,
+  } = useLetters({ page, perPage: pageSize, status: statusFilter || undefined })
   const [error, setError] = useState('')
   const [applying, setApplying] = useState(false)
   const [selectedCode, setSelectedCode] = useState('')
@@ -86,6 +97,7 @@ export default function SuratSayaPejabatPage() {
     closeForm()
     notifySuccess('Permohonan surat berhasil dikirim.')
     setPage(1)
+    setStatusFilter('')
     await loadLetters()
   }
 
@@ -95,65 +107,57 @@ export default function SuratSayaPejabatPage() {
         {applying ? (
           <>
             <button type="button" onClick={closeForm} className="sid-surat-saya-back">
-              <ArrowLeft size={16} />
+              <ArrowLeft size={16} aria-hidden="true" />
               Kembali ke Surat Saya
             </button>
 
-            <h1 className="sid-page-title">Ajukan Surat untuk Diri Sendiri</h1>
-            <p className="sid-page-description">
-              Surat ini diajukan atas nama Anda sebagai warga. Tahap persetujuan yang menjadi
-              wewenang Anda sendiri dilewati dan diputuskan pejabat lain.
-            </p>
+            <div className="sid-apply">
+              <header className="sid-apply-header">
+                <h1 className="sid-my-letters-heading">Ajukan surat</h1>
+                <p className="sid-my-letters-lead">
+                  Surat ini diajukan atas nama Anda sebagai warga. Tahap persetujuan yang menjadi
+                  wewenang Anda dilewati dan diputuskan pejabat lain.
+                </p>
+              </header>
 
-            <div className="sid-card">
-              <div className="sid-form-group">
-                <label className="sid-label" htmlFor="self-letter-type">
-                  Jenis surat <span className="sid-required">*</span>
-                </label>
-                <select
-                  id="self-letter-type"
-                  value={selectedCode}
-                  disabled={typesLoading || Boolean(typesError)}
-                  onChange={(event) => setSelectedCode(event.target.value)}
-                  className="sid-input"
-                >
-                  <option value="">Pilih jenis surat...</option>
-                  {letterTypes.map((type) => (
-                    <option key={type.id} value={type.code}>
-                      {type.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <section className="sid-apply-step" aria-labelledby="apply-step-type">
+                <h2 id="apply-step-type" className="sid-apply-step-title">
+                  {selectedLetterType ? 'Jenis surat' : 'Pilih jenis surat'}
+                </h2>
 
-              {typesLoading && <p role="status">Memuat jenis surat...</p>}
-              {typesError && <p role="alert">{typesError}</p>}
-              {selectedLetterType?.requirements_info && (
-                <p className="sid-info">Persyaratan: {selectedLetterType.requirements_info}</p>
-              )}
+                <LetterTypePicker
+                  letterTypes={letterTypes}
+                  loading={typesLoading}
+                  error={typesError}
+                  selectedCode={selectedCode}
+                  onSelect={setSelectedCode}
+                />
+              </section>
+
+              {currentConfig ? (
+                <DynamicSuratForm
+                  key={currentConfig.code}
+                  config={currentConfig}
+                  letterTypes={letterTypes}
+                  onCancel={closeForm}
+                  onSubmit={handleSubmitted}
+                  headings={APPLY_HEADINGS}
+                  className="sid-apply-form"
+                />
+              ) : selectedLetterType ? (
+                <p className="sid-admin-alert sid-admin-alert-error" role="alert">
+                  Formulir untuk jenis surat ini belum tersedia.
+                </p>
+              ) : null}
             </div>
-
-            {currentConfig ? (
-              <DynamicSuratForm
-                key={currentConfig.code}
-                config={currentConfig}
-                letterTypes={letterTypes}
-                onCancel={closeForm}
-                onSubmit={handleSubmitted}
-              />
-            ) : (
-              <div className="sid-card sid-empty-state">
-                Silakan pilih jenis surat di atas untuk melanjutkan.
-              </div>
-            )}
           </>
         ) : (
           <>
-            <div className="flex flex-wrap items-end justify-between gap-4">
+            <header className="sid-my-letters-header">
               <div>
-                <h1 className="sid-page-title">Surat Saya</h1>
-                <p className="sid-page-description">
-                  Surat yang Anda ajukan untuk diri sendiri, terpisah dari surat warga yang Anda
+                <h1 className="sid-my-letters-heading">Surat Saya</h1>
+                <p className="sid-my-letters-lead">
+                  Surat yang Anda ajukan atas nama sendiri, terpisah dari surat warga yang Anda
                   proses.
                 </p>
               </div>
@@ -162,10 +166,10 @@ export default function SuratSayaPejabatPage() {
                 className="sid-btn sid-btn-primary inline-flex items-center gap-2"
                 onClick={() => setApplying(true)}
               >
-                <FilePlus size={16} />
-                Ajukan Surat
+                <FilePlus size={16} aria-hidden="true" />
+                Ajukan surat
               </button>
-            </div>
+            </header>
 
             {error && (
               <p className="sid-admin-alert sid-admin-alert-error" role="alert">
@@ -173,71 +177,27 @@ export default function SuratSayaPejabatPage() {
               </p>
             )}
 
-            <div className="sid-card sid-surat-saya-table-card">
-              {loading ? (
-                <p className="sid-surat-saya-message">Memuat data surat...</p>
-              ) : letters.length === 0 ? (
-                <p className="sid-surat-saya-message">Anda belum pernah mengajukan surat.</p>
-              ) : (
-                <div className="sid-surat-saya-table-wrapper">
-                  <table className="sid-surat-saya-table">
-                    <thead>
-                      <tr>
-                        <th className="sid-surat-saya-col-type">Jenis Surat</th>
-                        <th>Nomor</th>
-                        <th className="sid-surat-saya-col-date">Tanggal</th>
-                        <th className="sid-surat-saya-col-status">Status</th>
-                        <th className="sid-surat-saya-col-action">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {letters.map((item) => (
-                        <tr key={item.id}>
-                          <td>{item.letter_type?.name ?? '-'}</td>
-                          <td>{item.letter_number ?? '-'}</td>
-                          <td>
-                            {item.created_at
-                              ? new Date(item.created_at).toLocaleDateString('id-ID')
-                              : '-'}
-                          </td>
-                          <td>
-                            <StatusBadge status={item.status} />
-                          </td>
-                          <td className="sid-surat-saya-action-cell">
-                            <div className="sid-surat-saya-actions">
-                              <button
-                                type="button"
-                                onClick={() => setSelectedSurat(toDetail(item))}
-                                className="sid-surat-saya-detail-button"
-                                aria-label={`Detail ${item.letter_type?.name ?? 'surat'}`}
-                              >
-                                <Eye size={16} />
-                                Detail
-                              </button>
-
-                              {item.status !== 'approved' && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDelete(item)}
-                                  disabled={deletingId === item.id}
-                                  className="sid-surat-saya-delete-button"
-                                  aria-label={`Hapus ${item.letter_type?.name ?? 'surat'}`}
-                                >
-                                  <Trash2 size={16} />
-                                  Hapus
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              <SimplePagination page={page} totalPages={meta.last_page} onChange={setPage} />
-            </div>
+            <MyLettersList
+              letters={letters}
+              loading={loading}
+              filter={statusFilter}
+              onFilterChange={(value) => {
+                setStatusFilter(value)
+                setPage(1)
+              }}
+              onDetail={(item) => setSelectedSurat(toDetail(item))}
+              onDelete={handleDelete}
+              deletingId={deletingId}
+              onCreate={() => setApplying(true)}
+              page={page}
+              totalPages={meta.last_page}
+              onPageChange={setPage}
+              pageSize={pageSize}
+              onPageSizeChange={(value) => {
+                setPageSize(value)
+                setPage(1)
+              }}
+            />
           </>
         )}
       </div>

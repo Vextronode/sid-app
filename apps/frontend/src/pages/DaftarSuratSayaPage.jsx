@@ -1,20 +1,19 @@
 // ==========================================
 // DaftarSuratSayaPage.jsx
-// Tabel daftar surat warga.
-// Status menggunakan status generic.
+// Daftar surat warga beserta tahap prosesnya (MyLettersList).
 // ==========================================
 
 import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Eye, Trash2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
 
 import { WargaLayout } from '@/components/layout/WargaLayout'
+import { usePageSize } from '@/components/ui/usePageSize'
 import { useLetters } from '@/features/surat/hooks/useLetters'
 import { deleteLetter } from '@/features/surat/api/letterApi'
 import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal'
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { SimplePagination } from '@/components/ui/SimplePagination'
+import { MyLettersList } from '@/features/surat/components/MyLettersList'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import { confirmDialog } from '@/shared/lib/dialog'
@@ -25,17 +24,14 @@ const STATUS_PARAM = {
   approved: SURAT_STATUS.APPROVED,
 }
 
-const PAGE_TITLE = {
-  '': 'Semua Pengajuan',
-  approved: 'Permohonan Disetujui',
-  ditolak: 'Permohonan Ditolak',
-}
-
 export default function DaftarSuratSayaPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const filterStatus = searchParams.get('status') ?? ''
+  const activeStatus = STATUS_PARAM[filterStatus] ?? filterStatus
+
+  const changeFilter = (status) => setSearchParams(status ? { status } : {}, { replace: true })
 
   // Halaman disimpan bersama filter yang berlaku saat itu, sehingga
   // berpindah filter otomatis kembali ke halaman pertama.
@@ -44,9 +40,16 @@ export default function DaftarSuratSayaPage() {
   const setPage = (nextPage) => setPageState({ status: filterStatus, page: nextPage })
 
   // Filter status dan pagination diproses di server.
+  const [pageSize, setPageSizeState] = usePageSize('surat-saya')
+  const setPageSize = (value) => {
+    setPageSizeState(value)
+    setPage(1)
+  }
+
   const { letters, meta, loading, refresh } = useLetters({
     page,
-    status: STATUS_PARAM[filterStatus] ?? filterStatus,
+    perPage: pageSize,
+    status: activeStatus,
   })
 
   const [selectedSurat, setSelectedSurat] = useState(null)
@@ -96,8 +99,6 @@ export default function DaftarSuratSayaPage() {
     setSelectedSurat(listed ? toDetail(listed) : { id: letterId })
   }, !loading)
 
-  const filtered = letters
-
   return (
     <WargaLayout>
       <div className="sid-page sid-surat-saya-page">
@@ -114,17 +115,14 @@ export default function DaftarSuratSayaPage() {
           Kembali
         </button>
 
-        {/* ==========================================
-            HEADER
-        ========================================== */}
-
-        <h1 className="sid-page-title">{PAGE_TITLE[filterStatus] ?? 'Daftar Permohonan'}</h1>
-
-        <p className="sid-page-description">Daftar surat yang pernah Anda ajukan</p>
-
-        {/* ==========================================
-            CARD TABEL
-        ========================================== */}
+        <header className="sid-my-letters-header">
+          <div>
+            <h1 className="sid-my-letters-heading">Surat Saya</h1>
+            <p className="sid-my-letters-lead">
+              Pantau surat yang pernah Anda ajukan dan sampai mana prosesnya.
+            </p>
+          </div>
+        </header>
 
         {deleteError && (
           <p className="sid-admin-alert sid-admin-alert-error" role="alert">
@@ -132,101 +130,21 @@ export default function DaftarSuratSayaPage() {
           </p>
         )}
 
-        <div className="sid-card sid-surat-saya-table-card">
-          {loading ? (
-            <p className="sid-surat-saya-message">Memuat data surat...</p>
-          ) : filtered.length === 0 ? (
-            <p className="sid-surat-saya-message">Belum ada surat pada kategori ini.</p>
-          ) : (
-            <div className="sid-surat-saya-table-wrapper">
-              <table className="sid-surat-saya-table">
-                {/* HEADER */}
-
-                <thead>
-                  <tr>
-                    <th className="sid-surat-saya-col-type">Jenis Surat</th>
-
-                    <th className="sid-surat-saya-col-date">Tanggal</th>
-
-                    <th className="sid-surat-saya-col-status">Status</th>
-
-                    <th className="sid-surat-saya-col-action">Aksi</th>
-                  </tr>
-                </thead>
-
-                {/* BODY */}
-
-                <tbody>
-                  {filtered.map((item) => (
-                    <tr key={item.id}>
-                      {/* JENIS SURAT */}
-
-                      <td className="sid-surat-saya-type-cell">
-                        <div className="sid-surat-saya-type-info">
-                          <p className="sid-surat-saya-type-name">
-                            {item.letter_type?.name ?? '-'}
-                          </p>
-
-                          <p className="sid-surat-saya-letter-number">
-                            #{item.letter_number ?? `SKD-${item.id}`}
-                          </p>
-                        </div>
-                      </td>
-
-                      {/* TANGGAL */}
-
-                      <td className="sid-surat-saya-date-cell">
-                        <span>
-                          {item.created_at
-                            ? new Date(item.created_at).toLocaleDateString('id-ID')
-                            : '-'}
-                        </span>
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td className="sid-surat-saya-status-cell">
-                        <StatusBadge status={item.status} />
-                      </td>
-
-                      {/* AKSI */}
-
-                      <td className="sid-surat-saya-action-cell">
-                        <div className="sid-surat-saya-actions">
-                          {/* DETAIL */}
-
-                          <button
-                            type="button"
-                            onClick={() => setSelectedSurat(toDetail(item))}
-                            className="sid-surat-saya-detail-button"
-                          >
-                            <Eye />
-                            Detail
-                          </button>
-
-                          {item.status !== SURAT_STATUS.APPROVED && (
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(item)}
-                              disabled={deletingId === item.id}
-                              className="sid-surat-saya-delete-button"
-                              aria-label={`Hapus ${item.letter_type?.name ?? 'surat'}`}
-                            >
-                              <Trash2 />
-                              Hapus
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          <SimplePagination page={page} totalPages={meta.last_page} onChange={setPage} />
-        </div>
+        <MyLettersList
+          letters={letters}
+          loading={loading}
+          filter={activeStatus}
+          onFilterChange={changeFilter}
+          onDetail={(item) => setSelectedSurat(toDetail(item))}
+          onDelete={handleDelete}
+          deletingId={deletingId}
+          onCreate={() => navigate('/jenis-surat')}
+          page={page}
+          totalPages={meta.last_page}
+          onPageChange={setPage}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* ==========================================
