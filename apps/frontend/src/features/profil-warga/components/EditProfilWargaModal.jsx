@@ -8,6 +8,8 @@
 // ==========================================
 import { useEffect, useState } from 'react'
 import api from '@/lib/api'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { notifySuccess } from '@/shared/lib/toast'
 
 const EMPTY_PASSWORD = { current_password: '', password: '', password_confirmation: '' }
 
@@ -26,7 +28,16 @@ export default function EditProfilWargaModal({ open, onClose, onSaved, initialDa
   const [password, setPassword] = useState(EMPTY_PASSWORD)
   const [saving, setSaving] = useState('')
   const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
+
+  // Username/email berbeda dari data tersimpan, atau kolom kata sandi terisi.
+  const accountDirty =
+    account.username !== (initialData?.username ?? '') ||
+    account.email !== (initialData?.email ?? '')
+  const passwordDirty = Object.values(password).some((value) => value !== '')
+  const requestClose = useConfirmDiscard(open && (accountDirty || passwordDirty), {
+    disabled: Boolean(saving),
+    escapeClose: open ? onClose : null,
+  })
 
   useEffect(() => {
     if (!open) return
@@ -37,7 +48,6 @@ export default function EditProfilWargaModal({ open, onClose, onSaved, initialDa
     })
     setPassword(EMPTY_PASSWORD)
     setError('')
-    setMessage('')
   }, [open, initialData])
 
   if (!open) return null
@@ -45,12 +55,11 @@ export default function EditProfilWargaModal({ open, onClose, onSaved, initialDa
   const submit = async (kind, request, successMessage) => {
     setSaving(kind)
     setError('')
-    setMessage('')
 
     try {
       const response = await request()
 
-      setMessage(response.data?.message ?? successMessage)
+      notifySuccess(response.data?.message ?? successMessage)
 
       if (response.data?.user) onSaved?.(response.data.user)
 
@@ -82,7 +91,6 @@ export default function EditProfilWargaModal({ open, onClose, onSaved, initialDa
     event.preventDefault()
 
     if (password.password !== password.password_confirmation) {
-      setMessage('')
       setError('Konfirmasi kata sandi tidak sama.')
 
       return
@@ -108,11 +116,6 @@ export default function EditProfilWargaModal({ open, onClose, onSaved, initialDa
           <div className="sid-modal-error" role="alert">
             {error}
           </div>
-        )}
-        {message && (
-          <p className="sid-admin-alert sid-admin-alert-success" role="status">
-            {message}
-          </p>
         )}
 
         <form onSubmit={handleAccountSubmit}>
@@ -197,7 +200,11 @@ export default function EditProfilWargaModal({ open, onClose, onSaved, initialDa
           </div>
 
           <div className="sid-modal-actions">
-            <button type="button" className="sid-btn sid-btn-secondary" onClick={onClose}>
+            <button
+              type="button"
+              className="sid-btn sid-btn-secondary"
+              onClick={() => requestClose(onClose)}
+            >
               Tutup
             </button>
             <button type="submit" className="sid-btn sid-btn-primary" disabled={saving !== ''}>
