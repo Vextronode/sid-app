@@ -11,6 +11,10 @@ import { formatAnnouncementUntil } from '@/features/beranda/utils/announcement'
 import { getBeritaList } from '@/features/kelola-berita/api'
 import { deleteAnnouncement, getAnnouncement, saveAnnouncement } from '@/features/pengumuman/api'
 import { refreshPublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
+import { notifySuccess } from '@/shared/lib/toast'
 
 const TITLE_MAX = 150
 const BODY_MAX = 1000
@@ -270,6 +274,16 @@ function AnnouncementForm({ current, processing, error, onSubmit, onCancel }) {
   const [custom, setCustom] = useState({ value: '2', unit: 'hour' })
   const [durationError, setDurationError] = useState('')
   const [linkError, setLinkError] = useState('')
+  // Isian awal untuk peringatan "Buang perubahan?" saat Batal.
+  const [baseline] = useState(() => ({
+    title: current?.title ?? '',
+    body: current?.body ?? '',
+    link: initialLink(current?.link_url),
+    choice: current ? KEEP : null,
+  }))
+  const requestCancel = useConfirmDiscard(isFormDirty({ ...form, link, choice }, baseline), {
+    disabled: processing,
+  })
 
   // Berita yang ditautkan sudah dihapus atau ditarik jadi draf.
   const missing =
@@ -397,7 +411,7 @@ function AnnouncementForm({ current, processing, error, onSubmit, onCancel }) {
         {onCancel && (
           <button
             type="button"
-            onClick={onCancel}
+            onClick={() => requestCancel(onCancel)}
             className="sid-wilayah-btn sid-wilayah-btn-secondary"
             disabled={processing}
           >
@@ -452,6 +466,7 @@ export default function KelolaPengumumanPage() {
       const response = await saveAnnouncement(payload)
       setAnnouncement(response.data?.data ?? null)
       setEditing(false)
+      notifySuccess('Pengumuman berhasil ditayangkan di beranda.')
       // Beranda yang sedang terbuka di tab lain ikut memakai data baru.
       refreshPublicVillageInfo()
     } catch (requestError) {
@@ -462,12 +477,20 @@ export default function KelolaPengumumanPage() {
   }
 
   const handleDelete = async () => {
-    if (!window.confirm(`Hapus pengumuman "${announcement.title}" dari beranda?`)) return
+    if (
+      !(await confirmDialog({
+        title: `Hapus pengumuman "${announcement.title}"?`,
+        message: 'Pengumuman akan hilang dari beranda.',
+        confirmLabel: 'Hapus',
+      }))
+    )
+      return
 
     setProcessing(true)
 
     try {
       await deleteAnnouncement()
+      notifySuccess('Pengumuman berhasil dihapus dari beranda.')
       setAnnouncement(null)
       setEditing(false)
       refreshPublicVillageInfo()

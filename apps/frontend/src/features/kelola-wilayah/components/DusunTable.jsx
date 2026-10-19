@@ -1,7 +1,8 @@
-import { Pencil, Search, Trash2 } from 'lucide-react'
+import { Pencil, Power, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { StatusPill } from '@/components/ui/StatusPill'
 
-export default function DusunTable({ hamlets, rws, rts, processing, onEdit, onDelete }) {
+export default function DusunTable({ hamlets, rws, rts, processing, onEdit, onToggle, onDelete }) {
   const [search, setSearch] = useState('')
 
   const data = useMemo(() => {
@@ -73,15 +74,9 @@ export default function DusunTable({ hamlets, rws, rts, processing, onEdit, onDe
                   <td>{getRwCount(hamlet.id)}</td>
                   <td>{getRtCount(hamlet.id)}</td>
                   <td>
-                    <span
-                      className={`sid-wilayah-status ${
-                        hamlet.isActive
-                          ? 'sid-wilayah-status-active'
-                          : 'sid-wilayah-status-inactive'
-                      }`}
-                    >
+                    <StatusPill active={hamlet.isActive}>
                       {hamlet.isActive ? 'Aktif' : 'Nonaktif'}
-                    </span>
+                    </StatusPill>
                   </td>
                   <td>
                     <div className="sid-wilayah-actions">
@@ -92,6 +87,17 @@ export default function DusunTable({ hamlets, rws, rts, processing, onEdit, onDe
                         title="Edit Dusun"
                       >
                         <Pencil size={15} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onToggle(hamlet)}
+                        className="sid-wilayah-action sid-wilayah-action-toggle"
+                        title={hamlet.isActive ? 'Nonaktifkan Dusun' : 'Aktifkan Dusun'}
+                        aria-label={hamlet.isActive ? 'Nonaktifkan Dusun' : 'Aktifkan Dusun'}
+                        disabled={processing === `update-hamlet-${hamlet.id}`}
+                      >
+                        <Power size={15} />
                       </button>
 
                       <button

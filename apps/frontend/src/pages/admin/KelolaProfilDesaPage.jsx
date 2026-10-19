@@ -4,7 +4,7 @@
 // Data berasal dari API backend.
 // ==========================================
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Pencil, Users, Building2, Eye, ClipboardList, Mail, MapPin, Phone } from 'lucide-react'
 
 import { useProfilDesa } from '@/features/profil-desa-admin/hooks/useProfilDesa'
@@ -15,6 +15,7 @@ import PengesahanSuratCard from '@/features/profil-desa-admin/components/Pengesa
 import TampilanPublikCard from '@/features/profil-desa-admin/components/TampilanPublikCard'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { notifySuccess } from '@/shared/lib/toast'
 
 function Avatar({ src, name, size = 'medium' }) {
   return (
@@ -63,9 +64,22 @@ export default function KelolaProfilDesaPage() {
   // dan diaktifkan kembali.
   // ==========================================
 
-  const modalPerangkatList = officials.filter((official) => official.position !== 'kadus')
+  // Dimemo agar modal tidak mereset isian setiap kali halaman dirender ulang
+  // (mis. saat simpan gagal dan status processing berubah).
+  const modalPerangkatList = useMemo(
+    () => officials.filter((official) => official.position !== 'kadus'),
+    [officials],
+  )
 
-  const modalKadusList = officials.filter((official) => official.position === 'kadus')
+  const modalKadusList = useMemo(
+    () => officials.filter((official) => official.position === 'kadus'),
+    [officials],
+  )
+
+  const visiMisiData = useMemo(
+    () => ({ vision: profile.vision, mission: profile.mission }),
+    [profile.vision, profile.mission],
+  )
 
   // ==========================================
   // UPDATE PROFIL DESA
@@ -74,6 +88,7 @@ export default function KelolaProfilDesaPage() {
   const handleUpdateProfile = async (payload) => {
     try {
       await updateProfile(payload)
+      notifySuccess('Profil desa berhasil diperbarui.')
       setModalProfil(false)
     } catch {
       // Error sudah ditangani di hook.
@@ -87,6 +102,7 @@ export default function KelolaProfilDesaPage() {
   const handleUpdateVisiMisi = async (payload) => {
     try {
       await updateVisiMisi(payload)
+      notifySuccess('Visi dan misi berhasil diperbarui.')
       setModalVisiMisi(false)
     } catch {
       // Error sudah ditangani di hook.
@@ -133,6 +149,7 @@ export default function KelolaProfilDesaPage() {
 
       await Promise.all(updates)
 
+      notifySuccess('Data perangkat desa berhasil diperbarui.')
       setModalPerangkat(false)
     } catch {
       // Error sudah ditangani di hook.
@@ -473,6 +490,7 @@ export default function KelolaProfilDesaPage() {
         onSubmit={handleUpdateProfile}
         initialData={profile}
         processing={processing}
+        error={error}
       />
 
       {/* ==========================================
@@ -483,11 +501,9 @@ export default function KelolaProfilDesaPage() {
         open={modalVisiMisi}
         onClose={() => setModalVisiMisi(false)}
         onSubmit={handleUpdateVisiMisi}
-        initialData={{
-          vision: profile.vision,
-          mission: profile.mission,
-        }}
+        initialData={visiMisiData}
         processing={processing}
+        error={error}
       />
 
       {/* ==========================================
@@ -502,6 +518,7 @@ export default function KelolaProfilDesaPage() {
         initialPerangkat={modalPerangkatList}
         initialKadus={modalKadusList}
         processing={processing}
+        error={error}
       />
     </div>
   )

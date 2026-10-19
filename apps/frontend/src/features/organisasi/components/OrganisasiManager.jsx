@@ -16,6 +16,10 @@ import {
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { useOrganisasi } from '../hooks/useOrganisasi'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
 
 const LEADER_SLOTS = [
   { key: 'ketua', label: 'Ketua' },
@@ -271,6 +275,13 @@ function LeaderCard({
 function FillLeaderForm({ initial, slots, submitting, error, onCancel, onSubmit }) {
   const [form, setForm] = useState(initial)
   const [photo, setPhoto] = useState(null)
+  const requestCancel = useConfirmDiscard(
+    isFormDirty({ ...form, photo }, { ...initial, photo: null }),
+    {
+      disabled: submitting,
+      escapeClose: onCancel,
+    },
+  )
 
   const target = slots[form.slot]
   const holder = activeOf(target)[0]
@@ -426,7 +437,7 @@ function FillLeaderForm({ initial, slots, submitting, error, onCancel, onSubmit 
       <ModalActions
         submitting={submitting}
         submitLabel={holder ? 'Ganti' : 'Simpan'}
-        onCancel={onCancel}
+        onCancel={() => requestCancel(onCancel)}
       />
     </form>
   )
@@ -434,13 +445,18 @@ function FillLeaderForm({ initial, slots, submitting, error, onCancel, onSubmit 
 
 // Tambah anggota baru, atau edit data siapa pun (termasuk Ketua/Wakil).
 function MemberForm({ member, submitting, error, onCancel, onSubmit }) {
-  const [form, setForm] = useState({
+  const [initialForm] = useState(() => ({
     member_name: member?.member_name ?? '',
     phone_wa: member?.phone_wa ?? '',
     started_at: member?.started_at ?? today(),
     notes: member?.notes ?? '',
-  })
+  }))
+  const [form, setForm] = useState(initialForm)
   const [photo, setPhoto] = useState(null)
+  const requestCancel = useConfirmDiscard(
+    isFormDirty({ ...form, photo }, { ...initialForm, photo: null }),
+    { disabled: submitting, escapeClose: onCancel },
+  )
 
   const set = (patch) => setForm((current) => ({ ...current, ...patch }))
 
@@ -497,7 +513,11 @@ function MemberForm({ member, submitting, error, onCancel, onSubmit }) {
       </label>
 
       <ModalError error={error} />
-      <ModalActions submitting={submitting} submitLabel="Simpan" onCancel={onCancel} />
+      <ModalActions
+        submitting={submitting}
+        submitLabel="Simpan"
+        onCancel={() => requestCancel(onCancel)}
+      />
     </form>
   )
 }
@@ -569,7 +589,6 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
   const [processing, setProcessing] = useState(false)
   const [formError, setFormError] = useState(null)
   const [actionError, setActionError] = useState(null)
-  const [success, setSuccess] = useState(null)
 
   const openModal = (next) => {
     setFormError(null)
@@ -585,11 +604,10 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
     setProcessing(true)
     setFormError(null)
     setActionError(null)
-    setSuccess(null)
     try {
       await action()
       closeModal()
-      setSuccess(successMessage)
+      notifySuccess(successMessage)
     } catch (err) {
       const message = getErrorMessage(err, fallback)
       if (modal) setFormError(message)
@@ -615,8 +633,15 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
       },
     })
 
-  const handleDelete = (position, member, label) => {
-    if (!window.confirm(`Hapus ${label} "${member.member_name}"?`)) return
+  const handleDelete = async (position, member, label) => {
+    if (
+      !(await confirmDialog({
+        title: `Hapus ${label} "${member.member_name}"?`,
+        message: 'Tindakan ini tidak dapat dibatalkan.',
+        confirmLabel: 'Hapus',
+      }))
+    )
+      return
     run(
       () => removeMember(position.id, member.id),
       'Data berhasil dihapus.',
@@ -643,8 +668,15 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
     )
   }
 
-  const removePhotoOf = (position) => (member) => {
-    if (!window.confirm(`Hapus foto "${member.member_name}"?`)) return
+  const removePhotoOf = (position) => async (member) => {
+    if (
+      !(await confirmDialog({
+        title: `Hapus foto "${member.member_name}"?`,
+        message: 'Tindakan ini tidak dapat dibatalkan.',
+        confirmLabel: 'Hapus',
+      }))
+    )
+      return
     run(
       () => removePhoto(position.id, member.id),
       'Foto berhasil dihapus.',
@@ -654,7 +686,6 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
 
   const switchType = (value) => {
     setActiveType(value)
-    setSuccess(null)
     setActionError(null)
   }
 
@@ -705,11 +736,6 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
         {actionError && (
           <p className="sid-admin-alert sid-admin-alert-error" role="alert">
             {actionError}
-          </p>
-        )}
-        {success && (
-          <p className="sid-admin-alert sid-admin-alert-success" role="status">
-            {success}
           </p>
         )}
 

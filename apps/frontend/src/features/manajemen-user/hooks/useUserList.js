@@ -67,6 +67,7 @@ export function useUserList() {
       setError('')
       await toggleUserStatus(id)
       await loadUsers()
+      return true
     } catch (error) {
       const message = error?.response?.data?.message || 'Gagal mengubah status pengguna.'
       setError(message)

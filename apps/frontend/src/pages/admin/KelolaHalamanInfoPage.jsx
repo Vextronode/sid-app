@@ -5,6 +5,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { getInfoPages, saveInfoPage } from '@/features/info-admin/api'
 import { ListField } from '@/features/info-admin/components/ListField'
+import { notifySuccess } from '@/shared/lib/toast'
 
 // Alamat publik tiap halaman (route di App.jsx).
 const PUBLIC_PATHS = {
@@ -56,7 +57,7 @@ function InfoPageForm({ section, onSaved }) {
 
       setValues(saved.fields)
       onSaved(saved)
-      setMessage({ type: 'success', text: `${section.title} disimpan.` })
+      notifySuccess(`${section.title} berhasil disimpan.`)
     } catch (requestError) {
       setMessage({
         type: 'error',

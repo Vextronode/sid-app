@@ -10,6 +10,8 @@ import {
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { notifySuccess } from '@/shared/lib/toast'
 
 export default function ApprovalSettingPage() {
   const { user } = useAuth()
@@ -17,7 +19,6 @@ export default function ApprovalSettingPage() {
   const [settings, setSettings] = useState([])
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState(null)
-  const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -54,8 +55,6 @@ export default function ApprovalSettingPage() {
           : setting,
       ),
     )
-
-    setMessage('')
     setError('')
   }
 
@@ -64,7 +63,7 @@ export default function ApprovalSettingPage() {
     const reminderHours = Number(setting.reminder_hours)
 
     if (!Number.isInteger(deadlineHours) || deadlineHours < 1) {
-      setError('Deadline harus berupa bilangan bulat minimal 1 jam.')
+      setError('Batas waktu harus berupa bilangan bulat minimal 1 jam.')
       return
     }
 
@@ -80,7 +79,6 @@ export default function ApprovalSettingPage() {
 
     try {
       setSavingId(setting.id)
-      setMessage('')
       setError('')
 
       const response = await updateApprovalSetting(setting.id, {
@@ -101,7 +99,7 @@ export default function ApprovalSettingPage() {
         ),
       )
 
-      setMessage(
+      notifySuccess(
         `Konfigurasi ${APPROVAL_SETTING_LABELS[setting.approval_level]} berhasil disimpan.`,
       )
     } catch (err) {
@@ -126,10 +124,10 @@ export default function ApprovalSettingPage() {
       <div className="sid-page">
         <div className="mb-6">
           <p className="rw-breadcrumb">
-            Admin / <span>Pengaturan Deadline</span>
+            Admin / <span>Pengaturan Batas Waktu</span>
           </p>
 
-          <h1 className="sid-page-title">Pengaturan Deadline Approval</h1>
+          <h1 className="sid-page-title">Pengaturan Batas Waktu Persetujuan</h1>
 
           <p className="sid-page-description">
             Atur batas waktu proses dan waktu pengingat untuk setiap tahap approval surat. Pengingat
@@ -137,12 +135,6 @@ export default function ApprovalSettingPage() {
             deadline).
           </p>
         </div>
-
-        {message && (
-          <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            {message}
-          </div>
-        )}
 
         {error && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -164,7 +156,7 @@ export default function ApprovalSettingPage() {
               </div>
 
               <div>
-                <h2 className="font-medium text-[var(--sid-text)]">Batas Waktu Approval</h2>
+                <h2 className="font-medium text-[var(--sid-text)]">Batas Waktu Persetujuan</h2>
 
                 <p className="text-sm text-gray-500">Satuan waktu menggunakan jam.</p>
               </div>
@@ -187,7 +179,7 @@ export default function ApprovalSettingPage() {
                   className="grid gap-5 px-5 py-5 md:grid-cols-[1.35fr_1fr_1fr_auto_auto] md:items-end"
                 >
                   <div>
-                    <p className="mb-1.5 text-xs font-medium text-gray-600">Tahap Approval</p>
+                    <p className="mb-1.5 text-xs font-medium text-gray-600">Tahap Persetujuan</p>
                     <p className="text-sm font-medium text-[var(--sid-text)]">
                       {APPROVAL_SETTING_LABELS[setting.approval_level] ?? setting.approval_level}
                     </p>
@@ -195,7 +187,7 @@ export default function ApprovalSettingPage() {
 
                   <label className="block">
                     <span className="mb-1.5 block text-xs font-medium text-gray-600">
-                      Deadline Hours
+                      Batas Waktu (jam)
                     </span>
 
                     <div className="relative">
@@ -243,15 +235,9 @@ export default function ApprovalSettingPage() {
 
                   <div>
                     <p className="mb-1.5 text-xs font-medium text-gray-600">Status</p>
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                        setting.is_active
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
+                    <StatusPill active={setting.is_active}>
                       {setting.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
+                    </StatusPill>
                   </div>
 
                   <button

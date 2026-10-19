@@ -125,7 +125,7 @@ const MENU_ITEMS = [
     icon: BookOpenText,
   },
   {
-    label: 'Pengaturan Deadline',
+    label: 'Pengaturan Batas Waktu',
     route: '/admin/approval-settings',
     allowedRoles: getOperatorAllowedRoles('/admin/approval-settings'),
     icon: Settings,

@@ -9,6 +9,8 @@ import {
   uploadOfficialSignature,
   uploadVillageStamp,
 } from '../api'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 const MAX_SIZE = 5 * 1024 * 1024
@@ -35,7 +37,6 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
   const [draftUrl, setDraftUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   useEffect(() => {
     if (!hasImage) return undefined
@@ -71,7 +72,6 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
     const file = event.target.files?.[0] ?? null
 
     event.target.value = ''
-    setSuccess('')
 
     if (!file) return
 
@@ -96,6 +96,18 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
   }
 
   const handleSave = async () => {
+    // Mengganti gambar yang sudah ada memengaruhi semua surat yang terbit sesudahnya.
+    if (hasImage || imageUrl) {
+      const confirmed = await confirmDialog({
+        title: `Ganti ${label.toLowerCase()}?`,
+        message: 'Surat yang terbit setelah ini akan memakai gambar baru.',
+        confirmLabel: 'Ganti',
+        tone: 'primary',
+      })
+
+      if (!confirmed) return
+    }
+
     setSaving(true)
     setError('')
 
@@ -106,7 +118,7 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
       setImageUrl(draftUrl)
       setDraft(null)
       setDraftUrl('')
-      setSuccess(`${label} berhasil disimpan.`)
+      notifySuccess(`${label} berhasil disimpan.`)
       onUploaded?.()
     } catch (requestError) {
       setError(serverMessage(requestError, `Gagal menyimpan ${label.toLowerCase()}.`))
@@ -134,11 +146,6 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
       {error && (
         <p className="sid-admin-alert sid-admin-alert-error" role="alert">
           {error}
-        </p>
-      )}
-      {success && (
-        <p className="sid-upload-description" role="status">
-          {success}
         </p>
       )}
 

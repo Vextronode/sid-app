@@ -9,6 +9,8 @@ import { X, Save } from 'lucide-react'
 
 import { formatCoords, parseCoords, villageCoords } from '@/shared/lib/villageMap'
 import { resolveMapLink } from '../api'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
 
 // Isian lokasi berupa link (Google Maps), bukan koordinat.
 const isLink = (text) => /^https?:\/\//i.test(text.trim())
@@ -41,16 +43,21 @@ export default function EditProfilDesaModal({
   onSubmit,
   initialData,
   processing = false,
+  error = '',
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
+  const [baseline, setBaseline] = useState(null)
+  const requestClose = useConfirmDiscard(open && isFormDirty(form, baseline), {
+    disabled: processing,
+    escapeClose: open ? onClose : null,
+  })
   const [coordsError, setCoordsError] = useState('')
   const [coordsFound, setCoordsFound] = useState(false)
   const [resolving, setResolving] = useState(false)
 
   useEffect(() => {
     if (!open) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setForm({
+    const initialForm = {
       name: initialData?.name ?? '',
       head_name: initialData?.head_name ?? '',
       address: initialData?.address ?? '',
@@ -66,7 +73,10 @@ export default function EditProfilDesaModal({
       coords: formatCoords(villageCoords(initialData)),
       hero_photo_credit: initialData?.hero_photo_credit ?? '',
       welcome_message: initialData?.welcome_message ?? '',
-    })
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setForm(initialForm)
+    setBaseline(initialForm)
     setCoordsError('')
     setCoordsFound(false)
   }, [open, initialData])
@@ -164,7 +174,7 @@ export default function EditProfilDesaModal({
       className="sid-profil-desa-modal-backdrop"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !processing) {
-          onClose()
+          requestClose(onClose)
         }
       }}
     >
@@ -185,7 +195,7 @@ export default function EditProfilDesaModal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => requestClose(onClose)}
             className="sid-profil-desa-modal-close"
             disabled={processing}
             aria-label="Tutup"
@@ -477,10 +487,16 @@ export default function EditProfilDesaModal({
             </div>
           </div>
 
+          {error && (
+            <div className="sid-profil-desa-error" role="alert">
+              {error}
+            </div>
+          )}
+
           <div className="sid-profil-desa-modal-actions">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => requestClose(onClose)}
               className="sid-profil-desa-modal-secondary"
               disabled={processing}
             >

@@ -1,6 +1,13 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { confirmDialog, notifySuccess } = vi.hoisted(() => ({
+  confirmDialog: vi.fn(),
+  notifySuccess: vi.fn(),
+}))
+vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, alertDialog: vi.fn() }))
+vi.mock('@/shared/lib/toast', () => ({ notifySuccess }))
 
 const api = vi.hoisted(() => ({ getInfoPages: vi.fn(), saveInfoPage: vi.fn() }))
 
@@ -32,6 +39,7 @@ const PAGES = [
 
 describe('KelolaHalamanInfoPage', () => {
   beforeEach(() => {
+    confirmDialog.mockResolvedValue(true)
     api.getInfoPages.mockReset().mockResolvedValue({ data: { data: PAGES } })
     api.saveInfoPage.mockReset()
   })
@@ -73,7 +81,7 @@ describe('KelolaHalamanInfoPage', () => {
       periodic_info: ['Peraturan desa', 'APBDes'],
       ppid_email: null,
     })
-    expect(await screen.findByRole('status')).toHaveTextContent('PPID disimpan.')
+    await waitFor(() => expect(notifySuccess).toHaveBeenCalledWith('PPID berhasil disimpan.'))
     expect(screen.getByText(/Terakhir disimpan/)).toBeInTheDocument()
   })
 

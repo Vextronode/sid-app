@@ -1,7 +1,8 @@
-import { Pencil, Search, Trash2 } from 'lucide-react'
+import { Pencil, Power, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { StatusPill } from '@/components/ui/StatusPill'
 
-export default function RwTable({ rws, hamlets, processing, onEdit, onDelete }) {
+export default function RwTable({ rws, hamlets, processing, onEdit, onToggle, onDelete }) {
   const [search, setSearch] = useState('')
   const [filterHamlet, setFilterHamlet] = useState('')
 
@@ -82,13 +83,9 @@ export default function RwTable({ rws, hamlets, processing, onEdit, onDelete }) 
                   <td className="sid-wilayah-name">RW {rw.number}</td>
                   <td>{getHamletName(rw.hamletId)}</td>
                   <td>
-                    <span
-                      className={`sid-wilayah-status ${
-                        rw.isActive ? 'sid-wilayah-status-active' : 'sid-wilayah-status-inactive'
-                      }`}
-                    >
+                    <StatusPill active={rw.isActive}>
                       {rw.isActive ? 'Aktif' : 'Nonaktif'}
-                    </span>
+                    </StatusPill>
                   </td>
                   <td>
                     <div className="sid-wilayah-actions">
@@ -99,6 +96,17 @@ export default function RwTable({ rws, hamlets, processing, onEdit, onDelete }) 
                         title="Edit RW"
                       >
                         <Pencil size={15} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onToggle(rw)}
+                        className="sid-wilayah-action sid-wilayah-action-toggle"
+                        title={rw.isActive ? 'Nonaktifkan RW' : 'Aktifkan RW'}
+                        aria-label={rw.isActive ? 'Nonaktifkan RW' : 'Aktifkan RW'}
+                        disabled={processing === `update-rw-${rw.id}`}
+                      >
+                        <Power size={15} />
                       </button>
 
                       <button

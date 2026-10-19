@@ -1,7 +1,8 @@
-import { Pencil, Search, Trash2 } from 'lucide-react'
+import { Pencil, Power, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { StatusPill } from '@/components/ui/StatusPill'
 
-export default function RtTable({ rts, rws, hamlets, processing, onEdit, onDelete }) {
+export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggle, onDelete }) {
   const [search, setSearch] = useState('')
   const [filterRw, setFilterRw] = useState('')
 
@@ -95,13 +96,9 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onDelet
                     <td>{rw ? `RW ${rw.number}` : '-'}</td>
                     <td>{getHamletName(rt.rwId)}</td>
                     <td>
-                      <span
-                        className={`sid-wilayah-status ${
-                          rt.isActive ? 'sid-wilayah-status-active' : 'sid-wilayah-status-inactive'
-                        }`}
-                      >
+                      <StatusPill active={rt.isActive}>
                         {rt.isActive ? 'Aktif' : 'Nonaktif'}
-                      </span>
+                      </StatusPill>
                     </td>
                     <td>
                       <div className="sid-wilayah-actions">
@@ -112,6 +109,17 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onDelet
                           title="Edit RT"
                         >
                           <Pencil size={15} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onToggle(rt)}
+                          className="sid-wilayah-action sid-wilayah-action-toggle"
+                          title={rt.isActive ? 'Nonaktifkan RT' : 'Aktifkan RT'}
+                          aria-label={rt.isActive ? 'Nonaktifkan RT' : 'Aktifkan RT'}
+                          disabled={processing === `update-rt-${rt.id}`}
+                        >
+                          <Power size={15} />
                         </button>
 
                         <button
