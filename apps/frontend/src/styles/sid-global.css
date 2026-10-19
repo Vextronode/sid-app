@@ -8,6 +8,7 @@
      ========================= */
   --sid-primary: #185fa5;
   --sid-primary-hover: #0c447c;
+  --sid-primary-soft: #e6f1fb;
   --sid-on-primary: #ffffff;
 
   /* =========================
@@ -4311,6 +4312,135 @@
   background: var(--sid-surface-page);
 }
 
+/* Latar foto hero desa (useAuthBackground). Lapisan biru gelap menjaga
+   kontras kartu dan teks di atas foto apa pun. */
+.sid-login--photo {
+  background:
+    linear-gradient(rgba(12, 35, 65, 0.45), rgba(12, 35, 65, 0.6)),
+    var(--sid-login-bg) center / cover no-repeat,
+    var(--sid-surface-page);
+}
+
+/* Kartu kaca gelap di atas foto. Warnanya tidak dicocokkan ke satu foto:
+   blur + saturate membuat warna foto apa pun tembus samar ke kartu, jadi
+   kartu ikut berubah saat foto hero diganti. Tanpa foto, kartu tetap
+   putih seperti biasa. */
+.sid-login--photo .sid-login-card {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(12, 35, 65, 0.42);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 60px -20px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  color-scheme: dark;
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* Tanpa dukungan blur, atau pengguna meminta transparansi dikurangi:
+   kartu hampir pekat agar teks tetap terbaca. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sid-login--photo .sid-login-card {
+    background: rgba(12, 35, 65, 0.88);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .sid-login--photo .sid-login-card {
+    background: rgba(12, 35, 65, 0.92);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.sid-login--photo .sid-login-logo {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.24);
+}
+
+.sid-login--photo .sid-login-title {
+  color: #fff;
+}
+
+.sid-login--photo .sid-login-description,
+.sid-login--photo .sid-login-label,
+.sid-login--photo .sid-login-remember,
+.sid-login--photo .sid-login-register-text,
+.sid-login--photo .sid-login-back {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.sid-login--photo .sid-login-copyright {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sid-login--photo .sid-login-forgot,
+.sid-login--photo .sid-login-register-button {
+  color: var(--color-pb-padi);
+}
+
+.sid-login--photo .sid-login-back:hover {
+  color: #fff;
+}
+
+.sid-login--photo .sid-login-input {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.sid-login--photo .sid-login-input::placeholder,
+.sid-login--photo .sid-login-input-icon,
+.sid-login--photo .sid-login-password-toggle {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sid-login--photo .sid-login-password-toggle:hover {
+  color: #fff;
+}
+
+.sid-login--photo .sid-login-input:focus {
+  border-color: var(--color-pb-padi);
+  box-shadow: 0 0 0 3px rgba(224, 172, 43, 0.25);
+}
+
+.sid-login--photo .sid-login-input-error,
+.sid-login--photo .sid-login-input-error:focus {
+  border-color: #ff8a80;
+}
+
+.sid-login--photo .sid-login-field-error {
+  color: #ffb4ab;
+}
+
+.sid-login--photo .sid-login-error {
+  border-color: rgba(255, 138, 128, 0.45);
+  background: rgba(240, 68, 56, 0.18);
+  color: #ffd5d1;
+}
+
+.sid-login--photo .sid-login-submit {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.sid-login--photo .sid-login-footer {
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.sid-login--photo .sid-register-username,
+.sid-login--photo .sid-register-success-info {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.sid-login--photo .sid-register-username-label {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.sid-login--photo .sid-register-username strong {
+  color: var(--color-pb-padi);
+}
+
 /* =========================================================
    LOGIN CARD
    ========================================================= */
@@ -5326,6 +5456,10 @@
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.sid-surat-saya-delete-button:hover:not(:disabled) {
+  background: #f9d8d8;
 }
 
 .sid-surat-saya-delete-button:disabled {
@@ -7764,68 +7898,8 @@
   gap: 0.5rem;
 }
 
-.sid-operator-action {
-  width: 2.25rem;
-  height: 2.25rem;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: var(--radius-sm);
-
-  font-family: inherit;
-
-  cursor: pointer;
-
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    transform 0.15s ease;
-}
-
-/* DETAIL */
-
-.sid-operator-action.detail {
-  border: 1px solid var(--sid-border);
-
-  background: var(--sid-surface-card);
-  color: var(--sid-primary);
-}
-
-.sid-operator-action.detail:hover {
-  background: var(--sid-status-progress-bg);
-  border-color: var(--sid-header-subtext);
-}
-
-/* EDIT */
-
-.sid-operator-action.edit {
-  border: 1px solid var(--sid-status-pending-bg);
-
-  background: var(--sid-status-pending-bg);
-  color: var(--sid-status-pending-text);
-}
-
-.sid-operator-action.edit:hover {
-  background: #f5e1bc;
-  border-color: var(--sid-status-pending-text);
-}
-
-/* DELETE */
-
-.sid-operator-action.delete {
-  border: 1px solid var(--sid-status-rejected-bg);
-
-  background: var(--sid-status-rejected-bg);
-  color: var(--sid-status-rejected-text);
-}
-
-.sid-operator-action.delete:hover {
-  background: #f8dada;
-  border-color: var(--sid-status-rejected-text);
-}
+/* Tombol aksi baris (.sid-operator-action) didefinisikan di blok
+   Manajemen Pengguna di bawah agar hanya ada satu sumber gaya. */
 
 /* ==========================================
    PAGINATION
@@ -8360,6 +8434,11 @@
   transform: translateY(1px);
 }
 
+.sid-operator-export:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
 /* ==========================================
    FILTER CARD
    ========================================== */
@@ -8741,6 +8820,17 @@
   color: var(--sid-primary);
 }
 
+.sid-operator-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sid-operator-action:focus-visible,
+.sid-wilayah-action:focus-visible {
+  outline: 3px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
 /* ==========================================
    ROLE BADGE
    ========================================== */
@@ -8766,6 +8856,8 @@
 
 /* ==========================================
    STATUS BADGE
+   Satu-satunya gaya badge status di dashboard; dipakai lewat
+   components/ui/StatusPill.jsx.
    ========================================== */
 
 .sid-operator-status {
@@ -8781,6 +8873,8 @@
 
   font-size: 0.75rem;
   font-weight: 500;
+
+  white-space: nowrap;
 }
 
 .sid-operator-status::before {
@@ -8802,6 +8896,16 @@
 .sid-operator-status.inactive {
   background: var(--sid-surface-page);
   color: var(--sid-text-muted);
+}
+
+.sid-operator-status.danger {
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+}
+
+.sid-operator-status.warning {
+  background: var(--sid-status-pending-bg);
+  color: var(--sid-status-pending-text);
 }
 
 /* ==========================================
@@ -10588,6 +10692,56 @@
   text-align: left;
 
   cursor: pointer;
+}
+
+/* Thumbnail berita terbaru: klik untuk edit. */
+.sid-kelola-berita-latest-image-button {
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  transition:
+    opacity 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sid-kelola-berita-latest-image-button:hover:not(:disabled) {
+  opacity: 0.85;
+  box-shadow: 0 0 0 2px var(--sid-primary);
+}
+
+.sid-kelola-berita-latest-image-button:disabled {
+  cursor: not-allowed;
+}
+
+/* Tombol "Publikasikan" pada kartu draft. */
+.sid-kelola-berita-publish-button {
+  padding: 0;
+  border: 0;
+  border-radius: 0.25rem;
+  background: none;
+  cursor: pointer;
+}
+
+.sid-kelola-berita-publish-button .sid-kelola-berita-category {
+  transition: background-color 0.15s ease;
+}
+
+.sid-kelola-berita-publish-button:hover:not(:disabled) .sid-kelola-berita-category {
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-kelola-berita-publish-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.sid-kelola-berita-publish-button:focus-visible,
+.sid-kelola-berita-latest-image-button:focus-visible {
+  outline: 3px solid var(--sid-primary);
+  outline-offset: 2px;
 }
 
 .sid-kelola-berita-latest-image {
@@ -17922,7 +18076,7 @@ button.sid-operator-profile {
 }
 
 .sid-info-card__value {
-  color: var(--sid-text-primary, #2c2c2a);
+  color: var(--sid-text-primary);
   font-weight: 500;
 }
 
@@ -17957,7 +18111,7 @@ button.sid-operator-profile {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 
-  color: var(--sid-text-primary, #2c2c2a);
+  color: var(--sid-text-primary);
 }
 
 .sid-perangkat-card__list {
@@ -17987,7 +18141,7 @@ button.sid-operator-profile {
 }
 
 .sid-perangkat-card__nama {
-  color: var(--sid-text-primary, #2c2c2a);
+  color: var(--sid-text-primary);
   font-weight: 600;
   text-align: right;
 }
@@ -19831,6 +19985,20 @@ button.sid-operator-profile {
   gap: 12px;
 }
 
+/* Telepon + Email: kedua kelompok (ikon + teks) di tengah modal, teks di
+   dalamnya tetap rata kiri. Di layar sempit bertumpuk, tetap di tengah. */
+.sid-help-contact-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px 32px;
+}
+
+.sid-help-contact-group > .sid-help-item {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .sid-help-item-icon {
   display: flex;
   align-items: center;
@@ -20758,26 +20926,6 @@ button.sid-operator-profile {
   font-size: 0.72rem !important;
 }
 
-.sid-wilayah-status {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
-.sid-wilayah-status-active {
-  background: var(--sid-status-done-bg);
-  color: var(--sid-status-done-text);
-}
-
-.sid-wilayah-status-inactive {
-  background: var(--sid-status-rejected-bg);
-  color: var(--sid-status-rejected-text);
-}
-
 .sid-wilayah-actions {
   display: flex;
   align-items: center;
@@ -20808,6 +20956,16 @@ button.sid-operator-profile {
 
 .sid-wilayah-action-edit:hover {
   background: var(--sid-status-progress-bg);
+}
+
+.sid-wilayah-action-toggle {
+  color: var(--sid-text-secondary);
+}
+
+.sid-wilayah-action-toggle:hover:not(:disabled) {
+  background: var(--sid-status-progress-bg);
+  border-color: #b5d4f4;
+  color: var(--sid-primary);
 }
 
 .sid-wilayah-action-delete {
@@ -20883,6 +21041,14 @@ button.sid-operator-profile {
   background: var(--sid-surface-card);
   color: var(--sid-text-secondary);
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-wilayah-modal-close:hover {
+  background: var(--sid-surface-page);
+  color: var(--sid-text-primary);
 }
 
 .sid-wilayah-modal form {
@@ -21424,25 +21590,30 @@ button.sid-operator-profile {
   font-size: 0.8125rem;
 }
 
-.sid-admin-family-panel > .sid-operator-header {
+/* Jarak antarkartu seksi (mis. Kartu Keluarga dan Data Penduduk). */
+.sid-admin-section-panel + .sid-admin-section-panel {
+  margin-top: 1.5rem;
+}
+
+.sid-admin-section-panel > .sid-operator-header {
   min-height: auto;
   margin: 0;
   padding: 1.25rem 1.25rem 0;
 }
 
-.sid-admin-family-panel > .sid-operator-header h2 {
+.sid-admin-section-panel > .sid-operator-header h2 {
   margin: 0;
   color: var(--sid-text-primary);
   font-size: 1.125rem;
 }
 
-.sid-admin-family-panel > .sid-operator-header p {
+.sid-admin-section-panel > .sid-operator-header p {
   margin: 0.35rem 0 0;
   color: var(--sid-text-muted);
   font-size: 0.875rem;
 }
 
-.sid-admin-family-panel > .sid-operator-filter-card {
+.sid-admin-section-panel > .sid-operator-filter-card {
   margin: 1rem 1.25rem;
 }
 
@@ -21620,6 +21791,11 @@ button.sid-operator-profile {
   color: var(--sid-primary);
   font: inherit;
   cursor: pointer;
+}
+
+.sid-activity-log-subject-filter button:hover {
+  border-color: var(--sid-primary);
+  background: var(--sid-status-progress-bg);
 }
 
 .sid-activity-log-time {
@@ -22158,6 +22334,299 @@ button.sid-operator-profile {
 .sid-profile-photo-actions {
   display: flex;
   gap: 0.35rem;
+}
+
+/* Toast sukses (ToastHost): kanan bawah, di atas modal dan dialog. */
+.sid-toast-region {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.sid-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  width: min(380px, calc(100vw - 2rem));
+  padding: 0.75rem 0.75rem 0.75rem 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-md, 12px);
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  animation: sid-toast-in 0.2s ease-out;
+}
+
+.sid-toast p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.sid-toast-icon {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.sid-toast--success {
+  border-left: 4px solid var(--sid-status-done-text);
+}
+
+.sid-toast--success .sid-toast-icon {
+  color: var(--sid-status-done-text);
+}
+
+.sid-toast--info {
+  border-left: 4px solid var(--sid-primary);
+}
+
+.sid-toast--info .sid-toast-icon {
+  color: var(--sid-primary);
+}
+
+.sid-toast-close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--sid-text-muted);
+  cursor: pointer;
+}
+
+.sid-toast-close:hover {
+  background: var(--sid-surface-page);
+  color: var(--sid-text-primary);
+}
+
+@keyframes sid-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .sid-toast-region {
+    right: 0.75rem;
+    left: 0.75rem;
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    align-items: stretch;
+  }
+
+  .sid-toast {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-toast {
+    animation: none;
+  }
+}
+
+/* Peringatan singkat di tengah layar (dialog global). */
+.sid-notice-modal {
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.sid-notice-modal h2 {
+  margin: 0;
+  color: var(--sid-text-primary);
+  font-size: 1.125rem;
+}
+
+.sid-notice-modal p {
+  margin: 0;
+  color: var(--sid-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.sid-notice-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--sid-status-pending-bg);
+  color: var(--sid-status-pending-text);
+}
+
+/* Dialog global (DialogHost) di atas modal lain. */
+.sid-dialog-overlay {
+  z-index: 1100;
+}
+
+.sid-notice-modal p {
+  white-space: pre-line;
+}
+
+.sid-notice-modal--error .sid-notice-icon,
+.sid-notice-modal--danger .sid-notice-icon {
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+}
+
+.sid-notice-modal--success .sid-notice-icon {
+  background: var(--sid-status-done-bg);
+  color: var(--sid-status-done-text);
+}
+
+.sid-notice-modal--info .sid-notice-icon,
+.sid-notice-modal--primary .sid-notice-icon {
+  background: var(--sid-status-progress-bg);
+  color: var(--sid-primary);
+}
+
+.sid-notice-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  text-align: left;
+  color: var(--sid-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.sid-notice-field textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.sid-notice-field textarea:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 1px;
+}
+
+.sid-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.sid-notice-actions > button {
+  min-width: 8rem;
+  justify-content: center;
+}
+
+.sid-notice-cancel {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.625rem 1.25rem;
+  border: 1px solid var(--sid-border);
+  border-radius: 9999px;
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.sid-notice-cancel:hover {
+  background: var(--sid-surface-page);
+}
+
+.sid-notice-modal .sid-operator-primary.sid-notice-danger {
+  border-color: var(--sid-status-rejected-text);
+  background: var(--sid-status-rejected-text);
+}
+
+.sid-notice-modal .sid-operator-primary.sid-notice-danger:hover {
+  filter: brightness(0.92);
+}
+
+/* Avatar yang punya foto: bisa diklik untuk pratinjau besar. */
+.sid-profile-photo-trigger {
+  padding: 0;
+  border: 0;
+  cursor: zoom-in;
+}
+
+.sid-profile-photo-trigger:focus-visible {
+  outline: 3px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+.sid-photo-preview {
+  position: relative;
+  max-width: min(90vw, 480px);
+  padding: 0.5rem;
+  border-radius: 16px;
+  background: var(--sid-surface-card);
+  box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.45);
+}
+
+.sid-photo-preview-image {
+  display: block;
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+/* Tombol tutup di pojok kanan atas bingkai, sedikit keluar dari tepinya. */
+.sid-photo-preview-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--sid-border);
+  border-radius: 50%;
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.sid-photo-preview-close:hover {
+  border-color: var(--sid-primary);
+  color: var(--sid-primary);
+}
+
+.sid-photo-preview-close:focus-visible {
+  outline: 3px solid var(--sid-primary);
+  outline-offset: 2px;
 }
 
 .sid-profile-photo-actions button {
