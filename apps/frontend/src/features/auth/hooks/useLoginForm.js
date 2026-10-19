@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import api from '@/lib/api'
+import { alertDialog } from '@/shared/lib/dialog'
 
 const INITIAL_FORM = {
   username: '',
@@ -38,11 +39,12 @@ function getRateLimitMessage(error) {
   const rawRetryAfter = response?.headers?.['retry-after'] ?? response?.data?.retry_after
   const retrySeconds = Number(rawRetryAfter)
   const retryDate = typeof rawRetryAfter === 'string' ? Date.parse(rawRetryAfter) : Number.NaN
-  const retryAfter = Number.isFinite(retrySeconds) && retrySeconds > 0
-    ? retrySeconds
-    : Number.isFinite(retryDate)
-      ? Math.max(Math.ceil((retryDate - Date.now()) / 1000), 0)
-      : 0
+  const retryAfter =
+    Number.isFinite(retrySeconds) && retrySeconds > 0
+      ? retrySeconds
+      : Number.isFinite(retryDate)
+        ? Math.max(Math.ceil((retryDate - Date.now()) / 1000), 0)
+        : 0
 
   if (Number.isFinite(retryAfter) && retryAfter > 0) {
     const minutes = Math.ceil(retryAfter / 60)
@@ -79,6 +81,34 @@ export function useLoginForm() {
   }
 
   // ==========================================
+  // VALIDASI FE: kolom kosong tidak dikirim ke server
+  // ==========================================
+
+  const validate = () => {
+    const nextErrors = {
+      ...INITIAL_ERRORS,
+      username: formData.username.trim() ? '' : 'Username wajib diisi.',
+      password: formData.password ? '' : 'Kata sandi wajib diisi.',
+    }
+
+    setErrors(nextErrors)
+
+    const missing = [nextErrors.username && 'username', nextErrors.password && 'kata sandi'].filter(
+      Boolean,
+    )
+
+    if (missing.length > 0) {
+      alertDialog({
+        title: 'Data belum lengkap',
+        message: `Isi ${missing.join(' dan ')} terlebih dahulu.`,
+        tone: 'warning',
+      })
+    }
+
+    return missing.length === 0
+  }
+
+  // ==========================================
   // LOGIN
   // ==========================================
 
@@ -90,6 +120,11 @@ export function useLoginForm() {
     }
 
     setErrors(INITIAL_ERRORS)
+
+    if (!validate()) {
+      return null
+    }
+
     setIsLoading(true)
 
     try {
@@ -106,7 +141,7 @@ export function useLoginForm() {
       // ==========================================
 
       const response = await api.post('/login', {
-        username: formData.username,
+        username: formData.username.trim(),
         password: formData.password,
       })
 
@@ -153,7 +188,7 @@ export function useLoginForm() {
             usernameError ||
             passwordError ||
             backendMessage ||
-            'Username atau password belum sesuai.',
+            'Username atau kata sandi belum sesuai.',
         })
 
         return null
@@ -168,9 +203,7 @@ export function useLoginForm() {
       if (status === 403) {
         setErrors({
           ...INITIAL_ERRORS,
-          general:
-            backendMessage ||
-            'Akun tidak dapat digunakan. Silakan hubungi administrator.',
+          general: backendMessage || 'Akun tidak dapat digunakan. Silakan hubungi administrator.',
         })
 
         return null
@@ -192,9 +225,7 @@ export function useLoginForm() {
       if (status === 419) {
         setErrors({
           ...INITIAL_ERRORS,
-          general:
-            backendMessage ||
-            'Sesi keamanan tidak valid. Silakan coba login kembali.',
+          general: backendMessage || 'Sesi keamanan tidak valid. Silakan coba login kembali.',
         })
 
         return null
@@ -220,8 +251,7 @@ export function useLoginForm() {
       if (isServerError(status)) {
         setErrors({
           ...INITIAL_ERRORS,
-          general:
-            'Terjadi gangguan pada server. Silakan coba lagi beberapa saat.',
+          general: 'Terjadi gangguan pada server. Silakan coba lagi beberapa saat.',
         })
 
         return null
@@ -234,8 +264,7 @@ export function useLoginForm() {
       if (isNetworkError(error)) {
         setErrors({
           ...INITIAL_ERRORS,
-          general:
-            'Tidak dapat terhubung ke server. Periksa koneksi Anda lalu coba lagi.',
+          general: 'Tidak dapat terhubung ke server. Periksa koneksi Anda lalu coba lagi.',
         })
 
         return null
@@ -247,9 +276,7 @@ export function useLoginForm() {
 
       setErrors({
         ...INITIAL_ERRORS,
-        general:
-          backendMessage ||
-          'Terjadi kesalahan saat login. Silakan coba lagi.',
+        general: backendMessage || 'Terjadi kesalahan saat login. Silakan coba lagi.',
       })
 
       return null

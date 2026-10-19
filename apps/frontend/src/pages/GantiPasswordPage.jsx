@@ -13,6 +13,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { useLogoutToBeranda } from '@/features/auth/hooks/useLogoutToBeranda'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { STAF_APP_LABEL } from '@/lib/constants/app'
+import { notifySuccess } from '@/shared/lib/toast'
 
 const EMPTY_FORM = { current_password: '', password: '', password_confirmation: '' }
 
@@ -62,6 +63,7 @@ export default function GantiPasswordPage() {
     try {
       await api.put('/api/profile/password', form)
       await refreshUser()
+      notifySuccess('Kata sandi berhasil diperbarui.')
       navigate('/loginpage', { replace: true })
     } catch (err) {
       setError(firstMessage(err, 'Kata sandi gagal diperbarui.'))

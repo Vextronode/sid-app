@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useLoginForm } from '@/features/auth/hooks/useLoginForm'
+import { useAuthBackground } from '@/features/auth/hooks/useAuthBackground'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
 import { HAL_BERANDA, HAL_DAFTAR } from '@/lib/constants/routes'
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { login } = useAuth()
+  const background = useAuthBackground()
 
   // ==========================================
   // LOGIN FORM HOOK
@@ -106,7 +108,7 @@ export default function LoginPage() {
   // ==========================================
 
   return (
-    <div className="sid-login">
+    <div className={background.className} style={background.style}>
       {/* ==========================================
           LOGIN CARD
           ========================================== */}
@@ -123,7 +125,7 @@ export default function LoginPage() {
         <div className="sid-login-header">
           <h1 className="sid-login-title">Masuk ke {APP_NAME}</h1>
 
-          <p className="sid-login-description">Masukkan Username dan Password Anda</p>
+          <p className="sid-login-description">Masukkan username dan kata sandi Anda</p>
         </div>
 
         {/* ERROR */}
@@ -168,7 +170,7 @@ export default function LoginPage() {
 
           <div className="sid-login-field">
             <div className="sid-login-password-header">
-              <label className="sid-login-label">Password</label>
+              <label className="sid-login-label">Kata Sandi</label>
 
               <button
                 type="button"
@@ -190,7 +192,7 @@ export default function LoginPage() {
                 className={`sid-login-input sid-login-input-password ${
                   errors.password ? 'sid-login-input-error' : ''
                 }`}
-                placeholder="Masukkan password"
+                placeholder="Masukkan kata sandi"
                 autoComplete="current-password"
               />
 

@@ -127,10 +127,16 @@ describe('ProtectedRoute', () => {
     expect(screen.getByText('Halaman terlindungi')).toBeInTheDocument()
   })
 
-  it('still sends users with another role to the home page', () => {
+  it('sends an official opening a warga letter page to their own letter page, not the public home', () => {
     auth.initialUser = { role: 'rt' }
     renderAt('/jenis-surat')
-    expect(currentPath()).toBe('/')
+    expect(currentPath()).toBe('/admin/surat-saya')
+  })
+
+  it('sends staf_sid opening a warga page to their own home page', () => {
+    auth.initialUser = { role: 'staf_sid' }
+    renderAt('/jenis-surat')
+    expect(currentPath()).toBe('/admin/operator-desa')
   })
 
   it('still sends users with a temporary password to /ganti-password', () => {
@@ -156,7 +162,8 @@ describe('GuestRoute', () => {
     ['warga', '/loginpage', '/daftar-surat'],
     ['warga', '/loginpage?redirect=%2F%2Fevil.com', '/daftar-surat'],
     ['warga', '/loginpage?redirect=%2Fadmin%2Fdashboard-surat-rt', '/daftar-surat'],
-    ['rt', '/loginpage?redirect=%2Fjenis-surat', '/admin/dashboard-surat-rt'],
+    ['rt', '/loginpage?redirect=%2Fjenis-surat', '/admin/surat-saya'],
+    ['rt', '/loginpage', '/admin/dashboard-surat-rt'],
     ['kepala_desa', '/loginpage', '/admin/dashboard-surat-kades'],
   ])('role %s at %s still goes to %s', (role, entry, expected) => {
     auth.initialUser = { role }
@@ -181,12 +188,12 @@ describe('login flow inside GuestRoute', () => {
     expect(await screen.findByText('Halaman terlindungi')).toBeInTheDocument()
   })
 
-  it('keeps the role redirect for other roles after login', async () => {
+  it('sends an official to their own letter page after logging in from a letter link', async () => {
     auth.loginUser = { id: 2, role: 'rt' }
     const { container } = renderAt('/loginpage?redirect=%2Fjenis-surat')
 
     fireEvent.submit(container.querySelector('form'))
 
-    expect(await screen.findByTestId('current-path')).toHaveTextContent('/admin/dashboard-surat-rt')
+    expect(await screen.findByTestId('current-path')).toHaveTextContent('/admin/surat-saya')
   })
 })

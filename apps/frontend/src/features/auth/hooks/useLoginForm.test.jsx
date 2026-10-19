@@ -8,6 +8,9 @@ const api = vi.hoisted(() => ({
 
 vi.mock('@/lib/api', () => ({ default: api }))
 
+const { alertDialog } = vi.hoisted(() => ({ alertDialog: vi.fn() }))
+vi.mock('@/shared/lib/dialog', () => ({ alertDialog }))
+
 import { useLoginForm } from './useLoginForm'
 
 function changeField(result, name, value) {
@@ -102,5 +105,48 @@ describe('useLoginForm', () => {
 
     expect(result.current.errors.general).toContain('ditangguhkan sementara hingga 1 jam')
     expect(result.current.isLoading).toBe(false)
+  })
+
+  it('does not send an empty form and shows a warning card', async () => {
+    const { result } = renderHook(() => useLoginForm())
+
+    await act(async () => {
+      await result.current.handleSubmit({ preventDefault: vi.fn() })
+    })
+
+    expect(api.get).not.toHaveBeenCalled()
+    expect(api.post).not.toHaveBeenCalled()
+    expect(result.current.errors.username).toBe('Username wajib diisi.')
+    expect(result.current.errors.password).toBe('Kata sandi wajib diisi.')
+    expect(alertDialog).toHaveBeenCalledWith({
+      title: 'Data belum lengkap',
+      message: 'Isi username dan kata sandi terlebih dahulu.',
+      tone: 'warning',
+    })
+  })
+
+  it('treats a whitespace-only username as empty and trims it when sending', async () => {
+    const { result } = renderHook(() => useLoginForm())
+    changeField(result, 'username', '   ')
+    changeField(result, 'password', 'rahasia123')
+
+    await act(async () => {
+      await result.current.handleSubmit({ preventDefault: vi.fn() })
+    })
+
+    expect(api.post).not.toHaveBeenCalled()
+    expect(alertDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Isi username terlebih dahulu.' }),
+    )
+
+    changeField(result, 'username', ' warga-10 ')
+    await act(async () => {
+      await result.current.handleSubmit({ preventDefault: vi.fn() })
+    })
+
+    expect(api.post).toHaveBeenCalledWith('/login', {
+      username: 'warga-10',
+      password: 'rahasia123',
+    })
   })
 })
