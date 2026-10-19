@@ -9,6 +9,7 @@ import {
   getLetterProgress,
   LETTER_STAGES,
 } from '@/features/surat/utils/letterProgress'
+import { LetterRowActions } from './LetterRowActions'
 
 const MY_LETTER_FILTERS = [
   { value: '', label: 'Semua' },
@@ -48,6 +49,7 @@ function LetterTrack({ progress }) {
 function LetterRow({ letter, onDetail, onDelete, deleting }) {
   const progress = getLetterProgress(letter)
   const name = letter.letter_type?.name ?? 'Surat'
+  const isApproved = letter.status === SURAT_STATUS.APPROVED
 
   return (
     <li className={`sid-my-letters-row tone-${progress.tone}`}>
@@ -80,27 +82,30 @@ function LetterRow({ letter, onDetail, onDelete, deleting }) {
         </p>
 
         <div className="sid-my-letters-actions">
-          <button
-            type="button"
-            onClick={() => onDetail(letter)}
-            className="sid-my-letters-detail"
-            aria-label={`Lihat detail ${name}`}
-          >
-            {progress.tone === 'done' ? 'Lihat dan unduh' : 'Lihat detail'}
-          </button>
-
-          {letter.status !== SURAT_STATUS.APPROVED && (
-            <button
-              type="button"
-              onClick={() => onDelete(letter)}
-              disabled={deleting}
-              className="sid-my-letters-delete"
-              aria-label={`Hapus ${name}`}
-            >
-              <Trash2 size={15} aria-hidden="true" />
-              {deleting ? 'Menghapus…' : 'Hapus'}
-            </button>
-          )}
+          <LetterRowActions
+            surat={letter}
+            onOpen={onDetail}
+            openAriaLabel={`Lihat detail ${name}`}
+            canDownload={isApproved}
+            downloadDisabled={letter.is_expired === true}
+            downloadTitle={
+              letter.is_expired === true ? 'Masa berlaku surat telah habis' : undefined
+            }
+            extra={
+              !isApproved && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(letter)}
+                  disabled={deleting}
+                  className="sid-row-action danger"
+                  aria-label={`Hapus ${name}`}
+                >
+                  <Trash2 size={15} aria-hidden="true" />
+                  {deleting ? 'Menghapus…' : 'Hapus'}
+                </button>
+              )
+            }
+          />
         </div>
       </div>
     </li>
