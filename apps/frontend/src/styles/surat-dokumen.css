@@ -216,9 +216,15 @@
   background: color-mix(in srgb, var(--sid-primary-soft) 45%, transparent);
 }
 
+/* Kolom Aksi berisi grup tombol yang lebar; judul dan tombol dipusatkan
+   bersama agar "Aksi" tepat di atas tombolnya. Kolom lain rata kiri. */
 .sid-letter-table th.sid-letter-table-actions,
 .sid-letter-table td.sid-letter-table-actions {
-  text-align: right;
+  text-align: center;
+}
+
+.sid-letter-table td.sid-letter-table-actions .sid-row-actions {
+  justify-content: center;
 }
 
 .sid-letter-table-number span {
