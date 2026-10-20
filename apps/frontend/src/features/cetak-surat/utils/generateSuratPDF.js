@@ -1,9 +1,10 @@
 // ==========================================
 // generateSuratPDF.js
-// Generate PDF surat dari backend seeder template
+// Unduh dan pratinjau PDF surat dari backend.
+// template: 'digital' (TTD + stempel) atau 'wet' (area tanda tangan kosong).
 // ==========================================
 
-import { responseError, userFacingError } from '@/shared/lib/apiError'
+import { responseError } from '@/shared/lib/apiError'
 
 // VITE_API_URL kosong/tidak di-build -> same-origin (sama seperti src/lib/api.js)
 const apiUrl = () => (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/+$/, '')
@@ -26,9 +27,10 @@ export async function downloadSuratPDF(surat, template = 'wet') {
   const blobUrl = window.URL.createObjectURL(blob)
   const downloadLink = document.createElement('a')
   const letterNumber = String(surat.letter_number ?? surat.id).replace(/[^\w-]/g, '-')
+  const suffix = template === 'wet' ? '-ttd-basah' : ''
 
   downloadLink.href = blobUrl
-  downloadLink.download = `surat-${letterNumber}.pdf`
+  downloadLink.download = `surat-${letterNumber}${suffix}.pdf`
   document.body.appendChild(downloadLink)
   downloadLink.click()
   downloadLink.remove()
@@ -36,69 +38,8 @@ export async function downloadSuratPDF(surat, template = 'wet') {
   setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000)
 }
 
-// buka file PDF dari backend
-export async function generateSuratPDF(surat, template = 'wet') {
-  const url = `${apiUrl()}/api/letters/${surat.id}/download?template=${template}`
-
-  // Buka tab SEBELUM await agar tidak diblokir browser
-  const pdfTab = window.open('', '_blank')
-
-  if (!pdfTab) {
-    throw userFacingError(
-      'Jendela baru diblokir browser. Izinkan pop-up untuk situs ini lalu coba lagi.',
-    )
-  }
-
-  try {
-    pdfTab.document.write(`
-      <html>
-        <head>
-          <title>Memproses Surat...</title>
-        </head>
-        <body style="
-          font-family: Arial, sans-serif;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 100vh;
-          margin: 0;
-        ">
-          <p>Memproses surat...</p>
-        </body>
-      </html>
-    `)
-
-    const response = await fetch(url, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        Accept: 'application/pdf',
-      },
-    })
-
-    if (!response.ok) {
-      throw await responseError(response, 'Gagal membuka surat.')
-    }
-
-    const blob = await response.blob()
-    const blobUrl = window.URL.createObjectURL(blob)
-
-    pdfTab.location.href = blobUrl
-
-    // Jangan revoke terlalu cepat
-    setTimeout(() => {
-      window.URL.revokeObjectURL(blobUrl)
-    }, 60000)
-
-    return true
-  } catch (error) {
-    pdfTab.close()
-    throw error
-  }
-}
-
-// Preview PDF di tab baru dari backend
-export async function previewSuratPDF(surat, template = 'wet') {
+// Blob PDF pratinjau; dirender sebagai canvas oleh PdfCanvasPreview.
+export async function previewSuratPDF(surat, template = 'digital') {
   const url = `${apiUrl()}/api/letters/${surat.id}/preview?template=${template}`
 
   const response = await fetch(url, {

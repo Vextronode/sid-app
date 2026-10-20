@@ -2103,176 +2103,6 @@
 }
 
 /* =========================================================
-   DATE PREVIEW CONTAINER
-   ========================================================= */
-
-.sid-date-preview-container {
-  width: 100%;
-
-  margin-top: 10px;
-
-  padding: 8px;
-
-  box-sizing: border-box;
-
-  overflow: hidden;
-
-  border: 1px solid var(--sid-border);
-
-  border-radius: var(--radius-md);
-
-  background: var(--sid-surface-page);
-}
-
-/* =========================================================
-   DATE PREVIEW LOADING
-   ========================================================= */
-
-.sid-date-preview-loading {
-  min-height: 280px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  gap: 12px;
-
-  color: var(--sid-text-secondary);
-}
-
-.sid-date-preview-loading p {
-  margin: 0;
-
-  font-size: 13px;
-
-  line-height: 1.5;
-}
-
-.sid-date-preview-spinner {
-  width: 32px;
-  height: 32px;
-
-  border: 2px solid var(--sid-border);
-
-  border-top-color: var(--sid-primary);
-
-  border-radius: 50%;
-
-  animation: sid-date-preview-spin 0.8s linear infinite;
-}
-
-@keyframes sid-date-preview-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* =========================================================
-   DATE PREVIEW ERROR
-   ========================================================= */
-
-.sid-date-preview-error {
-  min-height: 280px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  gap: 8px;
-
-  padding: 24px;
-
-  text-align: center;
-
-  color: var(--sid-text-muted);
-}
-
-.sid-date-preview-error-icon {
-  width: 40px;
-  height: 40px;
-
-  color: var(--sid-text-muted);
-}
-
-.sid-date-preview-error p {
-  margin: 0;
-
-  color: var(--sid-text-secondary);
-
-  font-size: 13px;
-
-  line-height: 1.5;
-}
-
-.sid-date-preview-error-description {
-  color: var(--sid-text-muted) !important;
-
-  font-size: 11px !important;
-}
-
-.sid-date-preview-retry {
-  margin-top: 4px;
-
-  padding: 9px 16px;
-
-  border: 1px solid var(--sid-primary);
-
-  border-radius: var(--radius-sm);
-
-  background: var(--sid-primary);
-
-  color: var(--sid-on-primary);
-
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 500;
-
-  cursor: pointer;
-
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.sid-date-preview-retry:hover {
-  background: var(--sid-primary-hover);
-
-  border-color: var(--sid-primary-hover);
-}
-
-/* =========================================================
-   DATE PREVIEW PDF PAGES
-   ========================================================= */
-
-.sid-date-preview-pages {
-  display: flex;
-  flex-direction: column;
-
-  gap: 10px;
-}
-
-.sid-date-preview-page {
-  overflow: hidden;
-
-  background: var(--sid-surface-card);
-
-  border-radius: 2px;
-
-  box-shadow: 0 1px 3px rgba(44, 44, 42, 0.1);
-}
-
-.sid-date-preview-image {
-  display: block;
-
-  width: 100%;
-  height: auto;
-
-  user-select: none;
-}
-
-/* =========================================================
    SID HOME / LANDING PAGE
    ========================================================= */
 
@@ -3040,19 +2870,6 @@
     padding: 9px 12px;
 
     font-size: 12px;
-  }
-
-  .sid-date-preview-container {
-    padding: 6px;
-  }
-
-  .sid-date-preview-loading,
-  .sid-date-preview-error {
-    min-height: 240px;
-  }
-
-  .sid-date-preview-pages {
-    gap: 8px;
   }
 
   .sid-date-tracker-empty {
@@ -6244,8 +6061,14 @@
   display: block;
 }
 
+/* Halaman tabel surat pejabat (layout navbar atas) selebar kontainer
+   navbar/footer (.bd-container: 1200px + gutter 24px), bukan lagi 768px,
+   agar tabel dan tombol aksinya lega dan tepinya segaris dengan logo. */
 .rw-page-content {
-  max-width: 768px;
+  box-sizing: content-box;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 1.5rem 24px;
 }
 
 .rw-breadcrumb {

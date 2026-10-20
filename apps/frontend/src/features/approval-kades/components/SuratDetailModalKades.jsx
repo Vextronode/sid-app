@@ -37,27 +37,21 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
     }
   }
 
+  // Kades/Sekdes berhak mengunduh surat final desanya (LetterPolicy::download).
   return (
     <SuratDetailModal
       suratId={suratId}
       onClose={onClose}
       surat={surat}
       notFound={notFound}
-      subtitle="Tahap Final (Kades/Sekdes)"
-      decisionLevels={[
-        {
-          levels: ['kepala_desa', 'sekretaris_desa'],
-          title: 'Keputusan Tahap Final',
-        },
-      ]}
-      showStatus
+      viewerRole={user?.role}
       currentUserRole={currentUserRole}
       apiRole={currentUserRole}
       onApprove={handleApprove}
       onReject={handleReject}
       onConflict={refresh}
       closeOnDecision={false}
-      previewWhen="approved"
+      canDownload
     />
   )
 }

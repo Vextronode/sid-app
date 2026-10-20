@@ -11,13 +11,7 @@ export default function SuratDetailModalRW({ suratId, onClose }) {
       onClose={onClose}
       surat={surat}
       notFound={notFound}
-      subtitle="Riwayat surat wilayah RW"
-      decisionLevels={[
-        {
-          levels: ['rt'],
-          title: 'Keputusan RT',
-        },
-      ]}
+      viewerRole="rw"
     />
   )
 }

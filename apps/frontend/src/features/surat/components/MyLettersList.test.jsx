@@ -81,7 +81,7 @@ describe('MyLettersList', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Lihat detail Surat Keterangan Usaha' }))
     expect(onDetail).toHaveBeenCalledWith(LETTERS[1])
-    expect(screen.getByText('Lihat dan unduh')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Unduh/ })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Hapus Surat Keterangan Usaha' })).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Hapus Surat Keterangan Domisili' }))
