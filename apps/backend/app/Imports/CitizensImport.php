@@ -60,7 +60,7 @@ class CitizensImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow
         }
 
         try {
-            $this->citizenService->create($validator->validated(), $this->user);
+            $this->citizenService->create($validator->validated(), $this->user, auditSource: 'import');
             $this->successCount++;
         } catch (ValidationException $e) {
             $this->errors[] = [

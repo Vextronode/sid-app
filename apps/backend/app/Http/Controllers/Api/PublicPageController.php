@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PublicNewsListRequest;
+use App\Http\Resources\AnnouncementResource;
 use App\Http\Resources\NewsResource;
 use App\Http\Resources\PublicContactResource;
 use App\Http\Resources\PublicLetterTypeResource;
@@ -11,6 +12,7 @@ use App\Http\Resources\PublicOfficialResource;
 use App\Http\Resources\RegulationResource;
 use App\Http\Resources\VillageResource;
 use App\Models\Hamlet;
+use App\Services\InfoPageService;
 use App\Services\PublicPageService;
 use App\Support\PublicPageCache;
 use Closure;
@@ -31,8 +33,16 @@ class PublicPageController extends Controller
             return response()->json([
                 'data' => [
                     'village' => new VillageResource($home['village']),
+                    // Kepala Desa aktif untuk Sambutan Kepala Desa, atau null.
+                    'village_head' => $home['village_head']
+                        ? new PublicOfficialResource($home['village_head'])
+                        : null,
                     'latest_news' => NewsResource::collection($home['latest_news']),
                     'public_stats' => $home['public_stats'],
+                    // Pengumuman yang masih tayang, atau null.
+                    'announcement' => $home['announcement']
+                        ? new AnnouncementResource($home['announcement'])
+                        : null,
                 ],
             ]);
         });
@@ -52,6 +62,17 @@ class PublicPageController extends Controller
                 ->map(fn (Hamlet $hamlet) => ['id' => $hamlet->id, 'name' => $hamlet->name])
                 ->all(),
         ])->response());
+    }
+
+    /**
+     * GET /public/village-orgs/{orgType}: struktur BPD, LPM, Karang Taruna,
+     * atau PKK (orgType dibatasi di route).
+     */
+    public function villageOrganization(Request $request, string $orgType): JsonResponse
+    {
+        return $this->cached($request, "org:{$orgType}", fn () => response()->json([
+            'data' => $this->service->publicOrganization($orgType, $request->query('village_code')),
+        ]));
     }
 
     public function newsList(PublicNewsListRequest $request): JsonResponse
@@ -76,6 +97,19 @@ class PublicPageController extends Controller
     {
         return $this->cached($request, 'regulations', fn () => response()->json([
             'data' => RegulationResource::collection($this->service->regulationList($request->query('village_code'))),
+        ]));
+    }
+
+    /**
+     * GET /public/info-pages/{page}: isian khas desa untuk halaman PPID,
+     * Kebijakan Privasi, atau Aksesibilitas (page dibatasi di route).
+     */
+    public function infoPage(Request $request, InfoPageService $infoPages, string $page): JsonResponse
+    {
+        $village = $this->service->requireVillage($request->query('village_code'));
+
+        return $this->cached($request, "info-page:{$page}", fn () => response()->json([
+            'data' => $infoPages->publicPage($village->id, $page),
         ]));
     }
 

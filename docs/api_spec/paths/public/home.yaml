@@ -1,15 +1,20 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
-  summary: Beranda publik (landing page, tanpa login)
+  summary: Beranda publik (tanpa login)
   security: []
   description: |
-    UC-16. Aktor Pengunjung tanpa login. Menampilkan sambutan kepala
-    desa, info singkat desa, statistik publik. Read-only, tidak ada
-    data sensitif warga. Tidak berubah dari v4.2.
+    UC-16. Identitas desa, Kepala Desa aktif (blok Sambutan Kepala Desa),
+    5 berita published terbaru (beserta kategori), dan statistik publik.
+    Semua endpoint `/public/*` memakai cache JSON per desa (TTL 10 menit)
+    yang digugurkan otomatis saat data sumber (desa, warga, berita,
+    kategori berita, peraturan, jenis surat, pejabat, dusun, jenis jabatan)
+    berubah.
   operationId: getPublicHome
+  parameters:
+    - $ref: '../../parameters/common.yaml#/VillageCode'
   responses:
     '200':
-      description: Data beranda publik berhasil diambil
+      description: Data beranda
       content:
         application/json:
           schema:
@@ -20,21 +25,46 @@ get:
                 properties:
                   village:
                     $ref: '../../schemas/villages/villages.yaml#/Village'
+                  village_head:
+                    description: |
+                      Kepala Desa aktif (`position = kepala_desa`, `is_active`,
+                      belum `ended_at`) untuk blok Sambutan Kepala Desa, atau
+                      null bila belum ada. Bentuk `PublicOfficial`: hanya
+                      nama, jabatan, dusun, dan `photo_url`, tanpa kontak
+                      maupun NIK. Teks sambutannya tetap dari
+                      `village.welcome_message`; field ini hanya memberi
+                      nama dan foto.
+                    type: object
+                    nullable: true
+                    allOf:
+                      - $ref: '../../schemas/users/users.yaml#/PublicOfficial'
+                    example:
+                      id: 3
+                      position: "kepala_desa"
+                      position_label: "Kepala Desa"
+                      name: "Ahmad Budiman"
+                      hamlet_id: null
+                      hamlet_name: null
+                      photo_url: "http://localhost:8000/storage/official-photos/1d6f0a3e-5b28-4c97-a1e4-7f2b8c9d0e35/contoh.jpg"
                   latest_news:
                     type: array
                     items:
                       $ref: '../../schemas/news/news.yaml#/News'
                   public_stats:
+                    allOf:
+                      - $ref: '../../schemas/villages/villages.yaml#/PublicStats'
+                      - type: object
+                        properties:
+                          total_letter_types:
+                            type: integer
+                            description: "Jenis surat aktif ber-template."
+                  announcement:
+                    description: Pengumuman yang masih tayang (menu Pengumuman), atau null.
                     type: object
-                    properties:
-                      total_letter_types:
-                        type: integer
-                        example: 8
+                    nullable: true
+                    allOf:
+                      - $ref: '../../schemas/announcements/announcements.yaml#/Announcement'
     '404':
-      description: Profil desa belum tersedia (data villages belum di-setup)
-      content:
-        application/json:
-          schema:
-            $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
-    '500':
-      $ref: '../../responses/common.yaml#/ServerError'
+      description: Profil desa belum tersedia / village_code tidak dikenal
+    '422':
+      description: village_code wajib pada instalasi multi-desa

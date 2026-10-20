@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Family;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Schema;
 
@@ -13,10 +14,31 @@ class FamilyRepository
         //
     }
 
-    public function allWithWilayah(string $villageId): Collection
+    public const DEFAULT_PER_PAGE = 10;
+
+    /**
+     * Daftar KK berhalaman. No. KK terenkripsi sehingga tidak bisa dicari
+     * sebagian: 16 digit dicocokkan lewat no_kk_hash, teks lain dicari di
+     * nama kepala keluarga.
+     */
+    public function paginateWithWilayah(string $villageId, array $filters = []): LengthAwarePaginator
     {
+        $search = trim((string) ($filters['search'] ?? ''));
+
         return Family::query()
             ->where('village_id', $villageId)
+            ->when($search !== '', function ($query) use ($search) {
+                if (preg_match('/^\d{16}$/', $search)) {
+                    return $query->where('no_kk_hash', hash('sha256', $search));
+                }
+
+                $pattern = '%'.addcslashes(mb_strtolower($search), '\\%_').'%';
+                $byName = fn ($citizen) => $citizen->whereRaw('LOWER(name) LIKE ?', [$pattern]);
+
+                return $query->where(fn ($inner) => $inner
+                    ->whereHas('headOfFamily', $byName)
+                    ->orWhereHas('headMember', $byName));
+            })
             ->withCount('members')
             ->with([
                 'rt',
@@ -27,6 +49,20 @@ class FamilyRepository
                 'headMember',
             ])
             ->orderBy('created_at', 'desc')
+            ->orderBy('id')
+            ->paginate((int) ($filters['per_page'] ?? self::DEFAULT_PER_PAGE));
+    }
+
+    /**
+     * Semua KK desa untuk pilihan KK di form warga (tanpa halaman).
+     */
+    public function optionsForVillage(string $villageId): Collection
+    {
+        return Family::query()
+            ->where('village_id', $villageId)
+            ->with(['headOfFamily', 'headMember'])
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id')
             ->get();
     }
 

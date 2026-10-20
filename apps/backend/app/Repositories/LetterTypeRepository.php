@@ -42,6 +42,14 @@ class LetterTypeRepository
             ->count();
     }
 
+    public function allForVillage(string $villageId): Collection
+    {
+        return LetterType::query()
+            ->where('village_id', $villageId)
+            ->orderBy('name')
+            ->get();
+    }
+
     public function allActiveWithTemplate(?string $villageId = null): Collection
     {
         return LetterType::query()

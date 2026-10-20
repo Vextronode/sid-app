@@ -1,0 +1,47 @@
+ApprovalFlow:
+  type: object
+  description: |
+    Urutan step approval yang dipakai jenis surat. Flow diset developer lewat
+    seeder (satu flow default per desa: RT -> Kepala Desa/Sekdes) dan hanya
+    dapat dibaca melalui API. Kolom `category_id` sudah dihapus.
+  properties:
+    id:
+      type: integer
+      example: 1
+    name:
+      type: string
+      example: "RT-Kades/Sekdes (2 Tahap)"
+    description:
+      type: string
+      nullable: true
+    is_active:
+      type: boolean
+      example: true
+    steps:
+      type: array
+      items:
+        $ref: '#/FlowStep'
+
+FlowStep:
+  type: object
+  description: |
+    UNIQUE(flow_id, step_order). `rw` dan `kadus` tidak pernah menjadi
+    approver_position; keduanya hanya menerima FYI setelah RT approve.
+  properties:
+    id:
+      type: integer
+      example: 1
+    flow_id:
+      type: integer
+      example: 1
+    step_order:
+      type: integer
+      example: 1
+    approver_position:
+      type: string
+      enum: [rt, kepala_desa, sekretaris_desa, kasi_pelayanan, kaur_tu_umum]
+      description: "Enum database; seeder hanya memakai rt (step 1) dan kepala_desa (step 2, final)."
+      example: "rt"
+    is_final:
+      type: boolean
+      example: false

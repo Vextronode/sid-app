@@ -5,7 +5,12 @@
 // ==========================================
 
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Save, X, User, Phone, FileText, Power } from 'lucide-react'
+
+import { StatusPill } from '@/components/ui/StatusPill'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
 
 const EMPTY_OFFICIAL = {
   id: null,
@@ -109,7 +114,7 @@ function PersonEditor({ person, onChange, disabled }) {
           <Power size={14} />
           Status Jabatan
         </span>
-        <strong>{person.isActive ? 'Aktif' : 'Tidak aktif'}</strong>
+        <StatusPill active={person.isActive}>{person.isActive ? 'Aktif' : 'Nonaktif'}</StatusPill>
         <small>Status jabatan dikelola melalui aksi pejabat.</small>
       </div>
     </div>
@@ -127,10 +132,17 @@ export default function EditPerangkatDesaModal({
   initialPerangkat,
   initialKadus = [],
   processing = false,
+  error = '',
 }) {
   const [perangkatList, setPerangkatList] = useState([])
 
   const [kadusList, setKadusList] = useState([])
+
+  const [baseline, setBaseline] = useState(null)
+  const requestClose = useConfirmDiscard(
+    open && isFormDirty({ perangkat: perangkatList, kadus: kadusList }, baseline),
+    { disabled: processing, escapeClose: open ? onClose : null },
+  )
 
   // ==========================================
   // LOAD DATA
@@ -141,9 +153,12 @@ export default function EditPerangkatDesaModal({
       return
     }
 
-    setPerangkatList(Array.isArray(initialPerangkat) ? initialPerangkat.map(normalizePerson) : [])
+    const perangkat = Array.isArray(initialPerangkat) ? initialPerangkat.map(normalizePerson) : []
+    const kadus = Array.isArray(initialKadus) ? initialKadus.map(normalizePerson) : []
 
-    setKadusList(Array.isArray(initialKadus) ? initialKadus.map(normalizePerson) : [])
+    setPerangkatList(perangkat)
+    setKadusList(kadus)
+    setBaseline({ perangkat, kadus })
   }, [open, initialPerangkat, initialKadus])
 
   // ==========================================
@@ -187,7 +202,7 @@ export default function EditPerangkatDesaModal({
       className="sid-profil-desa-modal-backdrop"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !processing) {
-          onClose()
+          requestClose(onClose)
         }
       }}
     >
@@ -212,7 +227,7 @@ export default function EditPerangkatDesaModal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => requestClose(onClose)}
             className="sid-profil-desa-modal-close"
             disabled={processing}
             aria-label="Tutup"
@@ -227,8 +242,9 @@ export default function EditPerangkatDesaModal({
               ========================================== */}
 
           <div className="sid-profil-desa-device-notice">
-            Nama dan foto perangkat berasal dari data backend dan tidak diedit dari modal ini. Foto
-            diunggah saat penetapan atau rotasi, dan dapat diganti di halaman Pejabat Desa.
+            Nama dan foto perangkat diambil dari data pejabat yang tercatat di sistem, jadi tidak
+            bisa diubah di sini. Untuk mengganti nama, foto, atau menetapkan pejabat baru, buka
+            halaman <Link to="/admin/pejabat-desa">Pejabat Desa</Link>.
           </div>
 
           {/* ==========================================
@@ -295,10 +311,16 @@ export default function EditPerangkatDesaModal({
               ACTIONS
               ========================================== */}
 
+          {error && (
+            <div className="sid-profil-desa-error" role="alert">
+              {error}
+            </div>
+          )}
+
           <div className="sid-profil-desa-modal-actions">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => requestClose(onClose)}
               className="sid-profil-desa-modal-secondary"
               disabled={processing}
             >

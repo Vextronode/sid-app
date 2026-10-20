@@ -12,6 +12,7 @@ use Illuminate\Http\Testing\File as TestingFile;
 use Illuminate\Http\UploadedFile;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
 /**
@@ -25,7 +26,7 @@ class CitizenImportTest extends TestCase
     {
         $village ??= Village::query()->first() ?? Village::factory()->create();
 
-        return User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        return User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
     }
 
     /**
@@ -68,6 +69,13 @@ class CitizenImportTest extends TestCase
 
         $this->assertDatabaseHas('citizens', ['nik_hash' => hash('sha256', '3201012345670001')]);
         $this->assertDatabaseHas('citizens', ['nik_hash' => hash('sha256', '3201012345670002')]);
+
+        // S-05: tiap baris tercatat sebagai `created` (source import) + satu ringkasan.
+        $logs = Activity::query()->where('log_name', 'citizen')->get();
+        $this->assertSame(2, $logs->where('event', 'created')->where('properties.source', 'import')->count());
+        $summary = $logs->firstWhere('event', 'imported');
+        $this->assertSame('warga.xlsx', $summary->properties['subject_label']);
+        $this->assertSame(2, $summary->properties['summary']['success_count']);
     }
 
     public function test_import_ignores_legacy_occupation_text_column(): void
@@ -209,7 +217,7 @@ class CitizenImportTest extends TestCase
             ->assertJsonValidationErrors(['file']);
     }
 
-    public function test_import_forbidden_for_non_petugas_desa(): void
+    public function test_import_forbidden_for_non_staf_sid(): void
     {
         $file = $this->makeXlsx(['nik', 'name', 'date_of_birth', 'gender', 'address', 'rt_id'], []);
 

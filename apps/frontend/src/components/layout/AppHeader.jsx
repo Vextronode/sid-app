@@ -3,6 +3,7 @@ import '@/styles/beranda.css'
 import { Bell, ChevronDown, Menu, X } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
+import { UserAvatar } from '@/components/ui/UserAvatar'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { useLogoutToBeranda } from '@/features/auth/hooks/useLogoutToBeranda'
 import { getBerandaContent } from '@/features/beranda/berandaContent'
@@ -24,9 +25,8 @@ export function AppHeader({
   onNotificationClick,
   extraActions = [],
   popover,
-  isDev = import.meta.env.DEV,
 }) {
-  const { header } = getBerandaContent(isDev)
+  const { header } = getBerandaContent()
   const { pathname } = useLocation()
   const { user } = useAuth()
   const { handleLogout, isLoggingOut } = useLogoutToBeranda()
@@ -88,12 +88,16 @@ export function AppHeader({
               ))}
 
               <AccountMenu
+                user={user}
                 name={user?.name}
                 profilePath={profilePath}
                 onLogout={handleLogout}
                 isLoggingOut={isLoggingOut}
                 logoutLabel={logoutLabel}
               />
+
+              {/* Di ponsel nama akun tersembunyi; fotonya tetap tampil. */}
+              <UserAvatar user={user} className="bd-mobile-avatar" />
 
               <AppMobileMenu
                 header={header}
@@ -115,7 +119,7 @@ export function AppHeader({
   )
 }
 
-function AccountMenu({ name, profilePath, onLogout, isLoggingOut, logoutLabel }) {
+function AccountMenu({ user, name, profilePath, onLogout, isLoggingOut, logoutLabel }) {
   const { isOpen, toggle, close, containerRef, triggerRef, panelId, onBlur } = useDisclosure()
 
   return (
@@ -128,6 +132,7 @@ function AccountMenu({ name, profilePath, onLogout, isLoggingOut, logoutLabel })
         aria-controls={panelId}
         onClick={toggle}
       >
+        <UserAvatar user={user} />
         <span className="bd-app-account-name">{name ?? 'Akun'}</span>
         <ChevronDown className="bd-nav-chevron" size={16} strokeWidth={2.2} aria-hidden="true" />
       </button>

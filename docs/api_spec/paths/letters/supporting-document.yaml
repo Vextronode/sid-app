@@ -1,0 +1,39 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Dokumen pendukung yang digenerate dari isian form
+  description: |
+    Diotorisasi LetterPolicy::view. Dirender dari `letter_types.supporting_template`
+    (mis. surat pernyataan) lengkap dengan tanda tangan pemohon/pihak terkait;
+    dipakai approver dan Kasi/Kaur sebagai bahan pertimbangan. Tidak
+    ditandatangani Kepala Desa sehingga tetap dapat dirender walau jabatan
+    itu kosong. Surat approved memakai snapshot.
+  operationId: letterSupportingDocument
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letter
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    - name: download
+      in: query
+      required: false
+      description: "Bernilai truthy (1/true) untuk unduh sebagai attachment; selain itu stream inline."
+      schema:
+        type: boolean
+  responses:
+    '200':
+      description: PDF `dokumen-pendukung-{id}.pdf`
+      content:
+        application/pdf:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      description: Jenis surat ini tidak memiliki dokumen pendukung

@@ -28,7 +28,7 @@ class DemoDataSeederTest extends TestCase
     use RefreshDatabase;
 
     private const VILLAGE_POSITIONS = [
-        'kepala_desa', 'sekdes', 'kasi_pemerintahan', 'kasi_kesejahteraan', 'kasi_pelayanan',
+        'kepala_desa', 'sekretaris_desa', 'kasi_pemerintahan', 'kasi_kesejahteraan', 'kasi_pelayanan',
         'kaur_perencanaan', 'kaur_keuangan', 'kaur_tu_umum', 'staf_siskeudes', 'staf_sipades',
     ];
 
@@ -117,7 +117,7 @@ class DemoDataSeederTest extends TestCase
     public function the_five_demo_accounts_log_in_with_the_demo_password(): void
     {
         $expectedRoles = [
-            'demo_admin' => 'petugas_desa',
+            'demo_admin' => 'staf_sid',
             'demo_warga' => 'warga',
             'demo_kadus' => 'kadus',
             'demo_rw' => 'rw',

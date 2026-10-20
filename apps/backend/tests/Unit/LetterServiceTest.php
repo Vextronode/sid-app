@@ -167,8 +167,8 @@ class LetterServiceTest extends TestCase
             'deadline_at' => now()->subDay(),
         ]);
 
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
-        Official::factory()->forUser($user)->position('petugas_desa')->create([
+        $user = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('staf_sid')->create([
             'village_id' => $village->id,
         ]);
         $letters = $this->service->paginateScopedLetters($user)->keyBy('id');
@@ -274,7 +274,7 @@ class LetterServiceTest extends TestCase
             'rt_id' => $rt->id,
         ]);
         $sekdesUser = User::factory()->create(['village_id' => $citizen->village_id]);
-        Official::factory()->forUser($sekdesUser)->position('sekdes')->create();
+        Official::factory()->forUser($sekdesUser)->position('sekretaris_desa')->create();
 
         $this->actingAs($user);
 
@@ -491,7 +491,7 @@ class LetterServiceTest extends TestCase
         $village = Village::factory()->create();
         [$letter] = $this->makeLetterAtStep('kepala_desa', 1, ['village_id' => $village->id, 'status' => 'in_progress']);
 
-        $official = Official::factory()->create(['position' => 'sekdes', 'village_id' => $village->id]);
+        $official = Official::factory()->create(['position' => 'sekretaris_desa', 'village_id' => $village->id]);
         $user = User::factory()->create(['role' => 'sekretaris_desa', 'village_id' => $village->id]);
         $user->official()->save($official);
 
@@ -522,14 +522,14 @@ class LetterServiceTest extends TestCase
         $this->assertSame($letter->id, $result->first()->id);
     }
 
-    public function test_get_scoped_letters_for_petugas_desa_is_limited_to_own_village(): void
+    public function test_get_scoped_letters_for_staf_sid_is_limited_to_own_village(): void
     {
         $village = Village::factory()->create();
         $otherVillage = Village::factory()->create();
         $ownLetter = Letter::factory()->create(['village_id' => $village->id]);
         Letter::factory()->create(['village_id' => $otherVillage->id]);
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
-        Official::factory()->forUser($user)->position('petugas_desa')->create([
+        $user = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('staf_sid')->create([
             'village_id' => $village->id,
         ]);
 
@@ -639,8 +639,8 @@ class LetterServiceTest extends TestCase
     public function test_get_scoped_letters_applies_status_filter(): void
     {
         $village = Village::factory()->create();
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
-        Official::factory()->forUser($user)->position('petugas_desa')->create([
+        $user = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('staf_sid')->create([
             'village_id' => $village->id,
         ]);
 
@@ -668,8 +668,8 @@ class LetterServiceTest extends TestCase
     {
         $owner = User::factory()->create();
         $village = Village::factory()->create();
-        $staff = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
-        Official::factory()->forUser($staff)->position('petugas_desa')->create([
+        $staff = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
+        Official::factory()->forUser($staff)->position('staf_sid')->create([
             'village_id' => $village->id,
         ]);
         $letter = Letter::factory()->create(['submitted_by' => $owner->id, 'village_id' => $village->id]);

@@ -1,0 +1,427 @@
+'==================================================================================
+' SECTION: ERD (ENTITY RELATIONSHIP DIAGRAM)
+' FILE: 01_ERD_Core_v8.puml
+' JUDUL: ERD - Core [1/2]
+' SUMBER: migration apps/backend/database/migrations (per 2026-10-16)
+'         + TDD-03_Database_Schema.md v5.3
+' CATATAN: Menggantikan 01_ERD_Core_v7.puml. Perubahan v7 -> v8 di catatan
+'          revisi bawah file ini.
+'==================================================================================
+
+@startuml ERD_Core_v8
+skinparam backgroundColor #FFFFFF
+skinparam entity {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+  HeaderBackgroundColor #2E5FA3
+  HeaderFontColor #FFFFFF
+}
+skinparam arrow {
+  Color #2E5FA3
+  FontName Arial
+  FontSize 10
+}
+skinparam linetype ortho
+
+title ERD v8 - CORE [1/2] - SIDUTama\n(Wilayah, Pengguna & Jabatan, Kependudukan, Pipeline Approval, Surat, Tanda Tangan)\nLihat ERD Pendukung [2/2]: organisasi non-struktural, notifikasi, berita & kategori, peraturan, push, activity log
+
+' ─────────────── WILAYAH ───────────────
+entity "villages" as VIL {
+  * id : UUID <<PK>>
+  --
+  * name : VARCHAR(100)
+  * code : VARCHAR(20) <<UNIQUE>>
+  head_name : VARCHAR(100)
+  address : VARCHAR(255)
+  phone : VARCHAR(20)
+  area_ha : DECIMAL(10,3)
+  stamp_img : VARCHAR(255) (private)
+  logo : VARCHAR(255)
+  hero_image : VARCHAR(255)
+  hero_photo_credit : VARCHAR(100)
+  office_hours : VARCHAR(100)
+  welcome_message : TEXT
+  latitude / longitude : DECIMAL(10,7)
+  history / vision / mission : TEXT
+  district / regency / province : VARCHAR(100)
+  postal_code : VARCHAR(10)
+  email : VARCHAR(150)
+  created_at, updated_at
+}
+
+entity "hamlets" as HAM {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * name : VARCHAR(255)
+  * code : VARCHAR(255)
+  is_active : BOOLEAN = true
+  UNIQUE(village_id, code)
+}
+
+entity "rws" as RWS {
+  * id : BIGINT <<PK>>
+  --
+  * hamlet_id : BIGINT <<FK>>
+  * village_id : UUID <<FK>>
+  * number : VARCHAR(255)
+  * full_label : VARCHAR(255)
+  is_active : BOOLEAN = true
+}
+
+entity "rts" as RTS {
+  * id : BIGINT <<PK>>
+  --
+  * rw_id : BIGINT <<FK>>
+  * village_id : UUID <<FK>>
+  * number : VARCHAR(255)
+  * full_label : VARCHAR(255)
+  is_active : BOOLEAN = true
+}
+
+' ─────────────── PENGGUNA & JABATAN ───────────────
+entity "users" as USR {
+  * id : UUID <<PK>>
+  --
+  village_id : UUID <<FK>>
+  citizen_id : UUID <<FK>>
+  * name : VARCHAR(255)
+  * username : VARCHAR(30) <<UNIQUE>>
+  email : VARCHAR(255) <<UNIQUE>>
+  * password : Argon2id
+  role : ENUM(9 role)
+  must_change_password : BOOLEAN = false
+  * is_active : BOOLEAN
+}
+
+entity "officials" as OFF {
+  * id : BIGINT <<PK>>
+  --
+  * citizen_id : UUID <<FK>>
+  user_id : UUID <<FK>> (NULL = jabatan tanpa akun)
+  * position : VARCHAR(50)
+  village_id : UUID <<FK>>
+  rt_id / rw_id / hamlet_id : BIGINT <<FK>>
+  signature_img : VARCHAR(255) (private)
+  stamp_img : VARCHAR(255) (legacy)
+  photo_img : VARCHAR(255) (public)
+  phone_wa : VARCHAR(255)
+  * started_at : DATE
+  ended_at / term_ends_at : DATE
+  is_active : BOOLEAN = true
+  notes : TEXT
+}
+
+entity "official_position_types" as OPT {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * code : VARCHAR(50)
+  * label : VARCHAR(100)
+  is_single_occupant : BOOLEAN = true
+  sort_order : INT = 0
+  is_active : BOOLEAN = true
+  UNIQUE(village_id, code)
+}
+
+note right of OPT
+  Jenis jabatan TANPA akun (dikelola Petugas Desa).
+  officials.position = nilai enum OfficialPosition
+  (kepala_desa, sekretaris_desa, rt, rw, kadus,
+  kasi_pelayanan, kaur_tu_umum, petugas_desa)
+  ATAU code dari tabel ini (relasi logis, bukan FK).
+end note
+
+' ─────────────── KEPENDUDUKAN ───────────────
+entity "citizens" as CIT {
+  * id : UUID <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * nik : TEXT (encrypted)
+  * nik_hash : VARCHAR(255) <<UNIQUE>>
+  * name / date_of_birth / gender / address
+  place_of_birth, marital_status, religion,
+  last_education, blood_type
+  rt_id / hamlet_id : BIGINT <<FK>>
+  occupation_id : BIGINT <<FK RESTRICT>>
+  family_id : UUID <<FK>>
+  family_role : ENUM
+  father_id / mother_id : UUID <<FK self>>
+  residency_type : ENUM = lokal
+  domicile_status, current_domicile, origin_region
+  data_source, sync_status, last_verified_at
+  is_active : BOOLEAN = true
+}
+
+entity "families" as FAM {
+  * id : UUID <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * no_kk : TEXT (encrypted)
+  * no_kk_hash : VARCHAR(255) <<UNIQUE>>
+  * family_address : TEXT (encrypted)
+  family_status : ENUM = aktif
+  rt_id / rw_id / hamlet_id : BIGINT <<FK>>
+  head_of_family_id : UUID
+}
+
+entity "family_socioeconomics" as FSE {
+  * id : BIGINT <<PK>>
+  --
+  * family_id : UUID <<FK UNIQUE>>
+  household_income_range, house_ownership_status,
+  water_source, electricity_source : ENUM
+  dependents_count : INT
+  productive_assets : JSON
+  surveyed_at : TIMESTAMP
+  surveyed_by : UUID <<FK users>>
+}
+
+entity "occupations" as OCC {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * name : VARCHAR(100)
+  is_active : BOOLEAN = true
+  sort_order : UINT = 0
+  UNIQUE(village_id, LOWER(name))
+}
+
+' ─────────────── PIPELINE APPROVAL ───────────────
+entity "approval_flows" as AFL {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * name : VARCHAR(150)
+  description : TEXT
+  is_active : BOOLEAN = true
+}
+
+entity "flow_steps" as FST {
+  * id : BIGINT <<PK>>
+  --
+  * flow_id : BIGINT <<FK>>
+  * step_order : INT
+  * approver_position : ENUM(rt, kepala_desa, sekretaris_desa,\n kasi_pelayanan, kaur_tu_umum)
+  is_final : BOOLEAN = false
+  UNIQUE(flow_id, step_order)
+}
+
+note right of AFL
+  Read-only lewat API; seed 1 flow/desa:
+  step 1 rt -> step 2 kepala_desa (final).
+  letter_categories & category_id DI-DROP (v5.3).
+end note
+
+entity "approval_settings" as APS {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID
+  * approval_level : ENUM(5)
+  deadline_hours : UINT = 24
+  reminder_hours : UINT = 12 (jam sebelum deadline)
+  is_active : BOOLEAN = true
+  UNIQUE(village_id, approval_level)
+}
+
+' ─────────────── SURAT ───────────────
+entity "letter_types" as LT {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * code : VARCHAR(20)
+  * name : VARCHAR(255)
+  description / template / requirement_info : TEXT
+  assigned_role : ENUM(kasi_pelayanan, kaur_tu_umum)
+  * flow_id : BIGINT <<FK>>
+  validity_days : UINT
+  * is_active : BOOLEAN
+  produces_letter : BOOLEAN = true
+  data_action : VARCHAR(30) = none
+  form_fields / data_fields / signature_slots : JSON
+  data_subject_field : VARCHAR(100)
+  supporting_template : TEXT
+  classification_code : VARCHAR(10) = '470'
+  UNIQUE(village_id, code)
+}
+
+entity "letters" as LET {
+  * id : UUID <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * letter_type_id : BIGINT <<FK RESTRICT>>
+  * submitted_by : UUID <<FK users>>
+  on_behalf_of / citizen_id : UUID <<FK citizens>>
+  letter_number : VARCHAR(50) <<UNIQUE>>
+  * applicant_name : VARCHAR(100)
+  * applicant_nik : TEXT (encrypted)
+  * applicant_nik_hash : VARCHAR(64)
+  applicant_address : TEXT (encrypted)
+  purpose / notes : TEXT (legacy, NULL)
+  payload : JSON
+  status : ENUM(pending, in_progress, approved, rejected)
+  * flow_id : BIGINT <<FK snapshot>>
+  current_step_order : INT = 1 (0 = menunggu TTD)
+  rejected_at_step : INT
+  is_overdue : BOOLEAN
+  expires_at / submitted_at / processed_at
+  snapshot : JSON
+  signed_by_official_id : BIGINT <<FK officials>>
+  fulfilled_at : TIMESTAMP
+  fulfilled_by : UUID <<FK users>>
+  fulfillment : JSON
+}
+
+entity "letter_approvals" as LA {
+  * id : BIGINT <<PK>>
+  --
+  * letter_id : UUID <<FK>>
+  approved_by : UUID <<FK users>>
+  * approval_level : ENUM(5)
+  flow_step_id : BIGINT <<FK>>
+  action : ENUM(approved, rejected)
+  notes : TEXT
+  deadline_at / reminded_at : TIMESTAMP
+}
+
+entity "letter_status_logs" as LSL {
+  * id : BIGINT <<PK>>
+  --
+  * letter_id : UUID <<FK>>
+  * actor_id : UUID <<FK users>>
+  old_status / new_status : ENUM
+  reason : TEXT
+  ip_address : VARCHAR(45)
+  user_agent : TEXT
+}
+
+entity "letter_attachments" as LAT {
+  * id : BIGINT <<PK>>
+  --
+  * letter_id : UUID <<FK CASCADE>>
+  kind : VARCHAR(30) (field | wet_signature | attachment)
+  field : VARCHAR(100)
+  * original_name / path : VARCHAR(255)
+  * mime_type : VARCHAR(100)
+  * size : UINT
+  uploaded_by : UUID <<FK users>>
+}
+
+entity "letter_signatures" as LSG {
+  * id : BIGINT <<PK>>
+  --
+  * letter_id : UUID <<FK CASCADE>>
+  * slot_key : VARCHAR(50)
+  * slot_label : VARCHAR(100)
+  * signer_type : applicant | other
+  * method : digital | wet
+  status : pending|signed|rejected|expired|cancelled
+  * requested_by : UUID <<FK users>>
+  target_nik_hash : VARCHAR(64)
+  signer_user_id : UUID <<FK users>>
+  signer_name : VARCHAR(100)
+  user_signature_id : BIGINT <<FK>>
+  attachment_id : BIGINT <<FK letter_attachments>>
+  expires_at / responded_at : TIMESTAMP
+  response_notes : TEXT
+}
+
+entity "user_signatures" as USG {
+  * id : BIGINT <<PK>>
+  --
+  * user_id : UUID <<FK CASCADE>>
+  * path : VARCHAR(255) (.enc)
+  * mime_type : VARCHAR(50)
+  revoked_at : TIMESTAMP
+  revoked_by : UUID <<FK users>>
+  revoke_reason : TEXT
+}
+
+entity "signature_blocks" as SBL {
+  * id : BIGINT <<PK>>
+  --
+  * user_id : UUID <<FK users>>
+  * blocked_user_id : UUID <<FK users>>
+  UNIQUE(user_id, blocked_user_id)
+}
+
+entity "letter_number_counters" as LNC {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  letter_type_id : BIGINT <<FK>> (baris lama)
+  classification_code : VARCHAR(10)
+  * year : SMALLINT
+  last_number : UINT = 0
+  UNIQUE(village_id, classification_code, year)
+}
+
+note bottom of LET
+  Final approve: letter_number
+  {classification_code}/{NNN}/Des/{Romawi}/{tahun},
+  expires_at, snapshot render (TTD & stempel Kades saat itu),
+  signed_by_official_id. data_action != none -> Terapkan
+  mengisi fulfilled_* (UC-26).
+end note
+
+' ─────────────── RELASI ───────────────
+VIL ||--o{ HAM
+HAM ||--o{ RWS
+RWS ||--o{ RTS
+VIL ||--o{ USR
+VIL ||--o{ CIT
+VIL ||--o{ FAM
+VIL ||--o{ OCC
+VIL ||--o{ OPT
+VIL ||--o{ AFL
+VIL ||--o{ LT
+VIL ||--o{ APS
+VIL ||--o{ LNC
+CIT |o--o| USR : "akun"
+CIT ||--o{ OFF : "menjabat"
+USR |o--o{ OFF
+RTS |o--o{ OFF
+RWS |o--o{ OFF
+HAM |o--o{ OFF
+RTS |o--o{ CIT
+HAM |o--o{ CIT
+FAM |o--o{ CIT : "anggota"
+OCC |o--o{ CIT
+FAM ||--o| FSE
+AFL ||--o{ FST
+AFL ||--o{ LT
+LT ||--o{ LET
+AFL ||--o{ LET : "snapshot flow_id"
+USR ||--o{ LET : "submitted_by"
+CIT |o--o{ LET
+OFF |o--o{ LET : "signed_by_official_id"
+LET ||--o{ LA
+FST |o--o{ LA
+LET ||--o{ LSL
+LET ||--o{ LAT
+LET ||--o{ LSG
+LAT |o--o| LSG : "TTD basah"
+USR ||--o{ USG
+USG |o--o{ LSG : "TTD digital"
+USR ||--o{ SBL
+
+' ==================================================================================
+' CATATAN REVISI v7 -> v8 (2026-10-16)
+' - letter_categories di-drop; category_id hilang dari letter_types & approval_flows;
+'   verification_type di-drop.
+' - letter_types: produces_letter, data_action, form_fields, data_fields,
+'   data_subject_field, signature_slots, supporting_template, classification_code;
+'   requirement_info nullable.
+' - letters: snapshot, signed_by_official_id, fulfilled_at/by, fulfillment;
+'   purpose nullable; current_step_order 0 = menunggu tanda tangan.
+' - Tabel baru: letter_attachments, letter_signatures, user_signatures,
+'   signature_blocks, official_position_types.
+' - officials.position ENUM -> VARCHAR(50).
+' - villages: area_ha, logo, hero_image, hero_photo_credit, office_hours, latitude/longitude,
+'   district, regency, province, postal_code, email.
+' - letter_number_counters: classification_code; letter_type_id nullable.
+' - Ukuran kolom wilayah dikoreksi ke migration (VARCHAR(255)).
+' ==================================================================================
+@enduml

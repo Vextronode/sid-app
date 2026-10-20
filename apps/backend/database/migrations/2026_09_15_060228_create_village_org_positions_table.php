@@ -21,11 +21,16 @@ return new class extends Migration
                 'karang_taruna',
                 'pkk',
             ]);
+            // Slot tetap per organisasi: satu Ketua, satu Wakil Ketua, dan
+            // Anggota yang jumlahnya bebas (lihat VillageOrgPosition::SLOTS).
+            $table->enum('slot', ['ketua', 'wakil_ketua', 'anggota']);
             $table->string('position_label', 100);
             $table->boolean('is_single_occupant')->default(true);
             $table->integer('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+
+            $table->unique(['village_id', 'org_type', 'slot']);
         });
     }
 

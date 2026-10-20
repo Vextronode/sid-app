@@ -13,12 +13,12 @@ class IndexVillageOrgPositionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->role === 'petugas_desa';
+        return $this->user()?->role === 'staf_sid';
     }
 
     public function failedAuthorization(): void
     {
-        throw new HttpException(403, 'Anda tidka memiliki akses untuk aksi ini.');
+        throw new HttpException(403, 'Anda tidak memiliki akses untuk aksi ini.');
     }
 
     /**

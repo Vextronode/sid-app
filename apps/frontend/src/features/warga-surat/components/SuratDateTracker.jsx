@@ -22,12 +22,12 @@ import { useEffect, useRef, useState } from 'react'
 
 import { Calendar, Check, ChevronLeft, ChevronRight, Clock, FileText, X } from 'lucide-react'
 
-import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import { PdfCanvasPreview } from '@/features/cetak-surat/components/PdfCanvasPreview'
+import { LetterValidityNote } from '@/features/surat/components/LetterValidityNote'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
-import { loadPdfjs } from '@/lib/pdfjs'
 import { useLetters } from '@/features/surat/hooks/useLetters'
 
 // ==========================================
@@ -244,159 +244,24 @@ function getPreviewTemplate(status) {
 // PREVIEW PDF
 // ==========================================
 
-function SuratPreview({ suratId, status }) {
+function SuratPreview({ suratId, status, isExpired = false }) {
   const [showPreview, setShowPreview] = useState(false)
 
-  const [loadingPreview, setLoadingPreview] = useState(false)
-
-  const [loadError, setLoadError] = useState(false)
-
-  const [pages, setPages] = useState([])
-
-  const canPreview = canPreviewSurat(status)
+  // Surat kedaluwarsa tinggal riwayat: tombol tetap tampil tetapi nonaktif.
+  const expired = canPreviewSurat(status) && isExpired
+  const canPreview = canPreviewSurat(status) && !expired
+  const template = getPreviewTemplate(status)
 
   useEffect(() => {
     setShowPreview(false)
-    setLoadingPreview(false)
-    setLoadError(false)
-    setPages([])
   }, [suratId])
-
-  useEffect(() => {
-    if (!suratId || !showPreview || !canPreview) {
-      return
-    }
-
-    let cancelled = false
-    let blobUrl = null
-
-    const loadPDF = async () => {
-      try {
-        setLoadingPreview(true)
-        setLoadError(false)
-        setPages([])
-
-        const template = getPreviewTemplate(status)
-
-        if (!template) {
-          throw new Error('Template PDF tidak tersedia.')
-        }
-
-        blobUrl = await previewSuratPDF(
-          {
-            id: suratId,
-          },
-          template,
-        )
-
-        if (!blobUrl) {
-          throw new Error('URL PDF tidak tersedia.')
-        }
-
-        if (cancelled) {
-          return
-        }
-
-        const response = await fetch(blobUrl)
-
-        if (!response.ok) {
-          throw new Error(`Gagal mengambil PDF: ${response.status}`)
-        }
-
-        const arrayBuffer = await response.arrayBuffer()
-
-        if (!arrayBuffer || arrayBuffer.byteLength === 0) {
-          throw new Error('File PDF kosong.')
-        }
-
-        const pdfjsLib = await loadPdfjs()
-
-        if (cancelled) {
-          return
-        }
-
-        const pdf = await pdfjsLib.getDocument({
-          data: arrayBuffer,
-        }).promise
-
-        if (cancelled) {
-          return
-        }
-
-        const renderedPages = []
-
-        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-          if (cancelled) {
-            return
-          }
-
-          const page = await pdf.getPage(pageNumber)
-
-          const viewport = page.getViewport({
-            scale: 1.5,
-          })
-
-          const canvas = document.createElement('canvas')
-
-          const context = canvas.getContext('2d', {
-            alpha: false,
-          })
-
-          if (!context) {
-            throw new Error('Browser tidak mendukung Canvas.')
-          }
-
-          canvas.width = Math.ceil(viewport.width)
-
-          canvas.height = Math.ceil(viewport.height)
-
-          await page.render({
-            canvasContext: context,
-            viewport,
-          }).promise
-
-          if (cancelled) {
-            return
-          }
-
-          renderedPages.push({
-            pageNumber,
-            dataUrl: canvas.toDataURL('image/jpeg', 0.9),
-          })
-        }
-
-        if (!cancelled) {
-          setPages(renderedPages)
-        }
-      } catch (error) {
-        console.error('GAGAL RENDER PREVIEW PDF:', error)
-
-        if (!cancelled) {
-          setLoadError(true)
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingPreview(false)
-        }
-      }
-    }
-
-    loadPDF()
-
-    return () => {
-      cancelled = true
-
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl)
-      }
-    }
-  }, [suratId, showPreview, status, canPreview])
 
   return (
     <div className="sid-date-tracker-preview">
       <button
         type="button"
         disabled={!canPreview}
+        title={expired ? 'Masa berlaku surat telah habis' : undefined}
         onClick={() => {
           if (!canPreview) {
             return
@@ -412,60 +277,16 @@ function SuratPreview({ suratId, status }) {
 
         {canPreview
           ? showPreview
-            ? 'Sembunyikan Preview Surat'
-            : 'Lihat Preview Surat'
-          : 'Preview tersedia setelah disetujui'}
+            ? 'Sembunyikan Pratinjau Surat'
+            : 'Lihat Pratinjau Surat'
+          : expired
+            ? 'Lihat Pratinjau Surat'
+            : 'Pratinjau tersedia setelah disetujui'}
       </button>
 
-      {showPreview && (
-        <div className="sid-date-preview-container">
-          {loadingPreview && (
-            <div className="sid-date-preview-loading">
-              <div className="sid-date-preview-spinner" />
-
-              <p>Memuat preview surat...</p>
-            </div>
-          )}
-
-          {!loadingPreview && loadError && (
-            <div className="sid-date-preview-error">
-              <FileText className="sid-date-preview-error-icon" />
-
-              <p>Gagal memuat preview surat</p>
-
-              <p className="sid-date-preview-error-description">Silakan coba lagi.</p>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPreview(false)
-
-                  setTimeout(() => {
-                    setShowPreview(true)
-                  }, 100)
-                }}
-                className="sid-date-preview-retry"
-              >
-                Coba Lagi
-              </button>
-            </div>
-          )}
-
-          {!loadingPreview && !loadError && pages.length > 0 && (
-            <div className="sid-date-preview-pages">
-              {pages.map((page) => (
-                <div key={page.pageNumber} className="sid-date-preview-page">
-                  <img
-                    src={page.dataUrl}
-                    alt={`Preview halaman ${page.pageNumber}`}
-                    className="sid-date-preview-image"
-                    draggable={false}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* Canvas, bukan <img>: tidak ada gambar yang bisa disimpan lewat klik kanan. */}
+      {showPreview && canPreview && template && (
+        <PdfCanvasPreview surat={{ id: suratId }} template={template} />
       )}
     </div>
   )
@@ -674,7 +495,14 @@ export default function SuratDateTracker() {
 
           {/* PREVIEW PDF */}
 
-          <SuratPreview suratId={activeSurat?.id} status={activeSurat?.status} />
+          {activeSurat?.status === SURAT_STATUS.APPROVED && (
+            <LetterValidityNote surat={activeSurat} />
+          )}
+          <SuratPreview
+            suratId={activeSurat?.id}
+            status={activeSurat?.status}
+            isExpired={activeSurat?.is_expired === true}
+          />
         </>
       )}
     </div>

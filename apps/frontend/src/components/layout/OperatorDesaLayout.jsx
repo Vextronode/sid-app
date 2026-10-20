@@ -7,7 +7,7 @@
 
 import '@/styles/beranda.css'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Bell,
@@ -16,6 +16,7 @@ import {
   LayoutGrid,
   FilePlus,
   FileText,
+  History,
   Users,
   UserCog,
   UserRoundCog,
@@ -23,9 +24,14 @@ import {
   MapPinned,
   Newspaper,
   LogOut,
+  BookOpenText,
+  Megaphone,
   Network,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   UserCircle,
+  Workflow,
 } from 'lucide-react'
 import { WilayahMasterProvider } from '@/features/kelola-wilayah/hooks/WilayahMasterProvider'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
@@ -38,6 +44,77 @@ import {
   getOperatorAllowedRoles,
   ROLE_NAVIGATION,
 } from '@/features/operator-desa/constants/roleNavigation'
+import { UserAvatar } from '@/components/ui/UserAvatar'
+import { STAF_APP_LABEL } from '@/lib/constants/app'
+
+// Lebar layar yang memakai sidebar ponsel (sama dengan breakpoint CSS).
+const MOBILE_QUERY = '(max-width: 639px)'
+const COLLAPSED_STORAGE_KEY = 'sid-operator-sidebar-collapsed'
+
+function readCollapsed() {
+  try {
+    return window.localStorage.getItem(COLLAPSED_STORAGE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function matchesMobile() {
+  return typeof window.matchMedia === 'function' && window.matchMedia(MOBILE_QUERY).matches
+}
+
+// Desktop: sidebar diciutkan/diperluas manual dan diingat di browser.
+// Ponsel: sidebar selalu ciut, dibuka sementara dan otomatis ciut lagi
+// setelah pindah halaman.
+function useSidebarState(pathname) {
+  const [collapsed, setCollapsed] = useState(readCollapsed)
+  // Path saat sidebar ponsel dibuka; begitu path berubah sidebar dianggap tertutup.
+  const [mobileOpenPath, setMobileOpenPath] = useState(null)
+  const mobileOpen = mobileOpenPath === pathname
+  const [isMobile, setIsMobile] = useState(matchesMobile)
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return undefined
+
+    const query = window.matchMedia(MOBILE_QUERY)
+    const handleChange = (event) => {
+      setIsMobile(event.matches)
+      setMobileOpenPath(null)
+    }
+
+    query.addEventListener('change', handleChange)
+    return () => query.removeEventListener('change', handleChange)
+  }, [])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(COLLAPSED_STORAGE_KEY, collapsed ? '1' : '0')
+    } catch {
+      // Penyimpanan browser tidak tersedia; status hanya berlaku di sesi ini.
+    }
+  }, [collapsed])
+
+  useEffect(() => {
+    if (!mobileOpen) return undefined
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setMobileOpenPath(null)
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [mobileOpen])
+
+  const isRail = isMobile ? !mobileOpen : collapsed
+
+  return {
+    isRail,
+    isMobileOpen: isMobile && mobileOpen,
+    toggle: () =>
+      isMobile ? setMobileOpenPath(mobileOpen ? null : pathname) : setCollapsed((value) => !value),
+    closeMobile: () => setMobileOpenPath(null),
+  }
+}
 
 const MENU_ITEMS = [
   {
@@ -107,10 +184,34 @@ const MENU_ITEMS = [
     icon: ScrollText,
   },
   {
-    label: 'Pengaturan Deadline',
+    label: 'Pengumuman',
+    route: '/admin/pengumuman',
+    allowedRoles: getOperatorAllowedRoles('/admin/pengumuman'),
+    icon: Megaphone,
+  },
+  {
+    label: 'Halaman Informasi',
+    route: '/admin/halaman-informasi',
+    allowedRoles: getOperatorAllowedRoles('/admin/halaman-informasi'),
+    icon: BookOpenText,
+  },
+  {
+    label: 'Pengaturan Batas Waktu',
     route: '/admin/approval-settings',
     allowedRoles: getOperatorAllowedRoles('/admin/approval-settings'),
     icon: Settings,
+  },
+  {
+    label: 'Alur & Jenis Surat',
+    route: '/admin/approval-flows',
+    allowedRoles: getOperatorAllowedRoles('/admin/approval-flows'),
+    icon: Workflow,
+  },
+  {
+    label: 'Log Aktivitas',
+    route: '/admin/log-aktivitas',
+    allowedRoles: getOperatorAllowedRoles('/admin/log-aktivitas'),
+    icon: History,
   },
   {
     label: 'Organisasi BPD',
@@ -138,9 +239,20 @@ export function OperatorDesaLayout({ children }) {
   const notificationState = useNotifications()
   const { unreadCount, reload } = notificationState
 
+  const sidebar = useSidebarState(location.pathname)
+  const ToggleIcon = sidebar.isRail ? PanelLeftOpen : PanelLeftClose
+
+  const layoutClassName = [
+    'sid-operator-layout',
+    sidebar.isRail && 'is-rail',
+    sidebar.isMobileOpen && 'is-mobile-open',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <WilayahMasterProvider>
-      <div className="sid-operator-layout">
+      <div className={layoutClassName}>
         {/* =================================================
             SIDEBAR
             ================================================= */}
@@ -150,8 +262,8 @@ export function OperatorDesaLayout({ children }) {
 
           <div className="sid-operator-sidebar-brand">
             <BerandaBrand
-              header={getBerandaContent(import.meta.env.DEV).header}
-              subtitle="Admin Petugas Desa"
+              header={getBerandaContent().header}
+              subtitle={`Admin ${STAF_APP_LABEL}`}
               className="sid-operator-brand"
             />
           </div>
@@ -168,6 +280,7 @@ export function OperatorDesaLayout({ children }) {
                 <Link
                   key={item.route}
                   to={item.route}
+                  title={item.label}
                   className={`sid-operator-menu-item ${isActive ? 'active' : ''}`}
                 >
                   <Icon size={18} />
@@ -185,6 +298,7 @@ export function OperatorDesaLayout({ children }) {
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
+              title="Keluar"
               className="sid-operator-sidebar-action logout"
             >
               <LogOut size={16} />
@@ -192,6 +306,14 @@ export function OperatorDesaLayout({ children }) {
             </button>
           </div>
         </aside>
+
+        {sidebar.isMobileOpen && (
+          <div
+            className="sid-operator-sidebar-backdrop"
+            aria-hidden="true"
+            onClick={sidebar.closeMobile}
+          />
+        )}
 
         {/* =================================================
             MAIN AREA
@@ -203,6 +325,17 @@ export function OperatorDesaLayout({ children }) {
               ================================================= */}
 
           <header className="sid-operator-topbar bd-theme">
+            <button
+              type="button"
+              onClick={sidebar.toggle}
+              className="sid-operator-sidebar-toggle"
+              aria-label={sidebar.isRail ? 'Perluas menu' : 'Ciutkan menu'}
+              aria-expanded={!sidebar.isRail}
+              title={sidebar.isRail ? 'Perluas menu' : 'Ciutkan menu'}
+            >
+              <ToggleIcon size={20} />
+            </button>
+
             <div className="sid-operator-topbar-spacer" />
 
             {/* TOPBAR RIGHT */}
@@ -248,9 +381,7 @@ export function OperatorDesaLayout({ children }) {
                     </p>
                   </div>
 
-                  <div className="sid-operator-profile-avatar">
-                    {(user?.name ?? 'OP').slice(0, 2).toUpperCase()}
-                  </div>
+                  <UserAvatar user={user} className="sid-operator-profile-avatar" />
                 </button>
 
                 {profileOpen && (

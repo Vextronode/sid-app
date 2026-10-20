@@ -59,12 +59,20 @@ describe('resolveLoginRedirect', () => {
     expect(resolveLoginRedirect(path, 'warga')).toBeNull()
   })
 
-  it.each([['rt'], ['rw'], ['kadus'], ['kepala_desa'], ['petugas_desa'], [undefined]])(
-    'rejects warga pages for role %s',
-    (role) => {
-      expect(resolveLoginRedirect('/jenis-surat', role)).toBeNull()
-    },
-  )
+  it.each([
+    ['rt', '/admin/surat-saya'],
+    ['rw', '/admin/surat-saya'],
+    ['kadus', '/admin/surat-saya'],
+    ['kepala_desa', '/admin/surat-saya'],
+    ['staf_sid', '/admin/operator-desa'],
+  ])('maps the warga letter page to its counterpart for role %s', (role, expected) => {
+    expect(resolveLoginRedirect('/jenis-surat', role)).toBe(expected)
+  })
+
+  it('rejects non-letter warga pages for other roles and unknown roles', () => {
+    expect(resolveLoginRedirect('/profile', 'rt')).toBeNull()
+    expect(resolveLoginRedirect('/jenis-surat', undefined)).toBeNull()
+  })
 })
 
 describe('buildLoginPath', () => {

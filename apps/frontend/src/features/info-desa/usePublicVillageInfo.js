@@ -3,7 +3,13 @@ import { useEffect, useState } from 'react'
 import api from '@/lib/api'
 import { publicVillageParams } from '@/shared/lib/api/publicVillageParams'
 
-const EMPTY_INFO = { village: null, stats: null, contacts: [] }
+const EMPTY_INFO = {
+  village: null,
+  villageHead: null,
+  stats: null,
+  contacts: [],
+  announcement: null,
+}
 
 // Identitas dan kontak desa dipakai beberapa komponen publik sekaligus
 // (beranda, header, footer, pusat bantuan), jadi satu permintaan dibagi bersama.
@@ -28,15 +34,22 @@ function cacheKey() {
 function readCache() {
   try {
     const cached = JSON.parse(window.localStorage.getItem(cacheKey()) ?? 'null')
-    return cached?.village ? { ...EMPTY_INFO, village: cached.village, stats: cached.stats } : null
+    return cached?.village
+      ? {
+          ...EMPTY_INFO,
+          village: cached.village,
+          villageHead: cached.villageHead ?? null,
+          stats: cached.stats,
+        }
+      : null
   } catch {
     return null
   }
 }
 
-function writeCache({ village, stats }) {
+function writeCache({ village, villageHead, stats }) {
   try {
-    window.localStorage.setItem(cacheKey(), JSON.stringify({ village, stats }))
+    window.localStorage.setItem(cacheKey(), JSON.stringify({ village, villageHead, stats }))
   } catch {
     // Storage penuh atau diblokir: cukup tanpa cache.
   }
@@ -61,10 +74,13 @@ function loadPublicVillageInfo() {
       .then((response) => {
         const identity = {
           village: response?.data?.data?.village ?? null,
+          // Kepala Desa aktif (nama + foto) untuk Sambutan Kepala Desa.
+          villageHead: response?.data?.data?.village_head ?? null,
           stats: response?.data?.data?.public_stats ?? null,
         }
         if (identity.village) writeCache(identity)
-        publish(identity)
+        // Pengumuman punya batas waktu, jadi tidak ikut disimpan di cache.
+        publish({ ...identity, announcement: response?.data?.data?.announcement ?? null })
       })
       // Gagal: identitas dari cache (bila ada) tetap dipakai.
       .catch(() => null)

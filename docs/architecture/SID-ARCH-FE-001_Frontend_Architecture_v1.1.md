@@ -1,139 +1,200 @@
 # ARSITEKTUR FRONTEND
-## SIDUTama Cibenda (Sistem Informasi Desa) - Program Capstone Cibenda
+## SIDUTama (Sistem Informasi Desa) - Program Capstone Cibenda
 
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Kode Dokumen | SID-ARCH-FE-001 |
-| Status | Berlaku (Aktif) - Versi 1.1 |
+| Status | Berlaku (Aktif) - Versi 1.2 (diselaraskan ke source `apps/frontend` per 2026-10-16) |
 | Audiens | Frontend Developer, Reviewer, Tech Lead |
-| Sifat Dokumen | Keputusan struktural & alasan di baliknya. Aturan penulisan kode sehari-hari ada di `DEV-CODE-001`. |
-| Dokumen Induk | `SID-ARCH-SYS-001` (System Architecture) |
+| Sifat Dokumen | Keputusan struktural & alasan di baliknya. Aturan kode sehari-hari ada di `DEV-CODE-001`. |
+| Dokumen Induk | `SID-ARCH-SYS-001` |
 
 ---
 
-## 1. Tech Stack
+## 1. Tech Stack (dari `package.json`)
 
 | Layer | Teknologi | Catatan |
 |---|---|---|
-| Framework UI | React (function component only) | |
-| Build Tool | Vite | |
-| Styling | Tailwind CSS | Terintegrasi dengan `sid-design-tokens.css` (lihat S7) |
-| Server State | TanStack Query | Lihat rasional pemilihan di S2 |
-| Form & Validasi | React Hook Form + Zod | |
-| Routing | React Router | |
-| Type Documentation | JSDoc (bukan TypeScript) | |
-| Linting/Formatting | ESLint + Prettier + Husky (pre-commit) | Detail konfigurasi di `DEV-CODE-001` |
-| Testing | Lihat `DEV-TEST-001` | |
+| UI | React 19 (function component) | JSDoc, bukan TypeScript |
+| Build | Vite 8 (Rolldown) | Alias `@` → `src`; `build` membuang `console.*`/`debugger`; vendor dipisah ke chunk `react`, `charts`, `pdfjs` |
+| Styling | Tailwind CSS 4 via `@tailwindcss/vite` | Token di `index.css` (`@theme static`, palet `pb-*`) dan CSS custom property `--sid-*` di `styles/sid-global.css`; font Bricolage Grotesque & Plus Jakarta Sans (`@fontsource`) |
+| Server state | TanStack Query 5 | `staleTime` 60 detik, `retry` 1, tanpa refetch saat fokus |
+| HTTP | Axios | `withCredentials` + `withXSRFToken` |
+| Form | React Hook Form + Zod | |
+| Routing | React Router 7 | |
+| Grafik | Recharts | |
+| PDF | `pdfjs-dist` (pratinjau PDF), `jspdf` | |
+| Ikon | `lucide-react` | |
+| PWA | `vite-plugin-pwa` (Workbox, `registerType: autoUpdate`) | Service worker mengimpor `public/push-handler.js` untuk Web Push |
+| Test | Vitest + Testing Library + jsdom; Playwright (skrip screenshot) | |
+| Kualitas | ESLint 10, Prettier, Husky + lint-staged | |
 
 ---
 
 ## 2. Pola Arsitektur & Alur Data
 
-**Pola:** Single Page Application (SPA), berkomunikasi dengan Backend Laravel API melalui REST, terautentikasi via Sanctum.
+SPA yang berkomunikasi dengan Laravel API lewat REST, terautentikasi Sanctum cookie.
 
-**Pemisahan Server State vs UI State** - ini keputusan struktural, bukan sekadar preferensi library:
-
-- **Server state** (data yang sumber kebenarannya ada di Backend - daftar surat, status `flow_steps` yang sedang aktif, data warga) ditangani **TanStack Query**. Alasan: data ini butuh caching, invalidasi saat berubah, dan sinkronisasi ulang otomatis - menyimpannya manual di `useState`/Context berisiko FE menampilkan data yang sudah usang tanpa disadari developer.
-- **UI state** (modal terbuka, tab aktif) tetap `useState`/`useReducer` lokal - tidak dipaksakan lewat state management global. Pemakaian state management library global (Redux, Zustand, dsb.) **sengaja dihindari** kecuali kebutuhan nyata membuktikan Context tidak cukup - konsisten dengan prinsip anti-premature-abstraction yang berlaku di seluruh arsitektur program.
+- **Server state** (surat, warga, notifikasi, konten) lewat TanStack Query dengan kunci terpusat di `shared/lib/queryKeys.js` (`surat`, `kependudukan`, `notifications`, `cms`, `adminConfig`). Aksi yang mengubah surat (mis. keputusan) meng-invalidate `queryKeys.surat.all`.
+- **Sesi** di `features/auth/contexts/AuthContext.jsx` (React Context): mengambil `GET /api/user`, CSRF `GET /sanctum/csrf-cookie`, logout `POST /logout`, dan membersihkan cache query saat logout.
+- **UI state** tetap lokal (`useState`). Tidak ada state manager global (Redux/Zustand).
+- **Identitas desa dari API.** Nama, logo, kontak, dan foto desa diambil dari `/api/villages/profile` atau `/api/public/*`; tidak di-hardcode di komponen.
 
 ---
 
-## 3. Struktur Folder (Feature-Based)
+## 3. Struktur Folder (aktual)
 
 ```
-/src
-  /features
-    /surat                  (pengajuan & approval surat)
-    /kependudukan           (master data, staging perubahan data)
-    /cms                    (Profil Desa, Berita - Admin Desa)
-    /admin-config           (konfigurasi pipeline approval, Bidang/Jabatan - Petugas Desa)
-  /shared
-    /components             (komponen lintas-fitur)
-    /hooks                  (hook lintas-fitur)
-    /lib                    (api client, utilitas)
-  /routes                   (definisi routing & access guard per Tier)
+src/
+  App.jsx                 definisi route + GuestRoute/ProtectedRoute
+  main.jsx                QueryClientProvider + CSS global
+  components/
+    layout/               MainLayout, OfficialLayout, OperatorDesaLayout, WargaLayout,
+                          AdminLayout, AppHeader, SiteFooter, PublicPageHead, ScrollToTop
+    ui/                   Button, Input, StatusBadge, OverdueBadge, SimplePagination, PageNumbers,
+                          PageSizeSelect, usePageSize, pageRange, PageLoader, NewsCard
+  constants/              suratStatus
+  features/
+    auth/                 AuthContext (patchUser, pemeriksaan role_forbidden), form login/register,
+                          loginRedirect, userPhoto (foto akun vs foto jabatan)
+    surat/                API surat/tipe/tanda tangan, DynamicSuratForm, FileUploader,
+                          SignatureCard, SignatureRequestsCard, FulfillmentPanel,
+                          LetterTypeSettingsPanel, DetailSuratModal (pemohon), LetterTable,
+                          LetterRowActions, dossier/ (LetterDossierModal, FlowTimeline,
+                          DossierParts), util letterTypeConfig
+    cetak-surat/          PdfCanvasPreview (pratinjau canvas pdf.js), DownloadSuratMenu
+                          (unduh digital / tanda tangan basah), generateSuratPDF
+    warga-surat/, warga-help/
+    profil-warga/         EditProfilWargaModal, ProfilePhoto (foto profil akun di halaman Profil)
+    approval/             ApprovalStepRenderer, SuratDetailModal (approver), canDecideOnLetter,
+                          api keputusan
+    approval-rt/, approval-rw/, approval-kadus/, approval-kades/
+    operator-desa/        roleNavigation (kapabilitas route operator), kartu dashboard
+    data-warga/, pekerjaan/, kelola-wilayah/, manajemen-user/
+    organisasi/           OrganisasiManager (slot Ketua/Wakil/Anggota, promosi, foto anggota)
+    kelola-berita/        berita + kategori berita
+    profil-desa-admin/    Kelola Profil Desa (identitas, kop, logo, foto beranda, stempel, titik kantor
+                          dari koordinat/link Google Maps, sambutan Kepala Desa)
+    pengumuman/           API pengumuman beranda (halaman Kelola Pengumuman)
+    info-admin/           Kelola Halaman Informasi (ListField: isian daftar dinamis)
+    peraturan/, notifikasi/ (popover, WebPushControls, deep link), dashboard-mobile/
+    beranda/              header publik (AccountNavLink: Masuk / Dashboard Saya), konten beranda,
+                          PublicStickyChrome (header + bar pengumuman menempel di semua halaman publik)
+    profil-desa/          OrgChart (bagan Perangkat Desa, BPD, Lembaga Desa)
+    berita/, info-desa/, info/ (halaman informasi: template + isian dari menu Halaman Informasi)
+    cetak-surat/
+  pages/                  halaman publik & warga; pages/admin untuk pejabat/operator
+  components/ui/          PageLoader, UserAvatar (foto akun di header, avatar default)
+  lib/                    api.js (instance Axios + submitDecision; memancarkan event role_forbidden),
+                          authEvents.js, pdfjs.js, constants/routes, constants/app (APP_NAME dari
+                          VITE_APP_NAME, STAF_APP_LABEL)
+  shared/lib/             queryClient, queryKeys, publicVillageParams, villageName, copyText,
+                          villageMap (koordinat kantor → link Google Maps)
+  styles/                 sid-global.css, public.css, beranda.css
+  test/                   setup Vitest
+public/
+  push-handler.js         handler `push` & `notificationclick` untuk service worker
+  assets/                 ikon PWA dan aset seeder (logo/foto default)
 ```
 
-**Alasan struktural:** dengan RBAC berlapis (lihat `SID-ARCH-SYS-001` S4) dan 4 domain bisnis yang cukup independen satu sama lain (lihat `SID-ARCH-SYS-001` S2), struktur folder berbasis tipe file (`/components`, `/pages`, `/hooks` generik) akan cepat kehilangan batas domain. Struktur feature-based menjaga setiap domain bisnis tetap mandiri dan mudah ditelusuri oleh kontributor baru.
-
-> Catatan: `/admin-config` sebelumnya dilabeli "Superadmin" - karena role Superadmin belum diimplementasikan (lihat `SID-ARCH-SYS-001` S4), halaman-halaman di folder ini saat ini diakses oleh `petugas_desa` (Tier 2 - Admin Desa/Eksekutif).
-
-Aturan penerapan detail (kapan komponen boleh naik ke `/shared`, dsb.) ada di `DEV-CODE-001`.
+Struktur berbasis fitur menjaga batas domain; halaman (`pages/`) merakit komponen fitur.
 
 ---
 
 ## 4. Lapisan API Client
 
-Satu lapisan terpusat (`/shared/lib/api`) membungkus seluruh komunikasi ke Backend - menangani penyisipan token Sanctum, normalisasi format error sesuai kontrak baku (`{ error: { code, message, details } }`), dan penanganan sesi kedaluwarsa secara seragam.
-
-**Alasan struktural:** tanpa lapisan ini, penanganan token/error akan terduplikasi di banyak komponen, dan perubahan kontrak API di Backend akan memaksa perubahan di banyak titik Frontend sekaligus.
-
----
-
-## 5. Arsitektur Routing & Access Guard
-
-Routing dikelompokkan berdasarkan RBAC Tier (lihat `SID-ARCH-SYS-001` S4 untuk mapping Tier ke `users.role`). Satu komponen `ProtectedRoute`/guard terpusat membaca `role` dari sesi pengguna, memetakannya ke Tier yang relevan di sisi Frontend, dan mengarahkan (redirect) pengguna yang tidak berwenang - bukan pengecekan kewenangan yang ditulis berulang di tiap halaman.
-
-Karena satu Tier (Admin Desa/Eksekutif) mencakup role dengan scope berbeda (`petugas_desa` vs `kepala_desa`/`sekretaris_desa` - lihat `SID-ARCH-SYS-001` S4), guard di level route tetap harus memeriksa `role` secara spesifik untuk halaman yang scope-nya tidak identik di dalam satu Tier yang sama (misalnya halaman konfigurasi tipe surat hanya untuk `petugas_desa`, sedangkan halaman approval surat untuk `kepala_desa`/`sekretaris_desa`) - pengelompokan Tier tidak menggantikan kebutuhan pengecekan role granular ini.
-
-Halaman dengan beban berat (dashboard Admin, halaman konfigurasi pipeline approval) menggunakan lazy-loading (`React.lazy` + `Suspense`) agar tidak membebani waktu muat awal aplikasi bagi pengguna Tier lain yang tidak mengakses halaman tersebut.
+`src/lib/api.js` adalah satu instance Axios untuk seluruh panggilan:
+- `baseURL` = `VITE_API_URL` atau origin halaman; `withCredentials` dan `withXSRFToken` aktif; header `Accept: application/json`, `X-Requested-With`.
+- Interceptor respons: 403 dengan `code: password_change_required` → redirect ke `/ganti-password`.
+- Error lain diteruskan ke pemanggil; bentuk error backend adalah format Laravel `{ message, errors? }` (bukan `{ error: { code, message, details } }`).
+- Modul API per fitur (`features/*/api*.js`) membungkus endpoint domainnya.
 
 ---
 
-## 6. Pola Komponen Kunci: `ApprovalStepRenderer`
+## 5. Routing & Access Guard
 
-Ini adalah komponen paling penting secara arsitektural di SIDUTama Frontend, karena **merealisasikan prinsip pipeline dinamis Backend di sisi antarmuka**.
+Semua route didefinisikan di `App.jsx`:
+- `GuestRoute` — untuk halaman login/register/lupa & reset password; user yang sudah login diarahkan ke halaman default role (atau `?redirect=` yang diizinkan) dan ke `/ganti-password` bila wajib ganti kata sandi.
+- `ProtectedRoute allowedRoles` — belum login → `/loginpage?redirect=...`; wajib ganti password → `/ganti-password`; role tidak diizinkan → `/`.
+- **Layout route** menjaga header/sidebar tetap terpasang: `PublicShell` (MainLayout) untuk halaman publik, `OfficialShell` (OfficialLayout, untuk 8 role pejabat) untuk seluruh `/admin/*`. OfficialLayout memakai sidebar operator untuk Kasi/Kaur/Petugas Desa dan bilah atas untuk RT/RW/Kadus/Kades/Sekdes.
+- Halaman operator dibatasi lewat `features/operator-desa/constants/roleNavigation.js` (`OPERATOR_ROUTE_CAPABILITIES`), mis. `/admin/data-warga` untuk Petugas, Kasi, Kaur; halaman kelola lain hanya Petugas Desa; `/admin/surat-saya` untuk pejabat non-Petugas.
+- Halaman selain beranda dimuat lazy (`React.lazy` + `Suspense`).
+- `/buka-notifikasi` adalah tujuan klik Web Push; meneruskan ke daftar surat yang sesuai peran (atau "Surat Saya" bila penerima adalah pemohon).
+- Halaman informasi (Kebijakan Privasi, Aksesibilitas, PPID) aktif di produksi; isian khas desa dari menu Halaman Informasi. Tidak ada konten atau route khusus mode dev.
+- Respons 403 `code: role_forbidden` memancarkan event `sid:role-forbidden`; AuthContext memeriksa `/api/user` tanpa loader dan, bila perannya berubah (mis. dirotasi), memuat ulang ke `/loginpage` sehingga `GuestRoute` meneruskan ke dashboard peran baru. Staf aplikasi yang merotasi dirinya sendiri langsung dibawa ke `/daftar-surat`.
+- Nama aplikasi (`VITE_APP_NAME`, default SIDUTama) dipakai di judul login, `<title>` (plugin kecil di `vite.config.js`), manifest PWA, dan label peran `staf_sid` ("Staf {nama aplikasi}").
 
-**Masalah yang diselesaikan:** Backend sudah dirancang agar alur persetujuan surat sepenuhnya data-driven lewat struktur `letter_categories` → `approval_flows` → `flow_steps` (lihat `SID-ARCH-BE-001` S3) - siapa penyetuju di tiap tahap (`flow_steps.approver_position`) dan apakah tahap itu tahap terakhir (`flow_steps.is_final`) semuanya bisa berubah lewat konfigurasi tanpa deploy ulang Backend. Jika Frontend membuat komponen terpisah per role (`RTApprovalCard`, `RWApprovalCard`, `KadesApprovalCard`, dst.), setiap perubahan konfigurasi flow di Backend akan tetap memaksa perubahan kode Frontend - meniadakan manfaat arsitektur data-driven yang sudah dibangun.
-
-**Solusi struktural:** satu komponen generik `ApprovalStepRenderer` menerima data step aktif dari API (`current_step_order` surat, di-JOIN Backend ke `flow_steps` yang cocok) berisi minimal `approver_position` dan `is_final`, lalu merender antarmuka yang sesuai:
-
-- Tombol **Setujui** dan **Tolak** dirender jika `approver_position` step aktif cocok dengan `role` user yang login.
-- Label/badge "Tahap Final" dirender jika `is_final = true` pada step tersebut - dipakai FE untuk menampilkan pesan konfirmasi berbeda ("keputusan ini akan menerbitkan nomor surat" vs "keputusan ini akan diteruskan ke tahap berikutnya").
-- Untuk role yang bukan approver di step manapun (khususnya **RW**, yang sejak v5.0 tidak pernah menjadi `approver_position` yang valid di `flow_steps` - lihat `SID-ARCH-BE-001` S3.2), komponen ini **tidak pernah merender tombol approve/reject sama sekali**. RW hanya menerima data surat dalam mode notifikasi/riwayat read-only, dilayani komponen tampilan terpisah (bukan `ApprovalStepRenderer`), karena secara struktural RW tidak pernah menjadi target endpoint decision.
-
-Komponen ini tidak pernah memuat logic spesifik per role di dalam kodenya sendiri - satu-satunya input yang menentukan perilakunya adalah data step yang diterima dari API.
-
-Detail implementasi (batas ukuran, dokumentasi props) ada di `DEV-CODE-001`.
-
----
-
-## 7. Integrasi Design System
-
-Proyek menggunakan **Tailwind CSS v4** via plugin Vite (`@tailwindcss/vite`), **bukan** Tailwind v3 dengan `tailwind.config.js`. Pendekatan v4 bersifat CSS-first — token desain didefinisikan langsung di berkas CSS lewat directive `@theme`, bukan lewat `theme.extend` di file konfigurasi JS.
-
-Token warna (primer, status semantik: amber/blue/green/red/coral) yang sudah ada di `sid-global.css` sebagai CSS custom property (`--sid-primary`, dst.) **wajib dihubungkan** ke Tailwind lewat `@theme inline` yang me-reference variable tersebut — bukan didefinisikan ulang secara terpisah. Contoh pola:
-
-```css
-/* sid-global.css tetap menjadi sumber nilai */
-:root {
-  --sid-primary: #185FA5;
-}
-
-/* dihubungkan ke Tailwind agar tersedia sebagai utility (bg-primary, text-primary) */
-@theme inline {
-  --color-primary: var(--sid-primary);
-}
-```
-
-Ini memastikan satu sumber kebenaran desain — nilai warna tidak pernah ditulis manual sebagai hex arbitrary (`bg-[#1F3864]`) di dalam kode komponen, dan token tetap bisa diubah dari satu tempat (`sid-global.css`) tanpa menyentuh kode komponen manapun.
+| Kelompok | Route utama |
+|---|---|
+| Publik | `/`, `/berita`, `/berita/:id`, `/profil-desa` (`#peraturan-desa`, `#perangkat-desa`), `/bpd`, `/lembaga-desa` (`?lembaga=lpm\|karang_taruna\|pkk`), `/kebijakan-privasi`, `/aksesibilitas`, `/ppid`; `/peraturan-desa` diarahkan ke `/profil-desa#peraturan-desa` |
+| Auth | `/loginpage`, `/register`, `/lupa-password`, `/password-reset/:token`, `/ganti-password` |
+| Warga | `/daftar-surat` (Beranda: ringkasan Surat Saya), `/jenis-surat` (Ajukan Surat: form pengajuan), `/pengajuan-surat/:kode?`, `/daftar-surat-saya`, `/profile` |
+| RT/RW/Kadus/Kades | `/admin/dashboard-surat-{rt,rw,kadus,kades}`, `/admin/list-{rt,rw,kadus,kades}` |
+| Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/approval-{settings,flows}`, `/admin/log-aktivitas`, `/admin/organisasi/{bpd,lembaga}`, `/admin/pengumuman`, `/admin/halaman-informasi` |
+| Pejabat (umum) | `/admin/profile`, `/admin/surat-saya` |
 
 ---
 
-## 8. Referensi Silang
+## 6. Komponen Kunci
+
+### 6.1 `ApprovalStepRenderer`
+Merender tombol Setuju/Tolak (tahap final: "Setujui & terbitkan") di footer popup detail hanya bila `canDecideOnLetter` terpenuhi: step aktif (`current_step.approver_position`) cocok dengan role user (`rt` → rt; `kepala_desa` → kepala_desa/sekretaris_desa), status surat masih dapat diputuskan, dan belum ada keputusan untuk level itu. RW, Kadus, Kasi/Kaur tidak pernah mendapat tombol. Tolak membuka kotak alasan wajib; Escape/Batal meminta konfirmasi bila alasan sudah diketik.
+
+### 6.2 `DynamicSuratForm`
+Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file) dan slot tanda tangan (`signature_slots`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`, `signers[...]`, `signature_files[...]`). Validasi akhir tetap di backend.
+
+### 6.3 Tanda tangan & Terapkan
+`SignatureCard` (buat/lihat TTD pribadi), `SignatureRequestsCard` (setujui dengan kata sandi/tolak/blokir permintaan TTD), `FulfillmentPanel` (tinjau & Terapkan perubahan data untuk Kasi/Kaur/Petugas), `LetterTypeSettingsPanel` (masa berlaku, penugasan, status aktif).
+
+### 6.4 Web Push
+`useWebPushSubscription` + `WebPushControls`: meminta izin, `PushManager.subscribe()` dengan `VITE_VAPID_PUBLIC_KEY`, lalu `POST /api/push-subscriptions`; menonaktifkan memanggil `DELETE`. `push-handler.js` menampilkan notifikasi dan membuka URL same-origin saat diklik.
+
+### 6.5 Daftar berhalaman
+Bar pagination memakai `PageNumbers` (jendela tiga nomor bergeser dengan elipsis, `pageWindow.js`), teks rentang `formatPageRange` ("1–50 dari 266 data"), dan `PageSizeSelect`. Pilihan baris per halaman (10/25/50; Kelola Berita 6/12/24) disimpan per daftar oleh `usePageSize` di `localStorage` (`sid-page-size:<daftar>`) dan dikirim sebagai `per_page` untuk daftar yang berpaginasi di server; mengganti pilihan kembali ke halaman 1.
+
+### 6.6 Daftar & popup detail surat
+- `LetterTable` dipakai semua daftar surat pejabat (RT, RW, Kadus, Kades/Sekdes, Kasi/Kaur/Petugas). Header dan sel memakai perataan yang sama; di ≤767px baris menjadi kartu. Halaman tabel selebar kontainer navbar (1200px), Kasi/Kaur selebar area konten di samping sidebar.
+- `LetterRowActions` mengisi kolom Aksi sesuai peran: **Proses** (primer) bila giliran pengguna memutus (RT di tahap RT, Kades/Sekdes di tahap final), selain itu **Detail**; **Unduh** hanya bagi yang lolos LetterPolicy::download (pemohon, Kades/Sekdes, Kasi/Kaur, Petugas) untuk surat final; pemohon juga mendapat **Hapus** untuk surat yang belum terbit.
+- `LetterDossierModal` adalah kerangka popup "meja dokumen": surat di kiri (`PdfCanvasPreview`), panel berkas di kanan, aksi di footer. Isinya per peran: pemohon (`DetailSuratModal`) melihat progres generik tanpa nama pejabat, alasan penolakan, masa berlaku, dan keadaan kosong bila surat belum terbit/kedaluwarsa; approver dan pemantau (`SuratDetailModal`) melihat pratinjau draf, tahapan lengkap dengan pemutus dan catatan, serta Setuju/Tolak bila berwenang; Kasi/Kaur (`OperatorSuratPreviewModal`) melihat riwayat persetujuan dan menu unduh.
+- Pratinjau selalu dirender sebagai canvas pdf.js di dalam halaman (klik kanan diblok), tidak pernah di tab/iframe viewer PDF browser yang punya tombol unduh. TTD dan stempel hanya muncul bila backend mengizinkan (lihat `GET /letters/{letter}/preview`).
+- `DownloadSuratMenu`: **TTD & stempel digital** atau **Untuk tanda tangan basah** (area tanda tangan kosong, nama file berakhiran `-ttd-basah`).
+
+### 6.7 Surat Saya
+`MyLettersList` dipakai halaman Surat Saya pejabat (`/admin/surat-saya`) dan warga (`/daftar-surat-saya`): filter status dengan jumlah dari `GET /letters/summary?scope=mine`, dan jalur tahapan per surat (Diajukan → RT → Desa → Terbit) yang dihitung `letterProgress.js` dari `status`, `current_step`, dan `rejected_at_step`. Halaman ajukan surat pejabat memakai `LetterTypePicker` (kartu jenis surat) sebelum `DynamicSuratForm`.
+
+---
+
+## 7. Design System
+
+Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@theme static`, palet `pb-*` seperti `pb-ink`, `pb-laut`, `pb-padi`) dan variabel `--sid-*` di `styles/sid-global.css` (mis. `--sid-primary: #185fa5`). Komponen memakai utility dari token tersebut, bukan hex arbitrer.
+
+---
+
+## 8. Build, PWA & Environment
+
+- `.env`: `VITE_API_URL`, `VITE_API_BASE_URL`, `VITE_VAPID_PUBLIC_KEY` (harus sama dengan backend).
+- Dev server `127.0.0.1:5173` mem-proxy `/api` dan `/sanctum` ke `127.0.0.1:8000`.
+- PWA manifest (nama "SIDUTama Cibenda", ikon 192/512/maskable), `navigateFallback` ke `index.html` kecuali `/api`, `/sanctum`, `/storage`, `/up`; gambar di-cache `StaleWhileRevalidate` 7 hari; chunk pdfjs tidak di-precache.
+- Image Docker `sid-web` menyajikan hasil build lewat Nginx bersama proxy ke PHP-FPM (lihat `deploy/`).
+
+---
+
+## 9. Referensi Silang
 
 | Kebutuhan | Dokumen |
 |---|---|
-| Aturan penulisan kode (naming, batas ukuran komponen, konvensi styling) | `DEV-CODE-001` |
-| Strategi & cakupan pengujian Frontend | `DEV-TEST-001` |
-| Skema `letter_types`/`letter_categories`/`approval_flows`/`flow_steps` yang menjadi sumber data `ApprovalStepRenderer` | `SID_Arsitektur_RoleSegmentation_Pipeline_Kependudukan_Tahap2.md` |
-| Detail implementasi Backend untuk pipeline dinamis, resolve approver, dan RBAC | `SID-ARCH-BE-001` S3, S4 |
+| Aturan kode | `DEV-CODE-001` |
+| Testing | `DEV-TEST-001` |
+| Kontrak API | `docs/api_spec/openapi.yaml` |
+| Pipeline & otorisasi backend | `SID-ARCH-BE-001` S3, S4 |
 
 ---
 
-## 9. Riwayat Revisi
+## 10. Riwayat Revisi
 
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | 1.0 | - | Penyusunan awal |
-| 1.1 | - | Ganti istilah `PipelineStep`/`approver_ref`/`authority_type: reject_capable` menjadi terminologi skema final TDD v5.0 (`flow_steps.approver_position`, `flow_steps.is_final`) di S6. Tambah penjelasan eksplisit bahwa RW tidak pernah merender tombol approve/reject. Tambah catatan di S3 & S5 soal perbedaan scope role di dalam Tier Admin Desa/Eksekutif, selaras dengan `SID-ARCH-SYS-001` v1.1 S4. |
+| 1.1 | - | Terminologi `flow_steps`, RW tanpa tombol keputusan, catatan scope Tier 2 |
+| 1.2 | 2026-10-16 | Diselaraskan ke source: stack aktual (React 19, Vite 8, Tailwind 4, PWA), struktur folder aktual, API client & format error Laravel, routing berbasis layout route + `roleNavigation`, komponen form dinamis/TTD/Terapkan/Web Push, token desain `pb-*` |
+| 1.3 | 2026-10-20 | Komponen daftar berhalaman (pilihan baris per halaman, teks rentang) dan Surat Saya (`MyLettersList`, `LetterTypePicker`) |

@@ -5,9 +5,11 @@ post:
     Aktor: Petugas Desa.
     UC-09 (Main Flow - Import Excel). Library `maatwebsite/excel`.
     Validasi per baris (format NIK, duplikat), baris error di-skip,
-    ringkasan hasil ditampilkan. Template Excel v5.0 disesuaikan untuk
-    kolom-kolom baru (residency_type, blood_type, dst) - lihat dokumen
-    template terpisah. Tidak all-or-nothing: satu baris gagal tidak
+    ringkasan hasil ditampilkan. Template diunduh dari
+    GET /citizens/import-template; header kolomnya dibuat dari daftar yang
+    sama dengan aturan `CitizensImport::rules()` (nik, name, date_of_birth,
+    ..., residency_type, origin_region), jadi template dan validasi impor
+    selalu sinkron. Tidak all-or-nothing: satu baris gagal tidak
     membatalkan baris lain yang valid (SID-ARCH-BE-001 S5.4).
   operationId: importCitizensExcel
   security:
@@ -23,7 +25,7 @@ post:
             file:
               type: string
               format: binary
-              description: File .xlsx atau .csv sesuai template yang disediakan
+              description: File .xlsx, .xls, atau .csv (maks 10 MB) sesuai template dari GET /citizens/import-template
   responses:
     '200':
       description: Import selesai diproses (bisa parsial - lihat error_count)
@@ -42,6 +44,6 @@ post:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
           example:
-            message: "The given data was invalid."
+            message: "Format file harus .xlsx atau .csv sesuai template"
             errors:
               file: ["Format file harus .xlsx atau .csv sesuai template"]

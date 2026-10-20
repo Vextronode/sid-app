@@ -37,7 +37,7 @@ describe('logout routing', () => {
   beforeEach(() => {
     visited.length = 0
     vi.clearAllMocks()
-    api.get.mockResolvedValue({ data: { user: { id: 1, role: 'petugas_desa' } } })
+    api.get.mockResolvedValue({ data: { user: { id: 1, role: 'staf_sid' } } })
     api.post.mockResolvedValue({})
   })
 

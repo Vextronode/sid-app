@@ -20,6 +20,16 @@ describe('letter type API', () => {
     expect(api.get).toHaveBeenCalledWith('/api/letter-types', { params: {} })
   })
 
+  it('requests draft and inactive types when includeInactive is set', async () => {
+    api.get.mockResolvedValue({ data: { data: [] } })
+
+    await getLetterTypes({ includeInactive: true })
+
+    expect(api.get).toHaveBeenCalledWith('/api/letter-types', {
+      params: { include_inactive: 1 },
+    })
+  })
+
   it('updates a type through the backend endpoint', () => {
     const payload = { validity_days: 30, is_active: true }
 

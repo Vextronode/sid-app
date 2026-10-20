@@ -1,27 +1,29 @@
 patch:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Berikan keputusan approve/reject Kepala Desa / Sekretaris Desa
+  summary: Keputusan approve/reject Kepala Desa / Sekretaris Desa (tahap final)
   description: |
-    BARU v5.0 (UC-04c versi baru). Endpoint ini MENGGANTIKAN TOTAL
-    `/kadus/letters/{id}/decision` yang sudah dihapus.
+    UC-04c. Aktor role `kepala_desa` atau `sekretaris_desa` dengan jabatan
+    aktif `kepala_desa`/`sekretaris_desa` di desa surat, bukan pemohon sendiri. Step
+    aktif harus `kepala_desa`. First-action-wins: surat dikunci
+    (`lockForUpdate`), lalu status dan step diperiksa ulang; request kedua
+    mendapat 409. `approval_level` mencatat aktor sebenarnya (`kepala_desa`
+    atau `sekretaris_desa`).
 
-    Kades dan Sekdes dapat memutuskan pada step `kepala_desa` yang sama
-    (first-action-wins). Flow baru hanya menerima posisi step `rt` dan
-    `kepala_desa`, dengan step final wajib `kepala_desa`.
+    **Approve pada step final**: status `approved`, `letter_number` dibuat
+    (`{classification_code}/{NNN}/Des/{bulan Romawi}/{tahun}`, counter per
+    desa + kode klasifikasi + tahun), `expires_at` dari `validity_days`,
+    `processed_at`; lalu **snapshot render** dibekukan (`letters.snapshot`,
+    `signed_by_official_id` = Kepala Desa aktif, termasuk bila Sekdes yang
+    menyetujui; ditunda ke unduhan pertama bila belum ada Kades aktif).
+    Notifikasi `letter_approved_final` ke pemohon, dan ke Kasi/Kaur sesuai
+    `assigned_role`: `letter_needs_fulfillment` bila jenis surat punya
+    `data_action`, selain itu `letter_ready_for_print`.
 
-    **Mekanisme first-action-wins:** request mengunci row surat dengan
-    `SELECT ... FOR UPDATE`, lalu memeriksa ulang status dan step aktif di
-    dalam transaksi. Request kedua mendapat 409 jika surat telah diproses.
+    **Approve pada step non-final** (data legacy): maju ke step berikutnya,
+    notifikasi `kepala_desa_approved` ke approver berikutnya.
 
-    **Approve**: placeholder `letter_approvals` untuk step aktif diperbarui
-    dengan aktor (approval_level `kepala_desa` atau `sekdes` sesuai jabatan)
-    dan aksi. Step `kepala_desa` adalah tahap final pada flow yang divalidasi;
-    surat menjadi `approved`, lalu nomor surat dan tanggal kedaluwarsa
-    (bila berlaku) ditetapkan. Kades dan Sekdes sama-sama menerima notifikasi
-    saat surat menunggu keputusan pada step `kepala_desa`.
-
-    **Reject**: placeholder approval step aktif diperbarui; `status = 'rejected'`, `rejected_at_step` dicatat,
-    TERMINAL, notifikasi ke Warga.
+    **Reject**: `rejected`, `rejected_at_step` dicatat (terminal),
+    notifikasi `kepala_desa_rejected` ke pemohon.
   operationId: decideKadesLetter
   security:
     - sanctumCookie: []
@@ -32,7 +34,6 @@ patch:
       schema:
         type: string
         format: uuid
-      example: "550e8400-e29b-41d4-a716-446655440501"
   requestBody:
     required: true
     content:
@@ -41,33 +42,15 @@ patch:
           $ref: '../../schemas/letters/letters.yaml#/DecisionRequest'
   responses:
     '200':
-      description: Keputusan berhasil disimpan
+      description: Keputusan tersimpan
       content:
         application/json:
           schema:
             $ref: '../../schemas/letters/letters.yaml#/DecisionResponse'
-          examples:
-            approved:
-              summary: Kades/Sekdes menyetujui surat - tahap final
-              value:
-                message: "Keputusan berhasil disimpan"
-                data:
-                  id: "550e8400-e29b-41d4-a716-446655440501"
-                  status: "approved"
-                  current_step_order: 2
-                  current_step: { step_order: 2, approver_position: "kepala_desa", is_final: true }
-            rejected:
-              summary: Kades/Sekdes menolak surat (TERMINAL)
-              value:
-                message: "Keputusan berhasil disimpan"
-                data:
-                  id: "550e8400-e29b-41d4-a716-446655440501"
-                  status: "rejected"
-                  rejected_at_step: 2
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: Role bukan kepala_desa/sekretaris_desa, atau status belum in_progress di step ini (gate logic)
+      description: Bukan Kades/Sekdes aktif, beda desa, atau surat milik sendiri
       content:
         application/json:
           schema:
@@ -75,23 +58,16 @@ patch:
     '404':
       $ref: '../../responses/common.yaml#/NotFound'
     '409':
-      description: |
-        Surat sudah diputuskan pihak lain (Kades/Sekdes yang lain sudah
-        action lebih dulu - first-action-wins), atau current_step_order
-        sudah berpindah sebelum transaksi ini commit.
+      description: Surat tidak di tahap Kepala Desa, sudah diproses, atau sudah diputuskan Kades/Sekdes lain
       content:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ConflictResponse'
           example:
-            message: "Surat sudah diproses oleh pejabat lain."
+            message: "Surat ini sudah diproses oleh Kepala Desa/Sekdes lain sebelum Anda."
     '422':
-      description: Memilih reject tanpa mengisi catatan
+      description: Reject tanpa catatan
       content:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
-          example:
-            message: "The given data was invalid."
-            errors:
-              notes: ["Catatan wajib diisi jika menolak"]

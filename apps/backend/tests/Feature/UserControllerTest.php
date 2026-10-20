@@ -11,9 +11,9 @@ class UserControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_index_returns_users_for_petugas_desa(): void
+    public function test_index_returns_users_for_staf_sid(): void
     {
-        $admin = User::factory()->create(['role' => 'petugas_desa']);
+        $admin = User::factory()->create(['role' => 'staf_sid']);
         User::factory()->count(2)->create();
 
         $this->actingAs($admin)
@@ -24,7 +24,7 @@ class UserControllerTest extends TestCase
 
     public function test_user_can_update_name_but_not_email(): void
     {
-        $admin = User::factory()->create(['role' => 'petugas_desa']);
+        $admin = User::factory()->create(['role' => 'staf_sid']);
         $target = User::factory()->create(['name' => 'Nama Lama', 'email' => 'lama@example.test']);
 
         $this->actingAs($admin)
@@ -39,7 +39,7 @@ class UserControllerTest extends TestCase
 
     public function test_user_status_can_be_toggled_and_self_deactivation_is_rejected(): void
     {
-        $admin = User::factory()->create(['role' => 'petugas_desa']);
+        $admin = User::factory()->create(['role' => 'staf_sid']);
         $target = User::factory()->create(['is_active' => true]);
 
         $this->actingAs($admin)
@@ -56,9 +56,9 @@ class UserControllerTest extends TestCase
     public function test_toggle_status_allows_deactivating_another_petugas_while_actor_remains_active(): void
     {
         $village = Village::factory()->create();
-        $actor = User::factory()->create(['role' => 'petugas_desa', 'is_active' => true, 'village_id' => $village->id]);
+        $actor = User::factory()->create(['role' => 'staf_sid', 'is_active' => true, 'village_id' => $village->id]);
         $lastActivePetugas = User::factory()->create([
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
             'is_active' => true,
             'village_id' => $village->id,
         ]);
@@ -73,7 +73,7 @@ class UserControllerTest extends TestCase
 
     public function test_petugas_can_reset_non_petugas_password_and_user_must_change_it(): void
     {
-        $admin = User::factory()->create(['role' => 'petugas_desa']);
+        $admin = User::factory()->create(['role' => 'staf_sid']);
         $target = User::factory()->create(['role' => 'warga']);
 
         $response = $this->actingAs($admin)
@@ -87,8 +87,8 @@ class UserControllerTest extends TestCase
 
     public function test_reset_password_is_forbidden_for_self_and_other_petugas(): void
     {
-        $admin = User::factory()->create(['role' => 'petugas_desa']);
-        $otherPetugas = User::factory()->create(['role' => 'petugas_desa']);
+        $admin = User::factory()->create(['role' => 'staf_sid']);
+        $otherPetugas = User::factory()->create(['role' => 'staf_sid']);
 
         $this->actingAs($admin)
             ->postJson("/api/users/{$admin->id}/reset-password")
@@ -98,7 +98,7 @@ class UserControllerTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_user_management_is_forbidden_for_non_petugas_desa(): void
+    public function test_user_management_is_forbidden_for_non_staf_sid(): void
     {
         $user = User::factory()->create(['role' => 'rt']);
         $target = User::factory()->create();
@@ -113,7 +113,7 @@ class UserControllerTest extends TestCase
 
     public function test_post_users_creation_route_has_been_removed(): void
     {
-        $this->actingAs(User::factory()->create(['role' => 'petugas_desa']))
+        $this->actingAs(User::factory()->create(['role' => 'staf_sid']))
             ->postJson('/api/users', [])
             ->assertMethodNotAllowed();
     }

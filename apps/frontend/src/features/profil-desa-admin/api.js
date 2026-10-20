@@ -8,6 +8,12 @@ export function updateProfilDesa(payload) {
   return api.patch('/api/villages/profile', payload)
 }
 
+// Titik kantor desa dari link Google Maps (termasuk short link maps.app.goo.gl).
+// Hanya membaca titiknya; penyimpanan tetap lewat updateProfilDesa.
+export function resolveMapLink(url) {
+  return api.post('/api/villages/profile/resolve-map-link', { url })
+}
+
 export function getPerangkatDesa() {
   return api.get('/api/officials')
 }
@@ -67,6 +73,10 @@ export function uploadVillageImage(kind, file) {
 
 export function uploadOfficialPhoto(officialId, file) {
   return api.post(`/api/officials/${officialId}/photo`, toFormData({ photo: file }), multipart)
+}
+
+export function deleteOfficialPhoto(officialId) {
+  return api.delete(`/api/officials/${officialId}/photo`)
 }
 
 // Jenis jabatan desa tanpa akun (Kasi/Kaur/Staf), dikelola Petugas Desa.

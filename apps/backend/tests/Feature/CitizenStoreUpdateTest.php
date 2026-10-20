@@ -23,7 +23,7 @@ class CitizenStoreUpdateTest extends TestCase
     {
         $village ??= Village::factory()->create();
 
-        return User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        return User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
     }
 
     private function payload(array $overrides = []): array
@@ -42,8 +42,8 @@ class CitizenStoreUpdateTest extends TestCase
     {
         Citizen::factory()->create(['nik' => '3201012345670001']);
 
-        // EV5-6-S2: /citizens eksklusif petugas_desa.
-        $this->actingAs(User::factory()->create(['role' => 'petugas_desa']))
+        // EV5-6-S2: /citizens eksklusif staf_sid.
+        $this->actingAs(User::factory()->create(['role' => 'staf_sid']))
             ->getJson('/api/citizens')
             ->assertOk()
             ->assertJsonPath('data.0.nik_masked', '************0001')
@@ -218,7 +218,7 @@ class CitizenStoreUpdateTest extends TestCase
             ->assertJsonValidationErrors(['family_role']);
     }
 
-    public function test_store_forbidden_for_non_petugas_desa(): void
+    public function test_store_forbidden_for_non_staf_sid(): void
     {
         $this->actingAs(User::factory()->create(['role' => 'warga']))
             ->postJson('/api/citizens', $this->payload())
@@ -246,6 +246,40 @@ class CitizenStoreUpdateTest extends TestCase
             ->assertJsonPath('data.name', 'Nama Baru')
             ->assertJsonPath('data.domicile_status', 'merantau_dalam_negeri')
             ->assertJsonPath('data.residency_type', 'pendatang');
+    }
+
+    public function test_update_name_also_renames_linked_account(): void
+    {
+        $village = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id, 'name' => 'Nama Lama']);
+        $account = User::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'name' => 'Nama Lama',
+        ]);
+
+        $this->actingAs($this->petugas($village))
+            ->patchJson("/api/citizens/{$citizen->id}", ['name' => 'Nama Baru'])
+            ->assertOk();
+
+        $this->assertSame('Nama Baru', $account->fresh()->name);
+    }
+
+    public function test_update_other_fields_keeps_linked_account_name(): void
+    {
+        $village = Village::factory()->create();
+        $citizen = Citizen::factory()->create(['village_id' => $village->id, 'name' => 'Nama Warga']);
+        $account = User::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+            'name' => 'Nama Akun',
+        ]);
+
+        $this->actingAs($this->petugas($village))
+            ->patchJson("/api/citizens/{$citizen->id}", ['address' => 'Jl. Baru No. 1'])
+            ->assertOk();
+
+        $this->assertSame('Nama Akun', $account->fresh()->name);
     }
 
     public function test_update_rejects_nik_change(): void
@@ -323,7 +357,7 @@ class CitizenStoreUpdateTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_update_forbidden_for_non_petugas_desa(): void
+    public function test_update_forbidden_for_non_staf_sid(): void
     {
         $citizen = Citizen::factory()->create();
 

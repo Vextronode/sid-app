@@ -1,7 +1,9 @@
-import { ClipboardCheck, FileText, Mail, MessageCircle, Search } from 'lucide-react'
+import { Download, FileText, Mail, MessageCircle, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { HAL_UNDUH_SURAT } from '@/features/auth/utils/letterLinks'
 import { HAL_AJUKAN_SURAT, HAL_STATUS_SURAT } from '@/lib/constants/routes'
+import { sectionGap } from '../publicClasses'
 import { useLoginAwareHref } from '../hooks/useLoginAwareHref'
 import { WhatsAppIcon } from './WhatsAppIcon'
 
@@ -37,8 +39,8 @@ const item =
   'flex min-w-0 border-pb-line max-sm:[&+&]:border-t sm:max-lg:[&:nth-child(even)]:border-l sm:max-lg:[&:nth-child(n+3)]:border-t lg:[&+&]:border-l'
 
 // Kartu layanan (A14–A18).
-// - Ajukan & Cek status: seluruh kartu adalah link dengan alur login (K4).
-// - Syarat dokumen: belum ada halamannya, jadi bukan link dan tanpa lift (K3).
+// - Ajukan, Cek status & Unduh surat selesai: seluruh kartu adalah link dengan
+//   alur login (K4); tujuannya menyesuaikan peran yang login.
 // - Pengaduan: kartu tidak bisa diklik; hanya baris WA dan email (K14). Baris WA
 //   (D2) membuka menu bagikan AddToAny di tab baru; nama aksesibel = teksnya.
 //   Email dari data desa (village.email); tanpa email barisnya tidak dirender.
@@ -47,12 +49,11 @@ export function ServiceCards({ content, village }) {
   const email = village?.email
   const ajukanHref = useLoginAwareHref(HAL_AJUKAN_SURAT)
   const statusHref = useLoginAwareHref(HAL_STATUS_SURAT)
+  const unduhHref = useLoginAwareHref(HAL_UNDUH_SURAT)
 
+  // Tidak lagi menempel ke hero: Sambutan Kepala Desa ada di antaranya.
   return (
-    <section
-      className="bd-container relative z-[2] -mt-16 max-sm:-mt-14"
-      aria-label={services.label}
-    >
+    <section className={`bd-container ${sectionGap}`} aria-label={services.label}>
       <ul className="m-0 grid list-none grid-cols-1 overflow-hidden rounded-3xl border border-pb-line bg-white p-0 shadow-[0_30px_60px_-40px_rgba(12,35,65,0.45)] sm:grid-cols-2 lg:grid-cols-4">
         <li className={item}>
           <Link to={ajukanHref} className={`bd-lift ${cardBase} ${cardLink}`}>
@@ -71,14 +72,11 @@ export function ServiceCards({ content, village }) {
         </li>
 
         <li className={item}>
-          <div className={cardBase}>
-            <CardIcon icon={ClipboardCheck} />
-            <span className={title}>{services.syarat.title}</span>
-            <span className={desc}>{services.syarat.description}</span>
-            <span className="mt-1.5 rounded-sm bg-pb-padi-soft px-2 py-0.5 text-[13px] leading-snug font-semibold text-pb-padi-ink">
-              {services.syarat.badge}
-            </span>
-          </div>
+          <Link to={unduhHref} className={`bd-lift ${cardBase} ${cardLink}`}>
+            <CardIcon icon={Download} />
+            <span className={`${title} group-hover:text-pb-laut`}>{services.unduh.title}</span>
+            <span className={desc}>{services.unduh.description}</span>
+          </Link>
         </li>
 
         <li className={item}>

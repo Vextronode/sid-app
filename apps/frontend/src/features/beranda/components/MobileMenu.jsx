@@ -1,14 +1,15 @@
 import { Menu, X } from 'lucide-react'
-import { Link, NavLink } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 
-import { HAL_BERANDA, HAL_BERITA, HAL_LOGIN, SECTION_KONTAK } from '@/lib/constants/routes'
+import { HAL_BERANDA, HAL_BERITA, SECTION_KONTAK } from '@/lib/constants/routes'
 import { useDisclosure } from '../hooks/useDisclosure'
 import { useSectionLink } from '../utils/sectionLink'
+import { AccountNavLink } from './AccountNavLink'
 import { ProfilDesaItems } from './ProfilDesaDropdown'
 
 // Navigasi ponsel (K5): tombol berlabel teks "Menu" yang membuka daftar nav.
 // Aturan tutupnya sama dengan dropdown Profil Desa (useDisclosure).
-export function MobileMenu({ header, showTransparansi }) {
+export function MobileMenu({ header }) {
   const { isOpen, toggle, close, containerRef, triggerRef, panelId, onBlur } = useDisclosure()
   const { nav } = header
   const sectionLinkProps = useSectionLink()
@@ -44,13 +45,13 @@ export function MobileMenu({ header, showTransparansi }) {
             </NavLink>
           </li>
           <li>
-            <Link to={HAL_BERITA} className="bd-menu-item bd-menu-item--link" onClick={close}>
+            <NavLink to={HAL_BERITA} className="bd-menu-item bd-menu-item--link" onClick={close}>
               {nav.berita}
-            </Link>
+            </NavLink>
           </li>
           <li className="bd-mobile-group">
             <span className="bd-mobile-group-title">{nav.profil}</span>
-            <ProfilDesaItems header={header} showTransparansi={showTransparansi} onSelect={close} />
+            <ProfilDesaItems header={header} onSelect={close} />
           </li>
           <li>
             <a
@@ -61,9 +62,11 @@ export function MobileMenu({ header, showTransparansi }) {
             </a>
           </li>
           <li>
-            <Link to={HAL_LOGIN} className="bd-button-outline bd-mobile-login" onClick={close}>
-              {nav.masuk}
-            </Link>
+            <AccountNavLink
+              nav={nav}
+              className="bd-button-outline bd-mobile-login"
+              onClick={close}
+            />
           </li>
         </ul>
       </nav>

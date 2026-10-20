@@ -17,14 +17,26 @@ const renderAt = (entry) =>
     </MemoryRouter>,
   )
 
+const REGULATION = {
+  id: 1,
+  title: 'Pungutan Desa',
+  regulation_number: '01/2026',
+  enacted_date: '2026-01-15',
+  content: 'Isi peraturan.',
+}
+
 describe('ProfilDesaPage scroll target', () => {
   let scrollTo
   let scrollIntoView
 
   beforeEach(() => {
-    api.get.mockResolvedValue({
-      data: { data: { name: 'Desa Cibenda' }, officials: [], hamlets: [], positions: [] },
-    })
+    api.get.mockImplementation((url) =>
+      Promise.resolve(
+        url === '/api/public/regulations'
+          ? { data: { data: [REGULATION] } }
+          : { data: { data: { name: 'Desa Cibenda' }, officials: [], hamlets: [], positions: [] } },
+      ),
+    )
     scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
     scrollIntoView = vi.fn()
     Element.prototype.scrollIntoView = scrollIntoView
@@ -45,9 +57,7 @@ describe('ProfilDesaPage scroll target', () => {
     expect(scrollIntoView).not.toHaveBeenCalled()
   })
 
-  // Nama, alamat, dan telepon dari data desa; kalimatnya statis tanpa kata
-  // "sejarah" (permintaan pemilik, 12 Okt 2026).
-  it('builds the header from the village data', async () => {
+  it('builds the header from the village name only', async () => {
     api.get.mockResolvedValue({
       data: {
         data: {
@@ -64,12 +74,11 @@ describe('ProfilDesaPage scroll target', () => {
     renderAt('/profil-desa')
 
     expect(await screen.findByRole('heading', { name: 'Profil Desa Cibenda' })).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'Halaman resmi informasi tata kelola dan capaian strategis Desa Cibenda untuk transparansi publik.',
-      ),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Jl. Raya Cibenda · Telp. (0265) 2640613')).toBeInTheDocument()
+    // Kepala halaman hanya judul; langsung ke foto dan sejarah tanpa
+    // kalimat pembuka, alamat, dan telepon (permintaan pemilik, 19 Okt 2026).
+    expect(screen.queryByText(/tata kelola dan capaian strategis/)).toBeNull()
+    expect(screen.queryByText('Jl. Raya Cibenda')).toBeNull()
+    expect(screen.queryByRole('link', { name: /Telp\./ })).toBeNull()
     expect(screen.getByRole('img', { name: 'Profil Desa Cibenda' })).toHaveAttribute(
       'src',
       '/assets/image/beranda/hero-pemandangan.jpg',
@@ -84,5 +93,50 @@ describe('ProfilDesaPage scroll target', () => {
     await waitFor(() => expect(scrollIntoView).toHaveBeenCalledOnce())
     expect(scrollIntoView.mock.contexts[0]).toHaveAttribute('id', 'perangkat-desa')
     expect(scrollTo).not.toHaveBeenCalled()
+  })
+
+  it('scrolls to the regulations section for #peraturan-desa', async () => {
+    renderAt('/profil-desa#peraturan-desa')
+
+    await screen.findByRole('heading', { name: 'Profil Desa Cibenda' })
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledOnce())
+    expect(scrollIntoView.mock.contexts[0]).toHaveAttribute('id', 'peraturan-desa')
+  })
+})
+
+describe('ProfilDesaPage peraturan desa', () => {
+  beforeEach(() => {
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const mockApi = (regulations) =>
+    api.get.mockImplementation((url) =>
+      url === '/api/public/regulations'
+        ? regulations()
+        : Promise.resolve({
+            data: { data: { name: 'Desa Cibenda' }, officials: [], hamlets: [], positions: [] },
+          }),
+    )
+
+  it('lists the published regulations', async () => {
+    mockApi(() => Promise.resolve({ data: { data: [REGULATION] } }))
+    renderAt('/profil-desa')
+
+    expect(await screen.findByRole('heading', { name: 'Peraturan Desa' })).toBeInTheDocument()
+    expect(await screen.findByText('Pungutan Desa')).toBeInTheDocument()
+  })
+
+  it('shows the empty state when the backend has none (404)', async () => {
+    mockApi(() => Promise.reject({ response: { status: 404, data: { message: 'Belum ada' } } }))
+    renderAt('/profil-desa')
+
+    expect(
+      await screen.findByText('Belum ada peraturan desa yang dipublikasikan.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 })

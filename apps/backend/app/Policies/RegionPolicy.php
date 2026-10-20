@@ -16,7 +16,7 @@ class RegionPolicy
 
     public function create(User $user): bool
     {
-        return $user->role === 'petugas_desa' && $user->is_active && $user->village_id !== null;
+        return $user->role === 'staf_sid' && $user->is_active && $user->village_id !== null;
     }
 
     public function update(User $user, Hamlet|Rw|Rt $region): bool

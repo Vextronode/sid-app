@@ -7,68 +7,108 @@ News:
     village_id:
       type: string
       format: uuid
-      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     author_id:
       type: string
       format: uuid
-      example: "e8aaa421-7fdd-42cf-8c30-993264820afd"
     author_name:
       type: string
-      example: "Petugas Desa"
+      description: "Hanya bila relasi author dimuat."
     title:
       type: string
       example: "Pengumuman Jadwal Posyandu Bulan Juli"
     slug:
       type: string
-      example: "pengumuman-jadwal-posyandu-bulan-juli"
     content:
       type: string
-      example: "Posyandu akan dilaksanakan pada tanggal 10 Juli 2026..."
     thumbnail:
       type: string
       nullable: true
-      example: "https://cdn.example.com/thumbnails/posyandu.jpg"
+      description: "URL publik (disk public) atau null."
+    categories:
+      type: array
+      description: "1-2 kategori berita (bentuk ringkas id, name, slug)."
+      items:
+        $ref: '#/NewsCategory'
     is_published:
       type: boolean
-      example: true
     published_at:
       type: string
       format: date-time
       nullable: true
-      example: "2026-07-01T08:00:00Z"
+
+NewsCategory:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 2
+    name:
+      type: string
+      example: "Pengumuman"
+    slug:
+      type: string
+      example: "pengumuman"
+    news_count:
+      type: integer
+      description: "Hanya di daftar kelola kategori; ikut menghitung berita soft-deleted."
+    can_delete:
+      type: boolean
+      description: "Hanya di daftar kelola kategori; true bila belum pernah dipakai berita."
+
+NewsCategoryRequest:
+  type: object
+  required: [name]
+  properties:
+    name:
+      type: string
+      maxLength: 50
+      example: "Kesehatan"
 
 NewsCreateRequest:
   type: object
-  required: [title, content]
+  description: "multipart/form-data. `is_published` boleh berupa teks \"true\"/\"false\"."
+  required: [title, content, category_ids]
   properties:
     title:
       type: string
-      example: "Pengumuman Jadwal Posyandu Bulan Juli"
+      maxLength: 200
     content:
       type: string
-      example: "Posyandu akan dilaksanakan pada tanggal 10 Juli 2026..."
     thumbnail:
       type: string
       format: binary
       nullable: true
+      description: "Gambar maks 2048 KB."
     is_published:
       type: boolean
-      example: true
+    category_ids:
+      type: array
+      minItems: 1
+      maxItems: 2
+      uniqueItems: true
+      items:
+        type: integer
+      description: "ID kategori milik desa yang sama."
 
 NewsUpdateRequest:
   type: object
   properties:
     title:
       type: string
-      example: "Pengumuman Jadwal Posyandu Bulan Juli (Update)"
+      maxLength: 200
     content:
       type: string
-      example: "Posyandu diundur menjadi tanggal 12 Juli 2026..."
     is_published:
       type: boolean
-      example: false
     thumbnail:
       type: string
       format: binary
       nullable: true
-      description: "Gambar thumbnail (maks 2048 KB)"
+    category_ids:
+      type: array
+      minItems: 1
+      maxItems: 2
+      uniqueItems: true
+      items:
+        type: integer
+      description: "Opsional; bila dikirim, kategori disinkronkan ulang."

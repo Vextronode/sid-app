@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { STAF_APP_LABEL } from '@/lib/constants/app'
 import { getMySignature, getMySignatureImage, saveMySignature } from '../api/signatureApi'
+import { notifySuccess } from '@/shared/lib/toast'
 
 const PAD_WIDTH = 480
 const PAD_HEIGHT = 180
@@ -19,7 +21,7 @@ function serverMessage(error, fallback) {
 /**
  * Tanda tangan pribadi akun. Diisi sekali (digambar atau diunggah) dengan
  * pratinjau dan konfirmasi; setelah tersimpan tidak dapat diubah sendiri
- * dan hanya bisa direset oleh Petugas Desa.
+ * dan hanya bisa direset oleh staf aplikasi (STAF_APP_LABEL).
  */
 export function SignatureCard() {
   const canvasRef = useRef(null)
@@ -133,6 +135,7 @@ export function SignatureCard() {
       setImageUrl(draftUrl)
       setDraft(null)
       setDraftUrl('')
+      notifySuccess('Tanda tangan berhasil disimpan.')
     } catch (requestError) {
       setError(serverMessage(requestError, 'Gagal menyimpan tanda tangan.'))
     } finally {
@@ -147,7 +150,7 @@ export function SignatureCard() {
       </h2>
 
       {error && (
-        <p role="alert" className="sid-form-field-error">
+        <p role="alert" className="sid-admin-alert sid-admin-alert-error">
           {error}
         </p>
       )}
@@ -164,8 +167,8 @@ export function SignatureCard() {
             />
           )}
           <p className="sid-upload-description">
-            Tanda tangan sudah tersimpan dan tidak dapat diubah. Bila perlu diganti, hubungi Petugas
-            Desa untuk mereset.
+            Tanda tangan sudah tersimpan dan tidak dapat diubah. Bila perlu diganti, hubungi{' '}
+            {STAF_APP_LABEL} untuk mengatur ulang.
           </p>
         </>
       )}

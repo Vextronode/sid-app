@@ -50,7 +50,7 @@ class LetterControllerTest extends TestCase
         $citizen = Citizen::factory()->create();
         $letterType = LetterType::factory()->create(['flow_id' => $this->flowWithRtStep()->id]);
         $user = User::factory()->create([
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
             'citizen_id' => $citizen->id,
             'village_id' => $citizen->village_id,
         ]);
@@ -78,7 +78,7 @@ class LetterControllerTest extends TestCase
 
     public function test_index_returns_letters_scoped_to_user(): void
     {
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa');
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid');
         Letter::factory()->count(2)->create();
 
         $this->actingAs($user)
@@ -269,6 +269,33 @@ class LetterControllerTest extends TestCase
                 ->assertJsonCount(1, 'data')
                 ->assertJsonPath('data.0.id', $own->id);
         }
+    }
+
+    public function test_index_scope_mine_reports_expired_letters(): void
+    {
+        $user = User::factory()->create(['role' => 'warga']);
+        $expired = Letter::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'approved',
+            'expires_at' => now()->subDay(),
+            'submitted_at' => now()->subDays(2),
+        ]);
+        $valid = Letter::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'approved',
+            'expires_at' => now()->addDay(),
+            'submitted_at' => now()->subDays(3),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/letters?scope=mine')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $rows = collect($response->json('data'))->keyBy('id');
+        $this->assertTrue($rows[$expired->id]['is_expired']);
+        $this->assertNotNull($rows[$expired->id]['expires_at']);
+        $this->assertFalse($rows[$valid->id]['is_expired']);
     }
 
     public function test_index_for_kasi_only_lists_approved_letters_for_assigned_role(): void

@@ -46,6 +46,7 @@ class LetterResource extends JsonResource
             'rejected_at_step' => $this->rejected_at_step,
             'is_overdue' => $this->is_overdue,
             'expires_at' => $this->expires_at,
+            'is_expired' => $this->resource->isExpired(),
             'submitted_at' => $this->submitted_at,
             'processed_at' => $this->processed_at,
             'signed_by_official_id' => $this->signed_by_official_id,

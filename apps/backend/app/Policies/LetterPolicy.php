@@ -19,7 +19,7 @@ class LetterPolicy
         'sekretaris_desa',
         'kasi_pelayanan',
         'kaur_tu_umum',
-        'petugas_desa',
+        'staf_sid',
     ];
 
     /**
@@ -55,7 +55,7 @@ class LetterPolicy
             'rt' => $this->isSameRt($user, $letter),
             'rw' => $this->isSameRw($user, $letter) && $this->wasApprovedByRt($letter),
             'kadus' => $this->isSameHamlet($user, $letter) && $this->wasApprovedByRt($letter),
-            'petugas_desa' => $this->isSameVillage($user, $letter),
+            'staf_sid' => $this->isSameVillage($user, $letter),
             'kasi_pelayanan', 'kaur_tu_umum' => $letter->status->value === 'approved'
                 && $this->isSameVillage($user, $letter)
                 && ($letter->letterType?->assigned_role === null
@@ -84,7 +84,7 @@ class LetterPolicy
             return true;
         }
 
-        if ($user->role === 'petugas_desa') {
+        if ($user->role === 'staf_sid') {
             return $this->isSameVillage($user, $letter);
         }
 
@@ -116,7 +116,7 @@ class LetterPolicy
             return false;
         }
 
-        if ($user->role === 'petugas_desa') {
+        if ($user->role === 'staf_sid') {
             return true;
         }
 

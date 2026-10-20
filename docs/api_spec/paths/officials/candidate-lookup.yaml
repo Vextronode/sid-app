@@ -1,0 +1,43 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Cari calon pejabat lewat NIK
+  description: |
+    Aktor: Petugas Desa. POST agar NIK tidak tercatat di URL. Mencari warga
+    ber-NIK tersebut di desa Petugas, lalu menilai kelayakannya. Tanpa
+    `position` diasumsikan jabatan berakun (syarat paling ketat: harus punya
+    akun warga aktif). Jabatan tanpa akun cukup data warga aktif yang belum
+    menjabat.
+  operationId: lookupOfficialCandidate
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [nik]
+          properties:
+            nik:
+              type: string
+              pattern: '^\d{16}$'
+            position:
+              $ref: '../../schemas/users/users.yaml#/OfficialPositionCode'
+  responses:
+    '200':
+      description: Hasil pencarian
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/users/users.yaml#/OfficialCandidate'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      description: NIK tidak ditemukan di data warga desa ini
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

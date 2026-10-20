@@ -19,8 +19,8 @@ class OfficialPositionEnumTest extends TestCase
             OfficialPosition::Kadus->value => UserRole::Kadus,
             OfficialPosition::KasiPelayanan->value => UserRole::KasiPelayanan,
             OfficialPosition::KaurTuUmum->value => UserRole::KaurTuUmum,
-            OfficialPosition::PetugasDesa->value => UserRole::PetugasDesa,
-            OfficialPosition::Sekdes->value => UserRole::SekretarisDesa,
+            OfficialPosition::StafSid->value => UserRole::StafSid,
+            OfficialPosition::SekretarisDesa->value => UserRole::SekretarisDesa,
         ];
 
         foreach ($expected as $position => $role) {
@@ -45,8 +45,8 @@ class OfficialPositionEnumTest extends TestCase
             'kadus',
             'kasi_pelayanan',
             'kaur_tu_umum',
-            'petugas_desa',
-            'sekdes',
+            'staf_sid',
+            'sekretaris_desa',
         ], OfficialPosition::accountPositions());
     }
 
@@ -61,13 +61,17 @@ class OfficialPositionEnumTest extends TestCase
     }
 
     #[Test]
-    public function only_petugas_desa_allows_multiple_holders_per_scope(): void
+    public function every_account_position_has_a_single_holder_per_scope(): void
     {
+        // Termasuk staf aplikasi desa: hanya satu, penggantinya lewat rotasi.
         foreach (OfficialPosition::cases() as $position) {
-            $this->assertSame(
-                $position !== OfficialPosition::PetugasDesa,
-                $position->isSingleHolderPerScope(),
-            );
+            $this->assertTrue($position->isSingleHolderPerScope(), $position->value);
         }
+    }
+
+    #[Test]
+    public function staf_sid_label_follows_the_configured_app_name(): void
+    {
+        $this->assertSame('Staf SIDUTama', OfficialPosition::StafSid->label());
     }
 }

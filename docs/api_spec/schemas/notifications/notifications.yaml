@@ -58,27 +58,39 @@ Notification:
         - $ref: '#/LetterStatusContext'
       example:
         letter_id: "550e8400-e29b-41d4-a716-446655440501"
-        letter_no: "470/123/VII/2026"
+        letter_no: "470/001/Des/X/2026"
         status: "rt_approved"
         applicant: "Siti Aminah"
 
 LetterStatusContext:
   type: object
-  description: "Bentuk `context` ketika `type` = LetterStatusNotification"
+  description: |
+    Bentuk `context` ketika `type` = LetterStatusNotification. Payload yang
+    sama (title, body/message, data.context, data.url
+    `/buka-notifikasi?surat=..&status=..&mine=..`) juga dikirim lewat Web Push.
   properties:
     letter_id:
       type: string
       format: uuid
-      example: "550e8400-e29b-41d4-a716-446655440501"
     letter_no:
       type: string
-      example: "470/123/VII/2026"
+      nullable: true
+      example: "470/001/Des/X/2026"
     status:
       type: string
+      description: |
+        Kode peristiwa: pending, approver_vacant, rt_approved, rt_rejected,
+        rt_approved_rw_fyi, rt_approved_kadus_fyi, kepala_desa_approved,
+        kepala_desa_rejected, letter_approved_final, letter_ready_for_print,
+        letter_needs_fulfillment, letter_fulfilled, signature_requested,
+        signature_accepted, signature_rejected.
       example: "rt_approved"
     applicant:
       type: string
       example: "Siti Aminah"
+    is_applicant:
+      type: boolean
+      description: "True bila penerima adalah pemohon surat (frontend membuka 'Surat Saya')."
 
 MarkReadResponse:
   type: object

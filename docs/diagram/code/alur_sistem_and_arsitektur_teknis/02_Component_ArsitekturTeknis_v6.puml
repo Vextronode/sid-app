@@ -1,0 +1,150 @@
+'==================================================================================
+' SECTION: COMPONENT DIAGRAM
+' FILE: 02_Component_ArsitekturTeknis_v6.puml
+' JUDUL: Diagram Arsitektur Teknis
+' SUMBER: apps/frontend (package.json, App.jsx, vite.config.js),
+'         apps/backend (composer.json, bootstrap/app.php, app/*), deploy/ (2026-10-16)
+' CATATAN: Menggantikan 02_Component_ArsitekturTeknis_v5.puml. Dihapus: Telescope,
+'          Mail Server untuk notifikasi, letter_categories, event generik.
+'          Ditambah: Web Push, PWA service worker, cache halaman publik, disk privat,
+'          tanda tangan, snapshot, fulfillment.
+'==================================================================================
+@startuml Component_ArsitekturTeknis_v6
+skinparam backgroundColor #FFFFFF
+skinparam component {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam database {
+  BackgroundColor #D5F5E3
+  BorderColor #1E8449
+  FontName Arial
+}
+skinparam cloud {
+  BackgroundColor #FEF9E7
+  BorderColor #F39C12
+  FontName Arial
+}
+skinparam arrow {
+  Color #2E5FA3
+  FontName Arial
+  FontSize 10
+}
+title Diagram Arsitektur Teknis - SIDUTama v5.3
+
+rectangle "CLIENT LAYER" #EBF3FB {
+  [Browser / PWA\n(9 role + pengunjung publik)] as CLIENT
+  rectangle "React 19 SPA (Vite 8, Tailwind 4)" #D6E4F7 {
+    [Pages & Layouts\n(PublicShell, OfficialShell,\nGuestRoute, ProtectedRoute)] as PAGES
+    [Features\n(surat, approval, notifikasi,\ndata-warga, kelola-berita, ...)] as FEAT
+    [ApprovalStepRenderer\nDynamicSuratForm\nSignature/Fulfillment panels] as KEY
+    [TanStack Query + Axios\n(lib/api.js, queryKeys)] as AXIOS
+    [AuthContext\n(Sanctum cookie)] as AUTH
+  }
+  [Service Worker\n(Workbox + push-handler.js)] as SW
+}
+
+rectangle "WEB SERVER - Nginx (sid-web)" #E1F5FE {
+  [Static SPA + fallback index.html] as STATIC
+  [Proxy /api, /sanctum, /storage, /login...\n→ PHP-FPM] as PROXY
+}
+
+rectangle "API - Laravel 13 (sid-api, PHP-FPM)" #D5EAD0 {
+  rectangle "HTTP" #C8E6C9 {
+    [Middleware\nauth:sanctum, account.active,\npassword.changed, role:, throttle] as MW
+    [Controllers (Api/*, Auth/*)] as CTRL
+    [Form Requests\n(StoreLetterRequest ← LetterFormSchema)] as FREQ
+    [API Resources] as ARES
+  }
+  rectangle "Business" #A5D6A7 {
+    [Surat: LetterService, LetterFlowService,\nRt/KadesApprovalService, LetterNumberGenerator,\nLetterSnapshotService, PdfService,\nLetterAttachmentService, LetterSignatureService,\nUserSignatureService, LetterFulfillmentService] as SVC_LETTER
+    [Kependudukan & Jabatan: Citizen/Family/Occupation,\nOfficial, OfficialAssignment,\nOfficialPositionType Service] as SVC_POP
+    [CMS & Publik: VillageProfile, News,\nNewsCategory, Regulation, PublicPageService] as SVC_CMS
+    [Policies: LetterPolicy, OfficialPolicy,\nRegionPolicy] as POL
+    [Repositories] as REPO
+  }
+  rectangle "Support" #B2DFDB {
+    [PublicPageCache (10 menit / desa)] as PCACHE
+    [VillageImageOptimizer (WebP)] as IMGOPT
+    [dompdf (PDF on-demand)] as PDF
+    [maatwebsite/excel (import warga)] as EXCEL
+    [spatie/activitylog] as ALOG
+  }
+  rectangle "Notifikasi" #81C784 {
+    [LetterStatusNotification\nkanal database (sync)] as NOTIF_DB
+    [WebPushChannel\n(diantrekan)] as NOTIF_PUSH
+    [Queue worker\n(database/sync)] as QUEUE
+  }
+}
+
+database "PostgreSQL" as DB {
+  [29 tabel domain + letter_number_counters,\nactivity_log, push_subscriptions,\ncache, sessions, jobs] as TABLES
+}
+
+rectangle "STORAGE LAYER" #FDE8D8 {
+  [disk public: logo, foto beranda,\nfoto pejabat, thumbnail berita] as PUB
+  [disk private_uploads: stempel, TTD Kades,\nTTD akun (.enc), lampiran surat] as PRIV
+}
+
+cloud "EXTERNAL SERVICES" #FEF9E7 {
+  [Layanan push browser\n(FCM / Mozilla / Apple)] as PUSHSVC
+  [Mail (reset password &\nverifikasi email)] as MAIL
+}
+
+CLIENT --> PAGES
+PAGES --> FEAT
+FEAT --> KEY
+FEAT --> AXIOS
+AXIOS --> AUTH
+CLIENT ..> SW
+AXIOS --> STATIC : HTTPS
+STATIC --> PROXY
+PROXY --> MW
+MW --> CTRL
+CTRL --> FREQ
+CTRL --> POL
+CTRL --> SVC_LETTER
+CTRL --> SVC_POP
+CTRL --> SVC_CMS
+CTRL --> ARES
+SVC_LETTER --> REPO
+SVC_POP --> REPO
+SVC_CMS --> REPO
+SVC_CMS --> PCACHE
+SVC_CMS --> IMGOPT
+SVC_LETTER --> PDF
+SVC_POP --> EXCEL
+SVC_LETTER --> ALOG
+SVC_POP --> ALOG
+SVC_LETTER --> NOTIF_DB
+SVC_LETTER --> NOTIF_PUSH
+NOTIF_PUSH --> QUEUE
+QUEUE --> PUSHSVC
+PUSHSVC --> SW : push
+REPO --> DB
+NOTIF_DB --> DB
+PCACHE --> DB
+SVC_LETTER --> PRIV
+SVC_CMS --> PUB
+SVC_CMS --> PRIV
+SVC_POP --> PUB
+PROXY --> PUB : /storage
+CTRL ..> MAIL : reset password
+
+note bottom of TABLES
+  letter_categories sudah di-drop (v5.3).
+  Tidak ada letter_hashes, village_assets,
+  village_finances, letter_type_fields,
+  letter_field_values (Next Dev/Tahap 2).
+end note
+note right of QUEUE
+  Docker: QUEUE_CONNECTION=database,
+  queue:work di service sid_worker.
+  VPS: Supervisor queue:work.
+  Scheduler: schedule:work (service sid_scheduler)
+  menjalankan approvals:send-reminders tiap 5 menit
+  dan announcements:prune tiap menit.
+end note
+@enduml

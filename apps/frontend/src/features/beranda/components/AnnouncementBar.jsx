@@ -1,32 +1,144 @@
+import { useEffect, useId, useState } from 'react'
+import { ChevronDown, Clock, ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { HAL_BERITA_DETAIL } from '@/lib/constants/routes'
+import { formatAnnouncementUntil, isAnnouncementExpired } from '../utils/announcement'
 
-// Bar pengumuman (A10). Satu pengumuman statis, bukan running text.
-// "+N pengumuman lain" (A11) dibatalkan pemilik proyek (11 Okt 2026).
-// Data belum ada di backend: hanya dirender di development (K6).
-export function AnnouncementBar({ content }) {
-  const { announcement, announcementBar: labels } = content
-  if (!announcement) return null
+// setTimeout tidak bisa menunggu lebih dari ~24,8 hari.
+const MAX_TIMEOUT_MS = 2_147_483_647
 
-  const { date, title, newsId } = announcement
+// Pengumuman tersembunyi tepat saat waktunya habis, walau halaman tetap terbuka.
+function useStillShowing(announcement) {
+  const [, setTick] = useState(0)
+
+  useEffect(() => {
+    if (!announcement) return undefined
+
+    const remaining = new Date(announcement.expires_at).getTime() - Date.now()
+    if (remaining <= 0) return undefined
+
+    const timer = setTimeout(() => setTick((tick) => tick + 1), Math.min(remaining, MAX_TIMEOUT_MS))
+
+    return () => clearTimeout(timer)
+  }, [announcement])
+
+  return Boolean(announcement) && !isAnnouncementExpired(announcement)
+}
+
+function AnnouncementLink({ href, labels }) {
+  const className =
+    'inline-flex min-h-11 items-center gap-2 rounded-lg bg-pb-laut px-4.5 text-base font-bold text-white no-underline hover:bg-pb-laut-hover focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pb-laut'
+
+  if (href.startsWith('/')) {
+    return (
+      <Link to={href} className={className}>
+        {labels.openLink}
+      </Link>
+    )
+  }
 
   return (
-    <section className="border-b border-[#ecd9a2] bg-pb-padi-soft" aria-label={labels.label}>
-      <div className="bd-container flex flex-wrap items-center gap-x-3.5 gap-y-1.5 py-2.5 text-[15px] leading-snug">
-        <span className="rounded-sm bg-pb-laut-deep px-2 py-0.5 text-xs font-bold tracking-[0.04em] text-white">
-          {labels.badge}
-        </span>
-        <span className="font-medium text-[#3d2c00]">
-          {date} — {title}
-        </span>
-        <Link
-          to={HAL_BERITA_DETAIL(newsId)}
-          className="inline-flex min-h-11 items-center font-bold text-pb-padi-ink underline underline-offset-4 hover:text-pb-ink"
-        >
-          {labels.readMore}
-        </Link>
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+      {labels.openLink} <span className="bd-visually-hidden">{labels.newTabHint}</span>
+      <ExternalLink size={17} aria-hidden="true" />
+    </a>
+  )
+}
+
+// Bar pengumuman (A10), desain "pita kentongan": pita biru laut tua selebar
+// layar dengan tiga garis kuning padi di kiri, seperti tiga pukulan kentongan
+// yang memanggil warga. Satu pengumuman dari Petugas Desa (menu Pengumuman),
+// tampil sampai waktunya habis. Isi dan link (opsional) terbuka lewat
+// "Baca selengkapnya" di panel terang di bawah pita.
+// containerClassName: pembungkus lebar konten (bd-container di beranda).
+export function AnnouncementBar({ content, announcement, containerClassName = 'bd-container' }) {
+  const labels = content.announcementBar
+  const [open, setOpen] = useState(false)
+  const panelId = useId()
+  const showing = useStillShowing(announcement)
+
+  if (!showing) return null
+
+  const { title, body, link_url: linkUrl, expires_at: expiresAt } = announcement
+  const hasMore = Boolean(body || linkUrl)
+
+  return (
+    <section aria-label={labels.label}>
+      <div className="bg-pb-laut-deep text-white">
+        <div className={containerClassName}>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3">
+            <div className="flex min-w-0 flex-1 basis-[30ch] items-center gap-4 min-[721px]:gap-5">
+              <span
+                className="bd-kentongan flex flex-none items-center gap-[5px]"
+                aria-hidden="true"
+              >
+                <span />
+                <span />
+                <span />
+              </span>
+              <div className="min-w-0">
+                <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[15px] leading-snug">
+                  <span className="font-bold text-pb-padi">{labels.label}</span>
+                  <span className="inline-flex items-center gap-1.5 text-white/80">
+                    <Clock size={15} strokeWidth={2} aria-hidden="true" />
+                    {labels.until} {formatAnnouncementUntil(expiresAt)}
+                  </span>
+                </p>
+                <p className="mt-0.5 mb-0 font-display text-[clamp(18px,16px+0.4vw,21px)] leading-tight font-bold tracking-[-0.01em] text-pretty text-white">
+                  {title}
+                </p>
+              </div>
+            </div>
+
+            {hasMore && (
+              <button
+                type="button"
+                className="group inline-flex min-h-11 flex-none cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent px-2 text-base font-bold text-white underline decoration-pb-padi decoration-2 underline-offset-[6px] hover:decoration-white focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pb-padi max-[720px]:ml-[30px]"
+                aria-expanded={open}
+                aria-controls={panelId}
+                onClick={() => setOpen((value) => !value)}
+              >
+                {open ? labels.close : labels.readMore}
+                <ChevronDown
+                  size={18}
+                  strokeWidth={2.2}
+                  className="transition-transform duration-200 group-aria-expanded:rotate-180 motion-reduce:transition-none"
+                  aria-hidden="true"
+                />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
+
+      {hasMore && open && (
+        <div className="border-b border-pb-line-strong bg-pb-laut-tint bg-(image:--pb-contour-dark) bg-size-[480px_180px] shadow-[inset_0_10px_12px_-10px_rgb(12_35_65/0.45)]">
+          <div className={containerClassName}>
+            <div id={panelId} className="bd-announcement-panel">
+              {/* Baris ini setinggi isinya (bukan setinggi area gulir), jadi
+                  garis gema memanjang sampai akhir teks. */}
+              <div className="flex gap-4 py-5 min-[721px]:gap-5">
+                {/* Gema tiga pukulan kentongan: garis padi lurus di bawahnya. */}
+                <span className="flex w-[22px] flex-none justify-center" aria-hidden="true">
+                  <span className="bd-kentongan-gema w-[3px] rounded-full bg-pb-padi" />
+                </span>
+                <div className="min-w-0">
+                  {body && (
+                    <p className="m-0 max-w-[68ch] text-[17px] leading-relaxed whitespace-pre-line text-pb-ink">
+                      {body}
+                    </p>
+                  )}
+                  {linkUrl && (
+                    <div className={body ? 'mt-4' : undefined}>
+                      <AnnouncementLink href={linkUrl} labels={labels} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

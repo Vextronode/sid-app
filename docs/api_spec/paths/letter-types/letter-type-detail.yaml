@@ -1,14 +1,11 @@
 put:
   tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
-  summary: Edit konfigurasi tipe surat (versi sederhana - MVP)
+  summary: Edit konfigurasi tipe surat (versi sederhana)
   description: |
-    UC-21. MVP: Petugas Desa bisa edit validity_days, assigned_role,
-    category_id, flow_id, dan toggle is_active. BARU v5.0: category_id
-    dan flow_id ditambahkan agar Petugas Desa bisa memindahkan suatu tipe
-    surat ke flow approval lain tanpa developer (Config over Code).
-    Template & field requirement developer-only via seeder (full CRUD =
-    Next Dev Paket 1). ID tipe surat dicari dalam desa Petugas yang login;
-    record milik desa lain menghasilkan 404.
+    UC-21. Aktor: Petugas Desa. Hanya `validity_days`, `assigned_role`, dan
+    `is_active` yang diterima. Flow, template, isian form, slot tanda tangan,
+    aksi data, dan dokumen pendukung diset developer lewat seeder. Tipe surat
+    dicari dalam desa Petugas yang login; milik desa lain menghasilkan 404.
   operationId: updateLetterType
   security:
     - sanctumCookie: []
@@ -42,21 +39,15 @@ put:
     '404':
       $ref: '../../responses/common.yaml#/NotFound'
     '422':
-      description: assigned_role tidak valid / validity_days negatif / flow_id tidak ditemukan atau tidak sesuai category_id
+      description: |
+        validity_days < 1, assigned_role tidak valid, atau `is_active=true`
+        untuk tipe Draft (template NULL): "Jenis surat draft belum memiliki
+        template sehingga tidak dapat diaktifkan."
       content:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
-          examples:
-            invalid_validity:
-              summary: validity_days negatif
-              value:
-                message: "The given data was invalid."
-                errors:
-                  validity_days: ["Masa berlaku harus lebih dari 0 hari"]
-            flow_category_mismatch:
-              summary: flow_id tidak termasuk dalam category_id yang dipilih
-              value:
-                message: "The given data was invalid."
-                errors:
-                  flow_id: ["Flow yang dipilih tidak termasuk dalam kategori surat ini"]
+          example:
+            message: "Masa berlaku harus lebih dari 0 hari"
+            errors:
+              validity_days: ["Masa berlaku harus lebih dari 0 hari"]

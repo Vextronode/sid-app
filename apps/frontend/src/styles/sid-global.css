@@ -8,6 +8,7 @@
      ========================= */
   --sid-primary: #185fa5;
   --sid-primary-hover: #0c447c;
+  --sid-primary-soft: #e6f1fb;
   --sid-on-primary: #ffffff;
 
   /* =========================
@@ -63,12 +64,10 @@
    FORM ERROR
    ========================= */
 
-  :root {
-    --sid-danger: #c53030;
-    --sid-danger-hover: #9b2c2c;
-    --sid-danger-soft: #fcebeb;
-    --sid-danger-border: #e80f0f;
-  }
+  --sid-danger: #c53030;
+  --sid-danger-hover: #9b2c2c;
+  --sid-danger-soft: #fcebeb;
+  --sid-danger-border: #e80f0f;
   /* =========================
      ACCENT
      ========================= */
@@ -1557,6 +1556,33 @@
   background: var(--sid-surface-page);
 }
 
+/* Masa berlaku surat approved (pemohon) */
+
+.sid-letter-validity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  margin-bottom: 12px;
+
+  color: var(--sid-text-muted);
+  font-size: 13px;
+}
+
+.sid-letter-validity p {
+  margin: 0;
+}
+
+.sid-letter-validity-expired {
+  padding: 10px 12px;
+
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+}
+
 .sid-preview-container {
   position: relative;
 
@@ -2074,176 +2100,6 @@
   height: 16px;
 
   flex-shrink: 0;
-}
-
-/* =========================================================
-   DATE PREVIEW CONTAINER
-   ========================================================= */
-
-.sid-date-preview-container {
-  width: 100%;
-
-  margin-top: 10px;
-
-  padding: 8px;
-
-  box-sizing: border-box;
-
-  overflow: hidden;
-
-  border: 1px solid var(--sid-border);
-
-  border-radius: var(--radius-md);
-
-  background: var(--sid-surface-page);
-}
-
-/* =========================================================
-   DATE PREVIEW LOADING
-   ========================================================= */
-
-.sid-date-preview-loading {
-  min-height: 280px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  gap: 12px;
-
-  color: var(--sid-text-secondary);
-}
-
-.sid-date-preview-loading p {
-  margin: 0;
-
-  font-size: 13px;
-
-  line-height: 1.5;
-}
-
-.sid-date-preview-spinner {
-  width: 32px;
-  height: 32px;
-
-  border: 2px solid var(--sid-border);
-
-  border-top-color: var(--sid-primary);
-
-  border-radius: 50%;
-
-  animation: sid-date-preview-spin 0.8s linear infinite;
-}
-
-@keyframes sid-date-preview-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* =========================================================
-   DATE PREVIEW ERROR
-   ========================================================= */
-
-.sid-date-preview-error {
-  min-height: 280px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  gap: 8px;
-
-  padding: 24px;
-
-  text-align: center;
-
-  color: var(--sid-text-muted);
-}
-
-.sid-date-preview-error-icon {
-  width: 40px;
-  height: 40px;
-
-  color: var(--sid-text-muted);
-}
-
-.sid-date-preview-error p {
-  margin: 0;
-
-  color: var(--sid-text-secondary);
-
-  font-size: 13px;
-
-  line-height: 1.5;
-}
-
-.sid-date-preview-error-description {
-  color: var(--sid-text-muted) !important;
-
-  font-size: 11px !important;
-}
-
-.sid-date-preview-retry {
-  margin-top: 4px;
-
-  padding: 9px 16px;
-
-  border: 1px solid var(--sid-primary);
-
-  border-radius: var(--radius-sm);
-
-  background: var(--sid-primary);
-
-  color: var(--sid-on-primary);
-
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 500;
-
-  cursor: pointer;
-
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.sid-date-preview-retry:hover {
-  background: var(--sid-primary-hover);
-
-  border-color: var(--sid-primary-hover);
-}
-
-/* =========================================================
-   DATE PREVIEW PDF PAGES
-   ========================================================= */
-
-.sid-date-preview-pages {
-  display: flex;
-  flex-direction: column;
-
-  gap: 10px;
-}
-
-.sid-date-preview-page {
-  overflow: hidden;
-
-  background: var(--sid-surface-card);
-
-  border-radius: 2px;
-
-  box-shadow: 0 1px 3px rgba(44, 44, 42, 0.1);
-}
-
-.sid-date-preview-image {
-  display: block;
-
-  width: 100%;
-  height: auto;
-
-  user-select: none;
 }
 
 /* =========================================================
@@ -3014,19 +2870,6 @@
     padding: 9px 12px;
 
     font-size: 12px;
-  }
-
-  .sid-date-preview-container {
-    padding: 6px;
-  }
-
-  .sid-date-preview-loading,
-  .sid-date-preview-error {
-    min-height: 240px;
-  }
-
-  .sid-date-preview-pages {
-    gap: 8px;
   }
 
   .sid-date-tracker-empty {
@@ -4286,6 +4129,135 @@
   background: var(--sid-surface-page);
 }
 
+/* Latar foto hero desa (useAuthBackground). Lapisan biru gelap menjaga
+   kontras kartu dan teks di atas foto apa pun. */
+.sid-login--photo {
+  background:
+    linear-gradient(rgba(12, 35, 65, 0.45), rgba(12, 35, 65, 0.6)),
+    var(--sid-login-bg) center / cover no-repeat,
+    var(--sid-surface-page);
+}
+
+/* Kartu kaca gelap di atas foto. Warnanya tidak dicocokkan ke satu foto:
+   blur + saturate membuat warna foto apa pun tembus samar ke kartu, jadi
+   kartu ikut berubah saat foto hero diganti. Tanpa foto, kartu tetap
+   putih seperti biasa. */
+.sid-login--photo .sid-login-card {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(12, 35, 65, 0.42);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 60px -20px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  color-scheme: dark;
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* Tanpa dukungan blur, atau pengguna meminta transparansi dikurangi:
+   kartu hampir pekat agar teks tetap terbaca. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sid-login--photo .sid-login-card {
+    background: rgba(12, 35, 65, 0.88);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .sid-login--photo .sid-login-card {
+    background: rgba(12, 35, 65, 0.92);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.sid-login--photo .sid-login-logo {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.24);
+}
+
+.sid-login--photo .sid-login-title {
+  color: #fff;
+}
+
+.sid-login--photo .sid-login-description,
+.sid-login--photo .sid-login-label,
+.sid-login--photo .sid-login-remember,
+.sid-login--photo .sid-login-register-text,
+.sid-login--photo .sid-login-back {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.sid-login--photo .sid-login-copyright {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sid-login--photo .sid-login-forgot,
+.sid-login--photo .sid-login-register-button {
+  color: var(--color-pb-padi);
+}
+
+.sid-login--photo .sid-login-back:hover {
+  color: #fff;
+}
+
+.sid-login--photo .sid-login-input {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.sid-login--photo .sid-login-input::placeholder,
+.sid-login--photo .sid-login-input-icon,
+.sid-login--photo .sid-login-password-toggle {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sid-login--photo .sid-login-password-toggle:hover {
+  color: #fff;
+}
+
+.sid-login--photo .sid-login-input:focus {
+  border-color: var(--color-pb-padi);
+  box-shadow: 0 0 0 3px rgba(224, 172, 43, 0.25);
+}
+
+.sid-login--photo .sid-login-input-error,
+.sid-login--photo .sid-login-input-error:focus {
+  border-color: #ff8a80;
+}
+
+.sid-login--photo .sid-login-field-error {
+  color: #ffb4ab;
+}
+
+.sid-login--photo .sid-login-error {
+  border-color: rgba(255, 138, 128, 0.45);
+  background: rgba(240, 68, 56, 0.18);
+  color: #ffd5d1;
+}
+
+.sid-login--photo .sid-login-submit {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.sid-login--photo .sid-login-footer {
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.sid-login--photo .sid-register-username,
+.sid-login--photo .sid-register-success-info {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.sid-login--photo .sid-register-username-label {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.sid-login--photo .sid-register-username strong {
+  color: var(--color-pb-padi);
+}
+
 /* =========================================================
    LOGIN CARD
    ========================================================= */
@@ -4909,7 +4881,7 @@
    ========================================================= */
 
 .sid-surat-saya-page {
-  max-width: 768px;
+  max-width: 840px;
 }
 
 /* =========================================================
@@ -4943,281 +4915,42 @@
 }
 
 /* =========================================================
-   TABLE CARD
+   PAGINATION: PILIHAN JUMLAH BARIS PER HALAMAN
    ========================================================= */
 
-.sid-surat-saya-table-card {
-  padding: 0;
-
-  overflow: hidden;
-}
-
-/* =========================================================
-   MESSAGE
-   ========================================================= */
-
-.sid-surat-saya-message {
-  margin: 0;
-
-  padding: 32px 16px;
-
-  text-align: center;
-
-  color: var(--sid-text-muted);
-
-  font-size: 14px;
-}
-
-/* =========================================================
-   TABLE WRAPPER
-   ========================================================= */
-
-.sid-surat-saya-table-wrapper {
-  width: 100%;
-
-  overflow-x: auto;
-}
-
-/* =========================================================
-   TABLE
-   ========================================================= */
-
-.sid-surat-saya-table {
-  width: 100%;
-
-  table-layout: fixed;
-
-  border-collapse: collapse;
-
-  color: var(--sid-text-secondary);
-
-  font-size: 14px;
-}
-
-/* =========================================================
-   TABLE HEADER
-   ========================================================= */
-
-.sid-surat-saya-table thead tr {
-  border-bottom: 1px solid var(--sid-border);
-
-  color: var(--sid-text-secondary);
-
-  font-size: 10px;
-
-  text-transform: uppercase;
-}
-
-.sid-surat-saya-table th {
-  padding: 12px 16px;
-
-  font-weight: 600;
-
-  vertical-align: middle;
-}
-
-.sid-surat-saya-col-type {
-  width: 28%;
-
-  text-align: left;
-}
-
-.sid-surat-saya-col-date {
-  width: 18%;
-
-  text-align: center;
-}
-
-.sid-surat-saya-col-status {
-  width: 22%;
-
-  text-align: center;
-}
-
-.sid-surat-saya-col-action {
-  width: 32%;
-
-  text-align: center;
-}
-
-/* =========================================================
-   TABLE BODY
-   ========================================================= */
-
-.sid-surat-saya-table tbody tr {
-  border-bottom: 1px solid var(--sid-border);
-
-  transition: background-color 0.15s ease;
-}
-
-.sid-surat-saya-table tbody tr:last-child {
-  border-bottom: 0;
-}
-
-.sid-surat-saya-table tbody tr:hover {
-  background: var(--sid-surface-page);
-}
-
-/* =========================================================
-   TYPE
-   ========================================================= */
-
-.sid-surat-saya-type-cell {
-  padding: 12px 16px;
-
-  vertical-align: top;
-
-  text-align: left;
-}
-
-.sid-surat-saya-type-info {
-  min-width: 0;
-}
-
-.sid-surat-saya-type-name {
-  margin: 0;
-
-  color: var(--sid-text-secondary);
-
-  font-size: 14px;
-  line-height: 1.4;
-
-  font-weight: 500;
-
-  overflow-wrap: anywhere;
-}
-
-.sid-surat-saya-letter-number {
-  margin: 2px 0 0;
-
-  color: var(--sid-text-muted);
-
-  font-size: 10px;
-  line-height: 1.4;
-
-  overflow-wrap: anywhere;
-}
-
-/* =========================================================
-   DATE
-   ========================================================= */
-
-.sid-surat-saya-date-cell {
-  padding: 12px 16px;
-
-  text-align: center;
-
-  vertical-align: middle;
-}
-
-.sid-surat-saya-date-cell span {
-  color: var(--sid-text-muted);
-
-  font-size: 14px;
-
-  white-space: nowrap;
-}
-
-/* =========================================================
-   STATUS
-   ========================================================= */
-
-.sid-surat-saya-status-cell {
-  padding: 12px 16px;
-
-  text-align: center;
-
-  vertical-align: middle;
-}
-
-.sid-surat-saya-status {
-  display: inline-flex;
-
-  align-items: center;
-  justify-content: center;
-
-  padding: 4px 8px;
-
-  border-radius: 999px;
-
-  font-size: 10px;
-
-  font-weight: 600;
-
-  line-height: 1.2;
-
-  white-space: nowrap;
-}
-
-.sid-surat-saya-status.status-pending {
-  background: var(--sid-status-pending-bg);
-
-  color: var(--sid-status-pending-text);
-}
-
-.sid-surat-saya-status.status-progress {
-  background: var(--sid-status-progress-bg);
-
-  color: var(--sid-status-progress-text);
-}
-
-.sid-surat-saya-status.status-done {
-  background: var(--sid-status-done-bg);
-
-  color: var(--sid-status-done-text);
-}
-
-.sid-surat-saya-status.status-rejected {
-  background: var(--sid-status-rejected-bg);
-
-  color: var(--sid-status-rejected-text);
-}
-
-.sid-surat-saya-status.status-default {
-  background: var(--sid-surface-page);
-
-  color: var(--sid-text-secondary);
-}
-
-/* =========================================================
-   ACTION
-   ========================================================= */
-
-.sid-surat-saya-action-cell {
-  padding: 12px 16px;
-
-  text-align: center;
-
-  vertical-align: middle;
-}
-
-.sid-surat-saya-actions {
+.sid-pagination-meta {
   display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  gap: 8px;
-
   flex-wrap: wrap;
+  align-items: center;
+
+  gap: 8px 16px;
 }
 
-/* =========================================================
-   DETAIL BUTTON
-   ========================================================= */
+/* Garis tipis memisahkan rentang data dari pilihan baris per halaman. */
+.sid-pagination-meta > .sid-page-size {
+  padding-left: 16px;
 
-.sid-surat-saya-detail-button {
+  border-left: 1px solid var(--sid-border);
+}
+
+.sid-page-size {
   display: inline-flex;
-
   align-items: center;
-  justify-content: center;
 
-  gap: 4px;
+  gap: 6px;
 
-  padding: 6px 12px;
+  color: var(--sid-text-muted);
+
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.sid-page-size select {
+  height: 30px;
+
+  padding: 0 6px;
 
   border: 1px solid var(--sid-border);
-
   border-radius: var(--radius-sm);
 
   background: var(--sid-surface-card);
@@ -5228,8 +4961,119 @@
   font-size: 12px;
 
   cursor: pointer;
+}
 
-  white-space: nowrap;
+.sid-page-size select:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 1px;
+}
+
+.sid-page-size select:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+}
+
+/* Bar pagination mobile: pemilih di baris sendiri di atas nomor halaman. */
+.rw-mobile-pagination .sid-page-size {
+  flex-basis: 100%;
+
+  justify-content: center;
+}
+
+@media (max-width: 639px) {
+  .sid-pagination-meta,
+  .sid-operator-pagination > .sid-pagination-meta {
+    justify-content: space-between;
+  }
+
+  .sid-pagination-meta > .sid-page-size {
+    padding-left: 0;
+
+    border-left: 0;
+  }
+}
+
+/* =========================================================
+   SURAT SAYA: DAFTAR SURAT MILIK SENDIRI
+   Satu panel berisi baris surat. Tiap baris punya garis warna status
+   di tepi kiri dan jalur tahapan (Diajukan -> RT -> Desa -> Terbit).
+   ========================================================= */
+
+.sid-my-letters-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 20px;
+}
+
+.sid-my-letters-heading {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.sid-my-letters-header .sid-btn {
+  flex: none;
+}
+
+.sid-my-letters-lead {
+  max-width: 60ch;
+
+  margin: 6px 0 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* FILTER STATUS */
+
+.sid-my-letters-filters {
+  display: flex;
+
+  gap: 8px;
+
+  margin-bottom: 12px;
+  padding-bottom: 2px;
+
+  overflow-x: auto;
+}
+
+.sid-my-letters-filter {
+  height: 34px;
+
+  display: inline-flex;
+  align-items: center;
+
+  flex-shrink: 0;
+
+  gap: 6px;
+
+  padding: 0 12px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 999px;
+
+  background: var(--sid-surface-card);
+
+  color: var(--sid-text-secondary);
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+
+  cursor: pointer;
 
   transition:
     background-color 0.15s ease,
@@ -5237,140 +5081,819 @@
     color 0.15s ease;
 }
 
-.sid-surat-saya-detail-button:hover {
-  background: var(--sid-surface-page);
-
+.sid-my-letters-filter:hover {
   border-color: var(--sid-primary);
 
   color: var(--sid-primary);
 }
 
-.sid-surat-saya-detail-button svg {
-  width: 14px;
-  height: 14px;
+.sid-my-letters-filter[aria-pressed='true'] {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-primary);
+
+  color: var(--sid-on-primary);
 }
 
-/* =========================================================
-   REVISION BUTTON
-   ========================================================= */
+.sid-my-letters-filter-count {
+  color: var(--sid-text-muted);
 
-.sid-surat-saya-revision-button {
-  display: inline-flex;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
 
+.sid-my-letters-filter[aria-pressed='true'] .sid-my-letters-filter-count {
+  color: rgb(255 255 255 / 80%);
+}
+
+.sid-my-letters-filter:focus-visible,
+.sid-my-letters-detail:focus-visible,
+.sid-my-letters-delete:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+/* PANEL & BARIS */
+
+.sid-my-letters-panel {
+  overflow: hidden;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+}
+
+.sid-my-letters-list {
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.sid-my-letters-row {
+  --tone: var(--sid-primary);
+
+  position: relative;
+
+  display: grid;
+
+  gap: 14px;
+
+  padding: 18px 20px 18px 24px;
+
+  border-top: 1px solid var(--sid-border);
+}
+
+.sid-my-letters-row:first-child {
+  border-top: 0;
+}
+
+.sid-my-letters-row::before {
+  content: '';
+
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+
+  width: 4px;
+
+  background: var(--tone);
+}
+
+.sid-my-letters-row.tone-pending {
+  --tone: #b7791f;
+}
+
+.sid-my-letters-row.tone-progress {
+  --tone: var(--sid-primary);
+}
+
+.sid-my-letters-row.tone-done {
+  --tone: #2f7d4f;
+}
+
+.sid-my-letters-row.tone-rejected {
+  --tone: var(--sid-danger);
+}
+
+.sid-my-letters-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 12px;
+}
+
+.sid-my-letters-title {
+  min-width: 0;
+}
+
+.sid-my-letters-title h2 {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.sid-my-letters-meta {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 2px 12px;
+
+  margin: 4px 0 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 13px;
+}
+
+.sid-my-letters-number {
+  font-variant-numeric: tabular-nums;
+}
+
+.sid-my-letters-body {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr auto;
   align-items: center;
-  justify-content: center;
+
+  gap: 16px 24px;
+}
+
+/* JALUR TAHAPAN */
+
+.sid-my-letters-track {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.sid-my-letters-stage {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Garis dari tahap sebelumnya ke tahap ini. */
+.sid-my-letters-stage + .sid-my-letters-stage::before {
+  content: '';
+
+  position: absolute;
+  top: 5px;
+  left: calc(-50% + 8px);
+  right: calc(50% + 8px);
+
+  height: 2px;
+
+  background: var(--tone);
+}
+
+.sid-my-letters-stage.is-upcoming::before {
+  background: repeating-linear-gradient(90deg, var(--sid-border) 0 4px, transparent 4px 8px);
+}
+
+.sid-my-letters-stage-dot {
+  width: 12px;
+  height: 12px;
+
+  box-sizing: border-box;
+
+  border: 2px solid var(--tone);
+  border-radius: 50%;
+
+  background: var(--tone);
+}
+
+/* Surat ditolak: hanya tahap yang menolak berwarna merah. */
+.tone-rejected .sid-my-letters-stage.is-done .sid-my-letters-stage-dot {
+  border-color: var(--sid-text-muted);
+
+  background: var(--sid-text-muted);
+}
+
+.tone-rejected .sid-my-letters-stage.is-done::before {
+  background: var(--sid-text-muted);
+}
+
+.sid-my-letters-stage.is-current .sid-my-letters-stage-dot {
+  background: var(--sid-surface-card);
+
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone) 18%, transparent);
+}
+
+.sid-my-letters-stage.is-upcoming .sid-my-letters-stage-dot {
+  border-color: var(--sid-border);
+
+  background: var(--sid-surface-card);
+}
+
+.sid-my-letters-stage-label {
+  margin-top: 6px;
+
+  color: var(--sid-text-muted);
+
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.sid-my-letters-stage.is-current .sid-my-letters-stage-label,
+.sid-my-letters-stage.is-rejected .sid-my-letters-stage-label {
+  color: var(--sid-text-primary);
+
+  font-weight: 600;
+}
+
+.sid-my-letters-message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 6px 8px;
+
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.sid-my-letters-overdue {
+  display: inline-flex;
+  align-items: center;
 
   gap: 4px;
 
-  padding: 6px 12px;
+  padding: 2px 8px;
 
-  border: 1px solid var(--sid-status-pending-text);
+  border-radius: 999px;
 
-  border-radius: var(--radius-sm);
+  background: var(--sid-status-overdue-bg);
 
-  background: var(--sid-status-pending-bg);
+  color: var(--sid-status-overdue-text);
 
-  color: var(--sid-status-pending-text);
-
-  font-family: inherit;
   font-size: 12px;
   font-weight: 500;
-
-  cursor: pointer;
-
-  white-space: nowrap;
-
-  transition: opacity 0.15s ease;
 }
 
-.sid-surat-saya-revision-button:hover {
-  opacity: 0.85;
+/* AKSI */
+
+.sid-my-letters-actions {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 8px;
 }
 
-.sid-surat-saya-delete-button {
+.sid-my-letters-detail,
+.sid-my-letters-delete {
+  height: 36px;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: 1px solid var(--sid-status-rejected-text);
-  border-radius: var(--radius-sm);
-  background: var(--sid-status-rejected-bg);
-  color: var(--sid-status-rejected-text);
+
+  gap: 6px;
+
+  padding: 0 14px;
+
+  border-radius: var(--radius-md);
+
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
+
   cursor: pointer;
-  white-space: nowrap;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.sid-surat-saya-delete-button:disabled {
+.sid-my-letters-detail {
+  border: 1px solid var(--sid-primary);
+
+  background: transparent;
+
+  color: var(--sid-primary);
+}
+
+.sid-my-letters-detail:hover {
+  background: var(--sid-primary-soft);
+}
+
+/* Surat terbit: membuka detail adalah jalan untuk mengunduh. */
+.tone-done .sid-my-letters-detail {
+  background: var(--sid-primary);
+
+  color: var(--sid-on-primary);
+}
+
+.tone-done .sid-my-letters-detail:hover {
+  background: var(--sid-primary-hover);
+}
+
+.sid-my-letters-delete {
+  border: 1px solid transparent;
+
+  background: transparent;
+
+  color: var(--sid-danger);
+}
+
+.sid-my-letters-delete:hover:not(:disabled) {
+  background: var(--sid-danger-soft);
+}
+
+.sid-my-letters-delete:disabled {
   opacity: 0.6;
-  cursor: not-allowed;
+
+  cursor: wait;
 }
 
-.sid-surat-saya-delete-button svg {
-  width: 14px;
-  height: 14px;
+/* KOSONG & MEMUAT */
+
+.sid-my-letters-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 48px 24px;
+
+  color: var(--sid-text-muted);
+
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
 }
 
-.sid-surat-saya-revision-button svg {
-  width: 14px;
-  height: 14px;
+.sid-my-letters-empty p {
+  max-width: 44ch;
+
+  margin: 0;
+}
+
+.sid-my-letters-empty .sid-my-letters-empty-title {
+  color: var(--sid-text-primary);
+
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.sid-my-letters-empty .sid-btn {
+  margin-top: 12px;
+}
+
+.sid-my-letters-row.is-skeleton {
+  --tone: var(--sid-border);
+}
+
+.sid-my-letters-skeleton {
+  display: block;
+
+  height: 12px;
+
+  border-radius: 6px;
+
+  background: var(--sid-surface-page);
+
+  animation: sid-my-letters-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes sid-my-letters-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-my-letters-skeleton {
+    animation: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .sid-my-letters-heading {
+    font-size: 21px;
+  }
+
+  .sid-my-letters-header .sid-btn {
+    flex: 1 1 100%;
+  }
+
+  .sid-my-letters-row {
+    padding: 16px 16px 16px 20px;
+  }
+
+  .sid-my-letters-body {
+    grid-template-columns: 1fr;
+
+    gap: 12px;
+  }
+
+  .sid-my-letters-actions > * {
+    flex: 1;
+  }
 }
 
 /* =========================================================
-   MOBILE
+   SURAT SAYA: AJUKAN SURAT
+   Langkah bernomor lewat counter CSS: pilih jenis surat (halaman),
+   lalu isi data dan tanda tangan (DynamicSuratForm .sid-apply-form).
    ========================================================= */
 
-@media (max-width: 767px) {
-  .sid-surat-saya-table {
-    min-width: 560px;
+.sid-apply {
+  counter-reset: apply-step;
+
+  display: grid;
+
+  gap: 16px;
+}
+
+.sid-apply-header {
+  margin-bottom: 4px;
+}
+
+.sid-apply-step,
+.sid-apply .sid-apply-form {
+  padding: 24px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--sid-surface-card);
+
+  box-shadow: none;
+}
+
+.sid-apply-step-title,
+.sid-apply-form .sid-section-title {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin: 0 0 16px;
+
+  color: var(--sid-text-primary);
+
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.sid-apply-step-title::before,
+.sid-apply-form .sid-section-title::before {
+  counter-increment: apply-step;
+  content: counter(apply-step);
+
+  width: 24px;
+  height: 24px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: var(--sid-primary);
+
+  color: var(--sid-on-primary);
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* FORM DI DALAM HALAMAN AJUKAN */
+
+.sid-apply-form .sid-section {
+  margin-bottom: 0;
+}
+
+.sid-apply-form .sid-section + .sid-section {
+  margin-top: 24px;
+  padding-top: 24px;
+
+  border-top: 1px solid var(--sid-border);
+}
+
+.sid-apply-form .sid-form-group,
+.sid-apply-form .sid-info {
+  margin-bottom: 0;
+}
+
+.sid-apply-form .sid-label {
+  color: var(--sid-text-secondary);
+
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Data otomatis dari profil: ringkasan dua kolom, bukan isian. */
+.sid-apply-form .grid-cols-1:has(.sid-input-readonly) {
+  margin-bottom: 16px;
+
+  gap: 16px;
+}
+
+.sid-apply-form .sid-input-readonly {
+  border-color: transparent;
+
+  background: var(--sid-surface-page);
+
+  color: var(--sid-text-primary);
+}
+
+.sid-apply-form .sid-info {
+  align-items: flex-start;
+
+  border-radius: var(--radius-md);
+
+  line-height: 1.5;
+}
+
+.sid-apply-form .sid-actions {
+  justify-content: flex-end;
+
+  margin-top: 24px;
+}
+
+.sid-apply-form .sid-actions .sid-btn {
+  min-width: 120px;
+
+  flex: none;
+}
+
+/* PILIH JENIS SURAT */
+
+.sid-letter-type-search {
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-bottom: 12px;
+  padding: 0 12px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+
+  color: var(--sid-text-muted);
+}
+
+.sid-letter-type-search:focus-within {
+  border-color: var(--sid-primary);
+}
+
+.sid-letter-type-search input {
+  min-width: 0;
+
+  flex: 1;
+
+  border: 0;
+  outline: none;
+
+  background: transparent;
+
+  color: var(--sid-text-primary);
+
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.sid-letter-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.sid-letter-type-option {
+  min-height: 92px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+
+  padding: 14px 16px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+
+  background: var(--sid-surface-card);
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.sid-letter-type-option:hover {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-primary-soft);
+}
+
+.sid-letter-type-option:focus-within {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+.sid-letter-type-option.is-skeleton {
+  border-color: transparent;
+
+  background: var(--sid-surface-page);
+
+  cursor: default;
+
+  animation: sid-my-letters-pulse 1.4s ease-in-out infinite;
+}
+
+.sid-letter-type-name {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.sid-letter-type-description {
+  display: -webkit-box;
+
+  overflow: hidden;
+
+  color: var(--sid-text-muted);
+
+  font-size: 13px;
+  line-height: 1.45;
+
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.sid-letter-type-meta {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 2px 12px;
+
+  margin-top: auto;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 12px;
+}
+
+.sid-letter-type-empty {
+  margin: 0;
+  padding: 16px 0;
+
+  color: var(--sid-text-muted);
+
+  font-size: 14px;
+}
+
+/* Jenis surat terpilih */
+
+.sid-letter-type-chosen {
+  padding: 14px 16px;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--radius-md);
+
+  background: var(--sid-primary-soft);
+}
+
+.sid-letter-type-chosen-head {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+.sid-letter-type-check {
+  width: 24px;
+  height: 24px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: var(--sid-primary);
+
+  color: var(--sid-on-primary);
+}
+
+.sid-letter-type-chosen-text {
+  min-width: 0;
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.sid-letter-type-change {
+  height: 32px;
+
+  flex-shrink: 0;
+
+  padding: 0 12px;
+
+  border: 1px solid var(--sid-primary);
+  border-radius: var(--radius-md);
+
+  background: var(--sid-surface-card);
+
+  color: var(--sid-primary);
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.sid-letter-type-change:hover {
+  background: var(--sid-primary);
+
+  color: var(--sid-on-primary);
+}
+
+.sid-letter-type-change:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+.sid-letter-type-requirements {
+  margin: 12px 0 0;
+  padding-top: 12px;
+
+  border-top: 1px solid color-mix(in srgb, var(--sid-primary) 20%, transparent);
+
+  color: var(--sid-text-primary);
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-letter-type-option.is-skeleton {
+    animation: none;
+  }
+}
+
+@media (min-width: 640px) {
+  .sid-apply-form .grid-cols-1:has(.sid-input-readonly) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639px) {
+  .sid-apply-step,
+  .sid-apply .sid-apply-form {
+    padding: 16px;
   }
 
-  .sid-surat-saya-table th {
-    padding: 12px 8px;
+  .sid-letter-type-grid {
+    grid-template-columns: 1fr;
   }
 
-  .sid-surat-saya-type-cell,
-  .sid-surat-saya-date-cell,
-  .sid-surat-saya-status-cell,
-  .sid-surat-saya-action-cell {
-    padding: 12px 8px;
+  .sid-letter-type-option {
+    min-height: 0;
   }
 
-  .sid-surat-saya-type-name {
-    font-size: 10px;
-  }
+  .sid-apply-form .sid-actions .sid-btn {
+    min-width: 0;
 
-  .sid-surat-saya-letter-number {
-    font-size: 8px;
-  }
-
-  .sid-surat-saya-date-cell span {
-    font-size: 9px;
-  }
-
-  .sid-surat-saya-status {
-    padding: 4px 6px;
-
-    font-size: 8px;
-  }
-
-  .sid-surat-saya-detail-button,
-  .sid-surat-saya-revision-button {
-    padding: 6px 8px;
-
-    font-size: 9px;
-  }
-
-  .sid-surat-saya-detail-button svg,
-  .sid-surat-saya-revision-button svg {
-    width: 12px;
-    height: 12px;
-  }
-
-  .sid-surat-saya-actions {
-    gap: 4px;
+    flex: 1;
   }
 }
 
@@ -5538,8 +6061,14 @@
   display: block;
 }
 
+/* Halaman tabel surat pejabat (layout navbar atas) selebar kontainer
+   navbar/footer (.bd-container: 1200px + gutter 24px), bukan lagi 768px,
+   agar tabel dan tombol aksinya lega dan tepinya segaris dengan logo. */
 .rw-page-content {
-  max-width: 768px;
+  box-sizing: content-box;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 1.5rem 24px;
 }
 
 .rw-breadcrumb {
@@ -5970,6 +6499,8 @@
 
 .rw-mobile-pagination {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
 
   justify-content: center;
 
@@ -7739,68 +8270,8 @@
   gap: 0.5rem;
 }
 
-.sid-operator-action {
-  width: 2.25rem;
-  height: 2.25rem;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: var(--radius-sm);
-
-  font-family: inherit;
-
-  cursor: pointer;
-
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    transform 0.15s ease;
-}
-
-/* DETAIL */
-
-.sid-operator-action.detail {
-  border: 1px solid var(--sid-border);
-
-  background: var(--sid-surface-card);
-  color: var(--sid-primary);
-}
-
-.sid-operator-action.detail:hover {
-  background: var(--sid-status-progress-bg);
-  border-color: var(--sid-header-subtext);
-}
-
-/* EDIT */
-
-.sid-operator-action.edit {
-  border: 1px solid var(--sid-status-pending-bg);
-
-  background: var(--sid-status-pending-bg);
-  color: var(--sid-status-pending-text);
-}
-
-.sid-operator-action.edit:hover {
-  background: #f5e1bc;
-  border-color: var(--sid-status-pending-text);
-}
-
-/* DELETE */
-
-.sid-operator-action.delete {
-  border: 1px solid var(--sid-status-rejected-bg);
-
-  background: var(--sid-status-rejected-bg);
-  color: var(--sid-status-rejected-text);
-}
-
-.sid-operator-action.delete:hover {
-  background: #f8dada;
-  border-color: var(--sid-status-rejected-text);
-}
+/* Tombol aksi baris (.sid-operator-action) didefinisikan di blok
+   Manajemen Pengguna di bawah agar hanya ada satu sumber gaya. */
 
 /* ==========================================
    PAGINATION
@@ -8335,6 +8806,11 @@
   transform: translateY(1px);
 }
 
+.sid-operator-export:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
 /* ==========================================
    FILTER CARD
    ========================================== */
@@ -8716,6 +9192,17 @@
   color: var(--sid-primary);
 }
 
+.sid-operator-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sid-operator-action:focus-visible,
+.sid-wilayah-action:focus-visible {
+  outline: 3px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
 /* ==========================================
    ROLE BADGE
    ========================================== */
@@ -8741,6 +9228,8 @@
 
 /* ==========================================
    STATUS BADGE
+   Satu-satunya gaya badge status di dashboard; dipakai lewat
+   components/ui/StatusPill.jsx.
    ========================================== */
 
 .sid-operator-status {
@@ -8756,6 +9245,8 @@
 
   font-size: 0.75rem;
   font-weight: 500;
+
+  white-space: nowrap;
 }
 
 .sid-operator-status::before {
@@ -8777,6 +9268,16 @@
 .sid-operator-status.inactive {
   background: var(--sid-surface-page);
   color: var(--sid-text-muted);
+}
+
+.sid-operator-status.danger {
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+}
+
+.sid-operator-status.warning {
+  background: var(--sid-status-pending-bg);
+  color: var(--sid-status-pending-text);
 }
 
 /* ==========================================
@@ -8894,9 +9395,7 @@
    ========================================== */
 
 .sid-operator-filter-grid.warga-filter {
-  grid-template-columns:
-    minmax(0, 1fr)
-    220px;
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
 }
 
 /* ==========================================
@@ -10565,6 +11064,56 @@
   cursor: pointer;
 }
 
+/* Thumbnail berita terbaru: klik untuk edit. */
+.sid-kelola-berita-latest-image-button {
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  transition:
+    opacity 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sid-kelola-berita-latest-image-button:hover:not(:disabled) {
+  opacity: 0.85;
+  box-shadow: 0 0 0 2px var(--sid-primary);
+}
+
+.sid-kelola-berita-latest-image-button:disabled {
+  cursor: not-allowed;
+}
+
+/* Tombol "Publikasikan" pada kartu draft. */
+.sid-kelola-berita-publish-button {
+  padding: 0;
+  border: 0;
+  border-radius: 0.25rem;
+  background: none;
+  cursor: pointer;
+}
+
+.sid-kelola-berita-publish-button .sid-kelola-berita-category {
+  transition: background-color 0.15s ease;
+}
+
+.sid-kelola-berita-publish-button:hover:not(:disabled) .sid-kelola-berita-category {
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-kelola-berita-publish-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.sid-kelola-berita-publish-button:focus-visible,
+.sid-kelola-berita-latest-image-button:focus-visible {
+  outline: 3px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
 .sid-kelola-berita-latest-image {
   width: 4rem;
   height: 4rem;
@@ -10740,10 +11289,43 @@
   color: var(--sid-primary);
 }
 
+.sid-kelola-berita-pagination-buttons {
+  align-items: center;
+}
+
+.sid-kelola-berita-pagination-buttons button {
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.sid-kelola-berita-pagination-buttons button.active {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
 .sid-kelola-berita-pagination-buttons button:disabled {
   opacity: 0.3;
 
   cursor: not-allowed;
+}
+
+/* Elipsis nomor halaman (PageNumbers) - dipakai semua gaya paginasi */
+
+.sid-pagination-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 1.25rem;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.875rem;
+
+  user-select: none;
 }
 
 /* =========================================================
@@ -10943,7 +11525,11 @@
 
 .sid-kelola-berita-pagination-info {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
+
+  gap: 8px 16px;
 
   margin-top: 1rem;
 
@@ -11050,6 +11636,10 @@
    ========================================================= */
 
 .sid-operator-layout {
+  /* Lebar sidebar; mengecil saat mode ikon (.is-rail). */
+  --sid-operator-sidebar-w: 14rem;
+  --sid-operator-rail-w: 4.25rem;
+
   width: 100%;
   min-height: 100vh;
 
@@ -11069,15 +11659,19 @@
   top: 0;
   left: 0;
 
-  width: 14rem;
+  width: var(--sid-operator-sidebar-w);
   height: 100vh;
 
   display: flex;
   flex-direction: column;
 
+  overflow-x: hidden;
+
   z-index: 40;
 
   background: var(--sid-surface-card);
+
+  transition: width 0.2s ease;
 }
 
 /* =========================================================
@@ -11260,14 +11854,18 @@
    ========================================================= */
 
 .sid-operator-main {
-  width: calc(100% - 14rem);
+  width: calc(100% - var(--sid-operator-sidebar-w));
 
   min-height: 100vh;
 
   display: flex;
   flex-direction: column;
 
-  margin-left: 14rem;
+  margin-left: var(--sid-operator-sidebar-w);
+
+  transition:
+    width 0.2s ease,
+    margin-left 0.2s ease;
 }
 
 /* =========================================================
@@ -11278,7 +11876,7 @@
   position: fixed;
 
   top: 0;
-  left: 14rem;
+  left: var(--sid-operator-sidebar-w);
   right: 0;
 
   height: 5rem;
@@ -11296,6 +11894,35 @@
   border-bottom: 1px solid var(--sid-primary);
 
   box-shadow: var(--shadow-sm);
+
+  transition: left 0.2s ease;
+}
+
+/* Tombol ciutkan/perluas sidebar di kiri topbar. */
+.sid-operator-sidebar-toggle {
+  width: 2.75rem;
+  height: 2.75rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: var(--radius-md);
+
+  background: transparent;
+
+  color: var(--sid-on-primary);
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .sid-operator-topbar-spacer {
@@ -11479,19 +12106,55 @@ button.sid-operator-profile {
    ========================================================= */
 
 @media (max-width: 900px) {
-  .sid-operator-sidebar {
-    width: 13rem;
+  .sid-operator-layout {
+    --sid-operator-sidebar-w: 13rem;
   }
+}
 
-  .sid-operator-main {
-    width: calc(100% - 13rem);
+/* =========================================================
+   SIDEBAR MODE IKON (.is-rail)
+   Desktop: diciutkan manual. Ponsel: tampilan bawaan sidebar.
+   ========================================================= */
 
-    margin-left: 13rem;
-  }
+.sid-operator-layout.is-rail {
+  --sid-operator-sidebar-w: var(--sid-operator-rail-w);
+}
 
-  .sid-operator-topbar {
-    left: 13rem;
-  }
+.sid-operator-layout.is-rail .sid-operator-sidebar-brand {
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 0.5rem;
+
+  text-align: center;
+}
+
+.sid-operator-layout.is-rail .sid-operator-sidebar-brand h1 {
+  font-size: 0.8125rem;
+}
+
+.sid-operator-layout.is-rail .sid-operator-sidebar-brand p,
+.sid-operator-layout.is-rail .sid-operator-brand .bd-brand-text {
+  display: none;
+}
+
+.sid-operator-layout.is-rail .sid-operator-sidebar-nav,
+.sid-operator-layout.is-rail .sid-operator-sidebar-footer {
+  padding: 0.75rem 0.5rem;
+}
+
+.sid-operator-layout.is-rail .sid-operator-menu-item,
+.sid-operator-layout.is-rail .sid-operator-sidebar-action {
+  justify-content: center;
+
+  padding: 0.625rem;
+
+  gap: 0;
+}
+
+.sid-operator-layout.is-rail .sid-operator-menu-item span,
+.sid-operator-layout.is-rail .sid-operator-sidebar-action span {
+  display: none;
 }
 
 /* =========================================================
@@ -11499,78 +12162,32 @@ button.sid-operator-profile {
    ========================================================= */
 
 @media (max-width: 639px) {
-  .sid-operator-sidebar {
-    width: 4.25rem;
-  }
-
-  .sid-operator-sidebar-brand {
-    height: 5rem;
-
-    align-items: center;
-
-    padding: 0 0.5rem;
-
-    text-align: center;
-  }
-
-  .sid-operator-sidebar-brand h1 {
-    font-size: 0.8125rem;
-  }
-
-  .sid-operator-sidebar-brand p {
-    display: none;
-  }
-
-  /* MENU */
-
-  .sid-operator-sidebar-nav {
-    padding: 0.75rem 0.5rem;
-  }
-
-  .sid-operator-menu-item {
-    justify-content: center;
-
-    padding: 0.625rem;
-
-    gap: 0;
-  }
-
-  .sid-operator-menu-item span {
-    display: none;
-  }
-
-  /* SIDEBAR FOOTER */
-
-  .sid-operator-sidebar-footer {
-    padding: 0.75rem 0.5rem;
-  }
-
-  .sid-operator-sidebar-action {
-    justify-content: center;
-
-    padding: 0.625rem;
-
-    gap: 0;
-  }
-
-  .sid-operator-sidebar-action span {
-    display: none;
-  }
-
-  /* MAIN */
-
+  /* Sidebar yang dibuka menimpa konten; konten tetap bergeser selebar ikon. */
   .sid-operator-main {
-    width: calc(100% - 4.25rem);
+    width: calc(100% - var(--sid-operator-rail-w));
 
-    margin-left: 4.25rem;
+    margin-left: var(--sid-operator-rail-w);
   }
-
-  /* TOPBAR */
 
   .sid-operator-topbar {
-    left: 4.25rem;
+    left: var(--sid-operator-rail-w);
 
     padding: 0 1rem;
+  }
+
+  .sid-operator-layout.is-mobile-open .sid-operator-sidebar {
+    z-index: 50;
+
+    box-shadow: var(--sid-shadow-lg);
+  }
+
+  .sid-operator-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+
+    z-index: 45;
+
+    background: rgb(15 23 42 / 40%);
   }
 
   .sid-operator-topbar-right {
@@ -11579,6 +12196,14 @@ button.sid-operator-profile {
 
   .sid-operator-profile-info {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-operator-sidebar,
+  .sid-operator-main,
+  .sid-operator-topbar {
+    transition: none;
   }
 }
 
@@ -11673,6 +12298,18 @@ button.sid-operator-profile {
   box-shadow: none;
 }
 
+.bd-theme .sid-operator-sidebar-toggle {
+  border-radius: var(--bd-radius-menu-item);
+
+  color: var(--bd-color-ink);
+}
+
+.bd-theme .sid-operator-sidebar-toggle:hover {
+  background: var(--bd-color-primary-tint);
+
+  color: var(--bd-color-primary);
+}
+
 .bd-theme .sid-operator-notification-btn {
   width: 2.75rem;
   height: 2.75rem;
@@ -11709,19 +12346,6 @@ button.sid-operator-profile {
   background: var(--bd-color-primary);
 
   color: var(--bd-color-on-primary);
-}
-
-@media (max-width: 639px) {
-  /* Sidebar ponsel hanya selebar ikon: tampilkan lambangnya saja. */
-  .bd-theme .sid-operator-sidebar-brand {
-    justify-content: center;
-
-    padding: 0 0.5rem;
-  }
-
-  .bd-theme .sid-operator-brand .bd-brand-text {
-    display: none;
-  }
 }
 
 /* ==========================================
@@ -17864,7 +18488,7 @@ button.sid-operator-profile {
 }
 
 .sid-info-card__value {
-  color: var(--sid-text-primary, #2c2c2a);
+  color: var(--sid-text-primary);
   font-weight: 500;
 }
 
@@ -17899,7 +18523,7 @@ button.sid-operator-profile {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 
-  color: var(--sid-text-primary, #2c2c2a);
+  color: var(--sid-text-primary);
 }
 
 .sid-perangkat-card__list {
@@ -17929,7 +18553,7 @@ button.sid-operator-profile {
 }
 
 .sid-perangkat-card__nama {
-  color: var(--sid-text-primary, #2c2c2a);
+  color: var(--sid-text-primary);
   font-weight: 600;
   text-align: right;
 }
@@ -19773,6 +20397,20 @@ button.sid-operator-profile {
   gap: 12px;
 }
 
+/* Telepon + Email: kedua kelompok (ikon + teks) di tengah modal, teks di
+   dalamnya tetap rata kiri. Di layar sempit bertumpuk, tetap di tengah. */
+.sid-help-contact-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px 32px;
+}
+
+.sid-help-contact-group > .sid-help-item {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .sid-help-item-icon {
   display: flex;
   align-items: center;
@@ -20131,6 +20769,24 @@ button.sid-operator-profile {
   min-height: 96px;
 }
 
+/* Titik kantor desa: input koordinat (link "Buka di peta" di beranda). */
+.sid-profil-desa-location-input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sid-profil-desa-location-input button {
+  flex: none;
+}
+
+.sid-profil-desa-location-hint {
+  margin: 0;
+
+  color: var(--sid-text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
 .sid-profil-desa-form-field input:focus,
 .sid-profil-desa-form-field textarea:focus {
   border-color: var(--sid-primary);
@@ -20225,6 +20881,12 @@ button.sid-operator-profile {
 
   font-size: 0.75rem;
   line-height: 1.6;
+}
+
+.sid-profil-desa-device-notice a {
+  color: var(--sid-primary);
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .sid-profil-desa-device-sections {
@@ -20532,8 +21194,15 @@ button.sid-operator-profile {
   color: var(--sid-text-primary);
 }
 
-.sid-wilayah-tab-active {
+/* Spesifisitas setara :hover agar tab terpilih tidak tertimpa warna hover
+   tab biasa; saat di-hover, tab terpilih sedikit lebih gelap. */
+.sid-wilayah-tab.sid-wilayah-tab-active {
   background: var(--sid-primary);
+  color: var(--sid-on-primary);
+}
+
+.sid-wilayah-tab.sid-wilayah-tab-active:hover {
+  background: var(--sid-primary-hover);
   color: var(--sid-on-primary);
 }
 
@@ -20543,6 +21212,21 @@ button.sid-operator-profile {
   border-radius: var(--radius-lg);
   background: var(--sid-surface-card);
   box-shadow: var(--shadow-card);
+}
+
+/* Isi kartu selain tabel (form, pratinjau, tab) di bawah toolbar. */
+.sid-wilayah-card-body {
+  padding: 1.1rem;
+}
+
+.sid-wilayah-card-body > .sid-wilayah-tabs {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .sid-wilayah-card-body {
+    padding: 0.9rem;
+  }
 }
 
 .sid-wilayah-table-toolbar {
@@ -20567,7 +21251,9 @@ button.sid-operator-profile {
 
 .sid-wilayah-toolbar-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.6rem;
 }
 
@@ -20654,26 +21340,6 @@ button.sid-operator-profile {
   font-size: 0.72rem !important;
 }
 
-.sid-wilayah-status {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
-.sid-wilayah-status-active {
-  background: var(--sid-status-done-bg);
-  color: var(--sid-status-done-text);
-}
-
-.sid-wilayah-status-inactive {
-  background: var(--sid-status-rejected-bg);
-  color: var(--sid-status-rejected-text);
-}
-
 .sid-wilayah-actions {
   display: flex;
   align-items: center;
@@ -20704,6 +21370,16 @@ button.sid-operator-profile {
 
 .sid-wilayah-action-edit:hover {
   background: var(--sid-status-progress-bg);
+}
+
+.sid-wilayah-action-toggle {
+  color: var(--sid-text-secondary);
+}
+
+.sid-wilayah-action-toggle:hover:not(:disabled) {
+  background: var(--sid-status-progress-bg);
+  border-color: #b5d4f4;
+  color: var(--sid-primary);
 }
 
 .sid-wilayah-action-delete {
@@ -20779,6 +21455,14 @@ button.sid-operator-profile {
   background: var(--sid-surface-card);
   color: var(--sid-text-secondary);
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-wilayah-modal-close:hover {
+  background: var(--sid-surface-page);
+  color: var(--sid-text-primary);
 }
 
 .sid-wilayah-modal form {
@@ -20937,6 +21621,17 @@ button.sid-operator-profile {
     padding: 1rem;
   }
 
+  /* Pencarian satu baris penuh; filter dusun dan RW berbagi baris di bawahnya. */
+  .sid-wilayah-toolbar-controls .sid-wilayah-search {
+    flex-basis: 100%;
+  }
+
+  .sid-wilayah-toolbar-controls .sid-wilayah-filter {
+    min-width: 0;
+
+    flex: 1;
+  }
+
   .sid-kelola-wilayah-summary {
     grid-template-columns: 1fr;
   }
@@ -21057,7 +21752,8 @@ button.sid-operator-profile {
   gap: 0.75rem;
 }
 
-.sid-admin-page-actions .sid-operator-secondary {
+.sid-admin-page-actions .sid-operator-secondary,
+.sid-admin-letter-types-panel .sid-operator-secondary {
   min-height: 2.625rem;
   display: inline-flex;
   align-items: center;
@@ -21077,7 +21773,8 @@ button.sid-operator-profile {
     color 0.15s ease;
 }
 
-.sid-admin-page-actions .sid-operator-secondary:hover {
+.sid-admin-page-actions .sid-operator-secondary:hover,
+.sid-admin-letter-types-panel .sid-operator-secondary:hover:not(:disabled) {
   background: var(--sid-status-progress-bg);
 }
 
@@ -21088,9 +21785,13 @@ button.sid-operator-profile {
   box-shadow: var(--shadow-card);
 }
 
-.sid-admin-data-page .sid-operator-filter-grid.warga-filter,
 .sid-admin-users-page .sid-operator-filter-grid.user-filter {
   grid-template-columns: minmax(240px, 2fr) minmax(200px, 1fr);
+}
+
+/* Pencarian + filter bertingkat Dusun, RW, RT. */
+.sid-admin-data-page .sid-operator-filter-grid.warga-filter {
+  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(120px, 1fr));
 }
 
 .sid-admin-data-page .sid-operator-filter-field > p,
@@ -21318,25 +22019,30 @@ button.sid-operator-profile {
   font-size: 0.8125rem;
 }
 
-.sid-admin-family-panel > .sid-operator-header {
+/* Jarak antarkartu seksi (mis. Kartu Keluarga dan Data Penduduk). */
+.sid-admin-section-panel + .sid-admin-section-panel {
+  margin-top: 1.5rem;
+}
+
+.sid-admin-section-panel > .sid-operator-header {
   min-height: auto;
   margin: 0;
   padding: 1.25rem 1.25rem 0;
 }
 
-.sid-admin-family-panel > .sid-operator-header h2 {
+.sid-admin-section-panel > .sid-operator-header h2 {
   margin: 0;
   color: var(--sid-text-primary);
   font-size: 1.125rem;
 }
 
-.sid-admin-family-panel > .sid-operator-header p {
+.sid-admin-section-panel > .sid-operator-header p {
   margin: 0.35rem 0 0;
   color: var(--sid-text-muted);
   font-size: 0.875rem;
 }
 
-.sid-admin-family-panel > .sid-operator-filter-card {
+.sid-admin-section-panel > .sid-operator-filter-card {
   margin: 1rem 1.25rem;
 }
 
@@ -21390,6 +22096,27 @@ button.sid-operator-profile {
   border-color: var(--sid-danger-border);
   background: var(--sid-danger-soft);
   color: var(--sid-danger);
+}
+
+/* Pesan error tingkat panel/form di fitur lain memakai kartu yang sama
+   dengan .sid-admin-alert-error agar seragam; margin bawaan tiap kelas
+   tetap dipakai. Error per kolom input (.sid-form-field-error,
+   .sid-login-field-error) sengaja tetap teks kecil di bawah kolomnya. */
+.sid-login-error,
+.sid-login-form-error,
+.sid-modal-error,
+.sid-profil-desa-error,
+.sid-berita-form-error,
+.sid-webpush-error,
+.sid-kelola-wilayah-error,
+.sid-wilayah-form-error {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--sid-danger-border);
+  border-radius: var(--radius-sm);
+  background: var(--sid-danger-soft);
+  color: var(--sid-danger);
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .sid-admin-alert-success {
@@ -21453,6 +22180,94 @@ button.sid-operator-profile {
 
 .sid-admin-letter-types-panel td select {
   min-width: 10rem;
+}
+
+/* Log Aktivitas (ActivityLogPage) */
+
+.sid-activity-log-filters {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.sid-activity-log-filters input[type='date'] {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  font: inherit;
+}
+
+.sid-activity-log-subject-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  color: var(--sid-text-secondary);
+  font-size: 0.8125rem;
+}
+
+.sid-activity-log-subject-filter button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--sid-border);
+  border-radius: 9999px;
+  background: var(--sid-surface-card);
+  color: var(--sid-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.sid-activity-log-subject-filter button:hover {
+  border-color: var(--sid-primary);
+  background: var(--sid-status-progress-bg);
+}
+
+.sid-activity-log-time {
+  white-space: nowrap;
+}
+
+.sid-activity-log-changes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.sid-activity-log-changes strong {
+  font-weight: 600;
+}
+
+.sid-activity-log-muted {
+  color: var(--sid-text-muted);
+}
+
+@media (max-width: 900px) {
+  .sid-activity-log-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .sid-activity-log-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sid-admin-letter-type-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sid-admin-letter-types-panel .sid-operator-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .sid-admin-officials-header {
@@ -21750,4 +22565,547 @@ button.sid-operator-profile {
   aspect-ratio: 16 / 9;
 
   object-fit: cover;
+}
+
+/* ==========================================
+   ORGANISASI (BPD / LPM / Karang Taruna / PKK)
+   Slot Ketua & Wakil Ketua + daftar Anggota
+   ========================================== */
+
+.sid-org-subtitle {
+  margin: 0.15rem 0 0;
+  color: var(--sid-text-secondary);
+  font-size: 0.875rem;
+}
+
+.sid-org-section-title {
+  margin: 0 0 0.75rem;
+  color: var(--sid-text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sid-org-section-title span {
+  color: var(--sid-text-muted);
+  font-weight: 500;
+}
+
+.sid-org-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 2rem 0 0.75rem;
+}
+
+.sid-org-section-head .sid-org-section-title {
+  margin: 0;
+}
+
+/* Pejabat Desa: satu tabel per tingkat (desa, dusun, RW, RT). */
+.sid-pejabat-group {
+  margin-top: 2rem;
+}
+
+.sid-pejabat-group .sid-org-section-title {
+  margin-bottom: 0.25rem;
+}
+
+.sid-pejabat-group-hint {
+  margin-bottom: 0.75rem;
+}
+
+.sid-pejabat-group .sid-org-section-title + .sid-operator-table-card {
+  margin-top: 0.75rem;
+}
+
+.sid-org-leaders {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.sid-org-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--sid-border);
+  border-top: 3px solid var(--sid-primary);
+  border-radius: var(--radius-lg);
+  background: var(--sid-surface-card);
+  box-shadow: var(--shadow-card);
+}
+
+.sid-org-slot-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2rem;
+}
+
+.sid-org-slot-label {
+  color: var(--sid-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sid-org-slot-body {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-width: 0;
+}
+
+.sid-org-slot-name {
+  margin: 0;
+  color: var(--sid-text-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.sid-org-slot-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.2rem 0 0;
+  color: var(--sid-text-secondary);
+  font-size: 0.8rem;
+}
+
+.sid-org-slot-empty {
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px dashed var(--sid-border);
+  border-radius: var(--radius-md);
+  color: var(--sid-text-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.sid-org-slot > .sid-button {
+  align-self: flex-start;
+}
+
+.sid-org-history {
+  margin-top: 0.75rem;
+  color: var(--sid-text-secondary);
+  font-size: 0.8rem;
+}
+
+.sid-org-history summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sid-org-history ul {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sid-org-history li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--sid-border);
+}
+
+.sid-org-history li small {
+  display: block;
+  color: var(--sid-text-muted);
+}
+
+.sid-org-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+}
+
+.sid-org-choice label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .sid-org-leaders {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sid-org-section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ==========================================
+   FOTO PROFIL AKUN (ProfilePhoto)
+   ========================================== */
+
+.sid-profile-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.sid-profile-photo-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+/* Toast sukses (ToastHost): kanan bawah, di atas modal dan dialog. */
+.sid-toast-region {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.sid-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  width: min(380px, calc(100vw - 2rem));
+  padding: 0.75rem 0.75rem 0.75rem 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-md, 12px);
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  animation: sid-toast-in 0.2s ease-out;
+}
+
+.sid-toast p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.sid-toast-icon {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.sid-toast--success {
+  border-left: 4px solid var(--sid-status-done-text);
+}
+
+.sid-toast--success .sid-toast-icon {
+  color: var(--sid-status-done-text);
+}
+
+.sid-toast--info {
+  border-left: 4px solid var(--sid-primary);
+}
+
+.sid-toast--info .sid-toast-icon {
+  color: var(--sid-primary);
+}
+
+.sid-toast-close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--sid-text-muted);
+  cursor: pointer;
+}
+
+.sid-toast-close:hover {
+  background: var(--sid-surface-page);
+  color: var(--sid-text-primary);
+}
+
+@keyframes sid-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .sid-toast-region {
+    right: 0.75rem;
+    left: 0.75rem;
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    align-items: stretch;
+  }
+
+  .sid-toast {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-toast {
+    animation: none;
+  }
+}
+
+/* Peringatan singkat di tengah layar (dialog global). */
+.sid-notice-modal {
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.sid-notice-modal h2 {
+  margin: 0;
+  color: var(--sid-text-primary);
+  font-size: 1.125rem;
+}
+
+.sid-notice-modal p {
+  margin: 0;
+  color: var(--sid-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.sid-notice-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--sid-status-pending-bg);
+  color: var(--sid-status-pending-text);
+}
+
+/* Dialog global (DialogHost) di atas modal lain. */
+.sid-dialog-overlay {
+  z-index: 1100;
+}
+
+.sid-notice-modal p {
+  white-space: pre-line;
+}
+
+.sid-notice-modal--error .sid-notice-icon,
+.sid-notice-modal--danger .sid-notice-icon {
+  background: var(--sid-status-rejected-bg);
+  color: var(--sid-status-rejected-text);
+}
+
+.sid-notice-modal--success .sid-notice-icon {
+  background: var(--sid-status-done-bg);
+  color: var(--sid-status-done-text);
+}
+
+.sid-notice-modal--info .sid-notice-icon,
+.sid-notice-modal--primary .sid-notice-icon {
+  background: var(--sid-status-progress-bg);
+  color: var(--sid-primary);
+}
+
+.sid-notice-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  text-align: left;
+  color: var(--sid-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.sid-notice-field textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-sm);
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.sid-notice-field textarea:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 1px;
+}
+
+.sid-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.sid-notice-actions > button {
+  min-width: 8rem;
+  justify-content: center;
+}
+
+.sid-notice-cancel {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.625rem 1.25rem;
+  border: 1px solid var(--sid-border);
+  border-radius: 9999px;
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.sid-notice-cancel:hover {
+  background: var(--sid-surface-page);
+}
+
+.sid-notice-modal .sid-operator-primary.sid-notice-danger {
+  border-color: var(--sid-status-rejected-text);
+  background: var(--sid-status-rejected-text);
+}
+
+.sid-notice-modal .sid-operator-primary.sid-notice-danger:hover {
+  filter: brightness(0.92);
+}
+
+/* Avatar yang punya foto: bisa diklik untuk pratinjau besar. */
+.sid-profile-photo-trigger {
+  padding: 0;
+  border: 0;
+  cursor: zoom-in;
+}
+
+.sid-profile-photo-trigger:focus-visible {
+  outline: 3px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+.sid-photo-preview {
+  position: relative;
+  max-width: min(90vw, 480px);
+  padding: 0.5rem;
+  border-radius: 16px;
+  background: var(--sid-surface-card);
+  box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.45);
+}
+
+.sid-photo-preview-image {
+  display: block;
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+/* Tombol tutup di pojok kanan atas bingkai, sedikit keluar dari tepinya. */
+.sid-photo-preview-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--sid-border);
+  border-radius: 50%;
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.sid-photo-preview-close:hover {
+  border-color: var(--sid-primary);
+  color: var(--sid-primary);
+}
+
+.sid-photo-preview-close:focus-visible {
+  outline: 3px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+.sid-profile-photo-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--sid-border);
+  border-radius: 9999px;
+  background: var(--sid-surface-card);
+  color: var(--sid-primary);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.sid-profile-photo-actions button:hover:not(:disabled) {
+  border-color: var(--sid-primary);
+}
+
+.sid-profile-photo-actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.sid-profile-photo-note {
+  max-width: 7rem;
+  margin: 0;
+  color: var(--sid-text-muted);
+  font-size: 0.65rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.sid-profile-photo .sid-form-field-error {
+  max-width: 10rem;
+  margin: 0;
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+/* Foto akun yang login di header (UserAvatar). */
+.sid-user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--sid-border);
+  border-radius: 50%;
+  background: var(--sid-status-progress-bg);
+  color: var(--sid-primary);
 }

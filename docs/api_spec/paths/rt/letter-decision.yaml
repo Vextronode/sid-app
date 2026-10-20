@@ -1,18 +1,20 @@
 patch:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Berikan keputusan approve/reject RT (Tahap 1)
+  summary: Keputusan approve/reject RT (Tahap 1)
   description: |
-    UC-04a. BARU v5.0 - alur setelah approve berubah total dari v4.2:
+    UC-04a. Aktor role `rt`. Gate: RT aktif dengan `rt_id` sama dengan
+    `citizen.rt_id` pemohon, bukan pemohon sendiri, dan step aktif surat
+    adalah `rt`. Di dalam transaksi surat dikunci (`lockForUpdate`) lalu
+    status/step diperiksa ulang.
 
-    - **Approve**: surat berpindah ke step actionable berikutnya dan
-      `status = 'in_progress'`. Placeholder `letter_approvals` step RT
-      diperbarui dengan aktor/aksi; placeholder ber-deadline dibuat untuk
-      step berikutnya. RW menerima notifikasi FYI, bukan approval gate.
-    - **Reject**: placeholder approval step RT diperbarui; `status =
-      'rejected'` dan `rejected_at_step` mencatat step RT (terminal).
-
-    Gate otorisasi tetap sama: hanya RT yang rt_id-nya sesuai wilayah
-    warga pemohon yang boleh approve (via OfficialService, tidak berubah).
+    - **Approve**: placeholder approval step RT diisi aktor/aksi; surat
+      maju ke step actionable berikutnya (`in_progress`), placeholder
+      ber-deadline dibuat untuk step itu. Notifikasi: FYI ke RW wilayah RW
+      pemohon (`rt_approved_rw_fyi`), FYI ke Kadus dusun pemohon
+      (`rt_approved_kadus_fyi`), approver berikutnya (`rt_approved`), dan
+      pemohon (`rt_approved`).
+    - **Reject**: `rejected`, `rejected_at_step` = step RT (terminal);
+      notifikasi `rt_rejected` ke pemohon.
   operationId: decideRtLetter
   security:
     - sanctumCookie: []
@@ -23,7 +25,6 @@ patch:
       schema:
         type: string
         format: uuid
-      example: "550e8400-e29b-41d4-a716-446655440501"
   requestBody:
     required: true
     content:
@@ -32,35 +33,15 @@ patch:
           $ref: '../../schemas/letters/letters.yaml#/DecisionRequest'
   responses:
     '200':
-      description: Keputusan berhasil disimpan
+      description: Keputusan tersimpan
       content:
         application/json:
           schema:
             $ref: '../../schemas/letters/letters.yaml#/DecisionResponse'
-          examples:
-            approved:
-              summary: RT menyetujui surat - lanjut ke step berikutnya + FYI RW
-              value:
-                message: "Keputusan berhasil disimpan"
-                data:
-                  id: "550e8400-e29b-41d4-a716-446655440501"
-                  status: "in_progress"
-                  current_step_order: 2
-                  current_step: { step_order: 2, approver_position: "kepala_desa", is_final: false }
-                  processed_at: "2026-07-01T14:00:00Z"
-            rejected:
-              summary: RT menolak surat (TERMINAL)
-              value:
-                message: "Keputusan berhasil disimpan"
-                data:
-                  id: "550e8400-e29b-41d4-a716-446655440501"
-                  status: "rejected"
-                  rejected_at_step: 1
-                  processed_at: "2026-07-01T14:00:00Z"
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: Surat bukan wilayah RT ini
+      description: Bukan RT aktif, surat di luar wilayah RT, atau surat milik sendiri
       content:
         application/json:
           schema:
@@ -68,20 +49,14 @@ patch:
     '404':
       $ref: '../../responses/common.yaml#/NotFound'
     '409':
-      description: Surat sudah diproses sebelumnya (status bukan lagi pending, atau current_step_order sudah berpindah)
+      description: Surat tidak sedang di tahap RT atau sudah diproses
       content:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ConflictResponse'
-          example:
-            message: "Surat sudah diproses sebelumnya"
     '422':
-      description: Memilih reject tanpa mengisi catatan
+      description: Reject tanpa catatan, atau tahap berikutnya tidak tersedia
       content:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
-          example:
-            message: "The given data was invalid."
-            errors:
-              notes: ["Catatan wajib diisi jika menolak"]

@@ -30,7 +30,7 @@ class OfficialPromoteDemoteTest extends TestCase
     public function test_petugas_can_promote_citizen_user_and_activity_is_recorded(): void
     {
         $village = Village::factory()->create();
-        $actor = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        $actor = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
         $target = User::factory()->create([
             'role' => 'warga',
@@ -74,7 +74,7 @@ class OfficialPromoteDemoteTest extends TestCase
             ->postJson('/api/officials/promote', [])
             ->assertForbidden();
 
-        $actor = User::factory()->create(['role' => 'petugas_desa']);
+        $actor = User::factory()->create(['role' => 'staf_sid']);
         $this->actingAs($actor)
             ->postJson('/api/officials/promote', [
                 'user_id' => $target->id,
@@ -88,7 +88,7 @@ class OfficialPromoteDemoteTest extends TestCase
     public function test_promote_rejects_target_not_in_actor_village(): void
     {
         $actor = User::factory()->create([
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
             'village_id' => Village::factory(),
         ]);
         $targetVillage = Village::factory()->create();
@@ -102,7 +102,7 @@ class OfficialPromoteDemoteTest extends TestCase
         $this->actingAs($actor)
             ->post('/api/officials/promote', [
                 'user_id' => $target->id,
-                'position' => 'sekdes',
+                'position' => 'sekretaris_desa',
                 'started_at' => today()->toDateString(),
                 'photo' => UploadedFile::fake()->image('foto.jpg'),
             ], self::JSON)
@@ -119,7 +119,7 @@ class OfficialPromoteDemoteTest extends TestCase
     public function test_position_without_account_can_be_promoted_rotated_and_demoted(): void
     {
         $village = Village::factory()->create();
-        $actor = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        $actor = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
         $first = Citizen::factory()->create(['village_id' => $village->id]);
         $firstAccount = User::factory()->create([
             'role' => 'warga',
@@ -173,7 +173,7 @@ class OfficialPromoteDemoteTest extends TestCase
     public function test_rotate_of_position_without_account_requires_citizen_and_photo(): void
     {
         $village = Village::factory()->create();
-        $actor = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        $actor = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
         $old = Official::factory()->position('staf_sipades')->create(['village_id' => $village->id]);
 
         $this->actingAs($actor)
@@ -186,8 +186,8 @@ class OfficialPromoteDemoteTest extends TestCase
     public function test_petugas_can_replace_official_photo_and_old_file_is_removed(): void
     {
         $village = Village::factory()->create();
-        $actor = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
-        $official = Official::factory()->position('sekdes')->create(['village_id' => $village->id]);
+        $actor = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
+        $official = Official::factory()->position('sekretaris_desa')->create(['village_id' => $village->id]);
 
         $upload = fn (string $name) => $this->actingAs($actor)
             ->post("/api/officials/{$official->id}/photo", [
@@ -208,7 +208,7 @@ class OfficialPromoteDemoteTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['photo']);
 
-        $foreign = User::factory()->create(['role' => 'petugas_desa', 'village_id' => Village::factory()]);
+        $foreign = User::factory()->create(['role' => 'staf_sid', 'village_id' => Village::factory()]);
         $this->actingAs($foreign)
             ->post("/api/officials/{$official->id}/photo", [
                 'photo' => UploadedFile::fake()->image('asing.jpg'),
@@ -217,17 +217,43 @@ class OfficialPromoteDemoteTest extends TestCase
         $this->assertSame($secondPath, $official->fresh()->photo_img);
     }
 
+    public function test_petugas_can_delete_official_photo(): void
+    {
+        $village = Village::factory()->create();
+        $actor = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
+        Storage::disk('public')->put('official-photos/lama.jpg', 'x');
+        $official = Official::factory()->position('sekretaris_desa')->create([
+            'village_id' => $village->id,
+            'photo_img' => 'official-photos/lama.jpg',
+        ]);
+
+        $foreign = User::factory()->create(['role' => 'staf_sid', 'village_id' => Village::factory()]);
+        $this->actingAs($foreign)
+            ->deleteJson("/api/officials/{$official->id}/photo")
+            ->assertForbidden();
+        Storage::disk('public')->assertExists('official-photos/lama.jpg');
+
+        $this->actingAs($actor)
+            ->deleteJson("/api/officials/{$official->id}/photo")
+            ->assertOk()
+            ->assertJsonPath('message', 'Foto pejabat berhasil dihapus.')
+            ->assertJsonPath('data.photo_img', null);
+
+        $this->assertNull($official->fresh()->photo_img);
+        Storage::disk('public')->assertMissing('official-photos/lama.jpg');
+    }
+
     public function test_demote_returns_warnings_and_updates_user_role(): void
     {
         $village = Village::factory()->create();
-        $actor = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        $actor = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
         $target = User::factory()->create([
             'role' => 'sekretaris_desa',
             'village_id' => $village->id,
             'citizen_id' => $citizen->id,
         ]);
-        $official = Official::factory()->forUser($target)->position('sekdes')->create([
+        $official = Official::factory()->forUser($target)->position('sekretaris_desa')->create([
             'village_id' => $village->id,
         ]);
 
@@ -254,8 +280,8 @@ class OfficialPromoteDemoteTest extends TestCase
             ->postJson("/api/officials/{$official->id}/demote")
             ->assertForbidden();
 
-        $petugas = User::factory()->create(['role' => 'petugas_desa']);
-        $petugasOfficial = Official::factory()->forUser($petugas)->position('petugas_desa')->create();
+        $petugas = User::factory()->create(['role' => 'staf_sid']);
+        $petugasOfficial = Official::factory()->forUser($petugas)->position('staf_sid')->create();
 
         $this->actingAs($petugas)
             ->postJson("/api/officials/{$petugasOfficial->id}/demote")
@@ -269,9 +295,9 @@ class OfficialPromoteDemoteTest extends TestCase
     public function test_rotate_requires_new_user_without_client_supplied_citizen_id(): void
     {
         $village = Village::factory()->create();
-        $actor = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        $actor = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
         $oldUser = User::factory()->create(['role' => 'sekretaris_desa', 'village_id' => $village->id]);
-        $old = Official::factory()->forUser($oldUser)->position('sekdes')->create(['village_id' => $village->id]);
+        $old = Official::factory()->forUser($oldUser)->position('sekretaris_desa')->create(['village_id' => $village->id]);
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
         $newUser = User::factory()->create([
             'role' => 'warga',
@@ -288,5 +314,77 @@ class OfficialPromoteDemoteTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.new_official.user_id', $newUser->id)
             ->assertJsonPath('warnings', []);
+    }
+
+    /**
+     * @return array{0: Village, 1: User, 2: Official, 3: User}
+     */
+    private function stafSidWithCandidate(): array
+    {
+        $village = Village::factory()->create();
+        $staf = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
+        $stafOfficial = Official::factory()->forUser($staf)->position('staf_sid')->create(['village_id' => $village->id]);
+        $citizen = Citizen::factory()->create(['village_id' => $village->id]);
+        $candidate = User::factory()->create([
+            'role' => 'warga',
+            'village_id' => $village->id,
+            'citizen_id' => $citizen->id,
+        ]);
+
+        return [$village, $staf, $stafOfficial, $candidate];
+    }
+
+    public function test_second_staf_sid_cannot_be_promoted(): void
+    {
+        [, $staf, , $candidate] = $this->stafSidWithCandidate();
+
+        $this->actingAs($staf)
+            ->post('/api/officials/promote', [
+                'user_id' => $candidate->id,
+                'position' => 'staf_sid',
+                'started_at' => today()->toDateString(),
+                'photo' => UploadedFile::fake()->image('foto.jpg'),
+            ], self::JSON)
+            ->assertStatus(409);
+
+        $this->assertSame('warga', $candidate->fresh()->role);
+    }
+
+    public function test_staf_sid_can_hand_over_the_position_to_someone_else(): void
+    {
+        [$village, $staf, $stafOfficial, $candidate] = $this->stafSidWithCandidate();
+
+        $this->actingAs($staf)
+            ->post("/api/officials/{$stafOfficial->id}/rotate", [
+                'user_id' => $candidate->id,
+                'started_at' => today()->toDateString(),
+                'photo' => UploadedFile::fake()->image('foto.jpg'),
+            ], self::JSON)
+            ->assertOk()
+            ->assertJsonPath('data.old_official.is_active', false)
+            ->assertJsonPath('data.new_official.user_id', $candidate->id)
+            ->assertJsonPath('data.new_official.position', 'staf_sid');
+
+        $this->assertSame('warga', $staf->fresh()->role);
+        $this->assertSame('staf_sid', $candidate->fresh()->role);
+        $this->assertSame(1, User::query()->where('village_id', $village->id)->where('role', 'staf_sid')->count());
+
+        // Peran lama langsung tidak berlaku: endpoint staf ditolak dengan
+        // kode yang dipakai FE untuk memuat ulang akun.
+        $this->actingAs($staf->fresh())
+            ->getJson('/api/officials')
+            ->assertForbidden()
+            ->assertJsonPath('code', 'role_forbidden');
+    }
+
+    public function test_staf_sid_still_cannot_be_demoted_without_replacement(): void
+    {
+        [, $staf, $stafOfficial] = $this->stafSidWithCandidate();
+
+        $this->actingAs($staf)
+            ->postJson("/api/officials/{$stafOfficial->id}/demote")
+            ->assertForbidden();
+
+        $this->assertSame('staf_sid', $staf->fresh()->role);
     }
 }

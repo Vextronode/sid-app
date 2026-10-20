@@ -6,12 +6,22 @@ import {
   publishBerita as publishBeritaApi,
   updateBerita,
 } from '@/features/kelola-berita/api'
+import { usePageSize } from '@/components/ui/usePageSize'
 
-const ITEMS_PER_PAGE = 6
+// Grid berita tiga kolom: kelipatan 3 agar baris kartu selalu penuh.
+export const BERITA_PAGE_SIZE_OPTIONS = [6, 12, 24]
 
 export function useBeritaList() {
   const [berita, setBerita] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSizeState] = usePageSize('kelola-berita', {
+    options: BERITA_PAGE_SIZE_OPTIONS,
+  })
+
+  const setPageSize = (value) => {
+    setPageSizeState(value)
+    setCurrentPage(1)
+  }
   const [processing, setProcessing] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -84,7 +94,7 @@ export function useBeritaList() {
   // TOTAL PAGE FRONTEND
   // ==========================================
 
-  const totalPages = Math.max(1, Math.ceil(berita.length / ITEMS_PER_PAGE))
+  const totalPages = Math.max(1, Math.ceil(berita.length / pageSize))
   const safeCurrentPage = Math.min(currentPage, totalPages)
   // ==========================================
   // REMOVE BERITA
@@ -106,12 +116,12 @@ export function useBeritaList() {
   // ==========================================
 
   const data = useMemo(() => {
-    const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE
+    const startIndex = (safeCurrentPage - 1) * pageSize
 
-    const endIndex = startIndex + ITEMS_PER_PAGE
+    const endIndex = startIndex + pageSize
 
     return berita.slice(startIndex, endIndex)
-  }, [berita, safeCurrentPage])
+  }, [berita, safeCurrentPage, pageSize])
 
   // ==========================================
   // BERITA UTAMA
@@ -189,6 +199,8 @@ export function useBeritaList() {
     currentPage,
     setCurrentPage,
     totalPages,
+    pageSize,
+    setPageSize,
 
     addBerita,
     updateBerita: updateBeritaData,

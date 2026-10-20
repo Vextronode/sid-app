@@ -4,7 +4,7 @@ Panduan operasional tim untuk menjalankan SID di laptop server selama pameran. S
 
 > **Status pengujian.** Skrip, Nginx, dan compose sudah diperiksa statis dan sebagian diuji perilakunya di mesin pengembang, **tetapi belum pernah dijalankan dengan Docker sungguhan, belum di laptop server, dan belum di GitHub Actions.** Bagian bertanda **[BELUM TERUJI]** wajib dibuktikan saat gladi H-3.
 
-Ringkasan arsitektur: CI membangun image `sid-api` (PHP-FPM) dan `sid-web` (Nginx + SPA) dari tag git `vX.Y.Z` di `main` lalu mendorongnya ke GHCR. Laptop hanya menarik image berdasarkan tag. Stack: `sid_db` (PostgreSQL 18, mode local), `sid_api`, `sid_web`. Satu-satunya port: `127.0.0.1:<SID_HTTP_PORT>` (default 8100). Proxy/tunnel tim (di host laptop) meneruskan HTTPS publik ke port itu.
+Ringkasan arsitektur: CI membangun image `sid-api` (PHP-FPM) dan `sid-web` (Nginx + SPA) dari tag git `vX.Y.Z` di `main` lalu mendorongnya ke GHCR. Laptop hanya menarik image berdasarkan tag. Stack: `sid_db` (PostgreSQL 18, mode local), `sid_api`, `sid_scheduler` (image `sid-api` yang menjalankan `schedule:work` untuk pengingat approval dan penghapusan pengumuman kedaluwarsa), `sid_worker` (image `sid-api` yang menjalankan `queue:work` untuk mengirim Web Push dari tabel `jobs`; `QUEUE_CONNECTION=database`), `sid_web`. Satu-satunya port: `127.0.0.1:<SID_HTTP_PORT>` (default 8100). Proxy/tunnel tim (di host laptop) meneruskan HTTPS publik ke port itu.
 
 ---
 
@@ -113,6 +113,12 @@ bash deploy/scripts/lib.sh restart sid_api
 bash deploy/scripts/smoke.sh
 ```
 
+Staf aplikasi lupa kata sandi: `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan staf-sid:recover --username=<username> --force`, lalu serahkan kata sandi sementara yang tercetak (hanya tampil sekali).
+
+Scheduler (pengingat approval tiap 5 menit, penghapusan pengumuman kedaluwarsa tiap menit, pembersihan log aktivitas harian) tidak punya healthcheck; cek dengan `ps` (status `Up`) dan `logs --tail 50 sid_scheduler`. Uji manual: `bash deploy/scripts/lib.sh exec -u www-data sid_scheduler php artisan approvals:send-reminders` atau `... php artisan announcements:prune`.
+
+Worker antrean (`sid_worker`) juga tanpa healthcheck; cek dengan `ps` dan `logs --tail 50 sid_worker`. Worker keluar sendiri tiap jam (`--max-time=3600`) lalu dinyalakan ulang Docker, jadi `Restarting`/uptime pendek sesekali itu normal. Bila worker mati, lonceng tetap masuk dan push hanya tertunda sampai worker hidup lagi. Push gagal: `bash deploy/scripts/lib.sh exec -u www-data sid_worker php artisan queue:failed`, coba lagi dengan `... php artisan queue:retry all`. Setelah env diubah ke `QUEUE_CONNECTION=database`, pastikan `sid.env`/`sid.neon.env` di mesin ikut diperbarui lalu deploy ulang.
+
 ## 5. Golden DB dan reset demo
 
 - **Membuat golden** (setelah deploy pertama, dan setiap kali migrasi/seed berubah):
@@ -127,7 +133,7 @@ bash deploy/scripts/smoke.sh
   bash deploy/scripts/reset-demo.sh             # minta ketik RESET
   bash deploy/scripts/reset-demo.sh --yes       # tanpa konfirmasi (syarat tetap dicek)
   ```
-  Syarat (tidak bisa dilewati): `SID_ROLE=expo`, `DB_HOST=sid_db`, mode DB local, dump + checksum cocok, `sid_db` sehat dan milik proyek ini. Alur: hentikan `sid_api` → drop + buat ulang DB → restore → nyalakan `sid_api` → smoke.
+  Syarat (tidak bisa dilewati): `SID_ROLE=expo`, `DB_HOST=sid_db`, mode DB local, dump + checksum cocok, `sid_db` sehat dan milik proyek ini. Alur: hentikan `sid_api`, `sid_scheduler` & `sid_worker` → drop + buat ulang DB → restore → nyalakan ketiganya → smoke.
   Efek: **semua pengguna ter-logout** dan **lockout login (throttle) terbuka**, karena tabel `sessions`/`cache` kosong. Data yang dibuat pengunjung hilang. File unggahan di volume tidak dihapus.
 
 **[BELUM TERUJI]** `make-golden.sh` dan `reset-demo.sh` belum pernah dijalankan terhadap PostgreSQL sungguhan.
@@ -173,7 +179,7 @@ Pakai hanya bila DB lokal bermasalah dan tidak cepat pulih (mis. disk rusak). In
 - Bila data demo berantakan saat sepi: `bash deploy/scripts/reset-demo.sh` (semua sesi keluar).
 
 **Insiden (urutan eskalasi).**
-1. Satu layanan bermasalah: `bash deploy/scripts/lib.sh restart sid_api` (atau `sid_web`), lalu `bash deploy/scripts/smoke.sh`.
+1. Satu layanan bermasalah: `bash deploy/scripts/lib.sh restart sid_api` (atau `sid_web` / `sid_scheduler` / `sid_worker`), lalu `bash deploy/scripts/smoke.sh`.
 2. Versi baru bermasalah: `bash deploy/scripts/deploy.sh <tag-sebelumnya>`.
 3. Data rusak: `bash deploy/scripts/reset-demo.sh`.
 4. Internet/hotspot putus: pindah ke hotspot cadangan; proxy/tunnel tim harus tersambung ulang (**[BELUM TERUJI]**).

@@ -1,5 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi, beforeEach } from 'vitest'
+
+const { confirmDialog, notifySuccess } = vi.hoisted(() => ({
+  confirmDialog: vi.fn(),
+  notifySuccess: vi.fn(),
+}))
+vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, alertDialog: vi.fn() }))
+vi.mock('@/shared/lib/toast', () => ({ notifySuccess }))
 
 import TampilanPublikCard from './TampilanPublikCard'
 
@@ -7,7 +14,8 @@ const profile = {
   logo_url: '/assets/image/lambang.webp',
   hero_image_url: null,
   office_hours: 'Senin – Jumat, 08.00 – 16.00 WIB',
-  map_url: 'https://maps.app.goo.gl/abc',
+  latitude: -7.6803137,
+  longitude: 108.5513816,
   hero_photo_credit: '',
 }
 
@@ -23,6 +31,10 @@ const renderCard = (props = {}) => {
 const pick = (label, file) =>
   fireEvent.change(screen.getByLabelText(label), { target: { files: [file] } })
 
+beforeEach(() => {
+  confirmDialog.mockResolvedValue(true)
+})
+
 describe('TampilanPublikCard', () => {
   beforeAll(() => {
     URL.createObjectURL = vi.fn(() => 'blob:preview')
@@ -37,9 +49,9 @@ describe('TampilanPublikCard', () => {
       '/assets/image/lambang.webp',
     )
     expect(screen.getByText('Senin – Jumat, 08.00 – 16.00 WIB')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /maps\.app\.goo\.gl/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /-7\.6803137, 108\.5513816/ })).toHaveAttribute(
       'href',
-      'https://maps.app.goo.gl/abc',
+      'https://www.google.com/maps/search/?api=1&query=-7.6803137,108.5513816',
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit Teks' }))
@@ -55,7 +67,9 @@ describe('TampilanPublikCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Simpan' }))
 
     await waitFor(() => expect(onUpload).toHaveBeenCalledWith('hero', file))
-    expect(await screen.findByText('Foto Beranda berhasil disimpan.')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(notifySuccess).toHaveBeenCalledWith('Foto Beranda berhasil disimpan.'),
+    )
   })
 
   it('rejects files that are too large or not images before uploading', () => {

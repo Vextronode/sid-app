@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Models\UserSignature;
 use Illuminate\Http\UploadedFile;
@@ -32,7 +33,7 @@ class UserSignatureService
     public function create(User $user, UploadedFile $file): UserSignature
     {
         if ($this->active($user) !== null) {
-            abort(409, 'Tanda tangan sudah tersimpan dan tidak dapat diubah. Hubungi Petugas Desa bila perlu direset.');
+            abort(409, 'Tanda tangan sudah tersimpan dan tidak dapat diubah. Hubungi '.UserRole::stafSidLabel().' bila perlu direset.');
         }
 
         $path = "user-signatures/{$user->id}/".Str::uuid().'.enc';
@@ -58,12 +59,12 @@ class UserSignatureService
     public function reset(User $actor, User $target, string $reason): void
     {
         if (
-            $actor->role !== 'petugas_desa'
+            $actor->role !== 'staf_sid'
             || ! $actor->is_active
             || $actor->village_id === null
             || $actor->village_id !== $target->village_id
         ) {
-            abort(403, 'Reset tanda tangan hanya dapat dilakukan Petugas Desa di desa yang sama.');
+            abort(403, 'Reset tanda tangan hanya dapat dilakukan '.UserRole::stafSidLabel().' di desa yang sama.');
         }
 
         $signature = $this->active($target);

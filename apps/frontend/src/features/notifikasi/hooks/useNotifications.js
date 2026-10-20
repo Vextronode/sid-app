@@ -44,7 +44,7 @@ export default function useNotifications() {
     queryKey: queryKeys.notifications.unreadCount,
     queryFn: async () => {
       const response = await getUnreadNotificationCount()
-      const count = response.data?.count
+      const count = response.data?.data?.count
 
       if (!Number.isInteger(count)) {
         throw new Error('Respons unread count tidak valid.')

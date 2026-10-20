@@ -1,73 +1,190 @@
 Village:
   type: object
+  description: |
+    Bentuk `VillageResource`. Identitas desa (nama, kontak, logo, foto,
+    kop surat) diambil dari DB, bukan di-hardcode di frontend. Path private
+    stempel tidak pernah dikirim; hanya indikator `has_stamp_img`.
   properties:
     id:
       type: string
       format: uuid
-      example: "0b7a9c52-3d1e-4f6a-8b2c-5e9d1a7f3c40"
     name:
       type: string
       example: "Desa Cibenda"
     code:
       type: string
-      example: "32.01.05.2003"
+      example: "32.18.06.2003"
     head_name:
       type: string
       nullable: true
-      example: "H. Ridwan Saepudin"
     address:
       type: string
       nullable: true
-      example: "Jl. Raya Cibenda No. 1"
     phone:
       type: string
       nullable: true
-      example: "0261-1234567"
+    district:
+      type: string
+      nullable: true
+      example: "Parigi"
+      description: "Kecamatan (kop surat)."
+    regency:
+      type: string
+      nullable: true
+      example: "Pangandaran"
+      description: "Kabupaten (kop surat)."
+    province:
+      type: string
+      nullable: true
+      example: "Jawa Barat"
+    postal_code:
+      type: string
+      nullable: true
+    email:
+      type: string
+      nullable: true
+    area_ha:
+      type: number
+      format: float
+      nullable: true
+      description: "Luas wilayah (hektare), diisi Petugas Desa."
+    has_stamp_img:
+      type: boolean
+    logo_url:
+      type: string
+      nullable: true
+      description: "URL publik logo: path aset frontend (/assets/..., dari seeder) apa adanya, atau URL storage publik untuk unggahan."
+    hero_image_url:
+      type: string
+      nullable: true
+      description: "URL publik foto beranda; aturan sama seperti logo_url."
+    hero_photo_credit:
+      type: string
+      nullable: true
+    office_hours:
+      type: string
+      nullable: true
+      example: "Senin–Jumat, 08.00–15.00"
+    welcome_message:
+      type: string
+      nullable: true
+      description: Sambutan Kepala Desa di beranda; null menyembunyikan blok sambutan.
+    latitude:
+      type: number
+      nullable: true
+      description: Titik kantor desa (WGS84), dipakai link "Buka di peta" (Google Maps) di beranda.
+      example: -7.6803137
+    longitude:
+      type: number
+      nullable: true
+      example: 108.5513816
     history:
       type: string
       nullable: true
-      example: "Desa Cibenda didirikan pada tahun 1945..."
     vision:
       type: string
       nullable: true
-      example: "Menjadi desa mandiri, maju, dan sejahtera"
     mission:
       type: string
       nullable: true
-      example: "1. Meningkatkan pelayanan publik\n2. Mengembangkan ekonomi desa"
-    has_stamp_img:
-      type: boolean
-      example: true
-      description: Indikator ketersediaan stempel private; preview melalui endpoint terproteksi.
 
 VillageUpdateRequest:
   type: object
-  description: |
-    UC-18. Aktor HANYA Petugas Desa (SID-ARCH-SYS-001 S2.3 menegaskan
-    ulang: Kepala Desa/Sekretaris Desa eksplisit TIDAK punya akses ke
-    domain CMS ini meski keduanya kini approver aktif di domain surat).
+  description: "UC-18. Aktor HANYA Petugas Desa. Gambar (stempel, logo, foto beranda) diunggah lewat endpoint terpisah."
+  required: [name, head_name]
   properties:
     name:
       type: string
-      example: "Desa Cibenda"
+      maxLength: 100
     head_name:
       type: string
-      example: "H. Ridwan Saepudin"
+      maxLength: 100
     address:
       type: string
-      example: "Jl. Raya Cibenda No. 1"
+      nullable: true
     phone:
       type: string
-      example: "0261-1234567"
+      maxLength: 20
+      nullable: true
+    district:
+      type: string
+      maxLength: 100
+      nullable: true
+    regency:
+      type: string
+      maxLength: 100
+      nullable: true
+    province:
+      type: string
+      maxLength: 100
+      nullable: true
+    postal_code:
+      type: string
+      maxLength: 10
+      nullable: true
+    email:
+      type: string
+      format: email
+      maxLength: 150
+      nullable: true
+    area_ha:
+      type: number
+      minimum: 0
+      maximum: 9999999.999
+      nullable: true
     history:
       type: string
-      example: "Desa Cibenda didirikan pada tahun 1945..."
+      nullable: true
     vision:
       type: string
-      example: "Menjadi desa mandiri, maju, dan sejahtera"
+      nullable: true
     mission:
       type: string
-      example: "1. Meningkatkan pelayanan publik\n2. Mengembangkan ekonomi desa"
+      nullable: true
+    office_hours:
+      type: string
+      maxLength: 100
+      nullable: true
+    welcome_message:
+      type: string
+      maxLength: 600
+      nullable: true
+    latitude:
+      type: number
+      minimum: -90
+      maximum: 90
+      nullable: true
+      description: Wajib bersama longitude; keduanya null untuk menghapus lokasi.
+    longitude:
+      type: number
+      minimum: -180
+      maximum: 180
+      nullable: true
+      description: Wajib bersama latitude.
+    hero_photo_credit:
+      type: string
+      maxLength: 100
+      nullable: true
+
+VillageImageUpload:
+  type: object
+  required: [image]
+  properties:
+    image:
+      type: string
+      format: binary
+      description: "PNG/JPG/JPEG/WebP. Logo maks 2 MB, foto beranda maks 5 MB."
+
+PublicStats:
+  type: object
+  description: "Dihitung dari data, tidak disimpan."
+  properties:
+    total_population:
+      type: integer
+      description: "Jumlah warga aktif desa."
+    total_hamlets:
+      type: integer
+      description: "Jumlah dusun aktif."
 
 ContactUsResponse:
   type: object
@@ -80,13 +197,14 @@ ContactUsResponse:
           position:
             type: string
             enum: [kasi_pelayanan, kaur_tu_umum]
-            example: "kasi_pelayanan"
           name:
             type: string
-            example: "Kasim"
+            nullable: true
           phone_wa:
             type: string
+            nullable: true
             example: "6281234567890"
           wa_link:
             type: string
+            nullable: true
             example: "https://wa.me/6281234567890"

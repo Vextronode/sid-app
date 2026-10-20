@@ -1,0 +1,53 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Isian khas desa untuk halaman informasi publik (tanpa login)
+  security: []
+  description: |
+    Dipakai halaman /ppid, /kebijakan-privasi, /aksesibilitas. Teks baku ada
+    di frontend; isian kosong menyembunyikan kalimat yang memakainya. Halaman
+    yang belum pernah disimpan tetap 200 dengan isian kosong. Cache per desa
+    (10 menit), segar saat Petugas Desa menyimpan.
+  operationId: getPublicInfoPage
+  parameters:
+    - name: page
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [ppid, kebijakan-privasi, aksesibilitas]
+    - $ref: '../../parameters/common.yaml#/VillageCode'
+  responses:
+    '200':
+      description: Isian halaman
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  fields:
+                    type: object
+                    description: |
+                      Isian khas desa. Kunci per halaman (App\Support\InfoPageFields):
+                      - ppid: ppid_officer, ppid_supervisor, decree_number, request_channel,
+                        copy_fee, ppid_email (teks); periodic_info, immediate_info,
+                        available_info, excluded_info (daftar)
+                      - kebijakan-privasi: effective_date (Y-m-d), server_manager,
+                        retention_period, contact_email (teks); registration_data (daftar)
+                      - aksesibilitas: contact_email, response_time (teks); known_limitations (daftar)
+                      Teks kosong bernilai null, daftar kosong [].
+                    additionalProperties:
+                      oneOf:
+                        - type: string
+                          nullable: true
+                        - type: array
+                          items:
+                            type: string
+                  updated_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+    '404':
+      description: Halaman tidak dikenal atau profil desa belum tersedia

@@ -6,8 +6,10 @@ get:
     UC-16 extended. Query officials WHERE position IN (kasi_pelayanan,
     kaur_tu_umum) AND is_active=true AND ended_at IS NULL. Data diambil
     live dari officials sehingga otomatis update saat rotasi jabatan.
-    Tidak berubah dari v4.2.
+    Cache per desa (10 menit); 404 bila belum ada kontak.
   operationId: getPublicContactUs
+  parameters:
+    - $ref: '../../parameters/common.yaml#/VillageCode'
   responses:
     '200':
       description: Kontak Kasi/Kaur aktif berhasil diambil

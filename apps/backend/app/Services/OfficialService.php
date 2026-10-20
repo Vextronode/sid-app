@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\OfficialPosition;
+use App\Enums\UserRole;
 use App\Models\Citizen;
 use App\Models\FlowStep;
 use App\Models\Hamlet;
@@ -133,7 +134,7 @@ class OfficialService
     private function resolvablePositionsFor(FlowStep $step): array
     {
         if ($step->approver_position === 'kepala_desa') {
-            return ['kepala_desa', 'sekdes'];
+            return ['kepala_desa', 'sekretaris_desa'];
         }
 
         return $step->resolvablePositions();
@@ -152,9 +153,9 @@ class OfficialService
      *
      * @return Collection<int, User>
      */
-    public function resolvePetugasDesaUsers(string $villageId): Collection
+    public function resolveStafSidUsers(string $villageId): Collection
     {
-        return $this->userRepository->allActiveByRoleAndVillage('petugas_desa', $villageId);
+        return $this->userRepository->allActiveByRoleAndVillage('staf_sid', $villageId);
     }
 
     public function resolveVillageHead(): ?Official
@@ -243,6 +244,22 @@ class OfficialService
             Storage::disk('public')->delete($newPath);
             throw $exception;
         }
+
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return $official;
+    }
+
+    public function deletePhoto(Official $official, User $user): Official
+    {
+        if ($official->village_id !== $this->villageId($user)) {
+            abort(404, 'Data pejabat tidak ditemukan.');
+        }
+
+        $oldPath = $official->photo_img;
+        $official = $this->officialRepository->update($official, ['photo_img' => null]);
 
         if ($oldPath) {
             Storage::disk('public')->delete($oldPath);
@@ -342,8 +359,8 @@ class OfficialService
 
     private function villageId(User $user): string
     {
-        if ($user->role !== 'petugas_desa' || ! $user->is_active || ! $user->village_id) {
-            abort(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        if ($user->role !== 'staf_sid' || ! $user->is_active || ! $user->village_id) {
+            abort(403, UserRole::stafSidLabel().' aktif dengan desa yang valid diperlukan.');
         }
 
         return $user->village_id;

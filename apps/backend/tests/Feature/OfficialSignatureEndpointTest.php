@@ -30,7 +30,7 @@ class OfficialSignatureEndpointTest extends TestCase
         ]);
     }
 
-    private function petugas(Village $village, string $role = 'petugas_desa'): User
+    private function petugas(Village $village, string $role = 'staf_sid'): User
     {
         return User::factory()->create(['village_id' => $village->id, 'role' => $role]);
     }
@@ -114,7 +114,7 @@ class OfficialSignatureEndpointTest extends TestCase
         $user = $this->petugas($village);
         $inactiveHead = $this->headOfVillage($village, ['is_active' => false]);
         $endedHead = $this->headOfVillage($village, ['ended_at' => today()]);
-        $otherOfficial = $this->headOfVillage($village, ['position' => 'sekdes']);
+        $otherOfficial = $this->headOfVillage($village, ['position' => 'sekretaris_desa']);
 
         foreach ([$inactiveHead, $endedHead, $otherOfficial] as $official) {
             $this->actingAs($user)->post("/api/officials/{$official->id}/signature", [
@@ -147,7 +147,7 @@ class OfficialSignatureEndpointTest extends TestCase
         $official = $this->headOfVillage($village);
         $user = User::factory()->create([
             'village_id' => $village->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
             'is_active' => false,
         ]);
 

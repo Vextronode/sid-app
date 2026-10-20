@@ -1,0 +1,79 @@
+post:
+  tags: [Epic 6 - Sistem Notifikasi]
+  summary: Simpan langganan Web Push perangkat ini
+  description: |
+    Lintas-role. Dipanggil frontend setelah `PushManager.subscribe()`
+    berhasil; payload mengikuti `PushSubscription.toJSON()` browser. Disimpan
+    ke `push_subscriptions` (package laravel-notification-channels/webpush,
+    upsert per endpoint). Notifikasi `LetterStatusNotification` dikirim ke
+    kanal database (sinkron) dan WebPush (lewat queue).
+  operationId: storePushSubscription
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [endpoint, keys]
+          properties:
+            endpoint:
+              type: string
+              maxLength: 500
+            keys:
+              type: object
+              required: [p256dh, auth]
+              properties:
+                p256dh:
+                  type: string
+                auth:
+                  type: string
+            content_encoding:
+              type: string
+              nullable: true
+              enum: [aesgcm, aes128gcm]
+  responses:
+    '201':
+      description: Langganan tersimpan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/SuccessMessage'
+          example:
+            message: "Langganan push notification berhasil disimpan."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+
+delete:
+  tags: [Epic 6 - Sistem Notifikasi]
+  summary: Hapus langganan Web Push perangkat ini
+  operationId: deletePushSubscription
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [endpoint]
+          properties:
+            endpoint:
+              type: string
+              maxLength: 500
+  responses:
+    '200':
+      description: Langganan dihapus
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/SuccessMessage'
+          example:
+            message: "Langganan push notification berhasil dihapus."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

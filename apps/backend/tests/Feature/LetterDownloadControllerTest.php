@@ -21,7 +21,7 @@ class LetterDownloadControllerTest extends TestCase
     public function test_download_blocked_when_letter_not_yet_approved(): void
     {
         $letter = Letter::factory()->create(['status' => 'pending']);
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $letter->village_id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $letter->village_id);
 
         $this->actingAs($user)
             ->getJson("/api/letters/{$letter->id}/download")
@@ -44,7 +44,7 @@ class LetterDownloadControllerTest extends TestCase
             'letter_type_id' => $letterType->id,
             'expires_at' => now()->addDays(10),
         ]);
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $letter->village_id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $letter->village_id);
 
         $this->actingAs($user)
             ->get("/api/letters/{$letter->id}/download")
@@ -152,7 +152,7 @@ class LetterDownloadControllerTest extends TestCase
 
     public function test_applicant_cannot_download_letter_that_is_not_approved(): void
     {
-        $applicant = User::factory()->create(['role' => 'petugas_desa']);
+        $applicant = User::factory()->create(['role' => 'staf_sid']);
         $letter = Letter::factory()->create([
             'submitted_by' => $applicant->id,
             'status' => 'pending',
@@ -161,6 +161,54 @@ class LetterDownloadControllerTest extends TestCase
         $this->actingAs($applicant)
             ->getJson("/api/letters/{$letter->id}/download")
             ->assertForbidden();
+    }
+
+    public function test_preview_blocked_for_applicant_when_letter_expired(): void
+    {
+        $applicant = User::factory()->create(['role' => 'warga']);
+        $letter = Letter::factory()->create([
+            'submitted_by' => $applicant->id,
+            'status' => 'approved',
+            'expires_at' => now()->subDay(),
+        ]);
+
+        $this->actingAs($applicant)
+            ->getJson("/api/letters/{$letter->id}/preview")
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Masa berlaku surat telah habis.');
+
+        $this->actingAs($applicant)
+            ->getJson("/api/letters/{$letter->id}")
+            ->assertOk()
+            ->assertJsonPath('data.is_expired', true);
+    }
+
+    public function test_staf_sid_can_still_download_and_preview_expired_letter(): void
+    {
+        $kadesCitizen = Citizen::factory()->create();
+        Official::factory()->create([
+            'position' => 'kepala_desa',
+            'citizen_id' => $kadesCitizen->id,
+            'is_active' => true,
+            'ended_at' => null,
+        ]);
+        $letterType = LetterType::factory()->create(['template' => 'Isi surat {{ applicant_name }}']);
+        $letter = Letter::factory()->create([
+            'status' => 'approved',
+            'letter_type_id' => $letterType->id,
+            'expires_at' => now()->subDay(),
+        ]);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $letter->village_id);
+
+        $this->actingAs($user)
+            ->get("/api/letters/{$letter->id}/download")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->actingAs($user)
+            ->get("/api/letters/{$letter->id}/preview")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
     }
 
     public function test_preview_forbids_unrelated_warga(): void

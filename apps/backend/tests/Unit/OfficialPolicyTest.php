@@ -67,7 +67,7 @@ class OfficialPolicyTest extends TestCase
 
     public static function managerRoleProvider(): array
     {
-        return [['petugas_desa']];
+        return [['staf_sid']];
     }
 
     #[DataProvider('nonManagerRoleProvider')]

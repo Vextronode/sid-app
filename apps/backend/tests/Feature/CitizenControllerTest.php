@@ -13,10 +13,10 @@ class CitizenControllerTest extends TestCase
 
     public function test_index_returns_citizens_wrapped_in_resource_collection(): void
     {
-        // EV5-6-S2: /citizens eksklusif petugas_desa (UC-09) — role-check
+        // EV5-6-S2: /citizens eksklusif staf_sid (UC-09) — role-check
         // kini ditegakkan middleware, sehingga factory user di test harus
         // eksplisit menyertakan role yang berwenang.
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = User::factory()->create(['role' => 'staf_sid']);
         Citizen::factory()->count(2)->create();
 
         $this->actingAs($user)
@@ -32,7 +32,7 @@ class CitizenControllerTest extends TestCase
 
     public function test_index_is_paginated_with_meta(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = User::factory()->create(['role' => 'staf_sid']);
         Citizen::factory()->count(5)->create();
 
         $this->actingAs($user)
@@ -53,7 +53,7 @@ class CitizenControllerTest extends TestCase
 
     public function test_index_filters_by_name_and_rt_on_the_server(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = User::factory()->create(['role' => 'staf_sid']);
         $target = Citizen::factory()->create(['name' => 'Siti Aminah']);
         Citizen::factory()->create(['name' => 'Budi Santoso']);
 
@@ -70,9 +70,34 @@ class CitizenControllerTest extends TestCase
             ->assertJsonPath('data.0.id', $target->id);
     }
 
+    public function test_index_filters_by_hamlet_and_rw_through_the_rt(): void
+    {
+        $user = User::factory()->create(['role' => 'staf_sid']);
+        $target = Citizen::factory()->create(['name' => 'Siti Aminah']);
+        Citizen::factory()->create(['name' => 'Budi Santoso']);
+        $targetRw = $target->rt->rw;
+
+        $this->actingAs($user)
+            ->getJson('/api/citizens?hamlet_id='.$targetRw->hamlet_id)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $target->id);
+
+        $this->actingAs($user)
+            ->getJson('/api/citizens?rw_id='.$targetRw->id)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $target->id);
+
+        $this->actingAs($user)
+            ->getJson('/api/citizens?hamlet_id='.$targetRw->hamlet_id.'&rt_id=999999')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
     public function test_destroy_deletes_citizen(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = User::factory()->create(['role' => 'staf_sid']);
         $citizen = Citizen::factory()->create();
 
         $this->actingAs($user)
@@ -85,7 +110,7 @@ class CitizenControllerTest extends TestCase
 
     public function test_wilayah_returns_distinct_rt_rw_pairs(): void
     {
-        $user = User::factory()->create(['role' => 'petugas_desa']);
+        $user = User::factory()->create(['role' => 'staf_sid']);
         Citizen::factory()->create();
 
         $this->actingAs($user)

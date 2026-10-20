@@ -144,24 +144,6 @@ class LetterRepository
         ]);
     }
 
-    /**
-     * Query surat berstatus tertentu yang discope ke warga dalam RT
-     * tertentu (dipakai DashboardService::forRt()).
-     */
-    public function queryByStatusesAndCitizenRt(array $statuses, int $rtId): Builder
-    {
-        return Letter::query()
-            ->whereIn('status', $statuses)
-            ->whereHas('citizen', fn (Builder $q) => $q->where('rt_id', $rtId))
-            ->with([
-                'citizen.occupation',
-                'letterType',
-                'approvals.approvedBy:id,name',
-                'approvals.flowStep',
-                'flow.steps',
-            ]);
-    }
-
     public function queryApprovedForAssignedRole(?string $assignedRole, string $villageId): Builder
     {
         return Letter::query()
@@ -415,38 +397,6 @@ class LetterRepository
     }
 
     /**
-     * Query dasar surat untuk sebuah desa (village).
-     */
-    public function queryByVillage(string $villageId): Builder
-    {
-        return Letter::query()->where('village_id', $villageId);
-    }
-
-    /**
-     * Query surat milik desa, discope ke warga dalam sebuah RT.
-     */
-    public function queryByVillageAndRt(string $villageId, int $rtId): Builder
-    {
-        return Letter::query()
-            ->where('village_id', $villageId)
-            ->whereHas('citizen', function (Builder $query) use ($rtId) {
-                $query->where('rt_id', $rtId);
-            });
-    }
-
-    /**
-     * Query surat milik desa, discope ke warga dalam sebuah RW.
-     */
-    public function queryByVillageAndRw(string $villageId, int $rwId): Builder
-    {
-        return Letter::query()
-            ->where('village_id', $villageId)
-            ->whereHas('citizen.rt', function (Builder $query) use ($rwId) {
-                $query->where('rw_id', $rwId);
-            });
-    }
-
-    /**
      * Query surat untuk daftar (index), sudah eager-load relasi yang
      * dibutuhkan tampilan daftar (citizen, letterType, approvals, user).
      */
@@ -484,6 +434,7 @@ class LetterRepository
                 'letters.current_step_order',
                 'letters.rejected_at_step',
                 'letters.is_overdue',
+                'letters.expires_at',
                 'letters.submitted_at',
                 'letters.processed_at',
                 'letters.fulfilled_at',
@@ -608,53 +559,14 @@ class LetterRepository
     public function countSubmittedPerDay(Builder $query, Carbon $from, Carbon $to): array
     {
         return (clone $query)
-            ->whereDate('submitted_at', '>=', $from)
-            ->whereDate('submitted_at', '<=', $to)
-            ->selectRaw('DATE(submitted_at) as submitted_day, COUNT(*) as aggregate')
+            ->setEagerLoads([])
+            ->toBase()
+            ->whereDate('letters.submitted_at', '>=', $from)
+            ->whereDate('letters.submitted_at', '<=', $to)
+            ->selectRaw('DATE(letters.submitted_at) as submitted_day, COUNT(*) as aggregate')
             ->groupBy('submitted_day')
             ->pluck('aggregate', 'submitted_day')
             ->mapWithKeys(fn ($count, $day): array => [substr((string) $day, 0, 10) => (int) $count])
-            ->all();
-    }
-
-    public function querySubmittedBy(string $userId): Builder
-    {
-        return Letter::query()
-            ->where('submitted_by', $userId)
-            ->with([
-                'letterType',
-                'flow.steps',
-            ]);
-    }
-
-    public function countByVillageInMonth(string $villageId): int
-    {
-        return Letter::query()
-            ->where('village_id', $villageId)
-            ->whereBetween('submitted_at', [
-                now()->startOfMonth(),
-                now()->endOfMonth(),
-            ])
-            ->count();
-    }
-
-    /**
-     * @param  array<int, string>  $statuses
-     * @return array<string, int>
-     */
-    public function countByVillageAndStatuses(string $villageId, array $statuses): array
-    {
-        $counts = Letter::query()
-            ->where('village_id', $villageId)
-            ->whereIn('status', $statuses)
-            ->selectRaw('status, COUNT(*) as aggregate')
-            ->groupBy('status')
-            ->pluck('aggregate', 'status')
-            ->map(fn ($count): int => (int) $count)
-            ->all();
-
-        return collect($statuses)
-            ->mapWithKeys(fn (string $status): array => [$status => $counts[$status] ?? 0])
             ->all();
     }
 }

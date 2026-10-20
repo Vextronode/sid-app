@@ -368,7 +368,7 @@ class LetterTypeSeeder extends Seeder
                 <td style="width: 50%; text-align: center;">
                     <p style="margin: 0;">{{ village_name_short }}, {{ issued_at }}</p>
                     <p style="margin: 2px 0 0 0;">Kepala Desa {{ village_name_short }}</p>
-                    <div style="height: 50px; margin: 4px 0; vertical-align: middle;">{{ signature_img }}</div>
+                    <div style="height: 64px; margin: 4px 0;">{{ signature_img }}</div>
                     <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ village_head_name }}</p>
                 </td>
             </tr>

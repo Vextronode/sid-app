@@ -1,6 +1,5 @@
 @startuml
-
-title SID - POV RT/RW & Staff Desa (Kasi/Kaur) [Business Workflow]
+title SID - POV RT/RW/Kadus & Staff Desa (Kasi/Kaur) [Business Workflow] (diselaraskan source 2026-10-16)
 
 skinparam activity {
   BackgroundColor #EBF3FB
@@ -15,90 +14,57 @@ skinparam note {
 
 |#MistyRose|RT|
 start
-:Login;
-:Buka Daftar Surat Wilayah\n(status: pending, current_step_order\nsesuai step RT, filter via citizens.rt_id);
-:Pilih Surat & Lihat Detail;
-:Putuskan Setuju / Tolak;
-
+:Login; terima notifikasi surat baru;
+:Buka daftar surat wilayah RT;
+:Periksa detail: isian, lampiran,\nstatus tanda tangan, dokumen pendukung;
+:Putuskan Setuju / Tolak (catatan wajib bila tolak);
 if (Keputusan?) then (Tolak)
-  |#LightYellow|Database & Backend|
-  :letters.status = rejected (terminal);
-  :Notifikasi ke Warga;
+  |#LightYellow|Sistem|
+  :status rejected (terminal);\nnotifikasi ke pemohon;
   stop
 else (Setuju)
-  |#LightYellow|Database & Backend|
-  :current_step_order += 1;
-  :INSERT letter_approvals\n(approval_level: rt);
-end if
-
-fork
-  |#LightYellow|Database & Backend|
-  :Kirim notifikasi FYI ke RW\n(via rts.rw_id) - side-effect,\nNON-BLOCKING, asinkron;
-
-  |#MistyRose|RW|
-  :Terima Notifikasi FYI;
-  note right
-    RW TIDAK PERNAH menjadi
-    approver_position di flow_steps
-    manapun. Tidak ada tombol
-    approve/reject/block untuk RW -
-    murni riwayat notifikasi read-only.
-  end note
-  stop
-fork again
-  |#LightYellow|Database & Backend|
-  :Resolve approver step berikutnya\nsesuai approval_flows/flow_steps;
-
-  if (approver_position step berikutnya?) then (kepala_desa)
-    :Kirim notifikasi ke Eksekutif;
-  else (step berikutnya tidak ada)
-    :Finalisasi sesuai flow tanpa tahap tambahan;
-    stop
-  endif
-end fork
-
-|#Thistle|Kepala Desa / Sekretaris Desa|
-:Terima notifikasi tahap final;
-:Buka worklist dan detail surat;
-:Setujui atau tolak pada step kepala_desa;
-
-if (Keputusan?) then (Tolak)
-  |#LightYellow|Database & Backend|
-  :letters.status = rejected (terminal);
-  :Notifikasi ke Warga;
-  stop
-else (Setuju)
-  |#LightYellow|Database & Backend|
-  :Generate letter_number dan expires_at;
-  :letters.status = approved;
-  :Notifikasi hasil ke Warga;
-  :Notifikasi selesai ke Kasi/Kaur sesuai assigned_role;
+  |#LightYellow|Sistem|
+  :Lanjut ke step kepala_desa\n(status in_progress);
 endif
 
-|#LightGreen|Staff Desa (Kasi Pelayanan / Kaur TU Umum)|
-:Terima notifikasi surat selesai;
-note right
-  Kasi/Kaur bukan approver dan tidak
-  menjadi posisi pada flow_steps.
-  Penerima ditentukan oleh
-  letter_types.assigned_role; NULL
-  mengirim notifikasi kepada keduanya.
-end note
-:Buka daftar surat selesai sesuai assignment;
-:Lihat detail dan unduh surat;
+fork
+  |#LightYellow|Sistem|
+  :FYI ke RW wilayah RW pemohon;
+  |#Lavender|RW|
+  :Terima FYI; lihat surat (read-only);
+  stop
+fork again
+  |#LightYellow|Sistem|
+  :FYI ke Kadus dusun pemohon;
+  |#Honeydew|Kadus|
+  :Terima FYI; lihat surat (read-only);
+  stop
+fork again
+  |#LightYellow|Sistem|
+  :Notifikasi ke Kepala Desa & Sekdes\n(lihat 04);
+end fork
+
+|#LightYellow|Sistem|
+:Setelah final approve: notifikasi ke\nKasi/Kaur sesuai assigned_role;
+
+|#LightGreen|Kasi Pelayanan / Kaur TU & Umum|
+if (Jenis surat punya aksi data?) then (ya)
+  :Buka surat "perlu diterapkan";
+  :Tinjau nilai sekarang vs usulan,\nkoreksi bila perlu;
+  :Terapkan;
+  |#LightYellow|Sistem|
+  :Ubah/tambah data warga,\ncatat audit, beri tahu pemohon;
+  |#LightGreen|Kasi Pelayanan / Kaur TU & Umum|
+else (tidak)
+endif
+:Unduh / cetak surat untuk warga;
 stop
 
 note right
-  Pengelolaan data warga (CRUD manual,
-  impor Excel UC-09), konfigurasi wilayah,
-  dan CMS BUKAN kewenangan Staff Desa
-  (Tier 3).
-
-  Itu kewenangan Petugas Desa
-  (Tier 2).
-
-  Lihat:
-  04_BWF_PovAdminEksekutifSuperadmin_v2.puml
+  Kasi/Kaur bukan approver flow; dapat
+  membaca daftar warga (read-only).
+  Kelola data warga, wilayah, CMS tetap
+  kewenangan Petugas Desa (04).
 end note
 
 @enduml

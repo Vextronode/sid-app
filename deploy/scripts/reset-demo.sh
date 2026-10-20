@@ -129,8 +129,9 @@ psql_admin() {
 }
 
 log_line "reset mulai db=$DB_NAME dump=$(basename "$DUMP") tag=$tag"
-info "1/5 hentikan sid_api..."
-dc stop sid_api
+info "1/5 hentikan sid_api, sid_scheduler & sid_worker..."
+# Scheduler & worker ikut dihentikan agar tidak menyentuh DB selama di-drop/restore.
+dc stop sid_api sid_scheduler sid_worker
 
 info "2/5 DROP DATABASE $DB_NAME WITH (FORCE)..."
 psql_admin -c "DROP DATABASE IF EXISTS \"$DB_NAME\" WITH (FORCE);"
@@ -142,8 +143,8 @@ info "4/5 pg_restore (dump dialirkan lewat stdin)..."
 docker exec -i "$SID_C_DB" pg_restore -U "$DB_USER" -d "$DB_NAME" --no-owner --no-acl --exit-on-error < "$DUMP" \
   || die "pg_restore gagal. DB $DB_NAME mungkin kosong/sebagian; ulangi reset-demo.sh. sid_api masih berhenti."
 
-info "5/5 nyalakan sid_api..."
-dc start sid_api || dc up -d --no-deps sid_api
+info "5/5 nyalakan sid_api, sid_scheduler & sid_worker..."
+dc start sid_api sid_scheduler sid_worker || dc up -d --no-deps sid_api sid_scheduler sid_worker
 wait_healthy "$SID_C_API" 180 || die "sid_api tidak sehat setelah reset."
 wait_healthy "$SID_C_WEB" 60 || die "sid_web tidak sehat setelah reset."
 

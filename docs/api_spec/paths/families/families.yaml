@@ -3,6 +3,11 @@ get:
   summary: Lihat & cari daftar Kartu Keluarga (KK)
   description: |
     BARU v5.0. UC-09 Sub-flow Kelola Data Keluarga. Aktor Petugas Desa.
+    Daftar berhalaman (`IndexFamilyRequest`), hanya KK di desa user login,
+    diurutkan dari yang terbaru dibuat. Tiap item memuat `members_count`,
+    `head_of_family` (`id`, `name`), dan relasi wilayah (`rt`, `rw`,
+    `hamlet`, `village`). Untuk dropdown pilihan KK di form warga (semua KK
+    tanpa halaman) pakai GET /families/options.
   operationId: listFamilies
   security:
     - sanctumCookie: []
@@ -10,20 +15,28 @@ get:
     - name: search
       in: query
       required: false
-      description: Cari berdasarkan No KK (dikonversi ke hash di server)
+      description: |
+        Tepat 16 digit dicocokkan persis ke No KK (lewat `no_kk_hash`);
+        teks lain dicari (case-insensitive, sebagian) pada nama kepala
+        keluarga. Maks 100 karakter.
       schema:
         type: string
-    - name: rt_id
-      in: query
-      required: false
-      schema:
-        type: integer
-      example: 12
+        maxLength: 100
+      example: "Siti"
     - name: page
       in: query
       required: false
       schema:
         type: integer
+        minimum: 1
+    - name: per_page
+      in: query
+      required: false
+      description: Default 10, maksimum 100.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
   responses:
     '200':
       description: Daftar KK berhasil diambil (No KK selalu ter-mask)
@@ -36,8 +49,32 @@ get:
                 type: array
                 items:
                   $ref: '../../schemas/families/families.yaml#/Family'
+              links:
+                type: object
+                description: Tautan paginasi bawaan Laravel (first, last, prev, next).
               meta:
                 $ref: '../../schemas/common/errors.yaml#/PaginationMeta'
+          example:
+            data:
+              - id: "9b3c1e52-7a40-4d2b-8f61-2c5d9e0a4b17"
+                village_id: "1d6f0a3e-5b28-4c97-a1e4-7f2b8c9d0e35"
+                no_kk_masked: "************0042"
+                family_address: "Jl. Contoh No. 1"
+                family_status: "aktif"
+                rt_id: 1
+                rw_id: 1
+                hamlet_id: 1
+                head_of_family_id: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
+                head_of_family: { id: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731", name: "Siti Aminah" }
+                members_count: 4
+            links: { first: "/api/families?page=1", last: "/api/families?page=3", prev: null, next: "/api/families?page=2" }
+            meta: { current_page: 1, per_page: 10, total: 27, last_page: 3 }
+    '422':
+      description: Parameter search, page, atau per_page tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':

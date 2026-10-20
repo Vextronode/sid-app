@@ -1,6 +1,10 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
-  summary: Lihat data profil desa (untuk form edit)
+  summary: Lihat data profil desa milik akun login
+  description: |
+    Lintas-role (semua user login). Dipakai halaman mana pun yang perlu
+    menampilkan identitas desa (nama, logo, kontak, kop) dan form Kelola
+    Profil Desa. Desa diambil dari `users.village_id`.
   operationId: getVillageProfile
   security:
     - sanctumCookie: []
@@ -22,7 +26,7 @@ patch:
   description: |
     UC-18. Aktor HANYA Petugas Desa. Guard ini ditegaskan ulang secara
     eksplisit di SID-ARCH-SYS-001 S2.3: domain CMS (Profil Desa, Berita,
-    Peraturan Desa) dimiliki EKSKLUSIF oleh petugas_desa - Kepala Desa
+    Peraturan Desa) dimiliki EKSKLUSIF oleh staf_sid - Kepala Desa
     dan Sekretaris Desa TIDAK memiliki akses ke domain ini meski v5.0
     menjadikan keduanya approver aktif di domain Surat-Menyurat. Dua
     domain ini terpisah tegas meski sama-sama berada di "Tier 2" untuk

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -19,14 +20,14 @@ class UploadVillageImageRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->role === 'petugas_desa'
+        return $this->user()?->role === 'staf_sid'
             && $this->user()?->is_active
             && $this->user()?->village_id !== null;
     }
 
     protected function failedAuthorization(): void
     {
-        throw new HttpException(403, 'Petugas Desa aktif dengan desa yang valid diperlukan.');
+        throw new HttpException(403, UserRole::stafSidLabel().' aktif dengan desa yang valid diperlukan.');
     }
 
     /**

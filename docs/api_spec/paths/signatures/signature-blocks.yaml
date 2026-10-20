@@ -1,0 +1,20 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Daftar akun yang diblokir dari meminta tanda tangan
+  operationId: listSignatureBlocks
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar blokir milik akun login
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letters/letters.yaml#/SignatureBlock'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

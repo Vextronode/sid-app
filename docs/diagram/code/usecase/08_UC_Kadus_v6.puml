@@ -1,0 +1,46 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 08_UC_Kadus_v6.puml
+' JUDUL: Use Case - Kepala Dusun (FYI read-only)
+' SUMBER: TDD-02 v5.3 + RtApprovalService::notifyKadusFyi, LetterPolicy (2026-10-16)
+' CATATAN: Menggantikan 08_UC_Kadus_v5.puml.
+'==================================================================================
+@startuml UC_Kadus_v6
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+}
+title Use Case Diagram - Kepala Dusun (FYI read-only) [v6]
+
+actor "Kadus" as KADUS
+
+rectangle "SIDUTama" {
+  usecase "UC-01/02: Login / Logout" as UC_AUTH
+  usecase "Terima FYI rt_approved_kadus_fyi\n(surat dusun sendiri)" as UC_NOTIF
+  usecase "UC-05: Daftar Surat Dusun\n(sudah di-approve RT)" as UC_LIST
+  usecase "UC-06: Detail Surat (read-only)" as UC_DETAIL
+  usecase "UC-15: Dashboard Kadus (FYI)" as UC_DASH
+  usecase "Ajukan Surat untuk Diri Sendiri" as UC_SELF
+}
+
+KADUS -- UC_AUTH
+KADUS -- UC_NOTIF
+KADUS -- UC_LIST
+KADUS -- UC_DETAIL
+KADUS -- UC_DASH
+KADUS -- UC_SELF
+UC_LIST ..> UC_DETAIL : <<include>>
+note bottom of UC_LIST
+  Kadus bukan approver; tampil juga di
+  Profil Desa publik per dusun (dengan foto).
+end note
+@enduml

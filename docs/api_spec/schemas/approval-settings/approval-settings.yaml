@@ -20,6 +20,7 @@ ApprovalSetting:
     reminder_hours:
       type: integer
       example: 12
+      description: Jam sebelum deadline_at saat pengingat dikirim ke approver (0 = tepat saat deadline).
     is_active:
       type: boolean
       example: true

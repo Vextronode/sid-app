@@ -16,8 +16,8 @@ use Tests\TestCase;
  * Cakupan kondisi:
  *  - GET /villages/profile butuh login (401 untuk guest).
  *  - GET /villages/profile mengembalikan profil desa milik user yang login.
- *  - PATCH /villages/profile sukses (200) untuk petugas_desa dengan payload valid.
- *  - PATCH /villages/profile ditolak (403) untuk role selain petugas_desa
+ *  - PATCH /villages/profile sukses (200) untuk staf_sid dengan payload valid.
+ *  - PATCH /villages/profile ditolak (403) untuk role selain staf_sid
  *    (termasuk kepala_desa/sekretaris_desa - SID-ARCH-SYS-001 S2.3).
  *  - PATCH /villages/profile gagal validasi (422) jika name/head_name kosong.
  */
@@ -25,7 +25,7 @@ class VillageProfileEndpointTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function villageWithUser(string $role = 'petugas_desa'): array
+    private function villageWithUser(string $role = 'staf_sid'): array
     {
         $village = Village::create([
             'name' => 'Desa Cibenda',
@@ -62,7 +62,7 @@ class VillageProfileEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_desa_can_update_village_profile(): void
+    public function staf_sid_can_update_village_profile(): void
     {
         [, $user] = $this->villageWithUser();
 
@@ -214,26 +214,48 @@ class VillageProfileEndpointTest extends TestCase
             'name' => 'Desa Cibenda',
             'head_name' => 'H. Ridwan Saepudin',
             'office_hours' => 'Senin – Jumat, 08.00 – 15.00 WIB',
-            'map_url' => 'https://maps.app.goo.gl/abc',
+            'latitude' => -7.6803137,
+            'longitude' => 108.5513816,
             'hero_photo_credit' => 'Dinas Pariwisata',
+            'welcome_message' => 'Selamat datang di situs resmi desa.',
         ])->assertOk()
+            ->assertJsonPath('data.welcome_message', 'Selamat datang di situs resmi desa.')
             ->assertJsonPath('data.office_hours', 'Senin – Jumat, 08.00 – 15.00 WIB')
-            ->assertJsonPath('data.map_url', 'https://maps.app.goo.gl/abc')
+            ->assertJsonPath('data.latitude', -7.6803137)
+            ->assertJsonPath('data.longitude', 108.5513816)
             ->assertJsonPath('data.hero_photo_credit', 'Dinas Pariwisata');
 
         // Field yang tidak dikirim tidak ikut dikosongkan.
         $this->actingAs($user)->patchJson('/api/villages/profile', [
             'name' => 'Desa Cibenda',
             'head_name' => 'H. Ridwan Saepudin',
-        ])->assertOk()->assertJsonPath('data.map_url', 'https://maps.app.goo.gl/abc');
+        ])->assertOk()->assertJsonPath('data.latitude', -7.6803137);
 
         $this->actingAs($user)->patchJson('/api/villages/profile', [
             'name' => 'Desa Cibenda',
             'head_name' => 'H. Ridwan Saepudin',
-            'map_url' => 'bukan url',
-        ])->assertStatus(422)->assertJsonValidationErrors(['map_url']);
+            'latitude' => -91,
+            'longitude' => 181,
+        ])->assertStatus(422)->assertJsonValidationErrors(['latitude', 'longitude']);
 
-        $this->assertSame('https://maps.app.goo.gl/abc', $village->fresh()->map_url);
+        // Koordinat hanya berarti bila keduanya ada.
+        $this->actingAs($user)->patchJson('/api/villages/profile', [
+            'name' => 'Desa Cibenda',
+            'head_name' => 'H. Ridwan Saepudin',
+            'latitude' => -7.5,
+        ])->assertStatus(422)->assertJsonValidationErrors(['longitude']);
+
+        $this->assertSame(-7.6803137, $village->fresh()->latitude);
+
+        // Lokasi bisa dihapus dengan mengosongkan keduanya.
+        $this->actingAs($user)->patchJson('/api/villages/profile', [
+            'name' => 'Desa Cibenda',
+            'head_name' => 'H. Ridwan Saepudin',
+            'latitude' => null,
+            'longitude' => null,
+        ])->assertOk()
+            ->assertJsonPath('data.latitude', null)
+            ->assertJsonPath('data.longitude', null);
     }
 
     #[Test]

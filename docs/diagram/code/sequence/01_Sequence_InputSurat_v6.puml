@@ -1,0 +1,99 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 01_Sequence_InputSurat_v6.puml
+' JUDUL: Sequence - Input Permohonan Surat (UC-03)
+' SUMBER: LetterController::store, StoreLetterRequest + LetterFormSchema,
+'         LetterService::createLetter, LetterAttachmentService,
+'         LetterSignatureService::openForSubmission, LetterFlowService (2026-10-16)
+' CATATAN: Menggantikan 01_Sequence_InputSurat_v5.puml.
+'==================================================================================
+@startuml Sequence_InputSurat_v6
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ParticipantFontName Arial
+  ActorBackgroundColor #D6E4F7
+  ActorBorderColor #1F3864
+  LifeLineBorderColor #2E5FA3
+  ArrowColor #2E5FA3
+  ArrowFontName Arial
+  ArrowFontSize 10
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+title Sequence - Input Permohonan Surat [v6]\n(form dinamis, berkas, tanda tangan, penentuan step awal)
+
+actor "Pemohon" as P
+participant "React\n(DynamicSuratForm)" as FE
+participant "LetterController" as CTRL
+participant "StoreLetterRequest\n+ LetterFormSchema" as REQ
+participant "LetterPolicy" as POL
+participant "LetterService" as SVC
+participant "LetterAttachmentService" as ATT
+participant "LetterSignatureService" as SIG
+participant "LetterFlowService" as FLOW
+participant "OfficialService" as OFF
+database "PostgreSQL" as DB
+collections "Disk private_uploads" as DISK
+actor "Pemilik NIK" as NIK
+actor "RT / Petugas Desa" as APR
+
+P -> FE : pilih jenis surat (GET /api/letter-types)
+FE -> FE : render isian dari form_fields\n+ slot dari signature_slots
+P -> FE : isi form, unggah berkas, tentukan penanda tangan
+FE -> CTRL : POST /api/letters (multipart:\nletter_type_id, payload[...], files[...],\nsigners[slot][nik|name], signature_files[slot])
+CTRL -> REQ : validate
+REQ -> DB : ambil letter_type (desa pemohon)
+REQ -> REQ : payloadRules() — isian tak dikenal → 422,\ntipe & wajib per isian, aturan berkas
+CTRL -> POL : authorize create (aktif + citizen_id)
+CTRL -> SVC : createLetter(validated)
+
+group DB::transaction
+  SVC -> DB : INSERT letters (pending, flow_id snapshot,\napplicant_* dari citizen, purpose/notes NULL)
+  SVC -> DB : INSERT letter_status_logs ("Permohonan surat dibuat")
+  SVC -> ATT : storeSubmission(files)
+  ATT -> DISK : simpan letter-attachments/{village}/{letter}/...
+  ATT -> DB : INSERT letter_attachments (kind=field)
+  SVC -> SIG : openForSubmission(signers, signature_files)
+  loop tiap slot
+    alt signer = applicant
+      SIG -> DB : INSERT letter_signatures (digital, signed,\nuser_signature_id = TTD akun aktif)
+    else NIK diisi
+      SIG -> SIG : cek NIK != pemohon, rate limit penolakan,\nblokir (jawaban seragam)
+      SIG -> DB : INSERT letter_signatures (pending, expires_at +7 hari)
+      SIG -> NIK : notifikasi signature_requested (bila punya akun)
+    else TTD basah
+      SIG -> ATT : store(kind=wet_signature)
+      SIG -> DB : INSERT letter_signatures (wet, signed)
+    end
+  end
+  SVC -> SIG : isComplete(letter)?
+  alt belum lengkap
+    SVC -> DB : UPDATE current_step_order = 0;\nlog "Menunggu tanda tangan pihak terkait"
+  else lengkap
+    SVC -> FLOW : resolveStartStep(letter)
+    FLOW -> OFF : resolveOfficialsForStep(step, letter)
+    note right of FLOW
+      non-final & semua approver = pemohon → dilewati
+      non-final tanpa pejabat aktif → vacant (ditahan)
+      final tanpa approver selain pemohon → 422
+    end note
+    SVC -> DB : UPDATE current_step_order = step;\nlog tahap dilewati (bila ada)
+    SVC -> DB : INSERT letter_approvals (placeholder + deadline_at)
+    alt vacant (RT kosong)
+      SVC -> DB : log "Surat ditahan: tahap RT belum memiliki pejabat aktif"
+      SVC -> APR : notifikasi approver_vacant ke Petugas Desa
+    else ada approver
+      SVC -> APR : notifikasi "pending" ke RT (afterCommit)
+    end
+  end
+end
+
+alt exception
+  SVC -> DISK : deleteFilesFor(letter)
+  CTRL --> FE : 422 / error
+else sukses
+  CTRL --> FE : 201 {message, data: LetterResource}
+end
+@enduml

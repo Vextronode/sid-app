@@ -1,0 +1,68 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 09_UC_KasiKaur_v6.puml
+' JUDUL: Use Case - Kasi Pelayanan & Kaur TU & Umum
+' SUMBER: TDD-02 v5.3 (UC-04d/05/06/08/09/15/26) + routes (2026-10-16)
+' CATATAN: Menggantikan 09_UC_KasiKaur_v5.puml. Tambah: Terapkan perubahan data,
+'          baca daftar warga, Surat Saya.
+'==================================================================================
+@startuml UC_KasiKaur_v6
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+}
+title Use Case Diagram - Kasi Pelayanan & Kaur TU & Umum [v6]
+
+actor "Kasi Pelayanan" as KASI
+actor "Kaur TU & Umum" as KAUR
+
+rectangle "SIDUTama" {
+  usecase "UC-01/02: Login / Logout" as UC_AUTH
+  usecase "Terima notifikasi surat final\n(siap cetak / perlu diterapkan)" as UC_NOTIF
+  usecase "UC-05: Daftar Surat Selesai\n(approved + assigned_role)" as UC_LIST
+  usecase "UC-06: Detail Surat" as UC_DETAIL
+  usecase "UC-08: Unduh / Cetak PDF" as UC_DL
+  usecase "UC-26: Terapkan Perubahan\nData Kependudukan" as UC_FULFILL
+  usecase "Lihat Daftar Warga (read-only)" as UC_CIT
+  usecase "UC-15: Dashboard" as UC_DASH
+  usecase "Surat Saya\n(ajukan untuk diri sendiri)" as UC_SELF
+}
+
+KASI -- UC_AUTH
+KASI -- UC_NOTIF
+KASI -- UC_LIST
+KASI -- UC_DETAIL
+KASI -- UC_DL
+KASI -- UC_FULFILL
+KASI -- UC_CIT
+KASI -- UC_DASH
+KASI -- UC_SELF
+KAUR -- UC_AUTH
+KAUR -- UC_NOTIF
+KAUR -- UC_LIST
+KAUR -- UC_DETAIL
+KAUR -- UC_DL
+KAUR -- UC_FULFILL
+KAUR -- UC_CIT
+KAUR -- UC_DASH
+KAUR -- UC_SELF
+UC_LIST ..> UC_DETAIL : <<include>>
+UC_DETAIL ..> UC_DL : <<extend>>
+UC_DETAIL ..> UC_FULFILL : <<extend>>
+
+note bottom of UC_FULFILL
+  Hanya surat approved dengan data_action
+  (mis. A07 Penguburan, A08 Kelahiran) dan
+  sesuai assigned_role (NULL = keduanya).
+  Bukan approver flow.
+end note
+@enduml

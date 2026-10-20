@@ -36,8 +36,13 @@ ForbiddenResponse:
       example: "Anda tidak memiliki akses untuk aksi ini."
     code:
       type: string
-      enum: [account_inactive]
-      description: "Dikirim oleh middleware account.active ketika akun pada sesi aktif telah dinonaktifkan."
+      enum: [account_inactive, role_forbidden]
+      description: |
+        `account_inactive`: dikirim middleware account.active ketika akun pada
+        sesi aktif telah dinonaktifkan. `role_forbidden`: dikirim middleware
+        role ketika peran akun tidak diizinkan untuk endpoint, termasuk bila
+        peran baru saja berubah (rotasi/turun jabatan); FE memeriksa ulang
+        akun dan mengarahkan ke dashboard peran yang baru.
       example: "account_inactive"
 
 NotFoundResponse:

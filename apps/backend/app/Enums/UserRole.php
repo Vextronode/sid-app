@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use Illuminate\Container\Container;
+
 enum UserRole: string
 {
     case Warga = 'warga';
@@ -10,9 +12,26 @@ enum UserRole: string
     case Kadus = 'kadus';
     case KasiPelayanan = 'kasi_pelayanan';
     case KaurTuUmum = 'kaur_tu_umum';
-    case PetugasDesa = 'petugas_desa';
+    case StafSid = 'staf_sid';
     case KepalaDesa = 'kepala_desa';
     case SekretarisDesa = 'sekretaris_desa';
+
+    private const DEFAULT_APP_NAME = 'SIDUTama';
+
+    /**
+     * Label peran staf pemegang aplikasi, mengikuti nama aplikasi yang
+     * diatur di config/sid.php (SID_APP_NAME), mis. "Staf SIDUTama".
+     */
+    public static function stafSidLabel(): string
+    {
+        // Enum juga dipakai di luar aplikasi Laravel yang sudah boot (mis.
+        // unit test murni); saat itu config belum ada, pakai nama bawaan.
+        $appName = Container::getInstance()->bound('config')
+            ? config('sid.app_name', self::DEFAULT_APP_NAME)
+            : self::DEFAULT_APP_NAME;
+
+        return 'Staf '.$appName;
+    }
 
     public function label(): string
     {
@@ -23,7 +42,7 @@ enum UserRole: string
             self::Kadus => 'Kepala Dusun',
             self::KasiPelayanan => 'Kasi Pelayanan',
             self::KaurTuUmum => 'Kaur TU & Umum',
-            self::PetugasDesa => 'Petugas Desa',
+            self::StafSid => self::stafSidLabel(),
             self::KepalaDesa => 'Kepala Desa',
             self::SekretarisDesa => 'Sekretaris Desa',
         };

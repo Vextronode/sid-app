@@ -1,0 +1,74 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Riwayat perubahan status surat desa (Log Aktivitas)
+  description: |
+    Aktor: Petugas Desa (`staf_sid`). Seluruh baris `letter_status_logs` untuk
+    surat milik desa akun yang login, terbaru dulu, berpaginasi (`per_page`,
+    default 20). Berbeda
+    dari `status_logs` di detail surat yang hanya memuat satu surat.
+  operationId: listLetterActivityLogs
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: new_status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [pending, in_progress, approved, rejected]
+    - name: actor_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    - name: from
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+    - name: to
+      in: query
+      required: false
+      description: Harus sama dengan atau setelah `from`
+      schema:
+        type: string
+        format: date
+    - name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+    - name: per_page
+      in: query
+      required: false
+      description: Jumlah baris per halaman. Default 20, maksimum 100.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+  responses:
+    '200':
+      description: Riwayat status surat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Riwayat status surat berhasil diambil."
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/activity-logs/activity-logs.yaml#/LetterActivityLog'
+              meta:
+                $ref: '../../schemas/activity-logs/activity-logs.yaml#/ActivityPageMeta'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

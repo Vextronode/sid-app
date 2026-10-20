@@ -1,13 +1,35 @@
 import { useState } from 'react'
-import { Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { History, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 
 import { getFamily, getFamilySocioeconomic, saveFamilySocioeconomic } from '../api'
+import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { formatPageRange } from '@/components/ui/pageRange'
+import { StatusPill } from '@/components/ui/StatusPill'
+import {
+  ELECTRICITY_SOURCE_LABELS,
+  FAMILY_ROLE_LABELS,
+  FAMILY_STATUS_LABELS,
+  HOUSE_OWNERSHIP_LABELS,
+  WATER_SOURCE_LABELS,
+  labelOf,
+  optionsOf,
+} from '@/shared/lib/labels'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
+import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 const EMPTY_FAMILY = {
   no_kk: '',
   family_address: '',
   family_status: 'aktif',
 }
+
+// Warna badge status KK, mengikuti badge Aktif/Nonaktif Manajemen Pengguna.
+const FAMILY_STATUS_TONE = { aktif: 'active', pindah: 'inactive', bubar: 'danger' }
 
 const EMPTY_SOCIOECONOMIC = {
   household_income_range: '',
@@ -33,6 +55,7 @@ function responseData(response) {
 }
 
 export default function FamilyManagementPanel({ familyList }) {
+  const navigate = useNavigate()
   const {
     families,
     loading,
@@ -42,6 +65,8 @@ export default function FamilyManagementPanel({ familyList }) {
     currentPage,
     setCurrentPage,
     totalPages,
+    pageSize,
+    setPageSize,
     addFamily,
     editFamily,
     removeFamily,
@@ -54,16 +79,25 @@ export default function FamilyManagementPanel({ familyList }) {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [keyword, setKeyword] = useState('')
+  // Isian saat modal dibuka (atau saat data survei selesai dimuat).
+  const [baseline, setBaseline] = useState(null)
+
+  const closeModal = () => setModal(null)
+  const currentForm =
+    modal === 'family' ? familyForm : modal === 'socioeconomic' ? socioeconomic : null
+  const requestClose = useConfirmDiscard(isFormDirty(currentForm, baseline), {
+    disabled: busy,
+    escapeClose: modal ? closeModal : null,
+  })
 
   const showError = (err) => {
-    setMessage(
-      err?.response?.data?.message || err?.message || 'Permintaan gagal. Silakan coba lagi.',
-    )
+    setMessage(getApiErrorMessage(err, 'Permintaan gagal. Silakan coba lagi.'))
   }
 
   const openCreate = () => {
     setSelectedFamily(null)
     setFamilyForm(EMPTY_FAMILY)
+    setBaseline(EMPTY_FAMILY)
     setMessage('')
     setModal('family')
   }
@@ -71,11 +105,13 @@ export default function FamilyManagementPanel({ familyList }) {
   const openEdit = async (family) => {
     setSelectedFamily(family)
     setMembers([])
-    setFamilyForm({
+    const initialFamily = {
       ...EMPTY_FAMILY,
       family_address: family.family_address ?? '',
       family_status: family.family_status ?? 'aktif',
-    })
+    }
+    setFamilyForm(initialFamily)
+    setBaseline(initialFamily)
     setMessage('')
     setModal('family')
     try {
@@ -91,9 +127,10 @@ export default function FamilyManagementPanel({ familyList }) {
     setMessage('')
     setModal('socioeconomic')
     setSocioeconomic(EMPTY_SOCIOECONOMIC)
+    setBaseline(EMPTY_SOCIOECONOMIC)
     try {
       const result = responseData(await getFamilySocioeconomic(family.id))
-      setSocioeconomic({
+      const loaded = {
         household_income_range: result.household_income_range ?? '',
         house_ownership_status: result.house_ownership_status ?? '',
         water_source: result.water_source ?? '',
@@ -102,7 +139,9 @@ export default function FamilyManagementPanel({ familyList }) {
         productive_assets: result.productive_assets
           ? JSON.stringify(result.productive_assets, null, 2)
           : '',
-      })
+      }
+      setSocioeconomic(loaded)
+      setBaseline(loaded)
     } catch (err) {
       if (err?.response?.status !== 404) showError(err)
     }
@@ -122,6 +161,9 @@ export default function FamilyManagementPanel({ familyList }) {
       } else {
         await addFamily({ ...payload, no_kk: familyForm.no_kk })
       }
+      notifySuccess(
+        selectedFamily ? 'Data KK berhasil diperbarui.' : 'KK baru berhasil ditambahkan.',
+      )
       setModal(null)
     } catch (err) {
       showError(err)
@@ -161,6 +203,7 @@ export default function FamilyManagementPanel({ familyList }) {
         }).filter(([, value]) => value !== undefined && value !== ''),
       )
       await saveFamilySocioeconomic(selectedFamily.id, payload)
+      notifySuccess('Survei sosio-ekonomi berhasil disimpan.')
       setModal(null)
     } catch (err) {
       showError(err)
@@ -170,10 +213,18 @@ export default function FamilyManagementPanel({ familyList }) {
   }
 
   const handleDelete = async (family) => {
-    if (!window.confirm(`Hapus data KK ${family.no_kk_masked ?? ''}?`)) return
+    if (
+      !(await confirmDialog({
+        title: `Hapus data KK ${family.no_kk_masked ?? ''}?`,
+        message: 'Tindakan ini tidak dapat dibatalkan.',
+        confirmLabel: 'Hapus',
+      }))
+    )
+      return
     try {
       setMessage('')
       await removeFamily(family.id)
+      notifySuccess('Data KK berhasil dihapus.')
     } catch (err) {
       showError(err)
     }
@@ -181,10 +232,10 @@ export default function FamilyManagementPanel({ familyList }) {
 
   return (
     <section
-      className="sid-operator-table-card sid-admin-family-panel"
+      className="sid-operator-table-card sid-admin-section-panel"
       aria-labelledby="families-heading"
     >
-      <div className="sid-operator-header" style={{ padding: '20px 20px 0' }}>
+      <div className="sid-operator-header">
         <div>
           <h2 id="families-heading">Kartu Keluarga</h2>
           <p>Kelola data KK dan survei sosio-ekonomi rumah tangga.</p>
@@ -201,7 +252,7 @@ export default function FamilyManagementPanel({ familyList }) {
           searchFamilies(keyword)
         }}
       >
-        <label htmlFor="family-search">Cari Nomor Kartu Keluarga</label>
+        <label htmlFor="family-search">Cari No. KK (16 digit) atau nama kepala keluarga</label>
 
         <div className="sid-operator-search">
           <Search size={16} aria-hidden="true" />
@@ -210,8 +261,8 @@ export default function FamilyManagementPanel({ familyList }) {
             type="search"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Masukkan nomor KK..."
-            aria-label="Cari nomor Kartu Keluarga"
+            placeholder="Contoh: 3201011234560001 atau Budi"
+            aria-label="Cari Kartu Keluarga"
           />
         </div>
       </form>
@@ -231,7 +282,7 @@ export default function FamilyManagementPanel({ familyList }) {
         <table className="sid-operator-table">
           <thead>
             <tr>
-              <th>No. KK (masked)</th>
+              <th>No. KK</th>
               <th>Kepala Keluarga</th>
               <th>Anggota</th>
               <th>Alamat KK</th>
@@ -259,20 +310,55 @@ export default function FamilyManagementPanel({ familyList }) {
                   <td>{family.head_of_family?.name ?? '-'}</td>
                   <td>{family.members_count ?? 0}</td>
                   <td>{family.family_address ?? '-'}</td>
-                  <td>{family.family_status ?? '-'}</td>
+                  <td>
+                    {family.family_status ? (
+                      <StatusPill tone={FAMILY_STATUS_TONE[family.family_status] ?? 'inactive'}>
+                        {labelOf(FAMILY_STATUS_LABELS, family.family_status)}
+                      </StatusPill>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
                   <td className="center">
                     <div className="sid-operator-actions">
-                      <button type="button" title="Edit KK" onClick={() => openEdit(family)}>
+                      <button
+                        type="button"
+                        className="sid-operator-action edit"
+                        title="Edit KK"
+                        aria-label="Edit KK"
+                        onClick={() => openEdit(family)}
+                      >
                         <Pencil size={16} />
                       </button>
                       <button
                         type="button"
+                        className="sid-operator-action toggle"
                         title="Survei sosio-ekonomi"
+                        aria-label="Survei sosio-ekonomi"
                         onClick={() => openSocioeconomic(family)}
                       >
                         <RefreshCw size={16} />
                       </button>
-                      <button type="button" title="Hapus KK" onClick={() => handleDelete(family)}>
+                      <button
+                        type="button"
+                        className="sid-operator-action detail"
+                        title="Riwayat perubahan"
+                        aria-label="Riwayat perubahan"
+                        onClick={() =>
+                          navigate(
+                            `/admin/log-aktivitas?tab=penduduk&type=family&subject=${encodeURIComponent(family.id)}`,
+                          )
+                        }
+                      >
+                        <History size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className="sid-operator-action delete"
+                        title="Hapus KK"
+                        aria-label="Hapus KK"
+                        onClick={() => handleDelete(family)}
+                      >
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -285,9 +371,10 @@ export default function FamilyManagementPanel({ familyList }) {
       </div>
 
       <div className="sid-operator-pagination">
-        <p>
-          Menampilkan {families.length} dari {totalItems} data KK
-        </p>
+        <div className="sid-pagination-meta">
+          <p>{formatPageRange(currentPage, pageSize, totalItems, 'KK')}</p>
+          <PageSizeSelect value={pageSize} onChange={setPageSize} />
+        </div>
         <div>
           <button
             type="button"
@@ -296,9 +383,11 @@ export default function FamilyManagementPanel({ familyList }) {
           >
             Sebelumnya
           </button>
-          <span>
-            {currentPage} / {totalPages}
-          </span>
+          <PageNumbers
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onChange={setCurrentPage}
+          />
           <button
             type="button"
             disabled={currentPage >= totalPages}
@@ -366,9 +455,11 @@ export default function FamilyManagementPanel({ familyList }) {
                       setFamilyForm({ ...familyForm, family_status: event.target.value })
                     }
                   >
-                    <option value="aktif">Aktif</option>
-                    <option value="pindah">Pindah</option>
-                    <option value="bubar">Bubar</option>
+                    {optionsOf(FAMILY_STATUS_LABELS).map(({ value, label }) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 {members.length > 0 && (
@@ -377,7 +468,8 @@ export default function FamilyManagementPanel({ familyList }) {
                     <ul>
                       {members.map((member) => (
                         <li key={member.id}>
-                          {member.name} — {member.family_role ?? 'anggota'}
+                          {member.name} —{' '}
+                          {labelOf(FAMILY_ROLE_LABELS, member.family_role ?? 'anggota')}
                         </li>
                       ))}
                     </ul>
@@ -422,9 +514,9 @@ export default function FamilyManagementPanel({ familyList }) {
                     }
                   >
                     <option value="">Pilih</option>
-                    {['milik_sendiri', 'sewa', 'menumpang', 'dinas'].map((value) => (
+                    {optionsOf(HOUSE_OWNERSHIP_LABELS).map(({ value, label }) => (
                       <option key={value} value={value}>
-                        {value.replaceAll('_', ' ')}
+                        {label}
                       </option>
                     ))}
                   </select>
@@ -439,9 +531,9 @@ export default function FamilyManagementPanel({ familyList }) {
                     }
                   >
                     <option value="">Pilih</option>
-                    {['pdam', 'sumur', 'sungai', 'lainnya'].map((value) => (
+                    {optionsOf(WATER_SOURCE_LABELS).map(({ value, label }) => (
                       <option key={value} value={value}>
-                        {value.toUpperCase()}
+                        {label}
                       </option>
                     ))}
                   </select>
@@ -456,9 +548,9 @@ export default function FamilyManagementPanel({ familyList }) {
                     }
                   >
                     <option value="">Pilih</option>
-                    {['pln', 'non_pln', 'tidak_ada'].map((value) => (
+                    {optionsOf(ELECTRICITY_SOURCE_LABELS).map(({ value, label }) => (
                       <option key={value} value={value}>
-                        {value.replaceAll('_', ' ').toUpperCase()}
+                        {label}
                       </option>
                     ))}
                   </select>
@@ -499,7 +591,7 @@ export default function FamilyManagementPanel({ familyList }) {
               <button
                 type="button"
                 className="sid-button sid-button-outline"
-                onClick={() => setModal(null)}
+                onClick={() => requestClose(closeModal)}
               >
                 Batal
               </button>

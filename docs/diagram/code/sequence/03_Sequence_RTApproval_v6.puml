@@ -1,0 +1,70 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 03_Sequence_RTApproval_v6.puml
+' JUDUL: Sequence - Keputusan RT (UC-04a)
+' SUMBER: RtApprovalController, RtDecisionRequest, RtApprovalService,
+'         LetterFlowService, LetterRepository (2026-10-16)
+' CATATAN: Menggantikan 03_Sequence_RTApproval_v5.puml.
+'==================================================================================
+@startuml Sequence_RTApproval_v6
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ActorBackgroundColor #D6E4F7
+  ArrowColor #2E5FA3
+  ArrowFontSize 10
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+title Sequence - Keputusan RT [v6]
+
+actor "RT" as RT
+participant "React\n(ApprovalStepRenderer)" as FE
+participant "role:rt middleware" as MW
+participant "RtApprovalController" as CTRL
+participant "RtApprovalService" as SVC
+participant "OfficialService" as OFF
+participant "LetterFlowService" as FLOW
+participant "LetterRepository" as REPO
+database "PostgreSQL" as DB
+actor "RW / Kadus" as FYI
+actor "Kades / Sekdes" as KD
+actor "Pemohon" as P
+
+RT -> FE : buka detail (GET /api/letters/{id})
+FE -> FE : tombol tampil bila current_step.approver_position = rt
+RT -> FE : Setujui / Tolak (+catatan)
+FE -> MW : PATCH /api/rt/letters/{letter}/decision
+MW -> CTRL
+CTRL -> SVC : decision(letter, user, {status, notes})
+SVC -> OFF : getCurrentRt(user)
+SVC -> FLOW : isApplicantOfficial? → 403
+SVC -> REPO : citizen.rt_id == official.rt_id? → 403
+SVC -> REPO : findCurrentFlowStep = rt? → 409
+
+group DB::transaction
+  SVC -> REPO : findForUpdateOrFail (SELECT ... FOR UPDATE)
+  SVC -> SVC : cek ulang status aktif & step → 409
+  SVC -> DB : UPDATE placeholder letter_approvals\n(approved_by, rt, action, notes)
+  alt approved
+    SVC -> FLOW : nextActionable(letter, step_order)
+    SVC -> DB : UPDATE letters in_progress, current_step_order = next
+    SVC -> DB : INSERT placeholder approval step berikutnya (deadline)
+    SVC -> DB : INSERT status log
+    SVC -> FYI : rt_approved_rw_fyi / rt_approved_kadus_fyi
+    SVC -> KD : rt_approved (eligible approvers)
+    SVC -> P : rt_approved
+  else rejected
+    SVC -> DB : UPDATE letters rejected, rejected_at_step
+    SVC -> DB : INSERT status log
+    SVC -> P : rt_rejected
+  end
+end
+note right of SVC
+  Notifikasi dikirim afterCommit:
+  database (sinkron) + WebPush (queue).
+end note
+CTRL --> FE : 200 {message: "Surat berhasil diproses."}
+FE -> FE : invalidate queryKeys.surat.all
+@enduml

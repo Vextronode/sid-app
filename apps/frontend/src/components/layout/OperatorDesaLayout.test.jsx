@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { useAuth, useNotifications, reload } = vi.hoisted(() => ({
   useAuth: vi.fn(),
@@ -48,6 +48,8 @@ describe('OperatorDesaLayout role regression', () => {
       expect(screen.getByRole('link', { name: 'Data Penduduk' })).toBeTruthy()
       expect(screen.queryByRole('link', { name: 'Manajemen Pengguna' })).toBeNull()
       expect(screen.queryByRole('link', { name: 'Kelola Wilayah' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Alur & Jenis Surat' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Log Aktivitas' })).toBeNull()
 
       fireEvent.click(screen.getByTitle('Notifikasi'))
 
@@ -55,4 +57,106 @@ describe('OperatorDesaLayout role regression', () => {
       expect(reload).toHaveBeenCalledOnce()
     },
   )
+
+  it('shows the letter type configuration menu to staf_sid', () => {
+    useAuth.mockReturnValue({
+      user: { role: 'staf_sid', name: 'Petugas', role_label: 'Petugas Desa' },
+      logout: vi.fn(),
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/admin/operator-desa']}>
+        <OperatorDesaLayout>Operator page</OperatorDesaLayout>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: 'Alur & Jenis Surat' })).toHaveAttribute(
+      'href',
+      '/admin/approval-flows',
+    )
+    expect(screen.getByRole('link', { name: 'Log Aktivitas' })).toHaveAttribute(
+      'href',
+      '/admin/log-aktivitas',
+    )
+  })
+})
+
+describe('OperatorDesaLayout sidebar', () => {
+  const originalMatchMedia = window.matchMedia
+
+  function mockViewport(mobile) {
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: mobile,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })
+  }
+
+  function renderLayout() {
+    useAuth.mockReturnValue({
+      user: { role: 'staf_sid', name: 'Petugas', role_label: 'Petugas Desa' },
+      logout: vi.fn(),
+    })
+
+    return render(
+      <MemoryRouter initialEntries={['/admin/operator-desa']}>
+        <OperatorDesaLayout>Operator page</OperatorDesaLayout>
+      </MemoryRouter>,
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useNotifications.mockReturnValue({ unreadCount: 0, reload })
+    window.localStorage.clear()
+  })
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia
+  })
+
+  it('collapses and expands manually on desktop and remembers the choice', () => {
+    mockViewport(false)
+    const { container } = renderLayout()
+    const layout = container.querySelector('.sid-operator-layout')
+
+    expect(layout).not.toHaveClass('is-rail')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ciutkan menu' }))
+    expect(layout).toHaveClass('is-rail')
+    expect(window.localStorage.getItem('sid-operator-sidebar-collapsed')).toBe('1')
+
+    // Pindah menu tidak mengubah pilihan di desktop.
+    fireEvent.click(screen.getByRole('link', { name: 'Log Aktivitas' }))
+    expect(layout).toHaveClass('is-rail')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Perluas menu' }))
+    expect(layout).not.toHaveClass('is-rail')
+  })
+
+  it('opens on mobile and collapses again after navigating', () => {
+    mockViewport(true)
+    const { container } = renderLayout()
+    const layout = container.querySelector('.sid-operator-layout')
+
+    expect(layout).toHaveClass('is-rail')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Perluas menu' }))
+    expect(layout).toHaveClass('is-mobile-open')
+    expect(layout).not.toHaveClass('is-rail')
+
+    fireEvent.click(screen.getByRole('link', { name: 'Log Aktivitas' }))
+    expect(layout).toHaveClass('is-rail')
+    expect(layout).not.toHaveClass('is-mobile-open')
+  })
+
+  it('closes the mobile sidebar from the backdrop', () => {
+    mockViewport(true)
+    const { container } = renderLayout()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Perluas menu' }))
+    fireEvent.click(container.querySelector('.sid-operator-sidebar-backdrop'))
+
+    expect(container.querySelector('.sid-operator-layout')).toHaveClass('is-rail')
+  })
 })

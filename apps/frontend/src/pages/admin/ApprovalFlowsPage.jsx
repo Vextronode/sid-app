@@ -8,7 +8,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 const POSITION_LABELS = {
   rt: 'Ketua RT',
   kepala_desa: 'Kepala Desa / Sekretaris Desa',
-  sekdes: 'Kepala Desa / Sekretaris Desa',
+  sekretaris_desa: 'Kepala Desa / Sekretaris Desa',
 }
 
 /**
@@ -45,18 +45,20 @@ export default function ApprovalFlowsPage() {
     }
   }, [])
 
-  if (user?.role !== 'petugas_desa') {
+  if (user?.role !== 'staf_sid') {
     return null
   }
 
   return (
-    <div className="sid-desktop-page">
-      <div className="sid-page">
+    <div className="sid-operator-page">
+      <div className="sid-operator-content">
+        <p className="sid-operator-breadcrumb">
+          Admin / <span>Alur & Jenis Surat</span>
+        </p>
+        <div className="sid-operator-header mb-0">
+          <h1>Alur Persetujuan &amp; Jenis Surat</h1>
+        </div>
         <div className="mb-6">
-          <p className="rw-breadcrumb">
-            Admin / <span>Alur Persetujuan</span>
-          </p>
-          <h1 className="sid-page-title">Alur Persetujuan & Jenis Surat</h1>
           <p className="sid-page-description">
             Semua jenis surat memakai satu alur persetujuan. RW dan Kadus menerima pemberitahuan
             setelah RT menyetujui; Kasi/Kaur menerima pemberitahuan setelah persetujuan akhir.
@@ -121,8 +123,9 @@ export default function ApprovalFlowsPage() {
         </section>
 
         <LetterTypeSettingsPanel />
-        <SiteFooter />
       </div>
+
+      <SiteFooter />
     </div>
   )
 }

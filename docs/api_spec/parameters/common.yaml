@@ -1,0 +1,7 @@
+VillageCode:
+  name: village_code
+  in: query
+  required: false
+  description: "Kode desa. Opsional bila hanya ada satu desa; wajib (422) bila lebih dari satu desa."
+  schema:
+    type: string

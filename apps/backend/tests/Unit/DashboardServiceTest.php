@@ -2,20 +2,12 @@
 
 namespace Tests\Unit;
 
-use App\Models\ApprovalFlow;
 use App\Models\Citizen;
-use App\Models\FlowStep;
-use App\Models\Hamlet;
 use App\Models\Letter;
-use App\Models\LetterType;
 use App\Models\Official;
 use App\Models\Rt;
 use App\Models\User;
 use App\Models\Village;
-use App\Repositories\CitizenRepository;
-use App\Repositories\LetterRepository;
-use App\Repositories\NotificationRepository;
-use App\Repositories\OfficialRepository;
 use App\Services\DashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -31,22 +23,18 @@ class DashboardServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new DashboardService(
-            new CitizenRepository,
-            new LetterRepository,
-            new NotificationRepository,
-            new OfficialRepository,
-        );
+        $this->service = app(DashboardService::class);
     }
 
-    public function test_gender_stats_for_petugas_desa_counts_all_citizens_in_village(): void
+    public function test_gender_stats_for_staf_sid_counts_active_citizens_in_village(): void
     {
         $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $village->id);
         $user->citizen->update(['gender' => 'L']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'L']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'P']);
         Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'P']);
+        Citizen::factory()->create(['village_id' => $village->id, 'gender' => 'P', 'is_active' => false]);
 
         $stats = $this->service->getGenderStats($user);
 
@@ -111,7 +99,7 @@ class DashboardServiceTest extends TestCase
     public function test_letter_stats_returns_chart_with_seven_days_and_min_max_y_of_50(): void
     {
         $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $village->id);
         Letter::factory()->create([
             'village_id' => $user->village_id,
             'submitted_at' => now(),
@@ -128,7 +116,7 @@ class DashboardServiceTest extends TestCase
     public function test_letter_stats_filters_by_letter_type_when_given(): void
     {
         $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
+        $user = $this->makeUserWithOfficialAssignment('staf_sid', 'staf_sid', $village->id);
         $letter = Letter::factory()->create([
             'village_id' => $user->village_id,
             'submitted_at' => now(),
@@ -140,207 +128,14 @@ class DashboardServiceTest extends TestCase
         $this->assertSame(1, $total);
     }
 
-    public function test_letter_stats_for_unauthorized_role_throws_403(): void
+    public function test_letter_stats_for_warga_counts_only_own_letters(): void
     {
         $user = User::factory()->create(['role' => 'warga']);
+        Letter::factory()->create(['submitted_by' => $user->id, 'submitted_at' => now()]);
+        Letter::factory()->create(['submitted_at' => now()]);
 
-        $this->expectException(HttpException::class);
+        $stats = $this->service->getLetterStats($user, null, null);
 
-        $this->service->getLetterStats($user, null, null);
-    }
-
-    public function test_kadus_dashboard_only_includes_rt_approved_letters_from_own_hamlet(): void
-    {
-        $village = Village::factory()->create();
-        $hamlet = Hamlet::factory()->create(['village_id' => $village->id]);
-        $otherHamlet = Hamlet::factory()->create(['village_id' => $village->id]);
-        $user = User::factory()->create(['role' => 'kadus', 'village_id' => $village->id]);
-        Official::factory()->forUser($user)->position('kadus')->create([
-            'village_id' => $village->id,
-            'hamlet_id' => $hamlet->id,
-            'is_active' => true,
-        ]);
-
-        $ownCitizen = Citizen::factory()->create([
-            'village_id' => $village->id,
-            'hamlet_id' => $hamlet->id,
-        ]);
-        $ownApprovedLetter = Letter::factory()->create([
-            'village_id' => $village->id,
-            'citizen_id' => $ownCitizen->id,
-        ]);
-        $ownPendingLetter = Letter::factory()->create([
-            'village_id' => $village->id,
-            'citizen_id' => $ownCitizen->id,
-        ]);
-        $otherCitizen = Citizen::factory()->create([
-            'village_id' => $village->id,
-            'hamlet_id' => $otherHamlet->id,
-        ]);
-        $otherHamletLetter = Letter::factory()->create([
-            'village_id' => $village->id,
-            'citizen_id' => $otherCitizen->id,
-        ]);
-        $approver = User::factory()->create(['village_id' => $village->id]);
-        foreach ([$ownApprovedLetter, $otherHamletLetter] as $letter) {
-            $letter->approvals()->create([
-                'approved_by' => $approver->id,
-                'approval_level' => 'rt',
-                'action' => 'approved',
-            ]);
-        }
-
-        $dashboard = $this->service->getDashboard($user);
-
-        $this->assertSame('kadus', $dashboard['role']);
-        $this->assertSame(
-            [$ownApprovedLetter->id],
-            array_column($dashboard['fyi_letters'], 'id'),
-        );
-    }
-
-    public function test_kasi_dashboard_shows_only_matching_approved_letters_with_total_and_limit(): void
-    {
-        $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('kasi_pelayanan', 'kasi_pelayanan', $village->id);
-        $kasiType = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
-        $unassignedType = LetterType::factory()->create(['assigned_role' => null]);
-        $kaurType = LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum']);
-
-        Letter::factory()->count(21)->create([
-            'village_id' => $village->id,
-            'letter_type_id' => $kasiType->id,
-            'status' => 'approved',
-        ]);
-        Letter::factory()->create([
-            'village_id' => $village->id,
-            'letter_type_id' => $unassignedType->id,
-            'status' => 'approved',
-        ]);
-        $excluded = Letter::factory()->create([
-            'village_id' => $village->id,
-            'letter_type_id' => $kaurType->id,
-            'status' => 'approved',
-        ]);
-        Letter::factory()->create([
-            'village_id' => $village->id,
-            'letter_type_id' => $kasiType->id,
-            'status' => 'pending',
-        ]);
-
-        $dashboard = $this->service->getDashboard($user);
-
-        $this->assertSame('kasi_pelayanan', $dashboard['role']);
-        $this->assertSame(22, $dashboard['total_surat_selesai']);
-        $this->assertCount(20, $dashboard['completed_letters']);
-        $this->assertNotContains(
-            $excluded->id,
-            array_column($dashboard['completed_letters'], 'id'),
-        );
-    }
-
-    public function test_petugas_dashboard_includes_expired_and_ending_official_terms(): void
-    {
-        $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('petugas_desa', 'petugas_desa', $village->id);
-        $expiredCitizen = Citizen::factory()->create([
-            'village_id' => $village->id,
-            'name' => 'Pejabat Lewat Masa',
-        ]);
-        $endingCitizen = Citizen::factory()->create([
-            'village_id' => $village->id,
-            'name' => 'Pejabat Segera Berakhir',
-        ]);
-        Official::factory()->create([
-            'position' => 'rt',
-            'village_id' => $village->id,
-            'citizen_id' => $expiredCitizen->id,
-            'term_ends_at' => today()->subDay(),
-            'is_active' => true,
-        ]);
-        Official::factory()->create([
-            'position' => 'rw',
-            'village_id' => $village->id,
-            'citizen_id' => $endingCitizen->id,
-            'term_ends_at' => today()->addDays(30),
-            'is_active' => true,
-        ]);
-
-        $dashboard = $this->service->getDashboard($user);
-
-        $this->assertSame('Pejabat Lewat Masa', $dashboard['jabatan_lewat_masa'][0]['name']);
-        $this->assertSame(today()->subDay()->toDateString(), $dashboard['jabatan_lewat_masa'][0]['term_ends_at']);
-        $this->assertSame('Pejabat Segera Berakhir', $dashboard['jabatan_segera_berakhir'][0]['name']);
-        $this->assertSame(today()->addDays(30)->toDateString(), $dashboard['jabatan_segera_berakhir'][0]['term_ends_at']);
-    }
-
-    public function test_kades_dashboard_excludes_letters_submitted_by_user_or_for_own_citizen(): void
-    {
-        $village = Village::factory()->create();
-        $user = User::factory()->create([
-            'role' => 'kepala_desa',
-            'village_id' => $village->id,
-        ]);
-        $official = Official::factory()->forUser($user)->position('kepala_desa')->create();
-
-        $flow = ApprovalFlow::factory()->create();
-        FlowStep::factory()->create([
-            'flow_id' => $flow->id,
-            'step_order' => 1,
-            'approver_position' => 'kepala_desa',
-            'is_final' => true,
-        ]);
-        $ownLetter = Letter::factory()->create([
-            'village_id' => $village->id,
-            'flow_id' => $flow->id,
-            'submitted_by' => $user->id,
-            'status' => 'pending',
-        ]);
-        $otherLetter = Letter::factory()->create([
-            'village_id' => $village->id,
-            'flow_id' => $flow->id,
-            'status' => 'pending',
-        ]);
-        $citizenLetter = Letter::factory()->create([
-            'village_id' => $village->id,
-            'flow_id' => $flow->id,
-            'citizen_id' => $official->citizen_id,
-            'status' => 'pending',
-        ]);
-
-        $dashboard = $this->service->getDashboard($user);
-
-        $this->assertSame([$otherLetter->id], array_column($dashboard['pending_letters'], 'id'));
-        $this->assertNotContains($ownLetter->id, array_column($dashboard['pending_letters'], 'id'));
-        $this->assertNotContains($citizenLetter->id, array_column($dashboard['pending_letters'], 'id'));
-    }
-
-    public function test_kades_dashboard_excludes_letter_submitted_for_the_officials_citizen(): void
-    {
-        $village = Village::factory()->create();
-        $user = User::factory()->create([
-            'role' => 'kepala_desa',
-            'village_id' => $village->id,
-        ]);
-        $official = Official::factory()->forUser($user)->position('kepala_desa')->create();
-
-        $flow = ApprovalFlow::factory()->create();
-        FlowStep::factory()->create([
-            'flow_id' => $flow->id,
-            'step_order' => 1,
-            'approver_position' => 'kepala_desa',
-            'is_final' => true,
-        ]);
-        $letter = Letter::factory()->create([
-            'village_id' => $village->id,
-            'flow_id' => $flow->id,
-            'citizen_id' => $official->citizen_id,
-            'status' => 'pending',
-        ]);
-
-        $dashboard = $this->service->getDashboard($user);
-
-        $this->assertSame(0, $dashboard['total_menunggu_approval']);
-        $this->assertNotContains($letter->id, array_column($dashboard['pending_letters'], 'id'));
+        $this->assertSame(1, array_sum($stats['chart']['values']));
     }
 }

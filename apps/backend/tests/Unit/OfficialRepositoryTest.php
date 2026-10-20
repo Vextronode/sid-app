@@ -212,7 +212,7 @@ class OfficialRepositoryTest extends TestCase
         $official = Official::factory()->create([
             'user_id' => $user->id,
             'citizen_id' => $citizen->id,
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
@@ -220,35 +220,6 @@ class OfficialRepositoryTest extends TestCase
         $this->assertSame($official->id, $this->repository->findActiveByUserId($user->id)->id);
         $this->assertTrue($this->repository->existsActiveForUser($user->id));
         $this->assertSame($official->id, $this->repository->findActiveByCitizenId($citizen->id)->id);
-        $this->assertSame(1, $this->repository->countActiveByPositionAndVillage('sekdes', $village->id));
-    }
-
-    public function test_all_term_expired_and_ending_within_return_only_active_soon_to_end_terms(): void
-    {
-        $village = Village::factory()->create();
-        Official::factory()->create([
-            'village_id' => $village->id,
-            'position' => 'kepala_desa',
-            'is_active' => true,
-            'term_ends_at' => today()->subDay(),
-        ]);
-        Official::factory()->create([
-            'village_id' => $village->id,
-            'position' => 'rt',
-            'is_active' => true,
-            'term_ends_at' => today()->addDays(3),
-        ]);
-        Official::factory()->create([
-            'village_id' => $village->id,
-            'position' => 'rw',
-            'is_active' => false,
-            'term_ends_at' => today()->addDays(2),
-        ]);
-
-        $expired = $this->repository->allTermExpiredActive($village->id);
-        $endingSoon = $this->repository->allTermEndingWithin($village->id, 5);
-
-        $this->assertCount(1, $expired);
-        $this->assertCount(1, $endingSoon);
+        $this->assertSame(1, $this->repository->countActiveByPositionAndVillage('sekretaris_desa', $village->id));
     }
 }

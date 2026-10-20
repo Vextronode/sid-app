@@ -1,107 +1,202 @@
 LetterType:
   type: object
+  description: |
+    Bentuk `LetterTypeResource`. Struktur jenis surat (template, isian form,
+    slot tanda tangan, aksi data, dokumen pendukung, flow) diset developer
+    lewat seeder; Petugas Desa hanya mengubah `validity_days`,
+    `assigned_role`, dan `is_active` (lihat LetterTypeUpdateRequest).
+    Kolom `letter_categories`/`category_id` dan `verification_type` sudah
+    dihapus dari skema.
   properties:
     id:
       type: integer
       example: 1
     code:
       type: string
-      example: "SKD"
+      example: "A01"
     name:
       type: string
-      example: "Surat Keterangan Domisili"
+      example: "Surat Keterangan Usaha"
     description:
       type: string
       nullable: true
-      example: "Surat keterangan tempat tinggal warga"
     template:
       type: string
       nullable: true
-      example: "<html>...template blade...</html>"
-      description: "NULL = status Draft, belum bisa dipakai warga"
-    verification_type:
-      type: string
-      enum: [auto, manual, document]
-      example: "auto"
+      example: "<div>...{{ applicant_name }}...</div>"
+      description: |
+        HTML dengan placeholder `{{ nama }}`. NULL = Draft (tidak tampil ke warga).
+        Placeholder sistem: letter_number, applicant_*, submitted_at, issued_at,
+        village_* (kop surat), village_head_name, logo_img, signature_img;
+        placeholder isian form memakai nama isian; slot TTD memakai
+        `ttd_{slot}` dan `nama_ttd_{slot}`.
     requirements_info:
       type: string
       nullable: true
-      example: "Fotokopi KTP dan KK"
+      description: "Dipetakan dari kolom `requirement_info` (nullable)."
+    flow_id:
+      type: integer
+      example: 1
+    flow:
+      type: object
+      nullable: true
+      description: "Hanya ada bila relasi flow dimuat."
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "RT-Kades/Sekdes (2 Tahap)"
     assigned_role:
       type: string
       enum: [kasi_pelayanan, kaur_tu_umum]
       nullable: true
       example: "kasi_pelayanan"
       description: |
-        Menentukan Kasi/Kaur yang dapat melihat dan mengunduh surat
-        approved. NULL memberikan akses kepada kedua role; bukan approver flow.
+        Kasi/Kaur yang dapat melihat/mengunduh surat approved dan
+        menerapkan aksi data. NULL = kedua role. Bukan approver flow.
     validity_days:
       type: integer
       nullable: true
-      example: 90
+      example: 365
       description: "NULL = surat tidak pernah expire"
-    category_id:
-      type: integer
-      example: 1
-      description: "BARU v5.0 - gate awal jenis surat, FK ke letter_categories"
-    category:
-      type: object
-      nullable: true
-      properties:
-        code:
-          type: string
-          example: "approval_normal"
-        name:
-          type: string
-          example: "Approval Normal"
-    flow_id:
-      type: integer
-      example: 3
-      description: |
-        BARU v5.0 - selalu diisi, termasuk untuk category upload_mandiri/
-        dokumen_pendukung/update_data (flow "Direct" dengan steps kosong/minimal),
-        demi konsistensi query generik di seluruh sistem.
-    flow:
-      type: object
-      nullable: true
-      properties:
-        id:
-          type: integer
-          example: 3
-        name:
-          type: string
-          example: "RT-Kades (2 Tahap)"
     is_active:
       type: boolean
       example: true
+    produces_letter:
+      type: boolean
+      example: true
+      description: "Penanda jenis surat menerbitkan surat. Saat ini hanya disimpan & dikirim; belum mengubah alur backend."
+    data_action:
+      type: string
+      enum: [none, update_citizen, create_citizen]
+      example: "none"
+      description: "Aksi data kependudukan setelah final approve (Terapkan oleh Kasi/Kaur/Petugas Desa)."
+    form_fields:
+      type: array
+      description: "Definisi isian form; kosong = tanpa isian tambahan."
+      items:
+        $ref: '#/LetterFormField'
+    data_fields:
+      type: array
+      description: "Kolom data warga yang boleh diubah lewat Terapkan."
+      items:
+        $ref: '#/LetterDataField'
+    signature_slots:
+      type: array
+      description: "Slot tanda tangan pada surat. Belum dipakai jenis surat bawaan seeder."
+      items:
+        $ref: '#/LetterSignatureSlot'
+    has_supporting_document:
+      type: boolean
+      example: false
+      description: "True bila jenis surat memiliki `supporting_template` (dokumen pendukung yang digenerate dari isian)."
     status_label:
       type: string
       enum: [draft, aktif, dinonaktifkan]
       example: "aktif"
-      description: "Derived: template=NULL+is_active=false -> draft; template!=NULL+is_active=true -> aktif; template!=NULL+is_active=false -> dinonaktifkan"
+      description: "Derived: template=NULL -> draft; template!=NULL+is_active -> aktif; selain itu dinonaktifkan"
+
+LetterFormField:
+  type: object
+  required: [name, type]
+  properties:
+    name:
+      type: string
+      example: "nama_usaha"
+      description: "Kunci di `payload`, juga nama placeholder template."
+    label:
+      type: string
+      example: "Nama Usaha"
+    type:
+      type: string
+      enum: [text, textarea, date, number, nik, select, file]
+    required:
+      type: boolean
+    placeholder:
+      type: string
+      nullable: true
+    options:
+      type: array
+      description: "Untuk type=select."
+      items:
+        type: object
+        properties:
+          value:
+            type: string
+          label:
+            type: string
+    accept:
+      type: string
+      nullable: true
+      enum: [image]
+      description: "Untuk type=file: `image` membatasi ke JPG/PNG; selain itu PDF juga diterima."
+
+LetterDataField:
+  type: object
+  required: [column]
+  properties:
+    column:
+      type: string
+      example: "is_active"
+      description: "Kolom `citizens` yang diubah/diisi."
+    label:
+      type: string
+    source:
+      type: string
+      nullable: true
+      description: "Nama isian payload sebagai sumber nilai usulan."
+    value:
+      description: "Nilai tetap (tidak dapat dikoreksi saat Terapkan); tipe bebas (boolean/string/number)."
+    value_label:
+      type: string
+      nullable: true
+
+LetterSignatureSlot:
+  type: object
+  required: [key]
+  properties:
+    key:
+      type: string
+      example: "saksi_1"
+    label:
+      type: string
+      example: "Saksi 1"
+    signer:
+      type: string
+      enum: [applicant, other]
+      description: "applicant memakai TTD akun pemohon; other diminta ke pemilik NIK atau diganti TTD basah."
 
 LetterTypeUpdateRequest:
   type: object
   description: |
-    MVP (UC-21 versi sederhana): field yang bisa diedit Petugas Desa.
-    assigned_role NULL diterima dan memberikan akses surat selesai kepada
-    kedua role Kasi/Kaur. Flow aktif hanya menggunakan RT dan Kades/Sekdes.
+    UC-21 versi sederhana. Hanya tiga field ini yang diterima; flow,
+    template, isian form, slot tanda tangan, dan aksi data tidak dapat
+    diubah dari API.
   properties:
     validity_days:
       type: integer
       nullable: true
+      minimum: 1
       example: 90
     assigned_role:
       type: string
       enum: [kasi_pelayanan, kaur_tu_umum]
       nullable: true
-      example: "kasi_pelayanan"
-    category_id:
-      type: integer
-      example: 1
-    flow_id:
-      type: integer
-      example: 3
     is_active:
       type: boolean
       example: true
+
+PublicLetterType:
+  type: object
+  properties:
+    code:
+      type: string
+      example: "A01"
+    name:
+      type: string
+      example: "Surat Keterangan Usaha"
+    requirements_info:
+      type: string
+      nullable: true

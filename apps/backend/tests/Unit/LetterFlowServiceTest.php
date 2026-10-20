@@ -78,7 +78,7 @@ class LetterFlowServiceTest extends TestCase
         $this->addStep($flow, 1, 'rt');
         $final = $this->addStep($flow, 2, 'kepala_desa', true);
         $this->addVillageOfficial($letter, 'kepala_desa', $applicant);
-        $sekdes = $this->addVillageOfficial($letter, 'sekdes');
+        $sekdes = $this->addVillageOfficial($letter, 'sekretaris_desa');
 
         $result = $this->service->nextActionable($letter, 1);
         $eligible = $this->service->eligibleApprovers($final, $letter);
@@ -111,7 +111,7 @@ class LetterFlowServiceTest extends TestCase
         [$letter, $flow, $applicant] = $this->makeLetterWithApplicant('sekretaris_desa');
         $this->addStep($flow, 1, 'rt');
         $final = $this->addStep($flow, 2, 'kepala_desa', true);
-        $this->addVillageOfficial($letter, 'sekdes', $applicant);
+        $this->addVillageOfficial($letter, 'sekretaris_desa', $applicant);
         $kades = $this->addVillageOfficial($letter, 'kepala_desa');
 
         $result = $this->service->nextActionable($letter, 1);
@@ -161,7 +161,7 @@ class LetterFlowServiceTest extends TestCase
         return [
             ['rw'],
             ['kadus'],
-            ['petugas_desa'],
+            ['staf_sid'],
             ['kasi_pelayanan'],
             ['kaur_tu_umum'],
         ];

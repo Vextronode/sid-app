@@ -21,7 +21,7 @@ class RegionPolicyTest extends TestCase
     public function test_petugas_without_village_cannot_manage_regions(): void
     {
         $user = User::factory()->make([
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
             'village_id' => null,
         ]);
 

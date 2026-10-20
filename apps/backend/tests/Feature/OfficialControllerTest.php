@@ -28,7 +28,7 @@ class OfficialControllerTest extends TestCase
 
     public function test_index_returns_all_officials_for_manager_role(): void
     {
-        $manager = User::factory()->create(['role' => 'petugas_desa']);
+        $manager = User::factory()->create(['role' => 'staf_sid']);
         Official::factory()->count(3)->create();
 
         $this->actingAs($manager)
@@ -53,7 +53,7 @@ class OfficialControllerTest extends TestCase
 
     public function test_show_returns_official_detail(): void
     {
-        $manager = User::factory()->create(['role' => 'petugas_desa']);
+        $manager = User::factory()->create(['role' => 'staf_sid']);
         $official = Official::factory()->create();
 
         $this->actingAs($manager)
@@ -64,7 +64,7 @@ class OfficialControllerTest extends TestCase
 
     public function test_show_returns_404_for_unknown_official(): void
     {
-        $manager = User::factory()->create(['role' => 'petugas_desa']);
+        $manager = User::factory()->create(['role' => 'staf_sid']);
 
         $this->actingAs($manager)
             ->getJson('/api/officials/999999')
@@ -73,22 +73,22 @@ class OfficialControllerTest extends TestCase
 
     public function test_store_creates_official_for_manager_role(): void
     {
-        $manager = User::factory()->create(['role' => 'petugas_desa']);
+        $manager = User::factory()->create(['role' => 'staf_sid']);
         $citizen = Citizen::factory()->create();
 
         $this->actingAs($manager)
             ->post('/api/officials', [
                 'citizen_id' => $citizen->id,
-                'position' => 'petugas_desa',
+                'position' => 'staf_sid',
                 'started_at' => now()->toDateString(),
                 'photo' => UploadedFile::fake()->image('foto.jpg'),
             ], self::JSON)
             ->assertCreated()
-            ->assertJsonPath('data.position', 'petugas_desa');
+            ->assertJsonPath('data.position', 'staf_sid');
 
         $this->assertDatabaseHas('officials', [
             'citizen_id' => $citizen->id,
-            'position' => 'petugas_desa',
+            'position' => 'staf_sid',
         ]);
     }
 
@@ -100,7 +100,7 @@ class OfficialControllerTest extends TestCase
         $this->actingAs($warga)
             ->postJson('/api/officials', [
                 'citizen_id' => $citizen->id,
-                'position' => 'petugas_desa',
+                'position' => 'staf_sid',
                 'started_at' => now()->toDateString(),
             ])
             ->assertStatus(403);
@@ -108,7 +108,7 @@ class OfficialControllerTest extends TestCase
 
     public function test_store_validates_required_fields(): void
     {
-        $manager = User::factory()->create(['role' => 'petugas_desa']);
+        $manager = User::factory()->create(['role' => 'staf_sid']);
 
         $this->actingAs($manager)
             ->postJson('/api/officials', [])
@@ -118,7 +118,7 @@ class OfficialControllerTest extends TestCase
 
     public function test_store_rejects_duplicate_active_position_in_same_scope(): void
     {
-        $manager = User::factory()->create(['role' => 'petugas_desa']);
+        $manager = User::factory()->create(['role' => 'staf_sid']);
         $rt = Rt::factory()->create();
         Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
         $citizen = Citizen::factory()->create();
@@ -137,7 +137,7 @@ class OfficialControllerTest extends TestCase
 
     public function test_update_changes_official_fields(): void
     {
-        $manager = User::factory()->create(['role' => 'petugas_desa']);
+        $manager = User::factory()->create(['role' => 'staf_sid']);
         $official = Official::factory()->create(['phone_wa' => '0800']);
 
         $this->actingAs($manager)
@@ -162,7 +162,7 @@ class OfficialControllerTest extends TestCase
 
     public function test_destroy_deletes_official_for_manager_role(): void
     {
-        $manager = User::factory()->create(['role' => 'petugas_desa']);
+        $manager = User::factory()->create(['role' => 'staf_sid']);
         $official = Official::factory()->create();
 
         $this->actingAs($manager)
@@ -188,7 +188,7 @@ class OfficialControllerTest extends TestCase
     public function test_rotate_ends_old_official_and_creates_new_one(): void
     {
         $village = Village::factory()->create();
-        $manager = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        $manager = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
         $rt = Rt::factory()->create();
         $oldUser = User::factory()->create(['role' => 'rt', 'village_id' => $village->id]);
         $old = Official::factory()->forUser($oldUser)->position('rt')->create(['rt_id' => $rt->id]);
@@ -247,7 +247,7 @@ class OfficialControllerTest extends TestCase
 
     public function test_rotate_validates_required_fields(): void
     {
-        $manager = User::factory()->create(['role' => 'petugas_desa']);
+        $manager = User::factory()->create(['role' => 'staf_sid']);
         $old = Official::factory()->create();
 
         $this->actingAs($manager)
@@ -258,7 +258,7 @@ class OfficialControllerTest extends TestCase
 
     public function test_rotate_returns_404_for_unknown_official(): void
     {
-        $manager = User::factory()->create(['role' => 'petugas_desa']);
+        $manager = User::factory()->create(['role' => 'staf_sid']);
 
         $this->actingAs($manager)
             ->postJson('/api/officials/999999/rotate', [])

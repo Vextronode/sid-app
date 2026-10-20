@@ -1,7 +1,8 @@
-import { Link, NavLink } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 
-import { HAL_BERANDA, HAL_BERITA, HAL_LOGIN, SECTION_KONTAK } from '@/lib/constants/routes'
+import { HAL_BERANDA, HAL_BERITA, SECTION_KONTAK } from '@/lib/constants/routes'
 import { useSectionLink } from '../utils/sectionLink'
+import { AccountNavLink } from './AccountNavLink'
 import { BerandaBrand } from './BerandaBrand'
 import { MobileMenu } from './MobileMenu'
 import { ProfilDesaDropdown } from './ProfilDesaDropdown'
@@ -9,7 +10,6 @@ import { ProfilDesaDropdown } from './ProfilDesaDropdown'
 // Header beranda (A1–A9), juga dipakai halaman publik lain lewat MainLayout.
 export function BerandaHeader({ content }) {
   const { header } = content
-  const showTransparansi = Boolean(content.apbdes)
   const sectionLinkProps = useSectionLink()
 
   return (
@@ -18,23 +18,23 @@ export function BerandaHeader({ content }) {
         <BerandaBrand header={header} />
 
         <nav className="bd-nav" aria-label="Menu utama">
-          {/* Selain lewat logo. NavLink memberi aria-current di beranda. */}
+          {/* NavLink memberi aria-current (garis padi) pada menu halaman
+              aktif; Berita juga aktif di detail berita. Kontak tidak, karena
+              hanya bagian dari beranda. */}
           <NavLink to={HAL_BERANDA} end className="bd-nav-link">
             {header.nav.beranda}
           </NavLink>
-          <Link to={HAL_BERITA} className="bd-nav-link">
+          <NavLink to={HAL_BERITA} className="bd-nav-link">
             {header.nav.berita}
-          </Link>
-          <ProfilDesaDropdown header={header} showTransparansi={showTransparansi} />
+          </NavLink>
+          <ProfilDesaDropdown header={header} />
           <a className="bd-nav-link" {...sectionLinkProps(SECTION_KONTAK)}>
             {header.nav.kontak}
           </a>
-          <Link to={HAL_LOGIN} className="bd-button-outline bd-nav-login">
-            {header.nav.masuk}
-          </Link>
+          <AccountNavLink nav={header.nav} className="bd-button-outline bd-nav-login" />
         </nav>
 
-        <MobileMenu header={header} showTransparansi={showTransparansi} />
+        <MobileMenu header={header} />
       </div>
     </header>
   )

@@ -1,0 +1,62 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Struktur organisasi desa publik (BPD, LPM, Karang Taruna, PKK)
+  security: []
+  description: |
+    UC-16. Pemegang aktif Ketua dan Wakil Ketua (`null` bila kosong) dan
+    daftar Anggota aktif (urut tanggal mulai menjabat). Hanya nama dan foto;
+    nomor WA dan catatan tidak dipublikasikan. `orgType` di luar
+    bpd/lpm/karang_taruna/pkk: 404. Di-cache per desa (10 menit) dan
+    disegarkan saat data organisasi berubah.
+  operationId: getPublicVillageOrganization
+  parameters:
+    - name: orgType
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [bpd, lpm, karang_taruna, pkk]
+    - $ref: '../../parameters/common.yaml#/VillageCode'
+  responses:
+    '200':
+      description: Struktur organisasi
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  org_type:
+                    type: string
+                    example: "bpd"
+                  ketua:
+                    $ref: '#/components/PublicOrgMember'
+                  wakil_ketua:
+                    $ref: '#/components/PublicOrgMember'
+                  anggota:
+                    type: array
+                    items:
+                      $ref: '#/components/PublicOrgMember'
+          example:
+            data:
+              org_type: "bpd"
+              ketua: { id: 1, name: "Budi Santoso", photo_url: null }
+              wakil_ketua: null
+              anggota:
+                - { id: 3, name: "Siti Aminah", photo_url: null }
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+components:
+  PublicOrgMember:
+    type: object
+    nullable: true
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      photo_url:
+        type: string
+        nullable: true

@@ -1,87 +1,67 @@
-import { Eye } from 'lucide-react'
+// ==========================================
+// SuratDetailModal.jsx
+// Popup detail surat untuk approver dan pemantau wilayah (RT, RW, Kadus,
+// Kades/Sekdes) di atas kerangka LetterDossierModal.
+//
+// Isi menyesuaikan peran:
+// - pratinjau draf untuk semua status (backend hanya memasang TTD &
+//   stempel pada surat final bagi pihak yang berhak mengunduh);
+// - Setuju/Tolak di footer hanya bila pengguna berwenang di tahap aktif;
+// - menu Unduh hanya bila `canDownload` (Kades/Sekdes) dan surat final.
+// ==========================================
 
-import ApprovalStepper from '@/features/approval/components/ApprovalStepper'
-import ApprovalStepRenderer from '@/features/approval/components/ApprovalStepRenderer'
-import { getLatestApprovalForLevel } from '@/features/approval/constants/statusFlow'
-import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
-import { StatusBadge } from '@/components/ui/StatusBadge'
+import { DownloadSuratMenu } from '@/features/cetak-surat/components/DownloadSuratMenu'
+import { PdfCanvasPreview } from '@/features/cetak-surat/components/PdfCanvasPreview'
 import { LetterExtrasPanel } from '@/features/surat/components/LetterExtrasPanel'
-import { OverdueBadge } from '@/components/ui/OverdueBadge'
+import { LetterDossierModal } from '@/features/surat/components/dossier/LetterDossierModal'
+import {
+  DossierFacts,
+  DossierQuote,
+  DossierSection,
+} from '@/features/surat/components/dossier/DossierParts'
+import { formatDossierDateTime } from '@/features/surat/components/dossier/dossierFormat'
+import { FlowTimeline } from '@/features/surat/components/dossier/FlowTimeline'
+import { getApplicantAddress, getApplicantNik } from '@/features/surat/utils/letterDetails'
+import { getLatestApprovalForLevel } from '@/features/approval/constants/statusFlow'
+import { SURAT_STATUS } from '@/constants/suratStatus'
 
-const FIELD_MAP = {
-  noSurat: (s) => s?.letter_number ?? '-',
+import ApprovalStepRenderer from './ApprovalStepRenderer'
+import { canDecideOnLetter } from '../utils/canDecide'
 
-  namaPemohon: (s) => s?.applicant_name ?? s?.citizen?.name ?? '-',
+// Peran yang hanya memantau surat di wilayahnya, tanpa memberi keputusan.
+const MONITOR_ROLES = ['rw', 'kadus']
 
-  nik: (s) => s?.applicant_nik ?? s?.citizen?.nik ?? '-',
-
-  alamat: (s) => s?.applicant_address ?? s?.citizen?.address ?? '-',
-
-  jenisSurat: (s) => s?.letter_type?.name ?? '-',
-
-  keperluan: (s) => s?.purpose ?? '-',
-
-  diajukan: (s) => (s?.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID') : '-'),
-
-  terakhirDiproses: (s) => (s?.updated_at ? new Date(s.updated_at).toLocaleString('id-ID') : '-'),
-}
-
-function getApproverName(approval) {
-  return (
-    approval?.approved_by_user?.name ??
-    approval?.approvedBy?.name ??
-    approval?.approver_name ??
-    approval?.actor_name ??
-    approval?.decided_by ??
-    '-'
+function getRejectionReason(surat) {
+  const rejection = getLatestApprovalForLevel(
+    (surat?.approvals ?? []).filter((approval) => approval?.action === 'rejected'),
+    ['rt', 'kepala_desa', 'sekretaris_desa'],
   )
+
+  return rejection?.notes ?? surat?.notes ?? null
 }
 
-function getApproverRole(approval) {
-  const roleLabels = {
-    kepala_desa: 'Kepala Desa',
-    sekdes: 'Sekretaris Desa',
-    sekretaris_desa: 'Sekretaris Desa',
-    rt: 'RT',
+function getHint({ surat, canDecide, canDownload, viewerRole }) {
+  if (canDecide) {
+    return surat.current_step?.is_final
+      ? 'Persetujuan Anda menerbitkan surat dengan tanda tangan dan stempel desa.'
+      : 'Periksa surat, lalu setujui untuk meneruskan ke Kepala Desa atau tolak dengan alasan.'
   }
 
-  return roleLabels[approval?.approval_level] ?? null
-}
-
-function getApprovalNotes(approval, surat) {
-  return approval?.notes ?? approval?.reason ?? surat?.notes ?? 'Tidak ada catatan.'
-}
-
-function DecisionBox({ approval, title, surat }) {
-  if (!approval) {
-    return null
+  if (surat.status === SURAT_STATUS.APPROVED) {
+    return canDownload
+      ? 'Surat sudah terbit. Pilih format saat mengunduh: digital atau untuk tanda tangan basah.'
+      : 'Surat sudah terbit.'
   }
 
-  const isRejected = approval.action === 'rejected'
-  const approverRole = getApproverRole(approval)
+  if (surat.status === SURAT_STATUS.REJECTED) {
+    return 'Surat ini ditolak. Pemohon dapat mengajukan ulang setelah memperbaikinya.'
+  }
 
-  return (
-    <div className={`sid-decision-box ${isRejected ? 'rejected' : 'approved'}`}>
-      <div className="sid-decision-header">
-        <p className="sid-decision-title">{title}</p>
+  if (MONITOR_ROLES.includes(viewerRole)) {
+    return 'Anda memantau surat di wilayah Anda. Keputusan ada di RT dan Kepala Desa.'
+  }
 
-        <span className={`sid-decision-badge ${isRejected ? 'rejected' : 'approved'}`}>
-          {isRejected ? 'Ditolak' : 'Disetujui'}
-        </span>
-      </div>
-
-      <div className="sid-decision-meta">
-        diputuskan oleh <strong>{getApproverName(approval)}</strong>
-        {approverRole && <> ({approverRole})</>}
-      </div>
-
-      {isRejected && <p className="sid-decision-comment-label">Komentar Penolakan</p>}
-
-      <div className={`sid-decision-comment ${isRejected ? 'rejected' : 'approved'}`}>
-        {getApprovalNotes(approval, surat)}
-      </div>
-    </div>
-  )
+  return 'Surat sedang menunggu keputusan di tahap lain.'
 }
 
 export default function SuratDetailModal({
@@ -89,9 +69,7 @@ export default function SuratDetailModal({
   onClose,
   surat,
   notFound,
-  subtitle,
-  decisionLevels = [],
-  showStatus = false,
+  viewerRole = null,
   currentUserRole = null,
   apiRole = null,
   onApprove,
@@ -99,151 +77,92 @@ export default function SuratDetailModal({
   onConflict,
   closeOnDecision = true,
   showPreview = true,
-  previewWhen = null,
+  canDownload = false,
 }) {
   if (suratId === null) {
     return null
   }
 
-  const infoFields = surat
-    ? [
-        {
-          label: 'Nama Pemohon',
-          value: FIELD_MAP.namaPemohon(surat),
-        },
-        {
-          label: 'NIK',
-          value: FIELD_MAP.nik(surat),
-        },
-        {
-          label: 'Alamat',
-          value: FIELD_MAP.alamat(surat),
-        },
-        {
-          label: 'Jenis Surat',
-          value: FIELD_MAP.jenisSurat(surat),
-        },
-        ...(surat?.purpose ? [{ label: 'Keperluan', value: FIELD_MAP.keperluan(surat) }] : []),
-        {
-          label: 'Diajukan',
-          value: FIELD_MAP.diajukan(surat),
-        },
-        {
-          label: 'Terakhir diproses',
-          value: FIELD_MAP.terakhirDiproses(surat),
-        },
-      ]
-    : []
-
-  const decisions = surat
-    ? decisionLevels
-        .map((decision) => ({
-          ...decision,
-          approval: getLatestApprovalForLevel(surat.approvals, decision.levels),
-        }))
-        .filter((decision) => decision.approval)
-    : []
-
-  const canPreview = showPreview && surat && (!previewWhen || surat.status === previewWhen)
-
-  const handleApprove = async (response) => {
-    if (onApprove) {
-      await onApprove(response)
-    }
-  }
-
-  const handleReject = async (notes, response) => {
-    if (onReject) {
-      await onReject(notes, response)
-    }
-  }
+  const canDecide = surat
+    ? canDecideOnLetter({
+        currentStep: surat.current_step,
+        approvals: surat.approvals,
+        letterStatus: surat.status,
+        currentUserRole,
+        apiRole,
+      })
+    : false
+  const isApproved = surat?.status === SURAT_STATUS.APPROVED
+  const isRejected = surat?.status === SURAT_STATUS.REJECTED
+  const rejectionReason = isRejected ? getRejectionReason(surat) : null
 
   return (
-    <div className="sid-modal-overlay">
-      <div className="sid-modal">
-        <button type="button" onClick={onClose} className="sid-modal-close" aria-label="Tutup">
-          ✕
-        </button>
-
-        {notFound ? (
-          <p className="sid-modal-message">Surat tidak ditemukan.</p>
-        ) : !surat ? (
-          <p className="sid-modal-message">Memuat...</p>
+    <LetterDossierModal
+      surat={surat}
+      notFound={notFound}
+      onClose={onClose}
+      preview={showPreview && surat ? <PdfCanvasPreview surat={surat} /> : null}
+      hint={surat ? getHint({ surat, canDecide, canDownload, viewerRole }) : null}
+      actions={
+        canDecide ? (
+          <ApprovalStepRenderer
+            currentStep={surat.current_step}
+            approvals={surat.approvals}
+            letterStatus={surat.status}
+            currentUserRole={currentUserRole}
+            apiRole={apiRole}
+            letterId={surat.id}
+            onApprove={onApprove}
+            onReject={onReject}
+            onConflict={onConflict}
+            onClose={onClose}
+            closeOnDecision={closeOnDecision}
+          />
         ) : (
           <>
-            <h2 className="sid-modal-title">Detail Permohonan Surat</h2>
-
-            <p className="sid-modal-subtitle">
-              #{FIELD_MAP.noSurat(surat)}
-              {' · '}
-              {subtitle}
-            </p>
-
-            <ApprovalStepper surat={surat} />
-
-            {(showStatus || surat.is_overdue === true) && (
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                {showStatus && <StatusBadge status={surat.status} />}
-                <OverdueBadge isOverdue={surat.is_overdue} />
-              </div>
-            )}
-
-            <div className="sid-modal-info">
-              {infoFields.map((field) => (
-                <div key={field.label}>
-                  <p className="sid-modal-info-label">{field.label}</p>
-
-                  <p className="sid-modal-info-value">{field.value}</p>
-                </div>
-              ))}
-            </div>
-
-            <LetterExtrasPanel letterId={surat.id} />
-
-            {decisions.map((decision) => (
-              <DecisionBox
-                key={decision.title}
-                approval={decision.approval}
-                title={decision.title}
-                surat={surat}
-              />
-            ))}
-
-            {apiRole && surat && (
-              <div className="mb-4">
-                <ApprovalStepRenderer
-                  currentStep={surat.current_step}
-                  approvals={surat.approvals}
-                  letterStatus={surat.status}
-                  currentUserRole={currentUserRole}
-                  apiRole={apiRole}
-                  letterId={surat.id}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                  onConflict={onConflict}
-                  onClose={onClose}
-                  closeOnDecision={closeOnDecision}
-                />
-              </div>
-            )}
-
-            {canPreview && (
-              <button
-                type="button"
-                onClick={() => previewSuratPDF(surat)}
-                className="sid-modal-preview"
-              >
-                <Eye size={16} />
-                Lihat Dokumen (Preview)
-              </button>
-            )}
-
-            <button type="button" onClick={onClose} className="sid-modal-action back">
-              ✓ Kembali
+            <button type="button" className="sid-dossier-button-quiet" onClick={onClose}>
+              Tutup
             </button>
+            {canDownload && isApproved && <DownloadSuratMenu surat={surat} />}
           </>
-        )}
-      </div>
-    </div>
+        )
+      }
+    >
+      {surat && (
+        <>
+          {isRejected && rejectionReason && (
+            <DossierSection title="Alasan penolakan">
+              <DossierQuote tone="danger">{rejectionReason}</DossierQuote>
+            </DossierSection>
+          )}
+
+          <DossierSection title="Pemohon">
+            <DossierFacts
+              items={[
+                { label: 'Nama', value: surat.applicant_name ?? surat.citizen?.name },
+                { label: 'NIK', value: getApplicantNik(surat) },
+                { label: 'Alamat', value: getApplicantAddress(surat) },
+                { label: 'Keperluan', value: surat.purpose },
+                { label: 'Diajukan', value: formatDossierDateTime(surat.submitted_at) },
+              ]}
+            />
+          </DossierSection>
+
+          {!isRejected && surat.notes && (
+            <DossierSection title="Catatan pemohon">
+              <DossierQuote>{surat.notes}</DossierQuote>
+            </DossierSection>
+          )}
+
+          <DossierSection title="Tahapan">
+            <FlowTimeline surat={surat} />
+          </DossierSection>
+
+          <div className="sid-dossier-extras">
+            <LetterExtrasPanel letterId={surat.id} />
+          </div>
+        </>
+      )}
+    </LetterDossierModal>
   )
 }

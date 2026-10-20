@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\LetterFlowLogReason;
 use App\Enums\LetterStatus;
+use App\Enums\UserRole;
 use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\User;
@@ -198,7 +199,7 @@ class LetterService
         if ($step === null) {
             // Flow tanpa step tidak punya approver; surat akan menggantung
             // selamanya bila tetap dibuat.
-            abort(422, 'Jenis surat ini belum memiliki alur persetujuan. Hubungi Petugas Desa.');
+            abort(422, 'Jenis surat ini belum memiliki alur persetujuan. Hubungi '.UserRole::stafSidLabel().'.');
         }
 
         $letter = $this->letterRepository->update($letter, [
@@ -250,7 +251,7 @@ class LetterService
             'reason' => LetterFlowLogReason::HeldForVacantApprover->value,
         ]);
 
-        foreach ($this->officialService->resolvePetugasDesaUsers($letter->village_id) as $petugas) {
+        foreach ($this->officialService->resolveStafSidUsers($letter->village_id) as $petugas) {
             $petugas->notify(new LetterStatusNotification(
                 $letter,
                 'Surat Tertahan: Pejabat RT Kosong',
@@ -293,7 +294,7 @@ class LetterService
 
     /**
      * EV5-4-S7. Rewrite total dari switch lama yang salah menggabungkan
-     * kasi_pelayanan/kaur_tu_umum/petugas_desa/sekretaris_desa/
+     * kasi_pelayanan/kaur_tu_umum/staf_sid/sekretaris_desa/
      * kepala_desa jadi satu case "lihat semua surat" (TDD-01 Table 3 -
      * Scope Monitoring Surat per Role, paths/letters/letters.yaml).
      * Daftar role dibatasi per wilayah dan tahap yang telah dicapai;
@@ -313,6 +314,24 @@ class LetterService
         $this->flagOverdueLetters($letters->getCollection());
 
         return $letters;
+    }
+
+    /**
+     * Seluruh surat (tanpa paginasi) atas scope dan filter yang sama
+     * dengan daftar, untuk laporan ekspor Excel.
+     *
+     * @return Collection<int, Letter>
+     */
+    public function exportScopedLetters(User $user, array $filters = []): Collection
+    {
+        $query = $this->scopedQuery($user, $filters);
+
+        $this->applyFilters($query, $filters);
+
+        return $this->letterRepository
+            ->forListing($query)
+            ->latest('submitted_at')
+            ->get();
     }
 
     /**
@@ -348,15 +367,33 @@ class LetterService
                 ->all(),
             'by_period' => $this->letterRepository->countByPeriodAndStatus($query, [
                 'day' => now()->startOfDay(),
-                'week' => now()->subDays(7),
+                'week' => now()->startOfWeek(Carbon::MONDAY),
                 'month' => now()->startOfMonth(),
             ]),
         ];
     }
 
     /**
+     * Jumlah surat yang diajukan per tanggal dalam rentang, atas scope yang
+     * sama dengan daftar dan ringkasan surat, supaya grafik dashboard
+     * cocok dengan kartu angkanya.
+     *
+     * @return array<string, int> tanggal (Y-m-d) => jumlah
+     */
+    public function countSubmittedPerDayForUser(User $user, Carbon $from, Carbon $to, ?string $letterTypeId = null): array
+    {
+        $query = $this->scopedQuery($user, []);
+
+        if ($letterTypeId && $letterTypeId !== 'all') {
+            $query->where('letters.letter_type_id', $letterTypeId);
+        }
+
+        return $this->letterRepository->countSubmittedPerDay($query, $from, $to);
+    }
+
+    /**
      * Scope daftar surat per role, tanpa filter tampilan maupun eager-load
-     * final; dipakai bersama oleh daftar berpaginasi dan ringkasan.
+     * final; dipakai bersama oleh daftar berpaginasi, ringkasan, dan grafik.
      */
     private function scopedQuery(User $user, array $filters): Builder
     {
@@ -370,7 +407,7 @@ class LetterService
                 'kadus' => $this->scopeForKadus($user),
                 'kepala_desa', 'sekretaris_desa' => $this->scopeForKadesSekdes($user),
                 'kasi_pelayanan', 'kaur_tu_umum' => $this->scopeForKasiKaur($user),
-                'petugas_desa' => $this->letterRepository
+                'staf_sid' => $this->letterRepository
                     ->queryForList()
                     ->where('village_id', $user->official?->village_id),
                 default => abort(403, 'Anda tidak berwenang mengakses daftar surat ini.'),

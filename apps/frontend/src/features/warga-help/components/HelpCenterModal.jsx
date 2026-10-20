@@ -2,6 +2,7 @@
 // HelpCenterModal.jsx
 // Popup "Pusat Bantuan" untuk Warga: kontak, alamat, jam operasional
 // desa. Dibuka dari ikon Pusat Bantuan di navbar WargaLayout.
+// Semua isian dari data desa (Kelola Profil Desa); tanpa data tampil "-".
 // ==========================================
 
 import { X, Phone, Mail, MapPin, Clock, HelpCircle } from 'lucide-react'
@@ -40,29 +41,31 @@ export default function HelpCenterModal({ open, onClose }) {
             CONTENT
         ========================= */}
         <div className="sid-help-modal-content">
-          {/* TELEPON */}
-          <div className="sid-help-item">
-            <div className="sid-help-item-icon">
-              <Phone size={16} />
+          {/* TELEPON + EMAIL: kelompoknya di tengah, teksnya tetap rata kiri. */}
+          <div className="sid-help-contact-group">
+            <div className="sid-help-item">
+              <div className="sid-help-item-icon">
+                <Phone size={16} />
+              </div>
+
+              <div className="sid-help-item-content">
+                <p className="sid-help-item-label">Telepon / WhatsApp</p>
+
+                <p className="sid-help-item-value">{village?.phone || '-'}</p>
+              </div>
             </div>
 
-            <div className="sid-help-item-content">
-              <p className="sid-help-item-label">Telepon / WhatsApp</p>
+            {/* EMAIL */}
+            <div className="sid-help-item">
+              <div className="sid-help-item-icon">
+                <Mail size={16} />
+              </div>
 
-              <p className="sid-help-item-value">{village?.phone || '+62 812-3456-7890'}</p>
-            </div>
-          </div>
+              <div className="sid-help-item-content">
+                <p className="sid-help-item-label">Email</p>
 
-          {/* EMAIL */}
-          <div className="sid-help-item">
-            <div className="sid-help-item-icon">
-              <Mail size={16} />
-            </div>
-
-            <div className="sid-help-item-content">
-              <p className="sid-help-item-label">Email</p>
-
-              <p className="sid-help-item-value">{village?.email || 'info@cibenda.desa.id'}</p>
+                <p className="sid-help-item-value">{village?.email || '-'}</p>
+              </div>
             </div>
           </div>
 
@@ -75,9 +78,7 @@ export default function HelpCenterModal({ open, onClose }) {
             <div className="sid-help-item-content">
               <p className="sid-help-item-label">Alamat Kantor Desa</p>
 
-              <p className="sid-help-item-value">
-                {village?.address || 'Jl. Raya Parigi No. 123, Cibenda, Parigi, Pangandaran'}
-              </p>
+              <p className="sid-help-item-value">{village?.address || '-'}</p>
             </div>
           </div>
 
@@ -90,7 +91,7 @@ export default function HelpCenterModal({ open, onClose }) {
             <div className="sid-help-item-content">
               <p className="sid-help-item-label">Jam Operasional</p>
 
-              <p className="sid-help-item-value">Senin – Jumat, 08.00 – 16.00 WIB</p>
+              <p className="sid-help-item-value">{village?.office_hours || '-'}</p>
             </div>
           </div>
 

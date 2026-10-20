@@ -9,10 +9,14 @@ vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: vi.fn(),
 }))
 
+vi.mock('@/features/auth/contexts/AuthContext', () => ({
+  useAuth: () => ({ user: null, isLoading: false }),
+}))
+
 const renderLayout = () =>
   render(
     <MemoryRouter initialEntries={['/berita']}>
-      <MainLayout isDev={false}>
+      <MainLayout>
         <p>Isi berita</p>
       </MainLayout>
     </MemoryRouter>,
@@ -48,5 +52,46 @@ describe('MainLayout', () => {
     for (const link of screen.queryAllByRole('link', { name: /^beranda$/i, hidden: true })) {
       expect(link.closest('header.bd-header')).not.toBeNull()
     }
+  })
+
+  // Bar pengumuman menempel di bawah header di semua halaman publik.
+  describe('announcement bar', () => {
+    const bar = () => screen.queryByRole('region', { name: 'Pengumuman desa' })
+    const withAnnouncement = (announcement) =>
+      usePublicVillageInfo.mockReturnValue({
+        village: null,
+        stats: null,
+        contacts: [],
+        announcement,
+      })
+
+    it('shows the active announcement inside the sticky header area', () => {
+      withAnnouncement({
+        title: 'Kantor desa tutup Jumat siang',
+        body: null,
+        link_url: null,
+        expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+      })
+
+      const { container } = renderLayout()
+
+      const region = bar()
+      expect(region).toHaveTextContent('Kantor desa tutup Jumat siang')
+      expect(region.closest('.bd-chrome--sticky')).toBe(
+        container.querySelector('.bd-chrome--sticky'),
+      )
+      expect(region.closest('main')).toBeNull()
+    })
+
+    it('is not rendered without an announcement or after it expires', () => {
+      withAnnouncement(null)
+      const { unmount } = renderLayout()
+      expect(bar()).toBeNull()
+      unmount()
+
+      withAnnouncement({ title: 'Lewat', expires_at: new Date(Date.now() - 1000).toISOString() })
+      renderLayout()
+      expect(bar()).toBeNull()
+    })
   })
 })

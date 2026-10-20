@@ -8,6 +8,9 @@ const api = vi.hoisted(() => ({
 
 vi.mock('@/lib/api', () => ({ default: api }))
 
+const { alertDialog } = vi.hoisted(() => ({ alertDialog: vi.fn() }))
+vi.mock('@/shared/lib/dialog', () => ({ alertDialog }))
+
 import { useRegisterForm } from './useRegisterForm'
 
 describe('useRegisterForm', () => {
@@ -26,6 +29,10 @@ describe('useRegisterForm', () => {
 
     expect(result.current.errors.nik).toBe('NIK wajib diisi.')
     expect(api.post).not.toHaveBeenCalled()
+    // Peringatan juga tampil sebagai kartu di tengah layar.
+    expect(alertDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Data belum lengkap', tone: 'warning' }),
+    )
   })
 
   it('registers a citizen after obtaining a CSRF cookie', async () => {

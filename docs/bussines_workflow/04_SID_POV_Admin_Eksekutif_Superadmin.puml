@@ -1,5 +1,5 @@
 @startuml
-title SID - POV Admin Desa, Eksekutif & Superadmin [Business Workflow]
+title SID - POV Admin Desa, Eksekutif & Superadmin [Business Workflow] (diselaraskan source 2026-10-16)
 
 skinparam activity {
   BackgroundColor #EBF3FB
@@ -12,77 +12,63 @@ skinparam note {
   BorderColor #C0A000
 }
 
-|#Wheat|Admin Desa (role: petugas_desa)|
+|#Wheat|Admin Desa (staf_sid)|
 start
 :Login;
-
-if (Aktivitas?) then (Kelola Data Warga)
-  :CRUD Data Warga (manual);
-  :Impor Data Warga via Excel\n(maatwebsite/excel, validasi per baris,\nbaris gagal di-skip + ringkasan);
+if (Aktivitas?) then (Kependudukan)
+  :CRUD warga & KK, impor Excel,\nsurvei sosio-ekonomi KK,\nkatalog pekerjaan;
   stop
-elseif (Kelola Konten - CMS) then
-  :Buat/Edit Profil Desa,\nBerita & Pengumuman, Peraturan Desa;
-  |#LightYellow|Database & Backend|
-  :Catat created_by/updated_by;
-  :Set is_published = true;
-  :Tampil di Halaman Publik;
+elseif (CMS) then
+  :Profil desa (identitas, kop surat,\nlogo, foto beranda, stempel);
+  :Berita (1-2 kategori) & kategori berita;
+  :Peraturan desa; organisasi non-struktural;
+  |#LightYellow|Sistem|
+  :Cache halaman publik desa digugurkan;
   stop
-elseif (Konfigurasi Sistem) then
-  :Kelola Struktur Wilayah (Dusun/RW/RT);
-  :Kelola User, Role & Jabatan;
-  :Kelola Setting Deadline Approval\n(approval_settings: deadline_hours,\nreminder_hours per approval_level);
-  :Edit Konfigurasi Tipe Surat\n(versi sederhana: validity_days,\nassigned_role, is_active);
+elseif (Jabatan & Akun) then
+  :Cari calon via NIK; tetapkan/rotasi/turunkan\npejabat (foto wajib);
+  :Kelola jenis jabatan tanpa akun;
+  :Reset password / reset TTD akun;
+  :Unggah TTD Kepala Desa aktif;
+  stop
+elseif (Konfigurasi Surat) then
+  :Ubah masa berlaku, penugasan Kasi/Kaur,\nstatus aktif jenis surat;
+  :Atur deadline per level (rt, kepala_desa);
+  :Lihat flow approval (read-only);
   stop
 else (Monitoring Surat)
-  :Lihat SELURUH Surat di desa sendiri\n(full visibility, semua status\ntermasuk rejected di step manapun);
+  :Lihat seluruh surat desa (semua status);
+  :Tanggapi surat tertahan (tetapkan RT);
+  :Cadangan Terapkan perubahan data;
   stop
 endif
 
-|#Thistle|Eksekutif (role: kepala_desa / sekretaris_desa)|
-:Login;
-:Buka Daftar Surat dengan\ncurrent_step_order menunjuk posisi ini\n(approver_position = kepala_desa);
-note right
-  BERBEDA dari asumsi sebelumnya:
-  Kepala Desa & Sekretaris Desa adalah
-  APPROVER AKTIF sejak v5.0 (bukan
-  monitoring-only), menggantikan posisi
-  Kadus lama. Keduanya saling
-  pada step `kepala_desa` dengan mekanisme
-  first-action-wins dan row lock.
-end note
-:Lihat Detail + Riwayat Keputusan (RT, FYI RW);
+|#Thistle|Eksekutif (kepala_desa / sekretaris_desa)|
+:Login; terima notifikasi surat lolos RT;
+:Buka daftar surat step kepala_desa\n(tanpa surat milik sendiri);
+:Lihat detail + riwayat RT;
 :Putuskan Setuju / Tolak;
-
+note right
+  Kades & Sekdes saling menggantikan
+  (first-action-wins, row lock).
+  Eksekutif tidak punya akses CMS.
+end note
 if (Keputusan?) then (Tolak)
-  |#LightYellow|Database & Backend|
-  :letters.status = rejected (terminal);
-  :Notifikasi ke Warga;
+  |#LightYellow|Sistem|
+  :rejected (terminal); notifikasi pemohon;
   stop
 else (Setuju)
-  |#LightYellow|Database & Backend|
-  :letters.status = approved (terminal);
-  :Finalisasi nomor surat dan masa berlaku;
-  :Kirim notifikasi ke pemohon;
-  :Kirim notifikasi ke Kasi/Kaur sesuai assigned_role;
-  note right
-    Kasi/Kaur adalah penerima notifikasi dan pemroses
-    surat selesai, bukan approver flow.
-  end note
+  |#LightYellow|Sistem|
+  :approved; nomor surat per kode klasifikasi;
+  :Bekukan snapshot (TTD & stempel Kades saat ini);
+  :Notifikasi pemohon & Kasi/Kaur;
   stop
 endif
 
 |#LightSteelBlue|Superadmin|
 note right
   BELUM DIIMPLEMENTASIKAN.
-  Tidak ada role, middleware, atau
-  halaman untuk tier ini di sistem
-  saat ini. Slot dicadangkan untuk
-  kebutuhan masa depan (mis. jika
-  sistem berkembang multi-desa).
-  Seluruh kapabilitas konfigurasi/audit
-  yang relevan saat ini dijalankan
-  oleh petugas_desa (lihat segmen
-  Admin Desa di atas).
+  Tidak ada role/middleware/halaman.
 end note
 
 @enduml

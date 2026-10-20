@@ -8,8 +8,10 @@ import {
 } from '../api/letterExtrasApi'
 import { refillLetterSignature } from '../api/signatureApi'
 import { FulfillmentPanel } from './FulfillmentPanel'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
 
-const FULFILLMENT_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'petugas_desa']
+const FULFILLMENT_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'staf_sid']
 
 const SIGNATURE_STATUS_LABELS = {
   signed: 'Sudah ditandatangani',
@@ -41,6 +43,25 @@ function SignatureRefill({ letterId, slot, onDone }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+
+    const confirmed = await confirmDialog(
+      mode === 'wet'
+        ? {
+            title: 'Unggah tanda tangan basah?',
+            message: `Dokumen tanda tangan atas nama ${name || 'penanda tangan'} akan dipakai pada surat ini.`,
+            confirmLabel: 'Unggah',
+            tone: 'primary',
+          }
+        : {
+            title: 'Kirim permintaan tanda tangan?',
+            message: `Permintaan dikirim ke warga ber-NIK ${nik}. Surat diproses setelah ia menyetujuinya.`,
+            confirmLabel: 'Kirim',
+            tone: 'primary',
+          },
+    )
+
+    if (!confirmed) return
+
     setSaving(true)
     setError('')
 
@@ -49,6 +70,11 @@ function SignatureRefill({ letterId, slot, onDone }) {
         letterId,
         slot.slot_key,
         mode === 'wet' ? { name, file } : { nik },
+      )
+      notifySuccess(
+        mode === 'wet'
+          ? 'Tanda tangan basah berhasil diunggah.'
+          : 'Permintaan tanda tangan berhasil dikirim.',
       )
       onDone()
     } catch (requestError) {
@@ -108,7 +134,7 @@ function SignatureRefill({ letterId, slot, onDone }) {
       )}
 
       {error && (
-        <p role="alert" className="sid-form-field-error">
+        <p role="alert" className="sid-admin-alert sid-admin-alert-error">
           {error}
         </p>
       )}

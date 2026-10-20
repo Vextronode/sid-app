@@ -32,7 +32,7 @@ class HamletServiceTest extends TestCase
     public function test_create_sets_village_id_from_user_and_defaults_is_active_true(): void
     {
         $village = Village::factory()->create();
-        $user = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
+        $user = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
 
         $hamlet = $this->service->create(['name' => 'Dusun Patrol', 'code' => 'PTR'], $user);
 
@@ -44,7 +44,7 @@ class HamletServiceTest extends TestCase
     public function test_update_allows_change_when_no_active_citizens(): void
     {
         $hamlet = Hamlet::factory()->create(['is_active' => true]);
-        $user = $this->makePetugasDesaActor($hamlet->village_id);
+        $user = $this->makeStafSidActor($hamlet->village_id);
 
         $updated = $this->service->update($hamlet, ['is_active' => false], $user);
 
@@ -55,7 +55,7 @@ class HamletServiceTest extends TestCase
     {
         $hamlet = Hamlet::factory()->create(['is_active' => true]);
         Citizen::factory()->create(['hamlet_id' => $hamlet->id, 'is_active' => true]);
-        $user = $this->makePetugasDesaActor($hamlet->village_id);
+        $user = $this->makeStafSidActor($hamlet->village_id);
 
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage('Dusun tidak bisa dinonaktifkan karena masih ada warga aktif terdaftar di wilayah ini.');
@@ -67,7 +67,7 @@ class HamletServiceTest extends TestCase
     {
         $hamlet = Hamlet::factory()->create(['is_active' => true]);
         Citizen::factory()->create(['hamlet_id' => $hamlet->id, 'is_active' => false]);
-        $user = $this->makePetugasDesaActor($hamlet->village_id);
+        $user = $this->makeStafSidActor($hamlet->village_id);
 
         $updated = $this->service->update($hamlet, ['is_active' => false], $user);
 
@@ -77,7 +77,7 @@ class HamletServiceTest extends TestCase
     public function test_delete_removes_hamlet_without_citizens(): void
     {
         $hamlet = Hamlet::factory()->create();
-        $user = $this->makePetugasDesaActor($hamlet->village_id);
+        $user = $this->makeStafSidActor($hamlet->village_id);
 
         $result = $this->service->delete($hamlet, $user);
 
@@ -89,7 +89,7 @@ class HamletServiceTest extends TestCase
     {
         $hamlet = Hamlet::factory()->create();
         Citizen::factory()->create(['hamlet_id' => $hamlet->id]);
-        $user = $this->makePetugasDesaActor($hamlet->village_id);
+        $user = $this->makeStafSidActor($hamlet->village_id);
 
         $this->expectException(HttpException::class);
         $this->service->delete($hamlet, $user);

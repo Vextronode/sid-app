@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { ExternalLink, Image as ImageIcon, Pencil } from 'lucide-react'
 
+import { formatCoords, googleMapsUrl, villageCoords } from '@/shared/lib/villageMap'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { notifySuccess } from '@/shared/lib/toast'
+
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 
 // Batas ukuran sama dengan backend (UploadVillageImageRequest).
@@ -37,7 +41,6 @@ function PublicImageField({ field, currentUrl, onUpload }) {
   const [draftUrl, setDraftUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const inputId = `village-${field.kind}-upload`
 
   useEffect(
@@ -51,7 +54,6 @@ function PublicImageField({ field, currentUrl, onUpload }) {
     const file = event.target.files?.[0] ?? null
 
     event.target.value = ''
-    setSuccess('')
 
     if (!file) return
 
@@ -76,6 +78,17 @@ function PublicImageField({ field, currentUrl, onUpload }) {
   }
 
   const handleSave = async () => {
+    if (currentUrl) {
+      const confirmed = await confirmDialog({
+        title: `Ganti ${field.label.toLowerCase()}?`,
+        message: 'Gambar lama diganti dan langsung tampil di halaman publik.',
+        confirmLabel: 'Ganti',
+        tone: 'primary',
+      })
+
+      if (!confirmed) return
+    }
+
     setSaving(true)
     setError('')
 
@@ -83,7 +96,7 @@ function PublicImageField({ field, currentUrl, onUpload }) {
       await onUpload(field.kind, draft)
       setDraft(null)
       setDraftUrl('')
-      setSuccess(`${field.label} berhasil disimpan.`)
+      notifySuccess(`${field.label} berhasil disimpan.`)
     } catch (requestError) {
       setError(serverMessage(requestError, `Gagal menyimpan ${field.label.toLowerCase()}.`))
     } finally {
@@ -110,13 +123,8 @@ function PublicImageField({ field, currentUrl, onUpload }) {
       )}
 
       {error && (
-        <p className="sid-form-field-error" role="alert">
+        <p className="sid-admin-alert sid-admin-alert-error" role="alert">
           {error}
-        </p>
-      )}
-      {success && (
-        <p className="sid-upload-description" role="status">
-          {success}
         </p>
       )}
 
@@ -157,6 +165,8 @@ function PublicImageField({ field, currentUrl, onUpload }) {
  * halaman publik. Teksnya diubah lewat modal Edit Profil Desa.
  */
 export default function TampilanPublikCard({ profile, onUpload, onEditText, disabled }) {
+  const mapUrl = googleMapsUrl(profile)
+
   return (
     <div className="sid-profil-desa-card">
       <div className="sid-profil-desa-perangkat-header">
@@ -203,11 +213,18 @@ export default function TampilanPublikCard({ profile, onUpload, onEditText, disa
         </div>
 
         <div className="sid-profil-desa-info-item sid-profil-desa-info-item-full">
-          <span className="sid-profil-desa-info-label">Link Google Maps Kantor Desa</span>
+          <span className="sid-profil-desa-info-label">Sambutan Kepala Desa</span>
           <p className="sid-profil-desa-info-value">
-            {profile.map_url ? (
-              <a href={profile.map_url} target="_blank" rel="noopener noreferrer">
-                {profile.map_url} <ExternalLink size={12} aria-hidden="true" />
+            {profile.welcome_message || 'Belum diisi (blok sambutan tidak tampil di beranda)'}
+          </p>
+        </div>
+
+        <div className="sid-profil-desa-info-item sid-profil-desa-info-item-full">
+          <span className="sid-profil-desa-info-label">Titik Kantor Desa</span>
+          <p className="sid-profil-desa-info-value">
+            {mapUrl ? (
+              <a href={mapUrl} target="_blank" rel="noopener noreferrer">
+                {formatCoords(villageCoords(profile))} <ExternalLink size={12} aria-hidden="true" />
               </a>
             ) : (
               '-'

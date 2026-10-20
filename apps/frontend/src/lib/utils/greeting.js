@@ -6,10 +6,10 @@
 // ==========================================
 
 export function getGreeting() {
-  const jam = new Date().getHours();
+  const jam = new Date().getHours()
 
-  if (jam >= 5 && jam < 11) return 'Selamat Pagi';
-  if (jam >= 11 && jam < 15) return 'Selamat Siang';
-  if (jam >= 15 && jam < 18) return 'Selamat Sore';
-  return 'Selamat Malam';
+  if (jam >= 5 && jam < 11) return 'Selamat Pagi'
+  if (jam >= 11 && jam < 15) return 'Selamat Siang'
+  if (jam >= 15 && jam < 18) return 'Selamat Sore'
+  return 'Selamat Malam'
 }

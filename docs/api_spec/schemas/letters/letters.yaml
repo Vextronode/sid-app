@@ -1,9 +1,12 @@
 Letter:
   type: object
   description: |
-    v5.1: `status` generik; final approver adalah Kades/Sekdes, Kasi/Kaur bukan approver.
-    Posisi "sedang di step mana" dibaca dari `current_step_order` + `current_step`
-    (di-JOIN backend ke flow_steps), bukan dari nama status.
+    Bentuk `LetterResource` (detail surat, respons submit, respons Terapkan).
+    `status` generik; posisi "sedang di step mana" dibaca dari
+    `current_step_order` + `current_step` (di-JOIN ke flow_steps), bukan dari
+    nama status. `current_step_order = 0` berarti surat masih menunggu tanda
+    tangan pihak terkait (lihat `awaiting_signatures`) dan belum masuk ke
+    approver mana pun.
   properties:
     id:
       type: string
@@ -15,10 +18,225 @@ Letter:
     letter_type_id:
       type: integer
       example: 1
-    letter_type:
+    submitted_by:
+      type: string
+      format: uuid
+    on_behalf_of:
+      type: string
+      format: uuid
       nullable: true
-      description: "Included when relation is loaded. Bentuk penuh LetterTypeResource."
-      $ref: '../letter-types/letter-types.yaml#/LetterType'
+      example: null
+      description: "Selalu NULL di MVP - dipersiapkan untuk future use case"
+    citizen_id:
+      type: string
+      format: uuid
+      nullable: true
+      example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
+    letter_number:
+      type: string
+      nullable: true
+      example: "470/001/Des/X/2026"
+      description: |
+        Diisi saat final approve dengan format
+        `{classification_code}/{urut 3 digit}/Des/{bulan Romawi}/{tahun}`.
+        Nomor urut dihitung per desa + kode klasifikasi + tahun.
+    applicant_name:
+      type: string
+      example: "Siti Aminah"
+    applicant_nik_masked:
+      type: string
+      nullable: true
+      example: "************0001"
+      description: "NIK pemohon tidak pernah dikirim plaintext."
+    purpose:
+      type: string
+      nullable: true
+      example: null
+      description: |
+        Kolom legacy. Pengajuan baru selalu mengisi NULL; keperluan yang
+        dibutuhkan sebuah jenis surat menjadi isian di `payload`.
+    payload:
+      type: object
+      nullable: true
+      additionalProperties: true
+      description: |
+        Isian form sesuai `letter_types.form_fields` (kunci = `name` isian).
+        Isian bertipe `file` tidak ada di sini; berkasnya tercatat di `attachments`.
+      example:
+        nama_usaha: "Warung Sembako Berkah"
+        alamat_usaha: "Dusun Patrol RT 001/RW 001"
+    notes:
+      type: string
+      nullable: true
+      example: null
+      description: "Kolom legacy; pengajuan baru selalu NULL."
+    status:
+      type: string
+      enum: [pending, in_progress, approved, rejected]
+      example: "pending"
+      description: |
+        pending: belum ada keputusan approver (termasuk saat menunggu tanda tangan).
+        in_progress: minimal 1 step approve, belum sampai step is_final=true.
+        approved: step is_final=true sudah di-approve.
+        rejected: TERMINAL, rejected_at_step dicatat.
+    flow_id:
+      type: integer
+      example: 1
+      description: "Snapshot dari letter_types.flow_id saat submit, dikunci (bukan live-reference)."
+    current_step_order:
+      type: integer
+      example: 1
+      description: "step_order yang sedang aktif/ditunggu; 0 = menunggu tanda tangan pihak terkait."
+    current_step:
+      $ref: '#/CurrentStep'
+    rejected_at_step:
+      type: integer
+      nullable: true
+      example: null
+    is_overdue:
+      type: boolean
+      example: false
+      description: |
+        Dihitung saat daftar dimuat: true bila deadline approval pending
+        pada step aktif terlewati. Pada detail surat nilainya adalah nilai
+        tersimpan di kolom.
+    expires_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: null
+      description: |
+        Dicap saat final approve dari `letter_types.validity_days`
+        (NULL = berlaku tanpa batas). Perubahan masa berlaku jenis surat
+        tidak mengubah surat yang sudah approved.
+    is_expired:
+      type: boolean
+      example: false
+      description: |
+        true bila `expires_at` sudah lewat. Pemohon tidak lagi dapat
+        mengunduh maupun mem-preview PDF surat ini (403); surat tetap
+        tampil sebagai riwayat. Pejabat dan Petugas Desa tetap dapat
+        membukanya.
+    submitted_at:
+      type: string
+      format: date-time
+      example: "2026-10-01T09:00:00Z"
+    processed_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: null
+    signed_by_official_id:
+      type: integer
+      nullable: true
+      example: 3
+      description: "Kepala Desa yang TTD-nya dibekukan pada snapshot saat final approve."
+    fulfilled_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: null
+      description: "Waktu perubahan data kependudukan diterapkan (Terapkan) oleh Kasi/Kaur/Petugas Desa."
+    fulfilled_by:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+    needs_fulfillment:
+      type: boolean
+      example: false
+      description: |
+        Hanya ada bila relasi letterType dimuat. True bila surat approved,
+        jenis suratnya memiliki `data_action` selain `none`, dan belum diterapkan.
+    awaiting_signatures:
+      type: boolean
+      example: false
+      description: "status = pending dan current_step_order = 0."
+    has_supporting_document:
+      type: boolean
+      example: false
+      description: "Hanya ada bila relasi letterType dimuat. True bila jenis surat memiliki `supporting_template`."
+    rw_fyi_notified:
+      type: boolean
+      example: true
+      description: |
+        Hanya ada bila relasi approvals dimuat. True jika ada keputusan
+        approve pada level RT; indikator surat melewati tahap RT, bukan bukti
+        keberhasilan pengiriman notifikasi FYI.
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+    citizen:
+      description: "Included when relation is loaded"
+      allOf:
+        - $ref: '../citizens/citizens.yaml#/Citizen'
+    letter_type:
+      description: |
+        Included when relation is loaded. Pada detail surat backend hanya
+        memuat kolom id, name, code, assigned_role, produces_letter,
+        data_action, form_fields, signature_slots, supporting_template.
+      allOf:
+        - $ref: '../letter-types/letter-types.yaml#/LetterType'
+    approvals:
+      type: array
+      items:
+        $ref: '#/LetterApproval'
+    status_logs:
+      type: array
+      items:
+        $ref: '#/LetterStatusLog'
+    attachments:
+      type: array
+      items:
+        $ref: '#/LetterAttachment'
+    signatures:
+      type: array
+      description: "Keadaan terkini tiap slot tanda tangan (baris terbaru per slot)."
+      items:
+        $ref: '#/LetterSignature'
+    user:
+      description: "Included when relation is loaded"
+      allOf:
+        - $ref: '../users/users.yaml#/User'
+
+CurrentStep:
+  type: object
+  nullable: true
+  description: "Step flow yang cocok dengan current_step_order; null bila tidak ada (mis. menunggu tanda tangan)."
+  properties:
+    step_order:
+      type: integer
+      example: 1
+    approver_position:
+      type: string
+      enum: [rt, kepala_desa, sekretaris_desa, kasi_pelayanan, kaur_tu_umum]
+      example: "rt"
+      description: "Flow seeder hanya memakai rt dan kepala_desa; nilai lain hanya mungkin pada data legacy."
+    is_final:
+      type: boolean
+      example: false
+
+LetterDetail:
+  allOf:
+    - $ref: '#/Letter'
+  description: |
+    GET /letters/{id} memuat relasi citizen.rt, letterType (kolom terbatas),
+    approvals.approvedBy, flow.steps, statusLogs.actor, attachments, signatures.
+
+LetterListItem:
+  type: object
+  description: |
+    Bentuk ringkas `LetterListResource` untuk GET /letters (daftar berpaginasi).
+    Tidak memuat payload, lampiran, tanda tangan, maupun riwayat.
+  properties:
+    id:
+      type: string
+      format: uuid
+    letter_type_id:
+      type: integer
     submitted_by:
       type: string
       format: uuid
@@ -26,138 +244,152 @@ Letter:
       type: string
       format: uuid
       nullable: true
-      example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
-    on_behalf_of:
-      type: string
-      format: uuid
-      nullable: true
-      example: null
-      description: "Selalu NULL di MVP - dipersiapkan untuk future use case"
     letter_number:
       type: string
       nullable: true
-      example: null
-      description: "Diisi otomatis saat status = approved pada step is_final=true"
     applicant_name:
       type: string
-      example: "Siti Aminah"
-    applicant_nik_masked:
-      type: string
-      example: "************0001"
-    purpose:
-      type: string
-      example: "Untuk keperluan pembuatan rekening bank"
     notes:
       type: string
       nullable: true
-      example: null
-    payload:
-      type: object
-      nullable: true
-      description: "Data tambahan bebas (JSON, cast array)"
     status:
       type: string
       enum: [pending, in_progress, approved, rejected]
-      example: "pending"
-      description: |
-        BARU v5.0 - status generik menggantikan ENUM granular per posisi
-        (rt_approved/rw_approved/kadus_approved/dst sudah dihapus total).
-        pending: belum ada keputusan approver; tahap non-final milik pemohon dapat dilewati.
-        in_progress: minimal 1 step approve, belum sampai step is_final=true.
-        approved: step is_final=true sudah di-approve.
-        rejected: TERMINAL, rejected_at_step dicatat.
-    flow_id:
-      type: integer
-      example: 3
-      description: "BARU v5.0 - snapshot dari letter_types.flow_id saat submit, dikunci (bukan live-reference)"
     current_step_order:
       type: integer
-      example: 1
-      description: "BARU v5.0 - step_order yang sedang aktif/ditunggu, dicocokkan ke flow_steps"
     current_step:
-      type: object
-      nullable: true
-      description: "Hasil JOIN current_step_order ke flow_steps, untuk kemudahan FE (ApprovalStepRenderer) tanpa request tambahan"
-      properties:
-        step_order:
-          type: integer
-          example: 1
-        approver_position:
-          type: string
-          enum: [rt, kepala_desa]
-          example: "rt"
-        is_final:
-          type: boolean
-          example: false
+      $ref: '#/CurrentStep'
     rejected_at_step:
       type: integer
       nullable: true
-      example: null
-      description: "BARU v5.0 - step_order tempat surat direject, untuk histori/laporan"
     is_overdue:
       type: boolean
-      example: false
-      description: "Pada daftar surat, true bila deadline approval pending pada step aktif terlewati. Surat terminal dan approval dari step sebelumnya tidak membuat surat overdue."
+    awaiting_signatures:
+      type: boolean
+    needs_fulfillment:
+      type: boolean
     expires_at:
       type: string
       format: date-time
       nullable: true
-      example: null
+    is_expired:
+      type: boolean
     submitted_at:
       type: string
       format: date-time
-      example: "2026-07-01T09:00:00Z"
     processed_at:
       type: string
       format: date-time
       nullable: true
-      example: null
     created_at:
       type: string
       format: date-time
-      example: "2026-07-01T09:00:00Z"
     updated_at:
       type: string
       format: date-time
-      example: "2026-07-01T09:00:00Z"
-    citizen:
+    letter_type:
+      type: object
       nullable: true
-      description: "Included when relation is loaded"
-      $ref: '../citizens/citizens.yaml#/Citizen'
-    user:
-      nullable: true
-      description: "Included when relation is loaded"
-      $ref: '../users/users.yaml#/User'
-
-LetterDetail:
-  allOf:
-    - $ref: '#/Letter'
-    - type: object
       properties:
-        approvals:
-          type: array
-          items:
-            $ref: '#/LetterApproval'
-        status_logs:
-          type: array
-          items:
-            $ref: '#/LetterStatusLog'
-        rw_fyi_notified:
-          type: boolean
-          example: true
-          description: |
-            True jika terdapat keputusan approve pada step RT. Ini indikator
-            bahwa surat melewati tahap RT, bukan bukti pengiriman atau
-            keberhasilan notifikasi FYI ke RW. RW tidak punya row approval.
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Surat Keterangan Usaha"
+        code:
+          type: string
+          example: "A01"
+    citizen:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Siti Aminah"
+
+LetterListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Daftar surat berhasil diambil."
+    data:
+      type: array
+      items:
+        $ref: '#/LetterListItem'
+    meta:
+      $ref: '../common/errors.yaml#/PaginationMeta'
+
+LetterSummary:
+  type: object
+  description: |
+    Ringkasan angka atas scope yang sama persis dengan GET /letters (per
+    role/wilayah, atau scope=mine). Filter tampilan (status, search, dst)
+    tidak diterapkan pada ringkasan.
+  properties:
+    total:
+      type: integer
+      example: 42
+    by_status:
+      type: object
+      properties:
+        pending:
+          type: integer
+          example: 5
+        in_progress:
+          type: integer
+          example: 3
+        approved:
+          type: integer
+          example: 30
+        rejected:
+          type: integer
+          example: 4
+    overdue:
+      type: integer
+      example: 1
+    by_type:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: integer
+            example: 1
+          name:
+            type: string
+            nullable: true
+            example: "Surat Keterangan Usaha"
+          total:
+            type: integer
+            example: 12
+    by_period:
+      type: object
+      description: "Kunci day (sejak awal hari), week (sejak Senin minggu kalender berjalan, Senin-Minggu, sama dengan /dashboard/letter-stats), month (sejak awal bulan)."
+      additionalProperties:
+        type: object
+        properties:
+          total:
+            type: integer
+          pending:
+            type: integer
+          in_progress:
+            type: integer
+          approved:
+            type: integer
+          rejected:
+            type: integer
 
 LetterApproval:
   type: object
   description: |
     Row dibuat saat suatu step mulai menunggu keputusan dengan approved_by
-    dan action null, lalu diperbarui saat keputusan dicatat. Ketika alur
-    maju, row pending deadline dibuat untuk step berikutnya. `sekdes` tetap
-    nilai legacy DB; request flow baru hanya mengizinkan rt/kepala_desa.
-    RW tidak pernah membuat row (FYI saja).
+    dan action null, lalu diperbarui saat keputusan dicatat. RW dan Kadus
+    tidak pernah membuat row (FYI saja).
   properties:
     id:
       type: integer
@@ -169,48 +401,42 @@ LetterApproval:
       type: string
       format: uuid
       nullable: true
-      example: "3c7e1a95-4d82-4b06-9f5a-8d2b6e0c4a17"
     approver_name:
       type: string
       nullable: true
       example: "Pak RT Ujang"
     approved_by_user:
-      nullable: true
       description: "Included when relation approvedBy is loaded"
-      $ref: '../users/users.yaml#/User'
+      allOf:
+        - $ref: '../users/users.yaml#/User'
     approval_level:
       type: string
-      enum: [rt, kepala_desa, sekdes, kasi_pelayanan, kaur_tu_umum]
+      enum: [rt, kepala_desa, sekretaris_desa, kasi_pelayanan, kaur_tu_umum]
       example: "rt"
-      description: "Level step untuk row pending; setelah keputusan berisi posisi aktor sebenarnya. Kades dan Sekdes saling menggantikan pada step kepala_desa."
+      description: "Level step untuk row pending; setelah keputusan berisi posisi aktor sebenarnya (sekretaris_desa bila Sekdes yang memutuskan step kepala_desa)."
     flow_step_id:
       type: integer
       nullable: true
       example: 12
-      description: "BARU v5.0 - referensi step spesifik yang dieksekusi, untuk audit trail granular"
     action:
       type: string
       enum: [approved, rejected]
       nullable: true
-      example: "approved"
     notes:
       type: string
       nullable: true
-      example: null
     deadline_at:
       type: string
       format: date-time
       nullable: true
-      example: "2026-07-02T09:00:00Z"
     reminded_at:
       type: string
       format: date-time
       nullable: true
-      example: null
+      description: "Waktu pengingat approval dikirim (approvals:send-reminders); NULL bila belum. Juga diisi bila tahap tidak punya pejabat aktif agar tidak dicoba ulang."
     created_at:
       type: string
       format: date-time
-      example: "2026-07-01T14:00:00Z"
 
 LetterStatusLog:
   type: object
@@ -224,7 +450,6 @@ LetterStatusLog:
     actor_id:
       type: string
       format: uuid
-      example: "3c7e1a95-4d82-4b06-9f5a-8d2b6e0c4a17"
     actor_name:
       type: string
       example: "Pak RT Ujang"
@@ -232,53 +457,145 @@ LetterStatusLog:
       type: string
       enum: [pending, in_progress, approved, rejected]
       nullable: true
-      example: null
     new_status:
       type: string
       enum: [pending, in_progress, approved, rejected]
-      example: "in_progress"
     notes:
       type: string
       nullable: true
-      example: null
-      description: "Dipetakan dari kolom `reason` pada letter_status_logs (alasan/catatan perubahan status)"
+      description: |
+        Dipetakan dari kolom `reason`. Nilai sistem yang dipakai antara lain:
+        "Permohonan surat dibuat", "Menunggu tanda tangan pihak terkait",
+        "Surat ditahan: tahap RT belum memiliki pejabat aktif",
+        "Tahap RT dilewati: pemohon adalah pejabat pada tahap tersebut",
+        "Perubahan data kependudukan diterapkan".
     ip_address:
       type: string
       nullable: true
-      example: "182.1.2.3"
     created_at:
       type: string
       format: date-time
-      example: "2026-07-01T14:00:00Z"
+
+LetterAttachment:
+  type: object
+  description: "Berkas pada disk privat; dibuka lewat `url` yang memeriksa hak lihat surat."
+  properties:
+    id:
+      type: integer
+      example: 15
+    kind:
+      type: string
+      enum: [attachment, field, wet_signature]
+      example: "field"
+      description: |
+        field: berkas isian bertipe file pada form; wet_signature: foto dokumen
+        ber-TTD basah untuk sebuah slot; attachment: lampiran umum (tidak dibuat
+        oleh alur pengajuan saat ini).
+    field:
+      type: string
+      nullable: true
+      example: "foto_usaha"
+      description: "Nama isian (kind=field) atau slot_key (kind=wet_signature)."
+    original_name:
+      type: string
+      example: "foto-warung.jpg"
+    mime_type:
+      type: string
+      example: "image/jpeg"
+    size:
+      type: integer
+      example: 204800
+    url:
+      type: string
+      example: "/api/letters/9b1d.../attachments/15"
+    created_at:
+      type: string
+      format: date-time
+
+LetterSignature:
+  type: object
+  description: "Keadaan terkini satu slot tanda tangan pada surat (`letter_types.signature_slots`)."
+  properties:
+    slot_key:
+      type: string
+      example: "saksi_1"
+    slot_label:
+      type: string
+      example: "Saksi 1"
+    signer_type:
+      type: string
+      enum: [applicant, other]
+    method:
+      type: string
+      enum: [digital, wet]
+    status:
+      type: string
+      enum: [pending, signed, rejected, expired, cancelled]
+      description: "pending yang sudah lewat expires_at dilaporkan sebagai expired."
+    signer_name:
+      type: string
+      nullable: true
+      description: "Hanya diisi bila status signed."
+    expires_at:
+      type: string
+      format: date-time
+      nullable: true
+      description: "Hanya diisi bila status pending."
+    responded_at:
+      type: string
+      format: date-time
+      nullable: true
 
 LetterCreateRequest:
   type: object
-  required: [letter_type_id, purpose]
+  description: |
+    Dikirim sebagai `multipart/form-data` bila ada berkas, atau JSON bila tidak.
+    Data pemohon (nama, NIK, alamat) diambil dari citizen akun yang login.
+    Aturan `payload` diturunkan dari `letter_types.form_fields`:
+    - jenis surat dengan `form_fields = null` menerima isian bebas (teks maks 2000);
+    - jenis surat dengan definisi hanya menerima isian terdaftar; isian tak dikenal → 422.
+    Tipe isian: text (maks 255), textarea (maks 2000), date, number, nik (16 digit),
+    select (harus salah satu `options.value`), file (dikirim di `files.{name}`).
+  required: [letter_type_id]
   properties:
     letter_type_id:
       type: integer
       example: 1
-    purpose:
-      type: string
-      maxLength: 500
-      example: "Untuk keperluan pembuatan rekening bank"
-    notes:
-      type: string
-      nullable: true
-      example: "Mohon diproses secepatnya"
+      description: "Jenis surat milik desa pemohon."
     payload:
       type: object
       nullable: true
-      description: "Data tambahan bebas (array/objek). Disimpan apa adanya ke `letters.payload` (JSON, cast array)."
-    attachments:
-      type: array
+      additionalProperties: true
+      example:
+        nama_usaha: "Warung Sembako Berkah"
+    files:
+      type: object
+      nullable: true
+      description: "Berkas per isian bertipe file: `files[{name}]`. PDF/JPG/JPEG/PNG (atau JPG/PNG bila `accept: image`), maks 2048 KB."
+      additionalProperties:
+        type: string
+        format: binary
+    signers:
+      type: object
       nullable: true
       description: |
-        Berkas lampiran (pdf/jpg/jpeg/png, maks 2048 KB per berkas). Hanya DIVALIDASI oleh
-        `StoreLetterRequest`; `LetterService` tidak menyimpan atau memprosesnya, dan tidak
-        ada kolom/tabel penyimpanan lampiran. Field `supporting_document` pada versi spec
-        sebelumnya tidak ada di source dan sudah dihapus.
-      items:
+        Per slot tanda tangan pihak lain: `signers[{slot}][nik]` (16 digit) untuk
+        meminta TTD digital pemilik NIK, atau `signers[{slot}][name]` (maks 100)
+        bersama `signature_files[{slot}]` untuk TTD basah.
+      additionalProperties:
+        type: object
+        properties:
+          nik:
+            type: string
+            pattern: '^\d{16}$'
+          name:
+            type: string
+            maxLength: 100
+    signature_files:
+      type: object
+      nullable: true
+      description: "Foto dokumen ber-TTD basah per slot. PDF/JPG/JPEG/PNG, maks 2048 KB."
+      additionalProperties:
         type: string
         format: binary
 
@@ -301,6 +618,144 @@ DecisionResponse:
   properties:
     message:
       type: string
-      example: "Keputusan berhasil disimpan"
-    data:
-      $ref: '#/Letter'
+      example: "Surat berhasil diproses."
+
+FulfillmentProposal:
+  type: object
+  description: "Bahan tinjauan sebelum Terapkan: tiap kolom dengan nilai sekarang dan nilai usulan."
+  properties:
+    action:
+      type: string
+      enum: [none, update_citizen, create_citizen]
+      example: "update_citizen"
+    fulfilled_at:
+      type: string
+      format: date-time
+      nullable: true
+    fulfilled_by:
+      type: string
+      format: uuid
+      nullable: true
+    result:
+      type: object
+      nullable: true
+      description: "Isi `letters.fulfillment` setelah diterapkan: {action, citizen_id, changes{kolom:{old,new}}}."
+    subject:
+      type: object
+      nullable: true
+      description: "Diisi bila jenis surat punya `data_subject_field` (subjek bukan pemohon, mis. almarhum)."
+      properties:
+        nik:
+          type: string
+          nullable: true
+        found:
+          type: boolean
+        name:
+          type: string
+          nullable: true
+    fields:
+      type: array
+      items:
+        type: object
+        properties:
+          column:
+            type: string
+            example: "is_active"
+          label:
+            type: string
+            example: "Status data warga"
+          source:
+            type: string
+            nullable: true
+            description: "Nama isian payload sumber nilai usulan."
+          current:
+            description: "Nilai sekarang (hanya untuk update_citizen); tipe bebas, dapat null."
+          proposed:
+            description: "Nilai usulan; tipe bebas, dapat null."
+          fixed:
+            type: boolean
+            description: "True bila nilai ditetapkan jenis surat dan tidak dapat dikoreksi."
+          display:
+            type: string
+            nullable: true
+
+FulfillmentApplyRequest:
+  type: object
+  properties:
+    values:
+      type: object
+      nullable: true
+      additionalProperties: true
+      description: |
+        Koreksi per kolom. Hanya kolom pada `data_fields` jenis surat yang tidak
+        bernilai tetap; kolom lain → 422. Nilai divalidasi dengan aturan yang sama
+        seperti form data warga Petugas Desa.
+    subject_nik:
+      type: string
+      nullable: true
+      pattern: '^\d{16}$'
+      description: "Koreksi NIK warga subjek bila subjeknya bukan pemohon."
+
+SignatureRefillRequest:
+  type: object
+  description: "Salah satu: `nik`, atau `file` + `name`."
+  properties:
+    nik:
+      type: string
+      pattern: '^\d{16}$'
+    file:
+      type: string
+      format: binary
+      description: "PDF/JPG/JPEG/PNG maks 2048 KB."
+    name:
+      type: string
+      maxLength: 100
+
+SignatureRequest:
+  type: object
+  description: "Permintaan tanda tangan yang menunggu keputusan pemilik NIK."
+  properties:
+    id:
+      type: integer
+      example: 7
+    slot_label:
+      type: string
+      example: "Saksi 1"
+    letter_type:
+      type: string
+      nullable: true
+      example: "Surat Keterangan Usaha"
+    applicant_name:
+      type: string
+      example: "Siti Aminah"
+    purpose:
+      type: string
+      nullable: true
+    requested_at:
+      type: string
+      format: date-time
+    expires_at:
+      type: string
+      format: date-time
+
+SignatureBlock:
+  type: object
+  properties:
+    id:
+      type: integer
+    blocked_user_name:
+      type: string
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+
+UserSignatureStatus:
+  type: object
+  properties:
+    has_signature:
+      type: boolean
+    created_at:
+      type: string
+      format: date-time
+      nullable: true

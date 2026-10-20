@@ -6,6 +6,12 @@ import {
   deleteOfficialPositionType,
   updateOfficialPositionType,
 } from '../api'
+import { STAF_APP_LABEL } from '@/lib/constants/app'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
+import { notifySuccess } from '@/shared/lib/toast'
 
 const EMPTY_FORM = { id: null, label: '', sort_order: '', is_single_occupant: true }
 
@@ -31,12 +37,29 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
 
-  const run = async (request) => {
+  // Isian dianggap berubah bila berbeda dari baris yang sedang diubah
+  // (atau dari form kosong saat menambah).
+  const editingType = form.id ? types.find((type) => type.id === form.id) : null
+  const baselineForm = editingType
+    ? {
+        id: editingType.id,
+        label: editingType.label,
+        sort_order: String(editingType.sort_order),
+        is_single_occupant: editingType.is_single_occupant,
+      }
+    : EMPTY_FORM
+  const requestClose = useConfirmDiscard(isFormDirty(form, baselineForm), {
+    disabled: processing,
+    escapeClose: onClose,
+  })
+
+  const run = async (request, successMessage) => {
     setProcessing(true)
     setError('')
 
     try {
       await request()
+      notifySuccess(successMessage)
       setForm(EMPTY_FORM)
       await onChanged()
     } catch (requestError) {
@@ -55,15 +78,53 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
       ...(form.sort_order !== '' ? { sort_order: Number(form.sort_order) } : {}),
     }
 
-    return run(() =>
-      form.id ? updateOfficialPositionType(form.id, payload) : createOfficialPositionType(payload),
+    return run(
+      () =>
+        form.id
+          ? updateOfficialPositionType(form.id, payload)
+          : createOfficialPositionType(payload),
+      `Jenis jabatan ${payload.label} berhasil ${form.id ? 'diperbarui' : 'ditambahkan'}.`,
     )
   }
 
-  const handleDelete = (type) => {
-    if (!window.confirm(`Hapus jenis jabatan ${type.label}?`)) return undefined
+  const handleToggle = async (type) => {
+    const confirmed = await confirmDialog(
+      type.is_active
+        ? {
+            title: `Nonaktifkan jabatan ${type.label}?`,
+            message: 'Jabatan ini tidak dapat dipilih saat menetapkan pejabat baru.',
+            confirmLabel: 'Nonaktifkan',
+          }
+        : {
+            title: `Aktifkan jabatan ${type.label}?`,
+            message: 'Jabatan ini dapat dipilih kembali saat menetapkan pejabat.',
+            confirmLabel: 'Aktifkan',
+            tone: 'primary',
+          },
+    )
 
-    return run(() => deleteOfficialPositionType(type.id))
+    if (!confirmed) return undefined
+
+    return run(
+      () => updateOfficialPositionType(type.id, { is_active: !type.is_active }),
+      `Jabatan ${type.label} berhasil ${type.is_active ? 'dinonaktifkan' : 'diaktifkan'}.`,
+    )
+  }
+
+  const handleDelete = async (type) => {
+    if (
+      !(await confirmDialog({
+        title: `Hapus jenis jabatan ${type.label}?`,
+        message: 'Tindakan ini tidak dapat dibatalkan.',
+        confirmLabel: 'Hapus',
+      }))
+    )
+      return undefined
+
+    return run(
+      () => deleteOfficialPositionType(type.id),
+      `Jenis jabatan ${type.label} berhasil dihapus.`,
+    )
   }
 
   return (
@@ -78,11 +139,11 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
         <p>
           Jenis jabatan di sini adalah jabatan desa tanpa akun login. Jabatan yang punya akun
           (Kepala Desa, Sekretaris Desa, Kasi Pelayanan, Kaur TU &amp; Umum, Kepala Dusun, RW, RT,
-          Petugas Desa) bersifat tetap.
+          {STAF_APP_LABEL}) bersifat tetap.
         </p>
 
         {error && (
-          <p className="sid-form-field-error" role="alert">
+          <p className="sid-admin-alert sid-admin-alert-error" role="alert">
             {error}
           </p>
         )}
@@ -111,7 +172,11 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
                     <td className="primary-text">{type.label}</td>
                     <td className="center">{type.sort_order}</td>
                     <td className="center">{type.is_single_occupant ? 'Satu orang' : 'Banyak'}</td>
-                    <td className="center">{type.is_active ? 'Aktif' : 'Nonaktif'}</td>
+                    <td className="center">
+                      <StatusPill active={type.is_active}>
+                        {type.is_active ? 'Aktif' : 'Nonaktif'}
+                      </StatusPill>
+                    </td>
                     <td className="center">
                       <div className="sid-operator-actions">
                         <button
@@ -137,11 +202,7 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
                           title={type.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                           aria-label={`${type.is_active ? 'Nonaktifkan' : 'Aktifkan'} ${type.label}`}
                           disabled={processing}
-                          onClick={() =>
-                            run(() =>
-                              updateOfficialPositionType(type.id, { is_active: !type.is_active }),
-                            )
-                          }
+                          onClick={() => handleToggle(type)}
                         >
                           <Power size={16} />
                         </button>
@@ -207,7 +268,7 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
               type="button"
               className="sid-button sid-button-outline"
               disabled={processing}
-              onClick={form.id ? () => setForm(EMPTY_FORM) : onClose}
+              onClick={() => requestClose(form.id ? () => setForm(EMPTY_FORM) : onClose)}
             >
               {form.id ? 'Batal Ubah' : 'Tutup'}
             </button>

@@ -29,7 +29,9 @@ class Village extends Model
         'hero_image',
         'hero_photo_credit',
         'office_hours',
-        'map_url',
+        'welcome_message',
+        'latitude',
+        'longitude',
         'history',
         'vision',
         'mission',
@@ -37,6 +39,8 @@ class Village extends Model
 
     protected $casts = [
         'area_ha' => 'float',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     /**

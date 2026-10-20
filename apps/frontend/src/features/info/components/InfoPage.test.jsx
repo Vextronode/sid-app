@@ -1,108 +1,167 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const api = vi.hoisted(() => ({ get: vi.fn() }))
+const villageInfo = vi.hoisted(() => ({ usePublicVillageInfo: vi.fn() }))
+
+vi.mock('@/lib/api', () => ({ default: api }))
+vi.mock('@/features/info-desa/usePublicVillageInfo', () => villageInfo)
 
 import { InfoPage } from './InfoPage'
 
-// Jumlah judul dan slot sesuai 08-draf-halaman-informasi.md.
-const PAGES = [
-  {
-    page: 'kebijakan-privasi',
-    title: 'Kebijakan Privasi',
-    status: 'Status: draf, berlaku sejak [TANGGAL BERLAKU].',
-    h2: 7,
-    h3: 3,
-    slots: 5,
-  },
-  {
-    page: 'aksesibilitas',
-    title: 'Pernyataan Aksesibilitas',
-    status: 'Status: draf, diperbarui Oktober 2026.',
-    h2: 4,
-    h3: 0,
-    slots: 3,
-  },
-  {
-    page: 'ppid',
-    title: 'Pejabat Pengelola Informasi dan Dokumentasi (PPID)',
-    status: 'Status: draf, perlu diverifikasi dan ditetapkan oleh Pemerintah Desa Cibenda.',
-    h2: 6,
-    h3: 4,
-    slots: 12,
-  },
-]
+const VILLAGE = {
+  name: 'Desa Cibenda',
+  district: 'Parigi',
+  regency: 'Pangandaran',
+  province: 'Jawa Barat',
+  phone: '(0265) 2640613',
+  office_hours: 'Senin – Jumat, 08.00 – 16.00 WIB',
+  email: 'kantor@desa.test',
+}
+
+const respond = (fields = {}, updatedAt = null) =>
+  api.get.mockResolvedValue({ data: { data: { fields, updated_at: updatedAt } } })
+
+const slots = (container) =>
+  [...container.querySelectorAll('mark.bd-info-slot')].map((mark) => mark.textContent)
 
 describe('InfoPage', () => {
   let scrollTo
 
   beforeEach(() => {
     scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    villageInfo.usePublicVillageInfo.mockReturnValue({ village: VILLAGE })
+    api.get.mockReset()
   })
 
   afterEach(() => {
     scrollTo.mockRestore()
   })
 
-  it.each(PAGES)('renders $page with one h1 and the draft headings', ({ page, title, h2, h3 }) => {
+  // Isian yang belum diisi Petugas Desa tampil sebagai penanda kuning. Email
+  // khusus yang kosong memakai email kantor desa, jadi bukan penanda.
+  it.each([
+    ['kebijakan-privasi', 4],
+    ['aksesibilitas', 2],
+    ['ppid', 9],
+  ])('marks every empty field on %s as a yellow [placeholder]', async (page, count) => {
+    respond()
     const { container } = render(<InfoPage page={page} />)
 
-    const h1s = screen.getAllByRole('heading', { level: 1 })
-    expect(h1s).toHaveLength(1)
-    expect(h1s[0]).toHaveTextContent(title)
-    expect(screen.queryAllByRole('heading', { level: 2 })).toHaveLength(h2)
-    expect(screen.queryAllByRole('heading', { level: 3 })).toHaveLength(h3)
-    // Di dalam MainLayout (yang sudah punya <main>): isi berupa <article> di .bd-root.
-    expect(container.firstChild).toHaveClass('bd-root', 'bd-info')
-    expect(container.querySelector('article')).not.toBeNull()
-    expect(container.querySelector('main')).toBeNull()
+    await screen.findAllByRole('heading', { level: 2 })
+    const marks = slots(container)
+    expect(marks).toHaveLength(count)
+    for (const mark of marks) expect(mark).toMatch(/^\[[^\]]+\]$/)
+    // Tidak ada kurung siku di luar penanda, dan tidak ada kata "draf".
+    expect(container.textContent.replace(/\[[^\]]+\]/g, '')).not.toMatch(/[[\]{}]/)
+    expect(container.textContent).not.toMatch(/draf/i)
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(api.get).toHaveBeenCalledWith(`/api/public/info-pages/${page}`, expect.anything())
   })
 
-  it.each(PAGES)('shows the draft status note on $page', ({ page, status }) => {
-    const { container } = render(<InfoPage page={page} />)
-
-    expect(container.querySelector('.bd-info-status')).toHaveTextContent(status)
-  })
-
-  it.each(PAGES)('marks every [placeholder] on $page as a visible slot', ({ page, slots }) => {
-    const { container } = render(<InfoPage page={page} />)
-
-    const marks = [...container.querySelectorAll('mark.bd-info-slot')]
-    expect(marks).toHaveLength(slots)
-    for (const mark of marks) expect(mark.textContent).toMatch(/^\[[^\]]+\]$/)
-    // Tidak ada kurung siku yang tertinggal di luar slot.
-    const textOutsideSlots = container.textContent.replace(/\[[^\]]+\]/g, '')
-    expect(textOutsideSlots).not.toMatch(/[[\]]/)
-  })
-
-  it('keeps the placeholder text unchanged inside a sentence', () => {
+  it('keeps the placeholder inside the original sentence', async () => {
+    respond()
     render(<InfoPage page="kebijakan-privasi" />)
 
-    const paragraph = screen.getByText(/Data disimpan di server yang dikelola/)
+    const paragraph = await screen.findByText(/Data disimpan di server yang dikelola/)
     expect(paragraph).toHaveTextContent(
       'Data disimpan di server yang dikelola [PENGELOLA SERVER] dan hanya dapat diakses oleh petugas berwenang. Data permohonan disimpan selama [JANGKA WAKTU PENYIMPANAN] sesuai ketentuan arsip desa.',
     )
-    expect(within(paragraph).getByText('[PENGELOLA SERVER]').tagName).toBe('MARK')
+    expect(screen.getByText('Berlaku sejak', { exact: false })).toHaveTextContent(
+      'Berlaku sejak [TANGGAL BERLAKU].',
+    )
   })
 
-  it('lists the four PPID request steps in one ordered list', () => {
+  it('builds the village identity from village data, not from code', async () => {
+    respond()
+    render(<InfoPage page="kebijakan-privasi" />)
+
+    expect(
+      await screen.findByText(
+        /^Pemerintah Desa Cibenda, Kecamatan Parigi, Kabupaten Pangandaran, mengelola/,
+      ),
+    ).toBeInTheDocument()
+    // Kontak sebagai daftar singkat; tanpa email khusus, email kantor desa dipakai.
+    expect(
+      screen.getByText('Datang ke Kantor Desa Cibenda, Senin – Jumat, 08.00 – 16.00 WIB'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Salin nomor telepon (0265) 2640613' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Salin alamat email kantor@desa.test' }),
+    ).toBeInTheDocument()
+  })
+
+  it('copies the phone number when it is clicked', async () => {
+    const user = userEvent.setup()
+    const writeText = vi.fn().mockResolvedValue()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    respond()
+    render(<InfoPage page="ppid" />)
+
+    await user.click(await screen.findByRole('button', { name: /Salin nomor telepon/ }))
+
+    expect(writeText).toHaveBeenCalledWith('(0265) 2640613')
+    expect(await screen.findByText('Nomor disalin')).toBeInTheDocument()
+  })
+
+  it('replaces placeholders with the saved fields', async () => {
+    respond(
+      {
+        effective_date: '2026-11-01',
+        server_manager: 'Diskominfo Pangandaran',
+        retention_period: '5 tahun',
+        registration_data: ['Nomor telepon'],
+      },
+      '2026-11-01T09:00:00+07:00',
+    )
+    const { container } = render(<InfoPage page="kebijakan-privasi" />)
+
+    expect(await screen.findByText('Berlaku sejak 1 November 2026.')).toHaveClass('bd-info-status')
+    expect(
+      screen.getByText(
+        'Data disimpan di server yang dikelola Diskominfo Pangandaran dan hanya dapat diakses oleh petugas berwenang. Data permohonan disimpan selama 5 tahun sesuai ketentuan arsip desa.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Nomor telepon')).toBeInTheDocument()
+    expect(slots(container)).toEqual([])
+  })
+
+  it('fills list fields on PPID and keeps a slot for lists still empty', async () => {
+    respond({
+      ppid_officer: 'Nama Sekdes, Sekretaris Desa',
+      periodic_info: ['Profil desa', 'APBDes dan realisasinya'],
+    })
     const { container } = render(<InfoPage page="ppid" />)
 
-    const lists = container.querySelectorAll('ol')
-    expect(lists).toHaveLength(1)
-    expect(within(lists[0]).getAllByRole('listitem')).toHaveLength(4)
+    expect(await screen.findByText('PPID Desa: Nama Sekdes, Sekretaris Desa')).toBeInTheDocument()
+    expect(screen.getByText('APBDes dan realisasinya')).toBeInTheDocument()
+    expect(screen.getByText('Atasan PPID:', { exact: false })).toHaveTextContent(
+      'Atasan PPID: [NAMA, JABATAN]',
+    )
+    expect(slots(container)).toContain('[DAFTAR, SESUAI PENETAPAN DESA]')
   })
 
-  it('scrolls to the top when a page opens', () => {
-    const { rerender } = render(<InfoPage page="aksesibilitas" />)
-    expect(scrollTo).toHaveBeenCalledWith(0, 0)
+  it('shows "Diperbarui" only after the page has been saved', async () => {
+    respond()
+    const { container, unmount } = render(<InfoPage page="ppid" />)
+    await screen.findAllByRole('heading', { level: 2 })
+    expect(container.querySelector('.bd-info-status')).toBeNull()
+    unmount()
 
-    scrollTo.mockClear()
-    rerender(<InfoPage page="ppid" />)
-    expect(scrollTo).toHaveBeenCalledWith(0, 0)
+    respond({}, '2026-11-01T09:00:00+07:00')
+    render(<InfoPage page="ppid" />)
+    expect(await screen.findByText('Diperbarui 1 November 2026.')).toHaveClass('bd-info-status')
   })
 
-  it('renders nothing for an unknown page', () => {
-    const { container } = render(<InfoPage page="tidak-ada" />)
+  it('still shows the fixed text when the page data fails to load', async () => {
+    api.get.mockRejectedValue(new Error('offline'))
+    render(<InfoPage page="aksesibilitas" />)
 
-    expect(container).toBeEmptyDOMElement()
+    expect(
+      await screen.findByRole('heading', { name: 'Standar yang kami ikuti' }),
+    ).toBeInTheDocument()
   })
 })

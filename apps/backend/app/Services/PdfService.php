@@ -14,6 +14,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PdfService
 {
+    private const SEAL_SIGNATURE_HEIGHT = 60;
+
+    private const SEAL_SIGNATURE_MAX_WIDTH = 160;
+
+    private const SEAL_STAMP_SIZE = 80;
+
+    private const SEAL_WET_WIDTH = 120;
+
     public function __construct(
         protected OfficialRepository $officialRepository,
         protected LetterRepository $letterRepository,
@@ -38,15 +46,9 @@ class PdfService
             abort(403, 'Surat baru dapat diunduh setelah seluruh proses persetujuan selesai.');
         }
 
-        if (
-            $letter->submitted_by === $user->id &&
-            $letter->expires_at &&
-            now()->greaterThan($letter->expires_at)
-        ) {
-            abort(403, 'Masa berlaku surat telah habis.');
-        }
+        $this->abortIfExpiredForApplicant($letter, $user);
 
-        return $this->buildPdf($letter, $template)->download("surat-{$letter->id}.pdf");
+        return $this->buildPdf($letter, $template, true)->download("surat-{$letter->id}.pdf");
     }
 
     public function preview(
@@ -57,7 +59,15 @@ class PdfService
 
         $letter = $this->letterRepository->loadForPdf($letter);
 
-        return $this->buildPdf($letter, $template)->stream("surat-{$letter->id}.pdf");
+        $this->abortIfExpiredForApplicant($letter, $user);
+
+        // TTD dan stempel Kades hanya untuk surat yang sudah final dan
+        // hanya bagi pihak yang berhak mengunduhnya; pihak lain (mis.
+        // RT/RW/Kadus) dan surat yang masih diproses mendapat versi
+        // tanpa pengesahan.
+        $sealed = $letter->status === LetterStatus::Approved && $user->can('download', $letter);
+
+        return $this->buildPdf($letter, $template, $sealed)->stream("surat-{$letter->id}.pdf");
     }
 
     /**
@@ -77,14 +87,25 @@ class PdfService
         $pdf = Pdf::loadView('pdf.templates.digital', [
             'letter' => $letter,
             'kades' => null,
-            'template' => $this->renderTemplate($letter, $context, 'digital', $context['supporting_template']),
+            'template' => $this->renderTemplate($letter, $context, 'digital', false, $context['supporting_template']),
         ]);
         $filename = "dokumen-pendukung-{$letter->id}.pdf";
 
         return $download ? $pdf->download($filename) : $pdf->stream($filename);
     }
 
-    private function buildPdf(Letter $letter, string $template): \Barryvdh\DomPDF\PDF
+    /**
+     * Surat kedaluwarsa hanya tersimpan sebagai riwayat bagi pemohon;
+     * pejabat dan Petugas Desa tetap dapat membuka PDF untuk arsip.
+     */
+    private function abortIfExpiredForApplicant(Letter $letter, User $user): void
+    {
+        if ($letter->submitted_by === $user->id && $letter->isExpired()) {
+            abort(403, 'Masa berlaku surat telah habis.');
+        }
+    }
+
+    private function buildPdf(Letter $letter, string $template, bool $sealed): \Barryvdh\DomPDF\PDF
     {
         // Surat approved dirender dari snapshot final approve; tanda tangan
         // dan stempel milik Kepala Desa yang menjabat saat itu, termasuk
@@ -104,16 +125,16 @@ class PdfService
         return Pdf::loadView($view, [
             'letter' => $letter,
             'kades' => $kades,
-            'template' => $this->renderTemplate($letter, $context, $template),
+            'template' => $this->renderTemplate($letter, $context, $template, $sealed),
         ]);
     }
 
     /**
      * @param  array<string, mixed>  $context
      */
-    private function renderTemplate(Letter $letter, array $context, string $template, ?string $source = null): string
+    private function renderTemplate(Letter $letter, array $context, string $template, bool $sealed, ?string $source = null): string
     {
-        $replacements = $this->getReplacements($letter, $context, $template);
+        $replacements = $this->getReplacements($letter, $context, $template, $sealed);
 
         $templateHtml = str_replace(
             array_keys($replacements),
@@ -128,21 +149,21 @@ class PdfService
     /**
      * @param  array<string, mixed>  $context
      */
-    private function getReplacements(Letter $letter, array $context, string $template): array
+    private function getReplacements(Letter $letter, array $context, string $template, bool $sealed): array
     {
         $signer = $context['signer'];
         $village = $context['village'];
 
+        // Template wet dicetak lalu ditandatangani dan distempel basah,
+        // jadi area tanda tangan dibiarkan kosong.
         $signatureHtml = '';
-        $signatureDirectory = "official-signatures/{$signer['village_id']}/{$signer['official_id']}/";
-        if ($template === 'digital') {
-            $signatureHtml .= $this->privateImage($signer['signature_img'] ?? null, $signatureDirectory, 'max-height: 60px; width: auto;');
+        if ($sealed && $template === 'digital') {
+            $signatureDirectory = "official-signatures/{$signer['village_id']}/{$signer['official_id']}/";
+            $signatureHtml = $this->sealHtml(
+                $this->privateImagePath($signer['signature_img'] ?? null, $signatureDirectory),
+                $this->privateImagePath($village['stamp_img'] ?? null, "village-stamps/{$letter->village_id}/"),
+            );
         }
-        $signatureHtml .= $this->privateImage(
-            $village['stamp_img'] ?? null,
-            "village-stamps/{$letter->village_id}/",
-            'max-height: 45px; width: auto; margin-left: 10px;',
-        );
 
         $logoPath = public_path('images/logo-pangandaran.png');
         $logoHtml = file_exists($logoPath)
@@ -232,16 +253,71 @@ class PdfService
         return [...$payloadHtml, ...$replacements, ...$signatureImages];
     }
 
-    private function privateImage(?string $path, string $directory, string $style): string
+    /**
+     * TTD Kades di tengah area tanda tangan; stempel desa menimpa separuh
+     * kiri TTD (tepi kanan stempel tepat di titik tengah TTD). Bila Kades
+     * belum mengunggah TTD, stempel diletakkan terhadap area tanda tangan
+     * selebar SEAL_WET_WIDTH.
+     */
+    private function sealHtml(?string $signaturePath, ?string $stampPath): string
+    {
+        if (! $signaturePath && ! $stampPath) {
+            return '';
+        }
+
+        $height = self::SEAL_SIGNATURE_HEIGHT;
+        [$signatureWidth] = $signaturePath
+            ? $this->fitImage($signaturePath, self::SEAL_SIGNATURE_MAX_WIDTH, $height)
+            : [self::SEAL_WET_WIDTH, $height];
+
+        $html = '<div style="position: relative; width: '.$signatureWidth.'px; height: '.$height.'px; margin: 0 auto;">';
+
+        if ($signaturePath) {
+            [$width, $imageHeight] = $this->fitImage($signaturePath, self::SEAL_SIGNATURE_MAX_WIDTH, $height);
+            $html .= '<img src="'.$signaturePath.'" style="width: '.$width.'px; height: '.$imageHeight.'px;">';
+        }
+
+        if ($stampPath) {
+            [$width, $imageHeight] = $this->fitImage($stampPath, self::SEAL_STAMP_SIZE, self::SEAL_STAMP_SIZE);
+            $left = intdiv($signatureWidth, 2) - $width;
+            $top = intdiv($height - $imageHeight, 2);
+            $html .= '<img src="'.$stampPath.'" style="position: absolute; left: '.$left.'px; top: '.$top.'px; width: '.$width.'px; height: '.$imageHeight.'px;">';
+        }
+
+        return $html.'</div>';
+    }
+
+    /**
+     * Ukuran tampil gambar (proporsional) di dalam kotak maxWidth x maxHeight.
+     *
+     * @return array{0: int, 1: int}
+     */
+    private function fitImage(string $absolutePath, int $maxWidth, int $maxHeight): array
+    {
+        $size = @getimagesize($absolutePath);
+        if (! $size || $size[0] <= 0 || $size[1] <= 0) {
+            return [$maxWidth, $maxHeight];
+        }
+
+        $scale = min($maxWidth / $size[0], $maxHeight / $size[1]);
+
+        return [max(1, (int) round($size[0] * $scale)), max(1, (int) round($size[1] * $scale))];
+    }
+
+    /**
+     * Path absolut file private yang tervalidasi berada di direktori
+     * miliknya, atau null bila tidak valid/tidak ada.
+     */
+    private function privateImagePath(?string $path, string $directory): ?string
     {
         if (
             ! $path
             || ! str_starts_with($path, $directory)
             || ! Storage::disk('private_uploads')->exists($path)
         ) {
-            return '';
+            return null;
         }
 
-        return '<img src="'.Storage::disk('private_uploads')->path($path).'" style="'.$style.'">';
+        return Storage::disk('private_uploads')->path($path);
     }
 }

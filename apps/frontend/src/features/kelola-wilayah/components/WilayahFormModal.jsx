@@ -1,5 +1,8 @@
 import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
+import { notifySuccess } from '@/shared/lib/toast'
 
 const TYPE_CONFIG = {
   dusun: {
@@ -21,7 +24,6 @@ function getInitialForm(type, item) {
     return {
       name: item?.name ?? '',
       code: item?.code ?? '',
-      is_active: item?.isActive ?? true,
     }
   }
 
@@ -29,14 +31,12 @@ function getInitialForm(type, item) {
     return {
       number: item?.number ?? '',
       hamlet_id: item?.hamletId ?? '',
-      is_active: item?.isActive ?? true,
     }
   }
 
   return {
     number: item?.number ?? '',
     rw_id: item?.rwId ?? '',
-    is_active: item?.isActive ?? true,
   }
 }
 
@@ -56,6 +56,10 @@ export default function WilayahFormModal({
   const initialForm = useMemo(() => getInitialForm(type, item), [type, item])
 
   const [form, setForm] = useState(initialForm)
+  const requestClose = useConfirmDiscard(isFormDirty(form, initialForm), {
+    disabled: Boolean(processing),
+    escapeClose: onClose,
+  })
 
   if (!open || !config) {
     return null
@@ -79,7 +83,6 @@ export default function WilayahFormModal({
       payload = isEdit
         ? {
             name: form.name.trim(),
-            is_active: Boolean(form.is_active),
           }
         : {
             name: form.name.trim(),
@@ -89,7 +92,6 @@ export default function WilayahFormModal({
       payload = isEdit
         ? {
             number: form.number.trim(),
-            is_active: Boolean(form.is_active),
           }
         : {
             hamlet_id: Number(form.hamlet_id),
@@ -99,7 +101,6 @@ export default function WilayahFormModal({
       payload = isEdit
         ? {
             number: form.number.trim(),
-            is_active: Boolean(form.is_active),
           }
         : {
             rw_id: Number(form.rw_id),
@@ -110,6 +111,7 @@ export default function WilayahFormModal({
     const success = await onSubmit(payload)
 
     if (success) {
+      notifySuccess(`${config.title} berhasil ${isEdit ? 'diperbarui' : 'ditambahkan'}.`)
       onClose()
     }
   }
@@ -120,7 +122,7 @@ export default function WilayahFormModal({
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
-          onClose()
+          requestClose(onClose)
         }
       }}
     >
@@ -133,7 +135,12 @@ export default function WilayahFormModal({
             </h2>
           </div>
 
-          <button type="button" onClick={onClose} className="sid-wilayah-modal-close">
+          <button
+            type="button"
+            onClick={() => requestClose(onClose)}
+            className="sid-wilayah-modal-close"
+            aria-label="Tutup"
+          >
             <X size={18} />
           </button>
         </div>
@@ -154,7 +161,7 @@ export default function WilayahFormModal({
                 />
                 {isEdit && (
                   <span className="sid-wilayah-form-help">
-                    Kode tidak dapat diubah melalui endpoint update.
+                    Kode tidak dapat diubah setelah disimpan.
                   </span>
                 )}
               </div>
@@ -196,7 +203,7 @@ export default function WilayahFormModal({
 
                 {isEdit && (
                   <span className="sid-wilayah-form-help">
-                    Relasi dusun tidak dapat dipindahkan melalui endpoint update.
+                    Dusun tidak dapat dipindahkan setelah disimpan.
                   </span>
                 )}
               </div>
@@ -243,7 +250,7 @@ export default function WilayahFormModal({
 
                 {isEdit && (
                   <span className="sid-wilayah-form-help">
-                    Relasi RW tidak dapat dipindahkan melalui endpoint update.
+                    RW tidak dapat dipindahkan setelah disimpan.
                   </span>
                 )}
               </div>
@@ -263,23 +270,12 @@ export default function WilayahFormModal({
             </>
           )}
 
-          {isEdit && (
-            <label className="sid-wilayah-checkbox">
-              <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={(event) => handleChange('is_active', event.target.checked)}
-              />
-              <span>Wilayah aktif</span>
-            </label>
-          )}
-
           {error && <div className="sid-wilayah-form-error">{error}</div>}
 
           <div className="sid-wilayah-modal-footer">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => requestClose(onClose)}
               className="sid-wilayah-btn sid-wilayah-btn-secondary"
             >
               Batal

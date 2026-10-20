@@ -1,115 +1,109 @@
 # ARSITEKTUR SISTEM
-## SIDUTama Cibenda (Sistem Informasi Desa) - Program Capstone Cibenda
+## SIDUTama (Sistem Informasi Desa) - Program Capstone Cibenda
 
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Kode Dokumen | SID-ARCH-SYS-001 |
-| Status | Berlaku (Aktif) - Versi 1.1 |
-| Nama Aplikasi | SIDUTama Cibenda (nickname: **SIDUTama**) |
-| Kode Proyek | SID (tidak berubah, terpisah dari nama aplikasi) |
-| Audiens | Seluruh developer (Backend & Frontend), Reviewer, Tech Lead, QA Coordinator, kontributor baru |
-| Sifat Dokumen | **Titik masuk tunggal (single entry point).** Dokumen ini dirancang agar developer dapat memahami keseluruhan sistem SIDUTama hanya dengan membaca dokumen ini. Detail teknis per sisi ada di dokumen turunan yang dirujuk pada setiap bagian. |
+| Status | Berlaku (Aktif) - Versi 1.3 (diselaraskan ke source 2026-10-16) |
+| Nama Aplikasi | SIDUTama (nama desa dan identitasnya diambil dari data `villages`, bukan di-hardcode) |
+| Kode Proyek | SID |
+| Audiens | Seluruh developer, Reviewer, Tech Lead, QA Coordinator, kontributor baru |
+| Sifat Dokumen | Titik masuk tunggal. Detail teknis ada di dokumen turunan yang dirujuk. |
 
 ---
 
 ## 1. Visi & Prinsip Arsitektur
 
-SIDUTama Cibenda dibangun di atas empat prinsip arsitektur yang bersifat final dan tidak dapat diubah tanpa melalui Architecture Working Group (AWG):
-
-1. **Independent Domain.** SIDUTama berdiri sendiri secara domain, database, dan deployment dari sistem lain dalam ekosistem program (SIGAP, CibendaMart). Interoperabilitas antar sistem disiapkan lewat API, bukan melalui shared database.
-2. **Konfigurasi di atas Kode (Config over Code).** Aspek yang dapat berubah tanpa keterlibatan developer (alur persetujuan surat, pemetaan jenis surat ke penyetuju) bersifat data-driven, bukan hardcoded. Direalisasikan lewat struktur `letter_categories` → `approval_flows` → `flow_steps` (lihat S2.1 dan `SID-ARCH-BE-001` S3).
-3. **RBAC Berlapis (Layered RBAC).** Kewenangan sistem dikomunikasikan dalam 5 kelompok tier untuk kebutuhan navigasi & orientasi (Superadmin, Admin Desa/Eksekutif, Staff Desa, RT/RW, Warga) - lihat S4 untuk penjelasan bagaimana pengelompokan ini dipetakan ke struktur role yang sebenarnya diimplementasikan di database.
-4. **Human-in-the-Loop untuk Keputusan Sensitif.** Sistem menyediakan data dan alat bantu; keputusan yang berdampak pada warga (approval surat, klasifikasi data sensitif) tetap berada di tangan manusia.
+1. **Independent Domain.** SIDUTama berdiri sendiri (domain, database, deployment); interoperabilitas lewat API.
+2. **Konfigurasi di atas Kode.** Jenis surat (template, isian form, slot tanda tangan, aksi data, kode klasifikasi) dan alur persetujuan (`approval_flows` → `flow_steps`) adalah data. Saat ini data tersebut diset developer lewat seeder; Petugas Desa mengatur masa berlaku, penugasan Kasi/Kaur, dan status aktif.
+3. **RBAC Berlapis.** Tier navigasi (S4) di atas 9 role datar; otorisasi konteks per resource di Policy/Service.
+4. **Human-in-the-Loop.** Approval surat dan penerapan perubahan data kependudukan tetap diputuskan manusia (RT, Kades/Sekdes, Kasi/Kaur/Petugas Desa).
+5. **Satu desa per instalasi (praktik saat ini).** Skema mendukung banyak desa (`village_id`), tetapi deployment berjalan dengan satu desa; identitas desa dikelola lewat Kelola Profil Desa.
 
 ---
 
-## 2. Peta Domain Bisnis (POV)
+## 2. Peta Domain Bisnis
 
-SIDUTama melayani empat domain bisnis utama. Setiap domain memiliki dokumen arsitektur/skema detail tersendiri - bagian ini hanya memberi orientasi.
-
-### 2.1 Pelayanan Surat-Menyurat & Pipeline Dinamis
-Domain inti SIDUTama. Setiap jenis surat (`letter_types`) dikelompokkan ke dalam empat kategori perilaku (`letter_categories.code`): Approval Normal, Upload Mandiri, Dokumen Pendukung, dan Update Data Kependudukan. Di dalam kategori Approval Normal, alur persetujuan konkret ditentukan oleh `approval_flows` beserta urutan penyetujunya (`flow_steps.approver_position`, `flow_steps.is_final`) - satu kategori bisa memiliki banyak flow berbeda, dan flow baru ditambahkan sebagai data, bukan perubahan kode. Source saat ini menghitung overdue dari deadline approval. **Status: Belum diimplementasi (Planned)** ??? pengiriman reminder otomatis melalui scheduler belum tersedia. Fallback broadcast ke Petugas Desa tidak tersedia pada alur aktif.
+### 2.1 Pelayanan Surat-Menyurat
+Warga (atau pejabat untuk dirinya) mengajukan surat dengan isian form dinamis per jenis surat, termasuk unggahan berkas dan tanda tangan pihak terkait (digital lewat persetujuan pemilik NIK, atau TTD basah). Alur default: **RT → Kepala Desa/Sekdes (final)**; RW & Kadus menerima FYI, Kasi/Kaur menerima notifikasi setelah final. Saat final approve sistem menerbitkan nomor surat (`{kode klasifikasi}/{urut}/Des/{bulan Romawi}/{tahun}`) dan membekukan **snapshot** render agar PDF tidak berubah. Jenis surat tertentu membawa **aksi data** (mis. menonaktifkan warga meninggal, menambah anak lahir) yang diterapkan Kasi/Kaur. Overdue dihitung dari deadline approval; scheduler mengirim satu pengingat ke approver `reminder_hours` sebelum deadline.
 
 ### 2.2 Manajemen Kependudukan
-Mengelola data warga (identitas individu, sosio-demografi, pekerjaan baku per desa) dan sosio-ekonomi pada tingkat keluarga/KK. Seluruh warga tercatat - baik berstatus lokal maupun pendatang - selalu memiliki NIK terverifikasi pada satu tabel yang sama; pembedaan lokal/pendatang murni status (`residency_type`), bukan struktur data terpisah (lihat `SID-ARCH-BE-001` S5.2). Mencakup mekanisme impor massal (Excel) yang sudah didesain (UC-09). Kapabilitas warga mengajukan perubahan data secara self-service (staging) **masih sebatas wacana** - bertentangan dengan UC-09 saat ini yang aktornya hanya Petugas Desa, lihat `SID-ARCH-BE-001` S10.
+Data warga (individu) dan KK, sosio-ekonomi per KK, katalog pekerjaan per desa, impor Excel. Warga tidak mengedit datanya langsung; perubahan diajukan lewat surat ber-aksi data.
 
 ### 2.3 Manajemen Informasi Desa (CMS)
-Pengelolaan Profil Desa, Berita & Pengumuman, dan Peraturan Desa yang tampil di halaman publik. Domain ini dimiliki eksklusif oleh `petugas_desa` - **bukan** seluruh Tier 2. Kepala Desa dan Sekretaris Desa (juga bagian Tier 2, lihat S4) secara eksplisit **tidak** memiliki akses ke domain ini; scope mereka di sistem murni sebagai approver aktif di domain Surat-Menyurat (S2.1). Pengelompokan Tier 2 sebagai satu label navigasi tidak berarti seluruh anggotanya berbagi akses domain yang sama - lihat S4 untuk penjelasan lengkap.
+Profil desa (identitas, kop surat, luas, jam layanan, titik kantor berupa koordinat, sambutan Kepala Desa, logo, foto beranda, stempel), berita berkategori, peraturan desa, pengumuman beranda berdurasi (dihapus otomatis), halaman informasi (PPID, Kebijakan Privasi, Aksesibilitas), organisasi non-struktural (BPD, LPM, Karang Taruna, PKK: Ketua, Wakil Ketua, Anggota). **Eksklusif `staf_sid`.** Halaman publik menampilkan profil, statistik terhitung (jumlah warga, dusun), perangkat desa (termasuk staf aplikasi), peraturan (section Profil Desa), struktur BPD dan Lembaga Desa, berita, info jenis surat, kontak, bar pengumuman, dan halaman informasi. BUMDesa dan Transparansi APBDes tampil "Segera hadir".
 
 ### 2.4 Governance & RBAC
-Mengatur struktur RBAC (lihat S4), segmentasi Bidang/Jabatan untuk Staff Desa, serta struktur wilayah administratif (Dusun/RW/RT) yang menjadi dasar gating pada domain Surat-Menyurat dan Kependudukan.
-
-Data operasional dan konfigurasi yang dimiliki desa menggunakan `village_id` sebagai scope. Approval flow dan tipe surat dikelola per desa; API publik memilih profil/konten desa melalui `village_code`. Detail batas scope dan respons lintas desa dijelaskan di `SID-ARCH-BE-001` dan OpenAPI.
+Struktur wilayah (Dusun/RW/RT), jabatan berakun dan jenis jabatan tanpa akun yang dapat dikelola, akun pengguna, reset password & reset tanda tangan akun.
 
 ---
 
 ## 3. Komponen Sistem
 
 ```
-┌──────────────────────┐        ┌───────────────────────┐        ┌─────────────────────┐
-│   Frontend (SPA)     │◄──────►│   Backend (API)       │◄──────►│   Database          │
-│   React + Vite       │  REST  │   Laravel API         │        │   (engine: lihat    │
-│   (lihat SID-ARCH-FE)│        │   (lihat SID-ARCH-BE) │        │    SID-ARCH-BE)     │
-└──────────────────────┘        └───────────┬───────────┘        └─────────────────────┘
-                                            │
-                                            ▼
-                                 ┌────────────────────────┐
-                                 │  Layanan Pendukung     │
-                                 │  - Endpoint Verifikasi │
-                                 │    QR (publik)         │
-                                 │  - Notifikasi          │
-                                 └────────────────────────┘
+┌───────────────────────┐   HTTPS (satu origin)   ┌────────────────────────┐
+│ Browser / PWA         │◄──────────────────────►│ Nginx (sid-web)        │
+│ React SPA + SW push   │                         │  - file statis SPA     │
+└───────────────────────┘                         │  - /api,/sanctum,      │
+        ▲  Web Push (VAPID)                       │    /storage → PHP-FPM  │
+        │                                         └──────────┬─────────────┘
+┌───────┴───────────────┐                                    │ FastCGI
+│ Layanan push browser  │◄──── WebPushChannel ───┐ ┌─────────▼─────────────┐
+└───────────────────────┘                        └─┤ Laravel API (sid-api) │
+                                                   │ Sanctum, Policy,      │
+                                                   │ dompdf, activitylog   │
+                                                   └───┬──────────┬────────┘
+                                                       │          │
+                                         ┌─────────────▼──┐  ┌────▼──────────────┐
+                                         │ PostgreSQL     │  │ Storage           │
+                                         │ (lokal / Neon) │  │ public | private  │
+                                         └────────────────┘  └───────────────────┘
 ```
 
-Autentikasi antara Frontend dan Backend menggunakan **Laravel Sanctum** (SPA cookie-based, bukan Bearer token manual). Detail pola auth, middleware RBAC, dan kontrak API diatur di dokumen arsitektur masing-masing sisi.
+Autentikasi Frontend–Backend: Laravel Sanctum SPA cookie (HttpOnly) + XSRF token. Detail di `SID-ARCH-FE-001` dan `SID-ARCH-BE-001`.
 
 ---
 
 ## 4. RBAC: Tier Navigasi vs Role Implementasi
 
-Bagian ini secara khusus mengklarifikasi hubungan antara **5 Tier** yang disebut di S1 sebagai prinsip komunikasi/navigasi, dengan **struktur role yang sebenarnya diimplementasikan** di database dan middleware backend.
+Tier hanyalah label navigasi/guard frontend di atas `users.role` (9 nilai).
 
-**Penting:** 5-Tier **bukan** tabel atau kolom terpisah di database. Backend hanya menyimpan `users.role` sebagai satu ENUM datar berisi 9 nilai. Tier adalah label pengelompokan di level dokumentasi dan navigasi Frontend (menentukan struktur menu, guard routing) di atas 9 role tersebut - lihat `SID-ARCH-BE-001` S4.1 untuk detail implementasi otorisasi yang sesungguhnya.
-
-| Tier | Label Navigasi | `users.role` yang termasuk | Catatan |
+| Tier | Label | `users.role` | Scope |
 |---|---|---|---|
-| 1 | Superadmin | *(belum ada)* | Slot dicadangkan untuk kebutuhan masa depan (misal admin lintas-desa jika sistem berkembang multi-desa). **Tidak diimplementasikan** - tidak ada role, middleware, atau halaman untuk tier ini saat ini. |
-| 2 | Admin Desa / Eksekutif | `petugas_desa`, `kepala_desa`, `sekretaris_desa` | Satu label navigasi untuk dua kelompok dengan scope otorisasi **berbeda tegas**: `petugas_desa` adalah operator dengan full visibility pipeline surat **di desanya sendiri** + akses konfigurasi (wilayah, jabatan, tipe surat, CMS); `kepala_desa`/`sekretaris_desa` adalah approver aktif di step tertentu pipeline surat **di desanya sendiri** (sejak v5.0), tanpa akses konfigurasi. Pengelompokan tier ini **tidak menghapus** perbedaan scope ini di backend. |
-| 3 | Staff Desa | `kasi_pelayanan`, `kaur_tu_umum` | Penerima notifikasi setelah persetujuan final dan petugas pemroses surat sesuai penugasan; bukan approver flow |
-| 4 | RT/RW | `rt`, `rw` | RT tetap approver bergerbang wilayah; RW sejak v5.0 **bukan approver**, murni penerima notifikasi FYI - lihat `SID-ARCH-BE-001` S3.2 |
-| 5 | Warga | `warga` | Self-service: submit surat, lihat status, download surat sendiri |
+| 1 | Superadmin | *(belum ada)* | Tidak diimplementasikan |
+| 2 | Admin Desa / Eksekutif | `staf_sid`, `kepala_desa`, `sekretaris_desa` | Petugas Desa (`staf_sid`, tampil "Staf {nama aplikasi}", satu per desa, diganti lewat rotasi) = operator penuh desanya (CMS, kependudukan, jabatan, konfigurasi, semua surat). Kades/Sekdes = approver final tanpa akses CMS |
+| 3 | Staff Desa | `kasi_pelayanan`, `kaur_tu_umum` | Notifikasi & akses surat selesai sesuai `assigned_role`, menerapkan aksi data, membaca daftar warga; bukan approver |
+| 4 | RT/RW/Kadus | `rt`, `rw`, `kadus` | RT approver wilayah; RW & Kadus hanya FYI read-only |
+| 5 | Warga | `warga` | Ajukan surat, TTD pribadi, setujui/tolak permintaan TTD, unduh surat sendiri |
 
-Setiap kali dokumen arsitektur atau turunannya menyebut "Tier X", itu harus dibaca sebagai referensi ke kelompok role pada tabel di atas - bukan entitas independen yang punya perilaku sendiri di luar role yang menyusunnya.
+Pejabat dengan citizen juga dapat mengajukan surat untuk dirinya (menu "Surat Saya").
 
 ---
 
 ## 5. Topologi Deployment
 
-| Environment | Lokasi Hosting | Aktif Sejak |
+| Mode | Isi | Rujukan |
 |---|---|---|
-| Staging | Hosting Kampus | Sejak Sprint Foundation |
-| Production | Hosting Desa | Setelah Gate G7 (Deployment Ready) tercapai |
+| Docker (expo/demo) | `sid_web` (Nginx + SPA, satu-satunya port host loopback), `sid_api` (PHP-FPM), `sid_scheduler` (`schedule:work`), `sid_worker` (`queue:work`), `sid_db` (PostgreSQL 18, profil `localdb`) atau DB Neon; volume `public`/`private`; `QUEUE_CONNECTION=database`, Web Push nonaktif bila VAPID kosong | `deploy/docker-compose.yml`, `docs/EXPO_RUNBOOK.md` |
+| VPS (Nginx + PHP-FPM) | SPA statis + Laravel, Supervisor queue worker untuk Web Push, opcache | `docs/deploy/README.md` |
+| Development | Vite dev server (proxy `/api`, `/sanctum` ke `127.0.0.1:8000`) + `php artisan serve` + PostgreSQL lokal | `docs/SETUP.md` |
 
-Detail konfigurasi environment (`.env`, secret handling) diatur di **DEV-CODE-001 (Code Guidelines)**.
+Lokasi hosting staging/produksi (kampus/desa) **tidak diverifikasi** dari source.
 
 ---
 
 ## 6. Tabel Navigasi Dokumen
 
-Dokumen ini sengaja tidak memuat detail teknis per sisi - gunakan tabel berikut untuk menuju dokumen yang relevan.
-
-| Kebutuhan | Dokumen Rujukan |
+| Kebutuhan | Dokumen |
 |---|---|
-| Arsitektur & tech stack Frontend | `SID-ARCH-FE-001` |
-| Arsitektur & tech stack Backend | `SID-ARCH-BE-001` |
-| Aturan penulisan kode sehari-hari | `DEV-CODE-001` (Code Guidelines) |
-| Strategi & cakupan pengujian | `DEV-TEST-001` (Testing) |
-| Alur kerja Git & review | `DEV-GIT-001` (Git Workflow) |
-| Skema domain Surat & Pipeline (`letter_categories`, `approval_flows`, `flow_steps`) | `SID_Arsitektur_RoleSegmentation_Pipeline_Kependudukan_Tahap2.md`, `SID_Addendum_KategoriLetterType_OperasionalPipeline_Verifikasi.md` |
-| Skema domain Kependudukan | `SID_MasterData_Kependudukan_NIK_Cibenda.md` |
-| Alur interaksi per aktor (Business Workflow) | `01_BWF_Overview_v1.puml` s.d. `05_BWF_SistemOtomatis_v1.puml` |
-| Standar keamanan lintas program | `AWG-SEC-001` s.d. `AWG-SEC-007` |
-| Standar observability lintas program | `AWG-OBS-001`, `AWG-OBS-002` |
+| Arsitektur Frontend | `SID-ARCH-FE-001` |
+| Arsitektur Backend | `SID-ARCH-BE-001` |
+| Kontrak API | `docs/api_spec/openapi.yaml` |
+| TDD (scope, UC, skema, keamanan, roadmap) | `docs/technical_design/TDD-01` s.d. `TDD-06` |
+| Diagram (UC, activity, sequence, class, ERD, component, deployment) | `docs/diagram/code/` |
+| Business workflow per aktor | `docs/bussines_workflow/*.puml` |
+| Aturan kode & testing | `docs/development/DEV-CODE-001`, `DEV-TEST-001` |
+| Fitur terdokumentasi yang belum diimplementasi | `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md` |
 
 ---
 
@@ -117,6 +111,7 @@ Dokumen ini sengaja tidak memuat detail teknis per sisi - gunakan tabel berikut 
 
 | Versi | Tanggal | Perubahan |
 |---|---|---|
-| 1.0 | - | Penyusunan awal sebagai titik masuk arsitektur SIDUTama Cibenda |
-| 1.1 | - | Tambah S4 (RBAC: Tier Navigasi vs Role Implementasi) untuk mengklarifikasi bahwa 5-Tier adalah label di atas 9-role ENUM TDD v5.0, bukan struktur DB terpisah. Selaraskan istilah pipeline surat di S2.1 & S6 ke terminologi skema final (`letter_categories`/`approval_flows`/`flow_steps`), menggantikan istilah `PipelineStep` generik sebelumnya. Koreksi S2.2: hapus penyebutan "warga Non-NIK" - bertentangan dengan keputusan final TDD v5.0 bahwa seluruh warga tercatat selalu punya NIK, dibedakan murni lewat `residency_type`. Koreksi S2.3: CMS eksklusif milik `petugas_desa`, bukan seluruh Tier 2 (Kades/Sekdes tidak punya akses). Tandai QR Verification, Void/Cancel, dan Staging Perubahan Data Self-Service di S2.1/S2.2 sebagai wacana belum berdesain, lihat `SID-ARCH-BE-001` S10. |
-| 1.2 | - | v5.2: sosio-ekonomi keluarga/KK dan pekerjaan individu dari katalog baku per desa. |
+| 1.0 | - | Penyusunan awal |
+| 1.1 | - | Tier vs role, terminologi pipeline, koreksi Non-NIK, CMS eksklusif Petugas Desa |
+| 1.2 | 2026-10-06 | Sosio-ekonomi KK dan pekerjaan baku per desa |
+| 1.3 | 2026-10-16 | Kategori surat dihapus; jenis surat data-driven, TTD pihak terkait, snapshot, aksi data; Web Push; identitas desa dari DB & halaman publik; topologi Docker/VPS; kotak "Endpoint Verifikasi QR" dihapus dari diagram komponen karena tidak ada di source |

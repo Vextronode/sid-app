@@ -133,12 +133,12 @@ class LetterFulfillmentTest extends TestCase
             ->assertJsonValidationErrors(['values.name']);
     }
 
-    public function test_only_assigned_kasi_kaur_or_petugas_desa_may_apply(): void
+    public function test_only_assigned_kasi_kaur_or_staf_sid_may_apply(): void
     {
         $letter = $this->approvedUpdateLetter(['nama_benar' => 'Nama Benar']);
         $otherKaur = $this->makeOfficialUser('kaur_tu_umum', $this->village);
         $kades = $this->makeOfficialUser('kepala_desa', $this->village);
-        $petugas = $this->makeOfficialUser('petugas_desa', $this->village);
+        $petugas = $this->makeOfficialUser('staf_sid', $this->village);
         $foreignKasi = $this->makeOfficialUser('kasi_pelayanan', Village::factory()->create());
 
         foreach ([$otherKaur, $kades, $this->applicant, $foreignKasi] as $account) {

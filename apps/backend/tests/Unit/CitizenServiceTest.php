@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\Citizen;
 use App\Repositories\CitizenRepository;
 use App\Services\CitizenService;
+use App\Services\PopulationAuditService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,13 +19,13 @@ class CitizenServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new CitizenService(new CitizenRepository);
+        $this->service = new CitizenService(new CitizenRepository, new PopulationAuditService);
     }
 
     public function test_get_all_with_wilayah_returns_all_citizens(): void
     {
         $citizens = Citizen::factory()->count(2)->create();
-        $user = $this->makePetugasDesaActor($citizens->first()->village_id);
+        $user = $this->makeStafSidActor($citizens->first()->village_id);
 
         $result = $this->service->paginateWithWilayah($user);
 
@@ -34,7 +35,7 @@ class CitizenServiceTest extends TestCase
     public function test_delete_removes_citizen(): void
     {
         $citizen = Citizen::factory()->create();
-        $user = $this->makePetugasDesaActor($citizen->village_id);
+        $user = $this->makeStafSidActor($citizen->village_id);
 
         $result = $this->service->delete($citizen, $user);
 
@@ -45,7 +46,7 @@ class CitizenServiceTest extends TestCase
     public function test_get_distinct_wilayah_returns_collection(): void
     {
         $citizen = Citizen::factory()->create();
-        $user = $this->makePetugasDesaActor($citizen->village_id);
+        $user = $this->makeStafSidActor($citizen->village_id);
 
         $result = $this->service->getDistinctWilayah($user);
 

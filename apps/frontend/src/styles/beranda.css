@@ -259,6 +259,65 @@
   animation-delay: var(--bd-rise-delay-3);
 }
 
+/* Isi pengumuman yang dibuka "Baca selengkapnya": satu gerakan pendek
+   sebagai jawaban atas klik. */
+.bd-announcement-panel {
+  animation: bd-rise 180ms ease-out both;
+  --bd-rise-distance: -6px;
+  /* Bar menempel di atas layar: isi panjang digulir di dalam panel agar
+     tidak menutupi halaman, terutama di ponsel. */
+  max-height: min(50vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Tiga garis "pukulan kentongan" di kiri pita pengumuman. Saat pita muncul,
+   garis menyala bergantian sekali (tok, tok, tok), lalu diam. */
+.bd-kentongan > span {
+  display: block;
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--color-pb-padi);
+  transform: skewX(-14deg);
+  animation: bd-kentongan-tok 260ms ease-out both;
+}
+
+.bd-kentongan > span:nth-child(2) {
+  animation-delay: 220ms;
+}
+
+.bd-kentongan > span:nth-child(3) {
+  animation-delay: 440ms;
+}
+
+@keyframes bd-kentongan-tok {
+  from {
+    opacity: 0.25;
+    transform: skewX(-14deg) scaleY(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: skewX(-14deg);
+  }
+}
+
+/* Garis padi di panel isi pengumuman, tepat di bawah tiga garis kentongan:
+   memanjang ke bawah saat panel dibuka. */
+.bd-kentongan-gema {
+  transform-origin: top;
+  animation: bd-kentongan-gema 280ms ease-out both;
+}
+
+@keyframes bd-kentongan-gema {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: none;
+  }
+}
+
 .bd-lift {
   transition:
     transform var(--bd-lift-duration) ease,
@@ -279,7 +338,10 @@
 @media (prefers-reduced-motion: reduce) {
   .bd-rise,
   .bd-rise-2,
-  .bd-rise-3 {
+  .bd-rise-3,
+  .bd-announcement-panel,
+  .bd-kentongan > span,
+  .bd-kentongan-gema {
     animation: none;
   }
 
@@ -315,7 +377,8 @@
 /* Tujuan tautan #section (scrollIntoView) tidak tertutup header yang
    menempel; scroll-margin-top tiap section menambah jarak di atasnya. */
 html:has(.bd-header) {
-  scroll-padding-top: 72px;
+  /* Tinggi header + bar pengumuman, diukur PublicStickyChrome. */
+  scroll-padding-top: var(--bd-sticky-offset, 72px);
 }
 
 /* Tombol berbingkai: "Masuk Warga". */
@@ -431,6 +494,16 @@ html:has(.bd-header) {
 
 .bd-root .bd-nav-login {
   margin-left: var(--bd-space-8);
+}
+
+/* Ikon dashboard di tombol akun (AccountNavLink) bagi pengguna yang login. */
+.bd-root .bd-nav-login,
+.bd-root .bd-mobile-login {
+  gap: var(--bd-space-8);
+}
+
+.bd-root .bd-account-icon {
+  flex: none;
 }
 
 /* ----- Dropdown Profil Desa (A3–A7) ----- */
@@ -659,6 +732,16 @@ html:has(.bd-header) {
   cursor: wait;
 }
 
+/* Foto akun di menu akun (desktop); di ponsel tampil sendiri di samping
+   tombol Menu karena nama akun disembunyikan. */
+.bd-root .bd-app-account .bd-nav-trigger {
+  gap: var(--bd-space-8);
+}
+
+.bd-root .bd-mobile-avatar {
+  display: none;
+}
+
 @media (max-width: 767.98px) {
   .bd-nav,
   .bd-app-account,
@@ -668,6 +751,10 @@ html:has(.bd-header) {
 
   .bd-mobile-menu {
     display: block;
+  }
+
+  .bd-root .bd-mobile-avatar {
+    display: inline-flex;
   }
 }
 

@@ -1,4 +1,4 @@
-import { Pencil, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react'
+import { Pencil, Plus, Power, RefreshCw, Search, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
@@ -9,6 +9,11 @@ import {
   updateOccupation,
 } from '@/features/pekerjaan/api'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import { isFormDirty } from '@/shared/lib/isFormDirty'
+import { notifySuccess } from '@/shared/lib/toast'
 
 function resolveError(error, fallback) {
   const errors = error?.response?.data?.errors
@@ -18,10 +23,14 @@ function resolveError(error, fallback) {
 
 function OccupationFormModal({ item, processing, error, onClose, onSubmit }) {
   const isEdit = Boolean(item?.id)
-  const [form, setForm] = useState({
+  const [initialForm] = useState(() => ({
     name: item?.name ?? '',
     sort_order: item?.sort_order ?? 0,
-    is_active: item?.is_active ?? true,
+  }))
+  const [form, setForm] = useState(initialForm)
+  const requestClose = useConfirmDiscard(isFormDirty(form, initialForm), {
+    disabled: processing,
+    escapeClose: onClose,
   })
 
   const handleSubmit = async (event) => {
@@ -30,10 +39,12 @@ function OccupationFormModal({ item, processing, error, onClose, onSubmit }) {
     const success = await onSubmit({
       name: form.name.trim(),
       sort_order: Number(form.sort_order) || 0,
-      is_active: Boolean(form.is_active),
     })
 
-    if (success) onClose()
+    if (success) {
+      notifySuccess(`Pekerjaan berhasil ${isEdit ? 'diperbarui' : 'ditambahkan'}.`)
+      onClose()
+    }
   }
 
   return (
@@ -41,7 +52,7 @@ function OccupationFormModal({ item, processing, error, onClose, onSubmit }) {
       className="sid-wilayah-modal-backdrop"
       role="presentation"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
+        if (event.target === event.currentTarget) requestClose(onClose)
       }}
     >
       <div className="sid-wilayah-modal">
@@ -51,7 +62,12 @@ function OccupationFormModal({ item, processing, error, onClose, onSubmit }) {
             <h2>{isEdit ? 'Edit' : 'Tambah'} Pekerjaan</h2>
           </div>
 
-          <button type="button" onClick={onClose} className="sid-wilayah-modal-close">
+          <button
+            type="button"
+            onClick={() => requestClose(onClose)}
+            className="sid-wilayah-modal-close"
+            aria-label="Tutup"
+          >
             <X size={18} />
           </button>
         </div>
@@ -83,23 +99,12 @@ function OccupationFormModal({ item, processing, error, onClose, onSubmit }) {
             />
           </div>
 
-          <label className="sid-wilayah-checkbox">
-            <input
-              type="checkbox"
-              checked={form.is_active}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, is_active: event.target.checked }))
-              }
-            />
-            <span>Pekerjaan aktif (dapat dipilih pada data warga)</span>
-          </label>
-
           {error && <div className="sid-wilayah-form-error">{error}</div>}
 
           <div className="sid-wilayah-modal-footer">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => requestClose(onClose)}
               className="sid-wilayah-btn sid-wilayah-btn-secondary"
             >
               Batal
@@ -183,14 +188,57 @@ export default function KelolaPekerjaanPage() {
     }
   }
 
+  const handleToggle = async (item) => {
+    const confirmed = await confirmDialog(
+      item.is_active
+        ? {
+            title: `Nonaktifkan pekerjaan "${item.name}"?`,
+            message:
+              'Pekerjaan tidak dapat dipilih lagi pada data warga. Data warga yang sudah memakainya tidak berubah.',
+            confirmLabel: 'Nonaktifkan',
+          }
+        : {
+            title: `Aktifkan pekerjaan "${item.name}"?`,
+            message: 'Pekerjaan dapat dipilih kembali pada data warga.',
+            confirmLabel: 'Aktifkan',
+            tone: 'primary',
+          },
+    )
+
+    if (!confirmed) return
+
+    setProcessing(true)
+    setError('')
+
+    try {
+      await updateOccupation(item.id, { is_active: !item.is_active })
+      await load()
+      notifySuccess(
+        `Pekerjaan "${item.name}" berhasil ${item.is_active ? 'dinonaktifkan' : 'diaktifkan'}.`,
+      )
+    } catch (requestError) {
+      setError(resolveError(requestError, 'Gagal mengubah status pekerjaan.'))
+    } finally {
+      setProcessing(false)
+    }
+  }
+
   const handleDelete = async (item) => {
-    if (!window.confirm(`Hapus pekerjaan "${item.name}"?`)) return
+    if (
+      !(await confirmDialog({
+        title: `Hapus pekerjaan "${item.name}"?`,
+        message: 'Tindakan ini tidak dapat dibatalkan.',
+        confirmLabel: 'Hapus',
+      }))
+    )
+      return
 
     setProcessing(true)
 
     try {
       await deleteOccupation(item.id)
       await load()
+      notifySuccess(`Pekerjaan "${item.name}" berhasil dihapus.`)
     } catch (requestError) {
       // 409: pekerjaan masih dipakai warga; pesan backend menyarankan nonaktifkan.
       setError(resolveError(requestError, 'Gagal menghapus pekerjaan.'))
@@ -297,15 +345,9 @@ export default function KelolaPekerjaanPage() {
                       <td>{item.sort_order ?? 0}</td>
                       <td>{item.citizens_count ?? '-'}</td>
                       <td>
-                        <span
-                          className={`sid-wilayah-status ${
-                            item.is_active
-                              ? 'sid-wilayah-status-active'
-                              : 'sid-wilayah-status-inactive'
-                          }`}
-                        >
+                        <StatusPill active={item.is_active}>
                           {item.is_active ? 'Aktif' : 'Nonaktif'}
-                        </span>
+                        </StatusPill>
                       </td>
                       <td>
                         <div className="sid-wilayah-actions">
@@ -316,6 +358,17 @@ export default function KelolaPekerjaanPage() {
                             title="Edit Pekerjaan"
                           >
                             <Pencil size={15} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => void handleToggle(item)}
+                            className="sid-wilayah-action sid-wilayah-action-toggle"
+                            title={item.is_active ? 'Nonaktifkan Pekerjaan' : 'Aktifkan Pekerjaan'}
+                            aria-label={`${item.is_active ? 'Nonaktifkan' : 'Aktifkan'} ${item.name}`}
+                            disabled={processing}
+                          >
+                            <Power size={15} />
                           </button>
 
                           <button

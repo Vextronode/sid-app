@@ -61,6 +61,59 @@ services:
     stop_grace_period: 20s
     logging: *logging
 
+  # Scheduler Laravel (pengingat approval UC-22, approvals:send-reminders).
+  # Image & env sama dengan sid_api; entrypoint menjalankannya sebagai www-data.
+  sid_scheduler:
+    image: ${SID_REGISTRY:?SID_REGISTRY wajib diisi di compose.env}/sid-api:${SID_IMAGE_TAG:?SID_IMAGE_TAG wajib diisi (mis. v1.2.3)}
+    container_name: ${SID_PROJECT:-sid}_scheduler
+    restart: unless-stopped
+    command: ["php", "artisan", "schedule:work"]
+    env_file:
+      - ${SID_ENV_FILE:-sid.env}
+    volumes:
+      - public:/var/www/html/storage/app/public
+      - private:/var/www/html/storage/app/private
+    networks:
+      - sid_net
+      # Keluar internet (DB Neon pada mode neon). Web push hanya diantrekan;
+      # pengirimnya sid_worker.
+      - sid_egress
+    depends_on:
+      sid_api:
+        condition: service_healthy
+    # Healthcheck image (ping PHP-FPM) tidak berlaku untuk proses scheduler.
+    healthcheck:
+      disable: true
+    stop_grace_period: 20s
+    logging: *logging
+
+  # Queue worker (QUEUE_CONNECTION=database): mengirim Web Push dari tabel jobs.
+  # Notifikasi in-app tetap sinkron, jadi worker mati hanya menunda push.
+  # --max-time: worker keluar tiap jam lalu dinyalakan ulang Docker (memori bersih).
+  sid_worker:
+    image: ${SID_REGISTRY:?SID_REGISTRY wajib diisi di compose.env}/sid-api:${SID_IMAGE_TAG:?SID_IMAGE_TAG wajib diisi (mis. v1.2.3)}
+    container_name: ${SID_PROJECT:-sid}_worker
+    restart: unless-stopped
+    command: ["php", "artisan", "queue:work", "--tries=3", "--backoff=30", "--sleep=3", "--max-time=3600"]
+    env_file:
+      - ${SID_ENV_FILE:-sid.env}
+    volumes:
+      - public:/var/www/html/storage/app/public
+      - private:/var/www/html/storage/app/private
+    networks:
+      - sid_net
+      # Web push dikirim ke layanan push browser di internet.
+      - sid_egress
+    depends_on:
+      sid_api:
+        condition: service_healthy
+    # Healthcheck image (ping PHP-FPM) tidak berlaku untuk proses worker.
+    healthcheck:
+      disable: true
+    # SIGTERM: queue:work menyelesaikan job yang sedang jalan dulu.
+    stop_grace_period: 30s
+    logging: *logging
+
   sid_web:
     image: ${SID_REGISTRY:?SID_REGISTRY wajib diisi di compose.env}/sid-web:${SID_IMAGE_TAG:?SID_IMAGE_TAG wajib diisi (mis. v1.2.3)}
     container_name: ${SID_PROJECT:-sid}_web

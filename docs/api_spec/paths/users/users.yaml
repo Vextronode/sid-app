@@ -11,7 +11,7 @@ get:
       required: false
       schema:
         type: string
-        enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, kepala_desa, sekretaris_desa]
+        enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, staf_sid, kepala_desa, sekretaris_desa]
   responses:
     '200':
       description: Daftar akun berhasil diambil

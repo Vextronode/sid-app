@@ -10,7 +10,13 @@ import {
 } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/features/auth/contexts/AuthContext'
 import { buildLoginPath, resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
-import { HAL_AKSESIBILITAS, HAL_KEBIJAKAN_PRIVASI, HAL_PPID } from '@/lib/constants/routes'
+import {
+  HAL_AKSESIBILITAS,
+  HAL_BPD,
+  HAL_KEBIJAKAN_PRIVASI,
+  HAL_LEMBAGA,
+  HAL_PPID,
+} from '@/lib/constants/routes'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
 
@@ -25,6 +31,7 @@ import {
   SELF_LETTER_ROUTE,
 } from '@/features/notifikasi/utils/notificationTarget'
 import { getOperatorAllowedRoles } from '@/features/operator-desa/constants/roleNavigation'
+import { letterTargetForRole, roleHomePath } from '@/features/auth/utils/letterLinks'
 
 const lazyNamed = (loader, name) =>
   lazy(() => loader().then((module) => ({ default: module[name] })))
@@ -33,6 +40,10 @@ const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const DetailBeritaPage = lazyNamed(() => import('@/pages/DetailBeritaPage'), 'DetailBeritaPage')
 const BeritaPage = lazyNamed(() => import('@/pages/BeritaPage'), 'BeritaPage')
 const ProfilDesaPage = lazyNamed(() => import('@/pages/ProfilDesaPage'), 'ProfilDesaPage')
+const OrganisasiDesaPage = lazyNamed(
+  () => import('@/pages/OrganisasiDesaPage'),
+  'OrganisasiDesaPage',
+)
 const PengajuanSuratPage = lazyNamed(
   () => import('@/pages/PengajuanSuratPage'),
   'PengajuanSuratPage',
@@ -48,13 +59,11 @@ const DaftarSuratSayaPage = lazy(() => import('@/pages/DaftarSuratSayaPage'))
 const KelolaWilayahPage = lazy(() => import('@/pages/admin/KelolaWilayahPage'))
 const KelolaPekerjaanPage = lazy(() => import('@/pages/admin/KelolaPekerjaanPage'))
 const KelolaPeraturanPage = lazy(() => import('@/pages/admin/KelolaPeraturanPage'))
-const PeraturanDesaPage = lazyNamed(() => import('@/pages/PeraturanDesaPage'), 'PeraturanDesaPage')
+const KelolaPengumumanPage = lazy(() => import('@/pages/admin/KelolaPengumumanPage'))
+const KelolaHalamanInfoPage = lazy(() => import('@/pages/admin/KelolaHalamanInfoPage'))
 
-// Halaman informasi (D6) masih draf: hanya ada di mode dev. Saat build,
-// import.meta.env.DEV menjadi false sehingga route dan chunk-nya tidak ikut.
-const InfoPage = import.meta.env.DEV
-  ? lazyNamed(() => import('@/features/info/components/InfoPage'), 'InfoPage')
-  : null
+// Halaman informasi (D6): Kebijakan privasi, Aksesibilitas, PPID.
+const InfoPage = lazyNamed(() => import('@/features/info/components/InfoPage'), 'InfoPage')
 
 // RT — approver tahap 1
 // RW — monitoring
@@ -85,6 +94,7 @@ const OperatorSuratListPage = lazy(() => import('@/pages/admin/OperatorSuratList
 
 const ApprovalSettingPage = lazy(() => import('@/pages/admin/ApprovalSettingPage'))
 const ApprovalFlowsPage = lazy(() => import('@/pages/admin/ApprovalFlowsPage'))
+const ActivityLogPage = lazy(() => import('@/pages/admin/ActivityLogPage'))
 const PejabatDesaPage = lazy(() => import('@/pages/admin/PejabatDesaPage'))
 const SuratSayaPejabatPage = lazy(() => import('@/pages/admin/SuratSayaPejabatPage'))
 const NotificationRedirectPage = lazy(() => import('@/pages/NotificationRedirectPage'))
@@ -98,7 +108,7 @@ const OFFICIAL_ROLES = [
   ...KADES_APPROVER_ROLES,
   'kasi_pelayanan',
   'kaur_tu_umum',
-  'petugas_desa',
+  'staf_sid',
 ]
 
 // Route khusus untuk user yang belum login.
@@ -122,25 +132,7 @@ export const GuestRoute = ({ children }) => {
       return <Navigate to={redirectTo} replace />
     }
 
-    switch (user.role) {
-      case 'rt':
-        return <Navigate to="/admin/dashboard-surat-rt" replace />
-      case 'rw':
-        return <Navigate to="/admin/dashboard-surat-rw" replace />
-      case 'kadus':
-        return <Navigate to="/admin/dashboard-surat-kadus" replace />
-      case 'kepala_desa':
-      case 'sekretaris_desa':
-        return <Navigate to="/admin/dashboard-surat-kades" replace />
-      case 'kasi_pelayanan':
-      case 'kaur_tu_umum':
-      case 'petugas_desa':
-        return <Navigate to="/admin/operator-desa" replace />
-      case 'warga':
-        return <Navigate to="/daftar-surat" replace />
-      default:
-        return <Navigate to="/" replace />
-    }
+    return <Navigate to={roleHomePath(user.role)} replace />
   }
 
   return children
@@ -165,8 +157,14 @@ export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/ganti-password" replace />
   }
 
+  // Peran lain: halaman surat warga ke padanannya (Surat Saya pejabat),
+  // selain itu ke halaman awal perannya, bukan ke beranda publik.
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />
+    const fallback = letterTargetForRole(location.pathname, user.role)
+
+    return (
+      <Navigate to={fallback === location.pathname ? roleHomePath(user.role) : fallback} replace />
+    )
   }
 
   return children
@@ -220,17 +218,21 @@ export default function App() {
               <Route path="/berita" element={<BeritaPage />} />
               <Route path="/berita/:id" element={<DetailBeritaPage />} />
               <Route path="/profil-desa" element={<ProfilDesaPage />} />
-              <Route path="/peraturan-desa" element={<PeraturanDesaPage />} />
+              <Route path={HAL_BPD} element={<OrganisasiDesaPage variant="bpd" />} />
+              <Route path={HAL_LEMBAGA} element={<OrganisasiDesaPage variant="lembaga" />} />
+              <Route
+                path="/peraturan-desa"
+                element={<Navigate to="/profil-desa#peraturan-desa" replace />}
+              />
 
-              {/* Halaman informasi (D6), khusus dev sampai isinya disetujui desa. */}
-              {import.meta.env.DEV &&
-                [
-                  [HAL_KEBIJAKAN_PRIVASI, 'kebijakan-privasi'],
-                  [HAL_AKSESIBILITAS, 'aksesibilitas'],
-                  [HAL_PPID, 'ppid'],
-                ].map(([path, page]) => (
-                  <Route key={path} path={path} element={<InfoPage page={page} />} />
-                ))}
+              {/* Halaman informasi (D6); isian khas desa dari menu Halaman Informasi. */}
+              {[
+                [HAL_KEBIJAKAN_PRIVASI, 'kebijakan-privasi'],
+                [HAL_AKSESIBILITAS, 'aksesibilitas'],
+                [HAL_PPID, 'ppid'],
+              ].map(([path, page]) => (
+                <Route key={path} path={path} element={<InfoPage page={page} />} />
+              ))}
             </Route>
 
             {/* ===== WARGA ===== */}
@@ -238,7 +240,7 @@ export default function App() {
               path="/daftar-surat"
               element={
                 <ProtectedRoute allowedRoles={['warga']}>
-                  <DaftarSurat />
+                  <JenisSuratPage />
                 </ProtectedRoute>
               }
             />
@@ -247,7 +249,7 @@ export default function App() {
               path="/jenis-surat"
               element={
                 <ProtectedRoute allowedRoles={['warga']}>
-                  <JenisSuratPage />
+                  <DaftarSurat />
                 </ProtectedRoute>
               }
             />
@@ -438,6 +440,24 @@ export default function App() {
                 }
               />
               <Route
+                path="/admin/pengumuman"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/pengumuman')}>
+                    <KelolaPengumumanPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/halaman-informasi"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={getOperatorAllowedRoles('/admin/halaman-informasi')}
+                  >
+                    <KelolaHalamanInfoPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin/organisasi/bpd"
                 element={
                   <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/organisasi/bpd')}>
@@ -488,6 +508,14 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/approval-flows')}>
                     <ApprovalFlowsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/log-aktivitas"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/log-aktivitas')}>
+                    <ActivityLogPage />
                   </ProtectedRoute>
                 }
               />

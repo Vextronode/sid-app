@@ -15,6 +15,7 @@ import { DynamicSuratForm } from '@/features/surat/components/DynamicSuratForm'
 import { useLetterTypes } from '@/features/surat/hooks/useLetterTypes'
 import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig'
 import { WargaLayout } from '@/components/layout/WargaLayout'
+import { notifySuccess } from '@/shared/lib/toast'
 
 export function PengajuanSuratPage() {
   const { kode } = useParams()
@@ -64,6 +65,8 @@ export function PengajuanSuratPage() {
       processed_at: data.processed_at || null,
     }
 
+    // Toast tetap tampil setelah pindah ke daftar surat.
+    notifySuccess('Permohonan surat berhasil dikirim.')
     navigate('/daftar-surat')
   }
 

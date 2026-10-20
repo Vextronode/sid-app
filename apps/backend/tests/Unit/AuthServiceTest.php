@@ -91,7 +91,7 @@ class AuthServiceTest extends TestCase
             // Field ini tidak boleh memengaruhi identitas hasil register.
             'village_id' => $otherVillage->id,
             'citizen_id' => $otherCitizen->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
             'name' => 'Nama yang tidak dipercaya',
             'email' => 'tidak-dipakai@example.test',
         ]));

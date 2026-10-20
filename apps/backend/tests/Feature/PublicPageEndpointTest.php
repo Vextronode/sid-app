@@ -151,7 +151,7 @@ class PublicPageEndpointTest extends TestCase
         $kades = Official::factory()->position('kepala_desa')->create(['village_id' => $village->id]);
         // RT dan pejabat yang sudah berakhir tidak tampil di halaman publik.
         Official::factory()->position('rt')->create(['village_id' => $village->id]);
-        Official::factory()->position('sekdes')->create(['village_id' => $village->id, 'is_active' => false]);
+        Official::factory()->position('sekretaris_desa')->create(['village_id' => $village->id, 'is_active' => false]);
         // Dusun aktif dikirim walau belum punya Kepala Dusun.
         $hamlet = Hamlet::factory()->create(['village_id' => $village->id, 'is_active' => true]);
         $inactiveHamlet = Hamlet::factory()->create(['village_id' => $village->id, 'is_active' => false]);
@@ -170,6 +170,8 @@ class PublicPageEndpointTest extends TestCase
                 ['code' => 'kaur_tu_umum', 'label' => 'Kaur TU & Umum'],
                 ['code' => 'kaur_keuangan', 'label' => 'Kaur Keuangan'],
                 ['code' => 'staf_arsip', 'label' => 'Staf Arsip'],
+                // Staf aplikasi desa paling akhir di grup staf.
+                ['code' => 'staf_sid', 'label' => 'Staf SIDUTama'],
             ])
             ->assertJsonPath('officials.1.position_label', 'Kaur Keuangan')
             ->assertJsonCount(2, 'officials')
@@ -349,7 +351,8 @@ class PublicPageEndpointTest extends TestCase
             'hero_image' => '/assets/image/hero.jpg',
             'hero_photo_credit' => 'Warga',
             'office_hours' => 'Senin – Jumat, 08.00 – 16.00 WIB',
-            'map_url' => 'https://maps.app.goo.gl/abc',
+            'latitude' => -7.6803137,
+            'longitude' => 108.5513816,
         ]);
 
         $this->getJson('/api/public/home')
@@ -360,6 +363,46 @@ class PublicPageEndpointTest extends TestCase
             ->assertJsonPath('data.village.hero_image_url', '/assets/image/hero.jpg')
             ->assertJsonPath('data.village.hero_photo_credit', 'Warga')
             ->assertJsonPath('data.village.office_hours', 'Senin – Jumat, 08.00 – 16.00 WIB')
-            ->assertJsonPath('data.village.map_url', 'https://maps.app.goo.gl/abc');
+            ->assertJsonPath('data.village.latitude', -7.6803137)
+            ->assertJsonPath('data.village.longitude', 108.5513816);
+    }
+
+    // Sambutan Kepala Desa di beranda memakai nama dan foto pejabat Kepala
+    // Desa aktif, bukan kolom teks head_name.
+    #[Test]
+    public function home_exposes_the_active_village_head_for_the_welcome_block(): void
+    {
+        Storage::fake('public');
+        $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
+        $citizen = Citizen::factory()->create(['village_id' => $village->id, 'name' => 'Asep Saepudin']);
+        Official::factory()->create([
+            'citizen_id' => $citizen->id,
+            'village_id' => $village->id,
+            'position' => 'kepala_desa',
+            'photo_img' => 'officials/kades.jpg',
+        ]);
+        // Kepala Desa sebelumnya yang sudah berakhir tidak ikut.
+        Official::factory()->create([
+            'village_id' => $village->id,
+            'position' => 'kepala_desa',
+            'is_active' => false,
+            'ended_at' => now()->subYear(),
+        ]);
+
+        $this->getJson('/api/public/home')
+            ->assertOk()
+            ->assertJsonPath('data.village_head.name', 'Asep Saepudin')
+            ->assertJsonPath('data.village_head.position', 'kepala_desa')
+            ->assertJsonPath('data.village_head.photo_url', Storage::disk('public')->url('officials/kades.jpg'));
+    }
+
+    #[Test]
+    public function home_returns_null_village_head_when_the_position_is_empty(): void
+    {
+        Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
+
+        $this->getJson('/api/public/home')
+            ->assertOk()
+            ->assertJsonPath('data.village_head', null);
     }
 }

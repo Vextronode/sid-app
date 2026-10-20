@@ -148,7 +148,7 @@ class RegisteredUserControllerTest extends TestCase
             'username' => 'nama.palsu',
             'village_id' => '00000000-0000-4000-8000-000000000000',
             'citizen_id' => '00000000-0000-4000-8000-000000000000',
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
         ]));
 
         $response->assertCreated()->assertJsonPath('data.name', $citizen->name);

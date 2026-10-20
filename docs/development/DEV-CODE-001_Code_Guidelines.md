@@ -32,13 +32,13 @@
 
 ### A.3 Konvensi Styling
 
-1. **Dilarang** menulis nilai warna/style sebagai hex/arbitrary value langsung dalam className (mis. `bg-[#1F3864]` **tidak diperbolehkan**). Seluruh warna dipetakan lewat `tailwind.config.js` yang meng-extend `sid-design-tokens.css`.
-2. Kombinasi kelas Tailwind yang berulang dan kompleks diekstrak menggunakan utility `cn()` (clsx + tailwind-merge) - bukan `@apply` yang tersebar di banyak berkas CSS.
+1. **Dilarang** menulis nilai warna/style sebagai hex/arbitrary value langsung dalam className (mis. `bg-[#1F3864]` **tidak diperbolehkan**). Proyek memakai Tailwind CSS v4 (CSS-first, tanpa `tailwind.config.js`): token warna didefinisikan di `src/index.css` (`@theme static`, palet `pb-*`) dan variabel `--sid-*` di `src/styles/sid-global.css`.
+2. Kombinasi kelas yang berulang dan kompleks diekstrak menjadi komponen kecil di `components/ui` atau konstanta kelas di fitur terkait - bukan `@apply` yang tersebar di banyak berkas CSS. (Utility `cn()`/clsx/tailwind-merge tidak terpasang di `package.json`.)
 3. Skala spasi mengikuti skala bawaan Tailwind - hindari nilai custom/"angka ajaib" tanpa alasan desain yang terdokumentasi.
 
 ### A.4 Form Handling
 
-1. Form pengajuan surat bersifat **schema-driven**, mengikuti `LetterType.applicant_category` dan field requirement dari Backend - bukan satu komponen form React per jenis surat.
+1. Form pengajuan surat bersifat **schema-driven**, dibangun dari `letter_type.form_fields` dan `signature_slots` yang dikirim Backend (`DynamicSuratForm`, `features/surat/utils/letterFormData.js`) - bukan satu komponen form React per jenis surat. Validasi akhir tetap di Backend (`LetterFormSchema`).
 2. Validasi menggunakan **React Hook Form + Zod**.
 3. Pesan kesalahan validasi ditampilkan dengan pola konsisten (posisi, warna) mengikuti design token status.
 
@@ -50,7 +50,7 @@
 
 ### A.6 Import Order
 
-Urutan import: (1) pustaka eksternal, (2) modul internal fitur lain melalui `/shared`, (3) import relatif dalam fitur yang sama - dipisahkan baris kosong antar kelompok.
+Urutan import: (1) pustaka eksternal, (2) modul internal lewat alias `@/` (`@/lib`, `@/shared/lib`, `@/components`, `@/features/...`), (3) import relatif dalam fitur yang sama - dipisahkan baris kosong antar kelompok.
 
 ### A.7 Linting, Formatting & Automasi
 

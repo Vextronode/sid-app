@@ -92,7 +92,7 @@ export function getStepStatuses(surat) {
 
   const steps = [
     {
-      label: 'Submit',
+      label: 'Diajukan',
       state: 'done',
       timestamp: submittedAt,
     },

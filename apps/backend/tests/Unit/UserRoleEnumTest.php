@@ -19,7 +19,7 @@ class UserRoleEnumTest extends TestCase
     {
         $expected = [
             'warga', 'rt', 'rw', 'kadus', 'kasi_pelayanan',
-            'kaur_tu_umum', 'petugas_desa', 'kepala_desa', 'sekretaris_desa',
+            'kaur_tu_umum', 'staf_sid', 'kepala_desa', 'sekretaris_desa',
         ];
 
         $this->assertEqualsCanonicalizing($expected, UserRole::values());
@@ -51,7 +51,7 @@ class UserRoleEnumTest extends TestCase
     #[Test]
     public function it_can_be_constructed_from_string_value(): void
     {
-        $this->assertSame(UserRole::PetugasDesa, UserRole::from('petugas_desa'));
+        $this->assertSame(UserRole::StafSid, UserRole::from('staf_sid'));
     }
 
     #[Test]

@@ -1,0 +1,195 @@
+'==================================================================================
+' SECTION: ERD (ENTITY RELATIONSHIP DIAGRAM)
+' FILE: 02_ERD_Pendukung_v8.puml
+' JUDUL: ERD - Pendukung [2/2]
+' SUMBER: migration apps/backend/database/migrations (per 2026-10-16)
+'         + TDD-03_Database_Schema.md v5.3
+' CATATAN: Menggantikan 02_ERD_Pendukung_v7.puml.
+'==================================================================================
+
+@startuml ERD_Pendukung_v8
+skinparam backgroundColor #FFFFFF
+skinparam entity {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+  HeaderBackgroundColor #2E5FA3
+  HeaderFontColor #FFFFFF
+}
+skinparam arrow {
+  Color #2E5FA3
+  FontName Arial
+  FontSize 10
+}
+skinparam linetype ortho
+
+title ERD v8 - PENDUKUNG [2/2] - SIDUTama\n(Organisasi Non-Struktural, Notifikasi & Web Push, Berita & Kategori, Peraturan Desa, Activity Log)\nLihat ERD Core [1/2] untuk definisi lengkap villages dan users
+
+' ─────────────── SHADOW ENTITIES (lihat ERD Core) ───────────────
+entity "villages\n(bayangan)" as VIL #F5F5F5 {
+  * id : UUID <<PK>>
+}
+entity "users\n(bayangan)" as USR #F5F5F5 {
+  * id : UUID <<PK>>
+}
+
+' ─────────────── ORGANISASI NON-STRUKTURAL ───────────────
+entity "village_org_positions" as VOP {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * org_type : ENUM(bpd, bumdes, lpm, karang_taruna, pkk)
+  * position_label : VARCHAR(100)
+  is_single_occupant : BOOLEAN = true
+  sort_order : INT = 0
+  is_active : BOOLEAN = true
+}
+
+entity "village_org_members" as VOM {
+  * id : BIGINT <<PK>>
+  --
+  * position_id : BIGINT <<FK>>
+  * member_name : VARCHAR(150)
+  photo_img : VARCHAR(255)
+  phone_wa : VARCHAR(20)
+  * started_at : DATE
+  ended_at : DATE
+  is_active : BOOLEAN = true
+  notes : TEXT
+}
+
+' ─────────────── NOTIFIKASI ───────────────
+entity "notifications" as NTF {
+  * id : UUID <<PK>>
+  --
+  * type : VARCHAR(255)
+  * notifiable_type / notifiable_id (uuidMorphs)
+  * data : TEXT (JSON: title, message, category,\n icon, color, context{letter_id, letter_no,\n status, applicant, is_applicant})
+  read_at : TIMESTAMP
+}
+
+entity "push_subscriptions" as PSH {
+  * id : BIGINT <<PK>>
+  --
+  * subscribable_type / subscribable_id (uuidMorphs)
+  * endpoint : VARCHAR(1024) ASCII <<UNIQUE>>
+  public_key : VARCHAR(255)
+  auth_token : VARCHAR(255)
+  content_encoding : VARCHAR(255)
+}
+
+note right of PSH
+  Tabel operasional package
+  laravel-notification-channels/webpush.
+  LetterStatusNotification dikirim ke
+  kanal database (sinkron) + WebPush (queue).
+end note
+
+' ─────────────── BERITA & PERATURAN ───────────────
+entity "news" as NWS {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * author_id : UUID <<FK users>>
+  * title : VARCHAR(200)
+  * slug : VARCHAR(200) <<UNIQUE>>
+  * content : TEXT
+  thumbnail : VARCHAR(255) (public)
+  is_published : BOOLEAN = false
+  published_at : TIMESTAMP
+  deleted_at : TIMESTAMP (soft delete)
+}
+
+entity "news_categories" as NCT {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * name : VARCHAR(50)
+  * slug : VARCHAR(60)
+  UNIQUE(village_id, slug)
+}
+
+entity "news_category_news" as NCN {
+  * news_id : BIGINT <<PK, FK CASCADE>>
+  * news_category_id : BIGINT <<PK, FK RESTRICT>>
+}
+
+note right of NCN
+  Satu berita 1-2 kategori (Form Request).
+  Kategori yang pernah dipakai (termasuk berita
+  soft-deleted) tidak dapat dihapus.
+end note
+
+entity "village_regulations" as REG {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * regulation_number : VARCHAR(100)
+  * title : VARCHAR(200)
+  * content : TEXT
+  enacted_date : DATE
+  * created_by : UUID <<FK users>>
+}
+
+entity "announcements" as ANN {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>> <<UNIQUE>>
+  * title : VARCHAR(150)
+  body : TEXT
+  link_url : VARCHAR(500)
+  * expires_at : TIMESTAMP
+  created_by : UUID <<FK users>>
+}
+
+note right of ANN
+  Satu pengumuman per desa; dihapus
+  announcements:prune setelah expires_at.
+end note
+
+entity "village_info_pages" as VIP {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * page : VARCHAR(30) (ppid | kebijakan-privasi | aksesibilitas)
+  * fields : JSON
+  UNIQUE (village_id, page)
+}
+
+' ─────────────── AUDIT ───────────────
+entity "activity_log" as ALG {
+  * id : BIGINT <<PK>>
+  --
+  log_name : VARCHAR(255) (official | citizen | user_signature)
+  * description : TEXT
+  subject_type / subject_id
+  causer_type / causer_id
+  properties : JSON
+  event : VARCHAR(255)
+  batch_uuid : UUID
+}
+
+' ─────────────── RELASI ───────────────
+VIL ||--o{ VOP
+VOP ||--o{ VOM
+USR ||--o{ NTF : "notifiable"
+USR ||--o{ PSH : "subscribable"
+VIL ||--o{ NWS
+USR ||--o{ NWS : "author"
+VIL ||--o{ NCT
+NWS ||--o{ NCN
+NCT ||--o{ NCN
+VIL ||--o{ REG
+VIL ||--o| ANN
+VIL ||--o{ VIP
+USR ||--o{ REG : "created_by"
+USR |o--o{ ALG : "causer"
+
+' ==================================================================================
+' CATATAN REVISI v7 -> v8 (2026-10-16)
+' - Tabel baru: news_categories, news_category_news (pivot), push_subscriptions.
+' - news.deleted_at (soft delete) ditampilkan.
+' - activity_log ditampilkan (log_name aktif: official, citizen, user_signature).
+' ==================================================================================
+@enduml

@@ -13,7 +13,7 @@ class OfficialPolicy
     }
 
     private const MANAGER_ROLES = [
-        'petugas_desa',
+        'staf_sid',
     ];
 
     public function viewAny(User $user): bool

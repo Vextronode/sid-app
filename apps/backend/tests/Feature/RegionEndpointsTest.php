@@ -15,18 +15,18 @@ class RegionEndpointsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function petugasDesa(Village $village): User
+    private function stafSid(Village $village): User
     {
         return User::factory()->create([
             'village_id' => $village->id,
-            'role' => 'petugas_desa',
+            'role' => 'staf_sid',
         ]);
     }
 
-    public function test_petugas_desa_can_create_list_and_update_hamlets(): void
+    public function test_staf_sid_can_create_list_and_update_hamlets(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
 
         $this->actingAs($user)
             ->postJson('/api/hamlets', ['name' => 'Dusun Patrol', 'code' => 'PTR'])
@@ -46,7 +46,7 @@ class RegionEndpointsTest extends TestCase
             ->assertJsonPath('data.name', 'Dusun Patrol Baru');
     }
 
-    public function test_non_petugas_desa_cannot_create_hamlet(): void
+    public function test_non_staf_sid_cannot_create_hamlet(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = User::factory()->create(['village_id' => $village->id, 'role' => 'rt']);
@@ -59,7 +59,7 @@ class RegionEndpointsTest extends TestCase
     public function test_duplicate_hamlet_code_is_rejected(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
 
         $this->actingAs($user)
@@ -71,7 +71,7 @@ class RegionEndpointsTest extends TestCase
     public function test_deactivating_hamlet_with_active_citizens_is_blocked(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
 
         Citizen::create([
@@ -96,7 +96,7 @@ class RegionEndpointsTest extends TestCase
     public function test_deactivating_hamlet_without_active_citizens_succeeds(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
 
         $this->actingAs($user)
@@ -105,10 +105,10 @@ class RegionEndpointsTest extends TestCase
             ->assertJsonPath('data.is_active', false);
     }
 
-    public function test_petugas_desa_can_create_list_update_and_delete_rws(): void
+    public function test_staf_sid_can_create_list_update_and_delete_rws(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
 
         $this->actingAs($user)
@@ -135,7 +135,7 @@ class RegionEndpointsTest extends TestCase
         $this->assertNull(Rw::find($rw->id));
     }
 
-    public function test_non_petugas_desa_cannot_create_rw(): void
+    public function test_non_staf_sid_cannot_create_rw(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = User::factory()->create(['village_id' => $village->id, 'role' => 'rt']);
@@ -149,7 +149,7 @@ class RegionEndpointsTest extends TestCase
     public function test_duplicate_rw_number_within_same_hamlet_is_rejected(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
         Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
 
@@ -162,7 +162,7 @@ class RegionEndpointsTest extends TestCase
     public function test_deactivating_rw_with_active_citizens_is_blocked(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
         $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
 
@@ -186,10 +186,10 @@ class RegionEndpointsTest extends TestCase
             ->assertStatus(200);
     }
 
-    public function test_petugas_desa_can_create_list_update_and_delete_rts(): void
+    public function test_staf_sid_can_create_list_update_and_delete_rts(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
         $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
 
@@ -217,7 +217,7 @@ class RegionEndpointsTest extends TestCase
         $this->assertNull(Rt::find($rt->id));
     }
 
-    public function test_non_petugas_desa_cannot_create_rt(): void
+    public function test_non_staf_sid_cannot_create_rt(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = User::factory()->create(['village_id' => $village->id, 'role' => 'rt']);
@@ -232,7 +232,7 @@ class RegionEndpointsTest extends TestCase
     public function test_duplicate_rt_number_within_same_rw_is_rejected(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
         $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
         Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
@@ -246,7 +246,7 @@ class RegionEndpointsTest extends TestCase
     public function test_deactivating_rt_with_active_citizens_is_blocked(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
-        $user = $this->petugasDesa($village);
+        $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
         $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
         $rt = Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
@@ -276,7 +276,7 @@ class RegionEndpointsTest extends TestCase
     {
         $ownerVillage = Village::factory()->create();
         $otherVillage = Village::factory()->create();
-        $user = $this->petugasDesa($ownerVillage);
+        $user = $this->stafSid($ownerVillage);
         $hamlet = Hamlet::factory()->create(['village_id' => $otherVillage->id]);
 
         $this->actingAs($user)

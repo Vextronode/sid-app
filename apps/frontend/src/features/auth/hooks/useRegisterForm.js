@@ -6,6 +6,7 @@
 import { useState } from 'react'
 
 import api from '@/lib/api'
+import { alertDialog } from '@/shared/lib/dialog'
 
 const INITIAL_FORM = {
   nik: '',
@@ -67,18 +68,31 @@ export function useRegisterForm() {
     }
 
     if (!formData.password) {
-      nextErrors.password = 'Password wajib diisi.'
+      nextErrors.password = 'Kata sandi wajib diisi.'
     }
 
     if (!formData.password_confirmation) {
-      nextErrors.password_confirmation = 'Konfirmasi password wajib diisi.'
+      nextErrors.password_confirmation = 'Konfirmasi kata sandi wajib diisi.'
     } else if (formData.password !== formData.password_confirmation) {
-      nextErrors.password_confirmation = 'Konfirmasi password tidak cocok.'
+      nextErrors.password_confirmation = 'Konfirmasi kata sandi tidak cocok.'
     }
 
     setErrors(nextErrors)
 
-    return !Object.values(nextErrors).some(Boolean)
+    const messages = Object.values(nextErrors).filter(Boolean)
+
+    // Peringatan juga tampil sebagai kartu di tengah layar.
+    if (messages.length > 0) {
+      const empty = messages.filter((message) => message.endsWith('wajib diisi.'))
+
+      alertDialog({
+        title: empty.length > 0 ? 'Data belum lengkap' : 'Periksa kembali data Anda',
+        message: messages.join('\n'),
+        tone: 'warning',
+      })
+    }
+
+    return messages.length === 0
   }
 
   const handleSubmit = async (event) => {

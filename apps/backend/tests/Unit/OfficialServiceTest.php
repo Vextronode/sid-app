@@ -176,7 +176,7 @@ class OfficialServiceTest extends TestCase
     {
         return [
             ['kepala_desa'],
-            ['sekdes'],
+            ['sekretaris_desa'],
             ['kasi_pelayanan'],
             ['kaur_tu_umum'],
         ];
@@ -247,7 +247,7 @@ class OfficialServiceTest extends TestCase
             'is_active' => true,
         ]);
         $sekdes = Official::factory()->create([
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
@@ -287,7 +287,7 @@ class OfficialServiceTest extends TestCase
             'is_active' => true,
         ]);
         Official::factory()->create([
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'village_id' => $otherVillage->id,
             'is_active' => true,
         ]);
@@ -317,7 +317,7 @@ class OfficialServiceTest extends TestCase
         $village = Village::factory()->create();
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
         Official::factory()->create([
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
@@ -376,7 +376,7 @@ class OfficialServiceTest extends TestCase
     public function test_get_all_with_relations_returns_all_officials(): void
     {
         Official::factory()->count(3)->create();
-        $actor = $this->makePetugasDesaActor();
+        $actor = $this->makeStafSidActor();
 
         $result = $this->service->getAllWithRelations($actor);
 
@@ -386,7 +386,7 @@ class OfficialServiceTest extends TestCase
     public function test_get_for_show_returns_official_with_relations(): void
     {
         $official = Official::factory()->create();
-        $actor = $this->makePetugasDesaActor($official->village_id);
+        $actor = $this->makeStafSidActor($official->village_id);
 
         $result = $this->service->getForShow($official->id, $actor);
 
@@ -397,22 +397,22 @@ class OfficialServiceTest extends TestCase
     public function test_create_persists_new_official(): void
     {
         $citizen = Citizen::factory()->create();
-        $actor = $this->makePetugasDesaActor($citizen->village_id);
+        $actor = $this->makeStafSidActor($citizen->village_id);
 
         $official = $this->service->create([
             'citizen_id' => $citizen->id,
-            'position' => 'petugas_desa',
+            'position' => 'staf_sid',
             'started_at' => now()->toDateString(),
             'is_active' => true,
         ], $actor);
 
-        $this->assertDatabaseHas('officials', ['id' => $official->id, 'position' => 'petugas_desa']);
+        $this->assertDatabaseHas('officials', ['id' => $official->id, 'position' => 'staf_sid']);
     }
 
     public function test_create_rejects_account_position_with_user_id(): void
     {
         $user = User::factory()->create();
-        $actor = $this->makePetugasDesaActor($user->village_id);
+        $actor = $this->makeStafSidActor($user->village_id);
 
         $this->expectException(HttpException::class);
 
@@ -430,7 +430,7 @@ class OfficialServiceTest extends TestCase
         Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
 
         $citizen = Citizen::factory()->create();
-        $actor = $this->makePetugasDesaActor($rt->village_id);
+        $actor = $this->makeStafSidActor($rt->village_id);
 
         $this->expectException(HttpException::class);
 
@@ -449,7 +449,7 @@ class OfficialServiceTest extends TestCase
         Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
 
         $citizen = Citizen::factory()->create();
-        $actor = $this->makePetugasDesaActor($rt->village_id);
+        $actor = $this->makeStafSidActor($rt->village_id);
 
         $official = $this->service->create([
             'citizen_id' => $citizen->id,
@@ -464,8 +464,8 @@ class OfficialServiceTest extends TestCase
 
     public function test_update_persists_changes_without_conflict(): void
     {
-        $official = Official::factory()->create(['position' => 'petugas_desa', 'phone_wa' => '0800']);
-        $actor = $this->makePetugasDesaActor($official->village_id);
+        $official = Official::factory()->create(['position' => 'staf_sid', 'phone_wa' => '0800']);
+        $actor = $this->makeStafSidActor($official->village_id);
 
         $updated = $this->service->update($official, ['phone_wa' => '0899'], $actor);
 
@@ -477,7 +477,7 @@ class OfficialServiceTest extends TestCase
         $rt = Rt::factory()->create();
         Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
         $other = Official::factory()->create(['position' => 'kadus', 'is_active' => true]);
-        $actor = $this->makePetugasDesaActor($other->village_id);
+        $actor = $this->makeStafSidActor($other->village_id);
 
         $this->expectException(HttpException::class);
 
@@ -492,7 +492,7 @@ class OfficialServiceTest extends TestCase
     {
         $rt = Rt::factory()->create();
         $official = Official::factory()->create(['position' => 'rt', 'rt_id' => $rt->id, 'is_active' => true]);
-        $actor = $this->makePetugasDesaActor($official->village_id);
+        $actor = $this->makeStafSidActor($official->village_id);
 
         $updated = $this->service->update($official, ['phone_wa' => '0812'], $actor);
 
@@ -503,7 +503,7 @@ class OfficialServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $official = Official::factory()->forUser($user)->create();
-        $actor = $this->makePetugasDesaActor($user->village_id);
+        $actor = $this->makeStafSidActor($user->village_id);
 
         $this->expectException(HttpException::class);
 
@@ -529,21 +529,24 @@ class OfficialServiceTest extends TestCase
         $this->service->delete($official);
     }
 
-    public function test_assert_position_available_allows_multiple_petugas_desa_officials(): void
+    public function test_assert_position_available_rejects_a_second_active_staf_sid(): void
     {
         $village = Village::factory()->create();
-        Official::factory()->count(2)->create([
-            'position' => 'petugas_desa',
+        Official::factory()->create([
+            'position' => 'staf_sid',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
 
-        $this->service->assertPositionAvailable([
-            'position' => 'petugas_desa',
-            'village_id' => $village->id,
-            'is_active' => true,
-        ]);
-
-        $this->assertTrue(true);
+        try {
+            $this->service->assertPositionAvailable([
+                'position' => 'staf_sid',
+                'village_id' => $village->id,
+                'is_active' => true,
+            ]);
+            $this->fail('Staf aplikasi kedua seharusnya ditolak.');
+        } catch (HttpException $exception) {
+            $this->assertSame(409, $exception->getStatusCode());
+        }
     }
 }

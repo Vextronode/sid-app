@@ -1,0 +1,133 @@
+'==================================================================================
+' SECTION: ACTIVITY DIAGRAM
+' FILE: 01_Activity_AlurSistem_v6.puml
+' JUDUL: Diagram Alur Sistem (pengajuan sampai Terapkan)
+' SUMBER: LetterService, LetterSignatureService, LetterFlowService,
+'         RtApprovalService, KadesApprovalService, LetterSnapshotService,
+'         LetterFulfillmentService (source 2026-10-16); TDD-01 Table 4
+' CATATAN: Menggantikan 01_Activity_AlurSistem_v5.puml. Perubahan: verification_type
+'          dihapus; form dinamis & tanda tangan pihak terkait; surat ditahan saat RT
+'          kosong; FYI Kadus; snapshot & nomor per kode klasifikasi; Terapkan.
+'==================================================================================
+
+@startuml Activity_AlurSistem_v6
+skinparam backgroundColor #FFFFFF
+skinparam activity {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 12
+  ArrowColor #2E5FA3
+  DiamondBackgroundColor #FFF8E1
+  DiamondBorderColor #F9A825
+}
+skinparam note {
+  BackgroundColor #FFF9C4
+  BorderColor #F9A825
+  FontName Arial
+  FontSize 10
+}
+
+title Diagram Alur Sistem - SIDUTama v5.3 (Flow default RT → Kepala Desa/Sekdes)
+
+|#D6E4F7|Pemohon|
+|#D5F5E3|Sistem|
+|#E3F2FD|Pemilik NIK (penanda tangan)|
+|#E8F5E9|RT|
+|#FFF3E0|RW / Kadus (FYI)|
+|#FDEBD0|Kepala Desa / Sekdes|
+|#FFE0B2|Kasi / Kaur / Petugas Desa|
+
+|Pemohon|
+start
+:Login; pilih jenis surat aktif ber-template;
+:Isi form dinamis (form_fields),\nunggah berkas isian,\ntentukan penanda tangan per slot\n(NIK atau TTD basah);
+
+|Sistem|
+:Validasi isian terhadap definisi jenis surat;
+if (Valid?) then (tidak)
+  :422 per field;
+  stop
+endif
+:Simpan surat **pending**\n(snapshot flow_id, NIK terenkripsi);
+:Simpan berkas isian (disk privat);
+:Isi slot TTD: pemohon = TTD akun;\npihak lain = permintaan ke NIK / TTD basah;
+
+while (Masih ada slot belum signed?) is (ya)
+  :current_step_order = 0\nlog "Menunggu tanda tangan pihak terkait";
+  |Pemilik NIK (penanda tangan)|
+  :Menerima notifikasi signature_requested;
+  if (Tanggapan?) then (setujui + kata sandi)
+    :Slot = signed (TTD pribadi dibubuhkan);
+  else (tolak / kedaluwarsa)
+    :Slot = rejected/expired\n(opsional blokir pemohon);
+    |Pemohon|
+    :Isi ulang slot: NIK lain\natau unggah TTD basah;
+  endif
+  |Sistem|
+endwhile (tidak)
+
+:Tentukan step awal\n(lewati tahap non-final milik pemohon);
+if (RT wilayah pemohon ada?) then (tidak)
+  :Tahan surat di step RT\nlog "Surat ditahan...";
+  :Notifikasi approver_vacant ke Petugas Desa;
+  note right
+    Saat Petugas menetapkan RT (promote),
+    RT baru langsung diberi tahu surat
+    yang menunggunya.
+  end note
+else (ya)
+  :Buat placeholder approval (deadline);
+  :Notifikasi "pending" ke RT;
+endif
+
+|RT|
+:Periksa isian, lampiran, TTD,\ndokumen pendukung;
+if (Keputusan RT?) then (tolak)
+  |Sistem|
+  :rejected, rejected_at_step = 1;\nnotifikasi rt_rejected ke pemohon;
+  stop
+else (setujui)
+endif
+
+|Sistem|
+:in_progress; current_step_order = 2;\nplaceholder approval step kepala_desa;
+fork
+  |RW / Kadus (FYI)|
+  :FYI rt_approved_rw_fyi / rt_approved_kadus_fyi\n(read-only, non-blocking);
+fork again
+  |Sistem|
+  :Notifikasi rt_approved ke Kades & Sekdes\n(selain pemohon) dan ke pemohon;
+end fork
+
+|Kepala Desa / Sekdes|
+:Buka surat di step kepala_desa;
+:Putuskan (first-action-wins,\nrow lock + cek ulang);
+if (Keputusan?) then (tolak)
+  |Sistem|
+  :rejected; notifikasi kepala_desa_rejected;
+  stop
+else (setujui)
+endif
+
+|Sistem|
+:approved; letter_number =\n{kode klasifikasi}/{NNN}/Des/{bulan Romawi}/{tahun};
+:expires_at dari validity_days;
+:Bekukan snapshot render\n(TTD & stempel Kades saat ini);
+:Notifikasi letter_approved_final ke pemohon;
+if (data_action != none?) then (ya)
+  :Notifikasi letter_needs_fulfillment\nke Kasi/Kaur sesuai assigned_role;
+  |Kasi / Kaur / Petugas Desa|
+  :Tinjau usulan (nilai sekarang vs usulan);
+  :Koreksi bila perlu → **Terapkan**;
+  |Sistem|
+  :Update/tambah citizens (transaksi + lock);\nfulfilled_at/by, fulfillment, audit log;
+  :Notifikasi letter_fulfilled ke pemohon;
+else (tidak)
+  :Notifikasi letter_ready_for_print\nke Kasi/Kaur;
+endif
+
+|Pemohon|
+:Unduh PDF (dari snapshot)\nselama belum kedaluwarsa;
+stop
+@enduml

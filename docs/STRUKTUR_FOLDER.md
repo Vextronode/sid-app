@@ -16,11 +16,14 @@ date: 2026-07-09
 
 ```
 repo-root/
-├── .github/           # workflow CI/CD, PR template, dll
-├── docs/              # dokumentasi project
+├── .github/           # workflow CI/CD, CODEOWNERS, PR & issue template
+├── .husky/            # git hooks (lint-staged frontend)
+├── docs/              # dokumentasi project (api_spec, architecture, diagram,
+│                      # technical_design, audit-docs, deploy, development, ...)
+├── deploy/            # stack Docker: docker-compose.yml, nginx/, scripts/, *.env.example
 ├── apps/
-│   ├── frontend/      # React SPA (Vite)
-│   └── backend/       # Laravel API (Breeze + Sanctum SPA auth)
+│   ├── frontend/      # React SPA (Vite) + Dockerfile (image sid-web)
+│   └── backend/       # Laravel API (Sanctum SPA auth) + Dockerfile (image sid-api)
 └── README.md
 ```
 
@@ -37,54 +40,49 @@ Kedua app **independen**, masing-masing punya `.env`, dependencies, dan dev serv
 
 ```
 apps/frontend/
-├── public/                  # static assets (favicon, dll)
+├── public/                  # push-handler.js (service worker push), assets/ (ikon PWA, aset default)
+├── scripts/                 # skrip bantu (screenshot beranda)
 ├── src/
-│   ├── assets/              # gambar, font, file static yang di-import
-│   ├── components/          # komponen reusable antar fitur
-│   │   └── ui/              # komponen dasar (Button, Input, Modal, dll)
-│   ├── features/            # kode per fitur/domain
-│   │   ├── auth/
-│   │   │   ├── components/  # LoginForm, dll
-│   │   │   ├── hooks/       # useLogin, dll
-│   │   │   └── api.js
-│   │   └── dashboard/
-│   │       ├── components/
-│   │       └── api.js
-│   ├── hooks/               # hooks global antar fitur
-│   ├── layouts/             # AuthLayout, DashboardLayout, dll
+│   ├── App.jsx              # semua route + GuestRoute / ProtectedRoute + layout route
+│   ├── main.jsx             # QueryClientProvider + CSS global
+│   ├── index.css            # Tailwind v4 + token @theme (palet pb-*)
+│   ├── assets/
+│   ├── components/
+│   │   ├── layout/          # MainLayout, OfficialLayout, OperatorDesaLayout, WargaLayout, AppHeader, SiteFooter, ...
+│   │   └── ui/              # Button, Input, StatusBadge, OverdueBadge, SimplePagination, PageLoader, NewsCard
+│   ├── constants/           # suratStatus
+│   ├── features/            # kode per domain, mis.:
+│   │   ├── auth/            # contexts/AuthContext, hooks, schemas, services, utils
+│   │   ├── surat/           # api/, components/ (DynamicSuratForm, SignatureCard, FulfillmentPanel, ...), hooks/, utils/
+│   │   ├── approval/        # ApprovalStepRenderer, api keputusan
+│   │   ├── notifikasi/      # popover, WebPushControls, hooks push & deep link
+│   │   ├── operator-desa/   # constants/roleNavigation.js (kapabilitas route operator)
+│   │   └── ...              # data-warga, kelola-berita, kelola-wilayah, profil-desa-admin, pekerjaan, organisasi, dst
 │   ├── lib/
-│   │   └── api.js           # axios instance, withCredentials: true
-│   ├── pages/               # 1 file = 1 route/halaman
-│   ├── routes/              # definisi routing (react-router)
-│   ├── context/             # React Context (AuthContext, dll)
-│   ├── App.jsx
-│   └── main.jsx
-├── .env.example
+│   │   ├── api.js           # instance axios tunggal (withCredentials, withXSRFToken)
+│   │   └── constants/       # konstanta route
+│   ├── pages/               # halaman publik & warga; pages/admin/ untuk pejabat & operator
+│   ├── shared/lib/          # queryClient, queryKeys, publicVillageParams, villageName
+│   ├── styles/              # sid-global.css, public.css, beranda.css
+│   └── test/                # setup Vitest
+├── .env.example             # VITE_API_URL, VITE_API_BASE_URL, VITE_VAPID_PUBLIC_KEY
+├── Dockerfile
 ├── index.html
 ├── package.json
-└── vite.config.js
+└── vite.config.js           # plugin react, tailwind, PWA; proxy dev /api & /sanctum
 ```
 
 ### Play Rules
 
-- `features/` dikelompokkan per domain, bukan per tipe file - komponen, hook, dan API call satu fitur ditaruh satu folder
-- `pages/` = komponen yang langsung dipasang ke route. `components/` = reusable, tidak berdiri sendiri sebagai route
-- Semua request ke backend wajib lewat `src/lib/api.js` - jangan bikin axios instance baru di file lain
-- Jangan simpan token auth di `localStorage` atau state manapun, auth pakai cookiebased session
+- `features/` dikelompokkan per domain - komponen, hook, dan API call satu fitur ditaruh satu folder
+- `pages/` = komponen yang langsung dipasang ke route. `components/` = reusable
+- Semua request ke backend wajib lewat `src/lib/api.js` - jangan bikin axios instance baru
+- Jangan simpan token auth di `localStorage`; auth memakai cookie session Sanctum
+- Identitas desa (nama, logo, kontak) diambil dari API, bukan di-hardcode
 
 ### Nambah Fitur Baru
 
-Contoh fitur "profile":
-```
-src/features/profile/
-├── components/
-│   └── ProfileForm.jsx
-├── hooks/
-│   └── useProfile.js
-└── api.js
-```
-
-Lalu daftarkan route di `src/routes/` dan buat halaman di `src/pages/ProfilePage.jsx`.
+Buat folder `src/features/<fitur>/` (components, hooks, api), halaman di `src/pages/` (atau `src/pages/admin/`), lalu daftarkan route di `src/App.jsx`. Untuk halaman operator, tambahkan kapabilitas role di `features/operator-desa/constants/roleNavigation.js`.
 
 ---
 
@@ -94,27 +92,34 @@ Struktur berikut merangkum lapisan yang benar-benar ada di source. Route API ber
 
 ```text
 apps/backend/
-??? app/
-?   ??? Console/Commands/
-?   ??? Enums/
-?   ??? Exceptions/
-?   ??? Http/
-?   ?   ??? Controllers/{Api,Auth}/
-?   ?   ??? Middleware/
-?   ?   ??? Requests/
-?   ?   ??? Resources/
-?   ??? Imports/
-?   ??? Models/
-?   ??? Notifications/
-?   ??? Policies/
-?   ??? Repositories/
-?   ??? Services/
-??? database/{factories,migrations,seeders}/
-??? resources/views/pdf/templates/
-??? routes/{api,auth,console,web}.php
-??? tests/{Feature,Unit}/
-??? composer.json
-??? .env.example
+├── app/
+│   ├── Console/Commands/        # staf-sid:first, letters:backfill-snapshots
+│   ├── Enums/
+│   ├── Exceptions/
+│   ├── Http/
+│   │   ├── Controllers/{Api,Auth}/
+│   │   ├── Middleware/          # account.active, password.changed, role, verified
+│   │   ├── Requests/
+│   │   └── Resources/
+│   ├── Imports/                 # CitizensImport (Excel)
+│   ├── Models/
+│   ├── Notifications/           # LetterStatusNotification (database + WebPush)
+│   ├── Policies/
+│   ├── Providers/
+│   ├── Repositories/
+│   ├── Rules/                   # ValidOfficialPosition
+│   ├── Services/                # termasuk Services/Auth
+│   └── Support/                 # LetterFormSchema, LetterValueFormatter, OfficialPositionCatalog,
+│                                # PublicPageCache, VillageImageOptimizer
+├── config/                      # termasuk letters.php, webpush.php
+├── database/{factories,migrations,seeders}/   # seeders/assets berisi foto demo
+├── docker/                      # entrypoint.sh, php.ini, www.conf
+├── resources/views/pdf/templates/   # wet.blade.php, digital.blade.php
+├── routes/{api,auth,console,web}.php
+├── tests/{Feature,Unit}/
+├── Dockerfile
+├── composer.json
+└── .env.example
 ```
 
 Nama class dan file konkret tercantum pada `apps/backend/app`; contoh resource generik tidak digunakan sebagai struktur proyek.

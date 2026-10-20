@@ -10,6 +10,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import {
   ArrowLeft,
+  CalendarDays,
   CheckCircle2,
   CreditCard,
   Eye,
@@ -20,10 +21,12 @@ import {
 } from 'lucide-react'
 
 import { useRegisterForm } from '@/features/auth/hooks/useRegisterForm'
+import { useAuthBackground } from '@/features/auth/hooks/useAuthBackground'
 import { HAL_BERANDA } from '@/lib/constants/routes'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const background = useAuthBackground()
 
   const {
     formData,
@@ -41,7 +44,7 @@ export default function RegisterPage() {
 
   if (isSuccess) {
     return (
-      <div className="sid-login">
+      <div className={background.className} style={background.style}>
         <div className="sid-login-card">
           <div className="sid-login-logo">
             <CheckCircle2 size={24} />
@@ -94,7 +97,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="sid-login">
+    <div className={background.className} style={background.style}>
       <div className="sid-login-card">
         <div className="sid-login-logo">
           <Landmark size={24} />
@@ -140,17 +143,23 @@ export default function RegisterPage() {
               Tanggal Lahir
             </label>
 
-            <input
-              id="date_of_birth"
-              type="date"
-              name="date_of_birth"
-              value={formData.date_of_birth}
-              onChange={handleChange}
-              autoComplete="bday"
-              className={`sid-login-input ${errors.date_of_birth ? 'sid-login-input-error' : ''}`}
-              aria-invalid={Boolean(errors.date_of_birth)}
-              aria-describedby={errors.date_of_birth ? 'date-of-birth-error' : undefined}
-            />
+            <div className="sid-login-input-wrapper">
+              <CalendarDays size={16} className="sid-login-input-icon" />
+
+              <input
+                id="date_of_birth"
+                type="date"
+                name="date_of_birth"
+                value={formData.date_of_birth}
+                onChange={handleChange}
+                autoComplete="bday"
+                className={`sid-login-input sid-login-input-with-left-icon ${
+                  errors.date_of_birth ? 'sid-login-input-error' : ''
+                }`}
+                aria-invalid={Boolean(errors.date_of_birth)}
+                aria-describedby={errors.date_of_birth ? 'date-of-birth-error' : undefined}
+              />
+            </div>
 
             {errors.date_of_birth && (
               <span id="date-of-birth-error" className="sid-login-field-error">
@@ -161,7 +170,7 @@ export default function RegisterPage() {
 
           {/* PASSWORD */}
           <div className="sid-login-field">
-            <label className="sid-login-label">Password</label>
+            <label className="sid-login-label">Kata Sandi</label>
 
             <div className="sid-login-input-wrapper">
               <Lock size={16} className="sid-login-input-icon" />
@@ -172,7 +181,7 @@ export default function RegisterPage() {
                 value={formData.password}
                 onChange={handleChange}
                 autoComplete="new-password"
-                placeholder="Masukkan password"
+                placeholder="Masukkan kata sandi"
                 className={`sid-login-input sid-login-input-password ${
                   errors.password ? 'sid-login-input-error' : ''
                 }`}
@@ -193,7 +202,7 @@ export default function RegisterPage() {
 
           {/* PASSWORD CONFIRMATION */}
           <div className="sid-login-field">
-            <label className="sid-login-label">Konfirmasi Password</label>
+            <label className="sid-login-label">Konfirmasi Kata Sandi</label>
 
             <div className="sid-login-input-wrapper">
               <Lock size={16} className="sid-login-input-icon" />
@@ -204,7 +213,7 @@ export default function RegisterPage() {
                 value={formData.password_confirmation}
                 onChange={handleChange}
                 autoComplete="new-password"
-                placeholder="Ulangi password"
+                placeholder="Ulangi kata sandi"
                 className={`sid-login-input sid-login-input-password ${
                   errors.password_confirmation ? 'sid-login-input-error' : ''
                 }`}

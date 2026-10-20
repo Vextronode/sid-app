@@ -1,6 +1,23 @@
 get:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Preview PDF surat sesuai kewenangan view
+  summary: Preview PDF surat (inline) sesuai kewenangan view
+  description: |
+    Diotorisasi LetterPolicy::view (tidak mensyaratkan status approved).
+    Surat yang belum approved dirender dari data hidup dengan Kepala Desa
+    aktif saat ini; surat approved dirender dari snapshot. Di-stream inline
+    (`surat-{id}.pdf`).
+
+    TTD Kepala Desa dan stempel desa hanya dipasang bila surat sudah
+    `approved` **dan** pengguna lolos LetterPolicy::download (pemohon,
+    Kades/Sekdes, Kasi/Kaur yang ditugaskan, Petugas Desa). Surat yang
+    belum final, atau surat final yang dilihat pihak lain (mis. RT/RW/
+    Kadus), dirender tanpa TTD dan stempel. FE menampilkan pratinjau
+    sebagai canvas di dalam popup (bukan viewer PDF browser), sehingga
+    tidak ada tombol unduh/cetak dari pratinjau.
+
+    Pemohon ditolak (403 "Masa berlaku surat telah habis.") bila
+    `expires_at` sudah lewat, sama seperti download; surat tetap tampil
+    sebagai riwayat. Pejabat dan Petugas Desa tetap dapat mem-preview.
   operationId: previewLetterPdf
   security:
     - sanctumCookie: []
@@ -14,12 +31,14 @@ get:
     - name: template
       in: query
       required: false
+      description: "`digital` memuat TTD Kepala Desa + stempel (bila berhak, lihat di atas); `wet` mengosongkan area tanda tangan. FE selalu meminta `digital`."
       schema:
         type: string
-        enum: [wet, dry]
+        enum: [wet, digital]
+        default: wet
   responses:
     '200':
-      description: PDF preview berhasil digenerate
+      description: PDF preview
       content:
         application/pdf:
           schema:
@@ -28,6 +47,12 @@ get:
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: User tidak berwenang melihat surat
+      description: Tidak berhak melihat surat, atau pemohon dengan surat kedaluwarsa
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ErrorResponse'
+          example:
+            message: "Masa berlaku surat telah habis."
     '404':
-      $ref: '../../responses/common.yaml#/NotFound'
+      description: Surat tidak ditemukan atau belum ada Kepala Desa aktif

@@ -19,14 +19,14 @@ import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink
 import { useApprovalLetterList } from '@/features/approval/hooks/useApprovalLetterList'
 import SuratDetailModalRW from '@/features/approval-rw/components/SuratDetailModalRW'
 
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { OverdueBadge } from '@/components/ui/OverdueBadge'
-
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { LetterTable } from '@/features/surat/components/LetterTable'
+import { LetterRowActions } from '@/features/surat/components/LetterRowActions'
 
 import { SURAT_STATUS_OPTIONS } from '@/constants/suratStatus'
-
-const ITEMS_PER_PAGE = 5
+import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { formatPageRange } from '@/components/ui/pageRange'
 
 export default function RWListPage() {
   const [searchParams] = useSearchParams()
@@ -50,10 +50,11 @@ export default function RWListPage() {
     totalPages,
     currentPage,
     setCurrentPage,
+    pageSize,
+    setPageSize,
   } = useApprovalLetterList({
     role: 'rw',
     initialStatus,
-    perPage: ITEMS_PER_PAGE,
   })
 
   // ==========================================
@@ -153,99 +154,24 @@ export default function RWListPage() {
               ====================================== */}
 
           <div className="sid-card rw-table-card">
-            <table className="rw-table">
-              <thead>
-                <tr className="rw-table-header">
-                  <th>No. Surat</th>
-
-                  <th>Pemohon</th>
-
-                  <th>Jenis</th>
-
-                  <th>Tanggal</th>
-
-                  <th>Status</th>
-
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="rw-table-message">
-                      Memuat data surat...
-                    </td>
-                  </tr>
-                ) : paginatedData.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="rw-table-message">
-                      Belum ada surat.
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedData.map((s) => (
-                    <tr key={s.id} className="rw-table-row">
-                      {/* NO SURAT */}
-
-                      <td className="rw-letter-number">#{s.letter_number ?? '-'}</td>
-
-                      {/* PEMOHON */}
-
-                      <td className="rw-table-center">{s.applicant_name ?? '-'}</td>
-
-                      {/* JENIS */}
-
-                      <td className="rw-table-center">{s.letter_type?.name ?? '-'}</td>
-
-                      {/* TANGGAL */}
-
-                      <td className="rw-table-date">
-                        {s.submitted_at
-                          ? new Date(s.submitted_at).toLocaleDateString('id-ID', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                            })
-                          : '-'}
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td className="rw-table-center">
-                        <div className="flex flex-col items-center gap-1.5">
-                          <StatusBadge status={s.status} />
-                          <OverdueBadge isOverdue={s.is_overdue} />
-                        </div>
-                      </td>
-
-                      {/* AKSI */}
-
-                      <td className="rw-table-center">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDetail(s)}
-                          className="rw-action-button"
-                        >
-                          Lihat
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+            <LetterTable
+              letters={paginatedData}
+              loading={loading}
+              renderActions={(s) => <LetterRowActions surat={s} onOpen={handleOpenDetail} />}
+            />
 
             {/* ==================================
                 PAGINATION DESKTOP
                 ================================== */}
 
             <div className="rw-pagination">
-              <p className="rw-pagination-info">
-                Menampilkan{' '}
-                {paginatedData.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-
-                {(currentPage - 1) * ITEMS_PER_PAGE + paginatedData.length} dari {totalItems} data
-              </p>
+              <div className="sid-pagination-meta">
+                <p className="rw-pagination-info">
+                  {formatPageRange(currentPage, pageSize, totalItems)}
+                </p>
+
+                <PageSizeSelect value={pageSize} onChange={setPageSize} />
+              </div>
 
               <div className="rw-pagination-buttons">
                 <button
@@ -257,18 +183,13 @@ export default function RWListPage() {
                   Sebelumnya
                 </button>
 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    onClick={() => setCurrentPage(page)}
-                    className={`rw-pagination-page ${
-                      page === currentPage ? 'rw-pagination-page-active' : ''
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
+                <PageNumbers
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onChange={setCurrentPage}
+                  buttonClassName="rw-pagination-page"
+                  activeClassName="rw-pagination-page-active"
+                />
 
                 <button
                   type="button"
@@ -333,57 +254,25 @@ export default function RWListPage() {
           {/* MOBILE TABLE */}
 
           <div className="sid-card rw-mobile-table-card">
-            <div className="rw-mobile-table-header">
-              <span>No.Surat</span>
-
-              <span>Pemohon</span>
-
-              <span>Jenis</span>
-
-              <span>Tanggal</span>
-            </div>
-
-            {loading ? (
-              <p className="rw-mobile-message">Memuat...</p>
-            ) : paginatedData.length === 0 ? (
-              <p className="rw-mobile-message">Belum ada surat.</p>
-            ) : (
-              paginatedData.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => handleOpenDetail(s)}
-                  className="rw-mobile-row"
-                >
-                  <span>{s.letter_number ?? '-'}</span>
-
-                  <span className="rw-mobile-applicant">{s.applicant_name ?? '-'}</span>
-
-                  <span>{s.letter_type?.name ?? '-'}</span>
-
-                  <span className="rw-mobile-date">
-                    {s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('id-ID') : '-'}
-                  </span>
-                </button>
-              ))
-            )}
+            <LetterTable
+              letters={paginatedData}
+              loading={loading}
+              renderActions={(s) => <LetterRowActions surat={s} onOpen={handleOpenDetail} />}
+            />
           </div>
 
           {/* MOBILE PAGINATION */}
 
           <div className="rw-mobile-pagination">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => setCurrentPage(page)}
-                className={`rw-mobile-page-button ${
-                  page === currentPage ? 'rw-mobile-page-button-active' : ''
-                }`}
-              >
-                {page}
-              </button>
-            ))}
+            <PageSizeSelect value={pageSize} onChange={setPageSize} />
+
+            <PageNumbers
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onChange={setCurrentPage}
+              buttonClassName="rw-mobile-page-button"
+              activeClassName="rw-mobile-page-button-active"
+            />
           </div>
         </div>
 

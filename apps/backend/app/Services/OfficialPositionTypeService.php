@@ -15,6 +15,10 @@ use Illuminate\Validation\ValidationException;
  * Jenis jabatan desa tanpa akun, dikelola Petugas Desa. `code` dibuat
  * sekali dari label dan tidak pernah berubah, karena officials.position
  * menyimpannya.
+ *
+ * Kode jabatan berakun ditulis tangan (mis. `rt`, `kadus`), bukan slug
+ * labelnya, sehingga nama jabatan juga dibandingkan dengan label: "Ketua RT"
+ * atau "Staf {nama aplikasi}" tidak boleh menjadi jenis jabatan ganda.
  */
 class OfficialPositionTypeService
 {
@@ -30,16 +34,12 @@ class OfficialPositionTypeService
 
     public function create(User $user, array $data): OfficialPositionType
     {
+        $this->assertLabelAvailable($user->village_id, $data['label']);
+
         $code = Str::limit(Str::slug($data['label'], '_'), 50, '');
 
-        if (
-            $code === ''
-            || OfficialPosition::tryFrom($code) !== null
-            || $this->repository->findByCode($user->village_id, $code) !== null
-        ) {
-            throw ValidationException::withMessages([
-                'label' => 'Nama jabatan ini sudah dipakai. Gunakan nama lain.',
-            ]);
+        if ($this->repository->findByCode($user->village_id, $code) !== null) {
+            $this->rejectLabel();
         }
 
         return $this->repository->create([
@@ -55,6 +55,11 @@ class OfficialPositionTypeService
     public function update(User $user, int $id, array $data): OfficialPositionType
     {
         $type = $this->repository->findByIdForVillageOrFail($id, $user->village_id);
+
+        if (array_key_exists('label', $data)) {
+            $this->assertLabelAvailable($type->village_id, $data['label'], ignoreId: $type->id);
+        }
+
         $activeHolders = $this->officialRepository->countActiveByPositionAndVillage($type->code, $type->village_id);
 
         if (($data['is_active'] ?? true) === false && $type->is_active && $activeHolders > 0) {
@@ -77,5 +82,33 @@ class OfficialPositionTypeService
         }
 
         $this->repository->delete($type);
+    }
+
+    /**
+     * Nama dibandingkan dalam bentuk slug, jadi beda huruf besar/kecil atau
+     * tanda baca tetap dianggap nama yang sama.
+     */
+    private function assertLabelAvailable(string $villageId, string $label, ?int $ignoreId = null): void
+    {
+        $slug = Str::limit(Str::slug($label, '_'), 50, '');
+
+        $taken = collect(OfficialPosition::cases())
+            ->flatMap(fn (OfficialPosition $position) => [$position->value, Str::slug($position->label(), '_')])
+            ->merge(
+                $this->repository->allForVillage($villageId)
+                    ->reject(fn ($type) => $type->id === $ignoreId)
+                    ->flatMap(fn ($type) => [$type->code, Str::slug($type->label, '_')])
+            );
+
+        if ($slug === '' || $taken->contains($slug)) {
+            $this->rejectLabel();
+        }
+    }
+
+    private function rejectLabel(): never
+    {
+        throw ValidationException::withMessages([
+            'label' => 'Nama jabatan ini sudah dipakai. Gunakan nama lain.',
+        ]);
     }
 }

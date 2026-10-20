@@ -1,0 +1,47 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Reset tanda tangan pribadi akun (darurat)
+  description: |
+    Aktor: Petugas Desa aktif di desa yang sama dengan akun target. Baris TTD
+    aktif ditandai `revoked_at`/`revoked_by`/`revoke_reason` tanpa menghapus
+    berkas, sehingga dokumen lama tetap dapat dirender; pemilik akun dapat
+    membuat TTD baru. Tercatat di activity log `user_signature` (event `reset`).
+  operationId: resetUserSignature
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: user
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [reason]
+          properties:
+            reason:
+              type: string
+              minLength: 5
+              maxLength: 500
+  responses:
+    '200':
+      description: TTD direset
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/SuccessMessage'
+          example:
+            message: "Tanda tangan akun berhasil direset."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Bukan Petugas Desa aktif di desa yang sama
+    '404':
+      description: Akun belum memiliki tanda tangan
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

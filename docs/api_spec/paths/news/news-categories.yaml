@@ -1,0 +1,59 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Daftar kategori berita desa
+  description: |
+    UC-19. Aktor HANYA Petugas Desa. Kategori milik desa Petugas, urut nama.
+    `news_count` ikut menghitung berita yang sudah dihapus (soft delete);
+    `can_delete` = false bila kategori pernah dipakai berita.
+  operationId: listNewsCategories
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar kategori berita
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/news/news.yaml#/NewsCategory'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+
+post:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Tambah kategori berita
+  description: |
+    UC-19. Aktor HANYA Petugas Desa. `slug` dibuat otomatis dari `name`;
+    nama ditolak bila slug-nya sudah dipakai kategori lain di desa yang sama
+    (tidak peka huruf besar/kecil). Desa lain boleh memakai nama yang sama.
+  operationId: createNewsCategory
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/news/news.yaml#/NewsCategoryRequest'
+  responses:
+    '201':
+      description: Kategori dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/news/news.yaml#/NewsCategory'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

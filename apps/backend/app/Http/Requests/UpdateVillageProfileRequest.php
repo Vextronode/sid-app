@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -15,12 +16,12 @@ class UpdateVillageProfileRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->role === 'petugas_desa';
+        return $this->user()?->role === 'staf_sid';
     }
 
     protected function failedAuthorization(): void
     {
-        throw new HttpException(403, 'Hanya Petugas Desa yang dapat mengubah profil desa');
+        throw new HttpException(403, 'Hanya '.UserRole::stafSidLabel().' yang dapat mengubah profil desa');
     }
 
     /**
@@ -46,7 +47,11 @@ class UpdateVillageProfileRequest extends FormRequest
             'mission' => ['nullable', 'string'],
             // Tampilan halaman publik (beranda dan kontak).
             'office_hours' => ['nullable', 'string', 'max:100'],
-            'map_url' => ['nullable', 'url', 'max:500'],
+            // Sambutan Kepala Desa (opsional); kosong menyembunyikan blok di beranda.
+            'welcome_message' => ['nullable', 'string', 'max:600'],
+            // Titik kantor desa; keduanya diisi atau keduanya kosong.
+            'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'hero_photo_credit' => ['nullable', 'string', 'max:100'],
         ];
     }
@@ -59,7 +64,13 @@ class UpdateVillageProfileRequest extends FormRequest
             'area_ha.numeric' => 'Luas wilayah harus berupa angka',
             'area_ha.min' => 'Luas wilayah tidak boleh negatif',
             'area_ha.max' => 'Luas wilayah terlalu besar',
-            'map_url.url' => 'Link peta harus berupa URL lengkap, mis. https://maps.app.goo.gl/...',
+            'welcome_message.max' => 'Sambutan Kepala Desa paling banyak 600 karakter',
+            'latitude.numeric' => 'Latitude harus berupa angka',
+            'latitude.between' => 'Latitude harus di antara -90 dan 90',
+            'latitude.required_with' => 'Latitude dan longitude harus diisi bersama',
+            'longitude.numeric' => 'Longitude harus berupa angka',
+            'longitude.between' => 'Longitude harus di antara -180 dan 180',
+            'longitude.required_with' => 'Latitude dan longitude harus diisi bersama',
         ];
     }
 }

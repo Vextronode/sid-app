@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Landmark, Mail, KeyRound, CheckCircle2, ArrowLeft } from 'lucide-react'
 import api from '@/lib/api'
+import { STAF_APP_LABEL } from '@/lib/constants/app'
 
 function firstMessage(error, fallback) {
   const errors = error?.response?.data?.errors
@@ -31,7 +32,7 @@ export default function ForgotPasswordPage() {
       await api.post('/forgot-password', { email: email.trim() })
       setSent(true)
     } catch (err) {
-      setError(firstMessage(err, 'Tautan reset gagal dikirim. Coba lagi nanti.'))
+      setError(firstMessage(err, 'Tautan atur ulang kata sandi gagal dikirim. Coba lagi nanti.'))
     } finally {
       setIsLoading(false)
     }
@@ -103,15 +104,15 @@ export default function ForgotPasswordPage() {
                 disabled={isLoading}
                 className="w-full bg-[#163e6b] text-white rounded-lg py-3 text-sm font-medium hover:bg-[#0e2a4a] flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {isLoading ? 'Mengirim...' : 'Kirim Tautan Reset'} <KeyRound size={16} />
+                {isLoading ? 'Mengirim...' : 'Kirim Tautan Atur Ulang'} <KeyRound size={16} />
               </button>
             </form>
           </>
         )}
 
         <p className="text-xs text-gray-500 bg-gray-50 border rounded-lg px-3 py-2 mt-5">
-          Tidak punya email atau belum mendaftarkannya? Datang ke kantor desa dan minta Petugas Desa
-          mengatur ulang kata sandi Anda.
+          Tidak punya email atau belum mendaftarkannya? Datang ke kantor desa dan minta{' '}
+          {STAF_APP_LABEL} mengatur ulang kata sandi Anda.
         </p>
 
         <div className="border-t mt-6 pt-4 text-center">

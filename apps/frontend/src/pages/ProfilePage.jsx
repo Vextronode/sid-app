@@ -11,6 +11,7 @@ import { Pencil, CheckCircle2, User, MapPin, VenetianMask, CreditCard } from 'lu
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { WargaLayout } from '@/components/layout/WargaLayout'
 import EditProfilWargaModal from '@/features/profil-warga/components/EditProfilWargaModal'
+import { ProfilePhoto } from '@/features/profil-warga/components/ProfilePhoto'
 import { SignatureCard } from '@/features/surat/components/SignatureCard'
 import { SignatureRequestsCard } from '@/features/surat/components/SignatureRequestsCard'
 
@@ -27,9 +28,7 @@ export default function ProfilePage() {
 
         <div className="sid-profile-card sid-profile-header-card">
           <div className="sid-profile-user">
-            <div className="sid-profile-avatar">
-              <User size={24} />
-            </div>
+            <ProfilePhoto avatarClassName="sid-profile-avatar" />
 
             <div className="sid-profile-user-info">
               <p className="sid-profile-user-name">{user?.name ?? 'Pengguna'}</p>
@@ -65,7 +64,7 @@ export default function ProfilePage() {
           {/* FULL NAME */}
 
           <div className="sid-profile-field">
-            <p className="sid-profile-field-label">Full Name</p>
+            <p className="sid-profile-field-label">Nama Lengkap</p>
 
             <div className="sid-profile-field-value">
               <span>{user?.name ?? '-'}</span>
@@ -89,7 +88,7 @@ export default function ProfilePage() {
           {/* GENDER */}
 
           <div className="sid-profile-field">
-            <p className="sid-profile-field-label">Gender</p>
+            <p className="sid-profile-field-label">Jenis Kelamin</p>
 
             <div className="sid-profile-field-value">
               <span>

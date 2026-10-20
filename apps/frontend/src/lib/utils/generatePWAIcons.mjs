@@ -14,8 +14,11 @@ for (const { name, size, padding } of sizes) {
   await sharp(SRC)
     .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .extend({
-      top: padding, bottom: padding, left: padding, right: padding,
-      background: { r: 0, g: 0, b: 0, alpha: 0 }
+      top: padding,
+      bottom: padding,
+      left: padding,
+      right: padding,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
     })
     .png()
     .toFile(`${OUT}/${name}`)

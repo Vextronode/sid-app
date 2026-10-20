@@ -1,0 +1,82 @@
+patch:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Ubah jenis jabatan desa tanpa akun
+  description: |
+    Aktor: Petugas Desa pada desa yang sama. Semua field opsional; `code`
+    tidak dapat diubah. Menonaktifkan ditolak selama masih ada pejabat aktif
+    pada jabatan itu, dan mengubah ke satu pemegang ditolak selama dijabat
+    lebih dari satu orang.
+  operationId: updateOfficialPositionType
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            label:
+              type: string
+              maxLength: 100
+            is_single_occupant:
+              type: boolean
+            sort_order:
+              type: integer
+              minimum: 0
+            is_active:
+              type: boolean
+  responses:
+    '200':
+      description: Jenis jabatan diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/users/users.yaml#/OfficialPositionType'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      description: Jabatan masih dijabat, atau dijabat lebih dari satu orang
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+
+delete:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Hapus jenis jabatan desa tanpa akun
+  description: |
+    Aktor: Petugas Desa pada desa yang sama. Ditolak bila jabatan itu pernah
+    dipakai pejabat mana pun, termasuk riwayat yang sudah berakhir; dalam
+    kasus itu nonaktifkan saja.
+  operationId: deleteOfficialPositionType
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    '200':
+      description: Jenis jabatan dihapus
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      description: Jabatan punya riwayat pejabat

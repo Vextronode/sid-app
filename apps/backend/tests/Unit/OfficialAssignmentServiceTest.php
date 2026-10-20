@@ -67,7 +67,7 @@ class OfficialAssignmentServiceTest extends TestCase
         try {
             $this->service()->promote($actor, [
                 'user_id' => $target->id,
-                'position' => 'sekdes',
+                'position' => 'sekretaris_desa',
                 'started_at' => today()->toDateString(),
             ]);
             $this->fail('Non-Petugas Desa actor must be rejected.');
@@ -75,13 +75,13 @@ class OfficialAssignmentServiceTest extends TestCase
             $this->assertSame(403, $exception->getStatusCode());
         }
 
-        $actor->update(['role' => 'petugas_desa']);
+        $actor->update(['role' => 'staf_sid']);
         $target->update(['role' => 'rt']);
 
         try {
             $this->service()->promote($actor, [
                 'user_id' => $target->id,
-                'position' => 'sekdes',
+                'position' => 'sekretaris_desa',
                 'started_at' => today()->toDateString(),
             ]);
             $this->fail('Non-warga target must be rejected.');
@@ -98,7 +98,7 @@ class OfficialAssignmentServiceTest extends TestCase
         $this->expectException(HttpException::class);
         $this->service()->promote($actor, [
             'user_id' => $target->id,
-            'position' => 'sekdes',
+            'position' => 'sekretaris_desa',
             'started_at' => today()->toDateString(),
         ]);
     }
@@ -187,8 +187,8 @@ class OfficialAssignmentServiceTest extends TestCase
     public function test_petugas_cannot_demote_self_and_last_petugas_cannot_be_demoted_by_another(): void
     {
         $village = Village::factory()->create();
-        $self = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $village->id]);
-        $selfOfficial = Official::factory()->forUser($self)->position('petugas_desa')->create();
+        $self = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
+        $selfOfficial = Official::factory()->forUser($self)->position('staf_sid')->create();
 
         try {
             $this->service()->demote($self, $selfOfficial);
@@ -205,9 +205,9 @@ class OfficialAssignmentServiceTest extends TestCase
 
     public function test_petugas_self_demote_is_rejected_when_another_petugas_remains(): void
     {
-        $actor = User::factory()->create(['role' => 'petugas_desa']);
-        $official = Official::factory()->forUser($actor)->position('petugas_desa')->create();
-        User::factory()->create(['role' => 'petugas_desa']);
+        $actor = User::factory()->create(['role' => 'staf_sid']);
+        $official = Official::factory()->forUser($actor)->position('staf_sid')->create();
+        User::factory()->create(['role' => 'staf_sid']);
 
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage('Anda tidak dapat menurunkan diri sendiri. Minta petugas lain untuk menurunkan Anda.');
@@ -244,8 +244,8 @@ class OfficialAssignmentServiceTest extends TestCase
 
     public function test_rotate_rejects_petugas_position(): void
     {
-        $actor = User::factory()->create(['role' => 'petugas_desa']);
-        $old = Official::factory()->create(['position' => 'petugas_desa']);
+        $actor = User::factory()->create(['role' => 'staf_sid']);
+        $old = Official::factory()->create(['position' => 'staf_sid']);
 
         try {
             $this->service()->rotate($actor, $old, []);
@@ -255,7 +255,7 @@ class OfficialAssignmentServiceTest extends TestCase
         }
     }
 
-    private function actorAndCitizenUser(string $actorRole = 'petugas_desa'): array
+    private function actorAndCitizenUser(string $actorRole = 'staf_sid'): array
     {
         $village = Village::factory()->create();
         $actor = User::factory()->create([

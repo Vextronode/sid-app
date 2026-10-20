@@ -3,11 +3,16 @@ post:
   summary: Tambah / rotasi anggota untuk suatu jabatan organisasi
   description: |
     Aktor: Petugas Desa.
-    UC-23. Jika is_single_occupant=true dan sudah ada anggota aktif,
-    sistem otomatis UPDATE ended_at anggota lama + INSERT baru (pola
-    rotasi sama seperti tabel officials). Jika is_single_occupant=false
-    (misal "Anggota BPD"), anggota baru ditambahkan tanpa mengakhiri
-    yang lama. Tidak berubah dari v4.2.
+    UC-23. Untuk slot `ketua`/`wakil_ketua` (is_single_occupant=true)
+    yang sudah terisi, pemegang lama diakhiri (ended_at = started_at)
+    lalu pemegang baru dicatat. Dengan `previous_holder=to_member`,
+    pemegang lama sekaligus dicatat sebagai Anggota aktif. Untuk slot
+    `anggota`, anggota baru ditambahkan tanpa mengakhiri yang lama.
+
+    Dengan `from_member_id`, yang diisikan adalah anggota/wakil aktif
+    organisasi yang sama (promosi): masa jabatan lamanya diakhiri dan
+    nama/foto/WA disalin, sehingga `member_name` tidak wajib. Semua
+    langkah berjalan dalam satu transaksi.
   operationId: addVillageOrgMember
   security:
     - sanctumCookie: []

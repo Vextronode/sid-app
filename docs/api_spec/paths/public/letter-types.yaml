@@ -3,14 +3,14 @@ get:
   summary: Info jenis surat & persyaratan (tanpa login)
   security: []
   description: |
-    UC-16. Hanya menampilkan letter_types dengan is_active = true.
-    Berbeda dengan endpoint /letter-types (Epic 4) yang butuh auth dan
-    menampilkan status Draft juga untuk Petugas Desa. Tidak menampilkan
-    category_id/flow_id (irrelevan untuk publik).
+    UC-16. Jenis surat aktif ber-template milik desa (urut nama), hanya
+    code, name, requirements_info. Cache per desa (10 menit).
   operationId: getPublicLetterTypes
+  parameters:
+    - $ref: '../../parameters/common.yaml#/VillageCode'
   responses:
     '200':
-      description: Daftar jenis surat publik berhasil diambil
+      description: Daftar jenis surat publik
       content:
         application/json:
           schema:
@@ -19,22 +19,12 @@ get:
               data:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    code:
-                      type: string
-                      example: "SKD"
-                    name:
-                      type: string
-                      example: "Surat Keterangan Domisili"
-                    requirements_info:
-                      type: string
-                      example: "Fotokopi KTP dan KK"
+                  $ref: '../../schemas/letter-types/letter-types.yaml#/PublicLetterType'
     '404':
-      description: Belum ada tipe surat aktif yang tersedia
+      description: Desa tidak ditemukan, atau belum ada tipe surat aktif
       content:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/NotFoundResponse'
-    '500':
-      $ref: '../../responses/common.yaml#/ServerError'
+    '422':
+      description: village_code wajib pada instalasi multi-desa

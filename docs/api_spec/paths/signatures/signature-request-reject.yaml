@@ -1,0 +1,48 @@
+post:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Tolak permintaan tanda tangan
+  description: |
+    Hanya pemilik NIK yang dituju dan selama permintaan masih pending.
+    `block = true` sekaligus memblokir pemohon (`signature_blocks`) agar tidak
+    dapat meminta TTD lagi ke akun ini. Pemohon menerima notifikasi
+    `signature_rejected` tanpa identitas penolak.
+  operationId: rejectSignatureRequest
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: signatureRequest
+      in: path
+      required: true
+      schema:
+        type: integer
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            notes:
+              type: string
+              maxLength: 500
+              nullable: true
+            block:
+              type: boolean
+              nullable: true
+  responses:
+    '200':
+      description: Ditolak
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/SuccessMessage'
+          example:
+            message: "Permintaan tanda tangan ditolak."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '404':
+      description: Permintaan tidak ditujukan ke akun ini
+    '409':
+      description: Permintaan sudah tidak aktif
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

@@ -13,6 +13,7 @@ import { Pencil, CheckCircle2, User, MapPin, VenetianMask, CreditCard } from 'lu
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
 import EditProfilWargaModal from '@/features/profil-warga/components/EditProfilWargaModal'
+import { ProfilePhoto } from '@/features/profil-warga/components/ProfilePhoto'
 import { SignatureCard } from '@/features/surat/components/SignatureCard'
 import { SignatureRequestsCard } from '@/features/surat/components/SignatureRequestsCard'
 
@@ -44,9 +45,7 @@ export default function AdminProfilePage() {
 
           <div className="sid-admin-profile-card sid-admin-profile-header">
             <div className="sid-admin-profile-user">
-              <div className="sid-admin-profile-avatar">
-                <User size={24} />
-              </div>
+              <ProfilePhoto avatarClassName="sid-admin-profile-avatar" />
 
               <div className="sid-admin-profile-user-info">
                 <p className="sid-admin-profile-name">{user?.name ?? 'Pengguna'}</p>

@@ -1,0 +1,47 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 07_UC_RW_v6.puml
+' JUDUL: Use Case - RW (FYI, bukan approver)
+' SUMBER: TDD-02 v5.3 (UC-04a sub-flow, UC-05/06/15) + routes (2026-10-16)
+' CATATAN: Menggantikan 07_UC_RW_v5.puml.
+'==================================================================================
+@startuml UC_RW_v6
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+}
+title Use Case Diagram - RW (FYI read-only) [v6]
+
+actor "RW" as RW
+
+rectangle "SIDUTama" {
+  usecase "UC-01/02: Login / Logout" as UC_AUTH
+  usecase "Terima FYI rt_approved_rw_fyi\n(in-app & Web Push)" as UC_NOTIF
+  usecase "UC-05: Daftar Surat Wilayah RW\n(sudah di-approve RT, read-only)" as UC_LIST
+  usecase "UC-06: Detail Surat (read-only)" as UC_DETAIL
+  usecase "UC-15: Dashboard RW (FYI)" as UC_DASH
+  usecase "Ajukan Surat untuk Diri Sendiri" as UC_SELF
+}
+
+RW -- UC_AUTH
+RW -- UC_NOTIF
+RW -- UC_LIST
+RW -- UC_DETAIL
+RW -- UC_DASH
+RW -- UC_SELF
+UC_LIST ..> UC_DETAIL : <<include>>
+
+note bottom of UC_LIST
+  Tidak ada endpoint keputusan untuk RW;
+  RW tidak pernah membuat letter_approvals.
+end note
+@enduml

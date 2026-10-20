@@ -1,17 +1,12 @@
 import { ChevronDown } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
-import { SECTION_TRANSPARANSI } from '@/lib/constants/routes'
 import { useDisclosure } from '../hooks/useDisclosure'
-import { useSectionLink } from '../utils/sectionLink'
 
 // Isi Profil Desa, dipakai dropdown desktop dan menu ponsel.
-// A4–A6: butir yang halamannya sudah ada menjadi link; sisanya teks biasa
-// + "Segera hadir" (tidak bisa diklik/difokus).
-// A7 hanya dirender bila section Transparansi tampil.
-export function ProfilDesaItems({ header, showTransparansi, onSelect }) {
-  const sectionLinkProps = useSectionLink()
-
+// A4–A7: butir yang halamannya sudah ada menjadi link; sisanya teks biasa
+// + "Segera hadir" (tidak bisa diklik/difokus), mis. Transparansi APBDes.
+export function ProfilDesaItems({ header, onSelect }) {
   return (
     <ul className="bd-menu-list">
       {header.profilItems.map(({ label, to }) =>
@@ -28,25 +23,20 @@ export function ProfilDesaItems({ header, showTransparansi, onSelect }) {
           </li>
         ),
       )}
-      {showTransparansi && (
-        <>
-          <li className="bd-menu-divider" aria-hidden="true" />
-          <li>
-            <a
-              className="bd-menu-item bd-menu-item--link"
-              {...sectionLinkProps(SECTION_TRANSPARANSI, onSelect)}
-            >
-              {header.transparansi}
-            </a>
-          </li>
-        </>
-      )}
     </ul>
   )
 }
 
-export function ProfilDesaDropdown({ header, showTransparansi }) {
+// Halaman Tentang Desa sedang dibuka bila path-nya sama dengan salah satu
+// butir menu (tanpa #, mis. /profil-desa#perangkat-desa -> /profil-desa).
+function isProfilPage(pathname, items) {
+  return items.some(({ to }) => to && to.split('#')[0] === pathname)
+}
+
+export function ProfilDesaDropdown({ header }) {
   const { isOpen, toggle, close, containerRef, triggerRef, panelId, onBlur } = useDisclosure()
+  const { pathname } = useLocation()
+  const active = isProfilPage(pathname, header.profilItems)
 
   return (
     <div className="bd-dropdown" ref={containerRef} onBlur={onBlur}>
@@ -56,13 +46,14 @@ export function ProfilDesaDropdown({ header, showTransparansi }) {
         className="bd-nav-link bd-nav-trigger"
         aria-expanded={isOpen}
         aria-controls={panelId}
+        aria-current={active ? 'page' : undefined}
         onClick={toggle}
       >
         {header.nav.profil}
         <ChevronDown className="bd-nav-chevron" size={16} strokeWidth={2.2} aria-hidden="true" />
       </button>
       <div id={panelId} className="bd-dropdown-panel" hidden={!isOpen}>
-        <ProfilDesaItems header={header} showTransparansi={showTransparansi} onSelect={close} />
+        <ProfilDesaItems header={header} onSelect={close} />
       </div>
     </div>
   )

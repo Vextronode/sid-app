@@ -1,0 +1,69 @@
+'==================================================================================
+' SECTION: SEQUENCE DIAGRAM
+' FILE: 05_Sequence_KadesFinalApproval_v6.puml
+' JUDUL: Sequence - Keputusan Final Kepala Desa / Sekdes (UC-04c)
+' SUMBER: KadesApprovalController, KadesApprovalService, LetterNumberGenerator,
+'         LetterNumberCounterRepository, LetterSnapshotService (2026-10-16)
+' CATATAN: Menggantikan 05_Sequence_ProcessFlowStep_Generic_v5.puml.
+'==================================================================================
+@startuml Sequence_KadesFinal_v6
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ParticipantBackgroundColor #EBF3FB
+  ParticipantBorderColor #2E5FA3
+  ActorBackgroundColor #D6E4F7
+  ArrowColor #2E5FA3
+  ArrowFontSize 10
+  NoteBackgroundColor #FFF9C4
+  NoteBorderColor #F9A825
+}
+title Sequence - Keputusan Final Kades/Sekdes [v6]\n(first-action-wins, nomor surat, snapshot, notifikasi Kasi/Kaur)
+
+actor "Kades / Sekdes" as KD
+participant "React" as FE
+participant "KadesApprovalController\n(role:kepala_desa,sekretaris_desa)" as CTRL
+participant "KadesApprovalService" as SVC
+participant "OfficialService" as OFF
+participant "LetterRepository" as REPO
+participant "LetterNumberGenerator" as NUM
+participant "LetterSnapshotService" as SNAP
+database "PostgreSQL" as DB
+actor "Pemohon" as P
+actor "Kasi / Kaur\n(assigned_role)" as KK
+
+KD -> FE : Setujui / Tolak
+FE -> CTRL : PATCH /api/kades/letters/{letter}/decision
+CTRL -> SVC : decision()
+SVC -> OFF : getCurrentOfficial → posisi kepala_desa | sekretaris_desa, desa sama
+SVC -> SVC : bukan pemohon sendiri (403); step aktif kepala_desa (409)
+
+group DB::transaction
+  SVC -> REPO : findForUpdateOrFail (row lock)
+  SVC -> SVC : cek ulang status & step (keputusan lain lebih dulu → 409)
+  SVC -> DB : UPDATE placeholder approval\n(approval_level = kepala_desa | sekretaris_desa)
+  alt approved & is_final
+    SVC -> NUM : next(letter)
+    NUM -> DB : counter (village, classification_code, year) +1
+    NUM --> SVC : "470/001/Des/X/2026"
+    SVC -> DB : UPDATE letters approved, letter_number,\nexpires_at (validity_days), processed_at
+    SVC -> SNAP : captureOnFinalApproval(letter)
+    SNAP -> DB : Kepala Desa aktif + citizen
+    alt ada Kades aktif
+      SNAP -> DB : UPDATE snapshot (template, form_fields,\nkop desa, stempel, nama & TTD Kades),\nsigned_by_official_id
+    else jabatan kosong
+      SNAP -> SNAP : tunda (dibuat saat unduhan pertama)
+    end
+  else rejected
+    SVC -> DB : UPDATE rejected, rejected_at_step
+  end
+  SVC -> DB : INSERT status log
+end
+
+alt approved
+  SVC -> P : letter_approved_final
+  SVC -> KK : letter_needs_fulfillment (data_action != none)\natau letter_ready_for_print
+else rejected
+  SVC -> P : kepala_desa_rejected
+end
+CTRL --> FE : 200 {message}
+@enduml

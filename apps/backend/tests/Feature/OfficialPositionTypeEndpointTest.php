@@ -25,7 +25,7 @@ class OfficialPositionTypeEndpointTest extends TestCase
         parent::setUp();
 
         $this->village = Village::factory()->create();
-        $this->petugas = User::factory()->create(['role' => 'petugas_desa', 'village_id' => $this->village->id]);
+        $this->petugas = User::factory()->create(['role' => 'staf_sid', 'village_id' => $this->village->id]);
     }
 
     public function test_petugas_can_create_list_and_update_a_position_type(): void
@@ -61,8 +61,18 @@ class OfficialPositionTypeEndpointTest extends TestCase
     public function test_label_must_not_collide_with_an_existing_or_account_position(): void
     {
         OfficialPositionType::factory()->code('kaur_keuangan')->create(['village_id' => $this->village->id]);
+        // Kodenya tetap kasi_trantib setelah berganti nama; nama barunya juga terpakai.
+        OfficialPositionType::factory()->code('kasi_trantib', 'Kasi Ketentraman & Ketertiban')
+            ->create(['village_id' => $this->village->id]);
 
-        foreach (['Kaur Keuangan', 'Kepala Desa', 'Sekdes', '!!!'] as $label) {
+        // Kode jabatan berakun bukan slug labelnya (mis. `rt` untuk "Ketua RT"),
+        // jadi label jabatan berakun ikut dibandingkan, termasuk "Staf {nama aplikasi}".
+        $taken = [
+            'Kaur Keuangan', 'kaur-keuangan', 'Kasi Trantib', 'kasi ketentraman ketertiban',
+            'Kepala Desa', 'Sekretaris Desa', 'Ketua RT', 'ketua rw', 'KEPALA DUSUN', 'Staf SIDUTama', '!!!',
+        ];
+
+        foreach ($taken as $label) {
             $this->actingAs($this->petugas)
                 ->postJson('/api/official-position-types', ['label' => $label])
                 ->assertUnprocessable()
@@ -75,16 +85,81 @@ class OfficialPositionTypeEndpointTest extends TestCase
             ->assertJsonValidationErrors(['label']);
 
         // Desa lain boleh memakai nama yang sama.
-        $other = User::factory()->create(['role' => 'petugas_desa', 'village_id' => Village::factory()]);
+        $other = User::factory()->create(['role' => 'staf_sid', 'village_id' => Village::factory()]);
         $this->actingAs($other)
             ->postJson('/api/official-position-types', ['label' => 'Kaur Keuangan'])
             ->assertCreated();
     }
 
-    public function test_position_types_are_limited_to_petugas_desa_of_the_same_village(): void
+    public function test_staf_sid_label_collision_follows_the_configured_app_name(): void
+    {
+        config(['sid.app_name' => 'SIPANDESA']);
+
+        $this->actingAs($this->petugas)
+            ->postJson('/api/official-position-types', ['label' => 'Staf SIPANDESA'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['label']);
+
+        $this->actingAs($this->petugas)
+            ->postJson('/api/official-position-types', ['label' => 'Staf SIDUTama'])
+            ->assertCreated();
+    }
+
+    public function test_renaming_a_position_type_must_not_collide_with_another_position(): void
+    {
+        OfficialPositionType::factory()->code('kaur_keuangan')->create(['village_id' => $this->village->id]);
+        $type = OfficialPositionType::factory()->code('kasi_trantib', 'Kasi Trantib')
+            ->create(['village_id' => $this->village->id]);
+
+        foreach (['Kepala Dusun', 'Staf SIDUTama', 'Kaur Keuangan'] as $label) {
+            $this->actingAs($this->petugas)
+                ->patchJson("/api/official-position-types/{$type->id}", ['label' => $label])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['label']);
+        }
+
+        // Nama sendiri dengan penulisan lain tetap boleh.
+        $this->actingAs($this->petugas)
+            ->patchJson("/api/official-position-types/{$type->id}", ['label' => 'KASI TRANTIB'])
+            ->assertOk()
+            ->assertJsonPath('data.label', 'KASI TRANTIB');
+
+        // Perubahan tanpa label tidak memeriksa nama.
+        $this->actingAs($this->petugas)
+            ->patchJson("/api/official-position-types/{$type->id}", ['sort_order' => 3])
+            ->assertOk();
+    }
+
+    public function test_list_includes_account_positions_with_labels_and_scope(): void
+    {
+        $staf = User::factory()->create(['role' => 'staf_sid', 'village_id' => $this->village->id]);
+
+        $this->actingAs($staf)
+            ->getJson('/api/official-position-types')
+            ->assertOk()
+            ->assertJsonPath('account_positions', [
+                ['code' => 'kepala_desa', 'label' => 'Kepala Desa', 'scope' => null],
+                ['code' => 'sekretaris_desa', 'label' => 'Sekretaris Desa', 'scope' => null],
+                ['code' => 'kasi_pelayanan', 'label' => 'Kasi Pelayanan', 'scope' => null],
+                ['code' => 'kaur_tu_umum', 'label' => 'Kaur TU & Umum', 'scope' => null],
+                ['code' => 'kadus', 'label' => 'Kepala Dusun', 'scope' => 'hamlet_id'],
+                ['code' => 'rw', 'label' => 'Ketua RW', 'scope' => 'rw_id'],
+                ['code' => 'rt', 'label' => 'Ketua RT', 'scope' => 'rt_id'],
+                ['code' => 'staf_sid', 'label' => 'Staf SIDUTama', 'scope' => null],
+            ]);
+
+        // Label staf aplikasi mengikuti nama aplikasi yang diatur (SID_APP_NAME).
+        config(['sid.app_name' => 'SIPANDESA']);
+
+        $this->actingAs($staf)
+            ->getJson('/api/official-position-types')
+            ->assertJsonPath('account_positions.7.label', 'Staf SIPANDESA');
+    }
+
+    public function test_position_types_are_limited_to_staf_sid_of_the_same_village(): void
     {
         $type = OfficialPositionType::factory()->create(['village_id' => $this->village->id]);
-        $foreign = User::factory()->create(['role' => 'petugas_desa', 'village_id' => Village::factory()]);
+        $foreign = User::factory()->create(['role' => 'staf_sid', 'village_id' => Village::factory()]);
 
         $this->getJson('/api/official-position-types')->assertUnauthorized();
         $this->actingAs(User::factory()->create(['role' => 'kepala_desa', 'village_id' => $this->village->id]))

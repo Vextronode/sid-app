@@ -1,0 +1,66 @@
+'==================================================================================
+' SECTION: USE CASE DIAGRAM
+' FILE: 05_UC_KepalaDesa_SekretarisDesa_v6.puml
+' JUDUL: Use Case - Kepala Desa & Sekretaris Desa (approver final)
+' SUMBER: TDD-02 v5.3 (UC-04c/05/06/08/15) + routes (2026-10-16)
+' CATATAN: Menggantikan 05_UC_KepalaDesa_SekretarisDesa_v5.puml. UC-07 Validasi
+'          Integritas dihapus dari diagram karena belum diimplementasi
+'          (Next Dev Paket 2, lihat audit docs).
+'==================================================================================
+@startuml UC_Kades_v6
+left to right direction
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EBF3FB
+  BorderColor #2E5FA3
+  FontName Arial
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #D6E4F7
+  BorderColor #1F3864
+}
+title Use Case Diagram - Kepala Desa & Sekretaris Desa [v6]
+
+actor "Kepala Desa" as KD
+actor "Sekretaris Desa" as SK
+
+rectangle "SIDUTama" {
+  usecase "UC-01/02: Login / Logout" as UC_AUTH
+  usecase "UC-05: Daftar Surat Desa\n(sudah lolos RT)" as UC_LIST
+  usecase "UC-06: Detail Surat\n(riwayat RT, lampiran, TTD,\ndokumen pendukung)" as UC_DETAIL
+  usecase "UC-04c: Approve / Reject\n(step kepala_desa, first-action-wins)" as UC_DECIDE
+  usecase "UC-08: Unduh PDF" as UC_DL
+  usecase "UC-15: Dashboard\n(menunggu keputusan,\ntanpa surat milik sendiri)" as UC_DASH
+  usecase "Notifikasi in-app & Web Push" as UC_NOTIF
+  usecase "Ajukan Surat untuk Diri Sendiri\n(diputuskan pejabat lain)" as UC_SELF
+}
+
+KD -- UC_AUTH
+KD -- UC_LIST
+KD -- UC_DETAIL
+KD -- UC_DECIDE
+KD -- UC_DL
+KD -- UC_DASH
+KD -- UC_NOTIF
+KD -- UC_SELF
+SK -- UC_AUTH
+SK -- UC_LIST
+SK -- UC_DETAIL
+SK -- UC_DECIDE
+SK -- UC_DL
+SK -- UC_DASH
+SK -- UC_NOTIF
+SK -- UC_SELF
+UC_LIST ..> UC_DETAIL : <<include>>
+UC_DETAIL ..> UC_DECIDE : <<extend>>
+
+note bottom of UC_DECIDE
+  Final approve: nomor surat per kode klasifikasi,
+  expires_at, snapshot (TTD & stempel Kepala Desa
+  aktif, juga bila Sekdes yang menyetujui),
+  notifikasi ke pemohon & Kasi/Kaur.
+  approval_level mencatat kepala_desa / sekretaris_desa.
+end note
+@enduml

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { applyFulfillment, getFulfillmentProposal } from '../api/letterExtrasApi'
+import { confirmDialog } from '@/shared/lib/dialog'
 
 const ACTION_TITLES = {
   update_citizen: 'Perubahan Data Warga',
@@ -71,6 +72,18 @@ export function FulfillmentPanel({ letterId, onApplied }) {
 
   const handleApply = async (event) => {
     event.preventDefault()
+
+    const confirmed = await confirmDialog({
+      title: 'Terapkan perubahan ke data kependudukan?',
+      message: `Data warga${
+        proposal?.subject && subjectNik.trim() ? ` ber-NIK ${subjectNik.trim()}` : ''
+      } akan diperbarui sesuai nilai di tabel. Perubahan hanya dapat diterapkan sekali.`,
+      confirmLabel: 'Terapkan',
+      tone: 'primary',
+    })
+
+    if (!confirmed) return
+
     setSaving(true)
     setError('')
 

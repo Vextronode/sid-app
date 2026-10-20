@@ -4,7 +4,7 @@ patch:
   description: |
     Aktor: Petugas Desa.
     UC-14. Guard: tidak bisa nonaktifkan diri
-    sendiri, dan tidak bisa nonaktifkan satu-satunya akun petugas_desa
+    sendiri, dan tidak bisa nonaktifkan satu-satunya akun staf_sid
     aktif yang tersisa.
   operationId: updateUser
   security:
@@ -35,7 +35,7 @@ patch:
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: Tidak berwenang, atau melanggar guard (nonaktifkan diri sendiri / satu-satunya petugas_desa aktif)
+      description: Tidak berwenang, atau melanggar guard (nonaktifkan diri sendiri / satu-satunya staf_sid aktif)
       content:
         application/json:
           schema:
@@ -45,7 +45,7 @@ patch:
               summary: Mencoba nonaktifkan diri sendiri
               value:
                 message: "Anda tidak dapat menonaktifkan akun Anda sendiri."
-            last_petugas_desa:
+            last_staf_sid:
               summary: Mencoba nonaktifkan satu-satunya Petugas Desa aktif
               value:
                 message: "Tidak dapat menonaktifkan satu-satunya akun Petugas Desa yang masih aktif."

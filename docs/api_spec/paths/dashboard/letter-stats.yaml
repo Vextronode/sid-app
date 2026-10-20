@@ -2,9 +2,15 @@ get:
   tags: [Epic 8 - Dashboard & Statistik]
   summary: Lihat statistik jumlah surat untuk chart dashboard
   description: |
-    Ditambahkan setelah v5.0 sebagai sub-endpoint dashboard. Mengembalikan
-    data chart (labels, values, maxY) jumlah surat, dengan filter opsional
-    berdasarkan tanggal dan tipe surat.
+    Jumlah surat yang diajukan (submitted_at) per hari dalam satu minggu
+    Senin-Minggu yang memuat `date` (default hari ini), untuk grafik
+    dashboard. Scope per role sama dengan GET /letters dan
+    GET /letters/summary, sehingga angka grafik cocok dengan kartu:
+    warga = surat sendiri; RT = warga RT-nya; RW/Kadus = surat warga
+    RW/dusunnya yang sudah disetujui RT; Kades/Sekdes = surat desa yang
+    sudah disetujui RT; Kasi/Kaur = surat approved yang ditugaskan ke
+    role-nya; Petugas Desa = seluruh surat desa.
+    `maxY` = nilai terbesar dibulatkan ke atas kelipatan 5, minimal 50.
   operationId: getDashboardLetterStats
   security:
     - sanctumCookie: []
@@ -22,7 +28,8 @@ get:
       schema:
         type: string
         maxLength: 50
-      example: "domisili"
+      description: ID jenis surat; `all` atau kosong berarti semua jenis.
+      example: "3"
   responses:
     '200':
       description: Statistik surat berhasil diambil
@@ -31,22 +38,25 @@ get:
           schema:
             type: object
             properties:
-              chart:
+              data:
                 type: object
                 properties:
-                  labels:
-                    type: array
-                    items:
-                      type: string
-                    example: ["Jan", "Feb", "Mar"]
-                  values:
-                    type: array
-                    items:
-                      type: integer
-                    example: [10, 25, 18]
-                  maxY:
-                    type: integer
-                    example: 30
+                  chart:
+                    type: object
+                    properties:
+                      labels:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
+                      values:
+                        type: array
+                        items:
+                          type: integer
+                        example: [4, 7, 2, 0, 5, 1, 0]
+                      maxY:
+                        type: integer
+                        example: 50
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '422':

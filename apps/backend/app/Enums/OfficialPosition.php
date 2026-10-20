@@ -16,8 +16,8 @@ enum OfficialPosition: string
     case Kadus = 'kadus';
     case KasiPelayanan = 'kasi_pelayanan';
     case KaurTuUmum = 'kaur_tu_umum';
-    case PetugasDesa = 'petugas_desa';
-    case Sekdes = 'sekdes';
+    case StafSid = 'staf_sid';
+    case SekretarisDesa = 'sekretaris_desa';
 
     public function userRole(): UserRole
     {
@@ -28,8 +28,8 @@ enum OfficialPosition: string
             self::Kadus => UserRole::Kadus,
             self::KasiPelayanan => UserRole::KasiPelayanan,
             self::KaurTuUmum => UserRole::KaurTuUmum,
-            self::PetugasDesa => UserRole::PetugasDesa,
-            self::Sekdes => UserRole::SekretarisDesa,
+            self::StafSid => UserRole::StafSid,
+            self::SekretarisDesa => UserRole::SekretarisDesa,
         };
     }
 
@@ -43,9 +43,14 @@ enum OfficialPosition: string
         };
     }
 
+    /**
+     * Setiap jabatan berakun dipegang satu orang per wilayahnya, termasuk
+     * staf aplikasi (staf_sid) yang hanya satu per desa; penggantinya lewat
+     * rotasi.
+     */
     public function isSingleHolderPerScope(): bool
     {
-        return $this !== self::PetugasDesa;
+        return true;
     }
 
     /**
@@ -56,17 +61,36 @@ enum OfficialPosition: string
         return array_column(self::cases(), 'value');
     }
 
+    /**
+     * Jabatan berakun dalam urutan pilihan "Tetapkan Pejabat" di dashboard.
+     *
+     * @return array<int, self>
+     */
+    public static function assignable(): array
+    {
+        return [
+            self::KepalaDesa,
+            self::SekretarisDesa,
+            self::KasiPelayanan,
+            self::KaurTuUmum,
+            self::Kadus,
+            self::Rw,
+            self::Rt,
+            self::StafSid,
+        ];
+    }
+
     public function label(): string
     {
         return match ($this) {
             self::KepalaDesa => 'Kepala Desa',
-            self::Rt => 'RT',
-            self::Rw => 'RW',
+            self::Rt => 'Ketua RT',
+            self::Rw => 'Ketua RW',
             self::Kadus => 'Kepala Dusun',
             self::KasiPelayanan => 'Kasi Pelayanan',
             self::KaurTuUmum => 'Kaur TU & Umum',
-            self::PetugasDesa => 'Petugas Desa',
-            self::Sekdes => 'Sekretaris Desa',
+            self::StafSid => UserRole::stafSidLabel(),
+            self::SekretarisDesa => 'Sekretaris Desa',
         };
     }
 }

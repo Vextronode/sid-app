@@ -9,7 +9,7 @@ const LETTER_LIST_ROUTES = {
   sekretaris_desa: '/admin/list-kades',
   kasi_pelayanan: '/admin/operator-desa/surat',
   kaur_tu_umum: '/admin/operator-desa/surat',
-  petugas_desa: '/admin/operator-desa/surat',
+  staf_sid: '/admin/operator-desa/surat',
 }
 
 // Pengajuan surat pribadi oleh pejabat: semua peran ber-akun kecuali

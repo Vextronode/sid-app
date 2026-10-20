@@ -1,14 +1,20 @@
 RegisterRequest:
   type: object
-  required: [nik, password, password_confirmation]
+  required: [nik, date_of_birth, password, password_confirmation]
   description: |
-    UC-17. Register dengan NIK dan password; nama diambil dari citizen dan
-    username dibuat otomatis dengan pola nama-depan.NNNN.
+    UC-17. Register dengan NIK, tanggal lahir, dan password. Tanggal lahir
+    harus sama dengan `citizens.date_of_birth` (verifikasi kedua selain NIK);
+    nama diambil dari citizen dan username dibuat otomatis (nama-depan.NNNN).
   properties:
     nik:
       type: string
       example: "3201012345670001"
       description: NIK 16 digit, harus sudah terdaftar di tabel citizens
+    date_of_birth:
+      type: string
+      format: date
+      example: "1990-05-17"
+      description: "Harus cocok dengan data kependudukan; bila tidak → 422 `date_of_birth`."
     password:
       type: string
       format: password
@@ -73,7 +79,7 @@ CurrentUser:
       example: "siti.aminah@gmail.com"
     role:
       type: string
-      enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, petugas_desa, kepala_desa, sekretaris_desa]
+      enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, staf_sid, kepala_desa, sekretaris_desa]
       example: "warga"
     must_change_password:
       type: boolean

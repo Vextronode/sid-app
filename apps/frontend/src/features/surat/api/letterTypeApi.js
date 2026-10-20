@@ -1,8 +1,13 @@
 import api from '@/lib/api'
 import { publicVillageParams } from '@/shared/lib/api/publicVillageParams'
 
-export const getLetterTypes = async () => {
-  const response = await api.get('/api/letter-types', { params: publicVillageParams() })
+// includeInactive: daftar lengkap (Draft/Nonaktif), khusus Petugas Desa.
+export const getLetterTypes = async ({ includeInactive = false } = {}) => {
+  const params = {
+    ...publicVillageParams(),
+    ...(includeInactive ? { include_inactive: 1 } : {}),
+  }
+  const response = await api.get('/api/letter-types', { params })
 
   return response.data.data
 }

@@ -28,7 +28,11 @@ return new class extends Migration
             $table->string('hero_image')->nullable();
             $table->string('hero_photo_credit', 100)->nullable();
             $table->string('office_hours', 100)->nullable();
-            $table->string('map_url', 500)->nullable();
+            // Sambutan Kepala Desa di beranda; kosong = blok tidak tampil.
+            $table->text('welcome_message')->nullable();
+            // Titik kantor desa (WGS84) untuk link "Buka di peta" (Google Maps).
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
             $table->timestamps();
         });
     }
