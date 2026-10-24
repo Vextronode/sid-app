@@ -196,10 +196,13 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::get('/letters', [ActivityLogController::class, 'letters']);
         });
 
+    // Daftar pekerjaan aktif juga dipakai pemohon surat untuk isian
+    // bertipe pekerjaan; kelola katalog tetap khusus Staf SID.
+    Route::get('/occupations', [OccupationController::class, 'index']);
+
     Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('occupations')
         ->group(function () {
-            Route::get('/', [OccupationController::class, 'index']);
             Route::post('/', [OccupationController::class, 'store']);
             Route::patch('/{id}', [OccupationController::class, 'update']);
             Route::delete('/{id}', [OccupationController::class, 'destroy']);
