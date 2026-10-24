@@ -51,3 +51,23 @@ export const applyFulfillment = async (letterId, values, subjectNik) => {
 
   return response.data
 }
+
+// Hasil dari instansi luar setelah formulir pelayanan terbit.
+export const submitLetterResult = async (letterId, files) => {
+  const formData = new FormData()
+
+  files.forEach((file) => formData.append('files[]', file))
+
+  const response = await api.post(`/api/letters/${letterId}/results`, formData)
+
+  return response.data
+}
+
+export const reviewLetterResult = async (letterId, resultId, decision, notes) => {
+  const response = await api.patch(`/api/letters/${letterId}/results/${resultId}`, {
+    decision,
+    notes: notes || null,
+  })
+
+  return response.data
+}

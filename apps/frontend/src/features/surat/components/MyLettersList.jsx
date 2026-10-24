@@ -4,11 +4,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { SimplePagination } from '@/components/ui/SimplePagination'
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
-import {
-  formatLetterDate,
-  getLetterProgress,
-  LETTER_STAGES,
-} from '@/features/surat/utils/letterProgress'
+import { formatLetterDate, getLetterProgress } from '@/features/surat/utils/letterProgress'
 import { LetterRowActions } from './LetterRowActions'
 
 const MY_LETTER_FILTERS = [
@@ -28,7 +24,7 @@ function stageState(index, progress) {
 function LetterTrack({ progress }) {
   return (
     <ol className="sid-my-letters-track" aria-label="Tahapan surat">
-      {LETTER_STAGES.map((label, index) => {
+      {progress.stages.map((label, index) => {
         const state = stageState(index, progress)
 
         return (

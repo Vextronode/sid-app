@@ -8,6 +8,7 @@ import {
 } from '../api/letterExtrasApi'
 import { refillLetterSignature } from '../api/signatureApi'
 import { FulfillmentPanel } from './FulfillmentPanel'
+import { LetterResultPanel } from './LetterResultPanel'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 
@@ -304,6 +305,14 @@ export function LetterExtrasPanel({ letterId }) {
             ))}
           </ul>
         </section>
+      )}
+
+      {letter.result_stage && (
+        <LetterResultPanel
+          letter={letter}
+          onChanged={load}
+          onOpenFile={(url) => openFile(() => openProtectedFile(url))}
+        />
       )}
 
       {canFulfill && <FulfillmentPanel letterId={letter.id} onApplied={load} />}
