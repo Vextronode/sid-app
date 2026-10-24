@@ -86,11 +86,11 @@ class LetterDownloadControllerTest extends TestCase
             'ended_at' => null,
         ]);
         $kasi = User::factory()->create([
-            'role' => 'kasi_pelayanan',
+            'role' => 'kasi_pemerintahan',
             'village_id' => $village->id,
         ]);
-        Official::factory()->forUser($kasi)->position('kasi_pelayanan')->create();
-        $letterType = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
+        Official::factory()->forUser($kasi)->position('kasi_pemerintahan')->create();
+        $letterType = LetterType::factory()->create(['assigned_role' => 'kasi_pemerintahan']);
         $letter = Letter::factory()->create([
             'village_id' => $village->id,
             'letter_type_id' => $letterType->id,
@@ -107,10 +107,10 @@ class LetterDownloadControllerTest extends TestCase
     {
         $village = Village::factory()->create();
         $kasi = User::factory()->create([
-            'role' => 'kasi_pelayanan',
+            'role' => 'kasi_pemerintahan',
             'village_id' => $village->id,
         ]);
-        Official::factory()->forUser($kasi)->position('kasi_pelayanan')->create();
+        Official::factory()->forUser($kasi)->position('kasi_pemerintahan')->create();
         $letterType = LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum']);
         $letter = Letter::factory()->create([
             'village_id' => $village->id,

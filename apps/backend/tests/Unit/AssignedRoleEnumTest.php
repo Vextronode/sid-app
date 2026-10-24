@@ -23,9 +23,9 @@ class AssignedRoleEnumTest extends TestCase
     }
 
     #[Test]
-    public function it_has_kasi_pelayanan_case_with_correct_value(): void
+    public function it_has_kasi_pemerintahan_case_with_correct_value(): void
     {
-        $this->assertSame('kasi_pelayanan', AssignedRole::KasiPelayanan->value);
+        $this->assertSame('kasi_pemerintahan', AssignedRole::KasiPemerintahan->value);
     }
 
     #[Test]
@@ -37,7 +37,7 @@ class AssignedRoleEnumTest extends TestCase
     #[Test]
     public function it_can_be_constructed_from_string_value(): void
     {
-        $this->assertSame(AssignedRole::KasiPelayanan, AssignedRole::from('kasi_pelayanan'));
+        $this->assertSame(AssignedRole::KasiPemerintahan, AssignedRole::from('kasi_pemerintahan'));
         $this->assertSame(AssignedRole::KaurTuUmum, AssignedRole::from('kaur_tu_umum'));
     }
 

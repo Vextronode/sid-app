@@ -111,7 +111,7 @@ class LetterTypeControllerTest extends TestCase
     public function test_update_accepts_null_assigned_role_for_letters_available_to_both_roles(): void
     {
         $admin = User::factory()->create(['role' => 'staf_sid']);
-        $letterType = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
+        $letterType = LetterType::factory()->create(['assigned_role' => 'kasi_pemerintahan']);
 
         $this->actingAs($admin)
             ->putJson("/api/letter-types/{$letterType->id}", ['assigned_role' => null])

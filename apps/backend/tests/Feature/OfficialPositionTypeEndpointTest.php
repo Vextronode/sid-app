@@ -140,7 +140,7 @@ class OfficialPositionTypeEndpointTest extends TestCase
             ->assertJsonPath('account_positions', [
                 ['code' => 'kepala_desa', 'label' => 'Kepala Desa', 'scope' => null],
                 ['code' => 'sekretaris_desa', 'label' => 'Sekretaris Desa', 'scope' => null],
-                ['code' => 'kasi_pelayanan', 'label' => 'Kasi Pelayanan', 'scope' => null],
+                ['code' => 'kasi_pemerintahan', 'label' => 'Kasi Pemerintahan', 'scope' => null],
                 ['code' => 'kaur_tu_umum', 'label' => 'Kaur TU & Umum', 'scope' => null],
                 ['code' => 'kadus', 'label' => 'Kepala Dusun', 'scope' => 'hamlet_id'],
                 ['code' => 'rw', 'label' => 'Ketua RW', 'scope' => 'rw_id'],

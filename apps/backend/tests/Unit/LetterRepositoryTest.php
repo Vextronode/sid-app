@@ -132,7 +132,7 @@ class LetterRepositoryTest extends TestCase
         $flow = ApprovalFlow::factory()->create();
         FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'rt']);
         FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 2, 'approver_position' => 'kepala_desa']);
-        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 3, 'approver_position' => 'kasi_pelayanan']);
+        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 3, 'approver_position' => 'kasi_pemerintahan']);
 
         $atKadesStep = Letter::factory()->create([
             'flow_id' => $flow->id,
@@ -276,7 +276,7 @@ class LetterRepositoryTest extends TestCase
         $village = Village::factory()->create();
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
 
-        $approvedForKasi = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
+        $approvedForKasi = LetterType::factory()->create(['assigned_role' => 'kasi_pemerintahan']);
         $otherType = LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum']);
 
         Letter::factory()->create([
@@ -292,7 +292,7 @@ class LetterRepositoryTest extends TestCase
             'status' => LetterStatus::Approved,
         ]);
 
-        $result = $this->repository->queryApprovedForAssignedRole('kasi_pelayanan', $village->id)->get();
+        $result = $this->repository->queryApprovedForAssignedRole('kasi_pemerintahan', $village->id)->get();
 
         $this->assertCount(1, $result);
     }

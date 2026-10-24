@@ -37,7 +37,7 @@ class PublicPageService
      * mendahului jenis jabatan tanpa akun yang dikelola Petugas Desa.
      */
     private const PUBLIC_STAFF_POSITIONS = [
-        OfficialPosition::KasiPelayanan,
+        OfficialPosition::KasiPemerintahan,
         OfficialPosition::KaurTuUmum,
     ];
 
@@ -136,7 +136,7 @@ class PublicPageService
 
     /**
      * Slot grup Kasi/Kaur/Staf di Profil Desa, berurutan: jabatan berakun
-     * Kasi Pelayanan dan Kaur TU, lalu jenis jabatan aktif menurut urutan
+     * Kasi Pemerintahan dan Kaur TU, lalu jenis jabatan aktif menurut urutan
      * yang diatur staf aplikasi, lalu staf aplikasi itu sendiri (staf_sid).
      * Jabatan yang belum terisi tetap punya slot.
      *
@@ -236,7 +236,7 @@ class PublicPageService
         $village = $this->requireVillage($villageCode);
 
         $officials = $this->officialRepository
-            ->allActiveByPositionsAndVillage(['kasi_pelayanan', 'kaur_tu_umum'], $village->id)
+            ->allActiveByPositionsAndVillage(['kasi_pemerintahan', 'kaur_tu_umum'], $village->id)
             ->load('citizen.occupation');
 
         if ($officials->isEmpty()) {

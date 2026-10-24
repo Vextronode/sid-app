@@ -296,7 +296,7 @@ class LetterService
 
     /**
      * EV5-4-S7. Rewrite total dari switch lama yang salah menggabungkan
-     * kasi_pelayanan/kaur_tu_umum/staf_sid/sekretaris_desa/
+     * kasi_pemerintahan/kaur_tu_umum/staf_sid/sekretaris_desa/
      * kepala_desa jadi satu case "lihat semua surat" (TDD-01 Table 3 -
      * Scope Monitoring Surat per Role, paths/letters/letters.yaml).
      * Daftar role dibatasi per wilayah dan tahap yang telah dicapai;
@@ -408,7 +408,7 @@ class LetterService
                 'rw' => $this->scopeForRw($user),
                 'kadus' => $this->scopeForKadus($user),
                 'kepala_desa', 'sekretaris_desa' => $this->scopeForKadesSekdes($user),
-                'kasi_pelayanan', 'kaur_tu_umum' => $this->scopeForKasiKaur($user),
+                'kasi_pemerintahan', 'kaur_tu_umum' => $this->scopeForKasiKaur($user),
                 'staf_sid' => $this->letterRepository
                     ->queryForList()
                     ->where('village_id', $user->official?->village_id),

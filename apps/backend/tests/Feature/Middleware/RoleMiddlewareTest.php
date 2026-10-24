@@ -123,7 +123,7 @@ class RoleMiddlewareTest extends TestCase
     public static function nonRtRoles(): array
     {
         return [
-            ['warga'], ['rw'], ['kadus'], ['kasi_pelayanan'],
+            ['warga'], ['rw'], ['kadus'], ['kasi_pemerintahan'],
             ['kaur_tu_umum'], ['staf_sid'], ['kepala_desa'], ['sekretaris_desa'],
         ];
     }
@@ -172,7 +172,7 @@ class RoleMiddlewareTest extends TestCase
     {
         return [
             ['warga'], ['rt'], ['rw'], ['kadus'],
-            ['kasi_pelayanan'], ['kaur_tu_umum'], ['staf_sid'],
+            ['kasi_pemerintahan'], ['kaur_tu_umum'], ['staf_sid'],
         ];
     }
 
@@ -229,7 +229,7 @@ class RoleMiddlewareTest extends TestCase
     public static function officialRolesAllowedToSubmit(): array
     {
         return [
-            ['rt'], ['rw'], ['kadus'], ['kasi_pelayanan'],
+            ['rt'], ['rw'], ['kadus'], ['kasi_pemerintahan'],
             ['kaur_tu_umum'], ['staf_sid'], ['kepala_desa'], ['sekretaris_desa'],
         ];
     }
@@ -259,7 +259,7 @@ class RoleMiddlewareTest extends TestCase
     public static function rolesAllowedOnLetterIndex(): array
     {
         return [
-            ['warga'], ['rt'], ['rw'], ['kasi_pelayanan'],
+            ['warga'], ['rt'], ['rw'], ['kasi_pemerintahan'],
             ['kaur_tu_umum'], ['staf_sid'], ['kepala_desa'], ['sekretaris_desa'],
         ];
     }
@@ -333,7 +333,7 @@ class RoleMiddlewareTest extends TestCase
 
     public static function kasiKaurRoles(): array
     {
-        return [['kasi_pelayanan'], ['kaur_tu_umum']];
+        return [['kasi_pemerintahan'], ['kaur_tu_umum']];
     }
 
     #[Test]
@@ -409,7 +409,7 @@ class RoleMiddlewareTest extends TestCase
     public static function allNineRoles(): array
     {
         return [
-            ['warga'], ['rt'], ['rw'], ['kadus'], ['kasi_pelayanan'],
+            ['warga'], ['rt'], ['rw'], ['kadus'], ['kasi_pemerintahan'],
             ['kaur_tu_umum'], ['staf_sid'], ['kepala_desa'], ['sekretaris_desa'],
         ];
     }

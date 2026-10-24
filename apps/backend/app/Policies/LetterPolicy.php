@@ -17,7 +17,7 @@ class LetterPolicy
     private const STAFF_ROLES = [
         'kepala_desa',
         'sekretaris_desa',
-        'kasi_pelayanan',
+        'kasi_pemerintahan',
         'kaur_tu_umum',
         'staf_sid',
     ];
@@ -30,7 +30,7 @@ class LetterPolicy
     private const VILLAGE_SCOPED_ROLES = [
         'kepala_desa',
         'sekretaris_desa',
-        'kasi_pelayanan',
+        'kasi_pemerintahan',
         'kaur_tu_umum',
     ];
 
@@ -56,7 +56,7 @@ class LetterPolicy
             'rw' => $this->isSameRw($user, $letter) && $this->wasApprovedByRt($letter),
             'kadus' => $this->isSameHamlet($user, $letter) && $this->wasApprovedByRt($letter),
             'staf_sid' => $this->isSameVillage($user, $letter),
-            'kasi_pelayanan', 'kaur_tu_umum' => $letter->status->value === 'approved'
+            'kasi_pemerintahan', 'kaur_tu_umum' => $letter->status->value === 'approved'
                 && $this->isSameVillage($user, $letter)
                 && ($letter->letterType?->assigned_role === null
                     || $letter->letterType->assigned_role === $user->role),
@@ -92,7 +92,7 @@ class LetterPolicy
             return $this->isSameVillage($user, $letter);
         }
 
-        if (in_array($user->role, ['kasi_pelayanan', 'kaur_tu_umum'], true)) {
+        if (in_array($user->role, ['kasi_pemerintahan', 'kaur_tu_umum'], true)) {
             return $this->isSameVillage($user, $letter)
                 && ($letter->letterType?->assigned_role === null
                     || $letter->letterType->assigned_role === $user->role);
@@ -120,7 +120,7 @@ class LetterPolicy
             return true;
         }
 
-        return in_array($user->role, ['kasi_pelayanan', 'kaur_tu_umum'], true)
+        return in_array($user->role, ['kasi_pemerintahan', 'kaur_tu_umum'], true)
             && ($letter->letterType->assigned_role === null
                 || $letter->letterType->assigned_role === $user->role);
     }

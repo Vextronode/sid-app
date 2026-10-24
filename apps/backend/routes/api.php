@@ -150,7 +150,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | warga sebagai bahan pertimbangan; perubahan data oleh mereka hanya
     | lewat surat (POST /letters/{letter}/fulfillment).
     */
-    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPelayanan, UserRole::KaurTuUmum))
+    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum))
         ->get('/citizens', [CitizenController::class, 'index']);
 
     Route::middleware(UserRole::middleware(UserRole::StafSid))

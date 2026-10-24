@@ -17,7 +17,7 @@ class OfficialPositionEnumTest extends TestCase
             OfficialPosition::Rt->value => UserRole::Rt,
             OfficialPosition::Rw->value => UserRole::Rw,
             OfficialPosition::Kadus->value => UserRole::Kadus,
-            OfficialPosition::KasiPelayanan->value => UserRole::KasiPelayanan,
+            OfficialPosition::KasiPemerintahan->value => UserRole::KasiPemerintahan,
             OfficialPosition::KaurTuUmum->value => UserRole::KaurTuUmum,
             OfficialPosition::StafSid->value => UserRole::StafSid,
             OfficialPosition::SekretarisDesa->value => UserRole::SekretarisDesa,
@@ -43,7 +43,7 @@ class OfficialPositionEnumTest extends TestCase
             'rt',
             'rw',
             'kadus',
-            'kasi_pelayanan',
+            'kasi_pemerintahan',
             'kaur_tu_umum',
             'staf_sid',
             'sekretaris_desa',
@@ -57,7 +57,7 @@ class OfficialPositionEnumTest extends TestCase
         $this->assertSame('rw_id', OfficialPosition::Rw->scopeColumn());
         $this->assertSame('hamlet_id', OfficialPosition::Kadus->scopeColumn());
         $this->assertNull(OfficialPosition::KepalaDesa->scopeColumn());
-        $this->assertNull(OfficialPosition::KasiPelayanan->scopeColumn());
+        $this->assertNull(OfficialPosition::KasiPemerintahan->scopeColumn());
     }
 
     #[Test]

@@ -79,7 +79,7 @@ class ApprovalSettingEndpointTest extends TestCase
         ]);
         ApprovalSetting::create([
             'village_id' => $village->id,
-            'approval_level' => 'kasi_pelayanan',
+            'approval_level' => 'kasi_pemerintahan',
             'deadline_hours' => 48,
             'reminder_hours' => 24,
         ]);
@@ -119,7 +119,7 @@ class ApprovalSettingEndpointTest extends TestCase
         [$village, $user] = $this->stafSid();
         $setting = ApprovalSetting::create([
             'village_id' => $village->id,
-            'approval_level' => 'kasi_pelayanan',
+            'approval_level' => 'kasi_pemerintahan',
             'deadline_hours' => 48,
             'reminder_hours' => 24,
         ]);

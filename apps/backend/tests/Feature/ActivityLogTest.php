@@ -189,7 +189,7 @@ class ActivityLogTest extends TestCase
 
     public function test_activity_log_endpoints_are_restricted_to_staf_sid_and_validate_filters(): void
     {
-        foreach (['kepala_desa', 'kasi_pelayanan', 'warga'] as $role) {
+        foreach (['kepala_desa', 'kasi_pemerintahan', 'warga'] as $role) {
             $user = User::factory()->create(['role' => $role, 'village_id' => $this->village->id]);
             $this->actingAs($user)->getJson('/api/activity-logs/population')->assertForbidden();
             $this->actingAs($user)->getJson('/api/activity-logs/letters')->assertForbidden();

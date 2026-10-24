@@ -501,10 +501,10 @@ class LetterServiceTest extends TestCase
         $this->assertSame($letter->id, $result->first()->id);
     }
 
-    public function test_get_scoped_letters_for_kasi_pelayanan_scopes_to_own_position_and_village(): void
+    public function test_get_scoped_letters_for_kasi_pemerintahan_scopes_to_own_position_and_village(): void
     {
         $village = Village::factory()->create();
-        [$letter] = $this->makeLetterAtStep('kasi_pelayanan', 1, [
+        [$letter] = $this->makeLetterAtStep('kasi_pemerintahan', 1, [
             'village_id' => $village->id,
             'status' => 'approved',
         ]);
@@ -512,8 +512,8 @@ class LetterServiceTest extends TestCase
         // step final untuk posisi LAIN (kaur_tu_umum) tidak boleh ikut.
         $this->makeLetterAtStep('kaur_tu_umum', 1, ['village_id' => $village->id]);
 
-        $official = Official::factory()->create(['position' => 'kasi_pelayanan', 'village_id' => $village->id]);
-        $user = User::factory()->create(['role' => 'kasi_pelayanan']);
+        $official = Official::factory()->create(['position' => 'kasi_pemerintahan', 'village_id' => $village->id]);
+        $user = User::factory()->create(['role' => 'kasi_pemerintahan']);
         $user->official()->save($official);
 
         $result = $this->service->paginateScopedLetters($user->fresh());
@@ -615,11 +615,11 @@ class LetterServiceTest extends TestCase
     public function test_kasi_scope_only_returns_approved_letters_matching_assigned_role(): void
     {
         $village = Village::factory()->create();
-        $user = User::factory()->create(['role' => 'kasi_pelayanan', 'village_id' => $village->id]);
-        Official::factory()->forUser($user)->position('kasi_pelayanan')->create();
+        $user = User::factory()->create(['role' => 'kasi_pemerintahan', 'village_id' => $village->id]);
+        Official::factory()->forUser($user)->position('kasi_pemerintahan')->create();
         $allowed = Letter::factory()->approved()->create([
             'village_id' => $village->id,
-            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pemerintahan'])->id,
         ]);
         Letter::factory()->approved()->create([
             'village_id' => $village->id,
@@ -627,7 +627,7 @@ class LetterServiceTest extends TestCase
         ]);
         Letter::factory()->create([
             'village_id' => $village->id,
-            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pemerintahan'])->id,
         ]);
 
         $result = $this->service->paginateScopedLetters($user);

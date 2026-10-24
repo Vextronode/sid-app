@@ -117,20 +117,20 @@ class OfficialServiceTest extends TestCase
         $village = Village::factory()->create();
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
         $kasi = Official::factory()->create([
-            'position' => 'kasi_pelayanan',
+            'position' => 'kasi_pemerintahan',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
 
         // Official dengan posisi sama tapi village berbeda TIDAK boleh ikut.
         Official::factory()->create([
-            'position' => 'kasi_pelayanan',
+            'position' => 'kasi_pemerintahan',
             'village_id' => Village::factory()->create()->id,
             'is_active' => true,
         ]);
 
         $flow = ApprovalFlow::factory()->create();
-        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'kasi_pelayanan']);
+        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'kasi_pemerintahan']);
 
         $letter = Letter::factory()->create([
             'flow_id' => $flow->id,
@@ -177,7 +177,7 @@ class OfficialServiceTest extends TestCase
         return [
             ['kepala_desa'],
             ['sekretaris_desa'],
-            ['kasi_pelayanan'],
+            ['kasi_pemerintahan'],
             ['kaur_tu_umum'],
         ];
     }
@@ -187,13 +187,13 @@ class OfficialServiceTest extends TestCase
         $village = Village::factory()->create();
         $citizen = Citizen::factory()->create(['village_id' => $village->id]);
         Official::factory()->create([
-            'position' => 'kasi_pelayanan',
+            'position' => 'kasi_pemerintahan',
             'village_id' => $village->id,
             'is_active' => false,
         ]);
 
         $flow = ApprovalFlow::factory()->create();
-        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'kasi_pelayanan']);
+        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'kasi_pemerintahan']);
 
         $letter = Letter::factory()->create([
             'flow_id' => $flow->id,
@@ -322,13 +322,13 @@ class OfficialServiceTest extends TestCase
             'is_active' => true,
         ]);
         $kasi = Official::factory()->create([
-            'position' => 'kasi_pelayanan',
+            'position' => 'kasi_pemerintahan',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
 
         $flow = ApprovalFlow::factory()->create();
-        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'kasi_pelayanan']);
+        FlowStep::factory()->create(['flow_id' => $flow->id, 'step_order' => 1, 'approver_position' => 'kasi_pemerintahan']);
 
         $letter = Letter::factory()->create([
             'flow_id' => $flow->id,

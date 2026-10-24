@@ -34,7 +34,7 @@ class LetterFulfillmentTest extends TestCase
             'name' => 'Nama Lama',
             'place_of_birth' => 'Tempat Lama',
         ]);
-        $this->kasi = $this->makeOfficialUser('kasi_pelayanan', $this->village);
+        $this->kasi = $this->makeOfficialUser('kasi_pemerintahan', $this->village);
     }
 
     public function test_assigned_kasi_reviews_proposal_and_applies_it_with_corrections(): void
@@ -139,7 +139,7 @@ class LetterFulfillmentTest extends TestCase
         $otherKaur = $this->makeOfficialUser('kaur_tu_umum', $this->village);
         $kades = $this->makeOfficialUser('kepala_desa', $this->village);
         $petugas = $this->makeOfficialUser('staf_sid', $this->village);
-        $foreignKasi = $this->makeOfficialUser('kasi_pelayanan', Village::factory()->create());
+        $foreignKasi = $this->makeOfficialUser('kasi_pemerintahan', Village::factory()->create());
 
         foreach ([$otherKaur, $kades, $this->applicant, $foreignKasi] as $account) {
             $this->actingAs($account['user'])
@@ -177,7 +177,7 @@ class LetterFulfillmentTest extends TestCase
     {
         $letterType = LetterType::factory()->create([
             'flow_id' => $this->makeDefaultFlow()->id,
-            'assigned_role' => 'kasi_pelayanan',
+            'assigned_role' => 'kasi_pemerintahan',
             'data_action' => 'create_citizen',
             'data_fields' => [
                 ['column' => 'nik', 'label' => 'NIK Anak'],
@@ -257,7 +257,7 @@ class LetterFulfillmentTest extends TestCase
     {
         return LetterType::factory()->create([
             'flow_id' => $this->makeDefaultFlow()->id,
-            'assigned_role' => 'kasi_pelayanan',
+            'assigned_role' => 'kasi_pemerintahan',
             'data_action' => 'update_citizen',
             'form_fields' => [
                 ['name' => 'nama_benar', 'label' => 'Nama yang Benar', 'type' => 'text', 'required' => true],

@@ -28,7 +28,7 @@ class UpdateLetterTypeRequest extends FormRequest
     {
         return [
             'validity_days' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'assigned_role' => ['sometimes', 'nullable', Rule::in(['kasi_pelayanan', 'kaur_tu_umum'])],
+            'assigned_role' => ['sometimes', 'nullable', Rule::in(['kasi_pemerintahan', 'kaur_tu_umum'])],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

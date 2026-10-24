@@ -106,7 +106,7 @@ class DashboardService
         return match ($user->role) {
             'rt' => [$regional->village_id, $regional->rt_id, null],
             'rw' => [$regional->village_id, null, $regional->rw_id],
-            'kasi_pelayanan', 'kaur_tu_umum' => [$this->officialVillageId($user), null, null],
+            'kasi_pemerintahan', 'kaur_tu_umum' => [$this->officialVillageId($user), null, null],
             'staf_sid' => [$this->officialVillageId($user), null, null],
             default => throw new HttpException(403, 'Tidak memiliki akses.'),
         };

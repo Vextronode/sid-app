@@ -28,7 +28,7 @@ class DemoDataSeederTest extends TestCase
     use RefreshDatabase;
 
     private const VILLAGE_POSITIONS = [
-        'kepala_desa', 'sekretaris_desa', 'kasi_pemerintahan', 'kasi_kesejahteraan', 'kasi_pelayanan',
+        'kepala_desa', 'sekretaris_desa', 'kasi_pelayanan', 'kasi_kesejahteraan', 'kasi_pemerintahan',
         'kaur_perencanaan', 'kaur_keuangan', 'kaur_tu_umum', 'staf_siskeudes', 'staf_sipades',
     ];
 

@@ -126,8 +126,8 @@ class DashboardControllerTest extends TestCase
     public function test_kasi_letter_stats_counts_only_assigned_approved_letters(): void
     {
         $village = Village::factory()->create();
-        $user = $this->makeUserWithOfficialAssignment('kasi_pelayanan', 'kasi_pelayanan', $village->id);
-        $kasiType = LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan']);
+        $user = $this->makeUserWithOfficialAssignment('kasi_pemerintahan', 'kasi_pemerintahan', $village->id);
+        $kasiType = LetterType::factory()->create(['assigned_role' => 'kasi_pemerintahan']);
         $kaurType = LetterType::factory()->create(['assigned_role' => 'kaur_tu_umum']);
 
         Letter::factory()->create(['village_id' => $village->id, 'letter_type_id' => $kasiType->id, 'status' => 'approved']);
