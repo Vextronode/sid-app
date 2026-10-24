@@ -37,6 +37,19 @@ describe('DownloadSuratMenu', () => {
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
+  it('offers a single download for forms without the village head signature', async () => {
+    const form = { id: 'letter-2', letter_type: { signed_by_village_head: false } }
+    render(<DownloadSuratMenu surat={form} />)
+
+    const trigger = screen.getByRole('button', { name: /Unduh formulir/ })
+    expect(trigger).not.toHaveAttribute('aria-haspopup')
+
+    fireEvent.click(trigger)
+
+    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(form, 'digital'))
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
   it('focuses the first option, moves with arrow keys and closes on Escape without bubbling', () => {
     // Meniru modal di bawah menu: menutup diri pada Escape yang belum ditangani.
     const outerEscape = vi.fn()

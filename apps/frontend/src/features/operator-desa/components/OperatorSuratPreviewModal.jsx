@@ -25,6 +25,10 @@ import {
 import { formatDossierDateTime } from '@/features/surat/components/dossier/dossierFormat'
 import { getApplicantAddress, getApplicantNik } from '@/features/surat/utils/letterDetails'
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import {
+  FORM_DOWNLOAD_HINT,
+  isSignedByVillageHead,
+} from '@/features/cetak-surat/utils/letterSigning'
 
 export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose }) {
   const [surat, setSurat] = useState(null)
@@ -82,9 +86,11 @@ export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose 
         )
       }
       hint={
-        isApproved
-          ? 'Pilih format saat mengunduh: digital atau untuk tanda tangan basah.'
-          : 'Surat dapat diunduh setelah disetujui.'
+        !isApproved
+          ? 'Surat dapat diunduh setelah disetujui.'
+          : isSignedByVillageHead(surat)
+            ? 'Pilih format saat mengunduh: digital atau untuk tanda tangan basah.'
+            : FORM_DOWNLOAD_HINT
       }
       actions={
         <>

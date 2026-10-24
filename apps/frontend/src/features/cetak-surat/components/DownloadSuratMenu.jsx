@@ -4,6 +4,7 @@
 // - digital: TTD Kepala Desa + stempel desa tercetak di surat
 // - wet: area tanda tangan kosong, untuk dicetak lalu ditandatangani
 //   dan distempel basah
+// Formulir tanpa TTD Kepala Desa hanya punya satu format: tombol langsung.
 // ==========================================
 
 import '@/styles/surat-dokumen.css'
@@ -11,6 +12,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { ChevronDown, Download, PenLine, Stamp } from 'lucide-react'
 
 import { downloadSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import { isSignedByVillageHead } from '@/features/cetak-surat/utils/letterSigning'
 import { alertDialog } from '@/shared/lib/dialog'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 
@@ -121,6 +123,21 @@ export function DownloadSuratMenu({
     } finally {
       setBusy(false)
     }
+  }
+
+  if (!isSignedByVillageHead(surat)) {
+    return (
+      <button
+        type="button"
+        className={`sid-download-trigger ${variant} ${className}`}
+        disabled={disabled || busy}
+        title={title}
+        onClick={() => handleSelect('digital')}
+      >
+        <Download size={16} aria-hidden="true" />
+        <span>{busy ? 'Menyiapkan...' : 'Unduh formulir'}</span>
+      </button>
+    )
   }
 
   return (

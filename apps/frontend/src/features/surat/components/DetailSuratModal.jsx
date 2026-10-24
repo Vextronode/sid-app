@@ -24,6 +24,10 @@ import { formatDossierDateTime } from './dossier/dossierFormat'
 import { FlowTimeline } from './dossier/FlowTimeline'
 import { getLetterDetail } from '../api/letterExtrasApi'
 import { getApplicantAddress, getApplicantNik } from '../utils/letterDetails'
+import {
+  FORM_DOWNLOAD_HINT,
+  isSignedByVillageHead,
+} from '@/features/cetak-surat/utils/letterSigning'
 
 function getRejectionReason(surat) {
   return surat?.notes ?? surat?.reason ?? surat?.rejection_reason ?? 'Tidak ada catatan penolakan.'
@@ -97,7 +101,9 @@ function DetailSuratModalContent({ row, onClose }) {
       surat={surat}
       onClose={onClose}
       preview={<DocumentArea surat={surat} state={state} />}
-      hint={HINTS[state]}
+      hint={
+        state === 'approved' && !isSignedByVillageHead(surat) ? FORM_DOWNLOAD_HINT : HINTS[state]
+      }
       actions={
         <>
           <button type="button" className="sid-dossier-button-quiet" onClick={onClose}>

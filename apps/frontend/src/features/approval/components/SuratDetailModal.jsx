@@ -27,6 +27,10 @@ import { SURAT_STATUS } from '@/constants/suratStatus'
 
 import ApprovalStepRenderer from './ApprovalStepRenderer'
 import { canDecideOnLetter } from '../utils/canDecide'
+import {
+  FORM_DOWNLOAD_HINT,
+  isSignedByVillageHead,
+} from '@/features/cetak-surat/utils/letterSigning'
 
 // Peran yang hanya memantau surat di wilayahnya, tanpa memberi keputusan.
 const MONITOR_ROLES = ['rw', 'kadus']
@@ -42,15 +46,21 @@ function getRejectionReason(surat) {
 
 function getHint({ surat, canDecide, canDownload, viewerRole }) {
   if (canDecide) {
-    return surat.current_step?.is_final
+    if (!surat.current_step?.is_final) {
+      return 'Periksa surat, lalu setujui untuk meneruskan ke Kepala Desa atau tolak dengan alasan.'
+    }
+
+    return isSignedByVillageHead(surat)
       ? 'Persetujuan Anda menerbitkan surat dengan tanda tangan dan stempel desa.'
-      : 'Periksa surat, lalu setujui untuk meneruskan ke Kepala Desa atau tolak dengan alasan.'
+      : 'Persetujuan Anda menerbitkan formulir untuk instansi luar, tanpa nomor surat dan tanpa tanda tangan Kepala Desa.'
   }
 
   if (surat.status === SURAT_STATUS.APPROVED) {
-    return canDownload
+    if (!canDownload) return 'Surat sudah terbit.'
+
+    return isSignedByVillageHead(surat)
       ? 'Surat sudah terbit. Pilih format saat mengunduh: digital atau untuk tanda tangan basah.'
-      : 'Surat sudah terbit.'
+      : `Formulir sudah terbit. ${FORM_DOWNLOAD_HINT}`
   }
 
   if (surat.status === SURAT_STATUS.REJECTED) {
