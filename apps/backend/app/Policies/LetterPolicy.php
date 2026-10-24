@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\LetterDataAction;
+use App\Enums\LetterResultStage;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
@@ -112,6 +113,38 @@ class LetterPolicy
             $letter->status->value !== 'approved'
             || ! $this->isSameVillage($user, $letter)
             || ($letter->letterType?->data_action ?? LetterDataAction::None) === LetterDataAction::None
+        ) {
+            return false;
+        }
+
+        if ($user->role === 'staf_sid') {
+            return true;
+        }
+
+        return in_array($user->role, ['kasi_pemerintahan', 'kaur_tu_umum'], true)
+            && ($letter->letterType->assigned_role === null
+                || $letter->letterType->assigned_role === $user->role);
+    }
+
+    /**
+     * Pemohon mengunggah hasil dari instansi luar pada suratnya sendiri,
+     * selama belum ada unggahan yang menunggu verifikasi atau diterima.
+     */
+    public function uploadResult(User $user, Letter $letter): bool
+    {
+        return $letter->submitted_by === $user->id
+            && $letter->resultStage() === LetterResultStage::AwaitingUpload;
+    }
+
+    /**
+     * Verifikasi hasil unggahan: Kasi/Kaur yang ditugaskan pada jenis
+     * surat, atau Petugas Desa sebagai cadangan (seperti Terapkan).
+     */
+    public function reviewResult(User $user, Letter $letter): bool
+    {
+        if (
+            $letter->resultStage() !== LetterResultStage::UnderReview
+            || ! $this->isSameVillage($user, $letter)
         ) {
             return false;
         }

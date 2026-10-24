@@ -35,6 +35,10 @@ return new class extends Migration
             // desa dan tidak ditandatangani/distempel Kepala Desa.
             $table->boolean('issues_letter_number')->default(true);
             $table->boolean('signed_by_village_head')->default(true);
+            // Setelah terbit, pemohon mengunggah hasil dari instansi luar
+            // (mis. KK baru dari Disdukcapil) untuk diverifikasi Kasi/Kaur.
+            $table->boolean('requires_result_upload')->default(false);
+            $table->text('result_upload_hint')->nullable();
             $table->boolean('is_active');
             $table->timestamps();
 

@@ -13,10 +13,13 @@ class LetterAttachment extends Model
 
     public const KIND_WET_SIGNATURE = 'wet_signature';
 
+    public const KIND_RESULT = 'result';
+
     protected $fillable = [
         'letter_id',
         'kind',
         'field',
+        'letter_result_id',
         'original_name',
         'path',
         'mime_type',

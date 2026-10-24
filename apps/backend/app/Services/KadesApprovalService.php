@@ -200,6 +200,20 @@ class KadesApprovalService
     private function notifyFinalApproval(Letter $letter): void
     {
         $citizenUser = $this->officialService->resolveCitizenUser($letter);
+
+        // Formulir pelayanan: Kasi/Kaur baru dilibatkan saat hasil dari
+        // instansi diunggah (LetterResultService).
+        if ($letter->letterType?->requires_result_upload) {
+            $citizenUser?->notify(new LetterStatusNotification(
+                $letter,
+                'Formulir Disetujui',
+                'Formulir Anda telah disetujui. Unduh formulir, bawa ke instansi yang dituju, lalu unggah hasilnya di surat ini.',
+                'letter_approved_final',
+            ));
+
+            return;
+        }
+
         $citizenUser?->notify(new LetterStatusNotification(
             $letter,
             'Permohonan Disetujui',

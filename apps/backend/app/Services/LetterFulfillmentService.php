@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\LetterDataAction;
+use App\Enums\LetterResultStage;
 use App\Enums\LetterStatus;
 use App\Http\Requests\StoreCitizenRequest;
 use App\Http\Requests\UpdateCitizenRequest;
@@ -92,6 +93,12 @@ class LetterFulfillmentService
 
             if ($locked->fulfilled_at !== null) {
                 abort(409, 'Perubahan data untuk surat ini sudah diterapkan.');
+            }
+
+            // Formulir pelayanan: data baru diubah setelah hasil dari
+            // instansi (mis. KK baru) diunggah dan diterima.
+            if (! in_array($locked->resultStage(), [null, LetterResultStage::Accepted], true)) {
+                abort(409, 'Perubahan data baru dapat diterapkan setelah hasil dari instansi diverifikasi.');
             }
 
             $action = $this->actionOf($locked);

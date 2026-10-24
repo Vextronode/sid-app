@@ -35,12 +35,15 @@ class LetterType extends Model
         'supporting_template',
         'issues_letter_number',
         'signed_by_village_head',
+        'requires_result_upload',
+        'result_upload_hint',
     ];
 
     protected $attributes = [
         'category' => 'persuratan',
         'issues_letter_number' => true,
         'signed_by_village_head' => true,
+        'requires_result_upload' => false,
     ];
 
     protected $casts = [
@@ -49,6 +52,7 @@ class LetterType extends Model
         'produces_letter' => 'boolean',
         'issues_letter_number' => 'boolean',
         'signed_by_village_head' => 'boolean',
+        'requires_result_upload' => 'boolean',
         'data_action' => LetterDataAction::class,
         'form_fields' => 'array',
         'data_fields' => 'array',

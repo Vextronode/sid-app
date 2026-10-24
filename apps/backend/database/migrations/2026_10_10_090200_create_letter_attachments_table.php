@@ -14,8 +14,13 @@ return new class extends Migration
                 ->constrained('letters')
                 ->cascadeOnDelete();
             // attachment: lampiran umum; field: isian bertipe file;
-            // wet_signature: foto dokumen ber-TTD basah untuk sebuah slot.
+            // wet_signature: foto dokumen ber-TTD basah untuk sebuah slot;
+            // result: berkas hasil dari instansi luar (letter_result_id).
             $table->string('kind', 30)->default('attachment');
+            $table->foreignId('letter_result_id')
+                ->nullable()
+                ->constrained('letter_results')
+                ->cascadeOnDelete();
             $table->string('field', 100)->nullable();
             $table->string('original_name');
             $table->string('path');

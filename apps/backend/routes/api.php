@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\LetterAttachmentController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
 use App\Http\Controllers\Api\LetterFulfillmentController;
+use App\Http\Controllers\Api\LetterResultController;
 use App\Http\Controllers\Api\LetterSignatureController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\NewsCategoryController;
@@ -294,6 +295,13 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
 
         // Pemohon mengisi ulang slot tanda tangan pihak lain.
         Route::post('/{letter}/signatures/{slot}', [LetterSignatureController::class, 'store']);
+
+        // Hasil dari instansi luar setelah formulir pelayanan terbit: pemohon
+        // mengunggah (LetterPolicy::uploadResult), Kasi/Kaur yang ditugaskan
+        // atau Petugas Desa memverifikasi (LetterPolicy::reviewResult).
+        // Berkasnya dibuka lewat /{letter}/attachments/{attachment}.
+        Route::post('/{letter}/results', [LetterResultController::class, 'store']);
+        Route::patch('/{letter}/results/{result}', [LetterResultController::class, 'update']);
 
         Route::get('/{letter}/fulfillment', [LetterFulfillmentController::class, 'show']);
         Route::post('/{letter}/fulfillment', [LetterFulfillmentController::class, 'store']);

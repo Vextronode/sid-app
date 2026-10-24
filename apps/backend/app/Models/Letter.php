@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\LetterResultStage;
 use App\Enums\LetterStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Letter extends Model
 {
@@ -107,6 +109,43 @@ class Letter extends Model
     public function signatures(): HasMany
     {
         return $this->hasMany(LetterSignature::class);
+    }
+
+    /** @return HasMany<LetterResult, $this> */
+    public function results(): HasMany
+    {
+        return $this->hasMany(LetterResult::class)->orderBy('id');
+    }
+
+    /** @return HasOne<LetterResult, $this> */
+    public function latestResult(): HasOne
+    {
+        return $this->hasOne(LetterResult::class)->latestOfMany('id');
+    }
+
+    /**
+     * Tahap unggah hasil dari instansi luar; null bila jenis suratnya tidak
+     * mewajibkan unggah hasil atau surat belum terbit.
+     */
+    public function resultStage(): ?LetterResultStage
+    {
+        if ($this->status !== LetterStatus::Approved) {
+            return null;
+        }
+
+        $this->loadMissing('letterType');
+
+        if (! $this->letterType?->requires_result_upload) {
+            return null;
+        }
+
+        $this->loadMissing('latestResult');
+
+        return match ($this->latestResult?->status) {
+            LetterResult::STATUS_SUBMITTED => LetterResultStage::UnderReview,
+            LetterResult::STATUS_ACCEPTED => LetterResultStage::Accepted,
+            default => LetterResultStage::AwaitingUpload,
+        };
     }
 
     /**
