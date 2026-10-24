@@ -48,6 +48,7 @@ class LetterTypeSeeder extends Seeder
                     array_merge([
                         'category' => LetterTypeCategory::Persuratan->value,
                         'requirement_info' => null,
+                        'documents' => null,
                         'classification_code' => '470',
                         'produces_letter' => true,
                         'data_action' => 'none',

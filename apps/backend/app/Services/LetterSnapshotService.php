@@ -121,7 +121,9 @@ class LetterSnapshotService
 
         return [
             'captured_at' => now()->toIso8601String(),
+            'title' => $letter->letterType?->name,
             'template' => $letter->letterType?->template,
+            'documents' => $letter->letterType?->documents ?? [],
             'supporting_template' => $letter->letterType?->supporting_template,
             'submitted_at' => $submittedAt->translatedFormat('d F Y'),
             // Tanggal surat = tanggal persetujuan akhir.

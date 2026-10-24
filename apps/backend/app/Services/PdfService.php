@@ -7,6 +7,7 @@ use App\Models\Letter;
 use App\Models\User;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
+use App\Support\LetterDocuments;
 use App\Support\LetterValueFormatter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
@@ -32,7 +33,8 @@ class PdfService
     public function download(
         Letter $letter,
         User $user,
-        string $template = 'wet'
+        string $template = 'wet',
+        ?string $document = null,
     ): Response {
 
         $letter = $this->letterRepository->loadForPdf($letter);
@@ -48,13 +50,16 @@ class PdfService
 
         $this->abortIfExpiredForApplicant($letter, $user);
 
-        return $this->buildPdf($letter, $template, true)->download("surat-{$letter->id}.pdf");
+        [$pdf, $filename] = $this->buildPdf($letter, $template, true, $document);
+
+        return $pdf->download($filename);
     }
 
     public function preview(
         Letter $letter,
         User $user,
-        string $template = 'wet'
+        string $template = 'wet',
+        ?string $document = null,
     ): Response {
 
         $letter = $this->letterRepository->loadForPdf($letter);
@@ -67,7 +72,9 @@ class PdfService
         // tanpa pengesahan.
         $sealed = $letter->status === LetterStatus::Approved && $user->can('download', $letter);
 
-        return $this->buildPdf($letter, $template, $sealed)->stream("surat-{$letter->id}.pdf");
+        [$pdf, $filename] = $this->buildPdf($letter, $template, $sealed, $document);
+
+        return $pdf->stream($filename);
     }
 
     /**
@@ -105,7 +112,10 @@ class PdfService
         }
     }
 
-    private function buildPdf(Letter $letter, string $template, bool $sealed): \Barryvdh\DomPDF\PDF
+    /**
+     * @return array{0: \Barryvdh\DomPDF\PDF, 1: string} PDF dan nama berkasnya
+     */
+    private function buildPdf(Letter $letter, string $template, bool $sealed, ?string $documentKey): array
     {
         // Surat approved dirender dari snapshot final approve; tanda tangan
         // dan stempel milik Kepala Desa yang menjabat saat itu, termasuk
@@ -122,11 +132,39 @@ class PdfService
             default => 'pdf.templates.wet',
         };
 
-        return Pdf::loadView($view, [
+        $document = $this->documentFor($letter, $context, $documentKey);
+        $filename = $document['key'] === LetterDocuments::MAIN
+            ? "surat-{$letter->id}.pdf"
+            : "surat-{$letter->id}-{$document['key']}.pdf";
+
+        $pdf = Pdf::loadView($view, [
             'letter' => $letter,
             'kades' => $kades,
-            'template' => $this->renderTemplate($letter, $context, $template, $sealed),
+            'template' => $this->renderTemplate($letter, $context, $template, $sealed, (string) $document['template']),
         ]);
+
+        return [$pdf, $filename];
+    }
+
+    /**
+     * Dokumen yang diminta harus termasuk dokumen yang terbit untuk surat
+     * ini (syaratnya terpenuhi oleh jawaban form). Snapshot lama belum
+     * menyimpan daftar dokumen, jadi memakai definisi jenis surat.
+     *
+     * @param  array<string, mixed>  $context
+     * @return array{key: string, title: string, template: string|null}
+     */
+    private function documentFor(Letter $letter, array $context, ?string $key): array
+    {
+        $documents = LetterDocuments::applicable(
+            (string) ($context['title'] ?? $letter->letterType?->name),
+            $context['template'] ?? null,
+            $context['documents'] ?? $letter->letterType?->documents,
+            is_array($letter->payload) ? $letter->payload : [],
+        );
+
+        return LetterDocuments::find($documents, $key)
+            ?? abort(404, 'Dokumen ini tidak terbit untuk surat ini.');
     }
 
     /**

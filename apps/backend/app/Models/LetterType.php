@@ -19,6 +19,7 @@ class LetterType extends Model
         'description',
         'category',
         'template',
+        'documents',
         'requirement_info',
         'flow_id',
         'assigned_role',
@@ -52,6 +53,7 @@ class LetterType extends Model
         'form_fields' => 'array',
         'data_fields' => 'array',
         'signature_slots' => 'array',
+        'documents' => 'array',
     ];
 
     public function flow(): BelongsTo

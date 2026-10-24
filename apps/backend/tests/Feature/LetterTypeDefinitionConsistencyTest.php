@@ -44,7 +44,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
         $unsourced = [];
 
         foreach (LetterType::query()->orderBy('code')->get() as $letterType) {
-            preg_match_all('/\{\{\s*([a-zA-Z0-9_]+)\s*}}/', (string) $letterType->template, $matches);
+            preg_match_all('/\{\{\s*([a-zA-Z0-9_]+)\s*}}/', $this->templatesOf($letterType), $matches);
             $missing = array_values(array_unique(array_diff($matches[1], $this->sourcesFor($letterType))));
             sort($missing);
 
@@ -72,7 +72,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             ];
 
             foreach ((new LetterFormSchema($letterType))->valueFieldNames() as $name) {
-                if (! str_contains((string) $letterType->template, "{{ {$name}") && ! in_array($name, $dataSources, true)) {
+                if (! str_contains($this->templatesOf($letterType), "{{ {$name}") && ! in_array($name, $dataSources, true)) {
                     $unused[$letterType->code][] = $name;
                 }
             }
@@ -114,6 +114,17 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             ['A03' => '510'],
             $letterTypes->where('classification_code', '!=', '470')->pluck('classification_code', 'code')->all(),
         );
+    }
+
+    /**
+     * Template dokumen utama beserta dokumen yang terbit bersama.
+     */
+    private function templatesOf(LetterType $letterType): string
+    {
+        return implode(PHP_EOL, [
+            (string) $letterType->template,
+            ...array_map(fn (array $document): string => (string) ($document['template'] ?? ''), $letterType->documents ?? []),
+        ]);
     }
 
     /**

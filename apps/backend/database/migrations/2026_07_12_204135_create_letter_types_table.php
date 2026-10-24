@@ -22,6 +22,9 @@ return new class extends Migration
             // Persuratan Desa / Pelayanan Desa (App\Enums\LetterTypeCategory).
             $table->string('category', 20)->default('persuratan');
             $table->text('template')->nullable();
+            // Dokumen yang terbit bersama dokumen utama: [{key, title, template, when?}]
+            // (App\Support\LetterDocuments).
+            $table->json('documents')->nullable();
             $table->enum('verification_type', ['manual', 'auto', 'document']);
             $table->text('requirement_info')->nullable();
             $table->enum('assigned_role', ['kasi_pemerintahan', 'kaur_tu_umum'])->nullable();

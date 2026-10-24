@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\LetterDocuments;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -75,6 +76,20 @@ class LetterResource extends JsonResource
                 $this->relationLoaded('signatures'),
                 fn () => LetterSignatureResource::collection(
                     $this->signatures->sortBy('id')->keyBy('slot_key')->values()
+                )
+            ),
+            // Dokumen yang terbit untuk surat ini (utama + yang terbit bersama
+            // sesuai jawaban form); diunduh/dipratinjau lewat ?document=key.
+            'documents' => $this->when(
+                $this->relationLoaded('letterType') && $this->letterType,
+                fn () => array_map(
+                    fn (array $document): array => ['key' => $document['key'], 'title' => $document['title']],
+                    LetterDocuments::applicable(
+                        (string) ($this->snapshot['title'] ?? $this->letterType->name),
+                        null,
+                        $this->snapshot['documents'] ?? $this->letterType->documents,
+                        is_array($this->payload) ? $this->payload : [],
+                    ),
                 )
             ),
             'has_supporting_document' => $this->when(
