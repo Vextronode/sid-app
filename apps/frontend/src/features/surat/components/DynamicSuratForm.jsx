@@ -7,6 +7,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getSuratSchema, signerFieldNames } from '../validation/suratSchema'
 import { buildLetterFormData } from '../utils/letterFormData'
 import { getMySignature } from '../api/signatureApi'
+import { getOccupations } from '@/features/pekerjaan/api'
 
 import { CheckCircle2 } from 'lucide-react'
 
@@ -14,6 +15,7 @@ import { useSubmitSurat } from '../hooks/useSubmitSurat'
 
 import { AutoFillProfile } from './AutoFillProfile'
 import { FileUploader } from './FileUploader'
+import { OccupationField } from './OccupationField'
 
 const WET_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png'
 
@@ -55,6 +57,9 @@ export function DynamicSuratForm({
   const applicantSlots = signatureSlots.filter((slot) => slot.signer === 'applicant')
   const otherSlots = signatureSlots.filter((slot) => slot.signer === 'other')
   const needsOwnSignature = applicantSlots.length > 0
+  const needsOccupations = config.fields.some((field) => field.type === 'occupation')
+  const [occupations, setOccupations] = useState([])
+  const [occupationsFailed, setOccupationsFailed] = useState(false)
 
   const {
     register,
@@ -94,6 +99,24 @@ export function DynamicSuratForm({
       active = false
     }
   }, [needsOwnSignature])
+
+  useEffect(() => {
+    if (!needsOccupations) return undefined
+
+    let active = true
+
+    getOccupations()
+      .then((response) => {
+        if (active) setOccupations(response.data?.data ?? [])
+      })
+      .catch(() => {
+        if (active) setOccupationsFailed(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [needsOccupations])
 
   const handleFileChange = (e, name, multiple = true) => {
     const files = Array.from(e.target.files || [])
@@ -280,6 +303,19 @@ export function DynamicSuratForm({
                   </select>
                 )}
 
+                {field.type === 'occupation' && (
+                  <OccupationField
+                    field={field}
+                    register={register}
+                    setValue={setValue}
+                    value={watchedFormData?.[field.name]}
+                    occupations={occupations}
+                    loadFailed={occupationsFailed}
+                    errors={errors}
+                    renderError={renderError}
+                  />
+                )}
+
                 {field.type === 'file' && (
                   <FileUploader
                     field={field}
@@ -289,7 +325,7 @@ export function DynamicSuratForm({
                   />
                 )}
 
-                {renderError(field.name)}
+                {field.type !== 'occupation' && renderError(field.name)}
               </div>
             )
           })}

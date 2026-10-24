@@ -35,6 +35,14 @@ const numberText = (label, required) =>
 
 const optionalFiles = z.array(z.instanceof(File)).optional().default([])
 
+// Nilai isian pekerjaan bila pemohon memilih "Lainnya"; teksnya diisi di
+// isian pendamping <nama>_lainnya (LetterFormSchema::OTHER_OCCUPATION).
+export const OTHER_OCCUPATION = 'lainnya'
+
+export function otherOccupationFieldName(name) {
+  return `${name}_lainnya`
+}
+
 function fieldSchema(field) {
   const { label, required } = field
 
@@ -49,6 +57,8 @@ function fieldSchema(field) {
       return required ? requiredNik(label) : optionalNik(label)
     case 'number':
       return required ? numberText(label, true) : numberText(label, false).optional()
+    case 'occupation':
+      return required ? z.string().trim().min(1, `${label} wajib dipilih`) : optionalText
     default:
       return required ? requiredText(label) : optionalText
   }
@@ -74,8 +84,18 @@ export function signerFieldNames(slotKey) {
 export function getSuratSchema(config) {
   const shape = {}
 
+  const occupationFields = (config?.fields ?? []).filter((field) => field.type === 'occupation')
+
   ;(config?.fields ?? []).forEach((field) => {
     shape[field.name] = fieldSchema(field)
+  })
+
+  occupationFields.forEach((field) => {
+    shape[otherOccupationFieldName(field.name)] = z
+      .string()
+      .trim()
+      .max(100, `${field.label} maksimal 100 karakter`)
+      .optional()
   })
 
   const otherSlots = (config?.signatureSlots ?? []).filter((slot) => slot.signer === 'other')
@@ -90,6 +110,18 @@ export function getSuratSchema(config) {
   })
 
   return z.object(shape).superRefine((values, context) => {
+    occupationFields.forEach((field) => {
+      const otherName = otherOccupationFieldName(field.name)
+
+      if (values[field.name] === OTHER_OCCUPATION && !values[otherName]) {
+        context.addIssue({
+          code: 'custom',
+          path: [otherName],
+          message: `Tuliskan ${field.label.toLowerCase()}`,
+        })
+      }
+    })
+
     otherSlots.forEach((slot) => {
       const names = signerFieldNames(slot.key)
 

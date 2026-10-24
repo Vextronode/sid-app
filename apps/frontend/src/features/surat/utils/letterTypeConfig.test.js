@@ -181,3 +181,53 @@ describe('buildLetterFormData', () => {
     expect(formData.has('signers[saksi][nik]')).toBe(false)
   })
 })
+
+describe('occupation field', () => {
+  const occupationConfig = getLetterTypeFormConfig({
+    id: 21,
+    code: 'A11',
+    name: 'Surat Keterangan Ahli Waris',
+    form_fields: [
+      {
+        name: 'pekerjaan_almarhum',
+        label: 'Pekerjaan Almarhum',
+        type: 'occupation',
+        required: true,
+      },
+    ],
+  })
+  const schema = getSuratSchema(occupationConfig)
+
+  it('requires a choice and the other text only when "Lainnya" is picked', () => {
+    expect(schema.safeParse({ pekerjaan_almarhum: '' }).success).toBe(false)
+    expect(schema.safeParse({ pekerjaan_almarhum: '3' }).success).toBe(true)
+
+    const missingOther = schema.safeParse({
+      pekerjaan_almarhum: 'lainnya',
+      pekerjaan_almarhum_lainnya: ' ',
+    })
+    expect(missingOther.success).toBe(false)
+    expect(missingOther.error.issues[0].path).toEqual(['pekerjaan_almarhum_lainnya'])
+
+    expect(
+      schema.safeParse({ pekerjaan_almarhum: 'lainnya', pekerjaan_almarhum_lainnya: 'Nelayan' })
+        .success,
+    ).toBe(true)
+  })
+
+  it('sends the other text only for "Lainnya"', () => {
+    const fromCatalog = buildLetterFormData(occupationConfig, 21, {
+      pekerjaan_almarhum: '3',
+      pekerjaan_almarhum_lainnya: 'sisa ketikan',
+    })
+    expect(fromCatalog.get('payload[pekerjaan_almarhum]')).toBe('3')
+    expect(fromCatalog.has('payload[pekerjaan_almarhum_lainnya]')).toBe(false)
+
+    const other = buildLetterFormData(occupationConfig, 21, {
+      pekerjaan_almarhum: 'lainnya',
+      pekerjaan_almarhum_lainnya: 'nelayan',
+    })
+    expect(other.get('payload[pekerjaan_almarhum]')).toBe('lainnya')
+    expect(other.get('payload[pekerjaan_almarhum_lainnya]')).toBe('nelayan')
+  })
+})

@@ -1,4 +1,8 @@
-import { signerFieldNames } from '../validation/suratSchema'
+import {
+  OTHER_OCCUPATION,
+  otherOccupationFieldName,
+  signerFieldNames,
+} from '../validation/suratSchema'
 
 /**
  * Menyusun FormData untuk POST /api/letters dari nilai form.
@@ -23,6 +27,13 @@ export function buildLetterFormData(config, letterTypeId, formData) {
 
     if (value !== undefined && value !== null && value !== '') {
       payload.append(`payload[${field.name}]`, value)
+    }
+
+    // Teks "Lainnya" hanya dikirim bila pilihan pekerjaannya memang Lainnya.
+    if (field.type === 'occupation' && value === OTHER_OCCUPATION) {
+      const otherName = otherOccupationFieldName(field.name)
+
+      payload.append(`payload[${otherName}]`, formData[otherName] ?? '')
     }
   })
 
