@@ -13,6 +13,7 @@ use App\Policies\LetterPolicy;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\LetterTypeRepository;
+use App\Support\LetterFormSchema;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -93,7 +94,8 @@ class LetterService
             // surat memerlukannya, ia menjadi isian di payload.
             'purpose' => null,
 
-            'payload' => $data['payload'] ?? null,
+            // Isian pekerjaan disimpan sebagai nama siap cetak.
+            'payload' => (new LetterFormSchema($letterType))->resolveOccupations($data['payload'] ?? null),
 
             'notes' => null,
 

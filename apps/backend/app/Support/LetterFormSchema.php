@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\LetterType;
+use App\Models\Occupation;
 use Illuminate\Validation\Rule;
 
 /**
@@ -12,14 +13,23 @@ use Illuminate\Validation\Rule;
  */
 class LetterFormSchema
 {
-    public const FIELD_TYPES = ['text', 'textarea', 'date', 'number', 'nik', 'select', 'file'];
+    public const FIELD_TYPES = ['text', 'textarea', 'date', 'number', 'nik', 'select', 'file', 'occupation'];
+
+    /**
+     * Nilai isian pekerjaan bila pemohon memilih "Lainnya"; teksnya dikirim
+     * di isian pendamping <nama>_lainnya.
+     */
+    public const OTHER_OCCUPATION = 'lainnya';
 
     /** @var array<int, array<string, mixed>>|null */
     private ?array $fields;
 
+    private ?string $villageId;
+
     public function __construct(?LetterType $letterType)
     {
         $this->fields = $letterType?->form_fields;
+        $this->villageId = $letterType?->village_id;
     }
 
     /**
@@ -68,11 +78,63 @@ class LetterFormSchema
     }
 
     /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function occupationFields(): array
+    {
+        return array_values(array_filter(
+            $this->fields ?? [],
+            fn (array $field): bool => ($field['type'] ?? 'text') === 'occupation',
+        ));
+    }
+
+    /**
      * @return array<int, string>
      */
     public function valueFieldNames(): array
     {
         return array_column($this->valueFields(), 'name');
+    }
+
+    /**
+     * Isian pekerjaan disimpan sebagai teks siap cetak: id katalog diganti
+     * nama pekerjaannya, teks "Lainnya" dirapikan. Teks ini hanya untuk
+     * surat; katalog dan data warga tidak berubah.
+     *
+     * @param  array<string, mixed>|null  $payload  payload yang sudah tervalidasi
+     * @return array<string, mixed>|null
+     */
+    public function resolveOccupations(?array $payload): ?array
+    {
+        $fields = $this->occupationFields();
+
+        if ($payload === null || $fields === []) {
+            return $payload;
+        }
+
+        $catalog = Occupation::query()
+            ->where('village_id', $this->villageId)
+            ->where('is_active', true)
+            ->pluck('name', 'id')
+            ->all();
+
+        foreach ($fields as $field) {
+            $name = $field['name'];
+            $other = $payload["{$name}_lainnya"] ?? null;
+            unset($payload["{$name}_lainnya"]);
+
+            $value = $payload[$name] ?? null;
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $payload[$name] = (string) $value === self::OTHER_OCCUPATION
+                ? OccupationName::normalize((string) $other, array_values($catalog))
+                : $catalog[(int) $value];
+        }
+
+        return $payload;
     }
 
     /**
@@ -87,7 +149,10 @@ class LetterFormSchema
             ];
         }
 
-        $allowed = $this->valueFieldNames();
+        $allowed = [
+            ...$this->valueFieldNames(),
+            ...array_map(fn (array $field): string => "{$field['name']}_lainnya", $this->occupationFields()),
+        ];
         $rules = [
             'payload' => [
                 $this->hasRequiredValueField() ? 'required' : 'nullable',
@@ -109,6 +174,34 @@ class LetterFormSchema
             ];
         }
 
+        foreach ($this->occupationFields() as $field) {
+            $rules["payload.{$field['name']}"] = [
+                ($field['required'] ?? false) ? 'required' : 'nullable',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ((string) $value === self::OTHER_OCCUPATION) {
+                        return;
+                    }
+
+                    $exists = ctype_digit((string) $value) && Occupation::query()
+                        ->where('village_id', $this->villageId)
+                        ->where('is_active', true)
+                        ->whereKey((int) $value)
+                        ->exists();
+
+                    if (! $exists) {
+                        $fail(':attribute tidak ada di daftar pekerjaan.');
+                    }
+                },
+            ];
+            $rules["payload.{$field['name']}_lainnya"] = [
+                "required_if:payload.{$field['name']},".self::OTHER_OCCUPATION,
+                'nullable',
+                'string',
+                'max:100',
+            ];
+        }
+
         return $rules;
     }
 
@@ -122,6 +215,10 @@ class LetterFormSchema
         foreach ($this->fields ?? [] as $field) {
             $labels["payload.{$field['name']}"] = $field['label'] ?? $field['name'];
             $labels["files.{$field['name']}"] = $field['label'] ?? $field['name'];
+        }
+
+        foreach ($this->occupationFields() as $field) {
+            $labels["payload.{$field['name']}_lainnya"] = ($field['label'] ?? $field['name']).' (Lainnya)';
         }
 
         return $labels;
