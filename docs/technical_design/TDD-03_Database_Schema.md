@@ -335,6 +335,8 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 | produces_letter | BOOLEAN | DEFAULT true | Penanda menerbitkan surat; belum dipakai logika backend |
 | issues_letter_number | BOOLEAN | DEFAULT true | false = tidak diberi `letter_number` saat final approve (formulir Pelayanan Desa) |
 | signed_by_village_head | BOOLEAN | DEFAULT true | false = tanpa TTD/stempel Kepala Desa; snapshot tanpa penanda tangan dan render tidak butuh Kepala Desa aktif |
+| requires_result_upload | BOOLEAN | DEFAULT false | true = setelah terbit, pemohon mengunggah hasil dari instansi luar untuk diverifikasi (`letter_results`); Terapkan baru setelah diterima |
+| result_upload_hint | TEXT | NULL | Berkas yang diminta, mis. "KK terbaru dari Disdukcapil" |
 | data_action | VARCHAR(30) | DEFAULT 'none' | `none` \| `update_citizen` \| `create_citizen` (enum aplikasi `LetterDataAction`) |
 | form_fields | JSON | NULL | Daftar isian `{name, label, type, required, placeholder?, options?, accept?}`; type: text, textarea, date, number, nik, select, file, occupation (id katalog `occupations` atau `lainnya` + `<name>_lainnya`; disimpan sebagai nama pekerjaan siap cetak). NULL = isian bebas (teks); array = hanya isian terdaftar |
 | data_fields | JSON | NULL | Kolom `citizens` yang boleh diubah lewat Terapkan: `{column, label, source?, value?, value_label?}` |
@@ -465,7 +467,8 @@ Berkas surat di disk privat `private_uploads` (`letter-attachments/{village_id}/
 |---|---|---|---|
 | id | BIGINT | PK | |
 | letter_id | UUID | FK → letters.id, ON DELETE CASCADE | |
-| kind | VARCHAR(30) | DEFAULT 'attachment' | `field` (isian bertipe file), `wet_signature` (foto dokumen ber-TTD basah), `attachment` (lampiran umum) |
+| kind | VARCHAR(30) | DEFAULT 'attachment' | `field` (isian bertipe file), `wet_signature` (foto dokumen ber-TTD basah), `result` (hasil dari instansi luar), `attachment` (lampiran umum) |
+| letter_result_id | BIGINT | FK → letter_results.id, NULL, ON DELETE CASCADE | Unggahan hasil pemilik berkas (`kind = result`) |
 | field | VARCHAR(100) | NULL | Nama isian atau `slot_key` |
 | original_name | VARCHAR(255) | NOT NULL | |
 | path | VARCHAR(255) | NOT NULL | |
@@ -475,6 +478,23 @@ Berkas surat di disk privat `private_uploads` (`letter-attachments/{village_id}/
 | created_at, updated_at | TIMESTAMP | NULL | |
 
 Index `idx_attachments_letter_kind (letter_id, kind)`.
+
+**Tabel: letter_results**
+
+Unggahan hasil dari instansi luar (mis. KK baru dari Disdukcapil) untuk jenis surat `requires_result_upload = true`, setelah surat approved. Satu baris per unggahan; yang ditolak tetap sebagai riwayat. Berkasnya di `letter_attachments` (`kind = result`).
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | BIGINT | PK | |
+| letter_id | UUID | FK → letters.id, ON DELETE CASCADE | |
+| status | VARCHAR(20) | DEFAULT 'submitted' | `submitted` (menunggu verifikasi) \| `accepted` \| `rejected` |
+| submitted_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | Pemohon |
+| reviewed_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | Kasi/Kaur/Petugas Desa |
+| reviewed_at | TIMESTAMP | NULL | |
+| review_notes | TEXT | NULL | Wajib bila ditolak |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+Index `idx_letter_results_letter (letter_id, id)`. Tahap surat diturunkan dari unggahan terakhir (`Letter::resultStage()`): tidak ada / `rejected` → `awaiting_upload`, `submitted` → `under_review`, `accepted` → `accepted`.
 
 **Tabel: user_signatures**
 
@@ -712,7 +732,7 @@ Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 29 tabel dom
 
 ## 3. Ringkasan Tabel
 
-Ada **31 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **34 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
+Ada **32 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **35 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
 
 ```
 Wilayah (4): villages, hamlets, rws, rts
@@ -720,8 +740,8 @@ Pengguna & Jabatan (4): users, citizens, officials, official_position_types
 Data Keluarga & Sosio-Ekonomi (2): families, family_socioeconomics
 Organisasi Non-Struktural (2): village_org_positions, village_org_members
 Alur Approval (2): approval_flows, flow_steps
-Surat (6): letter_types, letters, letter_approvals, letter_status_logs,
-           letter_attachments, letter_signatures
+Surat (7): letter_types, letters, letter_approvals, letter_status_logs,
+           letter_attachments, letter_signatures, letter_results
 Tanda Tangan Akun (2): user_signatures, signature_blocks
 Konfigurasi (1): approval_settings
 Konten & Komunikasi (7): notifications, news, news_categories,
@@ -729,7 +749,7 @@ Konten & Komunikasi (7): notifications, news, news_categories,
                          announcements, village_info_pages
 Referensi (1): occupations
 
-Total domain inti: 4 + 4 + 2 + 2 + 2 + 6 + 2 + 1 + 7 + 1 = 31 tabel
+Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 2 + 1 + 7 + 1 = 32 tabel
 Operasional: letter_number_counters, activity_log, push_subscriptions (3 tabel)
 Total aplikasi non-framework: 32 tabel
 Di-drop: letter_categories (v5.3)

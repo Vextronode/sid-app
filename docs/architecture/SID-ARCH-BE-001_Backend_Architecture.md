@@ -110,6 +110,7 @@ Konfigurasi tiap jenis surat adalah data, bukan kode:
 | `supporting_template` | Template dokumen pendukung (mis. surat pernyataan) |
 | `documents` (JSON) | Dokumen yang terbit bersama dokumen utama `[{key, title, template, when?}]`; `when` dievaluasi `FieldCondition` terhadap jawaban form, daftar dihitung `LetterDocuments`, diunduh/dipratinjau lewat `?document={key}`, dan dibekukan di snapshot |
 | `produces_letter` | Penanda; saat ini hanya dikirim ke frontend |
+| `requires_result_upload`, `result_upload_hint` | Formulir pelayanan bersambung setelah terbit: pemohon mengunggah hasil dari instansi (`POST /letters/{id}/results`), Kasi/Kaur memverifikasi (`PATCH /letters/{id}/results/{result}`); `LetterResultService`, tahap `Letter::resultStage()`. Terapkan menunggu hasil diterima |
 | `issues_letter_number`, `signed_by_village_head` | `false` untuk formulir instansi luar (Pelayanan Desa): tanpa nomor surat desa, tanpa TTD/stempel Kepala Desa, render tidak butuh Kepala Desa aktif |
 | `assigned_role` | Kasi/Kaur yang mengakses surat selesai dan menjalankan Terapkan; NULL = keduanya |
 | `validity_days`, `is_active` | Satu-satunya yang dapat diubah Petugas Desa (`PUT /letter-types/{id}`) bersama `assigned_role` |

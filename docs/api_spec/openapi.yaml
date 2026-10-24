@@ -254,6 +254,10 @@ paths:
     $ref: 'paths/letters/supporting-document.yaml'
   /letters/{letter}/signatures/{slot}:
     $ref: 'paths/letters/signature-slot.yaml'
+  /letters/{letter}/results:
+    $ref: 'paths/letters/results.yaml'
+  /letters/{letter}/results/{result}:
+    $ref: 'paths/letters/result-review.yaml'
   /letters/{letter}/fulfillment:
     $ref: 'paths/letters/fulfillment.yaml'
   /rt/letters/{letter}/decision:
