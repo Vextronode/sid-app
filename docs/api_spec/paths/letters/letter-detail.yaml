@@ -7,7 +7,7 @@ get:
     - rt: surat warga di RT-nya;
     - rw / kadus: surat di wilayahnya yang sudah di-approve RT;
     - staf_sid: surat di desanya;
-    - kasi_pelayanan / kaur_tu_umum: surat approved di desanya sesuai assigned_role;
+    - kasi_pemerintahan / kaur_tu_umum: surat approved di desanya sesuai assigned_role;
     - kepala_desa / sekretaris_desa: surat di desanya yang sudah di-approve RT
       atau step aktifnya bukan RT.
     Memuat approvals, status_logs, attachments, signatures (keadaan terkini
@@ -80,7 +80,7 @@ delete:
   summary: Hapus surat
   description: |
     LetterPolicy::delete: pemohon dapat menghapus suratnya sendiri (status
-    apa pun); kepala_desa, sekretaris_desa, kasi_pelayanan, kaur_tu_umum, dan
+    apa pun); kepala_desa, sekretaris_desa, kasi_pemerintahan, kaur_tu_umum, dan
     staf_sid dapat menghapus surat di desanya. Folder lampiran surat di
     disk privat ikut dihapus.
   operationId: deleteLetter

@@ -1,7 +1,7 @@
 '==================================================================================
 ' SECTION: USE CASE DIAGRAM
 ' FILE: 09_UC_KasiKaur_v6.puml
-' JUDUL: Use Case - Kasi Pelayanan & Kaur TU & Umum
+' JUDUL: Use Case - Kasi Pemerintahan & Kaur TU & Umum
 ' SUMBER: TDD-02 v5.3 (UC-04d/05/06/08/09/15/26) + routes (2026-10-16)
 ' CATATAN: Menggantikan 09_UC_KasiKaur_v5.puml. Tambah: Terapkan perubahan data,
 '          baca daftar warga, Surat Saya.
@@ -20,9 +20,9 @@ skinparam actor {
   BackgroundColor #D6E4F7
   BorderColor #1F3864
 }
-title Use Case Diagram - Kasi Pelayanan & Kaur TU & Umum [v6]
+title Use Case Diagram - Kasi Pemerintahan & Kaur TU & Umum [v6]
 
-actor "Kasi Pelayanan" as KASI
+actor "Kasi Pemerintahan" as KASI
 actor "Kaur TU & Umum" as KAUR
 
 rectangle "SIDUTama" {

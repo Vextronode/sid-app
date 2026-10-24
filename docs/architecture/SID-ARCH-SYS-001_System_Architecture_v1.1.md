@@ -72,7 +72,7 @@ Tier hanyalah label navigasi/guard frontend di atas `users.role` (9 nilai).
 |---|---|---|---|
 | 1 | Superadmin | *(belum ada)* | Tidak diimplementasikan |
 | 2 | Admin Desa / Eksekutif | `staf_sid`, `kepala_desa`, `sekretaris_desa` | Petugas Desa (`staf_sid`, tampil "Staf {nama aplikasi}", satu per desa, diganti lewat rotasi) = operator penuh desanya (CMS, kependudukan, jabatan, konfigurasi, semua surat). Kades/Sekdes = approver final tanpa akses CMS |
-| 3 | Staff Desa | `kasi_pelayanan`, `kaur_tu_umum` | Notifikasi & akses surat selesai sesuai `assigned_role`, menerapkan aksi data, membaca daftar warga; bukan approver |
+| 3 | Staff Desa | `kasi_pemerintahan`, `kaur_tu_umum` | Notifikasi & akses surat selesai sesuai `assigned_role`, menerapkan aksi data, membaca daftar warga; bukan approver |
 | 4 | RT/RW/Kadus | `rt`, `rw`, `kadus` | RT approver wilayah; RW & Kadus hanya FYI read-only |
 | 5 | Warga | `warga` | Ajukan surat, TTD pribadi, setujui/tolak permintaan TTD, unduh surat sendiri |
 

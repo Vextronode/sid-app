@@ -70,7 +70,7 @@ Fokus utama MVP adalah fitur inti yang membentuk alur kerja administrasi surat.
     - Kelola jenis jabatan desa tanpa akun, kategori berita, identitas & tampilan desa (logo, foto beranda, kop surat), reset tanda tangan akun
   - RW: daftar surat yang lewat FYI (read-only — RW bukan approver)
   - Kepala Desa / Sekretaris Desa: daftar surat di step aktif `kepala_desa` dengan status `pending`/`in_progress`; keduanya dapat memutuskan dengan first-action-wins
-  - Kasi Pelayanan / Kaur TU & Umum: daftar surat yang sudah `approved` sesuai `assigned_role`; unduh dan Terapkan perubahan data, membaca daftar warga; bukan approver
+  - Kasi Pemerintahan / Kaur TU & Umum: daftar surat yang sudah `approved` sesuai `assigned_role`; unduh dan Terapkan perubahan data, membaca daftar warga; bukan approver
 - Halaman Publik (beranda dengan statistik terhitung, profil desa dengan perangkat desa, berita berkategori, info surat, peraturan desa, hubungi kami), di-cache per desa
 - Registrasi Akun Warga (self-service, validasi NIK + tanggal lahir terhadap data kependudukan desa)
 - Sistem Notifikasi in-app (database) dan **Web Push** (PWA) dengan chain approval dinamis; penandaan overdue berdasarkan deadline aktif; pengingat approval terjadwal `reminder_hours` sebelum deadline. Notifikasi email status surat: **Belum diimplementasi** (lihat audit docs)
@@ -102,7 +102,7 @@ Sistem mendefinisikan sembilan role dengan hak akses yang berbeda. Seluruh role 
 | Petugas Desa / Staf aplikasi (kode role `staf_sid`, tampil "Staf {nama aplikasi}", mis. Staf SIDUTama) | 1. Login dengan username<br>2. CRUD data warga (citizens) manual + excel, KK, sosio-ekonomi, katalog pekerjaan<br>3. Promote/demote/rotate jabatan (berakun maupun tanpa akun; foto wajib, dapat diganti/dihapus), cari calon via NIK, kelola jenis jabatan tanpa akun<br>4. Reset password sementara, reset tanda tangan akun, serta ganti/hapus foto profil akun warga di desanya<br>5. Kelola profil desa (identitas, kop surat, logo, foto beranda, stempel), berita & kategori berita<br>6. Kelola struktur wilayah, setting deadline, peraturan, organisasi desa; ubah masa berlaku/penugasan/status jenis surat; lihat flow (read-only)<br>7. Hanya satu akun aktif per desa; diganti lewat rotasi (boleh oleh dirinya sendiri, lalu ia kembali menjadi warga). Tampil di grup staf Profil Desa publik<br>8. Full visibility seluruh surat di desanya; cadangan Terapkan perubahan data; notifikasi saat surat tertahan karena RT kosong | ✅ MVP |
 | Kepala Desa | 1. Login<br>2. Approver aktif pada tahap final; resolve berbasis posisi dalam desanya<br>3. Dashboard surat menunggu keputusan, kecuali surat yang diajukan sendiri<br>4. TTD PDF berasal dari Kepala Desa aktif; stempel PDF dari profil desa | ✅ MVP |
 | Sekretaris Desa | 1. Login<br>2. Dapat memutuskan tahap final yang sama dengan Kepala Desa (first-action-wins)<br>3. Dashboard seperti Kades, tanpa surat miliknya sendiri<br>4. `approval_level` mencatat aktor sebenarnya (`sekretaris_desa`) | ✅ MVP |
-| Kasi Pelayanan | 1. Login<br>2. Menerima notifikasi setelah surat final disetujui (siap cetak / perlu Terapkan)<br>3. Melihat dan mengunduh surat selesai sesuai `assigned_role`; bukan approver<br>4. Menerapkan perubahan data kependudukan dari surat ber-`data_action`<br>5. Melihat daftar warga (read-only)<br>6. Mengajukan surat untuk dirinya (Surat Saya) | ✅ MVP |
+| Kasi Pemerintahan | 1. Login<br>2. Menerima notifikasi setelah surat final disetujui (siap cetak / perlu Terapkan)<br>3. Melihat dan mengunduh surat selesai sesuai `assigned_role`; bukan approver<br>4. Menerapkan perubahan data kependudukan dari surat ber-`data_action`<br>5. Melihat daftar warga (read-only)<br>6. Mengajukan surat untuk dirinya (Surat Saya) | ✅ MVP |
 | Kaur TU dan Umum | Sama seperti Kasi: notifikasi, surat selesai sesuai `assigned_role`, unduh, Terapkan, baca daftar warga; bukan approver | ✅ MVP |
 | Kepala Dusun (Kadus) | 1. Login<br>2. Bukan approver; jabatan struktural tetap ada (`officials.position='kadus'`)<br>3. Melihat daftar/detail surat dusunnya yang sudah disetujui RT melalui endpoint bersama<br>4. Dashboard read-only FYI dan notifikasi setelah RT approve untuk dusun yang sama | ✅ MVP |
 | RT | 1. Login<br>2. Proses surat pending di wilayahnya<br>3. Approve/reject (tahap 1)<br>4. Terima notifikasi | ✅ MVP |
@@ -122,7 +122,7 @@ Sistem mendefinisikan sembilan role dengan hak akses yang berbeda. Seluruh role 
 | RT | Semua surat dari warga di RT-nya, termasuk yang masih menunggu RT dan seluruh riwayat setelah approve/reject |
 | RW | Surat dari warga di RW-nya yang sudah di-approve RT, termasuk semua status setelahnya (read-only) |
 | Kepala Desa / Sekretaris Desa | Surat di desanya yang sudah di-approve RT atau tercatat melewati tahap RT; aksi keputusan hanya pada step aktif `kepala_desa` |
-| Kasi Pelayanan / Kaur TU | Surat berstatus `approved` di desa dan sesuai `letter_types.assigned_role`; NULL berlaku untuk keduanya |
+| Kasi Pemerintahan / Kaur TU | Surat berstatus `approved` di desa dan sesuai `letter_types.assigned_role`; NULL berlaku untuk keduanya |
 | Petugas Desa | SEMUA surat di desanya sendiri — dari pending hingga rejected, termasuk yang rejected di step manapun |
 | Kadus | Surat dari warga di dusunnya yang sudah di-approve RT, termasuk semua status setelahnya (read-only); juga menerima FYI untuk surat tersebut |
 

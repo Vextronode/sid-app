@@ -112,7 +112,7 @@ Password menggunakan Argon2id. Seluruh role sistem disimpan di tabel ini.
 | photo_img | VARCHAR(255) | NULL | Path foto profil akun di disk public (`user-photos/{village_id}/...`). Hanya dipakai dan dapat diubah selama role `warga` (oleh pemilik atau Petugas Desa); akun yang menjabat memakai `officials.photo_img` |
 | password | VARCHAR(255) | NOT NULL | Hash Argon2id |
 | must_change_password | BOOLEAN | DEFAULT false | Memaksa penggantian setelah reset password sementara |
-| role | ENUM | NULL | `warga` \| `rt` \| `rw` \| `kadus` \| `kasi_pelayanan` \| `kaur_tu_umum` \| `staf_sid` \| `kepala_desa` \| `sekretaris_desa`. Nullable di migration; diisi saat registrasi atau assignment jabatan |
+| role | ENUM | NULL | `warga` \| `rt` \| `rw` \| `kadus` \| `kasi_pemerintahan` \| `kaur_tu_umum` \| `staf_sid` \| `kepala_desa` \| `sekretaris_desa`. Nullable di migration; diisi saat registrasi atau assignment jabatan |
 | village_id | UUID | FK → villages.id, NULL | NULL untuk akun lintas desa |
 | citizen_id | UUID | FK → citizens.id, NULL | Link ke data kependudukan; NULL untuk akun teknis tanpa data kependudukan |
 | is_active | BOOLEAN | NOT NULL | Status akun aktif/nonaktif; tidak ada default di migration, wajib diisi saat create |
@@ -228,7 +228,7 @@ Rekam jejak jabatan struktural desa per periode. Digunakan untuk resolusi wilaya
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | citizen_id | UUID | FK → citizens.id, NOT NULL | Warga yang menjabat |
 | user_id | UUID | FK → users.id, NULL | Akun sistem pejabat; NULL untuk jabatan tanpa akun |
-| position | VARCHAR(50) | NOT NULL | Nilai enum aplikasi `OfficialPosition` (jabatan berakun: `kepala_desa`, `sekretaris_desa`, `rt`, `rw`, `kadus`, `kasi_pelayanan`, `kaur_tu_umum`, `staf_sid`) atau `code` dari `official_position_types` desa (jabatan tanpa akun). Divalidasi rule `ValidOfficialPosition`, bukan ENUM DB |
+| position | VARCHAR(50) | NOT NULL | Nilai enum aplikasi `OfficialPosition` (jabatan berakun: `kepala_desa`, `sekretaris_desa`, `rt`, `rw`, `kadus`, `kasi_pemerintahan`, `kaur_tu_umum`, `staf_sid`) atau `code` dari `official_position_types` desa (jabatan tanpa akun). Divalidasi rule `ValidOfficialPosition`, bukan ENUM DB |
 | village_id | UUID | FK → villages.id, NULL | |
 | rt_id | BIGINT | FK → rts.id, NULL | Diisi untuk jabatan RT |
 | rw_id | BIGINT | FK → rws.id, NULL | Diisi untuk jabatan RW |
@@ -253,14 +253,14 @@ Rekam jejak jabatan struktural desa per periode. Digunakan untuk resolusi wilaya
 | officials.position | users.role | user_id |
 |---|---|---|
 | kepala_desa | kepala_desa | NOT NULL |
-| kasi_pelayanan | kasi_pelayanan | NOT NULL |
+| kasi_pemerintahan | kasi_pemerintahan | NOT NULL |
 | kaur_tu_umum | kaur_tu_umum | NOT NULL |
 | kadus | kadus | NOT NULL |
 | staf_sid | staf_sid | NOT NULL |
 | rw | rw | NOT NULL |
 | rt | rt | NOT NULL |
 | sekretaris_desa | sekretaris_desa | NOT NULL |
-| `code` jenis jabatan tanpa akun (seed: kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes) | — (role akun tidak berubah) | NULL |
+| `code` jenis jabatan tanpa akun (seed: kasi_kesejahteraan, kasi_pelayanan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes) | — (role akun tidak berubah) | NULL |
 
 **Tabel: official_position_types**
 
@@ -305,7 +305,7 @@ Urutan approver per flow.
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | flow_id | BIGINT | FK → approval_flows.id, NOT NULL | |
 | step_order | INT | NOT NULL | Urutan step dalam flow |
-| approver_position | ENUM | NOT NULL | DB enum memuat `rt`, `kepala_desa`, `sekretaris_desa`, `kasi_pelayanan`, `kaur_tu_umum`; flow baru hanya menerima `rt` dan `kepala_desa`, final harus `kepala_desa` |
+| approver_position | ENUM | NOT NULL | DB enum memuat `rt`, `kepala_desa`, `sekretaris_desa`, `kasi_pemerintahan`, `kaur_tu_umum`; flow baru hanya menerima `rt` dan `kepala_desa`, final harus `kepala_desa` |
 | is_final | BOOLEAN | DEFAULT false | true jika step ini step terakhir |
 | created_at, updated_at | TIMESTAMP | NULL | |
 
@@ -326,7 +326,7 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 | description | TEXT | NULL | |
 | template | TEXT | NULL | HTML ber-placeholder; NULL = Draft |
 | requirement_info | TEXT | NULL | Informasi persyaratan (seed: NULL) |
-| assigned_role | ENUM | NULL | `kasi_pelayanan` \| `kaur_tu_umum`; NULL = keduanya. Menentukan akses surat selesai & Terapkan |
+| assigned_role | ENUM | NULL | `kasi_pemerintahan` \| `kaur_tu_umum`; NULL = keduanya. Menentukan akses surat selesai & Terapkan |
 | flow_id | BIGINT | FK → approval_flows.id, NOT NULL | |
 | validity_days | UNSIGNED INT | NULL | NULL = tidak expire |
 | is_active | BOOLEAN | NOT NULL | Tanpa default di migration |
@@ -532,7 +532,7 @@ Unique `uq_signature_blocks_pair (user_id, blocked_user_id)`.
 |---|---|---|---|
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | village_id | UUID | FK → villages.id, NOT NULL | |
-| approval_level | ENUM | NOT NULL | `rt` \| `kepala_desa` \| `sekretaris_desa` \| `kasi_pelayanan` \| `kaur_tu_umum` |
+| approval_level | ENUM | NOT NULL | `rt` \| `kepala_desa` \| `sekretaris_desa` \| `kasi_pemerintahan` \| `kaur_tu_umum` |
 | deadline_hours | UNSIGNED INT | NOT NULL, DEFAULT 24 | Berapa jam pejabat punya waktu untuk action |
 | reminder_hours | UNSIGNED INT | NOT NULL, DEFAULT 12 | Jam sebelum `deadline_at` saat pengingat dikirim ke approver (0 = tepat saat deadline) |
 | is_active | BOOLEAN | DEFAULT true | |

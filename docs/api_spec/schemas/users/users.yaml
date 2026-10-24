@@ -23,7 +23,7 @@ User:
       example: "ahmad.1937"
     role:
       type: string
-      enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, staf_sid, kepala_desa, sekretaris_desa]
+      enum: [warga, rt, rw, kadus, kasi_pemerintahan, kaur_tu_umum, staf_sid, kepala_desa, sekretaris_desa]
       example: "rt"
     role_label:
       type: string
@@ -79,7 +79,7 @@ OfficialPositionCode:
   type: string
   description: |
     Jabatan berakun (enum `OfficialPosition`): kepala_desa, sekretaris_desa, rt, rw,
-    kadus, kasi_pelayanan, kaur_tu_umum, staf_sid. Selain itu harus
+    kadus, kasi_pemerintahan, kaur_tu_umum, staf_sid. Selain itu harus
     `code` jenis jabatan tanpa akun yang aktif milik desa
     (`official_position_types`), mis. kasi_kesejahteraan, kaur_keuangan,
     staf_sipades. Kolom `officials.position` kini VARCHAR(50), bukan ENUM.

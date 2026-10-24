@@ -8,8 +8,8 @@ Nama aplikasi yang tampil ke pengguna (judul, `<title>`, manifest PWA, label per
 
 ## Fitur utama
 
-- **Surat online:** warga (atau pejabat untuk dirinya sendiri) mengajukan surat dengan form dinamis per jenis surat, unggahan berkas, dan tanda tangan pihak terkait; status dipantau sampai PDF dapat diunduh.
-- **Persetujuan:** alur default **RT → Kepala Desa/Sekretaris Desa (final)**. RW dan Kadus menerima pemberitahuan setelah RT menyetujui; Kasi Pelayanan / Kaur TU & Umum menerima surat yang sudah final sesuai penugasan jenis suratnya. Saat final, sistem menerbitkan nomor surat dan membekukan snapshot render PDF.
+- **Surat online:** warga (atau pejabat untuk dirinya sendiri) mengajukan surat dengan form dinamis per jenis surat, unggahan berkas, dan tanda tangan pihak terkait; status dipantau sampai PDF dapat diunduh. Seeder menyediakan 11 jenis surat keterangan (A01–A11, termasuk Surat Keterangan Ahli Waris yang berlaku tanpa batas). Isian pekerjaan di form memakai katalog pekerjaan desa, dengan pilihan "Lainnya" yang teksnya dirapikan dan hanya dicetak di surat.
+- **Persetujuan:** alur default **RT → Kepala Desa/Sekretaris Desa (final)**. RW dan Kadus menerima pemberitahuan setelah RT menyetujui; Kasi Pemerintahan / Kaur TU & Umum menerima surat yang sudah final sesuai penugasan jenis suratnya (seluruh jenis surat bawaan A01–A11 ditugaskan ke Kaur TU & Umum). Saat final, sistem menerbitkan nomor surat dan membekukan snapshot render PDF.
 - **Deadline & pengingat:** tiap tahap punya batas waktu; surat yang lewat deadline ditandai overdue, dan scheduler mengirim satu pengingat ke approver `reminder_hours` sebelum deadline.
 - **Masa berlaku surat:** dicap saat final approve dari pengaturan jenis surat. Surat yang kedaluwarsa tetap tampil sebagai riwayat, tetapi pemohon tidak dapat lagi mengunduh atau mem-preview PDF-nya.
 - **Data kependudukan:** warga, Kartu Keluarga, data sosio-ekonomi KK, wilayah Dusun/RW/RT, dan katalog pekerjaan. NIK dan No KK disimpan terenkripsi.
@@ -25,7 +25,7 @@ Nama aplikasi yang tampil ke pengguna (judul, `<title>`, manifest PWA, label per
 | RT | Approver tahap pertama untuk warga di wilayahnya |
 | RW / Kadus | Menerima pemberitahuan dan melihat surat di wilayahnya setelah disetujui RT |
 | Kepala Desa / Sekretaris Desa | Approver final |
-| Kasi Pelayanan / Kaur TU & Umum | Menerima, mengunduh, dan menerapkan perubahan data dari surat yang sudah final sesuai penugasan |
+| Kasi Pemerintahan / Kaur TU & Umum | Menerima, mengunduh, dan menerapkan perubahan data dari surat yang sudah final sesuai penugasan. Kaur TU & Umum memegang surat keterangan desa (A01–A11); Kasi Pemerintahan disiapkan untuk layanan kependudukan (Pelayanan Desa, sedang dikembangkan). Kasi Pelayanan adalah jabatan tanpa akun |
 | Staf aplikasi (`staf_sid`, tampil "Staf {nama aplikasi}") | Mengelola akun, jabatan, data kependudukan, wilayah, konten desa, konfigurasi jenis surat & deadline, serta memantau seluruh surat dan Log Aktivitas. Hanya **satu per desa**; pergantian lewat Rotasi |
 
 ## Arsitektur

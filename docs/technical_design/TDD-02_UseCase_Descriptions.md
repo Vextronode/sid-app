@@ -194,7 +194,7 @@ Kasi/Kaur bukan approver. Setelah tahap final disetujui, role Kasi/Kaur terkait 
 |---|---|
 | Use Case ID | UC-04d |
 | Nama | Notifikasi dan Unduh Surat oleh Kasi/Kaur |
-| Aktor | Kasi Pelayanan atau Kaur TU & Umum sesuai `letter_types.assigned_role` |
+| Aktor | Kasi Pemerintahan atau Kaur TU & Umum sesuai `letter_types.assigned_role` |
 | Pre-condition | Kasi/Kaur sudah login; surat berstatus `approved` dan role sesuai assignment (NULL berlaku bagi keduanya) |
 | Post-condition | Surat dapat dibaca/diunduh tanpa mengubah approval atau statusnya |
 
@@ -216,7 +216,7 @@ Authorization:
 |---|---|
 | Use Case ID | UC-05 |
 | Nama | Lihat Daftar Surat |
-| Aktor | Warga, RT, RW, Kadus, Kasi Pelayanan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
+| Aktor | Warga, RT, RW, Kadus, Kasi Pemerintahan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
 | Pre-condition | User sudah login |
 | Post-condition | Daftar surat berpaginasi sesuai scope role dan filter |
 
@@ -241,7 +241,7 @@ Main Flow:
 |---|---|
 | Use Case ID | UC-06 |
 | Nama | Lihat Detail & Status Surat |
-| Aktor | Warga, RT, RW, Kadus (read-only), Kasi Pelayanan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
+| Aktor | Warga, RT, RW, Kadus (read-only), Kasi Pemerintahan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
 | Pre-condition | User sudah login, surat sudah ada di sistem |
 | Post-condition | Sistem menampilkan detail surat dan seluruh riwayat perubahan status |
 
@@ -302,7 +302,7 @@ Alternative Flow:
 |---|---|
 | Use Case ID | UC-09 |
 | Nama | Kelola Data Warga (CRUD Citizens) |
-| Aktor | Petugas Desa (kelola); Kasi Pelayanan & Kaur TU & Umum hanya melihat daftar |
+| Aktor | Petugas Desa (kelola); Kasi Pemerintahan & Kaur TU & Umum hanya melihat daftar |
 | Pre-condition | Petugas Desa sudah login |
 | Post-condition | Data warga berhasil dibuat / diupdate di tabel `citizens` |
 
@@ -394,7 +394,7 @@ Main Flow:
 
 **Sub-flow - Penetapan pejabat (promote) & rotasi:**
 - Petugas mencari calon lewat NIK (`POST /officials/candidates/lookup`); sistem menilai kelayakan (warga aktif, belum menjabat; jabatan berakun mensyaratkan akun warga aktif).
-- Jabatan **berakun** (Kepala Desa, Sekdes, RT, RW, Kadus, Kasi Pelayanan, Kaur TU & Umum, Petugas Desa) ditetapkan ke akun warga dan mengubah `users.role`. Jabatan **tanpa akun** (jenis dari `official_position_types`) ditetapkan ke data warga tanpa mengubah role.
+- Jabatan **berakun** (Kepala Desa, Sekdes, RT, RW, Kadus, Kasi Pemerintahan, Kaur TU & Umum, Petugas Desa) ditetapkan ke akun warga dan mengubah `users.role`. Jabatan **tanpa akun** (jenis dari `official_position_types`) ditetapkan ke data warga tanpa mengubah role.
 - Foto pejabat **wajib** (PNG/JPG/WebP maks 5 MB, disk publik, tampil di Profil Desa); dapat diganti tanpa rotasi lewat `POST /officials/{official}/photo` dan dihapus lewat `DELETE /officials/{official}/photo` (Profil Desa lalu menampilkan placeholder).
 - Jabatan satu-pemegang per wilayah ditolak 409 bila sudah terisi. Semua jabatan berakun satu-pemegang, termasuk staf aplikasi (`staf_sid`) yang hanya satu per desa.
 - Rotasi: pengganti mengikuti jenis jabatan lama (akun atau data warga), posisi & wilayah disalin. Berlaku juga untuk `staf_sid`, termasuk staf yang merotasi dirinya sendiri: ia langsung menjadi warga dan FE memindahkannya ke dashboard warga tanpa menunggu logout.
@@ -431,7 +431,7 @@ Alternative Flow:
 |---|---|
 | Use Case ID | UC-15 |
 | Nama | Lihat Dashboard & Statistik |
-| Aktor | Warga, RT, RW, Kadus, Kasi Pelayanan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
+| Aktor | Warga, RT, RW, Kadus, Kasi Pemerintahan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
 | Pre-condition | User sudah login |
 | Post-condition | Sistem menampilkan dashboard sesuai role |
 
@@ -480,7 +480,7 @@ Main Flow:
    - Berita — berita yang sudah dipublikasikan beserta kategorinya (10 per halaman)
    - Info Jenis Surat — daftar jenis surat yang tersedia beserta persyaratannya
    - Halaman informasi — Kebijakan Privasi, Aksesibilitas, PPID (link di footer). Teks baku dari aplikasi; bagian khas desa dari UC-28 dan identitas desa. Isian yang belum diisi tampil sebagai penanda kuning `[...]`; telepon/email bisa disalin
-   - Hubungi Kami — nomor WA dari `officials` dengan `position IN ('kasi_pelayanan', 'kaur_tu_umum')` yang `is_active=true`
+   - Hubungi Kami — nomor WA dari `officials` dengan `position IN ('kasi_pemerintahan', 'kaur_tu_umum')` yang `is_active=true`
 4. Semua konten halaman publik hanya dapat dibaca (read-only)
 
 Notes:
@@ -622,7 +622,7 @@ Catatan: 5 Dusun Desa Cibenda (Patrol, Sinargalih, Cibenda, Budiasih, Sucen) di-
 
 Main Flow:
 - Petugas membuka pengaturan jenis surat lewat menu **Alur & Jenis Surat** (`/admin/approval-flows`); daftar berasal dari `GET /letter-types?include_inactive=1` (khusus Petugas Desa) yang berisi semua jenis surat desa dengan badge Draft / Aktif / Nonaktif
-- Petugas mengubah: `validity_days` (minimal 1 atau kosong), `assigned_role` (Kasi Pelayanan / Kaur TU & Umum / keduanya), toggle `is_active` (Aktifkan / Nonaktifkan). Jenis Draft (belum ber-template) tidak bisa diaktifkan (422)
+- Petugas mengubah: `validity_days` (minimal 1 atau kosong), `assigned_role` (Kasi Pemerintahan / Kaur TU & Umum / keduanya), toggle `is_active` (Aktifkan / Nonaktifkan). Jenis Draft (belum ber-template) tidak bisa diaktifkan (422)
 - Sistem menyimpan perubahan ke `letter_types` dan menggugurkan cache halaman publik
 - Petugas dapat melihat flow approval (read-only) di halaman Approval Flows
 
@@ -741,7 +741,7 @@ Alternative Flow:
 |---|---|
 | Use Case ID | UC-26 |
 | Nama | Terapkan Perubahan Data Kependudukan |
-| Aktor | Kasi Pelayanan / Kaur TU & Umum sesuai `assigned_role` (NULL = keduanya); Petugas Desa sebagai cadangan |
+| Aktor | Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role` (NULL = keduanya); Petugas Desa sebagai cadangan |
 | Pre-condition | Surat `approved` di desa aktor; jenis surat memiliki `data_action` = `update_citizen` atau `create_citizen`; belum pernah diterapkan |
 | Post-condition | Data `citizens` diubah/ditambah; `letters.fulfilled_at/by` dan `fulfillment` terisi; jejak audit tercatat |
 

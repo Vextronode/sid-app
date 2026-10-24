@@ -11,7 +11,7 @@ get:
     - rw: surat dari warga di RW-nya yang memiliki keputusan approve RT, read-only
     - kadus: surat dari warga di dusunnya yang memiliki keputusan approve RT, read-only
     - kepala_desa/sekretaris_desa: surat di desanya yang sudah di-approve RT atau tercatat melewati tahap RT
-    - kasi_pelayanan/kaur_tu_umum: surat `approved` di desanya sesuai `letter_types.assigned_role` (NULL = keduanya)
+    - kasi_pemerintahan/kaur_tu_umum: surat `approved` di desanya sesuai `letter_types.assigned_role` (NULL = keduanya)
     - staf_sid: semua surat di desanya
 
     Respons memakai bentuk ringkas `LetterListItem` dan diurutkan dari

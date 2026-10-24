@@ -22,7 +22,7 @@ if (Role Login?) then (warga)
 elseif (rt / rw / kadus) then
   :Lihat **03_SID_POV_RTRW_StaffDesa.puml**\n(RT: keputusan tahap 1.\nRW & Kadus: FYI read-only);
   stop
-elseif (kasi_pelayanan / kaur_tu_umum) then
+elseif (kasi_pemerintahan / kaur_tu_umum) then
   :Lihat **03_SID_POV_RTRW_StaffDesa.puml**\n(notifikasi surat final, unduh,\nTerapkan perubahan data; bukan approver);
   stop
 elseif (staf_sid) then

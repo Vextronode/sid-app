@@ -196,7 +196,7 @@ ContactUsResponse:
         properties:
           position:
             type: string
-            enum: [kasi_pelayanan, kaur_tu_umum]
+            enum: [kasi_pemerintahan, kaur_tu_umum]
           name:
             type: string
             nullable: true

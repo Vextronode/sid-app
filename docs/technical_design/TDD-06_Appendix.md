@@ -42,7 +42,7 @@ Ini catatan khusus karena poin ini sempat jadi sumber ambiguitas antar dokumen (
 
    ENUM yang tercatat di TDD versi ini: `ENUM('rt','rw','kadus','kasi')` — 4 nilai, peninggalan v4.2.
 
-2. **OpenAPI Spec v5.0** (dibuat pada periode rencana migrasi v4→v5 sudah matang, tapi TDD belum dipatch penuh) sudah lebih dulu mengasumsikan ENUM baru 5 nilai (`rt`, `kepala_desa`, `sekdes`, `kasi_pelayanan`, `kaur_tu_umum`), dengan catatan eksplisit di dalamnya sendiri: *"mengikuti rekomendasi Rencana Migrasi Fase 6.1, BUKAN keputusan final TDD."*
+2. **OpenAPI Spec v5.0** (dibuat pada periode rencana migrasi v4→v5 sudah matang, tapi TDD belum dipatch penuh) sudah lebih dulu mengasumsikan ENUM baru 5 nilai (`rt`, `kepala_desa`, `sekdes`, `kasi_pemerintahan`, `kaur_tu_umum`), dengan catatan eksplisit di dalamnya sendiri: *"mengikuti rekomendasi Rencana Migrasi Fase 6.1, BUKAN keputusan final TDD."*
 
 3. **Migration Laravel yang benar-benar dijalankan di project** (`database/migrations/..._create_approval_settings_table.php`) mengonfirmasi ENUM sudah dibuat dengan 5 nilai baru sejak awal:
    ```php
@@ -50,7 +50,7 @@ Ini catatan khusus karena poin ini sempat jadi sumber ambiguitas antar dokumen (
        'rt',
        'kepala_desa',
        'sekdes',
-       'kasi_pelayanan',
+       'kasi_pemerintahan',
        'kaur_tu_umum',
    ]);
    ```

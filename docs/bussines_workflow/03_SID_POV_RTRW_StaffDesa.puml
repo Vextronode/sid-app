@@ -47,14 +47,14 @@ end fork
 |#LightYellow|Sistem|
 :Setelah final approve: notifikasi ke\nKasi/Kaur sesuai assigned_role;
 
-|#LightGreen|Kasi Pelayanan / Kaur TU & Umum|
+|#LightGreen|Kasi Pemerintahan / Kaur TU & Umum|
 if (Jenis surat punya aksi data?) then (ya)
   :Buka surat "perlu diterapkan";
   :Tinjau nilai sekarang vs usulan,\nkoreksi bila perlu;
   :Terapkan;
   |#LightYellow|Sistem|
   :Ubah/tambah data warga,\ncatat audit, beri tahu pemohon;
-  |#LightGreen|Kasi Pelayanan / Kaur TU & Umum|
+  |#LightGreen|Kasi Pemerintahan / Kaur TU & Umum|
 else (tidak)
 endif
 :Unduh / cetak surat untuk warga;

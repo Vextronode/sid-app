@@ -2,7 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat & cari daftar warga (berpaginasi)
   description: |
-    UC-09. Aktor: Petugas Desa, Kasi Pelayanan, Kaur TU & Umum (Kasi/Kaur
+    UC-09. Aktor: Petugas Desa, Kasi Pemerintahan, Kaur TU & Umum (Kasi/Kaur
     hanya membaca). Warga satu desa akun login, urut nama lalu id, berpaginasi
     di database. Pencarian nama case-insensitive (LIKE) dan filter wilayah
     bertingkat Dusun/RW/RT; RW dan Dusun dibaca lewat RT warga. Filter yang

@@ -170,12 +170,12 @@ Keputusan dijalankan di dalam transaksi: `SELECT ... FOR UPDATE` pada surat, cek
 
 ### 4.1 Peran
 
-`users.role` 9 nilai: `warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, staf_sid, kepala_desa, sekretaris_desa`. Tier navigasi di SYS/FE hanyalah label. Superadmin belum ada.
+`users.role` 9 nilai: `warga, rt, rw, kadus, kasi_pemerintahan, kaur_tu_umum, staf_sid, kepala_desa, sekretaris_desa`. Tier navigasi di SYS/FE hanyalah label. Superadmin belum ada.
 
 ### 4.2 Jabatan
 
-- **Jabatan berakun** (enum `OfficialPosition`): kepala_desa, sekretaris_desa, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, staf_sid — menentukan `users.role`.
-- **Jabatan tanpa akun**: jenis dikelola Petugas Desa di `official_position_types` (kode dibuat dari label, tidak dapat diubah; seeder: Kasi Kesejahteraan, Kasi Pemerintahan, Kaur Perencanaan, Kaur Keuangan, Staf SIPADES, Staf SISKEUDES). `officials.position` kini VARCHAR(50) berisi nilai enum atau `code` jenis jabatan (`ValidOfficialPosition`).
+- **Jabatan berakun** (enum `OfficialPosition`): kepala_desa, sekretaris_desa, rt, rw, kadus, kasi_pemerintahan, kaur_tu_umum, staf_sid — menentukan `users.role`.
+- **Jabatan tanpa akun**: jenis dikelola Petugas Desa di `official_position_types` (kode dibuat dari label, tidak dapat diubah; seeder: Kasi Kesejahteraan, Kasi Pelayanan, Kaur Perencanaan, Kaur Keuangan, Staf SIPADES, Staf SISKEUDES). `officials.position` kini VARCHAR(50) berisi nilai enum atau `code` jenis jabatan (`ValidOfficialPosition`).
 - Penetapan via `OfficialAssignmentService` (promote/demote/rotate, transaksional, activity log `official`). Foto pejabat wajib saat penetapan/rotasi (disk public). Calon dicari lewat NIK (`POST /officials/candidates/lookup`).
 
 ### 4.3 Lapisan otorisasi

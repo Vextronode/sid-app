@@ -50,9 +50,9 @@ LetterType:
           example: "RT-Kades/Sekdes (2 Tahap)"
     assigned_role:
       type: string
-      enum: [kasi_pelayanan, kaur_tu_umum]
+      enum: [kasi_pemerintahan, kaur_tu_umum]
       nullable: true
-      example: "kasi_pelayanan"
+      example: "kasi_pemerintahan"
       description: |
         Kasi/Kaur yang dapat melihat/mengunduh surat approved dan
         menerapkan aksi data. NULL = kedua role. Bukan approver flow.
@@ -182,7 +182,7 @@ LetterTypeUpdateRequest:
       example: 90
     assigned_role:
       type: string
-      enum: [kasi_pelayanan, kaur_tu_umum]
+      enum: [kasi_pemerintahan, kaur_tu_umum]
       nullable: true
     is_active:
       type: boolean

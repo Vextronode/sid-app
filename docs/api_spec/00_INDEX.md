@@ -91,7 +91,7 @@ api_spec/
   Kades dan Sekdes memutuskan step yang sama (first-action-wins);
   `approval_level` mencatat aktor sebenarnya.
 - RW dan Kadus hanya FYI; Kasi/Kaur bukan approver.
-- `assigned_role` NULL berarti Kasi Pelayanan dan Kaur TU & Umum.
+- `assigned_role` NULL berarti Kasi Pemerintahan dan Kaur TU & Umum.
 - PDF approved dirender dari snapshot; TTD/stempel selalu milik Kepala
   Desa yang menjabat saat final approve.
 - Gambar privat (stempel desa, TTD jabatan, TTD akun, lampiran) hanya

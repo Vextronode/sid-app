@@ -5,7 +5,7 @@ get:
     Aktor: Petugas Desa. Jenis jabatan tanpa akun (mis. Kasi Kesejahteraan,
     Kaur Keuangan, Staf) milik desa Petugas, urut `sort_order`, termasuk
     yang nonaktif. Jabatan yang punya akun (kepala_desa, sekretaris_desa,
-    kasi_pelayanan, kaur_tu_umum, kadus, rw, rt, staf_sid) bersifat tetap
+    kasi_pemerintahan, kaur_tu_umum, kadus, rw, rt, staf_sid) bersifat tetap
     dan tidak dikelola di sini; daftarnya ikut dikirim di
     `account_positions` (urutan pilihan "Tetapkan Pejabat", label dari backend
     termasuk "Staf {SID_APP_NAME}", dan `scope` = kolom wilayah wajib) supaya

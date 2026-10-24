@@ -141,7 +141,7 @@ Pejabat lain yang punya peran di aplikasi juga mendapat akun, supaya surat dari 
 |---|---|
 | Kepala Desa | `dede.rusliana` |
 | Sekretaris Desa | `saeful.millah` |
-| Kasi Pelayanan | `ferdiansyah` |
+| Kasi Pemerintahan | `sakim.hidayat` |
 | Kaur TU & Umum | `tita.sutiasih` |
 | Kepala Dusun lain | `kadus.<dusun>`, mis. `kadus.sinargalih` |
 | RW lain | `rw.<dusun>.<nn>`, mis. `rw.sucen.03` |
