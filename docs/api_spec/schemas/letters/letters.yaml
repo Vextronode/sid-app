@@ -152,6 +152,23 @@ Letter:
       type: boolean
       example: false
       description: "status = pending dan current_step_order = 0."
+    documents:
+      type: array
+      description: |
+        Hanya ada bila relasi letterType dimuat. Dokumen yang terbit untuk
+        surat ini: dokumen utama (`key: main`, judul = nama jenis surat)
+        lalu dokumen dari `letter_types.documents` yang syarat `when`-nya
+        terpenuhi jawaban form. Surat approved memakai daftar yang
+        dibekukan di snapshot. Unduh/pratinjau lewat `?document={key}`.
+      items:
+        type: object
+        properties:
+          key:
+            type: string
+            example: "main"
+          title:
+            type: string
+            example: "Formulir Pindah"
     has_supporting_document:
       type: boolean
       example: false

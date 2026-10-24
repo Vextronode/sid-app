@@ -31,9 +31,16 @@ get:
         type: string
         enum: [wet, digital]
         default: wet
+    - name: document
+      in: query
+      required: false
+      description: "Kunci dokumen dari `Letter.documents` (dokumen yang terbit bersama surat). Kosong/`main` = dokumen utama. 404 bila dokumen tidak terbit untuk surat ini (syarat `when` tidak terpenuhi) atau tidak dikenal."
+      schema:
+        type: string
+        default: main
   responses:
     '200':
-      description: File PDF (attachment `surat-{id}.pdf`)
+      description: File PDF (attachment `surat-{id}.pdf`, atau `surat-{id}-{document}.pdf` untuk dokumen yang terbit bersama)
       content:
         application/pdf:
           schema:
