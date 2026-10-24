@@ -80,6 +80,18 @@ LetterType:
       type: boolean
       example: true
       description: "Penanda jenis surat menerbitkan surat. Saat ini hanya disimpan & dikirim; belum mengubah alur backend."
+    issues_letter_number:
+      type: boolean
+      example: true
+      description: "false = tidak diberi nomor surat desa saat final approve (`letter_number` tetap null), mis. formulir Pelayanan Desa."
+    signed_by_village_head:
+      type: boolean
+      example: true
+      description: |
+        false = dokumen tidak ditandatangani/distempel Kepala Desa: snapshot
+        tanpa penanda tangan, PDF dapat dirender tanpa Kepala Desa aktif, dan
+        frontend menampilkan satu tombol "Unduh formulir" (tanpa pilihan
+        digital/tanda tangan basah).
     data_action:
       type: string
       enum: [none, update_citizen, create_citizen]

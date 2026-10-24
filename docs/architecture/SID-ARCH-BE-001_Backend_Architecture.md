@@ -109,6 +109,7 @@ Konfigurasi tiap jenis surat adalah data, bukan kode:
 | `signature_slots` (JSON) | Slot tanda tangan pemohon/pihak lain (S3.5) |
 | `supporting_template` | Template dokumen pendukung (mis. surat pernyataan) |
 | `produces_letter` | Penanda; saat ini hanya dikirim ke frontend |
+| `issues_letter_number`, `signed_by_village_head` | `false` untuk formulir instansi luar (Pelayanan Desa): tanpa nomor surat desa, tanpa TTD/stempel Kepala Desa, render tidak butuh Kepala Desa aktif |
 | `assigned_role` | Kasi/Kaur yang mengakses surat selesai dan menjalankan Terapkan; NULL = keduanya |
 | `validity_days`, `is_active` | Satu-satunya yang dapat diubah Petugas Desa (`PUT /letter-types/{id}`) bersama `assigned_role` |
 

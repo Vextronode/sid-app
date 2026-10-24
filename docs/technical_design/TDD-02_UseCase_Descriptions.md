@@ -176,7 +176,7 @@ Main Flow:
 3. User memilih Setujui/Tolak, isi catatan jika menolak
 4. Sistem mengunci row surat di dalam transaksi dan memeriksa ulang status serta step aktif `kepala_desa`; keputusan kedua ditolak dengan 409.
 5. Sistem memperbarui placeholder `letter_approvals` untuk step aktif dengan aktor, level, aksi, dan catatan keputusan.
-6. Jika SETUJUI pada step final: status `approved`, `letter_number` = `{classification_code}/{NNN}/Des/{bulan Romawi}/{tahun}` (counter per desa + kode klasifikasi + tahun), `expires_at` dari `validity_days`, `processed_at`; lalu **snapshot render** dibekukan (`letters.snapshot`, `signed_by_official_id` = Kepala Desa aktif, juga bila Sekdes yang menyetujui).
+6. Jika SETUJUI pada step final: status `approved`, `letter_number` = `{classification_code}/{NNN}/Des/{bulan Romawi}/{tahun}` (counter per desa + kode klasifikasi + tahun), `expires_at` dari `validity_days`, `processed_at`; lalu **snapshot render** dibekukan (`letters.snapshot`, `signed_by_official_id` = Kepala Desa aktif, juga bila Sekdes yang menyetujui). Jenis surat dengan `issues_letter_number = false` tidak diberi nomor, dan `signed_by_village_head = false` membekukan snapshot tanpa penanda tangan (formulir Pelayanan Desa).
 7. Jika TOLAK: status jadi `rejected`, `rejected_at_step` dicatat (TERMINAL), notifikasi `kepala_desa_rejected`.
 8. Notifikasi `letter_approved_final` ke pemohon; Kasi/Kaur sesuai `assigned_role` menerima `letter_needs_fulfillment` (jenis surat ber-`data_action`, lanjut UC-26) atau `letter_ready_for_print`.
 

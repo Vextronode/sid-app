@@ -177,7 +177,8 @@ Letter:
       description: |
         Included when relation is loaded. Pada detail surat backend hanya
         memuat kolom id, name, code, assigned_role, produces_letter,
-        data_action, form_fields, signature_slots, supporting_template.
+        data_action, form_fields, signature_slots, supporting_template,
+        issues_letter_number, signed_by_village_head.
       allOf:
         - $ref: '../letter-types/letter-types.yaml#/LetterType'
     approvals:
@@ -300,6 +301,9 @@ LetterListItem:
         code:
           type: string
           example: "A01"
+        signed_by_village_head:
+          type: boolean
+          example: true
     citizen:
       type: object
       nullable: true

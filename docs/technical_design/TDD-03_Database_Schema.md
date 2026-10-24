@@ -332,6 +332,8 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 | validity_days | UNSIGNED INT | NULL | NULL = tidak expire |
 | is_active | BOOLEAN | NOT NULL | Tanpa default di migration |
 | produces_letter | BOOLEAN | DEFAULT true | Penanda menerbitkan surat; belum dipakai logika backend |
+| issues_letter_number | BOOLEAN | DEFAULT true | false = tidak diberi `letter_number` saat final approve (formulir Pelayanan Desa) |
+| signed_by_village_head | BOOLEAN | DEFAULT true | false = tanpa TTD/stempel Kepala Desa; snapshot tanpa penanda tangan dan render tidak butuh Kepala Desa aktif |
 | data_action | VARCHAR(30) | DEFAULT 'none' | `none` \| `update_citizen` \| `create_citizen` (enum aplikasi `LetterDataAction`) |
 | form_fields | JSON | NULL | Daftar isian `{name, label, type, required, placeholder?, options?, accept?}`; type: text, textarea, date, number, nik, select, file, occupation (id katalog `occupations` atau `lainnya` + `<name>_lainnya`; disimpan sebagai nama pekerjaan siap cetak). NULL = isian bebas (teks); array = hanya isian terdaftar |
 | data_fields | JSON | NULL | Kolom `citizens` yang boleh diubah lewat Terapkan: `{column, label, source?, value?, value_label?}` |
@@ -360,7 +362,7 @@ Tabel utama sistem. Kolom `applicant_nik` dienkripsi AES-256, `applicant_nik_has
 | submitted_by | UUID | FK → users.id, NOT NULL | User yang mengajukan; dapat berperan sebagai warga atau pejabat |
 | on_behalf_of | UUID | FK → citizens.id, NULL | Selalu NULL di MVP; dipersiapkan untuk future use case petugas input atas nama warga lain |
 | citizen_id | UUID | FK → citizens.id, NULL | Diisi dari `auth()->user()->citizen_id` saat user submit untuk dirinya |
-| letter_number | VARCHAR(50) | UNIQUE, NULL | Diisi otomatis saat `status = 'approved'` (step `is_final=true`) |
+| letter_number | VARCHAR(50) | UNIQUE, NULL | Diisi otomatis saat `status = 'approved'` (step `is_final=true`), kecuali jenis surat `issues_letter_number = false` (tetap NULL) |
 | applicant_name | VARCHAR(100) | NOT NULL | |
 | applicant_nik | TEXT | NOT NULL | AES-256 encrypted |
 | applicant_nik_hash | VARCHAR(64) | NOT NULL | SHA-256, untuk indexing & pencarian |
