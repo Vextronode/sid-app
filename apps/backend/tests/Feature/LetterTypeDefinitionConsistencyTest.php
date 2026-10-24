@@ -22,7 +22,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
     /** Placeholder yang diisi sistem (PdfService::getReplacements). */
     private const SYSTEM_PLACEHOLDERS = [
         'logo_img', 'signature_img', 'letter_number', 'applicant_name', 'applicant_nik',
-        'applicant_address', 'applicant_gender', 'applicant_birth_place_date',
+        'applicant_address', 'applicant_gender', 'applicant_birth_place_date', 'applicant_occupation',
         'applicant_resident_phrase', 'purpose', 'submitted_at', 'issued_at', 'village_name',
         'village_name_short', 'village_name_upper', 'village_district', 'village_district_upper',
         'village_regency', 'village_regency_upper', 'village_province', 'village_region',
@@ -84,7 +84,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
     {
         $letterTypes = LetterType::query()->with('flow.steps')->orderBy('code')->get();
 
-        $this->assertCount(10, $letterTypes);
+        $this->assertCount(11, $letterTypes);
 
         foreach ($letterTypes as $letterType) {
             $this->assertSame(ApprovalFlowSeeder::DEFAULT_FLOW_NAME, $letterType->flow->name);

@@ -10,7 +10,7 @@ use App\Models\Village;
 use Illuminate\Database\Seeder;
 
 /**
- * Sepuluh jenis surat keterangan (A01-A10). Redaksi dan susunan tiap
+ * Sebelas jenis surat keterangan (A01-A11). Redaksi dan susunan tiap
  * template mengikuti template fisik kantor desa di
  * docs/template-surat-fisik/. Setiap jenis surat didefinisikan utuh di
  * satu tempat: isian form, template, kode klasifikasi nomor surat, dan
@@ -37,7 +37,8 @@ class LetterTypeSeeder extends Seeder
 
             foreach ($this->letterTypes() as $type) {
                 $sections = $type['sections'];
-                unset($type['sections']);
+                $opening = $type['opening'] ?? null;
+                unset($type['sections'], $type['opening']);
 
                 LetterType::updateOrCreate(
                     ['village_id' => $village->id, 'code' => $type['code']],
@@ -50,7 +51,7 @@ class LetterTypeSeeder extends Seeder
                         'data_subject_field' => null,
                     ], $type, [
                         'village_id' => $village->id,
-                        'template' => $this->page($type['name'], $sections),
+                        'template' => $this->page($type['name'], $sections, $opening),
                         'assigned_role' => 'kasi_pelayanan',
                         'is_active' => true,
                         'flow_id' => $flow->id,
@@ -263,6 +264,43 @@ class LetterTypeSeeder extends Seeder
                     $this->paragraph(self::CLOSING),
                 ],
             ],
+            [
+                'code' => 'A11',
+                'name' => 'Surat Keterangan Ahli Waris',
+                'description' => 'Keterangan bahwa pemohon adalah ahli waris dari warga yang telah meninggal dunia.',
+                // Status ahli waris tidak kedaluwarsa.
+                'validity_days' => null,
+                'form_fields' => [
+                    // Pemohon adalah ahli waris; datanya diambil dari akun.
+                    ...$this->personFields('almarhum', 'Almarhum/Almarhumah', nikRequired: false),
+                    $this->occupation('pekerjaan_almarhum', 'Pekerjaan Almarhum/Almarhumah'),
+                    $this->date('tanggal_meninggal', 'Tanggal Meninggal'),
+                    $this->text('tempat_pemakaman', 'Nama TPU', true, 'Contoh: Cibenda'),
+                ],
+                // Template fisik tidak memakai blok Nama/Jabatan penanda tangan.
+                'opening' => $this->paragraph('Yang bertanda tangan dibawah ini Kepala Desa {{ village_name_short }} Kecamatan {{ village_district }} Kabupaten {{ village_regency }} menerangkan dengan sebenarnya bahwa :'),
+                'sections' => [
+                    $this->heirBlock(
+                        '{{ applicant_name }}',
+                        '{{ applicant_gender }}',
+                        '{{ applicant_nik }}',
+                        '{{ applicant_birth_place_date }}',
+                        '{{ applicant_occupation }}',
+                        '{{ applicant_address }}',
+                    ),
+                    $this->paragraph('Berdasarkan keterangan yang bersangkutan dan tokoh masyarakat setempat adalah benar-benar Ahli Waris dari Almarhum/Almarhumah :'),
+                    $this->heirBlock(
+                        '{{ nama_almarhum }}',
+                        '{{ jenis_kelamin_almarhum }}',
+                        '{{ nik_almarhum }}',
+                        '{{ tempat_lahir_almarhum }}, {{ tanggal_lahir_almarhum }}',
+                        '{{ pekerjaan_almarhum }}',
+                        '{{ alamat_almarhum }}',
+                    ),
+                    $this->paragraph('Yang telah meninggal dunia pada hari {{ tanggal_meninggal_hari }} dan dimakamkan di TPU {{ tempat_pemakaman }} dan ahli waris tersebut diatas bertanggung jawab apabila ada yang mengatas namakan Ahli Waris lain di kemudian hari.'),
+                    $this->paragraph('Demikian Surat Keterangan ini dibuat untuk dipergunakan sebagaimana mestinya.'),
+                ],
+            ],
         ];
     }
 
@@ -301,6 +339,15 @@ class LetterTypeSeeder extends Seeder
         return $this->field($name, $label, 'file', $required, null, ['accept' => 'image']);
     }
 
+    /**
+     * Pilihan dari katalog pekerjaan desa, plus "Lainnya" dengan teks bebas
+     * yang hanya dicetak di surat (LetterFormSchema::resolveOccupations).
+     */
+    private function occupation(string $name, string $label, bool $required = true): array
+    {
+        return $this->field($name, $label, 'occupation', $required);
+    }
+
     private function date(string $name, string $label, bool $required = true): array
     {
         return $this->field($name, $label, 'date', $required);
@@ -330,8 +377,10 @@ class LetterTypeSeeder extends Seeder
 
     /**
      * @param  array<int, string>  $sections
+     * @param  string|null  $opening  pengganti blok penanda tangan bila
+     *                                template fisik memakai satu paragraf pembuka
      */
-    private function page(string $title, array $sections): string
+    private function page(string $title, array $sections, ?string $opening = null): string
     {
         $kop = <<<'HTML'
         <div style="text-align: center; margin-bottom: 5px;">
@@ -356,7 +405,7 @@ class LetterTypeSeeder extends Seeder
         </div>
         HTML;
 
-        $signer = $this->rowsBlock('Yang bertanda tangan dibawah ini :', [
+        $signer = $opening ?? $this->rowsBlock('Yang bertanda tangan dibawah ini :', [
             'Nama' => '{{ village_head_name }}',
             'Jabatan' => 'Kepala Desa {{ village_name_short }}',
         ]);
@@ -424,6 +473,22 @@ class LetterTypeSeeder extends Seeder
             'NIK' => "{{ nik_{$suffix} }}",
             'Jenis Kelamin' => "{{ jenis_kelamin_{$suffix} }}",
             'Alamat' => "{{ alamat_{$suffix} }}",
+        ]);
+    }
+
+    /**
+     * Blok identitas di template ahli waris: urutannya berbeda dari blok
+     * identitas lain dan memuat pekerjaan.
+     */
+    private function heirBlock(string $name, string $gender, string $nik, string $birth, string $occupation, string $address): string
+    {
+        return $this->rowsBlock(null, [
+            'Nama' => $name,
+            'Jenis Kelamin' => $gender,
+            'NIK' => $nik,
+            'Tempat, tgl Lahir' => $birth,
+            'Pekerjaan' => $occupation,
+            'Alamat' => $address,
         ]);
     }
 

@@ -193,6 +193,8 @@ class PdfService
             '{{ applicant_address }}' => $letter->applicant_address ?? '________________________________________',
             '{{ applicant_gender }}' => $context['applicant']['gender'],
             '{{ applicant_birth_place_date }}' => $context['applicant']['birth_place_date'],
+            // Snapshot surat lama belum menyimpan pekerjaan pemohon.
+            '{{ applicant_occupation }}' => $context['applicant']['occupation'] ?? '-',
             '{{ purpose }}' => $letter->purpose ?? '________________________________________',
             '{{ submitted_at }}' => $context['submitted_at'],
             '{{ issued_at }}' => $context['issued_at'] ?? $context['submitted_at'],

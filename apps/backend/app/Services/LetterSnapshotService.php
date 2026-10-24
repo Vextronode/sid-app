@@ -122,6 +122,7 @@ class LetterSnapshotService
                 'gender' => $this->genderLabel($citizen?->gender),
                 'birth_place_date' => $this->birthPlaceDate($citizen),
                 'resident_phrase' => $this->residentPhrase($citizen),
+                'occupation' => $citizen?->occupation?->name ?: '-',
             ],
             'village' => [
                 'name' => $letter->village?->name,
