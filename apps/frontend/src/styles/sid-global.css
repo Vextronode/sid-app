@@ -5678,6 +5678,24 @@
   font-size: 14px;
 }
 
+.sid-letter-type-groups {
+  display: flex;
+  flex-direction: column;
+
+  gap: 20px;
+}
+
+.sid-letter-type-group-title {
+  margin: 0 0 10px;
+
+  color: var(--sid-text-muted);
+
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .sid-letter-type-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

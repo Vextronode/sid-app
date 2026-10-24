@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Check, Search } from 'lucide-react'
 
+import { groupLetterTypes } from '../utils/letterTypeGroups'
+
 // Kolom pencarian baru berguna bila jenis surat cukup banyak.
 const SEARCH_THRESHOLD = 6
 
@@ -100,23 +102,37 @@ export function LetterTypePicker({ letterTypes, loading, error, selectedCode, on
           Tidak ada jenis surat yang cocok dengan &ldquo;{query.trim()}&rdquo;.
         </p>
       ) : (
-        <div className="sid-letter-type-grid" role="radiogroup" aria-label="Jenis surat">
-          {visibleTypes.map((type) => (
-            <label key={type.id} className="sid-letter-type-option">
-              <input
-                type="radio"
-                name="letter-type"
-                value={type.code}
-                checked={false}
-                onChange={() => onSelect(type.code)}
-                className="sr-only"
-              />
-              <span className="sid-letter-type-name">{type.name}</span>
-              {type.description && (
-                <span className="sid-letter-type-description">{type.description}</span>
-              )}
-              <LetterTypeMeta type={type} />
-            </label>
+        <div className="sid-letter-type-groups" role="radiogroup" aria-label="Jenis surat">
+          {groupLetterTypes(visibleTypes).map((group) => (
+            <section
+              key={group.key}
+              className="sid-letter-type-group"
+              aria-labelledby={`letter-type-group-${group.key}`}
+            >
+              <h4 id={`letter-type-group-${group.key}`} className="sid-letter-type-group-title">
+                {group.label}
+              </h4>
+
+              <div className="sid-letter-type-grid">
+                {group.types.map((type) => (
+                  <label key={type.id} className="sid-letter-type-option">
+                    <input
+                      type="radio"
+                      name="letter-type"
+                      value={type.code}
+                      checked={false}
+                      onChange={() => onSelect(type.code)}
+                      className="sr-only"
+                    />
+                    <span className="sid-letter-type-name">{type.name}</span>
+                    {type.description && (
+                      <span className="sid-letter-type-description">{type.description}</span>
+                    )}
+                    <LetterTypeMeta type={type} />
+                  </label>
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       )}

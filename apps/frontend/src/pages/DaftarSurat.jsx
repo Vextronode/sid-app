@@ -5,6 +5,7 @@ import { DynamicSuratForm } from '@/features/surat/components/DynamicSuratForm'
 import { useLetterTypes } from '@/features/surat/hooks/useLetterTypes'
 import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig'
 import { FileText, ChevronDown } from 'lucide-react'
+import { groupLetterTypes } from '@/features/surat/utils/letterTypeGroups'
 
 export function DaftarSurat() {
   const navigate = useNavigate()
@@ -60,10 +61,14 @@ export function DaftarSurat() {
               >
                 <option value="">Pilih jenis surat...</option>
 
-                {letterTypes.map((type) => (
-                  <option key={type.id} value={type.code}>
-                    {type.name}
-                  </option>
+                {groupLetterTypes(letterTypes).map((group) => (
+                  <optgroup key={group.key} label={group.label}>
+                    {group.types.map((type) => (
+                      <option key={type.id} value={type.code}>
+                        {type.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
 

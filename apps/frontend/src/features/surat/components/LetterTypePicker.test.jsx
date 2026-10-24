@@ -43,6 +43,21 @@ describe('LetterTypePicker', () => {
     expect(onSelect).toHaveBeenCalledWith('SKU')
   })
 
+  it('separates Persuratan Desa and Pelayanan Desa with a label', () => {
+    renderPicker({
+      letterTypes: [
+        { id: 3, code: 'F01', name: 'Pelayanan Pindah', category: 'pelayanan' },
+        { id: 1, code: 'A01', name: 'Surat Keterangan Usaha', category: 'persuratan' },
+      ],
+    })
+
+    const titles = screen.getAllByRole('heading').map((heading) => heading.textContent)
+    expect(titles).toEqual(['Persuratan Desa', 'Pelayanan Desa'])
+    expect(screen.getByRole('region', { name: 'Pelayanan Desa' }).textContent).toContain(
+      'Pelayanan Pindah',
+    )
+  })
+
   it('collapses to the chosen type with its requirements and lets the user change it', () => {
     const onSelect = renderPicker({ selectedCode: 'SKD' })
 

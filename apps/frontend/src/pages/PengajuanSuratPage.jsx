@@ -16,6 +16,7 @@ import { useLetterTypes } from '@/features/surat/hooks/useLetterTypes'
 import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig'
 import { WargaLayout } from '@/components/layout/WargaLayout'
 import { notifySuccess } from '@/shared/lib/toast'
+import { groupLetterTypes } from '@/features/surat/utils/letterTypeGroups'
 
 export function PengajuanSuratPage() {
   const { kode } = useParams()
@@ -108,10 +109,14 @@ export function PengajuanSuratPage() {
               >
                 <option value="">Pilih jenis surat...</option>
 
-                {letterTypes.map((type) => (
-                  <option key={type.id} value={type.code}>
-                    {type.name}
-                  </option>
+                {groupLetterTypes(letterTypes).map((group) => (
+                  <optgroup key={group.key} label={group.label}>
+                    {group.types.map((type) => (
+                      <option key={type.id} value={type.code}>
+                        {type.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>
