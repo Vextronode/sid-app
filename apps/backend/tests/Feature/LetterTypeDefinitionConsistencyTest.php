@@ -91,6 +91,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             $this->assertSame(['rt', 'kepala_desa'], $letterType->flow->steps->pluck('approver_position')->all());
             $this->assertNotNull($letterType->form_fields, "{$letterType->code} belum punya definisi isian.");
             $this->assertTrue($letterType->produces_letter);
+            $this->assertSame('kaur_tu_umum', $letterType->assigned_role, "{$letterType->code} harus ditangani Kaur TU & Umum.");
 
             foreach ($letterType->form_fields as $field) {
                 $this->assertContains($field['type'], LetterFormSchema::FIELD_TYPES);

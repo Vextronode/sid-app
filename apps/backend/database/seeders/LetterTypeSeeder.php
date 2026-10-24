@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\AssignedRole;
 use App\Models\ApprovalFlow;
 use App\Models\LetterType;
 use App\Models\Village;
@@ -17,6 +18,7 @@ use Illuminate\Database\Seeder;
  * aksi data. Isian form hanya yang ada di template fisik (kecuali
  * foto usaha di A01). Nama isian = nama placeholder di template. Kop surat dan
  * wilayah administratif diambil dari profil desa, bukan ditulis tetap.
+ * Semua surat bawaan ditangani Kaur TU & Umum (surat selesai dan Terapkan).
  */
 class LetterTypeSeeder extends Seeder
 {
@@ -52,7 +54,7 @@ class LetterTypeSeeder extends Seeder
                     ], $type, [
                         'village_id' => $village->id,
                         'template' => $this->page($type['name'], $sections, $opening),
-                        'assigned_role' => 'kasi_pelayanan',
+                        'assigned_role' => AssignedRole::KaurTuUmum->value,
                         'is_active' => true,
                         'flow_id' => $flow->id,
                     ])

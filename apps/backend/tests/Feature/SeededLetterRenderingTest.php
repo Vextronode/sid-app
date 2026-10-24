@@ -248,9 +248,9 @@ class SeededLetterRenderingTest extends TestCase
         $this->assertStringContainsString('tercatat dalam Akta Kelahiran Nomor : 123/AK/1990 atas nama <strong>SITI AMINAH</strong>', $html);
     }
 
-    public function test_birth_letter_lists_both_parents_and_child_then_kasi_adds_the_child(): void
+    public function test_birth_letter_lists_both_parents_and_child_then_kaur_adds_the_child(): void
     {
-        $kasi = $this->makeOfficialUser('kasi_pelayanan', $this->village);
+        $kaur = $this->makeOfficialUser('kaur_tu_umum', $this->village);
         $payload = [
             'nama_pasangan' => 'Ibu Contoh',
             'tempat_lahir_pasangan' => 'Pangandaran',
@@ -273,13 +273,13 @@ class SeededLetterRenderingTest extends TestCase
         $this->assertStringContainsString('Anak Contoh', $html);
         $this->assertStringContainsString('Pangandaran, 1 Oktober 2026', $html);
 
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->getJson("/api/letters/{$letterId}/fulfillment")
             ->assertOk()
             ->assertJsonPath('data.action', 'create_citizen')
             ->assertJsonPath('data.fields.1.proposed', 'Anak Contoh');
 
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => ['nik' => '3207014110260001']])
             ->assertOk();
 
@@ -434,9 +434,9 @@ class SeededLetterRenderingTest extends TestCase
             ->assertJsonMissingValidationErrors(['payload.sebab', 'payload.nik_almarhum']);
     }
 
-    public function test_burial_letter_lets_kasi_deactivate_the_deceased_citizen(): void
+    public function test_burial_letter_lets_kaur_deactivate_the_deceased_citizen(): void
     {
-        $kasi = $this->makeOfficialUser('kasi_pelayanan', $this->village);
+        $kaur = $this->makeOfficialUser('kaur_tu_umum', $this->village);
         $deceased = Citizen::factory()->create([
             'village_id' => $this->village->id,
             'nik' => '3207011705500001',
@@ -463,7 +463,7 @@ class SeededLetterRenderingTest extends TestCase
 
         // NIK almarhum tidak diisi pemohon: Kasi wajib melengkapinya.
         $this->issue('A07', $payload, $withoutNik);
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->getJson("/api/letters/{$withoutNik}/fulfillment")
             ->assertOk()
             ->assertJsonPath('data.action', 'update_citizen')
@@ -471,16 +471,16 @@ class SeededLetterRenderingTest extends TestCase
             ->assertJsonPath('data.fields.0.column', 'is_active')
             ->assertJsonPath('data.fields.0.fixed', true)
             ->assertJsonPath('data.fields.0.display', 'Dinonaktifkan (meninggal dunia)');
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$withoutNik}/fulfillment")
             ->assertStatus(422)
             ->assertJsonValidationErrors(['subject_nik']);
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$withoutNik}/fulfillment", ['subject_nik' => '3299999999999999'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['subject_nik']);
         // Nilai tetap dari jenis surat tidak dapat diganti.
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$withoutNik}/fulfillment", [
                 'subject_nik' => '3207011705500001',
                 'values' => ['is_active' => true],
@@ -492,7 +492,7 @@ class SeededLetterRenderingTest extends TestCase
         // Pemohon (pelapor) tidak ikut berubah.
         $this->assertTrue($this->applicant['citizen']->fresh()->is_active);
 
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$withoutNik}/fulfillment", ['subject_nik' => '3207011705500001'])
             ->assertOk();
 
@@ -513,11 +513,11 @@ class SeededLetterRenderingTest extends TestCase
             'name' => 'Almarhumah Fulanah',
         ]);
         $this->issue('A07', [...$payload, 'nik_almarhum' => '3207011705500002'], $withNik);
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->getJson("/api/letters/{$withNik}/fulfillment")
             ->assertJsonPath('data.subject.found', true)
             ->assertJsonPath('data.subject.name', 'Almarhumah Fulanah');
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$withNik}/fulfillment")
             ->assertOk();
         $this->assertFalse($other->fresh()->is_active);
