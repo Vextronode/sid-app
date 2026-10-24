@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\LetterTypeCategory;
 use App\Models\LetterType;
 use App\Models\Village;
 use App\Support\LetterFormSchema;
@@ -92,6 +93,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             $this->assertNotNull($letterType->form_fields, "{$letterType->code} belum punya definisi isian.");
             $this->assertTrue($letterType->produces_letter);
             $this->assertSame('kaur_tu_umum', $letterType->assigned_role, "{$letterType->code} harus ditangani Kaur TU & Umum.");
+            $this->assertSame(LetterTypeCategory::Persuratan, $letterType->category, "{$letterType->code} termasuk Persuratan Desa.");
 
             foreach ($letterType->form_fields as $field) {
                 $this->assertContains($field['type'], LetterFormSchema::FIELD_TYPES);

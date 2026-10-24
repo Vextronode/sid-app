@@ -28,6 +28,30 @@ class LetterTypeControllerTest extends TestCase
             ->assertJsonCount(1, 'data');
     }
 
+    public function test_index_sends_the_category_used_to_group_the_letter_type_choices(): void
+    {
+        LetterType::factory()->create(['template' => 'tpl', 'name' => 'Surat A']);
+        LetterType::factory()->create(['template' => 'tpl', 'name' => 'Surat B', 'category' => 'pelayanan']);
+
+        $this->actingAs(User::factory()->create())
+            ->getJson('/api/letter-types')
+            ->assertOk()
+            ->assertJsonPath('data.0.category', 'persuratan')
+            ->assertJsonPath('data.0.category_label', 'Persuratan Desa')
+            ->assertJsonPath('data.1.category', 'pelayanan')
+            ->assertJsonPath('data.1.category_label', 'Pelayanan Desa');
+    }
+
+    public function test_update_cannot_change_the_category(): void
+    {
+        $letterType = LetterType::factory()->create(['template' => 'tpl']);
+
+        $this->actingAs(User::factory()->create(['role' => 'staf_sid']))
+            ->putJson("/api/letter-types/{$letterType->id}", ['category' => 'pelayanan', 'validity_days' => 60])
+            ->assertOk()
+            ->assertJsonPath('data.category', 'persuratan');
+    }
+
     public function test_index_with_include_inactive_returns_all_types_for_staf_sid(): void
     {
         $admin = User::factory()->create(['role' => 'staf_sid']);

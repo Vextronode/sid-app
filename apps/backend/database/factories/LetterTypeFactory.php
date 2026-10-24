@@ -24,6 +24,7 @@ class LetterTypeFactory extends Factory
             'village_id' => fn () => Village::query()->value('id') ?? Village::factory()->create()->id,
             'name' => fake()->words(3, true),
             'description' => fake()->sentence(),
+            'category' => 'persuratan',
             'template' => null,
             'requirement_info' => fake()->sentence(),
             'flow_id' => ApprovalFlow::factory(),

@@ -18,6 +18,8 @@ class PublicLetterTypeResource extends JsonResource
         return [
             'code' => $this->code,
             'name' => $this->name,
+            'category' => $this->category?->value,
+            'category_label' => $this->category?->label(),
             'requirements_info' => $this->requirement_info,
         ];
     }

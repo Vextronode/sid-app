@@ -19,6 +19,8 @@ class LetterTypeResource extends JsonResource
             'code' => $this->code,
             'name' => $this->name,
             'description' => $this->description,
+            'category' => $this->category?->value,
+            'category_label' => $this->category?->label(),
             'template' => $this->template,
             'requirements_info' => $this->requirement_info,
             'flow_id' => $this->flow_id,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Enums\AssignedRole;
+use App\Enums\LetterTypeCategory;
 use App\Models\ApprovalFlow;
 use App\Models\LetterType;
 use App\Models\Village;
@@ -45,6 +46,7 @@ class LetterTypeSeeder extends Seeder
                 LetterType::updateOrCreate(
                     ['village_id' => $village->id, 'code' => $type['code']],
                     array_merge([
+                        'category' => LetterTypeCategory::Persuratan->value,
                         'requirement_info' => null,
                         'classification_code' => '470',
                         'produces_letter' => true,
