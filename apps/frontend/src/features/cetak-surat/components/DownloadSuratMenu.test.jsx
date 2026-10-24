@@ -33,7 +33,7 @@ describe('DownloadSuratMenu', () => {
 
     fireEvent.click(screen.getByRole('menuitem', { name: option }))
 
-    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(surat, template))
+    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(surat, template, 'main'))
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
@@ -46,8 +46,49 @@ describe('DownloadSuratMenu', () => {
 
     fireEvent.click(trigger)
 
-    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(form, 'digital'))
+    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(form, 'digital', 'main'))
     expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('lists every issued document of a form as its own download', async () => {
+    const form = {
+      id: 'letter-3',
+      letter_type: { signed_by_village_head: false },
+      documents: [
+        { key: 'main', title: 'Formulir Pindah' },
+        { key: 'pendaftaran', title: 'Formulir Pendaftaran' },
+      ],
+    }
+    render(<DownloadSuratMenu surat={form} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Unduh formulir/ }))
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      expect.stringContaining('Formulir Pindah'),
+      expect.stringContaining('Formulir Pendaftaran'),
+    ])
+
+    fireEvent.click(screen.getByRole('menuitem', { name: /Formulir Pendaftaran/ }))
+    await waitFor(() =>
+      expect(downloadSuratPDF).toHaveBeenCalledWith(form, 'digital', 'pendaftaran'),
+    )
+  })
+
+  it('adds documents issued together after the two formats of a signed letter', () => {
+    render(
+      <DownloadSuratMenu
+        surat={{
+          ...surat,
+          documents: [
+            { key: 'main', title: 'Surat Keterangan' },
+            { key: 'pernyataan', title: 'Surat Pernyataan' },
+          ],
+        }}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Unduh surat/ }))
+    expect(screen.getAllByRole('menuitem')).toHaveLength(3)
+    expect(screen.getByRole('menuitem', { name: /Surat Pernyataan/ })).toBeTruthy()
   })
 
   it('focuses the first option, moves with arrow keys and closes on Escape without bubbling', () => {

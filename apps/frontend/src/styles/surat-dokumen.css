@@ -1116,3 +1116,41 @@
     flex: 1;
   }
 }
+
+/* Tab dokumen yang terbit bersama surat (LetterDocumentsPreview). */
+.sid-letter-documents-tabs {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 0.5rem;
+
+  max-width: 52rem;
+  margin: 0 auto 1rem;
+}
+
+.sid-letter-documents-tab {
+  padding: 0.4rem 0.85rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 999px;
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+
+  font: inherit;
+  font-size: 0.8125rem;
+
+  cursor: pointer;
+}
+
+.sid-letter-documents-tab[aria-selected='true'] {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-primary);
+  color: #fff;
+}
+
+.sid-letter-documents-tab:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}

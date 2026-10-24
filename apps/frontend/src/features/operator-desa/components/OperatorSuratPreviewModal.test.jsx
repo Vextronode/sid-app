@@ -46,6 +46,7 @@ describe('OperatorSuratPreviewModal', () => {
       expect(downloadSuratPDF).toHaveBeenCalledWith(
         { id: 'letter-1', status: 'approved', approvals: [] },
         'wet',
+        'main',
       ),
     )
 

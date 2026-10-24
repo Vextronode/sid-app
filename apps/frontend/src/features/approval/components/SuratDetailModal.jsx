@@ -11,7 +11,7 @@
 // ==========================================
 
 import { DownloadSuratMenu } from '@/features/cetak-surat/components/DownloadSuratMenu'
-import { PdfCanvasPreview } from '@/features/cetak-surat/components/PdfCanvasPreview'
+import { LetterDocumentsPreview } from '@/features/cetak-surat/components/LetterDocumentsPreview'
 import { LetterExtrasPanel } from '@/features/surat/components/LetterExtrasPanel'
 import { LetterDossierModal } from '@/features/surat/components/dossier/LetterDossierModal'
 import {
@@ -111,7 +111,7 @@ export default function SuratDetailModal({
       surat={surat}
       notFound={notFound}
       onClose={onClose}
-      preview={showPreview && surat ? <PdfCanvasPreview surat={surat} /> : null}
+      preview={showPreview && surat ? <LetterDocumentsPreview surat={surat} /> : null}
       hint={surat ? getHint({ surat, canDecide, canDownload, viewerRole }) : null}
       actions={
         canDecide ? (

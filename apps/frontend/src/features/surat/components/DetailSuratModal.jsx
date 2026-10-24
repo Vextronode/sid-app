@@ -12,7 +12,7 @@ import { useQuery } from '@tanstack/react-query'
 import { CalendarX, FileX, Hourglass } from 'lucide-react'
 
 import { DownloadSuratMenu } from '@/features/cetak-surat/components/DownloadSuratMenu'
-import { PdfCanvasPreview } from '@/features/cetak-surat/components/PdfCanvasPreview'
+import { LetterDocumentsPreview } from '@/features/cetak-surat/components/LetterDocumentsPreview'
 import { queryKeys } from '@/shared/lib/queryKeys'
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
@@ -50,7 +50,7 @@ const HINTS = {
 
 function DocumentArea({ surat, state }) {
   if (state === 'approved') {
-    return <PdfCanvasPreview surat={surat} />
+    return <LetterDocumentsPreview surat={surat} />
   }
 
   if (state === 'expired') {

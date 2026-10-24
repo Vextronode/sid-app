@@ -10,7 +10,7 @@ import { FileClock } from 'lucide-react'
 
 import { getSuratDetail } from '@/lib/api'
 import { LetterExtrasPanel } from '@/features/surat/components/LetterExtrasPanel'
-import { PdfCanvasPreview } from '@/features/cetak-surat/components/PdfCanvasPreview'
+import { LetterDocumentsPreview } from '@/features/cetak-surat/components/LetterDocumentsPreview'
 import { DownloadSuratMenu } from '@/features/cetak-surat/components/DownloadSuratMenu'
 import {
   DossierDocumentEmpty,
@@ -78,7 +78,7 @@ export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose 
       onClose={onClose}
       preview={
         isApproved ? (
-          <PdfCanvasPreview surat={surat} />
+          <LetterDocumentsPreview surat={surat} />
         ) : (
           <DossierDocumentEmpty icon={FileClock} title="Surat belum selesai disetujui.">
             Pratinjau dan unduhan tersedia setelah persetujuan final Kepala Desa.
