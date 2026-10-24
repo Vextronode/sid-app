@@ -146,6 +146,7 @@ Keputusan dijalankan di dalam transaksi: `SELECT ... FOR UPDATE` pada surat, cek
 ### 3.5 Tanda tangan pada surat
 
 - **TTD pribadi akun** (`user_signatures`): dibuat sekali oleh pemilik akun, dienkripsi (`Crypt::encryptString`) di disk privat `user-signatures/{user_id}/*.enc`. Tidak dapat diubah sendiri; reset hanya oleh Petugas Desa desa yang sama (baris lama ditandai `revoked_at`, berkas dipertahankan agar dokumen lama tetap dapat dirender; tercatat di activity log `user_signature`).
+- **TTD jabatan** (`officials.signature_img`): Kepala Desa diunggah Petugas Desa (`OfficialService::replaceSignature`). Jabatan berakun lain memakai salinan TTD akun pejabatnya (`UserSignatureService::syncActiveOfficials`): disalin saat promote/rotasi, diganti saat pemilik membuat TTD baru, dikosongkan saat TTD akun direset, selama jabatan masih aktif. Jabatan yang sudah berakhir tidak disinkronkan agar surat lama tetap memakai TTD saat itu; berkas lama tidak dihapus.
 - **Slot pada surat** (`letter_signatures`, satu baris per percobaan, baris terbaru = keadaan slot):
   - `signer: applicant` → otomatis memakai TTD akun pemohon (wajib sudah ada);
   - `signer: other` → minta ke pemilik NIK (TTD digital; status `pending`, kedaluwarsa `request_ttl_days`=7) atau unggah foto dokumen ber-TTD basah (`wet`, langsung `signed`).

@@ -233,7 +233,7 @@ Rekam jejak jabatan struktural desa per periode. Digunakan untuk resolusi wilaya
 | rt_id | BIGINT | FK → rts.id, NULL | Diisi untuk jabatan RT |
 | rw_id | BIGINT | FK → rws.id, NULL | Diisi untuk jabatan RW |
 | hamlet_id | BIGINT | FK → hamlets.id, NULL | Diisi untuk jabatan Kadus |
-| signature_img | VARCHAR(255) | NULL | Path TTD Kepala Desa pada private storage; upload/preview terproteksi |
+| signature_img | VARCHAR(255) | NULL | Path TTD jabatan pada private storage (`official-signatures/{village_id}/{official_id}/`). Kepala Desa: diunggah Petugas Desa. Jabatan berakun lain: salinan TTD akun pejabatnya (`user_signatures`) saat dipromote, diganti/dikosongkan mengikuti TTD akun selama menjabat; tidak disentuh lagi setelah jabatan berakhir. Jabatan tanpa akun: NULL |
 | stamp_img | VARCHAR(255) | NULL | Kolom legacy; tidak dipakai PDF. Stempel PDF berasal dari `villages.stamp_img`; nasib kolom belum diputuskan |
 | photo_img | VARCHAR(255) | NULL | Path foto di disk public (`official-photos/{village_id}/...`); wajib diunggah saat promote/rotate/store, tampil di Profil Desa publik |
 | phone_wa | VARCHAR(255) | NULL | Untuk fitur Hubungi Kami |
