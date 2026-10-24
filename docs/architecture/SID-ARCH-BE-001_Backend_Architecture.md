@@ -102,7 +102,7 @@ Konfigurasi tiap jenis surat adalah data, bukan kode:
 | Kolom | Fungsi |
 |---|---|
 | `template` | HTML dengan placeholder `{{ nama }}`; NULL = draft |
-| `form_fields` (JSON) | Definisi isian: `name`, `label`, `type` (text, textarea, date, number, nik, select, file), `required`, `options`, `accept`. Divalidasi di server; isian tak dikenal ditolak |
+| `form_fields` (JSON) | Definisi isian: `name`, `label`, `type` (text, textarea, date, number, nik, select, file, occupation), `required`, `options`, `accept`. Divalidasi di server; isian tak dikenal ditolak |
 | `classification_code` | Kode klasifikasi nomor surat (default `470`) |
 | `data_action`, `data_fields`, `data_subject_field` | Aksi data pasca-approve: `none`, `update_citizen`, `create_citizen` (S3.6) |
 | `signature_slots` (JSON) | Slot tanda tangan pemohon/pihak lain (S3.5) |
@@ -111,7 +111,7 @@ Konfigurasi tiap jenis surat adalah data, bukan kode:
 | `assigned_role` | Kasi/Kaur yang mengakses surat selesai dan menjalankan Terapkan; NULL = keduanya |
 | `validity_days`, `is_active` | Satu-satunya yang dapat diubah Petugas Desa (`PUT /letter-types/{id}`) bersama `assigned_role` |
 
-Seeder membuat 10 jenis surat (A01–A10) per desa. A07 (Penguburan) memakai `update_citizen` untuk menonaktifkan data almarhum; A08 (Kelahiran) memakai `create_citizen` untuk menambah anak. Belum ada jenis surat bawaan yang memakai `signature_slots` atau `supporting_template`.
+Seeder membuat 11 jenis surat (A01–A11) per desa. A07 (Penguburan) memakai `update_citizen` untuk menonaktifkan data almarhum; A08 (Kelahiran) memakai `create_citizen` untuk menambah anak. A11 (Ahli Waris) hanya menerbitkan surat dan berlaku tanpa batas (`validity_days` null); blok identitasnya memuat pekerjaan pemohon lewat placeholder `{{ applicant_occupation }}`. Belum ada jenis surat bawaan yang memakai `signature_slots` atau `supporting_template`.
 
 > `letter_categories`, `letter_types.category_id`, `approval_flows.category_id`, dan `letter_types.verification_type` sudah di-drop (migration `2026_10_10_090000` dan `2026_10_11_090400`). Perilaku per "kategori" kini diturunkan dari kolom-kolom di atas.
 

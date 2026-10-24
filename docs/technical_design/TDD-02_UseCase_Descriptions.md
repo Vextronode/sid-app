@@ -88,7 +88,7 @@ Main Flow:
 
 Main Flow:
 1. Pemohon membuka "Ajukan Surat" dan memilih jenis surat (hanya `template != NULL AND is_active = true`, desa yang sama).
-2. Frontend membangun form dari `letter_types.form_fields` (text, textarea, date, number, nik, select, file) dan `signature_slots`.
+2. Frontend membangun form dari `letter_types.form_fields` (text, textarea, date, number, nik, select, file, occupation) dan `signature_slots`.
 3. Data pemohon (nama, NIK, alamat) diambil otomatis dari citizen akun; `purpose` dan `notes` tidak lagi diisi (keperluan menjadi isian bila diperlukan jenis surat).
 4. Pemohon mengisi isian, mengunggah berkas isian bertipe file (PDF/JPG/PNG, atau JPG/PNG bila `accept: image`; maks 2 MB), dan untuk tiap slot pihak lain mengisi NIK penanda tangan **atau** nama + foto dokumen ber-TTD basah.
 5. Server memvalidasi isian terhadap definisi jenis surat (isian tak dikenal ditolak; tipe dan wajib diperiksa).
@@ -108,7 +108,7 @@ Alternative Flow:
 - 6c. Kegagalan di tengah transaksi → berkas yang sudah tertulis dihapus.
 - 8a. Jika tahap RT dilewati, RW dan Kadus tidak menerima FYI.
 
-> Jenis surat bawaan seeder (A01–A10) belum memakai `signature_slots`; alur tanda tangan aktif begitu developer menambahkan slot pada jenis surat.
+> Jenis surat bawaan seeder (A01–A11) belum memakai `signature_slots`; alur tanda tangan aktif begitu developer menambahkan slot pada jenis surat.
 
 ---
 

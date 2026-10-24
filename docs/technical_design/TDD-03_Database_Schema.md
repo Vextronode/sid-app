@@ -321,7 +321,7 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 |---|---|---|---|
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | village_id | UUID | FK → villages.id, NOT NULL | Desa pemilik jenis surat |
-| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A10 |
+| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A11 |
 | name | VARCHAR(255) | NOT NULL | |
 | description | TEXT | NULL | |
 | template | TEXT | NULL | HTML ber-placeholder; NULL = Draft |
@@ -332,7 +332,7 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 | is_active | BOOLEAN | NOT NULL | Tanpa default di migration |
 | produces_letter | BOOLEAN | DEFAULT true | Penanda menerbitkan surat; belum dipakai logika backend |
 | data_action | VARCHAR(30) | DEFAULT 'none' | `none` \| `update_citizen` \| `create_citizen` (enum aplikasi `LetterDataAction`) |
-| form_fields | JSON | NULL | Daftar isian `{name, label, type, required, placeholder?, options?, accept?}`; type: text, textarea, date, number, nik, select, file. NULL = isian bebas (teks); array = hanya isian terdaftar |
+| form_fields | JSON | NULL | Daftar isian `{name, label, type, required, placeholder?, options?, accept?}`; type: text, textarea, date, number, nik, select, file, occupation (id katalog `occupations` atau `lainnya` + `<name>_lainnya`; disimpan sebagai nama pekerjaan siap cetak). NULL = isian bebas (teks); array = hanya isian terdaftar |
 | data_fields | JSON | NULL | Kolom `citizens` yang boleh diubah lewat Terapkan: `{column, label, source?, value?, value_label?}` |
 | data_subject_field | VARCHAR(100) | NULL | Nama isian NIK subjek bila yang diubah bukan pemohon (seed A07: `nik_almarhum`) |
 | signature_slots | JSON | NULL | `{key, label, signer: applicant\|other}`; belum dipakai jenis surat seed |
