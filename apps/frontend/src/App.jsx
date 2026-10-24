@@ -106,7 +106,7 @@ const OFFICIAL_ROLES = [
   'rw',
   'kadus',
   ...KADES_APPROVER_ROLES,
-  'kasi_pelayanan',
+  'kasi_pemerintahan',
   'kaur_tu_umum',
   'staf_sid',
 ]
@@ -371,7 +371,7 @@ export default function App() {
                 }
               />
 
-              {/* OPERATOR DESA — Kasi Pelayanan, Kaur TU Umum, Petugas Desa.
+              {/* OPERATOR DESA — Kasi Pemerintahan, Kaur TU Umum, Petugas Desa.
                 Halaman pengelolaan dibatasi sesuai kapabilitas backend. */}
               <Route
                 path="/admin/operator-desa"

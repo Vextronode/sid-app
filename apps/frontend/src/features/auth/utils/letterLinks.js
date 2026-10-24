@@ -19,7 +19,7 @@ export function roleHomePath(role) {
     case 'kepala_desa':
     case 'sekretaris_desa':
       return '/admin/dashboard-surat-kades'
-    case 'kasi_pelayanan':
+    case 'kasi_pemerintahan':
     case 'kaur_tu_umum':
     case 'staf_sid':
       return '/admin/operator-desa'

@@ -2,7 +2,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { AdminLayout } from './AdminLayout'
 import { OperatorDesaLayout } from './OperatorDesaLayout'
 
-const OPERATOR_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'staf_sid']
+const OPERATOR_ROLES = ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid']
 
 /**
  * Tata letak untuk halaman yang dipakai semua pejabat (mis. profil):

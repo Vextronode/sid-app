@@ -493,7 +493,7 @@ describe('BerandaPage contact section', () => {
     latitude: -7.6803137,
     longitude: 108.5513816,
   }
-  const officialContacts = [{ name: 'Petugas Lama', position: 'kasi_pelayanan', wa_link: 'x' }]
+  const officialContacts = [{ name: 'Petugas Lama', position: 'kasi_pemerintahan', wa_link: 'x' }]
 
   beforeEach(() => {
     usePublicVillageInfo.mockReturnValue({ village, stats: null, contacts: officialContacts })

@@ -11,7 +11,7 @@ import { FulfillmentPanel } from './FulfillmentPanel'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 
-const FULFILLMENT_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'staf_sid']
+const FULFILLMENT_ROLES = ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid']
 
 const SIGNATURE_STATUS_LABELS = {
   signed: 'Sudah ditandatangani',

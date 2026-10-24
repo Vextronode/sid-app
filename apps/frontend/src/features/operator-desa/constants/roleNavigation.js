@@ -1,10 +1,10 @@
 export const OPERATOR_ROUTE_CAPABILITIES = {
-  '/admin/operator-desa': ['kasi_pelayanan', 'kaur_tu_umum', 'staf_sid'],
-  '/admin/operator-desa/surat': ['kasi_pelayanan', 'kaur_tu_umum', 'staf_sid'],
+  '/admin/operator-desa': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
+  '/admin/operator-desa/surat': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
   // Pengajuan surat pribadi; Petugas Desa (admin) tidak memerlukannya.
-  '/admin/surat-saya': ['kasi_pelayanan', 'kaur_tu_umum'],
+  '/admin/surat-saya': ['kasi_pemerintahan', 'kaur_tu_umum'],
   // Kasi/Kaur hanya melihat daftar warga; halaman kelola tetap milik Petugas Desa.
-  '/admin/data-warga': ['kasi_pelayanan', 'kaur_tu_umum', 'staf_sid'],
+  '/admin/data-warga': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
   '/admin/kelola-wilayah': ['staf_sid'],
   '/admin/kelola-pekerjaan': ['staf_sid'],
   '/admin/manajemen-user': ['staf_sid'],
@@ -21,7 +21,7 @@ export const OPERATOR_ROUTE_CAPABILITIES = {
   '/admin/organisasi/lembaga': ['staf_sid'],
 }
 
-export const OPERATOR_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'staf_sid']
+export const OPERATOR_ROLES = ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid']
 
 export const ROLE_NAVIGATION = Object.fromEntries(
   OPERATOR_ROLES.map((role) => [

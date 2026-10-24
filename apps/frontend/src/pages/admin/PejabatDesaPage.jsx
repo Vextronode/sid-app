@@ -35,7 +35,7 @@ import { notifySuccess } from '@/shared/lib/toast'
 // Tabel pejabat dipisah per tingkat. Jabatan yang bukan Kadus/RW/RT
 // (Kades, Sekdes, Kasi, Kaur, staf, Petugas Desa) masuk tabel pertama,
 // diurutkan sesuai DESA_ORDER lalu abjad.
-const DESA_ORDER = ['kepala_desa', 'sekretaris_desa', 'kasi_pelayanan', 'kaur_tu_umum']
+const DESA_ORDER = ['kepala_desa', 'sekretaris_desa', 'kasi_pemerintahan', 'kaur_tu_umum']
 
 const areaNumber = (value) => Number(value) || 0
 

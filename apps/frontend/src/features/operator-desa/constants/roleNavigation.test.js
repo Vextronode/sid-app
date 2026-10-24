@@ -15,7 +15,7 @@ describe('operator role navigation', () => {
       '/admin/data-warga',
     ]
 
-    expect(ROLE_NAVIGATION.kasi_pelayanan).toEqual(expectedRoutes)
+    expect(ROLE_NAVIGATION.kasi_pemerintahan).toEqual(expectedRoutes)
     expect(ROLE_NAVIGATION.kaur_tu_umum).toEqual(expectedRoutes)
   })
 

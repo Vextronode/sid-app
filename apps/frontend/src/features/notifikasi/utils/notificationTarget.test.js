@@ -11,7 +11,7 @@ describe('getNotificationTarget', () => {
     ['kadus', '/admin/list-kadus?surat=abc-123'],
     ['kepala_desa', '/admin/list-kades?surat=abc-123'],
     ['sekretaris_desa', '/admin/list-kades?surat=abc-123'],
-    ['kasi_pelayanan', '/admin/operator-desa/surat?surat=abc-123'],
+    ['kasi_pemerintahan', '/admin/operator-desa/surat?surat=abc-123'],
     ['kaur_tu_umum', '/admin/operator-desa/surat?surat=abc-123'],
     ['staf_sid', '/admin/operator-desa/surat?surat=abc-123'],
   ])('opens the letter on the list page of %s', (role, expected) => {
@@ -29,7 +29,7 @@ describe('getNotificationTarget', () => {
     const own = { ...context, is_applicant: true }
 
     expect(getNotificationTarget('rt', own)).toBe('/admin/surat-saya?surat=abc-123')
-    expect(getNotificationTarget('kasi_pelayanan', own)).toBe('/admin/surat-saya?surat=abc-123')
+    expect(getNotificationTarget('kasi_pemerintahan', own)).toBe('/admin/surat-saya?surat=abc-123')
     expect(getNotificationTarget('warga', own)).toBe('/daftar-surat-saya?surat=abc-123')
     expect(getNotificationTarget('staf_sid', own)).toBe('/admin/operator-desa/surat?surat=abc-123')
   })

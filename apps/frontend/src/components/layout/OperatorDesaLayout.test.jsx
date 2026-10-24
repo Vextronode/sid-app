@@ -27,7 +27,7 @@ describe('OperatorDesaLayout role regression', () => {
     useNotifications.mockReturnValue({ unreadCount: 2, reload })
   })
 
-  it.each(['kasi_pelayanan', 'kaur_tu_umum'])(
+  it.each(['kasi_pemerintahan', 'kaur_tu_umum'])(
     'keeps %s on operator-desa pages and exposes notifications',
     (role) => {
       useAuth.mockReturnValue({
