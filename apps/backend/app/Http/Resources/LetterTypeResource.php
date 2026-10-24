@@ -35,6 +35,8 @@ class LetterTypeResource extends JsonResource
             'validity_days' => $this->validity_days,
             'is_active' => $this->is_active,
             'produces_letter' => $this->produces_letter,
+            'issues_letter_number' => $this->issues_letter_number,
+            'signed_by_village_head' => $this->signed_by_village_head,
             'data_action' => $this->data_action,
             'form_fields' => $this->form_fields ?? [],
             'data_fields' => $this->data_fields ?? [],

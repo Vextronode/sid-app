@@ -168,7 +168,10 @@ class KadesApprovalService
 
         $this->letterRepository->update($letter, [
             'status' => LetterStatus::Approved,
-            'letter_number' => $this->letterNumberGenerator->next($letter),
+            // Formulir pelayanan (Fxx) tidak memakai nomor surat desa.
+            'letter_number' => $letterType->issues_letter_number
+                ? $this->letterNumberGenerator->next($letter)
+                : null,
             'expires_at' => $expiresAt,
             'processed_at' => now(),
         ]);

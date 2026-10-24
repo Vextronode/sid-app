@@ -53,6 +53,7 @@ class LetterListResource extends JsonResource
                 'id' => $this->letterType->id,
                 'name' => $this->letterType->name,
                 'code' => $this->letterType->code,
+                'signed_by_village_head' => $this->letterType->signed_by_village_head,
             ] : null,
             'citizen' => $this->citizen ? [
                 'id' => $this->citizen->id,

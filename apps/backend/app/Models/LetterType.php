@@ -32,16 +32,22 @@ class LetterType extends Model
         'data_subject_field',
         'signature_slots',
         'supporting_template',
+        'issues_letter_number',
+        'signed_by_village_head',
     ];
 
     protected $attributes = [
         'category' => 'persuratan',
+        'issues_letter_number' => true,
+        'signed_by_village_head' => true,
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'category' => LetterTypeCategory::class,
         'produces_letter' => 'boolean',
+        'issues_letter_number' => 'boolean',
+        'signed_by_village_head' => 'boolean',
         'data_action' => LetterDataAction::class,
         'form_fields' => 'array',
         'data_fields' => 'array',

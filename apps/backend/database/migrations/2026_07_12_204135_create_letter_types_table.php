@@ -28,6 +28,10 @@ return new class extends Migration
             $table->foreignId('category_id')->after('assigned_role')->constrained('letter_categories');
             $table->foreignId('flow_id')->after('category_id')->constrained('approval_flows');
             $table->unsignedInteger('validity_days')->nullable();
+            // Formulir pelayanan (format instansi luar) tidak bernomor surat
+            // desa dan tidak ditandatangani/distempel Kepala Desa.
+            $table->boolean('issues_letter_number')->default(true);
+            $table->boolean('signed_by_village_head')->default(true);
             $table->boolean('is_active');
             $table->timestamps();
 

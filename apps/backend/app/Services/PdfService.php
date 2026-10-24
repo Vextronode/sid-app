@@ -157,7 +157,7 @@ class PdfService
         // Template wet dicetak lalu ditandatangani dan distempel basah,
         // jadi area tanda tangan dibiarkan kosong.
         $signatureHtml = '';
-        if ($sealed && $template === 'digital') {
+        if ($sealed && $template === 'digital' && ($signer['official_id'] ?? null) !== null) {
             $signatureDirectory = "official-signatures/{$signer['village_id']}/{$signer['official_id']}/";
             $signatureHtml = $this->sealHtml(
                 $this->privateImagePath($signer['signature_img'] ?? null, $signatureDirectory),

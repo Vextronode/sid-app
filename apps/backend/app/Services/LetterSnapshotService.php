@@ -32,10 +32,10 @@ class LetterSnapshotService
     public function contextFor(Letter $letter): array
     {
         if ($letter->status !== LetterStatus::Approved) {
-            return $this->build($letter, $this->activeVillageHeadOrFail($letter));
+            return $this->build($letter, $this->signerOrFail($letter));
         }
 
-        return $letter->snapshot ?? $this->capture($letter, $this->activeVillageHeadOrFail($letter));
+        return $letter->snapshot ?? $this->capture($letter, $this->signerOrFail($letter));
     }
 
     /**
@@ -64,6 +64,12 @@ class LetterSnapshotService
      */
     public function captureOnFinalApproval(Letter $letter): void
     {
+        if (! $this->signedByVillageHead($letter)) {
+            $this->capture($letter, null);
+
+            return;
+        }
+
         $kades = $this->officialRepository->findActiveVillageHeadWithCitizen($letter->village_id);
 
         if ($kades !== null) {
@@ -71,8 +77,15 @@ class LetterSnapshotService
         }
     }
 
-    public function signerFor(Letter $letter, array $context): Official
+    /**
+     * Null untuk jenis surat yang tidak ditandatangani Kepala Desa.
+     */
+    public function signerFor(Letter $letter, array $context): ?Official
     {
+        if (($context['signer']['official_id'] ?? null) === null) {
+            return null;
+        }
+
         $official = $this->officialRepository->find((int) $context['signer']['official_id']);
 
         if ($official === null) {
@@ -85,13 +98,13 @@ class LetterSnapshotService
     /**
      * @return array<string, mixed>
      */
-    private function capture(Letter $letter, Official $kades): array
+    private function capture(Letter $letter, ?Official $kades): array
     {
         $snapshot = $this->build($letter, $kades);
 
         $this->letterRepository->update($letter, [
             'snapshot' => $snapshot,
-            'signed_by_official_id' => $kades->id,
+            'signed_by_official_id' => $kades?->id,
         ]);
 
         return $snapshot;
@@ -142,6 +155,20 @@ class LetterSnapshotService
                 'signature_img' => $kades?->signature_img,
             ],
         ];
+    }
+
+    /**
+     * Formulir pelayanan (Fxx) tidak ditandatangani Kepala Desa, jadi
+     * dapat dirender tanpa Kepala Desa aktif.
+     */
+    private function signerOrFail(Letter $letter): ?Official
+    {
+        return $this->signedByVillageHead($letter) ? $this->activeVillageHeadOrFail($letter) : null;
+    }
+
+    private function signedByVillageHead(Letter $letter): bool
+    {
+        return $letter->loadMissing('letterType')->letterType?->signed_by_village_head ?? true;
     }
 
     private function activeVillageHeadOrFail(Letter $letter): Official
