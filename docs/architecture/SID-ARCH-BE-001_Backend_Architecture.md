@@ -102,6 +102,7 @@ Konfigurasi tiap jenis surat adalah data, bukan kode:
 | Kolom | Fungsi |
 |---|---|
 | `template` | HTML dengan placeholder `{{ nama }}`; NULL = draft |
+| `category` | `persuratan` (Persuratan Desa, Axx) / `pelayanan` (Pelayanan Desa, Fxx); mengelompokkan pilihan jenis surat saat pengajuan (Persuratan di atas). Tidak dapat diubah Petugas Desa |
 | `form_fields` (JSON) | Definisi isian: `name`, `label`, `type` (text, textarea, date, number, nik, select, file, occupation), `required`, `options`, `accept`. Divalidasi di server; isian tak dikenal ditolak |
 | `classification_code` | Kode klasifikasi nomor surat (default `470`) |
 | `data_action`, `data_fields`, `data_subject_field` | Aksi data pasca-approve: `none`, `update_citizen`, `create_citizen` (S3.6) |

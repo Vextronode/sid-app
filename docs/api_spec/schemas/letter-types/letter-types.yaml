@@ -20,6 +20,18 @@ LetterType:
     description:
       type: string
       nullable: true
+    category:
+      type: string
+      enum: [persuratan, pelayanan]
+      example: "persuratan"
+      description: |
+        Kelompok di pilihan pengajuan (diset developer lewat seeder, tidak
+        dapat diubah lewat `PUT /letter-types/{id}`). Frontend menampilkan
+        Persuratan Desa di atas lalu Pelayanan Desa di bawah.
+    category_label:
+      type: string
+      enum: ["Persuratan Desa", "Pelayanan Desa"]
+      example: "Persuratan Desa"
     template:
       type: string
       nullable: true
@@ -197,6 +209,18 @@ PublicLetterType:
     name:
       type: string
       example: "Surat Keterangan Usaha"
+    category:
+      type: string
+      enum: [persuratan, pelayanan]
+      example: "persuratan"
+      description: |
+        Kelompok di pilihan pengajuan (diset developer lewat seeder, tidak
+        dapat diubah lewat `PUT /letter-types/{id}`). Frontend menampilkan
+        Persuratan Desa di atas lalu Pelayanan Desa di bawah.
+    category_label:
+      type: string
+      enum: ["Persuratan Desa", "Pelayanan Desa"]
+      example: "Persuratan Desa"
     requirements_info:
       type: string
       nullable: true
