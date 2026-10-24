@@ -34,6 +34,7 @@ class OfficialAssignmentService
         protected LetterRepository $letterRepository,
         protected OfficialService $officialService,
         protected UsernameGenerator $usernameGenerator,
+        protected UserSignatureService $userSignatureService,
         protected OfficialPositionTypeRepository $positionTypes = new OfficialPositionTypeRepository,
     ) {}
 
@@ -332,6 +333,8 @@ class OfficialAssignmentService
 
         if ($target !== null) {
             $this->userRepository->updateRole($target->id, $position->userRole()->value);
+            // TTD jabatan disalin dari TTD akun pejabatnya (selain Kepala Desa).
+            $this->userSignatureService->syncActiveOfficials($target);
         }
 
         $this->logActivity($actor, $official, 'promoted', [
