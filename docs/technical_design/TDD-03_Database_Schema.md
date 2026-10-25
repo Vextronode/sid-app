@@ -321,7 +321,7 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 |---|---|---|---|
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | village_id | UUID | FK → villages.id, NOT NULL | Desa pemilik jenis surat |
-| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A11 |
+| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A11 (Persuratan Desa, `LetterTypeSeeder`), F01 (Pelayanan Desa, `ServiceLetterTypeSeeder`) |
 | name | VARCHAR(255) | NOT NULL | |
 | description | TEXT | NULL | |
 | category | VARCHAR(20) | NOT NULL, DEFAULT `persuratan` | `persuratan` (Persuratan Desa) \| `pelayanan` (Pelayanan Desa); pengelompokan pilihan jenis surat, diset seeder |
