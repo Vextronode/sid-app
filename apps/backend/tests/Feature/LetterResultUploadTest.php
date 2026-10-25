@@ -61,8 +61,12 @@ class LetterResultUploadTest extends TestCase
             LetterStatusNotification::class,
             fn (LetterStatusNotification $notification, array $channels, object $notifiable) => str_contains($notification->toArray($notifiable)['message'], 'unggah hasilnya'),
         );
-        // Kasi belum dilibatkan sebelum ada unggahan.
-        Notification::assertNotSentTo($this->kasi['user'], LetterStatusNotification::class);
+        // Kasi diberi tahu formulir terbit; verifikasi menunggu unggahan.
+        Notification::assertSentTo(
+            $this->kasi['user'],
+            LetterStatusNotification::class,
+            fn (LetterStatusNotification $notification, array $channels, object $notifiable) => $notification->toArray($notifiable)['context']['status'] === 'letter_awaiting_result',
+        );
 
         // Hanya pemohon yang dapat mengunggah, dan minimal satu berkas.
         $this->upload($this->kasi['user'], $letterId)->assertForbidden();

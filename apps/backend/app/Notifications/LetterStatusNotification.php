@@ -122,7 +122,8 @@ class LetterStatusNotification extends Notification implements ShouldQueue
 
             'waiting_revision_warga' => 'edit',
 
-            'letter_ready_for_print' => 'document',
+            'letter_ready_for_print',
+            'letter_awaiting_result' => 'document',
 
             'approval_reminder' => 'bell',
 
@@ -141,6 +142,7 @@ class LetterStatusNotification extends Notification implements ShouldQueue
             'letter_approved_final' => 'green',
 
             'letter_ready_for_print',
+            'letter_awaiting_result',
             'approval_reminder' => 'blue',
 
             'waiting_revision_warga' => 'amber',

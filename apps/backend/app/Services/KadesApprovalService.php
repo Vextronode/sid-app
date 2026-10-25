@@ -201,8 +201,8 @@ class KadesApprovalService
     {
         $citizenUser = $this->officialService->resolveCitizenUser($letter);
 
-        // Formulir pelayanan: Kasi/Kaur baru dilibatkan saat hasil dari
-        // instansi diunggah (LetterResultService).
+        // Formulir pelayanan: Kasi/Kaur diberi tahu formulir sudah terbit;
+        // verifikasi menunggu hasil dari instansi diunggah (LetterResultService).
         if ($letter->letterType?->requires_result_upload) {
             $citizenUser?->notify(new LetterStatusNotification(
                 $letter,
@@ -210,6 +210,15 @@ class KadesApprovalService
                 'Formulir Anda telah disetujui. Unduh formulir, bawa ke instansi yang dituju, lalu unggah hasilnya di surat ini.',
                 'letter_approved_final',
             ));
+
+            foreach ($this->officialService->resolveKasiKaurForLetter($letter) as $official) {
+                $official->user?->notify(new LetterStatusNotification(
+                    $letter,
+                    'Formulir pelayanan terbit',
+                    'Formulir telah disetujui Kepala Desa dan dibawa pemohon ke instansi. Hasilnya akan diunggah pemohon untuk Anda verifikasi.',
+                    'letter_awaiting_result',
+                ));
+            }
 
             return;
         }

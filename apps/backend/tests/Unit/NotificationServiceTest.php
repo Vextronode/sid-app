@@ -98,6 +98,7 @@ class NotificationServiceTest extends TestCase
         return [
             'final approval' => ['letter_approved_final', 'signature', 'green'],
             'ready for print' => ['letter_ready_for_print', 'document', 'blue'],
+            'awaiting service result' => ['letter_awaiting_result', 'document', 'blue'],
             'legacy approved' => ['kasi_approved', 'signature', 'green'],
             'legacy rejected' => ['kasi_rejected', 'document', 'red'],
         ];
