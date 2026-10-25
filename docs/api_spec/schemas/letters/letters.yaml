@@ -700,7 +700,7 @@ FulfillmentProposal:
   properties:
     action:
       type: string
-      enum: [none, update_citizen, create_citizen]
+      enum: [none, update_citizen, create_citizen, deactivate_members, manual]
       example: "update_citizen"
     fulfilled_at:
       type: string
@@ -713,7 +713,32 @@ FulfillmentProposal:
     result:
       type: object
       nullable: true
-      description: "Isi `letters.fulfillment` setelah diterapkan: {action, citizen_id, changes{kolom:{old,new}}}."
+      description: |
+        Isi `letters.fulfillment` setelah diterapkan. update/create_citizen:
+        {action, citizen_id, changes{kolom:{old,new}}}; deactivate_members:
+        {action, members[{citizen_id, name, changes}]}; manual: {action, notes}.
+    instructions:
+      type: string
+      nullable: true
+      description: "Untuk action `manual`: petunjuk dari `letter_types.data_instructions`."
+    members:
+      type: array
+      description: "Untuk action `deactivate_members`: anggota yang dipilih pemohon beserta keadaannya sekarang."
+      items:
+        type: object
+        properties:
+          citizen_id:
+            type: string
+            format: uuid
+          name:
+            type: string
+          family_role:
+            type: string
+            example: "Anak"
+          found:
+            type: boolean
+          is_active:
+            type: boolean
     subject:
       type: object
       nullable: true
@@ -764,6 +789,11 @@ FulfillmentApplyRequest:
         Koreksi per kolom. Hanya kolom pada `data_fields` jenis surat yang tidak
         bernilai tetap; kolom lain → 422. Nilai divalidasi dengan aturan yang sama
         seperti form data warga Petugas Desa.
+    notes:
+      type: string
+      nullable: true
+      maxLength: 500
+      description: "Catatan \"Tandai selesai\" untuk action `manual`."
     subject_nik:
       type: string
       nullable: true

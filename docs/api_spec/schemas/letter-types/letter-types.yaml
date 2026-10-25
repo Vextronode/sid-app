@@ -99,9 +99,14 @@ LetterType:
         digital/tanda tangan basah).
     data_action:
       type: string
-      enum: [none, update_citizen, create_citizen]
+      enum: [none, update_citizen, create_citizen, deactivate_members, manual]
       example: "none"
-      description: "Aksi data kependudukan setelah final approve (Terapkan oleh Kasi/Kaur/Petugas Desa)."
+      description: |
+        Aksi data kependudukan setelah final approve (Terapkan oleh
+        Kasi/Kaur/Petugas Desa). `deactivate_members` menonaktifkan anggota
+        KK yang dipilih di isian family_members (`data_subject_field`);
+        `manual` hanya mencatat "Tandai selesai" setelah Kasi/Kaur mengubah
+        data sendiri di Data Penduduk/KK (petunjuk di `data_instructions`).
     form_fields:
       type: array
       description: "Definisi isian form; kosong = tanpa isian tambahan."

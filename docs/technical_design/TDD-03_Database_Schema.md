@@ -336,8 +336,9 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 | issues_letter_number | BOOLEAN | DEFAULT true | false = tidak diberi `letter_number` saat final approve (formulir Pelayanan Desa) |
 | signed_by_village_head | BOOLEAN | DEFAULT true | false = tanpa TTD/stempel Kepala Desa; snapshot tanpa penanda tangan dan render tidak butuh Kepala Desa aktif |
 | requires_result_upload | BOOLEAN | DEFAULT false | true = setelah terbit, pemohon mengunggah hasil dari instansi luar untuk diverifikasi (`letter_results`); Terapkan baru setelah diterima |
+| data_instructions | TEXT | NULL | Petunjuk bagi Kasi/Kaur untuk `data_action = manual` |
 | result_upload_hint | TEXT | NULL | Berkas yang diminta, mis. "KK terbaru dari Disdukcapil" |
-| data_action | VARCHAR(30) | DEFAULT 'none' | `none` \| `update_citizen` \| `create_citizen` (enum aplikasi `LetterDataAction`) |
+| data_action | VARCHAR(30) | DEFAULT 'none' | `none` \| `update_citizen` \| `create_citizen` \| `deactivate_members` (nonaktifkan anggota KK pilihan pemohon di isian family_members = `data_subject_field`) \| `manual` (Kasi/Kaur mengubah data sendiri lalu Tandai selesai) (enum aplikasi `LetterDataAction`) |
 | form_fields | JSON | NULL | Daftar isian `{name, label, type, required, placeholder?, options?, accept?, visible_when?, fields?, min?, max?, item_label?}` (`visible_when` = syarat tampil dari jawaban isian lain, bentuk sama dengan `documents.when`; isian tersembunyi tidak wajib dan nilainya dibuang). `repeater` = baris berulang dengan sub-isian `fields` (payload: array baris); `family_members` = anggota KK pemohon yang dicentang, disimpan di payload sebagai baris siap cetak; type: text, textarea, date, number, nik, select, file, occupation (id katalog `occupations` atau `lainnya` + `<name>_lainnya`; disimpan sebagai nama pekerjaan siap cetak). NULL = isian bebas (teks); array = hanya isian terdaftar |
 | data_fields | JSON | NULL | Kolom `citizens` yang boleh diubah lewat Terapkan: `{column, label, source?, value?, value_label?}` |
 | data_subject_field | VARCHAR(100) | NULL | Nama isian NIK subjek bila yang diubah bukan pemohon (seed A07: `nik_almarhum`) |

@@ -744,7 +744,7 @@ Alternative Flow:
 | Use Case ID | UC-26 |
 | Nama | Terapkan Perubahan Data Kependudukan |
 | Aktor | Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role` (NULL = keduanya); Petugas Desa sebagai cadangan |
-| Pre-condition | Surat `approved` di desa aktor; jenis surat memiliki `data_action` = `update_citizen` atau `create_citizen`; belum pernah diterapkan; bila jenisnya `requires_result_upload`, hasil dari instansi sudah diterima (UC-29) |
+| Pre-condition | Surat `approved` di desa aktor; jenis surat memiliki `data_action` = `update_citizen`, `create_citizen`, `deactivate_members`, atau `manual`; belum pernah diterapkan; bila jenisnya `requires_result_upload`, hasil dari instansi sudah diterima (UC-29) |
 | Post-condition | Data `citizens` diubah/ditambah; `letters.fulfilled_at/by` dan `fulfillment` terisi; jejak audit tercatat |
 
 Main Flow:
@@ -753,7 +753,9 @@ Main Flow:
 3. Aktor mengoreksi nilai bila perlu (termasuk NIK subjek) lalu menekan **Terapkan**.
 4. Sistem mengunci surat, memvalidasi nilai dengan aturan yang sama seperti form data warga, lalu:
    - `update_citizen`: mengubah kolom yang diizinkan pada warga subjek; bila `is_active` menjadi false (mis. meninggal), akun login warga itu ikut dinonaktifkan dan sesinya dicabut;
-   - `create_citizen`: menambah warga baru (mewarisi RT, dusun, KK, alamat pemohon bila tidak diisi).
+   - `create_citizen`: menambah warga baru (mewarisi RT, dusun, KK, alamat pemohon bila tidak diisi);
+   - `deactivate_members`: menonaktifkan anggota KK yang dipilih pemohon (isian `family_members`) beserta akun login mereka; yang sudah nonaktif dilewati;
+   - `manual`: tidak mengubah data. Aktor mengikuti petunjuk `data_instructions`, memperbarui data sendiri di Data Penduduk/KK (mis. susunan KK baru dari Disdukcapil), lalu menekan **Tandai selesai** dengan catatan opsional.
 5. Sistem mencatat hasil di `letters.fulfillment`, status log "Perubahan data kependudukan diterapkan", activity log `citizen` (`letter_fulfilled`), dan mengirim notifikasi `letter_fulfilled` ke pemohon.
 
 Alternative Flow:
