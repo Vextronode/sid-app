@@ -6,7 +6,8 @@
 //   dan distempel basah
 // Formulir tanpa TTD Kepala Desa hanya punya satu format. Dokumen yang
 // terbit bersama (surat.documents) ikut menjadi pilihan menu; bila hanya
-// ada satu pilihan, tombolnya langsung mengunduh.
+// ada satu pilihan, tombolnya langsung mengunduh. Baris tabel tidak membawa
+// daftar dokumen, jadi `loadDetail` memuat rincian surat saat tombol ditekan.
 // ==========================================
 
 import '@/styles/surat-dokumen.css'
@@ -77,9 +78,12 @@ export function DownloadSuratMenu({
   disabled = false,
   title,
   className = '',
+  loadDetail,
 }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [detail, setDetail] = useState(null)
+  const current = detail ?? surat
   const [position, setPosition] = useState(null)
 
   const buttonRef = useRef(null)
@@ -146,15 +150,15 @@ export function DownloadSuratMenu({
     }
   }, [open])
 
-  const options = downloadOptions(surat)
-  const triggerLabel = isSignedByVillageHead(surat) ? label : 'Unduh formulir'
+  const options = downloadOptions(current)
+  const triggerLabel = isSignedByVillageHead(current) ? label : 'Unduh formulir'
 
-  const handleSelect = async (option) => {
+  const handleSelect = async (option, target = current) => {
     setOpen(false)
     setBusy(true)
 
     try {
-      await downloadSuratPDF(surat, option.template, option.documentKey)
+      await downloadSuratPDF(target, option.template, option.documentKey)
     } catch (error) {
       alertDialog({
         title: 'Unduhan gagal',
@@ -163,6 +167,50 @@ export function DownloadSuratMenu({
     } finally {
       setBusy(false)
     }
+  }
+
+  // Muat rincian (daftar dokumen) dulu; satu pilihan langsung diunduh.
+  const handleLazyOpen = async () => {
+    setBusy(true)
+
+    try {
+      const loaded = await loadDetail(surat.id)
+      const loadedOptions = downloadOptions(loaded)
+
+      setDetail(loaded)
+      setBusy(false)
+
+      if (loadedOptions.length === 1) {
+        await handleSelect(loadedOptions[0], loaded)
+      } else {
+        setPosition(null)
+        setOpen(true)
+      }
+    } catch (error) {
+      setBusy(false)
+      alertDialog({
+        title: 'Unduhan gagal',
+        message: getApiErrorMessage(error, 'Gagal memuat dokumen surat.'),
+      })
+    }
+  }
+
+  if (loadDetail && !detail) {
+    return (
+      <button
+        type="button"
+        className={`sid-download-trigger ${variant} ${className}`}
+        disabled={disabled || busy}
+        title={title}
+        aria-haspopup="menu"
+        aria-expanded={false}
+        onClick={handleLazyOpen}
+      >
+        <Download size={16} aria-hidden="true" />
+        <span>{busy ? 'Menyiapkan...' : triggerLabel}</span>
+        <ChevronDown size={14} aria-hidden="true" className="sid-download-chevron" />
+      </button>
+    )
   }
 
   if (options.length === 1) {

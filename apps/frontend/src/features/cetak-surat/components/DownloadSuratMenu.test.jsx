@@ -128,6 +128,37 @@ describe('DownloadSuratMenu', () => {
     )
   })
 
+  it('loads the issued documents of a table row before offering them', async () => {
+    const row = { id: 'letter-2', letter_type: { signed_by_village_head: false } }
+    const detail = {
+      ...row,
+      documents: [
+        { key: 'main', title: 'Formulir Pendaftaran (F-1.02)' },
+        { key: 'f1_01', title: 'Formulir Biodata Keluarga (F-1.01)' },
+      ],
+    }
+    const loadDetail = vi.fn().mockResolvedValue(detail)
+    render(<DownloadSuratMenu surat={row} loadDetail={loadDetail} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Unduh formulir/ }))
+
+    await waitFor(() => expect(loadDetail).toHaveBeenCalledWith('letter-2'))
+    fireEvent.click(await screen.findByRole('menuitem', { name: /F-1.01/ }))
+
+    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(detail, 'digital', 'f1_01'))
+  })
+
+  it('downloads right away when the loaded row has a single document', async () => {
+    const row = { id: 'letter-3', letter_type: { signed_by_village_head: false } }
+    const detail = { ...row, documents: [{ key: 'main', title: 'Formulir (F-1.04)' }] }
+    render(<DownloadSuratMenu surat={row} loadDetail={vi.fn().mockResolvedValue(detail)} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Unduh formulir/ }))
+
+    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(detail, 'digital', 'main'))
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
   it('stays disabled when the letter cannot be downloaded', () => {
     render(<DownloadSuratMenu surat={surat} disabled />)
 
