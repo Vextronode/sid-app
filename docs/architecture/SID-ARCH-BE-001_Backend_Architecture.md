@@ -103,7 +103,7 @@ Konfigurasi tiap jenis surat adalah data, bukan kode:
 |---|---|
 | `template` | HTML dengan placeholder `{{ nama }}`; NULL = draft |
 | `category` | `persuratan` (Persuratan Desa, Axx) / `pelayanan` (Pelayanan Desa, Fxx); mengelompokkan pilihan jenis surat saat pengajuan (Persuratan di atas). Tidak dapat diubah Petugas Desa |
-| `form_fields` (JSON) | Definisi isian: `name`, `label`, `type` (text, textarea, date, number, nik, select, file, occupation), `required`, `options`, `accept`. Divalidasi di server; isian tak dikenal ditolak |
+| `form_fields` (JSON) | Definisi isian: `name`, `label`, `type` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members), `required`, `options`, `accept`, `visible_when`. Divalidasi di server; isian tak dikenal ditolak. `visible_when` (`FieldCondition`) menyembunyikan isian menurut jawaban lain: tidak wajib, di-`exclude` dari validasi, dibuang sebelum disimpan (`LetterFormSchema::visiblePayload`). Template boleh memakai blok `{{#if isian=a|b}}…{{/if}}` (`TemplateConditionals`). Isian berulang: `repeater` (baris dengan sub-isian `fields`, `min`/`max`, sub-isian bersyarat per baris) dan `family_members` (anggota KK pemohon dari `GET /profile/family-members`, divalidasi terhadap KK pemohon, disimpan sebagai baris siap cetak); dicetak lewat `{{#each isian}}…{{/each}}` (`TemplateLoops`) |
 | `classification_code` | Kode klasifikasi nomor surat (default `470`) |
 | `data_action`, `data_fields`, `data_subject_field` | Aksi data pasca-approve: `none`, `update_citizen`, `create_citizen` (S3.6) |
 | `signature_slots` (JSON) | Slot tanda tangan pemohon/pihak lain (S3.5) |

@@ -1,0 +1,48 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Anggota KK pemohon (isian family_members)
+  description: |
+    Pilihan untuk isian form surat bertipe `family_members`: warga aktif
+    dengan KK yang sama dengan pengguna; tanpa KK, hanya pengguna sendiri.
+    NIK disamarkan. Pilihan yang dikirim saat pengajuan divalidasi ulang
+    terhadap daftar yang sama, lalu disimpan sebagai baris siap cetak
+    (`nama`, `nik`, `shdk`, `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir`).
+  operationId: listProfileFamilyMembers
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Anggota keluarga
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Anggota keluarga berhasil diambil."
+              data:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    name:
+                      type: string
+                    family_role:
+                      type: string
+                      nullable: true
+                      enum: [kepala_keluarga, istri, suami, anak, famili_lain, null]
+                    family_role_label:
+                      type: string
+                      example: "Kepala Keluarga"
+                    nik_masked:
+                      type: string
+                      nullable: true
+                      example: "************0001"
+                    is_self:
+                      type: boolean
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

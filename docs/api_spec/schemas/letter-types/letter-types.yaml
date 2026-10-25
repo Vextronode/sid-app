@@ -41,7 +41,12 @@ LetterType:
         Placeholder sistem: letter_number, applicant_*, submitted_at, issued_at,
         village_* (kop surat), village_head_name, logo_img, signature_img;
         placeholder isian form memakai nama isian; slot TTD memakai
-        `ttd_{slot}` dan `nama_ttd_{slot}`.
+        `ttd_{slot}` dan `nama_ttd_{slot}`. Blok bersyarat dari jawaban form:
+        `{{#if isian}}`, `{{#if isian=a|b}}`, `{{#if isian!=a}}` ... `{{/if}}`
+        (boleh bersarang). Isian repeater/family_members dicetak per baris
+        dengan `{{#each isian}}...{{/each}}`; di dalamnya `{{ no }}` = nomor
+        urut dan `{{ sub_isian }}` = nilai baris (family_members: `nama`,
+        `nik`, `shdk`, `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir`).
     requirements_info:
       type: string
       nullable: true
@@ -135,7 +140,7 @@ LetterFormField:
       example: "Nama Usaha"
     type:
       type: string
-      enum: [text, textarea, date, number, nik, select, file]
+      enum: [text, textarea, date, number, nik, select, file, occupation, repeater, family_members]
     required:
       type: boolean
     placeholder:
@@ -156,6 +161,39 @@ LetterFormField:
       nullable: true
       enum: [image]
       description: "Untuk type=file: `image` membatasi ke JPG/PNG; selain itu PDF juga diterima."
+    visible_when:
+      type: object
+      nullable: true
+      description: |
+        Syarat tampil isian berdasarkan jawaban isian lain: `{field, equals}`,
+        `{field, in: [...]}`, `{field, not_in: [...]}`, atau `{field, filled}`.
+        Dinilai berurutan terhadap isian yang tampil saja. Isian tersembunyi
+        tidak wajib, tidak divalidasi (`exclude`), dan nilainya dibuang
+        sebelum disimpan.
+      example:
+        field: kewarganegaraan
+        equals: wna
+    fields:
+      type: array
+      description: |
+        Untuk type=repeater: sub-isian tiap baris (type text, textarea, date,
+        number, nik, select; boleh `visible_when` yang dinilai per baris).
+        Payload: `payload[nama][i][sub]`.
+      items:
+        type: object
+    min:
+      type: integer
+      nullable: true
+      description: "Untuk type=repeater: jumlah baris minimal (default 1 bila required, 0 bila tidak)."
+    max:
+      type: integer
+      nullable: true
+      description: "Untuk type=repeater: jumlah baris maksimal (default 20)."
+    item_label:
+      type: string
+      nullable: true
+      example: "anak"
+      description: "Untuk type=repeater: sebutan satu baris di tombol Tambah/Hapus."
 
 LetterDataField:
   type: object

@@ -141,7 +141,7 @@ Semua route didefinisikan di `App.jsx`:
 Merender tombol Setuju/Tolak (tahap final: "Setujui & terbitkan") di footer popup detail hanya bila `canDecideOnLetter` terpenuhi: step aktif (`current_step.approver_position`) cocok dengan role user (`rt` → rt; `kepala_desa` → kepala_desa/sekretaris_desa), status surat masih dapat diputuskan, dan belum ada keputusan untuk level itu. RW, Kadus, Kasi/Kaur tidak pernah mendapat tombol. Tolak membuka kotak alasan wajib; Escape/Batal meminta konfirmasi bila alasan sudah diketik.
 
 ### 6.2 `DynamicSuratForm`
-Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file, occupation) dan slot tanda tangan (`signature_slots`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`, `signers[...]`, `signature_files[...]`). Validasi akhir tetap di backend.
+Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members; isian bersyarat `visible_when` disembunyikan) dan slot tanda tangan (`signature_slots`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`, `signers[...]`, `signature_files[...]`). Validasi akhir tetap di backend.
 
 ### 6.3 Tanda tangan & Terapkan
 `SignatureCard` (buat/lihat TTD pribadi), `SignatureRequestsCard` (setujui dengan kata sandi/tolak/blokir permintaan TTD), `FulfillmentPanel` (tinjau & Terapkan perubahan data untuk Kasi/Kaur/Petugas), `LetterTypeSettingsPanel` (masa berlaku, penugasan, status aktif).
