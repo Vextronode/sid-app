@@ -49,7 +49,9 @@ post:
       `address` diwarisi dari pemohon bila tidak diisi.
     - deactivate_members: menonaktifkan anggota KK pilihan pemohon
       (`payload[data_subject_field]`) beserta akun login mereka; yang sudah
-      nonaktif dilewati, dan 422 bila tidak ada yang aktif.
+      nonaktif dilewati, dan 422 bila tidak ada yang aktif. Bila pemohon
+      tidak memilih anggota (mis. orang asing/SKTT di F03), hanya menandai
+      selesai dengan `notes`.
     - update_members: mengubah kolom `data_fields` tiap anggota (baris
       repeater `data_subject_field`); `values` = {<indeks baris>: {<kolom>: nilai}}
       untuk koreksi, mis. pekerjaan dari katalog bagi usulan "Lainnya".

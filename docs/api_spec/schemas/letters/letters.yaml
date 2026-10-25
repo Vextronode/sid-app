@@ -732,7 +732,7 @@ FulfillmentProposal:
     instructions:
       type: string
       nullable: true
-      description: "Untuk action `manual`: petunjuk dari `letter_types.data_instructions`."
+      description: "Petunjuk dari `letter_types.data_instructions` (semua action, bila diisi)."
     members:
       type: array
       description: "Untuk action `deactivate_members`: anggota yang dipilih pemohon beserta keadaannya sekarang."

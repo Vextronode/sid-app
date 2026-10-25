@@ -178,7 +178,7 @@ LetterFormField:
       nullable: true
       description: |
         Syarat tampil isian berdasarkan jawaban isian lain: `{field, equals}`,
-        `{field, in: [...]}`, `{field, not_in: [...]}`, atau `{field, filled}`.
+        `{field, in: [...]}`, `{field, not_in: [...]}`, `{field, filled}`, atau gabungan `{any: [syarat, ...]}` / `{all: [syarat, ...]}`.
         Dinilai berurutan terhadap isian yang tampil saja. Isian tersembunyi
         tidak wajib, tidak divalidasi (`exclude`), dan nilainya dibuang
         sebelum disimpan.
