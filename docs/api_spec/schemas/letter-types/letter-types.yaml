@@ -52,7 +52,10 @@ LetterType:
         `applicant_family_number` (No. KK pemohon) dan
         `village_kasi_pemerintahan_name` (petugas F-1.02). Kotak per karakter
         formulir Disdukcapil: `{{ nama[0] }}` = karakter pertama nilai isian
-        atau placeholder sistem (kosong bila tidak ada).
+        atau placeholder sistem (huruf kapital; kosong bila tidak ada).
+        Cadangan `{{ a|b }}` = nilai pertama yang terisi (mis. ayah dari KK
+        atau yang diketik). Isian date juga menyediakan `<nama>_namahari`,
+        `<nama>_tgl`, `<nama>_bln`, `<nama>_thn`.
     requirements_info:
       type: string
       nullable: true
@@ -154,8 +157,13 @@ LetterFormField:
       example: "Nama Usaha"
     type:
       type: string
-      enum: [text, textarea, date, number, nik, select, file, occupation, repeater, family_members, village_area]
+      enum: [text, textarea, date, time, number, nik, select, file, occupation, repeater, family_members, village_area, family_member]
       description: |
+        `family_member` = satu anggota KK pemohon (id warga); saat pengajuan
+        ditambah `<nama>_nama`, `_nik`, `_shdk`, `_tempat_lahir`,
+        `_tanggal_lahir`, `_lahir_tgl/_bln/_thn`, `_pekerjaan`, `_agama`,
+        `_alamat`, dst. (keadaan saat pengajuan). Atribut `gender` (L/P)
+        membatasi anggota yang dapat dipilih, mis. ibu hanya perempuan.
         `village_area` = Dusun -> RW -> RT desa ini dari `GET /village-areas`;
         nilainya id RT, dan saat pengajuan ditambah `<nama>_dusun`,
         `<nama>_rw`, `<nama>_rt` (3 digit) siap cetak.

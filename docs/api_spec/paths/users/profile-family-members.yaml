@@ -38,6 +38,11 @@ get:
                     family_role_label:
                       type: string
                       example: "Kepala Keluarga"
+                    gender:
+                      type: string
+                      nullable: true
+                      enum: [L, P, null]
+                      description: "Untuk isian family_member yang dibatasi jenis kelamin (mis. ibu = P)."
                     nik_masked:
                       type: string
                       nullable: true
