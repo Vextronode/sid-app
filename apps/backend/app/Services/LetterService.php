@@ -96,10 +96,10 @@ class LetterService
             'purpose' => null,
 
             // Isian tersembunyi (visible_when) dibuang; isian pekerjaan,
-            // anggota KK, dan baris berulang disimpan siap cetak.
-            'payload' => $schema->resolveRows($schema->resolveFamilyMembers(
+            // anggota KK, baris berulang, dan wilayah disimpan siap cetak.
+            'payload' => $schema->resolveAreas($schema->resolveRows($schema->resolveFamilyMembers(
                 $schema->resolveOccupations($schema->visiblePayload($data['payload'] ?? null))
-            )),
+            ))),
 
             'notes' => null,
 

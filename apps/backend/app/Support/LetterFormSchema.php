@@ -6,6 +6,7 @@ use App\Enums\FamilyRole;
 use App\Models\Citizen;
 use App\Models\LetterType;
 use App\Models\Occupation;
+use App\Models\Rt;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\Rule;
 
@@ -27,10 +28,13 @@ use Illuminate\Validation\Rule;
  *  - `family_members`: anggota KK pemohon yang dicentang; disimpan sebagai
  *    baris siap cetak (nama, NIK, SHDK, ...) saat pengajuan.
  * Keduanya dicetak lewat blok {{#each nama_isian}} (TemplateLoops).
+ *
+ * Isian `village_area`: Dusun -> RW -> RT desa ini (id RT); saat pengajuan
+ * ditambah `<nama>_dusun`, `<nama>_rw`, `<nama>_rt` siap cetak.
  */
 class LetterFormSchema
 {
-    public const FIELD_TYPES = ['text', 'textarea', 'date', 'number', 'nik', 'select', 'file', 'occupation', 'repeater', 'family_members'];
+    public const FIELD_TYPES = ['text', 'textarea', 'date', 'number', 'nik', 'select', 'file', 'occupation', 'repeater', 'family_members', 'village_area'];
 
     /**
      * Tipe sub-isian di dalam repeater. `family_member` memilih satu anggota
@@ -317,6 +321,43 @@ class LetterFormSchema
     }
 
     /**
+     * Isian wilayah disimpan beserta label siap cetaknya (keadaan saat
+     * pengajuan): `<nama>_dusun`, `<nama>_rw`, `<nama>_rt` (3 digit).
+     *
+     * @param  array<string, mixed>|null  $payload  payload yang sudah tervalidasi
+     * @return array<string, mixed>|null
+     */
+    public function resolveAreas(?array $payload): ?array
+    {
+        if ($payload === null) {
+            return null;
+        }
+
+        foreach ($this->fieldsOfType('village_area') as $field) {
+            $name = $field['name'];
+            $rt = isset($payload[$name]) ? Rt::query()->with('rw.hamlet')->find((int) $payload[$name]) : null;
+
+            if ($rt === null) {
+                continue;
+            }
+
+            $payload[$name] = $rt->id;
+            $payload["{$name}_dusun"] = $rt->rw?->hamlet?->name ?? '-';
+            $payload["{$name}_rw"] = self::areaNumber($rt->rw?->number);
+            $payload["{$name}_rt"] = self::areaNumber($rt->number);
+        }
+
+        return $payload;
+    }
+
+    public static function areaNumber(mixed $number): string
+    {
+        $number = trim((string) $number);
+
+        return ctype_digit($number) ? str_pad($number, 3, '0', STR_PAD_LEFT) : $number;
+    }
+
+    /**
      * @param  array<string, mixed>  $payload  jawaban yang dikirim, untuk menilai `visible_when`
      * @return array<string, array<int, mixed>>
      */
@@ -364,6 +405,16 @@ class LetterFormSchema
 
             if (($field['type'] ?? 'text') === 'family_members') {
                 $rules = [...$rules, ...$this->familyMemberRules($field)];
+
+                continue;
+            }
+
+            if (($field['type'] ?? 'text') === 'village_area') {
+                $rules["payload.{$field['name']}"] = [
+                    ($field['required'] ?? false) ? 'required' : 'nullable',
+                    'integer',
+                    $this->villageRtRule(),
+                ];
 
                 continue;
             }
@@ -642,6 +693,24 @@ class LetterFormSchema
         }
 
         return $payload;
+    }
+
+    /**
+     * RT aktif milik desa jenis surat ini.
+     */
+    private function villageRtRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            $exists = Rt::query()
+                ->whereKey((int) $value)
+                ->where('village_id', $this->villageId)
+                ->where('is_active', true)
+                ->exists();
+
+            if (! $exists) {
+                $fail('Pilih dusun, RW, dan RT yang tersedia di desa ini.');
+            }
+        };
     }
 
     /**

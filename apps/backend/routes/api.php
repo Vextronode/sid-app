@@ -232,6 +232,10 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         Route::get('/letter-stats', [DashboardController::class, 'letterStats']);
     });
 
+    // Pilihan Dusun -> RW -> RT desa untuk isian wilayah di form surat
+    // (semua peran); kelola wilayah tetap khusus Staf SID di bawah.
+    Route::get('/village-areas', [HamletController::class, 'areas']);
+
     /*
     |----------------------------------------------------------------------
     | Regions: Hamlets / RTs / RWs (UC-20)

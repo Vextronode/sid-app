@@ -17,6 +17,22 @@ class HamletRepository
         return Hamlet::query()->where('village_id', $villageId)->orderBy('name')->get();
     }
 
+    /**
+     * Dusun aktif beserta RW dan RT aktifnya, untuk pilihan wilayah di form.
+     */
+    public function activeTree(string $villageId): Collection
+    {
+        return Hamlet::query()
+            ->where('village_id', $villageId)
+            ->where('is_active', true)
+            ->with([
+                'rws' => fn ($query) => $query->where('is_active', true)->orderBy('number'),
+                'rws.rts' => fn ($query) => $query->where('is_active', true)->orderBy('number'),
+            ])
+            ->orderBy('name')
+            ->get();
+    }
+
     public function create(array $data): Hamlet
     {
         return Hamlet::create($data);

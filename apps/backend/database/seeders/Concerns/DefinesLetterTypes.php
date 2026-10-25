@@ -53,6 +53,15 @@ trait DefinesLetterTypes
         return $this->field($name, $label, 'occupation', $required);
     }
 
+    /**
+     * Dusun -> RW -> RT desa ini (dipilih dari data wilayah); dicetak lewat
+     * {{ <nama>_dusun }}, {{ <nama>_rw }}, {{ <nama>_rt }}.
+     */
+    private function area(string $name, string $label, bool $required = true): array
+    {
+        return $this->field($name, $label, 'village_area', $required);
+    }
+
     private function date(string $name, string $label, bool $required = true): array
     {
         return $this->field($name, $label, 'date', $required);
