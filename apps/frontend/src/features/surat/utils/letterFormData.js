@@ -35,6 +35,12 @@ export function buildLetterFormData(config, letterTypeId, formData) {
           if (cell !== undefined && cell !== null && cell !== '') {
             payload.append(`payload[${field.name}][${index}][${subField.name}]`, cell)
           }
+
+          const otherName = otherOccupationFieldName(subField.name)
+
+          if (subField.type === 'occupation' && cell === OTHER_OCCUPATION) {
+            payload.append(`payload[${field.name}][${index}][${otherName}]`, row?.[otherName] ?? '')
+          }
         })
       })
 

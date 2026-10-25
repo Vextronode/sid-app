@@ -61,10 +61,15 @@ export function DynamicSuratForm({
   const applicantSlots = signatureSlots.filter((slot) => slot.signer === 'applicant')
   const otherSlots = signatureSlots.filter((slot) => slot.signer === 'other')
   const needsOwnSignature = applicantSlots.length > 0
-  const needsOccupations = config.fields.some((field) => field.type === 'occupation')
+  // Sub-isian baris repeater juga dapat memakai katalog pekerjaan / anggota KK.
+  const usesType = (type) =>
+    config.fields.some(
+      (field) => field.type === type || (field.fields ?? []).some((sub) => sub.type === type),
+    )
+  const needsOccupations = usesType('occupation')
   const [occupations, setOccupations] = useState([])
   const [occupationsFailed, setOccupationsFailed] = useState(false)
-  const needsFamily = config.fields.some((field) => field.type === 'family_members')
+  const needsFamily = usesType('family_members') || usesType('family_member')
   const [familyMembers, setFamilyMembers] = useState([])
   const [familyFailed, setFamilyFailed] = useState(false)
 
@@ -359,6 +364,7 @@ export function DynamicSuratForm({
                     register={register}
                     rows={watchedFormData?.[field.name]}
                     errors={errors}
+                    catalogs={{ familyMembers, occupations }}
                   />
                 )}
 

@@ -2,9 +2,53 @@ import { useFieldArray } from 'react-hook-form'
 import { Plus, Trash2 } from 'lucide-react'
 
 import { repeaterMinRows, visibleFields } from '../utils/fieldCondition'
+import { OTHER_OCCUPATION, otherOccupationFieldName } from '../validation/suratSchema'
 
-function SubInput({ field, name, register, error }) {
+function SubInput({ field, name, register, error, row, catalogs }) {
   const className = `sid-input ${error ? 'sid-input-error' : ''}`
+  const selectClass = `sid-select ${error ? 'sid-input-error' : ''}`
+
+  // Satu anggota KK pemohon per baris.
+  if (field.type === 'family_member') {
+    return (
+      <select id={name} {...register(name)} className={selectClass}>
+        <option value="">Pilih anggota keluarga...</option>
+        {catalogs.familyMembers.map((member) => (
+          <option key={member.id} value={member.id}>
+            {member.name} ({member.family_role_label})
+          </option>
+        ))}
+      </select>
+    )
+  }
+
+  // Katalog pekerjaan + "Lainnya" (teks bebas di bawahnya).
+  if (field.type === 'occupation') {
+    const isOther = row?.[field.name] === OTHER_OCCUPATION
+
+    return (
+      <>
+        <select id={name} {...register(name)} className={selectClass}>
+          <option value="">Pilih...</option>
+          {catalogs.occupations.map((occupation) => (
+            <option key={occupation.id} value={String(occupation.id)}>
+              {occupation.name}
+            </option>
+          ))}
+          <option value={OTHER_OCCUPATION}>Lainnya</option>
+        </select>
+        <input
+          type="text"
+          aria-label={`${field.label} (Lainnya)`}
+          {...register(otherOccupationFieldName(name))}
+          disabled={!isOther}
+          maxLength={100}
+          placeholder={isOther ? 'Tuliskan pekerjaan' : 'Pilih "Lainnya" untuk menulis pekerjaan'}
+          className="sid-input"
+        />
+      </>
+    )
+  }
 
   if (field.type === 'textarea') {
     return (
@@ -55,7 +99,14 @@ function SubInput({ field, name, register, error }) {
  * Isian berulang: satu blok per baris (mis. per anak) dengan tombol Tambah
  * dan Hapus. Sub-isian bersyarat dinilai per baris.
  */
-export function RepeaterField({ field, control, register, rows, errors }) {
+export function RepeaterField({
+  field,
+  control,
+  register,
+  rows,
+  errors,
+  catalogs = { familyMembers: [], occupations: [] },
+}) {
   const { fields: items, append, remove } = useFieldArray({ control, name: field.name })
   const itemLabel = field.itemLabel || 'baris'
   const minRows = repeaterMinRows(field)
@@ -88,10 +139,17 @@ export function RepeaterField({ field, control, register, rows, errors }) {
                     name={name}
                     register={register}
                     error={rowErrors[subField.name]}
+                    row={row}
+                    catalogs={catalogs}
                   />
                   {rowErrors[subField.name]?.message && (
                     <span className="sid-form-field-error" role="alert">
                       {rowErrors[subField.name].message}
+                    </span>
+                  )}
+                  {rowErrors[otherOccupationFieldName(subField.name)]?.message && (
+                    <span className="sid-form-field-error" role="alert">
+                      {rowErrors[otherOccupationFieldName(subField.name)].message}
                     </span>
                   )}
                 </div>

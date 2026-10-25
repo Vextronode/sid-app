@@ -337,3 +337,55 @@ describe('repeating fields', () => {
     expect(formData.getAll('payload[anggota][]')).toEqual(['c-1', 'c-2'])
   })
 })
+
+describe('row member and occupation sub-fields', () => {
+  const config = getLetterTypeFormConfig({
+    id: 51,
+    code: 'F02',
+    name: 'Perubahan Elemen Data',
+    form_fields: [
+      {
+        name: 'perubahan',
+        label: 'Perubahan',
+        type: 'repeater',
+        required: true,
+        fields: [
+          { name: 'anggota', label: 'Anggota Keluarga', type: 'family_member', required: true },
+          {
+            name: 'pekerjaan_menjadi',
+            label: 'Pekerjaan Menjadi',
+            type: 'occupation',
+            required: false,
+          },
+        ],
+      },
+    ],
+  })
+  const schema = getSuratSchema(config)
+
+  it('requires the member and the other occupation text per row', () => {
+    expect(schema.safeParse({ perubahan: [{ anggota: '' }] }).error.issues[0].path).toEqual([
+      'perubahan',
+      0,
+      'anggota',
+    ])
+
+    const missingOther = schema.safeParse({
+      perubahan: [{ anggota: 'c-1', pekerjaan_menjadi: 'lainnya', pekerjaan_menjadi_lainnya: '' }],
+    })
+    expect(missingOther.error.issues[0].path).toEqual(['perubahan', 0, 'pekerjaan_menjadi_lainnya'])
+  })
+
+  it('sends the other occupation text only for "Lainnya" rows', () => {
+    const formData = buildLetterFormData(config, 51, {
+      perubahan: [
+        { anggota: 'c-1', pekerjaan_menjadi: 'lainnya', pekerjaan_menjadi_lainnya: 'buruh' },
+        { anggota: 'c-2', pekerjaan_menjadi: '7', pekerjaan_menjadi_lainnya: 'sisa' },
+      ],
+    })
+
+    expect(formData.get('payload[perubahan][0][pekerjaan_menjadi_lainnya]')).toBe('buruh')
+    expect(formData.has('payload[perubahan][1][pekerjaan_menjadi_lainnya]')).toBe(false)
+    expect(formData.get('payload[perubahan][1][anggota]')).toBe('c-2')
+  })
+})

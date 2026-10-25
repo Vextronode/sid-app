@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { applyFulfillment, getFulfillmentProposal } from '../api/letterExtrasApi'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { SemiManualFulfillmentForm } from './SemiManualFulfillmentForm'
+import { MemberChangesForm } from './MemberChangesForm'
 
 const ACTION_TITLES = {
   update_citizen: 'Perubahan Data Warga',
   create_citizen: 'Penambahan Data Warga',
   deactivate_members: 'Penonaktifan Anggota Keluarga',
+  update_members: 'Perubahan Data Anggota Keluarga',
   manual: 'Pembaruan Data Penduduk & KK',
 }
 
@@ -154,6 +156,8 @@ export function FulfillmentPanel({ letterId, onApplied }) {
           Sudah {proposal.action === 'manual' ? 'ditandai selesai' : 'diterapkan'} pada{' '}
           {new Date(proposal.fulfilled_at).toLocaleString('id-ID')}.
         </p>
+      ) : proposal.action === 'update_members' ? (
+        <MemberChangesForm letterId={letterId} proposal={proposal} onDone={handleSemiManualDone} />
       ) : isSemiManual ? (
         <SemiManualFulfillmentForm
           letterId={letterId}

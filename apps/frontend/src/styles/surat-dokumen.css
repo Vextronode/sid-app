@@ -1391,3 +1391,18 @@
   margin-top: 0;
   margin-bottom: 0;
 }
+
+/* Terapkan perubahan per anggota keluarga (MemberChangesForm). */
+.sid-member-change {
+  padding: 0.625rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 0.5rem;
+}
+
+.sid-member-change-name {
+  margin: 0 0 0.5rem;
+
+  font-size: 0.875rem;
+  font-weight: 700;
+}

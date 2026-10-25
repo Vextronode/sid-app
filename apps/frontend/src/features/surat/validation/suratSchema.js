@@ -94,6 +94,18 @@ function validateRows(field, rows, context) {
     visibleFields(field.fields, row ?? {}).forEach((subField) => {
       const result = fieldSchema(subField).safeParse(row?.[subField.name] ?? '')
 
+      if (
+        subField.type === 'occupation' &&
+        row?.[subField.name] === OTHER_OCCUPATION &&
+        !String(row?.[otherOccupationFieldName(subField.name)] ?? '').trim()
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: [field.name, index, otherOccupationFieldName(subField.name)],
+          message: `Tuliskan ${subField.label.toLowerCase()}`,
+        })
+      }
+
       if (!result.success) {
         context.addIssue({
           code: 'custom',

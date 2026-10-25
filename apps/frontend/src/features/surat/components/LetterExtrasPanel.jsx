@@ -210,6 +210,8 @@ export function LetterExtrasPanel({ letterId }) {
           .map(
             (row) =>
               row?.nama ??
+              // Baris berisi anggota KK: tampilkan namanya, bukan id warga.
+              Object.entries(row ?? {}).find(([key]) => key.endsWith('_nama'))?.[1] ??
               Object.values(row ?? {})
                 .filter((cell) => cell !== '' && cell !== null)
                 .join(' / '),
