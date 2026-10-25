@@ -12,6 +12,26 @@ describe('matchesCondition', () => {
     expect(matchesCondition({ field: 'jenis', not_in: ['a'] }, {})).toBe(true)
     expect(matchesCondition({ field: 'nik', filled: true }, { nik: '  ' })).toBe(false)
   })
+
+  it('combines conditions with any / all', () => {
+    const any = {
+      any: [
+        { field: 'jenis', equals: 'skp' },
+        { field: 'warga', equals: 'wna' },
+      ],
+    }
+    expect(matchesCondition(any, { warga: 'wna' })).toBe(true)
+    expect(matchesCondition(any, { warga: 'wni', jenis: 'skpln' })).toBe(false)
+
+    const all = {
+      all: [
+        { field: 'warga', equals: 'wni' },
+        { field: 'jenis', equals: 'skp' },
+      ],
+    }
+    expect(matchesCondition(all, { warga: 'wni', jenis: 'skp' })).toBe(true)
+    expect(matchesCondition(all, { warga: 'wni' })).toBe(false)
+  })
 })
 
 describe('visibleFields', () => {

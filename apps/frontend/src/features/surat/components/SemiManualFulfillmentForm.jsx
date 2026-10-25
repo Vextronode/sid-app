@@ -22,6 +22,8 @@ function serverMessage(error, fallback) {
 /**
  * Aksi data semi-manual:
  * - `deactivate_members`: menonaktifkan anggota KK yang dipilih pemohon;
+ *   tanpa anggota terpilih (mis. orang asing di Pindah Keluar) cukup
+ *   ditandai selesai;
  * - `manual`: Kasi/Kaur mengerjakan perubahan sendiri di Data Penduduk/KK
  *   (berdasarkan hasil dari instansi), lalu menekan "Tandai selesai".
  */
@@ -29,10 +31,10 @@ export function SemiManualFulfillmentForm({ letterId, proposal, onDone }) {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const isManual = proposal.action === 'manual'
-  const activeMembers = (proposal.members ?? []).filter(
-    (member) => member.found && member.is_active,
-  )
+  const members = proposal.members ?? []
+  // Tanpa anggota terdata, penonaktifan cukup ditandai selesai.
+  const isManual = proposal.action === 'manual' || members.length === 0
+  const activeMembers = members.filter((member) => member.found && member.is_active)
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -71,9 +73,10 @@ export function SemiManualFulfillmentForm({ letterId, proposal, onDone }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      {proposal.instructions && <p className="sid-modal-note-text">{proposal.instructions}</p>}
+
       {isManual ? (
         <>
-          {proposal.instructions && <p className="sid-modal-note-text">{proposal.instructions}</p>}
           <p className="sid-modal-note-text">
             Perubahan dikerjakan langsung di{' '}
             <Link to={POPULATION_PAGE}>Data Penduduk &amp; KK</Link>, lalu tandai selesai di sini.
@@ -89,9 +92,9 @@ export function SemiManualFulfillmentForm({ letterId, proposal, onDone }) {
         </>
       ) : (
         <ul className="sid-modal-note-text">
-          {(proposal.members ?? []).map((member) => (
+          {members.map((member) => (
             <li key={member.citizen_id ?? member.name}>
-              <strong>{member.name}</strong> ({member.family_role}) —{' '}
+              <strong>{member.name}</strong> ({member.family_role}) -{' '}
               {!member.found
                 ? 'tidak ditemukan'
                 : member.is_active

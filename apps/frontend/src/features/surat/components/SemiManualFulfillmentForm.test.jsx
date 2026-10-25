@@ -82,4 +82,17 @@ describe('SemiManualFulfillmentForm', () => {
 
     expect(screen.getByRole('button', { name: 'Nonaktifkan anggota' })).toBeDisabled()
   })
+
+  it('only marks done when the letter has no registered members (e.g. foreigners)', async () => {
+    renderForm({
+      action: 'deactivate_members',
+      members: [],
+      instructions: 'Untuk orang asing (SKTT), cukup tandai selesai.',
+    })
+
+    expect(screen.getByText(/cukup tandai selesai/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Tandai selesai' }))
+
+    await waitFor(() => expect(applyFulfillment).toHaveBeenCalledWith('l-1', {}, null, ''))
+  })
 })

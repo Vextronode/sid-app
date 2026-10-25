@@ -30,7 +30,7 @@ export function FamilyMembersField({ field, members, loadFailed, value, setValue
           />
           <span>
             {member.name}
-            {member.is_self ? ' (Anda)' : ''} — {member.family_role_label}
+            {member.is_self ? ' (Anda)' : ''} - {member.family_role_label}
             {member.nik_masked ? `, NIK ${member.nik_masked}` : ''}
           </span>
         </label>

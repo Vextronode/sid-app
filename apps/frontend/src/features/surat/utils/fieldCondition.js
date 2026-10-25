@@ -3,10 +3,16 @@
  * di backend:
  *  - { field, equals }  - { field, in: [...] }  - { field, not_in: [...] }
  *  - { field, filled: true|false }
+ *  - { any: [syarat, ...] }  - { all: [syarat, ...] }
  * Tanpa syarat selalu terpenuhi.
  */
 export function matchesCondition(when, values = {}) {
   if (!when || typeof when !== 'object' || Object.keys(when).length === 0) return true
+
+  if (Array.isArray(when.any))
+    return when.any.some((condition) => matchesCondition(condition, values))
+  if (Array.isArray(when.all))
+    return when.all.every((condition) => matchesCondition(condition, values))
 
   const raw = values[when.field]
   const text = raw === undefined || raw === null || typeof raw === 'object' ? null : String(raw)
