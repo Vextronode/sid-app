@@ -20,6 +20,7 @@ class StoreLetterRequest extends FormRequest
     public function rules(): array
     {
         $schema = $this->schema();
+        $payload = is_array($this->input('payload')) ? $this->input('payload') : [];
 
         $rules = [
             'letter_type_id' => [
@@ -60,10 +61,18 @@ class StoreLetterRequest extends FormRequest
 
             'signature_files.*' => self::FILE_RULES,
 
-            ...$schema->payloadRules(),
+            ...$schema->payloadRules($payload),
         ];
 
+        $visible = $schema->visibleFieldNames($payload);
+
         foreach ($schema->fileFields() as $field) {
+            if (! in_array($field['name'], $visible, true)) {
+                $rules["files.{$field['name']}"] = ['exclude'];
+
+                continue;
+            }
+
             $rules["files.{$field['name']}"] = [
                 ($field['required'] ?? false) ? 'required' : 'nullable',
                 ...LetterFormSchema::fileRules($field),
@@ -98,6 +107,6 @@ class StoreLetterRequest extends FormRequest
                 ->find($letterTypeId)
             : null;
 
-        return $this->schema = new LetterFormSchema($letterType);
+        return $this->schema = new LetterFormSchema($letterType, $this->user()?->citizen);
     }
 }

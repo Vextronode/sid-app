@@ -9,6 +9,8 @@ use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Support\LetterDocuments;
 use App\Support\LetterValueFormatter;
+use App\Support\TemplateConditionals;
+use App\Support\TemplateLoops;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
@@ -174,10 +176,20 @@ class PdfService
     {
         $replacements = $this->getReplacements($letter, $context, $template, $sealed);
 
+        // Blok {{#each ...}} dan {{#if ...}} dinilai dari jawaban form
+        // sebelum placeholder diganti.
+        $payload = is_array($letter->payload) ? $letter->payload : [];
         $templateHtml = str_replace(
             array_keys($replacements),
             array_values($replacements),
-            (string) ($source ?? $context['template'] ?? '')
+            TemplateConditionals::apply(
+                TemplateLoops::apply(
+                    (string) ($source ?? $context['template'] ?? ''),
+                    $context['form_fields'] ?? $letter->letterType?->form_fields ?? [],
+                    $payload,
+                ),
+                $payload,
+            )
         );
 
         // Replace any unmapped {{ placeholder }} tags with fallback underline line

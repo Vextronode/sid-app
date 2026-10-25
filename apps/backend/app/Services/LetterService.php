@@ -71,6 +71,7 @@ class LetterService
             $data['letter_type_id'],
             $user->village_id,
         );
+        $schema = new LetterFormSchema($letterType, $citizen);
 
         $letter = $this->letterRepository->create([
 
@@ -94,8 +95,11 @@ class LetterService
             // surat memerlukannya, ia menjadi isian di payload.
             'purpose' => null,
 
-            // Isian pekerjaan disimpan sebagai nama siap cetak.
-            'payload' => (new LetterFormSchema($letterType))->resolveOccupations($data['payload'] ?? null),
+            // Isian tersembunyi (visible_when) dibuang; isian pekerjaan
+            // disimpan sebagai nama siap cetak.
+            'payload' => $schema->resolveFamilyMembers(
+                $schema->resolveOccupations($schema->visiblePayload($data['payload'] ?? null))
+            ),
 
             'notes' => null,
 

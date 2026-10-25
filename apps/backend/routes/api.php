@@ -97,6 +97,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::get('/user', [CurrentUserController::class, 'show']);
     Route::patch('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
+    // Anggota KK pemohon untuk isian family_members di form surat.
+    Route::get('/profile/family-members', [ProfileController::class, 'familyMembers']);
     // Foto profil akun warga; akun yang menjabat ditolak (foto pejabat
     // dikelola Petugas Desa).
     Route::post('/profile/photo', [UserPhotoController::class, 'storeOwn']);

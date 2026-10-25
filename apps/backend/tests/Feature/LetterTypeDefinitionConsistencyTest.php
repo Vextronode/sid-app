@@ -66,13 +66,22 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
         $unused = [];
 
         foreach (LetterType::query()->orderBy('code')->get() as $letterType) {
+            // Isian juga terpakai bila menjadi syarat isian lain, dokumen,
+            // atau blok {{#if}} di template.
             $dataSources = [
                 ...array_column($letterType->data_fields ?? [], 'source'),
                 $letterType->data_subject_field,
+                ...array_column(array_column($letterType->form_fields ?? [], 'visible_when'), 'field'),
+                ...array_column(array_column($letterType->documents ?? [], 'when'), 'field'),
             ];
+            $templates = $this->templatesOf($letterType);
 
             foreach ((new LetterFormSchema($letterType))->valueFieldNames() as $name) {
-                if (! str_contains($this->templatesOf($letterType), "{{ {$name}") && ! in_array($name, $dataSources, true)) {
+                $printed = str_contains($templates, "{{ {$name}")
+                    || str_contains($templates, "{{#if {$name}")
+                    || str_contains($templates, "{{#each {$name}");
+
+                if (! $printed && ! in_array($name, $dataSources, true)) {
                     $unused[$letterType->code][] = $name;
                 }
             }
@@ -146,6 +155,15 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
             if ($field['type'] === 'number') {
                 $sources[] = "{$field['name']}_terbilang";
+            }
+
+            // Placeholder di dalam {{#each}}: nomor baris dan isi baris.
+            if ($field['type'] === 'repeater') {
+                $sources = [...$sources, 'no', ...array_column($field['fields'] ?? [], 'name')];
+            }
+
+            if ($field['type'] === 'family_members') {
+                $sources = [...$sources, 'no', ...LetterFormSchema::FAMILY_MEMBER_KEYS];
             }
         }
 
