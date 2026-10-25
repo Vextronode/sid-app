@@ -118,6 +118,42 @@ describe('getSuratSchema', () => {
     )
   })
 
+  it('requires a chosen family member, and asks for the typed father only when none is chosen', () => {
+    const birth = getLetterTypeFormConfig({
+      ...letterType,
+      signature_slots: [],
+      form_fields: [
+        { name: 'ibu', label: 'Ibu', type: 'family_member', required: true },
+        { name: 'ayah', label: 'Ayah', type: 'family_member', required: false },
+        {
+          name: 'nama_ayah',
+          label: 'Nama Ayah',
+          type: 'text',
+          required: true,
+          visible_when: { field: 'ayah', filled: false },
+        },
+      ],
+    })
+    const issues = (values) =>
+      (getSuratSchema(birth).safeParse(values).error?.issues ?? []).map((issue) => issue.path[0])
+
+    expect(issues({ ibu: '', ayah: '' })).toEqual(expect.arrayContaining(['ibu', 'nama_ayah']))
+    expect(issues({ ibu: 'c-1', ayah: 'c-2' })).toEqual([])
+  })
+
+  it('accepts only an HH:MM value from the time input', () => {
+    const timed = getLetterTypeFormConfig({
+      ...letterType,
+      signature_slots: [],
+      form_fields: [{ name: 'pukul_lahir', label: 'Pukul Lahir', type: 'time', required: true }],
+    })
+    const schema = getSuratSchema(timed)
+
+    expect(schema.safeParse({ pukul_lahir: '08:30' }).success).toBe(true)
+    expect(schema.safeParse({ pukul_lahir: '' }).success).toBe(false)
+    expect(schema.safeParse({ pukul_lahir: '25:00' }).success).toBe(false)
+  })
+
   it('requires a name and a file when the other party signs on paper', () => {
     const result = getSuratSchema(config).safeParse({
       ...valid,

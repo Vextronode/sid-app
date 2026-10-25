@@ -221,6 +221,11 @@ export function LetterExtrasPanel({ letterId }) {
         return { name: field.name, label: field.label, value }
       }
 
+      // Anggota KK: tampilkan namanya, bukan id warga.
+      if (field.type === 'family_member' && letter.payload?.[`${field.name}_nama`]) {
+        return { name: field.name, label: field.label, value: letter.payload[`${field.name}_nama`] }
+      }
+
       // Wilayah desa: tampilkan label yang disimpan saat pengajuan.
       if (field.type === 'village_area' && letter.payload?.[`${field.name}_rt`]) {
         const p = letter.payload

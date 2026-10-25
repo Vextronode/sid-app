@@ -15,6 +15,8 @@ function normalizeField(field) {
     imageOnly: field.type === 'file' && field.accept === 'image',
     multiple: false,
     visibleWhen: field.visible_when ?? null,
+    // family_member: batas jenis kelamin anggota yang dapat dipilih (L/P).
+    gender: field.gender ?? null,
     // Isian berulang (repeater): sub-isian per baris dan batas jumlah baris.
     fields: Array.isArray(field.fields) ? field.fields.map(normalizeField) : [],
     min: field.min ?? null,

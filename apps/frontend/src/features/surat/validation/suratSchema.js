@@ -25,6 +25,13 @@ const optionalNik = (label) =>
     )
     .optional()
 
+// Nilai input waktu: HH:MM (24 jam).
+const requiredTime = (label) =>
+  z
+    .string()
+    .trim()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, `${label} wajib diisi`)
+
 const requiredDate = (label) =>
   z.string().trim().min(1, `${label} wajib diisi`).date(`${label} tidak valid`)
 
@@ -55,12 +62,15 @@ function fieldSchema(field) {
         : optionalFiles
     case 'date':
       return required ? requiredDate(label) : optionalText
+    case 'time':
+      return required ? requiredTime(label) : optionalText
     case 'nik':
       return required ? requiredNik(label) : optionalNik(label)
     case 'number':
       return required ? numberText(label, true) : numberText(label, false).optional()
     case 'occupation':
     case 'village_area':
+    case 'family_member':
       return required ? z.string().trim().min(1, `${label} wajib dipilih`) : optionalText
     default:
       return required ? requiredText(label) : optionalText

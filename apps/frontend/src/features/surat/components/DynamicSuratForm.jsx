@@ -351,6 +351,15 @@ export function DynamicSuratForm({
                   />
                 )}
 
+                {field.type === 'time' && (
+                  <input
+                    id={field.name}
+                    type="time"
+                    {...register(field.name)}
+                    className={inputClass}
+                  />
+                )}
+
                 {field.type === 'select' && (
                   <select
                     id={field.name}
@@ -388,6 +397,25 @@ export function DynamicSuratForm({
                     errors={errors}
                     catalogs={{ familyMembers, occupations }}
                   />
+                )}
+
+                {field.type === 'family_member' && (
+                  <select
+                    id={field.name}
+                    {...register(field.name)}
+                    className={`sid-select ${fieldError ? 'sid-input-error' : ''}`}
+                  >
+                    <option value="">
+                      {field.required ? 'Pilih anggota keluarga...' : 'Tidak ada di KK'}
+                    </option>
+                    {familyMembers
+                      .filter((member) => !field.gender || member.gender === field.gender)
+                      .map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name} ({member.family_role_label})
+                        </option>
+                      ))}
+                  </select>
                 )}
 
                 {field.type === 'village_area' && (

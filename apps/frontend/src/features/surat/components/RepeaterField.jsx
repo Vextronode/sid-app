@@ -80,6 +80,7 @@ function SubInput({ field, name, register, error, row, catalogs }) {
 
   const inputProps = {
     date: { type: 'date' },
+    time: { type: 'time' },
     number: { type: 'text', inputMode: 'decimal' },
     nik: { type: 'text', inputMode: 'numeric', maxLength: 16 },
   }[field.type] ?? { type: 'text' }
