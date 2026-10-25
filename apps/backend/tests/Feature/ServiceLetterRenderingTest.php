@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Letter;
 use App\Models\LetterType;
+use App\Models\Rt;
 use App\Models\Village;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
@@ -36,6 +37,8 @@ class ServiceLetterRenderingTest extends TestCase
 
     private array $kasi;
 
+    private Rt $budiasih;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -58,6 +61,7 @@ class ServiceLetterRenderingTest extends TestCase
         $this->rtApprover = $this->makeOfficialUser('rt', $this->village, ['rt_id' => $rt->id]);
         $this->kades = $this->makeOfficialUser('kepala_desa', $this->village);
         $this->kasi = $this->makeOfficialUser('kasi_pemerintahan', $this->village);
+        $this->budiasih = $this->makeNamedArea($this->village, 'Budiasih', '19', '2');
     }
 
     public function test_statement_without_population_documents_follows_form_f1_04(): void
@@ -70,9 +74,7 @@ class ServiceLetterRenderingTest extends TestCase
             'nama_ibu' => 'Siti Aminah',
             'golongan_darah' => 'O',
             'pendidikan_terakhir' => 'tidak_sekolah',
-            'alamat' => 'Dusun Budiasih',
-            'rt' => '002',
-            'rw' => '019',
+            'alamat' => $this->budiasih->id,
         ]);
 
         $this->assertNull(Letter::query()->findOrFail($letterId)->letter_number);
@@ -109,9 +111,7 @@ class ServiceLetterRenderingTest extends TestCase
             'jenis_kelamin' => 'P',
             'nama_ibu' => 'Siti Aminah',
             'pendidikan_terakhir' => 'sd',
-            'alamat' => 'Dusun Budiasih',
-            'rt' => '002',
-            'rw' => '019',
+            'alamat' => $this->budiasih->id,
         ]);
 
         $this->actingAs($this->applicant['user'])

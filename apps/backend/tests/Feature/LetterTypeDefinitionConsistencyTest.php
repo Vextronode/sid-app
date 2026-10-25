@@ -48,7 +48,8 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
         $unsourced = [];
 
         foreach (LetterType::query()->orderBy('code')->get() as $letterType) {
-            preg_match_all('/\{\{\s*([a-zA-Z0-9_]+)\s*}}/', $this->templatesOf($letterType), $matches);
+            // {{ isian[0] }} = kotak per karakter dari isian yang sama.
+            preg_match_all('/\{\{\s*([a-zA-Z0-9_]+)(?:\[\d+\])?\s*}}/', $this->templatesOf($letterType), $matches);
             $missing = array_values(array_unique(array_diff($matches[1], $this->sourcesFor($letterType))));
             sort($missing);
 
@@ -100,7 +101,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // 11 Persuratan Desa (Axx) + Pelayanan Desa (Fxx).
         $this->assertSame(
-            ['persuratan' => 11, 'pelayanan' => 3],
+            ['persuratan' => 11, 'pelayanan' => 4],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -134,7 +135,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // Penguburan menonaktifkan data almarhum; Kelahiran menambah anak.
         $this->assertSame(
-            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'manual', 'F02' => 'update_members', 'F03' => 'deactivate_members'],
+            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'manual', 'F02' => 'update_members', 'F03' => 'deactivate_members', 'F04' => 'manual'],
             $letterTypes
                 ->filter(fn (LetterType $type) => $type->data_action->value !== 'none')
                 ->mapWithKeys(fn (LetterType $type) => [$type->code => $type->data_action->value])
@@ -178,6 +179,10 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
             if ($field['type'] === 'number') {
                 $sources[] = "{$field['name']}_terbilang";
+            }
+
+            if ($field['type'] === 'village_area') {
+                $sources = [...$sources, "{$field['name']}_dusun", "{$field['name']}_rw", "{$field['name']}_rt"];
             }
 
             // Placeholder di dalam {{#each}}: nomor baris dan isi baris.

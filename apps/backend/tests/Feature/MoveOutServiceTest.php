@@ -156,9 +156,7 @@ class MoveOutServiceTest extends TestCase
             // Jenis permohonan WNI tidak berlaku untuk orang asing.
             'jenis_permohonan' => 'skpln',
             'nama_wna' => 'John Smith',
-            'alamat_wna' => 'Dusun Sinargalih',
-            'rt_wna' => '001',
-            'rw_wna' => '006',
+            'alamat_wna' => $this->makeNamedArea($this->village, 'Sinargalih', '6', '1')->id,
             'tipe_sponsor' => 'perusahaan',
             'nama_sponsor' => 'PT Laut Biru',
             'alamat_sponsor' => 'Jl. Pantai Barat 1, Pangandaran',
@@ -186,6 +184,7 @@ class MoveOutServiceTest extends TestCase
 
         $main = $this->render($letterId, null);
         $this->assertStringContainsString('( John Smith )', $main);
+        $this->assertStringContainsString('Dusun Sinargalih RT 001 RW 006', $main);
         $this->assertStringNotContainsString('3218011304150001', $main);
         $this->assertStringContainsString('PT Laut Biru', $main);
         $this->assertStringContainsString('2C11AB1234', $main);

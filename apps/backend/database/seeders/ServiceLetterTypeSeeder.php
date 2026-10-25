@@ -89,6 +89,22 @@ class ServiceLetterTypeSeeder extends Seeder
 
     private const MOVE_FOREIGNER = ['field' => 'kewarganegaraan', 'equals' => 'wna'];
 
+    private const ARRIVAL_RESIDENCE_OPTIONS = [
+        'numpang_kk' => 'Numpang KK warga desa',
+        'milik_sendiri' => 'Rumah milik sendiri/orang tua (membuat KK baru)',
+        'orang_lain' => 'Rumah orang lain/kontrakan/kantor (membuat KK baru)',
+    ];
+
+    // Pendatang membuat KK baru (tidak numpang KK).
+    private const ARRIVAL_NEW_FAMILY = ['field' => 'tempat_tinggal', 'in' => ['milik_sendiri', 'orang_lain']];
+
+    private const ARRIVAL_PLACE_OPTIONS = [
+        'rumah' => 'Rumah',
+        'tempat_tinggal' => 'Tempat tinggal',
+        'kontrakan' => 'Kontrakan',
+        'kantor' => 'Kantor',
+    ];
+
     private const SPONSOR_TYPE_OPTIONS = [
         'organisasi_internasional' => 'Organisasi Internasional',
         'pemerintah' => 'Pemerintah',
@@ -152,9 +168,7 @@ class ServiceLetterTypeSeeder extends Seeder
                     $this->text('nama_ibu', 'Nama Ibu Kandung', true, 'Nama lengkap ibu'),
                     $this->select('golongan_darah', 'Golongan Darah', self::BLOOD_TYPE_OPTIONS, false),
                     $this->select('pendidikan_terakhir', 'Pendidikan Terakhir', self::EDUCATION_OPTIONS),
-                    $this->text('alamat', 'Alamat (Dusun/Jalan)', true, 'Contoh: Dusun Budiasih'),
-                    $this->text('rt', 'RT', true, 'Contoh: 002'),
-                    $this->text('rw', 'RW', true, 'Contoh: 019'),
+                    $this->area('alamat', 'Alamat di Desa Ini'),
                 ],
                 'result_upload_hint' => 'Dokumen kependudukan yang terbit dari Disdukcapil (KK dan/atau KTP-el/KIA).',
                 // Setelah dokumen terbit, Kasi Pemerintahan mendaftarkan orang
@@ -169,7 +183,7 @@ class ServiceLetterTypeSeeder extends Seeder
                         'Nama Ibu' => '{{ nama_ibu }}',
                         'Golongan Darah' => '{{ golongan_darah }}',
                         'Pendidikan Terakhir' => '{{ pendidikan_terakhir }}',
-                        'Alamat' => '{{ alamat }} RT {{ rt }} RW {{ rw }}',
+                        'Alamat' => 'Dusun {{ alamat_dusun }} RT {{ alamat_rt }} RW {{ alamat_rw }}',
                     ], 0),
                     $this->rowsBlock(null, [
                         'a. Desa/Kelurahan' => '{{ village_name_short }}',
@@ -272,9 +286,7 @@ class ServiceLetterTypeSeeder extends Seeder
                         $this->text('nama_wna', 'Nama Lengkap Orang Asing', true, 'Sesuai paspor'),
                         $this->field('nik_wna', 'NIK Orang Asing', 'nik', false, 'Bila sudah punya (pemegang ITAP)'),
                         $this->text('no_kk_wna', 'No. KK Orang Asing', false, 'Bila sudah punya'),
-                        $this->text('alamat_wna', 'Alamat di Desa Ini (Dusun/Jalan)', true, 'Contoh: Dusun Sinargalih'),
-                        $this->text('rt_wna', 'RT', true, 'Contoh: 001'),
-                        $this->text('rw_wna', 'RW', true, 'Contoh: 006'),
+                        $this->area('alamat_wna', 'Alamat di Desa Ini'),
                         $this->select('tipe_sponsor', 'Tipe Sponsor', self::SPONSOR_TYPE_OPTIONS),
                     ]),
                     ...$this->withCondition(['all' => [self::MOVE_FOREIGNER, ['field' => 'tipe_sponsor', 'not_in' => ['tanpa_sponsor']]]], [
@@ -353,6 +365,108 @@ class ServiceLetterTypeSeeder extends Seeder
                 'data_subject_field' => 'anggota_pindah',
                 'data_instructions' => 'Anggota KK yang pindah dinonaktifkan beserta akunnya. Bila kepala keluarga ikut pindah sementara anggota lain tetap tinggal, atur kepala keluarga baru di Data KK sesuai KK terbaru dari Disdukcapil. Untuk orang asing (SKTT), tidak ada data warga yang diubah; cukup tandai selesai.',
                 'template' => $this->moveOutForm(),
+            ],
+            [
+                'code' => 'F04',
+                'name' => 'Pindah Datang',
+                'description' => 'Pendaftaran penduduk yang pindah datang ke desa, diajukan warga desa sebagai perantara (kepala keluarga yang ditumpangi, pemilik rumah, atau kerabat).',
+                'requirement_info' => 'Siapkan Surat Keterangan Pindah (SKPWNI) dari daerah asal dan KTP-el/KK lama pendatang. Surat pernyataan ditandatangani di atas materai dan diketahui Ketua RT dan RW.',
+                'form_fields' => [
+                    $this->select('tempat_tinggal', 'Tempat Tinggal Pendatang di Desa', self::ARRIVAL_RESIDENCE_OPTIONS),
+                    // Pendatang belum terdata: identitasnya diisi perantara.
+                    $this->text('nama_pendatang', 'Nama Lengkap Pendatang', true, 'Sesuai KTP-el/KK lama'),
+                    $this->field('nik_pendatang', 'NIK Pendatang', 'nik', true, '16 digit NIK'),
+                    $this->text('tempat_lahir_pendatang', 'Tempat Lahir', true, 'Kota/kabupaten'),
+                    $this->date('tanggal_lahir_pendatang', 'Tanggal Lahir'),
+                    $this->select('agama_pendatang', 'Agama', CitizenLabels::RELIGION),
+                    $this->occupation('pekerjaan_pendatang', 'Pekerjaan'),
+                    $this->area('alamat_pendatang', 'Alamat Pendatang di Desa Ini'),
+                    // Numpang KK: kepala keluarga yang KK-nya ditumpangi.
+                    ...$this->withCondition(['field' => 'tempat_tinggal', 'equals' => 'numpang_kk'], [
+                        $this->text('nama_kepala_keluarga', 'Nama Kepala Keluarga yang Ditumpangi', true, 'Nama lengkap'),
+                        $this->field('nik_kepala_keluarga', 'NIK Kepala Keluarga', 'nik', true, '16 digit NIK'),
+                        $this->field('no_kk_tujuan', 'No. KK yang Ditumpangi', 'nik', true, '16 digit No. KK'),
+                        $this->occupation('pekerjaan_kepala_keluarga', 'Pekerjaan Kepala Keluarga'),
+                        $this->area('alamat_kepala_keluarga', 'Alamat Kepala Keluarga'),
+                    ]),
+                    // Rumah orang lain/kontrakan/kantor: pemilik tempat tinggal.
+                    ...$this->withCondition(['field' => 'tempat_tinggal', 'equals' => 'orang_lain'], [
+                        $this->select('jenis_tempat', 'Jenis Tempat Tinggal', self::ARRIVAL_PLACE_OPTIONS),
+                        $this->text('nama_pemilik', 'Nama Pemilik', true, 'Nama lengkap'),
+                        $this->field('nik_pemilik', 'NIK Pemilik', 'nik', true, '16 digit NIK'),
+                        $this->text('tempat_lahir_pemilik', 'Tempat Lahir Pemilik', true, 'Kota/kabupaten'),
+                        $this->date('tanggal_lahir_pemilik', 'Tanggal Lahir Pemilik'),
+                        $this->occupation('pekerjaan_pemilik', 'Pekerjaan Pemilik'),
+                        $this->text('alamat_pemilik', 'Alamat Pemilik', true, 'Alamat lengkap pemilik'),
+                    ]),
+                    // Membuat KK baru: biodata untuk F-1.01.
+                    ...$this->withCondition(self::ARRIVAL_NEW_FAMILY, [
+                        $this->select('jenis_kelamin_pendatang', 'Jenis Kelamin', self::GENDER_OPTIONS),
+                        $this->select('golongan_darah_pendatang', 'Golongan Darah', self::BLOOD_TYPE_OPTIONS, false),
+                        $this->select('pendidikan_pendatang', 'Pendidikan Terakhir', CitizenLabels::LAST_EDUCATION),
+                        $this->text('no_akta_lahir', 'No. Akta Kelahiran', false, 'Bila ada'),
+                        $this->select('status_kawin_pendatang', 'Status Perkawinan', CitizenLabels::MARITAL_STATUS),
+                    ]),
+                    ...$this->withCondition(['all' => [self::ARRIVAL_NEW_FAMILY, ['field' => 'status_kawin_pendatang', 'equals' => 'kawin']]], [
+                        $this->text('no_akta_kawin', 'No. Akta/Buku Nikah', false, 'Bila ada'),
+                        $this->date('tanggal_kawin', 'Tanggal Perkawinan', false),
+                    ]),
+                    ...$this->withCondition(['all' => [self::ARRIVAL_NEW_FAMILY, ['field' => 'status_kawin_pendatang', 'equals' => 'cerai_hidup']]], [
+                        $this->text('no_akta_cerai', 'No. Akta Perceraian', false, 'Bila ada'),
+                        $this->date('tanggal_cerai', 'Tanggal Perceraian', false),
+                    ]),
+                    ...$this->withCondition(self::ARRIVAL_NEW_FAMILY, [
+                        $this->text('nama_ibu_pendatang', 'Nama Ibu', true, 'Nama lengkap ibu'),
+                        $this->field('nik_ibu_pendatang', 'NIK Ibu', 'nik', false, 'Bila diketahui'),
+                        $this->text('nama_ayah_pendatang', 'Nama Ayah', true, 'Nama lengkap ayah'),
+                        $this->field('nik_ayah_pendatang', 'NIK Ayah', 'nik', false, 'Bila diketahui'),
+                        $this->text('telepon_pendatang', 'No. Telepon/HP', false, 'Contoh: 081234567890'),
+                    ]),
+                ],
+                'documents' => [
+                    [
+                        'key' => 'pendatang_numpang_kk',
+                        'title' => 'Surat Pernyataan Tidak Keberatan Numpang KK',
+                        'when' => ['field' => 'tempat_tinggal', 'equals' => 'numpang_kk'],
+                        'template' => $this->hostFamilyStatement(),
+                    ],
+                    [
+                        'key' => 'pendatang_alamat_sendiri',
+                        'title' => 'Surat Pernyataan Menggunakan Alamat Rumah Milik Sendiri',
+                        'when' => ['field' => 'tempat_tinggal', 'equals' => 'milik_sendiri'],
+                        'template' => $this->ownHomeStatement(),
+                    ],
+                    [
+                        'key' => 'pendatang_alamat_orla',
+                        'title' => 'Surat Pernyataan Alamat Digunakan dalam Administrasi Kependudukan',
+                        'when' => ['field' => 'tempat_tinggal', 'equals' => 'orang_lain'],
+                        'template' => $this->hostAddressStatement(),
+                    ],
+                    [
+                        'key' => 'f1_01',
+                        'title' => 'Formulir Biodata Keluarga (F-1.01)',
+                        'orientation' => 'landscape',
+                        'when' => self::ARRIVAL_NEW_FAMILY,
+                        'template' => $this->arrivalBiodataForm(),
+                    ],
+                ],
+                'result_upload_hint' => 'KK dan KTP-el pendatang yang terbit dari Disdukcapil (KK baru, atau KK yang ditumpangi bila numpang KK).',
+                // Pendatang didaftarkan Kasi di Data Penduduk/KK sesuai KK
+                // yang terbit, lalu ditandai selesai.
+                'data_action' => LetterDataAction::Manual->value,
+                'data_instructions' => 'Daftarkan pendatang sebagai warga di Data Penduduk dan masukkan ke KK sesuai KK yang terbit dari Disdukcapil (KK baru, atau KK yang ditumpangi bila numpang KK), lalu tandai selesai.',
+                // F-1.02 atas nama pendatang (bukan perantara).
+                'template' => $this->registrationForm([
+                    'kk.ubah.menumpang' => 'tempat_tinggal=numpang_kk',
+                    'kk.baru.pindah_datang' => 'tempat_tinggal=milik_sendiri|orang_lain',
+                    'ktp.pindah_datang' => true,
+                    'lampiran.skp' => true,
+                    'lampiran.bersedia_menerima' => 'tempat_tinggal=numpang_kk',
+                ], [
+                    'name' => '{{ nama_pendatang }}',
+                    'nik' => '{{ nik_pendatang }}',
+                    'family_number' => $this->blank('no_kk_tujuan'),
+                ]),
             ],
         ];
     }
@@ -617,7 +731,9 @@ class ServiceLetterTypeSeeder extends Seeder
      */
     private function mover(string $citizen, string $foreigner): string
     {
-        return "{{#if kewarganegaraan=wni}}{$citizen}{{/if}}{{#if kewarganegaraan=wna}}".$this->blank($foreigner).'{{/if}}';
+        $foreignerValue = $foreigner === 'alamat_wna_dusun' ? 'Dusun '.$this->blank($foreigner) : $this->blank($foreigner);
+
+        return "{{#if kewarganegaraan=wni}}{$citizen}{{/if}}{{#if kewarganegaraan=wna}}{$foreignerValue}{{/if}}";
     }
 
     private function moveOutForm(): string
@@ -647,8 +763,8 @@ class ServiceLetterTypeSeeder extends Seeder
                 .$row('2.', 'Nama Lengkap Pemohon', $this->mover('{{ applicant_name }}', 'nama_wna'))
                 .$row('3.', 'NIK', $this->mover('{{ applicant_nik }}', 'nik_wna'))
                 .$row('4.', 'Jenis Permohonan', $requests)
-                .$row('5.', 'Alamat Jelas', $this->mover('{{ applicant_address }}', 'alamat_wna')
-                    .'{{#if kewarganegaraan=wna}} RT '.$this->blank('rt_wna').' RW '.$this->blank('rw_wna').'{{/if}}'
+                .$row('5.', 'Alamat Jelas', $this->mover('{{ applicant_address }}', 'alamat_wna_dusun')
+                    .'{{#if kewarganegaraan=wna}} RT '.$this->blank('alamat_wna_rt').' RW '.$this->blank('alamat_wna_rw').'{{/if}}'
                     .$region('{{ village_name_short }}', '{{ village_district }}', '{{ village_regency }}', '{{ village_province }}', '{{ village_postal_code }}')
                     .$this->choices('klasifikasi_pindah', self::MOVE_CLASSIFICATION_OPTIONS))
                 .$row('6.', 'Alamat Pindah', $this->blank('alamat_tujuan').' RT '.$this->blank('rt_tujuan').' RW '.$this->blank('rw_tujuan')
@@ -687,6 +803,220 @@ class ServiceLetterTypeSeeder extends Seeder
     }
 
     // ------------------------------------------------------------------
+    // F04: Pindah Datang (F-1.02 + satu surat pernyataan Pendatang + F-1.01)
+    // ------------------------------------------------------------------
+
+    /**
+     * Identitas bertitik dua tanpa indentasi (surat pernyataan Pendatang).
+     *
+     * @param  array<string, string>  $rows
+     */
+    private function identity(array $rows): string
+    {
+        return $this->rowsBlock(null, $rows, 20);
+    }
+
+    /**
+     * Tanda tangan surat pernyataan Pendatang: diketahui Ketua RT dan RW di
+     * kiri (diisi basah), yang menyatakan di kanan (dengan/tanpa materai).
+     */
+    private function arrivalSignature(string $name, bool $stamped): string
+    {
+        $stamp = $stamped
+            ? '<div style="width: 90px; height: 50px; margin: 6px auto; border: 1px dashed #777; font-size: 8pt; color: #555; display: table;"><span style="display: table-cell; vertical-align: middle;">Materai<br>Cukup</span></div>'
+            : '<div style="height: 62px;"></div>';
+        $official = fn (string $title): string => '<p style="margin: 0;">'.$title.'</p><div style="height: 50px;"></div>'
+            .'<p style="margin: 0;">(.............................................)</p><p style="margin: 0 0 12px;">NIK. ......................................</p>';
+
+        return <<<HTML
+        <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+            <tr>
+                <td style="width: 50%; vertical-align: top; text-align: center;">
+                    <p style="margin: 0;">Mengetahui :</p>
+                    {$official('Ketua RT {{ alamat_pendatang_rt }}')}
+                    {$official('Ketua RW {{ alamat_pendatang_rw }}')}
+                </td>
+                <td style="width: 50%; vertical-align: top; text-align: center;">
+                    <p style="margin: 0;">{{ village_regency }}, {{ issued_at }}</p>
+                    <p style="margin: 0;">Saya yang menyatakan,</p>
+                    {$stamp}
+                    <p style="margin: 0; font-weight: bold;">( {$name} )</p>
+                </td>
+            </tr>
+        </table>
+        HTML;
+    }
+
+    /**
+     * Identitas pendatang (nama, NIK, TTL, agama, pekerjaan).
+     */
+    private function arrivalIdentity(): string
+    {
+        return $this->identity([
+            'Nama' => '{{ nama_pendatang }}',
+            'NIK' => '{{ nik_pendatang }}',
+            'Tempat dan Tgl. lahir' => '{{ tempat_lahir_pendatang }}, {{ tanggal_lahir_pendatang }}',
+            'Agama' => '{{ agama_pendatang }}',
+            'Pekerjaan' => '{{ pekerjaan_pendatang }}',
+        ]);
+    }
+
+    private function hostFamilyStatement(): string
+    {
+        return $this->form('', 'SURAT PERNYATAAN<br>TIDAK KEBERATAN NUMPANG KK', [
+            '<p style="margin: 0 0 6px;">Saya yang bertanda tangan di bawah ini&nbsp;:</p>',
+            $this->identity([
+                'Nama' => '{{ nama_kepala_keluarga }}',
+                'NIK' => '{{ nik_kepala_keluarga }}',
+                'No. KK' => '{{ no_kk_tujuan }}',
+                'Pekerjaan' => '{{ pekerjaan_kepala_keluarga }}',
+                'Alamat' => 'Dusun {{ alamat_kepala_keluarga_dusun }} RT {{ alamat_kepala_keluarga_rt }} RW {{ alamat_kepala_keluarga_rw }}',
+            ]),
+            $this->paragraph('Selaku Kepala Keluarga, dengan ini menyatakan tidak keberatan dalam Kartu Keluarga saya dimasukkan orang tersebut di bawah ini&nbsp;:', false),
+            $this->arrivalIdentity(),
+            $this->paragraph('Demikian surat pernyataan ini saya buat dengan sebenar-benarnya dan tanpa paksaan dari pihak manapun, untuk dipergunakan sebagaimana mestinya.', false),
+            $this->arrivalSignature('{{ nama_kepala_keluarga }}', true),
+        ]);
+    }
+
+    private function ownHomeStatement(): string
+    {
+        return $this->form('', 'SURAT PERNYATAAN<br>MENGGUNAKAN ALAMAT RUMAH MILIK SENDIRI', [
+            '<p style="margin: 0 0 6px;">Saya yang bertanda tangan di bawah ini&nbsp;:</p>',
+            $this->identity([
+                'Nama' => '{{ nama_pendatang }}',
+                'NIK' => '{{ nik_pendatang }}',
+                'Tempat dan Tgl. lahir' => '{{ tempat_lahir_pendatang }}, {{ tanggal_lahir_pendatang }}',
+                'Agama' => '{{ agama_pendatang }}',
+                'Pekerjaan' => '{{ pekerjaan_pendatang }}',
+                'Alamat' => 'Dusun {{ alamat_pendatang_dusun }} RT {{ alamat_pendatang_rt }} RW {{ alamat_pendatang_rw }}, Desa {{ village_name_short }}',
+            ]),
+            $this->paragraph('Dengan ini menyatakan bahwa alamat yang dipergunakan dalam dokumen kependudukan sesuai alamat kepindahan adalah milik sendiri/ milik orang tua.', false),
+            $this->paragraph('Demikian surat pernyataan ini saya buat dengan sebenar-benarnya dan tanpa paksaan dari pihak manapun, untuk dipergunakan sebagaimana mestinya.', false),
+            $this->arrivalSignature('{{ nama_pendatang }}', false),
+        ]);
+    }
+
+    private function hostAddressStatement(): string
+    {
+        return $this->form('', 'SURAT PERNYATAAN<br>ALAMAT DIGUNAKAN DALAM ADMINISTRASI KEPENDUDUKAN', [
+            '<p style="margin: 0 0 6px;">Saya yang bertanda tangan di bawah ini&nbsp;:</p>',
+            $this->identity([
+                'Nama' => '{{ nama_pemilik }}',
+                'NIK' => '{{ nik_pemilik }}',
+                'Tempat/Tanggal Lahir' => '{{ tempat_lahir_pemilik }}, {{ tanggal_lahir_pemilik }}',
+                'Pekerjaan' => '{{ pekerjaan_pemilik }}',
+                'Alamat' => '{{ alamat_pemilik }}',
+            ]),
+            '<p style="margin: 8px 0 6px;">Selaku pemilik {{ jenis_tempat }} yang berlokasi di&nbsp;:</p>',
+            $this->identity([
+                'RT / RW' => '{{ alamat_pendatang_rt }} / {{ alamat_pendatang_rw }}',
+                'Dusun/Lingkungan' => '{{ alamat_pendatang_dusun }}',
+                'Desa/Kelurahan' => '{{ village_name_short }}',
+                'Kecamatan' => '{{ village_district }}',
+                'Kota' => '{{ village_regency }}',
+            ]),
+            $this->paragraph('Dengan ini menyatakan tidak keberatan alamat tersebut dipergunakan sebagai alamat tinggal dalam dokumen kependudukan bagi orang tersebut di bawah ini&nbsp;:', false),
+            $this->arrivalIdentity(),
+            $this->paragraph('Demikian surat pernyataan ini saya buat dengan sebenar-benarnya dan tanpa paksaan dari pihak manapun, untuk dipergunakan sebagaimana mestinya.', false),
+            $this->arrivalSignature('{{ nama_pemilik }}', true),
+        ]);
+    }
+
+    /**
+     * F-1.01 bagi pendatang yang membuat KK baru: pendatang sebagai kepala
+     * keluarga dan satu-satunya anggota.
+     */
+    private function arrivalBiodataForm(): string
+    {
+        return $this->biodataForm(
+            [
+                'head' => '{{ nama_pendatang }}',
+                'address' => 'DUSUN {{ alamat_pendatang_dusun }}',
+                'hamlet' => '{{ alamat_pendatang_dusun }}',
+                'count' => '1',
+            ],
+            // Kotak per karakter: nama placeholder sumbernya.
+            [
+                'postal' => 'village_postal_code',
+                'rt' => 'alamat_pendatang_rt',
+                'rw' => 'alamat_pendatang_rw',
+                'phone' => 'telepon_pendatang',
+            ],
+            [[
+                'name' => '{{ nama_pendatang }}',
+                'gender' => '{{ jenis_kelamin_pendatang }}',
+                'birth_place' => '{{ tempat_lahir_pendatang }}',
+                'birth_date' => '{{ tanggal_lahir_pendatang }}',
+                'nationality' => 'INDONESIA',
+                'birth_certificate' => '{{#if no_akta_lahir}}Ada{{/if}}',
+                'birth_certificate_number' => $this->blank('no_akta_lahir'),
+                'blood_type' => $this->blank('golongan_darah_pendatang'),
+                'religion' => '{{ agama_pendatang }}',
+                'marital_status' => '{{ status_kawin_pendatang }}',
+                'marriage_certificate' => '{{#if no_akta_kawin}}Ada{{/if}}',
+                'marriage_certificate_number' => $this->blank('no_akta_kawin'),
+                'marriage_date' => $this->blank('tanggal_kawin'),
+                'divorce_certificate' => '{{#if no_akta_cerai}}Ada{{/if}}',
+                'divorce_certificate_number' => $this->blank('no_akta_cerai'),
+                'divorce_date' => $this->blank('tanggal_cerai'),
+                'family_role' => 'Kepala Keluarga',
+                'education' => '{{ pendidikan_pendatang }}',
+                'occupation' => '{{ pekerjaan_pendatang }}',
+                'mother_nik' => $this->blank('nik_ibu_pendatang'),
+                'mother_name' => '{{ nama_ibu_pendatang }}',
+                'father_nik' => $this->blank('nik_ayah_pendatang'),
+                'father_name' => '{{ nama_ayah_pendatang }}',
+            ]],
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // F-1.01 Biodata Keluarga (dipakai layanan yang membuat/menyusun KK)
+    // ------------------------------------------------------------------
+
+    /**
+     * Formulir F-1.01 (mendatar), tata letaknya sama dengan Excel aslinya
+     * (templates/f1_01_biodata_keluarga.html). Kolom khusus orang asing dan
+     * WNI di luar negeri dicetak kosong; kode wilayah diisi petugas.
+     *
+     * @param  array<string, string>  $family  head, address, hamlet, count (+ email)
+     * @param  array<string, string>  $boxes  isian kotak per karakter: postal, rt, rw, phone => nama placeholder
+     * @param  array<int, array<string, string>>  $members  baris anggota (maks. 10)
+     */
+    private function biodataForm(array $family, array $boxes, array $members): string
+    {
+        $family = [
+            'province' => '{{ village_province }}',
+            'regency' => '{{ village_regency }}',
+            'district' => '{{ village_district }}',
+            'village' => '{{ village_name_short }}',
+            ...$family,
+        ];
+        $html = (string) file_get_contents(database_path('seeders/templates/f1_01_biodata_keluarga.html'));
+
+        return (string) preg_replace_callback('/\[\[([a-z0-9_]+)(?:\.([a-z_]+))?(?::(\d+))?\]\]/', function (array $match) use ($family, $boxes, $members): string {
+            [, $key, $column, $index] = $match + [2 => '', 3 => ''];
+
+            // Baris anggota: [[m1.name]] dst.
+            if ($column !== '') {
+                return $members[(int) substr($key, 1) - 1][$column] ?? '';
+            }
+
+            if ($index === '') {
+                return $family[$key] ?? '';
+            }
+
+            // Jumlah anggota rata kanan di dua kotak.
+            if ($key === 'count') {
+                return trim(str_pad($family['count'] ?? '', 2, ' ', STR_PAD_LEFT)[(int) $index]);
+            }
+
+            return isset($boxes[$key]) ? "{{ {$boxes[$key]}[{$index}] }}" : '';
+        }, $html);
+    }
+
+    // ------------------------------------------------------------------
     // F-1.02 Pendaftaran Peristiwa Kependudukan (dipakai banyak layanan)
     // ------------------------------------------------------------------
 
@@ -707,11 +1037,21 @@ class ServiceLetterTypeSeeder extends Seeder
 
     /**
      * Formulir F-1.02. $marks: kunci pilihan => true / syarat {{#if}}.
+     * $applicant: data pemohon bila bukan pemohon akun (mis. pendatang yang
+     * diajukan perantara): name, nik, family_number.
      *
      * @param  array<string, bool|string>  $marks
+     * @param  array<string, string>  $applicant
      */
-    private function registrationForm(array $marks): string
+    private function registrationForm(array $marks, array $applicant = []): string
     {
+        ['name' => $name, 'nik' => $nik, 'family_number' => $familyNumber] = [
+            'name' => '{{ applicant_name }}',
+            'nik' => '{{ applicant_nik }}',
+            'family_number' => '{{ applicant_family_number }}',
+            ...$applicant,
+        ];
+
         $item = fn (string $key, string $label, int $indent = 0): string => '<div style="padding-left: '.$indent.'px; margin: 1px 0;">'
             .$this->checkbox($marks[$key] ?? null).$label.'</div>';
         $group = fn (string $title, string $items): string => '<div style="margin: 4px 0 2px; font-weight: bold;">'.$title.'</div>'.$items;
@@ -765,15 +1105,15 @@ class ServiceLetterTypeSeeder extends Seeder
         return $this->form('F-1.02', 'FORMULIR PENDAFTARAN PERISTIWA KEPENDUDUKAN', [
             '<p style="margin: 0; font-weight: bold;">I. DATA PEMOHON</p>',
             $this->rowsBlock(null, [
-                '1. Nama Lengkap' => '{{ applicant_name }}',
-                '2. Nomor Induk Kependudukan' => '{{ applicant_nik }}',
-                '3. Nomor Kartu Keluarga' => '{{ applicant_family_number }}',
+                '1. Nama Lengkap' => $name,
+                '2. Nomor Induk Kependudukan' => $nik,
+                '3. Nomor Kartu Keluarga' => $familyNumber,
             ], 0),
             '<p style="margin: 8px 0 4px; font-weight: bold;">II. JENIS PERMOHONAN</p>',
             '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;"><tr>'.$column($kk).$column($ktp).$column($kia).$column($change).'</tr></table>',
             '<p style="margin: 10px 0 4px; font-weight: bold;">III. PERSYARATAN YANG DILAMPIRKAN</p>',
             '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">'.$attachmentRows.'</table>',
-            <<<'HTML'
+            <<<HTML
             <table style="width: 100%; margin-top: 18px; border-collapse: collapse; text-align: center;">
                 <tr>
                     <td style="width: 50%;"></td>
@@ -781,7 +1121,7 @@ class ServiceLetterTypeSeeder extends Seeder
                 </tr>
                 <tr>
                     <td style="vertical-align: top;">Petugas<br>Kasi Pemerintahan<div style="height: 60px;"></div>( {{ village_kasi_pemerintahan_name }} )</td>
-                    <td style="vertical-align: top;">Pemohon,<br>&nbsp;<div style="height: 60px;"></div>( {{ applicant_name }} )</td>
+                    <td style="vertical-align: top;">Pemohon,<br>&nbsp;<div style="height: 60px;"></div>( {$name} )</td>
                 </tr>
             </table>
             HTML,

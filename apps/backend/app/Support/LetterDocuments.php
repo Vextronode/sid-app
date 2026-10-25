@@ -16,11 +16,11 @@ class LetterDocuments
     /**
      * @param  array<int, array<string, mixed>>|null  $definitions  letter_types.documents (atau salinannya di snapshot)
      * @param  array<string, mixed>|null  $payload
-     * @return array<int, array{key: string, title: string, template: string|null}>
+     * @return array<int, array{key: string, title: string, template: string|null, orientation: string}>
      */
     public static function applicable(string $mainTitle, ?string $mainTemplate, ?array $definitions, ?array $payload): array
     {
-        $documents = [['key' => self::MAIN, 'title' => $mainTitle, 'template' => $mainTemplate]];
+        $documents = [['key' => self::MAIN, 'title' => $mainTitle, 'template' => $mainTemplate, 'orientation' => 'portrait']];
 
         foreach ($definitions ?? [] as $definition) {
             if (! FieldCondition::matches($definition['when'] ?? null, $payload ?? [])) {
@@ -31,6 +31,8 @@ class LetterDocuments
                 'key' => (string) $definition['key'],
                 'title' => (string) ($definition['title'] ?? $definition['key']),
                 'template' => $definition['template'] ?? null,
+                // Formulir lebar (mis. F-1.01) dicetak mendatar.
+                'orientation' => ($definition['orientation'] ?? null) === 'landscape' ? 'landscape' : 'portrait',
             ];
         }
 
@@ -38,8 +40,8 @@ class LetterDocuments
     }
 
     /**
-     * @param  array<int, array{key: string, title: string, template: string|null}>  $documents
-     * @return array{key: string, title: string, template: string|null}|null
+     * @param  array<int, array{key: string, title: string, template: string|null, orientation: string}>  $documents
+     * @return array{key: string, title: string, template: string|null, orientation: string}|null
      */
     public static function find(array $documents, ?string $key): ?array
     {

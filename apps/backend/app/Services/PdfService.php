@@ -145,6 +145,10 @@ class PdfService
             'template' => $this->renderTemplate($letter, $context, $template, $sealed, (string) $document['template']),
         ]);
 
+        if ($document['orientation'] === 'landscape') {
+            $pdf->setPaper('a4', 'landscape');
+        }
+
         return [$pdf, $filename];
     }
 
@@ -154,7 +158,7 @@ class PdfService
      * menyimpan daftar dokumen, jadi memakai definisi jenis surat.
      *
      * @param  array<string, mixed>  $context
-     * @return array{key: string, title: string, template: string|null}
+     * @return array{key: string, title: string, template: string|null, orientation: string}
      */
     private function documentFor(Letter $letter, array $context, ?string $key): array
     {
@@ -191,6 +195,18 @@ class PdfService
                 ),
                 $payload,
             )
+        );
+
+        // Kotak per karakter di formulir Disdukcapil: {{ isian[0] }} = huruf
+        // pertama nilai isian/placeholder sistem (kosong bila tidak ada).
+        $templateHtml = (string) preg_replace_callback(
+            '/\{\{\s*([a-zA-Z0-9_]+)\[(\d+)\]\s*}}/',
+            function (array $match) use ($replacements): string {
+                $value = trim(html_entity_decode(strip_tags((string) ($replacements["{{ {$match[1]} }}"] ?? ''))));
+
+                return preg_match('/^_+$/', $value) ? '' : e(mb_substr($value, (int) $match[2], 1));
+            },
+            $templateHtml,
         );
 
         // Replace any unmapped {{ placeholder }} tags with fallback underline line
