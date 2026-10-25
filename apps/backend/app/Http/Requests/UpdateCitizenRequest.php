@@ -16,7 +16,7 @@ class UpdateCitizenRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'staf_sid';
+        return in_array($this->user()?->role, ['staf_sid', 'kasi_pemerintahan'], true);
     }
 
     /**

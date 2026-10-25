@@ -313,27 +313,43 @@ class RoleMiddlewareTest extends TestCase
     }
 
     /**
-     * Kasi/Kaur boleh melihat daftar warga sebagai bahan pertimbangan,
-     * tetapi tidak boleh mengubahnya lewat modul data warga; perubahan
-     * oleh mereka hanya lewat surat (Terapkan).
+     * Kaur TU & Umum boleh melihat daftar warga dan KK sebagai bahan
+     * pertimbangan, tetapi tidak boleh mengubahnya lewat modul data warga;
+     * perubahan olehnya hanya lewat surat (Terapkan).
      */
-    #[DataProvider('kasiKaurRoles')]
     #[Test]
-    public function kasi_kaur_can_read_but_not_write_citizens(string $role): void
+    public function kaur_can_read_but_not_write_citizens_and_families(): void
     {
-        $user = $this->userWithRole($role);
+        $user = $this->userWithRole('kaur_tu_umum');
         $citizen = Citizen::factory()->create(['village_id' => $user->village_id]);
 
         $this->actingAs($user)->getJson('/api/citizens')->assertOk();
+        $this->actingAs($user)->getJson('/api/families')->assertOk();
         $this->actingAs($user)->postJson('/api/citizens', [])->assertForbidden();
         $this->actingAs($user)->patchJson("/api/citizens/{$citizen->id}", ['name' => 'Diubah'])->assertForbidden();
         $this->actingAs($user)->deleteJson("/api/citizens/{$citizen->id}")->assertForbidden();
         $this->actingAs($user)->postJson('/api/citizens/import', [])->assertForbidden();
+        $this->actingAs($user)->postJson('/api/families', [])->assertForbidden();
     }
 
-    public static function kasiKaurRoles(): array
+    /**
+     * Kasi Pemerintahan memegang layanan kependudukan (Pelayanan Desa),
+     * jadi mengelola data warga dan KK seperti Petugas Desa.
+     */
+    #[Test]
+    public function kasi_pemerintahan_manages_citizens_and_families(): void
     {
-        return [['kasi_pemerintahan'], ['kaur_tu_umum']];
+        $user = $this->userWithRole('kasi_pemerintahan');
+        $citizen = Citizen::factory()->create(['village_id' => $user->village_id]);
+
+        $this->actingAs($user)->getJson('/api/citizens')->assertOk();
+        $this->actingAs($user)->getJson('/api/families')->assertOk();
+        $this->actingAs($user)->getJson('/api/citizens/wilayah')->assertOk();
+        $this->actingAs($user)->patchJson("/api/citizens/{$citizen->id}", ['name' => 'Diubah'])->assertOk();
+        $this->assertSame('Diubah', $citizen->fresh()->name);
+        // Lolos otorisasi; ditolak karena isiannya kosong.
+        $this->actingAs($user)->postJson('/api/citizens', [])->assertUnprocessable();
+        $this->actingAs($user)->postJson('/api/families', [])->assertUnprocessable();
     }
 
     #[Test]

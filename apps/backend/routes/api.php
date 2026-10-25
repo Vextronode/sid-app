@@ -148,15 +148,16 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Citizens (UC-09)
     |----------------------------------------------------------------------
-    | Hanya Petugas Desa yang boleh create/update/delete/import data
-    | kependudukan lewat modul ini. Kasi/Kaur hanya boleh membaca daftar
-    | warga sebagai bahan pertimbangan; perubahan data oleh mereka hanya
-    | lewat surat (POST /letters/{letter}/fulfillment).
+    | Petugas Desa dan Kasi Pemerintahan (pemegang layanan kependudukan /
+    | Pelayanan Desa) boleh create/update/delete/import data kependudukan.
+    | Kaur TU & Umum hanya membaca daftar warga dan KK sebagai bahan
+    | pertimbangan; perubahan data olehnya hanya lewat surat
+    | (POST /letters/{letter}/fulfillment).
     */
     Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum))
         ->get('/citizens', [CitizenController::class, 'index']);
 
-    Route::middleware(UserRole::middleware(UserRole::StafSid))
+    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan))
         ->prefix('citizens')
         ->group(function () {
             Route::post('/', [CitizenController::class, 'store']);
@@ -172,17 +173,23 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Families / Kartu Keluarga (UC-09 sub-flow)
     |----------------------------------------------------------------------
-    | Eksklusif Petugas Desa, sama seperti Citizens.
+    | Sama seperti Citizens: Petugas Desa dan Kasi Pemerintahan mengelola,
+    | Kaur TU & Umum hanya membaca.
     */
-    Route::middleware(UserRole::middleware(UserRole::StafSid))
+    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum))
         ->prefix('families')
         ->group(function () {
             Route::get('/', [FamilyController::class, 'index']);
-            Route::post('/', [FamilyController::class, 'store']);
             Route::get('/options', [FamilyController::class, 'options']);
             Route::get('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'show']);
-            Route::put('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'upsert']);
             Route::get('/{family}', [FamilyController::class, 'show']);
+        });
+
+    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan))
+        ->prefix('families')
+        ->group(function () {
+            Route::post('/', [FamilyController::class, 'store']);
+            Route::put('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'upsert']);
             Route::patch('/{family}', [FamilyController::class, 'update']);
             Route::delete('/{family}', [FamilyController::class, 'destroy']);
         });
