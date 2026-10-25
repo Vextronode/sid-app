@@ -60,6 +60,7 @@ function fieldSchema(field) {
     case 'number':
       return required ? numberText(label, true) : numberText(label, false).optional()
     case 'occupation':
+    case 'village_area':
       return required ? z.string().trim().min(1, `${label} wajib dipilih`) : optionalText
     default:
       return required ? requiredText(label) : optionalText

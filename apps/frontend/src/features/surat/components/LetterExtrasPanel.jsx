@@ -221,6 +221,14 @@ export function LetterExtrasPanel({ letterId }) {
         return { name: field.name, label: field.label, value }
       }
 
+      // Wilayah desa: tampilkan label yang disimpan saat pengajuan.
+      if (field.type === 'village_area' && letter.payload?.[`${field.name}_rt`]) {
+        const p = letter.payload
+        const value = `Dusun ${p[`${field.name}_dusun`]}, RW ${p[`${field.name}_rw`]}, RT ${p[`${field.name}_rt`]}`
+
+        return { name: field.name, label: field.label, value }
+      }
+
       const option = (field.options ?? []).find((item) => String(item.value) === String(raw))
 
       return { name: field.name, label: field.label, value: option?.label ?? raw }

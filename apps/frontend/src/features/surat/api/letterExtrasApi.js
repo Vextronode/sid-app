@@ -60,6 +60,13 @@ export const getFamilyMembers = async () => {
   return response.data.data
 }
 
+// Dusun -> RW -> RT desa untuk isian village_area.
+export const getVillageAreas = async () => {
+  const response = await api.get('/api/village-areas')
+
+  return response.data.data
+}
+
 // Hasil dari instansi luar setelah formulir pelayanan terbit.
 export const submitLetterResult = async (letterId, files) => {
   const formData = new FormData()

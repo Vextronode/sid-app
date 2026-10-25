@@ -8,7 +8,7 @@ import { getSuratSchema, signerFieldNames } from '../validation/suratSchema'
 import { buildLetterFormData } from '../utils/letterFormData'
 import { repeaterMinRows, visibleFields } from '../utils/fieldCondition'
 import { getMySignature } from '../api/signatureApi'
-import { getFamilyMembers } from '../api/letterExtrasApi'
+import { getFamilyMembers, getVillageAreas } from '../api/letterExtrasApi'
 import { getOccupations } from '@/features/pekerjaan/api'
 
 import { CheckCircle2 } from 'lucide-react'
@@ -20,6 +20,7 @@ import { FileUploader } from './FileUploader'
 import { OccupationField } from './OccupationField'
 import { FamilyMembersField } from './FamilyMembersField'
 import { RepeaterField } from './RepeaterField'
+import { VillageAreaField } from './VillageAreaField'
 
 const WET_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png'
 
@@ -72,6 +73,9 @@ export function DynamicSuratForm({
   const needsFamily = usesType('family_members') || usesType('family_member')
   const [familyMembers, setFamilyMembers] = useState([])
   const [familyFailed, setFamilyFailed] = useState(false)
+  const needsAreas = usesType('village_area')
+  const [areas, setAreas] = useState([])
+  const [areasFailed, setAreasFailed] = useState(false)
 
   const {
     register,
@@ -158,6 +162,24 @@ export function DynamicSuratForm({
       active = false
     }
   }, [needsFamily])
+
+  useEffect(() => {
+    if (!needsAreas) return undefined
+
+    let active = true
+
+    getVillageAreas()
+      .then((tree) => {
+        if (active) setAreas(tree ?? [])
+      })
+      .catch(() => {
+        if (active) setAreasFailed(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [needsAreas])
 
   const handleFileChange = (e, name, multiple = true) => {
     const files = Array.from(e.target.files || [])
@@ -365,6 +387,17 @@ export function DynamicSuratForm({
                     rows={watchedFormData?.[field.name]}
                     errors={errors}
                     catalogs={{ familyMembers, occupations }}
+                  />
+                )}
+
+                {field.type === 'village_area' && (
+                  <VillageAreaField
+                    field={field}
+                    value={watchedFormData?.[field.name]}
+                    setValue={setValue}
+                    areas={areas}
+                    loadFailed={areasFailed}
+                    errors={errors}
                   />
                 )}
 
