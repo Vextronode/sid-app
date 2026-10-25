@@ -29,18 +29,22 @@ use Illuminate\Validation\Rule;
  *    baris siap cetak (nama, NIK, SHDK, ...) saat pengajuan.
  * Keduanya dicetak lewat blok {{#each nama_isian}} (TemplateLoops).
  *
+ * Isian `family_member`: satu anggota KK pemohon (mis. ibu bayi); saat
+ * pengajuan ditambah `<nama>_<kolom>` (MEMBER_KEYS) siap cetak. `gender`
+ * (L/P) membatasi pilihan, mis. ibu hanya anggota perempuan.
+ *
  * Isian `village_area`: Dusun -> RW -> RT desa ini (id RT); saat pengajuan
  * ditambah `<nama>_dusun`, `<nama>_rw`, `<nama>_rt` siap cetak.
  */
 class LetterFormSchema
 {
-    public const FIELD_TYPES = ['text', 'textarea', 'date', 'number', 'nik', 'select', 'file', 'occupation', 'repeater', 'family_members', 'village_area'];
+    public const FIELD_TYPES = ['text', 'textarea', 'date', 'time', 'number', 'nik', 'select', 'file', 'occupation', 'repeater', 'family_members', 'village_area', 'family_member'];
 
     /**
      * Tipe sub-isian di dalam repeater. `family_member` memilih satu anggota
      * KK pemohon per baris (mis. anggota yang datanya berubah).
      */
-    public const ROW_FIELD_TYPES = ['text', 'textarea', 'date', 'number', 'nik', 'select', 'occupation', 'family_member'];
+    public const ROW_FIELD_TYPES = ['text', 'textarea', 'date', 'time', 'number', 'nik', 'select', 'occupation', 'family_member'];
 
     /**
      * Kolom turunan sub-isian family_member yang dapat dipakai di template
@@ -48,6 +52,15 @@ class LetterFormSchema
      * kawin adalah keadaan saat pengajuan ("Semula").
      */
     public const ROW_MEMBER_KEYS = ['nama', 'nik', 'shdk', 'pendidikan', 'pekerjaan', 'agama', 'status_kawin'];
+
+    /**
+     * Kolom turunan isian family_member tingkat atas: ROW_MEMBER_KEYS plus
+     * data kelahiran dan alamat (`lahir_tgl/bln/thn` untuk kotak tanggal).
+     */
+    public const MEMBER_KEYS = [
+        ...self::ROW_MEMBER_KEYS,
+        'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'lahir_tgl', 'lahir_bln', 'lahir_thn', 'alamat',
+    ];
 
     /** Kolom tiap baris family_members yang dapat dipakai di template. */
     public const FAMILY_MEMBER_KEYS = ['nama', 'nik', 'shdk', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir'];
@@ -180,6 +193,19 @@ class LetterFormSchema
             return null;
         }
 
+        foreach ($this->fieldsOfType('family_member') as $field) {
+            $id = $payload[$field['name']] ?? null;
+            $member = $id ? $this->familyMembers()->loadMissing('occupation')->firstWhere('id', $id) : null;
+
+            if ($member === null) {
+                continue;
+            }
+
+            foreach (self::memberValues($member) as $key => $value) {
+                $payload["{$field['name']}_{$key}"] = $value;
+            }
+        }
+
         foreach ($this->fieldsOfType('family_members') as $field) {
             $ids = (array) ($payload[$field['name']] ?? []);
 
@@ -208,6 +234,38 @@ class LetterFormSchema
         }
 
         return $payload;
+    }
+
+    /**
+     * Nilai siap cetak seorang anggota KK (MEMBER_KEYS), keadaan saat
+     * pengajuan.
+     *
+     * @return array<string, string>
+     */
+    public static function memberValues(Citizen $member): array
+    {
+        $birth = $member->date_of_birth;
+
+        return [
+            'nama' => $member->name,
+            'nik' => (string) $member->nik,
+            'shdk' => self::familyRoleLabel($member->family_role),
+            'pendidikan' => CitizenLabels::of(CitizenLabels::LAST_EDUCATION, $member->last_education),
+            'pekerjaan' => $member->occupation?->name ?? '-',
+            'agama' => CitizenLabels::of(CitizenLabels::RELIGION, $member->religion),
+            'status_kawin' => CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $member->marital_status),
+            'jenis_kelamin' => match ($member->gender) {
+                'L' => 'Laki-laki',
+                'P' => 'Perempuan',
+                default => '-',
+            },
+            'tempat_lahir' => $member->place_of_birth ?? '-',
+            'tanggal_lahir' => $birth?->locale('id')->translatedFormat('j F Y') ?? '-',
+            'lahir_tgl' => $birth?->format('d') ?? '',
+            'lahir_bln' => $birth?->format('m') ?? '',
+            'lahir_thn' => $birth?->format('Y') ?? '',
+            'alamat' => $member->address ?? '-',
+        ];
     }
 
     public static function familyRoleLabel(mixed $role): string
@@ -409,6 +467,18 @@ class LetterFormSchema
                 continue;
             }
 
+            if (($field['type'] ?? 'text') === 'family_member') {
+                $members = $this->familyMembers()
+                    ->when(isset($field['gender']), fn ($members) => $members->where('gender', $field['gender']));
+                $rules["payload.{$field['name']}"] = [
+                    ($field['required'] ?? false) ? 'required' : 'nullable',
+                    'string',
+                    Rule::in($members->pluck('id')->map(fn ($id): string => (string) $id)->all()),
+                ];
+
+                continue;
+            }
+
             if (($field['type'] ?? 'text') === 'village_area') {
                 $rules["payload.{$field['name']}"] = [
                     ($field['required'] ?? false) ? 'required' : 'nullable',
@@ -507,6 +577,8 @@ class LetterFormSchema
         return match ($field['type'] ?? 'text') {
             'textarea' => ['string', 'max:2000'],
             'date' => ['date'],
+            // Jam 24 jam dari input waktu, mis. 08:30.
+            'time' => ['date_format:H:i'],
             'number' => ['numeric'],
             'nik' => ['digits:16'],
             'select' => ['string', Rule::in(array_column($field['options'] ?? [], 'value'))],
@@ -676,15 +748,11 @@ class LetterFormSchema
 
                     if (($subField['type'] ?? 'text') === 'family_member' && $value !== null && $value !== '') {
                         $members ??= $this->familyMembers()->loadMissing('occupation')->keyBy('id');
-                        $member = $members[$value];
+                        $values = self::memberValues($members[$value]);
 
-                        $row["{$name}_nama"] = $member->name;
-                        $row["{$name}_nik"] = $member->nik;
-                        $row["{$name}_shdk"] = self::familyRoleLabel($member->family_role);
-                        $row["{$name}_pendidikan"] = CitizenLabels::of(CitizenLabels::LAST_EDUCATION, $member->last_education);
-                        $row["{$name}_pekerjaan"] = $member->occupation?->name ?? '-';
-                        $row["{$name}_agama"] = CitizenLabels::of(CitizenLabels::RELIGION, $member->religion);
-                        $row["{$name}_status_kawin"] = CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $member->marital_status);
+                        foreach (self::ROW_MEMBER_KEYS as $key) {
+                            $row["{$name}_{$key}"] = $values[$key];
+                        }
                     }
                 }
 

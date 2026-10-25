@@ -139,6 +139,11 @@ class PdfService
             ? "surat-{$letter->id}.pdf"
             : "surat-{$letter->id}-{$document['key']}.pdf";
 
+        // Formulir Disdukcapil berkotak (mis. F-2.01) butuh memori lebih.
+        if (self::memoryLimitBytes() < 512 * 1024 * 1024) {
+            ini_set('memory_limit', '512M');
+        }
+
         $pdf = Pdf::loadView($view, [
             'letter' => $letter,
             'kades' => $kades,
@@ -150,6 +155,24 @@ class PdfService
         }
 
         return [$pdf, $filename];
+    }
+
+    private static function memoryLimitBytes(): int
+    {
+        $limit = trim((string) ini_get('memory_limit'));
+
+        if ($limit === '-1') {
+            return PHP_INT_MAX;
+        }
+
+        $value = (int) $limit;
+
+        return match (strtolower(substr($limit, -1))) {
+            'g' => $value * 1024 ** 3,
+            'm' => $value * 1024 ** 2,
+            'k' => $value * 1024,
+            default => $value,
+        };
     }
 
     /**
@@ -197,14 +220,32 @@ class PdfService
             )
         );
 
-        // Kotak per karakter di formulir Disdukcapil: {{ isian[0] }} = huruf
-        // pertama nilai isian/placeholder sistem (kosong bila tidak ada).
+        // Formulir Disdukcapil: {{ a|b }} = nilai pertama yang terisi (mis.
+        // ayah dari KK atau ayah yang diketik), {{ isian[0] }} = satu karakter
+        // untuk kotak per huruf. Keduanya kosong bila tidak ada nilai.
         $templateHtml = (string) preg_replace_callback(
-            '/\{\{\s*([a-zA-Z0-9_]+)\[(\d+)\]\s*}}/',
+            '/\{\{\s*([a-zA-Z0-9_]+(?:\|[a-zA-Z0-9_]+)*)(?:\[(\d+)\])?\s*}}/',
             function (array $match) use ($replacements): string {
-                $value = trim(html_entity_decode(strip_tags((string) ($replacements["{{ {$match[1]} }}"] ?? ''))));
+                $names = explode('|', $match[1]);
+                $index = $match[2] ?? '';
 
-                return preg_match('/^_+$/', $value) ? '' : e(mb_substr($value, (int) $match[2], 1));
+                if (count($names) === 1 && $index === '') {
+                    return $match[0];
+                }
+
+                foreach ($names as $name) {
+                    $html = (string) ($replacements["{{ {$name} }}"] ?? '');
+                    $value = trim(html_entity_decode(strip_tags($html)));
+                    // Kotak jam: "08:30" dicetak 0 8 3 0.
+                    $value = $index === '' ? $value : str_replace(':', '', $value);
+
+                    if ($value !== '' && ! preg_match('/^_+$/', $value)) {
+                        // Kotak formulir diisi huruf cetak (kapital).
+                        return $index === '' ? $html : e(mb_strtoupper(mb_substr($value, (int) $index, 1)));
+                    }
+                }
+
+                return '';
             },
             $templateHtml,
         );

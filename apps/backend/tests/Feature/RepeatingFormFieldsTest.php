@@ -163,6 +163,7 @@ class RepeatingFormFieldsTest extends TestCase
             ->assertJsonPath('data.0.is_self', true)
             ->assertJsonPath('data.0.family_role_label', 'Kepala Keluarga')
             ->assertJsonPath('data.0.nik_masked', '************0001')
+            ->assertJsonPath('data.0.gender', $this->applicant['citizen']->gender)
             ->assertJsonPath('data.1.family_role_label', 'Istri');
     }
 

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Services\ProfileService;
+use App\Services\UserService;
 use App\Support\LetterFormSchema;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ class ProfileController extends Controller
 {
     public function __construct(
         protected ProfileService $profileService,
+        protected UserService $userService,
     ) {}
 
     public function update(UpdateProfileRequest $request): JsonResponse
@@ -23,7 +25,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui.',
-            'user' => new UserResource($user->load(['citizen.occupation', 'official.citizen.occupation'])),
+            'user' => new UserResource($this->userService->getCurrentUserProfile($user)),
         ]);
     }
 
@@ -43,6 +45,8 @@ class ProfileController extends Controller
                 'name' => $member->name,
                 'family_role' => $member->family_role?->value,
                 'family_role_label' => LetterFormSchema::familyRoleLabel($member->family_role),
+                // Isian family_member dapat dibatasi menurut jenis kelamin.
+                'gender' => $member->gender,
                 'nik_masked' => $member->nik ? str_repeat('*', max(strlen($member->nik) - 4, 0)).substr($member->nik, -4) : null,
                 'is_self' => $member->id === $citizen?->id,
             ])->values(),
@@ -55,7 +59,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'message' => 'Kata sandi berhasil diperbarui.',
-            'user' => new UserResource($user->load(['citizen.occupation', 'official.citizen.occupation'])),
+            'user' => new UserResource($this->userService->getCurrentUserProfile($user)),
         ]);
     }
 }

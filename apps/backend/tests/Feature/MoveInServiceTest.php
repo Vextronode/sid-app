@@ -129,7 +129,7 @@ class MoveInServiceTest extends TestCase
         $biodata = $this->render($letterId, 'f1_01', landscape: true);
         $this->assertStringContainsString('FORMULIR BIODATA KELUARGA', $biodata);
         $this->assertStringContainsString('DUSUN Budiasih', $biodata);
-        $this->assertStringContainsString('>0</td><td class="x', $biodata);
+        $this->assertMatchesRegularExpression('/>0<\/td><td class=x\d+>0<\/td><td class=x\d+>1</', $biodata);
         $this->assertStringNotContainsString('[[', $biodata);
         $this->assertStringContainsString('Perempuan', $biodata);
         $this->assertStringContainsString('Kawin', $biodata);

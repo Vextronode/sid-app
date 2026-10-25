@@ -62,6 +62,14 @@ trait DefinesLetterTypes
         return $this->field($name, $label, 'village_area', $required);
     }
 
+    /**
+     * Jam (input waktu 24 jam), disimpan "HH:MM".
+     */
+    private function time(string $name, string $label, bool $required = true): array
+    {
+        return $this->field($name, $label, 'time', $required);
+    }
+
     private function date(string $name, string $label, bool $required = true): array
     {
         return $this->field($name, $label, 'date', $required);

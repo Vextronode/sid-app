@@ -105,6 +105,29 @@ class ServiceLetterTypeSeeder extends Seeder
         'kantor' => 'Kantor',
     ];
 
+    private const BIRTH_PLACE_OPTIONS = [
+        'rs' => 'RS/RB',
+        'puskesmas' => 'Puskesmas',
+        'polindes' => 'Polindes',
+        'rumah' => 'Rumah',
+        'lainnya' => 'Lainnya',
+    ];
+
+    private const BIRTH_TYPE_OPTIONS = [
+        'tunggal' => 'Tunggal',
+        'kembar2' => 'Kembar 2',
+        'kembar3' => 'Kembar 3',
+        'kembar4' => 'Kembar 4',
+        'lainnya' => 'Lainnya',
+    ];
+
+    private const BIRTH_HELPER_OPTIONS = [
+        'dokter' => 'Dokter',
+        'bidan' => 'Bidan/Perawat',
+        'dukun' => 'Dukun',
+        'lainnya' => 'Lainnya',
+    ];
+
     private const SPONSOR_TYPE_OPTIONS = [
         'organisasi_internasional' => 'Organisasi Internasional',
         'pemerintah' => 'Pemerintah',
@@ -467,6 +490,86 @@ class ServiceLetterTypeSeeder extends Seeder
                     'nik' => '{{ nik_pendatang }}',
                     'family_number' => $this->blank('no_kk_tujuan'),
                 ]),
+            ],
+            [
+                'code' => 'F05',
+                'name' => 'Pelaporan Kelahiran',
+                'description' => 'Pelaporan kelahiran anak untuk penerbitan akta kelahiran dan KK baru di Disdukcapil.',
+                'requirement_info' => 'Siapkan surat keterangan lahir dari RS/puskesmas/bidan (bila ada), KK dan KTP-el orang tua, serta KTP-el dua orang saksi.',
+                'form_fields' => [
+                    // Data anak.
+                    $this->text('nama_anak', 'Nama Anak', true, 'Nama lengkap anak'),
+                    $this->select('jenis_kelamin_anak', 'Jenis Kelamin Anak', self::GENDER_OPTIONS),
+                    $this->select('tempat_dilahirkan', 'Tempat Dilahirkan', self::BIRTH_PLACE_OPTIONS),
+                    $this->text('tempat_kelahiran', 'Tempat Kelahiran (Kota/Kabupaten)', true, 'Contoh: Pangandaran'),
+                    $this->date('tanggal_lahir_anak', 'Tanggal Lahir Anak'),
+                    $this->time('pukul_lahir', 'Pukul Lahir'),
+                    $this->select('jenis_kelahiran', 'Jenis Kelahiran', self::BIRTH_TYPE_OPTIONS),
+                    $this->number('kelahiran_ke', 'Kelahiran ke-', true, 'Contoh: 2'),
+                    $this->select('penolong_kelahiran', 'Penolong Kelahiran', self::BIRTH_HELPER_OPTIONS),
+                    $this->text('berat_bayi', 'Berat Bayi (kg)', true, 'Contoh: 3,2'),
+                    $this->number('panjang_bayi', 'Panjang Bayi (cm)', true, 'Contoh: 49'),
+                    // Orang tua: dipilih dari KK pemohon; ayah boleh di luar KK.
+                    // Ibu = anggota perempuan apa pun SHDK-nya (mis. anak yang
+                    // melahirkan, ibu tunggal kepala keluarga); ayah laki-laki.
+                    $this->field('ibu', 'Ibu (anggota KK)', 'family_member', true, null, ['gender' => 'P']),
+                    $this->field('ayah', 'Ayah (anggota KK; kosongkan bila tidak ada di KK)', 'family_member', false, null, ['gender' => 'L']),
+                    ...$this->withCondition(['field' => 'ayah', 'filled' => false], [
+                        $this->text('nama_ayah', 'Nama Ayah', true, 'Nama lengkap ayah'),
+                        $this->field('nik_ayah', 'NIK Ayah', 'nik', false, 'Bila diketahui'),
+                        $this->text('tempat_lahir_ayah', 'Tempat Lahir Ayah', true, 'Kota/kabupaten'),
+                        $this->date('tanggal_lahir_ayah', 'Tanggal Lahir Ayah'),
+                    ]),
+                    // Dua saksi kelahiran.
+                    $this->text('nama_saksi_1', 'Nama Saksi I', true, 'Nama lengkap'),
+                    $this->field('nik_saksi_1', 'NIK Saksi I', 'nik', true, '16 digit NIK'),
+                    $this->field('kk_saksi_1', 'No. KK Saksi I', 'nik', false, '16 digit No. KK'),
+                    $this->text('nama_saksi_2', 'Nama Saksi II', true, 'Nama lengkap'),
+                    $this->field('nik_saksi_2', 'NIK Saksi II', 'nik', true, '16 digit NIK'),
+                    $this->field('kk_saksi_2', 'No. KK Saksi II', 'nik', false, '16 digit No. KK'),
+                    // SPTJM F-2.03 bila tidak ada surat keterangan lahir.
+                    $this->select('surat_lahir', 'Ada surat keterangan lahir dari RS/puskesmas/bidan?', ['ada' => 'Ada', 'tidak' => 'Tidak ada']),
+                    ...$this->withCondition(['field' => 'surat_lahir', 'equals' => 'tidak'], [
+                        $this->text('nama_penolong', 'Nama Penolong Kelahiran', true, 'Nama lengkap'),
+                        $this->field('nik_penolong', 'NIK Penolong Kelahiran', 'nik', false, 'Bila diketahui'),
+                        $this->text('pekerjaan_penolong', 'Pekerjaan Penolong Kelahiran', true, 'Contoh: Bidan'),
+                        $this->text('alamat_penolong', 'Alamat Penolong Kelahiran', true, 'Alamat lengkap'),
+                    ]),
+                    // Pengakuan anak F-2.10 bila perkawinan orang tua belum tercatat.
+                    $this->select('pengakuan_ayah', 'Ayah mengakui anak (perkawinan orang tua belum tercatat)?', ['tidak' => 'Tidak', 'ya' => 'Ya']),
+                    ...$this->withCondition(['all' => [['field' => 'pengakuan_ayah', 'equals' => 'ya'], ['field' => 'ayah', 'filled' => false]]], [
+                        $this->occupation('pekerjaan_ayah', 'Pekerjaan Ayah'),
+                        $this->textarea('alamat_ayah', 'Alamat Ayah', true, 'Alamat lengkap ayah'),
+                    ]),
+                ],
+                'documents' => [
+                    [
+                        'key' => 'f2_03',
+                        'title' => 'SPTJM Kebenaran Data Kelahiran (F-2.03)',
+                        'when' => ['field' => 'surat_lahir', 'equals' => 'tidak'],
+                        'template' => $this->birthStatementForm(),
+                    ],
+                    [
+                        'key' => 'f2_10',
+                        'title' => 'Surat Pernyataan Pengakuan Anak (F-2.10)',
+                        'when' => ['field' => 'pengakuan_ayah', 'equals' => 'ya'],
+                        'template' => $this->acknowledgementForm(),
+                    ],
+                ],
+                'result_upload_hint' => 'Kutipan akta kelahiran dan KK baru yang memuat anak, dari Disdukcapil.',
+                // Anak ditambahkan ke KK pemohon; NIK diisi Kasi dari KK baru.
+                'data_action' => LetterDataAction::CreateCitizen->value,
+                'data_fields' => [
+                    ['column' => 'nik', 'label' => 'NIK Anak (dari KK baru)', 'source' => null],
+                    ['column' => 'name', 'label' => 'Nama Anak', 'source' => 'nama_anak'],
+                    ['column' => 'gender', 'label' => 'Jenis Kelamin (L/P)', 'source' => 'jenis_kelamin_anak'],
+                    ['column' => 'place_of_birth', 'label' => 'Tempat Lahir', 'source' => 'tempat_kelahiran'],
+                    ['column' => 'date_of_birth', 'label' => 'Tanggal Lahir', 'source' => 'tanggal_lahir_anak'],
+                    ['column' => 'family_role', 'label' => 'Hubungan dalam KK', 'value' => 'anak', 'value_label' => 'Anak'],
+                    ['column' => 'mother_name_text', 'label' => 'Nama Ibu', 'source' => 'ibu_nama'],
+                    ['column' => 'father_name_text', 'label' => 'Nama Ayah', 'source' => 'ayah_nama'],
+                ],
+                'template' => $this->birthReportForm(),
             ],
         ];
     }
@@ -969,6 +1072,156 @@ class ServiceLetterTypeSeeder extends Seeder
                 'father_name' => '{{ nama_ayah_pendatang }}',
             ]],
         );
+    }
+
+    // ------------------------------------------------------------------
+    // F05: Pelaporan Kelahiran (F-2.01 + F-2.03 + F-2.10)
+    // ------------------------------------------------------------------
+
+    /**
+     * Formulir dari templates/<file>.html (dibangun dari Excel aslinya):
+     * [[kunci]] diganti $text, [[kunci:i]] = kotak per karakter dari
+     * $boxes (nama placeholder, boleh cadangan `a|b`; awalan `=` = teks
+     * tetap). Token tanpa pasangan dicetak kosong.
+     *
+     * @param  array<string, string>  $text
+     * @param  array<string, string>  $boxes
+     */
+    private function sheetForm(string $file, array $text, array $boxes = []): string
+    {
+        $html = (string) file_get_contents(database_path("seeders/templates/{$file}.html"));
+
+        return (string) preg_replace_callback('/\[\[([a-z0-9_]+)(?::(\d+))?\]\]/', function (array $match) use ($text, $boxes): string {
+            [$key, $index] = [$match[1], $match[2] ?? ''];
+
+            if ($index === '') {
+                return $text[$key] ?? '';
+            }
+
+            $source = $boxes[$key] ?? null;
+
+            return match (true) {
+                $source === null => '',
+                str_starts_with($source, '=') => mb_substr(substr($source, 1), (int) $index, 1),
+                default => "{{ {$source}[{$index}] }}",
+            };
+        }, $html);
+    }
+
+    /**
+     * Tanda centang pilihan: X bila isian bernilai salah satu opsi.
+     *
+     * @param  array<string, string>  $map  kunci token => nilai isian
+     * @return array<string, string>
+     */
+    private function ticks(string $prefix, string $field, array $map): array
+    {
+        $ticks = [];
+
+        foreach ($map as $token => $value) {
+            $ticks["{$prefix}_{$token}"] = "{{#if {$field}={$value}}}X{{/if}}";
+        }
+
+        return $ticks;
+    }
+
+    private function birthReportForm(): string
+    {
+        $person = fn (string $prefix, string $name, string $nik, ?string $familyNumber = null): array => array_filter([
+            "{$prefix}_nama" => $name,
+            "{$prefix}_nik" => $nik,
+            "{$prefix}_kk" => $familyNumber,
+            "{$prefix}_kwn" => '=INDONESIA',
+        ]);
+        $birth = fn (string $prefix, string $tgl, string $bln, string $thn): array => [
+            "{$prefix}_tgl" => $tgl,
+            "{$prefix}_bln" => $bln,
+            "{$prefix}_thn" => $thn,
+        ];
+
+        return $this->sheetForm('f2_01_pelaporan_capil', [
+            'province' => '{{ village_province }}',
+            'regency' => '{{ village_regency }}',
+            'district' => '{{ village_district }}',
+            'village' => '{{ village_name_short }}',
+            'jenis_kelahiran' => 'X',
+            ...$this->ticks('anak_jk', 'jenis_kelamin_anak', ['l' => 'L', 'p' => 'P']),
+            ...$this->ticks('anak_tempat', 'tempat_dilahirkan', array_combine(array_keys(self::BIRTH_PLACE_OPTIONS), array_keys(self::BIRTH_PLACE_OPTIONS))),
+            ...$this->ticks('anak_jenis', 'jenis_kelahiran', array_combine(array_keys(self::BIRTH_TYPE_OPTIONS), array_keys(self::BIRTH_TYPE_OPTIONS))),
+            ...$this->ticks('anak_penolong', 'penolong_kelahiran', array_combine(array_keys(self::BIRTH_HELPER_OPTIONS), array_keys(self::BIRTH_HELPER_OPTIONS))),
+            'anak_ke' => '{{ kelahiran_ke }}',
+            'anak_berat' => '{{ berat_bayi }}',
+            'place_date' => '{{ village_regency }}, {{ issued_at }}',
+            'reporter_sign' => '( {{ applicant_name }} )',
+        ], [
+            ...$person('pelapor', 'applicant_name', 'applicant_nik', 'applicant_family_number'),
+            // Subjek akta = anak; NIK terbit bersama KK baru.
+            'subjek1_nama' => 'nama_anak',
+            'subjek1_kk' => 'applicant_family_number',
+            'subjek1_kwn' => '=INDONESIA',
+            ...$person('saksi1', 'nama_saksi_1', 'nik_saksi_1', 'kk_saksi_1'),
+            ...$person('saksi2', 'nama_saksi_2', 'nik_saksi_2', 'kk_saksi_2'),
+            'ayah_nama' => 'ayah_nama|nama_ayah',
+            'ayah_nik' => 'ayah_nik|nik_ayah',
+            'ayah_tempat_lahir' => 'ayah_tempat_lahir|tempat_lahir_ayah',
+            ...$birth('ayah_lahir', 'ayah_lahir_tgl|tanggal_lahir_ayah_tgl', 'ayah_lahir_bln|tanggal_lahir_ayah_bln', 'ayah_lahir_thn|tanggal_lahir_ayah_thn'),
+            'ayah_kwn' => '=INDONESIA',
+            'ibu_nama' => 'ibu_nama',
+            'ibu_nik' => 'ibu_nik',
+            'ibu_tempat_lahir' => 'ibu_tempat_lahir',
+            ...$birth('ibu_lahir', 'ibu_lahir_tgl', 'ibu_lahir_bln', 'ibu_lahir_thn'),
+            'ibu_kwn' => '=INDONESIA',
+            'anak_nama' => 'nama_anak',
+            'anak_tempat_lahir' => 'tempat_kelahiran',
+            'anak_hari' => 'tanggal_lahir_anak_namahari',
+            ...$birth('anak_lahir', 'tanggal_lahir_anak_tgl', 'tanggal_lahir_anak_bln', 'tanggal_lahir_anak_thn'),
+            'anak_pukul' => 'pukul_lahir',
+            'anak_panjang' => 'panjang_bayi',
+        ]);
+    }
+
+    private function birthStatementForm(): string
+    {
+        return $this->sheetForm('f2_03_sptjm_kelahiran', [
+            'ibu_nama' => '{{ ibu_nama }}',
+            'ibu_nik' => '{{ ibu_nik }}',
+            'ibu_ttl' => '{{ ibu_tempat_lahir }}, {{ ibu_tanggal_lahir }}',
+            'ibu_pekerjaan' => '{{ ibu_pekerjaan }}',
+            'ibu_alamat' => '{{ ibu_alamat }}',
+            'anak_nama' => '{{ nama_anak }}',
+            'anak_ttl' => '{{ tempat_kelahiran }}, {{ tanggal_lahir_anak }}',
+            'anak_ke' => '{{ kelahiran_ke }}',
+            'anak_jenis' => '{{ jenis_kelahiran }}',
+            'penolong_nama' => '{{ nama_penolong }}',
+            'penolong_nik' => $this->blank('nik_penolong'),
+            'penolong_pekerjaan' => '{{ pekerjaan_penolong }}',
+            'penolong_alamat' => '{{ alamat_penolong }}',
+            'place_date' => '{{ village_regency }}, {{ issued_at }}',
+            'saksi1_nama' => '{{ nama_saksi_1 }}',
+            'saksi1_nik' => '{{ nik_saksi_1 }}',
+            'saksi2_nama' => '{{ nama_saksi_2 }}',
+            'saksi2_nik' => '{{ nik_saksi_2 }}',
+        ]);
+    }
+
+    private function acknowledgementForm(): string
+    {
+        return $this->sheetForm('f2_10_pengakuan_anak', [
+            'ayah_nama' => '{{ ayah_nama|nama_ayah }}',
+            'ayah_nik' => '{{ ayah_nik|nik_ayah }}',
+            'ayah_ttl' => '{{ ayah_tempat_lahir|tempat_lahir_ayah }}, {{ ayah_tanggal_lahir|tanggal_lahir_ayah }}',
+            'ayah_pekerjaan' => '{{ ayah_pekerjaan|pekerjaan_ayah }}',
+            'ayah_alamat' => '{{ ayah_alamat|alamat_ayah }}',
+            'anak_nama' => '{{ nama_anak }}',
+            'anak_jk' => '{{ jenis_kelamin_anak }}',
+            'anak_ttl' => '{{ tempat_kelahiran }}, {{ tanggal_lahir_anak }}',
+            'ibu_nama' => '{{ ibu_nama }}',
+            'ibu_nik' => '{{ ibu_nik }}',
+            'ibu_ttl' => '{{ ibu_tempat_lahir }}, {{ ibu_tanggal_lahir }}',
+            'ibu_pekerjaan' => '{{ ibu_pekerjaan }}',
+            'ibu_alamat' => '{{ ibu_alamat }}',
+            'place_date' => '{{ village_regency }}, {{ issued_at }}',
+        ]);
     }
 
     // ------------------------------------------------------------------

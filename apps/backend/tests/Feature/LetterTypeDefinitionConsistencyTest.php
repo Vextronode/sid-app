@@ -49,8 +49,10 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         foreach (LetterType::query()->orderBy('code')->get() as $letterType) {
             // {{ isian[0] }} = kotak per karakter dari isian yang sama.
-            preg_match_all('/\{\{\s*([a-zA-Z0-9_]+)(?:\[\d+\])?\s*}}/', $this->templatesOf($letterType), $matches);
-            $missing = array_values(array_unique(array_diff($matches[1], $this->sourcesFor($letterType))));
+            // {{ a|b }} = cadangan: tiap nama harus punya sumber.
+            preg_match_all('/\{\{\s*([a-zA-Z0-9_|]+)(?:\[\d+\])?\s*}}/', $this->templatesOf($letterType), $matches);
+            $names = array_merge(...array_map(fn (string $name): array => explode('|', $name), $matches[1]));
+            $missing = array_values(array_unique(array_diff($names, $this->sourcesFor($letterType))));
             sort($missing);
 
             if ($missing !== []) {
@@ -82,7 +84,8 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             $templates = $this->templatesOf($letterType);
 
             foreach ((new LetterFormSchema($letterType))->valueFieldNames() as $name) {
-                $printed = str_contains($templates, "{{ {$name}")
+                // Termasuk cadangan {{ a|nama }} dan kotak {{ nama[0] }}.
+                $printed = preg_match('/\{\{[^{}]*?(?<![a-z0-9_])'.preg_quote($name, '/').'(?![a-z0-9])/', $templates) === 1
                     || str_contains($templates, "{{#if {$name}")
                     || str_contains($templates, "{{#each {$name}");
 
@@ -101,7 +104,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // 11 Persuratan Desa (Axx) + Pelayanan Desa (Fxx).
         $this->assertSame(
-            ['persuratan' => 11, 'pelayanan' => 4],
+            ['persuratan' => 11, 'pelayanan' => 5],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -135,7 +138,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // Penguburan menonaktifkan data almarhum; Kelahiran menambah anak.
         $this->assertSame(
-            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'manual', 'F02' => 'update_members', 'F03' => 'deactivate_members', 'F04' => 'manual'],
+            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'manual', 'F02' => 'update_members', 'F03' => 'deactivate_members', 'F04' => 'manual', 'F05' => 'create_citizen'],
             $letterTypes
                 ->filter(fn (LetterType $type) => $type->data_action->value !== 'none')
                 ->mapWithKeys(fn (LetterType $type) => [$type->code => $type->data_action->value])
@@ -174,7 +177,17 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             $sources[] = $field['name'];
 
             if ($field['type'] === 'date') {
-                $sources[] = "{$field['name']}_hari";
+                $sources = [...$sources, ...array_map(
+                    fn (string $suffix): string => "{$field['name']}_{$suffix}",
+                    ['hari', 'namahari', 'tgl', 'bln', 'thn'],
+                )];
+            }
+
+            if ($field['type'] === 'family_member') {
+                $sources = [...$sources, ...array_map(
+                    fn (string $key): string => "{$field['name']}_{$key}",
+                    LetterFormSchema::MEMBER_KEYS,
+                )];
             }
 
             if ($field['type'] === 'number') {
