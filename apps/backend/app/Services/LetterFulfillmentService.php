@@ -64,7 +64,7 @@ class LetterFulfillmentService
             'fulfilled_at' => $letter->fulfilled_at,
             'fulfilled_by' => $letter->fulfilled_by,
             'result' => $letter->fulfillment,
-            'instructions' => $action === LetterDataAction::Manual ? $letter->letterType?->data_instructions : null,
+            'instructions' => $letter->letterType?->data_instructions,
             'members' => $action === LetterDataAction::DeactivateMembers ? $this->memberProposal($letter) : [],
             'member_changes' => $action === LetterDataAction::UpdateMembers ? $this->memberChangeProposal($letter) : [],
             'options' => $action === LetterDataAction::UpdateMembers ? $this->columnOptions($letter) : (object) [],
@@ -124,7 +124,7 @@ class LetterFulfillmentService
                         ? $this->updateCitizen($locked, $actor, $this->finalValues($locked, $values), $subjectNik)
                         : $this->createCitizen($locked, $actor, $this->finalValues($locked, $values)),
                 ),
-                LetterDataAction::DeactivateMembers => $this->deactivateMembers($locked, $actor),
+                LetterDataAction::DeactivateMembers => $this->deactivateMembers($locked, $actor, $notes),
                 LetterDataAction::UpdateMembers => $this->updateMembers($locked, $actor, $values),
                 LetterDataAction::Manual => [['action' => $action->value, 'notes' => $notes], []],
                 default => abort(422, 'Jenis surat ini tidak memiliki aksi perubahan data.'),
@@ -140,7 +140,7 @@ class LetterFulfillmentService
                 'actor_id' => $actor->id,
                 'old_status' => LetterStatus::Approved->value,
                 'new_status' => LetterStatus::Approved->value,
-                'reason' => $action === LetterDataAction::Manual
+                'reason' => $touched === []
                     ? 'Perubahan data kependudukan ditandai selesai (dikerjakan manual)'
                     : 'Perubahan data kependudukan diterapkan',
             ]);
@@ -208,11 +208,17 @@ class LetterFulfillmentService
     /**
      * Nonaktifkan anggota KK yang dipilih pemohon, beserta akun login
      * mereka. Anggota yang sudah nonaktif atau tidak ditemukan dilewati.
+     * Tanpa anggota terpilih (mis. orang asing yang tidak terdata di F03),
+     * Terapkan hanya menandai selesai.
      *
      * @return array{0: array<string, mixed>, 1: array<int, array{0: Citizen, 1: array<string, mixed>}>}
      */
-    private function deactivateMembers(Letter $letter, User $actor): array
+    private function deactivateMembers(Letter $letter, User $actor, ?string $notes): array
     {
+        if ($this->memberRows($letter) === []) {
+            return [['action' => LetterDataAction::DeactivateMembers->value, 'members' => [], 'notes' => $notes], []];
+        }
+
         $members = [];
         $touched = [];
 

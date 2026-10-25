@@ -45,6 +45,58 @@ class ServiceLetterTypeSeeder extends Seeder
         's3' => 'S3',
     ];
 
+    private const MOVE_REQUEST_OPTIONS = [
+        'skp' => 'Surat Keterangan Pindah',
+        'skpln' => 'Surat Keterangan Pindah Luar Negeri (SKPLN)',
+    ];
+
+    private const MOVE_CLASSIFICATION_OPTIONS = [
+        'dalam_desa' => 'Dalam satu desa/kelurahan',
+        'antar_desa' => 'Antar desa/kelurahan dalam satu kecamatan',
+        'antar_kecamatan' => 'Antar kecamatan dalam satu kabupaten/kota',
+        'antar_kabupaten' => 'Antar kabupaten/kota dalam satu provinsi',
+        'antar_provinsi' => 'Antar provinsi',
+    ];
+
+    private const MOVE_REASON_OPTIONS = [
+        'pekerjaan' => 'Pekerjaan',
+        'pendidikan' => 'Pendidikan',
+        'keamanan' => 'Keamanan',
+        'kesehatan' => 'Kesehatan',
+        'perumahan' => 'Perumahan',
+        'keluarga' => 'Keluarga',
+        'lainnya' => 'Lainnya',
+    ];
+
+    private const MOVE_TYPE_OPTIONS = [
+        'kk' => 'Kepala Keluarga',
+        'kk_seluruh' => 'Kepala Keluarga dan Seluruh Anggota Keluarga',
+        'kk_sebagian' => 'Kepala Keluarga dan Sebagian Anggota Keluarga',
+        'anggota' => 'Anggota Keluarga',
+    ];
+
+    private const MOVE_KK_STATUS_OPTIONS = [
+        'numpang_kk' => 'Numpang KK',
+        'kk_baru' => 'Membuat KK Baru',
+    ];
+
+    private const MOVE_CITIZENSHIP_OPTIONS = [
+        'wni' => 'WNI (anggota KK saya)',
+        'wna' => 'WNA (orang asing, saya sebagai perantara)',
+    ];
+
+    private const MOVE_CITIZEN = ['field' => 'kewarganegaraan', 'equals' => 'wni'];
+
+    private const MOVE_FOREIGNER = ['field' => 'kewarganegaraan', 'equals' => 'wna'];
+
+    private const SPONSOR_TYPE_OPTIONS = [
+        'organisasi_internasional' => 'Organisasi Internasional',
+        'pemerintah' => 'Pemerintah',
+        'perusahaan' => 'Perusahaan',
+        'perorangan' => 'Perorangan',
+        'tanpa_sponsor' => 'Tanpa Sponsor',
+    ];
+
     public function run(): void
     {
         foreach (Village::query()->get() as $village) {
@@ -203,6 +255,104 @@ class ServiceLetterTypeSeeder extends Seeder
                     ['column' => 'marital_status', 'label' => 'Status Perkawinan', 'source' => 'status_kawin_menjadi'],
                 ],
                 'template' => $this->elementChangeStatement(),
+            ],
+            [
+                'code' => 'F03',
+                'name' => 'Pindah Keluar',
+                'description' => 'Pendaftaran perpindahan penduduk keluar desa (Surat Keterangan Pindah / SKPLN) untuk seluruh atau sebagian anggota KK, atau SKTT bagi orang asing yang diajukan lewat warga sebagai perantara.',
+                'requirement_info' => 'Siapkan KK asli dan KTP-el anggota yang pindah (orang asing: paspor dan ITAS/ITAP). Formulir dibawa ke Disdukcapil untuk penerbitan surat keterangan pindah.',
+                'form_fields' => [
+                    $this->select('kewarganegaraan', 'Kewarganegaraan yang Pindah', self::MOVE_CITIZENSHIP_OPTIONS),
+                    [
+                        ...$this->select('jenis_permohonan', 'Jenis Permohonan', self::MOVE_REQUEST_OPTIONS),
+                        'visible_when' => self::MOVE_CITIZEN,
+                    ],
+                    // Orang asing belum terdata: identitasnya diisi perantara.
+                    ...$this->withCondition(self::MOVE_FOREIGNER, [
+                        $this->text('nama_wna', 'Nama Lengkap Orang Asing', true, 'Sesuai paspor'),
+                        $this->field('nik_wna', 'NIK Orang Asing', 'nik', false, 'Bila sudah punya (pemegang ITAP)'),
+                        $this->text('no_kk_wna', 'No. KK Orang Asing', false, 'Bila sudah punya'),
+                        $this->text('alamat_wna', 'Alamat di Desa Ini (Dusun/Jalan)', true, 'Contoh: Dusun Sinargalih'),
+                        $this->text('rt_wna', 'RT', true, 'Contoh: 001'),
+                        $this->text('rw_wna', 'RW', true, 'Contoh: 006'),
+                        $this->select('tipe_sponsor', 'Tipe Sponsor', self::SPONSOR_TYPE_OPTIONS),
+                    ]),
+                    ...$this->withCondition(['all' => [self::MOVE_FOREIGNER, ['field' => 'tipe_sponsor', 'not_in' => ['tanpa_sponsor']]]], [
+                        $this->text('nama_sponsor', 'Nama Sponsor', true, 'Nama organisasi/instansi/perusahaan/perorangan'),
+                        $this->textarea('alamat_sponsor', 'Alamat Sponsor', true, 'Alamat lengkap sponsor'),
+                    ]),
+                    ...$this->withCondition(self::MOVE_FOREIGNER, [
+                        $this->text('nomor_itas', 'Nomor ITAS/ITAP', true, 'Nomor izin tinggal'),
+                        $this->date('tanggal_itas', 'Tanggal Masa Berlaku ITAS/ITAP'),
+                    ]),
+                    // Alamat tujuan dalam negeri: Surat Keterangan Pindah dan SKTT.
+                    ...$this->withCondition(['any' => [['field' => 'jenis_permohonan', 'equals' => 'skp'], self::MOVE_FOREIGNER]], [
+                        $this->text('alamat_tujuan', 'Alamat Tujuan (Jalan/Dusun)', true, 'Contoh: Jl. H. Niming No. 5'),
+                        $this->text('rt_tujuan', 'RT Tujuan', true, 'Contoh: 002'),
+                        $this->text('rw_tujuan', 'RW Tujuan', true, 'Contoh: 003'),
+                        $this->text('desa_tujuan', 'Desa/Kelurahan Tujuan', true, 'Contoh: Srengseng'),
+                        $this->text('kecamatan_tujuan', 'Kecamatan Tujuan', true, 'Contoh: Kembangan'),
+                        $this->text('kabupaten_tujuan', 'Kabupaten/Kota Tujuan', true, 'Contoh: Jakarta Barat'),
+                        $this->text('provinsi_tujuan', 'Provinsi Tujuan', true, 'Contoh: DKI Jakarta'),
+                        $this->text('kode_pos_tujuan', 'Kode Pos Tujuan', false, 'Bila diketahui'),
+                        $this->select('klasifikasi_pindah', 'Klasifikasi Pindah', self::MOVE_CLASSIFICATION_OPTIONS),
+                    ]),
+                    // Tujuan luar negeri (SKPLN).
+                    ...$this->withCondition(['field' => 'jenis_permohonan', 'equals' => 'skpln'], [
+                        $this->text('negara_tujuan', 'Negara Tujuan', true, 'Contoh: Malaysia'),
+                        $this->textarea('alamat_luar_negeri', 'Alamat Tujuan di Luar Negeri', true, 'Alamat lengkap di negara tujuan'),
+                        $this->text('penanggung_jawab', 'Penanggung Jawab', true, 'Nama penanggung jawab di negara tujuan'),
+                        $this->date('rencana_tanggal_pindah', 'Rencana Tanggal Pindah'),
+                    ]),
+                    $this->select('alasan_pindah', 'Alasan Pindah', self::MOVE_REASON_OPTIONS),
+                    [
+                        ...$this->text('alasan_lainnya', 'Alasan Lainnya', true, 'Sebutkan alasan pindah'),
+                        'visible_when' => ['field' => 'alasan_pindah', 'equals' => 'lainnya'],
+                    ],
+                    $this->select('jenis_kepindahan', 'Jenis Kepindahan', self::MOVE_TYPE_OPTIONS),
+                    // Hanya ditanyakan bila ada anggota yang tetap tinggal.
+                    [
+                        ...$this->select('status_tidak_pindah', 'Anggota Keluarga yang Tidak Pindah', self::MOVE_KK_STATUS_OPTIONS),
+                        'visible_when' => ['field' => 'jenis_kepindahan', 'not_in' => ['kk_seluruh']],
+                    ],
+                    $this->select('status_pindah', 'Anggota Keluarga yang Pindah', self::MOVE_KK_STATUS_OPTIONS),
+                    [
+                        ...$this->field('anggota_pindah', 'Anggota Keluarga yang Pindah', 'family_members', true),
+                        'visible_when' => self::MOVE_CITIZEN,
+                    ],
+                    [
+                        ...$this->field('anggota_wna', 'Orang Asing yang Pindah', 'repeater', true, null, [
+                            'max' => 10,
+                            'item_label' => 'orang',
+                            'fields' => [
+                                $this->text('nama', 'Nama Lengkap', true, 'Sesuai paspor'),
+                                $this->text('nik', 'NIK', false, 'Bila ada'),
+                                $this->text('shdk', 'SHDK', true, 'Contoh: Kepala Keluarga'),
+                            ],
+                        ]),
+                        'visible_when' => self::MOVE_FOREIGNER,
+                    ],
+                ],
+                'documents' => [
+                    // Sebagian anggota KK desa tetap tinggal: KK asal ikut berubah.
+                    [
+                        'key' => 'f1_02',
+                        'title' => 'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02)',
+                        'when' => ['all' => [self::MOVE_CITIZEN, ['field' => 'jenis_kepindahan', 'not_in' => ['kk_seluruh']]]],
+                        'template' => $this->registrationForm([
+                            'kk.baru.ganti_kepala' => 'jenis_kepindahan=kk|kk_sebagian',
+                            'ubah.kk' => true,
+                            'lampiran.kk_lama' => true,
+                        ]),
+                    ],
+                ],
+                'result_upload_hint' => 'Surat Keterangan Pindah (SKPWNI), SKPLN, atau SKTT dari Disdukcapil, dan KK baru bagi anggota yang tetap tinggal (bila ada).',
+                // Anggota KK yang pindah dinonaktifkan; orang asing tidak
+                // terdata, jadi Terapkan hanya menandai selesai.
+                'data_action' => LetterDataAction::DeactivateMembers->value,
+                'data_subject_field' => 'anggota_pindah',
+                'data_instructions' => 'Anggota KK yang pindah dinonaktifkan beserta akunnya. Bila kepala keluarga ikut pindah sementara anggota lain tetap tinggal, atur kepala keluarga baru di Data KK sesuai KK terbaru dari Disdukcapil. Untuk orang asing (SKTT), tidak ada data warga yang diubah; cukup tandai selesai.',
+                'template' => $this->moveOutForm(),
             ],
         ];
     }
@@ -414,6 +564,125 @@ class ServiceLetterTypeSeeder extends Seeder
                 </tr>
             </table>
             HTML,
+        ]);
+    }
+
+    // ------------------------------------------------------------------
+    // F03: Pindah Keluar (F-1.03 + F-1.02)
+    // ------------------------------------------------------------------
+
+    /**
+     * @param  array<string, mixed>  $condition
+     * @param  array<int, array<string, mixed>>  $fields
+     * @return array<int, array<string, mixed>>
+     */
+    private function withCondition(array $condition, array $fields): array
+    {
+        return array_map(fn (array $field): array => [...$field, 'visible_when' => $condition], $fields);
+    }
+
+    /**
+     * Pilihan bercentang: satu kotak per opsi, tercentang bila isian
+     * bernilai opsi itu.
+     *
+     * @param  array<string, string>  $options
+     */
+    private function choices(string $field, array $options, int $columns = 1): string
+    {
+        $cells = array_map(
+            fn (string $value, string $label): string => '<td style="vertical-align: top; padding: 1px 8px 1px 0;">'.$this->checkbox("{$field}={$value}").$label.'</td>',
+            array_keys($options),
+            $options,
+        );
+        $rows = '';
+
+        foreach (array_chunk($cells, $columns) as $chunk) {
+            $rows .= '<tr>'.implode('', $chunk).'</tr>';
+        }
+
+        return '<table style="border-collapse: collapse;">'.$rows.'</table>';
+    }
+
+    /**
+     * Isi formulir yang boleh kosong: dicetak kosong (bukan garis isian)
+     * bila tidak diisi, agar bagian formulir yang tidak dipakai tetap tampil.
+     */
+    private function blank(string $field): string
+    {
+        return "{{#if {$field}}}{{ {$field} }}{{/if}}";
+    }
+
+    /**
+     * Data pemohon pindah: warga desa dari data pemohon, orang asing dari isian.
+     */
+    private function mover(string $citizen, string $foreigner): string
+    {
+        return "{{#if kewarganegaraan=wni}}{$citizen}{{/if}}{{#if kewarganegaraan=wna}}".$this->blank($foreigner).'{{/if}}';
+    }
+
+    private function moveOutForm(): string
+    {
+        $row = fn (string $no, string $label, string $value): string => '<tr>'
+            .'<td style="width: 24px; vertical-align: top; padding: 3px 0;">'.$no.'</td>'
+            .'<td style="width: 180px; vertical-align: top; padding: 3px 0;">'.$label.'</td>'
+            .'<td style="width: 12px; vertical-align: top; padding: 3px 0;">:</td>'
+            .'<td style="vertical-align: top; padding: 3px 0;">'.$value.'</td>'
+            .'</tr>';
+        $table = fn (string $rows): string => '<table style="width: 100%; border-collapse: collapse;">'.$rows.'</table>';
+        $region = fn (string $desa, string $kecamatan, string $kabupaten, string $provinsi, string $kodePos): string => '<table style="width: 100%; border-collapse: collapse;">'
+            .'<tr><td style="width: 50%; padding: 1px 0;">a. Desa/Kelurahan : '.$desa.'</td><td style="padding: 1px 0;">b. Kecamatan : '.$kecamatan.'</td></tr>'
+            .'<tr><td style="padding: 1px 0;">c. Kabupaten/Kota : '.$kabupaten.'</td><td style="padding: 1px 0;">d. Provinsi : '.$provinsi.'</td></tr>'
+            .'<tr><td style="padding: 1px 0;" colspan="2">Kode Pos : '.$kodePos.'</td></tr></table>';
+        $section = fn (string $title): string => '<p style="margin: 12px 0 4px; font-weight: bold;">'.$title.'</p>';
+        $requests = '<table style="border-collapse: collapse;">'
+            .'<tr><td style="padding: 1px 0;">'.$this->checkbox('jenis_permohonan=skp').'Surat Keterangan Pindah</td></tr>'
+            .'<tr><td style="padding: 1px 0;">'.$this->checkbox('jenis_permohonan=skpln').'Surat Keterangan Pindah Luar Negeri (SKPLN)</td></tr>'
+            .'<tr><td style="padding: 1px 0;">'.$this->checkbox('kewarganegaraan=wna').'Surat Keterangan Tempat Tinggal (SKTT)<br><span style="padding-left: 17px;">Bagi Orang Asing Tinggal Terbatas</span></td></tr>'
+            .'</table>';
+        $memberRow = fn (string $nik): string => '<tr>'.$this->cell('{{ no }}', 'text-align: center; width: 30px;').$this->cell($nik).$this->cell('{{ nama }}').$this->cell('{{ shdk }}').'</tr>';
+
+        return $this->form('F-1.03', 'FORMULIR PENDAFTARAN PERPINDAHAN PENDUDUK', [
+            $table(
+                $row('1.', 'No KK', $this->mover('{{ applicant_family_number }}', 'no_kk_wna'))
+                .$row('2.', 'Nama Lengkap Pemohon', $this->mover('{{ applicant_name }}', 'nama_wna'))
+                .$row('3.', 'NIK', $this->mover('{{ applicant_nik }}', 'nik_wna'))
+                .$row('4.', 'Jenis Permohonan', $requests)
+                .$row('5.', 'Alamat Jelas', $this->mover('{{ applicant_address }}', 'alamat_wna')
+                    .'{{#if kewarganegaraan=wna}} RT '.$this->blank('rt_wna').' RW '.$this->blank('rw_wna').'{{/if}}'
+                    .$region('{{ village_name_short }}', '{{ village_district }}', '{{ village_regency }}', '{{ village_province }}', '{{ village_postal_code }}')
+                    .$this->choices('klasifikasi_pindah', self::MOVE_CLASSIFICATION_OPTIONS))
+                .$row('6.', 'Alamat Pindah', $this->blank('alamat_tujuan').' RT '.$this->blank('rt_tujuan').' RW '.$this->blank('rw_tujuan')
+                    .$region($this->blank('desa_tujuan'), $this->blank('kecamatan_tujuan'), $this->blank('kabupaten_tujuan'), $this->blank('provinsi_tujuan'), $this->blank('kode_pos_tujuan')))
+                .$row('7.', 'Alasan Pindah', $this->choices('alasan_pindah', self::MOVE_REASON_OPTIONS, 3)
+                    .'<div>Lainnya (sebutkan) : '.$this->blank('alasan_lainnya').'</div>')
+                .$row('8.', 'Jenis Kepindahan', $this->choices('jenis_kepindahan', self::MOVE_TYPE_OPTIONS, 2))
+                .$row('9.', 'Anggota Keluarga Tidak Pindah', $this->choices('status_tidak_pindah', self::MOVE_KK_STATUS_OPTIONS, 2))
+                .$row('10.', 'Anggota Keluarga Yang Pindah', $this->choices('status_pindah', self::MOVE_KK_STATUS_OPTIONS, 2))
+                .$row('11.', 'Daftar Anggota Keluarga Yang Pindah', ''),
+            ),
+            $this->gridTable(
+                '<tr>'.$this->headCell('NO.').$this->headCell('NIK').$this->headCell('NAMA LENGKAP').$this->headCell('SHDK').'</tr>',
+                '{{#each anggota_pindah}}'.$memberRow('{{ nik }}').'{{/each}}'
+                .'{{#each anggota_wna}}'.$memberRow('{{#if nik}}{{ nik }}{{/if}}').'{{/each}}',
+            ),
+            $section('Diisi oleh Penduduk (Orang Asing) pemegang ITAS yang Mengajukan SKTT dan OA Pemegang SKTT dan OA Pemegang ITAP yang Mengajukan Surat Keterangan Kependudukan Lainnya'),
+            $table(
+                $row('12.', 'Nama Sponsor', $this->blank('nama_sponsor'))
+                .$row('13.', 'Tipe Sponsor', $this->choices('tipe_sponsor', self::SPONSOR_TYPE_OPTIONS, 3))
+                .$row('14.', 'Alamat Sponsor', $this->blank('alamat_sponsor'))
+                .$row('15.', 'Nomor dan Tanggal ITAS &amp; ITAP', 'Nomor : '.$this->blank('nomor_itas').'<br>Tanggal Masa Berlaku : '.$this->blank('tanggal_itas')),
+            ),
+            $section('Diisi oleh Penduduk yang Mengajukan Surat Keterangan Pindah Luar Negeri'),
+            $table(
+                $row('16.', 'Negara Tujuan', $this->blank('negara_tujuan'))
+                .$row('17.', 'Alamat Tujuan', $this->blank('alamat_luar_negeri'))
+                .$row('18.', 'Penanggung Jawab', $this->blank('penanggung_jawab'))
+                .$row('19.', 'Rencana Pindah Tanggal', $this->blank('rencana_tanggal_pindah')),
+            ),
+            '<table style="width: 100%; margin-top: 20px; border-collapse: collapse; text-align: center;"><tr>'
+            .'<td style="width: 50%; vertical-align: top;">Mengetahui,<br>Kepala Dinas Kependudukan dan<br>Pencatatan Sipil {{ village_regency }},<div style="height: 60px;"></div>(.............................................)</td>'
+            .'<td style="width: 50%; vertical-align: top;">{{ village_name_short }}, {{ issued_at }}<br>Pemohon,<br>&nbsp;<div style="height: 60px;"></div>( '.$this->mover('{{ applicant_name }}', 'nama_wna').' )</td>'
+            .'</tr></table>',
         ]);
     }
 

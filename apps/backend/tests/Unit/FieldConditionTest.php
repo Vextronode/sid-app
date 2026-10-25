@@ -33,4 +33,15 @@ class FieldConditionTest extends TestCase
         $this->assertFalse(FieldCondition::matches(['field' => 'nik_ayah', 'filled' => true], ['nik_ayah' => '  ']));
         $this->assertTrue(FieldCondition::matches(['field' => 'nik_ayah', 'filled' => false], []));
     }
+
+    public function test_any_and_all_combine_conditions(): void
+    {
+        $any = ['any' => [['field' => 'jenis', 'equals' => 'skp'], ['field' => 'warga', 'equals' => 'wna']]];
+        $all = ['all' => [['field' => 'warga', 'equals' => 'wni'], ['field' => 'jenis', 'equals' => 'skp']]];
+
+        $this->assertTrue(FieldCondition::matches($any, ['warga' => 'wna']));
+        $this->assertFalse(FieldCondition::matches($any, ['warga' => 'wni', 'jenis' => 'skpln']));
+        $this->assertTrue(FieldCondition::matches($all, ['warga' => 'wni', 'jenis' => 'skp']));
+        $this->assertFalse(FieldCondition::matches($all, ['warga' => 'wni']));
+    }
 }

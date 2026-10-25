@@ -9,6 +9,8 @@ namespace App\Support;
  *  - {"field": "jenis", "in": ["kk_baru", "pisah_kk"]}
  *  - {"field": "jenis", "not_in": ["lainnya"]}
  *  - {"field": "nik_ayah", "filled": true}
+ *  - {"any": [syarat, ...]}  salah satu terpenuhi
+ *  - {"all": [syarat, ...]}  semua terpenuhi
  * Tanpa syarat (null) selalu terpenuhi.
  */
 class FieldCondition
@@ -21,6 +23,18 @@ class FieldCondition
     {
         if ($when === null || $when === []) {
             return true;
+        }
+
+        if (array_key_exists('any', $when) || array_key_exists('all', $when)) {
+            $any = array_key_exists('any', $when);
+
+            foreach ((array) ($when[$any ? 'any' : 'all']) as $condition) {
+                if (self::matches($condition, $payload) === $any) {
+                    return $any;
+                }
+            }
+
+            return ! $any;
         }
 
         $value = $payload[$when['field'] ?? ''] ?? null;
