@@ -2,7 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat & cari daftar Kartu Keluarga (KK)
   description: |
-    BARU v5.0. UC-09 Sub-flow Kelola Data Keluarga. Aktor Petugas Desa.
+    BARU v5.0. UC-09 Sub-flow Kelola Data Keluarga. Aktor Petugas Desa dan Kasi Pemerintahan (kelola); Kaur TU & Umum hanya membaca (GET).
     Daftar berhalaman (`IndexFamilyRequest`), hanya KK di desa user login,
     diurutkan dari yang terbaru dibuat. Tiap item memuat `members_count`,
     `head_of_family` (`id`, `name`), dan relasi wilayah (`rt`, `rw`,
@@ -83,7 +83,7 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Tambah Kartu Keluarga (KK) baru
   description: |
-    Aktor: Petugas Desa.
+    Aktor: Petugas Desa atau Kasi Pemerintahan.
     BARU v5.0. no_kk dienkripsi AES-256 + di-hash SHA-256 (no_kk_hash),
     pola dual-column sama seperti NIK. Setelah KK dibuat, tautkan anggota
     lewat POST /families/{id}/members atau isi family_id saat create/update

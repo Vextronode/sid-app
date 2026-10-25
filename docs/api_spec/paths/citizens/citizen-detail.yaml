@@ -2,7 +2,7 @@ patch:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Edit data warga
   description: |
-    Aktor: Petugas Desa.
+    Aktor: Petugas Desa atau Kasi Pemerintahan.
     UC-09 (Main Flow - Edit Warga). NIK tidak bisa diubah setelah dibuat.
     Catatan Alur Update KTP/KK v5.0 (TDD Section 5.4.2 UC-09): Petugas
     Desa mencatat ulang data yang sudah resmi berubah di Kecamatan/Dukcapil
@@ -101,7 +101,7 @@ patch:
 delete:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Hapus data warga
-  description: Hanya Petugas Desa yang dapat menghapus data kependudukan.
+  description: Hanya Petugas Desa dan Kasi Pemerintahan yang dapat menghapus data kependudukan.
   operationId: deleteCitizen
   security:
     - sanctumCookie: []

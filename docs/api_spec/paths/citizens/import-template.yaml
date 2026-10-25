@@ -2,7 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Unduh template Excel impor warga
   description: |
-    Aktor: Petugas Desa (`staf_sid`).
+    Aktor: Petugas Desa (`staf_sid`) atau Kasi Pemerintahan.
     UC-09. Template dibuat server (`CitizensTemplateExport`) sehingga
     header kolomnya selalu sama dengan key yang divalidasi
     `CitizensImport::rules()` (heading row, snake_case). Dipakai sebagai

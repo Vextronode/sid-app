@@ -79,7 +79,7 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Tambah warga baru
   description: |
-    Aktor: Petugas Desa.
+    Aktor: Petugas Desa atau Kasi Pemerintahan.
     UC-09 (Main Flow - Tambah Warga). NIK dienkripsi AES-256 (`nik`) dan
     di-hash SHA-256 (`nik_hash`) untuk indexing, dijalankan dalam satu
     `DB::transaction()`. BARU v5.0: `no_kk` DIHAPUS dari request ini -
