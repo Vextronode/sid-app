@@ -146,6 +146,8 @@ paths:
   # ─────────────────────────────────────────────
   # EPIC 1 - Struktur Wilayah
   # ─────────────────────────────────────────────
+  /village-areas:
+    $ref: 'paths/wilayah/village-areas.yaml'
   /hamlets:
     $ref: 'paths/wilayah/hamlets.yaml'
   /hamlets/{hamlet}:

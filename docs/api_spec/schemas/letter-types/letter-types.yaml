@@ -50,7 +50,9 @@ LetterType:
         Baris sistem `{{#each kk_anggota}}` = rincian KK pemohon (`nama`,
         `nik`, `shdk`). Placeholder sistem formulir pelayanan:
         `applicant_family_number` (No. KK pemohon) dan
-        `village_kasi_pemerintahan_name` (petugas F-1.02).
+        `village_kasi_pemerintahan_name` (petugas F-1.02). Kotak per karakter
+        formulir Disdukcapil: `{{ nama[0] }}` = karakter pertama nilai isian
+        atau placeholder sistem (kosong bila tidak ada).
     requirements_info:
       type: string
       nullable: true
@@ -152,7 +154,11 @@ LetterFormField:
       example: "Nama Usaha"
     type:
       type: string
-      enum: [text, textarea, date, number, nik, select, file, occupation, repeater, family_members]
+      enum: [text, textarea, date, number, nik, select, file, occupation, repeater, family_members, village_area]
+      description: |
+        `village_area` = Dusun -> RW -> RT desa ini dari `GET /village-areas`;
+        nilainya id RT, dan saat pengajuan ditambah `<nama>_dusun`,
+        `<nama>_rw`, `<nama>_rt` (3 digit) siap cetak.
     required:
       type: boolean
     placeholder:
