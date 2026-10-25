@@ -119,7 +119,8 @@ class UserRepository
             'citizen.hamlet',
             'citizen.rt',
             'citizen.rw',
-            'official',
+            'citizen.occupation',
+            'official.citizen.occupation',
         ]);
     }
 }
