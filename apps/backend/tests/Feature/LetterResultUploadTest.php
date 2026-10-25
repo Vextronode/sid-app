@@ -99,7 +99,12 @@ class LetterResultUploadTest extends TestCase
             ->assertJsonPath('data.status', 'rejected');
         $this->detail($this->applicant['user'], $letterId)
             ->assertJsonPath('data.result_stage', 'awaiting_upload')
-            ->assertJsonPath('data.results.0.review_notes', 'Foto KK buram.');
+            ->assertJsonPath('data.results.0.review_notes', 'Foto KK buram.')
+            // Pemohon dapat mengunggah ulang di surat yang sama.
+            ->assertJsonPath('data.can_upload_result', true);
+        $this->actingAs($this->applicant['user'])
+            ->getJson('/api/letters')
+            ->assertJsonPath('data.0.result_rejected', true);
 
         $second = $this->upload($this->applicant['user'], $letterId)->assertCreated()->json('data');
         // Unggahan lama sudah diverifikasi dan tidak dapat diputus ulang.

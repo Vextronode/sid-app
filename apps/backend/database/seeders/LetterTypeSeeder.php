@@ -9,6 +9,7 @@ use App\Enums\LetterTypeCategory;
 use App\Models\ApprovalFlow;
 use App\Models\LetterType;
 use App\Models\Village;
+use Database\Seeders\Concerns\DefinesLetterTypes;
 use Illuminate\Database\Seeder;
 
 /**
@@ -23,6 +24,8 @@ use Illuminate\Database\Seeder;
  */
 class LetterTypeSeeder extends Seeder
 {
+    use DefinesLetterTypes;
+
     private const CLOSING = 'Demikian surat keterangan ini kami buat dengan sebenarnya, mohon kepada yang bersangkutan agar menjadi maklum dan untuk menjadi bahan selanjutnya.';
 
     private const GENDER_OPTIONS = [
@@ -310,53 +313,8 @@ class LetterTypeSeeder extends Seeder
     }
 
     // ------------------------------------------------------------------
-    // Isian form
+    // Isian form (helper umum di DefinesLetterTypes)
     // ------------------------------------------------------------------
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function field(string $name, string $label, string $type, bool $required, ?string $placeholder = null, array $extra = []): array
-    {
-        return ['name' => $name, 'label' => $label, 'type' => $type, 'required' => $required, 'placeholder' => $placeholder, ...$extra];
-    }
-
-    private function text(string $name, string $label, bool $required = true, ?string $placeholder = null): array
-    {
-        return $this->field($name, $label, 'text', $required, $placeholder);
-    }
-
-    private function textarea(string $name, string $label, bool $required = true, ?string $placeholder = null): array
-    {
-        return $this->field($name, $label, 'textarea', $required, $placeholder);
-    }
-
-    private function number(string $name, string $label, bool $required = true, ?string $placeholder = null): array
-    {
-        return $this->field($name, $label, 'number', $required, $placeholder);
-    }
-
-    /**
-     * Unggahan gambar (JPG/PNG) sebagai bahan pertimbangan approver.
-     */
-    private function image(string $name, string $label, bool $required = true): array
-    {
-        return $this->field($name, $label, 'file', $required, null, ['accept' => 'image']);
-    }
-
-    /**
-     * Pilihan dari katalog pekerjaan desa, plus "Lainnya" dengan teks bebas
-     * yang hanya dicetak di surat (LetterFormSchema::resolveOccupations).
-     */
-    private function occupation(string $name, string $label, bool $required = true): array
-    {
-        return $this->field($name, $label, 'occupation', $required);
-    }
-
-    private function date(string $name, string $label, bool $required = true): array
-    {
-        return $this->field($name, $label, 'date', $required);
-    }
 
     /**
      * Lima data identitas seseorang, sejajar dengan blok identitas di
@@ -446,13 +404,6 @@ class LetterTypeSeeder extends Seeder
         HTML;
     }
 
-    private function paragraph(string $html, bool $indent = true): string
-    {
-        $textIndent = $indent ? '40px' : '0';
-
-        return '<p style="text-align: justify; text-indent: '.$textIndent.'; margin: 12px 0; line-height: 1.5;">'.$html.'</p>';
-    }
-
     /**
      * Blok identitas pemohon, diisi dari data akun.
      */
@@ -495,29 +446,5 @@ class LetterTypeSeeder extends Seeder
             'Pekerjaan' => $occupation,
             'Alamat' => $address,
         ]);
-    }
-
-    /**
-     * @param  array<string, string>  $rows  label => isi
-     */
-    private function rowsBlock(?string $intro, array $rows): string
-    {
-        $html = '<div style="margin-bottom: 12px;">';
-
-        if ($intro !== null) {
-            $html .= '<p style="margin: 0 0 8px 0;">'.$intro.'</p>';
-        }
-
-        $html .= '<table style="width: 100%; border-collapse: collapse; margin-left: 30px;">';
-
-        foreach ($rows as $label => $value) {
-            $html .= '<tr>'
-                .'<td style="width: 170px; vertical-align: top; padding: 2px 0;">'.$label.'</td>'
-                .'<td style="width: 15px; vertical-align: top; padding: 2px 0;">:</td>'
-                .'<td style="vertical-align: top; padding: 2px 0;">'.$value.'</td>'
-                .'</tr>';
-        }
-
-        return $html.'</table></div>';
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Enums\LetterResultStage;
+use App\Models\LetterResult;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -46,6 +47,9 @@ class LetterListResource extends JsonResource
                 && ! in_array($dataAction, [null, 'none'], true)
                 && in_array($this->resource->resultStage(), [null, LetterResultStage::Accepted], true),
             'result_stage' => $this->resource->resultStage()?->value,
+            // Unggahan hasil terakhir ditolak: pemohon diminta mengunggah ulang.
+            'result_rejected' => $this->resource->resultStage() === LetterResultStage::AwaitingUpload
+                && $this->latestResult?->status === LetterResult::STATUS_REJECTED,
             'expires_at' => $this->expires_at,
             'is_expired' => $this->resource->isExpired(),
             'submitted_at' => $this->submitted_at,

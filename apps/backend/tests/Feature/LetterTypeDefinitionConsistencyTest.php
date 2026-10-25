@@ -8,6 +8,7 @@ use App\Models\Village;
 use App\Support\LetterFormSchema;
 use Database\Seeders\ApprovalFlowSeeder;
 use Database\Seeders\LetterTypeSeeder;
+use Database\Seeders\ServiceLetterTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -36,7 +37,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
         parent::setUp();
 
         Village::factory()->create();
-        $this->seed([ApprovalFlowSeeder::class, LetterTypeSeeder::class]);
+        $this->seed([ApprovalFlowSeeder::class, LetterTypeSeeder::class, ServiceLetterTypeSeeder::class]);
     }
 
     public function test_every_template_placeholder_has_a_source(): void
@@ -94,15 +95,34 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
     {
         $letterTypes = LetterType::query()->with('flow.steps')->orderBy('code')->get();
 
-        $this->assertCount(11, $letterTypes);
+        // 11 Persuratan Desa (Axx) + Pelayanan Desa (Fxx).
+        $this->assertSame(
+            ['persuratan' => 11, 'pelayanan' => 1],
+            $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
+        );
 
         foreach ($letterTypes as $letterType) {
             $this->assertSame(ApprovalFlowSeeder::DEFAULT_FLOW_NAME, $letterType->flow->name);
             $this->assertSame(['rt', 'kepala_desa'], $letterType->flow->steps->pluck('approver_position')->all());
             $this->assertNotNull($letterType->form_fields, "{$letterType->code} belum punya definisi isian.");
             $this->assertTrue($letterType->produces_letter);
-            $this->assertSame('kaur_tu_umum', $letterType->assigned_role, "{$letterType->code} harus ditangani Kaur TU & Umum.");
-            $this->assertSame(LetterTypeCategory::Persuratan, $letterType->category, "{$letterType->code} termasuk Persuratan Desa.");
+
+            if (str_starts_with($letterType->code, 'A')) {
+                $this->assertSame('kaur_tu_umum', $letterType->assigned_role, "{$letterType->code} harus ditangani Kaur TU & Umum.");
+                $this->assertSame(LetterTypeCategory::Persuratan, $letterType->category, "{$letterType->code} termasuk Persuratan Desa.");
+                $this->assertTrue($letterType->issues_letter_number && $letterType->signed_by_village_head);
+                $this->assertFalse($letterType->requires_result_upload);
+            } else {
+                // Formulir Disdukcapil: tanpa nomor dan TTD Kepala Desa,
+                // bersambung dengan unggah hasil ke Kasi Pemerintahan.
+                $this->assertSame('kasi_pemerintahan', $letterType->assigned_role, "{$letterType->code} harus ditangani Kasi Pemerintahan.");
+                $this->assertSame(LetterTypeCategory::Pelayanan, $letterType->category, "{$letterType->code} termasuk Pelayanan Desa.");
+                $this->assertFalse($letterType->issues_letter_number || $letterType->signed_by_village_head);
+                $this->assertTrue($letterType->requires_result_upload);
+                $this->assertNotNull($letterType->result_upload_hint);
+                $this->assertStringNotContainsString('{{ signature_img }}', (string) $letterType->template);
+                $this->assertStringNotContainsString('{{ letter_number }}', (string) $letterType->template);
+            }
 
             foreach ($letterType->form_fields as $field) {
                 $this->assertContains($field['type'], LetterFormSchema::FIELD_TYPES);
@@ -111,7 +131,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // Penguburan menonaktifkan data almarhum; Kelahiran menambah anak.
         $this->assertSame(
-            ['A07' => 'update_citizen', 'A08' => 'create_citizen'],
+            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'manual'],
             $letterTypes
                 ->filter(fn (LetterType $type) => $type->data_action->value !== 'none')
                 ->mapWithKeys(fn (LetterType $type) => [$type->code => $type->data_action->value])
