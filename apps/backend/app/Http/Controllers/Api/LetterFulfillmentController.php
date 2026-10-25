@@ -33,6 +33,7 @@ class LetterFulfillmentController extends Controller
             $request->user(),
             $request->validated('values') ?? [],
             $request->validated('subject_nik'),
+            $request->validated('notes'),
         );
 
         return response()->json([

@@ -39,6 +39,8 @@ return new class extends Migration
             // (mis. KK baru dari Disdukcapil) untuk diverifikasi Kasi/Kaur.
             $table->boolean('requires_result_upload')->default(false);
             $table->text('result_upload_hint')->nullable();
+            // Petunjuk bagi Kasi/Kaur untuk aksi data `manual`.
+            $table->text('data_instructions')->nullable();
             $table->boolean('is_active');
             $table->timestamps();
 

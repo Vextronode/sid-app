@@ -37,6 +37,7 @@ class LetterType extends Model
         'signed_by_village_head',
         'requires_result_upload',
         'result_upload_hint',
+        'data_instructions',
     ];
 
     protected $attributes = [

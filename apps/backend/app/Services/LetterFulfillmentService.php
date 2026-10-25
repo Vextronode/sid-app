@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
 use App\Repositories\UserRepository;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -24,6 +25,11 @@ use Illuminate\Validation\ValidationException;
  * diusulkan warga lewat form surat ke data kependudukan. Kolom yang boleh
  * disentuh ditetapkan per tipe surat (letter_types.data_fields); tidak ada
  * jalur edit bebas ke data warga dari sini.
+ *
+ * Aksi semi-manual: `deactivate_members` menonaktifkan anggota KK yang
+ * dipilih pemohon (isian family_members), dan `manual` hanya mencatat
+ * bahwa Kasi/Kaur sudah mengerjakan perubahannya sendiri di Data
+ * Penduduk/KK (mis. susunan KK baru), lengkap dengan catatannya.
  */
 class LetterFulfillmentService
 {
@@ -56,9 +62,11 @@ class LetterFulfillmentService
             'fulfilled_at' => $letter->fulfilled_at,
             'fulfilled_by' => $letter->fulfilled_by,
             'result' => $letter->fulfillment,
+            'instructions' => $action === LetterDataAction::Manual ? $letter->letterType?->data_instructions : null,
+            'members' => $action === LetterDataAction::DeactivateMembers ? $this->memberProposal($letter) : [],
             // Diisi bila subjek perubahan bukan pemohon (mis. almarhum):
             // warga dicari lewat NIK yang ditulis pemohon di form.
-            'subject' => $subjectField === null ? null : [
+            'subject' => $subjectField === null || $action !== LetterDataAction::UpdateCitizen ? null : [
                 'nik' => $letter->payload[$subjectField] ?? null,
                 'found' => $current !== null,
                 'name' => $current?->name,
@@ -79,10 +87,11 @@ class LetterFulfillmentService
     /**
      * @param  array<string, mixed>  $values  koreksi dari Kasi/Kaur, per kolom
      * @param  string|null  $subjectNik  koreksi NIK subjek, bila subjeknya bukan pemohon
+     * @param  string|null  $notes  catatan "Tandai selesai" untuk aksi manual
      */
-    public function apply(Letter $letter, User $actor, array $values, ?string $subjectNik = null): Letter
+    public function apply(Letter $letter, User $actor, array $values, ?string $subjectNik = null, ?string $notes = null): Letter
     {
-        return DB::transaction(function () use ($letter, $actor, $values, $subjectNik): Letter {
+        return DB::transaction(function () use ($letter, $actor, $values, $subjectNik, $notes): Letter {
             // Lock agar dua Terapkan bersamaan tidak sama-sama lolos.
             $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
             $locked->load(['letterType', 'citizen']);
@@ -102,19 +111,19 @@ class LetterFulfillmentService
             }
 
             $action = $this->actionOf($locked);
-            $final = $this->finalValues($locked, $values);
 
-            [$citizen, $changes] = match ($action) {
-                LetterDataAction::UpdateCitizen => $this->updateCitizen($locked, $actor, $final, $subjectNik),
-                LetterDataAction::CreateCitizen => $this->createCitizen($locked, $actor, $final),
+            // Daftar [warga, perubahan] untuk jejak audit per warga.
+            [$result, $touched] = match ($action) {
+                LetterDataAction::UpdateCitizen, LetterDataAction::CreateCitizen => $this->singleCitizen(
+                    $action,
+                    $action === LetterDataAction::UpdateCitizen
+                        ? $this->updateCitizen($locked, $actor, $this->finalValues($locked, $values), $subjectNik)
+                        : $this->createCitizen($locked, $actor, $this->finalValues($locked, $values)),
+                ),
+                LetterDataAction::DeactivateMembers => $this->deactivateMembers($locked, $actor),
+                LetterDataAction::Manual => [['action' => $action->value, 'notes' => $notes], []],
                 default => abort(422, 'Jenis surat ini tidak memiliki aksi perubahan data.'),
             };
-
-            $result = [
-                'action' => $action->value,
-                'citizen_id' => $citizen->id,
-                'changes' => $changes,
-            ];
 
             $this->letterRepository->update($locked, [
                 'fulfilled_at' => now(),
@@ -126,23 +135,30 @@ class LetterFulfillmentService
                 'actor_id' => $actor->id,
                 'old_status' => LetterStatus::Approved->value,
                 'new_status' => LetterStatus::Approved->value,
-                'reason' => 'Perubahan data kependudukan diterapkan',
+                'reason' => $action === LetterDataAction::Manual
+                    ? 'Perubahan data kependudukan ditandai selesai (dikerjakan manual)'
+                    : 'Perubahan data kependudukan diterapkan',
             ]);
 
-            activity('citizen')
-                ->performedOn($citizen)
-                ->causedBy($actor)
-                ->event('letter_fulfilled')
-                ->withProperties([
-                    // Scoping halaman Log Aktivitas (S-05).
-                    'village_id' => $citizen->village_id,
-                    'subject_label' => $citizen->name,
-                    'letter_id' => $locked->id,
-                    'letter_number' => $locked->letter_number,
-                    'actor_role' => $actor->role,
-                    ...$result,
-                ])
-                ->log('Data kependudukan diubah berdasarkan surat');
+            // Perubahan manual tercatat sendiri saat Kasi/Kaur mengedit data warga.
+            foreach ($touched as [$citizen, $changes]) {
+                activity('citizen')
+                    ->performedOn($citizen)
+                    ->causedBy($actor)
+                    ->event('letter_fulfilled')
+                    ->withProperties([
+                        // Scoping halaman Log Aktivitas (S-05).
+                        'village_id' => $citizen->village_id,
+                        'subject_label' => $citizen->name,
+                        'letter_id' => $locked->id,
+                        'letter_number' => $locked->letter_number,
+                        'actor_role' => $actor->role,
+                        'action' => $action->value,
+                        'citizen_id' => $citizen->id,
+                        'changes' => $changes,
+                    ])
+                    ->log('Data kependudukan diubah berdasarkan surat');
+            }
 
             $this->officialService->resolveCitizenUser($locked)?->notify(new LetterStatusNotification(
                 $locked,
@@ -153,6 +169,97 @@ class LetterFulfillmentService
 
             return $locked;
         });
+    }
+
+    /**
+     * @param  array{0: Citizen, 1: array<string, array{old: mixed, new: mixed}>}  $outcome
+     * @return array{0: array<string, mixed>, 1: array<int, array{0: Citizen, 1: array<string, mixed>}>}
+     */
+    private function singleCitizen(LetterDataAction $action, array $outcome): array
+    {
+        [$citizen, $changes] = $outcome;
+
+        return [['action' => $action->value, 'citizen_id' => $citizen->id, 'changes' => $changes], [$outcome]];
+    }
+
+    /**
+     * Anggota yang dipilih pemohon beserta keadaannya sekarang.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function memberProposal(Letter $letter): array
+    {
+        $citizens = $this->selectedMembers($letter)->keyBy('id');
+
+        return array_map(fn (array $row): array => [
+            'citizen_id' => $row['citizen_id'] ?? null,
+            'name' => $row['nama'] ?? '-',
+            'family_role' => $row['shdk'] ?? '-',
+            'found' => isset($citizens[$row['citizen_id'] ?? '']),
+            'is_active' => (bool) ($citizens[$row['citizen_id'] ?? '']?->is_active ?? false),
+        ], $this->memberRows($letter));
+    }
+
+    /**
+     * Nonaktifkan anggota KK yang dipilih pemohon, beserta akun login
+     * mereka. Anggota yang sudah nonaktif atau tidak ditemukan dilewati.
+     *
+     * @return array{0: array<string, mixed>, 1: array<int, array{0: Citizen, 1: array<string, mixed>}>}
+     */
+    private function deactivateMembers(Letter $letter, User $actor): array
+    {
+        $members = [];
+        $touched = [];
+
+        foreach ($this->selectedMembers($letter) as $citizen) {
+            if (! $citizen->is_active) {
+                continue;
+            }
+
+            $changes = ['is_active' => ['old' => true, 'new' => false]];
+            $account = $this->userRepository->findByCitizenId($citizen->id);
+
+            if ($account !== null && $account->is_active) {
+                $this->userRepository->update($account, ['is_active' => false]);
+                $account->tokens()->delete();
+                $changes['account_is_active'] = ['old' => true, 'new' => false];
+            }
+
+            // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
+            $citizen = $this->citizenService->update($citizen, ['is_active' => false], $actor, audit: false);
+            $members[] = ['citizen_id' => $citizen->id, 'name' => $citizen->name, 'changes' => $changes];
+            $touched[] = [$citizen, $changes];
+        }
+
+        if ($members === []) {
+            abort(422, 'Tidak ada anggota aktif yang dapat dinonaktifkan dari surat ini.');
+        }
+
+        return [['action' => LetterDataAction::DeactivateMembers->value, 'members' => $members], $touched];
+    }
+
+    /**
+     * Baris isian family_members (data_subject_field) di payload.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function memberRows(Letter $letter): array
+    {
+        $field = $letter->letterType?->data_subject_field;
+        $rows = $field !== null ? ($letter->payload[$field] ?? []) : [];
+
+        return array_values(array_filter(is_array($rows) ? $rows : [], 'is_array'));
+    }
+
+    /**
+     * @return Collection<int, Citizen>
+     */
+    private function selectedMembers(Letter $letter): Collection
+    {
+        return Citizen::query()
+            ->where('village_id', $letter->village_id)
+            ->whereIn('id', array_filter(array_column($this->memberRows($letter), 'citizen_id')))
+            ->get();
     }
 
     /**
