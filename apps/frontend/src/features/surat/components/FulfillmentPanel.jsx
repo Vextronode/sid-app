@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { applyFulfillment, getFulfillmentProposal } from '../api/letterExtrasApi'
 import { confirmDialog } from '@/shared/lib/dialog'
+import { SemiManualFulfillmentForm } from './SemiManualFulfillmentForm'
 
 const ACTION_TITLES = {
   update_citizen: 'Perubahan Data Warga',
   create_citizen: 'Penambahan Data Warga',
+  deactivate_members: 'Penonaktifan Anggota Keluarga',
+  manual: 'Pembaruan Data Penduduk & KK',
 }
 
 function serverMessage(error, fallback) {
@@ -123,6 +126,13 @@ export function FulfillmentPanel({ letterId, onApplied }) {
 
   const done = Boolean(proposal.fulfilled_at)
   const isCreate = proposal.action === 'create_citizen'
+  const isSemiManual = ['deactivate_members', 'manual'].includes(proposal.action)
+
+  const handleSemiManualDone = (response) => {
+    setMessage(response?.message ?? 'Perubahan data berhasil disimpan.')
+    setProposal((current) => ({ ...current, fulfilled_at: new Date().toISOString() }))
+    onApplied?.(response?.data)
+  }
 
   return (
     <section className="sid-modal-note" aria-label="Terapkan perubahan data">
@@ -141,8 +151,15 @@ export function FulfillmentPanel({ letterId, onApplied }) {
 
       {done ? (
         <p className="sid-modal-note-text">
-          Sudah diterapkan pada {new Date(proposal.fulfilled_at).toLocaleString('id-ID')}.
+          Sudah {proposal.action === 'manual' ? 'ditandai selesai' : 'diterapkan'} pada{' '}
+          {new Date(proposal.fulfilled_at).toLocaleString('id-ID')}.
         </p>
+      ) : isSemiManual ? (
+        <SemiManualFulfillmentForm
+          letterId={letterId}
+          proposal={proposal}
+          onDone={handleSemiManualDone}
+        />
       ) : (
         <form onSubmit={handleApply}>
           <p className="sid-modal-note-text">

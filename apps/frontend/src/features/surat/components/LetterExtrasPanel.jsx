@@ -337,7 +337,7 @@ export function LetterExtrasPanel({ letterId }) {
         <section className="sid-modal-note" aria-label="Perubahan data">
           <p className="sid-modal-note-label">Perubahan Data</p>
           <p className="sid-modal-note-text">
-            Perubahan data kependudukan dari surat ini telah diterapkan pada{' '}
+            Perubahan data kependudukan dari surat ini telah diselesaikan pada{' '}
             {new Date(letter.fulfilled_at).toLocaleString('id-ID')}.
           </p>
         </section>

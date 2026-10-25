@@ -43,10 +43,11 @@ export const getFulfillmentProposal = async (letterId) => {
   return response.data.data
 }
 
-export const applyFulfillment = async (letterId, values, subjectNik) => {
+export const applyFulfillment = async (letterId, values, subjectNik, notes) => {
   const response = await api.post(`/api/letters/${letterId}/fulfillment`, {
     values,
     subject_nik: subjectNik || null,
+    notes: notes || null,
   })
 
   return response.data
