@@ -5771,6 +5771,34 @@
   line-clamp: 2;
 }
 
+.sid-letter-type-description.is-expanded {
+  display: block;
+
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+
+.sid-letter-type-more {
+  align-self: flex-start;
+
+  padding: 0;
+
+  border: 0;
+
+  background: none;
+  color: var(--sid-primary);
+
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.sid-letter-type-more:hover {
+  text-decoration: underline;
+}
+
 .sid-letter-type-meta {
   display: flex;
   flex-wrap: wrap;

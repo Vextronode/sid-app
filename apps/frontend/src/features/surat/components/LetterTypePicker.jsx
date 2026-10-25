@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Check, Search } from 'lucide-react'
 
 import { groupLetterTypes } from '../utils/letterTypeGroups'
@@ -20,11 +20,70 @@ function LetterTypeMeta({ type }) {
 }
 
 /**
+ * Deskripsi kartu dipotong dua baris; bila memang terpotong, muncul tombol
+ * "Baca selengkapnya" untuk membukanya. Tombol berada di dalam kartu
+ * (label pilihan), jadi kliknya tidak boleh ikut memilih jenis surat.
+ */
+function LetterTypeDescription({ text }) {
+  const ref = useRef(null)
+  const [expanded, setExpanded] = useState(false)
+  const [overflowing, setOverflowing] = useState(false)
+
+  useLayoutEffect(() => {
+    const element = ref.current
+
+    if (!element || expanded) return undefined
+
+    const measure = () => setOverflowing(element.scrollHeight > element.clientHeight + 1)
+    measure()
+
+    if (typeof ResizeObserver === 'undefined') return undefined
+
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+
+    return () => observer.disconnect()
+  }, [text, expanded])
+
+  const toggle = (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setExpanded((value) => !value)
+  }
+
+  return (
+    <>
+      <span ref={ref} className={`sid-letter-type-description${expanded ? ' is-expanded' : ''}`}>
+        {text}
+      </span>
+      {(overflowing || expanded) && (
+        <button
+          type="button"
+          className="sid-letter-type-more"
+          onClick={toggle}
+          aria-expanded={expanded}
+        >
+          {expanded ? 'Tutup' : 'Baca selengkapnya'}
+        </button>
+      )}
+    </>
+  )
+}
+
+/**
  * Langkah pertama pengajuan surat: kartu pilihan jenis surat. Setelah
  * dipilih, daftar menciut menjadi ringkasan jenis surat beserta
- * persyaratannya, dengan tombol untuk mengganti pilihan.
+ * persyaratannya, dengan tombol untuk mengganti pilihan (kecuali `locked`,
+ * mis. jenis surat sudah ditentukan dari tautan).
  */
-export function LetterTypePicker({ letterTypes, loading, error, selectedCode, onSelect }) {
+export function LetterTypePicker({
+  letterTypes,
+  loading,
+  error,
+  selectedCode,
+  onSelect,
+  locked = false,
+}) {
   const [query, setQuery] = useState('')
   const selected = letterTypes.find((type) => type.code === selectedCode)
 
@@ -41,9 +100,11 @@ export function LetterTypePicker({ letterTypes, loading, error, selectedCode, on
             <LetterTypeMeta type={selected} />
           </div>
 
-          <button type="button" onClick={() => onSelect('')} className="sid-letter-type-change">
-            Ganti
-          </button>
+          {!locked && (
+            <button type="button" onClick={() => onSelect('')} className="sid-letter-type-change">
+              Ganti
+            </button>
+          )}
         </div>
 
         {selected.requirements_info && (
@@ -125,9 +186,7 @@ export function LetterTypePicker({ letterTypes, loading, error, selectedCode, on
                       className="sr-only"
                     />
                     <span className="sid-letter-type-name">{type.name}</span>
-                    {type.description && (
-                      <span className="sid-letter-type-description">{type.description}</span>
-                    )}
+                    {type.description && <LetterTypeDescription text={type.description} />}
                     <LetterTypeMeta type={type} />
                   </label>
                 ))}

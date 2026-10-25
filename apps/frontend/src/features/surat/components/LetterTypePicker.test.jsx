@@ -82,4 +82,28 @@ describe('LetterTypePicker', () => {
 
     expect(screen.getAllByRole('radio')).toHaveLength(1)
   })
+
+  it('hides the change button when the type is fixed by the link', () => {
+    renderPicker({ selectedCode: 'SKD', locked: true })
+
+    expect(screen.queryByRole('button', { name: 'Ganti' })).toBeNull()
+  })
+
+  it('expands a cut-off description without selecting the type', () => {
+    // jsdom tidak menghitung tata letak: anggap deskripsi terpotong.
+    const scrollHeight = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(60)
+    const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(38)
+
+    const onSelect = renderPicker()
+
+    const more = screen.getAllByRole('button', { name: 'Baca selengkapnya' })[0]
+    fireEvent.click(more)
+
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Tutup' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Menerangkan domisili.').className).toContain('is-expanded')
+
+    scrollHeight.mockRestore()
+    clientHeight.mockRestore()
+  })
 })
