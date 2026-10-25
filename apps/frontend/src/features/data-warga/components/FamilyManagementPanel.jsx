@@ -54,7 +54,15 @@ function responseData(response) {
   return response?.data?.data ?? response?.data ?? {}
 }
 
-export default function FamilyManagementPanel({ familyList }) {
+/**
+ * Daftar Kartu Keluarga. `canEdit` = false untuk tampilan khusus-baca
+ * (Kaur TU & Umum); `canViewHistory` hanya untuk Petugas Desa (Log Aktivitas).
+ */
+export default function FamilyManagementPanel({
+  familyList,
+  canEdit = true,
+  canViewHistory = true,
+}) {
   const navigate = useNavigate()
   const {
     families,
@@ -71,6 +79,8 @@ export default function FamilyManagementPanel({ familyList }) {
     editFamily,
     removeFamily,
   } = familyList
+  const hasActions = canEdit || canViewHistory
+  const columnCount = hasActions ? 6 : 5
   const [modal, setModal] = useState(null)
   const [familyForm, setFamilyForm] = useState(EMPTY_FAMILY)
   const [socioeconomic, setSocioeconomic] = useState(EMPTY_SOCIOECONOMIC)
@@ -238,11 +248,17 @@ export default function FamilyManagementPanel({ familyList }) {
       <div className="sid-operator-header">
         <div>
           <h2 id="families-heading">Kartu Keluarga</h2>
-          <p>Kelola data KK dan survei sosio-ekonomi rumah tangga.</p>
+          <p>
+            {canEdit
+              ? 'Kelola data KK dan survei sosio-ekonomi rumah tangga.'
+              : 'Daftar Kartu Keluarga desa (hanya lihat).'}
+          </p>
         </div>
-        <button type="button" className="sid-operator-primary" onClick={openCreate}>
-          <Plus size={16} /> Tambah KK
-        </button>
+        {canEdit && (
+          <button type="button" className="sid-operator-primary" onClick={openCreate}>
+            <Plus size={16} /> Tambah KK
+          </button>
+        )}
       </div>
 
       <form
@@ -287,19 +303,19 @@ export default function FamilyManagementPanel({ familyList }) {
               <th>Anggota</th>
               <th>Alamat KK</th>
               <th>Status</th>
-              <th className="center">Aksi</th>
+              {hasActions && <th className="center">Aksi</th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="empty">
+                <td colSpan={columnCount} className="empty">
                   Memuat data kartu keluarga...
                 </td>
               </tr>
             ) : families.length === 0 ? (
               <tr>
-                <td colSpan={6} className="empty">
+                <td colSpan={columnCount} className="empty">
                   Belum ada data kartu keluarga.
                 </td>
               </tr>
@@ -319,50 +335,60 @@ export default function FamilyManagementPanel({ familyList }) {
                       '-'
                     )}
                   </td>
-                  <td className="center">
-                    <div className="sid-operator-actions">
-                      <button
-                        type="button"
-                        className="sid-operator-action edit"
-                        title="Edit KK"
-                        aria-label="Edit KK"
-                        onClick={() => openEdit(family)}
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="sid-operator-action toggle"
-                        title="Survei sosio-ekonomi"
-                        aria-label="Survei sosio-ekonomi"
-                        onClick={() => openSocioeconomic(family)}
-                      >
-                        <RefreshCw size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="sid-operator-action detail"
-                        title="Riwayat perubahan"
-                        aria-label="Riwayat perubahan"
-                        onClick={() =>
-                          navigate(
-                            `/admin/log-aktivitas?tab=penduduk&type=family&subject=${encodeURIComponent(family.id)}`,
-                          )
-                        }
-                      >
-                        <History size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="sid-operator-action delete"
-                        title="Hapus KK"
-                        aria-label="Hapus KK"
-                        onClick={() => handleDelete(family)}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
+                  {hasActions && (
+                    <td className="center">
+                      <div className="sid-operator-actions">
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="sid-operator-action edit"
+                            title="Edit KK"
+                            aria-label="Edit KK"
+                            onClick={() => openEdit(family)}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        )}
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="sid-operator-action toggle"
+                            title="Survei sosio-ekonomi"
+                            aria-label="Survei sosio-ekonomi"
+                            onClick={() => openSocioeconomic(family)}
+                          >
+                            <RefreshCw size={16} />
+                          </button>
+                        )}
+                        {canViewHistory && (
+                          <button
+                            type="button"
+                            className="sid-operator-action detail"
+                            title="Riwayat perubahan"
+                            aria-label="Riwayat perubahan"
+                            onClick={() =>
+                              navigate(
+                                `/admin/log-aktivitas?tab=penduduk&type=family&subject=${encodeURIComponent(family.id)}`,
+                              )
+                            }
+                          >
+                            <History size={16} />
+                          </button>
+                        )}
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="sid-operator-action delete"
+                            title="Hapus KK"
+                            aria-label="Hapus KK"
+                            onClick={() => handleDelete(family)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))
             )}

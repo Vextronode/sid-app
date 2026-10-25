@@ -15,6 +15,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAuth } from '@/features/auth/contexts/AuthContext'
 
 import { useWargaList } from '../../features/data-warga/hooks/useWargaList'
 import { useFamilyList } from '../../features/data-warga/hooks/useFamilyList'
@@ -102,6 +103,9 @@ const SECTIONS = [
 
 export default function DataWargaPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  // Log Aktivitas hanya dapat dibuka Petugas Desa.
+  const canViewHistory = user?.role === 'staf_sid'
   const [searchParams, setSearchParams] = useSearchParams()
   const activeSection = searchParams.get('tab') === 'kk' ? 'kk' : 'penduduk'
   const switchSection = (value) =>
@@ -418,7 +422,7 @@ export default function DataWargaPage() {
 
         {activeSection === 'kk' && (
           <div id="data-panel-kk" role="tabpanel" aria-labelledby="data-tab-kk">
-            <FamilyManagementPanel familyList={familyList} />
+            <FamilyManagementPanel familyList={familyList} canViewHistory={canViewHistory} />
           </div>
         )}
 
@@ -555,18 +559,20 @@ export default function DataWargaPage() {
                               >
                                 <Edit size={16} />
                               </button>
-                              <button
-                                type="button"
-                                title="Riwayat perubahan"
-                                className="sid-operator-action detail"
-                                onClick={() =>
-                                  navigate(
-                                    `/admin/log-aktivitas?tab=penduduk&type=citizen&subject=${encodeURIComponent(warga.id)}`,
-                                  )
-                                }
-                              >
-                                <History size={16} />
-                              </button>
+                              {canViewHistory && (
+                                <button
+                                  type="button"
+                                  title="Riwayat perubahan"
+                                  className="sid-operator-action detail"
+                                  onClick={() =>
+                                    navigate(
+                                      `/admin/log-aktivitas?tab=penduduk&type=citizen&subject=${encodeURIComponent(warga.id)}`,
+                                    )
+                                  }
+                                >
+                                  <History size={16} />
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 title="Hapus"
