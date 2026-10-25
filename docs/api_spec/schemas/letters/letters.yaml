@@ -700,7 +700,7 @@ FulfillmentProposal:
   properties:
     action:
       type: string
-      enum: [none, update_citizen, create_citizen, deactivate_members, manual]
+      enum: [none, update_citizen, create_citizen, deactivate_members, update_members, manual]
       example: "update_citizen"
     fulfilled_at:
       type: string
@@ -717,6 +717,18 @@ FulfillmentProposal:
         Isi `letters.fulfillment` setelah diterapkan. update/create_citizen:
         {action, citizen_id, changes{kolom:{old,new}}}; deactivate_members:
         {action, members[{citizen_id, name, changes}]}; manual: {action, notes}.
+    member_changes:
+      type: array
+      description: |
+        Untuk action `update_members`: per anggota (indeks baris repeater)
+        kolom yang diminta berubah: {column, label, current, current_label,
+        proposed, proposed_label, needs_choice}. `needs_choice` = pekerjaan
+        "Lainnya" tanpa id katalog; Kasi/Kaur memilih dari `options`.
+      items:
+        type: object
+    options:
+      type: object
+      description: "Untuk action `update_members`: pilihan nilai per kolom (last_education, religion, marital_status, occupation_id)."
     instructions:
       type: string
       nullable: true

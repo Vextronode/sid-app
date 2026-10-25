@@ -50,6 +50,9 @@ post:
     - deactivate_members: menonaktifkan anggota KK pilihan pemohon
       (`payload[data_subject_field]`) beserta akun login mereka; yang sudah
       nonaktif dilewati, dan 422 bila tidak ada yang aktif.
+    - update_members: mengubah kolom `data_fields` tiap anggota (baris
+      repeater `data_subject_field`); `values` = {<indeks baris>: {<kolom>: nilai}}
+      untuk koreksi, mis. pekerjaan dari katalog bagi usulan "Lainnya".
     - manual: tidak mengubah data; mencatat `notes` dan status log
       "Perubahan data kependudukan ditandai selesai (dikerjakan manual)".
     Bila jenis surat `requires_result_upload`, hasil dari instansi harus

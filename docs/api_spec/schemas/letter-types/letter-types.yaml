@@ -47,6 +47,10 @@ LetterType:
         dengan `{{#each isian}}...{{/each}}`; di dalamnya `{{ no }}` = nomor
         urut dan `{{ sub_isian }}` = nilai baris (family_members: `nama`,
         `nik`, `shdk`, `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir`).
+        Baris sistem `{{#each kk_anggota}}` = rincian KK pemohon (`nama`,
+        `nik`, `shdk`). Placeholder sistem formulir pelayanan:
+        `applicant_family_number` (No. KK pemohon) dan
+        `village_kasi_pemerintahan_name` (petugas F-1.02).
     requirements_info:
       type: string
       nullable: true
@@ -99,12 +103,15 @@ LetterType:
         digital/tanda tangan basah).
     data_action:
       type: string
-      enum: [none, update_citizen, create_citizen, deactivate_members, manual]
+      enum: [none, update_citizen, create_citizen, deactivate_members, update_members, manual]
       example: "none"
       description: |
         Aksi data kependudukan setelah final approve (Terapkan oleh
         Kasi/Kaur/Petugas Desa). `deactivate_members` menonaktifkan anggota
         KK yang dipilih di isian family_members (`data_subject_field`);
+        `update_members` mengubah kolom `data_fields` tiap anggota KK, satu
+        baris repeater (`data_subject_field`) per anggota, sumber kolom =
+        kunci baris (mis. `pekerjaan_menjadi_id`);
         `manual` hanya mencatat "Tandai selesai" setelah Kasi/Kaur mengubah
         data sendiri di Data Penduduk/KK (petunjuk di `data_instructions`).
     form_fields:
@@ -182,8 +189,13 @@ LetterFormField:
       type: array
       description: |
         Untuk type=repeater: sub-isian tiap baris (type text, textarea, date,
-        number, nik, select; boleh `visible_when` yang dinilai per baris).
-        Payload: `payload[nama][i][sub]`.
+        number, nik, select, occupation, family_member; boleh `visible_when`
+        yang dinilai per baris). Payload: `payload[nama][i][sub]`.
+        `family_member` = satu anggota KK pemohon (id warga); saat pengajuan
+        baris ditambah `<sub>_nama`, `_nik`, `_shdk`, `_pendidikan`,
+        `_pekerjaan`, `_agama`, `_status_kawin` (keadaan saat pengajuan).
+        `occupation` di baris disimpan sebagai nama + `<sub>_id` (id katalog,
+        null bila "Lainnya").
       items:
         type: object
     min:

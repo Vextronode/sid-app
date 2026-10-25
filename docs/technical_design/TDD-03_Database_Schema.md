@@ -321,7 +321,7 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 |---|---|---|---|
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | village_id | UUID | FK → villages.id, NOT NULL | Desa pemilik jenis surat |
-| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A11 (Persuratan Desa, `LetterTypeSeeder`), F01 (Pelayanan Desa, `ServiceLetterTypeSeeder`) |
+| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A11 (Persuratan Desa, `LetterTypeSeeder`), F01–F02 (Pelayanan Desa, `ServiceLetterTypeSeeder`) |
 | name | VARCHAR(255) | NOT NULL | |
 | description | TEXT | NULL | |
 | category | VARCHAR(20) | NOT NULL, DEFAULT `persuratan` | `persuratan` (Persuratan Desa) \| `pelayanan` (Pelayanan Desa); pengelompokan pilihan jenis surat, diset seeder |
@@ -338,7 +338,7 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 | requires_result_upload | BOOLEAN | DEFAULT false | true = setelah terbit, pemohon mengunggah hasil dari instansi luar untuk diverifikasi (`letter_results`); Terapkan baru setelah diterima |
 | data_instructions | TEXT | NULL | Petunjuk bagi Kasi/Kaur untuk `data_action = manual` |
 | result_upload_hint | TEXT | NULL | Berkas yang diminta, mis. "KK terbaru dari Disdukcapil" |
-| data_action | VARCHAR(30) | DEFAULT 'none' | `none` \| `update_citizen` \| `create_citizen` \| `deactivate_members` (nonaktifkan anggota KK pilihan pemohon di isian family_members = `data_subject_field`) \| `manual` (Kasi/Kaur mengubah data sendiri lalu Tandai selesai) (enum aplikasi `LetterDataAction`) |
+| data_action | VARCHAR(30) | DEFAULT 'none' | `none` \| `update_citizen` \| `create_citizen` \| `deactivate_members` (nonaktifkan anggota KK pilihan pemohon di isian family_members = `data_subject_field`) \| `update_members` (ubah kolom tiap anggota KK per baris repeater `data_subject_field`) \| `manual` (Kasi/Kaur mengubah data sendiri lalu Tandai selesai) (enum aplikasi `LetterDataAction`) |
 | form_fields | JSON | NULL | Daftar isian `{name, label, type, required, placeholder?, options?, accept?, visible_when?, fields?, min?, max?, item_label?}` (`visible_when` = syarat tampil dari jawaban isian lain, bentuk sama dengan `documents.when`; isian tersembunyi tidak wajib dan nilainya dibuang). `repeater` = baris berulang dengan sub-isian `fields` (payload: array baris); `family_members` = anggota KK pemohon yang dicentang, disimpan di payload sebagai baris siap cetak; type: text, textarea, date, number, nik, select, file, occupation (id katalog `occupations` atau `lainnya` + `<name>_lainnya`; disimpan sebagai nama pekerjaan siap cetak). NULL = isian bebas (teks); array = hanya isian terdaftar |
 | data_fields | JSON | NULL | Kolom `citizens` yang boleh diubah lewat Terapkan: `{column, label, source?, value?, value_label?}` |
 | data_subject_field | VARCHAR(100) | NULL | Nama isian NIK subjek bila yang diubah bukan pemohon (seed A07: `nik_almarhum`) |
