@@ -29,8 +29,11 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
         'village_name_short', 'village_name_upper', 'village_district', 'village_district_upper',
         'village_regency', 'village_regency_upper', 'village_province', 'village_region',
         'village_address', 'village_phone', 'village_postal_code', 'village_email',
-        'village_head_name',
+        'village_head_name', 'applicant_family_number', 'village_kasi_pemerintahan_name',
     ];
+
+    /** Baris sistem {{#each kk_anggota}}: rincian KK pemohon. */
+    private const SYSTEM_LOOP_PLACEHOLDERS = ['no', 'nama', 'nik', 'shdk'];
 
     protected function setUp(): void
     {
@@ -97,7 +100,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // 11 Persuratan Desa (Axx) + Pelayanan Desa (Fxx).
         $this->assertSame(
-            ['persuratan' => 11, 'pelayanan' => 1],
+            ['persuratan' => 11, 'pelayanan' => 2],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -131,7 +134,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // Penguburan menonaktifkan data almarhum; Kelahiran menambah anak.
         $this->assertSame(
-            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'manual'],
+            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'manual', 'F02' => 'update_members'],
             $letterTypes
                 ->filter(fn (LetterType $type) => $type->data_action->value !== 'none')
                 ->mapWithKeys(fn (LetterType $type) => [$type->code => $type->data_action->value])
@@ -164,7 +167,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
      */
     private function sourcesFor(LetterType $letterType): array
     {
-        $sources = self::SYSTEM_PLACEHOLDERS;
+        $sources = [...self::SYSTEM_PLACEHOLDERS, ...self::SYSTEM_LOOP_PLACEHOLDERS];
 
         foreach ((new LetterFormSchema($letterType))->valueFields() as $field) {
             $sources[] = $field['name'];
@@ -180,6 +183,15 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             // Placeholder di dalam {{#each}}: nomor baris dan isi baris.
             if ($field['type'] === 'repeater') {
                 $sources = [...$sources, 'no', ...array_column($field['fields'] ?? [], 'name')];
+
+                foreach ($field['fields'] ?? [] as $subField) {
+                    if ($subField['type'] === 'family_member') {
+                        $sources = [...$sources, ...array_map(
+                            fn (string $key): string => "{$subField['name']}_{$key}",
+                            LetterFormSchema::ROW_MEMBER_KEYS,
+                        )];
+                    }
+                }
             }
 
             if ($field['type'] === 'family_members') {

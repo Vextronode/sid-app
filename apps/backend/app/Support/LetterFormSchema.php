@@ -32,8 +32,18 @@ class LetterFormSchema
 {
     public const FIELD_TYPES = ['text', 'textarea', 'date', 'number', 'nik', 'select', 'file', 'occupation', 'repeater', 'family_members'];
 
-    /** Tipe sub-isian di dalam repeater. */
-    public const ROW_FIELD_TYPES = ['text', 'textarea', 'date', 'number', 'nik', 'select'];
+    /**
+     * Tipe sub-isian di dalam repeater. `family_member` memilih satu anggota
+     * KK pemohon per baris (mis. anggota yang datanya berubah).
+     */
+    public const ROW_FIELD_TYPES = ['text', 'textarea', 'date', 'number', 'nik', 'select', 'occupation', 'family_member'];
+
+    /**
+     * Kolom turunan sub-isian family_member yang dapat dipakai di template
+     * (`{{ <sub>_nama }}` dst.); nilai pendidikan/pekerjaan/agama/status
+     * kawin adalah keadaan saat pengajuan ("Semula").
+     */
+    public const ROW_MEMBER_KEYS = ['nama', 'nik', 'shdk', 'pendidikan', 'pekerjaan', 'agama', 'status_kawin'];
 
     /** Kolom tiap baris family_members yang dapat dipakai di template. */
     public const FAMILY_MEMBER_KEYS = ['nama', 'nik', 'shdk', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir'];
@@ -297,7 +307,7 @@ class LetterFormSchema
             $payload[$field['name']] = array_values(array_map(
                 fn (mixed $row): array => array_intersect_key(
                     is_array($row) ? $row : [],
-                    array_flip(self::visibleRowFieldNames($field, is_array($row) ? $row : [])),
+                    array_flip(self::keptRowKeys($field, is_array($row) ? $row : [])),
                 ),
                 $payload[$field['name']],
             ));
@@ -374,21 +384,7 @@ class LetterFormSchema
             $rules["payload.{$field['name']}"] = [
                 ($field['required'] ?? false) ? 'required' : 'nullable',
                 'string',
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    if ((string) $value === self::OTHER_OCCUPATION) {
-                        return;
-                    }
-
-                    $exists = ctype_digit((string) $value) && Occupation::query()
-                        ->where('village_id', $this->villageId)
-                        ->where('is_active', true)
-                        ->whereKey((int) $value)
-                        ->exists();
-
-                    if (! $exists) {
-                        $fail(':attribute tidak ada di daftar pekerjaan.');
-                    }
-                },
+                $this->occupationRule(),
             ];
             $rules["payload.{$field['name']}_lainnya"] = [
                 "required_if:payload.{$field['name']},".self::OTHER_OCCUPATION,
@@ -477,7 +473,14 @@ class LetterFormSchema
         $required = (bool) ($field['required'] ?? false);
         $min = (int) ($field['min'] ?? ($required ? 1 : 0));
         $max = (int) ($field['max'] ?? self::REPEATER_MAX_ROWS);
-        $allowed = array_column($field['fields'] ?? [], 'name');
+        $allowed = [
+            ...array_column($field['fields'] ?? [], 'name'),
+            ...array_map(
+                fn (array $subField): string => "{$subField['name']}_lainnya",
+                array_filter($field['fields'] ?? [], fn (array $subField): bool => ($subField['type'] ?? 'text') === 'occupation'),
+            ),
+        ];
+        $memberIds = $this->familyMembers()->pluck('id')->map(fn ($id): string => (string) $id)->all();
 
         $rules = [
             "payload.{$name}" => [
@@ -502,13 +505,143 @@ class LetterFormSchema
             $visible = self::visibleRowFieldNames($field, $row);
 
             foreach ($field['fields'] ?? [] as $subField) {
-                $rules["payload.{$name}.{$index}.{$subField['name']}"] = in_array($subField['name'], $visible, true)
-                    ? [($subField['required'] ?? false) ? 'required' : 'nullable', ...self::typeRules($subField)]
-                    : ['exclude'];
+                $key = "payload.{$name}.{$index}.{$subField['name']}";
+                $type = $subField['type'] ?? 'text';
+
+                if (! in_array($subField['name'], $visible, true)) {
+                    $rules[$key] = ['exclude'];
+                    $rules["{$key}_lainnya"] = ['exclude'];
+
+                    continue;
+                }
+
+                $presence = ($subField['required'] ?? false) ? 'required' : 'nullable';
+                $rules[$key] = match ($type) {
+                    'family_member' => [$presence, 'string', Rule::in($memberIds)],
+                    'occupation' => [$presence, 'string', $this->occupationRule()],
+                    default => [$presence, ...self::typeRules($subField)],
+                };
+
+                if ($type === 'occupation') {
+                    $rules["{$key}_lainnya"] = ["required_if:{$key},".self::OTHER_OCCUPATION, 'nullable', 'string', 'max:100'];
+                }
             }
         }
 
         return $rules;
+    }
+
+    /**
+     * Nilai isian pekerjaan: id katalog aktif desa ini, atau "Lainnya".
+     */
+    private function occupationRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            if ((string) $value === self::OTHER_OCCUPATION) {
+                return;
+            }
+
+            $exists = ctype_digit((string) $value) && Occupation::query()
+                ->where('village_id', $this->villageId)
+                ->where('is_active', true)
+                ->whereKey((int) $value)
+                ->exists();
+
+            if (! $exists) {
+                $fail(':attribute tidak ada di daftar pekerjaan.');
+            }
+        };
+    }
+
+    /**
+     * Kunci baris yang disimpan: sub-isian yang tampil, ditambah teks
+     * "Lainnya" untuk sub-isian pekerjaan.
+     *
+     * @param  array<string, mixed>  $field
+     * @param  array<string, mixed>  $row
+     * @return array<int, string>
+     */
+    private static function keptRowKeys(array $field, array $row): array
+    {
+        $visible = self::visibleRowFieldNames($field, $row);
+        $keys = $visible;
+
+        foreach ($field['fields'] ?? [] as $subField) {
+            if (($subField['type'] ?? 'text') === 'occupation' && in_array($subField['name'], $visible, true)) {
+                $keys[] = "{$subField['name']}_lainnya";
+            }
+        }
+
+        return $keys;
+    }
+
+    /**
+     * Baris repeater disimpan siap cetak:
+     *  - sub-isian pekerjaan: nama pekerjaan (katalog, atau teks "Lainnya"
+     *    yang dirapikan) dan `<sub>_id` (id katalog; null bila "Lainnya");
+     *  - sub-isian family_member: id warga tetap disimpan, ditambah kolom
+     *    turunan `<sub>_nama`, `<sub>_nik`, `<sub>_shdk`, dan keadaan
+     *    pendidikan/pekerjaan/agama/status kawin saat pengajuan.
+     *
+     * @param  array<string, mixed>|null  $payload  payload yang sudah tervalidasi
+     * @return array<string, mixed>|null
+     */
+    public function resolveRows(?array $payload): ?array
+    {
+        if ($payload === null) {
+            return null;
+        }
+
+        $catalog = null;
+        $members = null;
+
+        foreach ($this->fieldsOfType('repeater') as $field) {
+            if (! is_array($payload[$field['name']] ?? null)) {
+                continue;
+            }
+
+            foreach ($payload[$field['name']] as $index => $row) {
+                foreach ($field['fields'] ?? [] as $subField) {
+                    $name = $subField['name'];
+                    $value = $row[$name] ?? null;
+
+                    if (($subField['type'] ?? 'text') === 'occupation') {
+                        $other = $row["{$name}_lainnya"] ?? null;
+                        unset($row["{$name}_lainnya"]);
+
+                        if ($value !== null && $value !== '') {
+                            $catalog ??= Occupation::query()
+                                ->where('village_id', $this->villageId)
+                                ->where('is_active', true)
+                                ->pluck('name', 'id')
+                                ->all();
+                            $isOther = (string) $value === self::OTHER_OCCUPATION;
+                            $row["{$name}_id"] = $isOther ? null : (int) $value;
+                            $row[$name] = $isOther
+                                ? OccupationName::normalize((string) $other, array_values($catalog))
+                                : $catalog[(int) $value];
+                        }
+                    }
+
+                    if (($subField['type'] ?? 'text') === 'family_member' && $value !== null && $value !== '') {
+                        $members ??= $this->familyMembers()->loadMissing('occupation')->keyBy('id');
+                        $member = $members[$value];
+
+                        $row["{$name}_nama"] = $member->name;
+                        $row["{$name}_nik"] = $member->nik;
+                        $row["{$name}_shdk"] = self::familyRoleLabel($member->family_role);
+                        $row["{$name}_pendidikan"] = CitizenLabels::of(CitizenLabels::LAST_EDUCATION, $member->last_education);
+                        $row["{$name}_pekerjaan"] = $member->occupation?->name ?? '-';
+                        $row["{$name}_agama"] = CitizenLabels::of(CitizenLabels::RELIGION, $member->religion);
+                        $row["{$name}_status_kawin"] = CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $member->marital_status);
+                    }
+                }
+
+                $payload[$field['name']][$index] = $row;
+            }
+        }
+
+        return $payload;
     }
 
     /**

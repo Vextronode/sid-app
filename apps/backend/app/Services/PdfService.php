@@ -186,7 +186,8 @@ class PdfService
                 TemplateLoops::apply(
                     (string) ($source ?? $context['template'] ?? ''),
                     $context['form_fields'] ?? $letter->letterType?->form_fields ?? [],
-                    $payload,
+                    // Baris sistem: rincian KK pemohon saat surat dibuat/terbit.
+                    [...$payload, 'kk_anggota' => $context['applicant']['family_members'] ?? []],
                 ),
                 $payload,
             )
@@ -245,6 +246,8 @@ class PdfService
             '{{ applicant_birth_place_date }}' => $context['applicant']['birth_place_date'],
             // Snapshot surat lama belum menyimpan pekerjaan pemohon.
             '{{ applicant_occupation }}' => $context['applicant']['occupation'] ?? '-',
+            '{{ applicant_family_number }}' => $context['applicant']['family_number'] ?? '________________________',
+            '{{ village_kasi_pemerintahan_name }}' => $context['village']['kasi_pemerintahan_name'] ?? '________________________',
             '{{ purpose }}' => $letter->purpose ?? '________________________________________',
             '{{ submitted_at }}' => $context['submitted_at'],
             '{{ issued_at }}' => $context['issued_at'] ?? $context['submitted_at'],

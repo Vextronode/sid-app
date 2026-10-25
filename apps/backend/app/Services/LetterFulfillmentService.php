@@ -9,10 +9,12 @@ use App\Http\Requests\StoreCitizenRequest;
 use App\Http\Requests\UpdateCitizenRequest;
 use App\Models\Citizen;
 use App\Models\Letter;
+use App\Models\Occupation;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
 use App\Repositories\UserRepository;
+use App\Support\CitizenLabels;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +66,8 @@ class LetterFulfillmentService
             'result' => $letter->fulfillment,
             'instructions' => $action === LetterDataAction::Manual ? $letter->letterType?->data_instructions : null,
             'members' => $action === LetterDataAction::DeactivateMembers ? $this->memberProposal($letter) : [],
+            'member_changes' => $action === LetterDataAction::UpdateMembers ? $this->memberChangeProposal($letter) : [],
+            'options' => $action === LetterDataAction::UpdateMembers ? $this->columnOptions($letter) : (object) [],
             // Diisi bila subjek perubahan bukan pemohon (mis. almarhum):
             // warga dicari lewat NIK yang ditulis pemohon di form.
             'subject' => $subjectField === null || $action !== LetterDataAction::UpdateCitizen ? null : [
@@ -121,6 +125,7 @@ class LetterFulfillmentService
                         : $this->createCitizen($locked, $actor, $this->finalValues($locked, $values)),
                 ),
                 LetterDataAction::DeactivateMembers => $this->deactivateMembers($locked, $actor),
+                LetterDataAction::UpdateMembers => $this->updateMembers($locked, $actor, $values),
                 LetterDataAction::Manual => [['action' => $action->value, 'notes' => $notes], []],
                 default => abort(422, 'Jenis surat ini tidak memiliki aksi perubahan data.'),
             };
@@ -236,6 +241,207 @@ class LetterFulfillmentService
         }
 
         return [['action' => LetterDataAction::DeactivateMembers->value, 'members' => $members], $touched];
+    }
+
+    /**
+     * Usulan per anggota (satu baris repeater): kolom yang diminta berubah
+     * beserta nilai sekarang dan nilai usulan. Pekerjaan "Lainnya" tidak
+     * punya id katalog, jadi ditandai `needs_choice` agar Kasi/Kaur memilih
+     * pekerjaan dari katalog saat Terapkan.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function memberChangeProposal(Letter $letter): array
+    {
+        $memberField = $this->rowMemberField($letter);
+        $rows = $this->memberRows($letter);
+        $citizens = Citizen::query()
+            ->with('occupation')
+            ->where('village_id', $letter->village_id)
+            ->whereIn('id', array_filter(array_column($rows, $memberField)))
+            ->get()
+            ->keyBy('id');
+
+        $proposal = [];
+
+        foreach ($rows as $index => $row) {
+            $citizen = $citizens[$row[$memberField] ?? ''] ?? null;
+            $fields = [];
+
+            foreach ($this->rowChanges($letter, $row) as $column => $change) {
+                $fields[] = [
+                    'column' => $column,
+                    'label' => $change['label'],
+                    'current' => $citizen ? $this->scalar($citizen->getAttribute($column)) : null,
+                    'current_label' => $citizen ? $this->columnLabel($column, $citizen) : '-',
+                    'proposed' => $change['value'],
+                    'proposed_label' => $change['display'],
+                    'needs_choice' => $change['value'] === null,
+                ];
+            }
+
+            $proposal[] = [
+                'index' => $index,
+                'citizen_id' => $row[$memberField] ?? null,
+                'name' => $row["{$memberField}_nama"] ?? $citizen?->name ?? '-',
+                'found' => $citizen !== null,
+                'fields' => $fields,
+            ];
+        }
+
+        return $proposal;
+    }
+
+    /**
+     * Terapkan perubahan per anggota. $values[<indeks baris>][<kolom>] adalah
+     * koreksi Kasi/Kaur (mis. pekerjaan dari katalog untuk usulan "Lainnya").
+     *
+     * @param  array<int|string, mixed>  $values
+     * @return array{0: array<string, mixed>, 1: array<int, array{0: Citizen, 1: array<string, mixed>}>}
+     */
+    private function updateMembers(Letter $letter, User $actor, array $values): array
+    {
+        $memberField = $this->rowMemberField($letter);
+        $members = [];
+        $touched = [];
+
+        foreach ($this->memberRows($letter) as $index => $row) {
+            $citizen = Citizen::query()
+                ->where('village_id', $letter->village_id)
+                ->find($row[$memberField] ?? null);
+
+            if ($citizen === null) {
+                throw ValidationException::withMessages([
+                    "values.{$index}" => ['Anggota keluarga pada baris '.($index + 1).' tidak ditemukan di data warga.'],
+                ]);
+            }
+
+            $overrides = is_array($values[$index] ?? null) ? $values[$index] : [];
+            $final = [];
+
+            foreach ($this->rowChanges($letter, $row) as $column => $change) {
+                $value = ($overrides[$column] ?? '') !== '' ? $overrides[$column] : $change['value'];
+
+                if ($value !== null && $value !== '') {
+                    $final[$column] = $value;
+                }
+            }
+
+            if ($final === []) {
+                continue;
+            }
+
+            $validated = $this->validate($final, Arr::only($this->updateRules(), array_keys($final)));
+            $changes = [];
+
+            foreach ($validated as $column => $value) {
+                $old = $this->scalar($citizen->getAttribute($column));
+
+                if ($old != $value) {
+                    $changes[$column] = ['old' => $old, 'new' => $value];
+                }
+            }
+
+            // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
+            $citizen = $this->citizenService->update($citizen, $validated, $actor, audit: false);
+            $members[] = ['citizen_id' => $citizen->id, 'name' => $citizen->name, 'changes' => $changes];
+            $touched[] = [$citizen, $changes];
+        }
+
+        if ($members === []) {
+            abort(422, 'Tidak ada perubahan data yang dapat diterapkan dari surat ini.');
+        }
+
+        return [['action' => LetterDataAction::UpdateMembers->value, 'members' => $members], $touched];
+    }
+
+    /**
+     * Kolom yang diminta berubah pada satu baris: dari data_fields yang
+     * sumbernya terisi. Sumber berakhiran `_id` (pekerjaan) dianggap
+     * diminta bila isian aslinya (tanpa `_id`) terisi, walau id-nya kosong.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<string, array{label: string, value: mixed, display: string}>
+     */
+    private function rowChanges(Letter $letter, array $row): array
+    {
+        $changes = [];
+
+        foreach ($this->fields($letter) as $field) {
+            $source = (string) ($field['source'] ?? '');
+            $base = str_ends_with($source, '_id') ? substr($source, 0, -3) : $source;
+            $requested = ($row[$base] ?? '') !== '' && ($row[$base] ?? null) !== null;
+
+            if (! $requested) {
+                continue;
+            }
+
+            $value = $row[$source] ?? null;
+            $changes[$field['column']] = [
+                'label' => $field['label'] ?? $field['column'],
+                'value' => $value === '' ? null : $value,
+                'display' => $this->displayValue($field['column'], $row[$base]),
+            ];
+        }
+
+        return $changes;
+    }
+
+    /**
+     * Pilihan nilai per kolom untuk koreksi saat Terapkan.
+     *
+     * @return array<string, array<int, array{value: string|int, label: string}>>
+     */
+    private function columnOptions(Letter $letter): array
+    {
+        $toOptions = fn (array $labels): array => array_map(
+            fn (string $value, string $label): array => ['value' => $value, 'label' => $label],
+            array_keys($labels),
+            $labels,
+        );
+
+        return [
+            'last_education' => $toOptions(CitizenLabels::LAST_EDUCATION),
+            'religion' => $toOptions(CitizenLabels::RELIGION),
+            'marital_status' => $toOptions(CitizenLabels::MARITAL_STATUS),
+            'occupation_id' => Occupation::query()
+                ->where('village_id', $letter->village_id)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn (Occupation $occupation): array => ['value' => $occupation->id, 'label' => $occupation->name])
+                ->all(),
+        ];
+    }
+
+    private function columnLabel(string $column, Citizen $citizen): string
+    {
+        return match ($column) {
+            'occupation_id' => $citizen->occupation?->name ?? '-',
+            default => $this->displayValue($column, $citizen->getAttribute($column)),
+        };
+    }
+
+    private function displayValue(string $column, mixed $value): string
+    {
+        return match ($column) {
+            'last_education' => CitizenLabels::of(CitizenLabels::LAST_EDUCATION, $value),
+            'religion' => CitizenLabels::of(CitizenLabels::RELIGION, $value),
+            'marital_status' => CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $value),
+            default => is_scalar($value) && $value !== '' ? (string) $value : '-',
+        };
+    }
+
+    /**
+     * Sub-isian family_member pada repeater data_subject_field.
+     */
+    private function rowMemberField(Letter $letter): string
+    {
+        $subject = $letter->letterType?->data_subject_field;
+        $repeater = collect($letter->letterType?->form_fields ?? [])->firstWhere('name', $subject);
+
+        return (string) (collect($repeater['fields'] ?? [])->firstWhere('type', 'family_member')['name'] ?? 'anggota');
     }
 
     /**

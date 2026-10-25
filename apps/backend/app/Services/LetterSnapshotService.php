@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Enums\LetterStatus;
+use App\Enums\OfficialPosition;
 use App\Enums\ResidencyType;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
+use App\Support\LetterFormSchema;
 
 /**
  * Membekukan data yang dipakai untuk merender surat pada saat final
@@ -138,6 +140,17 @@ class LetterSnapshotService
                 'birth_place_date' => $this->birthPlaceDate($citizen),
                 'resident_phrase' => $this->residentPhrase($citizen),
                 'occupation' => $citizen?->occupation?->name ?: '-',
+                'family_number' => $citizen?->family?->no_kk,
+                // Rincian KK pemohon untuk formulir pelayanan ({{#each kk_anggota}}).
+                'family_members' => $citizen === null ? [] : (new LetterFormSchema(null, $citizen))
+                    ->familyMembers()
+                    ->map(fn ($member): array => [
+                        'nama' => $member->name,
+                        'nik' => $member->nik,
+                        'shdk' => LetterFormSchema::familyRoleLabel($member->family_role),
+                    ])
+                    ->values()
+                    ->all(),
             ],
             'village' => [
                 'name' => $letter->village?->name,
@@ -149,6 +162,10 @@ class LetterSnapshotService
                 'postal_code' => $letter->village?->postal_code,
                 'email' => $letter->village?->email,
                 'stamp_img' => $letter->village?->stamp_img,
+                // Petugas pada formulir F-1.02.
+                'kasi_pemerintahan_name' => $this->officialRepository
+                    ->findActiveByPositionWithCitizen($letter->village_id, OfficialPosition::KasiPemerintahan->value)
+                    ?->citizen?->name,
             ],
             'signer' => [
                 'official_id' => $kades?->id,

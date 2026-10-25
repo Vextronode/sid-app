@@ -95,11 +95,11 @@ class LetterService
             // surat memerlukannya, ia menjadi isian di payload.
             'purpose' => null,
 
-            // Isian tersembunyi (visible_when) dibuang; isian pekerjaan
-            // disimpan sebagai nama siap cetak.
-            'payload' => $schema->resolveFamilyMembers(
+            // Isian tersembunyi (visible_when) dibuang; isian pekerjaan,
+            // anggota KK, dan baris berulang disimpan siap cetak.
+            'payload' => $schema->resolveRows($schema->resolveFamilyMembers(
                 $schema->resolveOccupations($schema->visiblePayload($data['payload'] ?? null))
-            ),
+            )),
 
             'notes' => null,
 

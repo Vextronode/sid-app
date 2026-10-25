@@ -281,6 +281,21 @@ class OfficialRepository
         return $this->activeVillageHeadQuery($villageId)->firstOrFail();
     }
 
+    /**
+     * Pejabat aktif sebuah jabatan di desa (mis. Kasi Pemerintahan sebagai
+     * petugas pada formulir F-1.02).
+     */
+    public function findActiveByPositionWithCitizen(string $villageId, string $position): ?Official
+    {
+        return Official::query()
+            ->with('citizen')
+            ->where('village_id', $villageId)
+            ->where('position', $position)
+            ->where('is_active', true)
+            ->whereNull('ended_at')
+            ->first();
+    }
+
     public function findActiveVillageHeadWithCitizen(string $villageId): ?Official
     {
         return $this->activeVillageHeadQuery($villageId)->first();
