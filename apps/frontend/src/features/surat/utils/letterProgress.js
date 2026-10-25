@@ -53,6 +53,17 @@ export function getLetterProgress(letter) {
   const status = String(letter?.status ?? '').toLowerCase()
   const stages = letter?.result_stage ? RESULT_LETTER_STAGES : LETTER_STAGES
 
+  if (status === SURAT_STATUS.APPROVED && letter?.result_rejected) {
+    return {
+      stages,
+      tone: 'pending',
+      current: 4,
+      rejected: false,
+      message:
+        'Hasil yang diunggah ditolak desa. Buka detail untuk melihat alasannya dan unggah ulang.',
+    }
+  }
+
   if (status === SURAT_STATUS.APPROVED && RESULT_PROGRESS[letter?.result_stage]) {
     return { ...RESULT_PROGRESS[letter.result_stage], stages, rejected: false }
   }

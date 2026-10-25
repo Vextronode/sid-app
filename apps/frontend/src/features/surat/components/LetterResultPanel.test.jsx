@@ -49,20 +49,40 @@ describe('LetterResultPanel', () => {
     )
 
     expect(screen.getByText(/KK terbaru/)).toBeTruthy()
-    expect(screen.getByText(/Foto KK buram/)).toBeTruthy()
+    // Riwayat unggahan: status dan alasan per unggahan.
+    const history = screen
+      .getByRole('button', { name: 'kk.jpg' })
+      .closest('.sid-result-history-item')
+    expect(history.textContent).toMatch(/Ditolak/)
+    expect(history.textContent).toMatch(/Alasan: Foto KK buram/)
     fireEvent.click(screen.getByRole('button', { name: 'kk.jpg' }))
     expect(onOpenFile).toHaveBeenCalledWith('/api/letters/l-1/attachments/3')
 
-    const submit = screen.getByRole('button', { name: 'Unggah hasil' })
+    // Unggahan terakhir ditolak: diminta unggah ulang di surat yang sama.
+    const alert = screen.getByRole('alert')
+    expect(alert.textContent).toMatch(/Unggahan terakhir ditolak desa/)
+    expect(alert.textContent).toMatch(/Alasan: Foto KK buram/)
+    const submit = screen.getByRole('button', { name: 'Unggah ulang' })
     expect(submit).toBeDisabled()
 
-    const file = new File(['kk'], 'kk-baru.pdf', { type: 'application/pdf' })
+    // Berkas dipilih bertahap; pilihan baru menambah, bukan menimpa.
+    const first = new File(['kk'], 'kk-baru.pdf', { type: 'application/pdf' })
+    const second = new File(['akta'], 'akta.jpg', { type: 'image/jpeg' })
     fireEvent.change(screen.getByLabelText('Berkas hasil dari instansi'), {
-      target: { files: [file] },
+      target: { files: [first] },
+    })
+    fireEvent.change(screen.getByLabelText('Berkas hasil dari instansi'), {
+      target: { files: [second] },
+    })
+    expect(screen.getByText('2/5 berkas dipilih.', { exact: false })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus akta.jpg' }))
+    fireEvent.change(screen.getByLabelText('Berkas hasil dari instansi'), {
+      target: { files: [second] },
     })
     fireEvent.click(submit)
 
-    await waitFor(() => expect(submitLetterResult).toHaveBeenCalledWith('l-1', [file]))
+    await waitFor(() => expect(submitLetterResult).toHaveBeenCalledWith('l-1', [first, second]))
     expect(onChanged).toHaveBeenCalled()
   })
 

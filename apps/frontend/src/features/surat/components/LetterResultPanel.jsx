@@ -30,10 +30,32 @@ function serverMessage(error, fallback) {
   return error?.response?.data?.message ?? fallback
 }
 
-function UploadForm({ letterId, onDone }) {
+function UploadForm({ letterId, resubmit, onDone }) {
   const [files, setFiles] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  // Berkas dipilih bertahap: tiap pilihan menambah daftar (bukan menimpa)
+  // sampai batas MAX_FILES; berkas yang sama tidak terdaftar dua kali.
+  const addFiles = (event) => {
+    const picked = Array.from(event.target.files ?? [])
+    event.target.value = ''
+
+    setFiles((current) => {
+      const known = new Set(current.map((file) => `${file.name}:${file.size}`))
+      const fresh = picked.filter((file) => !known.has(`${file.name}:${file.size}`))
+      const next = [...current, ...fresh]
+
+      setError(next.length > MAX_FILES ? `Maksimal ${MAX_FILES} berkas per unggahan.` : '')
+
+      return next.slice(0, MAX_FILES)
+    })
+  }
+
+  const removeFile = (index) => {
+    setFiles((current) => current.filter((_, position) => position !== index))
+    setError('')
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -64,15 +86,40 @@ function UploadForm({ letterId, onDone }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <input
-        type="file"
-        multiple
-        accept=".pdf,.jpg,.jpeg,.png"
-        aria-label="Berkas hasil dari instansi"
-        onChange={(event) => setFiles(Array.from(event.target.files ?? []).slice(0, MAX_FILES))}
-      />
+      {files.length > 0 && (
+        <ul className="sid-result-files" aria-label="Berkas yang akan diunggah">
+          {files.map((file, index) => (
+            <li key={`${file.name}:${file.size}`}>
+              <span>{file.name}</span>
+              <button
+                type="button"
+                className="sid-row-action danger"
+                onClick={() => removeFile(index)}
+                aria-label={`Hapus ${file.name}`}
+              >
+                Hapus
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {files.length < MAX_FILES && (
+        <label className="sid-btn sid-btn-secondary sid-result-add">
+          {files.length === 0 ? 'Pilih berkas' : 'Tambah berkas'}
+          <input
+            type="file"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png"
+            aria-label="Berkas hasil dari instansi"
+            className="sr-only"
+            onChange={addFiles}
+          />
+        </label>
+      )}
       <p className="sid-upload-description">
-        PDF, JPG, atau PNG; maksimal {MAX_FILES} berkas, masing-masing 2 MB.
+        PDF, JPG, atau PNG; maksimal {MAX_FILES} berkas, masing-masing 2 MB. {files.length}/
+        {MAX_FILES} berkas dipilih.
       </p>
 
       {error && (
@@ -82,7 +129,7 @@ function UploadForm({ letterId, onDone }) {
       )}
 
       <button type="submit" className="sid-primary-button" disabled={saving || files.length === 0}>
-        {saving ? 'Mengunggah...' : 'Unggah hasil'}
+        {saving ? 'Mengunggah...' : resubmit ? 'Unggah ulang' : 'Unggah hasil'}
       </button>
     </form>
   )
@@ -137,10 +184,11 @@ function ReviewForm({ letterId, resultId, onDone }) {
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      {/* Dua tombol sama lebar; Tolak aktif setelah alasan diisi. */}
+      <div className="sid-result-decision">
         <button
           type="button"
-          className="sid-primary-button"
+          className="sid-result-decision-button accept"
           disabled={saving}
           onClick={() => decide('accepted')}
         >
@@ -148,7 +196,7 @@ function ReviewForm({ letterId, resultId, onDone }) {
         </button>
         <button
           type="button"
-          className="sid-btn sid-btn-secondary"
+          className="sid-result-decision-button reject"
           disabled={saving || notes.trim() === ''}
           onClick={() => decide('rejected')}
         >
@@ -166,46 +214,65 @@ function ReviewForm({ letterId, resultId, onDone }) {
 export function LetterResultPanel({ letter, onChanged, onOpenFile }) {
   const results = letter.results ?? []
   const latest = results[results.length - 1]
+  // Ditolak (mis. foto buram): unggah ulang di surat ini, tanpa pengajuan baru.
+  const rejected = letter.result_stage === 'awaiting_upload' && latest?.status === 'rejected'
 
   return (
-    <section className="sid-modal-note" aria-label="Hasil dari instansi">
+    <section className="sid-modal-note sid-result-panel" aria-label="Hasil dari instansi">
       <p className="sid-modal-note-label">Hasil dari Instansi</p>
-      <p className="sid-modal-note-text">
-        {STAGE_TEXT[letter.result_stage]}
-        {letter.result_stage === 'awaiting_upload' && letter.result_upload_hint && (
-          <>
-            {' '}
-            <strong>Yang diunggah:</strong> {letter.result_upload_hint}
-          </>
-        )}
-      </p>
 
-      {results.length > 0 && (
-        <ul className="sid-modal-note-text">
-          {results.map((result) => (
-            <li key={result.id}>
-              <strong>{new Date(result.submitted_at).toLocaleString('id-ID')}</strong> —{' '}
-              {RESULT_STATUS[result.status] ?? result.status}
-              {result.review_notes ? `: ${result.review_notes}` : ''}
-              <ul>
-                {(result.attachments ?? []).map((attachment) => (
-                  <li key={attachment.id}>
-                    <button
-                      type="button"
-                      className="underline"
-                      onClick={() => onOpenFile(attachment.url)}
-                    >
-                      {attachment.original_name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ul>
+      {rejected && (
+        <div role="alert" className="sid-result-rejected">
+          <p className="sid-result-rejected-title">Unggahan terakhir ditolak desa</p>
+          {latest.review_notes && (
+            <p className="sid-result-rejected-reason">Alasan: {latest.review_notes}</p>
+          )}
+          <p>Unggah ulang berkas yang benar di bawah ini; tidak perlu mengajukan ulang.</p>
+        </div>
       )}
 
-      {letter.can_upload_result && <UploadForm letterId={letter.id} onDone={onChanged} />}
+      <p className="sid-modal-note-text">{STAGE_TEXT[letter.result_stage]}</p>
+
+      {letter.result_stage === 'awaiting_upload' && letter.result_upload_hint && (
+        <div className="sid-result-hint">
+          <p className="sid-result-hint-label">Yang perlu diunggah</p>
+          <p>{letter.result_upload_hint}</p>
+        </div>
+      )}
+
+      {results.length > 0 && (
+        <div className="sid-result-history">
+          <p className="sid-result-hint-label">Riwayat unggahan</p>
+          <ol className="sid-result-history-list">
+            {results.map((result) => (
+              <li key={result.id} className="sid-result-history-item">
+                <div className="sid-result-history-head">
+                  <span>{new Date(result.submitted_at).toLocaleString('id-ID')}</span>
+                  <span className={`sid-result-status ${result.status}`}>
+                    {RESULT_STATUS[result.status] ?? result.status}
+                  </span>
+                </div>
+                {result.review_notes && (
+                  <p className="sid-result-history-notes">Alasan: {result.review_notes}</p>
+                )}
+                <ul className="sid-result-history-files">
+                  {(result.attachments ?? []).map((attachment) => (
+                    <li key={attachment.id}>
+                      <button type="button" onClick={() => onOpenFile(attachment.url)}>
+                        {attachment.original_name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {letter.can_upload_result && (
+        <UploadForm letterId={letter.id} resubmit={rejected} onDone={onChanged} />
+      )}
 
       {letter.can_review_result && latest && (
         <ReviewForm letterId={letter.id} resultId={latest.id} onDone={onChanged} />

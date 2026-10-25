@@ -27,6 +27,13 @@ describe('getLetterProgress', () => {
       current: 6,
     })
     expect(getLetterProgress({ status: 'pending', current_step_order: 1 }).stages).toHaveLength(4)
+    expect(
+      getLetterProgress({
+        status: 'approved',
+        result_stage: 'awaiting_upload',
+        result_rejected: true,
+      }).message,
+    ).toMatch(/ditolak desa.*unggah ulang/)
   })
 
   it('warns when an issued letter has expired', () => {
