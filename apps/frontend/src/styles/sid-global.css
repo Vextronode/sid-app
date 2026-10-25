@@ -23127,3 +23127,46 @@ button.sid-operator-profile {
   background: var(--sid-status-progress-bg);
   color: var(--sid-primary);
 }
+
+/* Isian berulang di form surat (RepeaterField): satu kartu per baris. */
+.sid-repeater {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+.sid-repeater-row {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+
+  margin: 0;
+  padding: 14px 16px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+}
+
+.sid-repeater-row-title {
+  padding: 0 4px;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sid-repeater-row > .sid-row-action {
+  align-self: flex-start;
+}
+
+.sid-repeater > .sid-btn {
+  align-self: flex-start;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+}

@@ -203,6 +203,22 @@ export function LetterExtrasPanel({ letterId }) {
     .filter((field) => field.type !== 'file')
     .map((field) => {
       const raw = letter.payload?.[field.name]
+
+      // Isian berulang: satu baris per entri (anggota KK memakai nama).
+      if (Array.isArray(raw)) {
+        const value = raw
+          .map(
+            (row) =>
+              row?.nama ??
+              Object.values(row ?? {})
+                .filter((cell) => cell !== '' && cell !== null)
+                .join(' / '),
+          )
+          .join('; ')
+
+        return { name: field.name, label: field.label, value }
+      }
+
       const option = (field.options ?? []).find((item) => String(item.value) === String(raw))
 
       return { name: field.name, label: field.label, value: option?.label ?? raw }

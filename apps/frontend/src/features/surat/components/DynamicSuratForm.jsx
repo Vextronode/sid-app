@@ -6,7 +6,9 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 
 import { getSuratSchema, signerFieldNames } from '../validation/suratSchema'
 import { buildLetterFormData } from '../utils/letterFormData'
+import { repeaterMinRows, visibleFields } from '../utils/fieldCondition'
 import { getMySignature } from '../api/signatureApi'
+import { getFamilyMembers } from '../api/letterExtrasApi'
 import { getOccupations } from '@/features/pekerjaan/api'
 
 import { CheckCircle2 } from 'lucide-react'
@@ -16,6 +18,8 @@ import { useSubmitSurat } from '../hooks/useSubmitSurat'
 import { AutoFillProfile } from './AutoFillProfile'
 import { FileUploader } from './FileUploader'
 import { OccupationField } from './OccupationField'
+import { FamilyMembersField } from './FamilyMembersField'
+import { RepeaterField } from './RepeaterField'
 
 const WET_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png'
 
@@ -60,6 +64,9 @@ export function DynamicSuratForm({
   const needsOccupations = config.fields.some((field) => field.type === 'occupation')
   const [occupations, setOccupations] = useState([])
   const [occupationsFailed, setOccupationsFailed] = useState(false)
+  const needsFamily = config.fields.some((field) => field.type === 'family_members')
+  const [familyMembers, setFamilyMembers] = useState([])
+  const [familyFailed, setFamilyFailed] = useState(false)
 
   const {
     register,
@@ -71,6 +78,17 @@ export function DynamicSuratForm({
     resolver: zodResolver(getSuratSchema(config)),
     defaultValues: {
       ...Object.fromEntries(otherSlots.map((slot) => [signerFieldNames(slot.key).mode, 'digital'])),
+      // Isian berulang langsung menampilkan jumlah baris minimalnya.
+      ...Object.fromEntries(
+        config.fields
+          .filter((field) => field.type === 'repeater')
+          .map((field) => [field.name, Array.from({ length: repeaterMinRows(field) }, () => ({}))]),
+      ),
+      ...Object.fromEntries(
+        config.fields
+          .filter((field) => field.type === 'family_members')
+          .map((field) => [field.name, []]),
+      ),
       ...initialData,
     },
     mode: 'onSubmit',
@@ -117,6 +135,24 @@ export function DynamicSuratForm({
       active = false
     }
   }, [needsOccupations])
+
+  useEffect(() => {
+    if (!needsFamily) return undefined
+
+    let active = true
+
+    getFamilyMembers()
+      .then((members) => {
+        if (active) setFamilyMembers(members ?? [])
+      })
+      .catch(() => {
+        if (active) setFamilyFailed(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [needsFamily])
 
   const handleFileChange = (e, name, multiple = true) => {
     const files = Array.from(e.target.files || [])
@@ -225,7 +261,7 @@ export function DynamicSuratForm({
             </p>
           )}
 
-          {config.fields.map((field) => {
+          {visibleFields(config.fields, watchedFormData ?? {}).map((field) => {
             const fieldError = errors[field.name]
             const inputClass = `sid-input ${fieldError ? 'sid-input-error' : ''}`
 
@@ -316,6 +352,27 @@ export function DynamicSuratForm({
                   />
                 )}
 
+                {field.type === 'repeater' && (
+                  <RepeaterField
+                    field={field}
+                    control={control}
+                    register={register}
+                    rows={watchedFormData?.[field.name]}
+                    errors={errors}
+                  />
+                )}
+
+                {field.type === 'family_members' && (
+                  <FamilyMembersField
+                    field={field}
+                    members={familyMembers}
+                    loadFailed={familyFailed}
+                    value={watchedFormData?.[field.name]}
+                    setValue={setValue}
+                    errors={errors}
+                  />
+                )}
+
                 {field.type === 'file' && (
                   <FileUploader
                     field={field}
@@ -325,7 +382,8 @@ export function DynamicSuratForm({
                   />
                 )}
 
-                {field.type !== 'occupation' && renderError(field.name)}
+                {!['occupation', 'repeater', 'family_members'].includes(field.type) &&
+                  renderError(field.name)}
               </div>
             )
           })}

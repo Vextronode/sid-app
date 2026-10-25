@@ -3,6 +3,7 @@ import {
   otherOccupationFieldName,
   signerFieldNames,
 } from '../validation/suratSchema'
+import { visibleFields } from './fieldCondition'
 
 /**
  * Menyusun FormData untuk POST /api/letters dari nilai form.
@@ -14,13 +15,36 @@ export function buildLetterFormData(config, letterTypeId, formData) {
 
   payload.append('letter_type_id', letterTypeId)
 
-  config.fields.forEach((field) => {
+  // Isian yang tersembunyi untuk jawaban ini tidak dikirim.
+  visibleFields(config.fields, formData).forEach((field) => {
     const value = formData[field.name]
 
     if (field.type === 'file') {
       if (Array.isArray(value) && value[0]) {
         payload.append(`files[${field.name}]`, value[0])
       }
+
+      return
+    }
+
+    if (field.type === 'repeater') {
+      ;(Array.isArray(value) ? value : []).forEach((row, index) => {
+        visibleFields(field.fields, row ?? {}).forEach((subField) => {
+          const cell = row?.[subField.name]
+
+          if (cell !== undefined && cell !== null && cell !== '') {
+            payload.append(`payload[${field.name}][${index}][${subField.name}]`, cell)
+          }
+        })
+      })
+
+      return
+    }
+
+    if (field.type === 'family_members') {
+      ;(Array.isArray(value) ? value : []).forEach((id) => {
+        payload.append(`payload[${field.name}][]`, id)
+      })
 
       return
     }

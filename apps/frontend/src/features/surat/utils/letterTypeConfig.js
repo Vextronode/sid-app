@@ -14,6 +14,12 @@ function normalizeField(field) {
     accept: field.type === 'file' ? fileAccept(field) : undefined,
     imageOnly: field.type === 'file' && field.accept === 'image',
     multiple: false,
+    visibleWhen: field.visible_when ?? null,
+    // Isian berulang (repeater): sub-isian per baris dan batas jumlah baris.
+    fields: Array.isArray(field.fields) ? field.fields.map(normalizeField) : [],
+    min: field.min ?? null,
+    max: field.max ?? null,
+    itemLabel: field.item_label ?? '',
     scope: 'definition',
   }
 }

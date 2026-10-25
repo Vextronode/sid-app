@@ -52,6 +52,13 @@ export const applyFulfillment = async (letterId, values, subjectNik) => {
   return response.data
 }
 
+// Anggota KK pemohon untuk isian family_members.
+export const getFamilyMembers = async () => {
+  const response = await api.get('/api/profile/family-members')
+
+  return response.data.data
+}
+
 // Hasil dari instansi luar setelah formulir pelayanan terbit.
 export const submitLetterResult = async (letterId, files) => {
   const formData = new FormData()

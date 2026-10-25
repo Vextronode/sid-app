@@ -231,3 +231,109 @@ describe('occupation field', () => {
     expect(other.get('payload[pekerjaan_almarhum_lainnya]')).toBe('nelayan')
   })
 })
+
+describe('conditional fields', () => {
+  const conditionalConfig = getLetterTypeFormConfig({
+    id: 31,
+    code: 'F01',
+    name: 'Formulir',
+    form_fields: [
+      {
+        name: 'warga',
+        label: 'Kewarganegaraan',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'wni', label: 'WNI' },
+          { value: 'wna', label: 'WNA' },
+        ],
+      },
+      {
+        name: 'paspor',
+        label: 'Nomor Paspor',
+        type: 'text',
+        required: true,
+        visible_when: { field: 'warga', equals: 'wna' },
+      },
+    ],
+  })
+  const schema = getSuratSchema(conditionalConfig)
+
+  it('requires a field only while it is shown', () => {
+    expect(schema.safeParse({ warga: 'wni' }).success).toBe(true)
+
+    const missing = schema.safeParse({ warga: 'wna', paspor: '' })
+    expect(missing.success).toBe(false)
+    expect(missing.error.issues[0].path).toEqual(['paspor'])
+
+    expect(schema.safeParse({ warga: 'wna', paspor: 'A123' }).success).toBe(true)
+  })
+
+  it('does not send the value of a hidden field', () => {
+    const hidden = buildLetterFormData(conditionalConfig, 31, { warga: 'wni', paspor: 'A123' })
+    expect(hidden.has('payload[paspor]')).toBe(false)
+
+    const shown = buildLetterFormData(conditionalConfig, 31, { warga: 'wna', paspor: 'A123' })
+    expect(shown.get('payload[paspor]')).toBe('A123')
+  })
+})
+
+describe('repeating fields', () => {
+  const repeatingConfig = getLetterTypeFormConfig({
+    id: 41,
+    code: 'F03',
+    name: 'Formulir Pindah',
+    form_fields: [
+      {
+        name: 'anak',
+        label: 'Anak',
+        type: 'repeater',
+        required: true,
+        max: 2,
+        item_label: 'anak',
+        fields: [
+          { name: 'nama', label: 'Nama Anak', type: 'text', required: true },
+          {
+            name: 'paspor',
+            label: 'Nomor Paspor',
+            type: 'text',
+            required: true,
+            visible_when: { field: 'warga', equals: 'wna' },
+          },
+          { name: 'warga', label: 'Kewarganegaraan', type: 'text', required: false },
+        ],
+      },
+      { name: 'anggota', label: 'Anggota', type: 'family_members', required: true },
+    ],
+  })
+  const schema = getSuratSchema(repeatingConfig)
+
+  it('validates the number of rows, each row and the chosen members', () => {
+    const empty = schema.safeParse({ anak: [], anggota: [] })
+    expect(empty.success).toBe(false)
+    expect(empty.error.issues.map((issue) => issue.path.join('.'))).toEqual(['anak', 'anggota'])
+
+    const missingName = schema.safeParse({ anak: [{ nama: '' }], anggota: ['c-1'] })
+    expect(missingName.error.issues[0].path).toEqual(['anak', 0, 'nama'])
+
+    expect(
+      schema.safeParse({
+        anak: [{ nama: 'Budi' }, { nama: 'Ani' }, { nama: 'Cici' }],
+        anggota: ['c-1'],
+      }).success,
+    ).toBe(false)
+    expect(schema.safeParse({ anak: [{ nama: 'Budi' }], anggota: ['c-1'] }).success).toBe(true)
+  })
+
+  it('sends rows and member ids as nested payload keys', () => {
+    const formData = buildLetterFormData(repeatingConfig, 41, {
+      anak: [{ nama: 'Budi', paspor: 'SISA' }, { nama: 'Ani' }],
+      anggota: ['c-1', 'c-2'],
+    })
+
+    expect(formData.get('payload[anak][0][nama]')).toBe('Budi')
+    expect(formData.has('payload[anak][0][paspor]')).toBe(false)
+    expect(formData.get('payload[anak][1][nama]')).toBe('Ani')
+    expect(formData.getAll('payload[anggota][]')).toEqual(['c-1', 'c-2'])
+  })
+})
