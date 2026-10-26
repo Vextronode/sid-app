@@ -27,10 +27,10 @@ LetterType:
       description: |
         Kelompok di pilihan pengajuan (diset developer lewat seeder, tidak
         dapat diubah lewat `PUT /letter-types/{id}`). Frontend menampilkan
-        Persuratan Desa di atas lalu Pelayanan Desa di bawah.
+        Persuratan Desa di atas lalu Layanan Kependudukan di bawah.
     category_label:
       type: string
-      enum: ["Persuratan Desa", "Pelayanan Desa"]
+      enum: ["Persuratan Desa", "Layanan Kependudukan"]
       example: "Persuratan Desa"
     template:
       type: string
@@ -97,7 +97,7 @@ LetterType:
     issues_letter_number:
       type: boolean
       example: true
-      description: "false = tidak diberi nomor surat desa saat final approve (`letter_number` tetap null), mis. formulir Pelayanan Desa."
+      description: "false = tidak diberi nomor surat desa saat final approve (`letter_number` tetap null), mis. formulir Layanan Kependudukan."
     signed_by_village_head:
       type: boolean
       example: true
@@ -175,7 +175,9 @@ LetterFormField:
         `from_nik` (nama isian NIK) diisi otomatis dari data penduduk bila NIK
         terdaftar di desa (lihat `GET /profile/nik-lookup`); `from_nik_value`
         `name` (bawaan) atau `family_number` (No. KK). Bila NIK tidak
-        terdaftar, isian diketik.
+        terdaftar, isian diketik. Isian NIK ber-`witness` (label saksi, mis.
+        "Saksi I") meminta persetujuan pemilik NIK yang punya akun sebelum
+        surat masuk ke RT.
         `village_area` = Dusun -> RW -> RT desa ini dari `GET /village-areas`;
         nilainya id RT, dan saat pengajuan ditambah `<nama>_dusun`,
         `<nama>_rw`, `<nama>_rt` (3 digit) siap cetak.
@@ -309,10 +311,10 @@ PublicLetterType:
       description: |
         Kelompok di pilihan pengajuan (diset developer lewat seeder, tidak
         dapat diubah lewat `PUT /letter-types/{id}`). Frontend menampilkan
-        Persuratan Desa di atas lalu Pelayanan Desa di bawah.
+        Persuratan Desa di atas lalu Layanan Kependudukan di bawah.
     category_label:
       type: string
-      enum: ["Persuratan Desa", "Pelayanan Desa"]
+      enum: ["Persuratan Desa", "Layanan Kependudukan"]
       example: "Persuratan Desa"
     requirements_info:
       type: string

@@ -131,6 +131,8 @@ Akun demo untuk mencoba setiap role:
 |---|---|---|
 | Staf aplikasi (`staf_sid`, "Staf SIDUTama") | `demo_admin` | Satu-satunya staf aplikasi desa demo |
 | Warga | `demo_warga` | Kepala keluarga di RT 001/RW 001 Patrol |
+| Warga | `demo_warga2` | Istri `demo_warga`, satu KK (mis. untuk mencoba saksi/TTD antar-warga) |
+| Warga | `demo_warga3` | Anak tertua `demo_warga`, satu KK |
 | Kepala Dusun | `demo_kadus` | Aditulloh, Kadus Patrol |
 | RW | `demo_rw` | Ketua RW 001 Patrol |
 | RT | `demo_rt` | Ketua RT 001/RW 001 Patrol |

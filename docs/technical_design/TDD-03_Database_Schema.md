@@ -321,10 +321,10 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 |---|---|---|---|
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | village_id | UUID | FK → villages.id, NOT NULL | Desa pemilik jenis surat |
-| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A11 (Persuratan Desa, `LetterTypeSeeder`), F01–F06 (Pelayanan Desa, `ServiceLetterTypeSeeder`) |
+| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A11 (Persuratan Desa, `LetterTypeSeeder`), F01–F06 (Layanan Kependudukan, `ServiceLetterTypeSeeder`) |
 | name | VARCHAR(255) | NOT NULL | |
 | description | TEXT | NULL | |
-| category | VARCHAR(20) | NOT NULL, DEFAULT `persuratan` | `persuratan` (Persuratan Desa) \| `pelayanan` (Pelayanan Desa); pengelompokan pilihan jenis surat, diset seeder |
+| category | VARCHAR(20) | NOT NULL, DEFAULT `persuratan` | `persuratan` (Persuratan Desa) \| `pelayanan` (Layanan Kependudukan); pengelompokan pilihan jenis surat, diset seeder |
 | template | TEXT | NULL | HTML ber-placeholder; NULL = Draft |
 | documents | JSON | NULL | Dokumen yang terbit bersama dokumen utama: `[{key, title, template, when?, orientation?}]` (`orientation: landscape` untuk formulir lebar, mis. F-1.01). `when` = syarat jawaban form (`{field, equals}` / `{field, in}` / `{field, not_in}` / `{field, filled}`, atau gabungan `{any: [...]}` / `{all: [...]}`); dibekukan di snapshot saat final approve |
 | requirement_info | TEXT | NULL | Informasi persyaratan (seed: NULL) |
@@ -333,7 +333,7 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 | validity_days | UNSIGNED INT | NULL | NULL = tidak expire |
 | is_active | BOOLEAN | NOT NULL | Tanpa default di migration |
 | produces_letter | BOOLEAN | DEFAULT true | Penanda menerbitkan surat; belum dipakai logika backend |
-| issues_letter_number | BOOLEAN | DEFAULT true | false = tidak diberi `letter_number` saat final approve (formulir Pelayanan Desa) |
+| issues_letter_number | BOOLEAN | DEFAULT true | false = tidak diberi `letter_number` saat final approve (formulir Layanan Kependudukan) |
 | signed_by_village_head | BOOLEAN | DEFAULT true | false = tanpa TTD/stempel Kepala Desa; snapshot tanpa penanda tangan dan render tidak butuh Kepala Desa aktif |
 | requires_result_upload | BOOLEAN | DEFAULT false | true = setelah terbit, pemohon mengunggah hasil dari instansi luar untuk diverifikasi (`letter_results`); Terapkan baru setelah diterima |
 | data_instructions | TEXT | NULL | Petunjuk bagi Kasi/Kaur untuk `data_action = manual` |
@@ -524,8 +524,8 @@ Satu baris per percobaan mengisi slot tanda tangan surat; baris terbaru per `(le
 | letter_id | UUID | FK → letters.id, ON DELETE CASCADE | |
 | slot_key | VARCHAR(50) | NOT NULL | Sesuai `letter_types.signature_slots[].key` |
 | slot_label | VARCHAR(100) | NOT NULL | |
-| signer_type | VARCHAR(20) | NOT NULL | `applicant` \| `other` |
-| method | VARCHAR(20) | NOT NULL | `digital` \| `wet` |
+| signer_type | VARCHAR(20) | NOT NULL | `applicant` \| `other` \| `witness` (saksi isian form; slot_key = nama isian NIK) |
+| method | VARCHAR(20) | NOT NULL | `digital` \| `wet` \| saksi: `consent` \| `rt_check` \| `manual` |
 | status | VARCHAR(20) | DEFAULT 'pending' | `pending` \| `signed` \| `rejected` \| `expired` \| `cancelled` |
 | requested_by | UUID | FK → users.id, ON DELETE CASCADE | Pemohon |
 | target_nik_hash | VARCHAR(64) | NULL | SHA-256 NIK yang diminta (TTD digital pihak lain) |
@@ -533,7 +533,7 @@ Satu baris per percobaan mengisi slot tanda tangan surat; baris terbaru per `(le
 | signer_name | VARCHAR(100) | NULL | |
 | user_signature_id | BIGINT | FK → user_signatures.id, NULL, ON DELETE SET NULL | TTD digital yang dibubuhkan |
 | attachment_id | BIGINT | FK → letter_attachments.id, NULL, ON DELETE SET NULL | Foto TTD basah |
-| expires_at | TIMESTAMP | NULL | Batas permintaan (`LETTER_SIGNATURE_REQUEST_TTL_DAYS`, default 7 hari) |
+| expires_at | TIMESTAMP | NULL | Batas permintaan (`LETTER_SIGNATURE_REQUEST_TTL_DAYS`, default 3 hari) |
 | responded_at | TIMESTAMP | NULL | |
 | response_notes | TEXT | NULL | Catatan penolakan |
 | created_at, updated_at | TIMESTAMP | NULL | |

@@ -61,7 +61,7 @@ group DB::transaction
       SIG -> DB : INSERT letter_signatures (digital, signed,\nuser_signature_id = TTD akun aktif)
     else NIK diisi
       SIG -> SIG : cek NIK != pemohon, rate limit penolakan,\nblokir (jawaban seragam)
-      SIG -> DB : INSERT letter_signatures (pending, expires_at +7 hari)
+      SIG -> DB : INSERT letter_signatures (pending, expires_at +3 hari)
       SIG -> NIK : notifikasi signature_requested (bila punya akun)
     else TTD basah
       SIG -> ATT : store(kind=wet_signature)

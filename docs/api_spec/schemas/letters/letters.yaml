@@ -570,10 +570,15 @@ LetterSignature:
       example: "Saksi 1"
     signer_type:
       type: string
-      enum: [applicant, other]
+      enum: [applicant, other, witness]
+      description: "`witness` = saksi dari isian NIK ber-`witness` (persetujuan, tanpa TTD); slot_key = nama isian NIK."
     method:
       type: string
-      enum: [digital, wet]
+      enum: [digital, wet, consent, rt_check, manual]
+      description: |
+        Saksi: `consent` = disetujui pemilik NIK lewat akun; `rt_check` =
+        warga desa tanpa akun (nama dari data penduduk, diverifikasi RT);
+        `manual` = di luar data penduduk (nama diketik pemohon).
     status:
       type: string
       enum: [pending, signed, rejected, expired, cancelled]

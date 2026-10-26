@@ -13,7 +13,7 @@
 > **v5.3:** UC-03 (form dinamis & penanda tangan), UC-04a/04c (surat ditahan, snapshot, notifikasi Terapkan), UC-05/06/08, UC-09 (paginasi), UC-14 (jabatan tanpa akun, foto, reset TTD), UC-16/18/19 (identitas desa, kategori berita), UC-17 (tanggal lahir), UC-21 (field yang dapat diubah) diperbarui. UC baru: **UC-25** Kelola Tanda Tangan & Permintaan Tanda Tangan, **UC-26** Terapkan Perubahan Data Kependudukan dari Surat.
 > **Pembaruan 2026-10-18:** UC-16 (bar pengumuman di semua halaman publik, sambutan Kepala Desa, kontak telepon/email yang bisa disalin, Peraturan Desa sebagai section Profil Desa, halaman informasi aktif di produksi, BUMDesa/APBDes "Segera hadir") dan UC-18 (titik kantor berupa koordinat, sambutan Kepala Desa) diperbarui. UC baru: **UC-27** Kelola Pengumuman Beranda, **UC-28** Kelola Halaman Informasi.
 
-> **Pembaruan 2026-10-25:** UC baru **UC-29** Unggah dan Verifikasi Hasil dari Instansi (formulir Pelayanan Desa).
+> **Pembaruan 2026-10-25:** UC baru **UC-29** Unggah dan Verifikasi Hasil dari Instansi (formulir Layanan Kependudukan).
 > Kontrak endpoint ada di OpenAPI Spec v5.3 — dokumen ini fokus pada alur bisnis. Hal yang pernah tertulis tetapi belum ada di source dicatat di `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md`.
 
 ---
@@ -97,7 +97,7 @@ Main Flow:
 6. Dalam `DB::transaction()` sistem:
    - menyimpan surat (`status = pending`, `submitted_at`, `flow_id` snapshot, NIK terenkripsi + hash) dan log "Permohonan surat dibuat";
    - menyimpan berkas isian ke disk privat (`letter_attachments`, kind `field`);
-   - mengisi slot TTD: slot pemohon langsung `signed` dari TTD akun; slot pihak lain → permintaan TTD digital ke pemilik NIK (`pending`, kedaluwarsa 7 hari, notifikasi `signature_requested`) atau TTD basah (`signed`).
+   - mengisi slot TTD: slot pemohon langsung `signed` dari TTD akun; slot pihak lain → permintaan TTD digital ke pemilik NIK (`pending`, kedaluwarsa 3 hari, notifikasi `signature_requested`); saksi warga desa ber-akun (isian NIK ber-`witness`) → permintaan persetujuan saksi dengan alur yang sama (tanpa TTD) atau TTD basah (`signed`).
 7. Bila masih ada slot belum `signed` → `current_step_order = 0` + log "Menunggu tanda tangan pihak terkait"; surat belum terlihat approver. Setelah semua slot terisi (UC-25), langkah 8 dijalankan otomatis.
 8. Sistem memilih tahap awal: tahap non-final yang semua pejabat eligible-nya adalah pemohon dilewati (log); bila RT wilayah pemohon **kosong**, surat ditahan di step RT (log "Surat ditahan…") dan Petugas Desa menerima notifikasi `approver_vacant`; bila tahap final tidak punya approver selain pemohon → 422.
 9. Sistem membuat placeholder `letter_approvals` untuk step aktif (deadline dari `approval_settings`) dan mengirim notifikasi `pending` ke approver.
@@ -178,7 +178,7 @@ Main Flow:
 3. User memilih Setujui/Tolak, isi catatan jika menolak
 4. Sistem mengunci row surat di dalam transaksi dan memeriksa ulang status serta step aktif `kepala_desa`; keputusan kedua ditolak dengan 409.
 5. Sistem memperbarui placeholder `letter_approvals` untuk step aktif dengan aktor, level, aksi, dan catatan keputusan.
-6. Jika SETUJUI pada step final: status `approved`, `letter_number` = `{classification_code}/{NNN}/Des/{bulan Romawi}/{tahun}` (counter per desa + kode klasifikasi + tahun), `expires_at` dari `validity_days`, `processed_at`; lalu **snapshot render** dibekukan (`letters.snapshot`, `signed_by_official_id` = Kepala Desa aktif, juga bila Sekdes yang menyetujui). Jenis surat dengan `issues_letter_number = false` tidak diberi nomor, dan `signed_by_village_head = false` membekukan snapshot tanpa penanda tangan (formulir Pelayanan Desa).
+6. Jika SETUJUI pada step final: status `approved`, `letter_number` = `{classification_code}/{NNN}/Des/{bulan Romawi}/{tahun}` (counter per desa + kode klasifikasi + tahun), `expires_at` dari `validity_days`, `processed_at`; lalu **snapshot render** dibekukan (`letters.snapshot`, `signed_by_official_id` = Kepala Desa aktif, juga bila Sekdes yang menyetujui). Jenis surat dengan `issues_letter_number = false` tidak diberi nomor, dan `signed_by_village_head = false` membekukan snapshot tanpa penanda tangan (formulir Layanan Kependudukan).
 7. Jika TOLAK: status jadi `rejected`, `rejected_at_step` dicatat (TERMINAL), notifikasi `kepala_desa_rejected`.
 8. Notifikasi `letter_approved_final` ke pemohon; Kasi/Kaur sesuai `assigned_role` menerima `letter_needs_fulfillment` (jenis surat ber-`data_action`, lanjut UC-26) atau `letter_ready_for_print`.
 
@@ -830,7 +830,7 @@ Notes:
 | Use Case ID | UC-29 |
 | Nama | Unggah dan Verifikasi Hasil dari Instansi |
 | Aktor | Pemohon (unggah); Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role`, Petugas Desa sebagai cadangan (verifikasi) |
-| Pre-condition | Surat `approved`; jenis surat `requires_result_upload = true` (formulir Pelayanan Desa yang dibawa ke instansi luar, mis. Disdukcapil) |
+| Pre-condition | Surat `approved`; jenis surat `requires_result_upload = true` (formulir Layanan Kependudukan yang dibawa ke instansi luar, mis. Disdukcapil) |
 | Post-condition | Unggahan tercatat di `letter_results` dengan berkas `letter_attachments` (`kind = result`); bila diterima, Terapkan (UC-26) dapat dijalankan |
 
 Main Flow:
