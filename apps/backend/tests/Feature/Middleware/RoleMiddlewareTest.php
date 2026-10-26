@@ -333,7 +333,7 @@ class RoleMiddlewareTest extends TestCase
     }
 
     /**
-     * Kasi Pemerintahan memegang layanan kependudukan (Pelayanan Desa),
+     * Kasi Pemerintahan memegang layanan kependudukan (Layanan Kependudukan),
      * jadi mengelola data warga dan KK seperti Petugas Desa.
      */
     #[Test]

@@ -105,7 +105,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
     {
         $letterTypes = LetterType::query()->with('flow.steps')->orderBy('code')->get();
 
-        // 11 Persuratan Desa (Axx) + Pelayanan Desa (Fxx).
+        // 11 Persuratan Desa (Axx) + Layanan Kependudukan (Fxx).
         $this->assertSame(
             ['persuratan' => 11, 'pelayanan' => 6],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
@@ -126,7 +126,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                 // Formulir Disdukcapil: tanpa nomor dan TTD Kepala Desa,
                 // bersambung dengan unggah hasil ke Kasi Pemerintahan.
                 $this->assertSame('kasi_pemerintahan', $letterType->assigned_role, "{$letterType->code} harus ditangani Kasi Pemerintahan.");
-                $this->assertSame(LetterTypeCategory::Pelayanan, $letterType->category, "{$letterType->code} termasuk Pelayanan Desa.");
+                $this->assertSame(LetterTypeCategory::Pelayanan, $letterType->category, "{$letterType->code} termasuk Layanan Kependudukan.");
                 $this->assertFalse($letterType->issues_letter_number || $letterType->signed_by_village_head);
                 $this->assertTrue($letterType->requires_result_upload);
                 $this->assertNotNull($letterType->result_upload_hint);

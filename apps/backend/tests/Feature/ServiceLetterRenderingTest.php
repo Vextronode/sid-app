@@ -20,7 +20,7 @@ use Tests\Concerns\BuildsLetterScenario;
 use Tests\TestCase;
 
 /**
- * Formulir Pelayanan Desa (Fxx) hasil seeder: dirender sesuai formulir
+ * Formulir Layanan Kependudukan (Fxx) hasil seeder: dirender sesuai formulir
  * Disdukcapil dan bersambung sampai data desa diperbarui.
  */
 class ServiceLetterRenderingTest extends TestCase

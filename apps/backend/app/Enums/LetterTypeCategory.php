@@ -4,7 +4,7 @@ namespace App\Enums;
 
 /**
  * Kelompok jenis surat di pilihan pengajuan. Urutan case = urutan tampil:
- * Persuratan Desa (surat keterangan desa, Axx) lalu Pelayanan Desa
+ * Persuratan Desa (surat keterangan desa, Axx) lalu Layanan Kependudukan
  * (formulir kependudukan untuk instansi luar, Fxx).
  */
 enum LetterTypeCategory: string
@@ -16,7 +16,7 @@ enum LetterTypeCategory: string
     {
         return match ($this) {
             self::Persuratan => 'Persuratan Desa',
-            self::Pelayanan => 'Pelayanan Desa',
+            self::Pelayanan => 'Layanan Kependudukan',
         };
     }
 }

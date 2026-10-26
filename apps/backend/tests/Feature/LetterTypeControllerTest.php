@@ -39,7 +39,7 @@ class LetterTypeControllerTest extends TestCase
             ->assertJsonPath('data.0.category', 'persuratan')
             ->assertJsonPath('data.0.category_label', 'Persuratan Desa')
             ->assertJsonPath('data.1.category', 'pelayanan')
-            ->assertJsonPath('data.1.category_label', 'Pelayanan Desa');
+            ->assertJsonPath('data.1.category_label', 'Layanan Kependudukan');
     }
 
     public function test_update_cannot_change_the_category(): void

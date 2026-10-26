@@ -4,7 +4,7 @@ namespace Database\Seeders\Concerns;
 
 /**
  * Penyusun definisi isian form dan potongan template yang dipakai bersama
- * seeder Persuratan Desa (LetterTypeSeeder) dan Pelayanan Desa
+ * seeder Persuratan Desa (LetterTypeSeeder) dan Layanan Kependudukan
  * (ServiceLetterTypeSeeder).
  */
 trait DefinesLetterTypes

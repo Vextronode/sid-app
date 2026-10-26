@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('code', 20);
             $table->string('name');
             $table->text('description')->nullable();
-            // Persuratan Desa / Pelayanan Desa (App\Enums\LetterTypeCategory).
+            // Persuratan Desa / Layanan Kependudukan (App\Enums\LetterTypeCategory).
             $table->string('category', 20)->default('persuratan');
             $table->text('template')->nullable();
             // Dokumen yang terbit bersama dokumen utama: [{key, title, template, when?}]
