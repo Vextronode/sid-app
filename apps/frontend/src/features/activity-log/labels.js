@@ -71,14 +71,14 @@ export function fieldLabel(field) {
 // `field` (opsional) memetakan nilai enum ke labelnya, mis. family_role
 // `kepala_keluarga` -> "Kepala Keluarga".
 export function formatChangeValue(value, field) {
-  if (value === null || value === undefined || value === '') return '—'
+  if (value === null || value === undefined || value === '') return '-'
   if (value === true) return 'Ya'
   if (value === false) return 'Tidak'
-  if (Array.isArray(value)) return value.length ? value.join(', ') : '—'
+  if (Array.isArray(value)) return value.length ? value.join(', ') : '-'
   if (typeof value === 'object') {
     const entries = Object.entries(value)
 
-    return entries.length ? entries.map(([key, item]) => `${key}: ${item}`).join(', ') : '—'
+    return entries.length ? entries.map(([key, item]) => `${key}: ${item}`).join(', ') : '-'
   }
 
   const labels = field ? FIELD_VALUE_LABELS[field] : null

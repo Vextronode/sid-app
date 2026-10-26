@@ -89,7 +89,7 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggl
               <option key={rw.id} value={rw.id}>
                 RW {rw.number}
                 {!filterHamlet &&
-                  ` — ${hamlets.find((hamlet) => hamlet.id === rw.hamletId)?.name ?? 'Dusun'}`}
+                  ` - ${hamlets.find((hamlet) => hamlet.id === rw.hamletId)?.name ?? 'Dusun'}`}
               </option>
             ))}
           </select>

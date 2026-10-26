@@ -84,7 +84,7 @@ function ChangeList({ log }) {
 
   const entries = Object.entries(log.changes ?? {})
 
-  if (!entries.length) return <span className="sid-activity-log-muted">—</span>
+  if (!entries.length) return <span className="sid-activity-log-muted">-</span>
 
   return (
     <ul className="sid-activity-log-changes">
@@ -356,7 +356,7 @@ function LetterTab({ params, setParam, pageSize, onPageSizeChange }) {
                         : ''}
                       {STATUS_LABELS[log.new_status] ?? log.new_status}
                     </td>
-                    <td>{log.reason || <span className="sid-activity-log-muted">—</span>}</td>
+                    <td>{log.reason || <span className="sid-activity-log-muted">-</span>}</td>
                   </tr>
                 ))
               )}

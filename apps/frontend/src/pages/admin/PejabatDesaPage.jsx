@@ -273,7 +273,7 @@ function CandidatePicker({ candidate, position, onChange, disabled }) {
         >
           {candidate.name}
           {candidate.username ? ` (@${candidate.username})` : ''}
-          {candidate.eligible ? ' dapat ditetapkan.' : ` — ${candidate.reason}`}
+          {candidate.eligible ? ' dapat ditetapkan.' : ` - ${candidate.reason}`}
         </p>
       )}
     </div>
