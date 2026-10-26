@@ -17,6 +17,17 @@ function normalizeField(field) {
     visibleWhen: field.visible_when ?? null,
     // family_member: batas jenis kelamin anggota yang dapat dipilih (L/P).
     gender: field.gender ?? null,
+    // family_member: pemohon sendiri tidak dapat dipilih (mis. almarhum).
+    notSelf: Boolean(field.not_self),
+    // Teks pilihan kosong isian family_member opsional.
+    emptyLabel: field.empty_label ?? null,
+    // Isian nama yang diisi otomatis dari NIK di isian ini.
+    fromNik: field.from_nik ?? null,
+    // Data yang diambil dari NIK: nama (bawaan) atau No. KK.
+    fromNikValue: field.from_nik_value ?? 'name',
+    // family_member yang hanya tampil (dan wajib) bila anggota di isian ini
+    // kepala keluarga, mis. kepala keluarga baru saat kepala keluarga meninggal.
+    requiredWhenHead: field.required_when_head ?? null,
     // Isian berulang (repeater): sub-isian per baris dan batas jumlah baris.
     fields: Array.isArray(field.fields) ? field.fields.map(normalizeField) : [],
     min: field.min ?? null,
@@ -55,7 +66,10 @@ export function getLetterTypeFormConfig(letterType) {
     hasSupportingDocument: Boolean(letterType.has_supporting_document),
     // Isian form hanya yang didefinisikan jenis suratnya (mengikuti
     // template fisik); tidak ada isian umum seperti keperluan/catatan.
-    fields: definitionFields.filter((field) => field?.name).map(normalizeField),
+    // family_roster disusun sistem saat pengajuan, tidak diisi pemohon.
+    fields: definitionFields
+      .filter((field) => field?.name && field.type !== 'family_roster')
+      .map(normalizeField),
     signatureSlots: signatureSlots.filter((slot) => slot?.key).map(normalizeSlot),
   }
 }

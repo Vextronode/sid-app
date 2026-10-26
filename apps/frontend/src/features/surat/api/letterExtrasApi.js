@@ -60,6 +60,13 @@ export const getFamilyMembers = async () => {
   return response.data.data
 }
 
+// Nama warga desa dari NIK (isian nama ber-from_nik, mis. saksi).
+export const lookupNik = async (nik) => {
+  const response = await api.get('/api/profile/nik-lookup', { params: { nik } })
+
+  return response.data.data
+}
+
 // Dusun -> RW -> RT desa untuk isian village_area.
 export const getVillageAreas = async () => {
   const response = await api.get('/api/village-areas')

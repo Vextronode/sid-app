@@ -21,6 +21,7 @@ import { OccupationField } from './OccupationField'
 import { FamilyMembersField } from './FamilyMembersField'
 import { RepeaterField } from './RepeaterField'
 import { VillageAreaField } from './VillageAreaField'
+import { NikLookupHint } from './NikLookupHint'
 
 const WET_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png'
 
@@ -76,6 +77,10 @@ export function DynamicSuratForm({
   const needsAreas = usesType('village_area')
   const [areas, setAreas] = useState([])
   const [areasFailed, setAreasFailed] = useState(false)
+  // Hasil pencarian NIK per isian NIK yang berpasangan dengan isian nama.
+  const [nikLookups, setNikLookups] = useState({})
+  // Isian (nama, No. KK) yang diisi otomatis dari isian NIK ini.
+  const lookupFieldsOf = (nikName) => config.fields.filter((field) => field.fromNik === nikName)
 
   const {
     register,
@@ -292,12 +297,31 @@ export function DynamicSuratForm({
             const fieldError = errors[field.name]
             const inputClass = `sid-input ${fieldError ? 'sid-input-error' : ''}`
 
+            // Nama dari NIK: diketik hanya bila NIK tidak ada di data penduduk.
+            if (field.fromNik && nikLookups[field.fromNik]?.status !== 'not_found') {
+              return null
+            }
+
+            // Kepala keluarga baru: hanya bila anggota terpilih kepala keluarga.
+            const headOf = field.requiredWhenHead
+              ? familyMembers.find(
+                  (member) =>
+                    String(member.id) === String(watchedFormData?.[field.requiredWhenHead]),
+                )
+              : null
+
+            if (field.requiredWhenHead && headOf?.family_role !== 'kepala_keluarga') {
+              return null
+            }
+
             return (
               <div key={field.name} className="sid-form-group">
                 <label htmlFor={field.name} className="sid-label">
                   {field.label}
 
-                  {field.required && <span className="sid-required"> *</span>}
+                  {(field.required || field.requiredWhenHead) && (
+                    <span className="sid-required"> *</span>
+                  )}
                 </label>
 
                 {field.type === 'textarea' && (
@@ -330,6 +354,41 @@ export function DynamicSuratForm({
                     className={inputClass}
                   />
                 )}
+
+                {field.type === 'nik' && lookupFieldsOf(field.name).length > 0 && (
+                  <NikLookupHint
+                    nik={watchedFormData?.[field.name]}
+                    onResult={(result) => {
+                      setNikLookups((current) =>
+                        current[field.name]?.status === result.status &&
+                        current[field.name]?.name === result.name
+                          ? current
+                          : { ...current, [field.name]: result },
+                      )
+                      // Isi dari data penduduk; dikosongkan bila NIK berubah.
+                      lookupFieldsOf(field.name).forEach((target) => {
+                        const found =
+                          target.fromNikValue === 'family_number'
+                            ? result.familyNumber
+                            : result.name
+
+                        if (result.status === 'found') {
+                          setValue(target.name, found ?? '', {
+                            shouldValidate: Boolean(errors[target.name]),
+                          })
+                        } else if (nikLookups[field.name]?.status === 'found') {
+                          setValue(target.name, '')
+                        }
+                      })
+                    }}
+                  />
+                )}
+
+                {field.type === 'nik' &&
+                  nikLookups[field.name]?.status !== 'not_found' &&
+                  lookupFieldsOf(field.name).map((target) => (
+                    <span key={target.name}>{renderError(target.name)}</span>
+                  ))}
 
                 {field.type === 'number' && (
                   <input
@@ -406,10 +465,21 @@ export function DynamicSuratForm({
                     className={`sid-select ${fieldError ? 'sid-input-error' : ''}`}
                   >
                     <option value="">
-                      {field.required ? 'Pilih anggota keluarga...' : 'Tidak ada di KK'}
+                      {field.required || field.requiredWhenHead
+                        ? 'Pilih anggota keluarga...'
+                        : (field.emptyLabel ?? 'Tidak ada di KK')}
                     </option>
                     {familyMembers
                       .filter((member) => !field.gender || member.gender === field.gender)
+                      .filter((member) => !field.notSelf || !member.is_self)
+                      // Kepala keluarga baru: bukan kepala keluarga yang sekarang.
+                      .filter(
+                        (member) =>
+                          !field.requiredWhenHead ||
+                          (member.family_role !== 'kepala_keluarga' &&
+                            String(member.id) !==
+                              String(watchedFormData?.[field.requiredWhenHead])),
+                      )
                       .map((member) => (
                         <option key={member.id} value={member.id}>
                           {member.name} ({member.family_role_label})

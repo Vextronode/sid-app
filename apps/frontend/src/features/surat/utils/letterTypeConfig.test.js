@@ -83,6 +83,26 @@ describe('getLetterTypeFormConfig', () => {
     expect(config.fields[1]).toMatchObject({ accept: '.pdf,.jpg,.jpeg,.png', imageOnly: false })
   })
 
+  it('leaves out the family roster that the system builds on submission', () => {
+    const config = getLetterTypeFormConfig({
+      ...letterType,
+      form_fields: [
+        {
+          name: 'almarhum',
+          label: 'Almarhum',
+          type: 'family_member',
+          required: true,
+          not_self: true,
+        },
+        { name: 'kk_baru', label: 'Susunan KK Baru', type: 'family_roster', required: false },
+      ],
+    })
+
+    expect(config.fields.map((field) => field.name)).toEqual(['almarhum'])
+    expect(config.fields[0].notSelf).toBe(true)
+    expect(config.fields[0].emptyLabel).toBeNull()
+  })
+
   it('returns null when no letter type is selected', () => {
     expect(getLetterTypeFormConfig(undefined)).toBeNull()
   })
