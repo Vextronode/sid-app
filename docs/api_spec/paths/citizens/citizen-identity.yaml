@@ -1,0 +1,33 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: NIK dan No. KK utuh seorang warga (tombol "lihat")
+  description: |
+    Untuk tombol mata di samping NIK/No. KK tersamar. Boleh: Petugas Desa,
+    Kasi Pemerintahan, Kaur TU & Umum untuk warga desanya; warga untuk
+    dirinya dan anggota KK-nya. Pembukaan data orang lain dicatat di Log
+    Aktivitas (event `identity_viewed`). Dibatasi 60 permintaan per menit.
+  operationId: revealCitizenIdentity
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: citizen
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    '200':
+      description: Data utuh
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  nik: { type: string }
+                  no_kk: { type: string, nullable: true }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Tidak berhak melihat NIK warga ini

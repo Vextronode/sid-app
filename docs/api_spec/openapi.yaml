@@ -166,6 +166,8 @@ paths:
   # ─────────────────────────────────────────────
   /citizens:
     $ref: 'paths/citizens/citizens.yaml'
+  /citizens/{citizen}/identity:
+    $ref: 'paths/citizens/citizen-identity.yaml'
   /citizens/{citizen}:
     $ref: 'paths/citizens/citizen-detail.yaml'
   /citizens/import:
@@ -178,6 +180,8 @@ paths:
     $ref: 'paths/families/families.yaml'
   /families/options:
     $ref: 'paths/families/family-options.yaml'
+  /families/{family}/identity:
+    $ref: 'paths/families/family-identity.yaml'
   /families/{family}:
     $ref: 'paths/families/family-detail.yaml'
   /families/{id}/socioeconomic:
@@ -244,6 +248,8 @@ paths:
     $ref: 'paths/letters/summary.yaml'
   /letters/export:
     $ref: 'paths/letters/export.yaml'
+  /letters/{letter}/applicant-identity:
+    $ref: 'paths/letters/letter-applicant-identity.yaml'
   /letters/{id}:
     $ref: 'paths/letters/letter-detail.yaml'
   /letters/{letter}/download:

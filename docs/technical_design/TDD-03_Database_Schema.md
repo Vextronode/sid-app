@@ -334,7 +334,7 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 | is_active | BOOLEAN | NOT NULL | Tanpa default di migration |
 | produces_letter | BOOLEAN | DEFAULT true | Penanda menerbitkan surat; belum dipakai logika backend |
 | issues_letter_number | BOOLEAN | DEFAULT true | false = tidak diberi `letter_number` saat final approve (formulir Layanan Kependudukan) |
-| signed_by_village_head | BOOLEAN | DEFAULT true | false = tanpa TTD/stempel Kepala Desa; snapshot tanpa penanda tangan dan render tidak butuh Kepala Desa aktif |
+| signed_by_village_head | BOOLEAN | DEFAULT true | false = tanpa pengesahan TTD/stempel Kepala Desa; snapshot tanpa penanda tangan pengesah dan render tidak butuh Kepala Desa aktif. Snapshot menyimpan `service_signatures` (TTD pemohon, Kepala Desa, Kasi Pemerintahan, Ketua RT/RW wilayah) untuk ditempel di formulir final |
 | requires_result_upload | BOOLEAN | DEFAULT false | true = setelah terbit, pemohon mengunggah hasil dari instansi luar untuk diverifikasi (`letter_results`); Terapkan baru setelah diterima |
 | data_instructions | TEXT | NULL | Petunjuk bagi Kasi/Kaur untuk `data_action = manual` |
 | result_upload_hint | TEXT | NULL | Berkas yang diminta, mis. "KK terbaru dari Disdukcapil" |

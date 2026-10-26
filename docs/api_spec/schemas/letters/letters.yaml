@@ -867,6 +867,10 @@ SignatureBlock:
     blocked_user_name:
       type: string
       nullable: true
+    blocked_nik_masked:
+      type: string
+      nullable: true
+      example: "************0009"
     created_at:
       type: string
       format: date-time
