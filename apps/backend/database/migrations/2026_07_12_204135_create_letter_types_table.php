@@ -41,6 +41,9 @@ return new class extends Migration
             $table->text('result_upload_hint')->nullable();
             // Petunjuk bagi Kasi/Kaur untuk aksi data `manual`.
             $table->text('data_instructions')->nullable();
+            // Opsi aksi data: `family` (create_citizen: masuk KK yang ada atau
+            // KK baru) dan `subjects` (update_citizens: isian NIK warga).
+            $table->json('data_options')->nullable();
             $table->boolean('is_active');
             $table->timestamps();
 

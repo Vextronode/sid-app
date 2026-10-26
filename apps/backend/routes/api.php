@@ -330,6 +330,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         Route::patch('/{letter}/results/{result}', [LetterResultController::class, 'update']);
 
         Route::get('/{letter}/fulfillment', [LetterFulfillmentController::class, 'show']);
+        Route::post('/{letter}/fulfillment/preview', [LetterFulfillmentController::class, 'preview']);
         Route::post('/{letter}/fulfillment', [LetterFulfillmentController::class, 'store']);
 
         // Catatan refactor: sebelumnya closure inline yang langsung

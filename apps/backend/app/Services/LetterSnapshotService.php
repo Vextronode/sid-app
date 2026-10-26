@@ -11,6 +11,7 @@ use App\Models\Rt;
 use App\Models\UserSignature;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
+use App\Support\CitizenLabels;
 use App\Support\LetterFormSchema;
 
 /**
@@ -142,6 +143,9 @@ class LetterSnapshotService
                 'birth_place_date' => $this->birthPlaceDate($citizen),
                 'resident_phrase' => $this->residentPhrase($citizen),
                 'occupation' => $citizen?->occupation?->name ?: '-',
+                'marital_status' => $citizen?->marital_status
+                    ? CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $citizen->marital_status)
+                    : '-',
                 'family_number' => $citizen?->family?->no_kk,
                 // Rincian KK pemohon untuk formulir pelayanan ({{#each kk_anggota}}).
                 'family_members' => $citizen === null ? [] : (new LetterFormSchema(null, $citizen))

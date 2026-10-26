@@ -30,6 +30,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
         'village_regency', 'village_regency_upper', 'village_province', 'village_region',
         'village_address', 'village_phone', 'village_postal_code', 'village_email',
         'village_head_name', 'applicant_family_number', 'village_kasi_pemerintahan_name',
+        'applicant_marital_status',
         // TTD formulir pelayanan (PdfService::serviceSignatureReplacements).
         'tanda_tangan_pemohon', 'tanda_tangan_kepala_desa', 'tanda_tangan_kasi_pemerintahan',
         'pejabat_kepala_desa_nama',
@@ -86,6 +87,8 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                 // Kepala keluarga baru / anggota yang dikeluarkan dari family_roster.
                 ...array_column($letterType->form_fields ?? [], 'head'),
                 ...array_column($letterType->form_fields ?? [], 'exclude'),
+                // Kepala keluarga baru yang ditetapkan saat Terapkan.
+                $letterType->data_options['new_head'] ?? null,
             ];
             $templates = $this->templatesOf($letterType);
 
@@ -110,7 +113,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // 11 Persuratan Desa (Axx) + Layanan Kependudukan (Fxx).
         $this->assertSame(
-            ['persuratan' => 11, 'pelayanan' => 6],
+            ['persuratan' => 11, 'pelayanan' => 7],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -144,7 +147,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // Penguburan menonaktifkan data almarhum; Kelahiran menambah anak.
         $this->assertSame(
-            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'manual', 'F02' => 'update_members', 'F03' => 'deactivate_members', 'F04' => 'manual', 'F05' => 'create_citizen', 'F06' => 'deactivate_members'],
+            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'create_citizen', 'F02' => 'update_members', 'F03' => 'deactivate_members', 'F04' => 'create_citizen', 'F05' => 'create_citizen', 'F06' => 'deactivate_members', 'F07' => 'update_citizens'],
             $letterTypes
                 ->filter(fn (LetterType $type) => $type->data_action->value !== 'none')
                 ->mapWithKeys(fn (LetterType $type) => [$type->code => $type->data_action->value])

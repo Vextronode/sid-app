@@ -18,6 +18,10 @@ enum LetterDataAction: string
     // (data_subject_field) per anggota, kolom dari data_fields yang
     // sumbernya kunci baris (mis. perubahan elemen data F-1.06).
     case UpdateMembers = 'update_members';
+    // Mengubah kolom beberapa warga desa yang NIK-nya diisi di form
+    // (data_options.subjects), mis. status kawin suami dan istri. Warga
+    // yang tidak terdata di desa dilewati.
+    case UpdateCitizens = 'update_citizens';
     // Perubahan dikerjakan Kasi/Kaur sendiri di Data Penduduk/KK (mis.
     // susunan KK baru); sistem hanya mencatat "Tandai selesai".
     case Manual = 'manual';

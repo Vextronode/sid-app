@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Citizen;
+use App\Models\Family;
 use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\Rt;
@@ -75,6 +77,7 @@ class ServiceLetterRenderingTest extends TestCase
             'golongan_darah' => 'O',
             'pendidikan_terakhir' => 'tidak_sekolah',
             'alamat' => $this->budiasih->id,
+            'shdk' => 'anak',
         ]);
 
         $this->assertNull(Letter::query()->findOrFail($letterId)->letter_number);
@@ -102,8 +105,11 @@ class ServiceLetterRenderingTest extends TestCase
         $this->assertStringNotContainsString('Pelapor Keluarga', $html);
     }
 
-    public function test_form_continues_until_kasi_registers_the_person(): void
+    public function test_kasi_previews_then_registers_the_person_into_the_applicant_family(): void
     {
+        $family = Family::factory()->create(['village_id' => $this->village->id, 'no_kk' => '3218011304150007']);
+        $this->applicant['citizen']->update(['family_id' => $family->id, 'family_role' => 'kepala_keluarga']);
+
         $letterId = $this->issue('F01', [
             'nama_lengkap' => 'Rosita',
             'tempat_lahir' => 'Garut',
@@ -112,6 +118,7 @@ class ServiceLetterRenderingTest extends TestCase
             'nama_ibu' => 'Siti Aminah',
             'pendidikan_terakhir' => 'sd',
             'alamat' => $this->budiasih->id,
+            'shdk' => 'anak',
         ]);
 
         $this->actingAs($this->applicant['user'])
@@ -133,11 +140,42 @@ class ServiceLetterRenderingTest extends TestCase
         $this->actingAs($this->kasi['user'])
             ->getJson("/api/letters/{$letterId}/fulfillment")
             ->assertOk()
-            ->assertJsonPath('data.action', 'manual');
+            ->assertJsonPath('data.action', 'create_citizen')
+            ->assertJsonPath('data.fields.0.column', 'nik');
+
+        // NIK wajib diisi dari dokumen terbitan.
         $this->actingAs($this->kasi['user'])
-            ->postJson("/api/letters/{$letterId}/fulfillment", ['notes' => 'Sudah didaftarkan di Data Penduduk.'])
+            ->postJson("/api/letters/{$letterId}/fulfillment/preview", ['values' => []])
+            ->assertUnprocessable();
+
+        // Pratinjau: daftar perubahan tanpa menyimpan apa pun.
+        $preview = $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letterId}/fulfillment/preview", ['values' => ['nik' => '3207014504210003']])
+            ->assertOk()
+            ->assertJsonPath('data.0.kind', 'create')
+            ->assertJsonPath('data.0.name', 'Rosita')
+            ->json('data.0.changes');
+        $changes = array_column($preview, 'new', 'label');
+        $this->assertSame('************0003', $changes['NIK']);
+        $this->assertSame('Anak', $changes['Hubungan dalam KK']);
+        $this->assertSame('Perempuan', $changes['Jenis Kelamin']);
+        $this->assertSame('5 April 2021', $changes['Tanggal Lahir']);
+        $this->assertSame('Dusun Budiasih, RT 002 / RW 019', $changes['RT/RW']);
+        $this->assertSame('No. KK ************0007', $changes['Kartu Keluarga']);
+        $this->assertSame('-', array_column($preview, 'old', 'label')['Nama']);
+        $this->assertFalse(Citizen::query()->where('name', 'Rosita')->exists());
+        $this->assertNull(Letter::query()->findOrFail($letterId)->fulfilled_at);
+
+        $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => ['nik' => '3207014504210003']])
             ->assertOk();
 
+        $person = Citizen::query()->where('name', 'Rosita')->firstOrFail();
+        $this->assertSame($family->id, $person->family_id);
+        $this->assertSame('anak', $person->family_role->value);
+        $this->assertSame($this->budiasih->id, $person->rt_id);
+        $this->assertSame($this->budiasih->rw->hamlet_id, $person->hamlet_id);
+        $this->assertSame('Dusun Budiasih, RT 002 / RW 019', $person->address);
         $this->assertNotNull(Letter::query()->findOrFail($letterId)->fulfilled_at);
     }
 

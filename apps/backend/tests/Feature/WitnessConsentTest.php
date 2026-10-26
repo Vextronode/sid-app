@@ -68,7 +68,7 @@ class WitnessConsentTest extends TestCase
         // Sebelum setuju: nama disamarkan dan No. KK tidak dibuka.
         $this->actingAs($this->applicant['user'])
             ->getJson('/api/profile/nik-lookup?nik=3207010101800009')
-            ->assertJsonPath('data', ['found' => true, 'has_account' => true, 'name' => 'U***g S***i', 'family_number' => null]);
+            ->assertJsonPath('data', ['found' => true, 'has_account' => true, 'name' => 'U***g S***i', 'family_number' => null, 'is_self' => false]);
 
         $letterId = $this->submit()->assertCreated()->json('data.id');
         $letter = Letter::query()->findOrFail($letterId);
@@ -109,7 +109,7 @@ class WitnessConsentTest extends TestCase
 
         $this->actingAs($this->applicant['user'])
             ->getJson('/api/profile/nik-lookup?nik=3207010101800009')
-            ->assertJsonPath('data', ['found' => true, 'has_account' => false, 'name' => 'Ujang Saksi', 'family_number' => '3218010101900009']);
+            ->assertJsonPath('data', ['found' => true, 'has_account' => false, 'name' => 'Ujang Saksi', 'family_number' => '3218010101900009', 'is_self' => false]);
 
         $letterId = $this->submit()->assertCreated()->json('data.id');
 

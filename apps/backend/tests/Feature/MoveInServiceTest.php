@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\Letter;
 use App\Models\LetterType;
@@ -77,6 +78,7 @@ class MoveInServiceTest extends TestCase
             'nama_kepala_keluarga' => 'Engkos Sutisna',
             'nik_kepala_keluarga' => '3207240101700001',
             'no_kk_tujuan' => '3218011304150001',
+            'shdk_pendatang' => 'famili_lain',
             'pekerjaan_kepala_keluarga' => (string) $this->farmer->id,
             'alamat_kepala_keluarga' => $this->budiasih->id,
             // Biodata KK baru tidak berlaku untuk numpang KK.
@@ -127,6 +129,7 @@ class MoveInServiceTest extends TestCase
             'nama_kepala_keluarga' => 'Engkos Sutisna',
             'nik_kepala_keluarga' => $this->applicant['citizen']->nik,
             'no_kk_tujuan' => '3218011304150001',
+            'shdk_pendatang' => 'famili_lain',
             'pekerjaan_kepala_keluarga' => (string) $this->farmer->id,
             'alamat_kepala_keluarga' => $this->budiasih->id,
         ]);
@@ -142,6 +145,32 @@ class MoveInServiceTest extends TestCase
 
         // F-1.02 atas nama pendatang: TTD perantara tidak ditempel.
         $this->assertStringNotContainsString('data:image/png;base64,', $this->render($letterId, null));
+    }
+
+    public function test_kasi_adds_a_joining_arrival_to_the_host_family(): void
+    {
+        $letterId = $this->approve([
+            ...$this->arrival('numpang_kk'),
+            'nama_kepala_keluarga' => 'Engkos Sutisna',
+            'nik_kepala_keluarga' => '3207240101700001',
+            'no_kk_tujuan' => '3218011304150001',
+            'shdk_pendatang' => 'famili_lain',
+            'pekerjaan_kepala_keluarga' => (string) $this->farmer->id,
+            'alamat_kepala_keluarga' => $this->budiasih->id,
+        ]);
+        $this->acceptResult($letterId);
+
+        $this->actingAs($this->kasi['user'])
+            ->getJson("/api/letters/{$letterId}/fulfillment")
+            ->assertJsonPath('data.family.mode', 'join')
+            ->assertJsonPath('data.family.description', 'Masuk ke No. KK ************0001 (kepala keluarga: Engkos Sutisna).');
+        $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => []])
+            ->assertOk();
+
+        $arrival = Citizen::query()->where('name', 'Rina Marlina')->firstOrFail();
+        $this->assertSame('3218011304150001', $arrival->family->no_kk);
+        $this->assertSame('famili_lain', $arrival->family_role->value);
     }
 
     public function test_own_home_creates_a_new_family_with_the_biodata_form(): void
@@ -174,7 +203,7 @@ class MoveInServiceTest extends TestCase
         $this->assertStringNotContainsString('________', $biodata);
     }
 
-    public function test_someone_elses_home_prints_the_owner_statement_and_kasi_marks_it_done(): void
+    public function test_someone_elses_home_prints_the_owner_statement_and_kasi_creates_a_new_family(): void
     {
         $letterId = $this->approve([
             ...$this->arrival('orang_lain'),
@@ -198,21 +227,42 @@ class MoveInServiceTest extends TestCase
         $this->assertStringContainsString('( Haji Darman )', $statement);
         $this->assertStringContainsString('Rina Marlina', $statement);
 
-        $resultId = $this->actingAs($this->applicant['user'])
-            ->post("/api/letters/{$letterId}/results", [
-                'files' => [UploadedFile::fake()->create('kk-baru.pdf', 100, 'application/pdf')],
-            ], ['Accept' => 'application/json'])
-            ->json('data.id');
-        $this->actingAs($this->kasi['user'])
-            ->patchJson("/api/letters/{$letterId}/results/{$resultId}", ['decision' => 'accepted'])
-            ->assertOk();
+        $this->acceptResult($letterId);
         $this->actingAs($this->kasi['user'])
             ->getJson("/api/letters/{$letterId}/fulfillment")
-            ->assertJsonPath('data.action', 'manual')
-            ->assertJsonPath('data.instructions', fn ($text) => str_contains($text, 'Daftarkan pendatang'));
+            ->assertJsonPath('data.action', 'create_citizen')
+            ->assertJsonPath('data.family.mode', 'create')
+            ->assertJsonPath('data.fields', fn ($fields) => in_array('no_kk', array_column($fields, 'column'), true));
+
+        // KK baru wajib diberi No. KK dari KK terbitan Disdukcapil.
         $this->actingAs($this->kasi['user'])
-            ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => [], 'notes' => 'Rina sudah diinput'])
+            ->postJson("/api/letters/{$letterId}/fulfillment/preview", ['values' => []])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('values.no_kk');
+
+        $families = Family::query()->count();
+        $changes = $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letterId}/fulfillment/preview", ['values' => ['no_kk' => '3218011304159999']])
+            ->assertOk()
+            ->assertJsonPath('data.0.kind', 'create')
+            ->json('data.0.changes');
+        $new = array_column($changes, 'new', 'label');
+        $this->assertSame('Kepala Keluarga', $new['Hubungan dalam KK']);
+        $this->assertSame('Pendatang', $new['Status Kependudukan']);
+        $this->assertSame('Petani', $new['Pekerjaan']);
+        $this->assertSame('No. KK ************9999', $new['Kartu Keluarga']);
+        $this->assertSame($families, Family::query()->count());
+
+        $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => ['no_kk' => '3218011304159999']])
             ->assertOk();
+
+        $arrival = Citizen::query()->where('name', 'Rina Marlina')->firstOrFail();
+        $this->assertSame('3218011304159999', $arrival->family->no_kk);
+        $this->assertSame('kepala_keluarga', $arrival->family_role->value);
+        $this->assertSame('pendatang', $arrival->residency_type->value);
+        $this->assertSame($this->farmer->id, $arrival->occupation_id);
+        $this->assertSame($this->budiasih->id, $arrival->family->rt_id);
 
         $this->assertNotNull(Letter::query()->findOrFail($letterId)->fulfilled_at);
     }
@@ -228,6 +278,7 @@ class MoveInServiceTest extends TestCase
             'nik_pendatang' => '3207246904990002',
             'tempat_lahir_pendatang' => 'Ciamis',
             'tanggal_lahir_pendatang' => '1999-04-29',
+            'jenis_kelamin_pendatang' => 'P',
             'agama_pendatang' => 'islam',
             'pekerjaan_pendatang' => (string) $this->farmer->id,
             'alamat_pendatang' => $this->budiasih->id,
@@ -240,13 +291,24 @@ class MoveInServiceTest extends TestCase
     private function biodata(): array
     {
         return [
-            'jenis_kelamin_pendatang' => 'P',
             'pendidikan_pendatang' => 'sma',
             'no_akta_lahir' => 'AN-123',
             'status_kawin_pendatang' => 'kawin',
             'nama_ibu_pendatang' => 'Ibu Pendatang',
             'nama_ayah_pendatang' => 'Ayah Pendatang',
         ];
+    }
+
+    private function acceptResult(string $letterId): void
+    {
+        $resultId = $this->actingAs($this->applicant['user'])
+            ->post("/api/letters/{$letterId}/results", [
+                'files' => [UploadedFile::fake()->create('kk-baru.pdf', 100, 'application/pdf')],
+            ], ['Accept' => 'application/json'])
+            ->json('data.id');
+        $this->actingAs($this->kasi['user'])
+            ->patchJson("/api/letters/{$letterId}/results/{$resultId}", ['decision' => 'accepted'])
+            ->assertOk();
     }
 
     private function approve(array $payload): string

@@ -89,6 +89,7 @@ class VillageAreaFieldTest extends TestCase
                 'nama_ibu' => 'Ibu',
                 'pendidikan_terakhir' => 'sd',
                 'alamat' => $rtId,
+                'shdk' => 'anak',
             ],
         ]);
     }

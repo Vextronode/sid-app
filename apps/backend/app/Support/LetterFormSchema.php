@@ -35,12 +35,28 @@ use Illuminate\Validation\Rule;
  * menolak pemohon sendiri; `different` = nama isian family_member lain yang
  * tidak boleh sama (mis. kepala keluarga baru bukan almarhum);
  * `required_when_head` = wajib bila anggota di isian itu kepala keluarga
- * (bila bukan, nilainya dibuang).
+ * (bila bukan, nilainya dibuang). Isian itu boleh family_member (mis.
+ * almarhum) atau family_members (mis. anggota yang pindah); calonnya anggota
+ * selain kepala keluarga dan selain yang terpilih di isian itu, dan bila
+ * tidak ada calon (semua anggota terpilih) isiannya juga dibuang.
  *
  * Isian dengan `from_nik` (nama isian NIK): bila NIK itu milik warga aktif
  * desa ini, isian tidak wajib dan diisi dari data penduduk saat pengajuan
  * (`from_nik_value`: `name` = nama, bawaan; `family_number` = No. KK); bila
  * tidak, isian diketik (mis. saksi dari luar desa).
+ *
+ * Isian dengan `from_applicant` ({column, map}): nilainya diturunkan dari data
+ * pemohon (mis. jenis kelamin L -> suami) dan menimpa jawaban form; hanya
+ * ditanyakan bila kolom pemohon itu kosong atau tidak ada di `map`.
+ *
+ * Isian NIK saksi (`witness`): bukan NIK pemohon, dan berbeda dari isian NIK
+ * di `not_same_as` (saksi lainnya, pihak dalam surat).
+ *
+ * Isian NIK dengan `self_when` (syarat FieldCondition): bila syaratnya
+ * terpenuhi, isian itu milik pemohon sendiri (mis. suami saat pemohon
+ * suami). Isiannya disembunyikan di form (`visible_when` kebalikannya) dan
+ * saat pengajuan diisi NIK pemohon, sehingga isian `from_nik`-nya ikut terisi
+ * dari data pemohon.
  *
  * Isian `family_roster` tidak diisi pemohon: saat pengajuan sistem mencatat
  * susunan KK pemohon tanpa anggota di isian `exclude`, dengan anggota di
@@ -333,7 +349,8 @@ class LetterFormSchema
     /**
      * Isian pekerjaan disimpan sebagai teks siap cetak: id katalog diganti
      * nama pekerjaannya, teks "Lainnya" dirapikan. Teks ini hanya untuk
-     * surat; katalog dan data warga tidak berubah.
+     * surat; katalog dan data warga tidak berubah. Id katalognya disimpan
+     * di `<nama>_id` (null untuk "Lainnya") untuk Terapkan.
      *
      * @param  array<string, mixed>|null  $payload  payload yang sudah tervalidasi
      * @return array<string, mixed>|null
@@ -363,9 +380,11 @@ class LetterFormSchema
                 continue;
             }
 
-            $payload[$name] = (string) $value === self::OTHER_OCCUPATION
+            $isOther = (string) $value === self::OTHER_OCCUPATION;
+            $payload[$name] = $isOther
                 ? OccupationName::normalize((string) $other, array_values($catalog))
                 : $catalog[(int) $value];
+            $payload["{$name}_id"] = $isOther ? null : (int) $value;
         }
 
         return $payload;
@@ -476,6 +495,12 @@ class LetterFormSchema
         }
 
         foreach ($this->fields ?? [] as $field) {
+            if (isset($field['self_when']) && $this->applicant !== null && FieldCondition::matches($field['self_when'], $payload)) {
+                $payload[$field['name']] = $this->applicant->nik;
+            }
+        }
+
+        foreach ($this->fields ?? [] as $field) {
             $fromNik = $field['from_nik'] ?? null;
             $citizen = $fromNik !== null ? $this->citizenByNik($payload[$fromNik] ?? null) : null;
 
@@ -579,11 +604,18 @@ class LetterFormSchema
                     ->when($field['not_self'] ?? false, fn ($members) => $members->where('id', '!==', $this->applicant?->id));
                 $headOf = $field['required_when_head'] ?? null;
 
-                // Kepala keluarga baru hanya berarti bila almarhum kepala keluarga.
-                if ($headOf !== null && ! $this->isFamilyHead($payload[$headOf] ?? null)) {
-                    $rules["payload.{$field['name']}"] = ['exclude'];
+                if ($headOf !== null) {
+                    // Calon kepala keluarga baru: yang tetap di KK, selain kepala keluarga sekarang.
+                    $leaving = array_map('strval', array_filter((array) ($payload[$headOf] ?? []), 'is_scalar'));
+                    $members = $members->filter(fn ($member): bool => $member->family_role !== FamilyRole::KEPALA_KELUARGA
+                        && ! in_array((string) $member->id, $leaving, true));
 
-                    continue;
+                    // Hanya berarti bila kepala keluarga ikut keluar dan masih ada anggota yang tinggal.
+                    if (! $this->isFamilyHead($payload[$headOf] ?? null) || $members->isEmpty()) {
+                        $rules["payload.{$field['name']}"] = ['exclude'];
+
+                        continue;
+                    }
                 }
 
                 $required = ($field['required'] ?? false) || $headOf !== null;
@@ -614,6 +646,7 @@ class LetterFormSchema
             $rules["payload.{$field['name']}"] = [
                 ($field['required'] ?? false) && ! $known ? 'required' : 'nullable',
                 ...self::typeRules($field),
+                ...(isset($field['witness']) ? [$this->witnessRule($field, $payload)] : []),
             ];
         }
 
@@ -885,13 +918,72 @@ class LetterFormSchema
         return $payload;
     }
 
-    private function isFamilyHead(mixed $citizenId): bool
+    /**
+     * Apakah anggota terpilih (satu id, atau daftar id isian family_members)
+     * termasuk kepala keluarga.
+     */
+    /**
+     * Jawaban isian `from_applicant` diganti nilai dari data pemohon, sebelum
+     * divalidasi (agar syarat tampil isian lain mengikutinya).
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function withApplicantValues(array $payload): array
     {
-        if (! is_string($citizenId) || $citizenId === '') {
-            return false;
+        foreach ($this->fields ?? [] as $field) {
+            $source = $field['from_applicant'] ?? null;
+            $raw = $source !== null ? $this->applicant?->getAttribute($source['column']) : null;
+            $raw = $raw instanceof \BackedEnum ? $raw->value : $raw;
+            $value = is_scalar($raw) ? ($source['map'][(string) $raw] ?? null) : null;
+
+            if ($value !== null) {
+                $payload[$field['name']] = $value;
+            }
         }
 
-        return $this->familyMembers()->firstWhere('id', $citizenId)?->family_role === FamilyRole::KEPALA_KELUARGA;
+        return $payload;
+    }
+
+    /**
+     * Saksi harus orang lain: bukan pemohon, bukan saksi lainnya, dan bukan
+     * pihak dalam surat (isian `not_same_as`).
+     *
+     * @param  array<string, mixed>  $field
+     * @param  array<string, mixed>  $payload
+     */
+    private function witnessRule(array $field, array $payload): \Closure
+    {
+        $labels = array_column($this->fields ?? [], 'label', 'name');
+
+        return function (string $attribute, mixed $value, \Closure $fail) use ($field, $payload, $labels): void {
+            if (! is_string($value) || $value === '') {
+                return;
+            }
+
+            if ($this->applicant !== null && hash('sha256', $value) === $this->applicant->nik_hash) {
+                $fail('Saksi tidak boleh pemohon sendiri.');
+
+                return;
+            }
+
+            foreach ($field['not_same_as'] ?? [] as $other) {
+                if (($payload[$other] ?? null) === $value) {
+                    $fail('Saksi tidak boleh orang yang sama dengan '.($labels[$other] ?? $other).'.');
+
+                    return;
+                }
+            }
+        };
+    }
+
+    private function isFamilyHead(mixed $citizenIds): bool
+    {
+        $ids = array_map('strval', array_filter((array) $citizenIds, fn (mixed $id): bool => is_scalar($id) && $id !== ''));
+
+        return $ids !== [] && $this->familyMembers()->contains(
+            fn ($member): bool => in_array((string) $member->id, $ids, true) && $member->family_role === FamilyRole::KEPALA_KELUARGA,
+        );
     }
 
     /**

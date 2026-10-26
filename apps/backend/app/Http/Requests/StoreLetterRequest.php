@@ -17,6 +17,17 @@ class StoreLetterRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Isian yang diturunkan dari data pemohon (mis. peran suami/istri dari
+     * jenis kelamin) menimpa jawaban form sebelum divalidasi.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (is_array($this->input('payload'))) {
+            $this->merge(['payload' => $this->schema()->withApplicantValues($this->input('payload'))]);
+        }
+    }
+
     public function rules(): array
     {
         $schema = $this->schema();

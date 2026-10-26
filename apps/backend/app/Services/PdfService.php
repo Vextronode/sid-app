@@ -313,6 +313,7 @@ class PdfService
             '{{ applicant_birth_place_date }}' => $context['applicant']['birth_place_date'],
             // Snapshot surat lama belum menyimpan pekerjaan pemohon.
             '{{ applicant_occupation }}' => $context['applicant']['occupation'] ?? '-',
+            '{{ applicant_marital_status }}' => $context['applicant']['marital_status'] ?? '-',
             '{{ applicant_family_number }}' => $context['applicant']['family_number'] ?? '________________________',
             '{{ village_kasi_pemerintahan_name }}' => $context['village']['kasi_pemerintahan_name'] ?? '________________________',
             '{{ purpose }}' => $letter->purpose ?? '________________________________________',

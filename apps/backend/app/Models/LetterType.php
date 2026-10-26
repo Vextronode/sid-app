@@ -38,6 +38,7 @@ class LetterType extends Model
         'requires_result_upload',
         'result_upload_hint',
         'data_instructions',
+        'data_options',
     ];
 
     protected $attributes = [
@@ -57,6 +58,7 @@ class LetterType extends Model
         'data_action' => LetterDataAction::class,
         'form_fields' => 'array',
         'data_fields' => 'array',
+        'data_options' => 'array',
         'signature_slots' => 'array',
         'documents' => 'array',
     ];

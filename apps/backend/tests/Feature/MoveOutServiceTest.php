@@ -228,6 +228,46 @@ class MoveOutServiceTest extends TestCase
         $this->assertTrue($this->applicant['citizen']->fresh()->is_active);
     }
 
+    public function test_staying_member_becomes_the_new_head_when_the_head_moves_out(): void
+    {
+        $headMoves = [
+            ...$this->payload(),
+            'jenis_kepindahan' => 'kk_sebagian',
+            'anggota_pindah' => [$this->applicant['citizen']->id, $this->child->id],
+        ];
+        $submit = fn (array $payload) => $this->actingAs($this->applicant['user'])->postJson('/api/letters', [
+            'letter_type_id' => LetterType::query()->where('code', 'F03')->value('id'),
+            'payload' => $payload,
+        ]);
+
+        // Wajib diisi, dan calonnya harus anggota yang tetap tinggal.
+        $submit($headMoves)->assertUnprocessable()->assertJsonValidationErrors('payload.kepala_baru');
+        $submit([...$headMoves, 'kepala_baru' => $this->child->id])->assertJsonValidationErrors('payload.kepala_baru');
+        // Kepala keluarga tidak pindah: isiannya dibuang.
+        $memberOnly = $submit([...$this->payload(), 'kepala_baru' => $this->wife->id])->assertCreated()->json('data.id');
+        $this->assertArrayNotHasKey('kepala_baru', Letter::query()->findOrFail($memberOnly)->payload);
+
+        $letterId = $this->approve([...$headMoves, 'kepala_baru' => $this->wife->id]);
+        $this->acceptResult($letterId);
+
+        $this->actingAs($this->kasi['user'])
+            ->getJson("/api/letters/{$letterId}/fulfillment")
+            ->assertJsonPath('data.new_head', ['name' => 'Iis Nurhayati', 'family_role' => 'Istri']);
+        $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letterId}/fulfillment/preview", ['values' => []])
+            ->assertOk()
+            ->assertJsonCount(3, 'data')
+            ->assertJsonPath('data.2.name', 'Iis Nurhayati')
+            ->assertJsonPath('data.2.changes.0.new', 'Kepala Keluarga');
+        $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => []])
+            ->assertOk();
+
+        $this->assertFalse($this->applicant['citizen']->fresh()->is_active);
+        $this->assertFalse($this->child->fresh()->is_active);
+        $this->assertSame('kepala_keluarga', $this->wife->fresh()->family_role->value);
+    }
+
     /**
      * @return array<string, mixed>
      */

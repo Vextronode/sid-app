@@ -181,10 +181,10 @@ class DeathReportServiceTest extends TestCase
         $this->actingAs($this->applicant['user'])
             ->getJson('/api/profile/nik-lookup?nik=3207010101800009')
             ->assertOk()
-            ->assertJsonPath('data', ['found' => true, 'has_account' => false, 'name' => 'Ujang Saksi', 'family_number' => '3218010101900009']);
+            ->assertJsonPath('data', ['found' => true, 'has_account' => false, 'name' => 'Ujang Saksi', 'family_number' => '3218010101900009', 'is_self' => false]);
         $this->actingAs($this->applicant['user'])
             ->getJson('/api/profile/nik-lookup?nik=3207010101800099')
-            ->assertJsonPath('data', ['found' => false, 'has_account' => false, 'name' => null, 'family_number' => null]);
+            ->assertJsonPath('data', ['found' => false, 'has_account' => false, 'name' => null, 'family_number' => null, 'is_self' => false]);
         $this->actingAs($this->applicant['user'])->getJson('/api/profile/nik-lookup?nik=123')->assertUnprocessable();
 
         // NIK terdaftar: nama dan No. KK diambil dari data penduduk.
@@ -200,7 +200,7 @@ class DeathReportServiceTest extends TestCase
             ->assertJsonValidationErrors('payload.nama_saksi_2');
     }
 
-    public function test_kasi_deactivates_the_deceased_and_their_account_after_the_death_certificate_is_accepted(): void
+    public function test_kasi_deactivates_the_deceased_and_sets_the_new_family_head_after_the_death_certificate_is_accepted(): void
     {
         $letterId = $this->approve([...$this->payload(), 'almarhum' => $this->father['citizen']->id, 'kepala_baru' => $this->mother->id]);
 
@@ -216,7 +216,25 @@ class DeathReportServiceTest extends TestCase
         $this->actingAs($this->kasi['user'])
             ->getJson("/api/letters/{$letterId}/fulfillment")
             ->assertJsonPath('data.action', 'deactivate_members')
-            ->assertJsonPath('data.members.0.name', 'Tatang Sutisna');
+            ->assertJsonPath('data.members.0.name', 'Tatang Sutisna')
+            ->assertJsonPath('data.new_head', ['name' => 'Iis Nurhayati', 'family_role' => 'Istri']);
+        // Pratinjau untuk pop up konfirmasi; belum ada yang berubah.
+        $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letterId}/fulfillment/preview", ['values' => []])
+            ->assertOk()
+            ->assertJsonPath('data.0.kind', 'deactivate')
+            ->assertJsonPath('data.0.changes', [
+                ['column' => 'is_active', 'label' => 'Status Data Warga', 'old' => 'Aktif', 'new' => 'Nonaktif'],
+                ['column' => 'account_is_active', 'label' => 'Akun Login', 'old' => 'Aktif', 'new' => 'Nonaktif'],
+            ])
+            // Ibu (pilihan pemohon) menggantikan almarhum sebagai kepala keluarga.
+            ->assertJsonPath('data.1.name', 'Iis Nurhayati')
+            ->assertJsonPath('data.1.changes', [
+                ['column' => 'family_role', 'label' => 'Hubungan dalam KK', 'old' => 'Istri', 'new' => 'Kepala Keluarga'],
+            ]);
+        $this->assertSame('istri', $this->mother->fresh()->family_role->value);
+        $this->assertTrue($this->father['citizen']->fresh()->is_active);
+        $this->assertTrue($this->father['user']->fresh()->is_active);
         $this->actingAs($this->kasi['user'])
             ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => []])
             ->assertOk();
@@ -224,6 +242,7 @@ class DeathReportServiceTest extends TestCase
         $this->assertFalse($this->father['citizen']->fresh()->is_active);
         $this->assertFalse($this->father['user']->fresh()->is_active);
         $this->assertTrue($this->mother->fresh()->is_active);
+        $this->assertSame('kepala_keluarga', $this->mother->fresh()->family_role->value);
     }
 
     private function uploadSignature(User $user): void

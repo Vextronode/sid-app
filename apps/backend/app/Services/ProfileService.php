@@ -42,6 +42,8 @@ class ProfileService
             'has_account' => $hasAccount,
             'name' => $citizen === null ? null : ($hasAccount ? self::maskName($citizen->name) : $citizen->name),
             'family_number' => $hasAccount ? null : $citizen?->family?->no_kk,
+            // NIK milik pemohon sendiri (mis. tidak boleh menjadi saksinya).
+            'is_self' => $citizen !== null && $citizen->id === $user->citizen_id,
         ];
     }
 

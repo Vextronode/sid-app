@@ -2,19 +2,25 @@
 
 namespace App\Services;
 
+use App\Enums\FamilyRole;
 use App\Enums\LetterDataAction;
 use App\Enums\LetterResultStage;
 use App\Enums\LetterStatus;
 use App\Http\Requests\StoreCitizenRequest;
 use App\Http\Requests\UpdateCitizenRequest;
 use App\Models\Citizen;
+use App\Models\Family;
+use App\Models\Hamlet;
 use App\Models\Letter;
 use App\Models\Occupation;
+use App\Models\Rt;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
 use App\Repositories\UserRepository;
 use App\Support\CitizenLabels;
+use App\Support\FieldCondition;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -32,17 +38,47 @@ use Illuminate\Validation\ValidationException;
  * dipilih pemohon (isian family_members), dan `manual` hanya mencatat
  * bahwa Kasi/Kaur sudah mengerjakan perubahannya sendiri di Data
  * Penduduk/KK (mis. susunan KK baru), lengkap dengan catatannya.
+ *
+ * Sebelum Terapkan, `preview()` menghitung daftar perubahan per warga
+ * (lama -> baru) dengan menjalankan Terapkan di transaksi yang lalu
+ * dibatalkan, sehingga yang dikonfirmasi Kasi/Kaur sama dengan yang
+ * disimpan.
  */
 class LetterFulfillmentService
 {
     /** Kolom yang nilainya mengikuti pemohon bila tidak diisi saat tambah warga. */
     private const INHERITED_FROM_APPLICANT = ['rt_id', 'hamlet_id', 'family_id', 'address'];
 
+    /** Judul kolom di daftar perubahan. */
+    private const COLUMN_TITLES = [
+        'nik' => 'NIK',
+        'name' => 'Nama',
+        'place_of_birth' => 'Tempat Lahir',
+        'date_of_birth' => 'Tanggal Lahir',
+        'gender' => 'Jenis Kelamin',
+        'blood_type' => 'Golongan Darah',
+        'address' => 'Alamat',
+        'rt_id' => 'RT/RW',
+        'hamlet_id' => 'Dusun',
+        'family_id' => 'Kartu Keluarga',
+        'family_role' => 'Hubungan dalam KK',
+        'mother_name_text' => 'Nama Ibu',
+        'father_name_text' => 'Nama Ayah',
+        'marital_status' => 'Status Perkawinan',
+        'occupation_id' => 'Pekerjaan',
+        'religion' => 'Agama',
+        'last_education' => 'Pendidikan Terakhir',
+        'residency_type' => 'Status Kependudukan',
+        'is_active' => 'Status Data Warga',
+        'account_is_active' => 'Akun Login',
+    ];
+
     public function __construct(
         protected LetterRepository $letterRepository,
         protected CitizenService $citizenService,
         protected OfficialService $officialService,
         protected UserRepository $userRepository,
+        protected FamilyService $familyService,
     ) {}
 
     /**
@@ -58,6 +94,33 @@ class LetterFulfillmentService
         $proposed = $this->proposedValues($letter);
         $current = $action === LetterDataAction::UpdateCitizen ? $this->subjectCitizen($letter, null) : null;
         $subjectField = $letter->letterType?->data_subject_field;
+        $familyMode = $action === LetterDataAction::CreateCitizen ? $this->familyMode($letter) : null;
+        $fields = array_map(fn (array $field): array => [
+            'column' => $field['column'],
+            'label' => $field['label'] ?? $field['column'],
+            'source' => $field['source'] ?? null,
+            'current' => $current ? $this->scalar($current->getAttribute($field['column'])) : null,
+            'proposed' => $proposed[$field['column']] ?? null,
+            'proposed_label' => $this->describeValue($field['column'], $proposed[$field['column']] ?? null),
+            // Nilai tetap dari jenis surat; tidak dapat dikoreksi.
+            'fixed' => array_key_exists('value', $field),
+            'display' => $field['value_label'] ?? null,
+        ], $this->fields($letter));
+
+        // KK baru (mis. pendatang dengan rumah sendiri): No. KK diisi dari
+        // KK terbitan Disdukcapil.
+        if ($familyMode === 'create') {
+            $fields[] = [
+                'column' => 'no_kk',
+                'label' => 'No. KK Baru (dari KK terbitan Disdukcapil)',
+                'source' => null,
+                'current' => null,
+                'proposed' => null,
+                'proposed_label' => '-',
+                'fixed' => false,
+                'display' => null,
+            ];
+        }
 
         return [
             'action' => $action->value,
@@ -66,6 +129,7 @@ class LetterFulfillmentService
             'result' => $letter->fulfillment,
             'instructions' => $letter->letterType?->data_instructions,
             'members' => $action === LetterDataAction::DeactivateMembers ? $this->memberProposal($letter) : [],
+            'new_head' => $action === LetterDataAction::DeactivateMembers ? $this->newHeadProposal($letter) : null,
             'member_changes' => $action === LetterDataAction::UpdateMembers ? $this->memberChangeProposal($letter) : [],
             'options' => $action === LetterDataAction::UpdateMembers ? $this->columnOptions($letter) : (object) [],
             // Diisi bila subjek perubahan bukan pemohon (mis. almarhum):
@@ -75,16 +139,9 @@ class LetterFulfillmentService
                 'found' => $current !== null,
                 'name' => $current?->name,
             ],
-            'fields' => array_map(fn (array $field): array => [
-                'column' => $field['column'],
-                'label' => $field['label'] ?? $field['column'],
-                'source' => $field['source'] ?? null,
-                'current' => $current ? $this->scalar($current->getAttribute($field['column'])) : null,
-                'proposed' => $proposed[$field['column']] ?? null,
-                // Nilai tetap dari jenis surat; tidak dapat dikoreksi.
-                'fixed' => array_key_exists('value', $field),
-                'display' => $field['value_label'] ?? null,
-            ], $this->fields($letter)),
+            'family' => $familyMode === null ? null : $this->familyProposal($letter, $familyMode),
+            'subjects' => $action === LetterDataAction::UpdateCitizens ? $this->subjectProposal($letter) : [],
+            'fields' => $fields,
         ];
     }
 
@@ -95,7 +152,30 @@ class LetterFulfillmentService
      */
     public function apply(Letter $letter, User $actor, array $values, ?string $subjectNik = null, ?string $notes = null): Letter
     {
-        return DB::transaction(function () use ($letter, $actor, $values, $subjectNik, $notes): Letter {
+        return $this->run($letter, $actor, $values, $subjectNik, $notes, dryRun: false)[0];
+    }
+
+    /**
+     * Daftar perubahan yang akan disimpan Terapkan dengan nilai yang sama,
+     * tanpa menyimpannya.
+     *
+     * @param  array<string, mixed>  $values
+     * @return array<int, array<string, mixed>>
+     */
+    public function preview(Letter $letter, User $actor, array $values, ?string $subjectNik = null, ?string $notes = null): array
+    {
+        return $this->run($letter, $actor, $values, $subjectNik, $notes, dryRun: true)[1];
+    }
+
+    /**
+     * @param  array<string, mixed>  $values
+     * @return array{0: Letter, 1: array<int, array<string, mixed>>}
+     */
+    private function run(Letter $letter, User $actor, array $values, ?string $subjectNik, ?string $notes, bool $dryRun): array
+    {
+        DB::beginTransaction();
+
+        try {
             // Lock agar dua Terapkan bersamaan tidak sama-sama lolos.
             $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
             $locked->load(['letterType', 'citizen']);
@@ -115,6 +195,9 @@ class LetterFulfillmentService
             }
 
             $action = $this->actionOf($locked);
+            // No. KK baru bukan kolom data warga (lihat targetFamily()).
+            $newFamilyNumber = $values['no_kk'] ?? null;
+            unset($values['no_kk']);
 
             // Daftar [warga, perubahan] untuk jejak audit per warga.
             [$result, $touched] = match ($action) {
@@ -122,13 +205,22 @@ class LetterFulfillmentService
                     $action,
                     $action === LetterDataAction::UpdateCitizen
                         ? $this->updateCitizen($locked, $actor, $this->finalValues($locked, $values), $subjectNik)
-                        : $this->createCitizen($locked, $actor, $this->finalValues($locked, $values)),
+                        : $this->createCitizen($locked, $actor, $this->finalValues($locked, $values), $newFamilyNumber),
                 ),
                 LetterDataAction::DeactivateMembers => $this->deactivateMembers($locked, $actor, $notes),
                 LetterDataAction::UpdateMembers => $this->updateMembers($locked, $actor, $values),
+                LetterDataAction::UpdateCitizens => $this->updateCitizens($locked, $actor),
                 LetterDataAction::Manual => [['action' => $action->value, 'notes' => $notes], []],
                 default => abort(422, 'Jenis surat ini tidak memiliki aksi perubahan data.'),
             };
+
+            $changes = $this->describe($touched);
+
+            if ($dryRun) {
+                DB::rollBack();
+
+                return [$locked, $changes];
+            }
 
             $this->letterRepository->update($locked, [
                 'fulfilled_at' => now(),
@@ -172,8 +264,97 @@ class LetterFulfillmentService
                 'letter_fulfilled',
             ));
 
-            return $locked;
-        });
+            DB::commit();
+
+            return [$locked, $changes];
+        } catch (\Throwable $exception) {
+            DB::rollBack();
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Perubahan per warga untuk pop up konfirmasi, dengan nilai yang mudah
+     * dibaca (label pilihan, nama pekerjaan, No. KK tersamar).
+     *
+     * @param  array<int, array{0: Citizen, 1: array<string, mixed>}>  $touched
+     * @return array<int, array<string, mixed>>
+     */
+    private function describe(array $touched): array
+    {
+        return array_map(function (array $entry): array {
+            [$citizen, $changes] = $entry;
+
+            return [
+                'citizen_id' => $citizen->id,
+                'name' => $citizen->name,
+                'kind' => match (true) {
+                    array_key_exists('nik', $changes) && ($changes['nik']['old'] ?? null) === null => 'create',
+                    ($changes['is_active']['new'] ?? null) === false => 'deactivate',
+                    default => 'update',
+                },
+                'changes' => array_values(array_map(fn (string $column, array $change): array => [
+                    'column' => $column,
+                    'label' => self::COLUMN_TITLES[$column] ?? ucfirst(str_replace('_', ' ', $column)),
+                    'old' => $this->describeValue($column, $change['old'] ?? null),
+                    'new' => $this->describeValue($column, $change['new'] ?? null),
+                ], array_keys($changes), $changes)),
+            ];
+        }, $touched);
+    }
+
+    private function describeValue(string $column, mixed $value): string
+    {
+        $value = $this->scalar($value);
+
+        if ($value === null || $value === '') {
+            return '-';
+        }
+
+        return match ($column) {
+            'is_active', 'account_is_active' => $value ? 'Aktif' : 'Nonaktif',
+            'gender' => match ((string) $value) {
+                'L' => 'Laki-laki',
+                'P' => 'Perempuan',
+                default => (string) $value,
+            },
+            'family_role' => FamilyRole::tryFrom((string) $value)?->label() ?? (string) $value,
+            'blood_type' => $value === 'tidak_tahu' ? 'Tidak Tahu' : (string) $value,
+            'residency_type' => ucfirst((string) $value),
+            'date_of_birth' => $this->dateLabel($value),
+            'occupation_id' => Occupation::query()->whereKey($value)->value('name') ?? (string) $value,
+            'rt_id' => $this->areaLabel($value),
+            'hamlet_id' => (string) (Hamlet::query()->whereKey($value)->value('name') ?? $value),
+            'family_id' => $this->familyLabel(Family::query()->find($value)),
+            default => $this->displayValue($column, $value),
+        };
+    }
+
+    private function dateLabel(mixed $value): string
+    {
+        try {
+            return CarbonImmutable::parse((string) $value)->locale('id')->translatedFormat('j F Y');
+        } catch (\Throwable) {
+            return (string) $value;
+        }
+    }
+
+    private function areaLabel(mixed $rtId): string
+    {
+        $rt = Rt::query()->with('rw.hamlet')->find($rtId);
+
+        return $rt === null ? (string) $rtId : sprintf(
+            'Dusun %s, RT %s / RW %s',
+            $rt->rw?->hamlet?->name ?? '-',
+            str_pad((string) $rt->number, 3, '0', STR_PAD_LEFT),
+            str_pad((string) $rt->rw?->number, 3, '0', STR_PAD_LEFT),
+        );
+    }
+
+    private function familyLabel(?Family $family): string
+    {
+        return $family === null ? '-' : 'No. KK '.str_repeat('*', 12).substr((string) $family->no_kk, -4);
     }
 
     /**
@@ -246,7 +427,50 @@ class LetterFulfillmentService
             abort(422, 'Tidak ada anggota aktif yang dapat dinonaktifkan dari surat ini.');
         }
 
+        // Kepala keluarga yang dinonaktifkan digantikan anggota pilihan pemohon.
+        $head = $this->newHead($letter);
+
+        if ($head !== null && $head->is_active && $head->family_role?->value !== FamilyRole::KEPALA_KELUARGA->value) {
+            $changes = ['family_role' => ['old' => $head->family_role?->value, 'new' => FamilyRole::KEPALA_KELUARGA->value]];
+            $head = $this->citizenService->update($head, ['family_role' => FamilyRole::KEPALA_KELUARGA->value], $actor, audit: false);
+            $members[] = ['citizen_id' => $head->id, 'name' => $head->name, 'changes' => $changes];
+            $touched[] = [$head, $changes];
+        }
+
         return [['action' => LetterDataAction::DeactivateMembers->value, 'members' => $members], $touched];
+    }
+
+    /**
+     * Anggota KK yang menjadi kepala keluarga baru (data_options.new_head =
+     * isian family_member), bila ada di payload dan masih satu KK dengan
+     * pemohon.
+     */
+    private function newHead(Letter $letter): ?Citizen
+    {
+        $field = $letter->letterType?->data_options['new_head'] ?? null;
+        $id = $field !== null ? ($letter->payload[$field] ?? null) : null;
+
+        if (! is_string($id) || $id === '' || $letter->citizen?->family_id === null) {
+            return null;
+        }
+
+        return Citizen::query()
+            ->where('village_id', $letter->village_id)
+            ->where('family_id', $letter->citizen->family_id)
+            ->find($id);
+    }
+
+    /**
+     * @return array{name: string, family_role: string}|null
+     */
+    private function newHeadProposal(Letter $letter): ?array
+    {
+        $head = $this->newHead($letter);
+
+        return $head === null ? null : [
+            'name' => $head->name,
+            'family_role' => $this->describeValue('family_role', $head->family_role),
+        ];
     }
 
     /**
@@ -540,9 +764,28 @@ class LetterFulfillmentService
      * @param  array<string, mixed>  $final
      * @return array{0: Citizen, 1: array<string, array{old: mixed, new: mixed}>}
      */
-    private function createCitizen(Letter $letter, User $actor, array $final): array
+    private function createCitizen(Letter $letter, User $actor, array $final, ?string $newFamilyNumber = null): array
     {
         $applicant = $letter->citizen;
+        $rt = isset($final['rt_id'])
+            ? Rt::query()->with('rw.hamlet')->where('village_id', $letter->village_id)->find($final['rt_id'])
+            : null;
+
+        // Alamat dari isian wilayah (mis. alamat pendatang), bukan pemohon.
+        if ($rt !== null) {
+            $final['hamlet_id'] ??= $rt->rw?->hamlet_id;
+            $final['address'] ??= $this->areaLabel($rt->id);
+        }
+
+        [$family, $role] = $this->targetFamily($letter, $actor, $final, $rt, $newFamilyNumber);
+
+        if ($family !== null) {
+            $final['family_id'] = $family->id;
+        }
+
+        if ($role !== null) {
+            $final['family_role'] = $role;
+        }
 
         foreach (self::INHERITED_FROM_APPLICANT as $column) {
             if (! array_key_exists($column, $final) && $applicant?->getAttribute($column) !== null) {
@@ -550,7 +793,7 @@ class LetterFulfillmentService
             }
         }
 
-        $allowed = array_merge(array_column($this->fields($letter), 'column'), self::INHERITED_FROM_APPLICANT);
+        $allowed = array_merge(array_column($this->fields($letter), 'column'), self::INHERITED_FROM_APPLICANT, ['family_role']);
         $rules = Arr::only($this->createRules(), [...$allowed, 'nik', 'name', 'date_of_birth', 'gender', 'address', 'rt_id']);
         $validated = $this->validate($final, $rules);
 
@@ -566,6 +809,183 @@ class LetterFulfillmentService
         }
 
         return [$citizen, $changes];
+    }
+
+    /**
+     * Cara warga baru masuk KK (data_options.family): `join` = KK yang sudah
+     * ada di desa (No. KK dari isian), `create` = KK baru (No. KK diisi
+     * Kasi/Kaur, warga menjadi kepala keluarga), null = KK pemohon.
+     */
+    private function familyMode(Letter $letter): ?string
+    {
+        $options = $letter->letterType?->data_options['family'] ?? [];
+        $payload = is_array($letter->payload) ? $letter->payload : [];
+
+        foreach (['join', 'create'] as $mode) {
+            if (isset($options[$mode]) && FieldCondition::matches($options[$mode]['when'] ?? null, $payload)) {
+                return $mode;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{mode: string, description: string}
+     */
+    private function familyProposal(Letter $letter, string $mode): array
+    {
+        if ($mode === 'create') {
+            return ['mode' => $mode, 'description' => 'Dibuatkan KK baru dengan warga ini sebagai kepala keluarga.'];
+        }
+
+        $family = $this->joinedFamily($letter);
+        $head = $family?->members()->where('family_role', FamilyRole::KEPALA_KELUARGA->value)->value('name');
+
+        return ['mode' => $mode, 'description' => $family === null
+            ? 'KK yang ditumpangi tidak ditemukan di data desa.'
+            : 'Masuk ke '.$this->familyLabel($family).($head ? " (kepala keluarga: {$head})." : '.')];
+    }
+
+    private function joinedFamily(Letter $letter): ?Family
+    {
+        $field = $letter->letterType?->data_options['family']['join']['no_kk_field'] ?? null;
+        $number = $field !== null ? (string) ($letter->payload[$field] ?? '') : '';
+
+        return $number === '' ? null : Family::query()
+            ->where('village_id', $letter->village_id)
+            ->where('no_kk_hash', hash('sha256', $number))
+            ->first();
+    }
+
+    /**
+     * KK warga baru dan hubungannya yang dipaksakan (kepala keluarga untuk
+     * KK baru). [null, null] = mengikuti KK pemohon.
+     *
+     * @param  array<string, mixed>  $final
+     * @return array{0: ?Family, 1: ?string}
+     */
+    private function targetFamily(Letter $letter, User $actor, array $final, ?Rt $rt, ?string $newFamilyNumber): array
+    {
+        return match ($this->familyMode($letter)) {
+            'join' => [$this->joinedFamily($letter) ?? throw ValidationException::withMessages([
+                'values.no_kk' => ['KK yang ditumpangi tidak ditemukan di data desa. Periksa No. KK di surat, atau daftarkan KK-nya lebih dulu.'],
+            ]), null],
+            'create' => [$this->createFamily($actor, $final, $rt, $newFamilyNumber), FamilyRole::KEPALA_KELUARGA->value],
+            default => [null, null],
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $final
+     */
+    private function createFamily(User $actor, array $final, ?Rt $rt, ?string $number): Family
+    {
+        if (! is_string($number) || ! preg_match('/^\d{16}$/', $number)) {
+            throw ValidationException::withMessages([
+                'values.no_kk' => ['Isi No. KK baru (16 digit) sesuai KK terbitan Disdukcapil.'],
+            ]);
+        }
+
+        return $this->familyService->create([
+            'no_kk' => $number,
+            'family_address' => (string) ($final['address'] ?? '-'),
+            'rt_id' => $rt?->id,
+            'rw_id' => $rt?->rw_id,
+            'hamlet_id' => $rt?->rw?->hamlet_id,
+        ], $actor);
+    }
+
+    /**
+     * Warga desa (aktif) ber-NIK sesuai isian data_options.subjects.
+     *
+     * @return array<int, array{field: string, label: string, nik: string, citizen: ?Citizen}>
+     */
+    private function subjects(Letter $letter): array
+    {
+        $subjects = [];
+
+        foreach ($letter->letterType?->data_options['subjects'] ?? [] as $field => $label) {
+            $nik = (string) ($letter->payload[$field] ?? '');
+            $citizen = preg_match('/^\d{16}$/', $nik) ? Citizen::query()
+                ->with('occupation')
+                ->where('village_id', $letter->village_id)
+                ->where('nik_hash', hash('sha256', $nik))
+                ->where('is_active', true)
+                ->first() : null;
+
+            $subjects[] = ['field' => $field, 'label' => (string) $label, 'nik' => $nik, 'citizen' => $citizen];
+        }
+
+        return $subjects;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function subjectProposal(Letter $letter): array
+    {
+        $proposed = $this->proposedValues($letter);
+
+        return array_map(fn (array $subject): array => [
+            'label' => $subject['label'],
+            'name' => $subject['citizen']?->name,
+            'nik_masked' => $subject['nik'] === '' ? null : str_repeat('*', 12).substr($subject['nik'], -4),
+            'found' => $subject['citizen'] !== null,
+            'fields' => array_map(fn (array $field): array => [
+                'label' => $field['label'] ?? $field['column'],
+                'current_label' => $subject['citizen'] ? $this->columnLabel($field['column'], $subject['citizen']) : '-',
+                'proposed_label' => $this->describeValue($field['column'], $proposed[$field['column']] ?? null),
+            ], $this->fields($letter)),
+        ], $this->subjects($letter));
+    }
+
+    /**
+     * Ubah kolom data_fields tiap warga subjek yang terdata di desa; yang
+     * tidak terdata (mis. pasangan dari luar desa) dilewati.
+     *
+     * @return array{0: array<string, mixed>, 1: array<int, array{0: Citizen, 1: array<string, mixed>}>}
+     */
+    private function updateCitizens(Letter $letter, User $actor): array
+    {
+        $final = array_filter($this->proposedValues($letter), fn (mixed $value): bool => $value !== null && $value !== '');
+
+        if ($final === []) {
+            abort(422, 'Tidak ada nilai perubahan untuk diterapkan.');
+        }
+
+        $validated = $this->validate($final, Arr::only($this->updateRules(), array_keys($final)));
+        $members = [];
+        $touched = [];
+
+        foreach ($this->subjects($letter) as $subject) {
+            $citizen = $subject['citizen'];
+
+            if ($citizen === null) {
+                continue;
+            }
+
+            $changes = [];
+
+            foreach ($validated as $column => $value) {
+                $old = $this->scalar($citizen->getAttribute($column));
+
+                if ($old != $value) {
+                    $changes[$column] = ['old' => $old, 'new' => $value];
+                }
+            }
+
+            // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
+            $citizen = $this->citizenService->update($citizen, $validated, $actor, audit: false);
+            $members[] = ['citizen_id' => $citizen->id, 'name' => $citizen->name, 'changes' => $changes];
+            $touched[] = [$citizen, $changes];
+        }
+
+        if ($members === []) {
+            abort(422, 'Tidak ada warga desa yang datanya dapat diubah dari surat ini.');
+        }
+
+        return [['action' => LetterDataAction::UpdateCitizens->value, 'members' => $members], $touched];
     }
 
     /**
@@ -622,6 +1042,13 @@ class LetterFulfillmentService
 
             $source = $field['source'] ?? null;
             $value = $source !== null ? ($payload[$source] ?? null) : null;
+
+            // `map`: jawaban isian diterjemahkan ke nilai kolom (mis.
+            // perkawinan -> kawin).
+            if (isset($field['map'])) {
+                $value = $field['map'][(string) $value] ?? null;
+            }
+
             $proposed[$field['column']] = $value === '' ? null : $value;
         }
 

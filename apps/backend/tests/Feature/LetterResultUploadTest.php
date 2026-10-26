@@ -121,7 +121,7 @@ class LetterResultUploadTest extends TestCase
             ->assertJsonCount(2, 'data.results');
         $this->assertSame(
             ['Hasil dari instansi diunggah pemohon', 'Hasil dari instansi ditolak: Foto KK buram.', 'Hasil dari instansi diunggah pemohon', 'Hasil dari instansi diterima'],
-            Letter::query()->findOrFail($letterId)->statusLogs()->where('reason', 'like', 'Hasil%')->orderBy('id')->pluck('reason')->all(),
+            Letter::query()->findOrFail($letterId)->statusLogs()->where('reason', 'like', 'Hasil%')->reorder('id')->pluck('reason')->all(),
         );
     }
 

@@ -24,6 +24,26 @@ class LetterFulfillmentController extends Controller
         ]);
     }
 
+    /**
+     * Daftar perubahan (lama -> baru) yang akan disimpan Terapkan dengan
+     * nilai yang sama, untuk dikonfirmasi lebih dulu. Tidak menyimpan apa pun.
+     */
+    public function preview(ApplyLetterFulfillmentRequest $request, Letter $letter)
+    {
+        $this->authorize('fulfill', $letter);
+
+        return response()->json([
+            'message' => 'Pratinjau perubahan data berhasil dihitung.',
+            'data' => $this->letterFulfillmentService->preview(
+                $letter,
+                $request->user(),
+                $request->validated('values') ?? [],
+                $request->validated('subject_nik'),
+                $request->validated('notes'),
+            ),
+        ]);
+    }
+
     public function store(ApplyLetterFulfillmentRequest $request, Letter $letter)
     {
         $this->authorize('fulfill', $letter);
