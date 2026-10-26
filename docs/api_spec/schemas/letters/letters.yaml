@@ -705,7 +705,7 @@ FulfillmentProposal:
   properties:
     action:
       type: string
-      enum: [none, update_citizen, create_citizen, deactivate_members, update_members, manual]
+      enum: [none, update_citizen, create_citizen, deactivate_members, update_members, update_citizens, manual]
       example: "update_citizen"
     fulfilled_at:
       type: string
@@ -734,6 +734,21 @@ FulfillmentProposal:
     options:
       type: object
       description: "Untuk action `update_members`: pilihan nilai per kolom (last_education, religion, marital_status, occupation_id)."
+    family:
+      type: object
+      nullable: true
+      description: |
+        Untuk action `create_citizen` dengan `data_options.family`: {mode:
+        join|create, description}. Mode `create` menambah kolom `no_kk` di
+        `fields` (No. KK baru dari KK terbitan Disdukcapil).
+    subjects:
+      type: array
+      description: |
+        Untuk action `update_citizens`: per isian `data_options.subjects`
+        {label, name, nik_masked, found, fields[{label, current_label,
+        proposed_label}]}; yang tidak `found` dilewati saat Terapkan.
+      items:
+        type: object
     instructions:
       type: string
       nullable: true

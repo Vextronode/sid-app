@@ -46,7 +46,16 @@ post:
       `is_active` diset false (mis. meninggal), akun login warga itu ikut
       dinonaktifkan dan token-nya dihapus.
     - create_citizen: menambah warga baru; `rt_id`, `hamlet_id`, `family_id`,
-      `address` diwarisi dari pemohon bila tidak diisi.
+      `address` diwarisi dari pemohon bila tidak diisi (bila `rt_id` dari
+      isian wilayah, dusun dan alamat diturunkan dari RT itu).
+      `data_options.family`: `join` = masuk KK desa ber-No. KK
+      `payload[no_kk_field]` (422 `values.no_kk` bila tidak ada), `create` =
+      KK baru ber-No. KK `values.no_kk` (16 digit, wajib) dengan warga ini
+      sebagai kepala keluarga.
+    - update_citizens: mengubah kolom `data_fields` (nilai dari isian, boleh
+      diterjemahkan lewat `map`) tiap warga desa aktif ber-NIK isian
+      `data_options.subjects`; yang tidak terdata dilewati, 422 bila tidak
+      ada satu pun.
     - deactivate_members: menonaktifkan anggota KK pilihan pemohon
       (`payload[data_subject_field]`) beserta akun login mereka; yang sudah
       nonaktif dilewati, dan 422 bila tidak ada yang aktif. Bila pemohon
