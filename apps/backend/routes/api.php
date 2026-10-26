@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\FamilySocioeconomicController;
 use App\Http\Controllers\Api\HamletController;
+use App\Http\Controllers\Api\IdentityController;
 use App\Http\Controllers\Api\InfoPageController;
 use App\Http\Controllers\Api\KadesApprovalController;
 use App\Http\Controllers\Api\LetterAttachmentController;
@@ -117,6 +118,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::post('/signature-requests/{signatureRequest}/accept', [SignatureRequestController::class, 'accept']);
     Route::post('/signature-requests/{signatureRequest}/reject', [SignatureRequestController::class, 'reject']);
     Route::get('/signature-blocks', [SignatureRequestController::class, 'blocks']);
+    Route::post('/signature-blocks', [SignatureRequestController::class, 'block']);
     Route::delete('/signature-blocks/{signatureBlock}', [SignatureRequestController::class, 'unblock']);
 
     /*
@@ -152,7 +154,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | Citizens (UC-09)
     |----------------------------------------------------------------------
     | Petugas Desa dan Kasi Pemerintahan (pemegang layanan kependudukan /
-    | Pelayanan Desa) boleh create/update/delete/import data kependudukan.
+    | Layanan Kependudukan) boleh create/update/delete/import data kependudukan.
     | Kaur TU & Umum hanya membaca daftar warga dan KK sebagai bahan
     | pertimbangan; perubahan data olehnya hanya lewat surat
     | (POST /letters/{letter}/fulfillment).
@@ -233,6 +235,14 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::prefix('dashboard')->group(function () {
         Route::get('/gender-stats', [DashboardController::class, 'genderStats']);
         Route::get('/letter-stats', [DashboardController::class, 'letterStats']);
+    });
+
+    // NIK / No. KK utuh untuk tombol "lihat" di samping nilai tersamar; hak
+    // akses dan pencatatan di IdentityRevealService.
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/citizens/{citizen}/identity', [IdentityController::class, 'citizen']);
+        Route::get('/families/{family}/identity', [IdentityController::class, 'family']);
+        Route::get('/letters/{letter}/applicant-identity', [IdentityController::class, 'letterApplicant']);
     });
 
     // Pilihan Dusun -> RW -> RT desa untuk isian wilayah di form surat
