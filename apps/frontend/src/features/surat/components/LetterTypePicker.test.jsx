@@ -43,7 +43,7 @@ describe('LetterTypePicker', () => {
     expect(onSelect).toHaveBeenCalledWith('SKU')
   })
 
-  it('separates Persuratan Desa and Pelayanan Desa with a label', () => {
+  it('separates Persuratan Desa and Layanan Kependudukan with a label', () => {
     renderPicker({
       letterTypes: [
         { id: 3, code: 'F01', name: 'Pelayanan Pindah', category: 'pelayanan' },
@@ -52,8 +52,8 @@ describe('LetterTypePicker', () => {
     })
 
     const titles = screen.getAllByRole('heading').map((heading) => heading.textContent)
-    expect(titles).toEqual(['Persuratan Desa', 'Pelayanan Desa'])
-    expect(screen.getByRole('region', { name: 'Pelayanan Desa' }).textContent).toContain(
+    expect(titles).toEqual(['Persuratan Desa', 'Layanan Kependudukan'])
+    expect(screen.getByRole('region', { name: 'Layanan Kependudukan' }).textContent).toContain(
       'Pelayanan Pindah',
     )
   })

@@ -1,12 +1,12 @@
 // Urutan tampil kelompok jenis surat (LetterTypeCategory di backend).
 const GROUPS = [
   { key: 'persuratan', label: 'Persuratan Desa' },
-  { key: 'pelayanan', label: 'Pelayanan Desa' },
+  { key: 'pelayanan', label: 'Layanan Kependudukan' },
 ]
 
 /**
  * Kelompokkan jenis surat untuk pilihan pengajuan: Persuratan Desa di atas,
- * Pelayanan Desa di bawah. Kelompok kosong dilewati; jenis tanpa kategori
+ * Layanan Kependudukan di bawah. Kelompok kosong dilewati; jenis tanpa kategori
  * dianggap Persuratan Desa.
  */
 export function groupLetterTypes(letterTypes = []) {
