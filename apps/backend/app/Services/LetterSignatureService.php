@@ -576,6 +576,28 @@ class LetterSignatureService
         return $this->recordWitness($letter, $requester, $slot, $nik, 'nik');
     }
 
+    /**
+     * Blokir warga desa ber-akun berdasarkan NIK (daftar blokir di profil).
+     */
+    public function blockByNik(User $user, string $nik): SignatureBlock
+    {
+        if (hash('sha256', $nik) === $user->citizen?->nik_hash) {
+            throw ValidationException::withMessages(['nik' => ['Anda tidak dapat memblokir diri sendiri.']]);
+        }
+
+        $citizen = $user->village_id ? $this->citizenRepository->findActiveInVillageByNik($user->village_id, $nik) : null;
+        $target = $citizen ? $this->userRepository->findByCitizenId($citizen->id) : null;
+
+        if ($target === null) {
+            throw ValidationException::withMessages(['nik' => ['NIK ini tidak terdaftar sebagai akun warga desa.']]);
+        }
+
+        return SignatureBlock::query()->firstOrCreate([
+            'user_id' => $user->id,
+            'blocked_user_id' => $target->id,
+        ]);
+    }
+
     private function isRateLimited(User $requester, string $nikHash): bool
     {
         $rejections = LetterSignature::query()
