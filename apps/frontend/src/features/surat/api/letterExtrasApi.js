@@ -43,6 +43,18 @@ export const getFulfillmentProposal = async (letterId) => {
   return response.data.data
 }
 
+// Daftar perubahan per warga (lama -> baru) yang akan disimpan Terapkan
+// dengan nilai yang sama; tidak menyimpan apa pun.
+export const previewFulfillment = async (letterId, values, subjectNik, notes) => {
+  const response = await api.post(`/api/letters/${letterId}/fulfillment/preview`, {
+    values,
+    subject_nik: subjectNik || null,
+    notes: notes || null,
+  })
+
+  return response.data.data
+}
+
 export const applyFulfillment = async (letterId, values, subjectNik, notes) => {
   const response = await api.post(`/api/letters/${letterId}/fulfillment`, {
     values,

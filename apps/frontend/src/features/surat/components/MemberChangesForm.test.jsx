@@ -1,12 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { applyFulfillment, confirmDialog } = vi.hoisted(() => ({
+const { applyFulfillment, confirmDialog, previewFulfillment } = vi.hoisted(() => ({
   applyFulfillment: vi.fn(),
   confirmDialog: vi.fn(),
+  previewFulfillment: vi.fn(),
 }))
 
-vi.mock('../api/letterExtrasApi', () => ({ applyFulfillment }))
+vi.mock('../api/letterExtrasApi', () => ({ applyFulfillment, previewFulfillment }))
 vi.mock('@/shared/lib/dialog', () => ({ confirmDialog }))
 
 import { MemberChangesForm } from './MemberChangesForm'
@@ -55,6 +56,7 @@ describe('MemberChangesForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     confirmDialog.mockResolvedValue(true)
+    previewFulfillment.mockResolvedValue([])
     applyFulfillment.mockResolvedValue({ message: 'ok' })
   })
 
@@ -78,13 +80,33 @@ describe('MemberChangesForm', () => {
     expect(onDone).toHaveBeenCalled()
   })
 
-  it('warns when an occupation is left unchosen', async () => {
+  it('warns when an occupation is left unchosen and confirms the server preview', async () => {
+    previewFulfillment.mockResolvedValue([
+      {
+        name: 'Alief',
+        kind: 'update',
+        changes: [{ label: 'Status Perkawinan', old: 'Belum Kawin', new: 'Kawin' }],
+      },
+    ])
     render(<MemberChangesForm letterId="l-1" proposal={proposal} onDone={vi.fn()} />)
 
+    expect(screen.getByText(/1 kolom pekerjaan belum dipilih/)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Terapkan' }))
 
     await waitFor(() => expect(confirmDialog).toHaveBeenCalled())
-    expect(confirmDialog.mock.calls[0][0].message).toMatch(/1 kolom pekerjaan belum dipilih/)
+    expect(previewFulfillment).toHaveBeenCalledWith(
+      'l-1',
+      { 0: { marital_status: 'kawin' } },
+      null,
+      null,
+    )
+    expect(confirmDialog.mock.calls[0][0].details).toEqual([
+      {
+        title: 'Alief (diubah)',
+        showOld: true,
+        rows: [{ label: 'Status Perkawinan', from: 'Belum Kawin', to: 'Kawin' }],
+      },
+    ])
     await waitFor(() =>
       expect(applyFulfillment).toHaveBeenCalledWith(
         'l-1',

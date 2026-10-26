@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { applyFulfillment, getFulfillmentProposal } from '../api/letterExtrasApi'
-import { confirmDialog } from '@/shared/lib/dialog'
+import { confirmFulfillment } from '../utils/confirmFulfillment'
 import { SemiManualFulfillmentForm } from './SemiManualFulfillmentForm'
 import { MemberChangesForm } from './MemberChangesForm'
+import { UpdateCitizensForm } from './UpdateCitizensForm'
 
 const ACTION_TITLES = {
   update_citizen: 'Perubahan Data Warga',
   create_citizen: 'Penambahan Data Warga',
   deactivate_members: 'Penonaktifan Anggota Keluarga',
   update_members: 'Perubahan Data Anggota Keluarga',
+  update_citizens: 'Perubahan Data Warga',
   manual: 'Pembaruan Data Penduduk & KK',
 }
 
@@ -35,7 +37,8 @@ function display(value) {
  * "Terapkan": Kasi/Kaur yang ditugaskan (atau Petugas Desa sebagai
  * cadangan) meninjau nilai yang diusulkan warga, boleh mengoreksinya, lalu
  * menerapkannya ke data kependudukan. Hanya kolom yang ditetapkan untuk
- * jenis surat itu yang tampil.
+ * jenis surat itu yang tampil. Sebelum disimpan, pop up menampilkan daftar
+ * perubahan (lama -> baru) dari server untuk dikonfirmasi.
  */
 export function FulfillmentPanel({ letterId, onApplied }) {
   const [proposal, setProposal] = useState(null)
@@ -78,17 +81,6 @@ export function FulfillmentPanel({ letterId, onApplied }) {
   const handleApply = async (event) => {
     event.preventDefault()
 
-    const confirmed = await confirmDialog({
-      title: 'Terapkan perubahan ke data kependudukan?',
-      message: `Data warga${
-        proposal?.subject && subjectNik.trim() ? ` ber-NIK ${subjectNik.trim()}` : ''
-      } akan diperbarui sesuai nilai di tabel. Perubahan hanya dapat diterapkan sekali.`,
-      confirmLabel: 'Terapkan',
-      tone: 'primary',
-    })
-
-    if (!confirmed) return
-
     setSaving(true)
     setError('')
 
@@ -96,13 +88,12 @@ export function FulfillmentPanel({ letterId, onApplied }) {
     const filled = Object.fromEntries(
       Object.entries(values).filter(([, value]) => value !== '' && value !== null),
     )
+    const nik = proposal?.subject ? subjectNik.trim() : null
 
     try {
-      const response = await applyFulfillment(
-        letterId,
-        filled,
-        proposal?.subject ? subjectNik.trim() : null,
-      )
+      if (!(await confirmFulfillment(letterId, filled, nik))) return
+
+      const response = await applyFulfillment(letterId, filled, nik)
 
       setMessage(response?.message ?? 'Perubahan data berhasil diterapkan.')
       setProposal((current) => ({ ...current, fulfilled_at: new Date().toISOString() }))
@@ -158,6 +149,8 @@ export function FulfillmentPanel({ letterId, onApplied }) {
         </p>
       ) : proposal.action === 'update_members' ? (
         <MemberChangesForm letterId={letterId} proposal={proposal} onDone={handleSemiManualDone} />
+      ) : proposal.action === 'update_citizens' ? (
+        <UpdateCitizensForm letterId={letterId} proposal={proposal} onDone={handleSemiManualDone} />
       ) : isSemiManual ? (
         <SemiManualFulfillmentForm
           letterId={letterId}
@@ -170,6 +163,8 @@ export function FulfillmentPanel({ letterId, onApplied }) {
             Tinjau nilai yang diusulkan warga. Anda boleh mengoreksinya sebelum diterapkan. Kolom
             yang dikosongkan tidak diubah.
           </p>
+
+          {proposal.family && <p className="sid-modal-note-text">{proposal.family.description}</p>}
 
           {proposal.subject && (
             <div className="sid-form-group">
@@ -208,7 +203,7 @@ export function FulfillmentPanel({ letterId, onApplied }) {
                   <tr key={field.column}>
                     <td>{field.label}</td>
                     {!isCreate && <td>{display(field.current)}</td>}
-                    <td>{field.fixed ? '-' : display(field.proposed)}</td>
+                    <td>{field.fixed ? '-' : (field.proposed_label ?? display(field.proposed))}</td>
                     <td>
                       {field.fixed ? (
                         // Nilai tetap dari jenis surat; tidak dapat dikoreksi.

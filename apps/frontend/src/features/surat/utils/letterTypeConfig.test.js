@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getLetterTypeFormConfig } from './letterTypeConfig'
+import { applicantValue, applicantValues, getLetterTypeFormConfig } from './letterTypeConfig'
 import { getSuratSchema, signerFieldNames } from '../validation/suratSchema'
 import { buildLetterFormData } from './letterFormData'
 
@@ -443,5 +443,24 @@ describe('row member and occupation sub-fields', () => {
     expect(formData.get('payload[perubahan][0][pekerjaan_menjadi_lainnya]')).toBe('buruh')
     expect(formData.has('payload[perubahan][1][pekerjaan_menjadi_lainnya]')).toBe(false)
     expect(formData.get('payload[perubahan][1][anggota]')).toBe('c-2')
+  })
+})
+
+describe('applicantValue', () => {
+  const field = {
+    name: 'peran_pemohon',
+    fromApplicant: { column: 'gender', map: { L: 'suami', P: 'istri' } },
+  }
+
+  it('derives the role from the applicant gender', () => {
+    expect(applicantValue(field, { citizen: { gender: 'P' } })).toBe('istri')
+    expect(applicantValues([field, { name: 'lain' }], { citizen: { gender: 'L' } })).toEqual({
+      peran_pemohon: 'suami',
+    })
+  })
+
+  it('asks the question when the applicant data is missing', () => {
+    expect(applicantValue(field, { citizen: {} })).toBeNull()
+    expect(applicantValue({ name: 'lain' }, { citizen: { gender: 'L' } })).toBeNull()
   })
 })

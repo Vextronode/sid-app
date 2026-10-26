@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { applyFulfillment } from '../api/letterExtrasApi'
+import { confirmFulfillment } from '../utils/confirmFulfillment'
 import { confirmDialog } from '@/shared/lib/dialog'
 
 // Data Penduduk dan pengelolaan KK ada di halaman yang sama.
@@ -39,31 +40,24 @@ export function SemiManualFulfillmentForm({ letterId, proposal, onDone }) {
   const handleSubmit = async (event) => {
     event.preventDefault()
 
-    const confirmed = await confirmDialog(
-      isManual
-        ? {
+    setSaving(true)
+    setError('')
+
+    try {
+      // Penonaktifan: pop up daftar perubahan per warga dari server.
+      const confirmed = isManual
+        ? await confirmDialog({
             title: 'Tandai perubahan data selesai?',
             message:
               'Pastikan data penduduk dan KK sudah diperbarui sesuai hasil dari instansi. Tindakan ini hanya dapat dilakukan sekali.',
             confirmLabel: 'Tandai selesai',
             tone: 'primary',
-          }
-        : {
-            title: 'Nonaktifkan anggota keluarga?',
-            message: `${activeMembers.length} data warga beserta akun login-nya akan dinonaktifkan. Tindakan ini hanya dapat dilakukan sekali.`,
-            confirmLabel: 'Nonaktifkan',
-            tone: 'danger',
-          },
-    )
+          })
+        : await confirmFulfillment(letterId, {}, null, notes.trim())
 
-    if (!confirmed) return
-
-    setSaving(true)
-    setError('')
-
-    try {
-      const response = await applyFulfillment(letterId, {}, null, notes.trim())
-      onDone(response)
+      if (confirmed) {
+        onDone(await applyFulfillment(letterId, {}, null, notes.trim()))
+      }
     } catch (requestError) {
       setError(serverMessage(requestError, 'Gagal menyimpan perubahan data.'))
     } finally {
@@ -102,6 +96,12 @@ export function SemiManualFulfillmentForm({ letterId, proposal, onDone }) {
                   : 'sudah nonaktif'}
             </li>
           ))}
+          {proposal.new_head && (
+            <li>
+              <strong>{proposal.new_head.name}</strong> ({proposal.new_head.family_role}) - menjadi
+              kepala keluarga baru
+            </li>
+          )}
         </ul>
       )}
 

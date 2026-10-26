@@ -22,6 +22,9 @@ import { FamilyMembersField } from './FamilyMembersField'
 import { RepeaterField } from './RepeaterField'
 import { VillageAreaField } from './VillageAreaField'
 import { NikLookupHint } from './NikLookupHint'
+import { newHeadChoice } from '../utils/familyHead'
+import { witnessConflict } from '../utils/witness'
+import { applicantValue, applicantValues } from '../utils/letterTypeConfig'
 
 const WET_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png'
 
@@ -104,6 +107,8 @@ export function DynamicSuratForm({
           .map((field) => [field.name, []]),
       ),
       ...initialData,
+      // Isian yang diturunkan dari data pemohon (mis. peran suami/istri).
+      ...applicantValues(config.fields, user),
     },
     mode: 'onSubmit',
   })
@@ -297,20 +302,23 @@ export function DynamicSuratForm({
             const fieldError = errors[field.name]
             const inputClass = `sid-input ${fieldError ? 'sid-input-error' : ''}`
 
+            // Diturunkan dari data pemohon: tidak perlu ditanyakan.
+            if (applicantValue(field, user) !== null) {
+              return null
+            }
+
             // Nama dari NIK: diketik hanya bila NIK tidak ada di data penduduk.
             if (field.fromNik && nikLookups[field.fromNik]?.status !== 'not_found') {
               return null
             }
 
-            // Kepala keluarga baru: hanya bila anggota terpilih kepala keluarga.
-            const headOf = field.requiredWhenHead
-              ? familyMembers.find(
-                  (member) =>
-                    String(member.id) === String(watchedFormData?.[field.requiredWhenHead]),
-                )
+            // Kepala keluarga baru: hanya bila kepala keluarga ikut keluar
+            // (almarhum/pindah) dan masih ada anggota yang tinggal.
+            const headChoice = field.requiredWhenHead
+              ? newHeadChoice(field, familyMembers, watchedFormData)
               : null
 
-            if (field.requiredWhenHead && headOf?.family_role !== 'kepala_keluarga') {
+            if (headChoice && !headChoice.visible) {
               return null
             }
 
@@ -358,6 +366,12 @@ export function DynamicSuratForm({
                 {field.type === 'nik' && lookupFieldsOf(field.name).length > 0 && (
                   <NikLookupHint
                     nik={watchedFormData?.[field.name]}
+                    witness={Boolean(field.witness)}
+                    conflict={
+                      field.witness
+                        ? (lookup) => witnessConflict(field, config.fields, watchedFormData, lookup)
+                        : null
+                    }
                     onResult={(result) => {
                       setNikLookups((current) =>
                         current[field.name]?.status === result.status &&
@@ -469,17 +483,9 @@ export function DynamicSuratForm({
                         ? 'Pilih anggota keluarga...'
                         : (field.emptyLabel ?? 'Tidak ada di KK')}
                     </option>
-                    {familyMembers
+                    {(headChoice?.candidates ?? familyMembers)
                       .filter((member) => !field.gender || member.gender === field.gender)
                       .filter((member) => !field.notSelf || !member.is_self)
-                      // Kepala keluarga baru: bukan kepala keluarga yang sekarang.
-                      .filter(
-                        (member) =>
-                          !field.requiredWhenHead ||
-                          (member.family_role !== 'kepala_keluarga' &&
-                            String(member.id) !==
-                              String(watchedFormData?.[field.requiredWhenHead])),
-                      )
                       .map((member) => (
                         <option key={member.id} value={member.id}>
                           {member.name} ({member.family_role_label})

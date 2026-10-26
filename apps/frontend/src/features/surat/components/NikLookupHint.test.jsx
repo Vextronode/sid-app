@@ -39,13 +39,37 @@ describe('NikLookupHint', () => {
       family_number: null,
     })
     const onResult = vi.fn()
-    render(<NikLookupHint nik="3207010101800009" onResult={onResult} />)
+    render(<NikLookupHint nik="3207010101800009" onResult={onResult} witness />)
 
     expect(await screen.findByText('U***g S***i')).toBeTruthy()
     expect(screen.getByText(/Persetujuan saksi akan diminta/)).toBeTruthy()
     expect(onResult).toHaveBeenLastCalledWith(
       expect.objectContaining({ status: 'found', hasAccount: true }),
     )
+  })
+
+  it('does not mention witness consent for a party NIK such as the spouse', async () => {
+    lookupNik.mockResolvedValue({ found: true, has_account: true, name: 'D***n R*****i' })
+    render(<NikLookupHint nik="3207240101950001" onResult={vi.fn()} />)
+
+    expect(
+      await screen.findByText(/diambil dari data penduduk setelah surat diajukan/),
+    ).toBeTruthy()
+    expect(screen.queryByText(/Persetujuan saksi/)).toBeNull()
+  })
+
+  it('shows the conflict instead of the name when the witness is the applicant', async () => {
+    lookupNik.mockResolvedValue({
+      found: true,
+      has_account: true,
+      name: 'T**i N*****h',
+      is_self: true,
+    })
+    const conflict = vi.fn((lookup) => (lookup.isSelf ? 'Ini NIK Anda sendiri.' : null))
+    render(<NikLookupHint nik="3218035507890002" onResult={vi.fn()} witness conflict={conflict} />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ini NIK Anda sendiri.')
+    expect(screen.queryByText('T**i N*****h')).toBeNull()
   })
 
   it('asks for the name when the NIK is not registered', async () => {

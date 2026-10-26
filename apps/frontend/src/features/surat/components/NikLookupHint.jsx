@@ -6,8 +6,10 @@ import { lookupNik } from '../api/letterExtrasApi'
  * Keterangan di bawah isian NIK yang berpasangan dengan isian nama
  * (`from_nik`): begitu NIK lengkap, nama dicari di data penduduk desa.
  * Ditemukan -> nama terisi otomatis; tidak ditemukan -> isian nama muncul.
+ * `witness`: isian NIK saksi (pemilik akun diminta persetujuannya);
+ * `conflict`: pesan bila NIK ini tidak boleh dipakai (mis. saksi = pemohon).
  */
-export function NikLookupHint({ nik, onResult }) {
+export function NikLookupHint({ nik, onResult, witness = false, conflict = null }) {
   const [result, setResult] = useState({ nik: '', status: 'idle', name: '' })
   const complete = /^\d{16}$/.test(nik ?? '')
   const current =
@@ -31,6 +33,7 @@ export function NikLookupHint({ nik, onResult }) {
           // Pemilik NIK yang punya akun harus menyetujui: nama tersamar,
           // nama lengkap & No. KK diisi sistem setelah pengajuan.
           hasAccount: Boolean(data?.has_account),
+          isSelf: Boolean(data?.is_self),
           name: data?.name ?? '',
           familyNumber: data?.family_number ?? '',
         }
@@ -56,11 +59,23 @@ export function NikLookupHint({ nik, onResult }) {
     return <p className="sid-upload-description">Mencari data NIK...</p>
   }
 
+  const message = typeof conflict === 'function' ? conflict(current) : conflict
+
+  if (message && current.status !== 'idle') {
+    return (
+      <p className="sid-form-field-error" role="alert">
+        {message}
+      </p>
+    )
+  }
+
   if (current.status === 'found' && current.hasAccount) {
     return (
       <p className="sid-upload-description" role="status">
-        NIK terdaftar atas nama <strong>{current.name}</strong>. Persetujuan saksi akan diminta
-        setelah surat diajukan.
+        NIK terdaftar atas nama <strong>{current.name}</strong>.{' '}
+        {witness
+          ? 'Persetujuan saksi akan diminta setelah surat diajukan.'
+          : 'Nama lengkap dan No. KK diambil dari data penduduk setelah surat diajukan.'}
       </p>
     )
   }

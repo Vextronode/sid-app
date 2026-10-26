@@ -21,12 +21,20 @@ function normalizeField(field) {
     notSelf: Boolean(field.not_self),
     // Teks pilihan kosong isian family_member opsional.
     emptyLabel: field.empty_label ?? null,
+    // Nilai diturunkan dari data pemohon ({ column, map }), mis. peran
+    // suami/istri dari jenis kelamin; ditanyakan bila datanya kosong.
+    fromApplicant: field.from_applicant ?? null,
+    // Isian NIK saksi (label slotnya) dan isian NIK yang tidak boleh sama
+    // dengannya (saksi lainnya, pihak dalam surat).
+    witness: field.witness ?? null,
+    notSameAs: Array.isArray(field.not_same_as) ? field.not_same_as : [],
     // Isian nama yang diisi otomatis dari NIK di isian ini.
     fromNik: field.from_nik ?? null,
     // Data yang diambil dari NIK: nama (bawaan) atau No. KK.
     fromNikValue: field.from_nik_value ?? 'name',
     // family_member yang hanya tampil (dan wajib) bila anggota di isian ini
-    // kepala keluarga, mis. kepala keluarga baru saat kepala keluarga meninggal.
+    // kepala keluarga, mis. kepala keluarga baru saat kepala keluarga meninggal
+    // atau ikut pindah (isian family_members).
     requiredWhenHead: field.required_when_head ?? null,
     // Isian berulang (repeater): sub-isian per baris dan batas jumlah baris.
     fields: Array.isArray(field.fields) ? field.fields.map(normalizeField) : [],
@@ -50,6 +58,26 @@ function normalizeSlot(slot) {
  * (letter_types.form_fields dan signature_slots), sehingga form, validasi
  * server, dan template PDF memakai satu sumber yang sama.
  */
+/**
+ * Nilai isian `fromApplicant` dari data pemohon (mis. jenis kelamin L ->
+ * suami), atau null bila datanya kosong sehingga isian tetap ditanyakan.
+ */
+export function applicantValue(field, user) {
+  const source = field.fromApplicant
+  const raw = source ? user?.citizen?.[source.column] : null
+
+  return raw === null || raw === undefined ? null : (source.map?.[raw] ?? null)
+}
+
+/** Nilai awal form untuk semua isian `fromApplicant` yang diketahui. */
+export function applicantValues(fields, user) {
+  return Object.fromEntries(
+    fields
+      .map((field) => [field.name, applicantValue(field, user)])
+      .filter(([, value]) => value !== null),
+  )
+}
+
 export function getLetterTypeFormConfig(letterType) {
   if (!letterType?.code) return null
 

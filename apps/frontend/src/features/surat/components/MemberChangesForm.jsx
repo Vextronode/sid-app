@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import { applyFulfillment } from '../api/letterExtrasApi'
-import { confirmDialog } from '@/shared/lib/dialog'
+import { confirmFulfillment } from '../utils/confirmFulfillment'
 
 function serverMessage(error, fallback) {
   const errors = error?.response?.data?.errors
@@ -51,18 +51,6 @@ export function MemberChangesForm({ letterId, proposal, onDone }) {
   const handleSubmit = async (event) => {
     event.preventDefault()
 
-    const confirmed = await confirmDialog({
-      title: 'Terapkan perubahan data anggota keluarga?',
-      message:
-        unresolved.length > 0
-          ? `${unresolved.length} kolom pekerjaan belum dipilih dari katalog dan tidak akan diubah. Lanjutkan?`
-          : `Data ${memberChanges.length} anggota keluarga akan diperbarui. Perubahan hanya dapat diterapkan sekali.`,
-      confirmLabel: 'Terapkan',
-      tone: 'primary',
-    })
-
-    if (!confirmed) return
-
     setSaving(true)
     setError('')
 
@@ -75,7 +63,10 @@ export function MemberChangesForm({ letterId, proposal, onDone }) {
     )
 
     try {
-      onDone(await applyFulfillment(letterId, filled, null))
+      // Pop up daftar perubahan (lama -> baru) sebelum disimpan.
+      if (await confirmFulfillment(letterId, filled, null)) {
+        onDone(await applyFulfillment(letterId, filled, null))
+      }
     } catch (requestError) {
       setError(serverMessage(requestError, 'Gagal menerapkan perubahan data.'))
     } finally {
@@ -144,6 +135,12 @@ export function MemberChangesForm({ letterId, proposal, onDone }) {
           </div>
         </div>
       ))}
+
+      {unresolved.length > 0 && (
+        <p className="sid-warning-box" role="status">
+          {unresolved.length} kolom pekerjaan belum dipilih dari katalog dan tidak akan diubah.
+        </p>
+      )}
 
       {error && (
         <p role="alert" className="sid-warning-box">
