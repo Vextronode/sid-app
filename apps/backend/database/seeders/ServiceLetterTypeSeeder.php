@@ -788,7 +788,7 @@ class ServiceLetterTypeSeeder extends Seeder
             ),
             $this->paragraph('Terlampir disampaikan fotokopi berkas-berkas yang terkait dengan perubahan elemen data tersebut.', false),
             $this->paragraph('Demikian Surat Pernyataan ini saya buat dengan sebenarnya, apabila dalam keterangan yang saya berikan terdapat hal-hal yang tidak berdasarkan keadaan yang sebenarnya, saya bersedia dikenakan sanksi sesuai ketentuan peraturan perundang-undangan yang berlaku.', false),
-            $this->plainSignature('{{ village_name_short }}, {{ issued_at }}', 'Yang membuat pernyataan,', '{{ applicant_name }}'),
+            $this->plainSignature('{{ village_name_short }}, {{ issued_at }}', 'Yang membuat pernyataan,', '{{ applicant_name }}', '{{ tanda_tangan_pemohon }}'),
         ]);
     }
 
@@ -833,10 +833,10 @@ class ServiceLetterTypeSeeder extends Seeder
             <p style="margin: 16px 0 4px; text-align: center;">{{ village_regency }}, {{ issued_at }}<br>Yang menyatakan,</p>
             <table style="width: 100%; border-collapse: collapse; text-align: center;">
                 <tr>
-                    <td style="width: 50%; vertical-align: top;">PIHAK KEDUA,<div style="height: 60px;"></div>( {{ nama_istri }} )</td>
+                    <td style="width: 50%; vertical-align: top;">PIHAK KEDUA,<div style="height: 60px;"></div>{{ tanda_tangan_pemohon_bila_nik_istri }}( {{ nama_istri }} )</td>
                     <td style="width: 50%; vertical-align: top;">PIHAK PERTAMA,
                         <div style="width: 90px; height: 50px; margin: 5px auto; border: 1px dashed #777; font-size: 8pt; color: #555; display: table;"><span style="display: table-cell; vertical-align: middle;">Materai<br>Cukup</span></div>
-                        ( {{ nama_suami }} )</td>
+                        {{ tanda_tangan_pemohon_bila_nik_suami }}( {{ nama_suami }} )</td>
                 </tr>
                 <tr>
                     <td style="padding-top: 16px; vertical-align: top;">SAKSI II,<div style="height: 50px;"></div>( {{ nama_saksi_2 }} )</td>
@@ -963,7 +963,7 @@ class ServiceLetterTypeSeeder extends Seeder
             ),
             '<table style="width: 100%; margin-top: 20px; border-collapse: collapse; text-align: center;"><tr>'
             .'<td style="width: 50%; vertical-align: top;">Mengetahui,<br>Kepala Dinas Kependudukan dan<br>Pencatatan Sipil {{ village_regency }},<div style="height: 60px;"></div>(.............................................)</td>'
-            .'<td style="width: 50%; vertical-align: top;">{{ village_name_short }}, {{ issued_at }}<br>Pemohon,<br>&nbsp;<div style="height: 60px;"></div>( '.$this->mover('{{ applicant_name }}', 'nama_wna').' )</td>'
+            .'<td style="width: 50%; vertical-align: top;">{{ village_name_short }}, {{ issued_at }}<br>Pemohon,<br>&nbsp;<div style="height: 60px;"></div>{{#if kewarganegaraan=wni}}{{ tanda_tangan_pemohon }}{{/if}}( '.$this->mover('{{ applicant_name }}', 'nama_wna').' )</td>'
             .'</tr></table>',
         ]);
     }
@@ -983,30 +983,32 @@ class ServiceLetterTypeSeeder extends Seeder
     }
 
     /**
-     * Tanda tangan surat pernyataan Pendatang: diketahui Ketua RT dan RW di
-     * kiri (diisi basah), yang menyatakan di kanan (dengan/tanpa materai).
+     * Tanda tangan surat pernyataan Pendatang: diketahui Ketua RT dan RW
+     * wilayah pendatang di kiri, yang menyatakan di kanan (dengan/tanpa
+     * materai). TTD yang menyatakan ditempel bila ia pemohonnya ($nik).
      */
-    private function arrivalSignature(string $name, bool $stamped): string
+    private function arrivalSignature(string $name, bool $stamped, string $nik): string
     {
         $stamp = $stamped
             ? '<div style="width: 90px; height: 50px; margin: 6px auto; border: 1px dashed #777; font-size: 8pt; color: #555; display: table;"><span style="display: table-cell; vertical-align: middle;">Materai<br>Cukup</span></div>'
             : '<div style="height: 62px;"></div>';
-        $official = fn (string $title): string => '<p style="margin: 0;">'.$title.'</p><div style="height: 50px;"></div>'
-            .'<p style="margin: 0;">(.............................................)</p><p style="margin: 0 0 12px;">NIK. ......................................</p>';
+        $official = fn (string $title, string $level): string => '<p style="margin: 0;">'.$title.'</p><div style="height: 50px;"></div>'
+            ."{{ tanda_tangan_{$level}_alamat_pendatang }}"
+            ."<p style=\"margin: 0;\">( {{ pejabat_{$level}_alamat_pendatang_nama }} )</p><p style=\"margin: 0 0 12px;\">NIK. {{ pejabat_{$level}_alamat_pendatang_nik }}</p>";
 
         return <<<HTML
         <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
             <tr>
                 <td style="width: 50%; vertical-align: top; text-align: center;">
                     <p style="margin: 0;">Mengetahui :</p>
-                    {$official('Ketua RT {{ alamat_pendatang_rt }}')}
-                    {$official('Ketua RW {{ alamat_pendatang_rw }}')}
+                    {$official('Ketua RT {{ alamat_pendatang_rt }}', 'rt')}
+                    {$official('Ketua RW {{ alamat_pendatang_rw }}', 'rw')}
                 </td>
                 <td style="width: 50%; vertical-align: top; text-align: center;">
                     <p style="margin: 0;">{{ village_regency }}, {{ issued_at }}</p>
                     <p style="margin: 0;">Saya yang menyatakan,</p>
                     {$stamp}
-                    <p style="margin: 0; font-weight: bold;">( {$name} )</p>
+                    {{ tanda_tangan_pemohon_bila_{$nik} }}<p style="margin: 0; font-weight: bold;">( {$name} )</p>
                 </td>
             </tr>
         </table>
@@ -1041,7 +1043,7 @@ class ServiceLetterTypeSeeder extends Seeder
             $this->paragraph('Selaku Kepala Keluarga, dengan ini menyatakan tidak keberatan dalam Kartu Keluarga saya dimasukkan orang tersebut di bawah ini&nbsp;:', false),
             $this->arrivalIdentity(),
             $this->paragraph('Demikian surat pernyataan ini saya buat dengan sebenar-benarnya dan tanpa paksaan dari pihak manapun, untuk dipergunakan sebagaimana mestinya.', false),
-            $this->arrivalSignature('{{ nama_kepala_keluarga }}', true),
+            $this->arrivalSignature('{{ nama_kepala_keluarga }}', true, 'nik_kepala_keluarga'),
         ]);
     }
 
@@ -1059,7 +1061,7 @@ class ServiceLetterTypeSeeder extends Seeder
             ]),
             $this->paragraph('Dengan ini menyatakan bahwa alamat yang dipergunakan dalam dokumen kependudukan sesuai alamat kepindahan adalah milik sendiri/ milik orang tua.', false),
             $this->paragraph('Demikian surat pernyataan ini saya buat dengan sebenar-benarnya dan tanpa paksaan dari pihak manapun, untuk dipergunakan sebagaimana mestinya.', false),
-            $this->arrivalSignature('{{ nama_pendatang }}', false),
+            $this->arrivalSignature('{{ nama_pendatang }}', false, 'nik_pendatang'),
         ]);
     }
 
@@ -1085,7 +1087,7 @@ class ServiceLetterTypeSeeder extends Seeder
             $this->paragraph('Dengan ini menyatakan tidak keberatan alamat tersebut dipergunakan sebagai alamat tinggal dalam dokumen kependudukan bagi orang tersebut di bawah ini&nbsp;:', false),
             $this->arrivalIdentity(),
             $this->paragraph('Demikian surat pernyataan ini saya buat dengan sebenar-benarnya dan tanpa paksaan dari pihak manapun, untuk dipergunakan sebagaimana mestinya.', false),
-            $this->arrivalSignature('{{ nama_pemilik }}', true),
+            $this->arrivalSignature('{{ nama_pemilik }}', true, 'nik_pemilik'),
         ]);
     }
 
@@ -1235,7 +1237,7 @@ class ServiceLetterTypeSeeder extends Seeder
             'anak_ke' => '{{ kelahiran_ke }}',
             'anak_berat' => '{{ berat_bayi }}',
             'place_date' => '{{ village_regency }}, {{ issued_at }}',
-            'reporter_sign' => '( {{ applicant_name }} )',
+            ...$this->capilSigners(),
         ], [
             ...$person('pelapor', 'applicant_name', 'applicant_nik', 'applicant_family_number'),
             // Subjek akta = anak; NIK terbit bersama KK baru.
@@ -1303,7 +1305,21 @@ class ServiceLetterTypeSeeder extends Seeder
             'village' => '{{ village_name_short }}',
             "jenis_{$event}" => 'X',
             'place_date' => '{{ village_regency }}, {{ issued_at }}',
-            'reporter_sign' => '( {{ applicant_name }} )',
+            ...$this->capilSigners(),
+        ];
+    }
+
+    /**
+     * Penanda tangan F-2.01: pelapor (pemohon) dan Kepala Desa yang
+     * mengetahui.
+     *
+     * @return array<string, string>
+     */
+    private function capilSigners(): array
+    {
+        return [
+            'reporter_sign' => '{{ tanda_tangan_pemohon }}( {{ applicant_name }} )',
+            'kades_sign' => '{{ tanda_tangan_kepala_desa }}( {{ pejabat_kepala_desa_nama }} )',
         ];
     }
 
@@ -1362,6 +1378,7 @@ class ServiceLetterTypeSeeder extends Seeder
         return $this->biodataForm(
             [
                 'head' => $cell(1, 'nama'),
+                'head_sign' => "{{ tanda_tangan_pemohon_bila_{$roster}_1_nik }}".$cell(1, 'nama'),
                 'address' => '{{ applicant_address }}',
                 'hamlet' => $cell(1, 'dusun'),
                 'count' => "{{ {$roster}_jumlah }}",
@@ -1392,6 +1409,7 @@ class ServiceLetterTypeSeeder extends Seeder
             'penolong_pekerjaan' => '{{ pekerjaan_penolong }}',
             'penolong_alamat' => '{{ alamat_penolong }}',
             'place_date' => '{{ village_regency }}, {{ issued_at }}',
+            'ibu_sign' => '{{ tanda_tangan_pemohon_bila_ibu_nik }}{{ ibu_nama }}',
             'saksi1_nama' => '{{ nama_saksi_1 }}',
             'saksi1_nik' => '{{ nik_saksi_1 }}',
             'saksi2_nama' => '{{ nama_saksi_2 }}',
@@ -1416,6 +1434,8 @@ class ServiceLetterTypeSeeder extends Seeder
             'ibu_pekerjaan' => '{{ ibu_pekerjaan }}',
             'ibu_alamat' => '{{ ibu_alamat }}',
             'place_date' => '{{ village_regency }}, {{ issued_at }}',
+            'ibu_sign' => '{{ tanda_tangan_pemohon_bila_ibu_nik }}{{ ibu_nama }}',
+            'ayah_sign' => '{{ tanda_tangan_pemohon_bila_ayah_nik }}{{ tanda_tangan_pemohon_bila_nik_ayah }}{{ ayah_nama|nama_ayah }}',
         ]);
     }
 
@@ -1428,7 +1448,7 @@ class ServiceLetterTypeSeeder extends Seeder
      * (templates/f1_01_biodata_keluarga.html). Kolom khusus orang asing dan
      * WNI di luar negeri dicetak kosong; kode wilayah diisi petugas.
      *
-     * @param  array<string, string>  $family  head, address, hamlet, count (+ email)
+     * @param  array<string, string>  $family  head, address, hamlet, count (+ email, head_sign)
      * @param  array<string, string>  $boxes  isian kotak per karakter: postal, rt, rw, phone => nama placeholder
      * @param  array<int, array<string, string>>  $members  baris anggota (maks. 10)
      */
@@ -1441,6 +1461,8 @@ class ServiceLetterTypeSeeder extends Seeder
             'village' => '{{ village_name_short }}',
             ...$family,
         ];
+        // Nama kepala keluarga di kolom tanda tangan (+TTD bila diberikan).
+        $family['head_sign'] ??= $family['head'];
         $html = (string) file_get_contents(database_path('seeders/templates/f1_01_biodata_keluarga.html'));
 
         return (string) preg_replace_callback('/\[\[([a-z0-9_]+)(?:\.([a-z_]+))?(?::(\d+))?\]\]/', function (array $match) use ($family, $boxes, $members): string {
@@ -1490,7 +1512,10 @@ class ServiceLetterTypeSeeder extends Seeder
     }
 
     /**
-     * Formulir F-1.02. $marks: kunci pilihan => true / syarat {{#if}}.
+     * Formulir F-1.02 (tata letak dari Excel aslinya, templates/
+     * f1_02_pendaftaran.html). $marks: kunci pilihan => true / syarat
+     * {{#if}}; pilihan terpilih ditandai "V" (jenis permohonan di belakang
+     * labelnya, persyaratan di dalam lingkarannya), seperti di Excel.
      * $applicant: data pemohon bila bukan pemohon akun (mis. pendatang yang
      * diajukan perantara): name, nik, family_number.
      *
@@ -1506,86 +1531,33 @@ class ServiceLetterTypeSeeder extends Seeder
             ...$applicant,
         ];
 
-        $item = fn (string $key, string $label, int $indent = 0): string => '<div style="padding-left: '.$indent.'px; margin: 1px 0;">'
-            .$this->checkbox($marks[$key] ?? null).$label.'</div>';
-        $group = fn (string $title, string $items): string => '<div style="margin: 4px 0 2px; font-weight: bold;">'.$title.'</div>'.$items;
-
-        $kk = $group('I. KARTU KELUARGA', $group('A. BARU', $item('kk.baru.keluarga_baru', '1. Membentuk Keluarga Baru', 8)
-            .$item('kk.baru.ganti_kepala', '2. Penggantian Kepala Keluarga', 8)
-            .$item('kk.baru.pisah', '3. Pisah KK', 8)
-            .$item('kk.baru.pindah_datang', '4. Pindah Datang', 8)
-            .$item('kk.baru.wni_ln', '5. WNI dari LN karena Pindah', 8)
-            .$item('kk.baru.rentan', '6. Rentan Adminduk', 8))
-            .$group('B. PERUBAHAN DATA', $item('kk.ubah.menumpang', '1. Menumpang dalam KK', 8)
-            .$item('kk.ubah.peristiwa', '2. Peristiwa Penting', 8)
-            .$item('kk.ubah.elemen', '3. Perubahan elemen data yang tercantum dalam KK', 8))
-            .$group('C. HILANG/ RUSAK', $item('kk.hilang', '1. Hilang', 8).$item('kk.rusak', '2. Rusak', 8)));
-
-        $ktp = $group('II. KTP-El', $item('ktp.baru', 'A. BARU')
-            .$item('ktp.pindah_datang', 'B. PINDAH DATANG')
-            .$group('C. HILANG/ RUSAK', $item('ktp.hilang', '1. Hilang', 8).$item('ktp.rusak', '2. Rusak', 8))
-            .$item('ktp.itap', 'D. PERPANJANGAN ITAP')
-            .$item('ktp.kewarganegaraan', 'E. PERUBAHAN STATUS KEWARGANEGARAAN')
-            .$item('ktp.luar_domisili', 'F. LUAR DOMISILI')
-            .$item('ktp.transmigrasi', 'G. TRANSMIGRASI'));
-
-        $kia = $group('III. KARTU IDENTITAS ANAK / KIA', $item('kia.baru', 'A. BARU')
-            .$group('B. HILANG/ RUSAK', $item('kia.hilang', '1. Hilang', 8).$item('kia.rusak', '2. Rusak', 8))
-            .$item('kia.itap', 'C. Perpanjangan ITAP')
-            .$item('kia.lainnya', 'D. Lainnya'));
-
-        $change = $group('IV. PERUBAHAN DATA', $item('ubah.kk', 'A. KK').$item('ubah.ktp', 'B. KTP-El').$item('ubah.kia', 'C. KIA')
-            .'<div style="margin-top: 4px;">Melampirkan :<br>1) Formulir Perubahan Data; dan<br>2) Bukti Perubahan Data</div>');
-
-        $attachments = [
-            ['lampiran.kk_lama', 'KK Lama/ KK Rusak'], ['lampiran.bukti', 'Surat Keterangan/ Bukti Perubahan Peristiwa Kependudukan dan Peristiwa Penting'],
-            ['lampiran.buku_nikah', 'Buku Nikah/ Kutipan Akta Perkawinan'], ['lampiran.sptjm', 'SPTJM perkawinan/ perceraian belum tercatat'],
-            ['lampiran.akta_cerai', 'Kutipan Akta Perceraian'], ['lampiran.akta_kematian', 'Akta Kematian'],
-            ['lampiran.skp', 'Surat Keterangan Pindah'], ['lampiran.pernyataan_hilang', 'Surat Pernyataan penyebab terjadinya hilang atau rusak'],
-            ['lampiran.skpln', 'Surat Keterangan Pindah Luar Negeri'], ['lampiran.skp_perwakilan', 'Surat Keterangan Pindah dari Perwakilan RI'],
-            ['lampiran.ktp_rusak', 'KTP-El Rusak'], ['lampiran.bersedia_menerima', 'Surat Pernyataan bersedia menerima sebagai anggota keluarga'],
-            ['lampiran.dokumen_perjalanan', 'Dokumen Perjalanan'], ['lampiran.kuasa_asuh', 'Surat kuasa pengasuhan anak dari orang tua/ wali'],
-            ['lampiran.hilang_polisi', 'Surat Keterangan Hilang dari Kepolisian'], ['lampiran.itap', 'Kartu Izin Tinggal Tetap'],
-        ];
-        $attachmentRows = '';
-
-        foreach (array_chunk($attachments, 2) as [$left, $right]) {
-            $attachmentRows .= '<tr><td style="width: 50%; vertical-align: top; padding: 1px 0;">'.$item(...$left).'</td>'
-                .'<td style="width: 50%; vertical-align: top; padding: 1px 0;">'.$item(...$right).'</td></tr>';
-        }
-
-        $column = fn (string $html): string => '<td style="width: 25%; vertical-align: top; padding: 0 4px;">'.$html.'</td>';
-
-        return $this->form('F-1.02', 'FORMULIR PENDAFTARAN PERISTIWA KEPENDUDUKAN', [
-            '<p style="margin: 0; font-weight: bold;">I. DATA PEMOHON</p>',
-            $this->rowsBlock(null, [
-                '1. Nama Lengkap' => $name,
-                '2. Nomor Induk Kependudukan' => $nik,
-                '3. Nomor Kartu Keluarga' => $familyNumber,
-            ], 0),
-            '<p style="margin: 8px 0 4px; font-weight: bold;">II. JENIS PERMOHONAN</p>',
-            '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;"><tr>'.$column($kk).$column($ktp).$column($kia).$column($change).'</tr></table>',
-            '<p style="margin: 10px 0 4px; font-weight: bold;">III. PERSYARATAN YANG DILAMPIRKAN</p>',
-            '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">'.$attachmentRows.'</table>',
-            <<<HTML
-            <table style="width: 100%; margin-top: 18px; border-collapse: collapse; text-align: center;">
-                <tr>
-                    <td style="width: 50%;"></td>
-                    <td style="width: 50%;">{{ village_name_short }}, {{ issued_at }}</td>
-                </tr>
-                <tr>
-                    <td style="vertical-align: top;">Petugas<br>Kasi Pemerintahan<div style="height: 60px;"></div>( {{ village_kasi_pemerintahan_name }} )</td>
-                    <td style="vertical-align: top;">Pemohon,<br>&nbsp;<div style="height: 60px;"></div>( {$name} )</td>
-                </tr>
-            </table>
-            HTML,
+        $html = $this->sheetForm('f1_02_pendaftaran', [
+            'name' => $name,
+            'nik' => $nik,
+            'family_number' => $familyNumber,
+            'place_date' => '{{ village_name_short }}, {{ issued_at }}',
+            'officer' => '{{ tanda_tangan_kasi_pemerintahan }}{{ village_kasi_pemerintahan_name }}',
+            'applicant' => ($applicant === [] ? '{{ tanda_tangan_pemohon }}' : '').$name,
         ]);
+
+        // [[mark:..]] = "V" di belakang label jenis permohonan; [[tick:..]] =
+        // "V" di dalam lingkaran persyaratan.
+        return (string) preg_replace_callback('/\[\[(mark|tick):([a-z_.]+)\]\]/', function (array $match) use ($marks): string {
+            $mark = $marks[$match[2]] ?? null;
+            $tick = $match[1] === 'mark' ? ' <b>V</b>' : 'V';
+
+            return match (true) {
+                $mark === true => $tick,
+                is_string($mark) => "{{#if {$mark}}}{$tick}{{/if}}",
+                default => '',
+            };
+        }, $html);
     }
 
     /**
      * Tanda tangan tanpa materai: tempat-tanggal, keterangan, nama.
      */
-    private function plainSignature(string $placeDate, string $caption, string $name): string
+    private function plainSignature(string $placeDate, string $caption, string $name, string $signature = ''): string
     {
         return <<<HTML
         <table style="width: 100%; margin-top: 18px; border-collapse: collapse;">
@@ -1595,7 +1567,7 @@ class ServiceLetterTypeSeeder extends Seeder
                     <p style="margin: 0;">{$placeDate}</p>
                     <p style="margin: 2px 0 0 0;">{$caption}</p>
                     <div style="height: 60px;"></div>
-                    <p style="margin: 0; font-weight: bold;">( {$name} )</p>
+                    {$signature}<p style="margin: 0; font-weight: bold;">( {$name} )</p>
                 </td>
             </tr>
         </table>

@@ -113,10 +113,10 @@ class ElementChangeServiceTest extends TestCase
 
         $registration = $this->render($letterId, 'f1_02');
         $this->assertStringContainsString('FORMULIR PENDAFTARAN PERISTIWA KEPENDUDUKAN', $registration);
-        $this->assertStringContainsString('( Sakim Hidayat )', $registration);
-        $this->assertStringContainsString('( Alief Syamsudin )', $registration);
+        $this->assertStringContainsString('>Sakim Hidayat<', $registration);
+        $this->assertStringContainsString('>Alief Syamsudin<', $registration);
         // Perubahan elemen KK, KK, KK lama, bukti, dan SPTJM tercentang.
-        $this->assertSame(5, substr_count($registration, '>X</span>'));
+        $this->assertSame(5, preg_match_all('/<b>V<\/b>|xf-circle>V</', $registration));
 
         $statement = $this->render($letterId, 'f1_05');
         $this->assertStringContainsString('PERKAWINAN/ PERCERAIAN BELUM TERCATAT', $statement);
@@ -137,7 +137,7 @@ class ElementChangeServiceTest extends TestCase
             ->assertJsonPath('data.documents.*.key', ['main', 'f1_02']);
         // Isian SPTJM tersisa tidak tersimpan.
         $this->assertArrayNotHasKey('nama_suami', Letter::query()->findOrFail($letterId)->payload);
-        $this->assertSame(4, substr_count($this->render($letterId, 'f1_02'), '>X</span>'));
+        $this->assertSame(4, preg_match_all('/<b>V<\/b>|xf-circle>V</', $this->render($letterId, 'f1_02')));
     }
 
     public function test_kasi_applies_the_changes_of_every_member_after_the_new_kk_is_accepted(): void

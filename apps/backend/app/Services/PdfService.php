@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\LetterStatus;
 use App\Models\Letter;
 use App\Models\User;
+use App\Models\UserSignature;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Support\LetterDocuments;
@@ -25,11 +26,16 @@ class PdfService
 
     private const SEAL_WET_WIDTH = 120;
 
+    private const SERVICE_SIGNATURE_HEIGHT = 45;
+
+    private const SERVICE_SIGNATURE_MAX_WIDTH = 130;
+
     public function __construct(
         protected OfficialRepository $officialRepository,
         protected LetterRepository $letterRepository,
         protected LetterSnapshotService $letterSnapshotService,
         protected LetterSignatureService $letterSignatureService,
+        protected UserSignatureService $userSignatureService,
     ) {}
 
     public function download(
@@ -250,6 +256,10 @@ class PdfService
             $templateHtml,
         );
 
+        // TTD formulir pelayanan yang tidak ada (belum diisi, surat belum
+        // final, atau penanda tangan bukan pemohon) dibiarkan kosong.
+        $templateHtml = (string) preg_replace('/\{\{\s*tanda_tangan_[a-z0-9_]+\s*}}/', '', $templateHtml);
+
         // Replace any unmapped {{ placeholder }} tags with fallback underline line
         return preg_replace('/\{\{\s*([a-zA-Z0-9_]+)\s*}}/', '________________________', $templateHtml);
     }
@@ -337,6 +347,13 @@ class PdfService
             };
         }
 
+        [$serviceText, $serviceImages] = $this->serviceSignatureReplacements(
+            $letter,
+            $context['service_signatures'] ?? [],
+            $sealed && $template === 'digital',
+        );
+        $textReplacements = [...$textReplacements, ...$serviceText];
+
         // Isian form diformat menurut tipenya (tanggal, rupiah + terbilang,
         // pilihan, teks panjang). Isian tidak boleh menimpa placeholder
         // milik sistem (nomor surat, nama Kades, dsb.).
@@ -362,7 +379,92 @@ class PdfService
         $replacements['{{ logo_img }}'] = $logoHtml;
         $replacements['{{ signature_img }}'] = $signatureHtml;
 
-        return [...$payloadHtml, ...$replacements, ...$signatureImages];
+        return [...$payloadHtml, ...$replacements, ...$signatureImages, ...$serviceImages];
+    }
+
+    /**
+     * Formulir pelayanan (Fxx): nama/NIK pejabat penanda tangan dan TTD
+     * yang ditempel saat surat final (snapshot service_signatures).
+     *  - {{ tanda_tangan_pemohon }}: TTD akun pemohon.
+     *  - {{ tanda_tangan_pemohon_bila_<isian> }}: TTD pemohon bila NIK di
+     *    isian itu NIK pemohon (mis. ibu/suami/kepala keluarga = pemohon).
+     *  - {{ tanda_tangan_kepala_desa }}, {{ tanda_tangan_kasi_pemerintahan }}.
+     *  - {{ tanda_tangan_rt_<area> }}, {{ tanda_tangan_rw_<area> }} dan
+     *    {{ pejabat_rt_<area>_nama }}/{{ pejabat_rt_<area>_nik }} (juga rw):
+     *    Ketua RT/RW wilayah isian village_area.
+     * Penanda tangan yang belum punya TTD dibiarkan kosong.
+     *
+     * @param  array<string, mixed>  $signatures
+     * @return array{0: array<string, string>, 1: array<string, string>} teks dan HTML gambar
+     */
+    private function serviceSignatureReplacements(Letter $letter, array $signatures, bool $sealed): array
+    {
+        $text = [
+            '{{ pejabat_kepala_desa_nama }}' => $signatures['kepala_desa']['name'] ?? '................................',
+        ];
+        $images = [];
+        $official = function (?array $official) use ($sealed): string {
+            if (! $sealed || $official === null) {
+                return '';
+            }
+
+            $path = $this->privateImagePath(
+                $official['signature_img'] ?? null,
+                "official-signatures/{$official['village_id']}/{$official['official_id']}/",
+            );
+
+            return $path === null ? '' : $this->signatureOverlay($path, @getimagesize($path) ?: null);
+        };
+
+        $images['{{ tanda_tangan_kepala_desa }}'] = $official($signatures['kepala_desa'] ?? null);
+        $images['{{ tanda_tangan_kasi_pemerintahan }}'] = $official($signatures['kasi_pemerintahan'] ?? null);
+
+        foreach ($signatures['areas'] ?? [] as $area => $officials) {
+            foreach (['rt', 'rw'] as $level) {
+                $text["{{ pejabat_{$level}_{$area}_nama }}"] = $officials[$level]['name'] ?? '.............................................';
+                $text["{{ pejabat_{$level}_{$area}_nik }}"] = $officials[$level]['nik'] ?? '......................................';
+                $images["{{ tanda_tangan_{$level}_{$area} }}"] = $official($officials[$level] ?? null);
+            }
+        }
+
+        $signature = $sealed && isset($signatures['applicant_signature_id'])
+            ? UserSignature::query()->find($signatures['applicant_signature_id'])
+            : null;
+        $dataUri = $signature !== null ? $this->userSignatureService->dataUri($signature) : null;
+
+        if ($dataUri !== null) {
+            $applicant = $this->signatureOverlay($dataUri, @getimagesize($dataUri) ?: null);
+            $images['{{ tanda_tangan_pemohon }}'] = $applicant;
+            $nik = (string) $letter->applicant_nik;
+
+            foreach (is_array($letter->payload) ? $letter->payload : [] as $key => $value) {
+                if ($nik !== '' && is_string($value) && $value === $nik) {
+                    $images["{{ tanda_tangan_pemohon_bila_{$key} }}"] = $applicant;
+                }
+            }
+        }
+
+        return [$text, $images];
+    }
+
+    /**
+     * Gambar TTD yang "melayang" di atas nama penanda tangan, di ruang
+     * kosong tanda tangan formulir, tanpa mengubah tinggi tata letaknya.
+     *
+     * @param  array<int, mixed>|null  $size  hasil getimagesize
+     */
+    private function signatureOverlay(string $src, ?array $size): string
+    {
+        [$width, $height] = [self::SERVICE_SIGNATURE_MAX_WIDTH, self::SERVICE_SIGNATURE_HEIGHT];
+
+        if ($size !== null && $size[0] > 0 && $size[1] > 0) {
+            $scale = min($width / $size[0], $height / $size[1]);
+            [$width, $height] = [max(1, (int) round($size[0] * $scale)), max(1, (int) round($size[1] * $scale))];
+        }
+
+        // Margin atas negatif setinggi gambar: tinggi bersihnya nol.
+        return '<div style="margin-top: -'.($height + 2).'px; height: '.($height + 2).'px; text-align: center;">'
+            .'<img src="'.$src.'" style="width: '.$width.'px; height: '.$height.'px;"></div>';
     }
 
     /**

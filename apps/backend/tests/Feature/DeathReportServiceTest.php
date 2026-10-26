@@ -6,6 +6,7 @@ use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\Letter;
 use App\Models\LetterType;
+use App\Models\User;
 use App\Models\Village;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
@@ -100,6 +101,38 @@ class DeathReportServiceTest extends TestCase
         // Jenis Kematian, sebab sakit, dan yang menerangkan dokter.
         $this->assertSame(3, substr_count($form, '>X</td>'));
         $this->assertStringNotContainsString('[[', $form);
+        // Belum ada yang punya TTD: tidak ada tempelan TTD sama sekali.
+        $this->assertStringNotContainsString('<img', $form);
+        $this->assertStringNotContainsString('tanda_tangan', $form);
+    }
+
+    public function test_signatures_of_the_applicant_and_village_officials_are_pasted_when_final(): void
+    {
+        $this->uploadSignature($this->applicant['user']);
+        // TTD akun Kasi Pemerintahan disalin ke jabatannya; TTD Kades diunggah Staf SID.
+        $this->uploadSignature($this->kasi['user']);
+        $kadesPath = "official-signatures/{$this->village->id}/{$this->kades['official']->id}/ttd.png";
+        Storage::disk('private_uploads')->put($kadesPath, UploadedFile::fake()->image('ttd.png', 200, 80)->getContent());
+        $this->kades['official']->update(['signature_img' => $kadesPath]);
+
+        $letterId = $this->approve([...$this->payload(), 'almarhum' => $this->father['citizen']->id, 'kepala_baru' => $this->mother->id]);
+        // TTD dibekukan saat final approve: Kasi yang mengganti TTD tidak mengubah formulir.
+        $this->kasi['official']->update(['signature_img' => null]);
+
+        // F-2.01: pelapor (pemohon) dan Kepala Desa yang mengetahui.
+        $report = $this->render($letterId, null);
+        $this->assertSame(2, substr_count($report, '<img'));
+        $this->assertStringContainsString('data:image/png;base64,', $report);
+        $this->assertStringContainsString($kadesPath, $report);
+        $this->assertStringContainsString('( '.$this->kades['citizen']->name.' )', $report);
+
+        // F-1.02: petugas Kasi Pemerintahan dan pemohon.
+        $registration = $this->render($letterId, 'f1_02');
+        $this->assertSame(2, substr_count($registration, '<img'));
+        $this->assertStringContainsString("official-signatures/{$this->village->id}/{$this->kasi['official']->id}/", $registration);
+
+        // F-1.01: kepala keluarga baru (ibu, tanpa akun) tidak ditempeli TTD.
+        $this->assertStringNotContainsString('<img', $this->render($letterId, 'f1_01', landscape: true));
     }
 
     public function test_death_of_the_family_head_requires_a_new_head_and_issues_the_new_family_forms(): void
@@ -191,6 +224,13 @@ class DeathReportServiceTest extends TestCase
         $this->assertFalse($this->father['citizen']->fresh()->is_active);
         $this->assertFalse($this->father['user']->fresh()->is_active);
         $this->assertTrue($this->mother->fresh()->is_active);
+    }
+
+    private function uploadSignature(User $user): void
+    {
+        $this->actingAs($user)
+            ->post('/api/profile/signature', ['signature' => UploadedFile::fake()->image('ttd.png', 200, 80)], ['Accept' => 'application/json'])
+            ->assertCreated();
     }
 
     private function boxes(string $value): string

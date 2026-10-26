@@ -30,6 +30,9 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
         'village_regency', 'village_regency_upper', 'village_province', 'village_region',
         'village_address', 'village_phone', 'village_postal_code', 'village_email',
         'village_head_name', 'applicant_family_number', 'village_kasi_pemerintahan_name',
+        // TTD formulir pelayanan (PdfService::serviceSignatureReplacements).
+        'tanda_tangan_pemohon', 'tanda_tangan_kepala_desa', 'tanda_tangan_kasi_pemerintahan',
+        'pejabat_kepala_desa_nama',
     ];
 
     /** Baris sistem {{#each kk_anggota}}: rincian KK pemohon. */
@@ -209,6 +212,16 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
             if ($field['type'] === 'village_area') {
                 $sources = [...$sources, "{$field['name']}_dusun", "{$field['name']}_rw", "{$field['name']}_rt"];
+
+                // Ketua RT/RW wilayah tersebut.
+                foreach (['rt', 'rw'] as $level) {
+                    $sources = [
+                        ...$sources,
+                        "tanda_tangan_{$level}_{$field['name']}",
+                        "pejabat_{$level}_{$field['name']}_nama",
+                        "pejabat_{$level}_{$field['name']}_nik",
+                    ];
+                }
             }
 
             // Placeholder di dalam {{#each}}: nomor baris dan isi baris.
@@ -228,6 +241,11 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             if ($field['type'] === 'family_members') {
                 $sources = [...$sources, 'no', ...LetterFormSchema::FAMILY_MEMBER_KEYS];
             }
+        }
+
+        // TTD pemohon bila NIK di isian itu NIK pemohon.
+        foreach ($sources as $source) {
+            $sources[] = "tanda_tangan_pemohon_bila_{$source}";
         }
 
         return $sources;

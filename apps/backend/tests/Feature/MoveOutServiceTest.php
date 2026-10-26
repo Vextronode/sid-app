@@ -110,7 +110,7 @@ class MoveOutServiceTest extends TestCase
         $this->assertStringContainsString('Cibenda, 12 Oktober 2026', $main);
 
         // Hanya anggota yang pindah: perubahan KK + KK lama, tanpa ganti kepala.
-        $this->assertSame(2, substr_count($this->render($letterId, 'f1_02'), '>X</span>'));
+        $this->assertSame(2, preg_match_all('/<b>V<\/b>|xf-circle>V</', $this->render($letterId, 'f1_02')));
     }
 
     public function test_whole_family_abroad_move_prints_skpln_and_skips_the_registration_form(): void

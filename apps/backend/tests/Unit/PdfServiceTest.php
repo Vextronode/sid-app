@@ -14,6 +14,7 @@ use App\Repositories\OfficialRepository;
 use App\Services\LetterSignatureService;
 use App\Services\LetterSnapshotService;
 use App\Services\PdfService;
+use App\Services\UserSignatureService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -40,6 +41,7 @@ class PdfServiceTest extends TestCase
             new LetterRepository,
             new LetterSnapshotService(new OfficialRepository, new LetterRepository),
             app(LetterSignatureService::class),
+            app(UserSignatureService::class),
         );
     }
 

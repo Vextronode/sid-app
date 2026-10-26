@@ -92,12 +92,12 @@ class MoveInServiceTest extends TestCase
         // F-1.02 atas nama pendatang dan KK yang ditumpangi.
         $registration = $this->render($letterId, null);
         $this->assertStringContainsString('FORMULIR PENDAFTARAN PERISTIWA KEPENDUDUKAN', $registration);
-        $this->assertStringContainsString('( Rina Marlina )', $registration);
+        $this->assertStringContainsString('>Rina Marlina<', $registration);
         $this->assertStringContainsString('3207246904990002', $registration);
         $this->assertStringContainsString('3218011304150001', $registration);
-        $this->assertStringNotContainsString('( Engkos Sutisna )', $registration);
+        $this->assertStringNotContainsString('>Engkos Sutisna<', $registration);
         // Menumpang dalam KK, KTP-el pindah datang, SKP, dan pernyataan bersedia menerima.
-        $this->assertSame(4, substr_count($registration, '>X</span>'));
+        $this->assertSame(4, preg_match_all('/<b>V<\/b>|xf-circle>V</', $registration));
 
         $statement = $this->render($letterId, 'pendatang_numpang_kk');
         $this->assertStringContainsString('TIDAK KEBERATAN NUMPANG KK', $statement);
@@ -108,6 +108,40 @@ class MoveInServiceTest extends TestCase
         $this->assertStringContainsString('Ketua RT 001', $statement);
         $this->assertStringContainsString('Dusun Budiasih RT 001 RW 016', $statement);
         $this->assertStringContainsString('( Engkos Sutisna )', $statement);
+    }
+
+    public function test_statement_prints_the_area_rt_and_rw_and_pastes_existing_signatures(): void
+    {
+        // Ketua RT wilayah pendatang punya TTD; Ketua RW belum.
+        $rt = $this->makeOfficialUser('rt', $this->village, ['rt_id' => $this->budiasih->id]);
+        $rw = $this->makeOfficialUser('rw', $this->village, ['rw_id' => $this->budiasih->rw_id]);
+        foreach ([$rt['user'], $this->applicant['user']] as $user) {
+            $this->actingAs($user)
+                ->post('/api/profile/signature', ['signature' => UploadedFile::fake()->image('ttd.png', 200, 80)], ['Accept' => 'application/json'])
+                ->assertCreated();
+        }
+
+        // Kepala keluarga yang ditumpangi adalah pemohon sendiri.
+        $letterId = $this->approve([
+            ...$this->arrival('numpang_kk'),
+            'nama_kepala_keluarga' => 'Engkos Sutisna',
+            'nik_kepala_keluarga' => $this->applicant['citizen']->nik,
+            'no_kk_tujuan' => '3218011304150001',
+            'pekerjaan_kepala_keluarga' => (string) $this->farmer->id,
+            'alamat_kepala_keluarga' => $this->budiasih->id,
+        ]);
+
+        $statement = $this->render($letterId, 'pendatang_numpang_kk');
+        $this->assertStringContainsString('( '.$rt['citizen']->name.' )', $statement);
+        $this->assertStringContainsString('NIK. '.$rt['citizen']->nik, $statement);
+        $this->assertStringContainsString('( '.$rw['citizen']->name.' )', $statement);
+        // TTD Ketua RT dan kepala keluarga (pemohon); Ketua RW kosong.
+        $this->assertSame(2, substr_count($statement, '<img'));
+        $this->assertStringContainsString("official-signatures/{$this->village->id}/{$rt['official']->id}/", $statement);
+        $this->assertStringContainsString('data:image/png;base64,', $statement);
+
+        // F-1.02 atas nama pendatang: TTD perantara tidak ditempel.
+        $this->assertStringNotContainsString('data:image/png;base64,', $this->render($letterId, null));
     }
 
     public function test_own_home_creates_a_new_family_with_the_biodata_form(): void
@@ -122,7 +156,7 @@ class MoveInServiceTest extends TestCase
             ->assertJsonPath('data.documents.*.key', ['main', 'pendatang_alamat_sendiri', 'f1_01']);
 
         // Pindah datang membuat KK baru, KTP-el pindah datang, SKP.
-        $this->assertSame(3, substr_count($this->render($letterId, null), '>X</span>'));
+        $this->assertSame(3, preg_match_all('/<b>V<\/b>|xf-circle>V</', $this->render($letterId, null)));
         $this->assertStringContainsString('MENGGUNAKAN ALAMAT RUMAH MILIK SENDIRI', $this->render($letterId, 'pendatang_alamat_sendiri'));
 
         // F-1.01 mendatar, tata letak sesuai Excel; RT/RW/kode pos per kotak.
