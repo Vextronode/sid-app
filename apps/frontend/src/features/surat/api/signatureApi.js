@@ -50,6 +50,13 @@ export const getSignatureBlocks = async () => {
 
 export const removeSignatureBlock = (id) => api.delete(`/api/signature-blocks/${id}`)
 
+// Blokir warga desa lewat NIK: permintaan TTD/saksi darinya tidak sampai lagi.
+export const addSignatureBlock = async (nik) => {
+  const response = await api.post('/api/signature-blocks', { nik })
+
+  return response.data.data
+}
+
 // Pemohon mengisi ulang slot tanda tangan pihak lain pada suratnya.
 export const refillLetterSignature = async (
   letterId,

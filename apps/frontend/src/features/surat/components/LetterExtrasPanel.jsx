@@ -21,6 +21,12 @@ const WITNESS_METHOD_LABELS = {
   manual: 'di luar data penduduk, diisi pemohon',
 }
 
+// Saksi tidak menandatangani: status menyesuaikan.
+const WITNESS_STATUS_LABELS = {
+  signed: 'Tercatat',
+  pending: 'Menunggu persetujuan saksi',
+}
+
 const SIGNATURE_STATUS_LABELS = {
   signed: 'Sudah ditandatangani',
   pending: 'Menunggu persetujuan pemilik NIK',
@@ -329,8 +335,10 @@ export function LetterExtrasPanel({ letterId }) {
           <ul className="sid-modal-note-text">
             {signatures.map((slot) => (
               <li key={slot.slot_key}>
-                <strong>{slot.slot_label}</strong> —{' '}
-                {SIGNATURE_STATUS_LABELS[slot.status] ?? slot.status}
+                <strong>{slot.slot_label}</strong> -{' '}
+                {(slot.signer_type === 'witness' && WITNESS_STATUS_LABELS[slot.status]) ||
+                  SIGNATURE_STATUS_LABELS[slot.status] ||
+                  slot.status}
                 {slot.signer_name ? ` (${slot.signer_name})` : ''}
                 {slot.method === 'wet' && slot.status === 'signed' ? ', tanda tangan basah' : ''}
                 {slot.signer_type === 'witness' && slot.status === 'signed'
