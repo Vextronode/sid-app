@@ -266,6 +266,8 @@ paths:
     $ref: 'paths/rt/letter-decision.yaml'
   /kades/letters/{letter}/decision:
     $ref: 'paths/kades/letter-decision.yaml'
+  /profile/nik-lookup:
+    $ref: 'paths/users/profile-nik-lookup.yaml'
   /profile/family-members:
     $ref: 'paths/users/profile-family-members.yaml'
   /profile/signature:

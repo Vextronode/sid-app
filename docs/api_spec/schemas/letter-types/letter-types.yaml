@@ -157,13 +157,25 @@ LetterFormField:
       example: "Nama Usaha"
     type:
       type: string
-      enum: [text, textarea, date, time, number, nik, select, file, occupation, repeater, family_members, village_area, family_member]
+      enum: [text, textarea, date, time, number, nik, select, file, occupation, repeater, family_members, village_area, family_member, family_roster]
       description: |
+        `family_roster` = tidak diisi pemohon; saat pengajuan sistem mencatat
+        susunan KK tanpa anggota di isian `exclude`, dengan anggota di isian
+        `head` sebagai kepala keluarga: `<nama>_<n>_<kolom>` (n = 1..10) dan
+        `<nama>_jumlah` (mis. F-1.01 setelah kepala keluarga meninggal).
         `family_member` = satu anggota KK pemohon (id warga); saat pengajuan
         ditambah `<nama>_nama`, `_nik`, `_shdk`, `_tempat_lahir`,
         `_tanggal_lahir`, `_lahir_tgl/_bln/_thn`, `_pekerjaan`, `_agama`,
         `_alamat`, dst. (keadaan saat pengajuan). Atribut `gender` (L/P)
-        membatasi anggota yang dapat dipilih, mis. ibu hanya perempuan.
+        membatasi anggota yang dapat dipilih, mis. ibu hanya perempuan;
+        `not_self` menolak pemohon sendiri; `different` = isian lain yang
+        tidak boleh sama; `required_when_head` = wajib bila anggota di isian
+        itu kepala keluarga (bila bukan, isian disembunyikan dan nilainya
+        dibuang); `empty_label` = teks pilihan kosong (opsional). Isian dengan
+        `from_nik` (nama isian NIK) diisi otomatis dari data penduduk bila NIK
+        terdaftar di desa (lihat `GET /profile/nik-lookup`); `from_nik_value`
+        `name` (bawaan) atau `family_number` (No. KK). Bila NIK tidak
+        terdaftar, isian diketik.
         `village_area` = Dusun -> RW -> RT desa ini dari `GET /village-areas`;
         nilainya id RT, dan saat pengajuan ditambah `<nama>_dusun`,
         `<nama>_rw`, `<nama>_rt` (3 digit) siap cetak.
