@@ -80,6 +80,9 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                 $letterType->data_subject_field,
                 ...array_column(array_column($letterType->form_fields ?? [], 'visible_when'), 'field'),
                 ...array_column(array_column($letterType->documents ?? [], 'when'), 'field'),
+                // Kepala keluarga baru / anggota yang dikeluarkan dari family_roster.
+                ...array_column($letterType->form_fields ?? [], 'head'),
+                ...array_column($letterType->form_fields ?? [], 'exclude'),
             ];
             $templates = $this->templatesOf($letterType);
 
@@ -104,7 +107,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // 11 Persuratan Desa (Axx) + Pelayanan Desa (Fxx).
         $this->assertSame(
-            ['persuratan' => 11, 'pelayanan' => 5],
+            ['persuratan' => 11, 'pelayanan' => 6],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -138,7 +141,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // Penguburan menonaktifkan data almarhum; Kelahiran menambah anak.
         $this->assertSame(
-            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'manual', 'F02' => 'update_members', 'F03' => 'deactivate_members', 'F04' => 'manual', 'F05' => 'create_citizen'],
+            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'manual', 'F02' => 'update_members', 'F03' => 'deactivate_members', 'F04' => 'manual', 'F05' => 'create_citizen', 'F06' => 'deactivate_members'],
             $letterTypes
                 ->filter(fn (LetterType $type) => $type->data_action->value !== 'none')
                 ->mapWithKeys(fn (LetterType $type) => [$type->code => $type->data_action->value])
@@ -181,6 +184,16 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                     fn (string $suffix): string => "{$field['name']}_{$suffix}",
                     ['hari', 'namahari', 'tgl', 'bln', 'thn'],
                 )];
+            }
+
+            if ($field['type'] === 'family_roster') {
+                $sources[] = "{$field['name']}_jumlah";
+
+                foreach (range(1, LetterFormSchema::ROSTER_ROWS) as $row) {
+                    foreach (LetterFormSchema::MEMBER_KEYS as $key) {
+                        $sources[] = "{$field['name']}_{$row}_{$key}";
+                    }
+                }
             }
 
             if ($field['type'] === 'family_member') {

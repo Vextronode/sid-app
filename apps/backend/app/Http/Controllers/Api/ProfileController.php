@@ -53,6 +53,20 @@ class ProfileController extends Controller
         ]);
     }
 
+    /**
+     * Nama dan No. KK warga desa ini dari NIK, untuk isian otomatis di form
+     * surat (mis. saksi).
+     */
+    public function lookupNik(Request $request): JsonResponse
+    {
+        $nik = (string) $request->validate(['nik' => ['required', 'digits:16']])['nik'];
+
+        return response()->json([
+            'message' => 'Pencarian NIK selesai.',
+            'data' => $this->profileService->lookupCitizenName($request->user(), $nik),
+        ]);
+    }
+
     public function updatePassword(UpdatePasswordRequest $request): JsonResponse
     {
         $user = $this->profileService->updatePassword($request->user(), $request->validated());

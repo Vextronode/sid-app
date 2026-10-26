@@ -460,6 +460,15 @@ class LetterFulfillmentService
         $field = $letter->letterType?->data_subject_field;
         $rows = $field !== null ? ($letter->payload[$field] ?? []) : [];
 
+        // Isian family_member tunggal (mis. almarhum): satu baris dari nilai turunannya.
+        if (is_string($rows) && $rows !== '') {
+            $rows = [[
+                'citizen_id' => $rows,
+                'nama' => $letter->payload["{$field}_nama"] ?? '-',
+                'shdk' => $letter->payload["{$field}_shdk"] ?? '-',
+            ]];
+        }
+
         return array_values(array_filter(is_array($rows) ? $rows : [], 'is_array'));
     }
 

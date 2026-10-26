@@ -128,6 +128,25 @@ class ServiceLetterTypeSeeder extends Seeder
         'lainnya' => 'Lainnya',
     ];
 
+    private const DEATH_CAUSE_OPTIONS = [
+        'sakit' => 'Sakit biasa/tua',
+        'wabah' => 'Wabah penyakit',
+        'kecelakaan' => 'Kecelakaan',
+        'kriminalitas' => 'Kriminalitas',
+        'bunuh_diri' => 'Bunuh diri',
+        'lainnya' => 'Lainnya',
+    ];
+
+    private const DEATH_WITNESS_OPTIONS = [
+        'dokter' => 'Dokter',
+        'nakes' => 'Tenaga Kesehatan',
+        'polisi' => 'Kepolisian',
+        'lainnya' => 'Lainnya',
+    ];
+
+    // Yang meninggal kepala keluarga (SHDK saat pengajuan).
+    private const DECEASED_HEAD = ['field' => 'almarhum_shdk', 'equals' => 'Kepala Keluarga'];
+
     private const SPONSOR_TYPE_OPTIONS = [
         'organisasi_internasional' => 'Organisasi Internasional',
         'pemerintah' => 'Pemerintah',
@@ -251,10 +270,8 @@ class ServiceLetterTypeSeeder extends Seeder
                         $this->field('nik_suami', 'NIK Suami', 'nik', true, '16 digit NIK'),
                         $this->text('nama_istri', 'Nama Istri', true, 'Nama lengkap'),
                         $this->field('nik_istri', 'NIK Istri', 'nik', true, '16 digit NIK'),
-                        $this->text('nama_saksi_1', 'Nama Saksi I', true, 'Nama lengkap'),
-                        $this->field('nik_saksi_1', 'NIK Saksi I', 'nik', true, '16 digit NIK'),
-                        $this->text('nama_saksi_2', 'Nama Saksi II', true, 'Nama lengkap'),
-                        $this->field('nik_saksi_2', 'NIK Saksi II', 'nik', true, '16 digit NIK'),
+                        ...$this->witness(1, 'I'),
+                        ...$this->witness(2, 'II'),
                         $this->field('sptjm_anak', 'Anak dari Perkawinan Tersebut', 'repeater', false, null, [
                             'max' => 10,
                             'item_label' => 'anak',
@@ -521,12 +538,8 @@ class ServiceLetterTypeSeeder extends Seeder
                         $this->date('tanggal_lahir_ayah', 'Tanggal Lahir Ayah'),
                     ]),
                     // Dua saksi kelahiran.
-                    $this->text('nama_saksi_1', 'Nama Saksi I', true, 'Nama lengkap'),
-                    $this->field('nik_saksi_1', 'NIK Saksi I', 'nik', true, '16 digit NIK'),
-                    $this->field('kk_saksi_1', 'No. KK Saksi I', 'nik', false, '16 digit No. KK'),
-                    $this->text('nama_saksi_2', 'Nama Saksi II', true, 'Nama lengkap'),
-                    $this->field('nik_saksi_2', 'NIK Saksi II', 'nik', true, '16 digit NIK'),
-                    $this->field('kk_saksi_2', 'No. KK Saksi II', 'nik', false, '16 digit No. KK'),
+                    ...$this->witness(1, 'I', withFamilyNumber: true),
+                    ...$this->witness(2, 'II', withFamilyNumber: true),
                     // SPTJM F-2.03 bila tidak ada surat keterangan lahir.
                     $this->select('surat_lahir', 'Ada surat keterangan lahir dari RS/puskesmas/bidan?', ['ada' => 'Ada', 'tidak' => 'Tidak ada']),
                     ...$this->withCondition(['field' => 'surat_lahir', 'equals' => 'tidak'], [
@@ -570,6 +583,56 @@ class ServiceLetterTypeSeeder extends Seeder
                     ['column' => 'father_name_text', 'label' => 'Nama Ayah', 'source' => 'ayah_nama'],
                 ],
                 'template' => $this->birthReportForm(),
+            ],
+            [
+                'code' => 'F06',
+                'name' => 'Pelaporan Kematian',
+                'description' => 'Pelaporan kematian anggota keluarga untuk penerbitan akta kematian di Disdukcapil, serta KK baru bila yang meninggal kepala keluarga.',
+                'requirement_info' => 'Siapkan surat keterangan kematian dari dokter/RS/desa, KK dan KTP-el almarhum, serta KTP-el dua orang saksi.',
+                'form_fields' => [
+                    $this->field('almarhum', 'Anggota Keluarga yang Meninggal', 'family_member', true, null, ['not_self' => true]),
+                    $this->date('tanggal_kematian', 'Tanggal Kematian'),
+                    $this->time('pukul_kematian', 'Pukul Kematian'),
+                    $this->select('sebab_kematian', 'Sebab Kematian', self::DEATH_CAUSE_OPTIONS),
+                    $this->text('tempat_kematian', 'Tempat Kematian', true, 'Contoh: RSUD Pandega Pangandaran'),
+                    $this->select('yang_menerangkan', 'Yang Menerangkan Kematian', self::DEATH_WITNESS_OPTIONS),
+                    // Dua saksi kematian.
+                    ...$this->witness(1, 'I', withFamilyNumber: true),
+                    ...$this->witness(2, 'II', withFamilyNumber: true),
+                    // Wajib bila yang meninggal kepala keluarga (dicek server).
+                    $this->field('kepala_baru', 'Kepala Keluarga Baru (isi bila yang meninggal kepala keluarga)', 'family_member', false, null, [
+                        'different' => 'almarhum',
+                        'required_when_head' => 'almarhum',
+                        'empty_label' => 'Yang meninggal bukan kepala keluarga',
+                    ]),
+                    // Susunan KK tanpa almarhum untuk F-1.01 (disusun sistem).
+                    $this->field('kk_baru', 'Susunan KK Baru', 'family_roster', false, null, ['exclude' => 'almarhum', 'head' => 'kepala_baru']),
+                ],
+                'documents' => [
+                    [
+                        'key' => 'f1_02',
+                        'title' => 'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02)',
+                        'when' => self::DECEASED_HEAD,
+                        'template' => $this->registrationForm([
+                            'kk.baru.ganti_kepala' => true,
+                            'lampiran.kk_lama' => true,
+                        ]),
+                    ],
+                    [
+                        'key' => 'f1_01',
+                        'title' => 'Formulir Biodata Keluarga (F-1.01)',
+                        'when' => self::DECEASED_HEAD,
+                        'orientation' => 'landscape',
+                        'template' => $this->rosterBiodataForm('kk_baru'),
+                    ],
+                ],
+                'result_upload_hint' => 'Kutipan akta kematian dari Disdukcapil, dan KK baru bila yang meninggal kepala keluarga.',
+                // Almarhum dinonaktifkan beserta akunnya; penggantian kepala
+                // keluarga dikerjakan Kasi di Data KK.
+                'data_action' => LetterDataAction::DeactivateMembers->value,
+                'data_subject_field' => 'almarhum',
+                'data_instructions' => 'Data almarhum dinonaktifkan beserta akunnya. Bila almarhum kepala keluarga, tetapkan kepala keluarga baru di Data KK sesuai KK terbaru dari Disdukcapil.',
+                'template' => $this->deathReportForm(),
             ],
         ];
     }
@@ -1087,6 +1150,25 @@ class ServiceLetterTypeSeeder extends Seeder
      * @param  array<string, string>  $text
      * @param  array<string, string>  $boxes
      */
+    /**
+     * NIK saksi lalu nama (dan No. KK): diisi otomatis dari data penduduk
+     * bila NIK terdaftar di desa ini, selain itu diketik.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function witness(int $no, string $label, bool $withFamilyNumber = false): array
+    {
+        return [
+            $this->field("nik_saksi_{$no}", "NIK Saksi {$label}", 'nik', true, '16 digit NIK'),
+            [...$this->text("nama_saksi_{$no}", "Nama Saksi {$label}", true, 'Nama lengkap'), 'from_nik' => "nik_saksi_{$no}"],
+            ...($withFamilyNumber ? [[
+                ...$this->field("kk_saksi_{$no}", "No. KK Saksi {$label}", 'nik', false, '16 digit No. KK'),
+                'from_nik' => "nik_saksi_{$no}",
+                'from_nik_value' => 'family_number',
+            ]] : []),
+        ];
+    }
+
     private function sheetForm(string $file, array $text, array $boxes = []): string
     {
         $html = (string) file_get_contents(database_path("seeders/templates/{$file}.html"));
@@ -1180,6 +1262,118 @@ class ServiceLetterTypeSeeder extends Seeder
         ]);
     }
 
+    /**
+     * Kotak pelapor (pemohon) dan dua saksi F-2.01, dipakai semua pelaporan.
+     *
+     * @return array<string, string>
+     */
+    private function capilWitnessBoxes(): array
+    {
+        $boxes = [
+            'pelapor_nama' => 'applicant_name',
+            'pelapor_nik' => 'applicant_nik',
+            'pelapor_kk' => 'applicant_family_number',
+            'pelapor_kwn' => '=INDONESIA',
+        ];
+
+        foreach ([1, 2] as $no) {
+            $boxes += [
+                "saksi{$no}_nama" => "nama_saksi_{$no}",
+                "saksi{$no}_nik" => "nik_saksi_{$no}",
+                "saksi{$no}_kk" => "kk_saksi_{$no}",
+                "saksi{$no}_kwn" => '=INDONESIA',
+            ];
+        }
+
+        return $boxes;
+    }
+
+    /**
+     * Teks kepala dan tanda tangan F-2.01.
+     *
+     * @return array<string, string>
+     */
+    private function capilHeader(string $event): array
+    {
+        return [
+            'province' => '{{ village_province }}',
+            'regency' => '{{ village_regency }}',
+            'district' => '{{ village_district }}',
+            'village' => '{{ village_name_short }}',
+            "jenis_{$event}" => 'X',
+            'place_date' => '{{ village_regency }}, {{ issued_at }}',
+            'reporter_sign' => '( {{ applicant_name }} )',
+        ];
+    }
+
+    private function deathReportForm(): string
+    {
+        $keys = fn (array $options): array => array_combine(array_keys($options), array_keys($options));
+
+        return $this->sheetForm('f2_01_pelaporan_capil', [
+            ...$this->capilHeader('kematian'),
+            ...$this->ticks('mati_sebab', 'sebab_kematian', $keys(self::DEATH_CAUSE_OPTIONS)),
+            ...$this->ticks('mati_terang', 'yang_menerangkan', $keys(self::DEATH_WITNESS_OPTIONS)),
+        ], [
+            ...$this->capilWitnessBoxes(),
+            // Subjek akta = almarhum; orang tua = orang tua almarhum.
+            'subjek1_nama' => 'almarhum_nama',
+            'subjek1_nik' => 'almarhum_nik',
+            'subjek1_kk' => 'applicant_family_number',
+            'subjek1_kwn' => '=INDONESIA',
+            'ayah_nama' => 'almarhum_nama_ayah',
+            'ibu_nama' => 'almarhum_nama_ibu',
+            'mati_nik' => 'almarhum_nik',
+            'mati_nama' => 'almarhum_nama',
+            'mati_tanggal_tgl' => 'tanggal_kematian_tgl',
+            'mati_tanggal_bln' => 'tanggal_kematian_bln',
+            'mati_tanggal_thn' => 'tanggal_kematian_thn',
+            'mati_pukul' => 'pukul_kematian',
+            'mati_tempat' => 'tempat_kematian',
+        ]);
+    }
+
+    /**
+     * F-1.01 dari isian family_roster: susunan KK baru (maks. 10 anggota).
+     */
+    private function rosterBiodataForm(string $roster): string
+    {
+        $cell = fn (int $row, string $key): string => $this->blank("{$roster}_{$row}_{$key}");
+        $members = [];
+
+        foreach (range(1, 10) as $row) {
+            $members[] = [
+                'name' => $cell($row, 'nama'),
+                'gender' => $cell($row, 'jenis_kelamin'),
+                'birth_place' => $cell($row, 'tempat_lahir'),
+                'birth_date' => $cell($row, 'tanggal_lahir'),
+                'nationality' => "{{#if {$roster}_{$row}_nama}}INDONESIA{{/if}}",
+                'religion' => $cell($row, 'agama'),
+                'marital_status' => $cell($row, 'status_kawin'),
+                'family_role' => $cell($row, 'shdk'),
+                'education' => $cell($row, 'pendidikan'),
+                'occupation' => $cell($row, 'pekerjaan'),
+                'mother_name' => $cell($row, 'nama_ibu'),
+                'father_name' => $cell($row, 'nama_ayah'),
+            ];
+        }
+
+        return $this->biodataForm(
+            [
+                'head' => $cell(1, 'nama'),
+                'address' => '{{ applicant_address }}',
+                'hamlet' => $cell(1, 'dusun'),
+                'count' => "{{ {$roster}_jumlah }}",
+            ],
+            [
+                'postal' => 'village_postal_code',
+                'rt' => "{$roster}_1_rt",
+                'rw' => "{$roster}_1_rw",
+            ],
+            $members,
+        );
+    }
+
     private function birthStatementForm(): string
     {
         return $this->sheetForm('f2_03_sptjm_kelahiran', [
@@ -1262,7 +1456,13 @@ class ServiceLetterTypeSeeder extends Seeder
 
             // Jumlah anggota rata kanan di dua kotak.
             if ($key === 'count') {
-                return trim(str_pad($family['count'] ?? '', 2, ' ', STR_PAD_LEFT)[(int) $index]);
+                $count = $family['count'] ?? '';
+
+                if (str_starts_with($count, '{{')) {
+                    return $index === '1' ? $count : '';
+                }
+
+                return trim(str_pad($count, 2, ' ', STR_PAD_LEFT)[(int) $index]);
             }
 
             return isset($boxes[$key]) ? "{{ {$boxes[$key]}[{$index}] }}" : '';

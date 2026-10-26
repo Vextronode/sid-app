@@ -99,6 +99,9 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
     // Anggota KK pemohon untuk isian family_members di form surat.
     Route::get('/profile/family-members', [ProfileController::class, 'familyMembers']);
+    // Nama otomatis dari NIK di form surat (mis. saksi); dibatasi agar
+    // tidak dipakai menebak NIK.
+    Route::get('/profile/nik-lookup', [ProfileController::class, 'lookupNik'])->middleware('throttle:30,1');
     // Foto profil akun warga; akun yang menjabat ditolak (foto pejabat
     // dikelola Petugas Desa).
     Route::post('/profile/photo', [UserPhotoController::class, 'storeOwn']);

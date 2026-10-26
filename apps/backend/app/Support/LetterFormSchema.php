@@ -31,14 +31,29 @@ use Illuminate\Validation\Rule;
  *
  * Isian `family_member`: satu anggota KK pemohon (mis. ibu bayi); saat
  * pengajuan ditambah `<nama>_<kolom>` (MEMBER_KEYS) siap cetak. `gender`
- * (L/P) membatasi pilihan, mis. ibu hanya anggota perempuan.
+ * (L/P) membatasi pilihan, mis. ibu hanya anggota perempuan; `not_self`
+ * menolak pemohon sendiri; `different` = nama isian family_member lain yang
+ * tidak boleh sama (mis. kepala keluarga baru bukan almarhum);
+ * `required_when_head` = wajib bila anggota di isian itu kepala keluarga
+ * (bila bukan, nilainya dibuang).
+ *
+ * Isian dengan `from_nik` (nama isian NIK): bila NIK itu milik warga aktif
+ * desa ini, isian tidak wajib dan diisi dari data penduduk saat pengajuan
+ * (`from_nik_value`: `name` = nama, bawaan; `family_number` = No. KK); bila
+ * tidak, isian diketik (mis. saksi dari luar desa).
+ *
+ * Isian `family_roster` tidak diisi pemohon: saat pengajuan sistem mencatat
+ * susunan KK pemohon tanpa anggota di isian `exclude`, dengan anggota di
+ * isian `head` sebagai kepala keluarga (urutan pertama). Disimpan sebagai
+ * `<nama>_<n>_<kolom>` (n = 1..10, kolom MEMBER_KEYS) dan `<nama>_jumlah`,
+ * mis. untuk F-1.01 setelah kepala keluarga meninggal.
  *
  * Isian `village_area`: Dusun -> RW -> RT desa ini (id RT); saat pengajuan
  * ditambah `<nama>_dusun`, `<nama>_rw`, `<nama>_rt` siap cetak.
  */
 class LetterFormSchema
 {
-    public const FIELD_TYPES = ['text', 'textarea', 'date', 'time', 'number', 'nik', 'select', 'file', 'occupation', 'repeater', 'family_members', 'village_area', 'family_member'];
+    public const FIELD_TYPES = ['text', 'textarea', 'date', 'time', 'number', 'nik', 'select', 'file', 'occupation', 'repeater', 'family_members', 'village_area', 'family_member', 'family_roster'];
 
     /**
      * Tipe sub-isian di dalam repeater. `family_member` memilih satu anggota
@@ -60,7 +75,14 @@ class LetterFormSchema
     public const MEMBER_KEYS = [
         ...self::ROW_MEMBER_KEYS,
         'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'lahir_tgl', 'lahir_bln', 'lahir_thn', 'alamat',
+        'dusun', 'rt', 'rw', 'nama_ayah', 'nama_ibu',
     ];
+
+    /** Relasi yang dibaca memberValues(). */
+    private const MEMBER_RELATIONS = ['occupation', 'rt.rw.hamlet'];
+
+    /** Jumlah baris anggota pada formulir susunan KK (F-1.01). */
+    public const ROSTER_ROWS = 10;
 
     /** Kolom tiap baris family_members yang dapat dipakai di template. */
     public const FAMILY_MEMBER_KEYS = ['nama', 'nik', 'shdk', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir'];
@@ -80,6 +102,9 @@ class LetterFormSchema
 
     /** @var Collection<int, Citizen>|null */
     private ?Collection $familyMembers = null;
+
+    /** @var array<string, Citizen|null> warga per NIK (isian from_nik) */
+    private array $nikCitizens = [];
 
     /**
      * @param  Citizen|null  $applicant  pemohon; sumber pilihan isian family_members
@@ -195,7 +220,7 @@ class LetterFormSchema
 
         foreach ($this->fieldsOfType('family_member') as $field) {
             $id = $payload[$field['name']] ?? null;
-            $member = $id ? $this->familyMembers()->loadMissing('occupation')->firstWhere('id', $id) : null;
+            $member = $id ? $this->familyMembers()->loadMissing(self::MEMBER_RELATIONS)->firstWhere('id', $id) : null;
 
             if ($member === null) {
                 continue;
@@ -204,6 +229,30 @@ class LetterFormSchema
             foreach (self::memberValues($member) as $key => $value) {
                 $payload["{$field['name']}_{$key}"] = $value;
             }
+        }
+
+        foreach ($this->fieldsOfType('family_roster') as $field) {
+            $excluded = (string) ($payload[$field['exclude'] ?? ''] ?? '');
+            $head = (string) ($payload[$field['head'] ?? ''] ?? '');
+            $members = $this->familyMembers()->loadMissing(self::MEMBER_RELATIONS)
+                ->reject(fn (Citizen $member): bool => (string) $member->id === $excluded)
+                ->sortBy(fn (Citizen $member): int => (string) $member->id === $head ? 0 : 1)
+                ->take(self::ROSTER_ROWS)
+                ->values();
+
+            foreach ($members as $index => $member) {
+                $values = self::memberValues($member);
+
+                if ((string) $member->id === $head) {
+                    $values['shdk'] = 'Kepala Keluarga';
+                }
+
+                foreach ($values as $key => $value) {
+                    $payload[$field['name'].'_'.($index + 1).'_'.$key] = $value;
+                }
+            }
+
+            $payload["{$field['name']}_jumlah"] = (string) $members->count();
         }
 
         foreach ($this->fieldsOfType('family_members') as $field) {
@@ -245,6 +294,7 @@ class LetterFormSchema
     public static function memberValues(Citizen $member): array
     {
         $birth = $member->date_of_birth;
+        $rt = $member->rt;
 
         return [
             'nama' => $member->name,
@@ -265,6 +315,11 @@ class LetterFormSchema
             'lahir_bln' => $birth?->format('m') ?? '',
             'lahir_thn' => $birth?->format('Y') ?? '',
             'alamat' => $member->address ?? '-',
+            'dusun' => $rt?->rw?->hamlet?->name ?? '',
+            'rt' => $rt ? self::areaNumber($rt->number) : '',
+            'rw' => $rt?->rw ? self::areaNumber($rt->rw->number) : '',
+            'nama_ayah' => (string) ($member->father_name_text ?? ''),
+            'nama_ibu' => (string) ($member->mother_name_text ?? ''),
         ];
     }
 
@@ -408,6 +463,50 @@ class LetterFormSchema
         return $payload;
     }
 
+    /**
+     * Isian nama ber-`from_nik` diisi nama warga ber-NIK tersebut.
+     *
+     * @param  array<string, mixed>|null  $payload  payload yang sudah tervalidasi
+     * @return array<string, mixed>|null
+     */
+    public function resolveNamesFromNik(?array $payload): ?array
+    {
+        if ($payload === null) {
+            return null;
+        }
+
+        foreach ($this->fields ?? [] as $field) {
+            $fromNik = $field['from_nik'] ?? null;
+            $citizen = $fromNik !== null ? $this->citizenByNik($payload[$fromNik] ?? null) : null;
+
+            if ($citizen !== null) {
+                $payload[$field['name']] = ($field['from_nik_value'] ?? 'name') === 'family_number'
+                    ? $citizen->family?->no_kk
+                    : $citizen->name;
+            }
+        }
+
+        return $payload;
+    }
+
+    private function citizenByNik(mixed $nik): ?Citizen
+    {
+        if (! is_string($nik) || ! preg_match('/^\d{16}$/', $nik) || $this->villageId === null) {
+            return null;
+        }
+
+        if (! array_key_exists($nik, $this->nikCitizens)) {
+            $this->nikCitizens[$nik] = Citizen::query()
+                ->where('village_id', $this->villageId)
+                ->where('nik_hash', hash('sha256', $nik))
+                ->where('is_active', true)
+                ->with('family:id,no_kk')
+                ->first();
+        }
+
+        return $this->nikCitizens[$nik];
+    }
+
     public static function areaNumber(mixed $number): string
     {
         $number = trim((string) $number);
@@ -467,13 +566,32 @@ class LetterFormSchema
                 continue;
             }
 
+            // Disusun sistem saat pengajuan, bukan diisi pemohon.
+            if (($field['type'] ?? 'text') === 'family_roster') {
+                $rules["payload.{$field['name']}"] = ['exclude'];
+
+                continue;
+            }
+
             if (($field['type'] ?? 'text') === 'family_member') {
                 $members = $this->familyMembers()
-                    ->when(isset($field['gender']), fn ($members) => $members->where('gender', $field['gender']));
+                    ->when(isset($field['gender']), fn ($members) => $members->where('gender', $field['gender']))
+                    ->when($field['not_self'] ?? false, fn ($members) => $members->where('id', '!==', $this->applicant?->id));
+                $headOf = $field['required_when_head'] ?? null;
+
+                // Kepala keluarga baru hanya berarti bila almarhum kepala keluarga.
+                if ($headOf !== null && ! $this->isFamilyHead($payload[$headOf] ?? null)) {
+                    $rules["payload.{$field['name']}"] = ['exclude'];
+
+                    continue;
+                }
+
+                $required = ($field['required'] ?? false) || $headOf !== null;
                 $rules["payload.{$field['name']}"] = [
-                    ($field['required'] ?? false) ? 'required' : 'nullable',
+                    $required ? 'required' : 'nullable',
                     'string',
                     Rule::in($members->pluck('id')->map(fn ($id): string => (string) $id)->all()),
+                    ...(isset($field['different']) ? ["different:payload.{$field['different']}"] : []),
                 ];
 
                 continue;
@@ -489,8 +607,12 @@ class LetterFormSchema
                 continue;
             }
 
+            // Nama dari data penduduk bila NIK-nya terdaftar.
+            $fromNik = $field['from_nik'] ?? null;
+            $known = $fromNik !== null && $this->citizenByNik($payload[$fromNik] ?? null) !== null;
+
             $rules["payload.{$field['name']}"] = [
-                ($field['required'] ?? false) ? 'required' : 'nullable',
+                ($field['required'] ?? false) && ! $known ? 'required' : 'nullable',
                 ...self::typeRules($field),
             ];
         }
@@ -747,7 +869,7 @@ class LetterFormSchema
                     }
 
                     if (($subField['type'] ?? 'text') === 'family_member' && $value !== null && $value !== '') {
-                        $members ??= $this->familyMembers()->loadMissing('occupation')->keyBy('id');
+                        $members ??= $this->familyMembers()->loadMissing(self::MEMBER_RELATIONS)->keyBy('id');
                         $values = self::memberValues($members[$value]);
 
                         foreach (self::ROW_MEMBER_KEYS as $key) {
@@ -761,6 +883,15 @@ class LetterFormSchema
         }
 
         return $payload;
+    }
+
+    private function isFamilyHead(mixed $citizenId): bool
+    {
+        if (! is_string($citizenId) || $citizenId === '') {
+            return false;
+        }
+
+        return $this->familyMembers()->firstWhere('id', $citizenId)?->family_role === FamilyRole::KEPALA_KELUARGA;
     }
 
     /**
