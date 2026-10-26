@@ -1,3 +1,6 @@
+import { RevealableValue } from '@/components/ui/RevealableValue'
+import { revealCitizenNik } from '@/shared/lib/identityApi'
+
 /**
  * Pilih anggota KK pemohon (centang). Daftar anggota diambil dari
  * GET /profile/family-members; backend memvalidasi ulang pilihannya.
@@ -31,7 +34,15 @@ export function FamilyMembersField({ field, members, loadFailed, value, setValue
           <span>
             {member.name}
             {member.is_self ? ' (Anda)' : ''} - {member.family_role_label}
-            {member.nik_masked ? `, NIK ${member.nik_masked}` : ''}
+            {member.nik_masked && (
+              <>
+                , NIK{' '}
+                <RevealableValue
+                  masked={member.nik_masked}
+                  reveal={() => revealCitizenNik(member.id)}
+                />
+              </>
+            )}
           </span>
         </label>
       ))}

@@ -21,6 +21,8 @@ import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
+import { RevealableValue } from '@/components/ui/RevealableValue'
+import { revealFamilyNumber } from '@/shared/lib/identityApi'
 
 const EMPTY_FAMILY = {
   no_kk: '',
@@ -322,7 +324,13 @@ export default function FamilyManagementPanel({
             ) : (
               families.map((family) => (
                 <tr key={family.id}>
-                  <td>{family.no_kk_masked ?? '-'}</td>
+                  <td>
+                    <RevealableValue
+                      masked={family.no_kk_masked}
+                      reveal={() => revealFamilyNumber(family.id)}
+                      label="No. KK"
+                    />
+                  </td>
                   <td>{family.head_of_family?.name ?? '-'}</td>
                   <td>{family.members_count ?? 0}</td>
                   <td>{family.family_address ?? '-'}</td>
@@ -458,7 +466,14 @@ export default function FamilyManagementPanel({
                 )}
                 {selectedFamily && (
                   <p>
-                    No. KK: <strong>{selectedFamily.no_kk_masked ?? '-'}</strong>
+                    No. KK:{' '}
+                    <strong>
+                      <RevealableValue
+                        masked={selectedFamily.no_kk_masked}
+                        reveal={() => revealFamilyNumber(selectedFamily.id)}
+                        label="No. KK"
+                      />
+                    </strong>
                   </p>
                 )}
                 <label className="sid-form-group">
@@ -494,7 +509,7 @@ export default function FamilyManagementPanel({
                     <ul>
                       {members.map((member) => (
                         <li key={member.id}>
-                          {member.name} —{' '}
+                          {member.name} -{' '}
                           {labelOf(FAMILY_ROLE_LABELS, member.family_role ?? 'anggota')}
                         </li>
                       ))}
@@ -505,7 +520,14 @@ export default function FamilyManagementPanel({
             ) : (
               <>
                 <p>
-                  KK: <strong>{selectedFamily?.no_kk_masked ?? '-'}</strong>
+                  KK:{' '}
+                  <strong>
+                    <RevealableValue
+                      masked={selectedFamily?.no_kk_masked}
+                      reveal={() => revealFamilyNumber(selectedFamily.id)}
+                      label="No. KK"
+                    />
+                  </strong>
                 </p>
                 <label className="sid-form-group">
                   <span className="sid-form-label">Rentang Penghasilan Rumah Tangga</span>

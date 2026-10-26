@@ -23198,3 +23198,154 @@ button.sid-operator-profile {
 
   gap: 6px;
 }
+
+/* Nilai tersamar (NIK / No. KK) dengan tombol mata untuk menampilkan nilai utuh. */
+.sid-revealable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.sid-revealable-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--sid-text-muted);
+  cursor: pointer;
+}
+
+.sid-revealable-toggle:hover:not(:disabled),
+.sid-revealable-toggle:focus-visible {
+  background: var(--sid-primary-soft);
+  color: var(--sid-primary);
+}
+
+.sid-revealable-toggle:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+/* Kartu permintaan tanda tangan & saksi (profil). */
+.sid-sign-requests {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sid-sign-requests-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sid-sign-requests-header .sid-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sid-sign-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px dashed var(--sid-border);
+  border-radius: var(--sid-radius-md);
+  color: var(--sid-text-muted);
+}
+
+.sid-sign-request-list,
+.sid-sign-block-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sid-sign-request {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-lg);
+  background: var(--sid-surface-card);
+}
+
+.sid-sign-request-kind {
+  align-self: flex-start;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--sid-primary-soft);
+  color: var(--sid-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sid-sign-request-kind.witness {
+  background: var(--sid-warning-soft);
+  color: #6b4400;
+}
+
+.sid-sign-request-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.sid-sign-request-meta {
+  margin: 0 0 0.35rem;
+  color: var(--sid-text-muted);
+  font-size: 0.875rem;
+}
+
+.sid-sign-request-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.sid-sign-request-block {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--sid-text-muted);
+  font-size: 0.875rem;
+}
+
+.sid-sign-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: var(--sid-radius-lg);
+  background: var(--sid-surface-page);
+}
+
+.sid-sign-block-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sid-sign-block-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sid-sign-block-form .sid-input {
+  flex: 1 1 14rem;
+}

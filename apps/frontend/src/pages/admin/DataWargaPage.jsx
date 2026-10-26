@@ -42,6 +42,8 @@ import { alertDialog, confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
+import { RevealableValue } from '@/components/ui/RevealableValue'
+import { revealCitizenNik, revealFamilyNumber } from '@/shared/lib/identityApi'
 
 const formatResidencyType = (type) => {
   if (!type) return '-'
@@ -519,7 +521,12 @@ export default function DataWargaPage() {
                       data.map((warga) => (
                         <tr key={warga.id}>
                           <td className="primary-text">{warga.name}</td>
-                          <td className="center">{warga.nik_masked ?? '-'}</td>
+                          <td className="center">
+                            <RevealableValue
+                              masked={warga.nik_masked}
+                              reveal={() => revealCitizenNik(warga.id)}
+                            />
+                          </td>
                           <td className="center">
                             RT {warga.rt?.number ?? '-'} / RW {warga.rw?.number ?? '-'}
                           </td>
@@ -531,7 +538,13 @@ export default function DataWargaPage() {
                                 : '-'}
                           </td>
                           <td className="center">{formatResidencyType(warga.residency_type)}</td>
-                          <td className="center">{warga.family?.no_kk_masked ?? '-'}</td>
+                          <td className="center">
+                            <RevealableValue
+                              masked={warga.family?.no_kk_masked}
+                              reveal={() => revealFamilyNumber(warga.family.id)}
+                              label="No. KK"
+                            />
+                          </td>
                           <td className="center">
                             {labelOf(FAMILY_ROLE_LABELS, warga.family_role)}
                           </td>
@@ -742,7 +755,7 @@ export default function DataWargaPage() {
                   <option value="">Belum terhubung ke KK</option>
                   {familyList.options.map((family) => (
                     <option key={family.id} value={family.id}>
-                      {family.no_kk_masked} — {family.head_of_family?.name ?? family.family_address}
+                      {family.no_kk_masked} - {family.head_of_family?.name ?? family.family_address}
                     </option>
                   ))}
                 </select>

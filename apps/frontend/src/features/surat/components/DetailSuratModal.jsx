@@ -28,6 +28,8 @@ import {
   FORM_DOWNLOAD_HINT,
   isSignedByVillageHead,
 } from '@/features/cetak-surat/utils/letterSigning'
+import { RevealableValue } from '@/components/ui/RevealableValue'
+import { revealLetterApplicantNik } from '@/shared/lib/identityApi'
 
 function getRejectionReason(surat) {
   return surat?.notes ?? surat?.reason ?? surat?.rejection_reason ?? 'Tidak ada catatan penolakan.'
@@ -139,7 +141,15 @@ function DetailSuratModalContent({ row, onClose }) {
         <DossierFacts
           items={[
             { label: 'Pemohon', value: surat.applicant_name },
-            { label: 'NIK', value: getApplicantNik(surat) },
+            {
+              label: 'NIK',
+              value: (
+                <RevealableValue
+                  masked={getApplicantNik(surat)}
+                  reveal={() => revealLetterApplicantNik(surat.id)}
+                />
+              ),
+            },
             { label: 'Alamat', value: getApplicantAddress(surat) },
             { label: 'Keperluan', value: surat.purpose },
             { label: 'Diajukan', value: formatDossierDateTime(surat.submitted_at) },

@@ -11,6 +11,8 @@ import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
 import { usePageSize } from '@/components/ui/usePageSize'
 import { FAMILY_ROLE_LABELS, labelOf } from '@/shared/lib/labels'
+import { RevealableValue } from '@/components/ui/RevealableValue'
+import { revealCitizenNik, revealFamilyNumber } from '@/shared/lib/identityApi'
 
 // Bagian halaman sama dengan halaman kelola (DataWargaPage): tab Data
 // Penduduk dan Kartu Keluarga, aktif di ?tab=.
@@ -172,7 +174,12 @@ export default function DataWargaReadOnlyPage() {
                       data.map((warga) => (
                         <tr key={warga.id}>
                           <td className="primary-text">{warga.name}</td>
-                          <td className="center">{warga.nik_masked ?? '-'}</td>
+                          <td className="center">
+                            <RevealableValue
+                              masked={warga.nik_masked}
+                              reveal={() => revealCitizenNik(warga.id)}
+                            />
+                          </td>
                           <td className="center">
                             RT {warga.rt?.number ?? '-'} / RW {warga.rw?.number ?? '-'}
                           </td>
@@ -193,7 +200,13 @@ export default function DataWargaReadOnlyPage() {
                               .filter(Boolean)
                               .join(', ') || '-'}
                           </td>
-                          <td className="center">{warga.family?.no_kk_masked ?? '-'}</td>
+                          <td className="center">
+                            <RevealableValue
+                              masked={warga.family?.no_kk_masked}
+                              reveal={() => revealFamilyNumber(warga.family.id)}
+                              label="No. KK"
+                            />
+                          </td>
                           <td className="center">
                             {labelOf(FAMILY_ROLE_LABELS, warga.family_role)}
                           </td>
