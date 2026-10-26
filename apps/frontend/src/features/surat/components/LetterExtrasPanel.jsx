@@ -14,6 +14,13 @@ import { notifySuccess } from '@/shared/lib/toast'
 
 const FULFILLMENT_ROLES = ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid']
 
+// Cara saksi tercatat (signer_type witness).
+const WITNESS_METHOD_LABELS = {
+  consent: 'disetujui lewat akun',
+  rt_check: 'warga tanpa akun, perlu verifikasi RT',
+  manual: 'di luar data penduduk, diisi pemohon',
+}
+
 const SIGNATURE_STATUS_LABELS = {
   signed: 'Sudah ditandatangani',
   pending: 'Menunggu persetujuan pemilik NIK',
@@ -32,6 +39,64 @@ function serverMessage(error, fallback) {
   }
 
   return error?.response?.data?.message ?? fallback
+}
+
+/**
+ * Ganti saksi yang menolak/kedaluwarsa: NIK baru (nama diketik bila NIK di
+ * luar data penduduk). Warga desa ber-akun diminta persetujuan lagi.
+ */
+function WitnessRefill({ letterId, slot, onDone }) {
+  const [nik, setNik] = useState('')
+  const [name, setName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+
+    try {
+      await refillLetterSignature(letterId, slot.slot_key, { nik, name })
+      notifySuccess('Saksi diperbarui.')
+      onDone()
+    } catch (requestError) {
+      setError(serverMessage(requestError, 'Gagal memperbarui saksi.'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <input
+        className="sid-input"
+        inputMode="numeric"
+        maxLength={16}
+        aria-label={`NIK ${slot.slot_label} baru`}
+        placeholder="NIK saksi baru (16 digit)"
+        value={nik}
+        onChange={(event) => setNik(event.target.value)}
+      />
+      <input
+        className="sid-input"
+        aria-label={`Nama ${slot.slot_label} baru`}
+        placeholder="Nama saksi (isi bila NIK tidak terdaftar di desa)"
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+      />
+
+      {error && (
+        <p role="alert" className="sid-admin-alert sid-admin-alert-error">
+          {error}
+        </p>
+      )}
+
+      <button type="submit" className="sid-primary-button" disabled={saving || nik.length !== 16}>
+        {saving ? 'Mengirim...' : 'Ganti saksi'}
+      </button>
+    </form>
+  )
 }
 
 function SignatureRefill({ letterId, slot, onDone }) {
@@ -254,13 +319,13 @@ export function LetterExtrasPanel({ letterId }) {
 
       {letter.awaiting_signatures && (
         <p className="sid-warning-box" role="status">
-          Surat ini belum diproses karena masih menunggu tanda tangan pihak terkait.
+          Surat ini belum diproses karena masih menunggu tanda tangan atau persetujuan saksi.
         </p>
       )}
 
       {signatures.length > 0 && (
         <section className="sid-modal-note" aria-label="Tanda tangan">
-          <p className="sid-modal-note-label">Tanda Tangan</p>
+          <p className="sid-modal-note-label">Tanda Tangan &amp; Saksi</p>
           <ul className="sid-modal-note-text">
             {signatures.map((slot) => (
               <li key={slot.slot_key}>
@@ -268,9 +333,17 @@ export function LetterExtrasPanel({ letterId }) {
                 {SIGNATURE_STATUS_LABELS[slot.status] ?? slot.status}
                 {slot.signer_name ? ` (${slot.signer_name})` : ''}
                 {slot.method === 'wet' && slot.status === 'signed' ? ', tanda tangan basah' : ''}
+                {slot.signer_type === 'witness' && slot.status === 'signed'
+                  ? `, ${WITNESS_METHOD_LABELS[slot.method] ?? slot.method}`
+                  : ''}
                 {canRefill && slot.signer_type === 'other' && slot.status !== 'signed' && (
                   <SignatureRefill letterId={letter.id} slot={slot} onDone={load} />
                 )}
+                {canRefill &&
+                  slot.signer_type === 'witness' &&
+                  ['rejected', 'expired', 'cancelled'].includes(slot.status) && (
+                    <WitnessRefill letterId={letter.id} slot={slot} onDone={load} />
+                  )}
               </li>
             ))}
           </ul>

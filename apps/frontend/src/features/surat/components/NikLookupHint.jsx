@@ -28,6 +28,9 @@ export function NikLookupHint({ nik, onResult }) {
         const next = {
           nik,
           status: data?.found ? 'found' : 'not_found',
+          // Pemilik NIK yang punya akun harus menyetujui: nama tersamar,
+          // nama lengkap & No. KK diisi sistem setelah pengajuan.
+          hasAccount: Boolean(data?.has_account),
           name: data?.name ?? '',
           familyNumber: data?.family_number ?? '',
         }
@@ -53,6 +56,15 @@ export function NikLookupHint({ nik, onResult }) {
     return <p className="sid-upload-description">Mencari data NIK...</p>
   }
 
+  if (current.status === 'found' && current.hasAccount) {
+    return (
+      <p className="sid-upload-description" role="status">
+        NIK terdaftar atas nama <strong>{current.name}</strong>. Persetujuan saksi akan diminta
+        setelah surat diajukan.
+      </p>
+    )
+  }
+
   if (current.status === 'found') {
     return (
       <p className="sid-upload-description" role="status">
@@ -62,7 +74,7 @@ export function NikLookupHint({ nik, onResult }) {
             , No. KK: <strong>{current.familyNumber}</strong>
           </>
         ) : null}{' '}
-        (dari data penduduk)
+        (dari data penduduk, diverifikasi RT)
       </p>
     )
   }

@@ -31,6 +31,23 @@ describe('NikLookupHint', () => {
     )
   })
 
+  it('only shows a masked name when the NIK owner has to consent first', async () => {
+    lookupNik.mockResolvedValue({
+      found: true,
+      has_account: true,
+      name: 'U***g S***i',
+      family_number: null,
+    })
+    const onResult = vi.fn()
+    render(<NikLookupHint nik="3207010101800009" onResult={onResult} />)
+
+    expect(await screen.findByText('U***g S***i')).toBeTruthy()
+    expect(screen.getByText(/Persetujuan saksi akan diminta/)).toBeTruthy()
+    expect(onResult).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 'found', hasAccount: true }),
+    )
+  })
+
   it('asks for the name when the NIK is not registered', async () => {
     lookupNik.mockResolvedValue({ found: false, name: null })
     const onResult = vi.fn()

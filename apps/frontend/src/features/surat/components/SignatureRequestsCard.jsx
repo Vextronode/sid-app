@@ -94,7 +94,7 @@ export function SignatureRequestsCard() {
       aria-labelledby="signature-requests-heading"
     >
       <h2 id="signature-requests-heading" className="sid-section-title">
-        Permintaan Tanda Tangan
+        Permintaan Tanda Tangan &amp; Saksi
       </h2>
 
       {error && (
@@ -110,7 +110,9 @@ export function SignatureRequestsCard() {
           {requests.map((request) => (
             <li key={request.id} className="sid-modal-note">
               <p className="sid-modal-note-label">
-                {request.applicant_name} meminta tanda tangan Anda sebagai {request.slot_label}
+                {request.signer_type === 'witness'
+                  ? `${request.applicant_name} meminta Anda menjadi ${request.slot_label}`
+                  : `${request.applicant_name} meminta tanda tangan Anda sebagai ${request.slot_label}`}
               </p>
               <p className="sid-modal-note-text">
                 {request.letter_type ?? 'Surat'}
@@ -186,7 +188,9 @@ export function SignatureRequestsCard() {
                     run(
                       request.id,
                       () => acceptSignatureRequest(request.id, passwords[request.id]),
-                      'Permintaan disetujui. Tanda tangan Anda dipakai pada surat tersebut.',
+                      request.signer_type === 'witness'
+                        ? 'Permintaan disetujui. Anda tercatat sebagai saksi pada surat tersebut.'
+                        : 'Permintaan disetujui. Tanda tangan Anda dipakai pada surat tersebut.',
                     )
                   }
                 >
