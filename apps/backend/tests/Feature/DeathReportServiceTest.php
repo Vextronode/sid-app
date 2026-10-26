@@ -148,10 +148,10 @@ class DeathReportServiceTest extends TestCase
         $this->actingAs($this->applicant['user'])
             ->getJson('/api/profile/nik-lookup?nik=3207010101800009')
             ->assertOk()
-            ->assertJsonPath('data', ['found' => true, 'name' => 'Ujang Saksi', 'family_number' => '3218010101900009']);
+            ->assertJsonPath('data', ['found' => true, 'has_account' => false, 'name' => 'Ujang Saksi', 'family_number' => '3218010101900009']);
         $this->actingAs($this->applicant['user'])
             ->getJson('/api/profile/nik-lookup?nik=3207010101800099')
-            ->assertJsonPath('data', ['found' => false, 'name' => null, 'family_number' => null]);
+            ->assertJsonPath('data', ['found' => false, 'has_account' => false, 'name' => null, 'family_number' => null]);
         $this->actingAs($this->applicant['user'])->getJson('/api/profile/nik-lookup?nik=123')->assertUnprocessable();
 
         // NIK terdaftar: nama dan No. KK diambil dari data penduduk.

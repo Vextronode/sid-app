@@ -23,6 +23,8 @@ class RefillLetterSignatureRequest extends FormRequest
             'nik' => ['required_without:file', 'nullable', 'digits:16'],
             'file' => ['required_without:nik', 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
             'name' => ['required_with:file', 'nullable', 'string', 'max:100'],
+            // Saksi di luar data penduduk: No. KK opsional.
+            'family_number' => ['nullable', 'digits:16'],
         ];
     }
 }

@@ -15,7 +15,7 @@ use Database\Seeders\Concerns\DefinesLetterTypes;
 use Illuminate\Database\Seeder;
 
 /**
- * Jenis surat Pelayanan Desa (Fxx): formulir pelayanan kependudukan
+ * Jenis surat Layanan Kependudukan (Fxx): formulir pelayanan kependudukan
  * (format Disdukcapil, docs/template-surat/pelayanan/) yang dibawa warga ke
  * instansi luar. Berbeda dari Persuratan Desa:
  *  - tanpa nomor surat desa dan tanpa TTD/stempel Kepala Desa (persetujuan
@@ -1159,7 +1159,8 @@ class ServiceLetterTypeSeeder extends Seeder
     private function witness(int $no, string $label, bool $withFamilyNumber = false): array
     {
         return [
-            $this->field("nik_saksi_{$no}", "NIK Saksi {$label}", 'nik', true, '16 digit NIK'),
+            // Warga desa yang punya akun diminta persetujuannya (LetterSignatureService).
+            [...$this->field("nik_saksi_{$no}", "NIK Saksi {$label}", 'nik', true, '16 digit NIK'), 'witness' => "Saksi {$label}"],
             [...$this->text("nama_saksi_{$no}", "Nama Saksi {$label}", true, 'Nama lengkap'), 'from_nik' => "nik_saksi_{$no}"],
             ...($withFamilyNumber ? [[
                 ...$this->field("kk_saksi_{$no}", "No. KK Saksi {$label}", 'nik', false, '16 digit No. KK'),

@@ -143,6 +143,7 @@ class LetterService
             $data['signers'] ?? [],
             $data['signature_files'] ?? [],
         );
+        $this->letterSignatureService->openWitnesses($letter, $user);
 
         if (! $this->letterSignatureService->isComplete($letter)) {
             return $this->holdForSignatures($letter, $user);
