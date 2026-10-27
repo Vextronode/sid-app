@@ -51,6 +51,7 @@ export function AdminLayout({ children, menuItems: customMenuItems }) {
           setNotifOpen(opening)
           if (opening) void reload()
         }}
+        onMenuOpen={() => setNotifOpen(false)}
         popover={
           <NotificationPopover
             open={notifOpen}
