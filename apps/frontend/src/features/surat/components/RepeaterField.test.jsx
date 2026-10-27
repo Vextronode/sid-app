@@ -67,4 +67,70 @@ describe('RepeaterField', () => {
     fireEvent.change(screen.getByLabelText(/Kewarganegaraan/), { target: { value: 'wna' } })
     expect(screen.getByLabelText(/Nomor Paspor/)).toBeTruthy()
   })
+
+  it('hides members and the Kepala Keluarga already chosen in another row', () => {
+    const familyField = {
+      name: 'susunan_baru',
+      label: 'Anggota',
+      type: 'repeater',
+      required: true,
+      max: 3,
+      itemLabel: 'anggota',
+      oneHead: { column: 'shdk', with: 'shdk_pasangan' },
+      fields: [
+        {
+          name: 'anggota',
+          label: 'Anggota Keluarga',
+          type: 'family_member',
+          required: true,
+          options: [],
+        },
+        {
+          name: 'shdk',
+          label: 'Hubungan dalam KK Baru',
+          type: 'select',
+          required: true,
+          options: [
+            { value: 'kepala_keluarga', label: 'Kepala Keluarga' },
+            { value: 'anak', label: 'Anak' },
+          ],
+        },
+      ],
+    }
+    const familyMembers = [
+      { id: 'c-1', name: 'Engkos', family_role_label: 'Kepala Keluarga' },
+      { id: 'c-2', name: 'Asti', family_role_label: 'Anak' },
+    ]
+
+    function FamilyHarness() {
+      const { control, register } = useForm({
+        defaultValues: { susunan_baru: [{ anggota: 'c-1', shdk: 'kepala_keluarga' }, {}] },
+      })
+      const rows = useWatch({ control, name: 'susunan_baru' })
+
+      return (
+        <RepeaterField
+          field={familyField}
+          control={control}
+          register={register}
+          rows={rows}
+          errors={{}}
+          catalogs={{ familyMembers, occupations: [] }}
+        />
+      )
+    }
+
+    render(<FamilyHarness />)
+
+    const second = (id) => document.getElementById(`susunan_baru.1.${id}`)
+    expect([...second('anggota').options].map((option) => option.textContent)).toEqual([
+      'Pilih anggota keluarga...',
+      'Asti (Anak)',
+    ])
+    expect([...second('shdk').options].map((option) => option.value)).toEqual(['', 'anak'])
+    // Baris pertama tetap bisa memilih Kepala Keluarga.
+    expect(
+      [...document.getElementById('susunan_baru.0.shdk').options].map((option) => option.value),
+    ).toContain('kepala_keluarga')
+  })
 })

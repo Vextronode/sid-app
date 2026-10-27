@@ -1,10 +1,11 @@
 import { useFieldArray } from 'react-hook-form'
 import { Plus, Trash2 } from 'lucide-react'
 
+import { roleOptions } from '../utils/familyHead'
 import { repeaterMinRows, visibleFields } from '../utils/fieldCondition'
 import { OTHER_OCCUPATION, otherOccupationFieldName } from '../validation/suratSchema'
 
-function SubInput({ field, name, register, error, row, catalogs }) {
+function SubInput({ field, name, register, error, row, catalogs, taken }) {
   const className = `sid-input ${error ? 'sid-input-error' : ''}`
   const selectClass = `sid-select ${error ? 'sid-input-error' : ''}`
 
@@ -13,11 +14,13 @@ function SubInput({ field, name, register, error, row, catalogs }) {
     return (
       <select id={name} {...register(name)} className={selectClass}>
         <option value="">Pilih anggota keluarga...</option>
-        {catalogs.familyMembers.map((member) => (
-          <option key={member.id} value={member.id}>
-            {member.name} ({member.family_role_label})
-          </option>
-        ))}
+        {catalogs.familyMembers
+          .filter((member) => !taken.members.includes(String(member.id)))
+          .map((member) => (
+            <option key={member.id} value={member.id}>
+              {member.name} ({member.family_role_label})
+            </option>
+          ))}
       </select>
     )
   }
@@ -69,11 +72,13 @@ function SubInput({ field, name, register, error, row, catalogs }) {
         className={`sid-select ${error ? 'sid-input-error' : ''}`}
       >
         <option value="">Pilih...</option>
-        {field.options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label ?? option.value}
-          </option>
-        ))}
+        {roleOptions(field, catalogs.familyMembers, row)
+          .filter((option) => !(taken.head && option.value === 'kepala_keluarga'))
+          .map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label ?? option.value}
+            </option>
+          ))}
       </select>
     )
   }
@@ -107,6 +112,7 @@ export function RepeaterField({
   rows,
   errors,
   catalogs = { familyMembers: [], occupations: [] },
+  answers = {},
 }) {
   const { fields: items, append, remove } = useFieldArray({ control, name: field.name })
   const itemLabel = field.itemLabel || 'baris'
@@ -119,6 +125,7 @@ export function RepeaterField({
       {items.map((item, index) => {
         const row = rows?.[index] ?? {}
         const rowErrors = fieldError?.[index] ?? {}
+        const others = (rows ?? []).filter((_, other) => other !== index)
 
         return (
           <fieldset key={item.id} className="sid-repeater-row">
@@ -128,6 +135,20 @@ export function RepeaterField({
 
             {visibleFields(field.fields, row).map((subField) => {
               const name = `${field.name}.${index}.${subField.name}`
+              // Anggota yang sudah dipilih di baris lain, dan Kepala Keluarga
+              // yang sudah ada di baris lain atau di isian `with` (one_head).
+              const taken = {
+                members:
+                  subField.type === 'family_member'
+                    ? others.map((other) => String(other?.[subField.name] ?? '')).filter(Boolean)
+                    : [],
+                head:
+                  field.oneHead?.column === subField.name &&
+                  (others.some((other) => other?.[subField.name] === 'kepala_keluarga') ||
+                    Boolean(
+                      field.oneHead.with && answers?.[field.oneHead.with] === 'kepala_keluarga',
+                    )),
+              }
 
               return (
                 <div key={subField.name} className="sid-form-group">
@@ -142,6 +163,7 @@ export function RepeaterField({
                     error={rowErrors[subField.name]}
                     row={row}
                     catalogs={catalogs}
+                    taken={taken}
                   />
                   {rowErrors[subField.name]?.message && (
                     <span className="sid-form-field-error" role="alert">

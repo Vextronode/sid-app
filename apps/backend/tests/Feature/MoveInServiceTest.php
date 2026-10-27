@@ -73,6 +73,22 @@ class MoveInServiceTest extends TestCase
 
     public function test_joining_a_family_issues_the_registration_form_and_host_family_statement(): void
     {
+        // Pendatang perempuan tidak bisa menjadi Suami di KK yang ditumpangi.
+        $this->actingAs($this->applicant['user'])
+            ->postJson('/api/letters', [
+                'letter_type_id' => LetterType::query()->where('code', 'F04')->value('id'),
+                'payload' => [
+                    ...$this->arrival('numpang_kk'),
+                    'nama_kepala_keluarga' => 'Engkos Sutisna',
+                    'nik_kepala_keluarga' => '3207240101700001',
+                    'no_kk_tujuan' => '3218011304150001',
+                    'shdk_pendatang' => 'suami',
+                    'pekerjaan_kepala_keluarga' => (string) $this->farmer->id,
+                    'alamat_kepala_keluarga' => $this->budiasih->id,
+                ],
+            ])
+            ->assertJsonValidationErrors(['payload.shdk_pendatang' => 'Suami harus laki-laki.']);
+
         $letterId = $this->approve([
             ...$this->arrival('numpang_kk'),
             'nama_kepala_keluarga' => 'Engkos Sutisna',
