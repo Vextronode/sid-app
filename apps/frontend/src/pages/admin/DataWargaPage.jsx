@@ -91,6 +91,16 @@ const emptyForm = {
   last_education: '',
   domicile_status: 'menetap',
   current_domicile: '',
+  // Dokumen & keterangan tambahan (Formulir Biodata Keluarga F-1.01).
+  title_front: '',
+  title_back: '',
+  birth_certificate_number: '',
+  marriage_certificate_number: '',
+  marriage_date: '',
+  divorce_certificate_number: '',
+  divorce_date: '',
+  has_disorder: false,
+  disability: '',
 }
 
 const emptyImportStatus = { loading: false, success: null, error: null, result: null }
@@ -106,7 +116,7 @@ const SECTIONS = [
 export default function DataWargaPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  // Log Aktivitas hanya dapat dibuka Petugas Desa.
+  // Log Aktivitas hanya dapat dibuka Staf SIDUTama.
   const canViewHistory = user?.role === 'staf_sid'
   const [searchParams, setSearchParams] = useSearchParams()
   const activeSection = searchParams.get('tab') === 'kk' ? 'kk' : 'penduduk'
@@ -223,6 +233,15 @@ export default function DataWargaPage() {
       last_education: warga.last_education || '',
       domicile_status: warga.domicile_status || 'menetap',
       current_domicile: warga.current_domicile || '',
+      title_front: warga.title_front || '',
+      title_back: warga.title_back || '',
+      birth_certificate_number: warga.birth_certificate_number || '',
+      marriage_certificate_number: warga.marriage_certificate_number || '',
+      marriage_date: warga.marriage_date ? String(warga.marriage_date).slice(0, 10) : '',
+      divorce_certificate_number: warga.divorce_certificate_number || '',
+      divorce_date: warga.divorce_date ? String(warga.divorce_date).slice(0, 10) : '',
+      has_disorder: Boolean(warga.has_disorder),
+      disability: warga.disability || '',
     })
     setFormError(null)
     setIsFormModalOpen(true)
@@ -249,6 +268,15 @@ export default function DataWargaPage() {
         last_education: formData.last_education || null,
         domicile_status: formData.domicile_status || null,
         current_domicile: formData.current_domicile || null,
+        title_front: formData.title_front || null,
+        title_back: formData.title_back || null,
+        birth_certificate_number: formData.birth_certificate_number || null,
+        marriage_certificate_number: formData.marriage_certificate_number || null,
+        marriage_date: formData.marriage_date || null,
+        divorce_certificate_number: formData.divorce_certificate_number || null,
+        divorce_date: formData.divorce_date || null,
+        has_disorder: Boolean(formData.has_disorder),
+        disability: formData.has_disorder ? formData.disability || null : null,
       }
 
       if (editingCitizen) {
@@ -922,6 +950,136 @@ export default function DataWargaPage() {
                       style={inputStyle}
                     />
                   </div>
+                </div>
+              </details>
+
+              <details className="sid-admin-form-details">
+                <summary>Dokumen &amp; Keterangan Tambahan</summary>
+                <p className="sid-admin-file-hint">
+                  Dipakai untuk Formulir Biodata Keluarga (F-1.01). Kosongkan bila tidak ada.
+                </p>
+                <div className="sid-admin-form-grid">
+                  <div>
+                    <label style={labelStyle} htmlFor="warga-title_front">
+                      Gelar Depan
+                    </label>
+                    <input
+                      id="warga-title_front"
+                      value={formData.title_front}
+                      onChange={(e) => setFormData({ ...formData, title_front: e.target.value })}
+                      placeholder="Contoh: Dr."
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle} htmlFor="warga-title_back">
+                      Gelar Belakang
+                    </label>
+                    <input
+                      id="warga-title_back"
+                      value={formData.title_back}
+                      onChange={(e) => setFormData({ ...formData, title_back: e.target.value })}
+                      placeholder="Contoh: S.Pd."
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle} htmlFor="warga-birth_certificate_number">
+                      No. Akta Lahir
+                    </label>
+                    <input
+                      id="warga-birth_certificate_number"
+                      value={formData.birth_certificate_number}
+                      onChange={(e) =>
+                        setFormData({ ...formData, birth_certificate_number: e.target.value })
+                      }
+                      placeholder="Kosongkan bila belum punya"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle} htmlFor="warga-marriage_certificate_number">
+                      No. Akta/Buku Nikah
+                    </label>
+                    <input
+                      id="warga-marriage_certificate_number"
+                      value={formData.marriage_certificate_number}
+                      onChange={(e) =>
+                        setFormData({ ...formData, marriage_certificate_number: e.target.value })
+                      }
+                      placeholder="Kosongkan bila tidak ada"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle} htmlFor="warga-marriage_date">
+                      Tanggal Perkawinan
+                    </label>
+                    <input
+                      id="warga-marriage_date"
+                      type="date"
+                      value={formData.marriage_date}
+                      onChange={(e) => setFormData({ ...formData, marriage_date: e.target.value })}
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle} htmlFor="warga-divorce_certificate_number">
+                      No. Akta Cerai
+                    </label>
+                    <input
+                      id="warga-divorce_certificate_number"
+                      value={formData.divorce_certificate_number}
+                      onChange={(e) =>
+                        setFormData({ ...formData, divorce_certificate_number: e.target.value })
+                      }
+                      placeholder="Kosongkan bila tidak ada"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle} htmlFor="warga-divorce_date">
+                      Tanggal Perceraian
+                    </label>
+                    <input
+                      id="warga-divorce_date"
+                      type="date"
+                      value={formData.divorce_date}
+                      onChange={(e) => setFormData({ ...formData, divorce_date: e.target.value })}
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle} htmlFor="warga-has_disorder">
+                      Kelainan Fisik &amp; Mental
+                    </label>
+                    <select
+                      id="warga-has_disorder"
+                      value={formData.has_disorder ? 'ada' : 'tidak'}
+                      onChange={(e) =>
+                        setFormData({ ...formData, has_disorder: e.target.value === 'ada' })
+                      }
+                      style={inputStyle}
+                    >
+                      <option value="tidak">Tidak ada</option>
+                      <option value="ada">Ada</option>
+                    </select>
+                  </div>
+                  {formData.has_disorder && (
+                    <div>
+                      <label style={labelStyle} htmlFor="warga-disability">
+                        Penyandang Cacat
+                      </label>
+                      <input
+                        id="warga-disability"
+                        required
+                        value={formData.disability}
+                        onChange={(e) => setFormData({ ...formData, disability: e.target.value })}
+                        placeholder="Contoh: Tuna netra"
+                        style={inputStyle}
+                      />
+                    </div>
+                  )}
                 </div>
               </details>
 
