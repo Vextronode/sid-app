@@ -705,7 +705,7 @@ FulfillmentProposal:
   properties:
     action:
       type: string
-      enum: [none, update_citizen, create_citizen, deactivate_members, update_members, update_citizens, manual]
+      enum: [none, update_citizen, create_citizen, deactivate_members, update_members, update_citizens, restructure_family, manual]
       example: "update_citizen"
     fulfilled_at:
       type: string
@@ -741,6 +741,19 @@ FulfillmentProposal:
         Untuk action `create_citizen` dengan `data_options.family`: {mode:
         join|create, description}. Mode `create` menambah kolom `no_kk` di
         `fields` (No. KK baru dari KK terbitan Disdukcapil).
+    restructure:
+      type: object
+      nullable: true
+      description: |
+        Untuk action `restructure_family` (F09): {kind: new_family|change_head|join,
+        lines: ringkasan rencana perubahan}. Jenis new_family menambah kolom
+        `no_kk` di `fields` (No. KK baru dari KK terbitan Disdukcapil); bila
+        alasannya membentuk keluarga baru, kepala keluarga dan suami/istri
+        juga diubah menjadi Kawin.
+    new_head:
+      type: object
+      nullable: true
+      description: "Kepala keluarga baru KK lama {name, family_role} (deactivate_members)."
     subjects:
       type: array
       description: |
