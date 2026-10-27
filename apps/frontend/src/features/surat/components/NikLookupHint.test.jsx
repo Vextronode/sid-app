@@ -39,10 +39,10 @@ describe('NikLookupHint', () => {
       family_number: null,
     })
     const onResult = vi.fn()
-    render(<NikLookupHint nik="3207010101800009" onResult={onResult} witness />)
+    render(<NikLookupHint nik="3207010101800009" onResult={onResult} witness="Saksi I" />)
 
     expect(await screen.findByText('U***g S***i')).toBeTruthy()
-    expect(screen.getByText(/Persetujuan saksi akan diminta/)).toBeTruthy()
+    expect(screen.getByText(/Persetujuan pemilik NIK sebagai Saksi I akan diminta/)).toBeTruthy()
     expect(onResult).toHaveBeenLastCalledWith(
       expect.objectContaining({ status: 'found', hasAccount: true }),
     )

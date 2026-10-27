@@ -21,6 +21,8 @@ function normalizeField(field) {
     roles: Array.isArray(field.roles) ? field.roles : null,
     // family_member: minimal sekian tahun lebih tua dari isian acuan.
     olderThan: field.older_than ?? null,
+    // Pilihan SHDK: acuan orang pemilik hubungan (Suami L, Istri P).
+    roleOf: field.role_of ?? null,
     // family_member: pemohon sendiri tidak dapat dipilih (mis. almarhum).
     notSelf: Boolean(field.not_self),
     // Teks pilihan kosong isian family_member opsional.
@@ -43,6 +45,8 @@ function normalizeField(field) {
     // Isian berulang (repeater): sub-isian per baris dan batas jumlah baris.
     fields: Array.isArray(field.fields) ? field.fields.map(normalizeField) : [],
     min: field.min ?? null,
+    // Repeater KK baru: tepat satu Kepala Keluarga di kolom `column` (+ isian `with`).
+    oneHead: field.one_head ?? null,
     max: field.max ?? null,
     itemLabel: field.item_label ?? '',
     scope: 'definition',
@@ -85,10 +89,11 @@ export function applicantValues(fields, user) {
 export function getLetterTypeFormConfig(letterType) {
   if (!letterType?.code) return null
 
-  // Isian yang diisi sistem saat pengajuan (`same_value`) tidak ditanyakan.
+  // Isian yang diisi sistem saat pengajuan (`same_value`, `family_head_of`)
+  // tidak ditanyakan.
   const definitionFields = (
     Array.isArray(letterType.form_fields) ? letterType.form_fields : []
-  ).filter((field) => !field.same_value)
+  ).filter((field) => !field.same_value && !field.family_head_of)
   const signatureSlots = Array.isArray(letterType.signature_slots) ? letterType.signature_slots : []
 
   return {

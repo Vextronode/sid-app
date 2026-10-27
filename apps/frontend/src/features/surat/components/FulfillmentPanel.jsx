@@ -4,6 +4,7 @@ import { confirmFulfillment } from '../utils/confirmFulfillment'
 import { SemiManualFulfillmentForm } from './SemiManualFulfillmentForm'
 import { MemberChangesForm } from './MemberChangesForm'
 import { UpdateCitizensForm } from './UpdateCitizensForm'
+import { RestructureFamilyForm } from './RestructureFamilyForm'
 
 const ACTION_TITLES = {
   update_citizen: 'Perubahan Data Warga',
@@ -11,6 +12,7 @@ const ACTION_TITLES = {
   deactivate_members: 'Penonaktifan Anggota Keluarga',
   update_members: 'Perubahan Data Anggota Keluarga',
   update_citizens: 'Perubahan Data Warga',
+  restructure_family: 'Perubahan Susunan KK',
   manual: 'Pembaruan Data Penduduk & KK',
 }
 
@@ -121,7 +123,7 @@ export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
 
     // Isian dari dokumen terbitan yang belum diisi: NIK warga baru, No. KK baru.
     const missing =
-      proposal.action === 'create_citizen' &&
+      ['create_citizen', 'restructure_family'].includes(proposal.action) &&
       (proposal.fields ?? []).some(
         (field) => ['nik', 'no_kk'].includes(field.column) && !String(values[field.column] ?? ''),
       )
@@ -190,6 +192,12 @@ export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
         </p>
       ) : proposal.action === 'update_members' ? (
         <MemberChangesForm letterId={letterId} proposal={proposal} onDone={handleSemiManualDone} />
+      ) : proposal.action === 'restructure_family' ? (
+        <RestructureFamilyForm
+          letterId={letterId}
+          proposal={proposal}
+          onDone={handleSemiManualDone}
+        />
       ) : proposal.action === 'update_citizens' ? (
         <UpdateCitizensForm letterId={letterId} proposal={proposal} onDone={handleSemiManualDone} />
       ) : isSemiManual ? (

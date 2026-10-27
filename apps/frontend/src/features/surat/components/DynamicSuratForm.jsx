@@ -22,7 +22,7 @@ import { FamilyMembersField } from './FamilyMembersField'
 import { RepeaterField } from './RepeaterField'
 import { VillageAreaField } from './VillageAreaField'
 import { NikLookupHint } from './NikLookupHint'
-import { memberChoices, newHeadChoice } from '../utils/familyHead'
+import { headTakenBy, memberChoices, newHeadChoice, roleOptions } from '../utils/familyHead'
 import { witnessConflict } from '../utils/witness'
 import { applicantValue, applicantValues } from '../utils/letterTypeConfig'
 
@@ -375,7 +375,7 @@ export function DynamicSuratForm({
                 {field.type === 'nik' && lookupFieldsOf(field.name).length > 0 && (
                   <NikLookupHint
                     nik={watchedFormData?.[field.name]}
-                    witness={Boolean(field.witness)}
+                    witness={field.witness}
                     conflict={
                       field.witness
                         ? (lookup) => witnessConflict(field, config.fields, watchedFormData, lookup)
@@ -449,11 +449,19 @@ export function DynamicSuratForm({
                     className={`sid-select ${fieldError ? 'sid-input-error' : ''}`}
                   >
                     <option value="">Pilih...</option>
-                    {field.options.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label ?? option.value}
-                      </option>
-                    ))}
+                    {roleOptions(field, familyMembers, watchedFormData)
+                      .filter(
+                        (option) =>
+                          !(
+                            option.value === 'kepala_keluarga' &&
+                            headTakenBy(field.name, config.fields, watchedFormData)
+                          ),
+                      )
+                      .map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label ?? option.value}
+                        </option>
+                      ))}
                   </select>
                 )}
 
@@ -478,6 +486,7 @@ export function DynamicSuratForm({
                     rows={watchedFormData?.[field.name]}
                     errors={errors}
                     catalogs={{ familyMembers, occupations }}
+                    answers={watchedFormData}
                   />
                 )}
 

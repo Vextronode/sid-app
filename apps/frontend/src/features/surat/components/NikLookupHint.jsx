@@ -6,10 +6,10 @@ import { lookupNik } from '../api/letterExtrasApi'
  * Keterangan di bawah isian NIK yang berpasangan dengan isian nama
  * (`from_nik`): begitu NIK lengkap, nama dicari di data penduduk desa.
  * Ditemukan -> nama terisi otomatis; tidak ditemukan -> isian nama muncul.
- * `witness`: isian NIK saksi (pemilik akun diminta persetujuannya);
+ * `witness`: label pihak yang diminta persetujuannya (mis. Saksi I);
  * `conflict`: pesan bila NIK ini tidak boleh dipakai (mis. saksi = pemohon).
  */
-export function NikLookupHint({ nik, onResult, witness = false, conflict = null }) {
+export function NikLookupHint({ nik, onResult, witness = null, conflict = null }) {
   const [result, setResult] = useState({ nik: '', status: 'idle', name: '' })
   const complete = /^\d{16}$/.test(nik ?? '')
   const current =
@@ -74,7 +74,7 @@ export function NikLookupHint({ nik, onResult, witness = false, conflict = null 
       <p className="sid-upload-description" role="status">
         NIK terdaftar atas nama <strong>{current.name}</strong>.{' '}
         {witness
-          ? 'Persetujuan saksi akan diminta setelah surat diajukan.'
+          ? `Persetujuan pemilik NIK sebagai ${witness} akan diminta setelah surat diajukan.`
           : 'Nama lengkap dan No. KK diambil dari data penduduk setelah surat diajukan.'}
       </p>
     )

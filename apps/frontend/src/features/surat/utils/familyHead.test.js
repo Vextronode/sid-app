@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { memberChoices, newHeadChoice } from './familyHead'
+import { memberChoices, newHeadChoice, roleOptions } from './familyHead'
 
 const members = [
   { id: 'c-1', name: 'Asep', family_role: 'kepala_keluarga' },
@@ -22,6 +22,18 @@ describe('newHeadChoice', () => {
     expect(newHeadChoice(field, members, { anggota_pindah: ['c-1', 'c-2', 'c-3'] }).visible).toBe(
       false,
     )
+  })
+
+  it('reads the member column of repeater rows (new family of F09)', () => {
+    const choice = newHeadChoice({ requiredWhenHead: 'susunan_baru' }, members, {
+      susunan_baru: [
+        { anggota: 'c-1', shdk: 'kepala_keluarga' },
+        { anggota: 'c-2', shdk: 'istri' },
+      ],
+    })
+
+    expect(choice.visible).toBe(true)
+    expect(choice.candidates.map((member) => member.id)).toEqual(['c-3'])
   })
 
   it('works with a single deceased member as well', () => {
@@ -69,5 +81,45 @@ describe('memberChoices', () => {
 
   it('is empty when nobody qualifies', () => {
     expect(memberChoices({ roles: ['menantu'] }, family, {})).toEqual([])
+  })
+})
+
+describe('roleOptions', () => {
+  const members = [
+    { id: 1, gender: 'L', family_role: 'kepala_keluarga' },
+    { id: 2, gender: 'L', family_role: 'anak' },
+    { id: 3, gender: 'P', family_role: 'anak' },
+  ]
+  const field = {
+    roleOf: 'anggota',
+    options: ['kepala_keluarga', 'suami', 'istri', 'anak'].map((value) => ({ value })),
+  }
+  const values = (options) => options.map((option) => option.value)
+
+  it('hides Istri for a male member and Suami for a female member', () => {
+    expect(values(roleOptions(field, members, { anggota: 2 }))).toEqual([
+      'kepala_keluarga',
+      'suami',
+      'anak',
+    ])
+    expect(values(roleOptions(field, members, { anggota: '3' }))).toEqual([
+      'kepala_keluarga',
+      'istri',
+      'anak',
+    ])
+  })
+
+  it('reads a gender answer or the family head', () => {
+    expect(values(roleOptions({ ...field, roleOf: 'jk' }, members, { jk: 'P' }))).not.toContain(
+      'suami',
+    )
+    expect(values(roleOptions({ ...field, roleOf: 'family_head' }, members, {}))).not.toContain(
+      'istri',
+    )
+  })
+
+  it('keeps every option while the person is unknown', () => {
+    expect(roleOptions(field, members, {})).toHaveLength(4)
+    expect(roleOptions({ options: field.options }, members, { anggota: 2 })).toHaveLength(4)
   })
 })

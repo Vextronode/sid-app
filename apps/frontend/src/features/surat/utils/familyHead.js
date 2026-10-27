@@ -7,8 +7,10 @@
  * @returns {{ visible: boolean, candidates: Array<object> }}
  */
 export function newHeadChoice(field, familyMembers, formData) {
+  // Satu id, daftar id, atau baris repeater dengan kolom `anggota`.
   const leaving = []
     .concat(formData?.[field.requiredWhenHead] ?? [])
+    .map((item) => (item && typeof item === 'object' ? item.anggota : item))
     .filter(Boolean)
     .map(String)
   const candidates = familyMembers.filter(
@@ -53,4 +55,47 @@ export function memberChoices(field, familyMembers, formData, headChoice = null)
     .filter((member) => !field.roles || field.roles.includes(member.family_role))
     .filter((member) => isOldEnough(member, field.olderThan, familyMembers, formData))
     .filter((member) => !field.notSelf || !member.is_self)
+}
+
+/**
+ * Kepala Keluarga sudah dipilih di repeater ber-`oneHead` yang `with`-nya
+ * isian ini (mis. SHDK pasangan saat salah satu anggota sudah kepala
+ * keluarga KK baru).
+ */
+export function headTakenBy(fieldName, fields, formData) {
+  return fields.some(
+    (field) =>
+      field.oneHead?.with === fieldName &&
+      (formData?.[field.name] ?? []).some(
+        (row) => row?.[field.oneHead.column] === 'kepala_keluarga',
+      ),
+  )
+}
+
+/**
+ * Pilihan SHDK isian ber-`roleOf`: Suami hanya untuk laki-laki dan Istri
+ * hanya untuk perempuan, menurut jenis kelamin orang di acuannya (anggota KK
+ * terpilih, isian jenis kelamin L/P, atau `family_head`). Bila jenis
+ * kelaminnya belum diketahui (mis. NIK warga lain), semua pilihan tampil dan
+ * diperiksa server.
+ */
+export function roleOptions(field, familyMembers, answers) {
+  if (!field.roleOf) return field.options
+
+  const value = answers?.[field.roleOf]
+  const gender =
+    field.roleOf === 'family_head'
+      ? familyMembers.find((member) => member.family_role === 'kepala_keluarga')?.gender
+      : ['L', 'P'].includes(value)
+        ? value
+        : familyMembers.find((member) => String(member.id) === String(value))?.gender
+
+  return field.options.filter(
+    (option) =>
+      !gender ||
+      !(
+        (option.value === 'suami' && gender !== 'L') ||
+        (option.value === 'istri' && gender !== 'P')
+      ),
+  )
 }
