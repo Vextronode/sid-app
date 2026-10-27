@@ -15,7 +15,7 @@ PHP 8.3+, Laravel 13, Laravel Sanctum (session/cookie SPA), PostgreSQL, DomPDF, 
 | `app/Support` | Helper bersama, mis. `LetterFormSchema` (definisi & validasi isian form surat), `CitizenDocumentRules` |
 | `app/Enums`, `app/Models`, `app/Policies`, `app/Repositories` | Enum peran/status, model Eloquent, otorisasi, akses data |
 | `database/migrations` | Skema database (pre-produksi: migrasi diedit langsung, lalu `migrate:fresh --seed`) |
-| `database/seeders` | Data awal & demo. `LetterTypeSeeder` (Persuratan Desa A01–A11), `ServiceLetterTypeSeeder` (Layanan Kependudukan F01–F09 + Surat Kuasa F-1.07) |
+| `database/seeders` | Data awal & demo. `LetterTypeSeeder` (Persuratan Desa A01–A11), `ServiceLetterTypeSeeder` (Layanan Kependudukan F01–F10 + Surat Kuasa F-1.07) |
 | `database/seeders/templates` | Formulir Disdukcapil (F-1.01, F-1.02, F-2.01, ...) hasil konversi dari Excel asli di `docs/template-surat/pelayanan` |
 | `routes/api.php`, `routes/console.php` | Seluruh route API dan jadwal scheduler |
 | `tests/Feature`, `tests/Unit` | Pengujian (SQLite in-memory) |

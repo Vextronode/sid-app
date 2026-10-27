@@ -705,7 +705,7 @@ FulfillmentProposal:
   properties:
     action:
       type: string
-      enum: [none, update_citizen, create_citizen, deactivate_members, update_members, update_citizens, restructure_family, manual]
+      enum: [none, update_citizen, create_citizen, deactivate_members, update_members, update_citizens, restructure_family, adopt_child, manual]
       example: "update_citizen"
     fulfilled_at:
       type: string

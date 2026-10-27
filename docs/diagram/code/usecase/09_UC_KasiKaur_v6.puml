@@ -69,14 +69,14 @@ UC_FULFILL ..> UC_PREVIEW : <<include>>
 
 note bottom of UC_FULFILL
   Hanya surat approved dengan data_action
-  (mis. A07 Penguburan, A08 Kelahiran, F01-F09) dan
+  (mis. A07 Penguburan, A08 Kelahiran, F01-F10) dan
   sesuai assigned_role (NULL = keduanya).
   Layanan Kependudukan: setelah hasil diterima.
   Bukan approver flow.
 end note
 
 note bottom of UC_RESULT
-  Layanan Kependudukan (F01-F09) dipegang
+  Layanan Kependudukan (F01-F10) dipegang
   Kasi Pemerintahan. Kasi Pelayanan adalah
   jabatan tanpa akun.
 end note
