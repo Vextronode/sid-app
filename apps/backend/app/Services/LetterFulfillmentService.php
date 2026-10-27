@@ -69,6 +69,8 @@ class LetterFulfillmentService
         'religion' => 'Agama',
         'last_education' => 'Pendidikan Terakhir',
         'residency_type' => 'Status Kependudukan',
+        'father_id' => 'Data Ayah (warga desa)',
+        'mother_id' => 'Data Ibu (warga desa)',
         'is_active' => 'Status Data Warga',
         'account_is_active' => 'Akun Login',
     ];
@@ -95,6 +97,9 @@ class LetterFulfillmentService
         $current = $action === LetterDataAction::UpdateCitizen ? $this->subjectCitizen($letter, null) : null;
         $subjectField = $letter->letterType?->data_subject_field;
         $familyMode = $action === LetterDataAction::CreateCitizen ? $this->familyMode($letter) : null;
+        $options = in_array($action, [LetterDataAction::UpdateCitizen, LetterDataAction::CreateCitizen], true)
+            ? $this->columnOptions($letter)
+            : [];
         $fields = array_map(fn (array $field): array => [
             'column' => $field['column'],
             'label' => $field['label'] ?? $field['column'],
@@ -102,9 +107,12 @@ class LetterFulfillmentService
             'current' => $current ? $this->scalar($current->getAttribute($field['column'])) : null,
             'proposed' => $proposed[$field['column']] ?? null,
             'proposed_label' => $this->describeValue($field['column'], $proposed[$field['column']] ?? null),
-            // Nilai tetap dari jenis surat; tidak dapat dikoreksi.
-            'fixed' => array_key_exists('value', $field),
-            'display' => $field['value_label'] ?? null,
+            // Pilihan koreksi berlabel (kolom berkode, mis. jenis kelamin, RT).
+            'options' => $options[$field['column']] ?? null,
+            // Nilai tetap dari jenis surat atau dari data penduduk; tidak dapat dikoreksi.
+            'fixed' => array_key_exists('value', $field) || isset($field['citizen_by_nik']),
+            'display' => $field['value_label']
+                ?? (isset($field['citizen_by_nik']) ? $this->describeValue($field['column'], $proposed[$field['column']] ?? null) : null),
         ], $this->fields($letter));
 
         // KK baru (mis. pendatang dengan rumah sendiri): No. KK diisi dari
@@ -117,6 +125,7 @@ class LetterFulfillmentService
                 'current' => null,
                 'proposed' => null,
                 'proposed_label' => '-',
+                'options' => null,
                 'fixed' => false,
                 'display' => null,
             ];
@@ -327,6 +336,7 @@ class LetterFulfillmentService
             'rt_id' => $this->areaLabel($value),
             'hamlet_id' => (string) (Hamlet::query()->whereKey($value)->value('name') ?? $value),
             'family_id' => $this->familyLabel(Family::query()->find($value)),
+            'father_id', 'mother_id' => Citizen::query()->whereKey($value)->value('name') ?? (string) $value,
             default => $this->displayValue($column, $value),
         };
     }
@@ -631,6 +641,22 @@ class LetterFulfillmentService
         );
 
         return [
+            'gender' => $toOptions(['L' => 'Laki-laki', 'P' => 'Perempuan']),
+            'blood_type' => $toOptions(['A' => 'A', 'B' => 'B', 'AB' => 'AB', 'O' => 'O', 'tidak_tahu' => 'Tidak Tahu']),
+            'family_role' => array_map(
+                fn (FamilyRole $role): array => ['value' => $role->value, 'label' => $role->label()],
+                FamilyRole::cases(),
+            ),
+            'residency_type' => $toOptions(['lokal' => 'Lokal', 'pendatang' => 'Pendatang']),
+            'rt_id' => Rt::query()
+                ->where('village_id', $letter->village_id)
+                ->where('is_active', true)
+                ->with('rw.hamlet')
+                ->get()
+                ->sortBy(fn (Rt $rt): string => sprintf('%s-%05d-%05d', $rt->rw?->hamlet?->name, (int) $rt->rw?->number, (int) $rt->number))
+                ->map(fn (Rt $rt): array => ['value' => $rt->id, 'label' => $this->areaLabel($rt->id)])
+                ->values()
+                ->all(),
             'last_education' => $toOptions(CitizenLabels::LAST_EDUCATION),
             'religion' => $toOptions(CitizenLabels::RELIGION),
             'marital_status' => $toOptions(CitizenLabels::MARITAL_STATUS),
@@ -1000,7 +1026,7 @@ class LetterFulfillmentService
         $fields = $this->fields($letter);
         $columns = array_column($fields, 'column');
         $editable = array_column(
-            array_filter($fields, fn (array $field): bool => ! array_key_exists('value', $field)),
+            array_filter($fields, fn (array $field): bool => ! array_key_exists('value', $field) && ! isset($field['citizen_by_nik'])),
             'column',
         );
         $unknown = array_diff(array_keys($values), $editable);
@@ -1042,6 +1068,17 @@ class LetterFulfillmentService
 
             $source = $field['source'] ?? null;
             $value = $source !== null ? ($payload[$source] ?? null) : null;
+
+            // `citizen_by_nik`: id warga desa ber-NIK isian itu (mis. ayah
+            // yang mengakui anak), kosong bila tidak terdata.
+            if (isset($field['citizen_by_nik'])) {
+                $nik = (string) ($payload[$field['citizen_by_nik']] ?? '');
+                $value = $nik === '' ? null : Citizen::query()
+                    ->where('village_id', $letter->village_id)
+                    ->where('nik_hash', hash('sha256', $nik))
+                    ->where('is_active', true)
+                    ->value('id');
+            }
 
             // `map`: jawaban isian diterjemahkan ke nilai kolom (mis.
             // perkawinan -> kawin).

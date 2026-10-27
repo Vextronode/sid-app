@@ -151,6 +151,15 @@ class BirthReportServiceTest extends TestCase
             'family_id' => $this->family->id,
             'family_role' => 'anak',
             'gender' => 'P',
+            'date_of_birth' => '2005-01-01',
+        ]);
+        // Anak perempuan yang belum 10 tahun lebih tua dari bayi tidak dapat dipilih.
+        $youngDaughter = Citizen::factory()->create([
+            'village_id' => $this->village->id,
+            'family_id' => $this->family->id,
+            'family_role' => 'anak',
+            'gender' => 'P',
+            'date_of_birth' => '2020-01-01',
         ]);
         $submit = fn (array $parents) => $this->actingAs($this->applicant['user'])->postJson('/api/letters', [
             'letter_type_id' => LetterType::query()->where('code', 'F05')->value('id'),
@@ -160,8 +169,26 @@ class BirthReportServiceTest extends TestCase
         $submit(['ibu' => $this->applicant['citizen']->id, 'ayah' => $this->mother->id])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['payload.ibu', 'payload.ayah']);
+        $submit(['ibu' => $youngDaughter->id, 'ayah' => $this->applicant['citizen']->id])
+            ->assertJsonValidationErrors('payload.ibu');
         $submit(['ibu' => $daughter->id, 'nama_ayah' => 'Ayah Di Luar KK', 'tempat_lahir_ayah' => 'Ciamis', 'tanggal_lahir_ayah' => '2000-01-01'])
             ->assertCreated();
+    }
+
+    public function test_the_baby_cannot_be_born_before_its_parents(): void
+    {
+        $submit = fn (array $payload) => $this->actingAs($this->applicant['user'])->postJson('/api/letters', [
+            'letter_type_id' => LetterType::query()->where('code', 'F05')->value('id'),
+            'payload' => [...$this->payload(), ...$payload],
+        ]);
+
+        // Ayah di luar KK dengan tanggal lahir yang diketik sesudah bayi lahir.
+        $submit(['nama_ayah' => 'Ayah Di Luar KK', 'tempat_lahir_ayah' => 'Ciamis', 'tanggal_lahir_ayah' => '2026-10-02'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_lahir_anak' => 'Tanggal Lahir Anak tidak boleh sebelum tanggal lahir ayah.']);
+        // Ibu (anggota KK, lahir 1988) sesudah bayi lahir.
+        $submit(['ayah' => $this->applicant['citizen']->id, 'tanggal_lahir_anak' => '1980-01-01'])
+            ->assertJsonValidationErrors(['payload.tanggal_lahir_anak' => 'Tanggal Lahir Anak tidak boleh sebelum tanggal lahir ibu.']);
     }
 
     public function test_birth_time_must_come_from_the_time_input(): void

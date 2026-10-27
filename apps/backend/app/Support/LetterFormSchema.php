@@ -8,6 +8,7 @@ use App\Models\LetterType;
 use App\Models\Occupation;
 use App\Models\Rt;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 /**
@@ -31,7 +32,10 @@ use Illuminate\Validation\Rule;
  *
  * Isian `family_member`: satu anggota KK pemohon (mis. ibu bayi); saat
  * pengajuan ditambah `<nama>_<kolom>` (MEMBER_KEYS) siap cetak. `gender`
- * (L/P) membatasi pilihan, mis. ibu hanya anggota perempuan; `not_self`
+ * (L/P) membatasi pilihan, mis. ibu hanya anggota perempuan; `roles` =
+ * hubungan dalam KK yang boleh dipilih (mis. hanya anak); `older_than`
+ * ({field, years}) = minimal sekian tahun lebih tua dari anggota/tanggal di
+ * isian itu (mis. ibu dari anak; anggota tanpa tanggal lahir tetap boleh); `not_self`
  * menolak pemohon sendiri; `different` = nama isian family_member lain yang
  * tidak boleh sama (mis. kepala keluarga baru bukan almarhum);
  * `required_when_head` = wajib bila anggota di isian itu kepala keluarga
@@ -48,6 +52,17 @@ use Illuminate\Validation\Rule;
  * Isian dengan `from_applicant` ({column, map}): nilainya diturunkan dari data
  * pemohon (mis. jenis kelamin L -> suami) dan menimpa jawaban form; hanya
  * ditanyakan bila kolom pemohon itu kosong atau tidak ada di `map`.
+ *
+ * Isian dengan `same_value` ([isian a, isian b]) tidak diisi pemohon: saat
+ * pengajuan bernilai `ya` bila kedua isian itu terisi dan sama (mis. No. KK
+ * suami = No. KK istri), selain itu `tidak`.
+ *
+ * Isian tanggal dengan `date_order` ([{after|before: acuan, label}]): tidak
+ * boleh sebelum (`after`) / sesudah (`before`) acuannya. Acuan = nama isian
+ * tanggal, atau `birth:<isian>` = tanggal lahir orang di isian itu (anggota
+ * KK, warga desa ber-NIK, pemohon bila isian NIK-nya miliknya, atau tanggal
+ * yang diketik); beberapa acuan dipisah `|`, yang pertama diketahui dipakai.
+ * Acuan yang tidak diketahui dilewati.
  *
  * Isian NIK saksi (`witness`): bukan NIK pemohon, dan berbeda dari isian NIK
  * di `not_same_as` (saksi lainnya, pihak dalam surat).
@@ -514,6 +529,28 @@ class LetterFormSchema
         return $payload;
     }
 
+    /**
+     * Isian `same_value`: `ya` bila kedua isian acuannya terisi dan sama.
+     *
+     * @param  array<string, mixed>|null  $payload  payload yang sudah lengkap (setelah resolveNamesFromNik)
+     * @return array<string, mixed>|null
+     */
+    public function resolveSameValues(?array $payload): ?array
+    {
+        if ($payload === null) {
+            return null;
+        }
+
+        foreach ($this->fields ?? [] as $field) {
+            if (isset($field['same_value'])) {
+                [$first, $second] = array_map(fn (string $name): string => (string) ($payload[$name] ?? ''), $field['same_value']);
+                $payload[$field['name']] = $first !== '' && $first === $second ? 'ya' : 'tidak';
+            }
+        }
+
+        return $payload;
+    }
+
     private function citizenByNik(mixed $nik): ?Citizen
     {
         if (! is_string($nik) || ! preg_match('/^\d{16}$/', $nik) || $this->villageId === null) {
@@ -592,7 +629,7 @@ class LetterFormSchema
             }
 
             // Disusun sistem saat pengajuan, bukan diisi pemohon.
-            if (($field['type'] ?? 'text') === 'family_roster') {
+            if (($field['type'] ?? 'text') === 'family_roster' || isset($field['same_value'])) {
                 $rules["payload.{$field['name']}"] = ['exclude'];
 
                 continue;
@@ -601,6 +638,10 @@ class LetterFormSchema
             if (($field['type'] ?? 'text') === 'family_member') {
                 $members = $this->familyMembers()
                     ->when(isset($field['gender']), fn ($members) => $members->where('gender', $field['gender']))
+                    ->when(isset($field['roles']), fn ($members) => $members->filter(
+                        fn ($member): bool => in_array($member->family_role?->value, $field['roles'], true),
+                    ))
+                    ->when(isset($field['older_than']), fn ($members) => $this->olderThan($members, $field['older_than'], $payload))
                     ->when($field['not_self'] ?? false, fn ($members) => $members->where('id', '!==', $this->applicant?->id));
                 $headOf = $field['required_when_head'] ?? null;
 
@@ -647,6 +688,7 @@ class LetterFormSchema
                 ($field['required'] ?? false) && ! $known ? 'required' : 'nullable',
                 ...self::typeRules($field),
                 ...(isset($field['witness']) ? [$this->witnessRule($field, $payload)] : []),
+                ...(isset($field['date_order']) ? [$this->dateOrderRule($field, $payload)] : []),
             ];
         }
 
@@ -919,6 +961,32 @@ class LetterFormSchema
     }
 
     /**
+     * Anggota yang minimal `years` tahun lebih tua dari acuan di isian
+     * `field`: anggota KK (family_member) atau tanggal (mis. lahir bayi).
+     * Tanpa acuan, atau anggota tanpa tanggal lahir, tidak disaring.
+     *
+     * @param  Collection<int, Citizen>  $members
+     * @param  array{field: string, years: int}  $rule
+     * @param  array<string, mixed>  $payload
+     * @return Collection<int, Citizen>
+     */
+    private function olderThan(Collection $members, array $rule, array $payload): Collection
+    {
+        $value = $payload[$rule['field']] ?? null;
+        $reference = is_string($value) && $value !== ''
+            ? ($this->familyMembers()->firstWhere('id', $value)?->date_of_birth ?? rescue(fn () => Carbon::parse($value), null, false))
+            : null;
+
+        if ($reference === null) {
+            return $members;
+        }
+
+        $latest = Carbon::parse($reference)->subYears((int) $rule['years']);
+
+        return $members->filter(fn ($member): bool => $member->date_of_birth === null || $member->date_of_birth->lte($latest));
+    }
+
+    /**
      * Apakah anggota terpilih (satu id, atau daftar id isian family_members)
      * termasuk kepala keluarga.
      */
@@ -943,6 +1011,63 @@ class LetterFormSchema
         }
 
         return $payload;
+    }
+
+    /**
+     * Urutan tanggal isian terhadap acuannya (`date_order`).
+     *
+     * @param  array<string, mixed>  $field
+     * @param  array<string, mixed>  $payload
+     */
+    private function dateOrderRule(array $field, array $payload): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($field, $payload): void {
+            $date = is_string($value) ? rescue(fn () => Carbon::parse($value)->startOfDay(), null, false) : null;
+
+            if ($date === null) {
+                return;
+            }
+
+            foreach ($field['date_order'] as $rule) {
+                $after = isset($rule['after']);
+                $reference = $this->referenceDate((string) ($rule['after'] ?? $rule['before']), $payload);
+
+                if ($reference !== null && ($after ? $date->lt($reference) : $date->gt($reference))) {
+                    $fail(($field['label'] ?? $field['name']).' tidak boleh '.($after ? 'sebelum ' : 'sesudah ').$rule['label'].'.');
+
+                    return;
+                }
+            }
+        };
+    }
+
+    /**
+     * Tanggal acuan `date_order`: isian tanggal, atau `birth:<isian>`.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function referenceDate(string $reference, array $payload): ?Carbon
+    {
+        foreach (explode('|', $reference) as $source) {
+            $birth = str_starts_with($source, 'birth:');
+            $name = $birth ? substr($source, 6) : $source;
+            $field = collect($this->fields ?? [])->firstWhere('name', $name);
+            $value = $payload[$name] ?? null;
+
+            $date = match (true) {
+                // Isian NIK milik pemohon sendiri (self_when), mis. suami = pemohon.
+                $birth && isset($field['self_when']) && FieldCondition::matches($field['self_when'], $payload) => $this->applicant?->date_of_birth,
+                $birth && ($field['type'] ?? null) === 'family_member' => is_string($value) ? $this->familyMembers()->firstWhere('id', $value)?->date_of_birth : null,
+                $birth && ($field['type'] ?? null) === 'nik' => $this->citizenByNik($value)?->date_of_birth,
+                default => is_string($value) && $value !== '' ? rescue(fn () => Carbon::parse($value), null, false) : null,
+            };
+
+            if ($date !== null) {
+                return Carbon::parse($date)->startOfDay();
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -66,6 +66,7 @@ class MarriageReportServiceTest extends TestCase
             'family_role' => 'kepala_keluarga',
             'gender' => 'L',
             'marital_status' => 'belum_kawin',
+            'date_of_birth' => '1995-01-01',
         ]);
         $this->wife = $this->makeCitizenAccount($this->village, $rt, 'warga', [
             'name' => 'Euis Komariah',
@@ -74,6 +75,7 @@ class MarriageReportServiceTest extends TestCase
             'family_role' => 'anak',
             'gender' => 'P',
             'marital_status' => 'kawin',
+            'date_of_birth' => '1997-02-22',
         ]);
         $this->rtApprover = $this->makeOfficialUser('rt', $this->village, ['rt_id' => $rt->id]);
         $this->kades = $this->makeOfficialUser('kepala_desa', $this->village);
@@ -102,6 +104,8 @@ class MarriageReportServiceTest extends TestCase
         $this->assertSame('Euis Komariah', $payload['nama_istri']);
         $this->assertSame('3218011304150002', $payload['kk_istri']);
         $this->assertArrayNotHasKey('nama_pengadilan', $payload);
+        // Beda KK (No. KK suami dan istri berbeda).
+        $this->assertSame('tidak', $payload['pasangan_satu_kk']);
         $this->assertNull(Letter::query()->findOrFail($letterId)->letter_number);
         $this->actingAs($this->husband['user'])
             ->getJson("/api/letters/{$letterId}")
@@ -141,7 +145,10 @@ class MarriageReportServiceTest extends TestCase
             'peran_pemohon' => 'istri',
             'nik_suami' => '3207010101900005',
             'nama_suami' => 'Ujang Suryana',
-            'pasangan_satu_kk' => 'ya',
+            // Suami masih tercatat di KK yang sama dengan pemohon.
+            'kk_suami' => '3218011304150002',
+            // Diabaikan: diisi sistem dari No. KK suami dan istri.
+            'pasangan_satu_kk' => 'tidak',
             'status_kawin_belum_tercatat' => 'tidak',
             'no_akta_perkawinan' => '0456/2018',
             'nama_pengadilan' => 'Pengadilan Agama Ciamis',
@@ -153,6 +160,7 @@ class MarriageReportServiceTest extends TestCase
         $payload = Letter::query()->findOrFail($letterId)->payload;
         $this->assertSame('Euis Komariah', $payload['nama_istri']);
         $this->assertSame('Ujang Suryana', $payload['nama_suami']);
+        $this->assertSame('ya', $payload['pasangan_satu_kk']);
         $this->assertArrayNotHasKey('tanggal_perkawinan', $payload);
 
         $report = $this->render($letterId, null);
@@ -226,6 +234,30 @@ class MarriageReportServiceTest extends TestCase
         $this->assertStringContainsString('SPTJM Perkawinan/Perceraian Belum Tercatat (F-1.05)', $this->render($letterId, 'f1_06'));
     }
 
+    public function test_event_dates_cannot_precede_births_and_divorce_cannot_precede_marriage(): void
+    {
+        $submit = fn (array $payload) => $this->actingAs($this->wife['user'])->postJson('/api/letters', [
+            'letter_type_id' => LetterType::query()->where('code', 'F07')->value('id'),
+            'payload' => ['nik_suami' => '3207240101950001', 'status_kawin_belum_tercatat' => 'tidak', ...$payload],
+        ]);
+
+        // Menikah sebelum suami (warga desa, dari data penduduk) lahir.
+        $submit([...$this->marriage(), 'tanggal_perkawinan' => '1990-05-05'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_perkawinan' => 'Tanggal Perkawinan/Pemberkatan tidak boleh sebelum tanggal lahir suami.']);
+
+        // Putusan cerai sebelum perkawinannya dicatat.
+        $submit([
+            'peristiwa' => 'perceraian',
+            'no_akta_perkawinan' => '0456/2018',
+            'tanggal_akta_perkawinan' => '2018-05-05',
+            'nama_pengadilan' => 'Pengadilan Agama Ciamis',
+            'nomor_putusan' => '1234/Pdt.G/2026/PA.Cms',
+            'tanggal_putusan' => '2017-01-01',
+            ...$this->witnesses(),
+        ])->assertJsonValidationErrors(['payload.tanggal_putusan' => 'Tanggal Putusan Pengadilan tidak boleh sebelum tanggal akta perkawinan.']);
+    }
+
     public function test_the_applicant_role_follows_the_recorded_gender(): void
     {
         $submit = fn (array $applicant, array $payload) => $this->actingAs($applicant['user'])->postJson('/api/letters', [
@@ -282,7 +314,6 @@ class MarriageReportServiceTest extends TestCase
     {
         return [
             'peristiwa' => 'perkawinan',
-            'pasangan_satu_kk' => 'tidak',
             'tanggal_perkawinan' => '2026-10-10',
             'agama_perkawinan' => 'islam',
             'nama_ayah_suami' => 'Asep Sunandar',

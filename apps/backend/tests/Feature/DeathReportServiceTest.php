@@ -106,6 +106,13 @@ class DeathReportServiceTest extends TestCase
         $this->assertStringNotContainsString('tanda_tangan', $form);
     }
 
+    public function test_death_cannot_precede_the_birth_of_the_deceased(): void
+    {
+        $this->submit([...$this->payload(), 'almarhum' => $this->mother->id, 'tanggal_kematian' => '1960-01-01'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_kematian' => 'Tanggal Kematian tidak boleh sebelum tanggal lahir almarhum.']);
+    }
+
     public function test_signatures_of_the_applicant_and_village_officials_are_pasted_when_final(): void
     {
         $this->uploadSignature($this->applicant['user']);

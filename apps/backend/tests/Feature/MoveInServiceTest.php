@@ -173,6 +173,17 @@ class MoveInServiceTest extends TestCase
         $this->assertSame('famili_lain', $arrival->family_role->value);
     }
 
+    public function test_arrival_marriage_cannot_precede_the_birth_of_the_arrival(): void
+    {
+        $this->actingAs($this->applicant['user'])
+            ->postJson('/api/letters', [
+                'letter_type_id' => LetterType::query()->where('code', 'F04')->value('id'),
+                'payload' => [...$this->arrival('milik_sendiri'), ...$this->biodata(), 'tanggal_kawin' => '1990-01-01'],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_kawin' => 'Tanggal Perkawinan tidak boleh sebelum tanggal lahir pendatang.']);
+    }
+
     public function test_own_home_creates_a_new_family_with_the_biodata_form(): void
     {
         $letterId = $this->approve([

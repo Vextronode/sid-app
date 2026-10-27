@@ -97,9 +97,9 @@ class LetterService
 
             // Isian tersembunyi (visible_when) dibuang; isian pekerjaan,
             // anggota KK, baris berulang, dan wilayah disimpan siap cetak.
-            'payload' => $schema->resolveNamesFromNik($schema->resolveAreas($schema->resolveRows($schema->resolveFamilyMembers(
+            'payload' => $schema->resolveSameValues($schema->resolveNamesFromNik($schema->resolveAreas($schema->resolveRows($schema->resolveFamilyMembers(
                 $schema->resolveOccupations($schema->visiblePayload($data['payload'] ?? null))
-            )))),
+            ))))),
 
             'notes' => null,
 

@@ -47,6 +47,8 @@ class ProfileController extends Controller
                 'family_role_label' => LetterFormSchema::familyRoleLabel($member->family_role),
                 // Isian family_member dapat dibatasi menurut jenis kelamin.
                 'gender' => $member->gender,
+                // Isian family_member dapat mensyaratkan selisih usia (`older_than`).
+                'date_of_birth' => $member->date_of_birth?->format('Y-m-d'),
                 'nik_masked' => $member->nik ? str_repeat('*', max(strlen($member->nik) - 4, 0)).substr($member->nik, -4) : null,
                 'is_self' => $member->id === $citizen?->id,
             ])->values(),

@@ -141,7 +141,10 @@ class ServiceLetterRenderingTest extends TestCase
             ->getJson("/api/letters/{$letterId}/fulfillment")
             ->assertOk()
             ->assertJsonPath('data.action', 'create_citizen')
-            ->assertJsonPath('data.fields.0.column', 'nik');
+            ->assertJsonPath('data.fields.0.column', 'nik')
+            // Kolom berkode dikoreksi lewat pilihan berlabel.
+            ->assertJsonPath('data.fields.2.options.0', ['value' => 'L', 'label' => 'Laki-laki'])
+            ->assertJsonPath('data.fields.9.options.0.label', 'Dusun Budiasih, RT 002 / RW 019');
 
         // NIK wajib diisi dari dokumen terbitan.
         $this->actingAs($this->kasi['user'])
