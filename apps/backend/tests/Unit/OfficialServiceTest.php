@@ -544,7 +544,7 @@ class OfficialServiceTest extends TestCase
                 'village_id' => $village->id,
                 'is_active' => true,
             ]);
-            $this->fail('Staf aplikasi kedua seharusnya ditolak.');
+            $this->fail('Staf SIDUTama kedua seharusnya ditolak.');
         } catch (HttpException $exception) {
             $this->assertSame(409, $exception->getStatusCode());
         }

@@ -63,7 +63,7 @@ class OfficialPositionEnumTest extends TestCase
     #[Test]
     public function every_account_position_has_a_single_holder_per_scope(): void
     {
-        // Termasuk staf aplikasi desa: hanya satu, penggantinya lewat rotasi.
+        // Termasuk Staf SIDUTama desa: hanya satu, penggantinya lewat rotasi.
         foreach (OfficialPosition::cases() as $position) {
             $this->assertTrue($position->isSingleHolderPerScope(), $position->value);
         }

@@ -9,7 +9,7 @@ use App\Repositories\LetterStatusLogRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
- * Halaman Log Aktivitas Petugas Desa: riwayat data warga & KK (S-05)
+ * Halaman Log Aktivitas Staf SIDUTama: riwayat data warga & KK (S-05)
  * dan riwayat status surat (letter_status_logs). Hanya baca.
  */
 class ActivityLogService

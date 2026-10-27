@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Hash;
 
 /**
  * Perangkat Desa Cibenda dari desacibenda.id/perangkat-desa (lengkap dengan
- * foto), Ketua RW dan RT dengan nama acak tanpa foto, serta Petugas Desa
+ * foto), Ketua RW dan RT dengan nama acak tanpa foto, serta Staf SIDUTama
  * demo. Setiap jabatan yang punya peran di aplikasi mendapat akun dengan
  * password demo, supaya alur surat RT -> Kepala Desa bisa dicoba dari RT
  * mana pun.

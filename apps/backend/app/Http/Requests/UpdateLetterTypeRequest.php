@@ -18,7 +18,7 @@ class UpdateLetterTypeRequest extends FormRequest
     }
 
     /**
-     * Hanya field ini yang boleh diedit Petugas Desa. Flow, template,
+     * Hanya field ini yang boleh diedit Staf SIDUTama. Flow, template,
      * isian form, slot tanda tangan, dan aksi data diset developer
      * lewat seeder dan tidak bisa diubah dari sini.
      *

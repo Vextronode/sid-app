@@ -20,7 +20,7 @@ class OfficialPositionTypeController extends Controller
     public function index(Request $request): JsonResponse
     {
         // account_positions: jabatan berakun (enum) beserta labelnya, supaya
-        // dashboard tidak menulis label sendiri. Label staf aplikasi mengikuti
+        // dashboard tidak menulis label sendiri. Label Staf SIDUTama mengikuti
         // SID_APP_NAME; scope = kolom wilayah yang wajib diisi saat penetapan.
         return OfficialPositionTypeResource::collection($this->service->list($request->user()))
             ->additional([

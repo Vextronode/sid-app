@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Gate;
 /**
  * Menampilkan NIK / No. KK utuh yang di daftar hanya tampil tersamar
  * (tombol "lihat" di UI). Yang boleh melihat:
- *  - Petugas Desa, Kasi Pemerintahan, Kaur TU & Umum: warga dan KK desanya;
+ *  - Staf SIDUTama, Kasi Pemerintahan, Kaur TU & Umum: warga dan KK desanya;
  *  - warga: dirinya dan anggota KK-nya sendiri;
  *  - siapa pun yang boleh melihat sebuah surat: NIK pemohon surat itu.
  * Setiap pembukaan data orang lain dicatat di Log Aktivitas.

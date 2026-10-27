@@ -15,7 +15,7 @@ use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
 /**
- * S-05. Jejak audit CRUD warga & KK oleh Petugas Desa dan halaman Log
+ * S-05. Jejak audit CRUD warga & KK oleh Staf SIDUTama dan halaman Log
  * Aktivitas (riwayat penduduk + riwayat status surat).
  */
 class ActivityLogTest extends TestCase

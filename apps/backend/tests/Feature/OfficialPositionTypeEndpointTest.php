@@ -148,7 +148,7 @@ class OfficialPositionTypeEndpointTest extends TestCase
                 ['code' => 'staf_sid', 'label' => 'Staf SIDUTama', 'scope' => null],
             ]);
 
-        // Label staf aplikasi mengikuti nama aplikasi yang diatur (SID_APP_NAME).
+        // Label Staf SIDUTama mengikuti nama aplikasi yang diatur (SID_APP_NAME).
         config(['sid.app_name' => 'SIPANDESA']);
 
         $this->actingAs($staf)

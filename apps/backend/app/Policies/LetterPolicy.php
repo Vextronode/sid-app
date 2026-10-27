@@ -104,7 +104,7 @@ class LetterPolicy
 
     /**
      * Terapkan perubahan data: Kasi/Kaur yang ditugaskan pada tipe surat,
-     * atau Petugas Desa sebagai cadangan. Hanya untuk surat final approved
+     * atau Staf SIDUTama sebagai cadangan. Hanya untuk surat final approved
      * yang tipe suratnya memang punya aksi data.
      */
     public function fulfill(User $user, Letter $letter): bool
@@ -138,7 +138,7 @@ class LetterPolicy
 
     /**
      * Verifikasi hasil unggahan: Kasi/Kaur yang ditugaskan pada jenis
-     * surat, atau Petugas Desa sebagai cadangan (seperti Terapkan).
+     * surat, atau Staf SIDUTama sebagai cadangan (seperti Terapkan).
      */
     public function reviewResult(User $user, Letter $letter): bool
     {

@@ -396,7 +396,7 @@ class SeededLetterRenderingTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.nik', $nik);
 
-        // Petugas Desa melihat daftar pengguna tanpa NIK utuh milik orang lain.
+        // Staf SIDUTama melihat daftar pengguna tanpa NIK utuh milik orang lain.
         $list = $this->actingAs($petugas['user'])->getJson('/api/users')->assertOk();
         $row = collect($list->json('data'))->firstWhere('id', $this->applicant['user']->id);
 

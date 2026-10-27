@@ -9,7 +9,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Pengumuman beranda (satu per desa), dikelola Petugas Desa. Setiap
+ * Pengumuman beranda (satu per desa), dikelola Staf SIDUTama. Setiap
  * pengumuman wajib punya durasi tayang; setelah lewat, ia tidak lagi tampil
  * dan dihapus oleh announcements:prune.
  */

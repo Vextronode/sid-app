@@ -334,7 +334,7 @@ class RoleMiddlewareTest extends TestCase
 
     /**
      * Kasi Pemerintahan memegang layanan kependudukan (Layanan Kependudukan),
-     * jadi mengelola data warga dan KK seperti Petugas Desa.
+     * jadi mengelola data warga dan KK seperti Staf SIDUTama.
      */
     #[Test]
     public function kasi_pemerintahan_manages_citizens_and_families(): void

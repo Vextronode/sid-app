@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Jenis jabatan desa tanpa akun, dikelola Petugas Desa. `code` dibuat
+ * Jenis jabatan desa tanpa akun, dikelola Staf SIDUTama. `code` dibuat
  * sekali dari label dan tidak pernah berubah, karena officials.position
  * menyimpannya.
  *

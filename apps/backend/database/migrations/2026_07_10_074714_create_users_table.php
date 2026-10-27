@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('username', 30)->unique()->after('name');
             $table->string('email')->nullable()->unique();
             // Foto profil akun warga. Selama akun menjabat, foto yang dipakai
-            // adalah officials.photo_img yang dikelola Petugas Desa.
+            // adalah officials.photo_img yang dikelola Staf SIDUTama.
             $table->string('photo_img')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

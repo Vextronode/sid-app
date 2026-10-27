@@ -147,7 +147,7 @@ class LetterFulfillmentTest extends TestCase
                 ->assertForbidden();
         }
 
-        // Petugas Desa adalah cadangan bila Kasi/Kaur berhalangan.
+        // Staf SIDUTama adalah cadangan bila Kasi/Kaur berhalangan.
         $this->actingAs($petugas['user'])
             ->postJson("/api/letters/{$letter->id}/fulfillment")
             ->assertOk()

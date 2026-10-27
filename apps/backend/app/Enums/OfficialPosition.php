@@ -45,7 +45,7 @@ enum OfficialPosition: string
 
     /**
      * Setiap jabatan berakun dipegang satu orang per wilayahnya, termasuk
-     * staf aplikasi (staf_sid) yang hanya satu per desa; penggantinya lewat
+     * Staf SIDUTama (staf_sid) yang hanya satu per desa; penggantinya lewat
      * rotasi.
      */
     public function isSingleHolderPerScope(): bool

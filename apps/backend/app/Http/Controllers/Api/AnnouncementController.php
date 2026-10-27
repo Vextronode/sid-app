@@ -10,7 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Pengumuman beranda (satu per desa), khusus Petugas Desa.
+ * Pengumuman beranda (satu per desa), khusus Staf SIDUTama.
  */
 class AnnouncementController extends Controller
 {

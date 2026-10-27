@@ -148,7 +148,7 @@ class OfficialService
     }
 
     /**
-     * Akun Petugas Desa aktif di desa; penerima notifikasi saat surat
+     * Akun Staf SIDUTama aktif di desa; penerima notifikasi saat surat
      * tertahan karena jabatan approver kosong.
      *
      * @return Collection<int, User>

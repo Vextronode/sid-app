@@ -16,14 +16,14 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Tanda tangan pribadi per akun (warga maupun pejabat; terpisah dari
  * tanda tangan jabatan di tabel officials). Diisi sekali, tidak dapat
- * diubah sendiri; reset hanya oleh Petugas Desa dan tercatat. Berkas
+ * diubah sendiri; reset hanya oleh Staf SIDUTama dan tercatat. Berkas
  * disimpan terenkripsi di disk privat.
  *
  * TTD jabatan selain Kepala Desa (officials.signature_img) adalah salinan
  * TTD akun pejabatnya: disalin saat dipromote, dan diganti/dikosongkan
  * mengikuti TTD akun selama masih menjabat. Jabatan yang sudah berakhir
  * tidak disentuh agar surat lama tetap memakai TTD saat itu. TTD Kepala
- * Desa tetap diunggah Petugas Desa (OfficialService::replaceSignature).
+ * Desa tetap diunggah Staf SIDUTama (OfficialService::replaceSignature).
  */
 class UserSignatureService
 {
@@ -112,7 +112,7 @@ class UserSignatureService
     }
 
     /**
-     * Reset darurat oleh Petugas Desa. Baris dan berkas lama dipertahankan
+     * Reset darurat oleh Staf SIDUTama. Baris dan berkas lama dipertahankan
      * agar dokumen yang sudah ditandatangani tetap dapat dirender.
      */
     public function reset(User $actor, User $target, string $reason): void

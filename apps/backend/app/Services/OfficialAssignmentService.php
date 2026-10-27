@@ -114,7 +114,7 @@ class OfficialAssignmentService
             $this->assertActivePetugas($actor);
             $this->assertOfficialInActorVillage($actor, $old);
 
-            // Staf aplikasi hanya satu dan boleh menyerahkan jabatannya
+            // Staf SIDUTama hanya satu dan boleh menyerahkan jabatannya
             // sendiri: penggantinya dipromosikan di transaksi ini juga, jadi
             // jabatan tidak pernah kosong. $actor di memori tetap berperan
             // staf_sid (updateRole memakai query), sehingga promosi di bawah
@@ -181,12 +181,12 @@ class OfficialAssignmentService
         }
     }
 
-    /** Create or reuse a citizen and account, then make the first Petugas Desa. */
+    /** Create or reuse a citizen and account, then make the first Staf SIDUTama. */
     public function bootstrapFirstPetugas(array $data): array
     {
         return DB::transaction(function () use ($data): array {
             // Lock the village rows so concurrent bootstrap invocations serialize,
-            // including when no Petugas Desa row exists yet.
+            // including when no Staf SIDUTama row exists yet.
             Village::query()->orderBy('id')->lockForUpdate()->get(['id']);
 
             if ($this->userRepository->countActiveByRole(OfficialPosition::StafSid->userRole()->value) > 0) {

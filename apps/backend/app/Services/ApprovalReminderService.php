@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
  * UC-22. Pengingat otomatis untuk approver: dikirim sekali per tahap per
  * surat ketika sisa waktu menuju `deadline_at` tinggal `reminder_hours`
  * (0 = tepat saat deadline). Nilai setting dibaca saat run, sehingga
- * perubahan oleh Petugas Desa ikut berlaku untuk surat yang sedang
+ * perubahan oleh Staf SIDUTama ikut berlaku untuk surat yang sedang
  * menunggu. Dijalankan scheduler lewat `approvals:send-reminders`.
  */
 class ApprovalReminderService
@@ -65,7 +65,7 @@ class ApprovalReminderService
 
     /**
      * Tahap tanpa pejabat aktif tetap ditandai agar tidak dicoba ulang
-     * setiap run; surat tertahan sudah diberitahukan ke Petugas Desa.
+     * setiap run; surat tertahan sudah diberitahukan ke Staf SIDUTama.
      */
     private function remind(LetterApproval $approval): bool
     {

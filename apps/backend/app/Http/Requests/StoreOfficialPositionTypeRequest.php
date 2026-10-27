@@ -8,7 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 class StoreOfficialPositionTypeRequest extends FormRequest
 {
     /**
-     * Akses dibatasi middleware peran Petugas Desa pada route.
+     * Akses dibatasi middleware peran Staf SIDUTama pada route.
      */
     public function authorize(): bool
     {

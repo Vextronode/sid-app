@@ -245,7 +245,7 @@ class LetterService
     /**
      * Step pertama belum punya pejabat aktif (mis. RT kosong atau warga
      * belum terdaftar di RT mana pun). Surat ditahan di step itu dan
-     * Petugas Desa diberi tahu untuk mengisi jabatannya; step tidak
+     * Staf SIDUTama diberi tahu untuk mengisi jabatannya; step tidak
      * dilewati agar verifikasi tingkat RT tetap terjadi.
      */
     private function holdForVacantStep(Letter $letter, User $actor): void

@@ -19,7 +19,7 @@ class IndexLetterTypeRequest extends FormRequest
 
     /**
      * Daftar aktif terbuka untuk semua user login (warga memilih jenis
-     * surat). Daftar lengkap (Draft/Nonaktif) khusus Petugas Desa.
+     * surat). Daftar lengkap (Draft/Nonaktif) khusus Staf SIDUTama.
      */
     public function authorize(): bool
     {
