@@ -346,6 +346,8 @@ export function DynamicSuratForm({
                   )}
                 </label>
 
+                {field.help && <p className="sid-upload-description">{field.help}</p>}
+
                 {field.type === 'textarea' && (
                   <textarea
                     id={field.name}

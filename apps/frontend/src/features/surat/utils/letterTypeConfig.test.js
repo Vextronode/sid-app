@@ -83,7 +83,7 @@ describe('getLetterTypeFormConfig', () => {
     expect(config.fields[1]).toMatchObject({ accept: '.pdf,.jpg,.jpeg,.png', imageOnly: false })
   })
 
-  it('keeps the default answer of a field', () => {
+  it('keeps the default answer and help text of a field', () => {
     const config = getLetterTypeFormConfig({
       ...letterType,
       form_fields: [
@@ -93,6 +93,7 @@ describe('getLetterTypeFormConfig', () => {
           type: 'select',
           required: true,
           default: 'sendiri',
+          help: 'Pilih Diwakilkan bila diurus orang lain.',
           options: [
             { value: 'sendiri', label: 'Saya sendiri' },
             { value: 'diwakilkan', label: 'Diwakilkan' },
@@ -102,6 +103,7 @@ describe('getLetterTypeFormConfig', () => {
     })
 
     expect(config.fields[0].defaultValue).toBe('sendiri')
+    expect(config.fields[0].help).toBe('Pilih Diwakilkan bila diurus orang lain.')
   })
 
   it('leaves out the family roster that the system builds on submission', () => {

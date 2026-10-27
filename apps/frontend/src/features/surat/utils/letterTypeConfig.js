@@ -15,6 +15,8 @@ function normalizeField(field) {
     imageOnly: field.type === 'file' && field.accept === 'image',
     multiple: false,
     visibleWhen: field.visible_when ?? null,
+    // Keterangan singkat di bawah label isian.
+    help: field.help ?? null,
     // Nilai awal isian (mis. pengurusan ke Disdukcapil = sendiri).
     defaultValue: field.default ?? null,
     // family_member: batas jenis kelamin anggota yang dapat dipilih (L/P).
