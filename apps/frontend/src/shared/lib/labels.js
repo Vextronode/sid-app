@@ -24,12 +24,19 @@ export const optionsOf = (map) => Object.entries(map).map(([value, label]) => ({
 
 export const FAMILY_STATUS_LABELS = { aktif: 'Aktif', pindah: 'Pindah', bubar: 'Bubar' }
 
+// SHDK resmi Disdukcapil, urut sesuai kodenya.
 export const FAMILY_ROLE_LABELS = {
   kepala_keluarga: 'Kepala Keluarga',
-  istri: 'Istri',
   suami: 'Suami',
+  istri: 'Istri',
   anak: 'Anak',
+  menantu: 'Menantu',
+  cucu: 'Cucu',
+  orang_tua: 'Orang Tua',
+  mertua: 'Mertua',
   famili_lain: 'Famili Lain',
+  pembantu: 'Pembantu',
+  lainnya: 'Lainnya',
 }
 
 export const BLOOD_TYPE_LABELS = { A: 'A', B: 'B', AB: 'AB', O: 'O', tidak_tahu: 'Tidak Tahu' }
