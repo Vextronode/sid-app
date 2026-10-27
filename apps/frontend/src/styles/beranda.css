@@ -637,14 +637,53 @@ html:has(.bd-header) {
   font-weight: var(--bd-font-semibold);
 }
 
+/* Sub menu Tentang Desa: menjorok dengan garis pandu di kiri, teks sedikit
+   lebih kecil dan tidak tebal, agar terbaca sebagai anak dari judulnya. */
 .bd-mobile-group .bd-menu-list {
-  padding-left: var(--bd-space-12);
+  margin: 0 0 var(--bd-space-4) var(--bd-space-16);
+  padding-left: var(--bd-space-8);
+  border-left: 2px solid var(--bd-color-border);
 }
 
+.bd-root .bd-mobile-panel .bd-mobile-group .bd-menu-item {
+  min-height: 40px;
+  font-size: var(--bd-text-small);
+}
+
+.bd-root .bd-mobile-panel .bd-mobile-group .bd-menu-item--link {
+  color: var(--bd-color-muted);
+  font-weight: var(--bd-font-semibold);
+}
+
+.bd-root .bd-mobile-panel .bd-mobile-group .bd-menu-item--link:hover {
+  color: var(--bd-color-primary);
+}
+
+/* Paling atas di panel ponsel (MobileMenu). */
 .bd-root .bd-mobile-login {
   width: 100%;
-  margin-top: var(--bd-space-12);
+  margin-bottom: var(--bd-space-8);
   font-size: var(--bd-text-body);
+}
+
+/* Blok akun di atas panel ponsel AppHeader (foto + nama). */
+.bd-mobile-account {
+  display: flex;
+  align-items: center;
+  gap: var(--bd-space-12);
+  padding: var(--bd-space-8) var(--bd-space-12) var(--bd-space-12);
+  margin-bottom: var(--bd-space-8);
+  border-bottom: 1px solid var(--bd-color-border);
+}
+
+.bd-mobile-account-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--bd-color-ink);
+  font-size: var(--bd-text-body);
+  font-weight: var(--bd-font-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ----- Header role (AppHeader): menu aktif, notifikasi, akun ----- */
@@ -652,6 +691,25 @@ html:has(.bd-header) {
 .bd-root .bd-menu-item--link[aria-current='page'] {
   background: var(--bd-color-primary-tint);
   color: var(--bd-color-primary);
+}
+
+/* Tinggi header dan brand (lambang + nama desa + wilayah) sama persis dengan
+   header publik (public.css, :root .pub ...) agar tidak berubah saat pindah
+   dari halaman publik ke dashboard. */
+.sid-app-header .bd-header-inner {
+  min-height: 72px;
+  padding-block: 10px;
+}
+
+.sid-app-header .bd-brand-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.sid-app-header .bd-brand-region {
+  font-size: 13px;
 }
 
 .bd-app-actions {
@@ -732,20 +790,18 @@ html:has(.bd-header) {
   cursor: wait;
 }
 
-/* Foto akun di menu akun (desktop); di ponsel tampil sendiri di samping
-   tombol Menu karena nama akun disembunyikan. */
+/* Foto akun di menu akun (desktop); di ponsel pindah ke dalam panel Menu
+   (.bd-mobile-account). */
 .bd-root .bd-app-account .bd-nav-trigger {
   gap: var(--bd-space-8);
 }
 
-.bd-root .bd-mobile-avatar {
-  display: none;
-}
-
 @media (max-width: 767.98px) {
+  /* .bd-root ikut di selektor agar menang dari `.bd-root .bd-icon-button`
+     (display: inline-flex) — tanpanya ikon Pusat Bantuan tetap tampil. */
   .bd-nav,
   .bd-app-account,
-  .bd-desktop-only {
+  .bd-root .bd-desktop-only {
     display: none;
   }
 
@@ -753,8 +809,24 @@ html:has(.bd-header) {
     display: block;
   }
 
-  .bd-root .bd-mobile-avatar {
-    display: inline-flex;
+  /* Header role di ponsel: nama desa satu baris (elipsis bila tak muat);
+     wilayah boleh turun baris seperti header publik, tidak dipotong. */
+  .sid-app-header .bd-header-inner {
+    gap: var(--bd-space-8);
+  }
+
+  .sid-app-header .bd-brand {
+    flex: 1 1 auto;
+  }
+
+  .sid-app-header .bd-brand-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sid-app-header .bd-app-actions {
+    flex: none;
   }
 }
 

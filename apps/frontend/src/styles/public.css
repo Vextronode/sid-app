@@ -221,12 +221,6 @@
   padding-inline: 8px;
 }
 
-:root .pub .bd-menu-button {
-  border: 1px solid var(--pb-line-strong);
-  border-radius: var(--pb-radius-s);
-  color: var(--pb-ink);
-}
-
 :root .pub .bd-mobile-panel {
   padding-top: 12px;
   box-shadow: 0 24px 48px -24px rgba(12, 35, 65, 0.4);
