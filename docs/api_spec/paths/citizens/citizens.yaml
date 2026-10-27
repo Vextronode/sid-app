@@ -2,7 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat & cari daftar warga (berpaginasi)
   description: |
-    UC-09. Aktor: Petugas Desa, Kasi Pemerintahan, Kaur TU & Umum (Kasi/Kaur
+    UC-09. Aktor: Staf SIDUTama, Kasi Pemerintahan, Kaur TU & Umum (Kasi/Kaur
     hanya membaca). Warga satu desa akun login, urut nama lalu id, berpaginasi
     di database. Pencarian nama case-insensitive (LIKE) dan filter wilayah
     bertingkat Dusun/RW/RT; RW dan Dusun dibaca lewat RT warga. Filter yang
@@ -79,14 +79,17 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Tambah warga baru
   description: |
-    Aktor: Petugas Desa atau Kasi Pemerintahan.
+    Aktor: Staf SIDUTama atau Kasi Pemerintahan.
     UC-09 (Main Flow - Tambah Warga). NIK dienkripsi AES-256 (`nik`) dan
     di-hash SHA-256 (`nik_hash`) untuk indexing, dijalankan dalam satu
     `DB::transaction()`. BARU v5.0: `no_kk` DIHAPUS dari request ini -
     gunakan `family_id` untuk menautkan ke KK yang sudah ada (buat KK
     baru dulu lewat `POST /families` jika belum ada). Field baru:
     family_role, father_id/mother_id, blood_type, residency_type,
-    origin_region.
+    origin_region. Dokumen & keterangan tambahan F-1.01 (opsional):
+    title_front, title_back, birth_certificate_number,
+    marriage_certificate_number, marriage_date, divorce_certificate_number,
+    divorce_date, has_disorder, disability (wajib bila has_disorder).
   operationId: createCitizen
   security:
     - sanctumCookie: []

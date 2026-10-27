@@ -115,7 +115,7 @@ Letter:
       description: |
         true bila `expires_at` sudah lewat. Pemohon tidak lagi dapat
         mengunduh maupun mem-preview PDF surat ini (403); surat tetap
-        tampil sebagai riwayat. Pejabat dan Petugas Desa tetap dapat
+        tampil sebagai riwayat. Pejabat dan Staf SIDUTama tetap dapat
         membukanya.
     submitted_at:
       type: string
@@ -136,7 +136,7 @@ Letter:
       format: date-time
       nullable: true
       example: null
-      description: "Waktu perubahan data kependudukan diterapkan (Terapkan) oleh Kasi/Kaur/Petugas Desa."
+      description: "Waktu perubahan data kependudukan diterapkan (Terapkan) oleh Kasi/Kaur/Staf SIDUTama."
     fulfilled_by:
       type: string
       format: uuid
@@ -749,7 +749,8 @@ FulfillmentProposal:
         lines: ringkasan rencana perubahan}. Jenis new_family menambah kolom
         `no_kk` di `fields` (No. KK baru dari KK terbitan Disdukcapil); bila
         alasannya membentuk keluarga baru, kepala keluarga dan suami/istri
-        juga diubah menjadi Kawin.
+        juga diubah menjadi Kawin, beserta No. buku nikah dan tanggal
+        perkawinan dari isian.
     new_head:
       type: object
       nullable: true
@@ -833,7 +834,7 @@ FulfillmentApplyRequest:
       description: |
         Koreksi per kolom. Hanya kolom pada `data_fields` jenis surat yang tidak
         bernilai tetap; kolom lain → 422. Nilai divalidasi dengan aturan yang sama
-        seperti form data warga Petugas Desa.
+        seperti form data warga Staf SIDUTama.
     notes:
       type: string
       nullable: true

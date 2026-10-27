@@ -2,7 +2,7 @@ patch:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Edit data warga
   description: |
-    Aktor: Petugas Desa atau Kasi Pemerintahan.
+    Aktor: Staf SIDUTama atau Kasi Pemerintahan.
     UC-09 (Main Flow - Edit Warga). NIK tidak bisa diubah setelah dibuat.
     Catatan Alur Update KTP/KK v5.0 (TDD Section 5.4.2 UC-09): Petugas
     Desa mencatat ulang data yang sudah resmi berubah di Kecamatan/Dukcapil
@@ -67,6 +67,52 @@ patch:
               type: string
               nullable: true
               example: null
+            title_front:
+              type: string
+              nullable: true
+              example: "Dr."
+              description: "Gelar depan (F-1.01 kolom 3)"
+            title_back:
+              type: string
+              nullable: true
+              example: "S.Pd."
+              description: "Gelar belakang (F-1.01 kolom 4)"
+            birth_certificate_number:
+              type: string
+              nullable: true
+              example: "3207-LT-01011990-0001"
+              description: "No. akta lahir, terenkripsi"
+            marriage_certificate_number:
+              type: string
+              nullable: true
+              example: "123/45/X/2015"
+              description: "No. akta perkawinan/buku nikah, terenkripsi"
+            marriage_date:
+              type: string
+              format: date
+              nullable: true
+              example: "2015-10-10"
+              description: "Tanggal perkawinan"
+            divorce_certificate_number:
+              type: string
+              nullable: true
+              example: null
+              description: "No. akta perceraian, terenkripsi"
+            divorce_date:
+              type: string
+              format: date
+              nullable: true
+              example: null
+              description: "Tanggal perceraian"
+            has_disorder:
+              type: boolean
+              default: false
+              description: "Kelainan fisik & mental (F-1.01 kolom 28)"
+            disability:
+              type: string
+              nullable: true
+              example: null
+              description: "Penyandang cacat (F-1.01 kolom 29), terenkripsi; wajib bila has_disorder true, dikosongkan bila false"
             last_verified_at:
               type: string
               format: date-time
@@ -101,7 +147,7 @@ patch:
 delete:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Hapus data warga
-  description: Hanya Petugas Desa dan Kasi Pemerintahan yang dapat menghapus data kependudukan.
+  description: Hanya Staf SIDUTama dan Kasi Pemerintahan yang dapat menghapus data kependudukan.
   operationId: deleteCitizen
   security:
     - sanctumCookie: []

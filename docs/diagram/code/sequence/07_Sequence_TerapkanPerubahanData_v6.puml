@@ -19,7 +19,7 @@ skinparam sequence {
 }
 title Sequence - Terapkan Perubahan Data [v6]
 
-actor "Kasi/Kaur (assigned_role)\natau Petugas Desa" as K
+actor "Kasi/Kaur (assigned_role)\natau Staf SIDUTama" as K
 participant "React\n(FulfillmentPanel)" as FE
 participant "LetterFulfillmentController" as CTRL
 participant "LetterPolicy::fulfill" as POL
@@ -29,6 +29,11 @@ participant "UserRepository" as UREPO
 database "PostgreSQL" as DB
 actor "Pemohon" as P
 
+note over K, FE
+  Layanan Kependudukan (Fxx): Terapkan baru terbuka setelah
+  hasil Disdukcapil diunggah pemohon dan diterima Kasi;
+  setelah diterima, FE langsung memulai Terapkan.
+end note
 K -> FE : buka surat "perlu diterapkan"
 FE -> CTRL : GET /api/letters/{letter}/fulfillment
 CTRL -> POL : approved, desa sama, data_action != none,\nrole sesuai assigned_role / petugas_desa
@@ -36,7 +41,13 @@ CTRL -> SVC : proposal(letter)
 SVC -> DB : warga subjek (pemohon atau NIK payload[data_subject_field])
 SVC --> FE : {action, subject, fields[column, current, proposed, fixed]}
 
-K -> FE : koreksi nilai / NIK subjek → Terapkan
+K -> FE : koreksi nilai / NIK subjek / No. KK baru → Terapkan
+FE -> CTRL : POST /api/letters/{letter}/fulfillment/preview {values, subject_nik}
+CTRL -> SVC : preview(letter, actor, values)
+SVC -> DB : jalankan apply() di transaksi lalu ROLLBACK
+SVC --> FE : perubahan per warga (label, lama -> baru)
+FE -> K : pop up konfirmasi daftar perubahan
+K -> FE : Konfirmasi
 FE -> CTRL : POST /api/letters/{letter}/fulfillment {values, subject_nik}
 CTRL -> POL : authorize
 CTRL -> SVC : apply(letter, actor, values, subjectNik)
@@ -51,12 +62,17 @@ group DB::transaction
     end
     SVC -> CIT : update(citizen, values)
   else create_citizen
-    SVC -> SVC : warisi rt/hamlet/family/address pemohon;\nvalidasi (aturan StoreCitizenRequest)
+    SVC -> SVC : warisi rt/hamlet/family/address pemohon;\nKK tujuan (join / create / KK pemohon);\nvalidasi (aturan StoreCitizenRequest)
     SVC -> CIT : create(values)
+  else deactivate_members / update_members / update_citizens / restructure_family
+    SVC -> CIT : update tiap warga terkait\n(nonaktifkan, ubah kolom, pindah KK, SHDK, kepala KK baru)
+  end
+  opt data_options.member_details
+    SVC -> CIT : simpan data tambahan anggota (gelar, akta, kelainan)
   end
   SVC -> DB : UPDATE letters fulfilled_at, fulfilled_by, fulfillment
   SVC -> DB : INSERT status log "Perubahan data kependudukan diterapkan"
-  SVC -> DB : activity_log citizen / letter_fulfilled
+  SVC -> DB : activity_log citizen / letter_fulfilled\n(nomor akta & cacat disamarkan)
   SVC -> P : letter_fulfilled
 end
 CTRL --> FE : 200 {LetterResource}
