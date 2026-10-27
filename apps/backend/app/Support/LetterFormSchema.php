@@ -92,6 +92,15 @@ use Illuminate\Validation\Rule;
  * pasangan `from_nik`-nya juga diketik bila NIK dikosongkan (mis. anak belum
  * punya NIK).
  *
+ * Isian NIK pihak dalam surat (bukan saksi) dengan `not_same_as` (nama
+ * isian NIK lain yang tampil) dan/atau `not_applicant`: satu NIK tidak boleh
+ * dipakai untuk dua identitas, mis. ibu kandung dan ibu angkat, dan bukan NIK
+ * pemohon; isian `not_same_as` boleh isian family_member (dibandingkan
+ * dengan NIK anggota itu). `nik_gender` (L/P, atau nama isian jenis kelamin
+ * L/P): bila NIK milik warga desa, jenis kelaminnya harus sesuai (mis. NIK
+ * ayah laki-laki). `not_village_citizen`: NIK belum terdaftar sebagai warga
+ * desa (mis. pendatang, anak yang baru lahir).
+ *
  * Isian NIK saksi (`witness`): bukan NIK pemohon, dan berbeda dari isian NIK
  * di `not_same_as` (saksi lainnya, pihak dalam surat).
  *
@@ -1012,6 +1021,11 @@ class LetterFormSchema
                 ($field['required'] ?? false) && ! $known ? 'required' : 'nullable',
                 ...self::typeRules($field),
                 ...(isset($field['witness']) ? [$this->witnessRule($field, $payload)] : []),
+                ...(! isset($field['witness']) && (isset($field['not_same_as']) || ($field['not_applicant'] ?? false))
+                    ? [$this->distinctNikRule($field, $payload, $visible)]
+                    : []),
+                ...(isset($field['nik_gender']) ? [$this->nikGenderRule((string) $field['nik_gender'], $payload)] : []),
+                ...(($field['not_village_citizen'] ?? false) ? [$this->notVillageCitizenRule()] : []),
                 ...(isset($field['date_order']) ? [$this->dateOrderRule($field, $payload)] : []),
                 ...(($field['village_citizen'] ?? false) ? [$this->villageCitizenRule()] : []),
                 ...(($field['village_family'] ?? false) ? [$this->villageFamilyRule()] : []),
@@ -1600,7 +1614,8 @@ class LetterFormSchema
      */
     private function witnessRule(array $field, array $payload): \Closure
     {
-        $labels = array_column($this->fields ?? [], 'label', 'name');
+        // Label tanpa keterangan dalam kurung, mis. "NIK Ibu Angkat (bila ada)".
+        $labels = array_map(fn (string $label): string => trim((string) preg_replace('/\s*\([^)]*\)\s*$/', '', $label)), array_column($this->fields ?? [], 'label', 'name'));
         // "Saksi", atau pihak lain yang dimintai persetujuan (mis. Penerima Kuasa).
         $who = str_starts_with((string) $field['witness'], 'Saksi') ? 'Saksi' : (string) $field['witness'];
 
@@ -1616,11 +1631,101 @@ class LetterFormSchema
             }
 
             foreach ($field['not_same_as'] ?? [] as $other) {
-                if (($payload[$other] ?? null) === $value) {
+                if ($this->nikOf($other, $payload) === $value) {
                     $fail("{$who} tidak boleh orang yang sama dengan ".($labels[$other] ?? $other).'.');
 
                     return;
                 }
+            }
+        };
+    }
+
+    /**
+     * Satu NIK untuk satu identitas: tidak sama dengan isian NIK lain di
+     * `not_same_as` yang tampil, dan bukan NIK pemohon bila `not_applicant`.
+     *
+     * @param  array<string, mixed>  $field
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, string>  $visible
+     */
+    private function distinctNikRule(array $field, array $payload, array $visible): \Closure
+    {
+        // Label tanpa keterangan dalam kurung, mis. "NIK Ibu Angkat (bila ada)".
+        $labels = array_map(fn (string $label): string => trim((string) preg_replace('/\s*\([^)]*\)\s*$/', '', $label)), array_column($this->fields ?? [], 'label', 'name'));
+
+        return function (string $attribute, mixed $value, \Closure $fail) use ($field, $payload, $visible, $labels): void {
+            if (! is_string($value) || $value === '') {
+                return;
+            }
+
+            if (($field['not_applicant'] ?? false) && $this->applicant !== null && hash('sha256', $value) === $this->applicant->nik_hash) {
+                $fail('NIK ini milik Anda sendiri; isi NIK orang yang dimaksud.');
+
+                return;
+            }
+
+            foreach ($field['not_same_as'] ?? [] as $other) {
+                if (in_array($other, $visible, true) && $this->nikOf($other, $payload) === $value) {
+                    $fail('NIK ini sudah dipakai untuk '.($labels[$other] ?? $other).'; satu NIK hanya untuk satu orang.');
+
+                    return;
+                }
+            }
+        };
+    }
+
+    /**
+     * NIK pada isian lain: isian NIK itu sendiri, atau NIK anggota KK yang
+     * dipilih di isian family_member.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function nikOf(string $name, array $payload): ?string
+    {
+        $value = $payload[$name] ?? null;
+        $type = collect($this->fields ?? [])->firstWhere('name', $name)['type'] ?? null;
+
+        if ($type === 'family_member') {
+            return $value === null || $value === '' ? null : $this->familyMembers()->firstWhere('id', $value)?->nik;
+        }
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * NIK yang belum boleh terdaftar sebagai warga desa (mis. pendatang).
+     */
+    private function notVillageCitizenRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            if ($this->citizenByNik($value) !== null) {
+                $fail('NIK ini sudah terdaftar sebagai warga desa.');
+            }
+        };
+    }
+
+    /**
+     * NIK warga desa harus berjenis kelamin $gender (L/P, atau nama isian
+     * jenis kelamin), mis. NIK ayah laki-laki. NIK di luar data desa, atau
+     * jenis kelamin yang belum dijawab, tidak diperiksa.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function nikGenderRule(string $gender, array $payload): \Closure
+    {
+        $gender = in_array($gender, ['L', 'P'], true) ? $gender : (string) ($payload[$gender] ?? '');
+
+        return function (string $attribute, mixed $value, \Closure $fail) use ($gender): void {
+            if (! in_array($gender, ['L', 'P'], true)) {
+                return;
+            }
+
+            $citizen = $this->citizenByNik($value);
+
+            if ($citizen !== null && $citizen->gender !== $gender) {
+                $fail($gender === 'L'
+                    ? 'NIK ini terdaftar atas warga perempuan; isi NIK laki-laki.'
+                    : 'NIK ini terdaftar atas warga laki-laki; isi NIK perempuan.');
             }
         };
     }

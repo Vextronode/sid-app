@@ -441,6 +441,7 @@ class SeededLetterRenderingTest extends TestCase
             'village_id' => $this->village->id,
             'nik' => '3207011705500001',
             'name' => 'Almarhum Fulan',
+            'gender' => 'L',
             'is_active' => true,
         ]);
         $deceasedAccount = User::factory()->create([
@@ -511,8 +512,9 @@ class SeededLetterRenderingTest extends TestCase
             'village_id' => $this->village->id,
             'nik' => '3207011705500002',
             'name' => 'Almarhumah Fulanah',
+            'gender' => 'P',
         ]);
-        $this->issue('A07', [...$payload, 'nik_almarhum' => '3207011705500002'], $withNik);
+        $this->issue('A07', [...$payload, 'nik_almarhum' => '3207011705500002', 'jenis_kelamin_almarhum' => 'P'], $withNik);
         $this->actingAs($kaur['user'])
             ->getJson("/api/letters/{$withNik}/fulfillment")
             ->assertJsonPath('data.subject.found', true)

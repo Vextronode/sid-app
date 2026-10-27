@@ -208,6 +208,40 @@ class AdoptionServiceTest extends TestCase
         Notification::assertNotSentTo($this->originHead['user'], FamilyMemberMovedNotification::class);
     }
 
+    public function test_one_nik_belongs_to_one_person_and_parents_match_their_gender(): void
+    {
+        // Anak tanpa NIK (diketik) agar NIK orang tua kandung ikut ditanyakan.
+        $payload = [
+            ...$this->decision(),
+            'nama_anak' => 'Bayu Pratama', 'jenis_kelamin_anak' => 'L', 'tempat_lahir_anak' => 'Garut', 'tanggal_lahir_anak' => '2020-02-02',
+        ];
+
+        // Satu NIK di luar data desa dipakai untuk empat identitas: ditolak.
+        $this->submit([...$payload, 'nik_ibu_kandung' => '1231231231231231', 'nik_ayah_kandung' => '1231231231231231', 'nik_ibu_angkat' => '1231231231231231', 'nik_saksi_1' => '1231231231231231'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.nik_ibu_kandung', 'payload.nik_ayah_kandung', 'payload.nik_ibu_angkat', 'payload.nik_saksi_1']);
+
+        // Satu NIK warga desa untuk ibu angkat dan ibu kandung sekaligus: ditolak.
+        $this->submit([...$payload, 'nik_ibu_angkat' => '3207244101820002', 'nik_ibu_kandung' => '3207244101820002'])
+            ->assertJsonValidationErrors(['payload.nik_ibu_kandung' => 'NIK ini sudah dipakai untuk NIK Ibu Angkat; satu NIK hanya untuk satu orang.']);
+
+        // NIK warga desa harus sesuai jenis kelaminnya; NIK pemohon tidak boleh dipakai.
+        $this->submit([...$payload, 'nik_ibu_angkat' => '3207240101750009'])
+            ->assertJsonValidationErrors(['payload.nik_ibu_angkat' => 'NIK ini terdaftar atas warga laki-laki; isi NIK perempuan.']);
+        $this->submit([...$payload, 'nik_ayah_kandung' => '3207244101820002'])
+            ->assertJsonValidationErrors(['payload.nik_ayah_kandung' => 'NIK ini terdaftar atas warga perempuan; isi NIK laki-laki.']);
+        $this->submit([...$payload, 'nik_ayah_kandung' => '3207240101800001'])
+            ->assertJsonValidationErrors(['payload.nik_ayah_kandung' => 'NIK ini milik Anda sendiri; isi NIK orang yang dimaksud.']);
+
+        // Saksi bukan orang tua dalam surat, dan Saksi I bukan Saksi II.
+        $this->submit([...$payload, 'nik_ibu_angkat' => '3207244101820002', 'nik_saksi_2' => '3207244101820002'])
+            ->assertJsonValidationErrors(['payload.nik_saksi_2' => 'Saksi tidak boleh orang yang sama dengan NIK Ibu Angkat.']);
+        $this->submit([...$payload, 'nik_saksi_2' => '3207010101800001'])
+            ->assertJsonValidationErrors('payload.nik_saksi_2');
+
+        $this->submit([...$payload, 'nik_ibu_angkat' => '3207244101820002', 'nik_ayah_kandung' => '3207240101750009'])->assertCreated();
+    }
+
     public function test_a_family_head_with_members_cannot_be_adopted_before_the_head_changes(): void
     {
         $this->submit([...$this->decision(), 'nik_anak' => '3207240101750009'])

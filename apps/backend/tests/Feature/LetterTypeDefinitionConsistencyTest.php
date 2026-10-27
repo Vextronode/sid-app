@@ -143,6 +143,10 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                 $this->assertFalse($letterType->issues_letter_number || $letterType->signed_by_village_head);
                 $this->assertTrue($letterType->requires_result_upload);
                 $this->assertNotNull($letterType->result_upload_hint);
+                // Dokumen yang dibawa ke Disdukcapil: formulir terbit + lampiran, termasuk Surat Kuasa.
+                $this->assertNotEmpty($letterType->carry_documents['forms'] ?? [], "{$letterType->code} tanpa daftar formulir yang dibawa.");
+                $this->assertNotEmpty($letterType->carry_documents['attachments'] ?? [], "{$letterType->code} tanpa daftar dokumen lampiran.");
+                $this->assertStringContainsString('F-1.07', (string) collect($letterType->carry_documents['forms'])->last());
                 $this->assertStringNotContainsString('{{ signature_img }}', (string) $letterType->template);
                 $this->assertStringNotContainsString('{{ letter_number }}', (string) $letterType->template);
             }

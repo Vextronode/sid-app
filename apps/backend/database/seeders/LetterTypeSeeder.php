@@ -224,8 +224,9 @@ class LetterTypeSeeder extends Seeder
                 'form_fields' => [
                     // Pemohon adalah salah satu orang tua; datanya diambil
                     // dari akun. Pasangan dan anak diisi di form.
-                    ...$this->personFields('pasangan', 'Pasangan (Suami/Istri)', nikRequired: true),
-                    ...$this->personFields('anak', 'Anak', nikRequired: false),
+                    ...$this->personFields('pasangan', 'Pasangan (Suami/Istri)', nikRequired: true, nikRules: ['not_same_as' => ['nik_anak']]),
+                    // Anak yang baru lahir belum terdata sebagai warga desa.
+                    ...$this->personFields('anak', 'Anak', nikRequired: false, nikRules: ['not_same_as' => ['nik_pasangan'], 'not_village_citizen' => true]),
                 ],
                 // Setelah final approve, Kasi/Kaur menambahkan anak ke data
                 // warga lewat Terapkan (NIK anak boleh dilengkapi saat itu).
@@ -322,13 +323,19 @@ class LetterTypeSeeder extends Seeder
      *
      * @return array<int, array<string, mixed>>
      */
-    private function personFields(string $suffix, string $who, bool $nikRequired): array
+    private function personFields(string $suffix, string $who, bool $nikRequired, array $nikRules = []): array
     {
         return [
             $this->text("nama_{$suffix}", "Nama {$who}", true, 'Nama lengkap'),
             $this->text("tempat_lahir_{$suffix}", "Tempat Lahir {$who}", true, 'Kota/kabupaten'),
             $this->date("tanggal_lahir_{$suffix}", "Tanggal Lahir {$who}"),
-            $this->field("nik_{$suffix}", "NIK {$who}", 'nik', $nikRequired, '16 digit NIK'),
+            // NIK warga desa harus sesuai jenis kelamin yang diisi, dan bukan NIK pemohon.
+            [
+                ...$this->field("nik_{$suffix}", "NIK {$who}", 'nik', $nikRequired, '16 digit NIK'),
+                'nik_gender' => "jenis_kelamin_{$suffix}",
+                'not_applicant' => true,
+                ...$nikRules,
+            ],
             $this->field("jenis_kelamin_{$suffix}", "Jenis Kelamin {$who}", 'select', true, null, ['options' => self::GENDER_OPTIONS]),
             $this->text("alamat_{$suffix}", "Alamat {$who}", true, 'Alamat lengkap'),
         ];
