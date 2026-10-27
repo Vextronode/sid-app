@@ -8,6 +8,7 @@ use App\Enums\FamilyRole;
 use App\Enums\LastEducation;
 use App\Enums\Religion;
 use App\Enums\ResidencyType;
+use App\Support\CitizenDocumentRules;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -49,6 +50,7 @@ class StoreCitizenRequest extends FormRequest
             'current_domicile' => ['nullable', 'string', 'max:150'],
             'residency_type' => ['nullable', Rule::enum(ResidencyType::class)],
             'origin_region' => ['nullable', 'string', 'max:255'],
+            ...CitizenDocumentRules::rules(),
         ];
     }
 

@@ -48,6 +48,15 @@ class Citizen extends Model
         'current_domicile',
         'residency_type',
         'origin_region',
+        'title_front',
+        'title_back',
+        'birth_certificate_number',
+        'marriage_certificate_number',
+        'marriage_date',
+        'divorce_certificate_number',
+        'divorce_date',
+        'has_disorder',
+        'disability',
         'data_source',
         'last_verified_at',
         'sync_status',
@@ -56,7 +65,14 @@ class Citizen extends Model
 
     protected $casts = [
         'nik' => 'encrypted',
+        'birth_certificate_number' => 'encrypted',
+        'marriage_certificate_number' => 'encrypted',
+        'divorce_certificate_number' => 'encrypted',
+        'disability' => 'encrypted',
         'date_of_birth' => 'date',
+        'marriage_date' => 'date',
+        'divorce_date' => 'date',
+        'has_disorder' => 'boolean',
         'is_active' => 'boolean',
         'blood_type' => BloodType::class,
         'religion' => Religion::class,
@@ -74,6 +90,11 @@ class Citizen extends Model
         static::saving(function (Citizen $citizen) {
             if ($citizen->isDirty('nik')) {
                 $citizen->nik_hash = hash('sha256', $citizen->nik);
+            }
+
+            // Jenis cacat hanya tercatat bila ada kelainan fisik & mental.
+            if (! $citizen->has_disorder) {
+                $citizen->disability = null;
             }
         });
     }

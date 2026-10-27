@@ -6,13 +6,14 @@ use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\FamilySocioeconomic;
 use App\Models\User;
+use App\Support\CitizenDocumentRules;
 use BackedEnum;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * S-05. Jejak audit perubahan data kependudukan yang dilakukan langsung
- * oleh Petugas Desa (tambah/ubah/hapus/impor warga, KK, dan data
+ * oleh Staf SIDUTama (tambah/ubah/hapus/impor warga, KK, dan data
  * sosio-ekonomi KK). Perubahan lewat surat dicatat terpisah oleh
  * LetterFulfillmentService (event `letter_fulfilled`).
  *
@@ -25,7 +26,8 @@ class PopulationAuditService
 {
     public const REDACTED = '(disamarkan)';
 
-    private const SENSITIVE_FIELDS = ['nik', 'no_kk', 'family_address'];
+    /** Nilai yang disamarkan di log: NIK, No. KK, alamat KK, dan kolom terenkripsi lain warga. */
+    private const SENSITIVE_FIELDS = ['nik', 'no_kk', 'family_address', ...CitizenDocumentRules::ENCRYPTED];
 
     /** Kolom teknis yang tidak bermakna sebagai perubahan data. */
     private const IGNORED_FIELDS = [
