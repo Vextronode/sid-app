@@ -13,6 +13,7 @@ use App\Support\LetterValueFormatter;
 use App\Support\TemplateConditionals;
 use App\Support\TemplateLoops;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -319,6 +320,7 @@ class PdfService
             '{{ purpose }}' => $letter->purpose ?? '________________________________________',
             '{{ submitted_at }}' => $context['submitted_at'],
             '{{ issued_at }}' => $context['issued_at'] ?? $context['submitted_at'],
+            ...$this->issuedDateParts((string) ($context['issued_at'] ?? $context['submitted_at'])),
             '{{ applicant_resident_phrase }}' => $context['applicant']['resident_phrase']
                 ?? 'benar-benar warga masyarakat Desa kami, dan',
             '{{ village_name }}' => $villageName,
@@ -381,6 +383,29 @@ class PdfService
         $replacements['{{ signature_img }}'] = $signatureHtml;
 
         return [...$payloadHtml, ...$replacements, ...$signatureImages, ...$serviceImages];
+    }
+
+    /**
+     * Bagian tanggal terbit untuk kalimat "Pada hari ini ... tanggal ...
+     * Bulan ... tahun ..." (F-1.07): {{ issued_day_name }} "Senin",
+     * {{ issued_day }} "12", {{ issued_month }} "Oktober", {{ issued_year }}.
+     *
+     * @return array<string, string>
+     */
+    private function issuedDateParts(string $issuedAt): array
+    {
+        try {
+            $date = Carbon::createFromLocaleFormat('j F Y', 'id', $issuedAt)->locale('id');
+        } catch (\Throwable) {
+            $date = null;
+        }
+
+        return [
+            '{{ issued_day_name }}' => $date?->translatedFormat('l') ?? '..........',
+            '{{ issued_day }}' => $date?->format('j') ?? '.....',
+            '{{ issued_month }}' => $date?->translatedFormat('F') ?? '..........',
+            '{{ issued_year }}' => $date?->format('Y') ?? '.....',
+        ];
     }
 
     /**

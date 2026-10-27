@@ -47,12 +47,16 @@ use Illuminate\Validation\Rule;
  *
  * Isian dengan `from_nik` (nama isian NIK): bila NIK itu milik warga aktif
  * desa ini, isian tidak wajib dan diisi dari data penduduk saat pengajuan
- * (`from_nik_value`: `name` = nama, bawaan; `family_number` = No. KK); bila
+ * (`from_nik_value`: `name` = nama, bawaan; `family_number` = No. KK;
+ * `occupation` = pekerjaan; `address` = alamat); bila
  * tidak, isian diketik (mis. saksi dari luar desa).
  *
  * Isian dengan `from_applicant` ({column, map}): nilainya diturunkan dari data
  * pemohon (mis. jenis kelamin L -> suami) dan menimpa jawaban form; hanya
  * ditanyakan bila kolom pemohon itu kosong atau tidak ada di `map`.
+ *
+ * Isian dengan `default`: nilai bawaan bila tidak dijawab (mis. pengurusan
+ * ke Disdukcapil = sendiri); juga nilai awal di form.
  *
  * Isian dengan `same_value` ([isian a, isian b]) tidak diisi pemohon: saat
  * pengajuan bernilai `ya` bila kedua isian itu terisi dan sama (mis. No. KK
@@ -647,9 +651,12 @@ class LetterFormSchema
             $citizen = $fromNik !== null ? $this->citizenByNik($payload[$fromNik] ?? null) : null;
 
             if ($citizen !== null) {
-                $payload[$field['name']] = ($field['from_nik_value'] ?? 'name') === 'family_number'
-                    ? $citizen->family?->no_kk
-                    : $citizen->name;
+                $payload[$field['name']] = match ($field['from_nik_value'] ?? 'name') {
+                    'family_number' => $citizen->family?->no_kk,
+                    'occupation' => $citizen->occupation?->name,
+                    'address' => $citizen->address,
+                    default => $citizen->name,
+                };
             }
         }
 
@@ -1168,6 +1175,11 @@ class LetterFormSchema
     public function withApplicantValues(array $payload): array
     {
         foreach ($this->fields ?? [] as $field) {
+            // Isian ber-`default` yang tidak dijawab memakai nilai bawaannya.
+            if (isset($field['default']) && ($payload[$field['name']] ?? '') === '') {
+                $payload[$field['name']] = $field['default'];
+            }
+
             $source = $field['from_applicant'] ?? null;
             $raw = $source !== null ? $this->applicant?->getAttribute($source['column']) : null;
             $raw = $raw instanceof \BackedEnum ? $raw->value : $raw;
@@ -1376,21 +1388,23 @@ class LetterFormSchema
     private function witnessRule(array $field, array $payload): \Closure
     {
         $labels = array_column($this->fields ?? [], 'label', 'name');
+        // "Saksi", atau pihak lain yang dimintai persetujuan (mis. Penerima Kuasa).
+        $who = str_starts_with((string) $field['witness'], 'Saksi') ? 'Saksi' : (string) $field['witness'];
 
-        return function (string $attribute, mixed $value, \Closure $fail) use ($field, $payload, $labels): void {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($field, $payload, $labels, $who): void {
             if (! is_string($value) || $value === '') {
                 return;
             }
 
             if ($this->applicant !== null && hash('sha256', $value) === $this->applicant->nik_hash) {
-                $fail('Saksi tidak boleh pemohon sendiri.');
+                $fail("{$who} tidak boleh pemohon sendiri.");
 
                 return;
             }
 
             foreach ($field['not_same_as'] ?? [] as $other) {
                 if (($payload[$other] ?? null) === $value) {
-                    $fail('Saksi tidak boleh orang yang sama dengan '.($labels[$other] ?? $other).'.');
+                    $fail("{$who} tidak boleh orang yang sama dengan ".($labels[$other] ?? $other).'.');
 
                     return;
                 }

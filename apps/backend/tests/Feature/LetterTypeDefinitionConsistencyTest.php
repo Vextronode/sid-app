@@ -26,7 +26,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
     private const SYSTEM_PLACEHOLDERS = [
         'logo_img', 'signature_img', 'letter_number', 'applicant_name', 'applicant_nik',
         'applicant_address', 'applicant_gender', 'applicant_birth_place_date', 'applicant_occupation',
-        'applicant_resident_phrase', 'purpose', 'submitted_at', 'issued_at', 'village_name',
+        'applicant_resident_phrase', 'purpose', 'submitted_at', 'issued_at', 'issued_day_name', 'issued_day', 'issued_month', 'issued_year', 'village_name',
         'village_name_short', 'village_name_upper', 'village_district', 'village_district_upper',
         'village_regency', 'village_regency_upper', 'village_province', 'village_region',
         'village_address', 'village_phone', 'village_postal_code', 'village_email',

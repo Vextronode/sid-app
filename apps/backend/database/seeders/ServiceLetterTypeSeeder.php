@@ -189,6 +189,9 @@ class ServiceLetterTypeSeeder extends Seeder
 
     private const MARRIAGE = ['field' => 'peristiwa', 'equals' => 'perkawinan'];
 
+    /** Formulir diurus ke Disdukcapil oleh penerima kuasa (F-1.07). */
+    private const POWER_OF_ATTORNEY = ['field' => 'pengurusan', 'equals' => 'diwakilkan'];
+
     private const DIVORCE = ['field' => 'peristiwa', 'equals' => 'perceraian'];
 
     private const UNRECORDED = ['field' => 'status_kawin_belum_tercatat', 'equals' => 'ya'];
@@ -256,7 +259,8 @@ class ServiceLetterTypeSeeder extends Seeder
      */
     private function letterTypes(): array
     {
-        return [
+        // Semua layanan: opsi "Diurus orang lain" (Surat Kuasa F-1.07).
+        return array_map(fn (array $type): array => $this->withPowerOfAttorney($type), [
             [
                 'code' => 'F01',
                 'name' => 'Surat Pernyataan Tidak Memiliki Dokumen Kependudukan',
@@ -1034,12 +1038,100 @@ class ServiceLetterTypeSeeder extends Seeder
                     'lampiran.bersedia_menerima' => 'jenis_perubahan=numpang',
                 ]),
             ],
-        ];
+        ]);
     }
 
     // ------------------------------------------------------------------
     // Template formulir
     // ------------------------------------------------------------------
+
+    /**
+     * Isian "Pengurusan ke Disdukcapil" di akhir form, dan Surat Kuasa
+     * F-1.07 bila diwakilkan. Pemberi kuasa = pemohon; penerima kuasa lewat
+     * NIK (warga desa: data dari data penduduk dan pemilik akun diminta
+     * persetujuannya, seperti saksi).
+     *
+     * @param  array<string, mixed>  $type
+     * @return array<string, mixed>
+     */
+    private function withPowerOfAttorney(array $type): array
+    {
+        $type['form_fields'] = [
+            ...$type['form_fields'] ?? [],
+            [
+                ...$this->select('pengurusan', 'Siapa yang Akan Mengurus Formulir Ini ke Disdukcapil?', [
+                    'sendiri' => 'Saya sendiri',
+                    'diwakilkan' => 'Diwakilkan kepada orang lain (terbit Surat Kuasa F-1.07)',
+                ]),
+                'default' => 'sendiri',
+            ],
+            ...$this->withCondition(self::POWER_OF_ATTORNEY, [
+                [...$this->field('nik_penerima_kuasa', 'NIK Penerima Kuasa', 'nik', true, '16 digit NIK'), 'witness' => 'Penerima Kuasa'],
+                [...$this->text('nama_penerima_kuasa', 'Nama Penerima Kuasa', true, 'Nama lengkap'), 'from_nik' => 'nik_penerima_kuasa'],
+                [
+                    ...$this->text('pekerjaan_penerima_kuasa', 'Pekerjaan Penerima Kuasa', true, 'Contoh: Wiraswasta'),
+                    'from_nik' => 'nik_penerima_kuasa',
+                    'from_nik_value' => 'occupation',
+                ],
+                [
+                    ...$this->text('alamat_penerima_kuasa', 'Alamat Penerima Kuasa', true, 'Alamat lengkap'),
+                    'from_nik' => 'nik_penerima_kuasa',
+                    'from_nik_value' => 'address',
+                ],
+                $this->text('alasan_kuasa', 'Alasan Diwakilkan', true, 'Contoh: sedang sakit'),
+            ]),
+        ];
+        $type['documents'] = [
+            ...$type['documents'] ?? [],
+            [
+                'key' => 'f1_07',
+                'title' => 'Surat Kuasa dalam Pelayanan Administrasi Kependudukan (F-1.07)',
+                'when' => self::POWER_OF_ATTORNEY,
+                'template' => $this->powerOfAttorneyForm(),
+            ],
+        ];
+
+        return $type;
+    }
+
+    /**
+     * F-1.07 Surat Kuasa dalam Pelayanan Administrasi Kependudukan, isi
+     * mengikuti Excel aslinya. TTD pemohon (pemberi kuasa) ditempel; penerima
+     * kuasa bertanda tangan basah.
+     */
+    private function powerOfAttorneyForm(): string
+    {
+        $party = fn (string $caption, string $name, string $signature = ''): string => <<<HTML
+            <td style="width: 50%; text-align: center; vertical-align: top;">
+                <p style="margin: 0;">{$caption}</p>
+                <div style="height: 70px;"></div>
+                {$signature}<p style="margin: 0;">( {$name} )</p>
+            </td>
+            HTML;
+
+        return $this->form('F-1.07', 'SURAT KUASA DALAM PELAYANAN<br>ADMINISTRASI KEPENDUDUKAN', [
+            $this->paragraph('Pada hari ini {{ issued_day_name }} tanggal {{ issued_day }} Bulan {{ issued_month }} tahun {{ issued_year }} bertempat di Desa {{ village_name_short }} saya&nbsp;:', false),
+            $this->identity([
+                'Nama Lengkap' => '{{ applicant_name }}',
+                'NIK' => '{{ applicant_nik }}',
+                'Tempat &amp; Tanggal lahir' => '{{ applicant_birth_place_date }}',
+                'Pekerjaan' => '{{ applicant_occupation }}',
+                'Alamat' => '{{ applicant_address }}',
+            ]),
+            $this->paragraph('Memberikan kuasa kepada&nbsp;:', false),
+            $this->identity([
+                'Nama Lengkap' => '{{ nama_penerima_kuasa }}',
+                'NIK' => '{{ nik_penerima_kuasa }}',
+                'Pekerjaan' => '{{ pekerjaan_penerima_kuasa }}',
+                'Alamat' => '{{ alamat_penerima_kuasa }}',
+            ]),
+            $this->paragraph('Untuk mengisi formulir dalam pelayanan administrasi kependudukan, sesuai keterangan dan kelengkapan persyaratan yang saya berikan seperti keadaan yang sebenarnya dikarenakan kondisi saya dalam keadaan {{ alasan_kuasa }}.', false),
+            '<table style="width: 100%; margin-top: 24px; border-collapse: collapse;"><tr>'
+                .$party('Yang diberi kuasa,', '{{ nama_penerima_kuasa }}')
+                .$party('Yang memberi kuasa,', '{{ applicant_name }}', '{{ tanda_tangan_pemohon }}')
+                .'</tr></table>',
+        ]);
+    }
 
     /**
      * Halaman formulir Disdukcapil: kode formulir di kanan atas, judul, isi.
