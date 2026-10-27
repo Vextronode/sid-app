@@ -37,6 +37,7 @@ class LetterType extends Model
         'signed_by_village_head',
         'requires_result_upload',
         'result_upload_hint',
+        'carry_documents',
         'data_instructions',
         'data_options',
     ];
@@ -58,6 +59,7 @@ class LetterType extends Model
         'data_action' => LetterDataAction::class,
         'form_fields' => 'array',
         'data_fields' => 'array',
+        'carry_documents' => 'array',
         'data_options' => 'array',
         'signature_slots' => 'array',
         'documents' => 'array',

@@ -21,6 +21,8 @@ class PublicLetterTypeResource extends JsonResource
             'category' => $this->category?->value,
             'category_label' => $this->category?->label(),
             'requirements_info' => $this->requirement_info,
+            // Layanan Kependudukan: {forms, attachments} yang dibawa ke Disdukcapil.
+            'carry_documents' => $this->carry_documents,
         ];
     }
 }

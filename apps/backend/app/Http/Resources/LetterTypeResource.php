@@ -23,6 +23,8 @@ class LetterTypeResource extends JsonResource
             'category_label' => $this->category?->label(),
             'template' => $this->template,
             'requirements_info' => $this->requirement_info,
+            // Layanan Kependudukan: {forms, attachments} yang dibawa ke Disdukcapil.
+            'carry_documents' => $this->carry_documents,
             'flow_id' => $this->flow_id,
             'flow' => $this->when(
                 $this->relationLoaded('flow') && $this->flow,
