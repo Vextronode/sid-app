@@ -158,6 +158,23 @@ class ServiceLetterTypeSeeder extends Seeder
 
     private const FATHER_IS_OTHER = ['field' => 'pemohon_ayah', 'equals' => 'tidak'];
 
+    private const RESTRUCTURE_OPTIONS = [
+        'kk_baru' => 'Membentuk KK baru (keluarga baru / pisah KK)',
+        'ganti_kepala' => 'Ganti kepala keluarga',
+        'numpang' => 'Masuk/numpang ke KK lain di desa',
+    ];
+
+    private const NEW_FAMILY_REASON_OPTIONS = [
+        'keluarga_baru' => 'Membentuk keluarga baru (mis. setelah menikah)',
+        'pisah' => 'Pisah KK',
+    ];
+
+    private const RESTRUCTURE_NEW = ['field' => 'jenis_perubahan', 'equals' => 'kk_baru'];
+
+    private const RESTRUCTURE_HEAD = ['field' => 'jenis_perubahan', 'equals' => 'ganti_kepala'];
+
+    private const RESTRUCTURE_JOIN = ['field' => 'jenis_perubahan', 'equals' => 'numpang'];
+
     // Selisih usia minimal ibu dengan anaknya (isian family_member `older_than`).
     private const MOTHER_MIN_AGE_GAP = 10;
 
@@ -257,7 +274,7 @@ class ServiceLetterTypeSeeder extends Seeder
                     $this->select('pendidikan_terakhir', 'Pendidikan Terakhir', self::EDUCATION_OPTIONS),
                     $this->area('alamat', 'Alamat di Desa Ini'),
                     // Didaftarkan ke KK pemohon setelah dokumennya terbit.
-                    $this->select('shdk', 'Hubungan dengan Kepala Keluarga Anda', FamilyRole::memberOptions()),
+                    [...$this->select('shdk', 'Hubungan dengan Kepala Keluarga Anda', FamilyRole::memberOptions()), 'role_of' => 'jenis_kelamin'],
                 ],
                 'result_upload_hint' => 'Dokumen kependudukan yang terbit dari Disdukcapil (KK dan/atau KTP-el/KIA).',
                 // Setelah dokumen terbit, orang ini ditambahkan ke KK pemohon;
@@ -495,7 +512,7 @@ class ServiceLetterTypeSeeder extends Seeder
                         $this->text('nama_kepala_keluarga', 'Nama Kepala Keluarga yang Ditumpangi', true, 'Nama lengkap'),
                         $this->field('nik_kepala_keluarga', 'NIK Kepala Keluarga', 'nik', true, '16 digit NIK'),
                         $this->field('no_kk_tujuan', 'No. KK yang Ditumpangi', 'nik', true, '16 digit No. KK'),
-                        $this->select('shdk_pendatang', 'Hubungan Pendatang dengan Kepala Keluarga', FamilyRole::memberOptions()),
+                        [...$this->select('shdk_pendatang', 'Hubungan Pendatang dengan Kepala Keluarga', FamilyRole::memberOptions()), 'role_of' => 'jenis_kelamin_pendatang'],
                         $this->occupation('pekerjaan_kepala_keluarga', 'Pekerjaan Kepala Keluarga'),
                         $this->area('alamat_kepala_keluarga', 'Alamat Kepala Keluarga'),
                     ]),
@@ -907,6 +924,115 @@ class ServiceLetterTypeSeeder extends Seeder
                     ['column' => 'father_id', 'label' => 'Data Ayah (warga desa)', 'citizen_by_nik' => 'nik_ayah'],
                 ],
                 'template' => $this->acknowledgementReportForm(),
+            ],
+            [
+                'code' => 'F09',
+                'name' => 'Perubahan Susunan KK',
+                'description' => 'Membentuk KK baru (keluarga baru atau pisah KK), mengganti kepala keluarga, atau memasukkan anggota ke KK lain di desa, untuk penerbitan KK baru di Disdukcapil.',
+                'requirement_info' => 'Siapkan KK asli (KK lama dan, bila numpang, KK tujuan), KTP-el anggota yang berubah, dan buku nikah/akta perkawinan bila membentuk keluarga baru.',
+                'form_fields' => [
+                    $this->select('jenis_perubahan', 'Jenis Perubahan Susunan KK', self::RESTRUCTURE_OPTIONS),
+                    // KK baru: anggota KK pemohon (+ pasangan dari KK lain) dengan SHDK di KK baru.
+                    ...$this->withCondition(self::RESTRUCTURE_NEW, [
+                        $this->select('alasan_kk_baru', 'Alasan Membentuk KK Baru', self::NEW_FAMILY_REASON_OPTIONS),
+                        $this->field('susunan_baru', 'Anggota KK Anda yang Masuk KK Baru', 'repeater', true, null, [
+                            'max' => 10,
+                            'item_label' => 'anggota',
+                            'one_head' => ['column' => 'shdk', 'with' => 'shdk_pasangan'],
+                            'fields' => [
+                                $this->field('anggota', 'Anggota Keluarga', 'family_member', true),
+                                [...$this->select('shdk', 'Hubungan dalam KK Baru', self::familyRoleOptions()), 'role_of' => 'anggota'],
+                            ],
+                        ]),
+                        // Pasangan warga desa dari KK lain diminta persetujuannya.
+                        [
+                            ...$this->field('nik_pasangan', 'NIK Pasangan dari KK Lain (bila ada)', 'nik', false, '16 digit NIK'),
+                            'witness' => 'Anggota KK Baru',
+                            'village_citizen' => true,
+                        ],
+                        [...$this->text('nama_pasangan', 'Nama Pasangan', false, 'Nama lengkap'), 'from_nik' => 'nik_pasangan'],
+                    ]),
+                    [
+                        ...$this->select('shdk_pasangan', 'Hubungan Pasangan dalam KK Baru', self::familyRoleOptions()),
+                        'role_of' => 'nik_pasangan',
+                        'visible_when' => ['all' => [self::RESTRUCTURE_NEW, ['field' => 'nik_pasangan', 'filled' => true]]],
+                    ],
+                    ...$this->withCondition(self::RESTRUCTURE_NEW, [
+                        $this->area('alamat_kk_baru', 'Alamat KK Baru di Desa Ini'),
+                        $this->field('kepala_baru', 'Kepala Keluarga Baru bagi Anggota yang Tetap di KK Lama', 'family_member', false, null, [
+                            'required_when_head' => 'susunan_baru',
+                        ]),
+                    ]),
+                    // Ganti kepala keluarga tanpa ada yang keluar.
+                    ...$this->withCondition(self::RESTRUCTURE_HEAD, [
+                        $this->field('kepala_pengganti', 'Kepala Keluarga Pengganti', 'family_member', true, null, [
+                            'roles' => array_keys(FamilyRole::memberOptions()),
+                        ]),
+                        [...$this->select('shdk_kepala_lama', 'Hubungan Kepala Keluarga Lama Setelah Diganti', FamilyRole::memberOptions()), 'role_of' => 'family_head'],
+                    ]),
+                    // Masuk ke KK lain di desa; kepala KK tujuan diminta persetujuannya.
+                    ...$this->withCondition(self::RESTRUCTURE_JOIN, [
+                        $this->field('anggota_numpang', 'Anggota yang Masuk ke KK Tujuan', 'repeater', true, null, [
+                            'max' => 10,
+                            'item_label' => 'anggota',
+                            'fields' => [
+                                $this->field('anggota', 'Anggota Keluarga', 'family_member', true),
+                                [...$this->select('shdk', 'Hubungan dalam KK Tujuan', FamilyRole::memberOptions()), 'role_of' => 'anggota'],
+                            ],
+                        ]),
+                        [...$this->field('no_kk_tujuan', 'No. KK Tujuan', 'nik', true, '16 digit No. KK'), 'village_family' => true],
+                        [
+                            ...$this->field('nik_kepala_tujuan', 'NIK Kepala Keluarga Tujuan', 'nik', false),
+                            'family_head_of' => 'no_kk_tujuan',
+                            'witness' => 'Kepala KK Tujuan',
+                        ],
+                        [...$this->text('nama_kepala_tujuan', 'Nama Kepala Keluarga Tujuan', false), 'from_nik' => 'nik_kepala_tujuan'],
+                        $this->field('kepala_baru_numpang', 'Kepala Keluarga Baru bagi Anggota yang Tetap di KK Lama', 'family_member', false, null, [
+                            'required_when_head' => 'anggota_numpang',
+                        ]),
+                    ]),
+                    // Susunan KK hasil untuk F-1.01 (disusun sistem).
+                    $this->field('kk_hasil', 'Susunan KK Hasil', 'family_roster', false, null, ['restructure' => true]),
+                ],
+                'documents' => [
+                    [
+                        'key' => 'f1_01',
+                        'title' => 'Formulir Biodata Keluarga (F-1.01)',
+                        'orientation' => 'landscape',
+                        'template' => $this->rosterBiodataForm('kk_hasil', fromRoster: true),
+                    ],
+                    [
+                        'key' => 'numpang_kk',
+                        'title' => 'Surat Pernyataan Tidak Keberatan Numpang KK',
+                        'when' => self::RESTRUCTURE_JOIN,
+                        'template' => $this->joinFamilyStatement(),
+                    ],
+                ],
+                'result_upload_hint' => 'KK baru/terbaru hasil perubahan susunan dari Disdukcapil.',
+                // Terapkan: KK baru dibuat (No. KK diisi Kasi), kepala diganti,
+                // atau anggota dipindah ke KK tujuan, dengan SHDK barunya.
+                // Keluarga baru: kepala keluarga dan suami/istri menjadi Kawin.
+                'data_action' => LetterDataAction::RestructureFamily->value,
+                'data_options' => [
+                    'restructure' => [
+                        'kind' => 'jenis_perubahan',
+                        'new_family' => ['when' => 'kk_baru', 'rows' => 'susunan_baru', 'partner_nik' => 'nik_pasangan', 'partner_role' => 'shdk_pasangan', 'area' => 'alamat_kk_baru', 'married' => ['field' => 'alasan_kk_baru', 'equals' => 'keluarga_baru']],
+                        'change_head' => ['when' => 'ganti_kepala', 'head' => 'kepala_pengganti', 'old_head_role' => 'shdk_kepala_lama'],
+                        'join' => ['when' => 'numpang', 'rows' => 'anggota_numpang', 'no_kk' => 'no_kk_tujuan'],
+                    ],
+                    'new_head' => ['kepala_baru', 'kepala_baru_numpang'],
+                ],
+                'template' => $this->registrationForm([
+                    'kk.baru' => 'jenis_perubahan=kk_baru|ganti_kepala',
+                    'kk.baru.keluarga_baru' => 'alasan_kk_baru=keluarga_baru',
+                    'kk.baru.pisah' => 'alasan_kk_baru=pisah',
+                    'kk.baru.ganti_kepala' => 'jenis_perubahan=ganti_kepala',
+                    'kk.ubah.menumpang' => 'jenis_perubahan=numpang',
+                    'ubah.kk' => 'jenis_perubahan=ganti_kepala|numpang',
+                    'lampiran.kk_lama' => true,
+                    'lampiran.buku_nikah' => 'alasan_kk_baru=keluarga_baru',
+                    'lampiran.bersedia_menerima' => 'jenis_perubahan=numpang',
+                ]),
             ],
         ];
     }
@@ -1596,6 +1722,47 @@ class ServiceLetterTypeSeeder extends Seeder
     }
 
     // ------------------------------------------------------------------
+    // F09: Perubahan Susunan KK (F-1.02 + F-1.01)
+    // ------------------------------------------------------------------
+
+    /**
+     * Semua SHDK, [nilai => label].
+     *
+     * @return array<string, string>
+     */
+    private static function familyRoleOptions(): array
+    {
+        return array_combine(
+            array_map(fn (FamilyRole $role): string => $role->value, FamilyRole::cases()),
+            array_map(fn (FamilyRole $role): string => $role->label(), FamilyRole::cases()),
+        );
+    }
+
+    /**
+     * Pernyataan kepala KK tujuan bahwa tidak keberatan anggota KK pemohon
+     * dimasukkan ke KK-nya.
+     */
+    private function joinFamilyStatement(): string
+    {
+        return $this->form('', 'SURAT PERNYATAAN<br>TIDAK KEBERATAN NUMPANG KK', [
+            '<p style="margin: 0 0 6px;">Saya yang bertanda tangan di bawah ini&nbsp;:</p>',
+            $this->identity([
+                'Nama' => '{{ nama_kepala_tujuan }}',
+                'NIK' => '{{ nik_kepala_tujuan }}',
+                'No. KK' => '{{ no_kk_tujuan }}',
+                'Alamat' => '{{ kk_hasil_alamat }}, Desa {{ village_name_short }}',
+            ]),
+            $this->paragraph('Selaku Kepala Keluarga, dengan ini menyatakan tidak keberatan dalam Kartu Keluarga saya dimasukkan anggota keluarga berikut&nbsp;:', false),
+            $this->gridTable(
+                '<tr>'.$this->headCell('No').$this->headCell('Nama').$this->headCell('NIK').$this->headCell('Hubungan dalam KK').'</tr>',
+                '{{#each anggota_numpang}}<tr>'.$this->cell('{{ no }}', 'text-align: center;').$this->cell('{{ anggota_nama }}').$this->cell('{{ anggota_nik }}').$this->cell('{{ shdk }}').'</tr>{{/each}}',
+            ),
+            $this->paragraph('Demikian surat pernyataan ini saya buat dengan sebenar-benarnya dan tanpa paksaan dari pihak manapun, untuk dipergunakan sebagaimana mestinya.', false),
+            $this->stampedSignature('Yang menyatakan,', '{{ nama_kepala_tujuan }}'),
+        ]);
+    }
+
+    // ------------------------------------------------------------------
     // F08: Pengakuan Anak (F-2.01 + F-2.10)
     // ------------------------------------------------------------------
 
@@ -1858,7 +2025,10 @@ class ServiceLetterTypeSeeder extends Seeder
     /**
      * F-1.01 dari isian family_roster: susunan KK baru (maks. 10 anggota).
      */
-    private function rosterBiodataForm(string $roster): string
+    /**
+     * @param  bool  $fromRoster  alamat & wilayah dari `<roster>_alamat/_dusun/_rt/_rw` (KK hasil F09), bukan dari pemohon
+     */
+    private function rosterBiodataForm(string $roster, bool $fromRoster = false): string
     {
         $cell = fn (int $row, string $key): string => $this->blank("{$roster}_{$row}_{$key}");
         $members = [];
@@ -1884,14 +2054,14 @@ class ServiceLetterTypeSeeder extends Seeder
             [
                 'head' => $cell(1, 'nama'),
                 'head_sign' => "{{ tanda_tangan_pemohon_bila_{$roster}_1_nik }}".$cell(1, 'nama'),
-                'address' => '{{ applicant_address }}',
-                'hamlet' => $cell(1, 'dusun'),
+                'address' => $fromRoster ? "{{ {$roster}_alamat }}" : '{{ applicant_address }}',
+                'hamlet' => $fromRoster ? "{{ {$roster}_dusun }}" : $cell(1, 'dusun'),
                 'count' => "{{ {$roster}_jumlah }}",
             ],
             [
                 'postal' => 'village_postal_code',
-                'rt' => "{$roster}_1_rt",
-                'rw' => "{$roster}_1_rw",
+                'rt' => $fromRoster ? "{$roster}_rt" : "{$roster}_1_rt",
+                'rw' => $fromRoster ? "{$roster}_rw" : "{$roster}_1_rw",
             ],
             $members,
         );

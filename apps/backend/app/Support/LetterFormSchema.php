@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\FamilyRole;
 use App\Models\Citizen;
+use App\Models\Family;
 use App\Models\LetterType;
 use App\Models\Occupation;
 use App\Models\Rt;
@@ -63,6 +64,21 @@ use Illuminate\Validation\Rule;
  * KK, warga desa ber-NIK, pemohon bila isian NIK-nya miliknya, atau tanggal
  * yang diketik); beberapa acuan dipisah `|`, yang pertama diketahui dipakai.
  * Acuan yang tidak diketahui dilewati.
+ *
+ * Isian NIK `village_citizen`: harus warga aktif desa ini di luar KK
+ * pemohon (mis. pasangan dari KK lain). Isian No. KK `village_family`: harus
+ * KK lain di desa ini. Isian NIK `family_head_of` (nama isian No. KK) diisi
+ * sistem dengan NIK kepala keluarga KK tersebut, tidak ditanyakan.
+ *
+ * Isian `family_roster` dengan `restructure`: susunan KK hasil perubahan
+ * (F09) menurut letter_types.data_options.restructure: KK baru (baris
+ * anggota + pasangan), ganti kepala, atau numpang ke KK tujuan.
+ *
+ * Isian pilihan SHDK dengan `role_of` (orang pemilik hubungan itu): Suami
+ * harus laki-laki dan Istri harus perempuan. Acuannya nama isian
+ * family_member (di repeater: kolom baris itu), isian NIK warga desa, isian
+ * jenis kelamin (L/P), atau `family_head` = kepala KK pemohon sekarang. Acuan
+ * yang jenis kelaminnya tidak diketahui dilewati.
  *
  * Isian NIK saksi (`witness`): bukan NIK pemohon, dan berbeda dari isian NIK
  * di `not_same_as` (saksi lainnya, pihak dalam surat).
@@ -137,12 +153,16 @@ class LetterFormSchema
     /** @var array<string, Citizen|null> warga per NIK (isian from_nik) */
     private array $nikCitizens = [];
 
+    /** @var array<string, mixed> letter_types.data_options (mis. restructure F09) */
+    private array $dataOptions;
+
     /**
      * @param  Citizen|null  $applicant  pemohon; sumber pilihan isian family_members
      */
     public function __construct(?LetterType $letterType, private readonly ?Citizen $applicant = null)
     {
         $this->fields = $letterType?->form_fields;
+        $this->dataOptions = $letterType?->data_options ?? [];
         $this->villageId = $letterType?->village_id;
     }
 
@@ -237,6 +257,107 @@ class LetterFormSchema
     }
 
     /**
+     * Susunan KK hasil perubahan F09 (data_options.restructure) untuk F-1.01:
+     * `<nama>_<n>_<kolom>` urut kepala keluarga dulu, `<nama>_jumlah`, dan
+     * wilayah/alamat KK `<nama>_dusun/_rw/_rt/_alamat`.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function restructureRoster(string $name, array $payload): array
+    {
+        $config = $this->dataOptions['restructure'] ?? [];
+        $kind = (string) ($payload[$config['kind'] ?? ''] ?? '');
+        $relations = self::MEMBER_RELATIONS;
+        $own = $this->familyMembers()->loadMissing($relations)->keyBy('id');
+        $rows = [];
+        $area = null;
+
+        if ($kind === ($config['new_family']['when'] ?? null)) {
+            $new = $config['new_family'];
+
+            foreach ((array) ($payload[$new['rows']] ?? []) as $row) {
+                if (isset($own[$row['anggota'] ?? ''])) {
+                    $rows[] = [$own[$row['anggota']], (string) ($row['shdk'] ?? '')];
+                }
+            }
+
+            $partner = $this->citizenByNik($payload[$new['partner_nik']] ?? null)?->loadMissing($relations);
+
+            if ($partner !== null) {
+                $rows[] = [$partner, (string) ($payload[$new['partner_role']] ?? '')];
+            }
+
+            $rt = isset($payload[$new['area']]) ? Rt::query()->with('rw.hamlet')->find((int) $payload[$new['area']]) : null;
+            $area = $rt === null ? null : [
+                'dusun' => $rt->rw?->hamlet?->name ?? '',
+                'rw' => self::areaNumber($rt->rw?->number),
+                'rt' => self::areaNumber($rt->number),
+                'alamat' => sprintf('Dusun %s RT %s RW %s', $rt->rw?->hamlet?->name ?? '-', self::areaNumber($rt->number), self::areaNumber($rt->rw?->number)),
+            ];
+        } elseif ($kind === ($config['change_head']['when'] ?? null)) {
+            $change = $config['change_head'];
+            $newHead = (string) ($payload[$change['head']] ?? '');
+
+            foreach ($own as $member) {
+                $role = match (true) {
+                    (string) $member->id === $newHead => FamilyRole::KEPALA_KELUARGA->value,
+                    $member->family_role === FamilyRole::KEPALA_KELUARGA => (string) ($payload[$change['old_head_role']] ?? ''),
+                    default => (string) $member->family_role?->value,
+                };
+                $rows[] = [$member, $role];
+            }
+        } elseif ($kind === ($config['join']['when'] ?? null)) {
+            $join = $config['join'];
+            $family = $this->familyByNumber($payload[$join['no_kk']] ?? null);
+
+            foreach ($family?->members()->where('is_active', true)->with($relations)->orderBy('date_of_birth')->get() ?? [] as $member) {
+                $rows[] = [$member, (string) $member->family_role?->value];
+            }
+
+            foreach ((array) ($payload[$join['rows']] ?? []) as $row) {
+                if (isset($own[$row['anggota'] ?? ''])) {
+                    $rows[] = [$own[$row['anggota']], (string) ($row['shdk'] ?? '')];
+                }
+            }
+
+            $area = $family === null ? null : [
+                'dusun' => $family->hamlet?->name ?? '',
+                'rw' => self::areaNumber($family->rw?->number),
+                'rt' => self::areaNumber($family->rt?->number),
+                'alamat' => (string) $family->family_address,
+            ];
+        }
+
+        // Kepala keluarga di baris pertama, sisanya menurut tanggal lahir.
+        $order = fn (array $row): array => [$row[1] !== FamilyRole::KEPALA_KELUARGA->value, $row[0]->date_of_birth?->timestamp ?? 0];
+        usort($rows, fn (array $a, array $b): int => $order($a) <=> $order($b));
+        $rows = array_slice($rows, 0, self::ROSTER_ROWS);
+
+        foreach ($rows as $index => [$member, $role]) {
+            foreach ([...self::memberValues($member), 'shdk' => self::familyRoleLabel($role)] as $key => $value) {
+                $payload[$name.'_'.($index + 1).'_'.$key] = $value;
+            }
+        }
+
+        $head = $rows[0][0] ?? null;
+        $area ??= [
+            'dusun' => $head?->rt?->rw?->hamlet?->name ?? '',
+            'rw' => $head?->rt?->rw ? self::areaNumber($head->rt->rw->number) : '',
+            'rt' => $head?->rt ? self::areaNumber($head->rt->number) : '',
+            'alamat' => (string) ($head?->address ?? ''),
+        ];
+
+        foreach ($area as $key => $value) {
+            $payload["{$name}_{$key}"] = $value;
+        }
+
+        $payload["{$name}_jumlah"] = (string) count($rows);
+
+        return $payload;
+    }
+
+    /**
      * Pilihan family_members (id warga) disimpan sebagai baris siap cetak
      * agar surat tidak berubah bila data warga diperbarui kemudian.
      *
@@ -263,6 +384,12 @@ class LetterFormSchema
         }
 
         foreach ($this->fieldsOfType('family_roster') as $field) {
+            if ($field['restructure'] ?? false) {
+                $payload = $this->restructureRoster($field['name'], $payload);
+
+                continue;
+            }
+
             $excluded = (string) ($payload[$field['exclude'] ?? ''] ?? '');
             $head = (string) ($payload[$field['head'] ?? ''] ?? '');
             $members = $this->familyMembers()->loadMissing(self::MEMBER_RELATIONS)
@@ -617,7 +744,7 @@ class LetterFormSchema
             }
 
             if (($field['type'] ?? 'text') === 'repeater') {
-                $rules = [...$rules, ...$this->repeaterRules($field, $payload[$field['name']] ?? null)];
+                $rules = [...$rules, ...$this->repeaterRules($field, $payload[$field['name']] ?? null, $payload)];
 
                 continue;
             }
@@ -629,7 +756,7 @@ class LetterFormSchema
             }
 
             // Disusun sistem saat pengajuan, bukan diisi pemohon.
-            if (($field['type'] ?? 'text') === 'family_roster' || isset($field['same_value'])) {
+            if (($field['type'] ?? 'text') === 'family_roster' || isset($field['same_value']) || isset($field['family_head_of'])) {
                 $rules["payload.{$field['name']}"] = ['exclude'];
 
                 continue;
@@ -647,7 +774,7 @@ class LetterFormSchema
 
                 if ($headOf !== null) {
                     // Calon kepala keluarga baru: yang tetap di KK, selain kepala keluarga sekarang.
-                    $leaving = array_map('strval', array_filter((array) ($payload[$headOf] ?? []), 'is_scalar'));
+                    $leaving = self::memberIdsOf($payload[$headOf] ?? null);
                     $members = $members->filter(fn ($member): bool => $member->family_role !== FamilyRole::KEPALA_KELUARGA
                         && ! in_array((string) $member->id, $leaving, true));
 
@@ -689,6 +816,9 @@ class LetterFormSchema
                 ...self::typeRules($field),
                 ...(isset($field['witness']) ? [$this->witnessRule($field, $payload)] : []),
                 ...(isset($field['date_order']) ? [$this->dateOrderRule($field, $payload)] : []),
+                ...(($field['village_citizen'] ?? false) ? [$this->villageCitizenRule()] : []),
+                ...(($field['village_family'] ?? false) ? [$this->villageFamilyRule()] : []),
+                ...(isset($field['role_of']) ? [$this->roleGenderRule($field['role_of'], $payload)] : []),
             ];
         }
 
@@ -785,9 +915,10 @@ class LetterFormSchema
 
     /**
      * @param  array<string, mixed>  $field
+     * @param  array<string, mixed>  $payload  jawaban form lengkap (mis. untuk one_head)
      * @return array<string, array<int, mixed>>
      */
-    private function repeaterRules(array $field, mixed $rows): array
+    private function repeaterRules(array $field, mixed $rows, array $payload = []): array
     {
         $name = $field['name'];
         $required = (bool) ($field['required'] ?? false);
@@ -802,12 +933,24 @@ class LetterFormSchema
         ];
         $memberIds = $this->familyMembers()->pluck('id')->map(fn ($id): string => (string) $id)->all();
 
+        $memberColumns = array_column(array_filter($field['fields'] ?? [], fn (array $subField): bool => ($subField['type'] ?? 'text') === 'family_member'), 'name');
         $rules = [
             "payload.{$name}" => [
                 $min > 0 ? 'required' : 'nullable',
                 'array',
                 ...($min > 0 ? ["min:{$min}"] : []),
                 "max:{$max}",
+                // Satu anggota KK hanya satu baris.
+                function (string $attribute, mixed $value, \Closure $fail) use ($memberColumns): void {
+                    foreach ($memberColumns as $column) {
+                        $ids = array_filter(array_column(array_filter((array) $value, 'is_array'), $column));
+
+                        if (count($ids) !== count(array_unique($ids))) {
+                            $fail('Anggota keluarga yang sama dipilih lebih dari sekali.');
+                        }
+                    }
+                },
+                ...(isset($field['one_head']) ? [$this->oneHeadRule($field['one_head'], $payload)] : []),
             ],
             "payload.{$name}.*" => [
                 'array',
@@ -841,6 +984,10 @@ class LetterFormSchema
                     'occupation' => [$presence, 'string', $this->occupationRule()],
                     default => [$presence, ...self::typeRules($subField)],
                 };
+
+                if (isset($subField['role_of'])) {
+                    $rules[$key][] = $this->roleGenderRule($subField['role_of'], $row);
+                }
 
                 if ($type === 'occupation') {
                     $rules["{$key}_lainnya"] = ["required_if:{$key},".self::OTHER_OCCUPATION, 'nullable', 'string', 'max:100'];
@@ -987,6 +1134,27 @@ class LetterFormSchema
     }
 
     /**
+     * Id anggota terpilih: satu id (family_member), daftar id
+     * (family_members), atau kolom family_member tiap baris repeater.
+     *
+     * @return array<int, string>
+     */
+    public static function memberIdsOf(mixed $value): array
+    {
+        $ids = [];
+
+        foreach ((array) $value as $item) {
+            $id = is_array($item) ? collect($item)->first(fn (mixed $cell, string $key): bool => $key === 'anggota') : $item;
+
+            if (is_scalar($id) && $id !== '') {
+                $ids[] = (string) $id;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
      * Apakah anggota terpilih (satu id, atau daftar id isian family_members)
      * termasuk kepala keluarga.
      */
@@ -1007,6 +1175,134 @@ class LetterFormSchema
 
             if ($value !== null) {
                 $payload[$field['name']] = $value;
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Tepat satu kepala keluarga di baris repeater (`column`) ditambah isian
+     * `with` (mis. SHDK pasangan), untuk KK baru.
+     *
+     * @param  array{column: string, with?: string}  $rule
+     * @param  array<string, mixed>  $payload
+     */
+    private function oneHeadRule(array $rule, array $payload): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($rule, $payload): void {
+            $roles = array_column(array_filter((array) $value, 'is_array'), $rule['column']);
+
+            if (isset($rule['with'])) {
+                $roles[] = $payload[$rule['with']] ?? null;
+            }
+
+            if (count(array_keys($roles, FamilyRole::KEPALA_KELUARGA->value, true)) !== 1) {
+                $fail('Pilih tepat satu Kepala Keluarga untuk KK baru.');
+            }
+        };
+    }
+
+    /**
+     * Suami laki-laki, Istri perempuan, menurut jenis kelamin orang di acuan
+     * `role_of` (jawaban form, atau baris repeater).
+     *
+     * @param  array<string, mixed>  $answers
+     */
+    private function roleGenderRule(string $reference, array $answers): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($reference, $answers): void {
+            $required = match ($value) {
+                FamilyRole::SUAMI->value => 'L',
+                FamilyRole::ISTRI->value => 'P',
+                default => null,
+            };
+            $gender = $required === null ? null : $this->genderOf($reference, $answers);
+
+            if ($gender !== null && $gender !== $required) {
+                $fail($required === 'L' ? 'Suami harus laki-laki.' : 'Istri harus perempuan.');
+            }
+        };
+    }
+
+    /**
+     * Jenis kelamin (L/P) orang di acuan `role_of`, atau null bila tidak diketahui.
+     *
+     * @param  array<string, mixed>  $answers
+     */
+    private function genderOf(string $reference, array $answers): ?string
+    {
+        if ($reference === 'family_head') {
+            return $this->familyMembers()->firstWhere('family_role', FamilyRole::KEPALA_KELUARGA)?->gender;
+        }
+
+        $value = $answers[$reference] ?? null;
+
+        if (in_array($value, ['L', 'P'], true)) {
+            return $value;
+        }
+
+        return $this->familyMembers()->firstWhere('id', $value)?->gender
+            ?? $this->citizenByNik($value)?->gender;
+    }
+
+    /**
+     * NIK warga aktif desa ini yang bukan anggota KK pemohon.
+     */
+    private function villageCitizenRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            $citizen = $this->citizenByNik($value);
+
+            if ($citizen === null) {
+                $fail('NIK ini tidak terdaftar sebagai warga desa.');
+            } elseif ($this->familyMembers()->contains('id', $citizen->id)) {
+                $fail('Warga ini sudah satu KK dengan Anda; pilih di daftar anggota keluarga.');
+            }
+        };
+    }
+
+    /**
+     * No. KK lain (bukan KK pemohon) yang terdaftar di desa ini.
+     */
+    private function villageFamilyRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            $family = $this->familyByNumber($value);
+
+            if ($family === null) {
+                $fail('No. KK ini tidak terdaftar di desa.');
+            } elseif ($family->id === $this->applicant?->family_id) {
+                $fail('No. KK ini adalah KK Anda sendiri.');
+            }
+        };
+    }
+
+    private function familyByNumber(mixed $number): ?Family
+    {
+        return is_string($number) && preg_match('/^\d{16}$/', $number) && $this->villageId !== null
+            ? Family::query()->where('village_id', $this->villageId)->where('no_kk_hash', hash('sha256', $number))->first()
+            : null;
+    }
+
+    /**
+     * Isian NIK `family_head_of`: NIK kepala keluarga aktif KK tujuan.
+     *
+     * @param  array<string, mixed>|null  $payload
+     * @return array<string, mixed>|null
+     */
+    public function resolveFamilyHeads(?array $payload): ?array
+    {
+        if ($payload === null) {
+            return null;
+        }
+
+        foreach ($this->fields ?? [] as $field) {
+            $family = isset($field['family_head_of']) ? $this->familyByNumber($payload[$field['family_head_of']] ?? null) : null;
+            $head = $family?->members()->where('family_role', FamilyRole::KEPALA_KELUARGA->value)->where('is_active', true)->first();
+
+            if ($head !== null) {
+                $payload[$field['name']] = $head->nik;
             }
         }
 
@@ -1104,7 +1400,7 @@ class LetterFormSchema
 
     private function isFamilyHead(mixed $citizenIds): bool
     {
-        $ids = array_map('strval', array_filter((array) $citizenIds, fn (mixed $id): bool => is_scalar($id) && $id !== ''));
+        $ids = self::memberIdsOf($citizenIds);
 
         return $ids !== [] && $this->familyMembers()->contains(
             fn ($member): bool => in_array((string) $member->id, $ids, true) && $member->family_role === FamilyRole::KEPALA_KELUARGA,

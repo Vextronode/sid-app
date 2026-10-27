@@ -519,10 +519,14 @@ class LetterSignatureService
                 'expires_at' => now()->addDays(config('letters.signature.request_ttl_days')),
             ]);
 
+            // Saksi, atau pihak lain yang diminta persetujuannya (mis. kepala KK tujuan).
+            $witness = str_starts_with($slot['label'], 'Saksi');
             $target->notify(new LetterStatusNotification(
                 $letter,
-                'Permintaan Menjadi Saksi',
-                "{$letter->applicant_name} meminta Anda menjadi \"{$slot['label']}\" pada pengajuan suratnya.",
+                $witness ? 'Permintaan Menjadi Saksi' : 'Permintaan Persetujuan',
+                $witness
+                    ? "{$letter->applicant_name} meminta Anda menjadi \"{$slot['label']}\" pada pengajuan suratnya."
+                    : "{$letter->applicant_name} meminta persetujuan Anda sebagai \"{$slot['label']}\" pada pengajuan suratnya.",
                 'signature_requested',
             ));
 

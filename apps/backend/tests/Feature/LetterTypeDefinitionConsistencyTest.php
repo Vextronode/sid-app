@@ -10,6 +10,7 @@ use Database\Seeders\ApprovalFlowSeeder;
 use Database\Seeders\LetterTypeSeeder;
 use Database\Seeders\ServiceLetterTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Tests\TestCase;
 
 /**
@@ -87,8 +88,13 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                 // Kepala keluarga baru / anggota yang dikeluarkan dari family_roster.
                 ...array_column($letterType->form_fields ?? [], 'head'),
                 ...array_column($letterType->form_fields ?? [], 'exclude'),
-                // Kepala keluarga baru yang ditetapkan saat Terapkan.
-                $letterType->data_options['new_head'] ?? null,
+                // Isian yang dirujuk opsi aksi data (kepala keluarga baru, susunan KK F09).
+                ...array_filter(Arr::flatten($letterType->data_options ?? []), 'is_string'),
+                // Nama pemilik NIK yang dimintai persetujuan (saksi, pasangan, kepala KK tujuan).
+                ...array_column(array_filter(
+                    $letterType->form_fields ?? [],
+                    fn (array $field): bool => isset($field['from_nik']) && isset(collect($letterType->form_fields)->firstWhere('name', $field['from_nik'])['witness']),
+                ), 'name'),
             ];
             $templates = $this->templatesOf($letterType);
 
@@ -113,7 +119,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // 11 Persuratan Desa (Axx) + Layanan Kependudukan (Fxx).
         $this->assertSame(
-            ['persuratan' => 11, 'pelayanan' => 8],
+            ['persuratan' => 11, 'pelayanan' => 9],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -147,7 +153,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // Penguburan menonaktifkan data almarhum; Kelahiran menambah anak.
         $this->assertSame(
-            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'create_citizen', 'F02' => 'update_members', 'F03' => 'deactivate_members', 'F04' => 'create_citizen', 'F05' => 'create_citizen', 'F06' => 'deactivate_members', 'F07' => 'update_citizens', 'F08' => 'update_citizen'],
+            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'create_citizen', 'F02' => 'update_members', 'F03' => 'deactivate_members', 'F04' => 'create_citizen', 'F05' => 'create_citizen', 'F06' => 'deactivate_members', 'F07' => 'update_citizens', 'F08' => 'update_citizen', 'F09' => 'restructure_family'],
             $letterTypes
                 ->filter(fn (LetterType $type) => $type->data_action->value !== 'none')
                 ->mapWithKeys(fn (LetterType $type) => [$type->code => $type->data_action->value])
@@ -194,6 +200,11 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
             if ($field['type'] === 'family_roster') {
                 $sources[] = "{$field['name']}_jumlah";
+
+                // Susunan KK hasil F09: wilayah dan alamat KK.
+                foreach (['alamat', 'dusun', 'rt', 'rw'] as $key) {
+                    $sources[] = "{$field['name']}_{$key}";
+                }
 
                 foreach (range(1, LetterFormSchema::ROSTER_ROWS) as $row) {
                     foreach (LetterFormSchema::MEMBER_KEYS as $key) {

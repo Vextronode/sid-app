@@ -96,7 +96,11 @@ class LetterFulfillmentService
         $proposed = $this->proposedValues($letter);
         $current = $action === LetterDataAction::UpdateCitizen ? $this->subjectCitizen($letter, null) : null;
         $subjectField = $letter->letterType?->data_subject_field;
-        $familyMode = $action === LetterDataAction::CreateCitizen ? $this->familyMode($letter) : null;
+        $familyMode = match ($action) {
+            LetterDataAction::CreateCitizen => $this->familyMode($letter),
+            LetterDataAction::RestructureFamily => $this->restructureKind($letter) === 'new_family' ? 'create' : null,
+            default => null,
+        };
         $options = in_array($action, [LetterDataAction::UpdateCitizen, LetterDataAction::CreateCitizen], true)
             ? $this->columnOptions($letter)
             : [];
@@ -148,7 +152,8 @@ class LetterFulfillmentService
                 'found' => $current !== null,
                 'name' => $current?->name,
             ],
-            'family' => $familyMode === null ? null : $this->familyProposal($letter, $familyMode),
+            'family' => $familyMode === null || $action !== LetterDataAction::CreateCitizen ? null : $this->familyProposal($letter, $familyMode),
+            'restructure' => $action === LetterDataAction::RestructureFamily ? $this->restructureProposal($letter) : null,
             'subjects' => $action === LetterDataAction::UpdateCitizens ? $this->subjectProposal($letter) : [],
             'fields' => $fields,
         ];
@@ -219,6 +224,7 @@ class LetterFulfillmentService
                 LetterDataAction::DeactivateMembers => $this->deactivateMembers($locked, $actor, $notes),
                 LetterDataAction::UpdateMembers => $this->updateMembers($locked, $actor, $values),
                 LetterDataAction::UpdateCitizens => $this->updateCitizens($locked, $actor),
+                LetterDataAction::RestructureFamily => $this->restructureFamily($locked, $actor, $newFamilyNumber),
                 LetterDataAction::Manual => [['action' => $action->value, 'notes' => $notes], []],
                 default => abort(422, 'Jenis surat ini tidak memiliki aksi perubahan data.'),
             };
@@ -457,8 +463,11 @@ class LetterFulfillmentService
      */
     private function newHead(Letter $letter): ?Citizen
     {
-        $field = $letter->letterType?->data_options['new_head'] ?? null;
-        $id = $field !== null ? ($letter->payload[$field] ?? null) : null;
+        $id = null;
+
+        foreach ((array) ($letter->letterType?->data_options['new_head'] ?? []) as $field) {
+            $id ??= $letter->payload[$field] ?? null;
+        }
 
         if (! is_string($id) || $id === '' || $letter->citizen?->family_id === null) {
             return null;
@@ -1012,6 +1021,234 @@ class LetterFulfillmentService
         }
 
         return [['action' => LetterDataAction::UpdateCitizens->value, 'members' => $members], $touched];
+    }
+
+    /**
+     * Jenis perubahan F09 (data_options.restructure): new_family,
+     * change_head, join, atau null.
+     */
+    private function restructureKind(Letter $letter): ?string
+    {
+        $config = $letter->letterType?->data_options['restructure'] ?? [];
+        $kind = (string) ($letter->payload[$config['kind'] ?? ''] ?? '');
+
+        foreach (['new_family', 'change_head', 'join'] as $key) {
+            if (isset($config[$key]) && $config[$key]['when'] === $kind) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Rencana perubahan susunan KK: [warga, perubahan] per anggota tanpa
+     * menyimpan, untuk ringkasan panel Terapkan.
+     *
+     * @return array{kind: ?string, lines: array<int, string>}
+     */
+    private function restructureProposal(Letter $letter): array
+    {
+        $config = $letter->letterType?->data_options['restructure'] ?? [];
+        $payload = is_array($letter->payload) ? $letter->payload : [];
+        $kind = $this->restructureKind($letter);
+        $role = fn (mixed $value): string => $this->describeValue('family_role', $value);
+        $lines = [];
+
+        if ($kind === 'new_family') {
+            $new = $config['new_family'];
+            $lines[] = 'Dibuatkan KK baru di '.$this->areaLabel($payload[$new['area']] ?? null).' (No. KK diisi dari KK terbitan Disdukcapil):';
+
+            foreach ($this->restructureRows($letter, $new['rows']) as [$citizen, $shdk]) {
+                $lines[] = "{$citizen->name}: {$role($shdk)}";
+            }
+
+            if ($partner = $this->villageCitizenByNik($letter, $payload[$new['partner_nik']] ?? null)) {
+                $lines[] = "{$partner->name} (dari KK lain): {$role($payload[$new['partner_role']] ?? null)}";
+            }
+
+            if ($this->formsMarriedFamily($letter)) {
+                $lines[] = 'Status perkawinan kepala keluarga dan suami/istri menjadi Kawin (bila belum).';
+            }
+        } elseif ($kind === 'change_head') {
+            $change = $config['change_head'];
+            $head = $this->ownFamily($letter)->firstWhere('family_role', FamilyRole::KEPALA_KELUARGA);
+            $successor = $this->ownFamily($letter)->firstWhere('id', $payload[$change['head']] ?? null);
+            $lines[] = ($successor?->name ?? '-').' menjadi Kepala Keluarga.';
+            $lines[] = ($head?->name ?? '-').' menjadi '.$role($payload[$change['old_head_role']] ?? null).'.';
+        } elseif ($kind === 'join') {
+            $family = $this->familyByNumber($letter, $payload[$config['join']['no_kk']] ?? null);
+            $lines[] = 'Masuk ke '.$this->familyLabel($family).':';
+
+            foreach ($this->restructureRows($letter, $config['join']['rows']) as [$citizen, $shdk]) {
+                $lines[] = "{$citizen->name}: {$role($shdk)}";
+            }
+        }
+
+        if ($head = $this->newHead($letter)) {
+            $lines[] = "{$head->name} menjadi kepala keluarga bagi anggota yang tetap di KK lama.";
+        }
+
+        return ['kind' => $kind, 'lines' => $lines];
+    }
+
+    /**
+     * Terapkan perubahan susunan KK (F09). Anggota yang pindah KK ikut
+     * mendapat wilayah dan alamat KK tujuannya.
+     *
+     * @return array{0: array<string, mixed>, 1: array<int, array{0: Citizen, 1: array<string, mixed>}>}
+     */
+    private function restructureFamily(Letter $letter, User $actor, ?string $newFamilyNumber): array
+    {
+        $config = $letter->letterType?->data_options['restructure'] ?? [];
+        $payload = is_array($letter->payload) ? $letter->payload : [];
+        $touched = [];
+        $move = function (Citizen $citizen, array $data) use ($actor, &$touched): void {
+            $validated = $this->validate($data, Arr::only($this->updateRules(), array_keys($data)));
+            $changes = [];
+
+            foreach ($validated as $column => $value) {
+                $old = $this->scalar($citizen->getAttribute($column));
+
+                if ($old != $value) {
+                    $changes[$column] = ['old' => $old, 'new' => $value];
+                }
+            }
+
+            // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
+            $citizen = $this->citizenService->update($citizen, $validated, $actor, audit: false);
+            $touched[] = [$citizen, $changes];
+        };
+
+        switch ($this->restructureKind($letter)) {
+            case 'new_family':
+                $new = $config['new_family'];
+                $rt = Rt::query()->with('rw.hamlet')->where('village_id', $letter->village_id)->find($payload[$new['area']] ?? null);
+                $address = $this->areaLabel($rt?->id);
+                $family = $this->createFamily($actor, ['address' => $address], $rt, $newFamilyNumber);
+                $place = ['family_id' => $family->id, 'rt_id' => $rt?->id, 'hamlet_id' => $rt?->rw?->hamlet_id, 'address' => $address];
+                $members = $this->restructureRows($letter, $new['rows']);
+
+                if ($partner = $this->villageCitizenByNik($letter, $payload[$new['partner_nik']] ?? null)) {
+                    $members[] = [$partner, $payload[$new['partner_role']] ?? null];
+                }
+
+                // Kepala keluarga lebih dulu agar anggota lain masuk ke KK yang sudah berkepala.
+                usort($members, fn (array $a, array $b): int => ($a[1] !== FamilyRole::KEPALA_KELUARGA->value) <=> ($b[1] !== FamilyRole::KEPALA_KELUARGA->value));
+
+                // Membentuk keluarga baru setelah menikah: kepala keluarga dan
+                // pasangannya tercatat Kawin (cukup F09 bila sudah punya buku nikah).
+                $married = $this->formsMarriedFamily($letter);
+                $couple = [FamilyRole::KEPALA_KELUARGA->value, FamilyRole::SUAMI->value, FamilyRole::ISTRI->value];
+
+                foreach ($members as [$citizen, $shdk]) {
+                    $marital = $married && in_array($shdk, $couple, true) ? ['marital_status' => 'kawin'] : [];
+                    $move($citizen, [...$place, 'family_role' => $shdk, ...$marital]);
+                }
+                break;
+            case 'change_head':
+                $change = $config['change_head'];
+                $head = $this->ownFamily($letter)->firstWhere('family_role', FamilyRole::KEPALA_KELUARGA);
+                $successor = $this->ownFamily($letter)->firstWhere('id', $payload[$change['head']] ?? null)
+                    ?? throw ValidationException::withMessages(['values' => ['Kepala keluarga pengganti tidak ditemukan di KK pemohon.']]);
+
+                if ($head !== null) {
+                    $move($head, ['family_role' => $payload[$change['old_head_role']] ?? null]);
+                }
+
+                $move($successor, ['family_role' => FamilyRole::KEPALA_KELUARGA->value]);
+                break;
+            case 'join':
+                $family = $this->familyByNumber($letter, $payload[$config['join']['no_kk']] ?? null)
+                    ?? throw ValidationException::withMessages(['values' => ['KK tujuan tidak ditemukan di data desa.']]);
+                $place = ['family_id' => $family->id, 'rt_id' => $family->rt_id, 'hamlet_id' => $family->hamlet_id, 'address' => $family->family_address];
+
+                foreach ($this->restructureRows($letter, $config['join']['rows']) as [$citizen, $shdk]) {
+                    $move($citizen, [...array_filter($place, fn (mixed $value): bool => $value !== null), 'family_role' => $shdk]);
+                }
+                break;
+            default:
+                abort(422, 'Jenis perubahan susunan KK tidak dikenal.');
+        }
+
+        // Kepala keluarga KK lama ikut keluar: anggota pilihan pemohon menggantikannya.
+        $head = $this->newHead($letter);
+
+        if ($head !== null && $head->is_active && $head->family_id === $letter->citizen?->family_id
+            && $head->family_role?->value !== FamilyRole::KEPALA_KELUARGA->value) {
+            $move($head, ['family_role' => FamilyRole::KEPALA_KELUARGA->value]);
+        }
+
+        if ($touched === []) {
+            abort(422, 'Tidak ada perubahan susunan KK yang dapat diterapkan dari surat ini.');
+        }
+
+        return [[
+            'action' => LetterDataAction::RestructureFamily->value,
+            'members' => array_map(fn (array $entry): array => ['citizen_id' => $entry[0]->id, 'name' => $entry[0]->name, 'changes' => $entry[1]], $touched),
+        ], $touched];
+    }
+
+    /**
+     * KK baru F09 karena membentuk keluarga baru (data_options.restructure
+     * .new_family.married), bukan pisah KK.
+     */
+    private function formsMarriedFamily(Letter $letter): bool
+    {
+        $married = $letter->letterType?->data_options['restructure']['new_family']['married'] ?? null;
+
+        return is_array($married) && $this->restructureKind($letter) === 'new_family'
+            && ($letter->payload[$married['field']] ?? null) === $married['equals'];
+    }
+
+    /**
+     * Anggota aktif KK pemohon (saat Terapkan).
+     *
+     * @return Collection<int, Citizen>
+     */
+    private function ownFamily(Letter $letter): Collection
+    {
+        return $letter->citizen?->family_id === null ? new Collection : Citizen::query()
+            ->where('village_id', $letter->village_id)
+            ->where('family_id', $letter->citizen->family_id)
+            ->where('is_active', true)
+            ->get();
+    }
+
+    /**
+     * Baris repeater F09 (anggota KK pemohon + SHDK barunya).
+     *
+     * @return array<int, array{0: Citizen, 1: mixed}>
+     */
+    private function restructureRows(Letter $letter, string $field): array
+    {
+        $members = $this->ownFamily($letter)->keyBy('id');
+        $rows = [];
+
+        foreach ((array) ($letter->payload[$field] ?? []) as $row) {
+            if (is_array($row) && isset($members[$row['anggota'] ?? ''])) {
+                $rows[] = [$members[$row['anggota']], $row['shdk'] ?? null];
+            }
+        }
+
+        return $rows;
+    }
+
+    private function villageCitizenByNik(Letter $letter, mixed $nik): ?Citizen
+    {
+        return is_string($nik) && preg_match('/^\d{16}$/', $nik) ? Citizen::query()
+            ->where('village_id', $letter->village_id)
+            ->where('nik_hash', hash('sha256', $nik))
+            ->where('is_active', true)
+            ->first() : null;
+    }
+
+    private function familyByNumber(Letter $letter, mixed $number): ?Family
+    {
+        return is_string($number) && $number !== '' ? Family::query()
+            ->where('village_id', $letter->village_id)
+            ->where('no_kk_hash', hash('sha256', $number))
+            ->first() : null;
     }
 
     /**

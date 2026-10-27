@@ -22,6 +22,9 @@ enum LetterDataAction: string
     // (data_options.subjects), mis. status kawin suami dan istri. Warga
     // yang tidak terdata di desa dilewati.
     case UpdateCitizens = 'update_citizens';
+    // Perubahan susunan KK (F09, data_options.restructure): KK baru, ganti
+    // kepala keluarga, atau anggota masuk ke KK lain di desa.
+    case RestructureFamily = 'restructure_family';
     // Perubahan dikerjakan Kasi/Kaur sendiri di Data Penduduk/KK (mis.
     // susunan KK baru); sistem hanya mencatat "Tandai selesai".
     case Manual = 'manual';
