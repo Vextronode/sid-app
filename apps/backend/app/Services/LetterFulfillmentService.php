@@ -15,6 +15,7 @@ use App\Models\Letter;
 use App\Models\Occupation;
 use App\Models\Rt;
 use App\Models\User;
+use App\Notifications\FamilyMemberMovedNotification;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
 use App\Repositories\UserRepository;
@@ -115,7 +116,7 @@ class LetterFulfillmentService
     public function proposal(Letter $letter): array
     {
         $letter->loadMissing(['letterType', 'citizen']);
-        $action = $this->actionOf($letter);
+        $action = $this->effectiveAction($letter);
         $proposed = $this->proposedValues($letter);
         $current = $action === LetterDataAction::UpdateCitizen ? $this->subjectCitizen($letter, null) : null;
         $subjectField = $letter->letterType?->data_subject_field;
@@ -176,7 +177,11 @@ class LetterFulfillmentService
                 'name' => $current?->name,
             ],
             'family' => $familyMode === null || $action !== LetterDataAction::CreateCitizen ? null : $this->familyProposal($letter, $familyMode),
-            'restructure' => $action === LetterDataAction::RestructureFamily ? $this->restructureProposal($letter) : null,
+            'restructure' => match ($action) {
+                LetterDataAction::RestructureFamily => $this->restructureProposal($letter),
+                LetterDataAction::AdoptChild => $this->adoptionProposal($letter),
+                default => null,
+            },
             'subjects' => $action === LetterDataAction::UpdateCitizens ? $this->subjectProposal($letter) : [],
             'fields' => $fields,
         ];
@@ -248,6 +253,12 @@ class LetterFulfillmentService
                 LetterDataAction::UpdateMembers => $this->updateMembers($locked, $actor, $values),
                 LetterDataAction::UpdateCitizens => $this->updateCitizens($locked, $actor),
                 LetterDataAction::RestructureFamily => $this->restructureFamily($locked, $actor, $newFamilyNumber),
+                LetterDataAction::AdoptChild => $this->adoptee($locked) !== null
+                    ? $this->adoptChild($locked, $actor)
+                    : $this->singleCitizen(
+                        LetterDataAction::CreateCitizen,
+                        $this->createCitizen($locked, $actor, $this->finalValues($locked, $values), $newFamilyNumber),
+                    ),
                 LetterDataAction::Manual => [['action' => $action->value, 'notes' => $notes], []],
                 default => abort(422, 'Jenis surat ini tidak memiliki aksi perubahan data.'),
             };
@@ -299,6 +310,11 @@ class LetterFulfillmentService
                         ) + $changes,
                     ])
                     ->log('Data kependudukan diubah berdasarkan surat');
+            }
+
+            // Anak angkat pindah dari KK lain: kepala KK asalnya diberi tahu.
+            if ($action === LetterDataAction::AdoptChild) {
+                $this->notifyFormerFamilyHeads($touched, 'karena pengangkatan anak berdasarkan penetapan pengadilan');
             }
 
             $this->officialService->resolveCitizenUser($locked)?->notify(new LetterStatusNotification(
@@ -1448,7 +1464,14 @@ class LetterFulfillmentService
      */
     private function fields(Letter $letter): array
     {
-        $rules = $this->actionOf($letter) === LetterDataAction::CreateCitizen
+        $action = $this->effectiveAction($letter);
+
+        // Anak angkat warga desa: dipindah KK tanpa isian kolom.
+        if ($action === LetterDataAction::AdoptChild) {
+            return [];
+        }
+
+        $rules = $action === LetterDataAction::CreateCitizen
             ? $this->createRules()
             : $this->updateRules();
 
@@ -1481,6 +1504,119 @@ class LetterFulfillmentService
             ->where('village_id', $letter->village_id)
             ->where('nik_hash', hash('sha256', $nik))
             ->first();
+    }
+
+    /**
+     * Aksi yang benar-benar dijalankan: pengangkatan anak yang anaknya
+     * belum terdata di desa berjalan sebagai create_citizen.
+     */
+    private function effectiveAction(Letter $letter): LetterDataAction
+    {
+        $action = $this->actionOf($letter);
+
+        return $action === LetterDataAction::AdoptChild && $this->adoptee($letter) === null
+            ? LetterDataAction::CreateCitizen
+            : $action;
+    }
+
+    /**
+     * Anak angkat warga desa (isian NIK data_options.adopt.nik), atau null.
+     */
+    private function adoptee(Letter $letter): ?Citizen
+    {
+        $config = $letter->letterType?->data_options['adopt'] ?? [];
+
+        return $this->villageCitizenByNik($letter, $letter->payload[$config['nik'] ?? ''] ?? null);
+    }
+
+    /**
+     * @return array{kind: string, lines: array<int, string>}
+     */
+    private function adoptionProposal(Letter $letter): array
+    {
+        $config = $letter->letterType?->data_options['adopt'] ?? [];
+        $child = $this->adoptee($letter);
+        $role = $this->describeValue('family_role', $letter->payload[$config['role'] ?? ''] ?? FamilyRole::ANAK->value);
+        $from = $child?->family_id === null ? 'belum tercatat di KK mana pun' : 'dari '.$this->familyLabel(Family::query()->find($child->family_id));
+
+        return ['kind' => 'adopt', 'lines' => [
+            ($child?->name ?? '-')." ({$from}) masuk ke KK pemohon sebagai {$role}.",
+            'Data ayah dan ibu kandung tidak berubah.',
+        ]];
+    }
+
+    /**
+     * Terapkan pengangkatan anak (F10) untuk anak warga desa: pindah ke KK
+     * pemohon dengan wilayah dan alamatnya, SHDK dari isian.
+     *
+     * @return array{0: array<string, mixed>, 1: array<int, array{0: Citizen, 1: array<string, mixed>}>}
+     */
+    private function adoptChild(Letter $letter, User $actor): array
+    {
+        $config = $letter->letterType?->data_options['adopt'] ?? [];
+        $child = $this->adoptee($letter) ?? abort(422, 'Anak angkat tidak ditemukan di data desa.');
+        $applicant = $letter->citizen;
+
+        if ($applicant?->family_id === null) {
+            abort(422, 'Pemohon belum tercatat di KK mana pun.');
+        }
+
+        $data = [
+            ...array_filter([
+                'family_id' => $applicant->family_id,
+                'rt_id' => $applicant->rt_id,
+                'hamlet_id' => $applicant->hamlet_id,
+                'address' => $applicant->address,
+            ], fn (mixed $value): bool => $value !== null),
+            'family_role' => $letter->payload[$config['role'] ?? ''] ?? FamilyRole::ANAK->value,
+        ];
+        $validated = $this->validate($data, Arr::only($this->updateRules(), array_keys($data)));
+        $changes = [];
+
+        foreach ($validated as $column => $value) {
+            $old = $this->scalar($child->getAttribute($column));
+
+            if ($old != $value) {
+                $changes[$column] = ['old' => $old, 'new' => $value];
+            }
+        }
+
+        // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
+        $child = $this->citizenService->update($child, $validated, $actor, audit: false);
+
+        return [[
+            'action' => LetterDataAction::AdoptChild->value,
+            'members' => [['citizen_id' => $child->id, 'name' => $child->name, 'changes' => $changes]],
+        ], [[$child, $changes]]];
+    }
+
+    /**
+     * Kepala KK asal (yang punya akun aktif) dari warga yang dipindah KK
+     * lewat surat orang lain diberi tahu. Warga tanpa KK asal, atau kepala
+     * KK tanpa akun, dilewati.
+     *
+     * @param  array<int, array{0: Citizen, 1: array<string, mixed>}>  $touched
+     */
+    private function notifyFormerFamilyHeads(array $touched, string $reason): void
+    {
+        foreach ($touched as [$citizen, $changes]) {
+            $oldFamily = $changes['family_id']['old'] ?? null;
+
+            if ($oldFamily === null) {
+                continue;
+            }
+
+            $head = Citizen::query()
+                ->where('family_id', $oldFamily)
+                ->where('is_active', true)
+                ->where('family_role', FamilyRole::KEPALA_KELUARGA->value)
+                ->first();
+            $user = $head !== null ? $this->userRepository->findByCitizenId($head->id) : null;
+
+            if ($user?->is_active) {
+                $user->notify(new FamilyMemberMovedNotification($citizen->name, $reason));
+            }
+        }
     }
 
     private function actionOf(Letter $letter): LetterDataAction

@@ -34,6 +34,11 @@ class ServiceLetterTypeSeeder extends Seeder
 
     private const BLOOD_TYPE_OPTIONS = ['A' => 'A', 'B' => 'B', 'AB' => 'AB', 'O' => 'O', 'tidak_tahu' => 'Tidak Tahu'];
 
+    /** F10: hubungan anak angkat dalam KK orang tua angkat. */
+    private const ADOPTED_ROLE_OPTIONS = ['anak' => 'Anak', 'famili_lain' => 'Famili Lain'];
+
+    private const ADOPTIVE_PARENT_OPTIONS = ['ayah' => 'Ayah Angkat', 'ibu' => 'Ibu Angkat'];
+
     /** Kolom 28 F-1.01 Kelainan Fisik & Mental. */
     private const DISORDER_OPTIONS = ['tidak' => 'Tidak ada', 'ada' => 'Ada'];
 
@@ -1086,6 +1091,105 @@ class ServiceLetterTypeSeeder extends Seeder
                     'lampiran.bersedia_menerima' => 'jenis_perubahan=numpang',
                 ]),
             ],
+            [
+                'code' => 'F10',
+                'name' => 'Pelaporan Pengangkatan Anak',
+                'description' => 'Pelaporan pengangkatan anak yang sudah mendapat penetapan pengadilan, untuk pencatatan di Disdukcapil serta masuknya anak angkat ke KK orang tua angkat. Bila belum ada penetapan, ajukan permohonan pengangkatan anak ke pengadilan terlebih dahulu.',
+                'requirement_info' => 'Layanan ini untuk pengangkatan anak yang sudah mendapat penetapan pengadilan; bila belum, ajukan permohonan ke pengadilan terlebih dahulu. Siapkan salinan penetapan pengadilan (dilampirkan saat ke Disdukcapil), kutipan akta kelahiran anak (bila ada), KK dan KTP-el orang tua angkat, serta KTP-el dua orang saksi.',
+                'form_fields' => [
+                    // Anak angkat: warga desa lewat NIK (data otomatis), selain itu diketik.
+                    [
+                        ...$this->field('nik_anak', 'NIK Anak Angkat (bila ada)', 'nik', false, '16 digit NIK'),
+                        'adoptee' => true,
+                        'typed_when_empty' => true,
+                        'help' => 'Bila anak warga desa ini, datanya diambil dari data penduduk. Kosongkan bila anak belum punya NIK.',
+                    ],
+                    [...$this->text('nama_anak', 'Nama Anak Angkat', true, 'Nama lengkap'), 'from_nik' => 'nik_anak'],
+                    [...$this->select('jenis_kelamin_anak', 'Jenis Kelamin Anak', self::GENDER_OPTIONS), 'from_nik' => 'nik_anak', 'from_nik_value' => 'gender'],
+                    [...$this->text('tempat_lahir_anak', 'Tempat Lahir Anak', true, 'Kota/kabupaten'), 'from_nik' => 'nik_anak', 'from_nik_value' => 'place_of_birth'],
+                    [...$this->date('tanggal_lahir_anak', 'Tanggal Lahir Anak'), 'from_nik' => 'nik_anak', 'from_nik_value' => 'date_of_birth'],
+                    [...$this->text('nama_ibu_kandung', 'Nama Ibu Kandung', false, 'Bila diketahui'), 'from_nik' => 'nik_anak', 'from_nik_value' => 'mother_name'],
+                    [...$this->field('nik_ibu_kandung', 'NIK Ibu Kandung', 'nik', false, 'Bila diketahui'), 'from_nik' => 'nik_anak', 'from_nik_value' => 'mother_nik'],
+                    [...$this->text('nama_ayah_kandung', 'Nama Ayah Kandung', false, 'Bila diketahui'), 'from_nik' => 'nik_anak', 'from_nik_value' => 'father_name'],
+                    [...$this->field('nik_ayah_kandung', 'NIK Ayah Kandung', 'nik', false, 'Bila diketahui'), 'from_nik' => 'nik_anak', 'from_nik_value' => 'father_nik'],
+                    $this->text('no_akta_lahir_anak', 'Nomor Akta Kelahiran Anak', false, 'Bila ada'),
+                    $this->date('tanggal_akta_lahir', 'Tanggal Penerbitan Akta Kelahiran', false),
+                    $this->text('dinas_akta_lahir', 'Dinas yang Menerbitkan Akta Kelahiran', false, 'Contoh: Disdukcapil Kab. Pangandaran'),
+                    [...$this->select('shdk_anak', 'Hubungan Anak dalam KK Anda', self::ADOPTED_ROLE_OPTIONS), 'default' => 'anak'],
+                    // Orang tua angkat: pemohon (dari jenis kelaminnya) dan pasangannya.
+                    [
+                        ...$this->select('peran_angkat', 'Anda sebagai', self::ADOPTIVE_PARENT_OPTIONS),
+                        'from_applicant' => ['column' => 'gender', 'map' => ['L' => 'ayah', 'P' => 'ibu']],
+                    ],
+                    ...$this->adoptiveParent('ayah', 'Ayah'),
+                    ...$this->adoptiveParent('ibu', 'Ibu'),
+                    // Penetapan pengadilan (dasar pengangkatan anak).
+                    $this->text('nomor_penetapan', 'Nomor Penetapan Pengadilan', true, 'Sesuai salinan penetapan'),
+                    [...$this->date('tanggal_penetapan', 'Tanggal Penetapan Pengadilan'), 'date_order' => [['after' => 'birth:nik_anak|tanggal_lahir_anak', 'label' => 'tanggal lahir anak']]],
+                    $this->text('nama_pengadilan_penetapan', 'Nama Pengadilan', true, 'Contoh: Pengadilan Agama Ciamis'),
+                    $this->text('tempat_pengadilan_penetapan', 'Tempat Pengadilan', false, 'Contoh: Ciamis'),
+                    ...$this->witness(1, 'I', withFamilyNumber: true, parties: ['nik_anak']),
+                    ...$this->witness(2, 'II', withFamilyNumber: true, parties: ['nik_anak']),
+                    // F-1.01: kontak dan data tambahan anggota KK orang tua angkat.
+                    $this->text('telepon_keluarga', 'Telepon/HP Keluarga', false, 'Contoh: 081234567890'),
+                    $this->memberDetails(),
+                    // Susunan KK orang tua angkat ditambah anak angkat untuk F-1.01 (disusun sistem).
+                    $this->field('kk_angkat', 'Susunan KK dengan Anak Angkat', 'family_roster', false, null, [
+                        'append' => [
+                            'nik' => 'nik_anak',
+                            'role' => 'shdk_anak',
+                            'typed' => [
+                                'nama' => 'nama_anak',
+                                'jenis_kelamin' => 'jenis_kelamin_anak',
+                                'tempat_lahir' => 'tempat_lahir_anak',
+                                'tanggal_lahir' => 'tanggal_lahir_anak',
+                                'nama_ibu' => 'nama_ibu_kandung',
+                                'nik_ibu' => 'nik_ibu_kandung',
+                                'nama_ayah' => 'nama_ayah_kandung',
+                                'nik_ayah' => 'nik_ayah_kandung',
+                                'no_akta_lahir' => 'no_akta_lahir_anak',
+                            ],
+                        ],
+                    ]),
+                ],
+                'documents' => [
+                    [
+                        'key' => 'f1_02',
+                        'title' => 'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02)',
+                        'template' => $this->registrationForm([
+                            'ubah.kk' => true,
+                            'kk.ubah.peristiwa' => true,
+                            'lampiran.kk_lama' => true,
+                            // Penetapan pengadilan sebagai bukti peristiwa penting.
+                            'lampiran.bukti' => true,
+                        ]),
+                    ],
+                    [
+                        'key' => 'f1_01',
+                        'title' => 'Formulir Biodata Keluarga (F-1.01)',
+                        'orientation' => 'landscape',
+                        'template' => $this->rosterBiodataForm('kk_angkat'),
+                    ],
+                ],
+                'result_upload_hint' => 'KK baru orang tua angkat dari Disdukcapil (dan akta kelahiran anak dengan catatan pengangkatan bila sudah terbit).',
+                // Anak warga desa pindah ke KK pemohon; anak dari luar desa
+                // ditambahkan sebagai warga baru (NIK diisi Kasi dari KK baru).
+                'data_action' => LetterDataAction::AdoptChild->value,
+                'data_options' => ['adopt' => ['nik' => 'nik_anak', 'role' => 'shdk_anak'], 'member_details' => 'data_tambahan'],
+                'data_fields' => [
+                    ['column' => 'nik', 'label' => 'NIK Anak (dari KK baru)', 'source' => null],
+                    ['column' => 'name', 'label' => 'Nama Anak', 'source' => 'nama_anak'],
+                    ['column' => 'gender', 'label' => 'Jenis Kelamin (L/P)', 'source' => 'jenis_kelamin_anak'],
+                    ['column' => 'place_of_birth', 'label' => 'Tempat Lahir', 'source' => 'tempat_lahir_anak'],
+                    ['column' => 'date_of_birth', 'label' => 'Tanggal Lahir', 'source' => 'tanggal_lahir_anak'],
+                    ['column' => 'family_role', 'label' => 'Hubungan dalam KK', 'source' => 'shdk_anak'],
+                    ['column' => 'mother_name_text', 'label' => 'Nama Ibu Kandung', 'source' => 'nama_ibu_kandung'],
+                    ['column' => 'father_name_text', 'label' => 'Nama Ayah Kandung', 'source' => 'nama_ayah_kandung'],
+                    ['column' => 'birth_certificate_number', 'label' => 'No. Akta Kelahiran', 'source' => 'no_akta_lahir_anak'],
+                ],
+                'data_instructions' => 'Anak angkat warga desa dipindah ke KK pemohon (kepala KK asalnya diberi tahu); anak yang belum terdata ditambahkan sebagai warga baru. Data ayah dan ibu kandung tidak diubah.',
+                'template' => $this->adoptionReportForm(),
+            ],
         ]);
     }
 
@@ -1950,6 +2054,71 @@ class ServiceLetterTypeSeeder extends Seeder
             ),
             $this->paragraph('Demikian surat pernyataan ini saya buat dengan sebenar-benarnya dan tanpa paksaan dari pihak manapun, untuk dipergunakan sebagaimana mestinya.', false),
             $this->stampedSignature('Yang menyatakan,', '{{ nama_kepala_tujuan }}'),
+        ]);
+    }
+
+    // ------------------------------------------------------------------
+    // F10: Pengangkatan Anak (F-2.01 + F-1.02 + F-1.01)
+    // ------------------------------------------------------------------
+
+    /**
+     * NIK dan nama ayah/ibu angkat. Pemohon sendiri (`self_when`) diisi dari
+     * akunnya; pasangannya lewat NIK (warga desa otomatis), boleh kosong
+     * bila pengangkatan oleh orang tua tunggal.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function adoptiveParent(string $role, string $label): array
+    {
+        $partner = ['field' => 'peran_angkat', 'equals' => $role === 'ayah' ? 'ibu' : 'ayah'];
+
+        return [
+            [
+                ...$this->field("nik_{$role}_angkat", "NIK {$label} Angkat (bila ada)", 'nik', false, '16 digit NIK'),
+                'self_when' => ['field' => 'peran_angkat', 'equals' => $role],
+                'typed_when_empty' => true,
+                'visible_when' => $partner,
+            ],
+            [...$this->text("nama_{$role}_angkat", "Nama {$label} Angkat", false, 'Kosongkan bila orang tua tunggal'), 'from_nik' => "nik_{$role}_angkat", 'visible_when' => $partner],
+        ];
+    }
+
+    /**
+     * F-2.01 bagian pengangkatan anak: subjek akta anak angkat, akta
+     * kelahirannya, orang tua kandung & angkat, dan penetapan pengadilan.
+     */
+    private function adoptionReportForm(): string
+    {
+        $date = fn (string $prefix, string $field): array => [
+            "{$prefix}_tgl" => "{$field}_tgl",
+            "{$prefix}_bln" => "{$field}_bln",
+            "{$prefix}_thn" => "{$field}_thn",
+        ];
+
+        return $this->sheetForm('f2_01_pelaporan_capil', $this->capilHeader('angkat_anak'), [
+            ...$this->capilWitnessBoxes(),
+            'subjek1_nama' => 'nama_anak',
+            'subjek1_nik' => 'nik_anak',
+            'subjek1_kk' => 'applicant_family_number',
+            'subjek1_kwn' => '=INDONESIA',
+            'angkat_nama' => 'nama_anak',
+            'angkat_akta' => 'no_akta_lahir_anak',
+            ...$date('angkat_akta_tanggal', 'tanggal_akta_lahir'),
+            'angkat_dinas' => 'dinas_akta_lahir',
+            'angkat_ibu_nama' => 'nama_ibu_kandung',
+            'angkat_ibu_nik' => 'nik_ibu_kandung',
+            'angkat_ibu_kwn' => ['=INDONESIA', 'nama_ibu_kandung'],
+            'angkat_ayah_nama' => 'nama_ayah_kandung',
+            'angkat_ayah_nik' => 'nik_ayah_kandung',
+            'angkat_ayah_kwn' => ['=INDONESIA', 'nama_ayah_kandung'],
+            'angkat_ibu_angkat_nama' => 'nama_ibu_angkat',
+            'angkat_ibu_angkat_nik' => 'nik_ibu_angkat',
+            'angkat_ayah_angkat_nama' => 'nama_ayah_angkat',
+            'angkat_ayah_angkat_nik' => 'nik_ayah_angkat',
+            ...$date('angkat_penetapan', 'tanggal_penetapan'),
+            'angkat_penetapan_no' => 'nomor_penetapan',
+            'angkat_lembaga' => 'nama_pengadilan_penetapan',
+            'angkat_lembaga_tempat' => 'tempat_pengadilan_penetapan',
         ]);
     }
 

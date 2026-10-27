@@ -25,6 +25,10 @@ enum LetterDataAction: string
     // Perubahan susunan KK (F09, data_options.restructure): KK baru, ganti
     // kepala keluarga, atau anggota masuk ke KK lain di desa.
     case RestructureFamily = 'restructure_family';
+    // Pengangkatan anak (F10, data_options.adopt): anak angkat warga desa
+    // dipindah ke KK pemohon; bila bukan warga desa, ditambahkan sebagai
+    // warga baru di KK pemohon (seperti create_citizen).
+    case AdoptChild = 'adopt_child';
     // Perubahan dikerjakan Kasi/Kaur sendiri di Data Penduduk/KK (mis.
     // susunan KK baru); sistem hanya mencatat "Tandai selesai".
     case Manual = 'manual';

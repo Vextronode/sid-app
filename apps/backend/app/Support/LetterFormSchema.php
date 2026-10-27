@@ -50,7 +50,8 @@ use Illuminate\Validation\Rule;
  * desa ini, isian tidak wajib dan diisi dari data penduduk saat pengajuan
  * (`from_nik_value`: `name` = nama, bawaan; `family_number` = No. KK;
  * `occupation` = pekerjaan; `address` = alamat; `marital_status` = status
- * kawin saat pengajuan); bila
+ * kawin saat pengajuan; `gender`, `place_of_birth`, `date_of_birth`,
+ * `mother_name`/`mother_nik`, `father_name`/`father_nik`); bila
  * tidak, isian diketik (mis. saksi dari luar desa).
  *
  * Isian dengan `from_applicant` ({column, map}): nilainya diturunkan dari data
@@ -85,6 +86,11 @@ use Illuminate\Validation\Rule;
  * family_member (di repeater: kolom baris itu), isian NIK warga desa, isian
  * jenis kelamin (L/P), atau `family_head` = kepala KK pemohon sekarang. Acuan
  * yang jenis kelaminnya tidak diketahui dilewati.
+ *
+ * Isian NIK `adoptee` (anak angkat F10): bukan pemohon, dan bukan kepala
+ * keluarga yang KK-nya masih beranggota lain. Isian NIK `typed_when_empty`:
+ * pasangan `from_nik`-nya juga diketik bila NIK dikosongkan (mis. anak belum
+ * punya NIK).
  *
  * Isian NIK saksi (`witness`): bukan NIK pemohon, dan berbeda dari isian NIK
  * di `not_same_as` (saksi lainnya, pihak dalam surat).
@@ -384,6 +390,37 @@ class LetterFormSchema
     }
 
     /**
+     * Baris susunan KK untuk orang yang belum terdata (mis. anak angkat dari
+     * luar desa) dari isian ($map: kolom MEMBER_KEYS => nama isian).
+     *
+     * @param  array<string, string>  $map
+     * @param  array<string, mixed>  $payload
+     * @return array<string, string>
+     */
+    private function typedMember(array $map, array $payload, string $role): array
+    {
+        $value = fn (string $key): string => trim((string) ($payload[$map[$key] ?? ''] ?? ''));
+        $birth = $value('tanggal_lahir');
+        $values = [];
+
+        foreach (array_keys($map) as $key) {
+            $values[$key] = $value($key);
+        }
+
+        return [
+            ...$values,
+            'shdk' => $role,
+            'jenis_kelamin' => match ($value('jenis_kelamin')) {
+                'L' => 'Laki-laki',
+                'P' => 'Perempuan',
+                default => '',
+            },
+            'tanggal_lahir' => $birth !== '' ? Carbon::parse($birth)->locale('id')->translatedFormat('j F Y') : '',
+            'akta_lahir' => $value('no_akta_lahir') !== '' ? 'Ada' : '',
+        ];
+    }
+
+    /**
      * Data tambahan anggota dari isian repeater `data_options.member_details`
      * (anggota, gelar, akta lahir/cerai, kelainan & cacat) per id anggota,
      * siap cetak (kolom MEMBER_KEYS). Hanya yang diisi yang menimpa data
@@ -510,7 +547,25 @@ class LetterFormSchema
                 }
             }
 
-            $payload["{$field['name']}_jumlah"] = (string) $members->count();
+            $count = $members->count();
+
+            // `append`: orang yang masuk KK ini (mis. anak angkat F10), dari
+            // data penduduk bila NIK-nya terdaftar, selain itu dari isian.
+            if (isset($field['append']) && $count < self::ROSTER_ROWS) {
+                $append = $field['append'];
+                $role = self::familyRoleLabel($payload[$append['role']] ?? null);
+                $citizen = $this->citizenByNik($payload[$append['nik']] ?? null)?->loadMissing(self::MEMBER_RELATIONS);
+                $index = $citizen === null ? false : $members->search(fn (Citizen $member): bool => $member->id === $citizen->id);
+                $values = $citizen !== null ? [...self::memberValues($citizen), 'shdk' => $role] : $this->typedMember($append['typed'] ?? [], $payload, $role);
+
+                foreach ($values as $key => $value) {
+                    $payload[$field['name'].'_'.(($index === false ? $count : $index) + 1).'_'.$key] = $value;
+                }
+
+                $count += $index === false ? 1 : 0;
+            }
+
+            $payload["{$field['name']}_jumlah"] = (string) $count;
         }
 
         foreach ($this->fieldsOfType('family_members') as $field) {
@@ -783,6 +838,13 @@ class LetterFormSchema
                     'occupation' => $citizen->occupation?->name,
                     'address' => $citizen->address,
                     'marital_status' => $citizen->marital_status,
+                    'gender' => $citizen->gender,
+                    'place_of_birth' => $citizen->place_of_birth,
+                    'date_of_birth' => $citizen->date_of_birth?->toDateString(),
+                    'mother_name' => $citizen->mother?->name ?? $citizen->mother_name_text,
+                    'mother_nik' => $citizen->mother?->nik,
+                    'father_name' => $citizen->father?->name ?? $citizen->father_name_text,
+                    'father_nik' => $citizen->father?->nik,
                     default => $citizen->name,
                 };
             }
@@ -954,6 +1016,7 @@ class LetterFormSchema
                 ...(($field['village_citizen'] ?? false) ? [$this->villageCitizenRule()] : []),
                 ...(($field['village_family'] ?? false) ? [$this->villageFamilyRule()] : []),
                 ...(isset($field['role_of']) ? [$this->roleGenderRule($field['role_of'], $payload)] : []),
+                ...(($field['adoptee'] ?? false) ? [$this->adopteeRule()] : []),
             ];
         }
 
@@ -1339,6 +1402,28 @@ class LetterFormSchema
 
             if (count(array_keys($roles, FamilyRole::KEPALA_KELUARGA->value, true)) !== 1) {
                 $fail('Pilih tepat satu Kepala Keluarga untuk KK baru.');
+            }
+        };
+    }
+
+    /**
+     * Anak angkat (F10): bukan pemohon, dan bukan kepala keluarga yang
+     * KK-nya masih beranggota lain (kepala keluarga KK itu diganti dulu).
+     */
+    private function adopteeRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            if ($this->applicant !== null && is_string($value) && hash('sha256', $value) === $this->applicant->nik_hash) {
+                $fail('Anak angkat tidak boleh pemohon sendiri.');
+
+                return;
+            }
+
+            $citizen = $this->citizenByNik($value);
+
+            if ($citizen?->family_role === FamilyRole::KEPALA_KELUARGA && $citizen->family_id !== null
+                && Citizen::query()->where('family_id', $citizen->family_id)->where('is_active', true)->whereKeyNot($citizen->id)->exists()) {
+                $fail('Anak ini tercatat sebagai kepala keluarga di KK-nya. Ganti kepala keluarga KK tersebut dulu lewat Perubahan Susunan KK (F09).');
             }
         };
     }

@@ -120,7 +120,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // 11 Persuratan Desa (Axx) + Layanan Kependudukan (Fxx).
         $this->assertSame(
-            ['persuratan' => 11, 'pelayanan' => 9],
+            ['persuratan' => 11, 'pelayanan' => 10],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -154,7 +154,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // Penguburan menonaktifkan data almarhum; Kelahiran menambah anak.
         $this->assertSame(
-            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'create_citizen', 'F02' => 'update_members', 'F03' => 'deactivate_members', 'F04' => 'create_citizen', 'F05' => 'create_citizen', 'F06' => 'deactivate_members', 'F07' => 'update_citizens', 'F08' => 'update_citizen', 'F09' => 'restructure_family'],
+            ['A07' => 'update_citizen', 'A08' => 'create_citizen', 'F01' => 'create_citizen', 'F02' => 'update_members', 'F03' => 'deactivate_members', 'F04' => 'create_citizen', 'F05' => 'create_citizen', 'F06' => 'deactivate_members', 'F07' => 'update_citizens', 'F08' => 'update_citizen', 'F09' => 'restructure_family', 'F10' => 'adopt_child'],
             $letterTypes
                 ->filter(fn (LetterType $type) => $type->data_action->value !== 'none')
                 ->mapWithKeys(fn (LetterType $type) => [$type->code => $type->data_action->value])
