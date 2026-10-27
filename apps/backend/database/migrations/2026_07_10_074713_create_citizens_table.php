@@ -30,7 +30,8 @@ return new class extends Migration
             // terpisah (2026_09_12_..._add_family_id_foreign_to_citizens_table)
             // karena families dibuat setelah citizens secara kronologis.
             $table->uuid('family_id')->nullable();
-            $table->enum('family_role', ['kepala_keluarga', 'istri', 'suami', 'anak', 'famili_lain'])->nullable();
+            // SHDK resmi Disdukcapil (App\Enums\FamilyRole).
+            $table->enum('family_role', ['kepala_keluarga', 'suami', 'istri', 'anak', 'menantu', 'cucu', 'orang_tua', 'mertua', 'famili_lain', 'pembantu', 'lainnya'])->nullable();
             $table->uuid('father_id')->nullable();
             $table->uuid('mother_id')->nullable();
             $table->string('father_name_text')->nullable();
