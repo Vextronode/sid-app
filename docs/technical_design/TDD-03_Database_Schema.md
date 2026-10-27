@@ -336,7 +336,8 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 | category | VARCHAR(20) | NOT NULL, DEFAULT `persuratan` | `persuratan` (Persuratan Desa) \| `pelayanan` (Layanan Kependudukan); pengelompokan pilihan jenis surat, diset seeder |
 | template | TEXT | NULL | HTML ber-placeholder; NULL = Draft |
 | documents | JSON | NULL | Dokumen yang terbit bersama dokumen utama: `[{key, title, template, when?, orientation?}]` (`orientation: landscape` untuk formulir lebar, mis. F-1.01). `when` = syarat jawaban form (`{field, equals}` / `{field, in}` / `{field, not_in}` / `{field, filled}`, atau gabungan `{any: [...]}` / `{all: [...]}`); dibekukan di snapshot saat final approve |
-| requirement_info | TEXT | NULL | Informasi persyaratan (seed: NULL) |
+| requirement_info | TEXT | NULL | Informasi persyaratan ("Siapkan: ..."; seed Persuratan Desa dan Layanan Kependudukan: NULL) |
+| carry_documents | JSON | NULL | Layanan Kependudukan: `{forms: [...], attachments: [...]}` = formulir yang terbit dari pengajuan dan dokumen lain yang dibawa ke Disdukcapil (F-1.07 + KTP-el pemberi/penerima kuasa ditambahkan otomatis); tampil di bawah deskripsi saat jenis surat dipilih |
 | assigned_role | ENUM | NULL | `kasi_pemerintahan` \| `kaur_tu_umum`; NULL = keduanya. Menentukan akses surat selesai & Terapkan |
 | flow_id | BIGINT | FK → approval_flows.id, NOT NULL | |
 | validity_days | UNSIGNED INT | NULL | NULL = tidak expire |

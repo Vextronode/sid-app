@@ -60,6 +60,22 @@ LetterType:
       type: string
       nullable: true
       description: "Dipetakan dari kolom `requirement_info` (nullable)."
+    carry_documents:
+      type: object
+      nullable: true
+      description: |
+        Layanan Kependudukan: dokumen yang dibawa ke Disdukcapil. `forms` =
+        formulir yang terbit dari pengajuan ini (termasuk yang bersyarat,
+        ditulis "bila ..."), `attachments` = dokumen lain yang dilampirkan.
+        Ditampilkan di bawah deskripsi saat jenis surat dipilih. NULL untuk
+        Persuratan Desa.
+      properties:
+        forms:
+          type: array
+          items: { type: string }
+        attachments:
+          type: array
+          items: { type: string }
     flow_id:
       type: integer
       example: 1
@@ -319,3 +335,19 @@ PublicLetterType:
     requirements_info:
       type: string
       nullable: true
+    carry_documents:
+      type: object
+      nullable: true
+      description: |
+        Layanan Kependudukan: dokumen yang dibawa ke Disdukcapil. `forms` =
+        formulir yang terbit dari pengajuan ini (termasuk yang bersyarat,
+        ditulis "bila ..."), `attachments` = dokumen lain yang dilampirkan.
+        Ditampilkan di bawah deskripsi saat jenis surat dipilih. NULL untuk
+        Persuratan Desa.
+      properties:
+        forms:
+          type: array
+          items: { type: string }
+        attachments:
+          type: array
+          items: { type: string }
