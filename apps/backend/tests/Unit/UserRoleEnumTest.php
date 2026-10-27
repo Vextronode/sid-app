@@ -18,7 +18,7 @@ class UserRoleEnumTest extends TestCase
     public function values_match_the_database_enum_exactly(): void
     {
         $expected = [
-            'warga', 'rt', 'rw', 'kadus', 'kasi_pelayanan',
+            'warga', 'rt', 'rw', 'kadus', 'kasi_pemerintahan',
             'kaur_tu_umum', 'staf_sid', 'kepala_desa', 'sekretaris_desa',
         ];
 

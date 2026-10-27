@@ -1,0 +1,58 @@
+import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { describe, expect, it, vi } from 'vitest'
+
+import FamilyManagementPanel from './FamilyManagementPanel'
+
+const familyList = {
+  families: [
+    {
+      id: 'f-1',
+      no_kk_masked: '************0001',
+      head_of_family: { name: 'Kepala Rumah' },
+      members_count: 3,
+      family_address: 'Dusun Budiasih',
+      family_status: 'aktif',
+    },
+  ],
+  loading: false,
+  error: '',
+  totalItems: 1,
+  searchFamilies: vi.fn(),
+  currentPage: 1,
+  setCurrentPage: vi.fn(),
+  totalPages: 1,
+  pageSize: 10,
+  setPageSize: vi.fn(),
+  addFamily: vi.fn(),
+  editFamily: vi.fn(),
+  removeFamily: vi.fn(),
+}
+
+function renderPanel(props) {
+  render(
+    <MemoryRouter>
+      <FamilyManagementPanel familyList={familyList} {...props} />
+    </MemoryRouter>,
+  )
+}
+
+describe('FamilyManagementPanel', () => {
+  it('offers management actions to managers without the activity log for Kasi', () => {
+    renderPanel({ canViewHistory: false })
+
+    expect(screen.getByRole('button', { name: /Tambah KK/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Edit KK' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Hapus KK' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Riwayat perubahan' })).toBeNull()
+  })
+
+  it('is read-only for Kaur TU & Umum', () => {
+    renderPanel({ canEdit: false, canViewHistory: false })
+
+    expect(screen.getByText('Kepala Rumah')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Tambah KK/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Edit KK' })).toBeNull()
+    expect(screen.queryByRole('columnheader', { name: 'Aksi' })).toBeNull()
+  })
+})

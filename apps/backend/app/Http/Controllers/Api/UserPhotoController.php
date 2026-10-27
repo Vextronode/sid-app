@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 
 /**
  * Foto profil akun warga: oleh pemilik akun (/profile/photo) atau oleh
- * Petugas Desa (/users/{user}/photo). Lihat UserPhotoService untuk aturan
+ * Staf SIDUTama (/users/{user}/photo). Lihat UserPhotoService untuk aturan
  * akun yang sedang menjabat.
  */
 class UserPhotoController extends Controller

@@ -13,9 +13,9 @@ import {
 // POSISI YANG TIDAK TAMPIL DI PROFIL DESA
 // ==========================================
 // Selain ini semua jabatan ditampilkan, termasuk jenis jabatan yang
-// ditambahkan Petugas Desa.
+// ditambahkan Staf SIDUTama.
 
-// Staf aplikasi (staf_sid) ikut tampil, sama seperti di halaman publik.
+// Staf SIDUTama (staf_sid) ikut tampil, sama seperti di halaman publik.
 const HIDDEN_POSITIONS = ['rt', 'rw']
 
 // ==========================================
@@ -211,7 +211,7 @@ export function useProfilDesa() {
   // SEKDES, KASI, KAUR & STAF AKTIF
   // ==========================================
   // Semua perangkat selain Kepala Desa dan Kepala Dusun, termasuk jenis
-  // jabatan yang ditambahkan Petugas Desa. Sekretaris Desa selalu pertama.
+  // jabatan yang ditambahkan Staf SIDUTama. Sekretaris Desa selalu pertama.
   // ==========================================
 
   const perangkatList = useMemo(
@@ -222,7 +222,7 @@ export function useProfilDesa() {
           (first, second) =>
             Number(second.position === 'sekretaris_desa') -
               Number(first.position === 'sekretaris_desa') ||
-            // Staf aplikasi paling akhir, seperti urutan di halaman publik.
+            // Staf SIDUTama paling akhir, seperti urutan di halaman publik.
             Number(first.position === 'staf_sid') - Number(second.position === 'staf_sid'),
         ),
     [activeOfficials],

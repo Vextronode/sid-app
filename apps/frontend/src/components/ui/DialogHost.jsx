@@ -83,6 +83,7 @@ function DialogCard({ dialog }) {
         </span>
         <h2 id="sid-dialog-title">{title}</h2>
         {message && <p id="sid-dialog-message">{message}</p>}
+        {dialog.details?.length > 0 && <ChangeDetails groups={dialog.details} />}
 
         {kind === 'prompt' && (
           <div className="sid-notice-field">
@@ -127,6 +128,41 @@ function DialogCard({ dialog }) {
           </button>
         </div>
       </form>
+    </div>
+  )
+}
+
+// Daftar perubahan per kelompok (mis. per warga): Data, Lama, Baru.
+function ChangeDetails({ groups }) {
+  return (
+    <div className="sid-dialog-changes">
+      {groups.map((group) => (
+        <section key={group.title} className="sid-dialog-change" aria-label={group.title}>
+          <h3>{group.title}</h3>
+          {group.rows.length === 0 ? (
+            <p>Tidak ada data yang berubah.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Data</th>
+                  {group.showOld !== false && <th scope="col">Lama</th>}
+                  <th scope="col">Baru</th>
+                </tr>
+              </thead>
+              <tbody>
+                {group.rows.map((row) => (
+                  <tr key={row.label}>
+                    <th scope="row">{row.label}</th>
+                    {group.showOld !== false && <td>{row.from}</td>}
+                    <td>{row.to}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+      ))}
     </div>
   )
 }

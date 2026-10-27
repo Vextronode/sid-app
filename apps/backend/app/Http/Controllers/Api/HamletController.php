@@ -22,6 +22,11 @@ class HamletController extends Controller
         return (new HamletCollection($this->hamletService->getAllOrderedByName($request->user())))->response();
     }
 
+    public function areas(Request $request)
+    {
+        return response()->json(['data' => $this->hamletService->areaTree($request->user())]);
+    }
+
     public function store(StoreHamletRequest $request)
     {
         $this->authorize('create', Hamlet::class);

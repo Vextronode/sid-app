@@ -6,8 +6,8 @@ import { formatVillageName } from '@/shared/lib/villageName'
 
 // Lambang + nama desa + wilayah (A1, A2). Dipakai header publik, header role
 // (AppHeader), dan sidebar operator. `subtitle` menggantikan baris wilayah,
-// mis. "Admin Petugas Desa" di sidebar. Nama dan lambang dari data desa
-// (diatur Petugas Desa); selagi belum termuat, tempat lambang tetap dipesan
+// mis. "Admin Staf SIDUTama" di sidebar. Nama dan lambang dari data desa
+// (diatur Staf SIDUTama); selagi belum termuat, tempat lambang tetap dipesan
 // agar header tidak bergeser.
 export function BerandaBrand({ header, to = HAL_BERANDA, subtitle, className = 'bd-brand' }) {
   const { village } = usePublicVillageInfo()

@@ -10,7 +10,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class UpdateVillageProfileRequest extends FormRequest
 {
     /**
-     * UC-18. Aktor HANYA Petugas Desa (SID-ARCH-SYS-001 S2.3 - Kepala
+     * UC-18. Aktor HANYA Staf SIDUTama (SID-ARCH-SYS-001 S2.3 - Kepala
      * Desa/Sekretaris Desa tidak punya akses ke domain CMS meski
      * keduanya approver aktif di domain surat).
      */

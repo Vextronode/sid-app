@@ -79,7 +79,7 @@ export function deleteOfficialPhoto(officialId) {
   return api.delete(`/api/officials/${officialId}/photo`)
 }
 
-// Jenis jabatan desa tanpa akun (Kasi/Kaur/Staf), dikelola Petugas Desa.
+// Jenis jabatan desa tanpa akun (Kasi/Kaur/Staf), dikelola Staf SIDUTama.
 export function getOfficialPositionTypes() {
   return api.get('/api/official-position-types')
 }

@@ -11,12 +11,14 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\FamilySocioeconomicController;
 use App\Http\Controllers\Api\HamletController;
+use App\Http\Controllers\Api\IdentityController;
 use App\Http\Controllers\Api\InfoPageController;
 use App\Http\Controllers\Api\KadesApprovalController;
 use App\Http\Controllers\Api\LetterAttachmentController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
 use App\Http\Controllers\Api\LetterFulfillmentController;
+use App\Http\Controllers\Api\LetterResultController;
 use App\Http\Controllers\Api\LetterSignatureController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\NewsCategoryController;
@@ -96,8 +98,13 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::get('/user', [CurrentUserController::class, 'show']);
     Route::patch('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
+    // Anggota KK pemohon untuk isian family_members di form surat.
+    Route::get('/profile/family-members', [ProfileController::class, 'familyMembers']);
+    // Nama otomatis dari NIK di form surat (mis. saksi); dibatasi agar
+    // tidak dipakai menebak NIK.
+    Route::get('/profile/nik-lookup', [ProfileController::class, 'lookupNik'])->middleware('throttle:30,1');
     // Foto profil akun warga; akun yang menjabat ditolak (foto pejabat
-    // dikelola Petugas Desa).
+    // dikelola Staf SIDUTama).
     Route::post('/profile/photo', [UserPhotoController::class, 'storeOwn']);
     Route::delete('/profile/photo', [UserPhotoController::class, 'destroyOwn']);
 
@@ -111,13 +118,14 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::post('/signature-requests/{signatureRequest}/accept', [SignatureRequestController::class, 'accept']);
     Route::post('/signature-requests/{signatureRequest}/reject', [SignatureRequestController::class, 'reject']);
     Route::get('/signature-blocks', [SignatureRequestController::class, 'blocks']);
+    Route::post('/signature-blocks', [SignatureRequestController::class, 'block']);
     Route::delete('/signature-blocks/{signatureBlock}', [SignatureRequestController::class, 'unblock']);
 
     /*
     |----------------------------------------------------------------------
     | Approval Flows
     |----------------------------------------------------------------------
-    | Hanya baca untuk Petugas Desa. Semua tipe surat memakai satu flow
+    | Hanya baca untuk Staf SIDUTama. Semua tipe surat memakai satu flow
     | RT -> Kepala Desa/Sekdes yang diset developer lewat seeder; tidak
     | ada endpoint tulis.
     */
@@ -132,7 +140,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Approval Settings (UC-22)
     |----------------------------------------------------------------------
-    | Eksklusif Petugas Desa.
+    | Eksklusif Staf SIDUTama.
     */
     Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('approval-settings')
@@ -145,15 +153,16 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Citizens (UC-09)
     |----------------------------------------------------------------------
-    | Hanya Petugas Desa yang boleh create/update/delete/import data
-    | kependudukan lewat modul ini. Kasi/Kaur hanya boleh membaca daftar
-    | warga sebagai bahan pertimbangan; perubahan data oleh mereka hanya
-    | lewat surat (POST /letters/{letter}/fulfillment).
+    | Staf SIDUTama dan Kasi Pemerintahan (pemegang layanan kependudukan /
+    | Layanan Kependudukan) boleh create/update/delete/import data kependudukan.
+    | Kaur TU & Umum hanya membaca daftar warga dan KK sebagai bahan
+    | pertimbangan; perubahan data olehnya hanya lewat surat
+    | (POST /letters/{letter}/fulfillment).
     */
-    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPelayanan, UserRole::KaurTuUmum))
+    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum))
         ->get('/citizens', [CitizenController::class, 'index']);
 
-    Route::middleware(UserRole::middleware(UserRole::StafSid))
+    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan))
         ->prefix('citizens')
         ->group(function () {
             Route::post('/', [CitizenController::class, 'store']);
@@ -169,17 +178,23 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Families / Kartu Keluarga (UC-09 sub-flow)
     |----------------------------------------------------------------------
-    | Eksklusif Petugas Desa, sama seperti Citizens.
+    | Sama seperti Citizens: Staf SIDUTama dan Kasi Pemerintahan mengelola,
+    | Kaur TU & Umum hanya membaca.
     */
-    Route::middleware(UserRole::middleware(UserRole::StafSid))
+    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum))
         ->prefix('families')
         ->group(function () {
             Route::get('/', [FamilyController::class, 'index']);
-            Route::post('/', [FamilyController::class, 'store']);
             Route::get('/options', [FamilyController::class, 'options']);
             Route::get('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'show']);
-            Route::put('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'upsert']);
             Route::get('/{family}', [FamilyController::class, 'show']);
+        });
+
+    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan))
+        ->prefix('families')
+        ->group(function () {
+            Route::post('/', [FamilyController::class, 'store']);
+            Route::put('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'upsert']);
             Route::patch('/{family}', [FamilyController::class, 'update']);
             Route::delete('/{family}', [FamilyController::class, 'destroy']);
         });
@@ -196,10 +211,13 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::get('/letters', [ActivityLogController::class, 'letters']);
         });
 
+    // Daftar pekerjaan aktif juga dipakai pemohon surat untuk isian
+    // bertipe pekerjaan; kelola katalog tetap khusus Staf SID.
+    Route::get('/occupations', [OccupationController::class, 'index']);
+
     Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('occupations')
         ->group(function () {
-            Route::get('/', [OccupationController::class, 'index']);
             Route::post('/', [OccupationController::class, 'store']);
             Route::patch('/{id}', [OccupationController::class, 'update']);
             Route::delete('/{id}', [OccupationController::class, 'destroy']);
@@ -219,11 +237,23 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         Route::get('/letter-stats', [DashboardController::class, 'letterStats']);
     });
 
+    // NIK / No. KK utuh untuk tombol "lihat" di samping nilai tersamar; hak
+    // akses dan pencatatan di IdentityRevealService.
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/citizens/{citizen}/identity', [IdentityController::class, 'citizen']);
+        Route::get('/families/{family}/identity', [IdentityController::class, 'family']);
+        Route::get('/letters/{letter}/applicant-identity', [IdentityController::class, 'letterApplicant']);
+    });
+
+    // Pilihan Dusun -> RW -> RT desa untuk isian wilayah di form surat
+    // (semua peran); kelola wilayah tetap khusus Staf SID di bawah.
+    Route::get('/village-areas', [HamletController::class, 'areas']);
+
     /*
     |----------------------------------------------------------------------
     | Regions: Hamlets / RTs / RWs (UC-20)
     |----------------------------------------------------------------------
-    | Eksklusif Petugas Desa.
+    | Eksklusif Staf SIDUTama.
     */
     Route::middleware(UserRole::middleware(UserRole::StafSid))->group(function () {
         Route::prefix('hamlets')->group(function () {
@@ -254,11 +284,11 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     */
     // Lintas-role: dipakai warga saat submit (pilih jenis surat) dan
-    // Petugas Desa saat konfigurasi. ?include_inactive=1 (semua jenis
-    // termasuk Draft/Nonaktif) khusus Petugas Desa - IndexLetterTypeRequest.
+    // Staf SIDUTama saat konfigurasi. ?include_inactive=1 (semua jenis
+    // termasuk Draft/Nonaktif) khusus Staf SIDUTama - IndexLetterTypeRequest.
     Route::get('/letter-types', [LetterTypeController::class, 'index']);
 
-    // UC-21: edit konfigurasi tipe surat eksklusif Petugas Desa.
+    // UC-21: edit konfigurasi tipe surat eksklusif Staf SIDUTama.
     // PUT (bukan PATCH) mengikuti backlog - beda dari api_spec yang
     // menulis PATCH untuk endpoint ini.
     Route::middleware(UserRole::middleware(UserRole::StafSid))
@@ -283,7 +313,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         Route::get('/{letter}/attachments/{attachment}', [LetterAttachmentController::class, 'show']);
 
         // Terapkan perubahan data setelah final approve (Kasi/Kaur yang
-        // ditugaskan, atau Petugas Desa sebagai cadangan) - LetterPolicy::fulfill.
+        // ditugaskan, atau Staf SIDUTama sebagai cadangan) - LetterPolicy::fulfill.
         // Dokumen pendukung yang digenerate sistem dari isian form; dapat
         // di-preview maupun diunduh (?download=1) oleh siapa pun yang
         // berhak melihat suratnya.
@@ -292,7 +322,15 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         // Pemohon mengisi ulang slot tanda tangan pihak lain.
         Route::post('/{letter}/signatures/{slot}', [LetterSignatureController::class, 'store']);
 
+        // Hasil dari instansi luar setelah formulir pelayanan terbit: pemohon
+        // mengunggah (LetterPolicy::uploadResult), Kasi/Kaur yang ditugaskan
+        // atau Staf SIDUTama memverifikasi (LetterPolicy::reviewResult).
+        // Berkasnya dibuka lewat /{letter}/attachments/{attachment}.
+        Route::post('/{letter}/results', [LetterResultController::class, 'store']);
+        Route::patch('/{letter}/results/{result}', [LetterResultController::class, 'update']);
+
         Route::get('/{letter}/fulfillment', [LetterFulfillmentController::class, 'show']);
+        Route::post('/{letter}/fulfillment/preview', [LetterFulfillmentController::class, 'preview']);
         Route::post('/{letter}/fulfillment', [LetterFulfillmentController::class, 'store']);
 
         // Catatan refactor: sebelumnya closure inline yang langsung
@@ -307,7 +345,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | News (UC-19)
     |----------------------------------------------------------------------
-    | Eksklusif Petugas Desa (SID-ARCH-SYS-001 S2.3 - domain CMS tidak
+    | Eksklusif Staf SIDUTama (SID-ARCH-SYS-001 S2.3 - domain CMS tidak
     | meluas ke Kades/Sekdes meski satu "Tier" navigasi).
     */
     Route::middleware(UserRole::middleware(UserRole::StafSid))
@@ -365,7 +403,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Village Regulations (UC-24)
     |----------------------------------------------------------------------
-    | Eksklusif Petugas Desa.
+    | Eksklusif Staf SIDUTama.
     */
     Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('regulations')
@@ -380,7 +418,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Pengumuman beranda & Halaman Informasi
     |----------------------------------------------------------------------
-    | Eksklusif Petugas Desa. Satu pengumuman per desa (PUT menggantikan).
+    | Eksklusif Staf SIDUTama. Satu pengumuman per desa (PUT menggantikan).
     */
     Route::middleware(UserRole::middleware(UserRole::StafSid))->group(function () {
         Route::get('/announcement', [AnnouncementController::class, 'show']);
@@ -460,7 +498,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Users (UC-14)
     |----------------------------------------------------------------------
-    | Eksklusif Petugas Desa (Kelola User & Role).
+    | Eksklusif Staf SIDUTama (Kelola User & Role).
     */
     Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('users')
@@ -479,7 +517,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | Villages: Profile (UC-18)
     |----------------------------------------------------------------------
     | show(): lintas-role, dipakai halaman mana pun yang perlu tampilkan
-    | identitas desa. update(): EKSKLUSIF Petugas Desa - ditegaskan
+    | identitas desa. update(): EKSKLUSIF Staf SIDUTama - ditegaskan
     | ulang di SID-ARCH-SYS-001 S2.3, Kepala Desa & Sekretaris Desa
     | TIDAK memiliki akses ke domain CMS meski keduanya approver aktif
     | di domain Surat-Menyurat.
@@ -506,7 +544,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |--------------------------------------------------------------------------
     | Jenis Jabatan Desa Tanpa Akun
     |--------------------------------------------------------------------------
-    | Eksklusif Petugas Desa. Jabatan yang punya akun tetap di enum
+    | Eksklusif Staf SIDUTama. Jabatan yang punya akun tetap di enum
     | OfficialPosition dan tidak dikelola dari sini.
     */
     Route::middleware(UserRole::middleware(UserRole::StafSid))
@@ -522,7 +560,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |--------------------------------------------------------------------------
     | Village Org (Organisasi Non-Struktural: BPD/BUMDES/LPM/Karang Taruna/PKK)
     |--------------------------------------------------------------------------
-    | UC-23. Eksklusif Petugas Desa. Jabatan (village_org_positions) berupa
+    | UC-23. Eksklusif Staf SIDUTama. Jabatan (village_org_positions) berupa
     | slot tetap Ketua/Wakil Ketua/Anggota yang dibuat otomatis, jadi hanya
     | bisa dibaca; anggota (village_org_members) dikelola lewat route nested
     | sesuai api_spec paths/village-org/*.yaml.

@@ -26,6 +26,8 @@ class ApplyLetterFulfillmentRequest extends FormRequest
             'values.*' => ['nullable'],
             // Koreksi NIK warga yang datanya diubah, bila subjeknya bukan pemohon.
             'subject_nik' => ['nullable', 'digits:16'],
+            // Catatan Kasi/Kaur untuk aksi data `manual` ("Tandai selesai").
+            'notes' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

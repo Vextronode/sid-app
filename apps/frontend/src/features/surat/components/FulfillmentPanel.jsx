@@ -1,10 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { applyFulfillment, getFulfillmentProposal } from '../api/letterExtrasApi'
-import { confirmDialog } from '@/shared/lib/dialog'
+import { confirmFulfillment } from '../utils/confirmFulfillment'
+import { SemiManualFulfillmentForm } from './SemiManualFulfillmentForm'
+import { MemberChangesForm } from './MemberChangesForm'
+import { UpdateCitizensForm } from './UpdateCitizensForm'
+import { RestructureFamilyForm } from './RestructureFamilyForm'
 
 const ACTION_TITLES = {
   update_citizen: 'Perubahan Data Warga',
   create_citizen: 'Penambahan Data Warga',
+  deactivate_members: 'Penonaktifan Anggota Keluarga',
+  update_members: 'Perubahan Data Anggota Keluarga',
+  update_citizens: 'Perubahan Data Warga',
+  restructure_family: 'Perubahan Susunan KK',
+  adopt_child: 'Pengangkatan Anak',
+  manual: 'Pembaruan Data Penduduk & KK',
 }
 
 function serverMessage(error, fallback) {
@@ -27,12 +37,17 @@ function display(value) {
 }
 
 /**
- * "Terapkan": Kasi/Kaur yang ditugaskan (atau Petugas Desa sebagai
+ * "Terapkan": Kasi/Kaur yang ditugaskan (atau Staf SIDUTama sebagai
  * cadangan) meninjau nilai yang diusulkan warga, boleh mengoreksinya, lalu
  * menerapkannya ke data kependudukan. Hanya kolom yang ditetapkan untuk
- * jenis surat itu yang tampil.
+ * jenis surat itu yang tampil. Sebelum disimpan, pop up menampilkan daftar
+ * perubahan (lama -> baru) dari server untuk dikonfirmasi.
+ *
+ * `autoStart` (hasil instansi baru diterima): Terapkan langsung dimulai bila
+ * tidak ada isian wajib yang masih kosong (mis. NIK atau No. KK baru dari
+ * dokumen terbitan); bila ada, Kasi/Kaur diminta melengkapinya dulu.
  */
-export function FulfillmentPanel({ letterId, onApplied }) {
+export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
   const [proposal, setProposal] = useState(null)
   const [values, setValues] = useState({})
   const [subjectNik, setSubjectNik] = useState('')
@@ -40,6 +55,9 @@ export function FulfillmentPanel({ letterId, onApplied }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [needsInput, setNeedsInput] = useState(false)
+  const section = useRef(null)
+  const autoStarted = useRef(false)
 
   useEffect(() => {
     let active = true
@@ -73,17 +91,6 @@ export function FulfillmentPanel({ letterId, onApplied }) {
   const handleApply = async (event) => {
     event.preventDefault()
 
-    const confirmed = await confirmDialog({
-      title: 'Terapkan perubahan ke data kependudukan?',
-      message: `Data warga${
-        proposal?.subject && subjectNik.trim() ? ` ber-NIK ${subjectNik.trim()}` : ''
-      } akan diperbarui sesuai nilai di tabel. Perubahan hanya dapat diterapkan sekali.`,
-      confirmLabel: 'Terapkan',
-      tone: 'primary',
-    })
-
-    if (!confirmed) return
-
     setSaving(true)
     setError('')
 
@@ -91,13 +98,12 @@ export function FulfillmentPanel({ letterId, onApplied }) {
     const filled = Object.fromEntries(
       Object.entries(values).filter(([, value]) => value !== '' && value !== null),
     )
+    const nik = proposal?.subject ? subjectNik.trim() : null
 
     try {
-      const response = await applyFulfillment(
-        letterId,
-        filled,
-        proposal?.subject ? subjectNik.trim() : null,
-      )
+      if (!(await confirmFulfillment(letterId, filled, nik))) return
+
+      const response = await applyFulfillment(letterId, filled, nik)
 
       setMessage(response?.message ?? 'Perubahan data berhasil diterapkan.')
       setProposal((current) => ({ ...current, fulfilled_at: new Date().toISOString() }))
@@ -108,6 +114,33 @@ export function FulfillmentPanel({ letterId, onApplied }) {
       setSaving(false)
     }
   }
+
+  useEffect(() => {
+    if (!autoStart || autoStarted.current || loading || !proposal || proposal.fulfilled_at) return
+    // "Tandai selesai" (manual) tetap dikonfirmasi sendiri oleh Kasi/Kaur.
+    if (proposal.action === 'manual') return
+
+    autoStarted.current = true
+
+    // Isian dari dokumen terbitan yang belum diisi: NIK warga baru, No. KK baru.
+    const missing =
+      ['create_citizen', 'restructure_family'].includes(proposal.action) &&
+      (proposal.fields ?? []).some(
+        (field) => ['nik', 'no_kk'].includes(field.column) && !String(values[field.column] ?? ''),
+      )
+
+    if (missing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNeedsInput(true)
+
+      return
+    }
+
+    const form = section.current?.querySelector('form')
+    const submit = form?.querySelector('button[type="submit"]')
+
+    if (form && !submit?.disabled) form.requestSubmit()
+  }, [autoStart, loading, proposal, values])
 
   if (loading) {
     return <p className="sid-modal-note-text">Memuat usulan perubahan data...</p>
@@ -123,10 +156,24 @@ export function FulfillmentPanel({ letterId, onApplied }) {
 
   const done = Boolean(proposal.fulfilled_at)
   const isCreate = proposal.action === 'create_citizen'
+  const isSemiManual = ['deactivate_members', 'manual'].includes(proposal.action)
+
+  const handleSemiManualDone = (response) => {
+    setMessage(response?.message ?? 'Perubahan data berhasil disimpan.')
+    setProposal((current) => ({ ...current, fulfilled_at: new Date().toISOString() }))
+    onApplied?.(response?.data)
+  }
 
   return (
-    <section className="sid-modal-note" aria-label="Terapkan perubahan data">
+    <section ref={section} className="sid-modal-note" aria-label="Terapkan perubahan data">
       <p className="sid-modal-note-label">{ACTION_TITLES[proposal.action] ?? 'Perubahan Data'}</p>
+
+      {needsInput && !done && (
+        <p role="status" className="sid-warning-box">
+          Hasil sudah diterima. Isi NIK/No. KK dari dokumen terbitan Disdukcapil di bawah, lalu klik
+          Terapkan.
+        </p>
+      )}
 
       {message && (
         <p role="status" className="sid-admin-alert sid-admin-alert-success">
@@ -141,14 +188,33 @@ export function FulfillmentPanel({ letterId, onApplied }) {
 
       {done ? (
         <p className="sid-modal-note-text">
-          Sudah diterapkan pada {new Date(proposal.fulfilled_at).toLocaleString('id-ID')}.
+          Sudah {proposal.action === 'manual' ? 'ditandai selesai' : 'diterapkan'} pada{' '}
+          {new Date(proposal.fulfilled_at).toLocaleString('id-ID')}.
         </p>
+      ) : proposal.action === 'update_members' ? (
+        <MemberChangesForm letterId={letterId} proposal={proposal} onDone={handleSemiManualDone} />
+      ) : ['restructure_family', 'adopt_child'].includes(proposal.action) ? (
+        <RestructureFamilyForm
+          letterId={letterId}
+          proposal={proposal}
+          onDone={handleSemiManualDone}
+        />
+      ) : proposal.action === 'update_citizens' ? (
+        <UpdateCitizensForm letterId={letterId} proposal={proposal} onDone={handleSemiManualDone} />
+      ) : isSemiManual ? (
+        <SemiManualFulfillmentForm
+          letterId={letterId}
+          proposal={proposal}
+          onDone={handleSemiManualDone}
+        />
       ) : (
         <form onSubmit={handleApply}>
           <p className="sid-modal-note-text">
             Tinjau nilai yang diusulkan warga. Anda boleh mengoreksinya sebelum diterapkan. Kolom
             yang dikosongkan tidak diubah.
           </p>
+
+          {proposal.family && <p className="sid-modal-note-text">{proposal.family.description}</p>}
 
           {proposal.subject && (
             <div className="sid-form-group">
@@ -187,11 +253,31 @@ export function FulfillmentPanel({ letterId, onApplied }) {
                   <tr key={field.column}>
                     <td>{field.label}</td>
                     {!isCreate && <td>{display(field.current)}</td>}
-                    <td>{field.fixed ? '-' : display(field.proposed)}</td>
+                    <td>{field.fixed ? '-' : (field.proposed_label ?? display(field.proposed))}</td>
                     <td>
                       {field.fixed ? (
                         // Nilai tetap dari jenis surat; tidak dapat dikoreksi.
                         <strong>{field.display ?? display(field.proposed)}</strong>
+                      ) : field.options ? (
+                        // Kolom berkode (jenis kelamin, RT, agama, ...): pilihan berlabel.
+                        <select
+                          className="sid-select"
+                          aria-label={`Nilai diterapkan untuk ${field.label}`}
+                          value={String(values[field.column] ?? '')}
+                          onChange={(event) =>
+                            setValues((current) => ({
+                              ...current,
+                              [field.column]: event.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Tidak diubah</option>
+                          {field.options.map((option) => (
+                            <option key={option.value} value={String(option.value)}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
                       ) : (
                         <input
                           className="sid-input"

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Citizen;
 use App\Models\Letter;
 use App\Models\LetterType;
+use App\Models\Occupation;
 use App\Models\User;
 use App\Models\Village;
 use App\Support\LetterValueFormatter;
@@ -22,7 +23,7 @@ use Tests\Concerns\BuildsLetterScenario;
 use Tests\TestCase;
 
 /**
- * Surat A01-A10 hasil seeder dirender sesuai template fisik kantor desa.
+ * Surat A01-A11 hasil seeder dirender sesuai template fisik kantor desa.
  */
 class SeededLetterRenderingTest extends TestCase
 {
@@ -103,6 +104,98 @@ class SeededLetterRenderingTest extends TestCase
         $this->assertStringNotContainsString('________', $html);
     }
 
+    public function test_inheritance_letter_names_the_applicant_as_heir_of_the_deceased(): void
+    {
+        $occupation = Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Petani']);
+        $trader = Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Pedagang']);
+        $this->applicant['citizen']->update(['occupation_id' => $occupation->id]);
+
+        $html = $this->issue('A11', [
+            ...$this->inheritancePayload(),
+            'pekerjaan_almarhum' => (string) $trader->id,
+        ], $letterId);
+
+        $this->assertStringContainsString('SURAT KETERANGAN AHLI WARIS', $html);
+        $this->assertStringContainsString('Yang bertanda tangan dibawah ini Kepala Desa Sukamaju Kecamatan Cijulang Kabupaten Pangandaran menerangkan dengan sebenarnya bahwa :', $html);
+        // Template fisik tidak memakai blok Nama/Jabatan penanda tangan.
+        $this->assertStringNotContainsString('Jabatan', $html);
+        // Ahli waris = pemohon, lengkap dengan pekerjaannya dari data warga.
+        $this->assertStringContainsString('Pelapor Hidup', $html);
+        $this->assertStringContainsString('Petani', $html);
+        $this->assertStringContainsString('Almarhum Fulan', $html);
+        $this->assertStringContainsString('Ciamis, 17 Mei 1950', $html);
+        $this->assertStringContainsString('Pedagang', $html);
+        $this->assertStringContainsString('pada hari Jumat, 9 Oktober 2026 dan dimakamkan di TPU Cibenda', $html);
+        $this->assertStringNotContainsString('________', $html);
+
+        // Keterangan ahli waris berlaku selamanya.
+        $this->assertNull(Letter::query()->findOrFail($letterId)->expires_at);
+        // Isian pekerjaan disimpan sebagai nama, bukan id katalog.
+        $this->assertSame('Pedagang', Letter::query()->findOrFail($letterId)->payload['pekerjaan_almarhum']);
+    }
+
+    public function test_other_occupation_is_tidied_and_only_printed_on_the_letter(): void
+    {
+        Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Pedagang']);
+        $catalogCount = Occupation::query()->count();
+
+        $html = $this->issue('A11', [
+            ...$this->inheritancePayload(),
+            'pekerjaan_almarhum' => 'lainnya',
+            'pekerjaan_almarhum_lainnya' => '  buruh   harian lepas / guru PNS ',
+        ], $letterId);
+
+        $this->assertStringContainsString('Buruh Harian Lepas / Guru PNS', $html);
+        $payload = Letter::query()->findOrFail($letterId)->payload;
+        $this->assertSame('Buruh Harian Lepas / Guru PNS', $payload['pekerjaan_almarhum']);
+        $this->assertArrayNotHasKey('pekerjaan_almarhum_lainnya', $payload);
+        // Teks Lainnya tidak menambah katalog pekerjaan.
+        $this->assertSame($catalogCount, Occupation::query()->count());
+    }
+
+    public function test_occupation_field_accepts_only_active_catalog_entries_of_the_village_or_other_text(): void
+    {
+        $inactive = Occupation::factory()->create(['village_id' => $this->village->id, 'is_active' => false]);
+        $otherVillage = Occupation::factory()->create();
+
+        foreach ([(string) $inactive->id, (string) $otherVillage->id, 'Petani'] as $value) {
+            $this->actingAs($this->applicant['user'])
+                ->postJson('/api/letters', [
+                    'letter_type_id' => $this->letterType('A11')->id,
+                    'payload' => [...$this->inheritancePayload(), 'pekerjaan_almarhum' => $value],
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('payload.pekerjaan_almarhum');
+        }
+
+        $this->actingAs($this->applicant['user'])
+            ->postJson('/api/letters', [
+                'letter_type_id' => $this->letterType('A11')->id,
+                'payload' => [...$this->inheritancePayload(), 'pekerjaan_almarhum' => 'lainnya'],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('payload.pekerjaan_almarhum_lainnya');
+    }
+
+    /**
+     * Isian A11 selain pekerjaan almarhum.
+     *
+     * @return array<string, string>
+     */
+    private function inheritancePayload(): array
+    {
+        return [
+            'nama_almarhum' => 'Almarhum Fulan',
+            'tempat_lahir_almarhum' => 'Ciamis',
+            'tanggal_lahir_almarhum' => '1950-05-17',
+            'nik_almarhum' => '3207011705500001',
+            'jenis_kelamin_almarhum' => 'L',
+            'alamat_almarhum' => 'Dusun Cibenda RT 001/RW 013',
+            'tanggal_meninggal' => '2026-10-09',
+            'tempat_pemakaman' => 'Cibenda',
+        ];
+    }
+
     public function test_income_letter_uses_classification_510_and_spells_out_the_amount(): void
     {
         $html = $this->issue('A03', [
@@ -155,9 +248,9 @@ class SeededLetterRenderingTest extends TestCase
         $this->assertStringContainsString('tercatat dalam Akta Kelahiran Nomor : 123/AK/1990 atas nama <strong>SITI AMINAH</strong>', $html);
     }
 
-    public function test_birth_letter_lists_both_parents_and_child_then_kasi_adds_the_child(): void
+    public function test_birth_letter_lists_both_parents_and_child_then_kaur_adds_the_child(): void
     {
-        $kasi = $this->makeOfficialUser('kasi_pelayanan', $this->village);
+        $kaur = $this->makeOfficialUser('kaur_tu_umum', $this->village);
         $payload = [
             'nama_pasangan' => 'Ibu Contoh',
             'tempat_lahir_pasangan' => 'Pangandaran',
@@ -180,13 +273,13 @@ class SeededLetterRenderingTest extends TestCase
         $this->assertStringContainsString('Anak Contoh', $html);
         $this->assertStringContainsString('Pangandaran, 1 Oktober 2026', $html);
 
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->getJson("/api/letters/{$letterId}/fulfillment")
             ->assertOk()
             ->assertJsonPath('data.action', 'create_citizen')
             ->assertJsonPath('data.fields.1.proposed', 'Anak Contoh');
 
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => ['nik' => '3207014110260001']])
             ->assertOk();
 
@@ -303,7 +396,7 @@ class SeededLetterRenderingTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.nik', $nik);
 
-        // Petugas Desa melihat daftar pengguna tanpa NIK utuh milik orang lain.
+        // Staf SIDUTama melihat daftar pengguna tanpa NIK utuh milik orang lain.
         $list = $this->actingAs($petugas['user'])->getJson('/api/users')->assertOk();
         $row = collect($list->json('data'))->firstWhere('id', $this->applicant['user']->id);
 
@@ -341,13 +434,14 @@ class SeededLetterRenderingTest extends TestCase
             ->assertJsonMissingValidationErrors(['payload.sebab', 'payload.nik_almarhum']);
     }
 
-    public function test_burial_letter_lets_kasi_deactivate_the_deceased_citizen(): void
+    public function test_burial_letter_lets_kaur_deactivate_the_deceased_citizen(): void
     {
-        $kasi = $this->makeOfficialUser('kasi_pelayanan', $this->village);
+        $kaur = $this->makeOfficialUser('kaur_tu_umum', $this->village);
         $deceased = Citizen::factory()->create([
             'village_id' => $this->village->id,
             'nik' => '3207011705500001',
             'name' => 'Almarhum Fulan',
+            'gender' => 'L',
             'is_active' => true,
         ]);
         $deceasedAccount = User::factory()->create([
@@ -370,7 +464,7 @@ class SeededLetterRenderingTest extends TestCase
 
         // NIK almarhum tidak diisi pemohon: Kasi wajib melengkapinya.
         $this->issue('A07', $payload, $withoutNik);
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->getJson("/api/letters/{$withoutNik}/fulfillment")
             ->assertOk()
             ->assertJsonPath('data.action', 'update_citizen')
@@ -378,16 +472,16 @@ class SeededLetterRenderingTest extends TestCase
             ->assertJsonPath('data.fields.0.column', 'is_active')
             ->assertJsonPath('data.fields.0.fixed', true)
             ->assertJsonPath('data.fields.0.display', 'Dinonaktifkan (meninggal dunia)');
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$withoutNik}/fulfillment")
             ->assertStatus(422)
             ->assertJsonValidationErrors(['subject_nik']);
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$withoutNik}/fulfillment", ['subject_nik' => '3299999999999999'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['subject_nik']);
         // Nilai tetap dari jenis surat tidak dapat diganti.
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$withoutNik}/fulfillment", [
                 'subject_nik' => '3207011705500001',
                 'values' => ['is_active' => true],
@@ -399,7 +493,7 @@ class SeededLetterRenderingTest extends TestCase
         // Pemohon (pelapor) tidak ikut berubah.
         $this->assertTrue($this->applicant['citizen']->fresh()->is_active);
 
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$withoutNik}/fulfillment", ['subject_nik' => '3207011705500001'])
             ->assertOk();
 
@@ -418,13 +512,14 @@ class SeededLetterRenderingTest extends TestCase
             'village_id' => $this->village->id,
             'nik' => '3207011705500002',
             'name' => 'Almarhumah Fulanah',
+            'gender' => 'P',
         ]);
-        $this->issue('A07', [...$payload, 'nik_almarhum' => '3207011705500002'], $withNik);
-        $this->actingAs($kasi['user'])
+        $this->issue('A07', [...$payload, 'nik_almarhum' => '3207011705500002', 'jenis_kelamin_almarhum' => 'P'], $withNik);
+        $this->actingAs($kaur['user'])
             ->getJson("/api/letters/{$withNik}/fulfillment")
             ->assertJsonPath('data.subject.found', true)
             ->assertJsonPath('data.subject.name', 'Almarhumah Fulanah');
-        $this->actingAs($kasi['user'])
+        $this->actingAs($kaur['user'])
             ->postJson("/api/letters/{$withNik}/fulfillment")
             ->assertOk();
         $this->assertFalse($other->fresh()->is_active);

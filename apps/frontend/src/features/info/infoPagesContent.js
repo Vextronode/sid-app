@@ -3,7 +3,7 @@
 // halaman ini, jadi revisi cukup di sini tanpa menyentuh komponen.
 //
 // Bagian khas desa tidak ditulis di sini:
-// - isian halaman ({ppid_officer}, {periodic_info}, ...) diatur Petugas Desa
+// - isian halaman ({ppid_officer}, {periodic_info}, ...) diatur Staf SIDUTama
 //   di menu Halaman Informasi (skema: backend App\Support\InfoPageFields);
 // - identitas desa ({village.name}, {village.phone}, ...) dari data desa.
 // Isian yang masih kosong tampil sebagai penanda kuning dengan label dari

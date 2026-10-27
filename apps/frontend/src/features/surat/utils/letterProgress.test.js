@@ -11,6 +11,31 @@ describe('getLetterProgress', () => {
     })
   })
 
+  it('continues issued service forms with the upload and verification stages', () => {
+    expect(
+      getLetterProgress({ status: 'approved', result_stage: 'awaiting_upload' }),
+    ).toMatchObject({
+      tone: 'pending',
+      current: 4,
+      stages: ['Diajukan', 'RT', 'Desa', 'Terbit', 'Unggah hasil', 'Verifikasi'],
+    })
+    expect(getLetterProgress({ status: 'approved', result_stage: 'under_review' })).toMatchObject({
+      current: 5,
+    })
+    expect(getLetterProgress({ status: 'approved', result_stage: 'accepted' })).toMatchObject({
+      tone: 'done',
+      current: 6,
+    })
+    expect(getLetterProgress({ status: 'pending', current_step_order: 1 }).stages).toHaveLength(4)
+    expect(
+      getLetterProgress({
+        status: 'approved',
+        result_stage: 'awaiting_upload',
+        result_rejected: true,
+      }).message,
+    ).toMatch(/ditolak desa.*unggah ulang/)
+  })
+
   it('warns when an issued letter has expired', () => {
     expect(getLetterProgress({ status: 'approved', is_expired: true }).message).toMatch(
       /masa berlakunya sudah habis/,

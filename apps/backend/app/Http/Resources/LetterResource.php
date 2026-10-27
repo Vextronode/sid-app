@@ -2,6 +2,9 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\LetterResultStage;
+use App\Models\LetterAttachment;
+use App\Support\LetterDocuments;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -52,12 +55,32 @@ class LetterResource extends JsonResource
             'signed_by_official_id' => $this->signed_by_official_id,
             'fulfilled_at' => $this->fulfilled_at,
             'fulfilled_by' => $this->fulfilled_by,
-            // Surat approved dengan aksi data yang belum diterapkan Kasi/Kaur.
+            // Surat approved dengan aksi data yang belum diterapkan Kasi/Kaur;
+            // bila jenisnya mewajibkan unggah hasil, baru setelah hasil diterima.
             'needs_fulfillment' => $this->when(
                 $this->relationLoaded('letterType') && $this->letterType,
                 fn () => $this->enumValue($this->status) === 'approved'
                     && $this->fulfilled_at === null
                     && ! in_array($this->enumValue($this->letterType->data_action), [null, 'none'], true)
+                    && in_array($this->resource->resultStage(), [null, LetterResultStage::Accepted], true)
+            ),
+            // Tahap unggah hasil dari instansi luar (null bila tidak berlaku).
+            'result_stage' => $this->when(
+                $this->relationLoaded('letterType') && $this->letterType,
+                fn () => $this->resource->resultStage()?->value
+            ),
+            'result_upload_hint' => $this->when(
+                $this->relationLoaded('letterType') && $this->letterType,
+                fn () => $this->letterType->result_upload_hint
+            ),
+            'results' => LetterResultResource::collection($this->whenLoaded('results')),
+            'can_upload_result' => $this->when(
+                $this->relationLoaded('letterType') && $this->letterType && $request->user() !== null,
+                fn () => $request->user()->can('uploadResult', $this->resource)
+            ),
+            'can_review_result' => $this->when(
+                $this->relationLoaded('letterType') && $this->letterType && $request->user() !== null,
+                fn () => $request->user()->can('reviewResult', $this->resource)
             ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
@@ -65,7 +88,13 @@ class LetterResource extends JsonResource
             'letter_type' => new LetterTypeResource($this->whenLoaded('letterType')),
             'approvals' => LetterApprovalResource::collection($this->whenLoaded('approvals')),
             'status_logs' => LetterStatusLogResource::collection($this->whenLoaded('statusLogs')),
-            'attachments' => LetterAttachmentResource::collection($this->whenLoaded('attachments')),
+            // Berkas hasil dari instansi tampil di `results`, bukan di lampiran.
+            'attachments' => $this->when(
+                $this->relationLoaded('attachments'),
+                fn () => LetterAttachmentResource::collection(
+                    $this->attachments->where('kind', '!=', LetterAttachment::KIND_RESULT)->values()
+                )
+            ),
             // Surat belum masuk ke approver karena masih ada slot tanda
             // tangan yang kosong (current_step_order 0).
             'awaiting_signatures' => $this->enumValue($this->status) === 'pending'
@@ -75,6 +104,20 @@ class LetterResource extends JsonResource
                 $this->relationLoaded('signatures'),
                 fn () => LetterSignatureResource::collection(
                     $this->signatures->sortBy('id')->keyBy('slot_key')->values()
+                )
+            ),
+            // Dokumen yang terbit untuk surat ini (utama + yang terbit bersama
+            // sesuai jawaban form); diunduh/dipratinjau lewat ?document=key.
+            'documents' => $this->when(
+                $this->relationLoaded('letterType') && $this->letterType,
+                fn () => array_map(
+                    fn (array $document): array => ['key' => $document['key'], 'title' => $document['title']],
+                    LetterDocuments::applicable(
+                        (string) ($this->snapshot['title'] ?? $this->letterType->name),
+                        null,
+                        $this->snapshot['documents'] ?? $this->letterType->documents,
+                        is_array($this->payload) ? $this->payload : [],
+                    ),
                 )
             ),
             'has_supporting_document' => $this->when(

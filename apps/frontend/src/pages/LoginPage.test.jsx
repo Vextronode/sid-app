@@ -63,7 +63,7 @@ describe('LoginPage redirect after login', () => {
     ['rw', '/admin/dashboard-surat-rw'],
     ['kadus', '/admin/dashboard-surat-kadus'],
     ['kepala_desa', '/admin/dashboard-surat-kades'],
-    ['kasi_pelayanan', '/admin/operator-desa'],
+    ['kasi_pemerintahan', '/admin/operator-desa'],
     ['kaur_tu_umum', '/admin/operator-desa'],
     ['staf_sid', '/admin/operator-desa'],
     ['warga', '/daftar-surat'],

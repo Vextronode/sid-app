@@ -36,7 +36,7 @@ ERD mencakup 29 tabel domain inti. Sumber kebenaran adalah migration di `apps/ba
 | head_name | VARCHAR(100) | NULL | Nama kepala desa |
 | address | VARCHAR(255) | NULL | Alamat kantor desa |
 | phone | VARCHAR(20) | NULL | Nomor telepon |
-| area_ha | DECIMAL(10,3) | NULL | Luas wilayah (hektare), diisi Petugas Desa |
+| area_ha | DECIMAL(10,3) | NULL | Luas wilayah (hektare), diisi Staf SIDUTama |
 | stamp_img | VARCHAR(255) | NULL | Path stempel desa pada private storage; satu desa memiliki satu stempel |
 | logo | VARCHAR(255) | NULL | Path aset frontend (`/assets/...`, dari seeder) atau path unggahan di disk public (`village-media/{id}/...`) |
 | hero_image | VARCHAR(255) | NULL | Foto beranda; aturan nilai sama dengan `logo` |
@@ -109,10 +109,10 @@ Password menggunakan Argon2id. Seluruh role sistem disimpan di tabel ini.
 | name | VARCHAR(255) | NOT NULL | Nama lengkap pengguna |
 | username | VARCHAR(30) | UNIQUE, NOT NULL | Identifier login; dibuat saat registrasi dan dapat diubah di profil |
 | email | VARCHAR(255) | UNIQUE, NULL | Email opsional; bukan identifier login |
-| photo_img | VARCHAR(255) | NULL | Path foto profil akun di disk public (`user-photos/{village_id}/...`). Hanya dipakai dan dapat diubah selama role `warga` (oleh pemilik atau Petugas Desa); akun yang menjabat memakai `officials.photo_img` |
+| photo_img | VARCHAR(255) | NULL | Path foto profil akun di disk public (`user-photos/{village_id}/...`). Hanya dipakai dan dapat diubah selama role `warga` (oleh pemilik atau Staf SIDUTama); akun yang menjabat memakai `officials.photo_img` |
 | password | VARCHAR(255) | NOT NULL | Hash Argon2id |
 | must_change_password | BOOLEAN | DEFAULT false | Memaksa penggantian setelah reset password sementara |
-| role | ENUM | NULL | `warga` \| `rt` \| `rw` \| `kadus` \| `kasi_pelayanan` \| `kaur_tu_umum` \| `staf_sid` \| `kepala_desa` \| `sekretaris_desa`. Nullable di migration; diisi saat registrasi atau assignment jabatan |
+| role | ENUM | NULL | `warga` \| `rt` \| `rw` \| `kadus` \| `kasi_pemerintahan` \| `kaur_tu_umum` \| `staf_sid` \| `kepala_desa` \| `sekretaris_desa`. Nullable di migration; diisi saat registrasi atau assignment jabatan |
 | village_id | UUID | FK → villages.id, NULL | NULL untuk akun lintas desa |
 | citizen_id | UUID | FK → citizens.id, NULL | Link ke data kependudukan; NULL untuk akun teknis tanpa data kependudukan |
 | is_active | BOOLEAN | NOT NULL | Status akun aktif/nonaktif; tidak ada default di migration, wajib diisi saat create |
@@ -120,7 +120,7 @@ Password menggunakan Argon2id. Seluruh role sistem disimpan di tabel ini.
 | remember_token | VARCHAR(100) | NULL | |
 | created_at, updated_at | TIMESTAMP | | |
 
-- `sekretaris_desa`: diberikan saat Petugas Desa assign jabatan Sekdes di `officials`. Scope dashboard identik `kepala_desa`. Saat rotasi jabatan Sekdes, `users.role` otomatis diupdate.
+- `sekretaris_desa`: diberikan saat Staf SIDUTama assign jabatan Sekdes di `officials`. Scope dashboard identik `kepala_desa`. Saat rotasi jabatan Sekdes, `users.role` otomatis diupdate.
 - `kadus`: tetap ada di ENUM untuk kompatibilitas akun (login/logout/lihat status), tidak lagi punya relevansi terhadap `flow_steps.approver_position`.
 - `staf_sid`: staf pemegang aplikasi desa (dulu `petugas_desa`), hanya satu aktif per desa dan diganti lewat rotasi. Label tampilannya "Staf {nama aplikasi}" dari `config('sid.app_name')` (env `SID_APP_NAME`), sehingga nama aplikasi dapat diganti tanpa mengubah data.
 
@@ -148,7 +148,7 @@ Kolom `nik` dienkripsi dengan cast Laravel `encrypted`; `address` disimpan sebag
 | domicile_status | ENUM | NOT NULL, DEFAULT 'menetap' | `menetap` \| `merantau_dalam_negeri` \| `merantau_luar_negeri` \| `tki`. Murni informatif, tidak mempengaruhi hak akses |
 | current_domicile | VARCHAR(150) | NULL | Alamat domisili saat ini jika tidak menetap |
 | family_id | UUID | FK → families.id, NULL | NULL = belum/tidak tergabung KK manapun |
-| family_role | ENUM | NULL | `kepala_keluarga` \| `istri` \| `suami` \| `anak` \| `famili_lain` |
+| family_role | ENUM | NULL | SHDK resmi Disdukcapil: `kepala_keluarga` \| `suami` \| `istri` \| `anak` \| `menantu` \| `cucu` \| `orang_tua` \| `mertua` \| `famili_lain` \| `pembantu` \| `lainnya` |
 | father_id | UUID | FK → citizens.id, NULL | Self-reference, untuk fitur pohon keluarga |
 | mother_id | UUID | FK → citizens.id, NULL | Self-reference |
 | father_name_text | VARCHAR(255) | NULL | Fallback teks bebas jika `father_id` NULL |
@@ -156,6 +156,15 @@ Kolom `nik` dienkripsi dengan cast Laravel `encrypted`; `address` disimpan sebag
 | blood_type | ENUM | NULL | `A` \| `B` \| `AB` \| `O` \| `tidak_tahu` |
 | residency_type | ENUM | NOT NULL, DEFAULT 'lokal' | `lokal` \| `pendatang`. Pembeda murni kolom, **bukan** tabel/entitas terpisah |
 | origin_region | VARCHAR(255) | NULL | Relevan jika `residency_type='pendatang'` |
+| title_front | VARCHAR(30) | NULL | Gelar depan (F-1.01 kolom 3) |
+| title_back | VARCHAR(30) | NULL | Gelar belakang (F-1.01 kolom 4) |
+| birth_certificate_number | TEXT | NULL | No. akta lahir, **terenkripsi** (cast `encrypted`) |
+| marriage_certificate_number | TEXT | NULL | No. akta perkawinan/buku nikah, **terenkripsi** |
+| marriage_date | DATE | NULL | Tanggal perkawinan |
+| divorce_certificate_number | TEXT | NULL | No. akta perceraian, **terenkripsi** |
+| divorce_date | DATE | NULL | Tanggal perceraian |
+| has_disorder | BOOLEAN | NOT NULL DEFAULT false | Kelainan fisik & mental (F-1.01 kolom 28) |
+| disability | TEXT | NULL | Penyandang cacat (F-1.01 kolom 29), **terenkripsi**; dikosongkan bila `has_disorder` false |
 | data_source | ENUM | NOT NULL, DEFAULT 'manual_input_desa' | `manual_input_desa` \| `import_excel` \| `dukcapil_sync` |
 | last_verified_at | TIMESTAMP | NULL | Kapan terakhir dicocokkan dengan dokumen fisik |
 | sync_status | ENUM | NULL | `synced` \| `pending` \| `conflict` |
@@ -186,7 +195,7 @@ Sengaja dibuat tipis — hanya berisi data yang sama untuk semua anggota keluarg
 
 **Tabel: occupations**
 
-Daftar pekerjaan baku per desa; bukan ENUM database agar dapat dikelola Petugas Desa. Nama unik tanpa membedakan huruf besar/kecil dalam satu desa, dijamin oleh unique index `LOWER(name)` dan validasi aplikasi.
+Daftar pekerjaan baku per desa; bukan ENUM database agar dapat dikelola Staf SIDUTama. Nama unik tanpa membedakan huruf besar/kecil dalam satu desa, dijamin oleh unique index `LOWER(name)` dan validasi aplikasi.
 
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|
@@ -228,12 +237,12 @@ Rekam jejak jabatan struktural desa per periode. Digunakan untuk resolusi wilaya
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | citizen_id | UUID | FK → citizens.id, NOT NULL | Warga yang menjabat |
 | user_id | UUID | FK → users.id, NULL | Akun sistem pejabat; NULL untuk jabatan tanpa akun |
-| position | VARCHAR(50) | NOT NULL | Nilai enum aplikasi `OfficialPosition` (jabatan berakun: `kepala_desa`, `sekretaris_desa`, `rt`, `rw`, `kadus`, `kasi_pelayanan`, `kaur_tu_umum`, `staf_sid`) atau `code` dari `official_position_types` desa (jabatan tanpa akun). Divalidasi rule `ValidOfficialPosition`, bukan ENUM DB |
+| position | VARCHAR(50) | NOT NULL | Nilai enum aplikasi `OfficialPosition` (jabatan berakun: `kepala_desa`, `sekretaris_desa`, `rt`, `rw`, `kadus`, `kasi_pemerintahan`, `kaur_tu_umum`, `staf_sid`) atau `code` dari `official_position_types` desa (jabatan tanpa akun). Divalidasi rule `ValidOfficialPosition`, bukan ENUM DB |
 | village_id | UUID | FK → villages.id, NULL | |
 | rt_id | BIGINT | FK → rts.id, NULL | Diisi untuk jabatan RT |
 | rw_id | BIGINT | FK → rws.id, NULL | Diisi untuk jabatan RW |
 | hamlet_id | BIGINT | FK → hamlets.id, NULL | Diisi untuk jabatan Kadus |
-| signature_img | VARCHAR(255) | NULL | Path TTD Kepala Desa pada private storage; upload/preview terproteksi |
+| signature_img | VARCHAR(255) | NULL | Path TTD jabatan pada private storage (`official-signatures/{village_id}/{official_id}/`). Kepala Desa: diunggah Staf SIDUTama. Jabatan berakun lain: salinan TTD akun pejabatnya (`user_signatures`) saat dipromote, diganti/dikosongkan mengikuti TTD akun selama menjabat; tidak disentuh lagi setelah jabatan berakhir. Jabatan tanpa akun: NULL |
 | stamp_img | VARCHAR(255) | NULL | Kolom legacy; tidak dipakai PDF. Stempel PDF berasal dari `villages.stamp_img`; nasib kolom belum diputuskan |
 | photo_img | VARCHAR(255) | NULL | Path foto di disk public (`official-photos/{village_id}/...`); wajib diunggah saat promote/rotate/store, tampil di Profil Desa publik |
 | phone_wa | VARCHAR(255) | NULL | Untuk fitur Hubungi Kami |
@@ -253,18 +262,18 @@ Rekam jejak jabatan struktural desa per periode. Digunakan untuk resolusi wilaya
 | officials.position | users.role | user_id |
 |---|---|---|
 | kepala_desa | kepala_desa | NOT NULL |
-| kasi_pelayanan | kasi_pelayanan | NOT NULL |
+| kasi_pemerintahan | kasi_pemerintahan | NOT NULL |
 | kaur_tu_umum | kaur_tu_umum | NOT NULL |
 | kadus | kadus | NOT NULL |
 | staf_sid | staf_sid | NOT NULL |
 | rw | rw | NOT NULL |
 | rt | rt | NOT NULL |
 | sekretaris_desa | sekretaris_desa | NOT NULL |
-| `code` jenis jabatan tanpa akun (seed: kasi_kesejahteraan, kasi_pemerintahan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes) | — (role akun tidak berubah) | NULL |
+| `code` jenis jabatan tanpa akun (seed: kasi_kesejahteraan, kasi_pelayanan, kaur_perencanaan, kaur_keuangan, staf_sipades, staf_siskeudes) | — (role akun tidak berubah) | NULL |
 
 **Tabel: official_position_types**
 
-Jenis jabatan desa **tanpa akun** yang dikelola Petugas Desa. Jabatan berakun tetap di enum aplikasi dan tidak disimpan di sini.
+Jenis jabatan desa **tanpa akun** yang dikelola Staf SIDUTama. Jabatan berakun tetap di enum aplikasi dan tidak disimpan di sini.
 
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|
@@ -305,7 +314,7 @@ Urutan approver per flow.
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | flow_id | BIGINT | FK → approval_flows.id, NOT NULL | |
 | step_order | INT | NOT NULL | Urutan step dalam flow |
-| approver_position | ENUM | NOT NULL | DB enum memuat `rt`, `kepala_desa`, `sekretaris_desa`, `kasi_pelayanan`, `kaur_tu_umum`; flow baru hanya menerima `rt` dan `kepala_desa`, final harus `kepala_desa` |
+| approver_position | ENUM | NOT NULL | DB enum memuat `rt`, `kepala_desa`, `sekretaris_desa`, `kasi_pemerintahan`, `kaur_tu_umum`; flow baru hanya menerima `rt` dan `kepala_desa`, final harus `kepala_desa` |
 | is_final | BOOLEAN | DEFAULT false | true jika step ini step terakhir |
 | created_at, updated_at | TIMESTAMP | NULL | |
 
@@ -315,24 +324,33 @@ Constraint: `UNIQUE(flow_id, step_order)`
 
 **Tabel: letter_types**
 
-Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) diisi developer lewat `LetterTypeSeeder`; Petugas Desa hanya mengubah `validity_days`, `assigned_role`, `is_active`.
+Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) diisi developer lewat `LetterTypeSeeder`; Staf SIDUTama hanya mengubah `validity_days`, `assigned_role`, `is_active`.
 
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | village_id | UUID | FK → villages.id, NOT NULL | Desa pemilik jenis surat |
-| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A10 |
+| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A11 (Persuratan Desa, `LetterTypeSeeder`), F01–F10 (Layanan Kependudukan, `ServiceLetterTypeSeeder`) |
 | name | VARCHAR(255) | NOT NULL | |
 | description | TEXT | NULL | |
+| category | VARCHAR(20) | NOT NULL, DEFAULT `persuratan` | `persuratan` (Persuratan Desa) \| `pelayanan` (Layanan Kependudukan); pengelompokan pilihan jenis surat, diset seeder |
 | template | TEXT | NULL | HTML ber-placeholder; NULL = Draft |
-| requirement_info | TEXT | NULL | Informasi persyaratan (seed: NULL) |
-| assigned_role | ENUM | NULL | `kasi_pelayanan` \| `kaur_tu_umum`; NULL = keduanya. Menentukan akses surat selesai & Terapkan |
+| documents | JSON | NULL | Dokumen yang terbit bersama dokumen utama: `[{key, title, template, when?, orientation?}]` (`orientation: landscape` untuk formulir lebar, mis. F-1.01). `when` = syarat jawaban form (`{field, equals}` / `{field, in}` / `{field, not_in}` / `{field, filled}`, atau gabungan `{any: [...]}` / `{all: [...]}`); dibekukan di snapshot saat final approve |
+| requirement_info | TEXT | NULL | Informasi persyaratan ("Siapkan: ..."; seed Persuratan Desa dan Layanan Kependudukan: NULL) |
+| carry_documents | JSON | NULL | Layanan Kependudukan: `{forms: [...], attachments: [...]}` = formulir yang terbit dari pengajuan dan dokumen lain yang dibawa ke Disdukcapil (F-1.07 + KTP-el pemberi/penerima kuasa ditambahkan otomatis); tampil di bawah deskripsi saat jenis surat dipilih |
+| assigned_role | ENUM | NULL | `kasi_pemerintahan` \| `kaur_tu_umum`; NULL = keduanya. Menentukan akses surat selesai & Terapkan |
 | flow_id | BIGINT | FK → approval_flows.id, NOT NULL | |
 | validity_days | UNSIGNED INT | NULL | NULL = tidak expire |
 | is_active | BOOLEAN | NOT NULL | Tanpa default di migration |
 | produces_letter | BOOLEAN | DEFAULT true | Penanda menerbitkan surat; belum dipakai logika backend |
-| data_action | VARCHAR(30) | DEFAULT 'none' | `none` \| `update_citizen` \| `create_citizen` (enum aplikasi `LetterDataAction`) |
-| form_fields | JSON | NULL | Daftar isian `{name, label, type, required, placeholder?, options?, accept?}`; type: text, textarea, date, number, nik, select, file. NULL = isian bebas (teks); array = hanya isian terdaftar |
+| issues_letter_number | BOOLEAN | DEFAULT true | false = tidak diberi `letter_number` saat final approve (formulir Layanan Kependudukan) |
+| signed_by_village_head | BOOLEAN | DEFAULT true | false = tanpa pengesahan TTD/stempel Kepala Desa; snapshot tanpa penanda tangan pengesah dan render tidak butuh Kepala Desa aktif. Snapshot menyimpan `service_signatures` (TTD pemohon, Kepala Desa, Kasi Pemerintahan, Ketua RT/RW wilayah) untuk ditempel di formulir final |
+| requires_result_upload | BOOLEAN | DEFAULT false | true = setelah terbit, pemohon mengunggah hasil dari instansi luar untuk diverifikasi (`letter_results`); Terapkan baru setelah diterima |
+| data_instructions | TEXT | NULL | Petunjuk bagi Kasi/Kaur untuk `data_action = manual` |
+| data_options | JSON | NULL | Opsi aksi data: `family` (`create_citizen`: `join` {when, no_kk_field} = masuk KK yang ada, `create` {when} = KK baru) `subjects` (`update_citizens`: {isian NIK: label}), `new_head` (isian family_member yang menjadi kepala keluarga baru KK lama; satu nama atau daftar), `member_details` (nama isian repeater data tambahan anggota F-1.01, disimpan ke data warga setelah aksi utama), `adopt` (`adopt_child` F10: {nik, role} = isian NIK anak angkat dan SHDK-nya), dan `restructure` (`restructure_family` F09: nama isian jenis perubahan, KK baru (+ `married` {field, equals, certificate, date}: alasan keluarga baru, kepala keluarga dan suami/istri menjadi Kawin dengan No. buku nikah & tanggal perkawinan), ganti kepala, numpang) |
+| result_upload_hint | TEXT | NULL | Berkas yang diminta, mis. "KK terbaru dari Disdukcapil" |
+| data_action | VARCHAR(30) | DEFAULT 'none' | `none` \| `update_citizen` \| `create_citizen` \| `deactivate_members` (nonaktifkan anggota KK pilihan pemohon di isian family_members = `data_subject_field`) \| `update_members` (ubah kolom tiap anggota KK per baris repeater `data_subject_field`) \| `adopt_child` (F10: anak angkat warga desa dipindah ke KK pemohon, kepala KK asal diberi tahu; anak yang belum terdata dibuat seperti `create_citizen`) \| `manual` (Kasi/Kaur mengubah data sendiri lalu Tandai selesai) (enum aplikasi `LetterDataAction`) |
+| form_fields | JSON | NULL | Daftar isian `{name, label, type, required, placeholder?, options?, accept?, visible_when?, fields?, min?, max?, item_label?}` (`visible_when` = syarat tampil dari jawaban isian lain, bentuk sama dengan `documents.when`; isian tersembunyi tidak wajib dan nilainya dibuang). `repeater` = baris berulang dengan sub-isian `fields` (payload: array baris); `family_members` = anggota KK pemohon yang dicentang, disimpan di payload sebagai baris siap cetak; type: text, textarea, date, time (HH:MM), number, nik, select, file, occupation (id katalog `occupations` atau `lainnya` + `<name>_lainnya`; disimpan sebagai nama pekerjaan siap cetak), village_area (id RT desa ini lewat pilihan Dusun -> RW -> RT; ditambah `<name>_dusun`, `<name>_rw`, `<name>_rt` siap cetak), family_member (satu anggota KK pemohon; ditambah `<name>_nama`, `_nik`, `_tempat_lahir`, `_tanggal_lahir`, `_pekerjaan`, `_alamat`, dst.), family_roster (disusun sistem: susunan KK tanpa anggota `exclude`, kepala keluarga `head`; `<name>_<n>_<kolom>`). NULL = isian bebas (teks); array = hanya isian terdaftar |
 | data_fields | JSON | NULL | Kolom `citizens` yang boleh diubah lewat Terapkan: `{column, label, source?, value?, value_label?}` |
 | data_subject_field | VARCHAR(100) | NULL | Nama isian NIK subjek bila yang diubah bukan pemohon (seed A07: `nik_almarhum`) |
 | signature_slots | JSON | NULL | `{key, label, signer: applicant\|other}`; belum dipakai jenis surat seed |
@@ -359,7 +377,7 @@ Tabel utama sistem. Kolom `applicant_nik` dienkripsi AES-256, `applicant_nik_has
 | submitted_by | UUID | FK → users.id, NOT NULL | User yang mengajukan; dapat berperan sebagai warga atau pejabat |
 | on_behalf_of | UUID | FK → citizens.id, NULL | Selalu NULL di MVP; dipersiapkan untuk future use case petugas input atas nama warga lain |
 | citizen_id | UUID | FK → citizens.id, NULL | Diisi dari `auth()->user()->citizen_id` saat user submit untuk dirinya |
-| letter_number | VARCHAR(50) | UNIQUE, NULL | Diisi otomatis saat `status = 'approved'` (step `is_final=true`) |
+| letter_number | VARCHAR(50) | UNIQUE, NULL | Diisi otomatis saat `status = 'approved'` (step `is_final=true`), kecuali jenis surat `issues_letter_number = false` (tetap NULL) |
 | applicant_name | VARCHAR(100) | NOT NULL | |
 | applicant_nik | TEXT | NOT NULL | AES-256 encrypted |
 | applicant_nik_hash | VARCHAR(64) | NOT NULL | SHA-256, untuk indexing & pencarian |
@@ -461,7 +479,8 @@ Berkas surat di disk privat `private_uploads` (`letter-attachments/{village_id}/
 |---|---|---|---|
 | id | BIGINT | PK | |
 | letter_id | UUID | FK → letters.id, ON DELETE CASCADE | |
-| kind | VARCHAR(30) | DEFAULT 'attachment' | `field` (isian bertipe file), `wet_signature` (foto dokumen ber-TTD basah), `attachment` (lampiran umum) |
+| kind | VARCHAR(30) | DEFAULT 'attachment' | `field` (isian bertipe file), `wet_signature` (foto dokumen ber-TTD basah), `result` (hasil dari instansi luar), `attachment` (lampiran umum) |
+| letter_result_id | BIGINT | FK → letter_results.id, NULL, ON DELETE CASCADE | Unggahan hasil pemilik berkas (`kind = result`) |
 | field | VARCHAR(100) | NULL | Nama isian atau `slot_key` |
 | original_name | VARCHAR(255) | NOT NULL | |
 | path | VARCHAR(255) | NOT NULL | |
@@ -471,6 +490,23 @@ Berkas surat di disk privat `private_uploads` (`letter-attachments/{village_id}/
 | created_at, updated_at | TIMESTAMP | NULL | |
 
 Index `idx_attachments_letter_kind (letter_id, kind)`.
+
+**Tabel: letter_results**
+
+Unggahan hasil dari instansi luar (mis. KK baru dari Disdukcapil) untuk jenis surat `requires_result_upload = true`, setelah surat approved. Satu baris per unggahan; yang ditolak tetap sebagai riwayat. Berkasnya di `letter_attachments` (`kind = result`).
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | BIGINT | PK | |
+| letter_id | UUID | FK → letters.id, ON DELETE CASCADE | |
+| status | VARCHAR(20) | DEFAULT 'submitted' | `submitted` (menunggu verifikasi) \| `accepted` \| `rejected` |
+| submitted_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | Pemohon |
+| reviewed_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | Kasi/Kaur/Staf SIDUTama |
+| reviewed_at | TIMESTAMP | NULL | |
+| review_notes | TEXT | NULL | Wajib bila ditolak |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+Index `idx_letter_results_letter (letter_id, id)`. Tahap surat diturunkan dari unggahan terakhir (`Letter::resultStage()`): tidak ada / `rejected` → `awaiting_upload`, `submitted` → `under_review`, `accepted` → `accepted`.
 
 **Tabel: user_signatures**
 
@@ -482,7 +518,7 @@ Tanda tangan pribadi per akun (warga maupun pejabat), terpisah dari TTD jabatan 
 | user_id | UUID | FK → users.id, ON DELETE CASCADE | |
 | path | VARCHAR(255) | NOT NULL | |
 | mime_type | VARCHAR(50) | NOT NULL | |
-| revoked_at | TIMESTAMP | NULL | Diisi saat Petugas Desa mereset; NULL = aktif |
+| revoked_at | TIMESTAMP | NULL | Diisi saat Staf SIDUTama mereset; NULL = aktif |
 | revoked_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | |
 | revoke_reason | TEXT | NULL | |
 | created_at, updated_at | TIMESTAMP | NULL | |
@@ -499,8 +535,8 @@ Satu baris per percobaan mengisi slot tanda tangan surat; baris terbaru per `(le
 | letter_id | UUID | FK → letters.id, ON DELETE CASCADE | |
 | slot_key | VARCHAR(50) | NOT NULL | Sesuai `letter_types.signature_slots[].key` |
 | slot_label | VARCHAR(100) | NOT NULL | |
-| signer_type | VARCHAR(20) | NOT NULL | `applicant` \| `other` |
-| method | VARCHAR(20) | NOT NULL | `digital` \| `wet` |
+| signer_type | VARCHAR(20) | NOT NULL | `applicant` \| `other` \| `witness` (saksi isian form; slot_key = nama isian NIK) |
+| method | VARCHAR(20) | NOT NULL | `digital` \| `wet` \| saksi: `consent` \| `rt_check` \| `manual` |
 | status | VARCHAR(20) | DEFAULT 'pending' | `pending` \| `signed` \| `rejected` \| `expired` \| `cancelled` |
 | requested_by | UUID | FK → users.id, ON DELETE CASCADE | Pemohon |
 | target_nik_hash | VARCHAR(64) | NULL | SHA-256 NIK yang diminta (TTD digital pihak lain) |
@@ -508,7 +544,7 @@ Satu baris per percobaan mengisi slot tanda tangan surat; baris terbaru per `(le
 | signer_name | VARCHAR(100) | NULL | |
 | user_signature_id | BIGINT | FK → user_signatures.id, NULL, ON DELETE SET NULL | TTD digital yang dibubuhkan |
 | attachment_id | BIGINT | FK → letter_attachments.id, NULL, ON DELETE SET NULL | Foto TTD basah |
-| expires_at | TIMESTAMP | NULL | Batas permintaan (`LETTER_SIGNATURE_REQUEST_TTL_DAYS`, default 7 hari) |
+| expires_at | TIMESTAMP | NULL | Batas permintaan (`LETTER_SIGNATURE_REQUEST_TTL_DAYS`, default 3 hari) |
 | responded_at | TIMESTAMP | NULL | |
 | response_notes | TEXT | NULL | Catatan penolakan |
 | created_at, updated_at | TIMESTAMP | NULL | |
@@ -532,7 +568,7 @@ Unique `uq_signature_blocks_pair (user_id, blocked_user_id)`.
 |---|---|---|---|
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | village_id | UUID | FK → villages.id, NOT NULL | |
-| approval_level | ENUM | NOT NULL | `rt` \| `kepala_desa` \| `sekretaris_desa` \| `kasi_pelayanan` \| `kaur_tu_umum` |
+| approval_level | ENUM | NOT NULL | `rt` \| `kepala_desa` \| `sekretaris_desa` \| `kasi_pemerintahan` \| `kaur_tu_umum` |
 | deadline_hours | UNSIGNED INT | NOT NULL, DEFAULT 24 | Berapa jam pejabat punya waktu untuk action |
 | reminder_hours | UNSIGNED INT | NOT NULL, DEFAULT 12 | Jam sebelum `deadline_at` saat pengingat dikirim ke approver (0 = tepat saat deadline) |
 | is_active | BOOLEAN | DEFAULT true | |
@@ -708,7 +744,7 @@ Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 29 tabel dom
 
 ## 3. Ringkasan Tabel
 
-Ada **31 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **34 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
+Ada **32 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **35 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
 
 ```
 Wilayah (4): villages, hamlets, rws, rts
@@ -716,8 +752,8 @@ Pengguna & Jabatan (4): users, citizens, officials, official_position_types
 Data Keluarga & Sosio-Ekonomi (2): families, family_socioeconomics
 Organisasi Non-Struktural (2): village_org_positions, village_org_members
 Alur Approval (2): approval_flows, flow_steps
-Surat (6): letter_types, letters, letter_approvals, letter_status_logs,
-           letter_attachments, letter_signatures
+Surat (7): letter_types, letters, letter_approvals, letter_status_logs,
+           letter_attachments, letter_signatures, letter_results
 Tanda Tangan Akun (2): user_signatures, signature_blocks
 Konfigurasi (1): approval_settings
 Konten & Komunikasi (7): notifications, news, news_categories,
@@ -725,7 +761,7 @@ Konten & Komunikasi (7): notifications, news, news_categories,
                          announcements, village_info_pages
 Referensi (1): occupations
 
-Total domain inti: 4 + 4 + 2 + 2 + 2 + 6 + 2 + 1 + 7 + 1 = 31 tabel
+Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 2 + 1 + 7 + 1 = 32 tabel
 Operasional: letter_number_counters, activity_log, push_subscriptions (3 tabel)
 Total aplikasi non-framework: 32 tabel
 Di-drop: letter_categories (v5.3)

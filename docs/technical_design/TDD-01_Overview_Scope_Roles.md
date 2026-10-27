@@ -7,7 +7,7 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 1 dari 5 (+ Appendix) |
-| Status | v5.3 — mencerminkan state source per 2026-10-16, bukan riwayat perubahan |
+| Status | v5.4 — mencerminkan state source per 2026-10-27, bukan riwayat perubahan |
 | Cakupan | Latar belakang & tujuan sistem, ruang lingkup MVP, pengguna & role |
 | Riwayat versi lengkap (v1–v4.2) | Lihat `TDD-06_Appendix.md` |
 | Fitur Next Dev / Tahap 2 (detail lengkap) | Lihat `TDD-06_Appendix.md` |
@@ -51,7 +51,8 @@ Fokus utama MVP adalah fitur inti yang membentuk alur kerja administrasi surat.
 | Tanda Tangan Pihak Terkait | Slot TTD pemohon memakai TTD akun; slot pihak lain diminta ke pemilik NIK (disetujui dengan kata sandi) atau diganti foto dokumen ber-TTD basah. Penolak dapat memblokir pemohon; penolakan berulang dibatasi. | Surat baru masuk approval setelah semua slot terisi |
 | Approval Surat (Category + Flow Dinamis) | Flow aktif dikonfigurasi lewat data. Alur bawaan: RT lalu Kepala Desa/Sekdes pada step final yang sama; Sekdes dapat memutuskan step `kepala_desa`. RW hanya menerima FYI setelah RT approve. Kasi/Kaur menerima notifikasi setelah final approval dan membaca/mengunduh surat sesuai `assigned_role`; bukan approver. Flow baru hanya menerima posisi `rt` dan `kepala_desa`, step final wajib `kepala_desa`. Penolakan di tahap mana pun terminal. | Status dan aktor aktual tercatat di approval serta log sistem |
 | Status Tracking | Melihat perkembangan status surat secara real-time | - |
-| Terapkan Perubahan Data | Jenis surat ber-`data_action` (mis. Penguburan → nonaktifkan data almarhum; Kelahiran → tambah data anak) diterapkan Kasi/Kaur sesuai `assigned_role` (atau Petugas Desa) setelah final approve, dengan koreksi bila perlu. | Data kependudukan diperbarui + jejak audit |
+| Terapkan Perubahan Data | Jenis surat ber-`data_action` (mis. Penguburan → nonaktifkan data almarhum; Kelahiran → tambah data anak) diterapkan Kasi/Kaur sesuai `assigned_role` (atau Staf SIDUTama) setelah final approve, dengan koreksi bila perlu dan pop up daftar perubahan (lama → baru) sebelum disimpan. | Data kependudukan diperbarui + jejak audit |
+| Layanan Kependudukan (F01–F10) | Formulir Disdukcapil hasil konversi Excel (F-1.01, F-1.02, F-1.03, F-1.04, F-1.05, F-1.06, F-1.07, F-2.01, F-2.03, F-2.04, F-2.10, surat pernyataan Pendatang): tanpa nomor surat dan tanpa TTD Kepala Desa, formulir pendukung terbit bersyarat menurut jawaban form, Surat Kuasa F-1.07 bila diurus orang lain. Pihak terkait (saksi, pasangan, kepala KK tujuan, penerima kuasa) diminta persetujuannya. Pemohon mengunggah hasil Disdukcapil di surat yang sama, Kasi Pemerintahan memverifikasi, lalu Terapkan. | Formulir PDF, hasil terverifikasi, data warga/KK diperbarui |
 | Download Surat | Surat approved diunduh sebagai PDF on-demand dari **snapshot** yang dibekukan saat final approve (template, kop desa, TTD & nama Kepala Desa saat itu). Nomor surat `{kode klasifikasi}/{urut}/Des/{bulan Romawi}/{tahun}`. Dokumen pendukung (bila ada) dapat diunduh terpisah. | File PDF |
 
 ### 2.2. Fitur Pendukung SID
@@ -59,7 +60,7 @@ Fokus utama MVP adalah fitur inti yang membentuk alur kerja administrasi surat.
 - **Dashboard per role:**
   - Warga: status surat yang diajukan
   - RT: daftar surat wilayah yang menunggu keputusan
-  - Petugas Desa:
+  - Staf SIDUTama:
     - Manajemen User, Role & Jabatan (officials + organisasi non-struktural desa)
     - Manajemen Data Warga (manual input, import Excel)
     - Kelola Peraturan Desa
@@ -70,7 +71,7 @@ Fokus utama MVP adalah fitur inti yang membentuk alur kerja administrasi surat.
     - Kelola jenis jabatan desa tanpa akun, kategori berita, identitas & tampilan desa (logo, foto beranda, kop surat), reset tanda tangan akun
   - RW: daftar surat yang lewat FYI (read-only — RW bukan approver)
   - Kepala Desa / Sekretaris Desa: daftar surat di step aktif `kepala_desa` dengan status `pending`/`in_progress`; keduanya dapat memutuskan dengan first-action-wins
-  - Kasi Pelayanan / Kaur TU & Umum: daftar surat yang sudah `approved` sesuai `assigned_role`; unduh dan Terapkan perubahan data, membaca daftar warga; bukan approver
+  - Kasi Pemerintahan / Kaur TU & Umum: daftar surat yang sudah `approved` sesuai `assigned_role`; unduh dan Terapkan perubahan data, membaca daftar warga; bukan approver
 - Halaman Publik (beranda dengan statistik terhitung, profil desa dengan perangkat desa, berita berkategori, info surat, peraturan desa, hubungi kami), di-cache per desa
 - Registrasi Akun Warga (self-service, validasi NIK + tanggal lahir terhadap data kependudukan desa)
 - Sistem Notifikasi in-app (database) dan **Web Push** (PWA) dengan chain approval dinamis; penandaan overdue berdasarkan deadline aktif; pengingat approval terjadwal `reminder_hours` sebelum deadline. Notifikasi email status surat: **Belum diimplementasi** (lihat audit docs)
@@ -79,7 +80,7 @@ Fokus utama MVP adalah fitur inti yang membentuk alur kerja administrasi surat.
 
 ### 2.3. Out of Scope (MVP)
 
-- Pembuatan tipe surat baru oleh Petugas Desa, WYSIWYG template editor, dan CRUD isian form oleh Petugas Desa — lihat Appendix (Next Dev Paket 1). Isian form dinamis (`form_fields`) sudah ada, tetapi didefinisikan developer via seeder.
+- Pembuatan tipe surat baru oleh Staf SIDUTama, WYSIWYG template editor, dan CRUD isian form oleh Staf SIDUTama — lihat Appendix (Next Dev Paket 1). Isian form dinamis (`form_fields`) sudah ada, tetapi didefinisikan developer via seeder.
 - Portal warga self-service dengan pengajuan surat via WhatsApp Bot terintegrasi (Planned Expansion)
 - Validasi integritas data Blockchain-inspired hashing — lihat Appendix (Next Dev Paket 2)
 - Aset Desa & Keuangan Desa — lihat Appendix (Tahap 2)
@@ -99,10 +100,10 @@ Sistem mendefinisikan sembilan role dengan hak akses yang berbeda. Seluruh role 
 
 | Role | Akses & Kewenangan | Status |
 |---|---|---|
-| Petugas Desa / Staf aplikasi (kode role `staf_sid`, tampil "Staf {nama aplikasi}", mis. Staf SIDUTama) | 1. Login dengan username<br>2. CRUD data warga (citizens) manual + excel, KK, sosio-ekonomi, katalog pekerjaan<br>3. Promote/demote/rotate jabatan (berakun maupun tanpa akun; foto wajib, dapat diganti/dihapus), cari calon via NIK, kelola jenis jabatan tanpa akun<br>4. Reset password sementara, reset tanda tangan akun, serta ganti/hapus foto profil akun warga di desanya<br>5. Kelola profil desa (identitas, kop surat, logo, foto beranda, stempel), berita & kategori berita<br>6. Kelola struktur wilayah, setting deadline, peraturan, organisasi desa; ubah masa berlaku/penugasan/status jenis surat; lihat flow (read-only)<br>7. Hanya satu akun aktif per desa; diganti lewat rotasi (boleh oleh dirinya sendiri, lalu ia kembali menjadi warga). Tampil di grup staf Profil Desa publik<br>8. Full visibility seluruh surat di desanya; cadangan Terapkan perubahan data; notifikasi saat surat tertahan karena RT kosong | ✅ MVP |
+| Staf SIDUTama (kode role `staf_sid`, label "Staf {nama aplikasi}" mengikuti `SID_APP_NAME`; default Staf SIDUTama) | 1. Login dengan username<br>2. CRUD data warga (citizens) manual + excel, KK, sosio-ekonomi, katalog pekerjaan<br>3. Promote/demote/rotate jabatan (berakun maupun tanpa akun; foto wajib, dapat diganti/dihapus), cari calon via NIK, kelola jenis jabatan tanpa akun<br>4. Reset password sementara, reset tanda tangan akun, serta ganti/hapus foto profil akun warga di desanya<br>5. Kelola profil desa (identitas, kop surat, logo, foto beranda, stempel), berita & kategori berita<br>6. Kelola struktur wilayah, setting deadline, peraturan, organisasi desa; ubah masa berlaku/penugasan/status jenis surat; lihat flow (read-only)<br>7. Hanya satu akun aktif per desa; diganti lewat rotasi (boleh oleh dirinya sendiri, lalu ia kembali menjadi warga). Tampil di grup staf Profil Desa publik<br>8. Full visibility seluruh surat di desanya; cadangan Terapkan perubahan data; notifikasi saat surat tertahan karena RT kosong | ✅ MVP |
 | Kepala Desa | 1. Login<br>2. Approver aktif pada tahap final; resolve berbasis posisi dalam desanya<br>3. Dashboard surat menunggu keputusan, kecuali surat yang diajukan sendiri<br>4. TTD PDF berasal dari Kepala Desa aktif; stempel PDF dari profil desa | ✅ MVP |
 | Sekretaris Desa | 1. Login<br>2. Dapat memutuskan tahap final yang sama dengan Kepala Desa (first-action-wins)<br>3. Dashboard seperti Kades, tanpa surat miliknya sendiri<br>4. `approval_level` mencatat aktor sebenarnya (`sekretaris_desa`) | ✅ MVP |
-| Kasi Pelayanan | 1. Login<br>2. Menerima notifikasi setelah surat final disetujui (siap cetak / perlu Terapkan)<br>3. Melihat dan mengunduh surat selesai sesuai `assigned_role`; bukan approver<br>4. Menerapkan perubahan data kependudukan dari surat ber-`data_action`<br>5. Melihat daftar warga (read-only)<br>6. Mengajukan surat untuk dirinya (Surat Saya) | ✅ MVP |
+| Kasi Pemerintahan | 1. Login<br>2. Menerima notifikasi setelah surat final disetujui (siap cetak / perlu Terapkan)<br>3. Melihat dan mengunduh surat selesai sesuai `assigned_role`; bukan approver<br>4. Pemegang **Layanan Kependudukan** (F01–F10, `assigned_role = kasi_pemerintahan`): memverifikasi hasil dari Disdukcapil yang diunggah pemohon (terima / tolak dengan catatan), lalu Terapkan perubahan data warga/KK dengan pop up konfirmasi; nama dan TTD-nya tercetak sebagai petugas di F-1.02<br>5. Mengelola Data Penduduk & KK seperti Staf SIDUTama (termasuk impor Excel)<br>6. Mengajukan surat untuk dirinya (Surat Saya). Kasi Pelayanan adalah jabatan tanpa akun (`official_position_types`) | ✅ MVP |
 | Kaur TU dan Umum | Sama seperti Kasi: notifikasi, surat selesai sesuai `assigned_role`, unduh, Terapkan, baca daftar warga; bukan approver | ✅ MVP |
 | Kepala Dusun (Kadus) | 1. Login<br>2. Bukan approver; jabatan struktural tetap ada (`officials.position='kadus'`)<br>3. Melihat daftar/detail surat dusunnya yang sudah disetujui RT melalui endpoint bersama<br>4. Dashboard read-only FYI dan notifikasi setelah RT approve untuk dusun yang sama | ✅ MVP |
 | RT | 1. Login<br>2. Proses surat pending di wilayahnya<br>3. Approve/reject (tahap 1)<br>4. Terima notifikasi | ✅ MVP |
@@ -122,8 +123,8 @@ Sistem mendefinisikan sembilan role dengan hak akses yang berbeda. Seluruh role 
 | RT | Semua surat dari warga di RT-nya, termasuk yang masih menunggu RT dan seluruh riwayat setelah approve/reject |
 | RW | Surat dari warga di RW-nya yang sudah di-approve RT, termasuk semua status setelahnya (read-only) |
 | Kepala Desa / Sekretaris Desa | Surat di desanya yang sudah di-approve RT atau tercatat melewati tahap RT; aksi keputusan hanya pada step aktif `kepala_desa` |
-| Kasi Pelayanan / Kaur TU | Surat berstatus `approved` di desa dan sesuai `letter_types.assigned_role`; NULL berlaku untuk keduanya |
-| Petugas Desa | SEMUA surat di desanya sendiri — dari pending hingga rejected, termasuk yang rejected di step manapun |
+| Kasi Pemerintahan / Kaur TU | Surat berstatus `approved` di desa dan sesuai `letter_types.assigned_role`; NULL berlaku untuk keduanya |
+| Staf SIDUTama | SEMUA surat di desanya sendiri — dari pending hingga rejected, termasuk yang rejected di step manapun |
 | Kadus | Surat dari warga di dusunnya yang sudah di-approve RT, termasuk semua status setelahnya (read-only); juga menerima FYI untuk surat tersebut |
 
 ### 3.1. Gambaran Umum Alur Kerja (Non-Teknis)
@@ -143,12 +144,12 @@ Sistem melindungi data pribadi (NIK terenkripsi, tanda tangan akun terenkripsi, 
 | 1 | Warga atau pejabat | Login, memilih jenis surat, mengisi isian form dinamis, mengunggah berkas isian (bila ada), dan menentukan penanda tangan untuk slot pihak lain (NIK atau TTD basah). Akun harus aktif dan terhubung dengan citizen. | Permohonan tersimpan `pending`; `flow_id` di-snapshot |
 | 2 | Sistem | Mengisi slot TTD pemohon dari TTD akun; mengirim permintaan TTD ke pemilik NIK. Bila masih ada slot kosong, surat menunggu (`current_step_order = 0`). | Surat belum terlihat approver |
 | 2a | Pemilik NIK | Menyetujui (dengan kata sandi) atau menolak (opsional memblokir) permintaan TTD. Pemohon dapat mengisi ulang slot yang ditolak/kedaluwarsa. | Semua slot terisi → lanjut ke langkah 3 |
-| 3 | Sistem | Menentukan tahap awal: tahap non-final milik pemohon dilewati; bila RT di wilayah pemohon kosong, surat **ditahan** di tahap RT dan Petugas Desa diberi tahu. | Approver tahap awal diberi notifikasi |
+| 3 | Sistem | Menentukan tahap awal: tahap non-final milik pemohon dilewati; bila RT di wilayah pemohon kosong, surat **ditahan** di tahap RT dan Staf SIDUTama diberi tahu. | Approver tahap awal diberi notifikasi |
 | 4 | RT | Memeriksa permohonan, lampiran, dan dokumen pendukung; approve/reject. | `in_progress` atau `rejected` (terminal) |
 | 5 | Sistem (jika RT approve) | FYI ke RW wilayah dan Kadus dusun pemohon; notifikasi ke Kades/Sekdes dan pemohon. | RW/Kadus bukan gate |
 | 6 | Kepala Desa / Sekretaris Desa | Memutuskan tahap final (first-action-wins); aktor sebenarnya tercatat. | `approved` atau `rejected` (terminal) |
 | 7 | Sistem (jika final approve) | Menetapkan nomor surat per kode klasifikasi, `expires_at`, `processed_at`, membekukan snapshot render (TTD & stempel Kepala Desa saat itu). Notifikasi ke pemohon dan Kasi/Kaur sesuai `assigned_role` (siap cetak, atau perlu Terapkan). | Nomor surat dibuat satu kali |
-| 8 | Kasi/Kaur (atau Petugas Desa) | Mengunduh/mencetak surat; untuk jenis surat ber-aksi data, meninjau usulan dan menekan **Terapkan**. | Data kependudukan diperbarui; pemohon diberi tahu |
+| 8 | Kasi/Kaur (atau Staf SIDUTama) | Mengunduh/mencetak surat; untuk jenis surat ber-aksi data, meninjau usulan dan menekan **Terapkan** (pop up daftar perubahan untuk dikonfirmasi). Layanan Kependudukan: pemohon lebih dulu mengunggah hasil Disdukcapil, Kasi Pemerintahan menerima/menolak (pemohon unggah ulang), baru Terapkan. | Data kependudukan diperbarui; pemohon diberi tahu |
 | 9 | Pemohon | Mengunduh PDF selama surat belum kedaluwarsa. | PDF dari snapshot |
 
 > Status generik (`pending`/`in_progress`/`approved`/`rejected`) + pointer `current_step_order` (0 = menunggu tanda tangan). Tahap final tidak pernah dilewati; tanpa approver eligible selain pemohon, pengajuan ditolak. Kasi/Kaur bukan tahap flow.

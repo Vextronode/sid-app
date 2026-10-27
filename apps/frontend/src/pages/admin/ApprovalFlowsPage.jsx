@@ -14,7 +14,7 @@ const POSITION_LABELS = {
 /**
  * Semua jenis surat memakai satu alur persetujuan (RT -> Kepala Desa) yang
  * ditetapkan developer. Halaman ini hanya menampilkannya; yang dapat diatur
- * Petugas Desa adalah masa berlaku dan petugas per jenis surat.
+ * Staf SIDUTama adalah masa berlaku dan petugas per jenis surat.
  */
 export default function ApprovalFlowsPage() {
   const { user } = useAuth()

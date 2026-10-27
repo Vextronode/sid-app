@@ -10,11 +10,11 @@ class OfficialPositionTypeSeeder extends Seeder
 {
     /**
      * Jenis jabatan tanpa akun bawaan tiap desa, berurutan sesuai tampilan
-     * Profil Desa. Petugas Desa dapat menambah atau mengubahnya dari aplikasi.
+     * Profil Desa. Staf SIDUTama dapat menambah atau mengubahnya dari aplikasi.
      */
     private const DEFAULTS = [
         'kasi_kesejahteraan' => 'Kasi Kesejahteraan',
-        'kasi_pemerintahan' => 'Kasi Pemerintahan',
+        'kasi_pelayanan' => 'Kasi Pelayanan',
         'kaur_perencanaan' => 'Kaur Perencanaan',
         'kaur_keuangan' => 'Kaur Keuangan',
         'staf_sipades' => 'Staf SIPADES',

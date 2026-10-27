@@ -22,7 +22,7 @@ class OccupationController extends Controller
     {
         $occupations = $this->service->list(
             $request->user(),
-            $request->boolean('include_inactive'),
+            $request->includeInactive(),
         );
 
         return (new OccupationCollection($occupations))->response();

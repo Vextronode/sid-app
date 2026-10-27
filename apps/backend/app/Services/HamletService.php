@@ -23,6 +23,32 @@ class HamletService
         return $this->hamletRepository->allOrderedByName($this->villageId($user));
     }
 
+    /**
+     * Pilihan Dusun -> RW -> RT desa pengguna (semua peran), untuk isian
+     * wilayah di form surat.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function areaTree(User $user): array
+    {
+        if (! $user->village_id) {
+            abort(403, 'Akun tidak terhubung ke desa.');
+        }
+
+        return $this->hamletRepository->activeTree($user->village_id)
+            ->map(fn (Hamlet $hamlet): array => [
+                'id' => $hamlet->id,
+                'name' => $hamlet->name,
+                'rws' => $hamlet->rws->map(fn ($rw): array => [
+                    'id' => $rw->id,
+                    'number' => $rw->number,
+                    'rts' => $rw->rts->map(fn ($rt): array => ['id' => $rt->id, 'number' => $rt->number])->values()->all(),
+                ])->values()->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
     public function create(array $data, User $user): Hamlet
     {
         $villageId = $this->villageId($user);

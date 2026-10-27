@@ -10,7 +10,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class UpdateRegulationRequest extends FormRequest
 {
     /**
-     * UC-24. Aktor HANYA Petugas Desa (SID-ARCH-SYS-001 S2.3).
+     * UC-24. Aktor HANYA Staf SIDUTama (SID-ARCH-SYS-001 S2.3).
      */
     public function authorize(): bool
     {

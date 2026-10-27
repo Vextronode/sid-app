@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\OfficialPosition;
 use App\Enums\UserRole;
+use App\Models\Official;
 use App\Models\User;
 use App\Models\UserSignature;
 use Illuminate\Http\UploadedFile;
@@ -14,8 +16,14 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Tanda tangan pribadi per akun (warga maupun pejabat; terpisah dari
  * tanda tangan jabatan di tabel officials). Diisi sekali, tidak dapat
- * diubah sendiri; reset hanya oleh Petugas Desa dan tercatat. Berkas
+ * diubah sendiri; reset hanya oleh Staf SIDUTama dan tercatat. Berkas
  * disimpan terenkripsi di disk privat.
+ *
+ * TTD jabatan selain Kepala Desa (officials.signature_img) adalah salinan
+ * TTD akun pejabatnya: disalin saat dipromote, dan diganti/dikosongkan
+ * mengikuti TTD akun selama masih menjabat. Jabatan yang sudah berakhir
+ * tidak disentuh agar surat lama tetap memakai TTD saat itu. TTD Kepala
+ * Desa tetap diunggah Staf SIDUTama (OfficialService::replaceSignature).
  */
 class UserSignatureService
 {
@@ -40,7 +48,7 @@ class UserSignatureService
         Storage::disk(self::DISK)->put($path, Crypt::encryptString($file->getContent()));
 
         try {
-            return UserSignature::query()->create([
+            $signature = UserSignature::query()->create([
                 'user_id' => $user->id,
                 'path' => $path,
                 'mime_type' => $file->getMimeType() ?? 'image/png',
@@ -50,10 +58,61 @@ class UserSignatureService
 
             throw $exception;
         }
+
+        $this->syncActiveOfficials($user);
+
+        return $signature;
     }
 
     /**
-     * Reset darurat oleh Petugas Desa. Baris dan berkas lama dipertahankan
+     * Salin TTD akun ke jabatan yang sedang dipegangnya (dipanggil juga
+     * saat dipromote). Tanpa TTD aktif, salinan jabatan dikosongkan.
+     */
+    public function syncActiveOfficials(User $user): void
+    {
+        $officials = Official::query()
+            ->where('user_id', $user->id)
+            ->where('is_active', true)
+            ->whereNull('ended_at')
+            ->where('position', '!=', OfficialPosition::KepalaDesa->value)
+            ->get();
+
+        if ($officials->isEmpty()) {
+            return;
+        }
+
+        $signature = $this->active($user);
+        $content = $signature !== null ? $this->content($signature) : null;
+
+        foreach ($officials as $official) {
+            $this->copyToOfficial($official, $signature, $content);
+        }
+    }
+
+    private function copyToOfficial(Official $official, ?UserSignature $signature, ?string $content): void
+    {
+        if ($signature === null || $content === null) {
+            $official->update(['signature_img' => null]);
+
+            return;
+        }
+
+        $extension = $signature->mime_type === 'image/jpeg' ? 'jpg' : 'png';
+        $path = "official-signatures/{$official->village_id}/{$official->id}/".Str::uuid().".{$extension}";
+        Storage::disk(self::DISK)->put($path, $content);
+
+        try {
+            // Berkas lama tidak dihapus: snapshot surat lama merujuknya.
+            $official->update(['signature_img' => $path]);
+        } catch (\Throwable $exception) {
+            Storage::disk(self::DISK)->delete($path);
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Reset darurat oleh Staf SIDUTama. Baris dan berkas lama dipertahankan
      * agar dokumen yang sudah ditandatangani tetap dapat dirender.
      */
     public function reset(User $actor, User $target, string $reason): void
@@ -78,6 +137,9 @@ class UserSignatureService
             'revoked_by' => $actor->id,
             'revoke_reason' => $reason,
         ]);
+
+        // TTD yang dicabut tidak boleh terus dipakai jabatannya.
+        $this->syncActiveOfficials($target);
 
         activity('user_signature')
             ->performedOn($target)

@@ -19,8 +19,12 @@ class LetterTypeResource extends JsonResource
             'code' => $this->code,
             'name' => $this->name,
             'description' => $this->description,
+            'category' => $this->category?->value,
+            'category_label' => $this->category?->label(),
             'template' => $this->template,
             'requirements_info' => $this->requirement_info,
+            // Layanan Kependudukan: {forms, attachments} yang dibawa ke Disdukcapil.
+            'carry_documents' => $this->carry_documents,
             'flow_id' => $this->flow_id,
             'flow' => $this->when(
                 $this->relationLoaded('flow') && $this->flow,
@@ -33,6 +37,8 @@ class LetterTypeResource extends JsonResource
             'validity_days' => $this->validity_days,
             'is_active' => $this->is_active,
             'produces_letter' => $this->produces_letter,
+            'issues_letter_number' => $this->issues_letter_number,
+            'signed_by_village_head' => $this->signed_by_village_head,
             'data_action' => $this->data_action,
             'form_fields' => $this->form_fields ?? [],
             'data_fields' => $this->data_fields ?? [],

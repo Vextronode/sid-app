@@ -16,6 +16,7 @@ use App\Repositories\UserRepository;
 use App\Services\Auth\UsernameGenerator;
 use App\Services\OfficialAssignmentService;
 use App\Services\OfficialService;
+use App\Services\UserSignatureService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
@@ -35,6 +36,7 @@ class OfficialAssignmentServiceTest extends TestCase
             new LetterRepository,
             new OfficialService($officialRepository, $userRepository, new LetterRepository),
             new UsernameGenerator($userRepository),
+            new UserSignatureService,
         );
     }
 
@@ -70,7 +72,7 @@ class OfficialAssignmentServiceTest extends TestCase
                 'position' => 'sekretaris_desa',
                 'started_at' => today()->toDateString(),
             ]);
-            $this->fail('Non-Petugas Desa actor must be rejected.');
+            $this->fail('Non-Staf SIDUTama actor must be rejected.');
         } catch (HttpException $exception) {
             $this->assertSame(403, $exception->getStatusCode());
         }
@@ -192,7 +194,7 @@ class OfficialAssignmentServiceTest extends TestCase
 
         try {
             $this->service()->demote($self, $selfOfficial);
-            $this->fail('Self-demotion of the only Petugas Desa must be rejected.');
+            $this->fail('Self-demotion of the only Staf SIDUTama must be rejected.');
         } catch (HttpException $exception) {
             $this->assertSame(403, $exception->getStatusCode());
             $this->assertSame(
@@ -249,7 +251,7 @@ class OfficialAssignmentServiceTest extends TestCase
 
         try {
             $this->service()->rotate($actor, $old, []);
-            $this->fail('Petugas Desa must not be rotated.');
+            $this->fail('Staf SIDUTama must not be rotated.');
         } catch (HttpException $exception) {
             $this->assertSame(422, $exception->getStatusCode());
         }

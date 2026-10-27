@@ -18,3 +18,39 @@ get:
                   $ref: '../../schemas/letters/letters.yaml#/SignatureBlock'
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
+post:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Blokir warga desa berdasarkan NIK
+  description: |
+    Permintaan tanda tangan dan saksi dari warga ber-NIK ini (yang punya
+    akun di desa yang sama) tidak lagi sampai ke akun login. Tidak dapat
+    memblokir diri sendiri.
+  operationId: createSignatureBlock
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [nik]
+          properties:
+            nik:
+              type: string
+              pattern: '^\d{16}$'
+  responses:
+    '201':
+      description: Warga diblokir
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message: { type: string }
+              data:
+                $ref: '../../schemas/letters/letters.yaml#/SignatureBlock'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '422':
+      description: NIK bukan 16 digit, tidak terdaftar sebagai akun warga desa, atau NIK sendiri

@@ -28,7 +28,7 @@ class DemoDataSeederTest extends TestCase
     use RefreshDatabase;
 
     private const VILLAGE_POSITIONS = [
-        'kepala_desa', 'sekretaris_desa', 'kasi_pemerintahan', 'kasi_kesejahteraan', 'kasi_pelayanan',
+        'kepala_desa', 'sekretaris_desa', 'kasi_pelayanan', 'kasi_kesejahteraan', 'kasi_pemerintahan',
         'kaur_perencanaan', 'kaur_keuangan', 'kaur_tu_umum', 'staf_siskeudes', 'staf_sipades',
     ];
 
@@ -114,11 +114,13 @@ class DemoDataSeederTest extends TestCase
     }
 
     #[Test]
-    public function the_five_demo_accounts_log_in_with_the_demo_password(): void
+    public function the_demo_accounts_log_in_with_the_demo_password(): void
     {
         $expectedRoles = [
             'demo_admin' => 'staf_sid',
             'demo_warga' => 'warga',
+            'demo_warga2' => 'warga',
+            'demo_warga3' => 'warga',
             'demo_kadus' => 'kadus',
             'demo_rw' => 'rw',
             'demo_rt' => 'rt',
@@ -131,6 +133,13 @@ class DemoDataSeederTest extends TestCase
         }
 
         $this->assertSame(0, User::query()->whereIn('username', ['demo_kasi', 'demo_kaur', 'demo_kades', 'demo_sekdes'])->count());
+
+        // Istri dan anak kepala keluarga demo satu KK dengan demo_warga.
+        $family = fn (string $username) => User::query()->where('username', $username)->sole()->citizen;
+        $this->assertSame($family('demo_warga')->family_id, $family('demo_warga2')->family_id);
+        $this->assertSame($family('demo_warga')->family_id, $family('demo_warga3')->family_id);
+        $this->assertSame('istri', $family('demo_warga2')->family_role->value);
+        $this->assertSame('anak', $family('demo_warga3')->family_role->value);
 
         $kadus = Official::query()->where('user_id', User::query()->where('username', 'demo_kadus')->value('id'))->sole();
         $this->assertSame('Aditulloh', $kadus->citizen()->value('name'));

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 
 /**
  * Mengambil titik (latitude, longitude) dari link Google Maps yang ditempel
- * Petugas Desa: link panjang (koordinat ada di URL) atau short link
+ * Staf SIDUTama: link panjang (koordinat ada di URL) atau short link
  * maps.app.goo.gl (koordinat baru terlihat setelah redirect).
  *
  * Hanya host Google Maps yang dihubungi, termasuk di setiap redirect, agar

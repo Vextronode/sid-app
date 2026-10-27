@@ -21,7 +21,7 @@ function serverMessage(error, fallback) {
 /**
  * Tanda tangan pribadi akun. Diisi sekali (digambar atau diunggah) dengan
  * pratinjau dan konfirmasi; setelah tersimpan tidak dapat diubah sendiri
- * dan hanya bisa direset oleh staf aplikasi (STAF_APP_LABEL).
+ * dan hanya bisa direset oleh Staf SIDUTama (STAF_APP_LABEL).
  */
 export function SignatureCard() {
   const canvasRef = useRef(null)

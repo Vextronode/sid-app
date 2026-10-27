@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Foto profil akun: warga mengelola sendiri, Petugas Desa boleh mengganti
+ * Foto profil akun: warga mengelola sendiri, Staf SIDUTama boleh mengganti
  * atau menghapus foto warga. Akun yang sedang menjabat tidak bisa diubah
  * lewat jalur ini (fotonya foto pejabat, dikelola di Pejabat Desa).
  */

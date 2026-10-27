@@ -5678,6 +5678,24 @@
   font-size: 14px;
 }
 
+.sid-letter-type-groups {
+  display: flex;
+  flex-direction: column;
+
+  gap: 20px;
+}
+
+.sid-letter-type-group-title {
+  margin: 0 0 10px;
+
+  color: var(--sid-text-muted);
+
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .sid-letter-type-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5751,6 +5769,34 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
+}
+
+.sid-letter-type-description.is-expanded {
+  display: block;
+
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+
+.sid-letter-type-more {
+  align-self: flex-start;
+
+  padding: 0;
+
+  border: 0;
+
+  background: none;
+  color: var(--sid-primary);
+
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.sid-letter-type-more:hover {
+  text-decoration: underline;
 }
 
 .sid-letter-type-meta {
@@ -5862,6 +5908,52 @@
 
   font-size: 13px;
   line-height: 1.5;
+}
+
+/* Deskripsi jenis surat terpilih, di atas daftar persyaratan. */
+.sid-letter-type-chosen-description {
+  margin: 10px 0 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Layanan Kependudukan: dokumen yang dibawa ke Disdukcapil. */
+.sid-letter-type-carry {
+  margin: 12px 0 0;
+  padding-top: 12px;
+
+  border-top: 1px solid color-mix(in srgb, var(--sid-primary) 20%, transparent);
+
+  color: var(--sid-text-primary);
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sid-letter-type-carry-title {
+  margin: 0 0 6px;
+
+  font-weight: 700;
+}
+
+.sid-letter-type-carry-label {
+  margin: 8px 0 2px;
+
+  color: var(--sid-text-secondary);
+}
+
+.sid-letter-type-carry ul {
+  margin: 0;
+  padding-left: 20px;
+
+  list-style: disc;
+}
+
+.sid-letter-type-carry li + li {
+  margin-top: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -22905,6 +22997,55 @@ button.sid-operator-profile {
   color: var(--sid-status-pending-text);
 }
 
+/* Daftar perubahan data di dialog konfirmasi (mis. Terapkan surat). */
+.sid-notice-modal:has(.sid-dialog-changes) {
+  max-width: 560px;
+}
+
+.sid-dialog-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-height: 50vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.sid-dialog-change h3 {
+  margin: 0 0 0.35rem;
+  color: var(--sid-text-primary);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.sid-dialog-change table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.sid-dialog-change th,
+.sid-dialog-change td {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--sid-border);
+  color: var(--sid-text-primary);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.sid-dialog-change thead th {
+  background: var(--sid-surface-page);
+  color: var(--sid-text-secondary);
+  font-weight: 600;
+}
+
+.sid-dialog-change tbody th {
+  font-weight: 600;
+  width: 35%;
+}
+
 /* Dialog global (DialogHost) di atas modal lain. */
 .sid-dialog-overlay {
   z-index: 1100;
@@ -23108,4 +23249,198 @@ button.sid-operator-profile {
   border-radius: 50%;
   background: var(--sid-status-progress-bg);
   color: var(--sid-primary);
+}
+
+/* Isian berulang di form surat (RepeaterField): satu kartu per baris. */
+.sid-repeater {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+.sid-repeater-row {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+
+  margin: 0;
+  padding: 14px 16px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+}
+
+.sid-repeater-row-title {
+  padding: 0 4px;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sid-repeater-row > .sid-row-action {
+  align-self: flex-start;
+}
+
+.sid-repeater > .sid-btn {
+  align-self: flex-start;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+}
+
+/* Nilai tersamar (NIK / No. KK) dengan tombol mata untuk menampilkan nilai utuh. */
+.sid-revealable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.sid-revealable-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--sid-text-muted);
+  cursor: pointer;
+}
+
+.sid-revealable-toggle:hover:not(:disabled),
+.sid-revealable-toggle:focus-visible {
+  background: var(--sid-primary-soft);
+  color: var(--sid-primary);
+}
+
+.sid-revealable-toggle:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+/* Kartu permintaan tanda tangan & saksi (profil). */
+.sid-sign-requests {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sid-sign-requests-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sid-sign-requests-header .sid-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sid-sign-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px dashed var(--sid-border);
+  border-radius: var(--sid-radius-md);
+  color: var(--sid-text-muted);
+}
+
+.sid-sign-request-list,
+.sid-sign-block-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sid-sign-request {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-lg);
+  background: var(--sid-surface-card);
+}
+
+.sid-sign-request-kind {
+  align-self: flex-start;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--sid-primary-soft);
+  color: var(--sid-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sid-sign-request-kind.witness {
+  background: var(--sid-warning-soft);
+  color: #6b4400;
+}
+
+.sid-sign-request-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.sid-sign-request-meta {
+  margin: 0 0 0.35rem;
+  color: var(--sid-text-muted);
+  font-size: 0.875rem;
+}
+
+.sid-sign-request-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.sid-sign-request-block {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--sid-text-muted);
+  font-size: 0.875rem;
+}
+
+.sid-sign-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: var(--sid-radius-lg);
+  background: var(--sid-surface-page);
+}
+
+.sid-sign-block-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sid-sign-block-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sid-sign-block-form .sid-input {
+  flex: 1 1 14rem;
 }

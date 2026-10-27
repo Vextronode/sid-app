@@ -2,7 +2,7 @@ get:
   tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
   summary: Lihat daftar flow approval (read-only)
   description: |
-    Aktor: Petugas Desa. Mengembalikan flow aktif milik desa akun yang
+    Aktor: Staf SIDUTama. Mengembalikan flow aktif milik desa akun yang
     login, beserta step-nya. Flow diset developer lewat seeder; tidak ada
     endpoint tulis (create/update/replace steps sudah dihapus).
   operationId: listApprovalFlows

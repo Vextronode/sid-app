@@ -53,6 +53,40 @@ describe('DialogHost', () => {
     await expect(second).resolves.toBe(false)
   })
 
+  it('lists the changes to confirm, without the old column for new records', async () => {
+    const user = userEvent.setup()
+    render(<DialogHost />)
+
+    let answer
+    act(() => {
+      answer = confirmDialog({
+        title: 'Konfirmasi perubahan data',
+        confirmLabel: 'Konfirmasi',
+        details: [
+          {
+            title: 'Euis (diubah)',
+            rows: [{ label: 'Status Perkawinan', from: 'Kawin', to: 'Cerai Hidup' }],
+          },
+          {
+            title: 'Rosita (warga baru)',
+            showOld: false,
+            rows: [{ label: 'Nama', from: '-', to: 'Rosita' }],
+          },
+        ],
+      })
+    })
+
+    const changed = screen.getByRole('region', { name: 'Euis (diubah)' })
+    expect(changed).toHaveTextContent('Lama')
+    expect(changed).toHaveTextContent('Status PerkawinanKawinCerai Hidup')
+    const created = screen.getByRole('region', { name: 'Rosita (warga baru)' })
+    expect(created).not.toHaveTextContent('Lama')
+    expect(created).toHaveTextContent('NamaRosita')
+
+    await user.click(screen.getByRole('button', { name: 'Konfirmasi' }))
+    await expect(answer).resolves.toBe(true)
+  })
+
   it('validates prompt input length before resolving the trimmed text', async () => {
     const user = userEvent.setup()
     render(<DialogHost />)

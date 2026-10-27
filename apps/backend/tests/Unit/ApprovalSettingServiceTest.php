@@ -37,12 +37,12 @@ class ApprovalSettingServiceTest extends TestCase
 
         ApprovalSetting::create([
             'village_id' => $village->id,
-            'approval_level' => 'kasi_pelayanan',
+            'approval_level' => 'kasi_pemerintahan',
             'deadline_hours' => 48,
             'reminder_hours' => 24,
         ]);
 
-        $deadline = $this->service->resolveDeadline('kasi_pelayanan', $village->id);
+        $deadline = $this->service->resolveDeadline('kasi_pemerintahan', $village->id);
 
         $this->assertEqualsWithDelta(
             now()->addHours(48)->timestamp,
@@ -71,7 +71,7 @@ class ApprovalSettingServiceTest extends TestCase
         $village = Village::factory()->create();
         $setting = ApprovalSetting::create([
             'village_id' => $village->id,
-            'approval_level' => 'kasi_pelayanan',
+            'approval_level' => 'kasi_pemerintahan',
             'deadline_hours' => 48,
             'reminder_hours' => 24,
         ]);

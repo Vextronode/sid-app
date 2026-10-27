@@ -10,12 +10,12 @@ class ShowFamilySocioeconomicRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'staf_sid';
+        return in_array($this->user()?->role, ['staf_sid', 'kasi_pemerintahan', 'kaur_tu_umum'], true);
     }
 
     protected function failedAuthorization(): void
     {
-        throw new HttpException(403, 'Hanya '.UserRole::stafSidLabel().' yang berwenang.');
+        throw new HttpException(403, 'Hanya '.UserRole::stafSidLabel().', Kasi Pemerintahan, dan Kaur TU & Umum yang berwenang.');
     }
 
     public function rules(): array

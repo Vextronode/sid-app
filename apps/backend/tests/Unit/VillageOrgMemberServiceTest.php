@@ -126,7 +126,7 @@ class VillageOrgMemberServiceTest extends TestCase
     }
 
     /**
-     * Guard multi-tenant (EV5-10-S2): Petugas Desa desa lain tidak boleh
+     * Guard multi-tenant (EV5-10-S2): Staf SIDUTama desa lain tidak boleh
      * bisa menambah anggota ke jabatan yang bukan miliknya, walau
      * position_id-nya valid dan aktif.
      */

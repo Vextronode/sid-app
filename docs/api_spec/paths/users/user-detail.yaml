@@ -2,7 +2,7 @@ patch:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Edit / nonaktifkan akun user
   description: |
-    Aktor: Petugas Desa.
+    Aktor: Staf SIDUTama.
     UC-14. Guard: tidak bisa nonaktifkan diri
     sendiri, dan tidak bisa nonaktifkan satu-satunya akun staf_sid
     aktif yang tersisa.
@@ -46,9 +46,9 @@ patch:
               value:
                 message: "Anda tidak dapat menonaktifkan akun Anda sendiri."
             last_staf_sid:
-              summary: Mencoba nonaktifkan satu-satunya Petugas Desa aktif
+              summary: Mencoba nonaktifkan satu-satunya Staf SIDUTama aktif
               value:
-                message: "Tidak dapat menonaktifkan satu-satunya akun Petugas Desa yang masih aktif."
+                message: "Tidak dapat menonaktifkan satu-satunya akun Staf SIDUTama yang masih aktif."
     '404':
       $ref: '../../responses/common.yaml#/NotFound'
     '422':

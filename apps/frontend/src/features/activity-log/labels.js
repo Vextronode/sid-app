@@ -47,6 +47,15 @@ const FIELD_LABELS = {
   current_domicile: 'Domisili sekarang',
   residency_type: 'Jenis kependudukan',
   origin_region: 'Daerah asal',
+  title_front: 'Gelar depan',
+  title_back: 'Gelar belakang',
+  birth_certificate_number: 'No. akta lahir',
+  marriage_certificate_number: 'No. akta/buku nikah',
+  marriage_date: 'Tanggal perkawinan',
+  divorce_certificate_number: 'No. akta cerai',
+  divorce_date: 'Tanggal perceraian',
+  has_disorder: 'Kelainan fisik & mental',
+  disability: 'Penyandang cacat',
   is_active: 'Status aktif',
   data_source: 'Sumber data',
   sync_status: 'Status sinkronisasi',
@@ -71,14 +80,14 @@ export function fieldLabel(field) {
 // `field` (opsional) memetakan nilai enum ke labelnya, mis. family_role
 // `kepala_keluarga` -> "Kepala Keluarga".
 export function formatChangeValue(value, field) {
-  if (value === null || value === undefined || value === '') return '—'
+  if (value === null || value === undefined || value === '') return '-'
   if (value === true) return 'Ya'
   if (value === false) return 'Tidak'
-  if (Array.isArray(value)) return value.length ? value.join(', ') : '—'
+  if (Array.isArray(value)) return value.length ? value.join(', ') : '-'
   if (typeof value === 'object') {
     const entries = Object.entries(value)
 
-    return entries.length ? entries.map(([key, item]) => `${key}: ${item}`).join(', ') : '—'
+    return entries.length ? entries.map(([key, item]) => `${key}: ${item}`).join(', ') : '-'
   }
 
   const labels = field ? FIELD_VALUE_LABELS[field] : null

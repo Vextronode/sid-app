@@ -36,7 +36,7 @@ title Diagram Alur Sistem - SIDUTama v5.3 (Flow default RT → Kepala Desa/Sekde
 |#E8F5E9|RT|
 |#FFF3E0|RW / Kadus (FYI)|
 |#FDEBD0|Kepala Desa / Sekdes|
-|#FFE0B2|Kasi / Kaur / Petugas Desa|
+|#FFE0B2|Kasi / Kaur / Staf SIDUTama|
 
 |Pemohon|
 start
@@ -70,7 +70,7 @@ endwhile (tidak)
 :Tentukan step awal\n(lewati tahap non-final milik pemohon);
 if (RT wilayah pemohon ada?) then (tidak)
   :Tahan surat di step RT\nlog "Surat ditahan...";
-  :Notifikasi approver_vacant ke Petugas Desa;
+  :Notifikasi approver_vacant ke Staf SIDUTama;
   note right
     Saat Petugas menetapkan RT (promote),
     RT baru langsung diberi tahu surat
@@ -117,7 +117,7 @@ endif
 :Notifikasi letter_approved_final ke pemohon;
 if (data_action != none?) then (ya)
   :Notifikasi letter_needs_fulfillment\nke Kasi/Kaur sesuai assigned_role;
-  |Kasi / Kaur / Petugas Desa|
+  |Kasi / Kaur / Staf SIDUTama|
   :Tinjau usulan (nilai sekarang vs usulan);
   :Koreksi bila perlu → **Terapkan**;
   |Sistem|

@@ -31,7 +31,7 @@ use Tests\TestCase;
  *    field dibatasi (code/name/requirements_info saja), 404 kalau kosong.
  *  - /public/regulations: semua regulation (tidak ada filter publish),
  *    404 kalau kosong.
- *  - /public/contact-us: hanya kasi_pelayanan/kaur_tu_umum aktif,
+ *  - /public/contact-us: hanya kasi_pemerintahan/kaur_tu_umum aktif,
  *    wa_link diturunkan dari phone_wa, 404 kalau kosong.
  */
 class PublicPageEndpointTest extends TestCase
@@ -166,11 +166,11 @@ class PublicPageEndpointTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath('positions', [
-                ['code' => 'kasi_pelayanan', 'label' => 'Kasi Pelayanan'],
+                ['code' => 'kasi_pemerintahan', 'label' => 'Kasi Pemerintahan'],
                 ['code' => 'kaur_tu_umum', 'label' => 'Kaur TU & Umum'],
                 ['code' => 'kaur_keuangan', 'label' => 'Kaur Keuangan'],
                 ['code' => 'staf_arsip', 'label' => 'Staf Arsip'],
-                // Staf aplikasi desa paling akhir di grup staf.
+                // Staf SIDUTama desa paling akhir di grup staf.
                 ['code' => 'staf_sid', 'label' => 'Staf SIDUTama'],
             ])
             ->assertJsonPath('officials.1.position_label', 'Kaur Keuangan')
@@ -299,7 +299,7 @@ class PublicPageEndpointTest extends TestCase
 
         Official::factory()->create([
             'village_id' => $village->id,
-            'position' => 'kasi_pelayanan',
+            'position' => 'kasi_pemerintahan',
             'phone_wa' => '6281234567890',
             'is_active' => true,
         ]);
@@ -314,7 +314,7 @@ class PublicPageEndpointTest extends TestCase
 
         $response->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.position', 'kasi_pelayanan')
+            ->assertJsonPath('data.0.position', 'kasi_pemerintahan')
             ->assertJsonPath('data.0.wa_link', 'https://wa.me/6281234567890');
     }
 

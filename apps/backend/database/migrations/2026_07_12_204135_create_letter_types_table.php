@@ -19,13 +19,34 @@ return new class extends Migration
             $table->string('code', 20);
             $table->string('name');
             $table->text('description')->nullable();
+            // Persuratan Desa / Layanan Kependudukan (App\Enums\LetterTypeCategory).
+            $table->string('category', 20)->default('persuratan');
             $table->text('template')->nullable();
+            // Dokumen yang terbit bersama dokumen utama: [{key, title, template, when?}]
+            // (App\Support\LetterDocuments).
+            $table->json('documents')->nullable();
             $table->enum('verification_type', ['manual', 'auto', 'document']);
             $table->text('requirement_info')->nullable();
-            $table->enum('assigned_role', ['kasi_pelayanan', 'kaur_tu_umum'])->nullable();
+            // Dokumen yang dibawa ke instansi luar (Layanan Kependudukan):
+            // {forms: formulir yang terbit dari pengajuan, attachments: dokumen lain}.
+            $table->json('carry_documents')->nullable();
+            $table->enum('assigned_role', ['kasi_pemerintahan', 'kaur_tu_umum'])->nullable();
             $table->foreignId('category_id')->after('assigned_role')->constrained('letter_categories');
             $table->foreignId('flow_id')->after('category_id')->constrained('approval_flows');
             $table->unsignedInteger('validity_days')->nullable();
+            // Formulir pelayanan (format instansi luar) tidak bernomor surat
+            // desa dan tidak ditandatangani/distempel Kepala Desa.
+            $table->boolean('issues_letter_number')->default(true);
+            $table->boolean('signed_by_village_head')->default(true);
+            // Setelah terbit, pemohon mengunggah hasil dari instansi luar
+            // (mis. KK baru dari Disdukcapil) untuk diverifikasi Kasi/Kaur.
+            $table->boolean('requires_result_upload')->default(false);
+            $table->text('result_upload_hint')->nullable();
+            // Petunjuk bagi Kasi/Kaur untuk aksi data `manual`.
+            $table->text('data_instructions')->nullable();
+            // Opsi aksi data: `family` (create_citizen: masuk KK yang ada atau
+            // KK baru) dan `subjects` (update_citizens: isian NIK warga).
+            $table->json('data_options')->nullable();
             $table->boolean('is_active');
             $table->timestamps();
 

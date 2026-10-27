@@ -7,7 +7,9 @@ use Illuminate\Support\Carbon;
 /**
  * Mengubah nilai isian form menjadi teks siap cetak di surat, menurut
  * tipe isian pada definisi jenis surat:
- *  - date    -> "1 Oktober 2026", plus {{ <nama>_hari }} "Kamis, 1 Oktober 2026"
+ *  - date    -> "1 Oktober 2026", plus {{ <nama>_hari }} "Kamis, 1 Oktober 2026",
+ *               {{ <nama>_namahari }} "Kamis", dan {{ <nama>_tgl/_bln/_thn }}
+ *               "01"/"10"/"2026" untuk kotak tanggal formulir
  *  - number  -> "1.500.000", plus {{ <nama>_terbilang }} "satu juta lima ratus ribu"
  *  - select  -> label pilihan
  *  - textarea-> baris baru dipertahankan
@@ -50,6 +52,10 @@ class LetterValueFormatter
                     $text[$name] = $date ? $date->translatedFormat('j F Y') : $value;
                     if ($date) {
                         $text["{$name}_hari"] = $date->translatedFormat('l, j F Y');
+                        $text["{$name}_namahari"] = $date->translatedFormat('l');
+                        $text["{$name}_tgl"] = $date->format('d');
+                        $text["{$name}_bln"] = $date->format('m');
+                        $text["{$name}_thn"] = $date->format('Y');
                     }
                     break;
 

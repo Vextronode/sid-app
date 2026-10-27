@@ -72,7 +72,7 @@ class FlowStepModelTest extends TestCase
         return [
             'kepala_desa' => ['kepala_desa'],
             'sekretaris_desa' => ['sekretaris_desa'],
-            'kasi_pelayanan' => ['kasi_pelayanan'],
+            'kasi_pemerintahan' => ['kasi_pemerintahan'],
             'kaur_tu_umum' => ['kaur_tu_umum'],
         ];
     }

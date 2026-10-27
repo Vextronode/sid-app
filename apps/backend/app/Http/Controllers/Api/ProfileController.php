@@ -7,12 +7,16 @@ use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Services\ProfileService;
+use App\Services\UserService;
+use App\Support\LetterFormSchema;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
     public function __construct(
         protected ProfileService $profileService,
+        protected UserService $userService,
     ) {}
 
     public function update(UpdateProfileRequest $request): JsonResponse
@@ -21,7 +25,47 @@ class ProfileController extends Controller
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui.',
-            'user' => new UserResource($user->load(['citizen.occupation', 'official.citizen.occupation'])),
+            'user' => new UserResource($this->userService->getCurrentUserProfile($user)),
+        ]);
+    }
+
+    /**
+     * Anggota KK pemohon untuk isian family_members di form surat. NIK
+     * disamarkan; pilihan yang dikirim divalidasi ulang saat pengajuan.
+     */
+    public function familyMembers(Request $request): JsonResponse
+    {
+        $citizen = $request->user()->citizen;
+        $members = (new LetterFormSchema(null, $citizen))->familyMembers();
+
+        return response()->json([
+            'message' => 'Anggota keluarga berhasil diambil.',
+            'data' => $members->map(fn ($member): array => [
+                'id' => $member->id,
+                'name' => $member->name,
+                'family_role' => $member->family_role?->value,
+                'family_role_label' => LetterFormSchema::familyRoleLabel($member->family_role),
+                // Isian family_member dapat dibatasi menurut jenis kelamin.
+                'gender' => $member->gender,
+                // Isian family_member dapat mensyaratkan selisih usia (`older_than`).
+                'date_of_birth' => $member->date_of_birth?->format('Y-m-d'),
+                'nik_masked' => $member->nik ? str_repeat('*', max(strlen($member->nik) - 4, 0)).substr($member->nik, -4) : null,
+                'is_self' => $member->id === $citizen?->id,
+            ])->values(),
+        ]);
+    }
+
+    /**
+     * Nama dan No. KK warga desa ini dari NIK, untuk isian otomatis di form
+     * surat (mis. saksi).
+     */
+    public function lookupNik(Request $request): JsonResponse
+    {
+        $nik = (string) $request->validate(['nik' => ['required', 'digits:16']])['nik'];
+
+        return response()->json([
+            'message' => 'Pencarian NIK selesai.',
+            'data' => $this->profileService->lookupCitizenName($request->user(), $nik),
         ]);
     }
 
@@ -31,7 +75,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'message' => 'Kata sandi berhasil diperbarui.',
-            'user' => new UserResource($user->load(['citizen.occupation', 'official.citizen.occupation'])),
+            'user' => new UserResource($this->userService->getCurrentUserProfile($user)),
         ]);
     }
 }

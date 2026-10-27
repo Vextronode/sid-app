@@ -148,7 +148,7 @@ class OfficialService
     }
 
     /**
-     * Akun Petugas Desa aktif di desa; penerima notifikasi saat surat
+     * Akun Staf SIDUTama aktif di desa; penerima notifikasi saat surat
      * tertahan karena jabatan approver kosong.
      *
      * @return Collection<int, User>
@@ -171,7 +171,7 @@ class OfficialService
         $assignedRole = $letter->letterType->assigned_role;
 
         return $this->officialRepository
-            ->allActiveByPositionsAndVillage(['kasi_pelayanan', 'kaur_tu_umum'], $letter->village_id)
+            ->allActiveByPositionsAndVillage(['kasi_pemerintahan', 'kaur_tu_umum'], $letter->village_id)
             ->filter(fn (Official $official) => $assignedRole === null || $official->position === $assignedRole)
             ->load('user')
             ->values();

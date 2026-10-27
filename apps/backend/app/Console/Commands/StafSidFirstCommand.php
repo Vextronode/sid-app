@@ -11,7 +11,7 @@ use Illuminate\Validation\ValidationException;
 class StafSidFirstCommand extends Command
 {
     protected $signature = 'staf-sid:first
-        {--nik= : NIK calon staf aplikasi desa (16 digit)}
+        {--nik= : NIK calon Staf SIDUTama desa (16 digit)}
         {--name= : Nama lengkap}
         {--dob= : Tanggal lahir (YYYY-MM-DD)}
         {--gender= : Jenis kelamin (L atau P)}
@@ -20,7 +20,7 @@ class StafSidFirstCommand extends Command
         {--rt= : ID RT, wajib jika citizen belum terdaftar}
         {--hamlet= : ID dusun (opsional)}';
 
-    protected $description = 'Membuat akun dan mempromosikan staf aplikasi desa (staf_sid) pertama.';
+    protected $description = 'Membuat akun dan mempromosikan Staf SIDUTama desa (staf_sid) pertama.';
 
     public function handle(OfficialAssignmentService $assignmentService): int
     {

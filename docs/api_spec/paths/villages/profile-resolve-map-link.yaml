@@ -2,7 +2,7 @@ post:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Ambil titik kantor desa dari link Google Maps
   description: |
-    Aktor: Petugas Desa. Menerima link Google Maps yang ditempel di Edit
+    Aktor: Staf SIDUTama. Menerima link Google Maps yang ditempel di Edit
     Profil Desa, baik link panjang (koordinat dibaca langsung dari URL) maupun
     short link `maps.app.goo.gl` (server mengikuti redirect-nya, maks. 5 hop,
     timeout 5 detik). Hanya host Google Maps yang dihubungi, termasuk di

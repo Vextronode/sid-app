@@ -288,7 +288,7 @@ describe('BerandaPage hero', () => {
     expect(screen.getByRole('link', { name: 'Cek Status Surat' })).toHaveClass('bd-lift')
   })
 
-  // Foto dan kreditnya dari data desa (diatur Petugas Desa).
+  // Foto dan kreditnya dari data desa (diatur Staf SIDUTama).
   it('uses the hero photo and credit from the village data', () => {
     usePublicVillageInfo.mockReturnValue({
       village: { hero_image_url: '/storage/village-media/hero.jpg', hero_photo_credit: 'Warga' },
@@ -376,7 +376,7 @@ describe('BerandaPage service cards', () => {
     expect(whatsapp.getAttribute('rel')).toMatch(/\bnoreferrer\b/)
     expect(screen.queryByText('+62 812-3456-7890')).toBeNull()
 
-    // Email dari data desa (diatur Petugas Desa).
+    // Email dari data desa (diatur Staf SIDUTama).
     expect(email).toHaveAttribute('href', 'mailto:kantor@desa.test')
     expect(email).toHaveAccessibleName('Email pengaduan kantor@desa.test')
     expect(email).not.toHaveAttribute('target')
@@ -482,7 +482,7 @@ describe('BerandaPage Kepala Desa welcome', () => {
 
 describe('BerandaPage contact section', () => {
   const section = () => screen.getByRole('region', { name: 'Butuh bantuan?' })
-  // Seluruh isi kartu kontak dari data desa (diatur Petugas Desa).
+  // Seluruh isi kartu kontak dari data desa (diatur Staf SIDUTama).
   const village = {
     name: 'Desa Cibenda',
     phone: '(0265) 2640613',
@@ -493,7 +493,7 @@ describe('BerandaPage contact section', () => {
     latitude: -7.6803137,
     longitude: 108.5513816,
   }
-  const officialContacts = [{ name: 'Petugas Lama', position: 'kasi_pelayanan', wa_link: 'x' }]
+  const officialContacts = [{ name: 'Petugas Lama', position: 'kasi_pemerintahan', wa_link: 'x' }]
 
   beforeEach(() => {
     usePublicVillageInfo.mockReturnValue({ village, stats: null, contacts: officialContacts })

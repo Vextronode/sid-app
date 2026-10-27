@@ -7,13 +7,13 @@ const LETTER_LIST_ROUTES = {
   kadus: '/admin/list-kadus',
   kepala_desa: '/admin/list-kades',
   sekretaris_desa: '/admin/list-kades',
-  kasi_pelayanan: '/admin/operator-desa/surat',
+  kasi_pemerintahan: '/admin/operator-desa/surat',
   kaur_tu_umum: '/admin/operator-desa/surat',
   staf_sid: '/admin/operator-desa/surat',
 }
 
 // Pengajuan surat pribadi oleh pejabat: semua peran ber-akun kecuali
-// Petugas Desa (admin).
+// Staf SIDUTama (admin).
 export const SELF_LETTER_ROUTE = '/admin/surat-saya'
 
 export const SELF_LETTER_ROLES = [
@@ -22,7 +22,7 @@ export const SELF_LETTER_ROLES = [
   'kadus',
   'kepala_desa',
   'sekretaris_desa',
-  'kasi_pelayanan',
+  'kasi_pemerintahan',
   'kaur_tu_umum',
 ]
 

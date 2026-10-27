@@ -8,10 +8,24 @@ import {
 } from '../api/letterExtrasApi'
 import { refillLetterSignature } from '../api/signatureApi'
 import { FulfillmentPanel } from './FulfillmentPanel'
+import { LetterResultPanel } from './LetterResultPanel'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 
-const FULFILLMENT_ROLES = ['kasi_pelayanan', 'kaur_tu_umum', 'staf_sid']
+const FULFILLMENT_ROLES = ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid']
+
+// Cara saksi tercatat (signer_type witness).
+const WITNESS_METHOD_LABELS = {
+  consent: 'disetujui lewat akun',
+  rt_check: 'warga tanpa akun, perlu verifikasi RT',
+  manual: 'di luar data penduduk, diisi pemohon',
+}
+
+// Saksi tidak menandatangani: status menyesuaikan.
+const WITNESS_STATUS_LABELS = {
+  signed: 'Tercatat',
+  pending: 'Menunggu persetujuan saksi',
+}
 
 const SIGNATURE_STATUS_LABELS = {
   signed: 'Sudah ditandatangani',
@@ -31,6 +45,64 @@ function serverMessage(error, fallback) {
   }
 
   return error?.response?.data?.message ?? fallback
+}
+
+/**
+ * Ganti saksi yang menolak/kedaluwarsa: NIK baru (nama diketik bila NIK di
+ * luar data penduduk). Warga desa ber-akun diminta persetujuan lagi.
+ */
+function WitnessRefill({ letterId, slot, onDone }) {
+  const [nik, setNik] = useState('')
+  const [name, setName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+
+    try {
+      await refillLetterSignature(letterId, slot.slot_key, { nik, name })
+      notifySuccess('Saksi diperbarui.')
+      onDone()
+    } catch (requestError) {
+      setError(serverMessage(requestError, 'Gagal memperbarui saksi.'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <input
+        className="sid-input"
+        inputMode="numeric"
+        maxLength={16}
+        aria-label={`NIK ${slot.slot_label} baru`}
+        placeholder="NIK saksi baru (16 digit)"
+        value={nik}
+        onChange={(event) => setNik(event.target.value)}
+      />
+      <input
+        className="sid-input"
+        aria-label={`Nama ${slot.slot_label} baru`}
+        placeholder="Nama saksi (isi bila NIK tidak terdaftar di desa)"
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+      />
+
+      {error && (
+        <p role="alert" className="sid-admin-alert sid-admin-alert-error">
+          {error}
+        </p>
+      )}
+
+      <button type="submit" className="sid-primary-button" disabled={saving || nik.length !== 16}>
+        {saving ? 'Mengirim...' : 'Ganti saksi'}
+      </button>
+    </form>
+  )
 }
 
 function SignatureRefill({ letterId, slot, onDone }) {
@@ -159,6 +231,8 @@ export function LetterExtrasPanel({ letterId }) {
   const { user } = useAuth()
   const [letter, setLetter] = useState(null)
   const [error, setError] = useState('')
+  // Hasil instansi baru diterima: Terapkan langsung dimulai (pop up perubahan).
+  const [resultAccepted, setResultAccepted] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -202,6 +276,37 @@ export function LetterExtrasPanel({ letterId }) {
     .filter((field) => field.type !== 'file')
     .map((field) => {
       const raw = letter.payload?.[field.name]
+
+      // Isian berulang: satu baris per entri (anggota KK memakai nama).
+      if (Array.isArray(raw)) {
+        const value = raw
+          .map(
+            (row) =>
+              row?.nama ??
+              // Baris berisi anggota KK: tampilkan namanya, bukan id warga.
+              Object.entries(row ?? {}).find(([key]) => key.endsWith('_nama'))?.[1] ??
+              Object.values(row ?? {})
+                .filter((cell) => cell !== '' && cell !== null)
+                .join(' / '),
+          )
+          .join('; ')
+
+        return { name: field.name, label: field.label, value }
+      }
+
+      // Anggota KK: tampilkan namanya, bukan id warga.
+      if (field.type === 'family_member' && letter.payload?.[`${field.name}_nama`]) {
+        return { name: field.name, label: field.label, value: letter.payload[`${field.name}_nama`] }
+      }
+
+      // Wilayah desa: tampilkan label yang disimpan saat pengajuan.
+      if (field.type === 'village_area' && letter.payload?.[`${field.name}_rt`]) {
+        const p = letter.payload
+        const value = `Dusun ${p[`${field.name}_dusun`]}, RW ${p[`${field.name}_rw`]}, RT ${p[`${field.name}_rt`]}`
+
+        return { name: field.name, label: field.label, value }
+      }
+
       const option = (field.options ?? []).find((item) => String(item.value) === String(raw))
 
       return { name: field.name, label: field.label, value: option?.label ?? raw }
@@ -222,23 +327,33 @@ export function LetterExtrasPanel({ letterId }) {
 
       {letter.awaiting_signatures && (
         <p className="sid-warning-box" role="status">
-          Surat ini belum diproses karena masih menunggu tanda tangan pihak terkait.
+          Surat ini belum diproses karena masih menunggu tanda tangan atau persetujuan saksi.
         </p>
       )}
 
       {signatures.length > 0 && (
         <section className="sid-modal-note" aria-label="Tanda tangan">
-          <p className="sid-modal-note-label">Tanda Tangan</p>
+          <p className="sid-modal-note-label">Tanda Tangan &amp; Saksi</p>
           <ul className="sid-modal-note-text">
             {signatures.map((slot) => (
               <li key={slot.slot_key}>
-                <strong>{slot.slot_label}</strong> —{' '}
-                {SIGNATURE_STATUS_LABELS[slot.status] ?? slot.status}
+                <strong>{slot.slot_label}</strong> -{' '}
+                {(slot.signer_type === 'witness' && WITNESS_STATUS_LABELS[slot.status]) ||
+                  SIGNATURE_STATUS_LABELS[slot.status] ||
+                  slot.status}
                 {slot.signer_name ? ` (${slot.signer_name})` : ''}
                 {slot.method === 'wet' && slot.status === 'signed' ? ', tanda tangan basah' : ''}
+                {slot.signer_type === 'witness' && slot.status === 'signed'
+                  ? `, ${WITNESS_METHOD_LABELS[slot.method] ?? slot.method}`
+                  : ''}
                 {canRefill && slot.signer_type === 'other' && slot.status !== 'signed' && (
                   <SignatureRefill letterId={letter.id} slot={slot} onDone={load} />
                 )}
+                {canRefill &&
+                  slot.signer_type === 'witness' &&
+                  ['rejected', 'expired', 'cancelled'].includes(slot.status) && (
+                    <WitnessRefill letterId={letter.id} slot={slot} onDone={load} />
+                  )}
               </li>
             ))}
           </ul>
@@ -306,13 +421,26 @@ export function LetterExtrasPanel({ letterId }) {
         </section>
       )}
 
-      {canFulfill && <FulfillmentPanel letterId={letter.id} onApplied={load} />}
+      {letter.result_stage && (
+        <LetterResultPanel
+          letter={letter}
+          onChanged={(decision) => {
+            setResultAccepted(decision === 'accepted')
+            void load()
+          }}
+          onOpenFile={(url) => openFile(() => openProtectedFile(url))}
+        />
+      )}
+
+      {canFulfill && (
+        <FulfillmentPanel letterId={letter.id} onApplied={load} autoStart={resultAccepted} />
+      )}
 
       {!canFulfill && letter.fulfilled_at && (
         <section className="sid-modal-note" aria-label="Perubahan data">
           <p className="sid-modal-note-label">Perubahan Data</p>
           <p className="sid-modal-note-text">
-            Perubahan data kependudukan dari surat ini telah diterapkan pada{' '}
+            Perubahan data kependudukan dari surat ini telah diselesaikan pada{' '}
             {new Date(letter.fulfilled_at).toLocaleString('id-ID')}.
           </p>
         </section>

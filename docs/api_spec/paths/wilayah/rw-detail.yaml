@@ -1,7 +1,7 @@
 patch:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Memperbarui RW
-  description: Eksklusif Petugas Desa. Memperbarui data atau status aktif RW.
+  description: Eksklusif Staf SIDUTama. Memperbarui data atau status aktif RW.
   operationId: updateRw
   security:
     - sanctumCookie: []
@@ -51,7 +51,7 @@ patch:
 delete:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Hapus RW
-  description: Eksklusif Petugas Desa. Penghapusan ditolak bila RW masih memiliki warga aktif.
+  description: Eksklusif Staf SIDUTama. Penghapusan ditolak bila RW masih memiliki warga aktif.
   operationId: deleteRw
   security:
     - sanctumCookie: []

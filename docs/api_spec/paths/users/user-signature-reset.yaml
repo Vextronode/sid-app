@@ -2,7 +2,7 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Reset tanda tangan pribadi akun (darurat)
   description: |
-    Aktor: Petugas Desa aktif di desa yang sama dengan akun target. Baris TTD
+    Aktor: Staf SIDUTama aktif di desa yang sama dengan akun target. Baris TTD
     aktif ditandai `revoked_at`/`revoked_by`/`revoke_reason` tanpa menghapus
     berkas, sehingga dokumen lama tetap dapat dirender; pemilik akun dapat
     membuat TTD baru. Tercatat di activity log `user_signature` (event `reset`).
@@ -40,7 +40,7 @@ post:
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: Bukan Petugas Desa aktif di desa yang sama
+      description: Bukan Staf SIDUTama aktif di desa yang sama
     '404':
       description: Akun belum memiliki tanda tangan
     '422':

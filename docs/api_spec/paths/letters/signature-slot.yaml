@@ -7,7 +7,7 @@ post:
     atau untuk beralih ke TTD basah. Permintaan yang masih menunggu pada slot
     itu dibatalkan (`cancelled`).
     - `nik`: minta TTD digital ke pemilik NIK (berlaku `config/letters.php`
-      `request_ttl_days`, default 7 hari). Jawaban sengaja seragam walau NIK
+      `request_ttl_days`, default 3 hari). Jawaban sengaja seragam walau NIK
       tidak punya akun. Ditolak bila NIK milik pemohon, pemohon diblokir oleh
       pemilik NIK, atau sudah ditolak `max_rejections` kali (default 3) dalam
       `rejection_window_hours` (default 24 jam).

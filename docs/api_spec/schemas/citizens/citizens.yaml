@@ -6,6 +6,11 @@ Citizen:
     kolom baru: family_id, family_role, father_id/mother_id (self-reference),
     father_name_text/mother_name_text (fallback teks), blood_type,
     residency_type, origin_region, data_source, last_verified_at, sync_status.
+    Dokumen & keterangan tambahan untuk F-1.01 (opsional): title_front,
+    title_back, birth_certificate_number, marriage_certificate_number,
+    marriage_date, divorce_certificate_number, divorce_date, has_disorder,
+    disability. Nomor akta dan disability disimpan terenkripsi (tidak dapat
+    dicari/difilter) dan disamarkan di Log Aktivitas.
     Setiap warga (lokal maupun pendatang) SELALU punya NIK - tidak ada
     kategori "warga Non-NIK" (SID-ARCH-BE-001 S5.2).
   properties:
@@ -74,7 +79,7 @@ Citizen:
           example: "************0001"
     family_role:
       type: string
-      enum: [kepala_keluarga, istri, suami, anak, famili_lain]
+      enum: [kepala_keluarga, suami, istri, anak, menantu, cucu, orang_tua, mertua, famili_lain, pembantu, lainnya]
       nullable: true
       example: "istri"
       description: "BARU v5.0"
@@ -148,6 +153,52 @@ Citizen:
       nullable: true
       example: null
       description: "BARU v5.0 - asal daerah, relevan jika residency_type='pendatang'"
+    title_front:
+      type: string
+      nullable: true
+      example: "Dr."
+      description: "Gelar depan (F-1.01 kolom 3)"
+    title_back:
+      type: string
+      nullable: true
+      example: "S.Pd."
+      description: "Gelar belakang (F-1.01 kolom 4)"
+    birth_certificate_number:
+      type: string
+      nullable: true
+      example: "3207-LT-01011990-0001"
+      description: "No. akta lahir, terenkripsi"
+    marriage_certificate_number:
+      type: string
+      nullable: true
+      example: "123/45/X/2015"
+      description: "No. akta perkawinan/buku nikah, terenkripsi"
+    marriage_date:
+      type: string
+      format: date
+      nullable: true
+      example: "2015-10-10"
+      description: "Tanggal perkawinan"
+    divorce_certificate_number:
+      type: string
+      nullable: true
+      example: null
+      description: "No. akta perceraian, terenkripsi"
+    divorce_date:
+      type: string
+      format: date
+      nullable: true
+      example: null
+      description: "Tanggal perceraian"
+    has_disorder:
+      type: boolean
+      default: false
+      description: "Kelainan fisik & mental (F-1.01 kolom 28)"
+    disability:
+      type: string
+      nullable: true
+      example: null
+      description: "Penyandang cacat (F-1.01 kolom 29), terenkripsi; wajib bila has_disorder true, dikosongkan bila false"
     data_source:
       type: string
       enum: [manual_input_desa, import_excel, dukcapil_sync]
@@ -235,7 +286,7 @@ CitizenCreateRequest:
       description: "Pilih dari dropdown KK yang sudah ada, atau buat KK baru dulu via POST /families"
     family_role:
       type: string
-      enum: [kepala_keluarga, istri, suami, anak, famili_lain]
+      enum: [kepala_keluarga, suami, istri, anak, menantu, cucu, orang_tua, mertua, famili_lain, pembantu, lainnya]
       nullable: true
       example: "istri"
     father_id:
@@ -288,6 +339,52 @@ CitizenCreateRequest:
       type: string
       nullable: true
       example: null
+    title_front:
+      type: string
+      nullable: true
+      example: "Dr."
+      description: "Gelar depan (F-1.01 kolom 3)"
+    title_back:
+      type: string
+      nullable: true
+      example: "S.Pd."
+      description: "Gelar belakang (F-1.01 kolom 4)"
+    birth_certificate_number:
+      type: string
+      nullable: true
+      example: "3207-LT-01011990-0001"
+      description: "No. akta lahir, terenkripsi"
+    marriage_certificate_number:
+      type: string
+      nullable: true
+      example: "123/45/X/2015"
+      description: "No. akta perkawinan/buku nikah, terenkripsi"
+    marriage_date:
+      type: string
+      format: date
+      nullable: true
+      example: "2015-10-10"
+      description: "Tanggal perkawinan"
+    divorce_certificate_number:
+      type: string
+      nullable: true
+      example: null
+      description: "No. akta perceraian, terenkripsi"
+    divorce_date:
+      type: string
+      format: date
+      nullable: true
+      example: null
+      description: "Tanggal perceraian"
+    has_disorder:
+      type: boolean
+      default: false
+      description: "Kelainan fisik & mental (F-1.01 kolom 28)"
+    disability:
+      type: string
+      nullable: true
+      example: null
+      description: "Penyandang cacat (F-1.01 kolom 29), terenkripsi; wajib bila has_disorder true, dikosongkan bila false"
 
 CitizenImportResponse:
   type: object

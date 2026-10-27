@@ -3,8 +3,8 @@ post:
   summary: Unggah atau ganti foto profil sendiri (akun warga)
   description: |
     Hanya akun berperan `warga`. Akun yang sedang menjabat (RT sampai
-    Kepala Desa, termasuk Petugas Desa) ditolak 403: fotonya adalah foto
-    pejabat yang dikelola Petugas Desa di halaman Pejabat Desa. Setelah
+    Kepala Desa, termasuk Staf SIDUTama) ditolak 403: fotonya adalah foto
+    pejabat yang dikelola Staf SIDUTama di halaman Pejabat Desa. Setelah
     kembali menjadi warga, foto akun bisa diubah lagi. Foto lama dihapus.
   operationId: uploadOwnProfilePhoto
   security:
@@ -45,7 +45,7 @@ post:
             properties:
               message:
                 type: string
-                example: "Foto pejabat dikelola Petugas Desa lewat halaman Pejabat Desa."
+                example: "Foto pejabat dikelola Staf SIDUTama lewat halaman Pejabat Desa."
     '422':
       $ref: '../../responses/common.yaml#/ValidationError'
 delete:

@@ -27,7 +27,7 @@ info:
       nomor surat per kode klasifikasi (`470/001/Des/X/2026`).
     - **Tanda tangan pribadi akun** (`/profile/signature`), permintaan TTD
       lintas warga (`/signature-requests`), blokir (`/signature-blocks`),
-      reset oleh Petugas Desa (`/users/{user}/signature/reset`).
+      reset oleh Staf SIDUTama (`/users/{user}/signature/reset`).
     - **Web Push** (`/push-subscriptions`) di samping notifikasi in-app.
     - **Jabatan desa dinamis:** jenis jabatan tanpa akun
       (`/official-position-types`), `officials.position` VARCHAR, foto
@@ -146,6 +146,8 @@ paths:
   # ─────────────────────────────────────────────
   # EPIC 1 - Struktur Wilayah
   # ─────────────────────────────────────────────
+  /village-areas:
+    $ref: 'paths/wilayah/village-areas.yaml'
   /hamlets:
     $ref: 'paths/wilayah/hamlets.yaml'
   /hamlets/{hamlet}:
@@ -164,6 +166,8 @@ paths:
   # ─────────────────────────────────────────────
   /citizens:
     $ref: 'paths/citizens/citizens.yaml'
+  /citizens/{citizen}/identity:
+    $ref: 'paths/citizens/citizen-identity.yaml'
   /citizens/{citizen}:
     $ref: 'paths/citizens/citizen-detail.yaml'
   /citizens/import:
@@ -176,6 +180,8 @@ paths:
     $ref: 'paths/families/families.yaml'
   /families/options:
     $ref: 'paths/families/family-options.yaml'
+  /families/{family}/identity:
+    $ref: 'paths/families/family-identity.yaml'
   /families/{family}:
     $ref: 'paths/families/family-detail.yaml'
   /families/{id}/socioeconomic:
@@ -242,6 +248,8 @@ paths:
     $ref: 'paths/letters/summary.yaml'
   /letters/export:
     $ref: 'paths/letters/export.yaml'
+  /letters/{letter}/applicant-identity:
+    $ref: 'paths/letters/letter-applicant-identity.yaml'
   /letters/{id}:
     $ref: 'paths/letters/letter-detail.yaml'
   /letters/{letter}/download:
@@ -254,12 +262,22 @@ paths:
     $ref: 'paths/letters/supporting-document.yaml'
   /letters/{letter}/signatures/{slot}:
     $ref: 'paths/letters/signature-slot.yaml'
+  /letters/{letter}/results:
+    $ref: 'paths/letters/results.yaml'
+  /letters/{letter}/results/{result}:
+    $ref: 'paths/letters/result-review.yaml'
   /letters/{letter}/fulfillment:
     $ref: 'paths/letters/fulfillment.yaml'
+  /letters/{letter}/fulfillment/preview:
+    $ref: 'paths/letters/fulfillment-preview.yaml'
   /rt/letters/{letter}/decision:
     $ref: 'paths/rt/letter-decision.yaml'
   /kades/letters/{letter}/decision:
     $ref: 'paths/kades/letter-decision.yaml'
+  /profile/nik-lookup:
+    $ref: 'paths/users/profile-nik-lookup.yaml'
+  /profile/family-members:
+    $ref: 'paths/users/profile-family-members.yaml'
   /profile/signature:
     $ref: 'paths/signatures/profile-signature.yaml'
   /profile/signature/image:

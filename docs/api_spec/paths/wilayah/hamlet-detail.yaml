@@ -2,7 +2,7 @@ patch:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Edit / nonaktifkan dusun
   description: |
-    Aktor: Petugas Desa.
+    Aktor: Staf SIDUTama.
     UC-20. Guard: menonaktifkan dusun yang masih punya warga aktif
     akan ditolak (cek relasi citizens.hamlet_id). Tidak berubah dari v4.2.
   operationId: updateHamlet
@@ -57,7 +57,7 @@ patch:
 delete:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Hapus dusun
-  description: Eksklusif Petugas Desa. Penghapusan ditolak bila masih ada warga aktif di dusun.
+  description: Eksklusif Staf SIDUTama. Penghapusan ditolak bila masih ada warga aktif di dusun.
   operationId: deleteHamlet
   security:
     - sanctumCookie: []

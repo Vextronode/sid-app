@@ -2,8 +2,13 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Citizen;
+use App\Models\Hamlet;
 use App\Models\Official;
+use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\User;
+use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -34,6 +39,21 @@ class LoginTest extends TestCase
             ->assertJsonPath('user.official.id', $official->id)
             ->assertJsonPath('user.must_change_password', true);
         $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_login_returns_the_rt_and_rw_of_the_citizen_like_the_session_endpoint(): void
+    {
+        $village = Village::factory()->create();
+        $hamlet = Hamlet::factory()->create(['village_id' => $village->id]);
+        $rw = Rw::factory()->create(['village_id' => $village->id, 'hamlet_id' => $hamlet->id, 'number' => '001']);
+        $rt = Rt::factory()->create(['village_id' => $village->id, 'rw_id' => $rw->id, 'number' => '005']);
+        $citizen = Citizen::factory()->create(['village_id' => $village->id, 'rt_id' => $rt->id]);
+        User::factory()->create(['username' => 'engkos', 'village_id' => $village->id, 'citizen_id' => $citizen->id]);
+
+        $this->postJson('/login', ['username' => 'engkos', 'password' => 'Password123'])
+            ->assertOk()
+            ->assertJsonPath('user.citizen.rt.number', '005')
+            ->assertJsonPath('user.citizen.rw.number', '001');
     }
 
     public function test_password_must_be_correct(): void

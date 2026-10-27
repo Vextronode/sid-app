@@ -24,7 +24,7 @@ export const saveMySignature = async (file) => {
   return response.data
 }
 
-// Reset darurat oleh Petugas Desa.
+// Reset darurat oleh Staf SIDUTama.
 export const resetUserSignature = (userId, reason) =>
   api.post(`/api/users/${userId}/signature/reset`, { reason })
 
@@ -50,8 +50,19 @@ export const getSignatureBlocks = async () => {
 
 export const removeSignatureBlock = (id) => api.delete(`/api/signature-blocks/${id}`)
 
+// Blokir warga desa lewat NIK: permintaan TTD/saksi darinya tidak sampai lagi.
+export const addSignatureBlock = async (nik) => {
+  const response = await api.post('/api/signature-blocks', { nik })
+
+  return response.data.data
+}
+
 // Pemohon mengisi ulang slot tanda tangan pihak lain pada suratnya.
-export const refillLetterSignature = async (letterId, slotKey, { nik, name, file }) => {
+export const refillLetterSignature = async (
+  letterId,
+  slotKey,
+  { nik, name, file, familyNumber },
+) => {
   const formData = new FormData()
 
   if (file) {
@@ -59,6 +70,10 @@ export const refillLetterSignature = async (letterId, slotKey, { nik, name, file
     formData.append('name', name ?? '')
   } else {
     formData.append('nik', nik ?? '')
+
+    // Ganti saksi di luar data penduduk: nama (dan No. KK) diketik.
+    if (name) formData.append('name', name)
+    if (familyNumber) formData.append('family_number', familyNumber)
   }
 
   const response = await api.post(

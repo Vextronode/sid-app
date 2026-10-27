@@ -1,7 +1,7 @@
 '==================================================================================
 ' SECTION: USE CASE DIAGRAM
 ' FILE: 03_UC_PetugasDesa_WilayahJabatan_v6.puml
-' JUDUL: Use Case - Petugas Desa (2/3: Wilayah, Akun, Jabatan, Organisasi)
+' JUDUL: Use Case - Staf SIDUTama (2/3: Wilayah, Akun, Jabatan, Organisasi)
 ' SUMBER: TDD-02 v5.3 (UC-14/20/22/23) + routes (2026-10-16)
 ' CATATAN: Menggantikan 03_UC_PetugasDesa_WilayahJabatan_v5.puml. Tambah: jenis
 '          jabatan tanpa akun, cari calon via NIK, foto pejabat, reset TTD akun.
@@ -20,9 +20,9 @@ skinparam actor {
   BackgroundColor #D6E4F7
   BorderColor #1F3864
 }
-title Use Case Diagram - Petugas Desa (2/3: Wilayah, Akun, Jabatan & Organisasi) [v6]
+title Use Case Diagram - Staf SIDUTama (2/3: Wilayah, Akun, Jabatan & Organisasi) [v6]
 
-actor "Petugas Desa" as PD
+actor "Staf SIDUTama" as PD
 actor "Developer/Operator\n(CLI)" as DEV
 
 rectangle "SIDUTama" {

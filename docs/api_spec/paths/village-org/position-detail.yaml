@@ -1,7 +1,7 @@
 get:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Lihat detail satu jabatan organisasi non-struktural
-  description: "Aktor: Petugas Desa."
+  description: "Aktor: Staf SIDUTama."
   operationId: getVillageOrgPosition
   security:
     - sanctumCookie: []

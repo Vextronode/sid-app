@@ -1,7 +1,7 @@
 // ==========================================
 // ForgotPasswordPage.jsx
 // Lupa kata sandi lewat email: backend mengirim tautan reset ke email yang
-// terdaftar pada akun. Akun tanpa email meminta reset ke Petugas Desa.
+// terdaftar pada akun. Akun tanpa email meminta reset ke Staf SIDUTama.
 // ==========================================
 
 import { useState } from 'react'

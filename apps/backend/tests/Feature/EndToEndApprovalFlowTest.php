@@ -45,7 +45,7 @@ class EndToEndApprovalFlowTest extends TestCase
         $rtApprover = $this->makeOfficialUser('rt', $village, ['rt_id' => $rt->id]);
         $rwUser = $this->makeOfficialUser('rw', $village, ['rw_id' => $rw->id]);
         $kades = $this->makeOfficialUser('kepala_desa', $village);
-        $kasi = $this->makeOfficialUser('kasi_pelayanan', $village);
+        $kasi = $this->makeOfficialUser('kasi_pemerintahan', $village);
         $otherKasi = $this->makeOfficialUser('kaur_tu_umum', $village);
         $flow = $this->makeFlow([
             ['position' => 'rt', 'final' => false],
@@ -53,7 +53,7 @@ class EndToEndApprovalFlowTest extends TestCase
         ]);
         $letterType = LetterType::factory()->create([
             'flow_id' => $flow->id,
-            'assigned_role' => 'kasi_pelayanan',
+            'assigned_role' => 'kasi_pemerintahan',
             'template' => 'Surat {{ applicant_name }}',
         ]);
 

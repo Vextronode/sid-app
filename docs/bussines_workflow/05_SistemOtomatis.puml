@@ -29,7 +29,7 @@ fork again
   :Pindahkan surat ke step approval pertama;
 fork again
   :Step awal tanpa RT aktif;
-  :Tahan surat + notifikasi Petugas Desa;
+  :Tahan surat + notifikasi Staf SIDUTama;
   :Saat RT ditetapkan → notifikasi RT baru;
 fork again
   :Final approve;

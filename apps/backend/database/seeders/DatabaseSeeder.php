@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             ApprovalFlowSeeder::class,
             ApprovalSettingSeeder::class,
             LetterTypeSeeder::class,
+            ServiceLetterTypeSeeder::class,
             VillageOrgPositionSeeder::class,
         ]);
     }

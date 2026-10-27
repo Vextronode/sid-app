@@ -6,7 +6,7 @@
 //                    tersimpan di ?lembaga= agar bisa dibagikan); BUMDesa
 //                    tampil "Segera hadir" dan tidak bisa dipilih
 // Bagannya sama dengan Perangkat Desa di Profil Desa (OrgChart).
-// Data dari /api/public/village-orgs/{orgType}, dikelola Petugas Desa.
+// Data dari /api/public/village-orgs/{orgType}, dikelola Staf SIDUTama.
 // ==========================================
 
 import { useEffect, useState } from 'react'

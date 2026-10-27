@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
+use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,12 +16,14 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): JsonResponse
+    public function store(LoginRequest $request, UserService $userService): JsonResponse
     {
         $request->authenticate();
 
         $request->session()->regenerate();
-        $user = $request->user()->load(['citizen.occupation', 'official.citizen.occupation']);
+        // Sama dengan GET /api/user (termasuk RT/RW) agar data form surat
+        // lengkap sejak login, tanpa perlu memuat ulang halaman.
+        $user = $userService->getCurrentUserProfile($request->user());
 
         return response()->json([
             'message' => 'Login berhasil',

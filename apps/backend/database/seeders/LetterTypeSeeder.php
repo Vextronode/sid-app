@@ -4,22 +4,28 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\AssignedRole;
+use App\Enums\LetterTypeCategory;
 use App\Models\ApprovalFlow;
 use App\Models\LetterType;
 use App\Models\Village;
+use Database\Seeders\Concerns\DefinesLetterTypes;
 use Illuminate\Database\Seeder;
 
 /**
- * Sepuluh jenis surat keterangan (A01-A10). Redaksi dan susunan tiap
+ * Sebelas jenis surat keterangan (A01-A11). Redaksi dan susunan tiap
  * template mengikuti template fisik kantor desa di
  * docs/template-surat-fisik/. Setiap jenis surat didefinisikan utuh di
  * satu tempat: isian form, template, kode klasifikasi nomor surat, dan
  * aksi data. Isian form hanya yang ada di template fisik (kecuali
  * foto usaha di A01). Nama isian = nama placeholder di template. Kop surat dan
  * wilayah administratif diambil dari profil desa, bukan ditulis tetap.
+ * Semua surat bawaan ditangani Kaur TU & Umum (surat selesai dan Terapkan).
  */
 class LetterTypeSeeder extends Seeder
 {
+    use DefinesLetterTypes;
+
     private const CLOSING = 'Demikian surat keterangan ini kami buat dengan sebenarnya, mohon kepada yang bersangkutan agar menjadi maklum dan untuk menjadi bahan selanjutnya.';
 
     private const GENDER_OPTIONS = [
@@ -37,12 +43,15 @@ class LetterTypeSeeder extends Seeder
 
             foreach ($this->letterTypes() as $type) {
                 $sections = $type['sections'];
-                unset($type['sections']);
+                $opening = $type['opening'] ?? null;
+                unset($type['sections'], $type['opening']);
 
                 LetterType::updateOrCreate(
                     ['village_id' => $village->id, 'code' => $type['code']],
                     array_merge([
+                        'category' => LetterTypeCategory::Persuratan->value,
                         'requirement_info' => null,
+                        'documents' => null,
                         'classification_code' => '470',
                         'produces_letter' => true,
                         'data_action' => 'none',
@@ -50,8 +59,8 @@ class LetterTypeSeeder extends Seeder
                         'data_subject_field' => null,
                     ], $type, [
                         'village_id' => $village->id,
-                        'template' => $this->page($type['name'], $sections),
-                        'assigned_role' => 'kasi_pelayanan',
+                        'template' => $this->page($type['name'], $sections, $opening),
+                        'assigned_role' => AssignedRole::KaurTuUmum->value,
                         'is_active' => true,
                         'flow_id' => $flow->id,
                     ])
@@ -215,8 +224,9 @@ class LetterTypeSeeder extends Seeder
                 'form_fields' => [
                     // Pemohon adalah salah satu orang tua; datanya diambil
                     // dari akun. Pasangan dan anak diisi di form.
-                    ...$this->personFields('pasangan', 'Pasangan (Suami/Istri)', nikRequired: true),
-                    ...$this->personFields('anak', 'Anak', nikRequired: false),
+                    ...$this->personFields('pasangan', 'Pasangan (Suami/Istri)', nikRequired: true, nikRules: ['not_same_as' => ['nik_anak']]),
+                    // Anak yang baru lahir belum terdata sebagai warga desa.
+                    ...$this->personFields('anak', 'Anak', nikRequired: false, nikRules: ['not_same_as' => ['nik_pasangan'], 'not_village_citizen' => true]),
                 ],
                 // Setelah final approve, Kasi/Kaur menambahkan anak ke data
                 // warga lewat Terapkan (NIK anak boleh dilengkapi saat itu).
@@ -263,48 +273,49 @@ class LetterTypeSeeder extends Seeder
                     $this->paragraph(self::CLOSING),
                 ],
             ],
+            [
+                'code' => 'A11',
+                'name' => 'Surat Keterangan Ahli Waris',
+                'description' => 'Keterangan bahwa pemohon adalah ahli waris dari warga yang telah meninggal dunia.',
+                // Status ahli waris tidak kedaluwarsa.
+                'validity_days' => null,
+                'form_fields' => [
+                    // Pemohon adalah ahli waris; datanya diambil dari akun.
+                    ...$this->personFields('almarhum', 'Almarhum/Almarhumah', nikRequired: false),
+                    $this->occupation('pekerjaan_almarhum', 'Pekerjaan Almarhum/Almarhumah'),
+                    $this->date('tanggal_meninggal', 'Tanggal Meninggal'),
+                    $this->text('tempat_pemakaman', 'Nama TPU', true, 'Contoh: Cibenda'),
+                ],
+                // Template fisik tidak memakai blok Nama/Jabatan penanda tangan.
+                'opening' => $this->paragraph('Yang bertanda tangan dibawah ini Kepala Desa {{ village_name_short }} Kecamatan {{ village_district }} Kabupaten {{ village_regency }} menerangkan dengan sebenarnya bahwa :'),
+                'sections' => [
+                    $this->heirBlock(
+                        '{{ applicant_name }}',
+                        '{{ applicant_gender }}',
+                        '{{ applicant_nik }}',
+                        '{{ applicant_birth_place_date }}',
+                        '{{ applicant_occupation }}',
+                        '{{ applicant_address }}',
+                    ),
+                    $this->paragraph('Berdasarkan keterangan yang bersangkutan dan tokoh masyarakat setempat adalah benar-benar Ahli Waris dari Almarhum/Almarhumah :'),
+                    $this->heirBlock(
+                        '{{ nama_almarhum }}',
+                        '{{ jenis_kelamin_almarhum }}',
+                        '{{ nik_almarhum }}',
+                        '{{ tempat_lahir_almarhum }}, {{ tanggal_lahir_almarhum }}',
+                        '{{ pekerjaan_almarhum }}',
+                        '{{ alamat_almarhum }}',
+                    ),
+                    $this->paragraph('Yang telah meninggal dunia pada hari {{ tanggal_meninggal_hari }} dan dimakamkan di TPU {{ tempat_pemakaman }} dan ahli waris tersebut diatas bertanggung jawab apabila ada yang mengatas namakan Ahli Waris lain di kemudian hari.'),
+                    $this->paragraph('Demikian Surat Keterangan ini dibuat untuk dipergunakan sebagaimana mestinya.'),
+                ],
+            ],
         ];
     }
 
     // ------------------------------------------------------------------
-    // Isian form
+    // Isian form (helper umum di DefinesLetterTypes)
     // ------------------------------------------------------------------
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function field(string $name, string $label, string $type, bool $required, ?string $placeholder = null, array $extra = []): array
-    {
-        return ['name' => $name, 'label' => $label, 'type' => $type, 'required' => $required, 'placeholder' => $placeholder, ...$extra];
-    }
-
-    private function text(string $name, string $label, bool $required = true, ?string $placeholder = null): array
-    {
-        return $this->field($name, $label, 'text', $required, $placeholder);
-    }
-
-    private function textarea(string $name, string $label, bool $required = true, ?string $placeholder = null): array
-    {
-        return $this->field($name, $label, 'textarea', $required, $placeholder);
-    }
-
-    private function number(string $name, string $label, bool $required = true, ?string $placeholder = null): array
-    {
-        return $this->field($name, $label, 'number', $required, $placeholder);
-    }
-
-    /**
-     * Unggahan gambar (JPG/PNG) sebagai bahan pertimbangan approver.
-     */
-    private function image(string $name, string $label, bool $required = true): array
-    {
-        return $this->field($name, $label, 'file', $required, null, ['accept' => 'image']);
-    }
-
-    private function date(string $name, string $label, bool $required = true): array
-    {
-        return $this->field($name, $label, 'date', $required);
-    }
 
     /**
      * Lima data identitas seseorang, sejajar dengan blok identitas di
@@ -312,13 +323,19 @@ class LetterTypeSeeder extends Seeder
      *
      * @return array<int, array<string, mixed>>
      */
-    private function personFields(string $suffix, string $who, bool $nikRequired): array
+    private function personFields(string $suffix, string $who, bool $nikRequired, array $nikRules = []): array
     {
         return [
             $this->text("nama_{$suffix}", "Nama {$who}", true, 'Nama lengkap'),
             $this->text("tempat_lahir_{$suffix}", "Tempat Lahir {$who}", true, 'Kota/kabupaten'),
             $this->date("tanggal_lahir_{$suffix}", "Tanggal Lahir {$who}"),
-            $this->field("nik_{$suffix}", "NIK {$who}", 'nik', $nikRequired, '16 digit NIK'),
+            // NIK warga desa harus sesuai jenis kelamin yang diisi, dan bukan NIK pemohon.
+            [
+                ...$this->field("nik_{$suffix}", "NIK {$who}", 'nik', $nikRequired, '16 digit NIK'),
+                'nik_gender' => "jenis_kelamin_{$suffix}",
+                'not_applicant' => true,
+                ...$nikRules,
+            ],
             $this->field("jenis_kelamin_{$suffix}", "Jenis Kelamin {$who}", 'select', true, null, ['options' => self::GENDER_OPTIONS]),
             $this->text("alamat_{$suffix}", "Alamat {$who}", true, 'Alamat lengkap'),
         ];
@@ -330,8 +347,10 @@ class LetterTypeSeeder extends Seeder
 
     /**
      * @param  array<int, string>  $sections
+     * @param  string|null  $opening  pengganti blok penanda tangan bila
+     *                                template fisik memakai satu paragraf pembuka
      */
-    private function page(string $title, array $sections): string
+    private function page(string $title, array $sections, ?string $opening = null): string
     {
         $kop = <<<'HTML'
         <div style="text-align: center; margin-bottom: 5px;">
@@ -356,7 +375,7 @@ class LetterTypeSeeder extends Seeder
         </div>
         HTML;
 
-        $signer = $this->rowsBlock('Yang bertanda tangan dibawah ini :', [
+        $signer = $opening ?? $this->rowsBlock('Yang bertanda tangan dibawah ini :', [
             'Nama' => '{{ village_head_name }}',
             'Jabatan' => 'Kepala Desa {{ village_name_short }}',
         ]);
@@ -392,13 +411,6 @@ class LetterTypeSeeder extends Seeder
         HTML;
     }
 
-    private function paragraph(string $html, bool $indent = true): string
-    {
-        $textIndent = $indent ? '40px' : '0';
-
-        return '<p style="text-align: justify; text-indent: '.$textIndent.'; margin: 12px 0; line-height: 1.5;">'.$html.'</p>';
-    }
-
     /**
      * Blok identitas pemohon, diisi dari data akun.
      */
@@ -428,26 +440,18 @@ class LetterTypeSeeder extends Seeder
     }
 
     /**
-     * @param  array<string, string>  $rows  label => isi
+     * Blok identitas di template ahli waris: urutannya berbeda dari blok
+     * identitas lain dan memuat pekerjaan.
      */
-    private function rowsBlock(?string $intro, array $rows): string
+    private function heirBlock(string $name, string $gender, string $nik, string $birth, string $occupation, string $address): string
     {
-        $html = '<div style="margin-bottom: 12px;">';
-
-        if ($intro !== null) {
-            $html .= '<p style="margin: 0 0 8px 0;">'.$intro.'</p>';
-        }
-
-        $html .= '<table style="width: 100%; border-collapse: collapse; margin-left: 30px;">';
-
-        foreach ($rows as $label => $value) {
-            $html .= '<tr>'
-                .'<td style="width: 170px; vertical-align: top; padding: 2px 0;">'.$label.'</td>'
-                .'<td style="width: 15px; vertical-align: top; padding: 2px 0;">:</td>'
-                .'<td style="vertical-align: top; padding: 2px 0;">'.$value.'</td>'
-                .'</tr>';
-        }
-
-        return $html.'</table></div>';
+        return $this->rowsBlock(null, [
+            'Nama' => $name,
+            'Jenis Kelamin' => $gender,
+            'NIK' => $nik,
+            'Tempat, tgl Lahir' => $birth,
+            'Pekerjaan' => $occupation,
+            'Alamat' => $address,
+        ]);
     }
 }

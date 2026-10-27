@@ -138,7 +138,8 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
         <h2 id="position-type-title">Kelola Jenis Jabatan</h2>
         <p>
           Jenis jabatan di sini adalah jabatan desa tanpa akun login. Jabatan yang punya akun
-          (Kepala Desa, Sekretaris Desa, Kasi Pelayanan, Kaur TU &amp; Umum, Kepala Dusun, RW, RT,
+          (Kepala Desa, Sekretaris Desa, Kasi Pemerintahan, Kaur TU &amp; Umum, Kepala Dusun, RW,
+          RT,
           {STAF_APP_LABEL}) bersifat tetap.
         </p>
 

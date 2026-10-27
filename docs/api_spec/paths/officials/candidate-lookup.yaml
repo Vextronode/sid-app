@@ -2,7 +2,7 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Cari calon pejabat lewat NIK
   description: |
-    Aktor: Petugas Desa. POST agar NIK tidak tercatat di URL. Mencari warga
+    Aktor: Staf SIDUTama. POST agar NIK tidak tercatat di URL. Mencari warga
     ber-NIK tersebut di desa Petugas, lalu menilai kelayakannya. Tanpa
     `position` diasumsikan jabatan berakun (syarat paling ketat: harus punya
     akun warga aktif). Jabatan tanpa akun cukup data warga aktif yang belum

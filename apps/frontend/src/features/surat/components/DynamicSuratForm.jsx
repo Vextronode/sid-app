@@ -6,7 +6,10 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 
 import { getSuratSchema, signerFieldNames } from '../validation/suratSchema'
 import { buildLetterFormData } from '../utils/letterFormData'
+import { repeaterMinRows, visibleFields } from '../utils/fieldCondition'
 import { getMySignature } from '../api/signatureApi'
+import { getFamilyMembers, getVillageAreas } from '../api/letterExtrasApi'
+import { getOccupations } from '@/features/pekerjaan/api'
 
 import { CheckCircle2 } from 'lucide-react'
 
@@ -14,6 +17,14 @@ import { useSubmitSurat } from '../hooks/useSubmitSurat'
 
 import { AutoFillProfile } from './AutoFillProfile'
 import { FileUploader } from './FileUploader'
+import { OccupationField } from './OccupationField'
+import { FamilyMembersField } from './FamilyMembersField'
+import { RepeaterField } from './RepeaterField'
+import { VillageAreaField } from './VillageAreaField'
+import { NikLookupHint } from './NikLookupHint'
+import { headTakenBy, memberChoices, newHeadChoice, roleOptions } from '../utils/familyHead'
+import { witnessConflict } from '../utils/witness'
+import { applicantValue, applicantValues } from '../utils/letterTypeConfig'
 
 const WET_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png'
 
@@ -55,18 +66,61 @@ export function DynamicSuratForm({
   const applicantSlots = signatureSlots.filter((slot) => slot.signer === 'applicant')
   const otherSlots = signatureSlots.filter((slot) => slot.signer === 'other')
   const needsOwnSignature = applicantSlots.length > 0
+  // Sub-isian baris repeater juga dapat memakai katalog pekerjaan / anggota KK.
+  const usesType = (type) =>
+    config.fields.some(
+      (field) => field.type === type || (field.fields ?? []).some((sub) => sub.type === type),
+    )
+  const needsOccupations = usesType('occupation')
+  const [occupations, setOccupations] = useState([])
+  const [occupationsFailed, setOccupationsFailed] = useState(false)
+  const needsFamily = usesType('family_members') || usesType('family_member')
+  const [familyMembers, setFamilyMembers] = useState([])
+  const [familyFailed, setFamilyFailed] = useState(false)
+  const needsAreas = usesType('village_area')
+  const [areas, setAreas] = useState([])
+  const [areasFailed, setAreasFailed] = useState(false)
+  // Hasil pencarian NIK per isian NIK yang berpasangan dengan isian nama.
+  const [nikLookups, setNikLookups] = useState({})
+  // Isian (nama, No. KK) yang diisi otomatis dari isian NIK ini.
+  const lookupFieldsOf = (nikName) => config.fields.filter((field) => field.fromNik === nikName)
+  // Isian dari NIK diketik bila NIK tidak ditemukan, atau dikosongkan pada
+  // isian NIK ber-typedWhenEmpty (mis. anak angkat yang belum punya NIK).
+  const lookupTyped = (nikName) =>
+    nikLookups[nikName]?.status === 'not_found' ||
+    (Boolean(config.fields.find((field) => field.name === nikName)?.typedWhenEmpty) &&
+      !String(watchedFormData?.[nikName] ?? '').trim())
 
   const {
     register,
     handleSubmit,
     setValue,
+    setError,
     control,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(getSuratSchema(config)),
     defaultValues: {
       ...Object.fromEntries(otherSlots.map((slot) => [signerFieldNames(slot.key).mode, 'digital'])),
+      // Isian berulang langsung menampilkan jumlah baris minimalnya.
+      ...Object.fromEntries(
+        config.fields
+          .filter((field) => field.type === 'repeater')
+          .map((field) => [field.name, Array.from({ length: repeaterMinRows(field) }, () => ({}))]),
+      ),
+      ...Object.fromEntries(
+        config.fields
+          .filter((field) => field.type === 'family_members')
+          .map((field) => [field.name, []]),
+      ),
+      ...Object.fromEntries(
+        config.fields
+          .filter((field) => field.defaultValue !== null && field.defaultValue !== undefined)
+          .map((field) => [field.name, field.defaultValue]),
+      ),
       ...initialData,
+      // Isian yang diturunkan dari data pemohon (mis. peran suami/istri).
+      ...applicantValues(config.fields, user),
     },
     mode: 'onSubmit',
   })
@@ -94,6 +148,60 @@ export function DynamicSuratForm({
       active = false
     }
   }, [needsOwnSignature])
+
+  useEffect(() => {
+    if (!needsOccupations) return undefined
+
+    let active = true
+
+    getOccupations()
+      .then((response) => {
+        if (active) setOccupations(response.data?.data ?? [])
+      })
+      .catch(() => {
+        if (active) setOccupationsFailed(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [needsOccupations])
+
+  useEffect(() => {
+    if (!needsFamily) return undefined
+
+    let active = true
+
+    getFamilyMembers()
+      .then((members) => {
+        if (active) setFamilyMembers(members ?? [])
+      })
+      .catch(() => {
+        if (active) setFamilyFailed(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [needsFamily])
+
+  useEffect(() => {
+    if (!needsAreas) return undefined
+
+    let active = true
+
+    getVillageAreas()
+      .then((tree) => {
+        if (active) setAreas(tree ?? [])
+      })
+      .catch(() => {
+        if (active) setAreasFailed(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [needsAreas])
 
   const handleFileChange = (e, name, multiple = true) => {
     const files = Array.from(e.target.files || [])
@@ -159,6 +267,14 @@ export function DynamicSuratForm({
       console.error(error)
 
       setSubmitError(firstServerError(error))
+      // Galat isian dari server (mis. urutan tanggal) juga tampil di isiannya.
+      Object.entries(error?.response?.data?.errors ?? {}).forEach(([key, messages]) => {
+        const name = key.startsWith('payload.') ? key.slice('payload.'.length) : null
+
+        if (name && !name.includes('.') && config.fields.some((field) => field.name === name)) {
+          setError(name, { type: 'server', message: [].concat(messages)[0] })
+        }
+      })
     } finally {
       submittingRef.current = false
       setIsSubmitting(false)
@@ -202,17 +318,41 @@ export function DynamicSuratForm({
             </p>
           )}
 
-          {config.fields.map((field) => {
+          {visibleFields(config.fields, watchedFormData ?? {}).map((field) => {
             const fieldError = errors[field.name]
             const inputClass = `sid-input ${fieldError ? 'sid-input-error' : ''}`
+
+            // Diturunkan dari data pemohon: tidak perlu ditanyakan.
+            if (applicantValue(field, user) !== null) {
+              return null
+            }
+
+            // Nama dari NIK: diketik hanya bila NIK tidak ada di data penduduk.
+            if (field.fromNik && !lookupTyped(field.fromNik)) {
+              return null
+            }
+
+            // Kepala keluarga baru: hanya bila kepala keluarga ikut keluar
+            // (almarhum/pindah) dan masih ada anggota yang tinggal.
+            const headChoice = field.requiredWhenHead
+              ? newHeadChoice(field, familyMembers, watchedFormData)
+              : null
+
+            if (headChoice && !headChoice.visible) {
+              return null
+            }
 
             return (
               <div key={field.name} className="sid-form-group">
                 <label htmlFor={field.name} className="sid-label">
                   {field.label}
 
-                  {field.required && <span className="sid-required"> *</span>}
+                  {(field.required || field.requiredWhenHead) && (
+                    <span className="sid-required"> *</span>
+                  )}
                 </label>
+
+                {field.help && <p className="sid-upload-description">{field.help}</p>}
 
                 {field.type === 'textarea' && (
                   <textarea
@@ -245,6 +385,50 @@ export function DynamicSuratForm({
                   />
                 )}
 
+                {field.type === 'nik' && lookupFieldsOf(field.name).length > 0 && (
+                  <NikLookupHint
+                    nik={watchedFormData?.[field.name]}
+                    witness={field.witness}
+                    conflict={
+                      field.witness
+                        ? (lookup) => witnessConflict(field, config.fields, watchedFormData, lookup)
+                        : null
+                    }
+                    onResult={(result) => {
+                      setNikLookups((current) =>
+                        current[field.name]?.status === result.status &&
+                        current[field.name]?.name === result.name
+                          ? current
+                          : { ...current, [field.name]: result },
+                      )
+                      // Isi dari data penduduk; dikosongkan bila NIK berubah.
+                      lookupFieldsOf(field.name).forEach((target) => {
+                        // Pekerjaan/alamat warga desa diisi server saat pengajuan.
+                        if (!['name', 'family_number'].includes(target.fromNikValue)) return
+
+                        const found =
+                          target.fromNikValue === 'family_number'
+                            ? result.familyNumber
+                            : result.name
+
+                        if (result.status === 'found') {
+                          setValue(target.name, found ?? '', {
+                            shouldValidate: Boolean(errors[target.name]),
+                          })
+                        } else if (nikLookups[field.name]?.status === 'found') {
+                          setValue(target.name, '')
+                        }
+                      })
+                    }}
+                  />
+                )}
+
+                {field.type === 'nik' &&
+                  nikLookups[field.name]?.status !== 'not_found' &&
+                  lookupFieldsOf(field.name).map((target) => (
+                    <span key={target.name}>{renderError(target.name)}</span>
+                  ))}
+
                 {field.type === 'number' && (
                   <input
                     id={field.name}
@@ -265,6 +449,15 @@ export function DynamicSuratForm({
                   />
                 )}
 
+                {field.type === 'time' && (
+                  <input
+                    id={field.name}
+                    type="time"
+                    {...register(field.name)}
+                    className={inputClass}
+                  />
+                )}
+
                 {field.type === 'select' && (
                   <select
                     id={field.name}
@@ -272,12 +465,96 @@ export function DynamicSuratForm({
                     className={`sid-select ${fieldError ? 'sid-input-error' : ''}`}
                   >
                     <option value="">Pilih...</option>
-                    {field.options.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label ?? option.value}
-                      </option>
-                    ))}
+                    {roleOptions(field, familyMembers, watchedFormData)
+                      .filter(
+                        (option) =>
+                          !(
+                            option.value === 'kepala_keluarga' &&
+                            headTakenBy(field.name, config.fields, watchedFormData)
+                          ),
+                      )
+                      .map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label ?? option.value}
+                        </option>
+                      ))}
                   </select>
+                )}
+
+                {field.type === 'occupation' && (
+                  <OccupationField
+                    field={field}
+                    register={register}
+                    setValue={setValue}
+                    value={watchedFormData?.[field.name]}
+                    occupations={occupations}
+                    loadFailed={occupationsFailed}
+                    errors={errors}
+                    renderError={renderError}
+                  />
+                )}
+
+                {field.type === 'repeater' && (
+                  <RepeaterField
+                    field={field}
+                    control={control}
+                    register={register}
+                    rows={watchedFormData?.[field.name]}
+                    errors={errors}
+                    catalogs={{ familyMembers, occupations }}
+                    answers={watchedFormData}
+                  />
+                )}
+
+                {field.type === 'family_member' && (
+                  <select
+                    id={field.name}
+                    {...register(field.name)}
+                    className={`sid-select ${fieldError ? 'sid-input-error' : ''}`}
+                  >
+                    <option value="">
+                      {field.required || field.requiredWhenHead
+                        ? 'Pilih anggota keluarga...'
+                        : (field.emptyLabel ?? 'Tidak ada di KK')}
+                    </option>
+                    {memberChoices(field, familyMembers, watchedFormData, headChoice).map(
+                      (member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name} ({member.family_role_label})
+                        </option>
+                      ),
+                    )}
+                  </select>
+                )}
+
+                {field.type === 'family_member' &&
+                  familyMembers.length > 0 &&
+                  memberChoices(field, familyMembers, watchedFormData, headChoice).length === 0 && (
+                    <p className="sid-form-field-error" role="status">
+                      Tidak ada anggota KK Anda yang dapat dipilih untuk isian ini.
+                    </p>
+                  )}
+
+                {field.type === 'village_area' && (
+                  <VillageAreaField
+                    field={field}
+                    value={watchedFormData?.[field.name]}
+                    setValue={setValue}
+                    areas={areas}
+                    loadFailed={areasFailed}
+                    errors={errors}
+                  />
+                )}
+
+                {field.type === 'family_members' && (
+                  <FamilyMembersField
+                    field={field}
+                    members={familyMembers}
+                    loadFailed={familyFailed}
+                    value={watchedFormData?.[field.name]}
+                    setValue={setValue}
+                    errors={errors}
+                  />
                 )}
 
                 {field.type === 'file' && (
@@ -289,7 +566,8 @@ export function DynamicSuratForm({
                   />
                 )}
 
-                {renderError(field.name)}
+                {!['occupation', 'repeater', 'family_members'].includes(field.type) &&
+                  renderError(field.name)}
               </div>
             )
           })}

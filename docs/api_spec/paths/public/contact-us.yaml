@@ -1,9 +1,9 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
-  summary: Hubungi Kami - kontak WA Kasi Pelayanan & Kaur TU Umum (tanpa login)
+  summary: Hubungi Kami - kontak WA Kasi Pemerintahan & Kaur TU Umum (tanpa login)
   security: []
   description: |
-    UC-16 extended. Query officials WHERE position IN (kasi_pelayanan,
+    UC-16 extended. Query officials WHERE position IN (kasi_pemerintahan,
     kaur_tu_umum) AND is_active=true AND ended_at IS NULL. Data diambil
     live dari officials sehingga otomatis update saat rotasi jabatan.
     Cache per desa (10 menit); 404 bila belum ada kontak.
@@ -19,7 +19,7 @@ get:
             $ref: '../../schemas/villages/villages.yaml#/ContactUsResponse'
           example:
             data:
-              - position: "kasi_pelayanan"
+              - position: "kasi_pemerintahan"
                 name: "Kasim"
                 phone_wa: "6281234567890"
                 wa_link: "https://wa.me/6281234567890"
@@ -28,7 +28,7 @@ get:
                 phone_wa: "6289876543210"
                 wa_link: "https://wa.me/6289876543210"
     '404':
-      description: Belum ada Kasi Pelayanan atau Kaur TU Umum aktif yang terdaftar
+      description: Belum ada Kasi Pemerintahan atau Kaur TU Umum aktif yang terdaftar
       content:
         application/json:
           schema:

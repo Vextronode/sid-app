@@ -10,7 +10,7 @@ import { notifySuccess } from '@/shared/lib/toast'
 
 const ASSIGNED_ROLE_OPTIONS = [
   ['', 'Tidak ditentukan'],
-  ['kasi_pelayanan', 'Kasi Pelayanan'],
+  ['kasi_pemerintahan', 'Kasi Pemerintahan'],
   ['kaur_tu_umum', 'Kaur TU Umum'],
 ]
 

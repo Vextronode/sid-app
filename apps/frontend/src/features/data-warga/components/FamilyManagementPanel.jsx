@@ -21,6 +21,8 @@ import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
+import { RevealableValue } from '@/components/ui/RevealableValue'
+import { revealFamilyNumber } from '@/shared/lib/identityApi'
 
 const EMPTY_FAMILY = {
   no_kk: '',
@@ -54,7 +56,15 @@ function responseData(response) {
   return response?.data?.data ?? response?.data ?? {}
 }
 
-export default function FamilyManagementPanel({ familyList }) {
+/**
+ * Daftar Kartu Keluarga. `canEdit` = false untuk tampilan khusus-baca
+ * (Kaur TU & Umum); `canViewHistory` hanya untuk Staf SIDUTama (Log Aktivitas).
+ */
+export default function FamilyManagementPanel({
+  familyList,
+  canEdit = true,
+  canViewHistory = true,
+}) {
   const navigate = useNavigate()
   const {
     families,
@@ -71,6 +81,8 @@ export default function FamilyManagementPanel({ familyList }) {
     editFamily,
     removeFamily,
   } = familyList
+  const hasActions = canEdit || canViewHistory
+  const columnCount = hasActions ? 6 : 5
   const [modal, setModal] = useState(null)
   const [familyForm, setFamilyForm] = useState(EMPTY_FAMILY)
   const [socioeconomic, setSocioeconomic] = useState(EMPTY_SOCIOECONOMIC)
@@ -238,11 +250,17 @@ export default function FamilyManagementPanel({ familyList }) {
       <div className="sid-operator-header">
         <div>
           <h2 id="families-heading">Kartu Keluarga</h2>
-          <p>Kelola data KK dan survei sosio-ekonomi rumah tangga.</p>
+          <p>
+            {canEdit
+              ? 'Kelola data KK dan survei sosio-ekonomi rumah tangga.'
+              : 'Daftar Kartu Keluarga desa (hanya lihat).'}
+          </p>
         </div>
-        <button type="button" className="sid-operator-primary" onClick={openCreate}>
-          <Plus size={16} /> Tambah KK
-        </button>
+        {canEdit && (
+          <button type="button" className="sid-operator-primary" onClick={openCreate}>
+            <Plus size={16} /> Tambah KK
+          </button>
+        )}
       </div>
 
       <form
@@ -287,26 +305,32 @@ export default function FamilyManagementPanel({ familyList }) {
               <th>Anggota</th>
               <th>Alamat KK</th>
               <th>Status</th>
-              <th className="center">Aksi</th>
+              {hasActions && <th className="center">Aksi</th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="empty">
+                <td colSpan={columnCount} className="empty">
                   Memuat data kartu keluarga...
                 </td>
               </tr>
             ) : families.length === 0 ? (
               <tr>
-                <td colSpan={6} className="empty">
+                <td colSpan={columnCount} className="empty">
                   Belum ada data kartu keluarga.
                 </td>
               </tr>
             ) : (
               families.map((family) => (
                 <tr key={family.id}>
-                  <td>{family.no_kk_masked ?? '-'}</td>
+                  <td>
+                    <RevealableValue
+                      masked={family.no_kk_masked}
+                      reveal={() => revealFamilyNumber(family.id)}
+                      label="No. KK"
+                    />
+                  </td>
                   <td>{family.head_of_family?.name ?? '-'}</td>
                   <td>{family.members_count ?? 0}</td>
                   <td>{family.family_address ?? '-'}</td>
@@ -319,50 +343,60 @@ export default function FamilyManagementPanel({ familyList }) {
                       '-'
                     )}
                   </td>
-                  <td className="center">
-                    <div className="sid-operator-actions">
-                      <button
-                        type="button"
-                        className="sid-operator-action edit"
-                        title="Edit KK"
-                        aria-label="Edit KK"
-                        onClick={() => openEdit(family)}
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="sid-operator-action toggle"
-                        title="Survei sosio-ekonomi"
-                        aria-label="Survei sosio-ekonomi"
-                        onClick={() => openSocioeconomic(family)}
-                      >
-                        <RefreshCw size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="sid-operator-action detail"
-                        title="Riwayat perubahan"
-                        aria-label="Riwayat perubahan"
-                        onClick={() =>
-                          navigate(
-                            `/admin/log-aktivitas?tab=penduduk&type=family&subject=${encodeURIComponent(family.id)}`,
-                          )
-                        }
-                      >
-                        <History size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="sid-operator-action delete"
-                        title="Hapus KK"
-                        aria-label="Hapus KK"
-                        onClick={() => handleDelete(family)}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
+                  {hasActions && (
+                    <td className="center">
+                      <div className="sid-operator-actions">
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="sid-operator-action edit"
+                            title="Edit KK"
+                            aria-label="Edit KK"
+                            onClick={() => openEdit(family)}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        )}
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="sid-operator-action toggle"
+                            title="Survei sosio-ekonomi"
+                            aria-label="Survei sosio-ekonomi"
+                            onClick={() => openSocioeconomic(family)}
+                          >
+                            <RefreshCw size={16} />
+                          </button>
+                        )}
+                        {canViewHistory && (
+                          <button
+                            type="button"
+                            className="sid-operator-action detail"
+                            title="Riwayat perubahan"
+                            aria-label="Riwayat perubahan"
+                            onClick={() =>
+                              navigate(
+                                `/admin/log-aktivitas?tab=penduduk&type=family&subject=${encodeURIComponent(family.id)}`,
+                              )
+                            }
+                          >
+                            <History size={16} />
+                          </button>
+                        )}
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="sid-operator-action delete"
+                            title="Hapus KK"
+                            aria-label="Hapus KK"
+                            onClick={() => handleDelete(family)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))
             )}
@@ -432,7 +466,14 @@ export default function FamilyManagementPanel({ familyList }) {
                 )}
                 {selectedFamily && (
                   <p>
-                    No. KK: <strong>{selectedFamily.no_kk_masked ?? '-'}</strong>
+                    No. KK:{' '}
+                    <strong>
+                      <RevealableValue
+                        masked={selectedFamily.no_kk_masked}
+                        reveal={() => revealFamilyNumber(selectedFamily.id)}
+                        label="No. KK"
+                      />
+                    </strong>
                   </p>
                 )}
                 <label className="sid-form-group">
@@ -468,7 +509,7 @@ export default function FamilyManagementPanel({ familyList }) {
                     <ul>
                       {members.map((member) => (
                         <li key={member.id}>
-                          {member.name} —{' '}
+                          {member.name} -{' '}
                           {labelOf(FAMILY_ROLE_LABELS, member.family_role ?? 'anggota')}
                         </li>
                       ))}
@@ -479,7 +520,14 @@ export default function FamilyManagementPanel({ familyList }) {
             ) : (
               <>
                 <p>
-                  KK: <strong>{selectedFamily?.no_kk_masked ?? '-'}</strong>
+                  KK:{' '}
+                  <strong>
+                    <RevealableValue
+                      masked={selectedFamily?.no_kk_masked}
+                      reveal={() => revealFamilyNumber(selectedFamily.id)}
+                      label="No. KK"
+                    />
+                  </strong>
                 </p>
                 <label className="sid-form-group">
                   <span className="sid-form-label">Rentang Penghasilan Rumah Tangga</span>

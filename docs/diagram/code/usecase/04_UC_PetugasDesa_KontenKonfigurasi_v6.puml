@@ -1,7 +1,7 @@
 '==================================================================================
 ' SECTION: USE CASE DIAGRAM
 ' FILE: 04_UC_PetugasDesa_KontenKonfigurasi_v6.puml
-' JUDUL: Use Case - Petugas Desa (3/3: Konten Publik & Konfigurasi Surat)
+' JUDUL: Use Case - Staf SIDUTama (3/3: Konten Publik & Konfigurasi Surat)
 ' SUMBER: TDD-02 v5.3 (UC-18/19/21/24/27/28) + routes (2026-10-18)
 ' CATATAN: Menggantikan 04_UC_PetugasDesa_KontenKonfigurasi_v5.puml. Tambah: kop
 '          surat, logo, foto beranda, kategori berita, lihat flow (read-only).
@@ -20,9 +20,9 @@ skinparam actor {
   BackgroundColor #D6E4F7
   BorderColor #1F3864
 }
-title Use Case Diagram - Petugas Desa (3/3: Konten Publik & Konfigurasi Surat) [v6]
+title Use Case Diagram - Staf SIDUTama (3/3: Konten Publik & Konfigurasi Surat) [v6]
 
-actor "Petugas Desa" as PD
+actor "Staf SIDUTama" as PD
 
 rectangle "SIDUTama" {
   rectangle "UC-18: Profil Desa" #F0F4FF {

@@ -116,12 +116,12 @@ Struktur berbasis fitur menjaga batas domain; halaman (`pages/`) merakit kompone
 Semua route didefinisikan di `App.jsx`:
 - `GuestRoute` — untuk halaman login/register/lupa & reset password; user yang sudah login diarahkan ke halaman default role (atau `?redirect=` yang diizinkan) dan ke `/ganti-password` bila wajib ganti kata sandi.
 - `ProtectedRoute allowedRoles` — belum login → `/loginpage?redirect=...`; wajib ganti password → `/ganti-password`; role tidak diizinkan → `/`.
-- **Layout route** menjaga header/sidebar tetap terpasang: `PublicShell` (MainLayout) untuk halaman publik, `OfficialShell` (OfficialLayout, untuk 8 role pejabat) untuk seluruh `/admin/*`. OfficialLayout memakai sidebar operator untuk Kasi/Kaur/Petugas Desa dan bilah atas untuk RT/RW/Kadus/Kades/Sekdes.
-- Halaman operator dibatasi lewat `features/operator-desa/constants/roleNavigation.js` (`OPERATOR_ROUTE_CAPABILITIES`), mis. `/admin/data-warga` untuk Petugas, Kasi, Kaur; halaman kelola lain hanya Petugas Desa; `/admin/surat-saya` untuk pejabat non-Petugas.
+- **Layout route** menjaga header/sidebar tetap terpasang: `PublicShell` (MainLayout) untuk halaman publik, `OfficialShell` (OfficialLayout, untuk 8 role pejabat) untuk seluruh `/admin/*`. OfficialLayout memakai sidebar operator untuk Kasi/Kaur/Staf SIDUTama dan bilah atas untuk RT/RW/Kadus/Kades/Sekdes.
+- Halaman operator dibatasi lewat `features/operator-desa/constants/roleNavigation.js` (`OPERATOR_ROUTE_CAPABILITIES`), mis. `/admin/data-warga` untuk Petugas, Kasi, Kaur; halaman kelola lain hanya Staf SIDUTama; `/admin/surat-saya` untuk pejabat non-Petugas.
 - Halaman selain beranda dimuat lazy (`React.lazy` + `Suspense`).
 - `/buka-notifikasi` adalah tujuan klik Web Push; meneruskan ke daftar surat yang sesuai peran (atau "Surat Saya" bila penerima adalah pemohon).
 - Halaman informasi (Kebijakan Privasi, Aksesibilitas, PPID) aktif di produksi; isian khas desa dari menu Halaman Informasi. Tidak ada konten atau route khusus mode dev.
-- Respons 403 `code: role_forbidden` memancarkan event `sid:role-forbidden`; AuthContext memeriksa `/api/user` tanpa loader dan, bila perannya berubah (mis. dirotasi), memuat ulang ke `/loginpage` sehingga `GuestRoute` meneruskan ke dashboard peran baru. Staf aplikasi yang merotasi dirinya sendiri langsung dibawa ke `/daftar-surat`.
+- Respons 403 `code: role_forbidden` memancarkan event `sid:role-forbidden`; AuthContext memeriksa `/api/user` tanpa loader dan, bila perannya berubah (mis. dirotasi), memuat ulang ke `/loginpage` sehingga `GuestRoute` meneruskan ke dashboard peran baru. Staf SIDUTama yang merotasi dirinya sendiri langsung dibawa ke `/daftar-surat`.
 - Nama aplikasi (`VITE_APP_NAME`, default SIDUTama) dipakai di judul login, `<title>` (plugin kecil di `vite.config.js`), manifest PWA, dan label peran `staf_sid` ("Staf {nama aplikasi}").
 
 | Kelompok | Route utama |
@@ -141,7 +141,7 @@ Semua route didefinisikan di `App.jsx`:
 Merender tombol Setuju/Tolak (tahap final: "Setujui & terbitkan") di footer popup detail hanya bila `canDecideOnLetter` terpenuhi: step aktif (`current_step.approver_position`) cocok dengan role user (`rt` → rt; `kepala_desa` → kepala_desa/sekretaris_desa), status surat masih dapat diputuskan, dan belum ada keputusan untuk level itu. RW, Kadus, Kasi/Kaur tidak pernah mendapat tombol. Tolak membuka kotak alasan wajib; Escape/Batal meminta konfirmasi bila alasan sudah diketik.
 
 ### 6.2 `DynamicSuratForm`
-Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file) dan slot tanda tangan (`signature_slots`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`, `signers[...]`, `signature_files[...]`). Validasi akhir tetap di backend.
+Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members; isian bersyarat `visible_when` disembunyikan) dan slot tanda tangan (`signature_slots`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`, `signers[...]`, `signature_files[...]`). Validasi akhir tetap di backend.
 
 ### 6.3 Tanda tangan & Terapkan
 `SignatureCard` (buat/lihat TTD pribadi), `SignatureRequestsCard` (setujui dengan kata sandi/tolak/blokir permintaan TTD), `FulfillmentPanel` (tinjau & Terapkan perubahan data untuk Kasi/Kaur/Petugas), `LetterTypeSettingsPanel` (masa berlaku, penugasan, status aktif).

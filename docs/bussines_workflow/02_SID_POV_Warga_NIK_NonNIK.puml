@@ -41,7 +41,7 @@ if (Semua slot tanda tangan terisi?) then (belum)
   |#LightYellow|Sistem|
 else (sudah)
 endif
-:Masuk tahap RT\n(ditahan bila RT wilayah kosong;\nPetugas Desa diberi tahu);
+:Masuk tahap RT\n(ditahan bila RT wilayah kosong;\nStaf SIDUTama diberi tahu);
 
 |#MistyRose|RT → Kepala Desa/Sekdes|
 :Proses keputusan\n(lihat 03 & 04);
@@ -70,7 +70,7 @@ note right
   Warga tidak mengedit data kependudukan
   secara langsung; perubahan hanya lewat
   jenis surat ber-aksi data yang
-  diterapkan Kasi/Kaur/Petugas Desa.
+  diterapkan Kasi/Kaur/Staf SIDUTama.
 end note
 
 @enduml

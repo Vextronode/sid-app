@@ -1,6 +1,6 @@
 import api from '@/lib/api'
 
-// Pengumuman beranda: satu per desa, khusus Petugas Desa.
+// Pengumuman beranda: satu per desa, khusus Staf SIDUTama.
 export function getAnnouncement() {
   return api.get('/api/announcement')
 }

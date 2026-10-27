@@ -98,7 +98,7 @@ describe('ApprovalStepRenderer regression', () => {
     },
   )
 
-  it.each(['rw', 'kadus', 'kasi_pelayanan', 'kaur_tu_umum'])(
+  it.each(['rw', 'kadus', 'kasi_pemerintahan', 'kaur_tu_umum'])(
     'renders the approval as read-only for %s',
     (role) => {
       render(

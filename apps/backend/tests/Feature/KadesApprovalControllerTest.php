@@ -203,7 +203,7 @@ class KadesApprovalControllerTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesStep($village);
-        $kasi = $this->makeUserWithPosition('kasi_pelayanan', $village);
+        $kasi = $this->makeUserWithPosition('kasi_pemerintahan', $village);
 
         $this->actingAs($kasi)
             ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
@@ -261,13 +261,13 @@ class KadesApprovalControllerTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeFinalLetter($village, LetterType::factory()->create([
-            'assigned_role' => 'kasi_pelayanan',
+            'assigned_role' => 'kasi_pemerintahan',
         ]));
         $citizen = $letter->citizen;
         $applicant = User::factory()->create(['citizen_id' => $citizen->id]);
         $letter->update(['submitted_by' => $applicant->id]);
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
-        $kasi = $this->makeUserWithPosition('kasi_pelayanan', $village);
+        $kasi = $this->makeUserWithPosition('kasi_pemerintahan', $village);
         $kaur = $this->makeUserWithPosition('kaur_tu_umum', $village);
 
         $this->actingAs($kades)
@@ -292,7 +292,7 @@ class KadesApprovalControllerTest extends TestCase
         $village = Village::factory()->create();
         $letter = $this->makeFinalLetter($village, LetterType::factory()->create(['assigned_role' => null]));
         $kades = $this->makeUserWithPosition('kepala_desa', $village);
-        $kasi = $this->makeUserWithPosition('kasi_pelayanan', $village);
+        $kasi = $this->makeUserWithPosition('kasi_pemerintahan', $village);
         $kaur = $this->makeUserWithPosition('kaur_tu_umum', $village);
 
         $this->actingAs($kades)

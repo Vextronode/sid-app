@@ -2,7 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Unduh template Excel impor warga
   description: |
-    Aktor: Petugas Desa (`staf_sid`).
+    Aktor: Staf SIDUTama (`staf_sid`) atau Kasi Pemerintahan.
     UC-09. Template dibuat server (`CitizensTemplateExport`) sehingga
     header kolomnya selalu sama dengan key yang divalidasi
     `CitizensImport::rules()` (heading row, snake_case). Dipakai sebagai
@@ -12,7 +12,10 @@ get:
     blood_type, address, rt_id, hamlet_id, family_id, family_role,
     father_id, mother_id, father_name_text, mother_name_text,
     marital_status, religion, last_education, domicile_status,
-    current_domicile, residency_type, origin_region.
+    current_domicile, residency_type, origin_region, title_front,
+    title_back, birth_certificate_number, marriage_certificate_number,
+    marriage_date, divorce_certificate_number, divorce_date, has_disorder
+    (1/0), disability.
 
     Baris kedua berisi satu contoh isian (NIK fiktif `3201010101900001`,
     `Contoh Nama Warga`, `1990-01-01`, gender `L`, family_role

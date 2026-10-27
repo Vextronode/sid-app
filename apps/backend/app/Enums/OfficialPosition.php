@@ -14,7 +14,7 @@ enum OfficialPosition: string
     case Rt = 'rt';
     case Rw = 'rw';
     case Kadus = 'kadus';
-    case KasiPelayanan = 'kasi_pelayanan';
+    case KasiPemerintahan = 'kasi_pemerintahan';
     case KaurTuUmum = 'kaur_tu_umum';
     case StafSid = 'staf_sid';
     case SekretarisDesa = 'sekretaris_desa';
@@ -26,7 +26,7 @@ enum OfficialPosition: string
             self::Rt => UserRole::Rt,
             self::Rw => UserRole::Rw,
             self::Kadus => UserRole::Kadus,
-            self::KasiPelayanan => UserRole::KasiPelayanan,
+            self::KasiPemerintahan => UserRole::KasiPemerintahan,
             self::KaurTuUmum => UserRole::KaurTuUmum,
             self::StafSid => UserRole::StafSid,
             self::SekretarisDesa => UserRole::SekretarisDesa,
@@ -45,7 +45,7 @@ enum OfficialPosition: string
 
     /**
      * Setiap jabatan berakun dipegang satu orang per wilayahnya, termasuk
-     * staf aplikasi (staf_sid) yang hanya satu per desa; penggantinya lewat
+     * Staf SIDUTama (staf_sid) yang hanya satu per desa; penggantinya lewat
      * rotasi.
      */
     public function isSingleHolderPerScope(): bool
@@ -71,7 +71,7 @@ enum OfficialPosition: string
         return [
             self::KepalaDesa,
             self::SekretarisDesa,
-            self::KasiPelayanan,
+            self::KasiPemerintahan,
             self::KaurTuUmum,
             self::Kadus,
             self::Rw,
@@ -87,7 +87,7 @@ enum OfficialPosition: string
             self::Rt => 'Ketua RT',
             self::Rw => 'Ketua RW',
             self::Kadus => 'Kepala Dusun',
-            self::KasiPelayanan => 'Kasi Pelayanan',
+            self::KasiPemerintahan => 'Kasi Pemerintahan',
             self::KaurTuUmum => 'Kaur TU & Umum',
             self::StafSid => UserRole::stafSidLabel(),
             self::SekretarisDesa => 'Sekretaris Desa',

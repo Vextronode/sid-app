@@ -106,9 +106,10 @@ export default function DaftarSuratSayaPage() {
             KEMBALI
         ========================================== */}
 
+        {/* Kembali ke Beranda warga, bukan ke halaman Ajukan Surat. */}
         <button
           type="button"
-          onClick={() => navigate('/jenis-surat')}
+          onClick={() => navigate('/daftar-surat')}
           className="sid-surat-saya-back"
         >
           <ArrowLeft size={16} />

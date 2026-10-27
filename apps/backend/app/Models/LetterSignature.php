@@ -15,9 +15,21 @@ class LetterSignature extends Model
 
     public const SIGNER_OTHER = 'other';
 
+    /** Saksi pada isian form (isian NIK ber-`witness`): cukup persetujuan, tanpa TTD. */
+    public const SIGNER_WITNESS = 'witness';
+
     public const METHOD_DIGITAL = 'digital';
 
     public const METHOD_WET = 'wet';
+
+    /** Saksi menyetujui lewat akunnya. */
+    public const METHOD_CONSENT = 'consent';
+
+    /** Saksi warga desa tanpa akun: diverifikasi RT saat memutuskan. */
+    public const METHOD_RT_CHECK = 'rt_check';
+
+    /** Saksi dari luar data penduduk: nama diketik pemohon. */
+    public const METHOD_MANUAL = 'manual';
 
     public const STATUS_PENDING = 'pending';
 

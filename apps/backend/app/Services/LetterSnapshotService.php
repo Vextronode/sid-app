@@ -3,11 +3,16 @@
 namespace App\Services;
 
 use App\Enums\LetterStatus;
+use App\Enums\OfficialPosition;
 use App\Enums\ResidencyType;
 use App\Models\Letter;
 use App\Models\Official;
+use App\Models\Rt;
+use App\Models\UserSignature;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
+use App\Support\CitizenLabels;
+use App\Support\LetterFormSchema;
 
 /**
  * Membekukan data yang dipakai untuk merender surat pada saat final
@@ -32,10 +37,10 @@ class LetterSnapshotService
     public function contextFor(Letter $letter): array
     {
         if ($letter->status !== LetterStatus::Approved) {
-            return $this->build($letter, $this->activeVillageHeadOrFail($letter));
+            return $this->build($letter, $this->signerOrFail($letter));
         }
 
-        return $letter->snapshot ?? $this->capture($letter, $this->activeVillageHeadOrFail($letter));
+        return $letter->snapshot ?? $this->capture($letter, $this->signerOrFail($letter));
     }
 
     /**
@@ -64,6 +69,12 @@ class LetterSnapshotService
      */
     public function captureOnFinalApproval(Letter $letter): void
     {
+        if (! $this->signedByVillageHead($letter)) {
+            $this->capture($letter, null);
+
+            return;
+        }
+
         $kades = $this->officialRepository->findActiveVillageHeadWithCitizen($letter->village_id);
 
         if ($kades !== null) {
@@ -71,8 +82,15 @@ class LetterSnapshotService
         }
     }
 
-    public function signerFor(Letter $letter, array $context): Official
+    /**
+     * Null untuk jenis surat yang tidak ditandatangani Kepala Desa.
+     */
+    public function signerFor(Letter $letter, array $context): ?Official
     {
+        if (($context['signer']['official_id'] ?? null) === null) {
+            return null;
+        }
+
         $official = $this->officialRepository->find((int) $context['signer']['official_id']);
 
         if ($official === null) {
@@ -85,13 +103,13 @@ class LetterSnapshotService
     /**
      * @return array<string, mixed>
      */
-    private function capture(Letter $letter, Official $kades): array
+    private function capture(Letter $letter, ?Official $kades): array
     {
         $snapshot = $this->build($letter, $kades);
 
         $this->letterRepository->update($letter, [
             'snapshot' => $snapshot,
-            'signed_by_official_id' => $kades->id,
+            'signed_by_official_id' => $kades?->id,
         ]);
 
         return $snapshot;
@@ -108,7 +126,9 @@ class LetterSnapshotService
 
         return [
             'captured_at' => now()->toIso8601String(),
+            'title' => $letter->letterType?->name,
             'template' => $letter->letterType?->template,
+            'documents' => $letter->letterType?->documents ?? [],
             'supporting_template' => $letter->letterType?->supporting_template,
             'submitted_at' => $submittedAt->translatedFormat('d F Y'),
             // Tanggal surat = tanggal persetujuan akhir.
@@ -122,9 +142,26 @@ class LetterSnapshotService
                 'gender' => $this->genderLabel($citizen?->gender),
                 'birth_place_date' => $this->birthPlaceDate($citizen),
                 'resident_phrase' => $this->residentPhrase($citizen),
+                'occupation' => $citizen?->occupation?->name ?: '-',
+                'marital_status' => $citizen?->marital_status
+                    ? CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $citizen->marital_status)
+                    : '-',
+                'family_number' => $citizen?->family?->no_kk,
+                'email' => $letter->user?->email,
+                // Rincian KK pemohon untuk formulir pelayanan ({{#each kk_anggota}}).
+                'family_members' => $citizen === null ? [] : (new LetterFormSchema(null, $citizen))
+                    ->familyMembers()
+                    ->map(fn ($member): array => [
+                        'nama' => $member->name,
+                        'nik' => $member->nik,
+                        'shdk' => LetterFormSchema::familyRoleLabel($member->family_role),
+                    ])
+                    ->values()
+                    ->all(),
             ],
             'village' => [
                 'name' => $letter->village?->name,
+                'code' => $letter->village?->code,
                 'address' => $letter->village?->address,
                 'phone' => $letter->village?->phone,
                 'district' => $letter->village?->district,
@@ -133,7 +170,12 @@ class LetterSnapshotService
                 'postal_code' => $letter->village?->postal_code,
                 'email' => $letter->village?->email,
                 'stamp_img' => $letter->village?->stamp_img,
+                // Petugas pada formulir F-1.02.
+                'kasi_pemerintahan_name' => $this->officialRepository
+                    ->findActiveByPositionWithCitizen($letter->village_id, OfficialPosition::KasiPemerintahan->value)
+                    ?->citizen?->name,
             ],
+            'service_signatures' => $this->serviceSignatures($letter),
             'signer' => [
                 'official_id' => $kades?->id,
                 'village_id' => $kades?->village_id,
@@ -141,6 +183,75 @@ class LetterSnapshotService
                 'signature_img' => $kades?->signature_img,
             ],
         ];
+    }
+
+    /**
+     * TTD yang ditempel pada formulir pelayanan (Fxx): TTD akun pemohon,
+     * Kepala Desa, Kasi Pemerintahan, serta Ketua RT/RW wilayah tiap isian
+     * village_area. Dibekukan bersama snapshot saat final approve; pejabat
+     * yang belum punya TTD tetap tercatat (nama/NIK) tanpa gambar.
+     *
+     * @return array<string, mixed>
+     */
+    private function serviceSignatures(Letter $letter): array
+    {
+        if ($this->signedByVillageHead($letter)) {
+            return [];
+        }
+
+        $areas = [];
+
+        foreach ($letter->letterType?->form_fields ?? [] as $field) {
+            $rtId = ($field['type'] ?? null) === 'village_area' ? ($letter->payload[$field['name']] ?? null) : null;
+            $rt = is_numeric($rtId) ? Rt::query()->find((int) $rtId) : null;
+
+            if ($rt !== null) {
+                $areas[$field['name']] = [
+                    'rt' => $this->signatureOf($this->officialRepository->findActiveRtByRtId($rt->id)),
+                    'rw' => $this->signatureOf($rt->rw_id ? $this->officialRepository->findActiveRwByRwId($rt->rw_id) : null),
+                ];
+            }
+        }
+
+        return [
+            'applicant_signature_id' => UserSignature::query()
+                ->where('user_id', $letter->submitted_by)
+                ->whereNull('revoked_at')
+                ->latest('id')
+                ->value('id'),
+            'kepala_desa' => $this->signatureOf($this->officialRepository->findActiveVillageHeadWithCitizen($letter->village_id)),
+            'kasi_pemerintahan' => $this->signatureOf($this->officialRepository
+                ->findActiveByPositionWithCitizen($letter->village_id, OfficialPosition::KasiPemerintahan->value)),
+            'areas' => $areas,
+        ];
+    }
+
+    /**
+     * @return array{official_id: int, village_id: string, name: ?string, nik: ?string, signature_img: ?string}|null
+     */
+    private function signatureOf(?Official $official): ?array
+    {
+        return $official === null ? null : [
+            'official_id' => $official->id,
+            'village_id' => $official->village_id,
+            'name' => $official->citizen?->name,
+            'nik' => $official->citizen?->nik,
+            'signature_img' => $official->signature_img,
+        ];
+    }
+
+    /**
+     * Formulir pelayanan (Fxx) tidak ditandatangani Kepala Desa, jadi
+     * dapat dirender tanpa Kepala Desa aktif.
+     */
+    private function signerOrFail(Letter $letter): ?Official
+    {
+        return $this->signedByVillageHead($letter) ? $this->activeVillageHeadOrFail($letter) : null;
+    }
+
+    private function signedByVillageHead(Letter $letter): bool
+    {
+        return $letter->loadMissing('letterType')->letterType?->signed_by_village_head ?? true;
     }
 
     private function activeVillageHeadOrFail(Letter $letter): Official

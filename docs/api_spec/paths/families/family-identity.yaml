@@ -1,0 +1,31 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: No. KK utuh (tombol "lihat")
+  description: |
+    Boleh: Staf SIDUTama, Kasi Pemerintahan, Kaur TU & Umum untuk KK desanya;
+    warga untuk KK-nya sendiri. Pembukaan KK orang lain dicatat di Log
+    Aktivitas. Dibatasi 60 permintaan per menit.
+  operationId: revealFamilyIdentity
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: family
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+    '200':
+      description: No. KK utuh
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  no_kk: { type: string }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Tidak berhak melihat No. KK ini

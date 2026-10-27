@@ -49,7 +49,7 @@ class DemoVillageSeeder extends Seeder
                 'postal_code' => '46393',
                 'email' => 'kantordesacibenda@gmail.com',
                 'area_ha' => 759.319,
-                // Tampilan halaman publik; Petugas Desa dapat menggantinya
+                // Tampilan halaman publik; Staf SIDUTama dapat menggantinya
                 // dari Kelola Profil Desa. Gambar awal memakai aset frontend.
                 'logo' => '/assets/image/lambang-kabupaten-pangandaran.webp',
                 'hero_image' => '/assets/image/beranda/hero-pemandangan.jpg',

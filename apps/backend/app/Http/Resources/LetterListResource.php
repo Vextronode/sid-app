@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\LetterResultStage;
+use App\Models\LetterResult;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -42,7 +44,12 @@ class LetterListResource extends JsonResource
             'awaiting_signatures' => $status === 'pending' && $this->current_step_order === 0,
             'needs_fulfillment' => $status === 'approved'
                 && $this->fulfilled_at === null
-                && ! in_array($dataAction, [null, 'none'], true),
+                && ! in_array($dataAction, [null, 'none'], true)
+                && in_array($this->resource->resultStage(), [null, LetterResultStage::Accepted], true),
+            'result_stage' => $this->resource->resultStage()?->value,
+            // Unggahan hasil terakhir ditolak: pemohon diminta mengunggah ulang.
+            'result_rejected' => $this->resource->resultStage() === LetterResultStage::AwaitingUpload
+                && $this->latestResult?->status === LetterResult::STATUS_REJECTED,
             'expires_at' => $this->expires_at,
             'is_expired' => $this->resource->isExpired(),
             'submitted_at' => $this->submitted_at,
@@ -53,6 +60,7 @@ class LetterListResource extends JsonResource
                 'id' => $this->letterType->id,
                 'name' => $this->letterType->name,
                 'code' => $this->letterType->code,
+                'signed_by_village_head' => $this->letterType->signed_by_village_head,
             ] : null,
             'citizen' => $this->citizen ? [
                 'id' => $this->citizen->id,

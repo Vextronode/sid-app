@@ -37,7 +37,7 @@ participant "OfficialService" as OFF
 database "PostgreSQL" as DB
 collections "Disk private_uploads" as DISK
 actor "Pemilik NIK" as NIK
-actor "RT / Petugas Desa" as APR
+actor "RT / Staf SIDUTama" as APR
 
 P -> FE : pilih jenis surat (GET /api/letter-types)
 FE -> FE : render isian dari form_fields\n+ slot dari signature_slots
@@ -61,7 +61,7 @@ group DB::transaction
       SIG -> DB : INSERT letter_signatures (digital, signed,\nuser_signature_id = TTD akun aktif)
     else NIK diisi
       SIG -> SIG : cek NIK != pemohon, rate limit penolakan,\nblokir (jawaban seragam)
-      SIG -> DB : INSERT letter_signatures (pending, expires_at +7 hari)
+      SIG -> DB : INSERT letter_signatures (pending, expires_at +3 hari)
       SIG -> NIK : notifikasi signature_requested (bila punya akun)
     else TTD basah
       SIG -> ATT : store(kind=wet_signature)
@@ -83,7 +83,7 @@ group DB::transaction
     SVC -> DB : INSERT letter_approvals (placeholder + deadline_at)
     alt vacant (RT kosong)
       SVC -> DB : log "Surat ditahan: tahap RT belum memiliki pejabat aktif"
-      SVC -> APR : notifikasi approver_vacant ke Petugas Desa
+      SVC -> APR : notifikasi approver_vacant ke Staf SIDUTama
     else ada approver
       SVC -> APR : notifikasi "pending" ke RT (afterCommit)
     end

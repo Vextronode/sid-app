@@ -126,7 +126,7 @@ class LetterControllerTest extends TestCase
     public function test_destroy_allowed_for_authorized_staff_role(): void
     {
         $owner = User::factory()->create();
-        $staff = $this->makeUserWithOfficialAssignment('kasi_pelayanan', 'kasi_pelayanan');
+        $staff = $this->makeUserWithOfficialAssignment('kasi_pemerintahan', 'kasi_pemerintahan');
         $letter = Letter::factory()->create(['submitted_by' => $owner->id]);
 
         $this->actingAs($staff)
@@ -302,18 +302,18 @@ class LetterControllerTest extends TestCase
     {
         $village = Village::factory()->create();
         $user = User::factory()->create([
-            'role' => 'kasi_pelayanan',
+            'role' => 'kasi_pemerintahan',
             'village_id' => $village->id,
         ]);
         Official::factory()->create([
             'user_id' => $user->id,
-            'position' => 'kasi_pelayanan',
+            'position' => 'kasi_pemerintahan',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
         $allowed = Letter::factory()->approved()->create([
             'village_id' => $village->id,
-            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pemerintahan'])->id,
         ]);
         Letter::factory()->approved()->create([
             'village_id' => $village->id,
@@ -321,7 +321,7 @@ class LetterControllerTest extends TestCase
         ]);
         Letter::factory()->create([
             'village_id' => $village->id,
-            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pemerintahan'])->id,
         ]);
 
         $this->actingAs($user)

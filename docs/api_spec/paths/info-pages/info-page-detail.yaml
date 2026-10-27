@@ -2,7 +2,7 @@ put:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Simpan isian satu halaman informasi
   description: |
-    Aktor Petugas Desa. Kunci yang tidak dikenal dibuang; butir daftar kosong
+    Aktor Staf SIDUTama. Kunci yang tidak dikenal dibuang; butir daftar kosong
     dibuang. Teks maks. 300 karakter; daftar maks. 30 butir @ 300 karakter.
     Cache halaman publik ikut segar.
   operationId: saveInfoPage

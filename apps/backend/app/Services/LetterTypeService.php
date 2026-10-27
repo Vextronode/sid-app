@@ -16,7 +16,7 @@ class LetterTypeService
 
     /**
      * Default: hanya jenis aktif ber-template (dipakai warga saat submit).
-     * $includeInactive (khusus Petugas Desa, dijaga IndexLetterTypeRequest):
+     * $includeInactive (khusus Staf SIDUTama, dijaga IndexLetterTypeRequest):
      * semua jenis desa termasuk Draft dan Nonaktif.
      */
     public function list(User $user, bool $includeInactive = false): Collection

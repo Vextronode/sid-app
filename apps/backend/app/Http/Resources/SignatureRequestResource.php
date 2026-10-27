@@ -18,6 +18,8 @@ class SignatureRequestResource extends JsonResource
         return [
             'id' => $this->id,
             'slot_label' => $this->slot_label,
+            // `witness` = diminta menjadi saksi (cukup setuju, tanpa TTD).
+            'signer_type' => $this->signer_type,
             'letter_type' => $this->letter?->letterType?->name,
             'applicant_name' => $this->letter?->applicant_name,
             'purpose' => $this->letter?->purpose,

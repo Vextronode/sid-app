@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Jenis jabatan desa tanpa akun (mis. Kasi Kesejahteraan, Kaur Keuangan),
- * dikelola Petugas Desa. Jabatan yang punya akun ada di enum OfficialPosition.
+ * dikelola Staf SIDUTama. Jabatan yang punya akun ada di enum OfficialPosition.
  */
 class OfficialPositionType extends Model
 {

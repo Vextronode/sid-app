@@ -1,4 +1,9 @@
-import { signerFieldNames } from '../validation/suratSchema'
+import {
+  OTHER_OCCUPATION,
+  otherOccupationFieldName,
+  signerFieldNames,
+} from '../validation/suratSchema'
+import { visibleFields } from './fieldCondition'
 
 /**
  * Menyusun FormData untuk POST /api/letters dari nilai form.
@@ -10,7 +15,8 @@ export function buildLetterFormData(config, letterTypeId, formData) {
 
   payload.append('letter_type_id', letterTypeId)
 
-  config.fields.forEach((field) => {
+  // Isian yang tersembunyi untuk jawaban ini tidak dikirim.
+  visibleFields(config.fields, formData).forEach((field) => {
     const value = formData[field.name]
 
     if (field.type === 'file') {
@@ -21,8 +27,43 @@ export function buildLetterFormData(config, letterTypeId, formData) {
       return
     }
 
+    if (field.type === 'repeater') {
+      ;(Array.isArray(value) ? value : []).forEach((row, index) => {
+        visibleFields(field.fields, row ?? {}).forEach((subField) => {
+          const cell = row?.[subField.name]
+
+          if (cell !== undefined && cell !== null && cell !== '') {
+            payload.append(`payload[${field.name}][${index}][${subField.name}]`, cell)
+          }
+
+          const otherName = otherOccupationFieldName(subField.name)
+
+          if (subField.type === 'occupation' && cell === OTHER_OCCUPATION) {
+            payload.append(`payload[${field.name}][${index}][${otherName}]`, row?.[otherName] ?? '')
+          }
+        })
+      })
+
+      return
+    }
+
+    if (field.type === 'family_members') {
+      ;(Array.isArray(value) ? value : []).forEach((id) => {
+        payload.append(`payload[${field.name}][]`, id)
+      })
+
+      return
+    }
+
     if (value !== undefined && value !== null && value !== '') {
       payload.append(`payload[${field.name}]`, value)
+    }
+
+    // Teks "Lainnya" hanya dikirim bila pilihan pekerjaannya memang Lainnya.
+    if (field.type === 'occupation' && value === OTHER_OCCUPATION) {
+      const otherName = otherOccupationFieldName(field.name)
+
+      payload.append(`payload[${otherName}]`, formData[otherName] ?? '')
     }
   })
 
