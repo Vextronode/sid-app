@@ -220,7 +220,7 @@ class BirthReportServiceTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.action', 'create_citizen');
         $this->actingAs($this->kasi['user'])
-            ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => ['nik' => '3218016909160002']])
+            ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => ['nik' => '3218016909160002', 'birth_certificate_number' => '3218-LT-01102026-0005']])
             ->assertOk();
 
         $child = Citizen::query()->where('name', 'Syfa Wijayanti')->firstOrFail();
@@ -230,6 +230,8 @@ class BirthReportServiceTest extends TestCase
         $this->assertSame('2026-10-01', $child->date_of_birth->toDateString());
         $this->assertSame('Ika Asmaulatipah', $child->mother_name_text);
         $this->assertSame('Engkos Sutisna', $child->father_name_text);
+        // No. akta lahir dari akta terbitan, diisi Kasi saat Terapkan.
+        $this->assertSame('3218-LT-01102026-0005', $child->birth_certificate_number);
     }
 
     /**

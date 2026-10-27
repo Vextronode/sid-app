@@ -147,6 +147,7 @@ class LetterSnapshotService
                     ? CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $citizen->marital_status)
                     : '-',
                 'family_number' => $citizen?->family?->no_kk,
+                'email' => $letter->user?->email,
                 // Rincian KK pemohon untuk formulir pelayanan ({{#each kk_anggota}}).
                 'family_members' => $citizen === null ? [] : (new LetterFormSchema(null, $citizen))
                     ->familyMembers()
@@ -160,6 +161,7 @@ class LetterSnapshotService
             ],
             'village' => [
                 'name' => $letter->village?->name,
+                'code' => $letter->village?->code,
                 'address' => $letter->village?->address,
                 'phone' => $letter->village?->phone,
                 'district' => $letter->village?->district,

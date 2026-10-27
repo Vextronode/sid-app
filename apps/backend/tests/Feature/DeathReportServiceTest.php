@@ -18,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
+use Spatie\Activitylog\Models\Activity;
 use Tests\Concerns\BuildsLetterScenario;
 use Tests\TestCase;
 
@@ -104,6 +105,47 @@ class DeathReportServiceTest extends TestCase
         // Belum ada yang punya TTD: tidak ada tempelan TTD sama sekali.
         $this->assertStringNotContainsString('<img', $form);
         $this->assertStringNotContainsString('tanda_tangan', $form);
+    }
+
+    public function test_village_code_and_linked_parents_of_the_deceased_fill_the_forms(): void
+    {
+        $this->village->update(['code' => '3218032001']);
+        $this->father['citizen']->update(['place_of_birth' => 'Ciamis']);
+        $child = Citizen::factory()->create([
+            'village_id' => $this->village->id, 'rt_id' => $this->applicant['citizen']->rt_id, 'family_id' => $this->applicant['citizen']->family_id,
+            'name' => 'Rina Sutisna', 'family_role' => 'anak', 'gender' => 'P', 'date_of_birth' => '2000-04-04',
+            'father_id' => $this->father['citizen']->id, 'mother_id' => $this->mother->id,
+        ]);
+
+        // F-2.01: kode wilayah 8 kotak (provinsi, kabupaten, kecamatan, desa)
+        // dan data orang tua almarhum yang tertaut di data penduduk.
+        $form = $this->render($this->approve([...$this->payload(), 'almarhum' => $child->id]), null);
+        $this->assertMatchesRegularExpression($this->boxes('32180301'), $form);
+        $this->assertMatchesRegularExpression($this->boxes('TATANG'), $form);
+        $this->assertMatchesRegularExpression($this->boxes('3207240101600001'), $form);
+        $this->assertMatchesRegularExpression($this->boxes('CIAMIS'), $form);
+        $this->assertMatchesRegularExpression($this->boxes('1960'), $form);
+        $this->assertMatchesRegularExpression($this->boxes('INDONESIA'), $form);
+        $this->assertMatchesRegularExpression($this->boxes('IIS'), $form);
+        $this->assertMatchesRegularExpression($this->boxes('1965'), $form);
+
+        // F-1.01 (kepala keluarga meninggal): golongan darah, NIK ayah/ibu,
+        // dan email pemohon dari data yang ada.
+        $this->applicant['citizen']->update([
+            'blood_type' => 'AB', 'father_id' => $this->father['citizen']->id, 'mother_id' => $this->mother->id,
+            // Dokumen & keterangan tambahan dari data warga.
+            'title_back' => 'S.Kom.', 'birth_certificate_number' => '3207-LT-03031990-0007', 'has_disorder' => true, 'disability' => 'Tuna rungu',
+        ]);
+        $this->applicant['user']->update(['email' => 'asep@example.test']);
+        $letterId = $this->approve([...$this->payload(), 'almarhum' => $this->father['citizen']->id, 'kepala_baru' => $this->mother->id]);
+        $biodata = $this->render($letterId, 'f1_01', landscape: true);
+        $this->assertStringContainsString('>AB</td>', $biodata);
+        $this->assertStringContainsString('>3207240101600001</td>', $biodata);
+        $this->assertStringContainsString('asep@example.test', $biodata);
+        $this->assertStringContainsString('>S.Kom.</td>', $biodata);
+        $this->assertStringContainsString('>3207-LT-03031990-0007</td>', $biodata);
+        $this->assertStringContainsString('>Tuna rungu</td>', $biodata);
+        $this->assertSame(2, substr_count($biodata, '>Ada</td>'));
     }
 
     public function test_death_cannot_precede_the_birth_of_the_deceased(): void
@@ -209,7 +251,18 @@ class DeathReportServiceTest extends TestCase
 
     public function test_kasi_deactivates_the_deceased_and_sets_the_new_family_head_after_the_death_certificate_is_accepted(): void
     {
-        $letterId = $this->approve([...$this->payload(), 'almarhum' => $this->father['citizen']->id, 'kepala_baru' => $this->mother->id]);
+        $letterId = $this->approve([
+            ...$this->payload(),
+            'almarhum' => $this->father['citizen']->id,
+            'kepala_baru' => $this->mother->id,
+            'telepon_keluarga' => '081298765432',
+            // Data tambahan anggota: tercetak di F-1.01 dan disimpan saat Terapkan.
+            'data_tambahan' => [['anggota' => $this->applicant['citizen']->id, 'gelar_belakang' => 'S.T.', 'no_akta_lahir' => '3207-LT-03031990-0009']],
+        ]);
+        $biodata = $this->render($letterId, 'f1_01', landscape: true);
+        $this->assertStringContainsString('>S.T.</td>', $biodata);
+        $this->assertStringContainsString('>3207-LT-03031990-0009</td>', $biodata);
+        $this->assertMatchesRegularExpression($this->boxes('0812'), $biodata);
 
         $resultId = $this->actingAs($this->applicant['user'])
             ->post("/api/letters/{$letterId}/results", [
@@ -239,6 +292,9 @@ class DeathReportServiceTest extends TestCase
             ->assertJsonPath('data.1.changes', [
                 ['column' => 'family_role', 'label' => 'Hubungan dalam KK', 'old' => 'Istri', 'new' => 'Kepala Keluarga'],
             ]);
+        $this->assertSame('Asep Hidayat', $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letterId}/fulfillment/preview", ['values' => []])
+            ->json('data.2.name'));
         $this->assertSame('istri', $this->mother->fresh()->family_role->value);
         $this->assertTrue($this->father['citizen']->fresh()->is_active);
         $this->assertTrue($this->father['user']->fresh()->is_active);
@@ -250,6 +306,12 @@ class DeathReportServiceTest extends TestCase
         $this->assertFalse($this->father['user']->fresh()->is_active);
         $this->assertTrue($this->mother->fresh()->is_active);
         $this->assertSame('kepala_keluarga', $this->mother->fresh()->family_role->value);
+        $this->assertSame('S.T.', $this->applicant['citizen']->fresh()->title_back);
+        $this->assertSame('3207-LT-03031990-0009', $this->applicant['citizen']->fresh()->birth_certificate_number);
+        // Nomor akta disamarkan di log aktivitas.
+        $log = Activity::query()->where('event', 'letter_fulfilled')->where('subject_id', $this->applicant['citizen']->id)->firstOrFail();
+        $this->assertSame('(disamarkan)', $log->properties['changes']['birth_certificate_number']['new']);
+        $this->assertSame('S.T.', $log->properties['changes']['title_back']['new']);
     }
 
     private function uploadSignature(User $user): void

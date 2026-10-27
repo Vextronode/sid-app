@@ -67,7 +67,7 @@ class LetterRepository
 
     public function loadForPdf(Letter $letter): Letter
     {
-        return $letter->load(['letterType', 'citizen.occupation', 'citizen.family', 'village']);
+        return $letter->load(['letterType', 'citizen.occupation', 'citizen.family', 'village', 'user']);
     }
 
     public function update(Letter $letter, array $data): Letter

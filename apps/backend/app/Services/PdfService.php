@@ -112,7 +112,7 @@ class PdfService
 
     /**
      * Surat kedaluwarsa hanya tersimpan sebagai riwayat bagi pemohon;
-     * pejabat dan Petugas Desa tetap dapat membuka PDF untuk arsip.
+     * pejabat dan Staf SIDUTama tetap dapat membuka PDF untuk arsip.
      */
     private function abortIfExpiredForApplicant(Letter $letter, User $user): void
     {
@@ -316,6 +316,7 @@ class PdfService
             '{{ applicant_occupation }}' => $context['applicant']['occupation'] ?? '-',
             '{{ applicant_marital_status }}' => $context['applicant']['marital_status'] ?? '-',
             '{{ applicant_family_number }}' => $context['applicant']['family_number'] ?? '________________________',
+            '{{ applicant_email }}' => (string) ($context['applicant']['email'] ?? ''),
             '{{ village_kasi_pemerintahan_name }}' => $context['village']['kasi_pemerintahan_name'] ?? '________________________',
             '{{ purpose }}' => $letter->purpose ?? '________________________________________',
             '{{ submitted_at }}' => $context['submitted_at'],
@@ -335,6 +336,7 @@ class PdfService
             '{{ village_address }}' => (string) ($village['address'] ?? ''),
             '{{ village_phone }}' => (string) ($village['phone'] ?? ''),
             '{{ village_postal_code }}' => (string) ($village['postal_code'] ?? ''),
+            '{{ village_area_code }}' => self::areaCode((string) ($village['code'] ?? '')),
             '{{ village_email }}' => (string) ($village['email'] ?? ''),
             '{{ village_head_name }}' => $signer['name'] ?? '________________________________________',
         ];
@@ -388,7 +390,8 @@ class PdfService
     /**
      * Bagian tanggal terbit untuk kalimat "Pada hari ini ... tanggal ...
      * Bulan ... tahun ..." (F-1.07): {{ issued_day_name }} "Senin",
-     * {{ issued_day }} "12", {{ issued_month }} "Oktober", {{ issued_year }}.
+     * {{ issued_day }} "12", {{ issued_month }} "Oktober", {{ issued_year }};
+     * dan {{ issued_tgl/_bln/_thn }} "12"/"10"/"2026" untuk kotak tanggal.
      *
      * @return array<string, string>
      */
@@ -405,7 +408,23 @@ class PdfService
             '{{ issued_day }}' => $date?->format('j') ?? '.....',
             '{{ issued_month }}' => $date?->translatedFormat('F') ?? '..........',
             '{{ issued_year }}' => $date?->format('Y') ?? '.....',
+            // Kotak tanggal formulir Disdukcapil: 2 digit tanggal & bulan.
+            '{{ issued_tgl }}' => $date?->format('d') ?? '',
+            '{{ issued_bln }}' => $date?->format('m') ?? '',
+            '{{ issued_thn }}' => $date?->format('Y') ?? '',
         ];
+    }
+
+    /**
+     * Kode wilayah 8 kotak formulir Disdukcapil (2 digit provinsi,
+     * kabupaten, kecamatan, desa) dari kode desa Kemendagri 10 digit
+     * (mis. 3218032001 -> 32180301). Kode lain dipakai apa adanya.
+     */
+    private static function areaCode(string $code): string
+    {
+        $digits = preg_replace('/\D/', '', $code) ?? '';
+
+        return strlen($digits) === 10 ? substr($digits, 0, 6).substr($digits, -2) : $digits;
     }
 
     /**

@@ -18,8 +18,10 @@ use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
 use App\Repositories\UserRepository;
+use App\Support\CitizenDocumentRules;
 use App\Support\CitizenLabels;
 use App\Support\FieldCondition;
+use App\Support\LetterFormSchema;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
@@ -29,7 +31,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * "Terapkan": aksi data setelah surat final approved. Kasi/Kaur yang
- * ditugaskan (atau Petugas Desa sebagai cadangan) menerapkan nilai yang
+ * ditugaskan (atau Staf SIDUTama sebagai cadangan) menerapkan nilai yang
  * diusulkan warga lewat form surat ke data kependudukan. Kolom yang boleh
  * disentuh ditetapkan per tipe surat (letter_types.data_fields); tidak ada
  * jalur edit bebas ke data warga dari sini.
@@ -73,6 +75,27 @@ class LetterFulfillmentService
         'mother_id' => 'Data Ibu (warga desa)',
         'is_active' => 'Status Data Warga',
         'account_is_active' => 'Akun Login',
+        'title_front' => 'Gelar Depan',
+        'title_back' => 'Gelar Belakang',
+        'birth_certificate_number' => 'No. Akta Lahir',
+        'marriage_certificate_number' => 'No. Akta/Buku Nikah',
+        'marriage_date' => 'Tanggal Perkawinan',
+        'divorce_certificate_number' => 'No. Akta Cerai',
+        'divorce_date' => 'Tanggal Perceraian',
+        'has_disorder' => 'Kelainan Fisik & Mental',
+        'disability' => 'Penyandang Cacat',
+    ];
+
+    /**
+     * Sub-isian repeater "Data Tambahan Anggota" (data_options.member_details)
+     * => kolom data warga.
+     */
+    private const MEMBER_DETAIL_COLUMNS = [
+        'gelar_depan' => 'title_front',
+        'gelar_belakang' => 'title_back',
+        'no_akta_lahir' => 'birth_certificate_number',
+        'no_akta_cerai' => 'divorce_certificate_number',
+        'tanggal_cerai' => 'divorce_date',
     ];
 
     public function __construct(
@@ -229,6 +252,8 @@ class LetterFulfillmentService
                 default => abort(422, 'Jenis surat ini tidak memiliki aksi perubahan data.'),
             };
 
+            // Data tambahan anggota (gelar, akta, kelainan) dari form layanan.
+            $touched = $this->applyMemberDetails($locked, $actor, $touched);
             $changes = $this->describe($touched);
 
             if ($dryRun) {
@@ -267,7 +292,11 @@ class LetterFulfillmentService
                         'actor_role' => $actor->role,
                         'action' => $action->value,
                         'citizen_id' => $citizen->id,
-                        'changes' => $changes,
+                        // Nomor akta dan jenis cacat (terenkripsi) disamarkan seperti NIK.
+                        'changes' => array_map(
+                            fn (array $change): array => ['old' => PopulationAuditService::REDACTED, 'new' => PopulationAuditService::REDACTED],
+                            array_intersect_key($changes, array_flip(CitizenDocumentRules::ENCRYPTED)),
+                        ) + $changes,
                     ])
                     ->log('Data kependudukan diubah berdasarkan surat');
             }
@@ -337,7 +366,8 @@ class LetterFulfillmentService
             'family_role' => FamilyRole::tryFrom((string) $value)?->label() ?? (string) $value,
             'blood_type' => $value === 'tidak_tahu' ? 'Tidak Tahu' : (string) $value,
             'residency_type' => ucfirst((string) $value),
-            'date_of_birth' => $this->dateLabel($value),
+            'date_of_birth', 'marriage_date', 'divorce_date' => $this->dateLabel($value),
+            'has_disorder' => $value ? 'Ada' : 'Tidak ada',
             'occupation_id' => Occupation::query()->whereKey($value)->value('name') ?? (string) $value,
             'rt_id' => $this->areaLabel($value),
             'hamlet_id' => (string) (Hamlet::query()->whereKey($value)->value('name') ?? $value),
@@ -657,6 +687,7 @@ class LetterFulfillmentService
                 FamilyRole::cases(),
             ),
             'residency_type' => $toOptions(['lokal' => 'Lokal', 'pendatang' => 'Pendatang']),
+            'has_disorder' => $toOptions(['1' => 'Ada', '0' => 'Tidak ada']),
             'rt_id' => Rt::query()
                 ->where('village_id', $letter->village_id)
                 ->where('is_active', true)
@@ -1139,11 +1170,15 @@ class LetterFulfillmentService
                 // Membentuk keluarga baru setelah menikah: kepala keluarga dan
                 // pasangannya tercatat Kawin (cukup F09 bila sudah punya buku nikah).
                 $married = $this->formsMarriedFamily($letter);
-                $couple = [FamilyRole::KEPALA_KELUARGA->value, FamilyRole::SUAMI->value, FamilyRole::ISTRI->value];
+                $marriage = $new['married'] ?? [];
+                $marital = $married ? array_filter([
+                    'marital_status' => 'kawin',
+                    'marriage_certificate_number' => $payload[$marriage['certificate'] ?? ''] ?? null,
+                    'marriage_date' => $payload[$marriage['date'] ?? ''] ?? null,
+                ], fn (mixed $value): bool => $value !== null && $value !== '') : [];
 
                 foreach ($members as [$citizen, $shdk]) {
-                    $marital = $married && in_array($shdk, $couple, true) ? ['marital_status' => 'kawin'] : [];
-                    $move($citizen, [...$place, 'family_role' => $shdk, ...$marital]);
+                    $move($citizen, [...$place, 'family_role' => $shdk, ...(in_array($shdk, LetterFormSchema::COUPLE_ROLES, true) ? $marital : [])]);
                 }
                 break;
             case 'change_head':
@@ -1187,6 +1222,74 @@ class LetterFulfillmentService
             'action' => LetterDataAction::RestructureFamily->value,
             'members' => array_map(fn (array $entry): array => ['citizen_id' => $entry[0]->id, 'name' => $entry[0]->name, 'changes' => $entry[1]], $touched),
         ], $touched];
+    }
+
+    /**
+     * Simpan data tambahan anggota (repeater data_options.member_details) ke
+     * data warga, digabung dengan perubahan aksi utama per warga. Hanya
+     * kolom yang diisi; anggota yang sudah dinonaktifkan dilewati.
+     *
+     * @param  array<int, array{0: Citizen, 1: array<string, mixed>}>  $touched
+     * @return array<int, array{0: Citizen, 1: array<string, mixed>}>
+     */
+    private function applyMemberDetails(Letter $letter, User $actor, array $touched): array
+    {
+        $field = $letter->letterType?->data_options['member_details'] ?? null;
+        $rows = $field === null ? [] : (array) ($letter->payload[$field] ?? []);
+
+        foreach ($rows as $row) {
+            $citizen = is_array($row) && isset($row['anggota']) ? Citizen::query()
+                ->where('village_id', $letter->village_id)
+                ->where('is_active', true)
+                ->find($row['anggota']) : null;
+
+            if ($citizen === null) {
+                continue;
+            }
+
+            $data = [];
+
+            foreach (self::MEMBER_DETAIL_COLUMNS as $key => $column) {
+                if (trim((string) ($row[$key] ?? '')) !== '') {
+                    $data[$column] = trim((string) $row[$key]);
+                }
+            }
+
+            if (in_array($row['kelainan'] ?? null, ['ada', 'tidak'], true)) {
+                $data['has_disorder'] = $row['kelainan'] === 'ada';
+                $data['disability'] = $row['kelainan'] === 'ada' ? trim((string) ($row['cacat'] ?? '')) : null;
+            }
+
+            if ($data === []) {
+                continue;
+            }
+
+            $validated = $this->validate($data, Arr::only(CitizenDocumentRules::rules(), array_keys($data)));
+            $changes = [];
+
+            foreach ($validated as $column => $value) {
+                $old = $this->scalar($citizen->getAttribute($column));
+
+                if ($old != $value) {
+                    $changes[$column] = ['old' => $old, 'new' => $value];
+                }
+            }
+
+            if ($changes === []) {
+                continue;
+            }
+
+            $citizen = $this->citizenService->update($citizen, $validated, $actor, audit: false);
+            $index = collect($touched)->search(fn (array $entry): bool => $entry[0]->id === $citizen->id);
+
+            if ($index === false) {
+                $touched[] = [$citizen, $changes];
+            } else {
+                $touched[$index] = [$citizen, [...$touched[$index][1], ...$changes]];
+            }
+        }
+
+        return $touched;
     }
 
     /**
@@ -1303,8 +1406,16 @@ class LetterFulfillmentService
                 continue;
             }
 
-            $source = $field['source'] ?? null;
-            $value = $source !== null ? ($payload[$source] ?? null) : null;
+            // Sumber `a|b`: isian pertama yang terisi (mis. buku nikah atau akta perkawinan).
+            $value = null;
+
+            foreach (($field['source'] ?? null) === null ? [] : explode('|', (string) ($field['source'] ?? '')) as $source) {
+                if (($payload[$source] ?? '') !== '') {
+                    $value = $payload[$source];
+
+                    break;
+                }
+            }
 
             // `citizen_by_nik`: id warga desa ber-NIK isian itu (mis. ayah
             // yang mengakui anak), kosong bila tidak terdata.
@@ -1378,7 +1489,7 @@ class LetterFulfillmentService
     }
 
     /**
-     * Aturan nilai disamakan dengan form data warga milik Petugas Desa
+     * Aturan nilai disamakan dengan form data warga milik Staf SIDUTama
      * supaya tidak ada dua definisi yang bisa berbeda.
      *
      * @return array<string, mixed>

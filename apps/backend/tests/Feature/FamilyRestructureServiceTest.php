@@ -108,7 +108,19 @@ class FamilyRestructureServiceTest extends TestCase
             'nik_pasangan' => '3207246202970002',
             'shdk_pasangan' => 'istri',
             'alamat_kk_baru' => $this->newArea->id,
+            'no_buku_nikah_kk' => '0789/12/X/2026',
+            'tanggal_perkawinan_kk' => '2026-10-03',
+            'telepon_keluarga' => '081234567890',
+            // Data tambahan anggota untuk F-1.01, disimpan saat Terapkan.
+            'data_tambahan' => [['anggota' => $this->applicant['citizen']->id, 'gelar_belakang' => 'S.Kom.', 'kelainan' => 'ada', 'cacat' => 'Tuna rungu']],
         ];
+
+        // Buku nikah wajib untuk keluarga baru, dan tidak sebelum pasangan lahir.
+        $this->submit([...$payload, 'no_buku_nikah_kk' => ''])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('payload.no_buku_nikah_kk');
+        $this->submit([...$payload, 'tanggal_perkawinan_kk' => '1990-01-01'])
+            ->assertJsonValidationErrors('payload.tanggal_perkawinan_kk');
 
         // Tepat satu kepala keluarga, dan pasangan bukan anggota KK sendiri.
         $this->submit([...$payload, 'shdk_pasangan' => 'kepala_keluarga'])
@@ -148,6 +160,12 @@ class FamilyRestructureServiceTest extends TestCase
         $this->assertStringContainsString('>Euis Komariah<', $biodata);
         $this->assertStringContainsString('Dusun Cikawung RT 001 RW 003', $biodata);
         $this->assertStringNotContainsString('Ujang Sutisna', $biodata);
+        // Kepala keluarga dan istri: Kawin dengan buku nikah; data tambahan dan telepon.
+        $this->assertSame(2, substr_count($biodata, '>0789/12/X/2026</td>'));
+        $this->assertSame(2, substr_count($biodata, '>3 Oktober 2026</td>'));
+        $this->assertStringContainsString('>S.Kom.</td>', $biodata);
+        $this->assertStringContainsString('>Tuna rungu</td>', $biodata);
+        $this->assertMatchesRegularExpression('/>0<\/td><td[^>]*>8<\/td><td[^>]*>1<\/td><td[^>]*>2/', $biodata);
 
         $this->acceptResult($letterId);
         $this->actingAs($this->kasi['user'])
@@ -179,6 +197,12 @@ class FamilyRestructureServiceTest extends TestCase
         $this->assertSame('istri', $euis->family_role->value);
         $this->assertSame('kawin', $dadan->marital_status);
         $this->assertSame('kawin', $euis->marital_status);
+        $this->assertSame('0789/12/X/2026', $euis->marriage_certificate_number);
+        $this->assertSame('2026-10-03', $dadan->marriage_date->toDateString());
+        $this->assertSame('S.Kom.', $dadan->title_back);
+        $this->assertTrue($dadan->has_disorder);
+        $this->assertSame('Tuna rungu', $dadan->disability);
+        $this->assertNull($euis->title_back);
         // KK lama tetap berkepala Ujang.
         $this->assertSame('kepala_keluarga', $this->father->fresh()->family_role->value);
         $this->assertSame($this->family->id, $this->father->fresh()->family_id);

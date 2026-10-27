@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\BloodType;
 use App\Enums\FamilyRole;
 use App\Models\Citizen;
 use App\Models\Family;
@@ -48,7 +49,8 @@ use Illuminate\Validation\Rule;
  * Isian dengan `from_nik` (nama isian NIK): bila NIK itu milik warga aktif
  * desa ini, isian tidak wajib dan diisi dari data penduduk saat pengajuan
  * (`from_nik_value`: `name` = nama, bawaan; `family_number` = No. KK;
- * `occupation` = pekerjaan; `address` = alamat); bila
+ * `occupation` = pekerjaan; `address` = alamat; `marital_status` = status
+ * kawin saat pengajuan); bila
  * tidak, isian diketik (mis. saksi dari luar desa).
  *
  * Isian dengan `from_applicant` ({column, map}): nilainya diturunkan dari data
@@ -126,11 +128,20 @@ class LetterFormSchema
     public const MEMBER_KEYS = [
         ...self::ROW_MEMBER_KEYS,
         'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'lahir_tgl', 'lahir_bln', 'lahir_thn', 'alamat',
-        'dusun', 'rt', 'rw', 'nama_ayah', 'nama_ibu',
+        'dusun', 'rt', 'rw', 'nama_ayah', 'nama_ibu', 'golongan_darah',
+        // Ayah/ibu yang tertaut di data penduduk (kosong bila tidak tertaut).
+        'nik_ayah', 'tempat_lahir_ayah', 'lahir_ayah_tgl', 'lahir_ayah_bln', 'lahir_ayah_thn', 'kwn_ayah',
+        'nik_ibu', 'tempat_lahir_ibu', 'lahir_ibu_tgl', 'lahir_ibu_bln', 'lahir_ibu_thn', 'kwn_ibu',
+        // Dokumen & keterangan tambahan (F-1.01); akta "Ada" bila nomornya tercatat.
+        'gelar_depan', 'gelar_belakang', 'akta_lahir', 'no_akta_lahir', 'akta_kawin', 'no_akta_kawin',
+        'tanggal_kawin', 'akta_cerai', 'no_akta_cerai', 'tanggal_cerai', 'kelainan', 'cacat',
     ];
 
+    /** SHDK pasangan suami istri dalam KK (kepala keluarga, suami, istri). */
+    public const COUPLE_ROLES = ['kepala_keluarga', 'suami', 'istri'];
+
     /** Relasi yang dibaca memberValues(). */
-    private const MEMBER_RELATIONS = ['occupation', 'rt.rw.hamlet'];
+    private const MEMBER_RELATIONS = ['occupation', 'rt.rw.hamlet', 'father', 'mother'];
 
     /** Jumlah baris anggota pada formulir susunan KK (F-1.01). */
     public const ROSTER_ROWS = 10;
@@ -338,8 +349,19 @@ class LetterFormSchema
         usort($rows, fn (array $a, array $b): int => $order($a) <=> $order($b));
         $rows = array_slice($rows, 0, self::ROSTER_ROWS);
 
+        $details = $this->memberDetailValues($payload);
+        $marriage = $this->newFamilyMarriage($payload);
+
         foreach ($rows as $index => [$member, $role]) {
-            foreach ([...self::memberValues($member), 'shdk' => self::familyRoleLabel($role)] as $key => $value) {
+            $values = [
+                ...self::memberValues($member),
+                'shdk' => self::familyRoleLabel($role),
+                // Keluarga baru setelah menikah: kepala keluarga dan suami/istri Kawin.
+                ...($marriage !== null && in_array($role, self::COUPLE_ROLES, true) ? $marriage : []),
+                ...($details[(string) $member->id] ?? []),
+            ];
+
+            foreach ($values as $key => $value) {
                 $payload[$name.'_'.($index + 1).'_'.$key] = $value;
             }
         }
@@ -359,6 +381,78 @@ class LetterFormSchema
         $payload["{$name}_jumlah"] = (string) count($rows);
 
         return $payload;
+    }
+
+    /**
+     * Data tambahan anggota dari isian repeater `data_options.member_details`
+     * (anggota, gelar, akta lahir/cerai, kelainan & cacat) per id anggota,
+     * siap cetak (kolom MEMBER_KEYS). Hanya yang diisi yang menimpa data
+     * warga; kelainan "Tidak" mengosongkan kelainan dan cacat.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, array<string, string>>
+     */
+    private function memberDetailValues(array $payload): array
+    {
+        $field = $this->dataOptions['member_details'] ?? null;
+        $date = fn (mixed $value): string => is_string($value) && $value !== ''
+            ? Carbon::parse($value)->locale('id')->translatedFormat('j F Y')
+            : '';
+        $details = [];
+
+        foreach ($field === null ? [] : (array) ($payload[$field] ?? []) as $row) {
+            if (! is_array($row) || (string) ($row['anggota'] ?? '') === '') {
+                continue;
+            }
+
+            $text = fn (string $key): string => trim((string) ($row[$key] ?? ''));
+            $values = array_filter([
+                'gelar_depan' => $text('gelar_depan'),
+                'gelar_belakang' => $text('gelar_belakang'),
+                'no_akta_lahir' => $text('no_akta_lahir'),
+                'akta_lahir' => $text('no_akta_lahir') !== '' ? 'Ada' : '',
+                'no_akta_cerai' => $text('no_akta_cerai'),
+                'akta_cerai' => $text('no_akta_cerai') !== '' ? 'Ada' : '',
+                'tanggal_cerai' => $date($row['tanggal_cerai'] ?? null),
+            ], fn (string $value): bool => $value !== '');
+
+            if (in_array($row['kelainan'] ?? null, ['ada', 'tidak'], true)) {
+                $values['kelainan'] = $row['kelainan'] === 'ada' ? 'Ada' : '';
+                $values['cacat'] = $row['kelainan'] === 'ada' ? $text('cacat') : '';
+            }
+
+            $details[(string) $row['anggota']] = $values;
+        }
+
+        return $details;
+    }
+
+    /**
+     * F09 KK baru karena membentuk keluarga baru: status Kawin dan buku
+     * nikah dari isian (data_options.restructure.new_family.married).
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, string>|null
+     */
+    private function newFamilyMarriage(array $payload): ?array
+    {
+        $config = $this->dataOptions['restructure'] ?? [];
+        $married = $config['new_family']['married'] ?? null;
+
+        if (! is_array($married) || (string) ($payload[$config['kind'] ?? ''] ?? '') !== ($config['new_family']['when'] ?? null)
+            || ($payload[$married['field']] ?? null) !== $married['equals']) {
+            return null;
+        }
+
+        $number = trim((string) ($payload[$married['certificate'] ?? ''] ?? ''));
+        $date = $payload[$married['date'] ?? ''] ?? null;
+
+        return [
+            'status_kawin' => CitizenLabels::of(CitizenLabels::MARITAL_STATUS, 'kawin'),
+            'akta_kawin' => $number !== '' ? 'Ada' : '',
+            'no_akta_kawin' => $number,
+            'tanggal_kawin' => is_string($date) && $date !== '' ? Carbon::parse($date)->locale('id')->translatedFormat('j F Y') : '',
+        ];
     }
 
     /**
@@ -402,8 +496,10 @@ class LetterFormSchema
                 ->take(self::ROSTER_ROWS)
                 ->values();
 
+            $details = $this->memberDetailValues($payload);
+
             foreach ($members as $index => $member) {
-                $values = self::memberValues($member);
+                $values = [...self::memberValues($member), ...($details[(string) $member->id] ?? [])];
 
                 if ((string) $member->id === $head) {
                     $values['shdk'] = 'Kepala Keluarga';
@@ -457,6 +553,20 @@ class LetterFormSchema
     {
         $birth = $member->date_of_birth;
         $rt = $member->rt;
+        $parent = function (string $key, ?Citizen $parent, ?string $typedName): array {
+            $born = $parent?->date_of_birth;
+            $name = (string) ($parent?->name ?? $typedName ?? '');
+
+            return [
+                "nama_{$key}" => $name,
+                "nik_{$key}" => (string) ($parent?->nik ?? ''),
+                "tempat_lahir_{$key}" => (string) ($parent?->place_of_birth ?? ''),
+                "lahir_{$key}_tgl" => $born?->format('d') ?? '',
+                "lahir_{$key}_bln" => $born?->format('m') ?? '',
+                "lahir_{$key}_thn" => $born?->format('Y') ?? '',
+                "kwn_{$key}" => $name !== '' ? 'INDONESIA' : '',
+            ];
+        };
 
         return [
             'nama' => $member->name,
@@ -480,8 +590,25 @@ class LetterFormSchema
             'dusun' => $rt?->rw?->hamlet?->name ?? '',
             'rt' => $rt ? self::areaNumber($rt->number) : '',
             'rw' => $rt?->rw ? self::areaNumber($rt->rw->number) : '',
-            'nama_ayah' => (string) ($member->father_name_text ?? ''),
-            'nama_ibu' => (string) ($member->mother_name_text ?? ''),
+            'golongan_darah' => match ($member->blood_type) {
+                null => '',
+                BloodType::TIDAK_TAHU => 'Tidak Tahu',
+                default => $member->blood_type->value,
+            },
+            ...$parent('ayah', $member->father, $member->father_name_text),
+            ...$parent('ibu', $member->mother, $member->mother_name_text),
+            'gelar_depan' => (string) ($member->title_front ?? ''),
+            'gelar_belakang' => (string) ($member->title_back ?? ''),
+            'akta_lahir' => $member->birth_certificate_number ? 'Ada' : '',
+            'no_akta_lahir' => (string) ($member->birth_certificate_number ?? ''),
+            'akta_kawin' => $member->marriage_certificate_number ? 'Ada' : '',
+            'no_akta_kawin' => (string) ($member->marriage_certificate_number ?? ''),
+            'tanggal_kawin' => $member->marriage_date?->locale('id')->translatedFormat('j F Y') ?? '',
+            'akta_cerai' => $member->divorce_certificate_number ? 'Ada' : '',
+            'no_akta_cerai' => (string) ($member->divorce_certificate_number ?? ''),
+            'tanggal_cerai' => $member->divorce_date?->locale('id')->translatedFormat('j F Y') ?? '',
+            'kelainan' => $member->has_disorder ? 'Ada' : '',
+            'cacat' => $member->has_disorder ? (string) ($member->disability ?? '') : '',
         ];
     }
 
@@ -655,6 +782,7 @@ class LetterFormSchema
                     'family_number' => $citizen->family?->no_kk,
                     'occupation' => $citizen->occupation?->name,
                     'address' => $citizen->address,
+                    'marital_status' => $citizen->marital_status,
                     default => $citizen->name,
                 };
             }

@@ -242,6 +242,9 @@ class MoveInServiceTest extends TestCase
             'tanggal_lahir_pemilik' => '1960-01-01',
             'pekerjaan_pemilik' => (string) $this->farmer->id,
             'alamat_pemilik' => 'Dusun Budiasih RT 002 RW 016',
+            'gelar_belakang_pendatang' => 'S.E.',
+            'kelainan_pendatang' => 'ada',
+            'cacat_pendatang' => 'Tuna daksa',
         ]);
 
         $this->actingAs($this->applicant['user'])
@@ -277,6 +280,10 @@ class MoveInServiceTest extends TestCase
         $this->assertSame('Kepala Keluarga', $new['Hubungan dalam KK']);
         $this->assertSame('Pendatang', $new['Status Kependudukan']);
         $this->assertSame('Petani', $new['Pekerjaan']);
+        $this->assertSame('S.E.', $new['Gelar Belakang']);
+        $this->assertSame('Ada', $new['Kelainan Fisik & Mental']);
+        $this->assertSame('Tuna daksa', $new['Penyandang Cacat']);
+        $this->assertSame('AN-123', $new['No. Akta Lahir']);
         $this->assertSame('No. KK ************9999', $new['Kartu Keluarga']);
         $this->assertSame($families, Family::query()->count());
 
@@ -290,6 +297,14 @@ class MoveInServiceTest extends TestCase
         $this->assertSame('pendatang', $arrival->residency_type->value);
         $this->assertSame($this->farmer->id, $arrival->occupation_id);
         $this->assertSame($this->budiasih->id, $arrival->family->rt_id);
+        $this->assertSame('S.E.', $arrival->title_back);
+        $this->assertSame('AN-123', $arrival->birth_certificate_number);
+        $this->assertTrue($arrival->has_disorder);
+        $this->assertSame('Tuna daksa', $arrival->disability);
+        // F-1.01: gelar dan kelainan pendatang ikut tercetak.
+        $biodata = $this->render($letterId, 'f1_01', landscape: true);
+        $this->assertStringContainsString('>S.E.</td>', $biodata);
+        $this->assertStringContainsString('>Tuna daksa</td>', $biodata);
 
         $this->assertNotNull(Letter::query()->findOrFail($letterId)->fulfilled_at);
     }

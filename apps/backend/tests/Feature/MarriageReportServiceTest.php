@@ -93,6 +93,8 @@ class MarriageReportServiceTest extends TestCase
             'nik_istri' => '3207246202970002',
             'status_kawin_belum_tercatat' => 'tidak',
             'no_buku_nikah' => '123/45/X/2026',
+            'istri_ke' => '2',
+            'jumlah_anak' => '3',
             // Bagian perceraian tidak berlaku untuk perkawinan.
             'nama_pengadilan' => 'Tidak tersimpan',
         ]);
@@ -111,13 +113,23 @@ class MarriageReportServiceTest extends TestCase
             ->getJson("/api/letters/{$letterId}")
             ->assertJsonPath('data.documents.*.key', ['main', 'f1_06']);
 
-        // F-2.01: jenis perkawinan dan agama dicentang; suami dan istri sebagai subjek akta.
+        // Status sebelum kawin dari data penduduk (suami = pemohon).
+        $this->assertSame('belum_kawin', $payload['status_kawin_suami']);
+        $this->assertSame('kawin', $payload['status_kawin_istri']);
+
+        // F-2.01: jenis perkawinan, agama, dan status sebelum kawin suami
+        // (Belum Kawin) dan istri (Kawin) dicentang; suami dan istri sebagai subjek akta.
         $report = $this->render($letterId, null);
-        $this->assertSame(2, substr_count($report, '>X</td>'));
+        $this->assertSame(4, substr_count($report, '>X</td>'));
         $this->assertMatchesRegularExpression($this->boxes('DADAN'), $report);
         $this->assertMatchesRegularExpression($this->boxes('EUIS'), $report);
         $this->assertMatchesRegularExpression($this->boxes('ASEP'), $report);
         $this->assertMatchesRegularExpression($this->boxes('SABTU'), $report);
+        // Istri ke- (poligami) dan jumlah anak.
+        $this->assertStringContainsString('>2</td>', $report);
+        $this->assertStringContainsString('>3</td>', $report);
+        // Tanggal melapor = tanggal formulir terbit (Senin, 12 Oktober 2026).
+        $this->assertMatchesRegularExpression($this->boxes('SENIN'), $report);
         $this->assertStringNotContainsString('[[', $report);
 
         // F-1.06: status perkawinan pemohon Belum Kawin -> Kawin; istri beda KK tidak tercantum.
@@ -189,13 +201,20 @@ class MarriageReportServiceTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.name', 'Euis Komariah')
-            ->assertJsonPath('data.0.changes', [['column' => 'marital_status', 'label' => 'Status Perkawinan', 'old' => 'Kawin', 'new' => 'Cerai Hidup']]);
+            ->assertJsonPath('data.0.changes', [
+                ['column' => 'marital_status', 'label' => 'Status Perkawinan', 'old' => 'Kawin', 'new' => 'Cerai Hidup'],
+                // Akta perkawinan dan tanggal putusan ikut tersimpan di data warga.
+                ['column' => 'marriage_certificate_number', 'label' => 'No. Akta/Buku Nikah', 'old' => '-', 'new' => '0456/2018'],
+                ['column' => 'divorce_date', 'label' => 'Tanggal Perceraian', 'old' => '-', 'new' => '1 September 2026'],
+            ]);
         $this->assertSame('kawin', $this->wife['citizen']->fresh()->marital_status);
 
         $this->actingAs($this->kasi['user'])
             ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => []])
             ->assertOk();
         $this->assertSame('cerai_hidup', $this->wife['citizen']->fresh()->marital_status);
+        $this->assertSame('0456/2018', $this->wife['citizen']->fresh()->marriage_certificate_number);
+        $this->assertSame('2026-09-01', $this->wife['citizen']->fresh()->divorce_date->toDateString());
     }
 
     public function test_unrecorded_marriage_issues_the_sptjm_and_the_spouse_statement(): void
@@ -232,6 +251,26 @@ class MarriageReportServiceTest extends TestCase
         $this->assertStringContainsString('>Euis Komariah<', $spouse);
 
         $this->assertStringContainsString('SPTJM Perkawinan/Perceraian Belum Tercatat (F-1.05)', $this->render($letterId, 'f1_06'));
+    }
+
+    public function test_status_before_marriage_is_asked_for_a_spouse_from_outside_the_village(): void
+    {
+        $payload = [
+            ...$this->marriage(),
+            'peran_pemohon' => 'suami',
+            'nik_istri' => '3207246202970099',
+            'nama_istri' => 'Neneng Hasanah',
+            'status_kawin_belum_tercatat' => 'tidak',
+        ];
+
+        $this->submit($this->husband, $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('payload.status_kawin_istri');
+
+        $letterId = $this->approve($this->husband, [...$payload, 'status_kawin_istri' => 'cerai_mati']);
+        $this->assertSame('cerai_mati', Letter::query()->findOrFail($letterId)->payload['status_kawin_istri']);
+        // Jenis perkawinan, agama, suami Belum Kawin, istri Cerai Mati.
+        $this->assertSame(4, substr_count($this->render($letterId, null), '>X</td>'));
     }
 
     public function test_event_dates_cannot_precede_births_and_divorce_cannot_precede_marriage(): void
@@ -354,12 +393,17 @@ class MarriageReportServiceTest extends TestCase
             ->assertOk();
     }
 
-    private function approve(array $applicant, array $payload): string
+    private function submit(array $applicant, array $payload)
     {
-        $letterId = $this->actingAs($applicant['user'])->postJson('/api/letters', [
+        return $this->actingAs($applicant['user'])->postJson('/api/letters', [
             'letter_type_id' => LetterType::query()->where('code', 'F07')->value('id'),
             'payload' => $payload,
-        ])->assertCreated()->json('data.id');
+        ]);
+    }
+
+    private function approve(array $applicant, array $payload): string
+    {
+        $letterId = $this->submit($applicant, $payload)->assertCreated()->json('data.id');
 
         $this->actingAs($this->rtApprover['user'])
             ->patchJson("/api/rt/letters/{$letterId}/decision", ['status' => 'approved'])
