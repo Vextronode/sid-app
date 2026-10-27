@@ -34,7 +34,7 @@ get:
                     family_role:
                       type: string
                       nullable: true
-                      enum: [kepala_keluarga, istri, suami, anak, famili_lain, null]
+                      enum: [kepala_keluarga, suami, istri, anak, menantu, cucu, orang_tua, mertua, famili_lain, pembantu, lainnya, null]
                     family_role_label:
                       type: string
                       example: "Kepala Keluarga"
@@ -43,6 +43,11 @@ get:
                       nullable: true
                       enum: [L, P, null]
                       description: "Untuk isian family_member yang dibatasi jenis kelamin (mis. ibu = P)."
+                    date_of_birth:
+                      type: string
+                      format: date
+                      nullable: true
+                      description: "Untuk isian family_member dengan syarat selisih usia (`older_than`, mis. ibu minimal 10 tahun lebih tua dari anak)."
                     nik_masked:
                       type: string
                       nullable: true

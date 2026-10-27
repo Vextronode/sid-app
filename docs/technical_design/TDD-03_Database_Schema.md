@@ -148,7 +148,7 @@ Kolom `nik` dienkripsi dengan cast Laravel `encrypted`; `address` disimpan sebag
 | domicile_status | ENUM | NOT NULL, DEFAULT 'menetap' | `menetap` \| `merantau_dalam_negeri` \| `merantau_luar_negeri` \| `tki`. Murni informatif, tidak mempengaruhi hak akses |
 | current_domicile | VARCHAR(150) | NULL | Alamat domisili saat ini jika tidak menetap |
 | family_id | UUID | FK → families.id, NULL | NULL = belum/tidak tergabung KK manapun |
-| family_role | ENUM | NULL | `kepala_keluarga` \| `istri` \| `suami` \| `anak` \| `famili_lain` |
+| family_role | ENUM | NULL | SHDK resmi Disdukcapil: `kepala_keluarga` \| `suami` \| `istri` \| `anak` \| `menantu` \| `cucu` \| `orang_tua` \| `mertua` \| `famili_lain` \| `pembantu` \| `lainnya` |
 | father_id | UUID | FK → citizens.id, NULL | Self-reference, untuk fitur pohon keluarga |
 | mother_id | UUID | FK → citizens.id, NULL | Self-reference |
 | father_name_text | VARCHAR(255) | NULL | Fallback teks bebas jika `father_id` NULL |

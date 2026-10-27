@@ -74,7 +74,7 @@ Citizen:
           example: "************0001"
     family_role:
       type: string
-      enum: [kepala_keluarga, istri, suami, anak, famili_lain]
+      enum: [kepala_keluarga, suami, istri, anak, menantu, cucu, orang_tua, mertua, famili_lain, pembantu, lainnya]
       nullable: true
       example: "istri"
       description: "BARU v5.0"
@@ -235,7 +235,7 @@ CitizenCreateRequest:
       description: "Pilih dari dropdown KK yang sudah ada, atau buat KK baru dulu via POST /families"
     family_role:
       type: string
-      enum: [kepala_keluarga, istri, suami, anak, famili_lain]
+      enum: [kepala_keluarga, suami, istri, anak, menantu, cucu, orang_tua, mertua, famili_lain, pembantu, lainnya]
       nullable: true
       example: "istri"
     father_id:
