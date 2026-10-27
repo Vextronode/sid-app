@@ -58,7 +58,7 @@ function responseData(response) {
 
 /**
  * Daftar Kartu Keluarga. `canEdit` = false untuk tampilan khusus-baca
- * (Kaur TU & Umum); `canViewHistory` hanya untuk Petugas Desa (Log Aktivitas).
+ * (Kaur TU & Umum); `canViewHistory` hanya untuk Staf SIDUTama (Log Aktivitas).
  */
 export default function FamilyManagementPanel({
   familyList,

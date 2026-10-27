@@ -33,7 +33,7 @@ import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { notifySuccess } from '@/shared/lib/toast'
 
 // Tabel pejabat dipisah per tingkat. Jabatan yang bukan Kadus/RW/RT
-// (Kades, Sekdes, Kasi, Kaur, staf, Petugas Desa) masuk tabel pertama,
+// (Kades, Sekdes, Kasi, Kaur, staf, Staf SIDUTama) masuk tabel pertama,
 // diurutkan sesuai DESA_ORDER lalu abjad.
 const DESA_ORDER = ['kepala_desa', 'sekretaris_desa', 'kasi_pemerintahan', 'kaur_tu_umum']
 
@@ -91,7 +91,7 @@ const OFFICIAL_GROUPS = [
 // Jabatan yang punya akun login dan peran di aplikasi (OfficialPosition di
 // backend), beserta labelnya, dari GET /official-position-types
 // (`account_positions`). Label tidak ditulis di FE supaya sama dengan tabel
-// pejabat; label staf aplikasi mengikuti SID_APP_NAME di backend.
+// pejabat; label Staf SIDUTama mengikuti SID_APP_NAME di backend.
 const toAccountPositions = (response) =>
   (response?.data?.account_positions ?? []).map((position) => ({
     value: position.code,
@@ -113,7 +113,7 @@ const candidateTarget = (accountPositions, position, candidate) =>
 
 const PHOTO_TYPES = 'image/png,image/jpeg,image/webp'
 
-// Dashboard warga, tujuan staf aplikasi setelah menyerahkan jabatannya.
+// Dashboard warga, tujuan Staf SIDUTama setelah menyerahkan jabatannya.
 const WARGA_HOME = '/daftar-surat'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -454,7 +454,7 @@ export default function PejabatDesaPage() {
   const handleRotate = (event) => {
     event.preventDefault()
 
-    // Staf aplikasi yang menyerahkan jabatannya sendiri langsung menjadi
+    // Staf SIDUTama yang menyerahkan jabatannya sendiri langsung menjadi
     // warga: buka dashboard warga dengan memuat ulang halaman, supaya data
     // akun (peran warga) dibaca ulang dari server tanpa menunggu logout.
     // Memuat ulang lewat AuthContext di sini akan memicu ProtectedRoute
@@ -768,7 +768,7 @@ export default function PejabatDesaPage() {
                                   >
                                     <ArrowLeftRight size={16} />
                                   </button>
-                                  {/* Staf aplikasi hanya satu dan tidak boleh kosong:
+                                  {/* Staf SIDUTama hanya satu dan tidak boleh kosong:
                                       penggantinya lewat rotasi. */}
                                   {official.position !== 'staf_sid' && (
                                     <button

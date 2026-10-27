@@ -361,7 +361,7 @@ export default function App() {
               {/* Profil terbuka untuk semua pejabat. */}
               <Route path="/admin/profile" element={<AdminProfilePage />} />
 
-              {/* Pengajuan surat pribadi oleh pejabat (bukan Petugas Desa). */}
+              {/* Pengajuan surat pribadi oleh pejabat (bukan Staf SIDUTama). */}
               <Route
                 path={SELF_LETTER_ROUTE}
                 element={
@@ -371,7 +371,7 @@ export default function App() {
                 }
               />
 
-              {/* OPERATOR DESA — Kasi Pemerintahan, Kaur TU Umum, Petugas Desa.
+              {/* OPERATOR DESA — Kasi Pemerintahan, Kaur TU Umum, Staf SIDUTama.
                 Halaman pengelolaan dibatasi sesuai kapabilitas backend. */}
               <Route
                 path="/admin/operator-desa"

@@ -36,7 +36,7 @@ export const getLetterDetail = async (letterId) => {
   return response.data.data
 }
 
-// Terapkan perubahan data setelah final approve (Kasi/Kaur/Petugas Desa).
+// Terapkan perubahan data setelah final approve (Kasi/Kaur/Staf SIDUTama).
 export const getFulfillmentProposal = async (letterId) => {
   const response = await api.get(`/api/letters/${letterId}/fulfillment`)
 

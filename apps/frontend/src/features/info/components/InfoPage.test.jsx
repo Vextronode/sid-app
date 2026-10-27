@@ -39,7 +39,7 @@ describe('InfoPage', () => {
     scrollTo.mockRestore()
   })
 
-  // Isian yang belum diisi Petugas Desa tampil sebagai penanda kuning. Email
+  // Isian yang belum diisi Staf SIDUTama tampil sebagai penanda kuning. Email
   // khusus yang kosong memakai email kantor desa, jadi bukan penanda.
   it.each([
     ['kebijakan-privasi', 4],

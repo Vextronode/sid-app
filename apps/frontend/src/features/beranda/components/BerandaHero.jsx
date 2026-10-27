@@ -74,7 +74,7 @@ export function BerandaHero({ content, village }) {
             className="relative aspect-4/3 overflow-hidden rounded-t-full bg-pb-laut-deep bg-(image:--pb-contour-light) bg-size-[480px_180px] shadow-[0_0_0_8px_#fff,0_0_0_9px_var(--color-pb-line)] min-[901px]:aspect-11/14 min-[901px]:shadow-[0_0_0_10px_#fff,0_0_0_11px_var(--color-pb-line)]"
             aria-hidden="true"
           >
-            {/* key: foto baru (mis. diganti Petugas Desa) mulai lagi dari tersembunyi. */}
+            {/* key: foto baru (mis. diganti Staf SIDUTama) mulai lagi dari tersembunyi. */}
             {imageUrl && <HeroPhoto key={imageUrl} src={imageUrl} />}
           </div>
           {photoCredit && (

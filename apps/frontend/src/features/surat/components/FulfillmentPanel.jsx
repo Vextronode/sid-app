@@ -36,7 +36,7 @@ function display(value) {
 }
 
 /**
- * "Terapkan": Kasi/Kaur yang ditugaskan (atau Petugas Desa sebagai
+ * "Terapkan": Kasi/Kaur yang ditugaskan (atau Staf SIDUTama sebagai
  * cadangan) meninjau nilai yang diusulkan warga, boleh mengoreksinya, lalu
  * menerapkannya ke data kependudukan. Hanya kolom yang ditetapkan untuk
  * jenis surat itu yang tampil. Sebelum disimpan, pop up menampilkan daftar

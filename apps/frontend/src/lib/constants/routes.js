@@ -18,7 +18,7 @@ export const HAL_STATUS_SURAT = '/daftar-surat-saya'
 // Id section di beranda yang menjadi tujuan gulir (A8).
 export const SECTION_KONTAK = 'kontak'
 
-// Halaman informasi (D6). Isian khas desa diatur Petugas Desa (menu Halaman Informasi).
+// Halaman informasi (D6). Isian khas desa diatur Staf SIDUTama (menu Halaman Informasi).
 export const HAL_KEBIJAKAN_PRIVASI = '/kebijakan-privasi'
 export const HAL_AKSESIBILITAS = '/aksesibilitas'
 export const HAL_PPID = '/ppid'

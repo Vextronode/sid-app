@@ -9,7 +9,7 @@ function compact(params) {
   )
 }
 
-// Riwayat data warga & KK (activity_log) - khusus Petugas Desa.
+// Riwayat data warga & KK (activity_log) - khusus Staf SIDUTama.
 export async function getPopulationLogs(params = {}) {
   const response = await api.get('/api/activity-logs/population', { params: compact(params) })
 

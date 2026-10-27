@@ -30,7 +30,7 @@ describe('getBerandaContent', () => {
     )
     expect(content.complaint.whatsappText).toBe('Bagikan kotak saran via WhatsApp')
     // Identitas desa (nama, logo, foto, telepon, email, jam layanan, link peta)
-    // dari data desa yang diatur Petugas Desa, bukan konten statis.
+    // dari data desa yang diatur Staf SIDUTama, bukan konten statis.
     expect(content.header.fallbackName).toBe('Desa')
     expect(content.header.logoSrc).toBeUndefined()
     expect(content.hero.imageUrl).toBeUndefined()

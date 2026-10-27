@@ -1,6 +1,6 @@
 // ==========================================
 // OperatorSuratPreviewModal.jsx
-// Detail surat untuk Kasi/Kaur dan Petugas Desa (read-only), di atas
+// Detail surat untuk Kasi/Kaur dan Staf SIDUTama (read-only), di atas
 // kerangka LetterDossierModal: surat di kiri, berkas di kanan, menu
 // "Unduh surat" (digital / tanda tangan basah) di footer.
 // ==========================================

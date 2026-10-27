@@ -1,7 +1,7 @@
 import api from '@/lib/api'
 
 // Isian halaman informasi publik (PPID, Kebijakan Privasi, Aksesibilitas),
-// khusus Petugas Desa. Respons memuat skema field per halaman.
+// khusus Staf SIDUTama. Respons memuat skema field per halaman.
 export function getInfoPages() {
   return api.get('/api/info-pages')
 }

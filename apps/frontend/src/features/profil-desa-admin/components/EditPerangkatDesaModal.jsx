@@ -193,7 +193,7 @@ export default function EditPerangkatDesaModal({
   // PERANGKAT DESA
   // ==========================================
   // Semua perangkat selain Kepala Dusun, termasuk jenis jabatan yang
-  // ditambahkan Petugas Desa.
+  // ditambahkan Staf SIDUTama.
 
   const perangkatSections = perangkatList.filter((person) => person?.id)
 

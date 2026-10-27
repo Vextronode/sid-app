@@ -96,7 +96,7 @@ function loadPublicVillageInfo() {
   return sharedRequest
 }
 
-// Muat ulang setelah Petugas Desa mengubah profil (mis. logo), agar header
+// Muat ulang setelah Staf SIDUTama mengubah profil (mis. logo), agar header
 // dan halaman publik yang sedang terbuka langsung memakai data baru.
 export async function refreshPublicVillageInfo() {
   sharedRequest = null

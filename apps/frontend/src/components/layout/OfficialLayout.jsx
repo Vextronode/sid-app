@@ -6,7 +6,7 @@ const OPERATOR_ROLES = ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid']
 
 /**
  * Tata letak untuk halaman yang dipakai semua pejabat (mis. profil):
- * sidebar operator untuk Kasi/Kaur/Petugas Desa, bilah atas untuk
+ * sidebar operator untuk Kasi/Kaur/Staf SIDUTama, bilah atas untuk
  * RT/RW/Kadus/Kades/Sekdes.
  */
 export function OfficialLayout({ children }) {

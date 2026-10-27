@@ -1,7 +1,7 @@
 // ==========================================
 // GantiPasswordPage.jsx
 // Wajib ganti kata sandi: akun yang kata sandinya baru dibuat/direset
-// Petugas Desa (must_change_password) ditolak backend di semua endpoint
+// Staf SIDUTama (must_change_password) ditolak backend di semua endpoint
 // lain sampai kata sandi sementara diganti di sini.
 // ==========================================
 

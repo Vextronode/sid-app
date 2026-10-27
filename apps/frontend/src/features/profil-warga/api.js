@@ -1,7 +1,7 @@
 import api from '@/lib/api'
 
 // Foto profil akun sendiri. Hanya akun warga; akun yang menjabat ditolak
-// (fotonya foto pejabat, dikelola Petugas Desa).
+// (fotonya foto pejabat, dikelola Staf SIDUTama).
 export function uploadOwnPhoto(file) {
   const form = new FormData()
   form.append('photo', file)

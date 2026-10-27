@@ -19,7 +19,7 @@ describe('operator role navigation', () => {
     expect(ROLE_NAVIGATION.kaur_tu_umum).toEqual(expectedRoutes)
   })
 
-  it('reserves village administration and configuration routes for Petugas Desa', () => {
+  it('reserves village administration and configuration routes for Staf SIDUTama', () => {
     const petugasRoutes = ROLE_NAVIGATION.staf_sid
 
     for (const route of [

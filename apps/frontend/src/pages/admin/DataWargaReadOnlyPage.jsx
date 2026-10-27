@@ -25,7 +25,7 @@ const SECTIONS = [
  * Data penduduk dan KK khusus-baca untuk Kaur TU & Umum sebagai bahan
  * pertimbangan saat memproses surat. Perubahan data olehnya hanya lewat
  * aksi "Terapkan" pada surat; tambah, ubah, hapus, dan impor ada di
- * halaman kelola milik Petugas Desa dan Kasi Pemerintahan.
+ * halaman kelola milik Staf SIDUTama dan Kasi Pemerintahan.
  */
 export default function DataWargaReadOnlyPage() {
   const [searchParams, setSearchParams] = useSearchParams()

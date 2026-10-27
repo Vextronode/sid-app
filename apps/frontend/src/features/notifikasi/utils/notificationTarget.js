@@ -13,7 +13,7 @@ const LETTER_LIST_ROUTES = {
 }
 
 // Pengajuan surat pribadi oleh pejabat: semua peran ber-akun kecuali
-// Petugas Desa (admin).
+// Staf SIDUTama (admin).
 export const SELF_LETTER_ROUTE = '/admin/surat-saya'
 
 export const SELF_LETTER_ROLES = [

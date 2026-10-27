@@ -65,7 +65,7 @@ function PhotoPreview({ src, alt, onClose }) {
  *
  * Akun warga: foto akun, bisa diunggah, diganti, dan dihapus sendiri.
  * Akun yang menjabat: foto pejabat (official.photo_img), hanya tampil;
- * yang mengubahnya Petugas Desa lewat halaman Pejabat Desa.
+ * yang mengubahnya Staf SIDUTama lewat halaman Pejabat Desa.
  */
 export function ProfilePhoto({ avatarClassName }) {
   const { user, patchUser } = useAuth()

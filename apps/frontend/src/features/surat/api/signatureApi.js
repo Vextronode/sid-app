@@ -24,7 +24,7 @@ export const saveMySignature = async (file) => {
   return response.data
 }
 
-// Reset darurat oleh Petugas Desa.
+// Reset darurat oleh Staf SIDUTama.
 export const resetUserSignature = (userId, reason) =>
   api.post(`/api/users/${userId}/signature/reset`, { reason })
 

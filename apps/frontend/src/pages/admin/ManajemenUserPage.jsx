@@ -440,7 +440,7 @@ export default function ManajemenUserPage() {
                             <Eraser size={16} />
                           </button>
 
-                          {/* Backend menolak reset kata sandi sesama Petugas Desa. */}
+                          {/* Backend menolak reset kata sandi sesama Staf SIDUTama. */}
                           {user.role !== 'staf_sid' && (
                             <button
                               type="button"
