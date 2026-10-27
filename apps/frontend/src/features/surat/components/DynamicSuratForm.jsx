@@ -84,6 +84,12 @@ export function DynamicSuratForm({
   const [nikLookups, setNikLookups] = useState({})
   // Isian (nama, No. KK) yang diisi otomatis dari isian NIK ini.
   const lookupFieldsOf = (nikName) => config.fields.filter((field) => field.fromNik === nikName)
+  // Isian dari NIK diketik bila NIK tidak ditemukan, atau dikosongkan pada
+  // isian NIK ber-typedWhenEmpty (mis. anak angkat yang belum punya NIK).
+  const lookupTyped = (nikName) =>
+    nikLookups[nikName]?.status === 'not_found' ||
+    (Boolean(config.fields.find((field) => field.name === nikName)?.typedWhenEmpty) &&
+      !String(watchedFormData?.[nikName] ?? '').trim())
 
   const {
     register,
@@ -322,7 +328,7 @@ export function DynamicSuratForm({
             }
 
             // Nama dari NIK: diketik hanya bila NIK tidak ada di data penduduk.
-            if (field.fromNik && nikLookups[field.fromNik]?.status !== 'not_found') {
+            if (field.fromNik && !lookupTyped(field.fromNik)) {
               return null
             }
 

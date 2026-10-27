@@ -13,6 +13,7 @@ const ACTION_TITLES = {
   update_members: 'Perubahan Data Anggota Keluarga',
   update_citizens: 'Perubahan Data Warga',
   restructure_family: 'Perubahan Susunan KK',
+  adopt_child: 'Pengangkatan Anak',
   manual: 'Pembaruan Data Penduduk & KK',
 }
 
@@ -192,7 +193,7 @@ export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
         </p>
       ) : proposal.action === 'update_members' ? (
         <MemberChangesForm letterId={letterId} proposal={proposal} onDone={handleSemiManualDone} />
-      ) : proposal.action === 'restructure_family' ? (
+      ) : ['restructure_family', 'adopt_child'].includes(proposal.action) ? (
         <RestructureFamilyForm
           letterId={letterId}
           proposal={proposal}

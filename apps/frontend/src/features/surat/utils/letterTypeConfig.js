@@ -38,6 +38,8 @@ function normalizeField(field) {
     // dengannya (saksi lainnya, pihak dalam surat).
     witness: field.witness ?? null,
     notSameAs: Array.isArray(field.not_same_as) ? field.not_same_as : [],
+    // Isian NIK opsional: pasangan from_nik-nya diketik bila NIK kosong.
+    typedWhenEmpty: Boolean(field.typed_when_empty),
     // Isian nama yang diisi otomatis dari NIK di isian ini.
     fromNik: field.from_nik ?? null,
     // Data yang diambil dari NIK: nama (bawaan) atau No. KK.

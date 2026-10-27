@@ -104,6 +104,13 @@ describe('getLetterTypeFormConfig', () => {
 
     expect(config.fields[0].defaultValue).toBe('sendiri')
     expect(config.fields[0].help).toBe('Pilih Diwakilkan bila diurus orang lain.')
+    expect(config.fields[0].typedWhenEmpty).toBe(false)
+
+    const adoption = getLetterTypeFormConfig({
+      ...letterType,
+      form_fields: [{ name: 'nik_anak', label: 'NIK Anak', type: 'nik', typed_when_empty: true }],
+    })
+    expect(adoption.fields[0].typedWhenEmpty).toBe(true)
   })
 
   it('leaves out the family roster that the system builds on submission', () => {
