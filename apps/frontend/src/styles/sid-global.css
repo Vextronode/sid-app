@@ -20372,17 +20372,21 @@ button.sid-operator-profile {
 
   padding: 16px;
 
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(15, 23, 42, 0.5);
 }
 
 .sid-help-modal {
   position: relative;
 
-  width: 100%;
-  max-width: 448px;
+  display: flex;
+  flex-direction: column;
 
-  max-height: 85vh;
-  overflow-y: auto;
+  width: 100%;
+  max-width: 440px;
+
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
 
   background: var(--sid-surface-card);
 
@@ -20393,32 +20397,74 @@ button.sid-operator-profile {
 
 /* =========================================================
    HEADER
+   Ikon, judul + subjudul, dan tombol tutup dalam satu baris.
    ========================================================= */
 
 .sid-help-modal-header {
-  position: relative;
+  display: flex;
+  align-items: flex-start;
 
-  padding: 24px;
+  gap: 12px;
+
+  flex: none;
+
+  padding: 20px 16px 20px 20px;
 
   background: var(--sid-header-bg);
 
   color: var(--sid-header-text);
-
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
-.sid-help-modal-close {
-  position: absolute;
-
-  top: 16px;
-  right: 16px;
-
+.sid-help-modal-icon {
   display: flex;
   align-items: center;
   justify-content: center;
 
-  width: 32px;
-  height: 32px;
+  flex: none;
+
+  width: 40px;
+  height: 40px;
+
+  border-radius: var(--radius-sm);
+
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.sid-help-modal-heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sid-help-modal-title {
+  margin: 0;
+
+  color: var(--sid-header-text);
+
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.sid-help-modal-subtitle {
+  margin: 4px 0 0;
+
+  color: var(--sid-header-subtext);
+
+  font-size: 14px;
+
+  line-height: 1.5;
+}
+
+.sid-help-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: none;
+
+  width: 36px;
+  height: 36px;
+  margin: -4px 0 0;
 
   padding: 0;
 
@@ -20437,32 +20483,9 @@ button.sid-operator-profile {
 }
 
 .sid-help-modal-close:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
 
   color: var(--sid-header-text);
-}
-
-.sid-help-modal-icon {
-  margin-bottom: 8px;
-}
-
-.sid-help-modal-title {
-  margin: 0;
-
-  color: var(--sid-header-text);
-
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.sid-help-modal-subtitle {
-  margin: 4px 0 0;
-
-  color: var(--sid-header-subtext);
-
-  font-size: 14px;
-
-  line-height: 1.5;
 }
 
 /* =========================================================
@@ -20473,34 +20496,39 @@ button.sid-operator-profile {
   display: flex;
   flex-direction: column;
 
-  gap: 16px;
+  gap: 20px;
 
-  padding: 24px;
+  padding: 20px;
+
+  overflow-y: auto;
 }
 
 /* =========================================================
-   HELP ITEM
+   HELP LIST
+   Semua kanal satu kolom rata kiri, dipisah garis tipis.
    ========================================================= */
+
+.sid-help-list {
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+}
 
 .sid-help-item {
   display: flex;
   align-items: flex-start;
 
   gap: 12px;
+
+  padding: 14px 16px;
 }
 
-/* Telepon + Email: kedua kelompok (ikon + teks) di tengah modal, teks di
-   dalamnya tetap rata kiri. Di layar sempit bertumpuk, tetap di tengah. */
-.sid-help-contact-group {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px 32px;
-}
-
-.sid-help-contact-group > .sid-help-item {
-  flex: 0 1 auto;
-  min-width: 0;
+.sid-help-item + .sid-help-item {
+  border-top: 1px solid var(--sid-border);
 }
 
 .sid-help-item-icon {
@@ -20521,8 +20549,8 @@ button.sid-operator-profile {
 }
 
 .sid-help-item-content {
+  flex: 1 1 auto;
   min-width: 0;
-  padding-top: 1px;
 }
 
 .sid-help-item-label {
@@ -20531,9 +20559,12 @@ button.sid-operator-profile {
   color: var(--sid-text-muted);
 
   font-size: 12px;
+  line-height: 1.4;
 }
 
 .sid-help-item-value {
+  display: block;
+
   margin: 2px 0 0;
 
   color: var(--sid-text-primary);
@@ -20542,6 +20573,19 @@ button.sid-operator-profile {
   font-weight: 600;
 
   line-height: 1.5;
+
+  /* Email/alamat panjang dipatahkan, tidak melebar keluar modal. */
+  overflow-wrap: anywhere;
+}
+
+.sid-help-item-link {
+  color: var(--sid-primary);
+
+  text-decoration: none;
+}
+
+.sid-help-item-link:hover {
+  text-decoration: underline;
 }
 
 /* =========================================================
@@ -20549,7 +20593,7 @@ button.sid-operator-profile {
    ========================================================= */
 
 .sid-help-close-button {
-  margin-top: 4px;
+  flex: none;
 }
 
 /* =========================================================
@@ -20557,16 +20601,16 @@ button.sid-operator-profile {
    ========================================================= */
 
 @media (max-width: 640px) {
-  .sid-help-modal {
-    max-width: 100%;
-  }
-
   .sid-help-modal-header {
-    padding: 20px;
+    padding: 16px 12px 16px 16px;
   }
 
   .sid-help-modal-content {
-    padding: 20px;
+    padding: 16px;
+  }
+
+  .sid-help-item {
+    padding: 12px 14px;
   }
 }
 
