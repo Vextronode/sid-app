@@ -107,6 +107,11 @@ export function DynamicSuratForm({
           .filter((field) => field.type === 'family_members')
           .map((field) => [field.name, []]),
       ),
+      ...Object.fromEntries(
+        config.fields
+          .filter((field) => field.defaultValue !== null && field.defaultValue !== undefined)
+          .map((field) => [field.name, field.defaultValue]),
+      ),
       ...initialData,
       // Isian yang diturunkan dari data pemohon (mis. peran suami/istri).
       ...applicantValues(config.fields, user),
@@ -390,6 +395,9 @@ export function DynamicSuratForm({
                       )
                       // Isi dari data penduduk; dikosongkan bila NIK berubah.
                       lookupFieldsOf(field.name).forEach((target) => {
+                        // Pekerjaan/alamat warga desa diisi server saat pengajuan.
+                        if (!['name', 'family_number'].includes(target.fromNikValue)) return
+
                         const found =
                           target.fromNikValue === 'family_number'
                             ? result.familyNumber

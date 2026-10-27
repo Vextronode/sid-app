@@ -83,6 +83,27 @@ describe('getLetterTypeFormConfig', () => {
     expect(config.fields[1]).toMatchObject({ accept: '.pdf,.jpg,.jpeg,.png', imageOnly: false })
   })
 
+  it('keeps the default answer of a field', () => {
+    const config = getLetterTypeFormConfig({
+      ...letterType,
+      form_fields: [
+        {
+          name: 'pengurusan',
+          label: 'Pengurusan',
+          type: 'select',
+          required: true,
+          default: 'sendiri',
+          options: [
+            { value: 'sendiri', label: 'Saya sendiri' },
+            { value: 'diwakilkan', label: 'Diwakilkan' },
+          ],
+        },
+      ],
+    })
+
+    expect(config.fields[0].defaultValue).toBe('sendiri')
+  })
+
   it('leaves out the family roster that the system builds on submission', () => {
     const config = getLetterTypeFormConfig({
       ...letterType,
