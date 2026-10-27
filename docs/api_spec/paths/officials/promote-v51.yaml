@@ -2,7 +2,7 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Tetapkan pejabat (promote)
   description: |
-    Aktor: Petugas Desa aktif. Jabatan berakun (enum OfficialPosition)
+    Aktor: Staf SIDUTama aktif. Jabatan berakun (enum OfficialPosition)
     ditetapkan ke akun warga (`user_id`) dan role akun diubah sesuai
     jabatan; jabatan tanpa akun (jenis jabatan desa aktif) ditetapkan ke data
     warga (`citizen_id`) tanpa mengubah role. Jabatan bertipe satu pemegang
@@ -31,7 +31,7 @@ post:
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: Hanya Petugas Desa yang dapat menetapkan pejabat
+      description: Hanya Staf SIDUTama yang dapat menetapkan pejabat
     '409':
       description: Posisi tunggal pada wilayah tersebut sudah terisi
     '422':

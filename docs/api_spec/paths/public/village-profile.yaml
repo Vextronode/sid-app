@@ -7,7 +7,7 @@ get:
     - `stats`: jumlah warga aktif & dusun aktif (dihitung dari data);
     - `officials`: perangkat desa aktif berurutan Kepala Desa, Sekdes, grup
       Kasi/Kaur/Staf (kasi_pemerintahan, kaur_tu_umum, lalu jenis jabatan desa
-      aktif menurut sort_order, lalu staf aplikasi `staf_sid` berlabel
+      aktif menurut sort_order, lalu Staf SIDUTama `staf_sid` berlabel
       "Staf {SID_APP_NAME}"), lalu Kepala Dusun. RT dan RW tidak
       ditampilkan. Tanpa kontak/NIK.
     - `positions`: slot grup Kasi/Kaur/Staf (termasuk yang belum terisi);

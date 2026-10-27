@@ -2,7 +2,7 @@ get:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
   summary: Riwayat perubahan status surat desa (Log Aktivitas)
   description: |
-    Aktor: Petugas Desa (`staf_sid`). Seluruh baris `letter_status_logs` untuk
+    Aktor: Staf SIDUTama (`staf_sid`). Seluruh baris `letter_status_logs` untuk
     surat milik desa akun yang login, terbaru dulu, berpaginasi (`per_page`,
     default 20). Berbeda
     dari `status_logs` di detail surat yang hanya memuat satu surat.

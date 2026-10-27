@@ -2,7 +2,7 @@ get:
   tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
   summary: Lihat detail flow approval (read-only)
   description: |
-    Aktor: Petugas Desa. Flow dicari dalam desa akun yang login; flow milik
+    Aktor: Staf SIDUTama. Flow dicari dalam desa akun yang login; flow milik
     desa lain menghasilkan 404.
   operationId: showApprovalFlow
   security:

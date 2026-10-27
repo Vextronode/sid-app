@@ -4,16 +4,17 @@
 
 > Status: pengembangan aktif. Kode, migration, dan route yang berjalan adalah sumber kebenaran implementasi; dokumen di `docs/` diselaraskan dengannya.
 
-Nama aplikasi yang tampil ke pengguna (judul, `<title>`, manifest PWA, label peran staf) dapat diganti lewat `SID_APP_NAME` (backend) dan `VITE_APP_NAME` (frontend). Default-nya **SIDUTama**, sehingga peran staf aplikasi tampil sebagai "Staf SIDUTama".
+Nama aplikasi yang tampil ke pengguna (judul, `<title>`, manifest PWA, label peran staf) dapat diganti lewat `SID_APP_NAME` (backend) dan `VITE_APP_NAME` (frontend). Default-nya **SIDUTama**, sehingga peran staf aplikasi (`staf_sid`) tampil sebagai **Staf SIDUTama**; dokumen di repo ini memakai nama default tersebut.
 
 ## Fitur utama
 
-- **Surat online:** warga (atau pejabat untuk dirinya sendiri) mengajukan surat dengan form dinamis per jenis surat, unggahan berkas, dan tanda tangan pihak terkait; status dipantau sampai PDF dapat diunduh. Pilihan jenis surat dikelompokkan menjadi **Persuratan Desa** (surat keterangan desa) dan **Layanan Kependudukan** (formulir kependudukan Disdukcapil: terbit tanpa nomor/TTD Kepala Desa, lalu pemohon mengunggah hasil dari Disdukcapil di surat yang sama untuk diverifikasi Kasi Pemerintahan; saat ini F01 Surat Pernyataan Tidak Memiliki Dokumen Kependudukan , F02 Perubahan Elemen Data, F03 Pindah Keluar, F04 Pindah Datang, F05 Pelaporan Kelahiran, dan F06 Pelaporan Kematian, layanan lain menyusul). Seeder menyediakan 11 jenis surat keterangan Persuratan Desa (A01–A11, termasuk Surat Keterangan Ahli Waris yang berlaku tanpa batas). Isian pekerjaan di form memakai katalog pekerjaan desa, dengan pilihan "Lainnya" yang teksnya dirapikan dan hanya dicetak di surat.
+- **Surat online:** warga (atau pejabat untuk dirinya sendiri) mengajukan surat dengan form dinamis per jenis surat, unggahan berkas, dan tanda tangan pihak terkait; status dipantau sampai PDF dapat diunduh. Pilihan jenis surat dikelompokkan menjadi **Persuratan Desa** (surat keterangan desa) dan **Layanan Kependudukan** (formulir kependudukan Disdukcapil). Seeder menyediakan 11 jenis surat keterangan Persuratan Desa (A01–A11, termasuk Surat Keterangan Ahli Waris yang berlaku tanpa batas). Isian pekerjaan di form memakai katalog pekerjaan desa, dengan pilihan "Lainnya" yang teksnya dirapikan dan hanya dicetak di surat.
+- **Layanan Kependudukan (F01–F09):** Surat Pernyataan Tidak Memiliki Dokumen Kependudukan, Perubahan Elemen Data, Pindah Keluar, Pindah Datang, Pelaporan Kelahiran, Pelaporan Kematian, Pelaporan Perkawinan/Perceraian, Pengakuan Anak, dan Perubahan Susunan KK. Tiap layanan menerbitkan formulir Disdukcapil yang dibangun dari Excel aslinya (F-1.01, F-1.02, F-2.01, dst.) beserta formulir pendukung yang hanya terbit bila dibutuhkan jawaban form; formulir tanpa nomor dan tanpa TTD Kepala Desa, TTD pemohon dan pejabat (RT/RW, Kasi Pemerintahan) ditempel otomatis saat final. Isian mengambil data dari database (anggota KK, NIK warga desa, data orang tua, kode wilayah) dan memeriksa aturan seperti urutan tanggal, SHDK sesuai jenis kelamin, dan satu kepala keluarga. Pihak lain (saksi, pasangan, kepala KK tujuan, penerima kuasa) diminta persetujuannya lewat akunnya. Semua layanan punya opsi **"Diurus orang lain"** yang menerbitkan Surat Kuasa F-1.07. Setelah formulir terbit, pemohon mengunggah hasil dari Disdukcapil di surat yang sama; setelah diverifikasi Kasi Pemerintahan, perubahan data warga/KK diterapkan otomatis lewat **Terapkan** dengan pop up daftar perubahan (lama → baru) untuk dikonfirmasi.
 - **Persetujuan:** alur default **RT → Kepala Desa/Sekretaris Desa (final)**. RW dan Kadus menerima pemberitahuan setelah RT menyetujui; Kasi Pemerintahan / Kaur TU & Umum menerima surat yang sudah final sesuai penugasan jenis suratnya (seluruh jenis surat bawaan A01–A11 ditugaskan ke Kaur TU & Umum). Saat final, sistem menerbitkan nomor surat dan membekukan snapshot render PDF.
 - **Deadline & pengingat:** tiap tahap punya batas waktu; surat yang lewat deadline ditandai overdue, dan scheduler mengirim satu pengingat ke approver `reminder_hours` sebelum deadline.
 - **Masa berlaku surat:** dicap saat final approve dari pengaturan jenis surat. Surat yang kedaluwarsa tetap tampil sebagai riwayat, tetapi pemohon tidak dapat lagi mengunduh atau mem-preview PDF-nya.
-- **Data kependudukan:** warga, Kartu Keluarga, data sosio-ekonomi KK, wilayah Dusun/RW/RT, dan katalog pekerjaan. NIK dan No KK disimpan terenkripsi.
-- **Log Aktivitas:** setiap perubahan data warga/KK oleh staf tercatat (nilai lama → baru, data sensitif disamarkan), bersama riwayat status semua surat, dalam satu halaman khusus staf aplikasi.
+- **Data kependudukan:** warga (termasuk 11 SHDK resmi Disdukcapil serta dokumen & keterangan tambahan untuk Biodata Keluarga: gelar, akta lahir/perkawinan/perceraian, kelainan fisik & mental), Kartu Keluarga, data sosio-ekonomi KK, wilayah Dusun/RW/RT, dan katalog pekerjaan, dengan impor Excel. NIK, No KK, nomor akta, dan keterangan penyandang cacat disimpan terenkripsi.
+- **Log Aktivitas:** setiap perubahan data warga/KK oleh staf tercatat (nilai lama → baru, data sensitif disamarkan), bersama riwayat status semua surat, dalam satu halaman khusus Staf SIDUTama.
 - **Konten publik:** beranda, profil desa, berita berkategori, peraturan desa, struktur pemerintahan, BPD, LPM/Karang Taruna/PKK, dan informasi jenis surat.
 - **Notifikasi:** in-app (lonceng) dan Web Push (PWA).
 
@@ -25,8 +26,8 @@ Nama aplikasi yang tampil ke pengguna (judul, `<title>`, manifest PWA, label per
 | RT | Approver tahap pertama untuk warga di wilayahnya |
 | RW / Kadus | Menerima pemberitahuan dan melihat surat di wilayahnya setelah disetujui RT |
 | Kepala Desa / Sekretaris Desa | Approver final |
-| Kasi Pemerintahan / Kaur TU & Umum | Menerima, mengunduh, dan menerapkan perubahan data dari surat yang sudah final sesuai penugasan. Kaur TU & Umum memegang surat keterangan desa (A01–A11); Kasi Pemerintahan memegang layanan kependudukan (Layanan Kependudukan: verifikasi hasil dari Disdukcapil) dan ikut mengelola Data Penduduk & KK seperti staf aplikasi; Kaur TU & Umum hanya melihat Data Penduduk & KK. Kasi Pelayanan adalah jabatan tanpa akun |
-| Staf aplikasi (`staf_sid`, tampil "Staf {nama aplikasi}") | Mengelola akun, jabatan, data kependudukan, wilayah, konten desa, konfigurasi jenis surat & deadline, serta memantau seluruh surat dan Log Aktivitas. Hanya **satu per desa**; pergantian lewat Rotasi |
+| Kasi Pemerintahan / Kaur TU & Umum | Menerima, mengunduh, dan menerapkan perubahan data dari surat yang sudah final sesuai penugasan. Kaur TU & Umum memegang surat keterangan desa (A01–A11); Kasi Pemerintahan memegang Layanan Kependudukan (verifikasi hasil dari Disdukcapil, lalu Terapkan) dan ikut mengelola Data Penduduk & KK seperti Staf SIDUTama; Kaur TU & Umum hanya melihat Data Penduduk & KK. Kasi Pelayanan adalah jabatan tanpa akun |
+| Staf SIDUTama (`staf_sid`) | Mengelola akun, jabatan, data kependudukan, wilayah, konten desa, konfigurasi jenis surat & deadline, serta memantau seluruh surat dan Log Aktivitas. Hanya **satu per desa**; pergantian lewat Rotasi |
 
 ## Arsitektur
 
@@ -94,9 +95,9 @@ php artisan migrate:fresh --seed
 php artisan storage:link
 ```
 
-Seeder membuat Desa Cibenda lengkap dengan wilayah, perangkat desa, warga, berita, dan akun demo (mis. `demo_admin` untuk staf aplikasi, `demo_warga` untuk warga, `demo_warga2`/`demo_warga3` untuk istri dan anaknya; kata sandi `Password123!`). Daftar lengkap akun ada di SETUP. Seeder demo menolak berjalan di `APP_ENV=production`.
+Seeder membuat Desa Cibenda lengkap dengan wilayah, perangkat desa, warga, berita, dan akun demo (mis. `demo_admin` untuk Staf SIDUTama, `demo_warga` untuk warga, `demo_warga2`/`demo_warga3` untuk istri dan anaknya; kata sandi `Password123!`). Daftar lengkap akun ada di SETUP. Seeder demo menolak berjalan di `APP_ENV=production`.
 
-Untuk database tanpa data demo, buat staf aplikasi pertama dengan `php artisan staf-sid:first` (lihat SETUP).
+Untuk database tanpa data demo, buat Staf SIDUTama pertama dengan `php artisan staf-sid:first` (lihat SETUP).
 
 ### 2. Proses backend yang dijalankan
 
@@ -152,8 +153,8 @@ npm run build
 
 | Perintah | Kegunaan |
 | --- | --- |
-| `php artisan staf-sid:first --nik=... [data citizen]` | Bootstrap staf aplikasi pertama (ditolak bila sudah ada staf aktif) |
-| `php artisan staf-sid:recover --username=... [--force]` | Pemulihan darurat bila staf aplikasi lupa kata sandi: kata sandi sementara, wajib ganti saat login, sesi lama dicabut, tercatat |
+| `php artisan staf-sid:first --nik=... [data citizen]` | Bootstrap Staf SIDUTama pertama (ditolak bila sudah ada staf aktif) |
+| `php artisan staf-sid:recover --username=... [--force]` | Pemulihan darurat bila Staf SIDUTama lupa kata sandi: kata sandi sementara, wajib ganti saat login, sesi lama dicabut, tercatat |
 | `php artisan approvals:send-reminders` | Kirim pengingat approval yang jatuh tempo sekarang (normalnya otomatis lewat `schedule:work`) |
 | `php artisan letters:backfill-snapshots` | Bekukan snapshot render untuk surat approved lama yang belum punya snapshot |
 

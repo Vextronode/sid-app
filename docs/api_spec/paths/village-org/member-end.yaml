@@ -2,7 +2,7 @@ post:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Akhiri pemegang Ketua/Wakil Ketua (kosongkan atau turunkan jadi Anggota)
   description: |
-    Aktor: Petugas Desa. Hanya untuk pemegang aktif slot `ketua` atau
+    Aktor: Staf SIDUTama. Hanya untuk pemegang aktif slot `ketua` atau
     `wakil_ketua`. Masa jabatannya diakhiri (masuk riwayat) sehingga slot
     kosong. Dengan `to_member=true`, ia sekaligus dicatat sebagai Anggota
     aktif mulai `ended_at`.

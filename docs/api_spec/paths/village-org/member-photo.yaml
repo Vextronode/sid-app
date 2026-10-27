@@ -2,7 +2,7 @@ post:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Unggah atau ganti foto profil anggota organisasi
   description: |
-    Aktor: Petugas Desa. Foto disimpan di disk public. Berkas lama dihapus
+    Aktor: Staf SIDUTama. Foto disimpan di disk public. Berkas lama dihapus
     bila tidak lagi dipakai baris lain (promosi dan turun jabatan menyalin
     foto ke baris baru, sehingga riwayat bisa memakai berkas yang sama).
   operationId: uploadVillageOrgMemberPhoto
@@ -54,7 +54,7 @@ post:
 delete:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Hapus foto profil anggota organisasi
-  description: "Aktor: Petugas Desa. photo_img menjadi null."
+  description: "Aktor: Staf SIDUTama. photo_img menjadi null."
   operationId: deleteVillageOrgMemberPhoto
   security:
     - sanctumCookie: []

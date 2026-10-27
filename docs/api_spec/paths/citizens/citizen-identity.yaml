@@ -2,7 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: NIK dan No. KK utuh seorang warga (tombol "lihat")
   description: |
-    Untuk tombol mata di samping NIK/No. KK tersamar. Boleh: Petugas Desa,
+    Untuk tombol mata di samping NIK/No. KK tersamar. Boleh: Staf SIDUTama,
     Kasi Pemerintahan, Kaur TU & Umum untuk warga desanya; warga untuk
     dirinya dan anggota KK-nya. Pembukaan data orang lain dicatat di Log
     Aktivitas (event `identity_viewed`). Dibatasi 60 permintaan per menit.

@@ -99,7 +99,7 @@ Main Flow:
    - menyimpan berkas isian ke disk privat (`letter_attachments`, kind `field`);
    - mengisi slot TTD: slot pemohon langsung `signed` dari TTD akun; slot pihak lain → permintaan TTD digital ke pemilik NIK (`pending`, kedaluwarsa 3 hari, notifikasi `signature_requested`); saksi warga desa ber-akun (isian NIK ber-`witness`) → permintaan persetujuan saksi dengan alur yang sama (tanpa TTD) atau TTD basah (`signed`).
 7. Bila masih ada slot belum `signed` → `current_step_order = 0` + log "Menunggu tanda tangan pihak terkait"; surat belum terlihat approver. Setelah semua slot terisi (UC-25), langkah 8 dijalankan otomatis.
-8. Sistem memilih tahap awal: tahap non-final yang semua pejabat eligible-nya adalah pemohon dilewati (log); bila RT wilayah pemohon **kosong**, surat ditahan di step RT (log "Surat ditahan…") dan Petugas Desa menerima notifikasi `approver_vacant`; bila tahap final tidak punya approver selain pemohon → 422.
+8. Sistem memilih tahap awal: tahap non-final yang semua pejabat eligible-nya adalah pemohon dilewati (log); bila RT wilayah pemohon **kosong**, surat ditahan di step RT (log "Surat ditahan…") dan Staf SIDUTama menerima notifikasi `approver_vacant`; bila tahap final tidak punya approver selain pemohon → 422.
 9. Sistem membuat placeholder `letter_approvals` untuk step aktif (deadline dari `approval_settings`) dan mengirim notifikasi `pending` ke approver.
 10. Respons 201 berisi detail surat.
 
@@ -141,7 +141,7 @@ Main Flow:
 
 Authorization:
 - Hanya RT yang `rt_id`-nya sesuai dengan wilayah warga pemohon yang boleh approve; RT tidak dapat memutuskan surat miliknya sendiri
-- Surat yang ditahan karena RT kosong menunggu sampai Petugas Desa menetapkan RT (UC-14); RT baru langsung menerima notifikasi surat yang menunggunya
+- Surat yang ditahan karena RT kosong menunggu sampai Staf SIDUTama menetapkan RT (UC-14); RT baru langsung menerima notifikasi surat yang menunggunya
 - 5a. RT memilih Tolak tanpa catatan → sistem meminta catatan wajib diisi
 
 ### Sub-flow: Notifikasi RW (Side-Effect, Non-Blocking)
@@ -218,7 +218,7 @@ Authorization:
 |---|---|
 | Use Case ID | UC-05 |
 | Nama | Lihat Daftar Surat |
-| Aktor | Warga, RT, RW, Kadus, Kasi Pemerintahan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
+| Aktor | Warga, RT, RW, Kadus, Kasi Pemerintahan, Kaur TU & Umum, Staf SIDUTama, Kepala Desa, Sekretaris Desa |
 | Pre-condition | User sudah login |
 | Post-condition | Daftar surat berpaginasi sesuai scope role dan filter |
 
@@ -230,7 +230,7 @@ Main Flow:
     - RW / Kadus: surat di wilayah RW / dusunnya yang sudah di-approve RT (read-only)
     - Kepala Desa / Sekretaris Desa: surat di desanya yang sudah di-approve RT atau melewati tahap RT
     - Kasi/Kaur: surat `approved` sesuai `letter_types.assigned_role` (NULL = keduanya)
-    - Petugas Desa: semua surat di desanya
+    - Staf SIDUTama: semua surat di desanya
 3. Filter: status, jenis surat, rentang tanggal (`from`/`to` atau `submitted_from`/`submitted_to` dengan zona waktu klien), pencarian (nama pemohon, nomor surat, nama warga), nama pemohon; paginasi `page`/`per_page` (default 20, maks 100).
 4. Sistem menampilkan nomor surat, pemohon, jenis, status, tahap aktif, tanggal, badge overdue (`is_overdue` dihitung saat dimuat), penanda "menunggu tanda tangan" dan "perlu diterapkan".
 5. Kartu ringkasan dashboard memakai `GET /letters/summary` (total, per status, overdue, per jenis, per periode hari/minggu/bulan) atas scope yang sama.
@@ -243,7 +243,7 @@ Main Flow:
 |---|---|
 | Use Case ID | UC-06 |
 | Nama | Lihat Detail & Status Surat |
-| Aktor | Warga, RT, RW, Kadus (read-only), Kasi Pemerintahan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
+| Aktor | Warga, RT, RW, Kadus (read-only), Kasi Pemerintahan, Kaur TU & Umum, Staf SIDUTama, Kepala Desa, Sekretaris Desa |
 | Pre-condition | User sudah login, surat sudah ada di sistem |
 | Post-condition | Sistem menampilkan detail surat dan seluruh riwayat perubahan status |
 
@@ -272,7 +272,7 @@ Main Flow:
 |---|---|
 | Use Case ID | UC-08 |
 | Nama | Download Surat (PDF On-Demand) |
-| Aktor | Pemohon surat (role apa pun), Petugas Desa, approver berwenang, Kasi/Kaur sesuai assignment |
+| Aktor | Pemohon surat (role apa pun), Staf SIDUTama, approver berwenang, Kasi/Kaur sesuai assignment |
 | Pre-condition | User sudah login, surat sudah berstatus `approved` |
 | Post-condition | File PDF ter-download (digenerate on-demand, tidak disimpan di server) |
 
@@ -289,7 +289,7 @@ Main Flow:
 
 Alternative Flow:
 - 3a. Status bukan `approved` → tombol Download tidak muncul
-- 3b. Pemohon dengan `expires_at` sudah lewat → 403, apa pun role pemohon (berlaku juga untuk `GET /letters/{id}/preview`); di UI tombol tampil nonaktif. Petugas Desa, Kades/Sekdes, dan Kasi/Kaur yang berwenang tetap dapat mengunduh untuk arsip.
+- 3b. Pemohon dengan `expires_at` sudah lewat → 403, apa pun role pemohon (berlaku juga untuk `GET /letters/{id}/preview`); di UI tombol tampil nonaktif. Staf SIDUTama, Kades/Sekdes, dan Kasi/Kaur yang berwenang tetap dapat mengunduh untuk arsip.
 - 3c. `validity_days` jenis surat diubah Petugas (UC-21) → hanya berlaku untuk surat yang final approve setelahnya; `expires_at` surat yang sudah terbit tidak berubah.
 
 **Alasan struktural:** PDF tidak disimpan, tetapi isi surat approved dibekukan lewat snapshot sehingga penggantian Kepala Desa/TTD, perubahan template, atau perubahan data warga tidak mengubah surat yang sudah terbit.
@@ -304,12 +304,12 @@ Alternative Flow:
 |---|---|
 | Use Case ID | UC-09 |
 | Nama | Kelola Data Warga (CRUD Citizens) |
-| Aktor | Petugas Desa (kelola); Kasi Pemerintahan & Kaur TU & Umum hanya melihat daftar |
-| Pre-condition | Petugas Desa sudah login |
+| Aktor | Staf SIDUTama (kelola); Kasi Pemerintahan & Kaur TU & Umum hanya melihat daftar |
+| Pre-condition | Staf SIDUTama sudah login |
 | Post-condition | Data warga berhasil dibuat / diupdate di tabel `citizens` |
 
 **Main Flow - Tambah Warga:**
-1. Petugas Desa membuka menu "Data Warga"
+1. Staf SIDUTama membuka menu "Data Warga"
 2. Petugas memilih "Tambah Warga Baru"
 3. Petugas mengisi form:
    - NIK (16 digit numerik), nama lengkap, tempat & tanggal lahir
@@ -350,23 +350,23 @@ Alternative Flow:
 - NIK sudah terdaftar → error "NIK sudah ada dalam database warga"
 - Format NIK salah → error "NIK harus 16 digit angka"
 
-**Catatan Alur Update KTP/KK:** Petugas Desa sifatnya asesor/pencatat administratif, bukan penerbit resmi (penerbitan tetap di Kecamatan/Dukcapil). UC-09 adalah tempat Petugas Desa mencatat ulang data yang sudah resmi berubah di Kecamatan — murni pencatatan administratif desa, **bukan** proses penerbitan, **tidak perlu approval flow apapun**, cukup CRUD biasa.
+**Catatan Alur Update KTP/KK:** Staf SIDUTama sifatnya asesor/pencatat administratif, bukan penerbit resmi (penerbitan tetap di Kecamatan/Dukcapil). UC-09 adalah tempat Staf SIDUTama mencatat ulang data yang sudah resmi berubah di Kecamatan — murni pencatatan administratif desa, **bukan** proses penerbitan, **tidak perlu approval flow apapun**, cukup CRUD biasa.
 
 **Main Flow - Kelola Data Keluarga (KK):**
-- Petugas Desa buka menu "Data Keluarga (KK)"
+- Staf SIDUTama buka menu "Data Keluarga (KK)"
 - Tambah KK baru: input `no_kk`, `family_address`, pilih `rt_id`/`hamlet_id`
 - Tambah anggota ke KK: pilih/buat citizen, set `family_role`, FK ke `family_id`
 - Sistem otomatis validasi: hanya 1 `family_role='kepala_keluarga'` per `family_id` aktif
 
 **Sub-flow - Kelola Data Sosio-Ekonomi Keluarga:**
-- Petugas Desa membuka satu data KK dan melihat status survei.
+- Staf SIDUTama membuka satu data KK dan melihat status survei.
 - Petugas mengisi atau memperbarui `household_income_range` dan atribut sosio-ekonomi keluarga lainnya melalui survei per KK.
 - Sistem mengisi `surveyed_by` dan `surveyed_at` dari Petugas yang login dan waktu request.
 - Survei ulang menimpa data sebelumnya; KK tanpa record berarti belum disurvei.
 - Data penghasilan adalah tingkat rumah tangga; periode penghasilan belum ditetapkan. KK tanpa anggota/warga terhubung juga tidak memiliki record terpisah di tingkat individu.
 
 **Sub-flow - Kelola Daftar Pekerjaan Desa:**
-- Petugas Desa menambah, mengubah nama/urutan, atau menonaktifkan pekerjaan untuk desanya.
+- Staf SIDUTama menambah, mengubah nama/urutan, atau menonaktifkan pekerjaan untuk desanya.
 - Form warga memilih pekerjaan aktif dari katalog desa melalui `occupation_id`; pekerjaan desa lain dan pekerjaan nonaktif tidak dapat dipilih.
 - Pekerjaan yang masih digunakan warga tidak dapat dihapus (HTTP 409); Petugas disarankan menonaktifkannya.
 
@@ -378,34 +378,34 @@ Alternative Flow:
 |---|---|
 | Use Case ID | UC-14 |
 | Nama | Kelola User & Role |
-| Aktor | Petugas Desa |
-| Pre-condition | Petugas Desa sudah login |
+| Aktor | Staf SIDUTama |
+| Pre-condition | Staf SIDUTama sudah login |
 | Post-condition | Akun/jabatan diperbarui atau password sementara diterbitkan sesuai operasi |
 
 Main Flow:
-1. CLI `staf-sid:first --nik=...` mencari citizen; jika belum ada, Petugas awal memasukkan data wajib citizen beserta desa dan RT. Command membuat atau menggunakan citizen, membuat atau mempromosikan akun, lalu membuat jabatan Petugas Desa dalam satu transaksi. Username otomatis dan password sementara acak ditampilkan sekali; akun wajib menggantinya saat login pertama. Demote dan reset password selanjutnya dilakukan Petugas melalui dashboard.
-2. Petugas Desa menjalankan promote, demote, rotate, update non-sensitif, toggle status, atau reset password melalui endpoint yang sesuai.
+1. CLI `staf-sid:first --nik=...` mencari citizen; jika belum ada, Petugas awal memasukkan data wajib citizen beserta desa dan RT. Command membuat atau menggunakan citizen, membuat atau mempromosikan akun, lalu membuat jabatan Staf SIDUTama dalam satu transaksi. Username otomatis dan password sementara acak ditampilkan sekali; akun wajib menggantinya saat login pertama. Demote dan reset password selanjutnya dilakukan Petugas melalui dashboard.
+2. Staf SIDUTama menjalankan promote, demote, rotate, update non-sensitif, toggle status, atau reset password melalui endpoint yang sesuai.
 3. Promote menghubungkan akun warga aktif dengan citizen ke jabatan/wilayah valid; demote dan rotate mengubah akun serta official secara transaksional.
-4. Reset password hanya untuk akun non-Petugas Desa selain diri sendiri; password acak 12 karakter ditandai `must_change_password=true` dan hanya ditampilkan sekali.
+4. Reset password hanya untuk akun non-Staf SIDUTama selain diri sendiri; password acak 12 karakter ditandai `must_change_password=true` dan hanya ditampilkan sekali.
 5. Perubahan jabatan dicatat pada audit activitylog.
 
 **Sub-flow - Upload / Ganti TTD Kepala Desa:**
-- Setelah rotasi jabatan, Petugas Desa mengunggah file TTD ke record Kepala Desa aktif yang baru melalui `POST /officials/{official}/signature` (multipart field `signature`).
-- File PNG/JPEG/WebP maksimum 5 MB disimpan pada private storage; preview binary melalui `GET` pada endpoint yang sama hanya tersedia bagi Petugas Desa desa terkait dan Kepala Desa aktif yang belum mengakhiri masa jabatan.
+- Setelah rotasi jabatan, Staf SIDUTama mengunggah file TTD ke record Kepala Desa aktif yang baru melalui `POST /officials/{official}/signature` (multipart field `signature`).
+- File PNG/JPEG/WebP maksimum 5 MB disimpan pada private storage; preview binary melalui `GET` pada endpoint yang sama hanya tersedia bagi Staf SIDUTama desa terkait dan Kepala Desa aktif yang belum mengakhiri masa jabatan.
 - Upload ulang mengganti file TTD pada record aktif yang sama. Alur upload terpisah dari operasi rotasi.
 
 **Sub-flow - Penetapan pejabat (promote) & rotasi:**
 - Petugas mencari calon lewat NIK (`POST /officials/candidates/lookup`); sistem menilai kelayakan (warga aktif, belum menjabat; jabatan berakun mensyaratkan akun warga aktif).
-- Jabatan **berakun** (Kepala Desa, Sekdes, RT, RW, Kadus, Kasi Pemerintahan, Kaur TU & Umum, Petugas Desa) ditetapkan ke akun warga dan mengubah `users.role`. Jabatan **tanpa akun** (jenis dari `official_position_types`) ditetapkan ke data warga tanpa mengubah role.
+- Jabatan **berakun** (Kepala Desa, Sekdes, RT, RW, Kadus, Kasi Pemerintahan, Kaur TU & Umum, Staf SIDUTama) ditetapkan ke akun warga dan mengubah `users.role`. Jabatan **tanpa akun** (jenis dari `official_position_types`) ditetapkan ke data warga tanpa mengubah role.
 - Foto pejabat **wajib** (PNG/JPG/WebP maks 5 MB, disk publik, tampil di Profil Desa); dapat diganti tanpa rotasi lewat `POST /officials/{official}/photo` dan dihapus lewat `DELETE /officials/{official}/photo` (Profil Desa lalu menampilkan placeholder).
-- Jabatan satu-pemegang per wilayah ditolak 409 bila sudah terisi. Semua jabatan berakun satu-pemegang, termasuk staf aplikasi (`staf_sid`) yang hanya satu per desa.
+- Jabatan satu-pemegang per wilayah ditolak 409 bila sudah terisi. Semua jabatan berakun satu-pemegang, termasuk Staf SIDUTama (`staf_sid`) yang hanya satu per desa.
 - Rotasi: pengganti mengikuti jenis jabatan lama (akun atau data warga), posisi & wilayah disalin. Berlaku juga untuk `staf_sid`, termasuk staf yang merotasi dirinya sendiri: ia langsung menjadi warga dan FE memindahkannya ke dashboard warga tanpa menunggu logout.
 - Halaman Pejabat Desa memisahkan pejabat ke empat tabel: Perangkat Desa (Kades, Sekdes, Kasi, Kaur, staf), Kepala Dusun, Ketua RW, dan Ketua RT.
 
 **Sub-flow - Foto Profil Akun Warga:**
 - Akun berperan `warga` mengunggah, mengganti, atau menghapus foto profilnya sendiri di halaman Profil (`POST`/`DELETE /profile/photo`).
-- Petugas Desa dapat mengganti atau menghapus foto akun warga di desanya dari Manajemen User (`POST`/`DELETE /users/{user}/photo`).
-- Selama akun menjabat, foto yang dipakai adalah foto pejabat (`officials.photo_img`) yang hanya diatur Petugas Desa: jalur mandiri ditolak 403, jalur Petugas untuk akun itu ditolak 422. Setelah kembali menjadi warga, foto akun (`users.photo_img`) dipakai dan dapat diubah lagi.
+- Staf SIDUTama dapat mengganti atau menghapus foto akun warga di desanya dari Manajemen User (`POST`/`DELETE /users/{user}/photo`).
+- Selama akun menjabat, foto yang dipakai adalah foto pejabat (`officials.photo_img`) yang hanya diatur Staf SIDUTama: jalur mandiri ditolak 403, jalur Petugas untuk akun itu ditolak 422. Setelah kembali menjadi warga, foto akun (`users.photo_img`) dipakai dan dapat diubah lagi.
 - Foto tampil di samping nama akun pada header semua dashboard; bila kosong, tampil avatar default.
 
 **Sub-flow - Peran berubah saat sesi masih terbuka:**
@@ -417,11 +417,11 @@ Main Flow:
 - Menonaktifkan ditolak selama masih dijabat; menjadi satu-pemegang ditolak bila dijabat lebih dari 1 orang; hapus ditolak bila pernah dipakai (nonaktifkan saja).
 
 **Sub-flow - Reset Tanda Tangan Akun:**
-- Petugas Desa mereset TTD pribadi akun di desanya dengan alasan (5-500 karakter). Baris lama ditandai revoked (berkas dipertahankan), dicatat di activity log; pemilik akun dapat membuat TTD baru.
+- Staf SIDUTama mereset TTD pribadi akun di desanya dengan alasan (5-500 karakter). Baris lama ditandai revoked (berkas dipertahankan), dicatat di activity log; pemilik akun dapat membuat TTD baru.
 
 Alternative Flow:
 - NIK calon tidak ditemukan di desa → 404; calon tidak memenuhi syarat → `eligible: false` beserta alasan
-- Guard: staf aplikasi (`staf_sid`, hanya satu per desa) tidak bisa menonaktifkan atau menurunkan dirinya sendiri, dan `staf_sid` aktif tidak boleh kosong. Penggantinya lewat rotasi (boleh dilakukan staf itu sendiri); setelah rotasi ia langsung menjadi warga
+- Guard: Staf SIDUTama (`staf_sid`, hanya satu per desa) tidak bisa menonaktifkan atau menurunkan dirinya sendiri, dan `staf_sid` aktif tidak boleh kosong. Penggantinya lewat rotasi (boleh dilakukan staf itu sendiri); setelah rotasi ia langsung menjadi warga
 
 > Meski Kadus tetap dicantumkan dalam daftar jabatan yang dikelola di UC-14, Kadus tidak lagi punya relevansi terhadap `flow_steps.approver_position`.
 
@@ -433,7 +433,7 @@ Alternative Flow:
 |---|---|
 | Use Case ID | UC-15 |
 | Nama | Lihat Dashboard & Statistik |
-| Aktor | Warga, RT, RW, Kadus, Kasi Pemerintahan, Kaur TU & Umum, Petugas Desa, Kepala Desa, Sekretaris Desa |
+| Aktor | Warga, RT, RW, Kadus, Kasi Pemerintahan, Kaur TU & Umum, Staf SIDUTama, Kepala Desa, Sekretaris Desa |
 | Pre-condition | User sudah login |
 | Post-condition | Sistem menampilkan dashboard sesuai role |
 
@@ -449,7 +449,7 @@ Main Flow:
 
 **Dashboard Kadus:** Daftar read-only surat di dusunnya yang telah disetujui RT (`fyi_letters`) dan jumlah notifikasi belum dibaca; Kadus bukan approver.
 
-**Dashboard Petugas Desa:** Jumlah warga terdaftar, full visibility semua surat (termasuk rejected), jabatan lewat masa dan jabatan berakhir dalam 30 hari (`id`, posisi, nama pejabat, `term_ends_at`), notifikasi belum dibaca.
+**Dashboard Staf SIDUTama:** Jumlah warga terdaftar, full visibility semua surat (termasuk rejected), jabatan lewat masa dan jabatan berakhir dalam 30 hari (`id`, posisi, nama pejabat, `term_ends_at`), notifikasi belum dibaca.
 
 **Dashboard Kasi/Kaur:** `{role, total_surat_selesai, completed_letters, unread_notifications_count}`; maksimum 20 surat approved terbaru sesuai `assigned_role`, tanpa aksi keputusan.
 
@@ -477,7 +477,7 @@ Main Flow:
 3. Pengunjung dapat mengakses:
    - Beranda — identitas desa (logo, foto beranda), 5 berita terbaru, statistik publik (jenis surat aktif, jumlah warga aktif, jumlah dusun aktif), sambutan Kepala Desa (hanya bila diisi), dan kontak: telepon & email kantor (diklik untuk disalin), jam layanan, alamat dengan link "Buka di peta" ke Google Maps (dari titik koordinat kantor)
    - Pengumuman — bar di bawah header yang menempel di **semua** halaman publik selama pengumuman masih tayang (UC-27); "Baca selengkapnya" membuka isi dan link
-   - Profil Desa — sejarah (foto di samping teks), visi misi, luas wilayah, statistik, **Peraturan Desa** (section `#peraturan-desa`; `/peraturan-desa` diarahkan ke sana), perangkat desa (Kepala Desa, Sekdes, grup Kasi/Kaur/Staf termasuk slot kosong dan staf aplikasi di urutan terakhir, Kepala Dusun per dusun) dengan foto
+   - Profil Desa — sejarah (foto di samping teks), visi misi, luas wilayah, statistik, **Peraturan Desa** (section `#peraturan-desa`; `/peraturan-desa` diarahkan ke sana), perangkat desa (Kepala Desa, Sekdes, grup Kasi/Kaur/Staf termasuk slot kosong dan Staf SIDUTama di urutan terakhir, Kepala Dusun per dusun) dengan foto
    - BPD (`/bpd`) dan Lembaga Desa (`/lembaga-desa`, tab LPM/Karang Taruna/PKK tersimpan di `?lembaga=`; BUMDesa tampil "Segera hadir" dan tidak bisa dipilih) — bagan Ketua, Wakil Ketua, dan Anggota dengan foto; diakses dari dropdown "Tentang Desa" (Transparansi APBDes tampil "Segera hadir")
    - Berita — berita yang sudah dipublikasikan beserta kategorinya (10 per halaman)
    - Info Jenis Surat — daftar jenis surat yang tersedia beserta persyaratannya
@@ -522,7 +522,7 @@ Alternatif Flow:
 - Benturan username otomatis → suffix acak dibuat ulang
 - Password terlalu lemah → error dengan panduan password
 
-> **Catatan penting:** Tidak ada kategori "warga Non-NIK". Setiap warga tercatat (baik lokal maupun pendatang) selalu punya NIK terverifikasi di `citizens` — pembeda lokal/pendatang murni kolom `residency_type`, bukan tabel/jalur terpisah. Warga yang belum tercatat di `citizens` (baik lokal maupun pendatang) harus dicatat lebih dulu oleh Petugas Desa (UC-09) sebelum bisa register.
+> **Catatan penting:** Tidak ada kategori "warga Non-NIK". Setiap warga tercatat (baik lokal maupun pendatang) selalu punya NIK terverifikasi di `citizens` — pembeda lokal/pendatang murni kolom `residency_type`, bukan tabel/jalur terpisah. Warga yang belum tercatat di `citizens` (baik lokal maupun pendatang) harus dicatat lebih dulu oleh Staf SIDUTama (UC-09) sebelum bisa register.
 
 ---
 
@@ -532,7 +532,7 @@ Alternatif Flow:
 |---|---|
 | Use Case ID | UC-18 |
 | Nama | Kelola Profil Desa |
-| Aktor | Petugas Desa (saja) — Kepala Desa dan Sekretaris Desa **tidak termasuk** |
+| Aktor | Staf SIDUTama (saja) — Kepala Desa dan Sekretaris Desa **tidak termasuk** |
 | Pre-condition | User sudah login |
 | Post-condition | Data profil desa berhasil diperbarui dan tampil di halaman publik |
 
@@ -543,7 +543,7 @@ Main Flow:
 3b. Titik kantor diisi dengan menempel koordinat (`lat, lng`) atau link Google Maps, termasuk short link `maps.app.goo.gl`. Link diurai server (`POST /villages/profile/resolve-map-link`): redirect diikuti hanya ke host Google Maps, lalu titik pin diambil dan diisikan ke form sebelum disimpan sebagai `latitude`/`longitude`. Link "Buka di peta" di beranda dibuat dari koordinat ini.
 3a. Logo (maks 2 MB) dan foto beranda (maks 5 MB) diunggah terpisah, disimpan di disk publik setelah dioptimasi (diperkecil, WebP); unggahan lama dihapus, aset bawaan seeder tidak disentuh.
 4. Untuk menambah atau mengganti stempel, User mengunggah file PNG/JPEG/WebP maksimum 5 MB melalui operasi upload terpisah.
-5. File disimpan di private storage; API menyimpan path dan menyediakan preview binary melalui endpoint yang memerlukan autentikasi serta scope Petugas Desa pada desanya.
+5. File disimpan di private storage; API menyimpan path dan menyediakan preview binary melalui endpoint yang memerlukan autentikasi serta scope Staf SIDUTama pada desanya.
 6. Sistem menampilkan konfirmasi; profil publik hanya menerima indikator `has_stamp_img`, bukan path private atau URL file.
 
 Alternatif Flow:
@@ -566,7 +566,7 @@ Notes:
 |---|---|
 | Use Case ID | UC-19 |
 | Nama | Kelola Berita / Informasi |
-| Aktor | Petugas Desa (saja) — Kepala Desa dan Sekretaris Desa **tidak termasuk** |
+| Aktor | Staf SIDUTama (saja) — Kepala Desa dan Sekretaris Desa **tidak termasuk** |
 | Pre-condition | User sudah login |
 | Post-condition | Berita/pengumuman berhasil dibuat/diperbarui/dihapus; konten tampil di halaman publik jika dipublikasikan |
 
@@ -596,8 +596,8 @@ Alternatif Flow:
 |---|---|
 | Use Case ID | UC-20 |
 | Nama | Kelola Struktur Wilayah |
-| Aktor | Petugas Desa |
-| Pre-condition | Petugas Desa sudah login |
+| Aktor | Staf SIDUTama |
+| Pre-condition | Staf SIDUTama sudah login |
 | Post-condition | Data struktur wilayah berhasil ditambah/diubah/dinonaktifkan |
 
 Main Flow:
@@ -617,13 +617,13 @@ Catatan: 5 Dusun Desa Cibenda (Patrol, Sinargalih, Cibenda, Budiasih, Sucen) di-
 |---|---|
 | Use Case ID | UC-21 |
 | Nama | Edit Konfigurasi Tipe Surat (Versi Sederhana) |
-| Aktor | Petugas Desa |
-| Pre-condition | Petugas Desa sudah login |
+| Aktor | Staf SIDUTama |
+| Pre-condition | Staf SIDUTama sudah login |
 | Post-condition | Konfigurasi tipe surat berhasil diperbarui |
 | Catatan Penting | Template HTML dan form field adalah developer-only via seeder. Tambah/hapus/ubah template → Next Dev Paket 1 (lihat Appendix). |
 
 Main Flow:
-- Petugas membuka pengaturan jenis surat lewat menu **Alur & Jenis Surat** (`/admin/approval-flows`); daftar berasal dari `GET /letter-types?include_inactive=1` (khusus Petugas Desa) yang berisi semua jenis surat desa dengan badge Draft / Aktif / Nonaktif
+- Petugas membuka pengaturan jenis surat lewat menu **Alur & Jenis Surat** (`/admin/approval-flows`); daftar berasal dari `GET /letter-types?include_inactive=1` (khusus Staf SIDUTama) yang berisi semua jenis surat desa dengan badge Draft / Aktif / Nonaktif
 - Petugas mengubah: `validity_days` (minimal 1 atau kosong), `assigned_role` (Kasi Pemerintahan / Kaur TU & Umum / keduanya), toggle `is_active` (Aktifkan / Nonaktifkan). Jenis Draft (belum ber-template) tidak bisa diaktifkan (422)
 - Sistem menyimpan perubahan ke `letter_types` dan menggugurkan cache halaman publik
 - Petugas dapat melihat flow approval (read-only) di halaman Approval Flows
@@ -638,8 +638,8 @@ Main Flow:
 |---|---|
 | Use Case ID | UC-22 |
 | Nama | Kelola Setting Deadline Approver |
-| Aktor | Petugas Desa |
-| Pre-condition | Petugas Desa sudah login |
+| Aktor | Staf SIDUTama |
+| Pre-condition | Staf SIDUTama sudah login |
 | Post-condition | Setting deadline approval per tahap berhasil diperbarui |
 
 Main Flow:
@@ -659,8 +659,8 @@ Catatan: Jika deadline terlewat, surat **tidak** auto-reject — hanya `is_overd
 |---|---|
 | Use Case ID | UC-23 |
 | Nama | Kelola Data Organisasi Desa |
-| Aktor | Petugas Desa |
-| Pre-condition | Petugas Desa sudah login |
+| Aktor | Staf SIDUTama |
+| Pre-condition | Staf SIDUTama sudah login |
 | Post-condition | Susunan Ketua, Wakil Ketua, dan Anggota organisasi tersimpan beserta riwayatnya; halaman publik ikut diperbarui |
 | Catatan | Struktur tetap: setiap organisasi punya tiga slot (`slot`): `ketua` dan `wakil_ketua` (satu pemegang, dirotasi) serta `anggota` (jumlah bebas). Slot dibuat otomatis saat daftar dibuka dan tidak dapat dibuat, diubah, atau dihapus lewat API. `bumdes` masih ada di enum `org_type` tetapi tidak dikelola di UI. Rotasi dapat dimatikan per slot dengan `is_active=false` (403 "menunggu konfirmasi desa"). |
 
@@ -688,8 +688,8 @@ Notes:
 |---|---|
 | Use Case ID | UC-24 |
 | Nama | Kelola Peraturan Desa |
-| Aktor | Petugas Desa |
-| Pre-condition | Petugas Desa sudah login |
+| Aktor | Staf SIDUTama |
+| Pre-condition | Staf SIDUTama sudah login |
 | Post-condition | Peraturan desa berhasil dibuat/diperbarui/dihapus |
 
 Main Flow:
@@ -715,7 +715,7 @@ Catatan: Tidak ada file lampiran di MVP, murni teks.
 **Main Flow - Buat Tanda Tangan Pribadi:**
 1. User membuka profil → Tanda Tangan.
 2. User mengunggah gambar TTD (PNG/JPG, maks 512 KB). Sistem menyimpan berkas terenkripsi di disk privat.
-3. TTD tidak dapat diubah sendiri (409 bila sudah ada); reset hanya oleh Petugas Desa (UC-14).
+3. TTD tidak dapat diubah sendiri (409 bila sudah ada); reset hanya oleh Staf SIDUTama (UC-14).
 
 **Main Flow - Menanggapi Permintaan Tanda Tangan:**
 1. Pemilik NIK menerima notifikasi `signature_requested` dan membuka daftar permintaan (`GET /signature-requests`): jenis surat, nama pemohon, label slot, batas waktu.
@@ -743,7 +743,7 @@ Alternative Flow:
 |---|---|
 | Use Case ID | UC-26 |
 | Nama | Terapkan Perubahan Data Kependudukan |
-| Aktor | Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role` (NULL = keduanya); Petugas Desa sebagai cadangan |
+| Aktor | Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role` (NULL = keduanya); Staf SIDUTama sebagai cadangan |
 | Pre-condition | Surat `approved` di desa aktor; jenis surat memiliki `data_action` = `update_citizen`, `create_citizen`, `deactivate_members`, atau `manual`; belum pernah diterapkan; bila jenisnya `requires_result_upload`, hasil dari instansi sudah diterima (UC-29) |
 | Post-condition | Data `citizens` diubah/ditambah; `letters.fulfilled_at/by` dan `fulfillment` terisi; jejak audit tercatat |
 
@@ -774,8 +774,8 @@ Contoh jenis surat bawaan: **A07 Surat Keterangan Penguburan** (`update_citizen`
 |---|---|
 | Use Case ID | UC-27 |
 | Nama | Kelola Pengumuman Beranda |
-| Aktor | Petugas Desa |
-| Pre-condition | Petugas Desa sudah login |
+| Aktor | Staf SIDUTama |
+| Pre-condition | Staf SIDUTama sudah login |
 | Post-condition | Pengumuman tayang di bar halaman publik sampai waktunya habis, atau dihapus |
 
 Main Flow:
@@ -803,8 +803,8 @@ Notes:
 |---|---|
 | Use Case ID | UC-28 |
 | Nama | Kelola Halaman Informasi |
-| Aktor | Petugas Desa |
-| Pre-condition | Petugas Desa sudah login |
+| Aktor | Staf SIDUTama |
+| Pre-condition | Staf SIDUTama sudah login |
 | Post-condition | Isian khas desa pada halaman PPID, Kebijakan Privasi, atau Aksesibilitas tersimpan dan tampil di halaman publik |
 
 Main Flow:
@@ -829,7 +829,7 @@ Notes:
 |---|---|
 | Use Case ID | UC-29 |
 | Nama | Unggah dan Verifikasi Hasil dari Instansi |
-| Aktor | Pemohon (unggah); Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role`, Petugas Desa sebagai cadangan (verifikasi) |
+| Aktor | Pemohon (unggah); Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role`, Staf SIDUTama sebagai cadangan (verifikasi) |
 | Pre-condition | Surat `approved`; jenis surat `requires_result_upload = true` (formulir Layanan Kependudukan yang dibawa ke instansi luar, mis. Disdukcapil) |
 | Post-condition | Unggahan tercatat di `letter_results` dengan berkas `letter_attachments` (`kind = result`); bila diterima, Terapkan (UC-26) dapat dijalankan |
 

@@ -9,7 +9,7 @@ get:
 
     TTD Kepala Desa dan stempel desa hanya dipasang bila surat sudah
     `approved` **dan** pengguna lolos LetterPolicy::download (pemohon,
-    Kades/Sekdes, Kasi/Kaur yang ditugaskan, Petugas Desa). Surat yang
+    Kades/Sekdes, Kasi/Kaur yang ditugaskan, Staf SIDUTama). Surat yang
     belum final, atau surat final yang dilihat pihak lain (mis. RT/RW/
     Kadus), dirender tanpa TTD dan stempel. FE menampilkan pratinjau
     sebagai canvas di dalam popup (bukan viewer PDF browser), sehingga
@@ -17,7 +17,7 @@ get:
 
     Pemohon ditolak (403 "Masa berlaku surat telah habis.") bila
     `expires_at` sudah lewat, sama seperti download; surat tetap tampil
-    sebagai riwayat. Pejabat dan Petugas Desa tetap dapat mem-preview.
+    sebagai riwayat. Pejabat dan Staf SIDUTama tetap dapat mem-preview.
   operationId: previewLetterPdf
   security:
     - sanctumCookie: []

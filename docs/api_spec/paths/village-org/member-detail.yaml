@@ -2,7 +2,7 @@ patch:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Ubah data anggota organisasi (nama, foto, kontak, status aktif, dst)
   description: |
-    Aktor: Petugas Desa.
+    Aktor: Staf SIDUTama.
     UC-23. Untuk rotasi anggota (mengakhiri masa jabatan lama +
     menambah anggota baru), gunakan `POST
     /village-org-positions/{position}/members`, bukan endpoint ini.
@@ -67,7 +67,7 @@ delete:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Hapus data anggota organisasi
   description: |
-    Aktor: Petugas Desa. Pemegang aktif slot `ketua`/`wakil_ketua`
+    Aktor: Staf SIDUTama. Pemegang aktif slot `ketua`/`wakil_ketua`
     tidak bisa dihapus (422); akhiri dulu lewat
     `POST /village-org-positions/{position}/members/{id}/end`.
     Baris riwayat dan anggota biasa boleh dihapus permanen.

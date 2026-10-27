@@ -1,8 +1,8 @@
 post:
   tags: [Epic 2 - Users, Citizens, Officials]
-  summary: Ganti foto profil akun warga (oleh Petugas Desa)
+  summary: Ganti foto profil akun warga (oleh Staf SIDUTama)
   description: |
-    Aktor: Petugas Desa, untuk akun warga di desa yang sama. Akun yang
+    Aktor: Staf SIDUTama, untuk akun warga di desa yang sama. Akun yang
     sedang menjabat ditolak 422; fotonya diganti lewat
     `POST /officials/{official}/photo`. Akun desa lain: 404.
   operationId: uploadUserPhoto
@@ -58,7 +58,7 @@ post:
                 example: "Akun ini sedang menjabat. Ganti fotonya di halaman Pejabat Desa."
 delete:
   tags: [Epic 2 - Users, Citizens, Officials]
-  summary: Hapus foto profil akun warga (oleh Petugas Desa)
+  summary: Hapus foto profil akun warga (oleh Staf SIDUTama)
   description: Aturan akses sama dengan POST.
   operationId: deleteUserPhoto
   security:

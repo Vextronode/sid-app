@@ -1,7 +1,7 @@
 get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat detail satu pejabat struktural
-  description: "Aktor: Petugas Desa."
+  description: "Aktor: Staf SIDUTama."
   operationId: getOfficial
   security:
     - sanctumCookie: []
@@ -32,7 +32,7 @@ get:
 patch:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Edit data pejabat struktural
-  description: "Aktor: Petugas Desa."
+  description: "Aktor: Staf SIDUTama."
   operationId: updateOfficial
   security:
     - sanctumCookie: []
@@ -75,7 +75,7 @@ patch:
 delete:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Hapus data pejabat struktural
-  description: "Aktor: Petugas Desa."
+  description: "Aktor: Staf SIDUTama."
   operationId: deleteOfficial
   security:
     - sanctumCookie: []

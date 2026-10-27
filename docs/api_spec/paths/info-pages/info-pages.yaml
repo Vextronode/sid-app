@@ -2,7 +2,7 @@ get:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Isian ketiga halaman informasi beserta skemanya
   description: |
-    Aktor Petugas Desa (menu Halaman Informasi). Urutan: ppid,
+    Aktor Staf SIDUTama (menu Halaman Informasi). Urutan: ppid,
     kebijakan-privasi, aksesibilitas. `schema` menjelaskan field tiap halaman
     (key, type: text|email|date|list, label, hint).
   operationId: getInfoPages

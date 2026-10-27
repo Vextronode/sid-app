@@ -67,7 +67,7 @@
 | Promote/demote/rotate jabatan | activity log `official` | **Aktif** |
 | Perubahan data warga dari surat (Terapkan) | activity log `citizen`, event `letter_fulfilled` | **Aktif** |
 | Reset tanda tangan akun | activity log `user_signature`, event `reset` | **Aktif** |
-| Pemulihan kata sandi staf aplikasi lewat CLI (`staf-sid:recover`) | activity log `user`, event `staf_sid_recovered` (tanpa causer, `via: cli`) | **Aktif** |
+| Pemulihan kata sandi Staf SIDUTama lewat CLI (`staf-sid:recover`) | activity log `user`, event `staf_sid_recovered` (tanpa causer, `via: cli`) | **Aktif** |
 | Percobaan login gagal | `Log::warning('Failed login attempt')` | **Aktif** |
 | Login/logout sukses | — | **Belum diimplementasi** |
 | Akses data sensitif (NIK, No KK) | — | **Belum diimplementasi** |
@@ -116,15 +116,15 @@
 | XSS lewat isian surat | Isian berisi HTML/skrip masuk PDF | Escape semua nilai isian sebelum disisipkan template |
 | SQL Injection | Input berbahaya | Eloquent + binding, escape wildcard LIKE |
 | Race condition approval / Terapkan | Dua aktor bersamaan | Row lock + cek ulang; 409 |
-| Reset password disalahgunakan | Akun tidak berwenang mereset | Hanya Petugas Desa; `must_change_password` |
+| Reset password disalahgunakan | Akun tidak berwenang mereset | Hanya Staf SIDUTama; `must_change_password` |
 | Misconfig server | Port terbuka | Docker: satu port loopback; sisanya di luar source |
 
-### 2.3. Pengamanan jabatan dan akun Petugas Desa
+### 2.3. Pengamanan jabatan dan akun Staf SIDUTama
 
 - Jabatan berakun hanya berubah lewat promote/demote/rotate (transaksional, audit).
-- Akun tidak dapat menonaktifkan dirinya; Petugas Desa aktif terakhir tidak dapat diturunkan.
+- Akun tidak dapat menonaktifkan dirinya; Staf SIDUTama aktif terakhir tidak dapat diturunkan.
 - Petugas pertama dibuat sekali lewat `php artisan staf-sid:first --nik=...` (password sementara dicetak sekali, wajib diganti).
-- Belum ada prosedur pemulihan darurat bila tidak ada Petugas Desa yang dapat login.
+- Belum ada prosedur pemulihan darurat bila tidak ada Staf SIDUTama yang dapat login.
 
 ---
 

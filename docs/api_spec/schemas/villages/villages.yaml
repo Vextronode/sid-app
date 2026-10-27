@@ -47,7 +47,7 @@ Village:
       type: number
       format: float
       nullable: true
-      description: "Luas wilayah (hektare), diisi Petugas Desa."
+      description: "Luas wilayah (hektare), diisi Staf SIDUTama."
     has_stamp_img:
       type: boolean
     logo_url:
@@ -90,7 +90,7 @@ Village:
 
 VillageUpdateRequest:
   type: object
-  description: "UC-18. Aktor HANYA Petugas Desa. Gambar (stempel, logo, foto beranda) diunggah lewat endpoint terpisah."
+  description: "UC-18. Aktor HANYA Staf SIDUTama. Gambar (stempel, logo, foto beranda) diunggah lewat endpoint terpisah."
   required: [name, head_name]
   properties:
     name:

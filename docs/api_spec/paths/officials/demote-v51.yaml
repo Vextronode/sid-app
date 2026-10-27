@@ -1,7 +1,7 @@
 post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Menurunkan pejabat aktif
-  description: "Aktor: Petugas Desa."
+  description: "Aktor: Staf SIDUTama."
   operationId: demoteOfficial
   security:
     - sanctumCookie: []
@@ -35,6 +35,6 @@ post:
                 count: 2
                 message: "Ada surat yang menunggu pejabat pengganti."
     '403':
-      description: Aksi dilarang, termasuk self-demote atau menurunkan Petugas Desa terakhir
+      description: Aksi dilarang, termasuk self-demote atau menurunkan Staf SIDUTama terakhir
     '409':
-      description: Petugas Desa aktif terakhir tidak dapat diturunkan
+      description: Staf SIDUTama aktif terakhir tidak dapat diturunkan

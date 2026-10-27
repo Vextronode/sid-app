@@ -141,7 +141,7 @@ post:
        "Menunggu tanda tangan pihak terkait", tidak ada approver yang dinotifikasi.
     5. Bila lengkap → masuk step actionable pertama: tahap non-final milik
        pemohon dilewati; bila step RT belum memiliki pejabat aktif, surat
-       ditahan di step itu dan Petugas Desa dinotifikasi (`approver_vacant`).
+       ditahan di step itu dan Staf SIDUTama dinotifikasi (`approver_vacant`).
     Bila transaksi gagal, berkas yang sudah tertulis dihapus.
   operationId: createLetter
   security:

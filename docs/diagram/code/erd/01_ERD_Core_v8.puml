@@ -127,7 +127,7 @@ entity "official_position_types" as OPT {
 }
 
 note right of OPT
-  Jenis jabatan TANPA akun (dikelola Petugas Desa).
+  Jenis jabatan TANPA akun (dikelola Staf SIDUTama).
   officials.position = nilai enum OfficialPosition
   (kepala_desa, sekretaris_desa, rt, rw, kadus,
   kasi_pemerintahan, kaur_tu_umum, petugas_desa)

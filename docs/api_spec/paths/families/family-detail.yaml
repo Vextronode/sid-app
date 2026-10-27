@@ -1,7 +1,7 @@
 get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat detail KK beserta anggota
-  description: "Aktor: Petugas Desa atau Kasi Pemerintahan."
+  description: "Aktor: Staf SIDUTama atau Kasi Pemerintahan."
   operationId: getFamily
   security:
     - sanctumCookie: []
@@ -39,7 +39,7 @@ get:
 patch:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Edit KK (No KK tidak bisa diubah setelah dibuat)
-  description: "Aktor: Petugas Desa atau Kasi Pemerintahan."
+  description: "Aktor: Staf SIDUTama atau Kasi Pemerintahan."
   operationId: updateFamily
   security:
     - sanctumCookie: []
@@ -78,7 +78,7 @@ patch:
 delete:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Hapus data KK
-  description: Hanya Petugas Desa dan Kasi Pemerintahan yang dapat mengelola data kependudukan.
+  description: Hanya Staf SIDUTama dan Kasi Pemerintahan yang dapat mengelola data kependudukan.
   operationId: deleteFamily
   security:
     - sanctumCookie: []

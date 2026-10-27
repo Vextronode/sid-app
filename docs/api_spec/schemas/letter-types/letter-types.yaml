@@ -3,7 +3,7 @@ LetterType:
   description: |
     Bentuk `LetterTypeResource`. Struktur jenis surat (template, isian form,
     slot tanda tangan, aksi data, dokumen pendukung, flow) diset developer
-    lewat seeder; Petugas Desa hanya mengubah `validity_days`,
+    lewat seeder; Staf SIDUTama hanya mengubah `validity_days`,
     `assigned_role`, dan `is_active` (lihat LetterTypeUpdateRequest).
     Kolom `letter_categories`/`category_id` dan `verification_type` sudah
     dihapus dari skema.
@@ -112,7 +112,7 @@ LetterType:
       example: "none"
       description: |
         Aksi data kependudukan setelah final approve (Terapkan oleh
-        Kasi/Kaur/Petugas Desa). `deactivate_members` menonaktifkan anggota
+        Kasi/Kaur/Staf SIDUTama). `deactivate_members` menonaktifkan anggota
         KK yang dipilih di isian family_members (`data_subject_field`);
         `update_members` mengubah kolom `data_fields` tiap anggota KK, satu
         baris repeater (`data_subject_field`) per anggota, sumber kolom =

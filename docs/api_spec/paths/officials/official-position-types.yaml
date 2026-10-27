@@ -2,7 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Daftar jenis jabatan desa tanpa akun
   description: |
-    Aktor: Petugas Desa. Jenis jabatan tanpa akun (mis. Kasi Kesejahteraan,
+    Aktor: Staf SIDUTama. Jenis jabatan tanpa akun (mis. Kasi Kesejahteraan,
     Kaur Keuangan, Staf) milik desa Petugas, urut `sort_order`, termasuk
     yang nonaktif. Jabatan yang punya akun (kepala_desa, sekretaris_desa,
     kasi_pemerintahan, kaur_tu_umum, kadus, rw, rt, staf_sid) bersifat tetap
@@ -50,7 +50,7 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Tambah jenis jabatan desa tanpa akun
   description: |
-    Aktor: Petugas Desa. `code` dibuat otomatis dari `label` (huruf kecil,
+    Aktor: Staf SIDUTama. `code` dibuat otomatis dari `label` (huruf kecil,
     garis bawah) dan tidak dapat diubah, karena disimpan di
     `officials.position`. Label ditolak bila kodenya bentrok dengan jabatan
     berakun atau jenis jabatan lain di desa yang sama. Tanpa `sort_order`,

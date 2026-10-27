@@ -37,7 +37,7 @@ else (Superadmin)
 endif
 
 note right
-  Pejabat (selain Petugas Desa) yang punya
+  Pejabat (selain Staf SIDUTama) yang punya
   data kependudukan juga dapat mengajukan
   surat untuk dirinya (menu Surat Saya).
   Proses otomatis sistem: 05_SistemOtomatis.puml.

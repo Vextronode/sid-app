@@ -2,7 +2,7 @@ post:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Upload atau ganti logo desa
   description: |
-    Aktor: Petugas Desa aktif pada desanya. Logo tampil di header publik,
+    Aktor: Staf SIDUTama aktif pada desanya. Logo tampil di header publik,
     header role, dan sidebar operator, jadi disimpan di disk public
     (`village-media/{village_id}/...`). Sebelum disimpan gambar dioptimasi
     (VillageImageOptimizer): rotasi EXIF diterapkan, diperkecil proporsional

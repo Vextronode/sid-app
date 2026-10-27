@@ -1,7 +1,7 @@
 get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat daftar seluruh pejabat struktural
-  description: "Aktor: Petugas Desa."
+  description: "Aktor: Staf SIDUTama."
   operationId: listOfficials
   security:
     - sanctumCookie: []
@@ -25,7 +25,7 @@ get:
 post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Tambah record jabatan non-akun
-  description: "Jabatan berakun harus ditetapkan melalui POST /officials/promote. Aktor: Petugas Desa."
+  description: "Jabatan berakun harus ditetapkan melalui POST /officials/promote. Aktor: Staf SIDUTama."
   operationId: createOfficial
   security:
     - sanctumCookie: []

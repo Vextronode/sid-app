@@ -1,7 +1,7 @@
 get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat daftar akun sistem
-  description: UC-14. Petugas Desa dapat melihat daftar akun; pembuatan akun langsung melalui POST /users telah dihapus.
+  description: UC-14. Staf SIDUTama dapat melihat daftar akun; pembuatan akun langsung melalui POST /users telah dihapus.
   operationId: listUsers
   security:
     - sanctumCookie: []

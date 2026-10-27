@@ -129,7 +129,7 @@ Akun demo untuk mencoba setiap role:
 
 | Role | Username | Keterangan |
 |---|---|---|
-| Staf aplikasi (`staf_sid`, "Staf SIDUTama") | `demo_admin` | Satu-satunya staf aplikasi desa demo |
+| Staf SIDUTama (`staf_sid`) | `demo_admin` | Satu-satunya Staf SIDUTama desa demo |
 | Warga | `demo_warga` | Kepala keluarga di RT 001/RW 001 Patrol |
 | Warga | `demo_warga2` | Istri `demo_warga`, satu KK (mis. untuk mencoba saksi/TTD antar-warga) |
 | Warga | `demo_warga3` | Anak tertua `demo_warga`, satu KK |
@@ -153,21 +153,21 @@ Pejabat lain yang punya peran di aplikasi juga mendapat akun, supaya surat dari 
 
 Akun dan identitas tersebut hanya untuk development/testing. Seeder demo menolak berjalan di environment `production`. Untuk mengganti data demo lama, gunakan `migrate:fresh --seed` hanya pada database yang boleh dihapus; menjalankan `db:seed` sendiri tidak menghapus data lama.
 
-### Staf aplikasi pertama (database tanpa data demo)
+### Staf SIDUTama pertama (database tanpa data demo)
 
-Staf aplikasi (`staf_sid`) pertama diinisialisasi langsung pada database yang belum memiliki staf aktif. Untuk citizen baru, berikan data wajib citizen sesuai form dashboard, UUID desa, dan ID RT:
+Staf SIDUTama (`staf_sid`) pertama diinisialisasi langsung pada database yang belum memiliki staf aktif. Untuk citizen baru, berikan data wajib citizen sesuai form dashboard, UUID desa, dan ID RT:
 
 ```powershell
 php artisan staf-sid:first --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas" --village="<UUID_DESA>" --rt=1
 ```
 
-Ganti `--rt=1` dengan ID RT yang benar-benar ada di desa tersebut. Jika citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Username dibuat otomatis dan password sementara acak hanya ditampilkan sekali. Akun wajib menggantinya saat login pertama. Command menolak jika staf aplikasi aktif sudah ada, jadi pada database demo gunakan `demo_admin`.
+Ganti `--rt=1` dengan ID RT yang benar-benar ada di desa tersebut. Jika citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Username dibuat otomatis dan password sementara acak hanya ditampilkan sekali. Akun wajib menggantinya saat login pertama. Command menolak jika Staf SIDUTama aktif sudah ada, jadi pada database demo gunakan `demo_admin`.
 
-Staf aplikasi hanya **satu per desa**; penggantinya diproses lewat Rotasi di halaman Pejabat Desa (boleh oleh staf itu sendiri). Label perannya mengikuti `SID_APP_NAME` / `VITE_APP_NAME`, default "Staf SIDUTama".
+Staf SIDUTama hanya **satu per desa**; penggantinya diproses lewat Rotasi di halaman Pejabat Desa (boleh oleh staf itu sendiri). Label perannya mengikuti `SID_APP_NAME` / `VITE_APP_NAME`, default "Staf SIDUTama".
 
-### Pemulihan staf aplikasi yang lupa kata sandi
+### Pemulihan Staf SIDUTama yang lupa kata sandi
 
-`staf-sid:first` bukan command pemulihan. Staf aplikasi tidak bisa mereset kata sandinya sendiri dari aplikasi, jadi bila lupa, jalankan di server:
+`staf-sid:first` bukan command pemulihan. Staf SIDUTama tidak bisa mereset kata sandinya sendiri dari aplikasi, jadi bila lupa, jalankan di server:
 
 ```powershell
 php artisan staf-sid:recover --username=<username_staf>
@@ -308,7 +308,7 @@ npm run build
 | Push browser tidak muncul, lonceng muncul | Worker tidak jalan (`QUEUE_CONNECTION=database`) atau VAPID kosong | Jalankan `php artisan queue:work`; cek `VAPID_*` dan `VITE_VAPID_PUBLIC_KEY` |
 | Pengingat approval tidak pernah datang | `schedule:work` tidak jalan, atau setting tahap nonaktif | Jalankan `php artisan schedule:work`; uji dengan `php artisan approvals:send-reminders` |
 | Perubahan kode tidak berefek di push/pengingat | Worker/scheduler memakai kode lama | Restart `queue:work` dan `schedule:work` |
-| Staf aplikasi lupa kata sandi | Staf tidak bisa mereset dirinya sendiri | `php artisan staf-sid:recover --username=...` |
+| Staf SIDUTama lupa kata sandi | Staf tidak bisa mereset dirinya sendiri | `php artisan staf-sid:recover --username=...` |
 
 ---
 

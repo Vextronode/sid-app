@@ -9,7 +9,7 @@ get:
     warga = surat sendiri; RT = warga RT-nya; RW/Kadus = surat warga
     RW/dusunnya yang sudah disetujui RT; Kades/Sekdes = surat desa yang
     sudah disetujui RT; Kasi/Kaur = surat approved yang ditugaskan ke
-    role-nya; Petugas Desa = seluruh surat desa.
+    role-nya; Staf SIDUTama = seluruh surat desa.
     `maxY` = nilai terbesar dibulatkan ke atas kelipatan 5, minimal 50.
   operationId: getDashboardLetterStats
   security:

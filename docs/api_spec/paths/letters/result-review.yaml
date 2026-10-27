@@ -4,7 +4,7 @@ patch:
   description: |
     LetterPolicy::reviewResult: `result_stage = under_review`, desa yang
     sama, aktor Kasi/Kaur sesuai `assigned_role` (NULL = keduanya) atau
-    Petugas Desa sebagai cadangan. Hanya unggahan terakhir yang dapat
+    Staf SIDUTama sebagai cadangan. Hanya unggahan terakhir yang dapat
     diputus. `accepted` membuka Terapkan (`needs_fulfillment`) bila jenis
     surat memiliki `data_action`; `rejected` mengembalikan tahap ke
     `awaiting_upload` sehingga pemohon dapat mengunggah ulang. Pemohon

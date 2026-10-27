@@ -3,7 +3,7 @@ get:
   summary: Lihat usulan perubahan data kependudukan dari surat
   description: |
     LetterPolicy::fulfill: surat `approved` di desa yang sama dan jenis
-    suratnya memiliki `data_action` selain `none`; aktor Petugas Desa
+    suratnya memiliki `data_action` selain `none`; aktor Staf SIDUTama
     (cadangan) atau Kasi/Kaur sesuai `assigned_role`. Mengembalikan tiap
     kolom `data_fields` dengan nilai sekarang dan nilai usulan dari payload.
   operationId: showLetterFulfillment

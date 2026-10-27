@@ -1,7 +1,7 @@
 get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Daftar pekerjaan desa
-  description: "Aktor: semua role berdesa. Hanya pekerjaan desa yang login ditampilkan. Role selain Petugas Desa (mis. pemohon surat untuk isian bertipe occupation) selalu mendapat pekerjaan aktif saja; include_inactive dan citizens_count hanya untuk Petugas Desa."
+  description: "Aktor: semua role berdesa. Hanya pekerjaan desa yang login ditampilkan. Role selain Staf SIDUTama (mis. pemohon surat untuk isian bertipe occupation) selalu mendapat pekerjaan aktif saja; include_inactive dan citizens_count hanya untuk Staf SIDUTama."
   operationId: listOccupations
   security:
     - sanctumCookie: []
@@ -12,7 +12,7 @@ get:
       schema:
         type: boolean
         default: false
-      description: Hanya berlaku untuk Petugas Desa; diabaikan untuk role lain.
+      description: Hanya berlaku untuk Staf SIDUTama; diabaikan untuk role lain.
   responses:
     '200':
       description: Daftar pekerjaan

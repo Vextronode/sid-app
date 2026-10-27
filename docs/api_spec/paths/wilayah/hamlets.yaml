@@ -1,7 +1,7 @@
 get:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Lihat daftar dusun (hamlets)
-  description: "Aktor: Petugas Desa."
+  description: "Aktor: Staf SIDUTama."
   operationId: listHamlets
   security:
     - sanctumCookie: []
@@ -34,7 +34,7 @@ get:
 post:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Tambah dusun baru
-  description: UC-20. Aktor Petugas Desa saja. Tidak berubah dari v4.2.
+  description: UC-20. Aktor Staf SIDUTama saja. Tidak berubah dari v4.2.
   operationId: createHamlet
   security:
     - sanctumCookie: []
@@ -57,7 +57,7 @@ post:
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
-      description: Hanya Petugas Desa yang berwenang
+      description: Hanya Staf SIDUTama yang berwenang
       content:
         application/json:
           schema:

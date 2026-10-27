@@ -27,7 +27,7 @@ info:
       nomor surat per kode klasifikasi (`470/001/Des/X/2026`).
     - **Tanda tangan pribadi akun** (`/profile/signature`), permintaan TTD
       lintas warga (`/signature-requests`), blokir (`/signature-blocks`),
-      reset oleh Petugas Desa (`/users/{user}/signature/reset`).
+      reset oleh Staf SIDUTama (`/users/{user}/signature/reset`).
     - **Web Push** (`/push-subscriptions`) di samping notifikasi in-app.
     - **Jabatan desa dinamis:** jenis jabatan tanpa akun
       (`/official-position-types`), `officials.position` VARCHAR, foto

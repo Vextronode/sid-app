@@ -64,7 +64,7 @@ note right
   Kasi/Kaur bukan approver flow; dapat
   membaca daftar warga (read-only).
   Kelola data warga, wilayah, CMS tetap
-  kewenangan Petugas Desa (04).
+  kewenangan Staf SIDUTama (04).
 end note
 
 @enduml

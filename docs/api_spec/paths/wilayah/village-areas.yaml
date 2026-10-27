@@ -5,7 +5,7 @@ get:
     Aktor: semua role yang login. Dusun, RW, dan RT aktif desa pengguna,
     bertingkat, untuk isian `village_area` di form surat (pemohon memilih
     wilayah yang tersedia, bukan mengetik). Kelola wilayah tetap lewat
-    `/hamlets`, `/rws`, `/rts` (Petugas Desa).
+    `/hamlets`, `/rws`, `/rts` (Staf SIDUTama).
   operationId: listVillageAreas
   security:
     - sanctumCookie: []

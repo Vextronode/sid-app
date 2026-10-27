@@ -37,7 +37,7 @@ User:
       nullable: true
       description: |
         URL foto profil akun warga. Selama akun menjabat, foto yang dipakai
-        adalah `official.photo_img` (dikelola Petugas Desa).
+        adalah `official.photo_img` (dikelola Staf SIDUTama).
       example: null
     email:
       type: string
@@ -382,7 +382,7 @@ OfficialCandidate:
 
 OfficialPositionType:
   type: object
-  description: "Jenis jabatan desa tanpa akun (dikelola Petugas Desa)."
+  description: "Jenis jabatan desa tanpa akun (dikelola Staf SIDUTama)."
   properties:
     id:
       type: integer

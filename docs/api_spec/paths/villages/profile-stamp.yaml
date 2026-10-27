@@ -2,7 +2,7 @@ post:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Upload atau ganti stempel desa
   description: |
-    Aktor: Petugas Desa pada desanya. File disimpan pada private storage;
+    Aktor: Staf SIDUTama pada desanya. File disimpan pada private storage;
     database hanya menyimpan path. Format PNG, JPEG, atau WebP, maksimum 5 MB.
   operationId: uploadVillageStamp
   security:
@@ -41,7 +41,7 @@ get:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Preview stempel desa
   description: |
-    Preview binary hanya untuk Petugas Desa yang terautentikasi dan
+    Preview binary hanya untuk Staf SIDUTama yang terautentikasi dan
     dibatasi pada desa Petugas tersebut. File tidak memiliki URL publik.
   operationId: previewVillageStamp
   security:

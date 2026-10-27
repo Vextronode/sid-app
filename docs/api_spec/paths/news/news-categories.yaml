@@ -2,7 +2,7 @@ get:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Daftar kategori berita desa
   description: |
-    UC-19. Aktor HANYA Petugas Desa. Kategori milik desa Petugas, urut nama.
+    UC-19. Aktor HANYA Staf SIDUTama. Kategori milik desa Petugas, urut nama.
     `news_count` ikut menghitung berita yang sudah dihapus (soft delete);
     `can_delete` = false bila kategori pernah dipakai berita.
   operationId: listNewsCategories
@@ -29,7 +29,7 @@ post:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Tambah kategori berita
   description: |
-    UC-19. Aktor HANYA Petugas Desa. `slug` dibuat otomatis dari `name`;
+    UC-19. Aktor HANYA Staf SIDUTama. `slug` dibuat otomatis dari `name`;
     nama ditolak bila slug-nya sudah dipakai kategori lain di desa yang sama
     (tidak peka huruf besar/kecil). Desa lain boleh memakai nama yang sama.
   operationId: createNewsCategory

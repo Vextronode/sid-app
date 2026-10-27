@@ -1,7 +1,7 @@
 get:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Lihat daftar RT (opsional filter per RW)
-  description: "Aktor: Petugas Desa."
+  description: "Aktor: Staf SIDUTama."
   operationId: listRts
   security:
     - sanctumCookie: []
@@ -36,7 +36,7 @@ get:
 post:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Tambah RT baru
-  description: "Aktor: Petugas Desa."
+  description: "Aktor: Staf SIDUTama."
   operationId: createRt
   security:
     - sanctumCookie: []

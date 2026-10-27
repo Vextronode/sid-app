@@ -23,7 +23,7 @@
 | 3.2 | 20 Mei 2026 | Revisi Diagram | Handika |
 | 4.0 | Juni 2026 | Post-observasi client: 4-tahap approval hardcode (RT→RW→Kadus→Kasi), 8 role, struktur wilayah proper (hamlets/rws/rts), deadline approval + reminder, PDF on-demand. | Handika Chandra Pratama |
 | 4.1 | Juni 2026 | Import Excel warga masuk Tahap 1, organisasi non-struktural desa (`village_org_positions` + `village_org_members`), peraturan desa, domisili warga, UI grouping manajemen jabatan. 22 UC aktif MVP (26 UC total termasuk non-MVP), 17 tabel MVP. | Handika Chandra Pratama |
-| 4.2 | Juni 2026 | Role `sekretaris_desa` baru (ENUM jadi 9 nilai), Sekdes punya akun sistem dengan scope monitoring identik Kepala Desa, scope monitoring surat per role dikonfirmasi (Petugas Desa = semua, Kades/Sekdes = hanya status level desa — **masih monitoring-only di versi ini**), dynamic form digabung ke Next Dev satu paket dengan WYSIWYG + create tipe surat. | Handika Chandra Pratama |
+| 4.2 | Juni 2026 | Role `sekretaris_desa` baru (ENUM jadi 9 nilai), Sekdes punya akun sistem dengan scope monitoring identik Kepala Desa, scope monitoring surat per role dikonfirmasi (Staf SIDUTama = semua, Kades/Sekdes = hanya status level desa — **masih monitoring-only di versi ini**), dynamic form digabung ke Next Dev satu paket dengan WYSIWYG + create tipe surat. | Handika Chandra Pratama |
 | 5.0 | (patch diterapkan) | **Perombakan besar RBAC**: RT approve → RW notif-only → Kades/Sekdes approve (bukan lagi monitoring-only) → Staff final. Sistem Category+Flow approval dinamis menggantikan hardcode 4-tahap RT→RW→Kadus→Kasi. Restrukturisasi data warga: tabel `families`/KK terpisah dari `citizens`, `citizen_socioeconomics`, `residency_type` lokal/pendatang, self-reference orang tua (`father_id`/`mother_id`). | Handika Chandra Pratama |
 | 5.0.1 | (revisi dokumen) | Revisi kerapian dokumen: koreksi judul tabel yang salah label, pemisahan section Next Dev jadi sub-section terpisah, update daftar sequence diagram, klarifikasi peran Kadus sebagai aktor non-approval. Tidak ada perubahan keputusan teknis/skema — murni penyelarasan dokumen. | — |
 | 5.0.2 (pecahan ini) | (tanggal pemecahan dokumen) | **Pemecahan TDD menjadi 6 file** (TDD-01 s/d TDD-05 + Appendix ini) untuk penggunaan sebagai knowledge base AI. **Koreksi substantif**: status ENUM `approval_settings.approval_level` yang sebelumnya dicatat "belum diselaraskan/technical debt" dikoreksi menjadi "sudah diselaraskan" berdasarkan migration project yang berjalan (lihat Section A.2 di bawah). Riwayat versi v1–v5.0.1 dipindah ke Appendix ini; detail Next Dev/Tahap 2 dipindah ke Appendix ini. Badan dokumen utama (TDD-01–05) difokuskan pada state final v5.0, bebas dari jejak historis patch-per-patch. | — |
@@ -161,13 +161,13 @@ Urutan ini penting untuk konsistensi dengan mekanisme hashing saat fitur ini dik
 
 ## B.2. Next Dev — Paket 1: Dynamic Tipe Surat (Create + WYSIWYG + Field Requirement)
 
-**Status:** Next Dev Paket 1 — **sebagian infrastruktur sudah ada (v5.3)**. Source sudah memiliki isian form dinamis per jenis surat dalam bentuk kolom JSON `letter_types.form_fields` (tipe text, textarea, date, number, nik, select, file) dengan validasi server (`LetterFormSchema`), jawaban di `letters.payload`, berkas isian di `letter_attachments`, serta slot tanda tangan, aksi data, dan dokumen pendukung. Semuanya **diisi developer lewat seeder**. Yang belum ada: UI/endpoint bagi Petugas Desa untuk membuat jenis surat, mengedit template (WYSIWYG), dan CRUD isian. Rancangan tabel `letter_type_fields`/`letter_field_values` di bawah **tidak dipakai** source; bila paket ini dikerjakan, pertimbangkan membangun di atas kolom JSON yang sudah ada.
+**Status:** Next Dev Paket 1 — **sebagian infrastruktur sudah ada (v5.3)**. Source sudah memiliki isian form dinamis per jenis surat dalam bentuk kolom JSON `letter_types.form_fields` (tipe text, textarea, date, number, nik, select, file) dengan validasi server (`LetterFormSchema`), jawaban di `letters.payload`, berkas isian di `letter_attachments`, serta slot tanda tangan, aksi data, dan dokumen pendukung. Semuanya **diisi developer lewat seeder**. Yang belum ada: UI/endpoint bagi Staf SIDUTama untuk membuat jenis surat, mengedit template (WYSIWYG), dan CRUD isian. Rancangan tabel `letter_type_fields`/`letter_field_values` di bawah **tidak dipakai** source; bila paket ini dikerjakan, pertimbangkan membangun di atas kolom JSON yang sudah ada.
 
 ### Scope Next Dev Paket 1
 
-- Petugas Desa bisa create tipe surat baru (tidak lagi developer-only)
+- Staf SIDUTama bisa create tipe surat baru (tidak lagi developer-only)
 - WYSIWYG template editor menggantikan seeder developer untuk `letter_types.template`
-- Petugas Desa bisa CRUD field requirement per tipe surat (dokumen, checklist, field teks), termasuk untuk tipe surat yang sudah ada dan sudah dipakai warga
+- Staf SIDUTama bisa CRUD field requirement per tipe surat (dokumen, checklist, field teks), termasuk untuk tipe surat yang sudah ada dan sudah dipakai warga
 
 ### Skema Tabel: letter_type_fields
 
@@ -220,12 +220,12 @@ Cek "sudah dipakai": `LetterFieldValue::where('field_id', $fieldId)->exists()`
 
 | Kolom | MVP (Saat Ini) | Next Dev Paket 1 (Rencana) |
 |---|---|---|
-| `template`, `form_fields`, `signature_slots`, `data_action`, `supporting_template` | Diisi developer via seeder, `template` NULL = Draft | Petugas Desa bisa buat/edit via UI |
-| `validity_days` | Petugas Desa bisa edit | Tetap bisa edit |
-| `assigned_role` | Petugas Desa bisa edit | Tetap bisa edit |
-| `is_active` | Petugas Desa bisa toggle | Tetap bisa toggle |
-| Buat tipe surat baru | Developer-only | Petugas Desa bisa |
-| Isian form (termasuk unggahan dokumen) | Developer-only via seeder (`form_fields` JSON) | Petugas Desa CRUD (dengan constraint di atas) |
+| `template`, `form_fields`, `signature_slots`, `data_action`, `supporting_template` | Diisi developer via seeder, `template` NULL = Draft | Staf SIDUTama bisa buat/edit via UI |
+| `validity_days` | Staf SIDUTama bisa edit | Tetap bisa edit |
+| `assigned_role` | Staf SIDUTama bisa edit | Tetap bisa edit |
+| `is_active` | Staf SIDUTama bisa toggle | Tetap bisa toggle |
+| Buat tipe surat baru | Developer-only | Staf SIDUTama bisa |
+| Isian form (termasuk unggahan dokumen) | Developer-only via seeder (`form_fields` JSON) | Staf SIDUTama CRUD (dengan constraint di atas) |
 
 ### Use Case Terkait: UC-21 (Versi Lengkap — Rencana)
 
@@ -243,8 +243,8 @@ Saat ini UC-21 di MVP hanya versi sederhana (edit `validity_days`, `assigned_rol
 |---|---|
 | Use Case ID | UC-11 |
 | Nama | Kelola Aset Desa (CRUD) |
-| Aktor | Petugas Desa (CRUD) / Kepala Desa (Read only) |
-| Pre-condition | Petugas Desa/Kepala Desa sudah login |
+| Aktor | Staf SIDUTama (CRUD) / Kepala Desa (Read only) |
+| Pre-condition | Staf SIDUTama/Kepala Desa sudah login |
 | Post-condition | Data aset berhasil dibuat/diupdate/dihapus di `village_assets` |
 
 **Main Flow - Tambah Aset:**
@@ -266,7 +266,7 @@ Alternative Flow: Kode aset sudah terdaftar → error "Kode aset sudah digunakan
 |---|---|
 | Use Case ID | UC-12 |
 | Nama | Catat Transaksi Keuangan Desa |
-| Aktor | Petugas Desa |
+| Aktor | Staf SIDUTama |
 | Post-condition | Transaksi tersimpan di `village_finances`, dashboard keuangan diperbarui |
 
 Main Flow:
@@ -287,7 +287,7 @@ Alternative Flow: Nominal diisi 0 atau negatif → error "Nominal harus lebih da
 |---|---|
 | Use Case ID | UC-13 |
 | Nama | Lihat Laporan Keuangan & Rekap Aset |
-| Aktor | Petugas Desa, Kepala Desa |
+| Aktor | Staf SIDUTama, Kepala Desa |
 
 **Main Flow - Laporan Keuangan:** Filter periode (bulan & tahun) → tabel daftar transaksi, ringkasan total pemasukan/pengeluaran/saldo periode, grafik sederhana (opsional) → cetak/export PDF/Excel.
 
