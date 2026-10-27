@@ -571,7 +571,7 @@ LetterSignature:
     signer_type:
       type: string
       enum: [applicant, other, witness]
-      description: "`witness` = saksi dari isian NIK ber-`witness` (persetujuan, tanpa TTD); slot_key = nama isian NIK."
+      description: "`witness` = pihak dari isian NIK ber-`witness` (saksi, penerima kuasa F-1.07, dsb.; persetujuan, tanpa TTD); slot_key = nama isian NIK."
     method:
       type: string
       enum: [digital, wet, consent, rt_check, manual]
