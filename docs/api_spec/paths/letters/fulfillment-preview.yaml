@@ -1,0 +1,81 @@
+post:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Pratinjau perubahan data sebelum Terapkan
+  description: |
+    Otorisasi, body, dan validasi sama dengan POST /letters/{letter}/fulfillment.
+    Terapkan dijalankan di transaksi yang lalu dibatalkan, sehingga daftar
+    perubahan sama persis dengan yang akan disimpan; tidak ada data, log,
+    maupun notifikasi yang tersimpan. Dipakai untuk pop up konfirmasi
+    "lama -> baru" di dashboard Kasi/Kaur. Galat yang sama dengan Terapkan
+    (mis. 422 NIK/No. KK belum diisi, 409 sudah diterapkan) dikembalikan di sini.
+  operationId: previewLetterFulfillment
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letter
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/letters/letters.yaml#/FulfillmentApplyRequest'
+  responses:
+    '200':
+      description: Daftar perubahan per warga
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Pratinjau perubahan data berhasil dihitung."
+              data:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    citizen_id:
+                      type: string
+                      format: uuid
+                    name:
+                      type: string
+                      example: "Euis Komariah"
+                    kind:
+                      type: string
+                      enum: [create, update, deactivate]
+                    changes:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          column:
+                            type: string
+                            example: "marital_status"
+                          label:
+                            type: string
+                            example: "Status Perkawinan"
+                          old:
+                            type: string
+                            description: Nilai lama yang mudah dibaca ("-" bila kosong/warga baru)
+                            example: "Kawin"
+                          new:
+                            type: string
+                            example: "Cerai Hidup"
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '409':
+      description: Surat belum approved, hasil instansi belum diterima, atau perubahan sudah diterapkan
+    '422':
+      description: Nilai tidak valid atau wajib diisi (mis. NIK, No. KK baru)
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'

@@ -19,13 +19,18 @@ use Illuminate\Support\Facades\Hash;
 /**
  * 100 warga Desa Cibenda dalam beberapa KK, tersebar acak di semua RT.
  * Kepala keluarga KK pertama (RT 001/RW 001 Dusun Patrol) adalah akun
- * demo_warga.
+ * demo_warga; istrinya demo_warga2 dan anak tertuanya demo_warga3 (untuk
+ * mencoba saksi/TTD antar-warga dan layanan yang memilih anggota KK).
  */
 class DemoCitizenSeeder extends Seeder
 {
     public const TOTAL_CITIZENS = 100;
 
     public const DEMO_USERNAME = 'demo_warga';
+
+    public const DEMO_SPOUSE_USERNAME = 'demo_warga2';
+
+    public const DEMO_CHILD_USERNAME = 'demo_warga3';
 
     /** Pekerjaan khas desa, di luar tiga pekerjaan bawaan OccupationService. */
     public const OCCUPATIONS = [
@@ -80,7 +85,8 @@ class DemoCitizenSeeder extends Seeder
             $head = $this->seedFamily($familyNumber, max($size, $familyNumber === 1 ? 3 : 1), $rt);
 
             if ($familyNumber === 1) {
-                $this->seedDemoAccount($head);
+                $this->seedDemoAccount(self::DEMO_USERNAME, $head);
+                $this->seedFamilyAccounts($head);
             }
         }
     }
@@ -254,10 +260,32 @@ class DemoCitizenSeeder extends Seeder
         return Carbon::parse($date)->addYears($years)->min(now()->subYears(20))->toDateString();
     }
 
-    private function seedDemoAccount(Citizen $citizen): void
+    /**
+     * Akun untuk istri dan anak tertua kepala keluarga demo.
+     */
+    private function seedFamilyAccounts(Citizen $head): void
+    {
+        $members = Citizen::query()
+            ->where('family_id', $head->family_id)
+            ->whereKeyNot($head->id)
+            ->orderBy('date_of_birth')
+            ->get();
+        $spouse = $members->first(fn (Citizen $member): bool => $member->family_role?->value === 'istri') ?? $members->first();
+        $child = $members->first(fn (Citizen $member): bool => $member->family_role?->value === 'anak' && $member->isNot($spouse));
+
+        if ($spouse !== null) {
+            $this->seedDemoAccount(self::DEMO_SPOUSE_USERNAME, $spouse);
+        }
+
+        if ($child !== null) {
+            $this->seedDemoAccount(self::DEMO_CHILD_USERNAME, $child);
+        }
+    }
+
+    private function seedDemoAccount(string $username, Citizen $citizen): void
     {
         User::query()->updateOrCreate(
-            ['username' => self::DEMO_USERNAME],
+            ['username' => $username],
             [
                 'village_id' => $this->village->id,
                 'citizen_id' => $citizen->id,

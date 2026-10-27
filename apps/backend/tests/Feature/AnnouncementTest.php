@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Pengumuman beranda: satu per desa, dikelola Petugas Desa, durasi wajib,
+ * Pengumuman beranda: satu per desa, dikelola Staf SIDUTama, durasi wajib,
  * dihapus otomatis setelah lewat waktunya.
  */
 class AnnouncementTest extends TestCase

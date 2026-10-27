@@ -28,6 +28,15 @@ class OccupationService
 
     public function list(User $user, bool $includeInactive = false): Collection
     {
+        // Pemohon surat hanya butuh pekerjaan aktif di desanya.
+        if ($user->role !== 'staf_sid') {
+            if (! $user->village_id) {
+                throw new HttpException(403, 'Akun belum terhubung ke desa.');
+            }
+
+            return $this->repository->allForVillage($user->village_id);
+        }
+
         return $this->repository->allForVillage($this->villageId($user), $includeInactive);
     }
 

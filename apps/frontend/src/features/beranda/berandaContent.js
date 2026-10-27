@@ -10,7 +10,7 @@ import { HAL_BPD, HAL_LEMBAGA, HAL_PROFIL } from '@/lib/constants/routes'
 const STATIC = {
   header: {
     // Nama dan lambang dari data desa (village.name, village.logo_url), diatur
-    // Petugas Desa. Cadangan netral selagi data belum termuat, agar tidak ada
+    // Staf SIDUTama. Cadangan netral selagi data belum termuat, agar tidak ada
     // nama desa yang ditulis di kode.
     fallbackName: 'Desa',
     nav: {
@@ -40,7 +40,7 @@ const STATIC = {
     comingSoonBadge: 'Segera hadir',
   },
 
-  // Label bar pengumuman. Isinya dari Petugas Desa (menu Pengumuman).
+  // Label bar pengumuman. Isinya dari Staf SIDUTama (menu Pengumuman).
   announcementBar: {
     label: 'Pengumuman desa',
     until: 'berlaku sampai',
@@ -154,7 +154,7 @@ const STATIC = {
     title: 'Butuh bantuan?',
     // Telepon, email, jam layanan, nama kantor, dan link peta dari data desa
     // (village.phone, email, office_hours, name, latitude/longitude), diatur
-    // Petugas Desa.
+    // Staf SIDUTama.
     phoneLabel: 'Telepon',
     emailLabel: 'Email',
     // Tombol salin; nama aksesibel: "Salin nomor telepon (0265) 2640613".
@@ -180,7 +180,7 @@ const STATIC = {
   },
 
   // A33–A35: link footer ke halaman informasi (D6). Isian khas desa diatur
-  // Petugas Desa di menu Halaman Informasi.
+  // Staf SIDUTama di menu Halaman Informasi.
   infoLinks: [
     { label: 'Kebijakan privasi', to: HAL_KEBIJAKAN_PRIVASI },
     { label: 'Aksesibilitas', to: HAL_AKSESIBILITAS },

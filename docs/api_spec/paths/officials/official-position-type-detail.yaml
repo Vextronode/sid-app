@@ -2,7 +2,7 @@ patch:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Ubah jenis jabatan desa tanpa akun
   description: |
-    Aktor: Petugas Desa pada desa yang sama. Semua field opsional; `code`
+    Aktor: Staf SIDUTama pada desa yang sama. Semua field opsional; `code`
     tidak dapat diubah. Menonaktifkan ditolak selama masih ada pejabat aktif
     pada jabatan itu, dan mengubah ke satu pemegang ditolak selama dijabat
     lebih dari satu orang.
@@ -57,7 +57,7 @@ delete:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Hapus jenis jabatan desa tanpa akun
   description: |
-    Aktor: Petugas Desa pada desa yang sama. Ditolak bila jabatan itu pernah
+    Aktor: Staf SIDUTama pada desa yang sama. Ditolak bila jabatan itu pernah
     dipakai pejabat mana pun, termasuk riwayat yang sudah berakhir; dalam
     kasus itu nonaktifkan saja.
   operationId: deleteOfficialPositionType

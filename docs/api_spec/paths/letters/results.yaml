@@ -1,0 +1,57 @@
+post:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Unggah hasil dari instansi luar (formulir pelayanan)
+  description: |
+    LetterPolicy::uploadResult: hanya pemohon (`submitted_by`), surat
+    `approved` yang jenisnya `requires_result_upload = true`, dan
+    `result_stage = awaiting_upload` (belum ada unggahan, atau unggahan
+    terakhir ditolak). Berkas disimpan sebagai `letter_attachments`
+    (`kind = result`). Kasi/Kaur sesuai `assigned_role` menerima notifikasi
+    `letter_result_submitted`; status log "Hasil dari instansi diunggah pemohon".
+  operationId: storeLetterResult
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letter
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [files]
+          properties:
+            files:
+              type: array
+              minItems: 1
+              maxItems: 5
+              description: PDF/JPG/PNG, maksimal 2 MB per berkas.
+              items:
+                type: string
+                format: binary
+  responses:
+    '201':
+      description: Hasil terunggah, menunggu verifikasi
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Hasil dari instansi berhasil diunggah dan menunggu verifikasi."
+              data:
+                $ref: '../../schemas/letters/letters.yaml#/LetterResult'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '409':
+      description: Unggahan lain sedang diverifikasi atau sudah diterima
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

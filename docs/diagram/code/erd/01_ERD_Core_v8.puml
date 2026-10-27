@@ -127,10 +127,10 @@ entity "official_position_types" as OPT {
 }
 
 note right of OPT
-  Jenis jabatan TANPA akun (dikelola Petugas Desa).
+  Jenis jabatan TANPA akun (dikelola Staf SIDUTama).
   officials.position = nilai enum OfficialPosition
   (kepala_desa, sekretaris_desa, rt, rw, kadus,
-  kasi_pelayanan, kaur_tu_umum, petugas_desa)
+  kasi_pemerintahan, kaur_tu_umum, petugas_desa)
   ATAU code dari tabel ini (relasi logis, bukan FK).
 end note
 
@@ -204,7 +204,7 @@ entity "flow_steps" as FST {
   --
   * flow_id : BIGINT <<FK>>
   * step_order : INT
-  * approver_position : ENUM(rt, kepala_desa, sekretaris_desa,\n kasi_pelayanan, kaur_tu_umum)
+  * approver_position : ENUM(rt, kepala_desa, sekretaris_desa,\n kasi_pemerintahan, kaur_tu_umum)
   is_final : BOOLEAN = false
   UNIQUE(flow_id, step_order)
 }
@@ -234,7 +234,7 @@ entity "letter_types" as LT {
   * code : VARCHAR(20)
   * name : VARCHAR(255)
   description / template / requirement_info : TEXT
-  assigned_role : ENUM(kasi_pelayanan, kaur_tu_umum)
+  assigned_role : ENUM(kasi_pemerintahan, kaur_tu_umum)
   * flow_id : BIGINT <<FK>>
   validity_days : UINT
   * is_active : BOOLEAN

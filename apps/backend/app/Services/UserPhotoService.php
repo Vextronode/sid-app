@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Foto profil akun warga. Warga mengelola fotonya sendiri, dan Petugas Desa
+ * Foto profil akun warga. Warga mengelola fotonya sendiri, dan Staf SIDUTama
  * boleh mengganti atau menghapusnya. Selama akun berperan pejabat (RT
- * sampai Kepala Desa, termasuk Petugas Desa), foto yang dipakai adalah
- * foto pejabat (officials.photo_img) yang hanya dikelola Petugas Desa lewat
+ * sampai Kepala Desa, termasuk Staf SIDUTama), foto yang dipakai adalah
+ * foto pejabat (officials.photo_img) yang hanya dikelola Staf SIDUTama lewat
  * halaman Pejabat Desa; setelah kembali menjadi warga, foto akun bisa
  * diubah lagi.
  */

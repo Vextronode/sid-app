@@ -2,7 +2,7 @@ patch:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Ubah nama kategori berita
   description: |
-    UC-19. Aktor HANYA Petugas Desa pada desa yang sama. `slug` ikut
+    UC-19. Aktor HANYA Staf SIDUTama pada desa yang sama. `slug` ikut
     diperbarui dari nama baru. Berita yang memakai kategori ini langsung
     menampilkan nama baru.
   operationId: updateNewsCategory
@@ -43,7 +43,7 @@ delete:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Hapus kategori berita
   description: |
-    UC-19. Aktor HANYA Petugas Desa pada desa yang sama. Hanya kategori yang
+    UC-19. Aktor HANYA Staf SIDUTama pada desa yang sama. Hanya kategori yang
     belum pernah dipakai berita yang bisa dihapus, termasuk berita yang
     sudah dihapus (soft delete).
   operationId: deleteNewsCategory

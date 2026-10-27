@@ -162,7 +162,7 @@ class LetterFlowServiceTest extends TestCase
             ['rw'],
             ['kadus'],
             ['staf_sid'],
-            ['kasi_pelayanan'],
+            ['kasi_pemerintahan'],
             ['kaur_tu_umum'],
         ];
     }

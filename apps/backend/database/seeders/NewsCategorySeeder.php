@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 class NewsCategorySeeder extends Seeder
 {
     /**
-     * Kategori berita bawaan tiap desa. Petugas Desa dapat menambah,
+     * Kategori berita bawaan tiap desa. Staf SIDUTama dapat menambah,
      * mengubah, atau menghapus (selama belum dipakai) dari aplikasi.
      */
     private const DEFAULTS = [

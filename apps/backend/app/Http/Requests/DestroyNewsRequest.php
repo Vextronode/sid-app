@@ -9,7 +9,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class DestroyNewsRequest extends FormRequest
 {
     /**
-     * UC-19. Aktor HANYA Petugas Desa (SID-ARCH-SYS-001 S2.3).
+     * UC-19. Aktor HANYA Staf SIDUTama (SID-ARCH-SYS-001 S2.3).
      */
     public function authorize(): bool
     {

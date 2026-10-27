@@ -13,7 +13,7 @@ import { FileText } from 'lucide-react'
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { loadPdfjs } from '@/lib/pdfjs'
 
-export function PdfCanvasPreview({ surat, template = 'digital' }) {
+export function PdfCanvasPreview({ surat, template = 'digital', documentKey = 'main' }) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -37,7 +37,7 @@ export function PdfCanvasPreview({ surat, template = 'digital' }) {
 
       try {
         const [blobUrl, pdfjsLib] = await Promise.all([
-          previewSuratPDF({ id: suratId }, template),
+          previewSuratPDF({ id: suratId }, template, documentKey),
           loadPdfjs(),
         ])
 
@@ -133,7 +133,7 @@ export function PdfCanvasPreview({ surat, template = 'digital' }) {
 
       loadingTask?.destroy().catch(() => {})
     }
-  }, [suratId, template, attempt])
+  }, [suratId, template, documentKey, attempt])
 
   return (
     <div className="sid-preview-container" onContextMenu={(event) => event.preventDefault()}>

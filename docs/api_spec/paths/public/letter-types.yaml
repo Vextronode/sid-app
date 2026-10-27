@@ -4,7 +4,7 @@ get:
   security: []
   description: |
     UC-16. Jenis surat aktif ber-template milik desa (urut nama), hanya
-    code, name, requirements_info. Cache per desa (10 menit).
+    code, name, category, category_label, requirements_info. Cache per desa (10 menit).
   operationId: getPublicLetterTypes
   parameters:
     - $ref: '../../parameters/common.yaml#/VillageCode'

@@ -19,7 +19,7 @@ export function roleHomePath(role) {
     case 'kepala_desa':
     case 'sekretaris_desa':
       return '/admin/dashboard-surat-kades'
-    case 'kasi_pelayanan':
+    case 'kasi_pemerintahan':
     case 'kaur_tu_umum':
     case 'staf_sid':
       return '/admin/operator-desa'
@@ -48,7 +48,7 @@ export function isWargaLetterPath(path) {
 // Tujuan link surat di beranda (Ajukan, Cek Status, Unduh) untuk peran yang
 // sedang login. Link beranda selalu ditulis sebagai halaman warga; pejabat
 // yang boleh mengajukan surat sendiri diarahkan ke halaman Surat Saya
-// pejabat, peran lain (Petugas Desa) ke halaman awalnya. Tanpa pemetaan ini
+// pejabat, peran lain (Staf SIDUTama) ke halaman awalnya. Tanpa pemetaan ini
 // ProtectedRoute menolak pejabat dan mereka terlempar ke beranda publik.
 export function letterTargetForRole(target, role) {
   if (role === 'warga') return target

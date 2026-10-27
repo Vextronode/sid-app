@@ -175,7 +175,7 @@ class LetterPolicyTest extends TestCase
     #[DataProvider('villageScopedRoleProvider')]
     public function test_view_allowed_for_village_scoped_role_in_same_village(string $role): void
     {
-        $letter = in_array($role, ['kasi_pelayanan', 'kaur_tu_umum'], true)
+        $letter = in_array($role, ['kasi_pemerintahan', 'kaur_tu_umum'], true)
             ? Letter::factory()->approved()->create([
                 'letter_type_id' => LetterType::factory()->create(['assigned_role' => $role])->id,
             ])
@@ -253,7 +253,7 @@ class LetterPolicyTest extends TestCase
         return [
             ['kepala_desa'],
             ['sekretaris_desa'],
-            ['kasi_pelayanan'],
+            ['kasi_pemerintahan'],
             ['kaur_tu_umum'],
         ];
     }
@@ -320,7 +320,7 @@ class LetterPolicyTest extends TestCase
             'village_id' => $village->id,
             'letter_type_id' => LetterType::factory()->create(['assigned_role' => null])->id,
         ]);
-        $otherRole = $role === 'kasi_pelayanan' ? 'kaur_tu_umum' : 'kasi_pelayanan';
+        $otherRole = $role === 'kasi_pemerintahan' ? 'kaur_tu_umum' : 'kasi_pemerintahan';
         $wrongRole = Letter::factory()->approved()->create([
             'village_id' => $village->id,
             'letter_type_id' => LetterType::factory()->create(['assigned_role' => $otherRole])->id,
@@ -345,7 +345,7 @@ class LetterPolicyTest extends TestCase
     public static function kasiKaurRoles(): array
     {
         return [
-            ['kasi_pelayanan'],
+            ['kasi_pemerintahan'],
             ['kaur_tu_umum'],
         ];
     }
@@ -407,12 +407,12 @@ class LetterPolicyTest extends TestCase
         $village = Village::factory()->create();
         $letter = Letter::factory()->approved()->create([
             'village_id' => $village->id,
-            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pelayanan'])->id,
+            'letter_type_id' => LetterType::factory()->create(['assigned_role' => 'kasi_pemerintahan'])->id,
         ]);
-        $kasi = User::factory()->create(['role' => 'kasi_pelayanan', 'village_id' => $village->id]);
+        $kasi = User::factory()->create(['role' => 'kasi_pemerintahan', 'village_id' => $village->id]);
         Official::factory()->create([
             'user_id' => $kasi->id,
-            'position' => 'kasi_pelayanan',
+            'position' => 'kasi_pemerintahan',
             'village_id' => $village->id,
             'is_active' => true,
         ]);
@@ -475,7 +475,7 @@ class LetterPolicyTest extends TestCase
         return [
             ['kepala_desa'],
             ['sekretaris_desa'],
-            ['kasi_pelayanan'],
+            ['kasi_pemerintahan'],
             ['kaur_tu_umum'],
             ['staf_sid'],
         ];

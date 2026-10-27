@@ -5,7 +5,7 @@
 //                  {kunci:date} diformat sebagai tanggal.
 // - Token kosong tampil sebagai slot "[LABEL]" (penanda kuning) dengan label
 //   dari peta `placeholders` halaman, agar terlihat bagian mana yang belum
-//   diisi Petugas Desa.
+//   diisi Staf SIDUTama.
 // Hasil render berupa array bagian: teks, { slot: '[LABEL]' }, atau
 // { copy, kind: 'phone' | 'email' } untuk telepon/email yang bisa disalin.
 

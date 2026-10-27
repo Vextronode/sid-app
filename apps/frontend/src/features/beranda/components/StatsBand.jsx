@@ -9,7 +9,7 @@ const formatNumber = (value) =>
   value ? Number(value).toLocaleString('id-ID', { maximumFractionDigits: 3 }) : null
 
 // Pita angka (A19). Penduduk dan dusun dihitung backend dari data warga dan
-// wilayah; luas wilayah diisi Petugas Desa di Kelola Profil Desa. Angka yang
+// wilayah; luas wilayah diisi Staf SIDUTama di Kelola Profil Desa. Angka yang
 // belum ada datanya tidak ditampilkan, dan pita disembunyikan bila semuanya
 // kosong. Angka bukan link.
 // Tampil sebagai panel biru laut bermotif kontur, sebentuk dengan panel

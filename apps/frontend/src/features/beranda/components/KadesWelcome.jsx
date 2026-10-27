@@ -3,7 +3,7 @@ import { UserRound } from 'lucide-react'
 
 import { formatVillageName } from '@/shared/lib/villageName'
 
-// Sambutan Kepala Desa. Teksnya diisi Petugas Desa (village.welcome_message,
+// Sambutan Kepala Desa. Teksnya diisi Staf SIDUTama (village.welcome_message,
 // Kelola Profil Desa); bila kosong, seluruh blok tidak dirender.
 // Nama dan foto dari pejabat Kepala Desa aktif (`head`, village_head di
 // /public/home), dengan cadangan nama dari village.head_name. Jabatan

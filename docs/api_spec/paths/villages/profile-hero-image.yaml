@@ -2,7 +2,7 @@ post:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Upload atau ganti foto beranda desa
   description: |
-    Aktor: Petugas Desa aktif pada desanya. Foto besar di beranda dan
+    Aktor: Staf SIDUTama aktif pada desanya. Foto besar di beranda dan
     halaman Profil Desa publik, disimpan di disk public. Dioptimasi seperti
     logo dengan sisi terpanjang maksimum 1920 px (WebP, fallback JPEG).
     Aturan penggantian sama dengan logo.

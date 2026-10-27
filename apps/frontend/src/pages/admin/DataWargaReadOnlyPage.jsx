@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { getCitizens } from '@/features/data-warga/api'
+import FamilyManagementPanel from '@/features/data-warga/components/FamilyManagementPanel'
+import { useFamilyList } from '@/features/data-warga/hooks/useFamilyList'
 import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
@@ -8,14 +11,28 @@ import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
 import { usePageSize } from '@/components/ui/usePageSize'
 import { FAMILY_ROLE_LABELS, labelOf } from '@/shared/lib/labels'
+import { RevealableValue } from '@/components/ui/RevealableValue'
+import { revealCitizenNik, revealFamilyNumber } from '@/shared/lib/identityApi'
+
+// Bagian halaman sama dengan halaman kelola (DataWargaPage): tab Data
+// Penduduk dan Kartu Keluarga, aktif di ?tab=.
+const SECTIONS = [
+  { value: 'penduduk', label: 'Data Penduduk' },
+  { value: 'kk', label: 'Kartu Keluarga' },
+]
 
 /**
- * Daftar warga khusus-baca untuk Kasi/Kaur sebagai bahan pertimbangan
- * saat memproses surat. Perubahan data oleh Kasi/Kaur hanya lewat aksi
- * "Terapkan" pada surat; tambah, ubah, hapus, dan impor tetap di halaman
- * Petugas Desa.
+ * Data penduduk dan KK khusus-baca untuk Kaur TU & Umum sebagai bahan
+ * pertimbangan saat memproses surat. Perubahan data olehnya hanya lewat
+ * aksi "Terapkan" pada surat; tambah, ubah, hapus, dan impor ada di
+ * halaman kelola milik Staf SIDUTama dan Kasi Pemerintahan.
  */
 export default function DataWargaReadOnlyPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeSection = searchParams.get('tab') === 'kk' ? 'kk' : 'penduduk'
+  const switchSection = (value) =>
+    setSearchParams(value === 'penduduk' ? {} : { tab: value }, { replace: true })
+  const familyList = useFamilyList()
   const [citizens, setCitizens] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -67,7 +84,7 @@ export default function DataWargaReadOnlyPage() {
         </p>
 
         <div className="sid-operator-header">
-          <h1>Data Penduduk</h1>
+          <h1>Data Penduduk &amp; Kartu Keluarga</h1>
         </div>
 
         <p className="sid-admin-alert" role="note">
@@ -75,121 +92,165 @@ export default function DataWargaReadOnlyPage() {
           pada surat yang sudah disetujui.
         </p>
 
-        <div className="sid-operator-filter-card">
-          <div className="sid-operator-filter-field">
-            <p>Pencarian Cepat</p>
-            <div className="sid-operator-search">
-              <Search size={16} />
-              <input
-                value={keyword}
-                onChange={(event) => {
-                  setKeyword(event.target.value)
-                  setPage(1)
-                }}
-                placeholder="Cari nama warga..."
-                aria-label="Cari nama warga"
-              />
-            </div>
-          </div>
+        <div className="sid-wilayah-tabs" role="tablist" aria-label="Pilih bagian data">
+          {SECTIONS.map((section) => (
+            <button
+              key={section.value}
+              id={`data-tab-${section.value}`}
+              type="button"
+              role="tab"
+              aria-selected={section.value === activeSection}
+              aria-controls={`data-panel-${section.value}`}
+              className={`sid-wilayah-tab${section.value === activeSection ? ' sid-wilayah-tab-active' : ''}`}
+              onClick={() => switchSection(section.value)}
+            >
+              {section.label}
+            </button>
+          ))}
         </div>
 
-        <div className="sid-operator-table-card">
-          <div className="sid-operator-table-wrapper">
-            <table className="sid-operator-table">
-              <thead>
-                <tr>
-                  <th>Nama</th>
-                  <th className="center">NIK</th>
-                  <th className="center">RT/RW</th>
-                  <th className="center">Jenis Kelamin</th>
-                  <th className="center">Tempat, Tanggal Lahir</th>
-                  <th className="center">No. KK</th>
-                  <th className="center">Peran KK</th>
-                  <th className="center">Pekerjaan</th>
-                  <th>Alamat</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={9} className="empty">
-                      Memuat data...
-                    </td>
-                  </tr>
-                ) : error ? (
-                  <tr>
-                    <td colSpan={9} className="empty sid-admin-error" role="alert">
-                      {error}
-                    </td>
-                  </tr>
-                ) : data.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="empty">
-                      Tidak ada data warga.
-                    </td>
-                  </tr>
-                ) : (
-                  data.map((warga) => (
-                    <tr key={warga.id}>
-                      <td className="primary-text">{warga.name}</td>
-                      <td className="center">{warga.nik_masked ?? '-'}</td>
-                      <td className="center">
-                        RT {warga.rt?.number ?? '-'} / RW {warga.rw?.number ?? '-'}
-                      </td>
-                      <td className="center">
-                        {warga.gender === 'L'
-                          ? 'Laki-Laki'
-                          : warga.gender === 'P'
-                            ? 'Perempuan'
-                            : '-'}
-                      </td>
-                      <td className="center">
-                        {[
-                          warga.place_of_birth,
-                          warga.date_of_birth
-                            ? new Date(warga.date_of_birth).toLocaleDateString('id-ID')
-                            : null,
-                        ]
-                          .filter(Boolean)
-                          .join(', ') || '-'}
-                      </td>
-                      <td className="center">{warga.family?.no_kk_masked ?? '-'}</td>
-                      <td className="center">{labelOf(FAMILY_ROLE_LABELS, warga.family_role)}</td>
-                      <td className="center">{warga.occupation ?? '-'}</td>
-                      <td>{warga.address ?? '-'}</td>
+        {activeSection === 'kk' && (
+          <div id="data-panel-kk" role="tabpanel" aria-labelledby="data-tab-kk">
+            <FamilyManagementPanel familyList={familyList} canEdit={false} canViewHistory={false} />
+          </div>
+        )}
+
+        {activeSection === 'penduduk' && (
+          <div id="data-panel-penduduk" role="tabpanel" aria-labelledby="data-tab-penduduk">
+            <div className="sid-operator-filter-card">
+              <div className="sid-operator-filter-field">
+                <p>Pencarian Cepat</p>
+                <div className="sid-operator-search">
+                  <Search size={16} />
+                  <input
+                    value={keyword}
+                    onChange={(event) => {
+                      setKeyword(event.target.value)
+                      setPage(1)
+                    }}
+                    placeholder="Cari nama warga..."
+                    aria-label="Cari nama warga"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="sid-operator-table-card">
+              <div className="sid-operator-table-wrapper">
+                <table className="sid-operator-table">
+                  <thead>
+                    <tr>
+                      <th>Nama</th>
+                      <th className="center">NIK</th>
+                      <th className="center">RT/RW</th>
+                      <th className="center">Jenis Kelamin</th>
+                      <th className="center">Tempat, Tanggal Lahir</th>
+                      <th className="center">No. KK</th>
+                      <th className="center">Peran KK</th>
+                      <th className="center">Pekerjaan</th>
+                      <th>Alamat</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={9} className="empty">
+                          Memuat data...
+                        </td>
+                      </tr>
+                    ) : error ? (
+                      <tr>
+                        <td colSpan={9} className="empty sid-admin-error" role="alert">
+                          {error}
+                        </td>
+                      </tr>
+                    ) : data.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="empty">
+                          Tidak ada data warga.
+                        </td>
+                      </tr>
+                    ) : (
+                      data.map((warga) => (
+                        <tr key={warga.id}>
+                          <td className="primary-text">{warga.name}</td>
+                          <td className="center">
+                            <RevealableValue
+                              masked={warga.nik_masked}
+                              reveal={() => revealCitizenNik(warga.id)}
+                            />
+                          </td>
+                          <td className="center">
+                            RT {warga.rt?.number ?? '-'} / RW {warga.rw?.number ?? '-'}
+                          </td>
+                          <td className="center">
+                            {warga.gender === 'L'
+                              ? 'Laki-Laki'
+                              : warga.gender === 'P'
+                                ? 'Perempuan'
+                                : '-'}
+                          </td>
+                          <td className="center">
+                            {[
+                              warga.place_of_birth,
+                              warga.date_of_birth
+                                ? new Date(warga.date_of_birth).toLocaleDateString('id-ID')
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(', ') || '-'}
+                          </td>
+                          <td className="center">
+                            <RevealableValue
+                              masked={warga.family?.no_kk_masked}
+                              reveal={() => revealFamilyNumber(warga.family.id)}
+                              label="No. KK"
+                            />
+                          </td>
+                          <td className="center">
+                            {labelOf(FAMILY_ROLE_LABELS, warga.family_role)}
+                          </td>
+                          <td className="center">{warga.occupation ?? '-'}</td>
+                          <td>{warga.address ?? '-'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-          {totalItems > 0 && (
-            <div className="sid-operator-pagination">
-              <div className="sid-pagination-meta">
-                <p>{formatPageRange(currentPage, pageSize, totalItems)}</p>
-                <PageSizeSelect value={pageSize} onChange={setPageSize} />
-              </div>
-              <div>
-                <button
-                  type="button"
-                  disabled={currentPage === 1}
-                  onClick={() => setPage(currentPage - 1)}
-                >
-                  Sebelumnya
-                </button>
-                <PageNumbers currentPage={currentPage} totalPages={totalPages} onChange={setPage} />
-                <button
-                  type="button"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setPage(currentPage + 1)}
-                >
-                  Berikutnya
-                </button>
-              </div>
+              {totalItems > 0 && (
+                <div className="sid-operator-pagination">
+                  <div className="sid-pagination-meta">
+                    <p>{formatPageRange(currentPage, pageSize, totalItems)}</p>
+                    <PageSizeSelect value={pageSize} onChange={setPageSize} />
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      disabled={currentPage === 1}
+                      onClick={() => setPage(currentPage - 1)}
+                    >
+                      Sebelumnya
+                    </button>
+                    <PageNumbers
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onChange={setPage}
+                    />
+                    <button
+                      type="button"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setPage(currentPage + 1)}
+                    >
+                      Berikutnya
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
       <SiteFooter />
     </div>

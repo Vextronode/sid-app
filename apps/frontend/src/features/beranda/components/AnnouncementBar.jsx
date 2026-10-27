@@ -47,7 +47,7 @@ function AnnouncementLink({ href, labels }) {
 
 // Bar pengumuman (A10), desain "pita kentongan": pita biru laut tua selebar
 // layar dengan tiga garis kuning padi di kiri, seperti tiga pukulan kentongan
-// yang memanggil warga. Satu pengumuman dari Petugas Desa (menu Pengumuman),
+// yang memanggil warga. Satu pengumuman dari Staf SIDUTama (menu Pengumuman),
 // tampil sampai waktunya habis. Isi dan link (opsional) terbuka lewat
 // "Baca selengkapnya" di panel terang di bawah pita.
 // containerClassName: pembungkus lebar konten (bd-container di beranda).

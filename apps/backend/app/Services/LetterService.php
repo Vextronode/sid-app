@@ -13,6 +13,7 @@ use App\Policies\LetterPolicy;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\LetterTypeRepository;
+use App\Support\LetterFormSchema;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -70,6 +71,7 @@ class LetterService
             $data['letter_type_id'],
             $user->village_id,
         );
+        $schema = new LetterFormSchema($letterType, $citizen);
 
         $letter = $this->letterRepository->create([
 
@@ -93,7 +95,11 @@ class LetterService
             // surat memerlukannya, ia menjadi isian di payload.
             'purpose' => null,
 
-            'payload' => $data['payload'] ?? null,
+            // Isian tersembunyi (visible_when) dibuang; isian pekerjaan,
+            // anggota KK, baris berulang, dan wilayah disimpan siap cetak.
+            'payload' => $schema->resolveSameValues($schema->resolveNamesFromNik($schema->resolveFamilyHeads($schema->resolveAreas($schema->resolveRows($schema->resolveFamilyMembers(
+                $schema->resolveOccupations($schema->visiblePayload($data['payload'] ?? null))
+            )))))),
 
             'notes' => null,
 
@@ -137,6 +143,7 @@ class LetterService
             $data['signers'] ?? [],
             $data['signature_files'] ?? [],
         );
+        $this->letterSignatureService->openWitnesses($letter, $user);
 
         if (! $this->letterSignatureService->isComplete($letter)) {
             return $this->holdForSignatures($letter, $user);
@@ -238,7 +245,7 @@ class LetterService
     /**
      * Step pertama belum punya pejabat aktif (mis. RT kosong atau warga
      * belum terdaftar di RT mana pun). Surat ditahan di step itu dan
-     * Petugas Desa diberi tahu untuk mengisi jabatannya; step tidak
+     * Staf SIDUTama diberi tahu untuk mengisi jabatannya; step tidak
      * dilewati agar verifikasi tingkat RT tetap terjadi.
      */
     private function holdForVacantStep(Letter $letter, User $actor): void
@@ -294,7 +301,7 @@ class LetterService
 
     /**
      * EV5-4-S7. Rewrite total dari switch lama yang salah menggabungkan
-     * kasi_pelayanan/kaur_tu_umum/staf_sid/sekretaris_desa/
+     * kasi_pemerintahan/kaur_tu_umum/staf_sid/sekretaris_desa/
      * kepala_desa jadi satu case "lihat semua surat" (TDD-01 Table 3 -
      * Scope Monitoring Surat per Role, paths/letters/letters.yaml).
      * Daftar role dibatasi per wilayah dan tahap yang telah dicapai;
@@ -406,7 +413,7 @@ class LetterService
                 'rw' => $this->scopeForRw($user),
                 'kadus' => $this->scopeForKadus($user),
                 'kepala_desa', 'sekretaris_desa' => $this->scopeForKadesSekdes($user),
-                'kasi_pelayanan', 'kaur_tu_umum' => $this->scopeForKasiKaur($user),
+                'kasi_pemerintahan', 'kaur_tu_umum' => $this->scopeForKasiKaur($user),
                 'staf_sid' => $this->letterRepository
                     ->queryForList()
                     ->where('village_id', $user->official?->village_id),

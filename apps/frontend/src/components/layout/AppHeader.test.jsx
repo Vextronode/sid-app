@@ -114,6 +114,7 @@ describe('AppHeader', () => {
     await user.click(button)
     const panel = within(document.getElementById(button.getAttribute('aria-controls')))
 
+    expect(panel.getByText('Budi Santoso')).toBeVisible()
     expect(panel.getByRole('link', { name: 'Surat Warga' })).toHaveAttribute('aria-current', 'page')
     expect(panel.getByRole('link', { name: 'Profil Saya' })).toBeVisible()
     expect(panel.getByRole('button', { name: 'Keluar' })).toBeVisible()
@@ -121,6 +122,20 @@ describe('AppHeader', () => {
     await user.click(panel.getByRole('button', { name: 'Pusat Bantuan' }))
     expect(onHelp).toHaveBeenCalledOnce()
     expect(button).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('calls onMenuOpen only when the account or mobile menu opens, so the notification panel closes', async () => {
+    const user = userEvent.setup()
+    const onMenuOpen = vi.fn()
+    const { mobileMenu } = renderHeader({ onMenuOpen })
+    const menuButton = mobileMenu.getByRole('button', { name: 'Menu' })
+
+    await user.click(menuButton)
+    await user.click(menuButton)
+    expect(onMenuOpen).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByRole('button', { name: 'Budi Santoso' }))
+    expect(onMenuOpen).toHaveBeenCalledTimes(2)
   })
 
   it('disables logout and shows progress while logging out', async () => {

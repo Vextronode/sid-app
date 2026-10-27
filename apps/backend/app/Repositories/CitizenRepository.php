@@ -47,6 +47,19 @@ class CitizenRepository
             ->paginate((int) ($filters['per_page'] ?? self::DEFAULT_PER_PAGE));
     }
 
+    /**
+     * Warga aktif desa ini ber-NIK tersebut (pencarian lewat nik_hash).
+     */
+    public function findActiveInVillageByNik(string $villageId, string $nik): ?Citizen
+    {
+        return Citizen::query()
+            ->where('village_id', $villageId)
+            ->where('nik_hash', hash('sha256', $nik))
+            ->where('is_active', true)
+            ->with('family:id,no_kk')
+            ->first();
+    }
+
     public function findByNikHash(string $nikHash): ?Citizen
     {
         return Citizen::query()->where('nik_hash', $nikHash)->first();

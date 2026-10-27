@@ -2,7 +2,7 @@ get:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Lihat slot jabatan organisasi non-struktural (BPD/LPM/Karang Taruna/PKK)
   description: |
-    UC-23. Aktor Petugas Desa. Berbeda dengan `officials` (jabatan
+    UC-23. Aktor Staf SIDUTama. Berbeda dengan `officials` (jabatan
     struktural desa) - ini untuk organisasi seperti BPD, LPM, dst.
     Setiap organisasi punya tiga slot tetap: `ketua` dan `wakil_ketua`
     (satu pemegang, rotasi) serta `anggota` (jumlah bebas). Slot yang

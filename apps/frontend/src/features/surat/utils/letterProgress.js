@@ -5,6 +5,28 @@ import { SURAT_STATUS } from '@/constants/suratStatus'
 // tahap yang sudah lewat.
 export const LETTER_STAGES = ['Diajukan', 'RT', 'Desa', 'Terbit']
 
+// Formulir pelayanan bersambung setelah terbit: pemohon mengunggah hasil
+// dari instansi luar pada surat yang sama, lalu desa memverifikasinya.
+export const RESULT_LETTER_STAGES = [...LETTER_STAGES, 'Unggah hasil', 'Verifikasi']
+
+const RESULT_PROGRESS = {
+  awaiting_upload: {
+    tone: 'pending',
+    current: 4,
+    message: 'Formulir terbit. Bawa ke instansi yang dituju, lalu unggah hasilnya di detail surat.',
+  },
+  under_review: {
+    tone: 'progress',
+    current: 5,
+    message: 'Hasil sudah diunggah dan menunggu verifikasi desa.',
+  },
+  accepted: {
+    tone: 'done',
+    current: RESULT_LETTER_STAGES.length,
+    message: 'Hasil dari instansi sudah diverifikasi desa.',
+  },
+}
+
 const POSITION_STAGE = { rt: 1, kepala_desa: 2, sekretaris_desa: 2 }
 
 const POSITION_NAME = {
@@ -29,9 +51,26 @@ function stageFromOrder(order) {
  */
 export function getLetterProgress(letter) {
   const status = String(letter?.status ?? '').toLowerCase()
+  const stages = letter?.result_stage ? RESULT_LETTER_STAGES : LETTER_STAGES
+
+  if (status === SURAT_STATUS.APPROVED && letter?.result_rejected) {
+    return {
+      stages,
+      tone: 'pending',
+      current: 4,
+      rejected: false,
+      message:
+        'Hasil yang diunggah ditolak desa. Buka detail untuk melihat alasannya dan unggah ulang.',
+    }
+  }
+
+  if (status === SURAT_STATUS.APPROVED && RESULT_PROGRESS[letter?.result_stage]) {
+    return { ...RESULT_PROGRESS[letter.result_stage], stages, rejected: false }
+  }
 
   if (status === SURAT_STATUS.APPROVED) {
     return {
+      stages,
       tone: 'done',
       current: LETTER_STAGES.length,
       rejected: false,
@@ -45,6 +84,7 @@ export function getLetterProgress(letter) {
     const current = stageFromOrder(letter?.rejected_at_step)
 
     return {
+      stages,
       tone: 'rejected',
       current,
       rejected: true,
@@ -54,6 +94,7 @@ export function getLetterProgress(letter) {
 
   if (letter?.awaiting_signatures) {
     return {
+      stages,
       tone: 'pending',
       current: 0,
       rejected: false,
@@ -65,6 +106,7 @@ export function getLetterProgress(letter) {
   const current = POSITION_STAGE[position] ?? stageFromOrder(letter?.current_step_order)
 
   return {
+    stages,
     tone: status === SURAT_STATUS.PENDING ? 'pending' : 'progress',
     current,
     rejected: false,

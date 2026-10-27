@@ -45,7 +45,7 @@ describe('PdfCanvasPreview', () => {
     const container = screen.getByTestId('pdf-canvas-preview')
     await waitFor(() => expect(container.querySelector('canvas')).not.toBeNull())
     expect(container).not.toHaveAttribute('hidden')
-    expect(previewSuratPDF).toHaveBeenCalledWith({ id: 'letter-1' }, 'digital')
+    expect(previewSuratPDF).toHaveBeenCalledWith({ id: 'letter-1' }, 'digital', 'main')
 
     const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
     container.querySelector('canvas').dispatchEvent(event)

@@ -23,7 +23,7 @@ User:
       example: "ahmad.1937"
     role:
       type: string
-      enum: [warga, rt, rw, kadus, kasi_pelayanan, kaur_tu_umum, staf_sid, kepala_desa, sekretaris_desa]
+      enum: [warga, rt, rw, kadus, kasi_pemerintahan, kaur_tu_umum, staf_sid, kepala_desa, sekretaris_desa]
       example: "rt"
     role_label:
       type: string
@@ -37,7 +37,7 @@ User:
       nullable: true
       description: |
         URL foto profil akun warga. Selama akun menjabat, foto yang dipakai
-        adalah `official.photo_img` (dikelola Petugas Desa).
+        adalah `official.photo_img` (dikelola Staf SIDUTama).
       example: null
     email:
       type: string
@@ -79,7 +79,7 @@ OfficialPositionCode:
   type: string
   description: |
     Jabatan berakun (enum `OfficialPosition`): kepala_desa, sekretaris_desa, rt, rw,
-    kadus, kasi_pelayanan, kaur_tu_umum, staf_sid. Selain itu harus
+    kadus, kasi_pemerintahan, kaur_tu_umum, staf_sid. Selain itu harus
     `code` jenis jabatan tanpa akun yang aktif milik desa
     (`official_position_types`), mis. kasi_kesejahteraan, kaur_keuangan,
     staf_sipades. Kolom `officials.position` kini VARCHAR(50), bukan ENUM.
@@ -382,7 +382,7 @@ OfficialCandidate:
 
 OfficialPositionType:
   type: object
-  description: "Jenis jabatan desa tanpa akun (dikelola Petugas Desa)."
+  description: "Jenis jabatan desa tanpa akun (dikelola Staf SIDUTama)."
   properties:
     id:
       type: integer

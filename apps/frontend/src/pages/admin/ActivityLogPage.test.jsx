@@ -25,7 +25,7 @@ function renderPage(entry = '/admin/log-aktivitas') {
   )
 }
 
-const actor = { id: 'u1', name: 'Petugas Desa', role: 'staf_sid', role_label: 'Staf SIDUTama' }
+const actor = { id: 'u1', name: 'Nina Rahmawati', role: 'staf_sid', role_label: 'Staf SIDUTama' }
 
 describe('ActivityLogPage', () => {
   beforeEach(() => {
@@ -76,7 +76,7 @@ describe('ActivityLogPage', () => {
     expect(screen.getByText('Diubah', { selector: 'td span' })).toBeInTheDocument()
     expect(screen.getByText('Nama:')).toBeInTheDocument()
     expect(screen.getByText('NIK:').parentElement).toHaveTextContent('(disamarkan) → (disamarkan)')
-    expect(screen.getByText('Staf SIDUTama')).toBeInTheDocument()
+    expect(screen.getByText('Nina Rahmawati')).toBeInTheDocument()
   })
 
   it('applies the subject filter from the URL and lets it be cleared', async () => {

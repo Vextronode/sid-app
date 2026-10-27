@@ -4,7 +4,6 @@ namespace App\Http\Requests;
 
 use App\Enums\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class IndexOccupationRequest extends FormRequest
 {
@@ -17,14 +16,18 @@ class IndexOccupationRequest extends FormRequest
         }
     }
 
+    /**
+     * Semua pengguna boleh membaca katalog untuk isian pekerjaan di form
+     * surat; hanya Staf SID yang melihat pekerjaan nonaktif.
+     */
     public function authorize(): bool
     {
-        return $this->user()?->role === 'staf_sid';
+        return $this->user() !== null;
     }
 
-    protected function failedAuthorization(): void
+    public function includeInactive(): bool
     {
-        throw new HttpException(403, 'Hanya '.UserRole::stafSidLabel().' yang berwenang.');
+        return $this->user()?->role === UserRole::StafSid->value && $this->boolean('include_inactive');
     }
 
     public function rules(): array

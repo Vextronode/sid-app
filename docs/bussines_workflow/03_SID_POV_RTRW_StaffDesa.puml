@@ -47,14 +47,14 @@ end fork
 |#LightYellow|Sistem|
 :Setelah final approve: notifikasi ke\nKasi/Kaur sesuai assigned_role;
 
-|#LightGreen|Kasi Pelayanan / Kaur TU & Umum|
+|#LightGreen|Kasi Pemerintahan / Kaur TU & Umum|
 if (Jenis surat punya aksi data?) then (ya)
   :Buka surat "perlu diterapkan";
   :Tinjau nilai sekarang vs usulan,\nkoreksi bila perlu;
   :Terapkan;
   |#LightYellow|Sistem|
   :Ubah/tambah data warga,\ncatat audit, beri tahu pemohon;
-  |#LightGreen|Kasi Pelayanan / Kaur TU & Umum|
+  |#LightGreen|Kasi Pemerintahan / Kaur TU & Umum|
 else (tidak)
 endif
 :Unduh / cetak surat untuk warga;
@@ -64,7 +64,7 @@ note right
   Kasi/Kaur bukan approver flow; dapat
   membaca daftar warga (read-only).
   Kelola data warga, wilayah, CMS tetap
-  kewenangan Petugas Desa (04).
+  kewenangan Staf SIDUTama (04).
 end note
 
 @enduml

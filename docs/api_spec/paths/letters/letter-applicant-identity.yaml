@@ -1,0 +1,30 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: NIK utuh pemohon surat (tombol "lihat" di rincian surat)
+  description: |
+    Siapa pun yang boleh melihat surat ini. Pembukaan oleh selain pemohon
+    dicatat di Log Aktivitas. Dibatasi 60 permintaan per menit.
+  operationId: revealLetterApplicantIdentity
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letter
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    '200':
+      description: NIK utuh
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  nik: { type: string }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Tidak berhak melihat surat ini

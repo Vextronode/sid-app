@@ -39,8 +39,28 @@ describe('LetterTypePicker', () => {
     expect(screen.getByText('Berlaku 30 hari')).toBeTruthy()
     expect(screen.getByText('Perlu tanda tangan')).toBeTruthy()
 
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+
     fireEvent.click(screen.getByRole('radio', { name: /Surat Keterangan Usaha/ }))
     expect(onSelect).toHaveBeenCalledWith('SKU')
+    // Halaman kembali ke atas setelah memilih.
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }))
+    scrollTo.mockRestore()
+  })
+
+  it('separates Persuratan Desa and Layanan Kependudukan with a label', () => {
+    renderPicker({
+      letterTypes: [
+        { id: 3, code: 'F01', name: 'Pelayanan Pindah', category: 'pelayanan' },
+        { id: 1, code: 'A01', name: 'Surat Keterangan Usaha', category: 'persuratan' },
+      ],
+    })
+
+    const titles = screen.getAllByRole('heading').map((heading) => heading.textContent)
+    expect(titles).toEqual(['Persuratan Desa', 'Layanan Kependudukan'])
+    expect(screen.getByRole('region', { name: 'Layanan Kependudukan' }).textContent).toContain(
+      'Pelayanan Pindah',
+    )
   })
 
   it('collapses to the chosen type with its requirements and lets the user change it', () => {
@@ -51,6 +71,37 @@ describe('LetterTypePicker', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ganti' }))
     expect(onSelect).toHaveBeenCalledWith('')
+  })
+
+  it('shows the description and the documents to bring for a population service', () => {
+    renderPicker({
+      selectedCode: 'F01',
+      letterTypes: [
+        {
+          id: 3,
+          code: 'F01',
+          name: 'Surat Pernyataan Tidak Memiliki Dokumen Kependudukan',
+          category: 'pelayanan',
+          description: 'Untuk warga yang belum punya dokumen kependudukan.',
+          carry_documents: {
+            forms: ['Surat Pernyataan (F-1.04)'],
+            attachments: ['KK asli pemohon'],
+          },
+        },
+      ],
+    })
+
+    expect(screen.getByText('Untuk warga yang belum punya dokumen kependudukan.')).toBeTruthy()
+    expect(screen.getByText('Dokumen yang dibawa ke Disdukcapil')).toBeTruthy()
+    expect(screen.getByText('Surat Pernyataan (F-1.04)')).toBeTruthy()
+    expect(screen.getByText('KK asli pemohon')).toBeTruthy()
+  })
+
+  it('shows no document list for a village letter', () => {
+    renderPicker({ selectedCode: 'SKD' })
+
+    expect(screen.queryByText('Dokumen yang dibawa ke Disdukcapil')).toBeNull()
+    expect(screen.getByText('Menerangkan domisili.')).toBeTruthy()
   })
 
   it('filters long lists by name', () => {
@@ -66,5 +117,29 @@ describe('LetterTypePicker', () => {
     })
 
     expect(screen.getAllByRole('radio')).toHaveLength(1)
+  })
+
+  it('hides the change button when the type is fixed by the link', () => {
+    renderPicker({ selectedCode: 'SKD', locked: true })
+
+    expect(screen.queryByRole('button', { name: 'Ganti' })).toBeNull()
+  })
+
+  it('expands a cut-off description without selecting the type', () => {
+    // jsdom tidak menghitung tata letak: anggap deskripsi terpotong.
+    const scrollHeight = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(60)
+    const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(38)
+
+    const onSelect = renderPicker()
+
+    const more = screen.getAllByRole('button', { name: 'Baca selengkapnya' })[0]
+    fireEvent.click(more)
+
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Tutup' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Menerangkan domisili.').className).toContain('is-expanded')
+
+    scrollHeight.mockRestore()
+    clientHeight.mockRestore()
   })
 })

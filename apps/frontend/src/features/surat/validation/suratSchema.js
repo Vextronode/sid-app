@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { visibleFields } from '../utils/fieldCondition'
+
 const requiredText = (label) => z.string().trim().min(1, `${label} wajib diisi`)
 
 const optionalText = z.string().trim().optional().or(z.literal(''))
@@ -23,6 +25,13 @@ const optionalNik = (label) =>
     )
     .optional()
 
+// Nilai input waktu: HH:MM (24 jam).
+const requiredTime = (label) =>
+  z
+    .string()
+    .trim()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, `${label} wajib diisi`)
+
 const requiredDate = (label) =>
   z.string().trim().min(1, `${label} wajib diisi`).date(`${label} tidak valid`)
 
@@ -35,6 +44,14 @@ const numberText = (label, required) =>
 
 const optionalFiles = z.array(z.instanceof(File)).optional().default([])
 
+// Nilai isian pekerjaan bila pemohon memilih "Lainnya"; teksnya diisi di
+// isian pendamping <nama>_lainnya (LetterFormSchema::OTHER_OCCUPATION).
+export const OTHER_OCCUPATION = 'lainnya'
+
+export function otherOccupationFieldName(name) {
+  return `${name}_lainnya`
+}
+
 function fieldSchema(field) {
   const { label, required } = field
 
@@ -45,13 +62,70 @@ function fieldSchema(field) {
         : optionalFiles
     case 'date':
       return required ? requiredDate(label) : optionalText
+    case 'time':
+      return required ? requiredTime(label) : optionalText
     case 'nik':
       return required ? requiredNik(label) : optionalNik(label)
     case 'number':
       return required ? numberText(label, true) : numberText(label, false).optional()
+    case 'occupation':
+    case 'village_area':
+    case 'family_member':
+      return required ? z.string().trim().min(1, `${label} wajib dipilih`) : optionalText
     default:
       return required ? requiredText(label) : optionalText
   }
+}
+
+const LIST_TYPES = ['repeater', 'family_members']
+
+// Jumlah baris dan isi tiap baris repeater; sub-isian bersyarat per baris.
+function validateRows(field, rows, context) {
+  const list = Array.isArray(rows) ? rows : []
+  const min = field.min ?? (field.required ? 1 : 0)
+  const max = field.max ?? 20
+
+  if (list.length < min) {
+    context.addIssue({
+      code: 'custom',
+      path: [field.name],
+      message: `Isi minimal ${min} ${field.itemLabel || 'baris'}`,
+    })
+  }
+
+  if (list.length > max) {
+    context.addIssue({
+      code: 'custom',
+      path: [field.name],
+      message: `Maksimal ${max} ${field.itemLabel || 'baris'}`,
+    })
+  }
+
+  list.forEach((row, index) => {
+    visibleFields(field.fields, row ?? {}).forEach((subField) => {
+      const result = fieldSchema(subField).safeParse(row?.[subField.name] ?? '')
+
+      if (
+        subField.type === 'occupation' &&
+        row?.[subField.name] === OTHER_OCCUPATION &&
+        !String(row?.[otherOccupationFieldName(subField.name)] ?? '').trim()
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: [field.name, index, otherOccupationFieldName(subField.name)],
+          message: `Tuliskan ${subField.label.toLowerCase()}`,
+        })
+      }
+
+      if (!result.success) {
+        context.addIssue({
+          code: 'custom',
+          path: [field.name, index, subField.name],
+          message: result.error.issues[0]?.message ?? `${subField.label} tidak valid`,
+        })
+      }
+    })
+  })
 }
 
 /**
@@ -74,8 +148,23 @@ export function signerFieldNames(slotKey) {
 export function getSuratSchema(config) {
   const shape = {}
 
-  ;(config?.fields ?? []).forEach((field) => {
-    shape[field.name] = fieldSchema(field)
+  const occupationFields = (config?.fields ?? []).filter((field) => field.type === 'occupation')
+
+  const fields = config?.fields ?? []
+  const lateFields = fields.filter((field) => field.visibleWhen || LIST_TYPES.includes(field.type))
+
+  // Isian bersyarat dan isian berulang divalidasi di superRefine (bila tampil).
+  fields.forEach((field) => {
+    shape[field.name] =
+      field.visibleWhen || LIST_TYPES.includes(field.type) ? z.any().optional() : fieldSchema(field)
+  })
+
+  occupationFields.forEach((field) => {
+    shape[otherOccupationFieldName(field.name)] = z
+      .string()
+      .trim()
+      .max(100, `${field.label} maksimal 100 karakter`)
+      .optional()
   })
 
   const otherSlots = (config?.signatureSlots ?? []).filter((slot) => slot.signer === 'other')
@@ -90,6 +179,56 @@ export function getSuratSchema(config) {
   })
 
   return z.object(shape).superRefine((values, context) => {
+    const visibleNames = new Set(visibleFields(fields, values).map((field) => field.name))
+
+    lateFields
+      .filter((field) => visibleNames.has(field.name))
+      .forEach((field) => {
+        if (field.type === 'repeater') {
+          validateRows(field, values[field.name], context)
+
+          return
+        }
+
+        if (field.type === 'family_members') {
+          if (field.required && !(values[field.name] ?? []).length) {
+            context.addIssue({
+              code: 'custom',
+              path: [field.name],
+              message: `Pilih minimal satu ${field.label.toLowerCase()}`,
+            })
+          }
+
+          return
+        }
+
+        const result = fieldSchema(field).safeParse(values[field.name])
+
+        if (!result.success) {
+          context.addIssue({
+            code: 'custom',
+            path: [field.name],
+            message: result.error.issues[0]?.message ?? `${field.label} tidak valid`,
+          })
+        }
+      })
+
+    occupationFields.forEach((field) => {
+      const otherName = otherOccupationFieldName(field.name)
+
+      if (
+        visibleNames.has(field.name) &&
+        values[field.name] === OTHER_OCCUPATION &&
+        !values[otherName]
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: [otherName],
+          message: `Tuliskan ${field.label.toLowerCase()}`,
+        })
+      }
+    })
+
     otherSlots.forEach((slot) => {
       const names = signerFieldNames(slot.key)
 

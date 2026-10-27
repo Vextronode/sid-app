@@ -11,7 +11,7 @@
 // ==========================================
 
 import { DownloadSuratMenu } from '@/features/cetak-surat/components/DownloadSuratMenu'
-import { PdfCanvasPreview } from '@/features/cetak-surat/components/PdfCanvasPreview'
+import { LetterDocumentsPreview } from '@/features/cetak-surat/components/LetterDocumentsPreview'
 import { LetterExtrasPanel } from '@/features/surat/components/LetterExtrasPanel'
 import { LetterDossierModal } from '@/features/surat/components/dossier/LetterDossierModal'
 import {
@@ -27,6 +27,12 @@ import { SURAT_STATUS } from '@/constants/suratStatus'
 
 import ApprovalStepRenderer from './ApprovalStepRenderer'
 import { canDecideOnLetter } from '../utils/canDecide'
+import {
+  FORM_DOWNLOAD_HINT,
+  isSignedByVillageHead,
+} from '@/features/cetak-surat/utils/letterSigning'
+import { RevealableValue } from '@/components/ui/RevealableValue'
+import { revealLetterApplicantNik } from '@/shared/lib/identityApi'
 
 // Peran yang hanya memantau surat di wilayahnya, tanpa memberi keputusan.
 const MONITOR_ROLES = ['rw', 'kadus']
@@ -42,15 +48,21 @@ function getRejectionReason(surat) {
 
 function getHint({ surat, canDecide, canDownload, viewerRole }) {
   if (canDecide) {
-    return surat.current_step?.is_final
+    if (!surat.current_step?.is_final) {
+      return 'Periksa surat, lalu setujui untuk meneruskan ke Kepala Desa atau tolak dengan alasan.'
+    }
+
+    return isSignedByVillageHead(surat)
       ? 'Persetujuan Anda menerbitkan surat dengan tanda tangan dan stempel desa.'
-      : 'Periksa surat, lalu setujui untuk meneruskan ke Kepala Desa atau tolak dengan alasan.'
+      : 'Persetujuan Anda menerbitkan formulir untuk instansi luar, tanpa nomor surat dan tanpa tanda tangan Kepala Desa.'
   }
 
   if (surat.status === SURAT_STATUS.APPROVED) {
-    return canDownload
+    if (!canDownload) return 'Surat sudah terbit.'
+
+    return isSignedByVillageHead(surat)
       ? 'Surat sudah terbit. Pilih format saat mengunduh: digital atau untuk tanda tangan basah.'
-      : 'Surat sudah terbit.'
+      : `Formulir sudah terbit. ${FORM_DOWNLOAD_HINT}`
   }
 
   if (surat.status === SURAT_STATUS.REJECTED) {
@@ -101,7 +113,7 @@ export default function SuratDetailModal({
       surat={surat}
       notFound={notFound}
       onClose={onClose}
-      preview={showPreview && surat ? <PdfCanvasPreview surat={surat} /> : null}
+      preview={showPreview && surat ? <LetterDocumentsPreview surat={surat} /> : null}
       hint={surat ? getHint({ surat, canDecide, canDownload, viewerRole }) : null}
       actions={
         canDecide ? (
@@ -140,7 +152,15 @@ export default function SuratDetailModal({
             <DossierFacts
               items={[
                 { label: 'Nama', value: surat.applicant_name ?? surat.citizen?.name },
-                { label: 'NIK', value: getApplicantNik(surat) },
+                {
+                  label: 'NIK',
+                  value: (
+                    <RevealableValue
+                      masked={getApplicantNik(surat)}
+                      reveal={() => revealLetterApplicantNik(surat.id)}
+                    />
+                  ),
+                },
                 { label: 'Alamat', value: getApplicantAddress(surat) },
                 { label: 'Keperluan', value: surat.purpose },
                 { label: 'Diajukan', value: formatDossierDateTime(surat.submitted_at) },

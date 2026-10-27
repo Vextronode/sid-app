@@ -18,7 +18,7 @@ class UpdateLetterTypeRequest extends FormRequest
     }
 
     /**
-     * Hanya field ini yang boleh diedit Petugas Desa. Flow, template,
+     * Hanya field ini yang boleh diedit Staf SIDUTama. Flow, template,
      * isian form, slot tanda tangan, dan aksi data diset developer
      * lewat seeder dan tidak bisa diubah dari sini.
      *
@@ -28,7 +28,7 @@ class UpdateLetterTypeRequest extends FormRequest
     {
         return [
             'validity_days' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'assigned_role' => ['sometimes', 'nullable', Rule::in(['kasi_pelayanan', 'kaur_tu_umum'])],
+            'assigned_role' => ['sometimes', 'nullable', Rule::in(['kasi_pemerintahan', 'kaur_tu_umum'])],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

@@ -113,7 +113,7 @@ bash deploy/scripts/lib.sh restart sid_api
 bash deploy/scripts/smoke.sh
 ```
 
-Staf aplikasi lupa kata sandi: `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan staf-sid:recover --username=<username> --force`, lalu serahkan kata sandi sementara yang tercetak (hanya tampil sekali).
+Staf SIDUTama lupa kata sandi: `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan staf-sid:recover --username=<username> --force`, lalu serahkan kata sandi sementara yang tercetak (hanya tampil sekali).
 
 Scheduler (pengingat approval tiap 5 menit, penghapusan pengumuman kedaluwarsa tiap menit, pembersihan log aktivitas harian) tidak punya healthcheck; cek dengan `ps` (status `Up`) dan `logs --tail 50 sid_scheduler`. Uji manual: `bash deploy/scripts/lib.sh exec -u www-data sid_scheduler php artisan approvals:send-reminders` atau `... php artisan announcements:prune`.
 

@@ -2,7 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat data sosio-ekonomi keluarga
   description: |
-    Aktor: Petugas Desa. Data dicatat per KK dan opsional (1:1 dengan
+    Aktor: Staf SIDUTama. Data dicatat per KK dan opsional (1:1 dengan
     families). KK yang belum disurvei atau KK desa lain mengembalikan 404.
   operationId: getFamilySocioeconomic
   security:
@@ -35,7 +35,7 @@ put:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Buat atau perbarui data sosio-ekonomi keluarga
   description: |
-    Aktor: Petugas Desa. `surveyed_by` dan `surveyed_at` diisi otomatis
+    Aktor: Staf SIDUTama. `surveyed_by` dan `surveyed_at` diisi otomatis
     oleh server. Survei ulang menggantikan data sebelumnya.
   operationId: upsertFamilySocioeconomic
   security:

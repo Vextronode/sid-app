@@ -1,7 +1,7 @@
 import api from '@/lib/api'
 import { publicVillageParams } from '@/shared/lib/api/publicVillageParams'
 
-// includeInactive: daftar lengkap (Draft/Nonaktif), khusus Petugas Desa.
+// includeInactive: daftar lengkap (Draft/Nonaktif), khusus Staf SIDUTama.
 export const getLetterTypes = async ({ includeInactive = false } = {}) => {
   const params = {
     ...publicVillageParams(),

@@ -2,7 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Riwayat perubahan data warga & KK (Log Aktivitas)
   description: |
-    S-05. Aktor: Petugas Desa (`staf_sid`). Daftar activity log `citizen` dan
+    S-05. Aktor: Staf SIDUTama (`staf_sid`). Daftar activity log `citizen` dan
     `family` milik desa akun yang login (disaring lewat `properties.village_id`,
     sehingga data yang sudah dihapus tetap terlihat), terbaru dulu, berpaginasi
     (`per_page`, default 20). Dicatat oleh `PopulationAuditService` saat Petugas menambah,

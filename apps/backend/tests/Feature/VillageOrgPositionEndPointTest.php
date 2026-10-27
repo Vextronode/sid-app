@@ -133,7 +133,7 @@ class VillageOrgPositionEndpointTest extends TestCase
     }
 
     /**
-     * Guard multi-tenant (EV5-10-S2): Petugas Desa satu desa tidak boleh
+     * Guard multi-tenant (EV5-10-S2): Staf SIDUTama satu desa tidak boleh
      * bisa melihat jabatan milik desa lain hanya lewat ID.
      */
     #[Test]

@@ -4,7 +4,7 @@
 // Pengaturan akun untuk semua peran: ubah username/email
 // (PATCH /api/profile) dan ubah kata sandi (PUT /api/profile/password).
 // Data kependudukan (nama, alamat, dst.) tidak diubah dari sini; itu
-// dikelola Petugas Desa atau lewat surat.
+// dikelola Staf SIDUTama atau lewat surat.
 // ==========================================
 import { useEffect, useState } from 'react'
 import api from '@/lib/api'

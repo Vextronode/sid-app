@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\LetterDataAction;
+use App\Enums\LetterResultStage;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
@@ -17,7 +18,7 @@ class LetterPolicy
     private const STAFF_ROLES = [
         'kepala_desa',
         'sekretaris_desa',
-        'kasi_pelayanan',
+        'kasi_pemerintahan',
         'kaur_tu_umum',
         'staf_sid',
     ];
@@ -30,7 +31,7 @@ class LetterPolicy
     private const VILLAGE_SCOPED_ROLES = [
         'kepala_desa',
         'sekretaris_desa',
-        'kasi_pelayanan',
+        'kasi_pemerintahan',
         'kaur_tu_umum',
     ];
 
@@ -56,7 +57,7 @@ class LetterPolicy
             'rw' => $this->isSameRw($user, $letter) && $this->wasApprovedByRt($letter),
             'kadus' => $this->isSameHamlet($user, $letter) && $this->wasApprovedByRt($letter),
             'staf_sid' => $this->isSameVillage($user, $letter),
-            'kasi_pelayanan', 'kaur_tu_umum' => $letter->status->value === 'approved'
+            'kasi_pemerintahan', 'kaur_tu_umum' => $letter->status->value === 'approved'
                 && $this->isSameVillage($user, $letter)
                 && ($letter->letterType?->assigned_role === null
                     || $letter->letterType->assigned_role === $user->role),
@@ -92,7 +93,7 @@ class LetterPolicy
             return $this->isSameVillage($user, $letter);
         }
 
-        if (in_array($user->role, ['kasi_pelayanan', 'kaur_tu_umum'], true)) {
+        if (in_array($user->role, ['kasi_pemerintahan', 'kaur_tu_umum'], true)) {
             return $this->isSameVillage($user, $letter)
                 && ($letter->letterType?->assigned_role === null
                     || $letter->letterType->assigned_role === $user->role);
@@ -103,7 +104,7 @@ class LetterPolicy
 
     /**
      * Terapkan perubahan data: Kasi/Kaur yang ditugaskan pada tipe surat,
-     * atau Petugas Desa sebagai cadangan. Hanya untuk surat final approved
+     * atau Staf SIDUTama sebagai cadangan. Hanya untuk surat final approved
      * yang tipe suratnya memang punya aksi data.
      */
     public function fulfill(User $user, Letter $letter): bool
@@ -120,7 +121,39 @@ class LetterPolicy
             return true;
         }
 
-        return in_array($user->role, ['kasi_pelayanan', 'kaur_tu_umum'], true)
+        return in_array($user->role, ['kasi_pemerintahan', 'kaur_tu_umum'], true)
+            && ($letter->letterType->assigned_role === null
+                || $letter->letterType->assigned_role === $user->role);
+    }
+
+    /**
+     * Pemohon mengunggah hasil dari instansi luar pada suratnya sendiri,
+     * selama belum ada unggahan yang menunggu verifikasi atau diterima.
+     */
+    public function uploadResult(User $user, Letter $letter): bool
+    {
+        return $letter->submitted_by === $user->id
+            && $letter->resultStage() === LetterResultStage::AwaitingUpload;
+    }
+
+    /**
+     * Verifikasi hasil unggahan: Kasi/Kaur yang ditugaskan pada jenis
+     * surat, atau Staf SIDUTama sebagai cadangan (seperti Terapkan).
+     */
+    public function reviewResult(User $user, Letter $letter): bool
+    {
+        if (
+            $letter->resultStage() !== LetterResultStage::UnderReview
+            || ! $this->isSameVillage($user, $letter)
+        ) {
+            return false;
+        }
+
+        if ($user->role === 'staf_sid') {
+            return true;
+        }
+
+        return in_array($user->role, ['kasi_pemerintahan', 'kaur_tu_umum'], true)
             && ($letter->letterType->assigned_role === null
                 || $letter->letterType->assigned_role === $user->role);
     }

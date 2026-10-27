@@ -16,6 +16,7 @@ import { useLetterTypes } from '@/features/surat/hooks/useLetterTypes'
 import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig'
 import { WargaLayout } from '@/components/layout/WargaLayout'
 import { notifySuccess } from '@/shared/lib/toast'
+import { LetterTypePicker } from '@/features/surat/components/LetterTypePicker'
 
 export function PengajuanSuratPage() {
   const { kode } = useParams()
@@ -95,39 +96,18 @@ export function PengajuanSuratPage() {
               <span>LANGKAH 1 – PILIH JENIS SURAT</span>
             </div>
 
-            <div className="sid-form-group">
-              <label className="sid-label">
-                Jenis surat <span className="sid-required">*</span>
-              </label>
+            {/* Kartu jenis surat; dari tautan berkode, pilihan dikunci. */}
+            <LetterTypePicker
+              letterTypes={letterTypes}
+              loading={loading}
+              error={error}
+              selectedCode={selectedCode}
+              onSelect={setSelectedCode}
+              locked={isLocked}
+            />
 
-              <select
-                value={selectedCode}
-                disabled={isLocked || loading || !!error}
-                onChange={(e) => setSelectedCode(e.target.value)}
-                className="sid-input"
-              >
-                <option value="">Pilih jenis surat...</option>
-
-                {letterTypes.map((type) => (
-                  <option key={type.id} value={type.code}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {loading && <p role="status">Memuat jenis surat...</p>}
-            {error && <p role="alert">{error}</p>}
             {!loading && !error && selectedLetterType && !currentConfig && (
               <p role="alert">Formulir untuk jenis surat ini belum tersedia.</p>
-            )}
-
-            {currentConfig && selectedLetterType.requirements_info && (
-              <div className="sid-info">
-                <span className="sid-info-dot" />
-
-                <span>Persyaratan: {selectedLetterType.requirements_info}</span>
-              </div>
             )}
           </div>
 

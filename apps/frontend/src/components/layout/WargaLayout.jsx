@@ -41,6 +41,7 @@ export function WargaLayout({ children }) {
           setNotifOpen(opening)
           if (opening) void reload()
         }}
+        onMenuOpen={() => setNotifOpen(false)}
         extraActions={[
           { label: 'Pusat Bantuan', icon: HelpCircle, onClick: () => setHelpOpen(true) },
         ]}

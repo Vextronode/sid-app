@@ -61,13 +61,13 @@ api_spec/
 | Permintaan TTD | `GET /signature-requests`, `POST /signature-requests/{id}/accept\|reject`, `GET /signature-blocks`, `DELETE /signature-blocks/{id}` | Pemilik NIK yang dituju |
 | Surat | `GET/POST /letters`, `GET /letters/summary`, `GET /letters/export` (Excel, filter sama dengan daftar), `GET/DELETE /letters/{id}`, `GET /letters/{letter}/download\|preview\|supporting-document`, `GET /letters/{letter}/attachments/{attachment}`, `POST /letters/{letter}/signatures/{slot}`, `GET/POST /letters/{letter}/fulfillment` | Sesuai LetterPolicy |
 | Keputusan | `PATCH /rt/letters/{letter}/decision`, `PATCH /kades/letters/{letter}/decision` | RT; Kades/Sekdes |
-| Konfigurasi surat | `GET /letter-types`, `PUT /letter-types/{id}`, `GET /approval-flows`, `GET /approval-flows/{id}`, `GET/PATCH /approval-settings` | Petugas Desa (GET letter-types lintas-role) |
-| Kependudukan | `/citizens` (GET juga untuk Kasi/Kaur), `/citizens/import`, `GET /citizens/import-template`, `/citizens/wilayah`, `/families` (berhalaman), `GET /families/options`, `/families/{id}/socioeconomic`, `/occupations` | Petugas Desa |
-| Akun & jabatan | `/users`, `/users/{user}/reset-password`, `/users/{user}/signature/reset`, `/users/{user}/toggle-status`, `/users/{user}/photo` (POST/DELETE, akun warga), `/officials` (+ promote, candidates/lookup, demote, rotate, signature, photo POST/DELETE), `/official-position-types` | Petugas Desa (`staf_sid`, satu per desa) |
-| Wilayah | `/hamlets`, `/rws`, `/rts` | Petugas Desa |
+| Konfigurasi surat | `GET /letter-types`, `PUT /letter-types/{id}`, `GET /approval-flows`, `GET /approval-flows/{id}`, `GET/PATCH /approval-settings` | Staf SIDUTama (GET letter-types lintas-role) |
+| Kependudukan | `/citizens` (GET juga untuk Kasi/Kaur), `/citizens/import`, `GET /citizens/import-template`, `/citizens/wilayah`, `/families` (berhalaman), `GET /families/options`, `/families/{id}/socioeconomic`, `/occupations` (GET daftar aktif juga untuk semua role, dipakai isian pekerjaan form surat) | Staf SIDUTama dan Kasi Pemerintahan (kelola); Kaur TU & Umum hanya GET `/citizens` dan `/families` |
+| Akun & jabatan | `/users`, `/users/{user}/reset-password`, `/users/{user}/signature/reset`, `/users/{user}/toggle-status`, `/users/{user}/photo` (POST/DELETE, akun warga), `/officials` (+ promote, candidates/lookup, demote, rotate, signature, photo POST/DELETE), `/official-position-types` | Staf SIDUTama (`staf_sid`, satu per desa) |
+| Wilayah | `/hamlets`, `/rws`, `/rts`; `GET /village-areas` (pohon Dusun -> RW -> RT aktif untuk isian `village_area` form surat) | Staf SIDUTama; `/village-areas` semua role |
 | Notifikasi | `/notifications`, `/notifications/unread-count` (`{ data: { count } }`), `/notifications/read-all`, `/notifications/{id}/read`, `POST/DELETE /push-subscriptions` | Semua user |
 | Dashboard | `/dashboard`, `/dashboard/gender-stats`, `/dashboard/letter-stats` (keduanya dibungkus `data`) | Semua role (data di-scope) |
-| CMS | `/villages/profile` (GET semua user; PATCH Petugas), `/villages/profile/stamp\|logo\|hero-image\|resolve-map-link`, `/news`, `/news-categories`, `/regulations`, `/announcement` (GET/PUT/DELETE, satu per desa), `/info-pages` (+ `/{page}`), `/village-org-positions` (GET slot tetap; + members, members/{id}/end, members/{id}/photo) | Petugas Desa |
+| CMS | `/villages/profile` (GET semua user; PATCH Petugas), `/villages/profile/stamp\|logo\|hero-image\|resolve-map-link`, `/news`, `/news-categories`, `/regulations`, `/announcement` (GET/PUT/DELETE, satu per desa), `/info-pages` (+ `/{page}`), `/village-org-positions` (GET slot tetap; + members, members/{id}/end, members/{id}/photo) | Staf SIDUTama |
 | Publik | `/public/home` (+ `village_head`), `/public/village-profile`, `/public/news`, `/public/letter-types`, `/public/regulations`, `/public/contact-us`, `/public/village-orgs/{orgType}` (opsional `?village_code=`; cache 10 menit per desa) | Tanpa login |
 
 ## Alur Surat (ringkas)
@@ -78,7 +78,7 @@ api_spec/
 2. Slot belum lengkap → `current_step_order = 0` (`awaiting_signatures`).
    Pemilik NIK menyetujui/menolak lewat `/signature-requests`; pemohon dapat
    mengisi ulang slot lewat `POST /letters/{letter}/signatures/{slot}`.
-3. Slot lengkap → step 1 (RT). RT kosong → surat ditahan dan Petugas Desa
+3. Slot lengkap → step 1 (RT). RT kosong → surat ditahan dan Staf SIDUTama
    dinotifikasi. Tahap non-final milik pemohon dilewati.
 4. RT approve → FYI RW & Kadus, notifikasi Kades/Sekdes → Kades/Sekdes
    approve (first-action-wins) → nomor surat, `expires_at`, snapshot render.
@@ -91,7 +91,7 @@ api_spec/
   Kades dan Sekdes memutuskan step yang sama (first-action-wins);
   `approval_level` mencatat aktor sebenarnya.
 - RW dan Kadus hanya FYI; Kasi/Kaur bukan approver.
-- `assigned_role` NULL berarti Kasi Pelayanan dan Kaur TU & Umum.
+- `assigned_role` NULL berarti Kasi Pemerintahan dan Kaur TU & Umum.
 - PDF approved dirender dari snapshot; TTD/stempel selalu milik Kepala
   Desa yang menjabat saat final approve.
 - Gambar privat (stempel desa, TTD jabatan, TTD akun, lampiran) hanya

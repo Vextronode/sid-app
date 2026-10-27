@@ -1,7 +1,7 @@
 get:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Lihat semua peraturan desa (untuk manajemen)
-  description: UC-24. Aktor HANYA Petugas Desa.
+  description: UC-24. Aktor HANYA Staf SIDUTama.
   operationId: listRegulationsManagement
   security:
     - sanctumCookie: []
@@ -25,7 +25,7 @@ post:
   tags: [Epic 9 - Halaman Publik & Konten]
   summary: Tambah peraturan desa baru
   description: |
-    UC-24. Aktor HANYA Petugas Desa. Tidak ada file lampiran di MVP,
+    UC-24. Aktor HANYA Staf SIDUTama. Tidak ada file lampiran di MVP,
     murni teks. Langsung tampil di halaman publik setelah dibuat (tidak
     ada status draft).
   operationId: createRegulation

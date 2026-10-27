@@ -24,7 +24,7 @@ return new class extends Migration
                 'rt',
                 'kepala_desa',
                 'sekretaris_desa',
-                'kasi_pelayanan',
+                'kasi_pemerintahan',
                 'kaur_tu_umum',
             ]);
 

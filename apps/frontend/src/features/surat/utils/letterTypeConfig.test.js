@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getLetterTypeFormConfig } from './letterTypeConfig'
+import { applicantValue, applicantValues, getLetterTypeFormConfig } from './letterTypeConfig'
 import { getSuratSchema, signerFieldNames } from '../validation/suratSchema'
 import { buildLetterFormData } from './letterFormData'
 
@@ -83,6 +83,56 @@ describe('getLetterTypeFormConfig', () => {
     expect(config.fields[1]).toMatchObject({ accept: '.pdf,.jpg,.jpeg,.png', imageOnly: false })
   })
 
+  it('keeps the default answer and help text of a field', () => {
+    const config = getLetterTypeFormConfig({
+      ...letterType,
+      form_fields: [
+        {
+          name: 'pengurusan',
+          label: 'Pengurusan',
+          type: 'select',
+          required: true,
+          default: 'sendiri',
+          help: 'Pilih Diwakilkan bila diurus orang lain.',
+          options: [
+            { value: 'sendiri', label: 'Saya sendiri' },
+            { value: 'diwakilkan', label: 'Diwakilkan' },
+          ],
+        },
+      ],
+    })
+
+    expect(config.fields[0].defaultValue).toBe('sendiri')
+    expect(config.fields[0].help).toBe('Pilih Diwakilkan bila diurus orang lain.')
+    expect(config.fields[0].typedWhenEmpty).toBe(false)
+
+    const adoption = getLetterTypeFormConfig({
+      ...letterType,
+      form_fields: [{ name: 'nik_anak', label: 'NIK Anak', type: 'nik', typed_when_empty: true }],
+    })
+    expect(adoption.fields[0].typedWhenEmpty).toBe(true)
+  })
+
+  it('leaves out the family roster that the system builds on submission', () => {
+    const config = getLetterTypeFormConfig({
+      ...letterType,
+      form_fields: [
+        {
+          name: 'almarhum',
+          label: 'Almarhum',
+          type: 'family_member',
+          required: true,
+          not_self: true,
+        },
+        { name: 'kk_baru', label: 'Susunan KK Baru', type: 'family_roster', required: false },
+      ],
+    })
+
+    expect(config.fields.map((field) => field.name)).toEqual(['almarhum'])
+    expect(config.fields[0].notSelf).toBe(true)
+    expect(config.fields[0].emptyLabel).toBeNull()
+  })
+
   it('returns null when no letter type is selected', () => {
     expect(getLetterTypeFormConfig(undefined)).toBeNull()
   })
@@ -116,6 +166,42 @@ describe('getSuratSchema', () => {
     expect(result.error.issues.map((issue) => issue.path[0])).toEqual(
       expect.arrayContaining(['nama_almarhum', 'tanggal_meninggal', 'nik_pelapor', names.nik]),
     )
+  })
+
+  it('requires a chosen family member, and asks for the typed father only when none is chosen', () => {
+    const birth = getLetterTypeFormConfig({
+      ...letterType,
+      signature_slots: [],
+      form_fields: [
+        { name: 'ibu', label: 'Ibu', type: 'family_member', required: true },
+        { name: 'ayah', label: 'Ayah', type: 'family_member', required: false },
+        {
+          name: 'nama_ayah',
+          label: 'Nama Ayah',
+          type: 'text',
+          required: true,
+          visible_when: { field: 'ayah', filled: false },
+        },
+      ],
+    })
+    const issues = (values) =>
+      (getSuratSchema(birth).safeParse(values).error?.issues ?? []).map((issue) => issue.path[0])
+
+    expect(issues({ ibu: '', ayah: '' })).toEqual(expect.arrayContaining(['ibu', 'nama_ayah']))
+    expect(issues({ ibu: 'c-1', ayah: 'c-2' })).toEqual([])
+  })
+
+  it('accepts only an HH:MM value from the time input', () => {
+    const timed = getLetterTypeFormConfig({
+      ...letterType,
+      signature_slots: [],
+      form_fields: [{ name: 'pukul_lahir', label: 'Pukul Lahir', type: 'time', required: true }],
+    })
+    const schema = getSuratSchema(timed)
+
+    expect(schema.safeParse({ pukul_lahir: '08:30' }).success).toBe(true)
+    expect(schema.safeParse({ pukul_lahir: '' }).success).toBe(false)
+    expect(schema.safeParse({ pukul_lahir: '25:00' }).success).toBe(false)
   })
 
   it('requires a name and a file when the other party signs on paper', () => {
@@ -179,5 +265,248 @@ describe('buildLetterFormData', () => {
     expect(formData.get('signers[saksi][name]')).toBe('Pak Saksi')
     expect(formData.get('signature_files[saksi]').name).toBe('pernyataan.jpg')
     expect(formData.has('signers[saksi][nik]')).toBe(false)
+  })
+})
+
+describe('occupation field', () => {
+  const occupationConfig = getLetterTypeFormConfig({
+    id: 21,
+    code: 'A11',
+    name: 'Surat Keterangan Ahli Waris',
+    form_fields: [
+      {
+        name: 'pekerjaan_almarhum',
+        label: 'Pekerjaan Almarhum',
+        type: 'occupation',
+        required: true,
+      },
+    ],
+  })
+  const schema = getSuratSchema(occupationConfig)
+
+  it('requires a choice and the other text only when "Lainnya" is picked', () => {
+    expect(schema.safeParse({ pekerjaan_almarhum: '' }).success).toBe(false)
+    expect(schema.safeParse({ pekerjaan_almarhum: '3' }).success).toBe(true)
+
+    const missingOther = schema.safeParse({
+      pekerjaan_almarhum: 'lainnya',
+      pekerjaan_almarhum_lainnya: ' ',
+    })
+    expect(missingOther.success).toBe(false)
+    expect(missingOther.error.issues[0].path).toEqual(['pekerjaan_almarhum_lainnya'])
+
+    expect(
+      schema.safeParse({ pekerjaan_almarhum: 'lainnya', pekerjaan_almarhum_lainnya: 'Nelayan' })
+        .success,
+    ).toBe(true)
+  })
+
+  it('sends the other text only for "Lainnya"', () => {
+    const fromCatalog = buildLetterFormData(occupationConfig, 21, {
+      pekerjaan_almarhum: '3',
+      pekerjaan_almarhum_lainnya: 'sisa ketikan',
+    })
+    expect(fromCatalog.get('payload[pekerjaan_almarhum]')).toBe('3')
+    expect(fromCatalog.has('payload[pekerjaan_almarhum_lainnya]')).toBe(false)
+
+    const other = buildLetterFormData(occupationConfig, 21, {
+      pekerjaan_almarhum: 'lainnya',
+      pekerjaan_almarhum_lainnya: 'nelayan',
+    })
+    expect(other.get('payload[pekerjaan_almarhum]')).toBe('lainnya')
+    expect(other.get('payload[pekerjaan_almarhum_lainnya]')).toBe('nelayan')
+  })
+})
+
+describe('conditional fields', () => {
+  const conditionalConfig = getLetterTypeFormConfig({
+    id: 31,
+    code: 'F01',
+    name: 'Formulir',
+    form_fields: [
+      {
+        name: 'warga',
+        label: 'Kewarganegaraan',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'wni', label: 'WNI' },
+          { value: 'wna', label: 'WNA' },
+        ],
+      },
+      {
+        name: 'paspor',
+        label: 'Nomor Paspor',
+        type: 'text',
+        required: true,
+        visible_when: { field: 'warga', equals: 'wna' },
+      },
+    ],
+  })
+  const schema = getSuratSchema(conditionalConfig)
+
+  it('requires a field only while it is shown', () => {
+    expect(schema.safeParse({ warga: 'wni' }).success).toBe(true)
+
+    const missing = schema.safeParse({ warga: 'wna', paspor: '' })
+    expect(missing.success).toBe(false)
+    expect(missing.error.issues[0].path).toEqual(['paspor'])
+
+    expect(schema.safeParse({ warga: 'wna', paspor: 'A123' }).success).toBe(true)
+  })
+
+  it('does not send the value of a hidden field', () => {
+    const hidden = buildLetterFormData(conditionalConfig, 31, { warga: 'wni', paspor: 'A123' })
+    expect(hidden.has('payload[paspor]')).toBe(false)
+
+    const shown = buildLetterFormData(conditionalConfig, 31, { warga: 'wna', paspor: 'A123' })
+    expect(shown.get('payload[paspor]')).toBe('A123')
+  })
+})
+
+describe('repeating fields', () => {
+  const repeatingConfig = getLetterTypeFormConfig({
+    id: 41,
+    code: 'F03',
+    name: 'Formulir Pindah',
+    form_fields: [
+      {
+        name: 'anak',
+        label: 'Anak',
+        type: 'repeater',
+        required: true,
+        max: 2,
+        item_label: 'anak',
+        fields: [
+          { name: 'nama', label: 'Nama Anak', type: 'text', required: true },
+          {
+            name: 'paspor',
+            label: 'Nomor Paspor',
+            type: 'text',
+            required: true,
+            visible_when: { field: 'warga', equals: 'wna' },
+          },
+          { name: 'warga', label: 'Kewarganegaraan', type: 'text', required: false },
+        ],
+      },
+      { name: 'anggota', label: 'Anggota', type: 'family_members', required: true },
+    ],
+  })
+  const schema = getSuratSchema(repeatingConfig)
+
+  it('validates the number of rows, each row and the chosen members', () => {
+    const empty = schema.safeParse({ anak: [], anggota: [] })
+    expect(empty.success).toBe(false)
+    expect(empty.error.issues.map((issue) => issue.path.join('.'))).toEqual(['anak', 'anggota'])
+
+    const missingName = schema.safeParse({ anak: [{ nama: '' }], anggota: ['c-1'] })
+    expect(missingName.error.issues[0].path).toEqual(['anak', 0, 'nama'])
+
+    expect(
+      schema.safeParse({
+        anak: [{ nama: 'Budi' }, { nama: 'Ani' }, { nama: 'Cici' }],
+        anggota: ['c-1'],
+      }).success,
+    ).toBe(false)
+    expect(schema.safeParse({ anak: [{ nama: 'Budi' }], anggota: ['c-1'] }).success).toBe(true)
+  })
+
+  it('sends rows and member ids as nested payload keys', () => {
+    const formData = buildLetterFormData(repeatingConfig, 41, {
+      anak: [{ nama: 'Budi', paspor: 'SISA' }, { nama: 'Ani' }],
+      anggota: ['c-1', 'c-2'],
+    })
+
+    expect(formData.get('payload[anak][0][nama]')).toBe('Budi')
+    expect(formData.has('payload[anak][0][paspor]')).toBe(false)
+    expect(formData.get('payload[anak][1][nama]')).toBe('Ani')
+    expect(formData.getAll('payload[anggota][]')).toEqual(['c-1', 'c-2'])
+  })
+})
+
+describe('row member and occupation sub-fields', () => {
+  const config = getLetterTypeFormConfig({
+    id: 51,
+    code: 'F02',
+    name: 'Perubahan Elemen Data',
+    form_fields: [
+      {
+        name: 'perubahan',
+        label: 'Perubahan',
+        type: 'repeater',
+        required: true,
+        fields: [
+          { name: 'anggota', label: 'Anggota Keluarga', type: 'family_member', required: true },
+          {
+            name: 'pekerjaan_menjadi',
+            label: 'Pekerjaan Menjadi',
+            type: 'occupation',
+            required: false,
+          },
+        ],
+      },
+    ],
+  })
+  const schema = getSuratSchema(config)
+
+  it('requires the member and the other occupation text per row', () => {
+    expect(schema.safeParse({ perubahan: [{ anggota: '' }] }).error.issues[0].path).toEqual([
+      'perubahan',
+      0,
+      'anggota',
+    ])
+
+    const missingOther = schema.safeParse({
+      perubahan: [{ anggota: 'c-1', pekerjaan_menjadi: 'lainnya', pekerjaan_menjadi_lainnya: '' }],
+    })
+    expect(missingOther.error.issues[0].path).toEqual(['perubahan', 0, 'pekerjaan_menjadi_lainnya'])
+  })
+
+  it('sends the other occupation text only for "Lainnya" rows', () => {
+    const formData = buildLetterFormData(config, 51, {
+      perubahan: [
+        { anggota: 'c-1', pekerjaan_menjadi: 'lainnya', pekerjaan_menjadi_lainnya: 'buruh' },
+        { anggota: 'c-2', pekerjaan_menjadi: '7', pekerjaan_menjadi_lainnya: 'sisa' },
+      ],
+    })
+
+    expect(formData.get('payload[perubahan][0][pekerjaan_menjadi_lainnya]')).toBe('buruh')
+    expect(formData.has('payload[perubahan][1][pekerjaan_menjadi_lainnya]')).toBe(false)
+    expect(formData.get('payload[perubahan][1][anggota]')).toBe('c-2')
+  })
+})
+
+describe('applicantValue', () => {
+  const field = {
+    name: 'peran_pemohon',
+    fromApplicant: { column: 'gender', map: { L: 'suami', P: 'istri' } },
+  }
+
+  it('derives the role from the applicant gender', () => {
+    expect(applicantValue(field, { citizen: { gender: 'P' } })).toBe('istri')
+    expect(applicantValues([field, { name: 'lain' }], { citizen: { gender: 'L' } })).toEqual({
+      peran_pemohon: 'suami',
+    })
+  })
+
+  it('asks the question when the applicant data is missing', () => {
+    expect(applicantValue(field, { citizen: {} })).toBeNull()
+    expect(applicantValue({ name: 'lain' }, { citizen: { gender: 'L' } })).toBeNull()
+  })
+})
+
+describe('family_member roles', () => {
+  it('keeps the allowed family roles of a member field', () => {
+    const config = getLetterTypeFormConfig({
+      id: 8,
+      code: 'F08',
+      name: 'Pengakuan Anak',
+      form_fields: [
+        { name: 'anak', label: 'Anak', type: 'family_member', required: true, roles: ['anak'] },
+        { name: 'ibu', label: 'Ibu', type: 'family_member', required: true },
+      ],
+    })
+
+    expect(config.fields.map((field) => field.roles)).toEqual([['anak'], null])
   })
 })

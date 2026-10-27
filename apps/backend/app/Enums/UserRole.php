@@ -10,7 +10,7 @@ enum UserRole: string
     case Rt = 'rt';
     case Rw = 'rw';
     case Kadus = 'kadus';
-    case KasiPelayanan = 'kasi_pelayanan';
+    case KasiPemerintahan = 'kasi_pemerintahan';
     case KaurTuUmum = 'kaur_tu_umum';
     case StafSid = 'staf_sid';
     case KepalaDesa = 'kepala_desa';
@@ -40,7 +40,7 @@ enum UserRole: string
             self::Rt => 'RT',
             self::Rw => 'RW',
             self::Kadus => 'Kepala Dusun',
-            self::KasiPelayanan => 'Kasi Pelayanan',
+            self::KasiPemerintahan => 'Kasi Pemerintahan',
             self::KaurTuUmum => 'Kaur TU & Umum',
             self::StafSid => self::stafSidLabel(),
             self::KepalaDesa => 'Kepala Desa',

@@ -36,6 +36,15 @@ class CitizensTemplateExport implements FromArray, ShouldAutoSize, WithHeadings
         'current_domicile',
         'residency_type',
         'origin_region',
+        'title_front',
+        'title_back',
+        'birth_certificate_number',
+        'marriage_certificate_number',
+        'marriage_date',
+        'divorce_certificate_number',
+        'divorce_date',
+        'has_disorder',
+        'disability',
     ];
 
     /**
@@ -73,6 +82,15 @@ class CitizensTemplateExport implements FromArray, ShouldAutoSize, WithHeadings
             'menetap',
             '',
             'lokal',
+            '',
+            '',
+            'S.Pd.',
+            '3207-LT-01011990-0001',
+            '123/45/X/2015',
+            '2015-10-10',
+            '',
+            '',
+            '0',
             '',
         ]];
     }

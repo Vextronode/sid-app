@@ -28,8 +28,26 @@ class OccupationEndpointTest extends TestCase
         $this->getJson('/api/occupations')->assertUnauthorized();
 
         $user = User::factory()->create(['role' => 'warga']);
-        $this->actingAs($user)->getJson('/api/occupations')->assertForbidden();
+        $occupation = Occupation::factory()->create(['village_id' => $user->village_id]);
         $this->actingAs($user)->postJson('/api/occupations', ['name' => 'Petani'])->assertForbidden();
+        $this->actingAs($user)->patchJson("/api/occupations/{$occupation->id}", ['name' => 'Petani'])->assertForbidden();
+        $this->actingAs($user)->deleteJson("/api/occupations/{$occupation->id}")->assertForbidden();
+    }
+
+    #[Test]
+    public function other_roles_read_only_the_active_catalog_of_their_village_for_letter_forms(): void
+    {
+        $village = Village::factory()->create();
+        Occupation::factory()->create(['village_id' => $village->id, 'name' => 'Petani']);
+        Occupation::factory()->create(['village_id' => $village->id, 'name' => 'Nonaktif', 'is_active' => false]);
+        Occupation::factory()->create(['name' => 'Desa Lain']);
+        $warga = User::factory()->create(['role' => 'warga', 'village_id' => $village->id]);
+
+        $this->actingAs($warga)->getJson('/api/occupations?include_inactive=true')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Petani')
+            ->assertJsonMissingPath('data.0.citizens_count');
     }
 
     #[Test]

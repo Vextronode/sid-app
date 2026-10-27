@@ -12,7 +12,7 @@ import { useQuery } from '@tanstack/react-query'
 import { CalendarX, FileX, Hourglass } from 'lucide-react'
 
 import { DownloadSuratMenu } from '@/features/cetak-surat/components/DownloadSuratMenu'
-import { PdfCanvasPreview } from '@/features/cetak-surat/components/PdfCanvasPreview'
+import { LetterDocumentsPreview } from '@/features/cetak-surat/components/LetterDocumentsPreview'
 import { queryKeys } from '@/shared/lib/queryKeys'
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
@@ -24,6 +24,12 @@ import { formatDossierDateTime } from './dossier/dossierFormat'
 import { FlowTimeline } from './dossier/FlowTimeline'
 import { getLetterDetail } from '../api/letterExtrasApi'
 import { getApplicantAddress, getApplicantNik } from '../utils/letterDetails'
+import {
+  FORM_DOWNLOAD_HINT,
+  isSignedByVillageHead,
+} from '@/features/cetak-surat/utils/letterSigning'
+import { RevealableValue } from '@/components/ui/RevealableValue'
+import { revealLetterApplicantNik } from '@/shared/lib/identityApi'
 
 function getRejectionReason(surat) {
   return surat?.notes ?? surat?.reason ?? surat?.rejection_reason ?? 'Tidak ada catatan penolakan.'
@@ -46,7 +52,7 @@ const HINTS = {
 
 function DocumentArea({ surat, state }) {
   if (state === 'approved') {
-    return <PdfCanvasPreview surat={surat} />
+    return <LetterDocumentsPreview surat={surat} />
   }
 
   if (state === 'expired') {
@@ -97,7 +103,9 @@ function DetailSuratModalContent({ row, onClose }) {
       surat={surat}
       onClose={onClose}
       preview={<DocumentArea surat={surat} state={state} />}
-      hint={HINTS[state]}
+      hint={
+        state === 'approved' && !isSignedByVillageHead(surat) ? FORM_DOWNLOAD_HINT : HINTS[state]
+      }
       actions={
         <>
           <button type="button" className="sid-dossier-button-quiet" onClick={onClose}>
@@ -133,7 +141,15 @@ function DetailSuratModalContent({ row, onClose }) {
         <DossierFacts
           items={[
             { label: 'Pemohon', value: surat.applicant_name },
-            { label: 'NIK', value: getApplicantNik(surat) },
+            {
+              label: 'NIK',
+              value: (
+                <RevealableValue
+                  masked={getApplicantNik(surat)}
+                  reveal={() => revealLetterApplicantNik(surat.id)}
+                />
+              ),
+            },
             { label: 'Alamat', value: getApplicantAddress(surat) },
             { label: 'Keperluan', value: surat.purpose },
             { label: 'Diajukan', value: formatDossierDateTime(surat.submitted_at) },

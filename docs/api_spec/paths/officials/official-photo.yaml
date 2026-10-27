@@ -2,7 +2,7 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Upload atau ganti foto pejabat
   description: |
-    Aktor: Petugas Desa pada desa yang sama. Dipakai untuk melengkapi
+    Aktor: Staf SIDUTama pada desa yang sama. Dipakai untuk melengkapi
     pejabat yang belum punya foto atau memperbarui foto tanpa rotasi.
     File disimpan pada public storage (tampil di Profil Desa publik) dan
     foto lama dihapus. Format PNG, JPEG, atau WebP, maksimum 5 MB.
@@ -52,7 +52,7 @@ delete:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Hapus foto pejabat
   description: |
-    Aktor: Petugas Desa pada desa yang sama. Berkas foto dihapus dan
+    Aktor: Staf SIDUTama pada desa yang sama. Berkas foto dihapus dan
     photo_img menjadi null; Profil Desa publik menampilkan placeholder.
   operationId: deleteOfficialPhoto
   security:

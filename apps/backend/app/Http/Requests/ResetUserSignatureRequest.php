@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 class ResetUserSignatureRequest extends FormRequest
 {
     /**
-     * Otorisasi peran ditegakkan middleware Petugas Desa di routes/api.php
+     * Otorisasi peran ditegakkan middleware Staf SIDUTama di routes/api.php
      * dan diperiksa ulang (termasuk kesamaan desa) di UserSignatureService.
      */
     public function authorize(): bool

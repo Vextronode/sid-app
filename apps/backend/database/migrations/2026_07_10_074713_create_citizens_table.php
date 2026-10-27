@@ -30,7 +30,8 @@ return new class extends Migration
             // terpisah (2026_09_12_..._add_family_id_foreign_to_citizens_table)
             // karena families dibuat setelah citizens secara kronologis.
             $table->uuid('family_id')->nullable();
-            $table->enum('family_role', ['kepala_keluarga', 'istri', 'suami', 'anak', 'famili_lain'])->nullable();
+            // SHDK resmi Disdukcapil (App\Enums\FamilyRole).
+            $table->enum('family_role', ['kepala_keluarga', 'suami', 'istri', 'anak', 'menantu', 'cucu', 'orang_tua', 'mertua', 'famili_lain', 'pembantu', 'lainnya'])->nullable();
             $table->uuid('father_id')->nullable();
             $table->uuid('mother_id')->nullable();
             $table->string('father_name_text')->nullable();
@@ -45,6 +46,18 @@ return new class extends Migration
 
             $table->enum('residency_type', ['lokal', 'pendatang'])->default('lokal');
             $table->string('origin_region')->nullable();
+
+            // Dokumen & keterangan tambahan untuk F-1.01 (CitizenDocumentRules).
+            // Nomor akta dan jenis cacat terenkripsi (cast `encrypted`).
+            $table->string('title_front', 30)->nullable();
+            $table->string('title_back', 30)->nullable();
+            $table->text('birth_certificate_number')->nullable();
+            $table->text('marriage_certificate_number')->nullable();
+            $table->date('marriage_date')->nullable();
+            $table->text('divorce_certificate_number')->nullable();
+            $table->date('divorce_date')->nullable();
+            $table->boolean('has_disorder')->default(false);
+            $table->text('disability')->nullable();
 
             $table->enum('data_source', ['manual_input_desa', 'import_excel', 'dukcapil_sync'])->default('manual_input_desa');
             $table->timestamp('last_verified_at')->nullable();

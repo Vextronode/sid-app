@@ -41,7 +41,7 @@ class LetterSignatureController extends Controller
             $letter,
             $user,
             $slot,
-            $request->safe()->only(['nik', 'name']),
+            $request->safe()->only(['nik', 'name', 'family_number']),
             $request->file('file'),
         );
 

@@ -8,6 +8,7 @@ use App\Enums\FamilyRole;
 use App\Enums\LastEducation;
 use App\Enums\Religion;
 use App\Enums\ResidencyType;
+use App\Support\CitizenDocumentRules;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,7 +17,7 @@ class UpdateCitizenRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'staf_sid';
+        return in_array($this->user()?->role, ['staf_sid', 'kasi_pemerintahan'], true);
     }
 
     /**
@@ -51,6 +52,7 @@ class UpdateCitizenRequest extends FormRequest
             'current_domicile' => ['nullable', 'string', 'max:150'],
             'residency_type' => ['sometimes', Rule::enum(ResidencyType::class)],
             'origin_region' => ['nullable', 'string', 'max:255'],
+            ...CitizenDocumentRules::rules(),
             'last_verified_at' => ['nullable', 'date'],
         ];
     }

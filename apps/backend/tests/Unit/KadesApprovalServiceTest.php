@@ -59,7 +59,7 @@ class KadesApprovalServiceTest extends TestCase
 
     /**
      * Membuat surat yang sedang berada di step 'kepala_desa' pada
-     * sebuah flow 2-step (kepala_desa -> kasi_pelayanan), di village tertentu.
+     * sebuah flow 2-step (kepala_desa -> kasi_pemerintahan), di village tertentu.
      */
     private function makeLetterAtKadesStep(Village $village, ?Citizen $citizen = null): Letter
     {
@@ -388,7 +388,7 @@ class KadesApprovalServiceTest extends TestCase
     {
         $village = Village::factory()->create();
         $letter = $this->makeLetterAtKadesStep($village);
-        $kasi = $this->makeUserWithPosition('kasi_pelayanan', $village);
+        $kasi = $this->makeUserWithPosition('kasi_pemerintahan', $village);
 
         $this->expectException(HttpException::class);
 

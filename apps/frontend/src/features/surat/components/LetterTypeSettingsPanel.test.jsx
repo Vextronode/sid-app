@@ -32,7 +32,7 @@ describe('LetterTypeSettingsPanel', () => {
         produces_letter: true,
         data_action: 'update_citizen',
         validity_days: 14,
-        assigned_role: 'kasi_pelayanan',
+        assigned_role: 'kasi_pemerintahan',
         is_active: true,
         status_label: 'aktif',
       },

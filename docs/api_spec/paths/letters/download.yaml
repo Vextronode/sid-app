@@ -3,7 +3,7 @@ get:
   summary: Download PDF surat
   description: |
     UC-08. LetterPolicy::download: surat harus `approved`; boleh diunduh oleh
-    pemohon, Petugas Desa / Kepala Desa / Sekretaris Desa di desa yang sama,
+    pemohon, Staf SIDUTama / Kepala Desa / Sekretaris Desa di desa yang sama,
     dan Kasi/Kaur di desa yang sama sesuai `assigned_role` (NULL = keduanya).
     Pemohon ditolak bila `expires_at` sudah lewat.
 
@@ -31,9 +31,16 @@ get:
         type: string
         enum: [wet, digital]
         default: wet
+    - name: document
+      in: query
+      required: false
+      description: "Kunci dokumen dari `Letter.documents` (dokumen yang terbit bersama surat). Kosong/`main` = dokumen utama. 404 bila dokumen tidak terbit untuk surat ini (syarat `when` tidak terpenuhi) atau tidak dikenal."
+      schema:
+        type: string
+        default: main
   responses:
     '200':
-      description: File PDF (attachment `surat-{id}.pdf`)
+      description: File PDF (attachment `surat-{id}.pdf`, atau `surat-{id}-{document}.pdf` untuk dokumen yang terbit bersama)
       content:
         application/pdf:
           schema:

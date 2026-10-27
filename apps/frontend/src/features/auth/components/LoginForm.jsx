@@ -64,7 +64,7 @@ export function LoginForm() {
           break
 
         case 'kasi':
-        case 'kasi_pelayanan':
+        case 'kasi_pemerintahan':
           navigate('/admin/operator-desa', {
             replace: true,
           })

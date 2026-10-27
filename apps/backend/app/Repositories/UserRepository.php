@@ -96,7 +96,7 @@ class UserRepository
 
     /**
      * Dipakai UserService::update() untuk guard "tidak dapat
-     * menonaktifkan satu-satunya akun Petugas Desa yang masih aktif".
+     * menonaktifkan satu-satunya akun Staf SIDUTama yang masih aktif".
      */
     public function countActiveByRole(string $role, ?string $villageId = null): int
     {
@@ -119,7 +119,8 @@ class UserRepository
             'citizen.hamlet',
             'citizen.rt',
             'citizen.rw',
-            'official',
+            'citizen.occupation',
+            'official.citizen.occupation',
         ]);
     }
 }

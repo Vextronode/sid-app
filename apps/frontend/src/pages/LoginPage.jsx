@@ -84,7 +84,7 @@ export default function LoginPage() {
           })
           break
 
-        case 'kasi_pelayanan':
+        case 'kasi_pemerintahan':
         case 'kaur_tu_umum':
         case 'staf_sid':
           navigate('/admin/operator-desa', {

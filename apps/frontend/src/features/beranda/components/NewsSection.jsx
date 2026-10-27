@@ -62,7 +62,7 @@ function NewsMeta({ categories = [], date }) {
 
 // Kabar desa (A20–A24): satu berita utama + tiga berita ringkas, seluruh kartu
 // adalah link. Data dari usePublicNews (hook bersama). Chip kategori dari
-// kategori berita yang diatur Petugas Desa (1-2 per berita).
+// kategori berita yang diatur Staf SIDUTama (1-2 per berita).
 export function NewsSection({ content }) {
   const { news: labels } = content
   const { news, loading, error } = usePublicNews()

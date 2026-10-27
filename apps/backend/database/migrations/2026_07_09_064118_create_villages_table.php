@@ -18,10 +18,10 @@ return new class extends Migration
             $table->string('head_name', 100)->nullable();
             $table->string('address')->nullable();
             $table->string('phone', 20)->nullable();
-            // Luas wilayah dalam hektare, diisi Petugas Desa.
+            // Luas wilayah dalam hektare, diisi Staf SIDUTama.
             $table->decimal('area_ha', 10, 3)->nullable();
             $table->string('stamp_img')->nullable();
-            // Tampilan halaman publik, diubah Petugas Desa. Gambar berisi path
+            // Tampilan halaman publik, diubah Staf SIDUTama. Gambar berisi path
             // aset frontend (/assets/..., dari seeder) atau path unggahan di
             // disk public.
             $table->string('logo')->nullable();

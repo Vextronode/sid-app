@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Kategori berita per desa, dikelola Petugas Desa. Kategori yang sudah
+ * Kategori berita per desa, dikelola Staf SIDUTama. Kategori yang sudah
  * dipakai berita (termasuk berita yang sudah dihapus) tidak bisa dihapus.
  */
 class NewsCategoryService

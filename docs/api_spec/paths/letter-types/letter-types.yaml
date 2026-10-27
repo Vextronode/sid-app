@@ -6,7 +6,7 @@ get:
     login yang `template != NULL` dan `is_active = true`, urut nama (dipakai
     warga saat memilih jenis surat).
 
-    `include_inactive=true` (khusus Petugas Desa / `staf_sid`): semua tipe
+    `include_inactive=true` (khusus Staf SIDUTama / `staf_sid`): semua tipe
     surat desa termasuk Draft dan Nonaktif, urut nama, untuk halaman
     pengaturan (UC-21). Badge diturunkan dari `status_label`.
   operationId: listLetterTypes
@@ -44,7 +44,7 @@ get:
                 template: "<div>...</div>"
                 requirements_info: null
                 flow_id: 1
-                assigned_role: "kasi_pelayanan"
+                assigned_role: "kasi_pemerintahan"
                 validity_days: 365
                 is_active: true
                 produces_letter: true

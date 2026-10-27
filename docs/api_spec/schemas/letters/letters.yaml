@@ -115,7 +115,7 @@ Letter:
       description: |
         true bila `expires_at` sudah lewat. Pemohon tidak lagi dapat
         mengunduh maupun mem-preview PDF surat ini (403); surat tetap
-        tampil sebagai riwayat. Pejabat dan Petugas Desa tetap dapat
+        tampil sebagai riwayat. Pejabat dan Staf SIDUTama tetap dapat
         membukanya.
     submitted_at:
       type: string
@@ -136,7 +136,7 @@ Letter:
       format: date-time
       nullable: true
       example: null
-      description: "Waktu perubahan data kependudukan diterapkan (Terapkan) oleh Kasi/Kaur/Petugas Desa."
+      description: "Waktu perubahan data kependudukan diterapkan (Terapkan) oleh Kasi/Kaur/Staf SIDUTama."
     fulfilled_by:
       type: string
       format: uuid
@@ -148,10 +148,52 @@ Letter:
       description: |
         Hanya ada bila relasi letterType dimuat. True bila surat approved,
         jenis suratnya memiliki `data_action` selain `none`, dan belum diterapkan.
+        Untuk jenis `requires_result_upload`, baru true setelah hasil dari
+        instansi diterima (`result_stage = accepted`).
     awaiting_signatures:
       type: boolean
       example: false
       description: "status = pending dan current_step_order = 0."
+    documents:
+      type: array
+      description: |
+        Hanya ada bila relasi letterType dimuat. Dokumen yang terbit untuk
+        surat ini: dokumen utama (`key: main`, judul = nama jenis surat)
+        lalu dokumen dari `letter_types.documents` yang syarat `when`-nya
+        terpenuhi jawaban form. Surat approved memakai daftar yang
+        dibekukan di snapshot. Unduh/pratinjau lewat `?document={key}`.
+      items:
+        type: object
+        properties:
+          key:
+            type: string
+            example: "main"
+          title:
+            type: string
+            example: "Formulir Pindah"
+    result_stage:
+      type: string
+      nullable: true
+      enum: [awaiting_upload, under_review, accepted, null]
+      description: |
+        Tahap unggah hasil dari instansi luar setelah terbit; null bila
+        jenis surat tidak `requires_result_upload` atau surat belum approved.
+        Juga dikirim di baris daftar surat.
+    result_upload_hint:
+      type: string
+      nullable: true
+      description: "Berkas yang perlu diunggah pemohon, mis. 'KK terbaru dari Disdukcapil'."
+    results:
+      type: array
+      description: Riwayat unggahan hasil (lama ke baru), hanya di detail.
+      items:
+        $ref: '#/LetterResult'
+    can_upload_result:
+      type: boolean
+      description: "Pengguna saat ini boleh mengunggah hasil (LetterPolicy::uploadResult)."
+    can_review_result:
+      type: boolean
+      description: "Pengguna saat ini boleh memverifikasi hasil (LetterPolicy::reviewResult)."
     has_supporting_document:
       type: boolean
       example: false
@@ -177,7 +219,8 @@ Letter:
       description: |
         Included when relation is loaded. Pada detail surat backend hanya
         memuat kolom id, name, code, assigned_role, produces_letter,
-        data_action, form_fields, signature_slots, supporting_template.
+        data_action, form_fields, signature_slots, supporting_template,
+        issues_letter_number, signed_by_village_head.
       allOf:
         - $ref: '../letter-types/letter-types.yaml#/LetterType'
     approvals:
@@ -212,7 +255,7 @@ CurrentStep:
       example: 1
     approver_position:
       type: string
-      enum: [rt, kepala_desa, sekretaris_desa, kasi_pelayanan, kaur_tu_umum]
+      enum: [rt, kepala_desa, sekretaris_desa, kasi_pemerintahan, kaur_tu_umum]
       example: "rt"
       description: "Flow seeder hanya memakai rt dan kepala_desa; nilai lain hanya mungkin pada data legacy."
     is_final:
@@ -300,6 +343,9 @@ LetterListItem:
         code:
           type: string
           example: "A01"
+        signed_by_village_head:
+          type: boolean
+          example: true
     citizen:
       type: object
       nullable: true
@@ -411,7 +457,7 @@ LetterApproval:
         - $ref: '../users/users.yaml#/User'
     approval_level:
       type: string
-      enum: [rt, kepala_desa, sekretaris_desa, kasi_pelayanan, kaur_tu_umum]
+      enum: [rt, kepala_desa, sekretaris_desa, kasi_pemerintahan, kaur_tu_umum]
       example: "rt"
       description: "Level step untuk row pending; setelah keputusan berisi posisi aktor sebenarnya (sekretaris_desa bila Sekdes yang memutuskan step kepala_desa)."
     flow_step_id:
@@ -524,10 +570,15 @@ LetterSignature:
       example: "Saksi 1"
     signer_type:
       type: string
-      enum: [applicant, other]
+      enum: [applicant, other, witness]
+      description: "`witness` = pihak dari isian NIK ber-`witness` (saksi, penerima kuasa F-1.07, dsb.; persetujuan, tanpa TTD); slot_key = nama isian NIK."
     method:
       type: string
-      enum: [digital, wet]
+      enum: [digital, wet, consent, rt_check, manual]
+      description: |
+        Saksi: `consent` = disetujui pemilik NIK lewat akun; `rt_check` =
+        warga desa tanpa akun (nama dari data penduduk, diverifikasi RT);
+        `manual` = di luar data penduduk (nama diketik pemohon).
     status:
       type: string
       enum: [pending, signed, rejected, expired, cancelled]
@@ -620,13 +671,41 @@ DecisionResponse:
       type: string
       example: "Surat berhasil diproses."
 
+LetterResult:
+  type: object
+  description: Satu unggahan hasil dari instansi luar.
+  properties:
+    id:
+      type: integer
+      example: 1
+    status:
+      type: string
+      enum: [submitted, accepted, rejected]
+    submitted_at:
+      type: string
+      format: date-time
+    reviewed_at:
+      type: string
+      format: date-time
+      nullable: true
+    reviewer_name:
+      type: string
+      nullable: true
+    review_notes:
+      type: string
+      nullable: true
+    attachments:
+      type: array
+      items:
+        $ref: '#/LetterAttachment'
+
 FulfillmentProposal:
   type: object
   description: "Bahan tinjauan sebelum Terapkan: tiap kolom dengan nilai sekarang dan nilai usulan."
   properties:
     action:
       type: string
-      enum: [none, update_citizen, create_citizen]
+      enum: [none, update_citizen, create_citizen, deactivate_members, update_members, update_citizens, restructure_family, adopt_child, manual]
       example: "update_citizen"
     fulfilled_at:
       type: string
@@ -639,7 +718,73 @@ FulfillmentProposal:
     result:
       type: object
       nullable: true
-      description: "Isi `letters.fulfillment` setelah diterapkan: {action, citizen_id, changes{kolom:{old,new}}}."
+      description: |
+        Isi `letters.fulfillment` setelah diterapkan. update/create_citizen:
+        {action, citizen_id, changes{kolom:{old,new}}}; deactivate_members:
+        {action, members[{citizen_id, name, changes}]}; manual: {action, notes}.
+    member_changes:
+      type: array
+      description: |
+        Untuk action `update_members`: per anggota (indeks baris repeater)
+        kolom yang diminta berubah: {column, label, current, current_label,
+        proposed, proposed_label, needs_choice}. `needs_choice` = pekerjaan
+        "Lainnya" tanpa id katalog; Kasi/Kaur memilih dari `options`.
+      items:
+        type: object
+    options:
+      type: object
+      description: "Untuk action `update_members`: pilihan nilai per kolom (last_education, religion, marital_status, occupation_id)."
+    family:
+      type: object
+      nullable: true
+      description: |
+        Untuk action `create_citizen` dengan `data_options.family`: {mode:
+        join|create, description}. Mode `create` menambah kolom `no_kk` di
+        `fields` (No. KK baru dari KK terbitan Disdukcapil).
+    restructure:
+      type: object
+      nullable: true
+      description: |
+        Untuk action `restructure_family` (F09): {kind: new_family|change_head|join,
+        lines: ringkasan rencana perubahan}. Jenis new_family menambah kolom
+        `no_kk` di `fields` (No. KK baru dari KK terbitan Disdukcapil); bila
+        alasannya membentuk keluarga baru, kepala keluarga dan suami/istri
+        juga diubah menjadi Kawin, beserta No. buku nikah dan tanggal
+        perkawinan dari isian.
+    new_head:
+      type: object
+      nullable: true
+      description: "Kepala keluarga baru KK lama {name, family_role} (deactivate_members)."
+    subjects:
+      type: array
+      description: |
+        Untuk action `update_citizens`: per isian `data_options.subjects`
+        {label, name, nik_masked, found, fields[{label, current_label,
+        proposed_label}]}; yang tidak `found` dilewati saat Terapkan.
+      items:
+        type: object
+    instructions:
+      type: string
+      nullable: true
+      description: "Petunjuk dari `letter_types.data_instructions` (semua action, bila diisi)."
+    members:
+      type: array
+      description: "Untuk action `deactivate_members`: anggota yang dipilih pemohon beserta keadaannya sekarang."
+      items:
+        type: object
+        properties:
+          citizen_id:
+            type: string
+            format: uuid
+          name:
+            type: string
+          family_role:
+            type: string
+            example: "Anak"
+          found:
+            type: boolean
+          is_active:
+            type: boolean
     subject:
       type: object
       nullable: true
@@ -689,7 +834,12 @@ FulfillmentApplyRequest:
       description: |
         Koreksi per kolom. Hanya kolom pada `data_fields` jenis surat yang tidak
         bernilai tetap; kolom lain → 422. Nilai divalidasi dengan aturan yang sama
-        seperti form data warga Petugas Desa.
+        seperti form data warga Staf SIDUTama.
+    notes:
+      type: string
+      nullable: true
+      maxLength: 500
+      description: "Catatan \"Tandai selesai\" untuk action `manual`."
     subject_nik:
       type: string
       nullable: true
@@ -746,6 +896,10 @@ SignatureBlock:
     blocked_user_name:
       type: string
       nullable: true
+    blocked_nik_masked:
+      type: string
+      nullable: true
+      example: "************0009"
     created_at:
       type: string
       format: date-time

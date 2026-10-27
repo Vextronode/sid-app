@@ -61,17 +61,43 @@ class SignatureRequestController extends Controller
     {
         $blocks = SignatureBlock::query()
             ->where('user_id', $request->user()->id)
-            ->with('blockedUser:id,name')
+            ->with('blockedUser.citizen')
             ->latest('id')
             ->get();
 
         return response()->json([
-            'data' => $blocks->map(fn (SignatureBlock $block): array => [
-                'id' => $block->id,
-                'blocked_user_name' => $block->blockedUser?->name,
-                'created_at' => $block->created_at,
-            ]),
+            'data' => $blocks->map(fn (SignatureBlock $block): array => $this->blockData($block)),
         ]);
+    }
+
+    /**
+     * Memblokir warga berdasarkan NIK: permintaan TTD/saksi darinya tidak
+     * lagi sampai ke akun ini.
+     */
+    public function block(Request $request): JsonResponse
+    {
+        $nik = (string) $request->validate(['nik' => ['required', 'digits:16']])['nik'];
+        $block = $this->letterSignatureService->blockByNik($request->user(), $nik);
+
+        return response()->json([
+            'message' => 'Warga diblokir.',
+            'data' => $this->blockData($block->load('blockedUser.citizen')),
+        ], 201);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function blockData(SignatureBlock $block): array
+    {
+        $nik = $block->blockedUser?->citizen?->nik;
+
+        return [
+            'id' => $block->id,
+            'blocked_user_name' => $block->blockedUser?->name,
+            'blocked_nik_masked' => $nik ? str_repeat('*', 12).substr($nik, -4) : null,
+            'created_at' => $block->created_at,
+        ];
     }
 
     public function unblock(Request $request, SignatureBlock $signatureBlock): JsonResponse

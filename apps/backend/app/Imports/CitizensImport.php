@@ -10,6 +10,7 @@ use App\Enums\Religion;
 use App\Enums\ResidencyType;
 use App\Models\User;
 use App\Services\CitizenService;
+use App\Support\CitizenDocumentRules;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -112,6 +113,7 @@ class CitizensImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow
             'current_domicile' => ['nullable', 'string', 'max:150'],
             'residency_type' => ['nullable', Rule::enum(ResidencyType::class)],
             'origin_region' => ['nullable', 'string', 'max:255'],
+            ...CitizenDocumentRules::rules(),
         ];
     }
 }

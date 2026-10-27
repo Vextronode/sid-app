@@ -11,6 +11,7 @@ import '@/styles/surat-dokumen.css'
 import { FileSearch, SquarePen } from 'lucide-react'
 
 import { DownloadSuratMenu } from '@/features/cetak-surat/components/DownloadSuratMenu'
+import { getLetterDetail } from '../api/letterExtrasApi'
 
 export function LetterRowActions({
   surat,
@@ -49,6 +50,8 @@ export function LetterRowActions({
           variant="compact"
           disabled={downloadDisabled}
           title={downloadTitle}
+          // Baris tabel tidak membawa daftar dokumen terbitan.
+          loadDetail={getLetterDetail}
         />
       )}
 

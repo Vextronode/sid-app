@@ -3,7 +3,7 @@
 namespace App\Support;
 
 /**
- * Bagian khas desa pada halaman informasi publik, diisi Petugas Desa dari
+ * Bagian khas desa pada halaman informasi publik, diisi Staf SIDUTama dari
  * menu Halaman Informasi. Teks bakunya ada di frontend
  * (features/info/infoPagesContent.js) dan merujuk field ini lewat kuncinya.
  *

@@ -2,7 +2,7 @@ post:
   tags: [Epic 10 - Organisasi Non-Struktural Desa]
   summary: Tambah / rotasi anggota untuk suatu jabatan organisasi
   description: |
-    Aktor: Petugas Desa.
+    Aktor: Staf SIDUTama.
     UC-23. Untuk slot `ketua`/`wakil_ketua` (is_single_occupant=true)
     yang sudah terisi, pemegang lama diakhiri (ended_at = started_at)
     lalu pemegang baru dicatat. Dengan `previous_holder=to_member`,
@@ -54,7 +54,7 @@ post:
             $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'
           examples:
             not_authorized:
-              summary: Bukan Petugas Desa
+              summary: Bukan Staf SIDUTama
               value:
                 message: "Anda tidak memiliki akses untuk aksi ini."
             feature_pending:

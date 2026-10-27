@@ -242,7 +242,7 @@ export default function WilayahFormModal({
                     return (
                       <option key={rw.id} value={rw.id}>
                         RW {rw.number}
-                        {hamlet ? ` — ${hamlet.name}` : ''}
+                        {hamlet ? ` - ${hamlet.name}` : ''}
                       </option>
                     )
                   })}

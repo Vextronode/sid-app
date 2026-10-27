@@ -2,7 +2,7 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Upload atau ganti tanda tangan Kepala Desa aktif
   description: |
-    Aktor: Petugas Desa pada desa yang sama. Hanya record Kepala Desa
+    Aktor: Staf SIDUTama pada desa yang sama. Hanya record Kepala Desa
     aktif yang belum mengakhiri masa jabatan. File disimpan pada private
     storage; database menyimpan path. Format PNG, JPEG, atau WebP,
     maksimum 5 MB. Upload terpisah dari rotasi jabatan.
@@ -52,7 +52,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Preview tanda tangan Kepala Desa aktif
   description: |
-    Preview binary terautentikasi; Petugas Desa hanya dapat melihat tanda
+    Preview binary terautentikasi; Staf SIDUTama hanya dapat melihat tanda
     tangan record Kepala Desa aktif yang belum mengakhiri masa jabatan pada
     desanya. File tidak memiliki URL publik.
   operationId: previewOfficialSignature

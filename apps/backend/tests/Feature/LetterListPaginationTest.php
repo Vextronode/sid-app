@@ -65,7 +65,8 @@ class LetterListPaginationTest extends TestCase
         $this->assertArrayNotHasKey('applicant_nik_masked', $row);
         $this->assertArrayNotHasKey('template', $row['letter_type']);
         $this->assertArrayNotHasKey('form_fields', $row['letter_type']);
-        $this->assertSame(['id', 'name', 'code'], array_keys($row['letter_type']));
+        // Penanda TTD Kepala Desa menentukan pilihan format unduhan di daftar.
+        $this->assertSame(['id', 'name', 'code', 'signed_by_village_head'], array_keys($row['letter_type']));
     }
 
     public function test_index_search_matches_applicant_and_letter_number_case_insensitively(): void

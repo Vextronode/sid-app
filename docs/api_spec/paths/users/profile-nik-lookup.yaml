@@ -1,0 +1,51 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Cari nama dan No. KK warga desa dari NIK (isian otomatis di form surat)
+  description: |
+    Aktor: semua role yang login. Untuk isian ber-`from_nik` (mis. saksi):
+    - warga aktif desa pengguna yang punya akun (`has_account`): nama
+      disamarkan (mis. "U***g S***i") dan No. KK tidak dibuka, karena ia
+      harus menyetujui dulu sebagai saksi; data lengkap diisi sistem;
+    - warga tanpa akun: nama dan No. KK dibuka (diverifikasi RT);
+    - tidak ditemukan: `found` false, pemohon mengetik datanya.
+    Dibatasi 30 permintaan per menit.
+  operationId: lookupNikName
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: nik
+      in: query
+      required: true
+      schema:
+        type: string
+        pattern: '^\d{16}$'
+  responses:
+    '200':
+      description: Hasil pencarian
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  found: { type: boolean }
+                  has_account: { type: boolean }
+                  name: { type: string, nullable: true }
+                  family_number: { type: string, nullable: true, description: "No. KK warga" }
+          example:
+            message: "Pencarian NIK selesai."
+            data:
+              found: true
+              has_account: false
+              name: "Ujang Saksi"
+              family_number: "3218010101900009"
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '422':
+      description: NIK bukan 16 digit
+    '429':
+      description: Terlalu banyak permintaan

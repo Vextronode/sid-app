@@ -2,13 +2,14 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Import data warga massal via Excel
   description: |
-    Aktor: Petugas Desa.
+    Aktor: Staf SIDUTama atau Kasi Pemerintahan.
     UC-09 (Main Flow - Import Excel). Library `maatwebsite/excel`.
     Validasi per baris (format NIK, duplikat), baris error di-skip,
     ringkasan hasil ditampilkan. Template diunduh dari
     GET /citizens/import-template; header kolomnya dibuat dari daftar yang
     sama dengan aturan `CitizensImport::rules()` (nik, name, date_of_birth,
-    ..., residency_type, origin_region), jadi template dan validasi impor
+    ..., residency_type, origin_region, title_front, ..., has_disorder,
+    disability), jadi template dan validasi impor
     selalu sinkron. Tidak all-or-nothing: satu baris gagal tidak
     membatalkan baris lain yang valid (SID-ARCH-BE-001 S5.4).
   operationId: importCitizensExcel

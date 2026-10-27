@@ -64,6 +64,19 @@ trait BuildsLetterScenario
     }
 
     /**
+     * Wilayah bernama untuk isian village_area (Dusun -> RW -> RT).
+     */
+    protected function makeNamedArea(Village $village, string $hamlet, string $rw, string $rt): Rt
+    {
+        $area = $this->makeArea($village);
+        $area['hamlet']->update(['name' => $hamlet]);
+        $area['rw']->update(['number' => $rw]);
+        $area['rt']->update(['number' => $rt]);
+
+        return $area['rt'];
+    }
+
+    /**
      * @return array{user: User, citizen: Citizen}
      */
     protected function makeCitizenAccount(Village $village, ?Rt $rt, string $role = 'warga', array $citizenAttributes = []): array

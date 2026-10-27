@@ -34,10 +34,10 @@ class PublicPageService
 
     /**
      * Jabatan berakun yang tampil di grup Kasi/Kaur/Staf Profil Desa,
-     * mendahului jenis jabatan tanpa akun yang dikelola Petugas Desa.
+     * mendahului jenis jabatan tanpa akun yang dikelola Staf SIDUTama.
      */
     private const PUBLIC_STAFF_POSITIONS = [
-        OfficialPosition::KasiPelayanan,
+        OfficialPosition::KasiPemerintahan,
         OfficialPosition::KaurTuUmum,
     ];
 
@@ -115,7 +115,7 @@ class PublicPageService
     /**
      * Angka desa yang dihitung dari data, bukan disimpan: warga aktif dan
      * dusun aktif. Luas wilayah bukan bagian ini karena merupakan kolom
-     * villages yang diisi Petugas Desa.
+     * villages yang diisi Staf SIDUTama.
      *
      * @return array{total_population: int, total_hamlets: int}
      */
@@ -136,8 +136,8 @@ class PublicPageService
 
     /**
      * Slot grup Kasi/Kaur/Staf di Profil Desa, berurutan: jabatan berakun
-     * Kasi Pelayanan dan Kaur TU, lalu jenis jabatan aktif menurut urutan
-     * yang diatur staf aplikasi, lalu staf aplikasi itu sendiri (staf_sid).
+     * Kasi Pemerintahan dan Kaur TU, lalu jenis jabatan aktif menurut urutan
+     * yang diatur Staf SIDUTama, lalu Staf SIDUTama itu sendiri (staf_sid).
      * Jabatan yang belum terisi tetap punya slot.
      *
      * @return array<int, array{code: string, label: string}>
@@ -154,7 +154,7 @@ class PublicPageService
                 ->allForVillage($village->id, activeOnly: true)
                 ->map(fn (OfficialPositionType $type) => ['code' => $type->code, 'label' => $type->label])
                 ->all(),
-            // Staf aplikasi desa tampil paling akhir, setelah staf lain
+            // Staf SIDUTama desa tampil paling akhir, setelah staf lain
             // seperti Staf SIPADES dan Staf SISKEUDES.
             $accountSlot(OfficialPosition::StafSid),
         ];
@@ -162,7 +162,7 @@ class PublicPageService
 
     /**
      * Perangkat desa aktif untuk halaman Profil Desa: Kepala Desa, Sekdes,
-     * grup Kasi/Kaur/Staf (termasuk staf aplikasi), lalu Kepala Dusun. RT dan
+     * grup Kasi/Kaur/Staf (termasuk Staf SIDUTama), lalu Kepala Dusun. RT dan
      * RW tidak ditampilkan. Boleh kosong: profil desa tetap tampil walau belum ada
      * pejabat yang ditetapkan.
      *
@@ -236,7 +236,7 @@ class PublicPageService
         $village = $this->requireVillage($villageCode);
 
         $officials = $this->officialRepository
-            ->allActiveByPositionsAndVillage(['kasi_pelayanan', 'kaur_tu_umum'], $village->id)
+            ->allActiveByPositionsAndVillage(['kasi_pemerintahan', 'kaur_tu_umum'], $village->id)
             ->load('citizen.occupation');
 
         if ($officials->isEmpty()) {

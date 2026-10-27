@@ -1,0 +1,52 @@
+get:
+  tags: [Epic 1 - Struktur Wilayah]
+  summary: Pilihan Dusun -> RW -> RT desa (untuk isian form surat)
+  description: |
+    Aktor: semua role yang login. Dusun, RW, dan RT aktif desa pengguna,
+    bertingkat, untuk isian `village_area` di form surat (pemohon memilih
+    wilayah yang tersedia, bukan mengetik). Kelola wilayah tetap lewat
+    `/hamlets`, `/rws`, `/rts` (Staf SIDUTama).
+  operationId: listVillageAreas
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Pohon wilayah aktif desa
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    name: { type: string }
+                    rws:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id: { type: integer }
+                          number: { type: string }
+                          rts:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id: { type: integer }
+                                number: { type: string }
+          example:
+            data:
+              - id: 1
+                name: "Budiasih"
+                rws:
+                  - id: 3
+                    number: "16"
+                    rts:
+                      - id: 7
+                        number: "1"
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

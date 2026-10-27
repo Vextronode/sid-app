@@ -4,7 +4,7 @@ get:
   description: |
     Jumlah warga aktif (is_active = true) laki-laki/perempuan untuk kartu
     gender di dashboard. Scope: RT = warga RT-nya, RW = warga RW-nya,
-    Kasi/Kaur/Petugas Desa = seluruh desa. Role lain mendapat 403.
+    Kasi/Kaur/Staf SIDUTama = seluruh desa. Role lain mendapat 403.
   operationId: getDashboardGenderStats
   security:
     - sanctumCookie: []

@@ -2,11 +2,11 @@ post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Rotasi pejabat ke pengganti (akun warga atau data warga)
   description: |
-    Hanya Petugas Desa. Demote pejabat lama lalu promote pengganti dalam
+    Hanya Staf SIDUTama. Demote pejabat lama lalu promote pengganti dalam
     satu transaksi dengan posisi dan wilayah yang sama. Jabatan berakun
     memakai `user_id`; jabatan tanpa akun memakai `citizen_id`. Foto
     pengganti wajib (multipart) dan disimpan sebelum transaksi, dihapus lagi
-    bila rotasi gagal. Berlaku juga untuk staf aplikasi `staf_sid` (hanya
+    bila rotasi gagal. Berlaku juga untuk Staf SIDUTama `staf_sid` (hanya
     satu per desa), termasuk staf yang menyerahkan jabatannya sendiri: ia
     langsung kembali menjadi warga, dan request berikutnya ke endpoint staf
     ditolak 403 `code: role_forbidden`. Respons memuat

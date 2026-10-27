@@ -12,12 +12,14 @@ import { useDisclosure } from '@/features/beranda/hooks/useDisclosure'
 
 // Header halaman role (warga, RT/RW/Kadus/Kades/Sekdes) dengan gaya header
 // publik: lambang + nama desa, menu role, notifikasi, dan menu akun.
-// Di ponsel menu role, aksi tambahan, Profil, dan Keluar pindah ke tombol
-// "Menu" (sama seperti beranda); tidak ada bottom bar.
+// Di ponsel menu role, aksi tambahan, akun (foto + nama), Profil, dan Keluar
+// pindah ke tombol "Menu" (sama seperti beranda); tidak ada bottom bar.
 //
 // menuItems: [{ label, path }]
 // extraActions: [{ label, icon, onClick }] — mis. Pusat Bantuan warga.
 // popover: panel notifikasi; dirender di luar .bd-root agar gayanya tetap.
+// onMenuOpen: dipanggil saat menu akun / menu ponsel dibuka — dipakai untuk
+//   menutup panel notifikasi agar keduanya tidak terbuka bertumpuk.
 export function AppHeader({
   menuItems = [],
   profilePath,
@@ -25,6 +27,7 @@ export function AppHeader({
   onNotificationClick,
   extraActions = [],
   popover,
+  onMenuOpen,
 }) {
   const { header } = getBerandaContent()
   const { pathname } = useLocation()
@@ -94,13 +97,13 @@ export function AppHeader({
                 onLogout={handleLogout}
                 isLoggingOut={isLoggingOut}
                 logoutLabel={logoutLabel}
+                onOpen={onMenuOpen}
               />
-
-              {/* Di ponsel nama akun tersembunyi; fotonya tetap tampil. */}
-              <UserAvatar user={user} className="bd-mobile-avatar" />
 
               <AppMobileMenu
                 header={header}
+                user={user}
+                onOpen={onMenuOpen}
                 menuItems={menuItems}
                 isActive={isActive}
                 extraActions={extraActions}
@@ -119,7 +122,15 @@ export function AppHeader({
   )
 }
 
-function AccountMenu({ user, name, profilePath, onLogout, isLoggingOut, logoutLabel }) {
+// Buka/tutup menu; saat dibuka, beri tahu pemanggil (tutup notifikasi).
+function toggleWithOpen(isOpen, toggle, onOpen) {
+  return () => {
+    if (!isOpen) onOpen?.()
+    toggle()
+  }
+}
+
+function AccountMenu({ user, name, profilePath, onLogout, isLoggingOut, logoutLabel, onOpen }) {
   const { isOpen, toggle, close, containerRef, triggerRef, panelId, onBlur } = useDisclosure()
 
   return (
@@ -130,7 +141,7 @@ function AccountMenu({ user, name, profilePath, onLogout, isLoggingOut, logoutLa
         className="bd-nav-link bd-nav-trigger"
         aria-expanded={isOpen}
         aria-controls={panelId}
-        onClick={toggle}
+        onClick={toggleWithOpen(isOpen, toggle, onOpen)}
       >
         <UserAvatar user={user} />
         <span className="bd-app-account-name">{name ?? 'Akun'}</span>
@@ -163,6 +174,8 @@ function AccountMenu({ user, name, profilePath, onLogout, isLoggingOut, logoutLa
 
 function AppMobileMenu({
   header,
+  user,
+  onOpen,
   menuItems,
   isActive,
   extraActions,
@@ -181,7 +194,7 @@ function AppMobileMenu({
         className="bd-menu-button"
         aria-expanded={isOpen}
         aria-controls={panelId}
-        onClick={toggle}
+        onClick={toggleWithOpen(isOpen, toggle, onOpen)}
       >
         {isOpen ? (
           <X size={22} strokeWidth={2.2} aria-hidden="true" />
@@ -192,6 +205,12 @@ function AppMobileMenu({
       </button>
 
       <nav id={panelId} className="bd-mobile-panel" aria-label="Menu utama" hidden={!isOpen}>
+        {/* Akun yang login: foto + nama, pengganti menu akun desktop. */}
+        <div className="bd-mobile-account">
+          <UserAvatar user={user} size={40} />
+          <span className="bd-mobile-account-name">{user?.name ?? 'Akun'}</span>
+        </div>
+
         <ul className="bd-menu-list">
           {menuItems.map((item) => (
             <li key={item.path}>

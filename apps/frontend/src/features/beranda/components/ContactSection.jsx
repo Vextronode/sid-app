@@ -85,7 +85,7 @@ function CopyValue({ value, copyLabel, copiedLabel, failedLabel, email = false }
 }
 
 // Kontak (A31, A32; tujuan gulir A8). Tiga kolom dalam satu panel "loket"
-// (sama dengan panel layanan), isinya dari data desa yang diatur Petugas Desa
+// (sama dengan panel layanan), isinya dari data desa yang diatur Staf SIDUTama
 // di Kelola Profil Desa:
 // - Telepon (village.phone) dan email (village.email): dua kartu bertumpuk di
 //   kolom pertama, tidak bisa diklik; nomor dan email bisa disalin.

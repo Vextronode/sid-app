@@ -71,7 +71,7 @@ class VillageOrgPositionServiceTest extends TestCase
     }
 
     /**
-     * Guard multi-tenant (EV5-10-S2): Petugas Desa tidak boleh bisa
+     * Guard multi-tenant (EV5-10-S2): Staf SIDUTama tidak boleh bisa
      * "menebak" ID jabatan milik desa lain lewat GET /village-org-positions/{id}.
      */
     public function test_find_throws_when_position_belongs_to_other_village(): void

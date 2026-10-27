@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
- * Kategori berita per desa, dikelola Petugas Desa.
+ * Kategori berita per desa, dikelola Staf SIDUTama.
  */
 class NewsCategory extends Model
 {

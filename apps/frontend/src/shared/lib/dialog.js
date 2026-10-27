@@ -47,15 +47,17 @@ export function alertDialog({
 }
 
 // Konfirmasi ya/tidak; resolve true bila dikonfirmasi. tone 'danger' untuk
-// aksi yang menghapus data.
+// aksi yang menghapus data. details (opsional): daftar perubahan yang
+// dikonfirmasi, [{ title, showOld, rows: [{ label, from, to }] }].
 export function confirmDialog({
   title = 'Konfirmasi',
   message,
+  details = null,
   confirmLabel = 'Ya, lanjutkan',
   cancelLabel = 'Batal',
   tone = 'danger',
 }) {
-  return open({ kind: 'confirm', title, message, confirmLabel, cancelLabel, tone })
+  return open({ kind: 'confirm', title, message, details, confirmLabel, cancelLabel, tone })
 }
 
 // Isian teks singkat; resolve string (sudah di-trim) atau null bila batal.

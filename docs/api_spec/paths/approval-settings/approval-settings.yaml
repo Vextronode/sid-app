@@ -2,7 +2,7 @@ get:
   tags: [Epic 7 - Deadline & Reminder Approval]
   summary: Lihat setting deadline approval per tahap
   description: |
-    Aktor: Petugas Desa.
+    Aktor: Staf SIDUTama.
     UC-22. Hanya mengembalikan pengaturan untuk level approver aktif:
     rt dan kepala_desa. Nilai lain pada ENUM database tetap
     dipertahankan untuk kompatibilitas namun tidak disajikan/diubah.

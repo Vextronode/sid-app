@@ -3,7 +3,7 @@ LetterType:
   description: |
     Bentuk `LetterTypeResource`. Struktur jenis surat (template, isian form,
     slot tanda tangan, aksi data, dokumen pendukung, flow) diset developer
-    lewat seeder; Petugas Desa hanya mengubah `validity_days`,
+    lewat seeder; Staf SIDUTama hanya mengubah `validity_days`,
     `assigned_role`, dan `is_active` (lihat LetterTypeUpdateRequest).
     Kolom `letter_categories`/`category_id` dan `verification_type` sudah
     dihapus dari skema.
@@ -20,6 +20,18 @@ LetterType:
     description:
       type: string
       nullable: true
+    category:
+      type: string
+      enum: [persuratan, pelayanan]
+      example: "persuratan"
+      description: |
+        Kelompok di pilihan pengajuan (diset developer lewat seeder, tidak
+        dapat diubah lewat `PUT /letter-types/{id}`). Frontend menampilkan
+        Persuratan Desa di atas lalu Layanan Kependudukan di bawah.
+    category_label:
+      type: string
+      enum: ["Persuratan Desa", "Layanan Kependudukan"]
+      example: "Persuratan Desa"
     template:
       type: string
       nullable: true
@@ -29,11 +41,41 @@ LetterType:
         Placeholder sistem: letter_number, applicant_*, submitted_at, issued_at,
         village_* (kop surat), village_head_name, logo_img, signature_img;
         placeholder isian form memakai nama isian; slot TTD memakai
-        `ttd_{slot}` dan `nama_ttd_{slot}`.
+        `ttd_{slot}` dan `nama_ttd_{slot}`. Blok bersyarat dari jawaban form:
+        `{{#if isian}}`, `{{#if isian=a|b}}`, `{{#if isian!=a}}` ... `{{/if}}`
+        (boleh bersarang). Isian repeater/family_members dicetak per baris
+        dengan `{{#each isian}}...{{/each}}`; di dalamnya `{{ no }}` = nomor
+        urut dan `{{ sub_isian }}` = nilai baris (family_members: `nama`,
+        `nik`, `shdk`, `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir`).
+        Baris sistem `{{#each kk_anggota}}` = rincian KK pemohon (`nama`,
+        `nik`, `shdk`). Placeholder sistem formulir pelayanan:
+        `applicant_family_number` (No. KK pemohon) dan
+        `village_kasi_pemerintahan_name` (petugas F-1.02). Kotak per karakter
+        formulir Disdukcapil: `{{ nama[0] }}` = karakter pertama nilai isian
+        atau placeholder sistem (huruf kapital; kosong bila tidak ada).
+        Cadangan `{{ a|b }}` = nilai pertama yang terisi (mis. ayah dari KK
+        atau yang diketik). Isian date juga menyediakan `<nama>_namahari`,
+        `<nama>_tgl`, `<nama>_bln`, `<nama>_thn`.
     requirements_info:
       type: string
       nullable: true
       description: "Dipetakan dari kolom `requirement_info` (nullable)."
+    carry_documents:
+      type: object
+      nullable: true
+      description: |
+        Layanan Kependudukan: dokumen yang dibawa ke Disdukcapil. `forms` =
+        formulir yang terbit dari pengajuan ini (termasuk yang bersyarat,
+        ditulis "bila ..."), `attachments` = dokumen lain yang dilampirkan.
+        Ditampilkan di bawah deskripsi saat jenis surat dipilih. NULL untuk
+        Persuratan Desa.
+      properties:
+        forms:
+          type: array
+          items: { type: string }
+        attachments:
+          type: array
+          items: { type: string }
     flow_id:
       type: integer
       example: 1
@@ -50,9 +92,9 @@ LetterType:
           example: "RT-Kades/Sekdes (2 Tahap)"
     assigned_role:
       type: string
-      enum: [kasi_pelayanan, kaur_tu_umum]
+      enum: [kasi_pemerintahan, kaur_tu_umum]
       nullable: true
-      example: "kasi_pelayanan"
+      example: "kasi_pemerintahan"
       description: |
         Kasi/Kaur yang dapat melihat/mengunduh surat approved dan
         menerapkan aksi data. NULL = kedua role. Bukan approver flow.
@@ -68,11 +110,31 @@ LetterType:
       type: boolean
       example: true
       description: "Penanda jenis surat menerbitkan surat. Saat ini hanya disimpan & dikirim; belum mengubah alur backend."
+    issues_letter_number:
+      type: boolean
+      example: true
+      description: "false = tidak diberi nomor surat desa saat final approve (`letter_number` tetap null), mis. formulir Layanan Kependudukan."
+    signed_by_village_head:
+      type: boolean
+      example: true
+      description: |
+        false = dokumen tidak ditandatangani/distempel Kepala Desa: snapshot
+        tanpa penanda tangan, PDF dapat dirender tanpa Kepala Desa aktif, dan
+        frontend menampilkan satu tombol "Unduh formulir" (tanpa pilihan
+        digital/tanda tangan basah).
     data_action:
       type: string
-      enum: [none, update_citizen, create_citizen]
+      enum: [none, update_citizen, create_citizen, deactivate_members, update_members, manual]
       example: "none"
-      description: "Aksi data kependudukan setelah final approve (Terapkan oleh Kasi/Kaur/Petugas Desa)."
+      description: |
+        Aksi data kependudukan setelah final approve (Terapkan oleh
+        Kasi/Kaur/Staf SIDUTama). `deactivate_members` menonaktifkan anggota
+        KK yang dipilih di isian family_members (`data_subject_field`);
+        `update_members` mengubah kolom `data_fields` tiap anggota KK, satu
+        baris repeater (`data_subject_field`) per anggota, sumber kolom =
+        kunci baris (mis. `pekerjaan_menjadi_id`);
+        `manual` hanya mencatat "Tandai selesai" setelah Kasi/Kaur mengubah
+        data sendiri di Data Penduduk/KK (petunjuk di `data_instructions`).
     form_fields:
       type: array
       description: "Definisi isian form; kosong = tanpa isian tambahan."
@@ -111,7 +173,30 @@ LetterFormField:
       example: "Nama Usaha"
     type:
       type: string
-      enum: [text, textarea, date, number, nik, select, file]
+      enum: [text, textarea, date, time, number, nik, select, file, occupation, repeater, family_members, village_area, family_member, family_roster]
+      description: |
+        `family_roster` = tidak diisi pemohon; saat pengajuan sistem mencatat
+        susunan KK tanpa anggota di isian `exclude`, dengan anggota di isian
+        `head` sebagai kepala keluarga: `<nama>_<n>_<kolom>` (n = 1..10) dan
+        `<nama>_jumlah` (mis. F-1.01 setelah kepala keluarga meninggal).
+        `family_member` = satu anggota KK pemohon (id warga); saat pengajuan
+        ditambah `<nama>_nama`, `_nik`, `_shdk`, `_tempat_lahir`,
+        `_tanggal_lahir`, `_lahir_tgl/_bln/_thn`, `_pekerjaan`, `_agama`,
+        `_alamat`, dst. (keadaan saat pengajuan). Atribut `gender` (L/P)
+        membatasi anggota yang dapat dipilih, mis. ibu hanya perempuan;
+        `not_self` menolak pemohon sendiri; `different` = isian lain yang
+        tidak boleh sama; `required_when_head` = wajib bila anggota di isian
+        itu kepala keluarga (bila bukan, isian disembunyikan dan nilainya
+        dibuang); `empty_label` = teks pilihan kosong (opsional). Isian dengan
+        `from_nik` (nama isian NIK) diisi otomatis dari data penduduk bila NIK
+        terdaftar di desa (lihat `GET /profile/nik-lookup`); `from_nik_value`
+        `name` (bawaan) atau `family_number` (No. KK). Bila NIK tidak
+        terdaftar, isian diketik. Isian NIK ber-`witness` (label saksi, mis.
+        "Saksi I") meminta persetujuan pemilik NIK yang punya akun sebelum
+        surat masuk ke RT.
+        `village_area` = Dusun -> RW -> RT desa ini dari `GET /village-areas`;
+        nilainya id RT, dan saat pengajuan ditambah `<nama>_dusun`,
+        `<nama>_rw`, `<nama>_rt` (3 digit) siap cetak.
     required:
       type: boolean
     placeholder:
@@ -132,6 +217,44 @@ LetterFormField:
       nullable: true
       enum: [image]
       description: "Untuk type=file: `image` membatasi ke JPG/PNG; selain itu PDF juga diterima."
+    visible_when:
+      type: object
+      nullable: true
+      description: |
+        Syarat tampil isian berdasarkan jawaban isian lain: `{field, equals}`,
+        `{field, in: [...]}`, `{field, not_in: [...]}`, `{field, filled}`, atau gabungan `{any: [syarat, ...]}` / `{all: [syarat, ...]}`.
+        Dinilai berurutan terhadap isian yang tampil saja. Isian tersembunyi
+        tidak wajib, tidak divalidasi (`exclude`), dan nilainya dibuang
+        sebelum disimpan.
+      example:
+        field: kewarganegaraan
+        equals: wna
+    fields:
+      type: array
+      description: |
+        Untuk type=repeater: sub-isian tiap baris (type text, textarea, date,
+        number, nik, select, occupation, family_member; boleh `visible_when`
+        yang dinilai per baris). Payload: `payload[nama][i][sub]`.
+        `family_member` = satu anggota KK pemohon (id warga); saat pengajuan
+        baris ditambah `<sub>_nama`, `_nik`, `_shdk`, `_pendidikan`,
+        `_pekerjaan`, `_agama`, `_status_kawin` (keadaan saat pengajuan).
+        `occupation` di baris disimpan sebagai nama + `<sub>_id` (id katalog,
+        null bila "Lainnya").
+      items:
+        type: object
+    min:
+      type: integer
+      nullable: true
+      description: "Untuk type=repeater: jumlah baris minimal (default 1 bila required, 0 bila tidak)."
+    max:
+      type: integer
+      nullable: true
+      description: "Untuk type=repeater: jumlah baris maksimal (default 20)."
+    item_label:
+      type: string
+      nullable: true
+      example: "anak"
+      description: "Untuk type=repeater: sebutan satu baris di tombol Tambah/Hapus."
 
 LetterDataField:
   type: object
@@ -182,7 +305,7 @@ LetterTypeUpdateRequest:
       example: 90
     assigned_role:
       type: string
-      enum: [kasi_pelayanan, kaur_tu_umum]
+      enum: [kasi_pemerintahan, kaur_tu_umum]
       nullable: true
     is_active:
       type: boolean
@@ -197,6 +320,34 @@ PublicLetterType:
     name:
       type: string
       example: "Surat Keterangan Usaha"
+    category:
+      type: string
+      enum: [persuratan, pelayanan]
+      example: "persuratan"
+      description: |
+        Kelompok di pilihan pengajuan (diset developer lewat seeder, tidak
+        dapat diubah lewat `PUT /letter-types/{id}`). Frontend menampilkan
+        Persuratan Desa di atas lalu Layanan Kependudukan di bawah.
+    category_label:
+      type: string
+      enum: ["Persuratan Desa", "Layanan Kependudukan"]
+      example: "Persuratan Desa"
     requirements_info:
       type: string
       nullable: true
+    carry_documents:
+      type: object
+      nullable: true
+      description: |
+        Layanan Kependudukan: dokumen yang dibawa ke Disdukcapil. `forms` =
+        formulir yang terbit dari pengajuan ini (termasuk yang bersyarat,
+        ditulis "bila ..."), `attachments` = dokumen lain yang dilampirkan.
+        Ditampilkan di bawah deskripsi saat jenis surat dipilih. NULL untuk
+        Persuratan Desa.
+      properties:
+        forms:
+          type: array
+          items: { type: string }
+        attachments:
+          type: array
+          items: { type: string }

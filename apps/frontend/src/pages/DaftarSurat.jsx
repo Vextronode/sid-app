@@ -4,7 +4,8 @@ import { WargaLayout } from '@/components/layout/WargaLayout'
 import { DynamicSuratForm } from '@/features/surat/components/DynamicSuratForm'
 import { useLetterTypes } from '@/features/surat/hooks/useLetterTypes'
 import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig'
-import { FileText, ChevronDown } from 'lucide-react'
+import { FileText } from 'lucide-react'
+import { LetterTypePicker } from '@/features/surat/components/LetterTypePicker'
 
 export function DaftarSurat() {
   const navigate = useNavigate()
@@ -45,32 +46,19 @@ export function DaftarSurat() {
           </div>
 
           {/* ==========================================
-              DROPDOWN PILIH SURAT
+              PILIH JENIS SURAT (kartu, dikelompokkan)
               ========================================== */}
 
           <div className="sid-card sid-daftar-surat-selector">
-            <label className="sid-label">Jenis Surat</label>
+            <p className="sid-label">{selectedLetterType ? 'Jenis Surat' : 'Pilih Jenis Surat'}</p>
 
-            <div className="sid-daftar-surat-select-wrapper">
-              <select
-                value={selectedCode}
-                disabled={loading || !!error}
-                onChange={(e) => setSelectedCode(e.target.value)}
-                className="sid-select sid-daftar-surat-select"
-              >
-                <option value="">Pilih jenis surat...</option>
-
-                {letterTypes.map((type) => (
-                  <option key={type.id} value={type.code}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-
-              <ChevronDown size={18} className="sid-daftar-surat-select-icon" />
-            </div>
-            {loading && <p role="status">Memuat jenis surat...</p>}
-            {error && <p role="alert">{error}</p>}
+            <LetterTypePicker
+              letterTypes={letterTypes}
+              loading={loading}
+              error={error}
+              selectedCode={selectedCode}
+              onSelect={setSelectedCode}
+            />
             {!loading && !error && selectedLetterType && !currentConfig && (
               <p role="alert">Formulir untuk jenis surat ini belum tersedia.</p>
             )}

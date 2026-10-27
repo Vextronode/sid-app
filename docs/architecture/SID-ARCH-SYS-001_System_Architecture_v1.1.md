@@ -15,9 +15,9 @@
 ## 1. Visi & Prinsip Arsitektur
 
 1. **Independent Domain.** SIDUTama berdiri sendiri (domain, database, deployment); interoperabilitas lewat API.
-2. **Konfigurasi di atas Kode.** Jenis surat (template, isian form, slot tanda tangan, aksi data, kode klasifikasi) dan alur persetujuan (`approval_flows` → `flow_steps`) adalah data. Saat ini data tersebut diset developer lewat seeder; Petugas Desa mengatur masa berlaku, penugasan Kasi/Kaur, dan status aktif.
+2. **Konfigurasi di atas Kode.** Jenis surat (template, isian form, slot tanda tangan, aksi data, kode klasifikasi) dan alur persetujuan (`approval_flows` → `flow_steps`) adalah data. Saat ini data tersebut diset developer lewat seeder; Staf SIDUTama mengatur masa berlaku, penugasan Kasi/Kaur, dan status aktif.
 3. **RBAC Berlapis.** Tier navigasi (S4) di atas 9 role datar; otorisasi konteks per resource di Policy/Service.
-4. **Human-in-the-Loop.** Approval surat dan penerapan perubahan data kependudukan tetap diputuskan manusia (RT, Kades/Sekdes, Kasi/Kaur/Petugas Desa).
+4. **Human-in-the-Loop.** Approval surat dan penerapan perubahan data kependudukan tetap diputuskan manusia (RT, Kades/Sekdes, Kasi/Kaur/Staf SIDUTama).
 5. **Satu desa per instalasi (praktik saat ini).** Skema mendukung banyak desa (`village_id`), tetapi deployment berjalan dengan satu desa; identitas desa dikelola lewat Kelola Profil Desa.
 
 ---
@@ -25,13 +25,13 @@
 ## 2. Peta Domain Bisnis
 
 ### 2.1 Pelayanan Surat-Menyurat
-Warga (atau pejabat untuk dirinya) mengajukan surat dengan isian form dinamis per jenis surat, termasuk unggahan berkas dan tanda tangan pihak terkait (digital lewat persetujuan pemilik NIK, atau TTD basah). Alur default: **RT → Kepala Desa/Sekdes (final)**; RW & Kadus menerima FYI, Kasi/Kaur menerima notifikasi setelah final. Saat final approve sistem menerbitkan nomor surat (`{kode klasifikasi}/{urut}/Des/{bulan Romawi}/{tahun}`) dan membekukan **snapshot** render agar PDF tidak berubah. Jenis surat tertentu membawa **aksi data** (mis. menonaktifkan warga meninggal, menambah anak lahir) yang diterapkan Kasi/Kaur. Overdue dihitung dari deadline approval; scheduler mengirim satu pengingat ke approver `reminder_hours` sebelum deadline.
+Warga (atau pejabat untuk dirinya) mengajukan surat dengan isian form dinamis per jenis surat, termasuk unggahan berkas dan tanda tangan pihak terkait (digital lewat persetujuan pemilik NIK, atau TTD basah). Alur default: **RT → Kepala Desa/Sekdes (final)**; RW & Kadus menerima FYI, Kasi/Kaur menerima notifikasi setelah final. Saat final approve sistem menerbitkan nomor surat (`{kode klasifikasi}/{urut}/Des/{bulan Romawi}/{tahun}`) dan membekukan **snapshot** render agar PDF tidak berubah. Jenis surat tertentu membawa **aksi data** (mis. menonaktifkan warga meninggal, menambah anak lahir) yang diterapkan Kasi/Kaur, dengan pop up daftar perubahan sebelum disimpan. Jenis surat dibagi **Persuratan Desa** (A01–A11, surat keterangan bernomor ber-TTD Kepala Desa) dan **Layanan Kependudukan** (F01–F10, formulir Disdukcapil tanpa nomor dan tanpa TTD Kepala Desa, plus formulir pendukung bersyarat dan Surat Kuasa F-1.07 bila diurus orang lain): setelah terbit, pemohon mengunggah hasil Disdukcapil di surat yang sama, Kasi Pemerintahan memverifikasi, lalu Terapkan. Overdue dihitung dari deadline approval; scheduler mengirim satu pengingat ke approver `reminder_hours` sebelum deadline.
 
 ### 2.2 Manajemen Kependudukan
-Data warga (individu) dan KK, sosio-ekonomi per KK, katalog pekerjaan per desa, impor Excel. Warga tidak mengedit datanya langsung; perubahan diajukan lewat surat ber-aksi data.
+Data warga (individu, 11 SHDK resmi Disdukcapil, dokumen & keterangan tambahan untuk Biodata Keluarga) dan KK, sosio-ekonomi per KK, katalog pekerjaan per desa, impor Excel. NIK, No KK, nomor akta, dan keterangan penyandang cacat terenkripsi. Warga tidak mengedit datanya langsung; perubahan diajukan lewat surat ber-aksi data.
 
 ### 2.3 Manajemen Informasi Desa (CMS)
-Profil desa (identitas, kop surat, luas, jam layanan, titik kantor berupa koordinat, sambutan Kepala Desa, logo, foto beranda, stempel), berita berkategori, peraturan desa, pengumuman beranda berdurasi (dihapus otomatis), halaman informasi (PPID, Kebijakan Privasi, Aksesibilitas), organisasi non-struktural (BPD, LPM, Karang Taruna, PKK: Ketua, Wakil Ketua, Anggota). **Eksklusif `staf_sid`.** Halaman publik menampilkan profil, statistik terhitung (jumlah warga, dusun), perangkat desa (termasuk staf aplikasi), peraturan (section Profil Desa), struktur BPD dan Lembaga Desa, berita, info jenis surat, kontak, bar pengumuman, dan halaman informasi. BUMDesa dan Transparansi APBDes tampil "Segera hadir".
+Profil desa (identitas, kop surat, luas, jam layanan, titik kantor berupa koordinat, sambutan Kepala Desa, logo, foto beranda, stempel), berita berkategori, peraturan desa, pengumuman beranda berdurasi (dihapus otomatis), halaman informasi (PPID, Kebijakan Privasi, Aksesibilitas), organisasi non-struktural (BPD, LPM, Karang Taruna, PKK: Ketua, Wakil Ketua, Anggota). **Eksklusif `staf_sid`.** Halaman publik menampilkan profil, statistik terhitung (jumlah warga, dusun), perangkat desa (termasuk Staf SIDUTama), peraturan (section Profil Desa), struktur BPD dan Lembaga Desa, berita, info jenis surat, kontak, bar pengumuman, dan halaman informasi. BUMDesa dan Transparansi APBDes tampil "Segera hadir".
 
 ### 2.4 Governance & RBAC
 Struktur wilayah (Dusun/RW/RT), jabatan berakun dan jenis jabatan tanpa akun yang dapat dikelola, akun pengguna, reset password & reset tanda tangan akun.
@@ -71,8 +71,8 @@ Tier hanyalah label navigasi/guard frontend di atas `users.role` (9 nilai).
 | Tier | Label | `users.role` | Scope |
 |---|---|---|---|
 | 1 | Superadmin | *(belum ada)* | Tidak diimplementasikan |
-| 2 | Admin Desa / Eksekutif | `staf_sid`, `kepala_desa`, `sekretaris_desa` | Petugas Desa (`staf_sid`, tampil "Staf {nama aplikasi}", satu per desa, diganti lewat rotasi) = operator penuh desanya (CMS, kependudukan, jabatan, konfigurasi, semua surat). Kades/Sekdes = approver final tanpa akses CMS |
-| 3 | Staff Desa | `kasi_pelayanan`, `kaur_tu_umum` | Notifikasi & akses surat selesai sesuai `assigned_role`, menerapkan aksi data, membaca daftar warga; bukan approver |
+| 2 | Admin Desa / Eksekutif | `staf_sid`, `kepala_desa`, `sekretaris_desa` | Staf SIDUTama (`staf_sid`, tampil "Staf {nama aplikasi}", satu per desa, diganti lewat rotasi) = operator penuh desanya (CMS, kependudukan, jabatan, konfigurasi, semua surat). Kades/Sekdes = approver final tanpa akses CMS |
+| 3 | Staff Desa | `kasi_pemerintahan`, `kaur_tu_umum` | Notifikasi & akses surat selesai sesuai `assigned_role`, menerapkan aksi data, membaca daftar warga; bukan approver. Kasi Pemerintahan memegang Layanan Kependudukan (F01–F10: verifikasi hasil Disdukcapil lalu Terapkan) dan mengelola Data Penduduk & KK; Kaur TU & Umum memegang Persuratan Desa (A01–A11). Kasi Pelayanan adalah jabatan tanpa akun |
 | 4 | RT/RW/Kadus | `rt`, `rw`, `kadus` | RT approver wilayah; RW & Kadus hanya FYI read-only |
 | 5 | Warga | `warga` | Ajukan surat, TTD pribadi, setujui/tolak permintaan TTD, unduh surat sendiri |
 
@@ -112,6 +112,6 @@ Lokasi hosting staging/produksi (kampus/desa) **tidak diverifikasi** dari source
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | 1.0 | - | Penyusunan awal |
-| 1.1 | - | Tier vs role, terminologi pipeline, koreksi Non-NIK, CMS eksklusif Petugas Desa |
+| 1.1 | - | Tier vs role, terminologi pipeline, koreksi Non-NIK, CMS eksklusif Staf SIDUTama |
 | 1.2 | 2026-10-06 | Sosio-ekonomi KK dan pekerjaan baku per desa |
 | 1.3 | 2026-10-16 | Kategori surat dihapus; jenis surat data-driven, TTD pihak terkait, snapshot, aksi data; Web Push; identitas desa dari DB & halaman publik; topologi Docker/VPS; kotak "Endpoint Verifikasi QR" dihapus dari diagram komponen karena tidak ada di source |

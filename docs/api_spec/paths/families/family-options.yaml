@@ -2,7 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat pilihan KK untuk form warga
   description: |
-    Aktor: Petugas Desa. Semua KK di desa user login tanpa halaman, untuk
+    Aktor: Staf SIDUTama. Semua KK di desa user login tanpa halaman, untuk
     dropdown pilihan KK di form tambah/ubah warga, diurutkan dari yang
     terbaru dibuat. Hanya memuat field yang dibutuhkan pilihan: `id`,
     `no_kk_masked`, `family_address`, `head_of_family` (`id`, `name`).

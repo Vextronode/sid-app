@@ -23,6 +23,7 @@ class LetterAttachmentService
         User $uploader,
         string $kind = LetterAttachment::KIND_ATTACHMENT,
         ?string $field = null,
+        ?int $resultId = null,
     ): LetterAttachment {
         $path = $file->store($this->directory($letter), self::DISK);
 
@@ -30,6 +31,7 @@ class LetterAttachmentService
             return $letter->attachments()->create([
                 'kind' => $kind,
                 'field' => $field,
+                'letter_result_id' => $resultId,
                 'original_name' => mb_substr($file->getClientOriginalName(), 0, 255),
                 'path' => $path,
                 'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
@@ -73,6 +75,11 @@ class LetterAttachmentService
         $response->setPrivate();
 
         return $response;
+    }
+
+    public function deleteFile(LetterAttachment $attachment): void
+    {
+        Storage::disk(self::DISK)->delete($attachment->path);
     }
 
     /**

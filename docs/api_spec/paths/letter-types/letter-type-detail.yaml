@@ -2,7 +2,7 @@ put:
   tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
   summary: Edit konfigurasi tipe surat (versi sederhana)
   description: |
-    UC-21. Aktor: Petugas Desa. Hanya `validity_days`, `assigned_role`, dan
+    UC-21. Aktor: Staf SIDUTama. Hanya `validity_days`, `assigned_role`, dan
     `is_active` yang diterima. Flow, template, isian form, slot tanda tangan,
     aksi data, dan dokumen pendukung diset developer lewat seeder. Tipe surat
     dicari dalam desa Petugas yang login; milik desa lain menghasilkan 404.

@@ -27,7 +27,7 @@ describe('OperatorDesaLayout role regression', () => {
     useNotifications.mockReturnValue({ unreadCount: 2, reload })
   })
 
-  it.each(['kasi_pelayanan', 'kaur_tu_umum'])(
+  it.each(['kasi_pemerintahan', 'kaur_tu_umum'])(
     'keeps %s on operator-desa pages and exposes notifications',
     (role) => {
       useAuth.mockReturnValue({
@@ -44,7 +44,7 @@ describe('OperatorDesaLayout role regression', () => {
       expect(screen.getByRole('link', { name: 'Ringkasan' })).toBeTruthy()
       expect(screen.getByRole('link', { name: 'Permohonan Surat' })).toBeTruthy()
       // Kasi/Kaur boleh melihat data penduduk (khusus-baca), tetapi tidak
-      // mendapat menu pengelolaan milik Petugas Desa.
+      // mendapat menu pengelolaan milik Staf SIDUTama.
       expect(screen.getByRole('link', { name: 'Data Penduduk' })).toBeTruthy()
       expect(screen.queryByRole('link', { name: 'Manajemen Pengguna' })).toBeNull()
       expect(screen.queryByRole('link', { name: 'Kelola Wilayah' })).toBeNull()
@@ -60,7 +60,7 @@ describe('OperatorDesaLayout role regression', () => {
 
   it('shows the letter type configuration menu to staf_sid', () => {
     useAuth.mockReturnValue({
-      user: { role: 'staf_sid', name: 'Petugas', role_label: 'Petugas Desa' },
+      user: { role: 'staf_sid', name: 'Petugas', role_label: 'Staf SIDUTama' },
       logout: vi.fn(),
     })
 
@@ -94,7 +94,7 @@ describe('OperatorDesaLayout sidebar', () => {
 
   function renderLayout() {
     useAuth.mockReturnValue({
-      user: { role: 'staf_sid', name: 'Petugas', role_label: 'Petugas Desa' },
+      user: { role: 'staf_sid', name: 'Petugas', role_label: 'Staf SIDUTama' },
       logout: vi.fn(),
     })
 

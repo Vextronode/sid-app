@@ -34,6 +34,15 @@ export function MobileMenu({ header }) {
 
       <nav id={panelId} className="bd-mobile-panel" aria-label="Menu utama" hidden={!isOpen}>
         <ul className="bd-menu-list">
+          {/* Masuk / Dashboard Saya paling atas: langsung terlihat tanpa
+              menggulir daftar menu yang panjang. */}
+          <li>
+            <AccountNavLink
+              nav={nav}
+              className="bd-button-outline bd-mobile-login"
+              onClick={close}
+            />
+          </li>
           <li>
             <NavLink
               to={HAL_BERANDA}
@@ -60,13 +69,6 @@ export function MobileMenu({ header }) {
             >
               {nav.kontak}
             </a>
-          </li>
-          <li>
-            <AccountNavLink
-              nav={nav}
-              className="bd-button-outline bd-mobile-login"
-              onClick={close}
-            />
           </li>
         </ul>
       </nav>

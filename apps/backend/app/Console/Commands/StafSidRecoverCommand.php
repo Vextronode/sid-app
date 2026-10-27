@@ -8,17 +8,17 @@ use Illuminate\Console\Command;
 use RuntimeException;
 
 /**
- * A-18. Pemulihan darurat bila satu-satunya staf aplikasi desa lupa kata
+ * A-18. Pemulihan darurat bila satu-satunya Staf SIDUTama desa lupa kata
  * sandi. Hanya mereset kata sandi akun staf_sid aktif; pergantian
  * pemegang jabatan tetap lewat rotasi di aplikasi.
  */
 class StafSidRecoverCommand extends Command
 {
     protected $signature = 'staf-sid:recover
-        {--username= : Username akun staf aplikasi desa yang dipulihkan}
+        {--username= : Username akun Staf SIDUTama desa yang dipulihkan}
         {--force : Lewati konfirmasi (untuk eksekusi non-interaktif)}';
 
-    protected $description = 'Reset kata sandi staf aplikasi desa (staf_sid) aktif dengan kata sandi sementara.';
+    protected $description = 'Reset kata sandi Staf SIDUTama desa (staf_sid) aktif dengan kata sandi sementara.';
 
     public function handle(UserService $userService): int
     {

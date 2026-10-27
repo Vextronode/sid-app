@@ -64,7 +64,7 @@ function toSlot(id, jabatan, official) {
 }
 
 // Kasi, Kaur, dan Staf. Daftar dan urutan jabatannya dikirim backend
-// (`positions`), jadi jenis jabatan yang ditambah Petugas Desa langsung
+// (`positions`), jadi jenis jabatan yang ditambah Staf SIDUTama langsung
 // tampil. Jabatan yang belum terisi tetap punya satu slot "Belum tersedia";
 // jabatan yang dijabat beberapa orang tampil satu kartu per orang.
 function mapStaff(officials, positions) {
@@ -115,7 +115,7 @@ function mapProfile(raw, officials = [], hamlets = [], positions = [], stats = n
       : []
 
   return {
-    // Nama, alamat, dan telepon dari data desa (diatur Petugas Desa).
+    // Nama, alamat, dan telepon dari data desa (diatur Staf SIDUTama).
     name: formatVillageName(raw?.name),
     address: raw?.address || null,
     phone: raw?.phone || null,
@@ -127,13 +127,13 @@ function mapProfile(raw, officials = [], hamlets = [], positions = [], stats = n
     heroImage: raw?.hero_image_url || null,
 
     // Penduduk (warga aktif) dan dusun (dusun aktif) dihitung backend dari
-    // data; luas wilayah diisi Petugas Desa. Nol atau kosong dianggap
+    // data; luas wilayah diisi Staf SIDUTama. Nol atau kosong dianggap
     // belum tersedia.
     totalPenduduk: stats?.total_population || null,
     luasWilayah: raw?.area_ha || null,
     jumlahDusun: stats?.total_hamlets || null,
 
-    // RT, RW, dan Petugas Desa tidak ditampilkan di halaman publik.
+    // RT, RW, dan Staf SIDUTama tidak ditampilkan di halaman publik.
     kepalaDesa: {
       nama: kepalaDesa?.name || raw?.head_name || null,
       jabatan: 'Kepala Desa',

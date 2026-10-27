@@ -1,7 +1,7 @@
 patch:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Toggle status aktif akun pengguna
-  description: Hanya Petugas Desa; tidak boleh menonaktifkan diri sendiri atau Petugas Desa aktif terakhir.
+  description: Hanya Staf SIDUTama; tidak boleh menonaktifkan diri sendiri atau Staf SIDUTama aktif terakhir.
   operationId: toggleUserStatus
   security:
     - sanctumCookie: []
@@ -23,6 +23,6 @@ patch:
               id: "550e8400-e29b-41d4-a716-446655440000"
               is_active: false
     '403':
-      description: Aksi tidak diizinkan karena target adalah diri sendiri atau Petugas Desa terakhir
+      description: Aksi tidak diizinkan karena target adalah diri sendiri atau Staf SIDUTama terakhir
     '404':
       description: Akun tidak ditemukan
