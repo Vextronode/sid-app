@@ -5,98 +5,113 @@
 // Semua isian dari data desa (Kelola Profil Desa); tanpa data tampil "-".
 // ==========================================
 
+import { useEffect } from 'react'
 import { X, Phone, Mail, MapPin, Clock, HelpCircle } from 'lucide-react'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 
 export default function HelpCenterModal({ open, onClose }) {
   const { village } = usePublicVillageInfo()
 
+  // Esc menutup popup.
+  useEffect(() => {
+    if (!open) return undefined
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [open, onClose])
+
   if (!open) return null
 
+  const phone = village?.phone
+  const email = village?.email
+
+  const items = [
+    {
+      key: 'phone',
+      icon: Phone,
+      label: 'Telepon / WhatsApp',
+      value: phone,
+      href: phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : null,
+    },
+    {
+      key: 'email',
+      icon: Mail,
+      label: 'Email',
+      value: email,
+      href: email ? `mailto:${email}` : null,
+    },
+    { key: 'address', icon: MapPin, label: 'Alamat Kantor Desa', value: village?.address },
+    { key: 'hours', icon: Clock, label: 'Jam Operasional', value: village?.office_hours },
+  ]
+
   return (
-    <div className="sid-help-modal-overlay">
-      <div className="sid-help-modal">
+    <div className="sid-help-modal-overlay" onClick={onClose}>
+      <div
+        className="sid-help-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sid-help-modal-title"
+        onClick={(event) => event.stopPropagation()}
+      >
         {/* =========================
             HEADER
         ========================= */}
         <div className="sid-help-modal-header">
+          <div className="sid-help-modal-icon" aria-hidden="true">
+            <HelpCircle size={22} />
+          </div>
+
+          <div className="sid-help-modal-heading">
+            <h2 id="sid-help-modal-title" className="sid-help-modal-title">
+              Pusat Bantuan
+            </h2>
+
+            <p className="sid-help-modal-subtitle">
+              Butuh bantuan? Hubungi kami lewat kanal berikut.
+            </p>
+          </div>
+
           <button
+            type="button"
             onClick={onClose}
             className="sid-help-modal-close"
             aria-label="Tutup pusat bantuan"
           >
             <X size={20} />
           </button>
-
-          <HelpCircle size={28} className="sid-help-modal-icon" />
-
-          <h2 className="sid-help-modal-title">Pusat Bantuan</h2>
-
-          <p className="sid-help-modal-subtitle">
-            Butuh bantuan? Hubungi kami lewat kanal berikut.
-          </p>
         </div>
 
         {/* =========================
             CONTENT
         ========================= */}
         <div className="sid-help-modal-content">
-          {/* TELEPON + EMAIL: kelompoknya di tengah, teksnya tetap rata kiri. */}
-          <div className="sid-help-contact-group">
-            <div className="sid-help-item">
-              <div className="sid-help-item-icon">
-                <Phone size={16} />
-              </div>
+          <ul className="sid-help-list">
+            {items.map(({ key, icon: Icon, label, value, href }) => (
+              <li key={key} className="sid-help-item">
+                <div className="sid-help-item-icon" aria-hidden="true">
+                  <Icon size={18} />
+                </div>
 
-              <div className="sid-help-item-content">
-                <p className="sid-help-item-label">Telepon / WhatsApp</p>
+                <div className="sid-help-item-content">
+                  <p className="sid-help-item-label">{label}</p>
 
-                <p className="sid-help-item-value">{village?.phone || '-'}</p>
-              </div>
-            </div>
-
-            {/* EMAIL */}
-            <div className="sid-help-item">
-              <div className="sid-help-item-icon">
-                <Mail size={16} />
-              </div>
-
-              <div className="sid-help-item-content">
-                <p className="sid-help-item-label">Email</p>
-
-                <p className="sid-help-item-value">{village?.email || '-'}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* ALAMAT */}
-          <div className="sid-help-item">
-            <div className="sid-help-item-icon">
-              <MapPin size={16} />
-            </div>
-
-            <div className="sid-help-item-content">
-              <p className="sid-help-item-label">Alamat Kantor Desa</p>
-
-              <p className="sid-help-item-value">{village?.address || '-'}</p>
-            </div>
-          </div>
-
-          {/* JAM OPERASIONAL */}
-          <div className="sid-help-item">
-            <div className="sid-help-item-icon">
-              <Clock size={16} />
-            </div>
-
-            <div className="sid-help-item-content">
-              <p className="sid-help-item-label">Jam Operasional</p>
-
-              <p className="sid-help-item-value">{village?.office_hours || '-'}</p>
-            </div>
-          </div>
+                  {href ? (
+                    <a href={href} className="sid-help-item-value sid-help-item-link">
+                      {value}
+                    </a>
+                  ) : (
+                    <p className="sid-help-item-value">{value || '-'}</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
 
           {/* TUTUP */}
           <button
+            type="button"
             onClick={onClose}
             className="sid-btn sid-btn-secondary sid-btn-full sid-help-close-button"
           >
