@@ -5910,6 +5910,52 @@
   line-height: 1.5;
 }
 
+/* Deskripsi jenis surat terpilih, di atas daftar persyaratan. */
+.sid-letter-type-chosen-description {
+  margin: 10px 0 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Layanan Kependudukan: dokumen yang dibawa ke Disdukcapil. */
+.sid-letter-type-carry {
+  margin: 12px 0 0;
+  padding-top: 12px;
+
+  border-top: 1px solid color-mix(in srgb, var(--sid-primary) 20%, transparent);
+
+  color: var(--sid-text-primary);
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sid-letter-type-carry-title {
+  margin: 0 0 6px;
+
+  font-weight: 700;
+}
+
+.sid-letter-type-carry-label {
+  margin: 8px 0 2px;
+
+  color: var(--sid-text-secondary);
+}
+
+.sid-letter-type-carry ul {
+  margin: 0;
+  padding-left: 20px;
+
+  list-style: disc;
+}
+
+.sid-letter-type-carry li + li {
+  margin-top: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sid-letter-type-option.is-skeleton {
     animation: none;
