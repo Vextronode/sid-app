@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { newHeadChoice } from './familyHead'
+import { memberChoices, newHeadChoice } from './familyHead'
 
 const members = [
   { id: 'c-1', name: 'Asep', family_role: 'kepala_keluarga' },
@@ -29,5 +29,45 @@ describe('newHeadChoice', () => {
 
     expect(choice.visible).toBe(true)
     expect(choice.candidates.map((member) => member.id)).toEqual(['c-2', 'c-3'])
+  })
+})
+
+describe('memberChoices', () => {
+  const family = [
+    {
+      id: 'c-1',
+      family_role: 'kepala_keluarga',
+      gender: 'L',
+      date_of_birth: '1960-01-01',
+      is_self: true,
+    },
+    { id: 'c-2', family_role: 'istri', gender: 'P', date_of_birth: '1965-01-01' },
+    { id: 'c-3', family_role: 'anak', gender: 'P', date_of_birth: '1990-01-01' },
+    { id: 'c-4', family_role: 'cucu', gender: 'L', date_of_birth: '2015-01-01' },
+    { id: 'c-5', family_role: 'anak', gender: 'P', date_of_birth: '2012-01-01' },
+  ]
+
+  it('limits the child to its allowed roles and skips the applicant', () => {
+    const field = { roles: ['anak', 'cucu', 'famili_lain'], notSelf: true }
+
+    expect(memberChoices(field, family, {}).map((member) => member.id)).toEqual([
+      'c-3',
+      'c-4',
+      'c-5',
+    ])
+  })
+
+  it('only offers women at least ten years older than the chosen child as mother', () => {
+    const field = { gender: 'P', olderThan: { field: 'anak', years: 10 } }
+
+    // Untuk cucu (2015): nenek dan ibunya, bukan bibinya yang lahir 2012.
+    expect(memberChoices(field, family, { anak: 'c-4' }).map((member) => member.id)).toEqual([
+      'c-2',
+      'c-3',
+    ])
+  })
+
+  it('is empty when nobody qualifies', () => {
+    expect(memberChoices({ roles: ['menantu'] }, family, {})).toEqual([])
   })
 })

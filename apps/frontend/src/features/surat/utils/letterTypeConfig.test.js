@@ -464,3 +464,19 @@ describe('applicantValue', () => {
     expect(applicantValue({ name: 'lain' }, { citizen: { gender: 'L' } })).toBeNull()
   })
 })
+
+describe('family_member roles', () => {
+  it('keeps the allowed family roles of a member field', () => {
+    const config = getLetterTypeFormConfig({
+      id: 8,
+      code: 'F08',
+      name: 'Pengakuan Anak',
+      form_fields: [
+        { name: 'anak', label: 'Anak', type: 'family_member', required: true, roles: ['anak'] },
+        { name: 'ibu', label: 'Ibu', type: 'family_member', required: true },
+      ],
+    })
+
+    expect(config.fields.map((field) => field.roles)).toEqual([['anak'], null])
+  })
+})

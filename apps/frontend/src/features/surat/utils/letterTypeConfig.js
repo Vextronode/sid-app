@@ -17,6 +17,10 @@ function normalizeField(field) {
     visibleWhen: field.visible_when ?? null,
     // family_member: batas jenis kelamin anggota yang dapat dipilih (L/P).
     gender: field.gender ?? null,
+    // family_member: hubungan dalam KK yang boleh dipilih (mis. hanya anak).
+    roles: Array.isArray(field.roles) ? field.roles : null,
+    // family_member: minimal sekian tahun lebih tua dari isian acuan.
+    olderThan: field.older_than ?? null,
     // family_member: pemohon sendiri tidak dapat dipilih (mis. almarhum).
     notSelf: Boolean(field.not_self),
     // Teks pilihan kosong isian family_member opsional.
@@ -54,11 +58,6 @@ function normalizeSlot(slot) {
 }
 
 /**
- * Definisi form sebuah jenis surat sepenuhnya berasal dari backend
- * (letter_types.form_fields dan signature_slots), sehingga form, validasi
- * server, dan template PDF memakai satu sumber yang sama.
- */
-/**
  * Nilai isian `fromApplicant` dari data pemohon (mis. jenis kelamin L ->
  * suami), atau null bila datanya kosong sehingga isian tetap ditanyakan.
  */
@@ -78,10 +77,18 @@ export function applicantValues(fields, user) {
   )
 }
 
+/**
+ * Definisi form sebuah jenis surat sepenuhnya berasal dari backend
+ * (letter_types.form_fields dan signature_slots), sehingga form, validasi
+ * server, dan template PDF memakai satu sumber yang sama.
+ */
 export function getLetterTypeFormConfig(letterType) {
   if (!letterType?.code) return null
 
-  const definitionFields = Array.isArray(letterType.form_fields) ? letterType.form_fields : []
+  // Isian yang diisi sistem saat pengajuan (`same_value`) tidak ditanyakan.
+  const definitionFields = (
+    Array.isArray(letterType.form_fields) ? letterType.form_fields : []
+  ).filter((field) => !field.same_value)
   const signatureSlots = Array.isArray(letterType.signature_slots) ? letterType.signature_slots : []
 
   return {

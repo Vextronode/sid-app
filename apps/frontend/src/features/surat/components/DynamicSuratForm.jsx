@@ -22,7 +22,7 @@ import { FamilyMembersField } from './FamilyMembersField'
 import { RepeaterField } from './RepeaterField'
 import { VillageAreaField } from './VillageAreaField'
 import { NikLookupHint } from './NikLookupHint'
-import { newHeadChoice } from '../utils/familyHead'
+import { memberChoices, newHeadChoice } from '../utils/familyHead'
 import { witnessConflict } from '../utils/witness'
 import { applicantValue, applicantValues } from '../utils/letterTypeConfig'
 
@@ -89,6 +89,7 @@ export function DynamicSuratForm({
     register,
     handleSubmit,
     setValue,
+    setError,
     control,
     formState: { errors },
   } = useForm({
@@ -255,6 +256,14 @@ export function DynamicSuratForm({
       console.error(error)
 
       setSubmitError(firstServerError(error))
+      // Galat isian dari server (mis. urutan tanggal) juga tampil di isiannya.
+      Object.entries(error?.response?.data?.errors ?? {}).forEach(([key, messages]) => {
+        const name = key.startsWith('payload.') ? key.slice('payload.'.length) : null
+
+        if (name && !name.includes('.') && config.fields.some((field) => field.name === name)) {
+          setError(name, { type: 'server', message: [].concat(messages)[0] })
+        }
+      })
     } finally {
       submittingRef.current = false
       setIsSubmitting(false)
@@ -483,16 +492,23 @@ export function DynamicSuratForm({
                         ? 'Pilih anggota keluarga...'
                         : (field.emptyLabel ?? 'Tidak ada di KK')}
                     </option>
-                    {(headChoice?.candidates ?? familyMembers)
-                      .filter((member) => !field.gender || member.gender === field.gender)
-                      .filter((member) => !field.notSelf || !member.is_self)
-                      .map((member) => (
+                    {memberChoices(field, familyMembers, watchedFormData, headChoice).map(
+                      (member) => (
                         <option key={member.id} value={member.id}>
                           {member.name} ({member.family_role_label})
                         </option>
-                      ))}
+                      ),
+                    )}
                   </select>
                 )}
+
+                {field.type === 'family_member' &&
+                  familyMembers.length > 0 &&
+                  memberChoices(field, familyMembers, watchedFormData, headChoice).length === 0 && (
+                    <p className="sid-form-field-error" role="status">
+                      Tidak ada anggota KK Anda yang dapat dipilih untuk isian ini.
+                    </p>
+                  )}
 
                 {field.type === 'village_area' && (
                   <VillageAreaField

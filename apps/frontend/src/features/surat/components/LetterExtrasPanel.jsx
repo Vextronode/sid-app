@@ -231,6 +231,8 @@ export function LetterExtrasPanel({ letterId }) {
   const { user } = useAuth()
   const [letter, setLetter] = useState(null)
   const [error, setError] = useState('')
+  // Hasil instansi baru diterima: Terapkan langsung dimulai (pop up perubahan).
+  const [resultAccepted, setResultAccepted] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -422,12 +424,17 @@ export function LetterExtrasPanel({ letterId }) {
       {letter.result_stage && (
         <LetterResultPanel
           letter={letter}
-          onChanged={load}
+          onChanged={(decision) => {
+            setResultAccepted(decision === 'accepted')
+            void load()
+          }}
           onOpenFile={(url) => openFile(() => openProtectedFile(url))}
         />
       )}
 
-      {canFulfill && <FulfillmentPanel letterId={letter.id} onApplied={load} />}
+      {canFulfill && (
+        <FulfillmentPanel letterId={letter.id} onApplied={load} autoStart={resultAccepted} />
+      )}
 
       {!canFulfill && letter.fulfilled_at && (
         <section className="sid-modal-note" aria-label="Perubahan data">

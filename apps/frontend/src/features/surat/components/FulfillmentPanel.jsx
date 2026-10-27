@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { applyFulfillment, getFulfillmentProposal } from '../api/letterExtrasApi'
 import { confirmFulfillment } from '../utils/confirmFulfillment'
 import { SemiManualFulfillmentForm } from './SemiManualFulfillmentForm'
@@ -39,8 +39,12 @@ function display(value) {
  * menerapkannya ke data kependudukan. Hanya kolom yang ditetapkan untuk
  * jenis surat itu yang tampil. Sebelum disimpan, pop up menampilkan daftar
  * perubahan (lama -> baru) dari server untuk dikonfirmasi.
+ *
+ * `autoStart` (hasil instansi baru diterima): Terapkan langsung dimulai bila
+ * tidak ada isian wajib yang masih kosong (mis. NIK atau No. KK baru dari
+ * dokumen terbitan); bila ada, Kasi/Kaur diminta melengkapinya dulu.
  */
-export function FulfillmentPanel({ letterId, onApplied }) {
+export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
   const [proposal, setProposal] = useState(null)
   const [values, setValues] = useState({})
   const [subjectNik, setSubjectNik] = useState('')
@@ -48,6 +52,9 @@ export function FulfillmentPanel({ letterId, onApplied }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [needsInput, setNeedsInput] = useState(false)
+  const section = useRef(null)
+  const autoStarted = useRef(false)
 
   useEffect(() => {
     let active = true
@@ -105,6 +112,33 @@ export function FulfillmentPanel({ letterId, onApplied }) {
     }
   }
 
+  useEffect(() => {
+    if (!autoStart || autoStarted.current || loading || !proposal || proposal.fulfilled_at) return
+    // "Tandai selesai" (manual) tetap dikonfirmasi sendiri oleh Kasi/Kaur.
+    if (proposal.action === 'manual') return
+
+    autoStarted.current = true
+
+    // Isian dari dokumen terbitan yang belum diisi: NIK warga baru, No. KK baru.
+    const missing =
+      proposal.action === 'create_citizen' &&
+      (proposal.fields ?? []).some(
+        (field) => ['nik', 'no_kk'].includes(field.column) && !String(values[field.column] ?? ''),
+      )
+
+    if (missing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNeedsInput(true)
+
+      return
+    }
+
+    const form = section.current?.querySelector('form')
+    const submit = form?.querySelector('button[type="submit"]')
+
+    if (form && !submit?.disabled) form.requestSubmit()
+  }, [autoStart, loading, proposal, values])
+
   if (loading) {
     return <p className="sid-modal-note-text">Memuat usulan perubahan data...</p>
   }
@@ -128,8 +162,15 @@ export function FulfillmentPanel({ letterId, onApplied }) {
   }
 
   return (
-    <section className="sid-modal-note" aria-label="Terapkan perubahan data">
+    <section ref={section} className="sid-modal-note" aria-label="Terapkan perubahan data">
       <p className="sid-modal-note-label">{ACTION_TITLES[proposal.action] ?? 'Perubahan Data'}</p>
+
+      {needsInput && !done && (
+        <p role="status" className="sid-warning-box">
+          Hasil sudah diterima. Isi NIK/No. KK dari dokumen terbitan Disdukcapil di bawah, lalu klik
+          Terapkan.
+        </p>
+      )}
 
       {message && (
         <p role="status" className="sid-admin-alert sid-admin-alert-success">
@@ -208,6 +249,26 @@ export function FulfillmentPanel({ letterId, onApplied }) {
                       {field.fixed ? (
                         // Nilai tetap dari jenis surat; tidak dapat dikoreksi.
                         <strong>{field.display ?? display(field.proposed)}</strong>
+                      ) : field.options ? (
+                        // Kolom berkode (jenis kelamin, RT, agama, ...): pilihan berlabel.
+                        <select
+                          className="sid-select"
+                          aria-label={`Nilai diterapkan untuk ${field.label}`}
+                          value={String(values[field.column] ?? '')}
+                          onChange={(event) =>
+                            setValues((current) => ({
+                              ...current,
+                              [field.column]: event.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Tidak diubah</option>
+                          {field.options.map((option) => (
+                            <option key={option.value} value={String(option.value)}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
                       ) : (
                         <input
                           className="sid-input"

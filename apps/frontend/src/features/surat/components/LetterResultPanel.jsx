@@ -145,7 +145,7 @@ function ReviewForm({ letterId, resultId, onDone }) {
     const confirmed = await confirmDialog({
       title: accepted ? 'Terima hasil dari instansi?' : 'Tolak hasil dari instansi?',
       message: accepted
-        ? 'Hasil dianggap sah. Bila jenis surat ini mengubah data, lanjutkan dengan Terapkan.'
+        ? 'Hasil dianggap sah. Bila jenis surat ini mengubah data, daftar perubahannya langsung ditampilkan untuk dikonfirmasi.'
         : 'Pemohon akan diminta mengunggah ulang sesuai alasan penolakan.',
       confirmLabel: accepted ? 'Terima' : 'Tolak',
       tone: accepted ? 'primary' : 'danger',
@@ -159,7 +159,7 @@ function ReviewForm({ letterId, resultId, onDone }) {
     try {
       await reviewLetterResult(letterId, resultId, decision, notes.trim())
       notifySuccess(accepted ? 'Hasil diterima.' : 'Hasil ditolak.')
-      onDone()
+      onDone(decision)
     } catch (requestError) {
       setError(serverMessage(requestError, 'Gagal menyimpan verifikasi.'))
     } finally {
