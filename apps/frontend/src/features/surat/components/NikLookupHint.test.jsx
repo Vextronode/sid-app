@@ -21,7 +21,7 @@ describe('NikLookupHint', () => {
 
     expect(await screen.findByText('Ujang Saksi')).toBeTruthy()
     expect(screen.getByText('3218010101900009')).toBeTruthy()
-    expect(lookupNik).toHaveBeenCalledWith('3207010101800009')
+    expect(lookupNik).toHaveBeenCalledWith('3207010101800009', { includeInactive: false })
     expect(onResult).toHaveBeenLastCalledWith(
       expect.objectContaining({
         status: 'found',

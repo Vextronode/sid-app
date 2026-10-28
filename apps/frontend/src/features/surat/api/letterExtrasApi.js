@@ -73,8 +73,11 @@ export const getFamilyMembers = async () => {
 }
 
 // Nama warga desa dari NIK (isian nama ber-from_nik, mis. saksi).
-export const lookupNik = async (nik) => {
-  const response = await api.get('/api/profile/nik-lookup', { params: { nik } })
+// includeInactive: juga mencari warga nonaktif (mis. NIK almarhum).
+export const lookupNik = async (nik, { includeInactive = false } = {}) => {
+  const response = await api.get('/api/profile/nik-lookup', {
+    params: includeInactive ? { nik, include_inactive: 1 } : { nik },
+  })
 
   return response.data.data
 }
