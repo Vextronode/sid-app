@@ -182,6 +182,12 @@ class DeathReportServiceTest extends TestCase
 
         // F-1.01: kepala keluarga baru (ibu, tanpa akun) tidak ditempeli TTD.
         $this->assertStringNotContainsString('<img', $this->render($letterId, 'f1_01', landscape: true));
+
+        // Versi TTD basah: dicetak lalu ditandatangani, tanpa gambar TTD.
+        $wetReport = $this->render($letterId, null, template: 'wet');
+        $this->assertStringNotContainsString('<img', $wetReport);
+        $this->assertStringContainsString('( '.$this->kades['citizen']->name.' )', $wetReport);
+        $this->assertStringNotContainsString('<img', $this->render($letterId, 'f1_02', template: 'wet'));
     }
 
     public function test_death_of_the_family_head_requires_a_new_head_and_issues_the_new_family_forms(): void
@@ -377,7 +383,7 @@ class DeathReportServiceTest extends TestCase
         return $letterId;
     }
 
-    private function render(string $letterId, ?string $document, bool $landscape = false): string
+    private function render(string $letterId, ?string $document, bool $landscape = false, string $template = 'digital'): string
     {
         $rendered = null;
         $pdf = Mockery::mock(DomPdf::class);
@@ -389,7 +395,7 @@ class DeathReportServiceTest extends TestCase
 
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with('pdf.templates.digital', Mockery::on(function (array $data) use (&$rendered): bool {
+            ->with("pdf.templates.{$template}", Mockery::on(function (array $data) use (&$rendered): bool {
                 $rendered = $data['template'];
 
                 return true;
@@ -398,7 +404,7 @@ class DeathReportServiceTest extends TestCase
 
         $query = $document === null ? '' : "&document={$document}";
         $this->actingAs($this->applicant['user'])
-            ->get("/api/letters/{$letterId}/download?template=digital{$query}")
+            ->get("/api/letters/{$letterId}/download?template={$template}{$query}")
             ->assertOk();
 
         return (string) $rendered;

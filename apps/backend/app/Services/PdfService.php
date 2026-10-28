@@ -342,10 +342,12 @@ class PdfService
         ];
 
         // Slot tanda tangan warga: {{ nama_ttd_<slot> }} dan {{ ttd_<slot> }}.
+        // Versi TTD basah dicetak lalu ditandatangani: gambarnya kosong.
         $signatureImages = [];
         foreach ($this->letterSignatureService->renderData($letter) as $slotKey => $signature) {
             $textReplacements["{{ nama_ttd_{$slotKey} }}"] = $signature['name'];
             $signatureImages["{{ ttd_{$slotKey} }}"] = match (true) {
+                $template !== 'digital' => '',
                 $signature['image'] !== null => '<img src="'.$signature['image'].'" style="max-height: 60px; width: auto;">',
                 $signature['method'] === 'wet' => '<em>(tanda tangan basah terlampir)</em>',
                 default => '',
