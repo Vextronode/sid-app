@@ -61,6 +61,15 @@ use Illuminate\Validation\Rule;
  * Isian dengan `default`: nilai bawaan bila tidak dijawab (mis. pengurusan
  * ke Disdukcapil = sendiri); juga nilai awal di form.
  *
+ * Isian tanggal `past`: tidak boleh sesudah hari ini (peristiwa yang sudah
+ * terjadi). Isian angka `integer` (bilangan bulat) dan `min_value` (batas
+ * bawah). Isian jenis kelamin `opposite_applicant_gender` dan isian NIK
+ * `nik_gender` = `opposite_applicant`: pasangan pemohon berlawanan jenis.
+ *
+ * Isian dengan `prefill_from_applicant` (kolom data penduduk, mis.
+ * occupation_id, rt_id, name, address): nilai awal di form dari data
+ * pemohon; berbeda dari `from_applicant`, jawaban pemohon tetap dipakai.
+ *
  * Isian dengan `same_value` ([isian a, isian b]) tidak diisi pemohon: saat
  * pengajuan bernilai `ya` bila kedua isian itu terisi dan sama (mis. No. KK
  * suami = No. KK istri), selain itu `tidak`.
@@ -69,8 +78,9 @@ use Illuminate\Validation\Rule;
  * boleh sebelum (`after`) / sesudah (`before`) acuannya. Acuan = nama isian
  * tanggal, atau `birth:<isian>` = tanggal lahir orang di isian itu (anggota
  * KK, warga desa ber-NIK, pemohon bila isian NIK-nya miliknya, atau tanggal
- * yang diketik); beberapa acuan dipisah `|`, yang pertama diketahui dipakai.
- * Acuan yang tidak diketahui dilewati.
+ * yang diketik); `birth:applicant` = tanggal lahir pemohon. Beberapa acuan
+ * dipisah `|`, yang pertama diketahui dipakai. Acuan yang tidak diketahui
+ * dilewati.
  *
  * Isian NIK `village_citizen`: harus warga aktif desa ini di luar KK
  * pemohon (mis. pasangan dari KK lain). Isian No. KK `village_family`: harus
@@ -88,7 +98,9 @@ use Illuminate\Validation\Rule;
  * yang jenis kelaminnya tidak diketahui dilewati.
  *
  * Isian NIK `adoptee` (anak angkat F10): bukan pemohon, dan bukan kepala
- * keluarga yang KK-nya masih beranggota lain. Isian NIK `typed_when_empty`:
+ * keluarga yang KK-nya masih beranggota lain. Isian NIK `include_inactive`:
+ * pencarian dan pengisian `from_nik` juga menemukan warga nonaktif (mis.
+ * almarhum). Isian NIK `typed_when_empty`:
  * pasangan `from_nik`-nya juga diketik bila NIK dikosongkan (mis. anak belum
  * punya NIK).
  *
@@ -839,7 +851,7 @@ class LetterFormSchema
 
         foreach ($this->fields ?? [] as $field) {
             $fromNik = $field['from_nik'] ?? null;
-            $citizen = $fromNik !== null ? $this->citizenByNik($payload[$fromNik] ?? null) : null;
+            $citizen = $fromNik !== null ? $this->citizenByNik($payload[$fromNik] ?? null, $this->includesInactive($fromNik)) : null;
 
             if ($citizen !== null) {
                 $payload[$field['name']] = match ($field['from_nik_value'] ?? 'name') {
@@ -884,22 +896,25 @@ class LetterFormSchema
         return $payload;
     }
 
-    private function citizenByNik(mixed $nik): ?Citizen
+    private function citizenByNik(mixed $nik, bool $includeInactive = false): ?Citizen
     {
         if (! is_string($nik) || ! preg_match('/^\d{16}$/', $nik) || $this->villageId === null) {
             return null;
         }
 
-        if (! array_key_exists($nik, $this->nikCitizens)) {
-            $this->nikCitizens[$nik] = Citizen::query()
+        // Warga nonaktif (mis. almarhum) hanya dicari bila isiannya mengizinkan.
+        $key = ($includeInactive ? 'all:' : 'active:').$nik;
+
+        if (! array_key_exists($key, $this->nikCitizens)) {
+            $this->nikCitizens[$key] = Citizen::query()
                 ->where('village_id', $this->villageId)
                 ->where('nik_hash', hash('sha256', $nik))
-                ->where('is_active', true)
+                ->when(! $includeInactive, fn ($query) => $query->where('is_active', true))
                 ->with('family:id,no_kk')
                 ->first();
         }
 
-        return $this->nikCitizens[$nik];
+        return $this->nikCitizens[$key];
     }
 
     public static function areaNumber(mixed $number): string
@@ -1015,7 +1030,7 @@ class LetterFormSchema
 
             // Nama dari data penduduk bila NIK-nya terdaftar.
             $fromNik = $field['from_nik'] ?? null;
-            $known = $fromNik !== null && $this->citizenByNik($payload[$fromNik] ?? null) !== null;
+            $known = $fromNik !== null && $this->citizenByNik($payload[$fromNik] ?? null, $this->includesInactive($fromNik)) !== null;
 
             $rules["payload.{$field['name']}"] = [
                 ($field['required'] ?? false) && ! $known ? 'required' : 'nullable',
@@ -1024,13 +1039,14 @@ class LetterFormSchema
                 ...(! isset($field['witness']) && (isset($field['not_same_as']) || ($field['not_applicant'] ?? false))
                     ? [$this->distinctNikRule($field, $payload, $visible)]
                     : []),
-                ...(isset($field['nik_gender']) ? [$this->nikGenderRule((string) $field['nik_gender'], $payload)] : []),
+                ...(isset($field['nik_gender']) ? [$this->nikGenderRule((string) $field['nik_gender'], $payload, (bool) ($field['include_inactive'] ?? false))] : []),
                 ...(($field['not_village_citizen'] ?? false) ? [$this->notVillageCitizenRule()] : []),
                 ...(isset($field['date_order']) ? [$this->dateOrderRule($field, $payload)] : []),
                 ...(($field['village_citizen'] ?? false) ? [$this->villageCitizenRule()] : []),
                 ...(($field['village_family'] ?? false) ? [$this->villageFamilyRule()] : []),
                 ...(isset($field['role_of']) ? [$this->roleGenderRule($field['role_of'], $payload)] : []),
                 ...(($field['adoptee'] ?? false) ? [$this->adopteeRule()] : []),
+                ...(($field['opposite_applicant_gender'] ?? false) ? [$this->oppositeApplicantGenderRule($field)] : []),
             ];
         }
 
@@ -1041,8 +1057,11 @@ class LetterFormSchema
                 continue;
             }
 
+            // Pekerjaan dari data penduduk bila NIK-nya terdaftar (`from_nik`).
+            $fromNik = $field['from_nik'] ?? null;
+            $known = $fromNik !== null && $this->citizenByNik($payload[$fromNik] ?? null, $this->includesInactive($fromNik)) !== null;
             $rules["payload.{$field['name']}"] = [
-                ($field['required'] ?? false) ? 'required' : 'nullable',
+                ($field['required'] ?? false) && ! $known ? 'required' : 'nullable',
                 'string',
                 $this->occupationRule(),
             ];
@@ -1115,13 +1134,35 @@ class LetterFormSchema
     {
         return match ($field['type'] ?? 'text') {
             'textarea' => ['string', 'max:2000'],
-            'date' => ['date'],
+            // `past`: peristiwa yang sudah terjadi, tidak sesudah hari ini.
+            'date' => ['date', ...(($field['past'] ?? false) ? [self::pastDateRule($field)] : [])],
             // Jam 24 jam dari input waktu, mis. 08:30.
             'time' => ['date_format:H:i'],
-            'number' => ['numeric'],
+            // `integer` (bilangan bulat, mis. rupiah) dan `min_value`.
+            'number' => [
+                'numeric',
+                ...(($field['integer'] ?? false) ? ['integer'] : []),
+                ...(isset($field['min_value']) ? ['min:'.$field['min_value']] : []),
+            ],
             'nik' => ['digits:16'],
             'select' => ['string', Rule::in(array_column($field['options'] ?? [], 'value'))],
             default => ['string', 'max:255'],
+        };
+    }
+
+    /**
+     * Tanggal tidak boleh sesudah hari ini.
+     *
+     * @param  array<string, mixed>  $field
+     */
+    private static function pastDateRule(array $field): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($field): void {
+            $date = is_string($value) ? rescue(fn () => Carbon::parse($value)->startOfDay(), null, false) : null;
+
+            if ($date !== null && $date->gt(today())) {
+                $fail(($field['label'] ?? $field['name']).' tidak boleh sesudah hari ini.');
+            }
         };
     }
 
@@ -1590,10 +1631,11 @@ class LetterFormSchema
             $value = $payload[$name] ?? null;
 
             $date = match (true) {
+                $source === 'birth:applicant' => $this->applicant?->date_of_birth,
                 // Isian NIK milik pemohon sendiri (self_when), mis. suami = pemohon.
                 $birth && isset($field['self_when']) && FieldCondition::matches($field['self_when'], $payload) => $this->applicant?->date_of_birth,
                 $birth && ($field['type'] ?? null) === 'family_member' => is_string($value) ? $this->familyMembers()->firstWhere('id', $value)?->date_of_birth : null,
-                $birth && ($field['type'] ?? null) === 'nik' => $this->citizenByNik($value)?->date_of_birth,
+                $birth && ($field['type'] ?? null) === 'nik' => $this->citizenByNik($value, $this->includesInactive($name))?->date_of_birth,
                 default => is_string($value) && $value !== '' ? rescue(fn () => Carbon::parse($value), null, false) : null,
             };
 
@@ -1693,6 +1735,15 @@ class LetterFormSchema
     }
 
     /**
+     * Isian NIK yang juga mencari warga nonaktif (`include_inactive`, mis.
+     * almarhum yang datanya sudah dinonaktifkan).
+     */
+    private function includesInactive(string $nikField): bool
+    {
+        return (bool) (collect($this->fields ?? [])->firstWhere('name', $nikField)['include_inactive'] ?? false);
+    }
+
+    /**
      * NIK yang belum boleh terdaftar sebagai warga desa (mis. pendatang).
      */
     private function notVillageCitizenRule(): \Closure
@@ -1711,21 +1762,42 @@ class LetterFormSchema
      *
      * @param  array<string, mixed>  $payload
      */
-    private function nikGenderRule(string $gender, array $payload): \Closure
+    private function nikGenderRule(string $gender, array $payload, bool $includeInactive = false): \Closure
     {
-        $gender = in_array($gender, ['L', 'P'], true) ? $gender : (string) ($payload[$gender] ?? '');
+        $gender = match (true) {
+            in_array($gender, ['L', 'P'], true) => $gender,
+            // Pasangan pemohon: kebalikan jenis kelamin pemohon.
+            $gender === 'opposite_applicant' => ['L' => 'P', 'P' => 'L'][(string) $this->applicant?->gender] ?? '',
+            default => (string) ($payload[$gender] ?? ''),
+        };
 
-        return function (string $attribute, mixed $value, \Closure $fail) use ($gender): void {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($gender, $includeInactive): void {
             if (! in_array($gender, ['L', 'P'], true)) {
                 return;
             }
 
-            $citizen = $this->citizenByNik($value);
+            $citizen = $this->citizenByNik($value, $includeInactive);
 
             if ($citizen !== null && $citizen->gender !== $gender) {
                 $fail($gender === 'L'
                     ? 'NIK ini terdaftar atas warga perempuan; isi NIK laki-laki.'
                     : 'NIK ini terdaftar atas warga laki-laki; isi NIK perempuan.');
+            }
+        };
+    }
+
+    /**
+     * Isian jenis kelamin pasangan pemohon: tidak sama dengan pemohon.
+     *
+     * @param  array<string, mixed>  $field
+     */
+    private function oppositeApplicantGenderRule(array $field): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($field): void {
+            $own = (string) $this->applicant?->gender;
+
+            if (in_array($own, ['L', 'P'], true) && $value === $own) {
+                $fail(($field['label'] ?? $field['name']).' harus '.($own === 'L' ? 'Perempuan' : 'Laki-laki').' (berbeda dengan jenis kelamin pemohon).');
             }
         };
     }

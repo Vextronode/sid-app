@@ -236,6 +236,17 @@ class DeathReportServiceTest extends TestCase
             ->assertJsonPath('data', ['found' => false, 'has_account' => false, 'name' => null, 'family_number' => null, 'is_self' => false]);
         $this->actingAs($this->applicant['user'])->getJson('/api/profile/nik-lookup?nik=123')->assertUnprocessable();
 
+        // Warga nonaktif (mis. almarhum) hanya ditemukan bila diminta.
+        $witness->update(['is_active' => false]);
+        $this->actingAs($this->applicant['user'])
+            ->getJson('/api/profile/nik-lookup?nik=3207010101800009')
+            ->assertJsonPath('data.found', false);
+        $this->actingAs($this->applicant['user'])
+            ->getJson('/api/profile/nik-lookup?nik=3207010101800009&include_inactive=1')
+            ->assertJsonPath('data.found', true)
+            ->assertJsonPath('data.name', 'Ujang Saksi');
+        $witness->update(['is_active' => true]);
+
         // NIK terdaftar: nama dan No. KK diambil dari data penduduk.
         $payload = [...$this->payload(), 'almarhum' => $this->mother->id, 'nik_saksi_1' => $witness->nik, 'nama_saksi_1' => 'Nama Lain'];
         $letterId = $this->submit($payload)->assertCreated()->json('data.id');

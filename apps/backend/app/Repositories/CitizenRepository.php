@@ -60,6 +60,18 @@ class CitizenRepository
             ->first();
     }
 
+    /**
+     * Warga desa ber-NIK ini, aktif maupun nonaktif (mis. almarhum).
+     */
+    public function findInVillageByNik(string $villageId, string $nik): ?Citizen
+    {
+        return Citizen::query()
+            ->where('village_id', $villageId)
+            ->where('nik_hash', hash('sha256', $nik))
+            ->with('family:id,no_kk')
+            ->first();
+    }
+
     public function findByNikHash(string $nikHash): ?Citizen
     {
         return Citizen::query()->where('nik_hash', $nikHash)->first();

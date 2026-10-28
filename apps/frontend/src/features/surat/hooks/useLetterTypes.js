@@ -15,9 +15,7 @@ export function useLetterTypes() {
       })
       .catch((requestError) => {
         if (active) {
-          setError(
-            requestError?.response?.data?.message || 'Gagal memuat konfigurasi jenis surat.',
-          )
+          setError(requestError?.response?.data?.message || 'Gagal memuat konfigurasi jenis surat.')
         }
       })
       .finally(() => {

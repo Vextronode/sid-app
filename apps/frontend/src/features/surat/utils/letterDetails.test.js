@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SURAT_STATUS } from '@/constants/suratStatus'
-import {
-  getApplicantAddress,
-  getApplicantNik,
-  getLetterTrackingState,
-} from './letterDetails'
+import { getApplicantAddress, getApplicantNik, getLetterTrackingState } from './letterDetails'
 
 describe('letter details helpers', () => {
   it('reads the masked NIK and address fields provided by the API', () => {
@@ -34,9 +30,10 @@ describe('letter details helpers', () => {
       getLetterTrackingState({ status: SURAT_STATUS.IN_PROGRESS, current_step_order: 2 })
         .currentStep,
     ).toBe(3)
-    expect(
-      getLetterTrackingState({ status: SURAT_STATUS.APPROVED }),
-    ).toMatchObject({ currentStep: 4, completed: true })
+    expect(getLetterTrackingState({ status: SURAT_STATUS.APPROVED })).toMatchObject({
+      currentStep: 4,
+      completed: true,
+    })
   })
 
   it('marks the active approval step as rejected when the request is rejected', () => {

@@ -60,6 +60,8 @@ class SeededLetterRenderingTest extends TestCase
         $this->applicant = $this->makeCitizenAccount($this->village, $rt, 'warga', [
             'name' => 'Pelapor Hidup',
             'gender' => 'L',
+            // Lebih tua dari anak di surat A05/A08.
+            'date_of_birth' => '1980-01-01',
             'residency_type' => 'lokal',
         ]);
         $this->rtApprover = $this->makeOfficialUser('rt', $this->village, ['rt_id' => $rt->id]);
@@ -102,6 +104,27 @@ class SeededLetterRenderingTest extends TestCase
         // Pemohon hanyalah pelapor dan tidak boleh tercetak sebagai yang meninggal.
         $this->assertStringNotContainsString('Pelapor Hidup', $html);
         $this->assertStringNotContainsString('________', $html);
+    }
+
+    public function test_inheritance_letter_takes_the_deceased_from_the_population_data_by_nik(): void
+    {
+        // Almarhum sudah dinonaktifkan (mis. lewat Surat Keterangan Penguburan).
+        $trader = Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Pedagang']);
+        Citizen::factory()->create([
+            'village_id' => $this->village->id, 'nik' => '3207011705500009', 'name' => 'Haji Darman', 'gender' => 'L',
+            'place_of_birth' => 'Banjar', 'date_of_birth' => '1948-03-03', 'address' => 'Dusun Cibenda RT 002/RW 013',
+            'occupation_id' => $trader->id, 'is_active' => false,
+        ]);
+
+        $html = $this->issue('A11', [
+            'nik_almarhum' => '3207011705500009',
+            'tanggal_meninggal' => '2026-10-09',
+            'tempat_pemakaman' => 'Cibenda',
+        ], $letterId);
+
+        foreach (['Haji Darman', 'Banjar, 3 Maret 1948', 'Laki-laki', 'Dusun Cibenda RT 002/RW 013', 'Pedagang', '3207011705500009'] as $value) {
+            $this->assertStringContainsString($value, $html);
+        }
     }
 
     public function test_inheritance_letter_names_the_applicant_as_heir_of_the_deceased(): void
@@ -198,11 +221,17 @@ class SeededLetterRenderingTest extends TestCase
 
     public function test_income_letter_uses_classification_510_and_spells_out_the_amount(): void
     {
-        $html = $this->issue('A03', [
-            'jenis_usaha' => 'Perdagangan',
-            'penghasilan_perbulan' => '2500000',
-        ]);
+        $trader = Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Pedagang']);
+        $catalogCount = Occupation::query()->count();
 
+        // Bidang usaha dipilih dari katalog pekerjaan desa.
+        $html = $this->issue('A03', [
+            'jenis_usaha' => (string) $trader->id,
+            'penghasilan_perbulan' => '2500000',
+        ], $letterId);
+
+        $this->assertStringContainsString('di bidang &ldquo;Pedagang&rdquo;', $html);
+        $this->assertSame('Pedagang', Letter::query()->findOrFail($letterId)->payload['jenis_usaha']);
         $this->assertStringContainsString('Nomor : 510/001/Des/X/2026', $html);
         $this->assertStringContainsString('Rp. 2.500.000,- (dua juta lima ratus ribu rupiah) setiap bulannya', $html);
         $this->assertStringContainsString('Sukamaju, 12 Oktober 2026', $html);
@@ -216,11 +245,34 @@ class SeededLetterRenderingTest extends TestCase
         $this->assertStringNotContainsString('CIBENDA', mb_strtoupper($html));
         $this->assertStringContainsString(e($this->kades['citizen']->name), $html);
         $this->assertStringNotContainsString('________', $html);
+
+        // "Lainnya": teksnya hanya dicetak, tidak menambah katalog.
+        $other = $this->issue('A03', [
+            'jenis_usaha' => 'lainnya',
+            'jenis_usaha_lainnya' => 'kerajinan bambu',
+            'penghasilan_perbulan' => '1500000',
+        ]);
+        $this->assertStringContainsString('di bidang &ldquo;Kerajinan Bambu&rdquo;', $other);
+        $this->assertSame($catalogCount, Occupation::query()->count());
+    }
+
+    public function test_income_letter_suggests_the_applicant_occupation(): void
+    {
+        $farmer = Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Petani']);
+        $this->applicant['citizen']->update(['occupation_id' => $farmer->id]);
+        $field = collect($this->letterType('A03')->form_fields)->firstWhere('name', 'jenis_usaha');
+
+        $this->assertSame('occupation', $field['type']);
+        $this->assertSame('occupation_id', $field['prefill_from_applicant']);
+        $this->actingAs($this->applicant['user'])
+            ->getJson('/api/user')
+            ->assertJsonPath('data.citizen.occupation_id', $farmer->id);
     }
 
     public function test_domicile_letter_wording_depends_on_residency_status(): void
     {
-        $payload = ['alamat_domisili' => 'Dusun Cibenda RT 001/RW 013'];
+        $area = $this->makeNamedArea($this->village, 'Cibenda', '13', '1');
+        $payload = ['alamat_domisili' => $area->id];
 
         $local = $this->issue('A04', $payload);
         $this->assertStringContainsString('benar-benar warga masyarakat Desa kami, dan menurut keterangan RT/RW', $local);
@@ -233,6 +285,148 @@ class SeededLetterRenderingTest extends TestCase
         // Dua surat berkode klasifikasi sama mendapat nomor berurutan.
         $this->assertStringContainsString('Nomor : 470/001/Des/X/2026', $local);
         $this->assertStringContainsString('Nomor : 470/002/Des/X/2026', $newcomer);
+    }
+
+    public function test_village_citizen_child_and_spouse_are_taken_from_the_population_data_by_nik(): void
+    {
+        Citizen::factory()->create([
+            'village_id' => $this->village->id, 'nik' => '3207010403100009', 'name' => 'Rina Anak Desa', 'gender' => 'P',
+            'place_of_birth' => 'Banjar', 'date_of_birth' => '2010-03-04', 'address' => 'Dusun Cibenda RT 002/RW 013',
+        ]);
+
+        // A05: cukup NIK anak.
+        $poverty = $this->issue('A05', ['nik_anak' => '3207010403100009', 'keperluan_persyaratan' => 'pengajuan beasiswa']);
+        foreach (['Rina Anak Desa', 'Banjar, 4 Maret 2010', 'Perempuan', 'Dusun Cibenda RT 002/RW 013'] as $value) {
+            $this->assertStringContainsString($value, $poverty);
+        }
+
+        // A08: pasangan warga desa cukup NIK; anak yang baru lahir diketik.
+        $birth = $this->issue('A08', [
+            'nik_pasangan' => '3207010403100009',
+            'nama_anak' => 'Bayi Contoh',
+            'tempat_lahir_anak' => 'Pangandaran',
+            'tanggal_lahir_anak' => '2026-10-01',
+            'jenis_kelamin_anak' => 'L',
+            'alamat_anak' => 'Dusun Cibenda RT 001/RW 013',
+        ]);
+        $this->assertStringContainsString('Rina Anak Desa', $birth);
+        $this->assertStringContainsString('Banjar, 4 Maret 2010', $birth);
+
+        // NIK di luar desa: identitasnya wajib diketik.
+        $this->actingAs($this->applicant['user'])
+            ->postJson('/api/letters', [
+                'letter_type_id' => $this->letterType('A05')->id,
+                'payload' => ['nik_anak' => '3207010403100001', 'keperluan_persyaratan' => 'beasiswa'],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.nama_anak', 'payload.tanggal_lahir_anak', 'payload.alamat_anak']);
+    }
+
+    public function test_child_cannot_be_born_before_its_parents(): void
+    {
+        $this->applicant['citizen']->update(['date_of_birth' => '1990-01-01']);
+        $birth = [
+            'nama_pasangan' => 'Ibu Contoh',
+            'tempat_lahir_pasangan' => 'Pangandaran',
+            'tanggal_lahir_pasangan' => '1995-02-03',
+            'nik_pasangan' => '3207014302950001',
+            'jenis_kelamin_pasangan' => 'P',
+            'alamat_pasangan' => 'Dusun Cibenda RT 001/RW 013',
+            'nama_anak' => 'Anak Contoh',
+            'tempat_lahir_anak' => 'Pangandaran',
+            'jenis_kelamin_anak' => 'P',
+            'alamat_anak' => 'Dusun Cibenda RT 001/RW 013',
+        ];
+        $submit = fn (string $code, array $payload) => $this->actingAs($this->applicant['user'])
+            ->postJson('/api/letters', ['letter_type_id' => $this->letterType($code)->id, 'payload' => $payload]);
+
+        // A08: sebelum pasangan yang diketik, dan sebelum pemohon.
+        $submit('A08', [...$birth, 'tanggal_lahir_anak' => '1994-05-05'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_lahir_anak' => 'Tanggal Lahir Anak tidak boleh sebelum tanggal lahir pasangan.']);
+        $submit('A08', [...$birth, 'tanggal_lahir_pasangan' => '1980-02-03', 'tanggal_lahir_anak' => '1985-05-05'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_lahir_anak' => 'Tanggal Lahir Anak tidak boleh sebelum tanggal lahir pemohon.']);
+
+        // Pasangan warga desa: tanggal lahirnya dari data penduduk.
+        Citizen::factory()->create([
+            'village_id' => $this->village->id, 'nik' => '3207014302950009', 'name' => 'Istri Desa', 'gender' => 'P',
+            'date_of_birth' => '2000-01-01',
+        ]);
+        $submit('A08', [...$birth, 'nik_pasangan' => '3207014302950009', 'tanggal_lahir_anak' => '1999-05-05'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_lahir_anak' => 'Tanggal Lahir Anak tidak boleh sebelum tanggal lahir pasangan.']);
+        $submit('A08', [...$birth, 'tanggal_lahir_anak' => '2026-10-01'])->assertCreated();
+
+        // A05: anak yang diketik tidak lahir sebelum pemohon.
+        $submit('A05', [
+            'nik_anak' => '3207010403100001', 'nama_anak' => 'Anak Contoh', 'tempat_lahir_anak' => 'Pangandaran',
+            'tanggal_lahir_anak' => '1989-03-04', 'jenis_kelamin_anak' => 'L', 'alamat_anak' => 'Dusun Cibenda',
+            'keperluan_persyaratan' => 'beasiswa',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_lahir_anak' => 'Tanggal Lahir Anak tidak boleh sebelum tanggal lahir pemohon.']);
+    }
+
+    public function test_village_letter_dates_amounts_and_spouse_follow_the_facts(): void
+    {
+        $submit = fn (string $code, array $payload) => $this->actingAs($this->applicant['user'])
+            ->postJson('/api/letters', ['letter_type_id' => $this->letterType($code)->id, 'payload' => $payload]);
+        $burial = [
+            'nama_almarhum' => 'Almarhum Fulan', 'tempat_lahir_almarhum' => 'Ciamis', 'tanggal_lahir_almarhum' => '1950-05-17',
+            'jenis_kelamin_almarhum' => 'L', 'alamat_almarhum' => 'Dusun Cibenda', 'tempat_meninggal' => 'Rumah',
+            'tempat_pemakaman' => 'TPU Cibenda', 'tanggal_meninggal' => '2026-10-09', 'tanggal_pemakaman' => '2026-10-10',
+        ];
+
+        // Peristiwa belum terjadi (hari ini 12 Oktober 2026).
+        $submit('A07', [...$burial, 'tanggal_meninggal' => '2026-10-13', 'tanggal_pemakaman' => '2026-10-14'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'payload.tanggal_meninggal' => 'Tanggal Meninggal tidak boleh sesudah hari ini.',
+                'payload.tanggal_pemakaman' => 'Tanggal Pemakaman tidak boleh sesudah hari ini.',
+            ]);
+        $submit('A07', [...$burial, 'tanggal_lahir_almarhum' => '2027-01-01'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_lahir_almarhum' => 'Tanggal Lahir Almarhum/Almarhumah tidak boleh sesudah hari ini.']);
+        // Urutan lahir -> meninggal -> dimakamkan.
+        $submit('A07', [...$burial, 'tanggal_meninggal' => '1949-01-01', 'tanggal_pemakaman' => '2026-10-08'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_meninggal' => 'Tanggal Meninggal tidak boleh sebelum tanggal lahir almarhum/almarhumah.']);
+        $submit('A07', [...$burial, 'tanggal_pemakaman' => '2026-10-08'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_pemakaman' => 'Tanggal Pemakaman tidak boleh sebelum tanggal meninggal.']);
+
+        // A11: tanggal lahir almarhum nonaktif dari data penduduk.
+        Citizen::factory()->create([
+            'village_id' => $this->village->id, 'nik' => '3207011705500009', 'name' => 'Haji Darman', 'gender' => 'L',
+            'date_of_birth' => '1948-03-03', 'is_active' => false,
+        ]);
+        $submit('A11', ['nik_almarhum' => '3207011705500009', 'tanggal_meninggal' => '1947-01-01', 'tempat_pemakaman' => 'Cibenda'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_meninggal' => 'Tanggal Meninggal tidak boleh sebelum tanggal lahir almarhum/almarhumah.']);
+
+        // Penghasilan: rupiah bulat lebih dari 0.
+        foreach (['0', '-5000', '2500000.5'] as $amount) {
+            $submit('A10', ['penghasilan_perbulan' => $amount])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('payload.penghasilan_perbulan');
+        }
+
+        // A08: pasangan pemohon laki-laki harus perempuan.
+        $birth = [
+            'nama_pasangan' => 'Pasangan Contoh', 'tempat_lahir_pasangan' => 'Pangandaran', 'tanggal_lahir_pasangan' => '1995-02-03',
+            'nik_pasangan' => '3207014302950001', 'jenis_kelamin_pasangan' => 'L', 'alamat_pasangan' => 'Dusun Cibenda',
+            'nama_anak' => 'Anak Contoh', 'tempat_lahir_anak' => 'Pangandaran', 'tanggal_lahir_anak' => '2026-10-01',
+            'jenis_kelamin_anak' => 'P', 'alamat_anak' => 'Dusun Cibenda',
+        ];
+        $submit('A08', $birth)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.jenis_kelamin_pasangan' => 'Jenis Kelamin Pasangan (Suami/Istri) harus Perempuan (berbeda dengan jenis kelamin pemohon).']);
+        Citizen::factory()->create(['village_id' => $this->village->id, 'nik' => '3207014302950008', 'gender' => 'L']);
+        $submit('A08', [...$birth, 'nik_pasangan' => '3207014302950008'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.nik_pasangan' => 'NIK ini terdaftar atas warga laki-laki; isi NIK perempuan.']);
+        $submit('A08', [...$birth, 'jenis_kelamin_pasangan' => 'P'])->assertCreated();
     }
 
     public function test_name_difference_letter_keeps_one_name_per_line(): void
