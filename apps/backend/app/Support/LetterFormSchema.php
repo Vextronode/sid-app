@@ -126,7 +126,10 @@ use Illuminate\Validation\Rule;
  * susunan KK pemohon tanpa anggota di isian `exclude`, dengan anggota di
  * isian `head` sebagai kepala keluarga (urutan pertama). Disimpan sebagai
  * `<nama>_<n>_<kolom>` (n = 1..10, kolom MEMBER_KEYS) dan `<nama>_jumlah`,
- * mis. untuk F-1.01 setelah kepala keluarga meninggal.
+ * mis. untuk F-1.01 setelah kepala keluarga meninggal. `append` ({nik, role
+ * | role_value, typed, fixed}) menambah satu orang di akhir susunan (anak
+ * angkat F10, bayi F05); sumber `typed` boleh `a|b` (isian pertama yang
+ * terisi).
  *
  * Isian `village_area`: Dusun -> RW -> RT desa ini (id RT); saat pengajuan
  * ditambah `<nama>_dusun`, `<nama>_rw`, `<nama>_rt` siap cetak.
@@ -420,7 +423,18 @@ class LetterFormSchema
      */
     private function typedMember(array $map, array $payload, string $role): array
     {
-        $value = fn (string $key): string => trim((string) ($payload[$map[$key] ?? ''] ?? ''));
+        // Sumber `a|b`: isian pertama yang terisi (mis. ayah anggota KK, atau yang diketik).
+        $value = function (string $key) use ($map, $payload): string {
+            foreach (explode('|', (string) ($map[$key] ?? '')) as $source) {
+                $text = trim((string) ($payload[$source] ?? ''));
+
+                if ($text !== '') {
+                    return $text;
+                }
+            }
+
+            return '';
+        };
         $birth = $value('tanggal_lahir');
         $values = [];
 
@@ -570,14 +584,18 @@ class LetterFormSchema
 
             $count = $members->count();
 
-            // `append`: orang yang masuk KK ini (mis. anak angkat F10), dari
-            // data penduduk bila NIK-nya terdaftar, selain itu dari isian.
+            // `append`: orang yang masuk KK ini (mis. anak angkat F10, bayi
+            // F05), dari data penduduk bila NIK-nya terdaftar, selain itu dari
+            // isian `typed` ditambah nilai tetap `fixed` (mis. status kawin
+            // bayi). SHDK dari isian `role`, atau tetap `role_value`.
             if (isset($field['append']) && $count < self::ROSTER_ROWS) {
                 $append = $field['append'];
-                $role = self::familyRoleLabel($payload[$append['role']] ?? null);
-                $citizen = $this->citizenByNik($payload[$append['nik']] ?? null)?->loadMissing(self::MEMBER_RELATIONS);
+                $role = self::familyRoleLabel($append['role_value'] ?? $payload[$append['role'] ?? ''] ?? null);
+                $citizen = $this->citizenByNik($payload[$append['nik'] ?? ''] ?? null)?->loadMissing(self::MEMBER_RELATIONS);
                 $index = $citizen === null ? false : $members->search(fn (Citizen $member): bool => $member->id === $citizen->id);
-                $values = $citizen !== null ? [...self::memberValues($citizen), 'shdk' => $role] : $this->typedMember($append['typed'] ?? [], $payload, $role);
+                $values = $citizen !== null
+                    ? [...self::memberValues($citizen), 'shdk' => $role]
+                    : [...$this->typedMember($append['typed'] ?? [], $payload, $role), ...($append['fixed'] ?? [])];
 
                 foreach ($values as $key => $value) {
                     $payload[$field['name'].'_'.(($index === false ? $count : $index) + 1).'_'.$key] = $value;

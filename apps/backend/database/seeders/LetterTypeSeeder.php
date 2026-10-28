@@ -198,10 +198,10 @@ class LetterTypeSeeder extends Seeder
                 'form_fields' => [
                     // Identitas di surat ini milik almarhum, bukan pemohon.
                     ...$this->deceasedFields('Almarhum/Almarhumah'),
-                    $this->pastDate('tanggal_meninggal', 'Tanggal Meninggal', [self::AFTER_DECEASED_BORN]),
+                    $this->pastDate('tanggal_meninggal', 'Tanggal Meninggal', order: [self::AFTER_DECEASED_BORN]),
                     $this->text('tempat_meninggal', 'Tempat Meninggal', true, 'Tuliskan tempat meninggal'),
                     $this->text('sebab', 'Sebab Meninggal', false, 'Contoh: sakit / kecelakaan'),
-                    $this->pastDate('tanggal_pemakaman', 'Tanggal Pemakaman', [['after' => 'tanggal_meninggal', 'label' => 'tanggal meninggal']]),
+                    $this->pastDate('tanggal_pemakaman', 'Tanggal Pemakaman', order: [['after' => 'tanggal_meninggal', 'label' => 'tanggal meninggal']]),
                     $this->text('tempat_pemakaman', 'Tempat Pemakaman', true, 'Tuliskan tempat pemakaman'),
                 ],
                 // Setelah final approve, Kasi/Kaur menonaktifkan data warga
@@ -316,7 +316,7 @@ class LetterTypeSeeder extends Seeder
                     // Pemohon adalah ahli waris; datanya diambil dari akun.
                     ...$this->deceasedFields('Almarhum/Almarhumah'),
                     [...$this->occupation('pekerjaan_almarhum', 'Pekerjaan Almarhum/Almarhumah'), 'from_nik' => 'nik_almarhum', 'from_nik_value' => 'occupation'],
-                    $this->pastDate('tanggal_meninggal', 'Tanggal Meninggal', [self::AFTER_DECEASED_BORN]),
+                    $this->pastDate('tanggal_meninggal', 'Tanggal Meninggal', order: [self::AFTER_DECEASED_BORN]),
                     $this->text('tempat_pemakaman', 'Nama TPU', true, 'Contoh: Cibenda'),
                 ],
                 // Template fisik tidak memakai blok Nama/Jabatan penanda tangan.
@@ -414,18 +414,6 @@ class LetterTypeSeeder extends Seeder
             'typed_when_empty' => true,
             'help' => 'Bila terdaftar di desa ini, data almarhum/almarhumah diambil dari data penduduk. Kosongkan bila tidak diketahui.',
         ]);
-    }
-
-    /**
-     * Tanggal peristiwa yang sudah terjadi (tidak sesudah hari ini), dengan
-     * urutan terhadap tanggal lain (`date_order`) bila ada.
-     *
-     * @param  array<int, array<string, string>>  $order
-     * @return array<string, mixed>
-     */
-    private function pastDate(string $name, string $label, array $order = []): array
-    {
-        return [...$this->date($name, $label), 'past' => true, ...($order === [] ? [] : ['date_order' => $order])];
     }
 
     /**
