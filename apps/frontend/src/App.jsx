@@ -11,11 +11,22 @@ import {
 import { AuthProvider, useAuth } from '@/features/auth/contexts/AuthContext'
 import { buildLoginPath, resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
 import {
+  HAL_AJUKAN_SURAT,
   HAL_AKSESIBILITAS,
   HAL_BPD,
+  HAL_DAFTAR,
+  HAL_GANTI_PASSWORD,
   HAL_KEBIJAKAN_PRIVASI,
   HAL_LEMBAGA,
+  HAL_LOGIN,
+  HAL_LUPA_PASSWORD,
+  HAL_PENGAJUAN_SURAT,
   HAL_PPID,
+  HAL_PROFIL_PEJABAT,
+  HAL_PROFIL_WARGA,
+  HAL_RESET_PASSWORD,
+  HAL_STATUS_SURAT,
+  HAL_SURAT_SAYA,
 } from '@/lib/constants/routes'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
@@ -86,6 +97,7 @@ const KadesListPage = lazy(() => import('@/pages/admin/KadesListPage'))
 const OperatorDesaDashboardPage = lazy(() => import('@/pages/admin/OperatorDesaDashboardPage'))
 const DataWargaAccessPage = lazy(() => import('@/pages/admin/DataWargaAccessPage'))
 const ManajemenUserPage = lazy(() => import('@/pages/admin/ManajemenUserPage'))
+const PengajuanResetPage = lazy(() => import('@/pages/admin/PengajuanResetPage'))
 const KelolaBeritaPage = lazy(() => import('@/pages/admin/KelolaBeritaPage'))
 const KelolaProfilDesaPage = lazy(() => import('@/pages/admin/KelolaProfilDesaPage'))
 const OrganisasiBpdPage = lazy(() => import('@/pages/admin/OrganisasiBpdPage'))
@@ -124,7 +136,7 @@ export const GuestRoute = ({ children }) => {
 
   if (user) {
     if (user.must_change_password) {
-      return <Navigate to="/ganti-password" replace />
+      return <Navigate to={HAL_GANTI_PASSWORD} replace />
     }
 
     const redirectTo = resolveLoginRedirect(searchParams.get('redirect'), user.role)
@@ -154,7 +166,7 @@ export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   // Backend menolak semua endpoint lain sampai kata sandi sementara diganti.
   if (user.must_change_password) {
-    return <Navigate to="/ganti-password" replace />
+    return <Navigate to={HAL_GANTI_PASSWORD} replace />
   }
 
   // Peran lain: halaman surat warga ke padanannya (Surat Saya pejabat),
@@ -237,7 +249,7 @@ export default function App() {
 
             {/* ===== WARGA ===== */}
             <Route
-              path="/daftar-surat"
+              path={HAL_SURAT_SAYA}
               element={
                 <ProtectedRoute allowedRoles={['warga']}>
                   <JenisSuratPage />
@@ -246,7 +258,7 @@ export default function App() {
             />
 
             <Route
-              path="/jenis-surat"
+              path={HAL_AJUKAN_SURAT}
               element={
                 <ProtectedRoute allowedRoles={['warga']}>
                   <DaftarSurat />
@@ -255,7 +267,7 @@ export default function App() {
             />
 
             <Route
-              path="/pengajuan-surat"
+              path={HAL_PENGAJUAN_SURAT}
               element={
                 <ProtectedRoute allowedRoles={['warga']}>
                   <PengajuanSuratPage />
@@ -263,7 +275,7 @@ export default function App() {
               }
             />
             <Route
-              path="/pengajuan-surat/:kode"
+              path={`${HAL_PENGAJUAN_SURAT}/:kode`}
               element={
                 <ProtectedRoute allowedRoles={['warga']}>
                   <PengajuanSuratPage />
@@ -272,7 +284,7 @@ export default function App() {
             />
 
             <Route
-              path="/daftar-surat-saya"
+              path={HAL_STATUS_SURAT}
               element={
                 <ProtectedRoute allowedRoles={['warga']}>
                   <DaftarSuratSayaPage />
@@ -288,7 +300,7 @@ export default function App() {
             <Route element={<OfficialShell />}>
               {/* RT — approve tahap 1 */}
               <Route
-                path="/admin/dashboard-surat-rt"
+                path="/admin/rt"
                 element={
                   <ProtectedRoute allowedRoles={['rt']}>
                     <RTDashboardPage />
@@ -296,7 +308,7 @@ export default function App() {
                 }
               />
               <Route
-                path="/admin/list-rt"
+                path="/admin/rt/surat"
                 element={
                   <ProtectedRoute allowedRoles={['rt']}>
                     <RTListPage />
@@ -306,7 +318,7 @@ export default function App() {
 
               {/* RW — monitoring */}
               <Route
-                path="/admin/dashboard-surat-rw"
+                path="/admin/rw"
                 element={
                   <ProtectedRoute allowedRoles={['rw']}>
                     <RWDashboardPage />
@@ -314,7 +326,7 @@ export default function App() {
                 }
               />
               <Route
-                path="/admin/list-rw"
+                path="/admin/rw/surat"
                 element={
                   <ProtectedRoute allowedRoles={['rw']}>
                     <RWListPage />
@@ -324,7 +336,7 @@ export default function App() {
 
               {/* Kadus — monitoring saja */}
               <Route
-                path="/admin/dashboard-surat-kadus"
+                path="/admin/kadus"
                 element={
                   <ProtectedRoute allowedRoles={['kadus']}>
                     <KadusDashboardPage />
@@ -332,7 +344,7 @@ export default function App() {
                 }
               />
               <Route
-                path="/admin/list-kadus"
+                path="/admin/kadus/surat"
                 element={
                   <ProtectedRoute allowedRoles={['kadus']}>
                     <KadusListPage />
@@ -342,7 +354,7 @@ export default function App() {
 
               {/* Kepala Desa — approve */}
               <Route
-                path="/admin/dashboard-surat-kades"
+                path="/admin/kades"
                 element={
                   <ProtectedRoute allowedRoles={KADES_APPROVER_ROLES}>
                     <KadesDashboardPage />
@@ -350,7 +362,7 @@ export default function App() {
                 }
               />
               <Route
-                path="/admin/list-kades"
+                path="/admin/kades/surat"
                 element={
                   <ProtectedRoute allowedRoles={KADES_APPROVER_ROLES}>
                     <KadesListPage />
@@ -359,7 +371,7 @@ export default function App() {
               />
 
               {/* Profil terbuka untuk semua pejabat. */}
-              <Route path="/admin/profile" element={<AdminProfilePage />} />
+              <Route path={HAL_PROFIL_PEJABAT} element={<AdminProfilePage />} />
 
               {/* Pengajuan surat pribadi oleh pejabat (bukan Staf SIDUTama). */}
               <Route
@@ -404,6 +416,14 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/manajemen-user')}>
                     <ManajemenUserPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/pengajuan-reset"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/pengajuan-reset')}>
+                    <PengajuanResetPage />
                   </ProtectedRoute>
                 }
               />
@@ -494,19 +514,19 @@ export default function App() {
                 }
               />
               <Route
-                path="/admin/approval-settings"
+                path="/admin/pengaturan-persetujuan"
                 element={
                   <ProtectedRoute
-                    allowedRoles={getOperatorAllowedRoles('/admin/approval-settings')}
+                    allowedRoles={getOperatorAllowedRoles('/admin/pengaturan-persetujuan')}
                   >
                     <ApprovalSettingPage />
                   </ProtectedRoute>
                 }
               />
               <Route
-                path="/admin/approval-flows"
+                path="/admin/alur-persetujuan"
                 element={
-                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/approval-flows')}>
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/alur-persetujuan')}>
                     <ApprovalFlowsPage />
                   </ProtectedRoute>
                 }
@@ -521,7 +541,7 @@ export default function App() {
               />
             </Route>
             <Route
-              path="/register"
+              path={HAL_DAFTAR}
               element={
                 <GuestRoute>
                   <RegisterPage />
@@ -529,7 +549,7 @@ export default function App() {
               }
             />
             <Route
-              path="/lupa-password"
+              path={HAL_LUPA_PASSWORD}
               element={
                 <GuestRoute>
                   <ForgotPasswordPage />
@@ -539,7 +559,7 @@ export default function App() {
 
             {/* Tujuan tautan reset kata sandi yang dikirim backend lewat email. */}
             <Route
-              path="/password-reset/:token"
+              path={HAL_RESET_PASSWORD}
               element={
                 <GuestRoute>
                   <ResetPasswordPage />
@@ -548,7 +568,7 @@ export default function App() {
             />
 
             {/* Wajib ganti kata sandi sementara; halaman ini menjaga aksesnya sendiri. */}
-            <Route path="/ganti-password" element={<GantiPasswordPage />} />
+            <Route path={HAL_GANTI_PASSWORD} element={<GantiPasswordPage />} />
 
             {/* Tujuan klik notifikasi push; diteruskan sesuai peran. */}
             <Route
@@ -561,7 +581,7 @@ export default function App() {
             />
 
             <Route
-              path="/profile"
+              path={HAL_PROFIL_WARGA}
               element={
                 <ProtectedRoute allowedRoles={['warga']}>
                   <ProfilePage />
@@ -571,7 +591,7 @@ export default function App() {
 
             {/* ===== LOGIN ===== */}
             <Route
-              path="/loginpage"
+              path={HAL_LOGIN}
               element={
                 <GuestRoute>
                   <LoginPage />

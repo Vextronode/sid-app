@@ -58,7 +58,7 @@ function renderAt(entry, allowedRoles = ['warga']) {
           <Route path="/jenis-surat" element={guarded} />
           <Route path="/pengajuan-surat/:kode" element={guarded} />
           <Route
-            path="/loginpage"
+            path="/login"
             element={
               <GuestRoute>
                 <LoginPage />
@@ -97,7 +97,7 @@ describe('ProtectedRoute', () => {
         </MemoryRouter>
       </AuthProvider>,
     )
-    expect(currentPath()).toBe('/loginpage?redirect=%2Fjenis-surat')
+    expect(currentPath()).toBe('/login?redirect=%2Fjenis-surat')
   })
 
   it('includes the query string of the target', () => {
@@ -118,7 +118,7 @@ describe('ProtectedRoute', () => {
         </MemoryRouter>
       </AuthProvider>,
     )
-    expect(currentPath()).toBe('/loginpage?redirect=%2Fpengajuan-surat%2FSKD%3Fdraft%3D1')
+    expect(currentPath()).toBe('/login?redirect=%2Fpengajuan-surat%2FSKD%3Fdraft%3D1')
   })
 
   it('renders the page for a user with an allowed role', () => {
@@ -139,49 +139,49 @@ describe('ProtectedRoute', () => {
     expect(currentPath()).toBe('/admin/operator-desa')
   })
 
-  it('still sends users with a temporary password to /ganti-password', () => {
+  it('still sends users with a temporary password to /change-password', () => {
     auth.initialUser = { role: 'warga', must_change_password: true }
     renderAt('/jenis-surat')
-    expect(currentPath()).toBe('/ganti-password')
+    expect(currentPath()).toBe('/change-password')
   })
 })
 
 describe('GuestRoute', () => {
   it('shows the login page to guests', () => {
-    renderAt('/loginpage?redirect=%2Fjenis-surat')
+    renderAt('/login?redirect=%2Fjenis-surat')
     expect(screen.getByRole('heading', { name: 'Masuk ke SIDUTama' })).toBeInTheDocument()
   })
 
   it('sends a logged-in warga to an allowed redirect target', () => {
     auth.initialUser = { role: 'warga' }
-    renderAt('/loginpage?redirect=%2Fjenis-surat')
+    renderAt('/login?redirect=%2Fjenis-surat')
     expect(screen.getByText('Halaman terlindungi')).toBeInTheDocument()
   })
 
   it.each([
-    ['warga', '/loginpage', '/daftar-surat'],
-    ['warga', '/loginpage?redirect=%2F%2Fevil.com', '/daftar-surat'],
-    ['warga', '/loginpage?redirect=%2Fadmin%2Fdashboard-surat-rt', '/daftar-surat'],
-    ['rt', '/loginpage?redirect=%2Fjenis-surat', '/admin/surat-saya'],
-    ['rt', '/loginpage', '/admin/dashboard-surat-rt'],
-    ['kepala_desa', '/loginpage', '/admin/dashboard-surat-kades'],
+    ['warga', '/login', '/surat-saya'],
+    ['warga', '/login?redirect=%2F%2Fevil.com', '/surat-saya'],
+    ['warga', '/login?redirect=%2Fadmin%2Frt', '/surat-saya'],
+    ['rt', '/login?redirect=%2Fjenis-surat', '/admin/surat-saya'],
+    ['rt', '/login', '/admin/rt'],
+    ['kepala_desa', '/login', '/admin/kades'],
   ])('role %s at %s still goes to %s', (role, entry, expected) => {
     auth.initialUser = { role }
     renderAt(entry)
     expect(currentPath()).toBe(expected)
   })
 
-  it('sends users with a temporary password to /ganti-password before any redirect', () => {
+  it('sends users with a temporary password to /change-password before any redirect', () => {
     auth.initialUser = { role: 'warga', must_change_password: true }
-    renderAt('/loginpage?redirect=%2Fjenis-surat')
-    expect(currentPath()).toBe('/ganti-password')
+    renderAt('/login?redirect=%2Fjenis-surat')
+    expect(currentPath()).toBe('/change-password')
   })
 })
 
 describe('login flow inside GuestRoute', () => {
   it('returns warga to the redirect target after login', async () => {
     auth.loginUser = { id: 1, role: 'warga' }
-    const { container } = renderAt('/loginpage?redirect=%2Fjenis-surat')
+    const { container } = renderAt('/login?redirect=%2Fjenis-surat')
 
     fireEvent.submit(container.querySelector('form'))
 
@@ -190,7 +190,7 @@ describe('login flow inside GuestRoute', () => {
 
   it('sends an official to their own letter page after logging in from a letter link', async () => {
     auth.loginUser = { id: 2, role: 'rt' }
-    const { container } = renderAt('/loginpage?redirect=%2Fjenis-surat')
+    const { container } = renderAt('/login?redirect=%2Fjenis-surat')
 
     fireEvent.submit(container.querySelector('form'))
 

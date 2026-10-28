@@ -72,7 +72,7 @@ describe('OperatorDesaLayout role regression', () => {
 
     expect(screen.getByRole('link', { name: 'Alur & Jenis Surat' })).toHaveAttribute(
       'href',
-      '/admin/approval-flows',
+      '/admin/alur-persetujuan',
     )
     expect(screen.getByRole('link', { name: 'Log Aktivitas' })).toHaveAttribute(
       'href',

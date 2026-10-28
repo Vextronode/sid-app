@@ -29,6 +29,7 @@ import {
   Network,
   PanelLeftClose,
   PanelLeftOpen,
+  RotateCcw,
   Settings,
   UserCircle,
   Workflow,
@@ -160,6 +161,12 @@ const MENU_ITEMS = [
     icon: UserCog,
   },
   {
+    label: 'Pengajuan Reset',
+    route: '/admin/pengajuan-reset',
+    allowedRoles: getOperatorAllowedRoles('/admin/pengajuan-reset'),
+    icon: RotateCcw,
+  },
+  {
     label: 'Pejabat Desa',
     route: '/admin/pejabat-desa',
     allowedRoles: getOperatorAllowedRoles('/admin/pejabat-desa'),
@@ -197,14 +204,14 @@ const MENU_ITEMS = [
   },
   {
     label: 'Pengaturan Batas Waktu',
-    route: '/admin/approval-settings',
-    allowedRoles: getOperatorAllowedRoles('/admin/approval-settings'),
+    route: '/admin/pengaturan-persetujuan',
+    allowedRoles: getOperatorAllowedRoles('/admin/pengaturan-persetujuan'),
     icon: Settings,
   },
   {
     label: 'Alur & Jenis Surat',
-    route: '/admin/approval-flows',
-    allowedRoles: getOperatorAllowedRoles('/admin/approval-flows'),
+    route: '/admin/alur-persetujuan',
+    allowedRoles: getOperatorAllowedRoles('/admin/alur-persetujuan'),
     icon: Workflow,
   },
   {
@@ -390,7 +397,7 @@ export function OperatorDesaLayout({ children }) {
 
                     <div className="sid-dropdown" role="menu">
                       <Link
-                        to="/admin/profile"
+                        to="/admin/profil"
                         role="menuitem"
                         onClick={() => setProfileOpen(false)}
                         className="sid-dropdown-item"
