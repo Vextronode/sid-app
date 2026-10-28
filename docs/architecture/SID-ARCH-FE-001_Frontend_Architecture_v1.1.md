@@ -105,7 +105,7 @@ Struktur berbasis fitur menjaga batas domain; halaman (`pages/`) merakit kompone
 
 `src/lib/api.js` adalah satu instance Axios untuk seluruh panggilan:
 - `baseURL` = `VITE_API_URL` atau origin halaman; `withCredentials` dan `withXSRFToken` aktif; header `Accept: application/json`, `X-Requested-With`.
-- Interceptor respons: 403 dengan `code: password_change_required` → redirect ke `/ganti-password`.
+- Interceptor respons: 403 dengan `code: password_change_required` → redirect ke `/change-password`.
 - Error lain diteruskan ke pemanggil; bentuk error backend adalah format Laravel `{ message, errors? }` (bukan `{ error: { code, message, details } }`).
 - Modul API per fitur (`features/*/api*.js`) membungkus endpoint domainnya.
 
@@ -113,25 +113,25 @@ Struktur berbasis fitur menjaga batas domain; halaman (`pages/`) merakit kompone
 
 ## 5. Routing & Access Guard
 
-Semua route didefinisikan di `App.jsx`:
-- `GuestRoute` — untuk halaman login/register/lupa & reset password; user yang sudah login diarahkan ke halaman default role (atau `?redirect=` yang diizinkan) dan ke `/ganti-password` bila wajib ganti kata sandi.
-- `ProtectedRoute allowedRoles` — belum login → `/loginpage?redirect=...`; wajib ganti password → `/ganti-password`; role tidak diizinkan → `/`.
+Semua route didefinisikan di `App.jsx`; path publik, auth, profil, dan surat warga diambil dari konstanta `src/lib/constants/routes.js`. Konvensi penamaan: kebab-case berbahasa Indonesia dan dikelompokkan per peran (`/admin/rt`, `/admin/rt/surat`), kecuali halaman auth yang memakai istilah baku bahasa Inggris (`/login`, `/register`, `/forgot-password`, `/reset-password/:token`, `/change-password`). Link reset password di email dibuat backend (`AppServiceProvider`) dan harus sama dengan `HAL_RESET_PASSWORD`.
+- `GuestRoute` — untuk halaman login/register/lupa & reset password; user yang sudah login diarahkan ke halaman default role (atau `?redirect=` yang diizinkan) dan ke `/change-password` bila wajib ganti kata sandi.
+- `ProtectedRoute allowedRoles` — belum login → `/login?redirect=...`; wajib ganti password → `/change-password`; role tidak diizinkan → `/`.
 - **Layout route** menjaga header/sidebar tetap terpasang: `PublicShell` (MainLayout) untuk halaman publik, `OfficialShell` (OfficialLayout, untuk 8 role pejabat) untuk seluruh `/admin/*`. OfficialLayout memakai sidebar operator untuk Kasi/Kaur/Staf SIDUTama dan bilah atas untuk RT/RW/Kadus/Kades/Sekdes.
 - Halaman operator dibatasi lewat `features/operator-desa/constants/roleNavigation.js` (`OPERATOR_ROUTE_CAPABILITIES`), mis. `/admin/data-warga` untuk Petugas, Kasi, Kaur; halaman kelola lain hanya Staf SIDUTama; `/admin/surat-saya` untuk pejabat non-Petugas.
 - Halaman selain beranda dimuat lazy (`React.lazy` + `Suspense`).
 - `/buka-notifikasi` adalah tujuan klik Web Push; meneruskan ke daftar surat yang sesuai peran (atau "Surat Saya" bila penerima adalah pemohon).
 - Halaman informasi (Kebijakan Privasi, Aksesibilitas, PPID) aktif di produksi; isian khas desa dari menu Halaman Informasi. Tidak ada konten atau route khusus mode dev.
-- Respons 403 `code: role_forbidden` memancarkan event `sid:role-forbidden`; AuthContext memeriksa `/api/user` tanpa loader dan, bila perannya berubah (mis. dirotasi), memuat ulang ke `/loginpage` sehingga `GuestRoute` meneruskan ke dashboard peran baru. Staf SIDUTama yang merotasi dirinya sendiri langsung dibawa ke `/daftar-surat`.
+- Respons 403 `code: role_forbidden` memancarkan event `sid:role-forbidden`; AuthContext memeriksa `/api/user` tanpa loader dan, bila perannya berubah (mis. dirotasi), memuat ulang ke `/login` sehingga `GuestRoute` meneruskan ke dashboard peran baru. Staf SIDUTama yang merotasi dirinya sendiri langsung dibawa ke `/surat-saya`.
 - Nama aplikasi (`VITE_APP_NAME`, default SIDUTama) dipakai di judul login, `<title>` (plugin kecil di `vite.config.js`), manifest PWA, dan label peran `staf_sid` ("Staf {nama aplikasi}").
 
 | Kelompok | Route utama |
 |---|---|
 | Publik | `/`, `/berita`, `/berita/:id`, `/profil-desa` (`#peraturan-desa`, `#perangkat-desa`), `/bpd`, `/lembaga-desa` (`?lembaga=lpm\|karang_taruna\|pkk`), `/kebijakan-privasi`, `/aksesibilitas`, `/ppid`; `/peraturan-desa` diarahkan ke `/profil-desa#peraturan-desa` |
-| Auth | `/loginpage`, `/register`, `/lupa-password`, `/password-reset/:token`, `/ganti-password` |
-| Warga | `/daftar-surat` (Beranda: ringkasan Surat Saya), `/jenis-surat` (Ajukan Surat: form pengajuan), `/pengajuan-surat/:kode?`, `/daftar-surat-saya`, `/profile` |
-| RT/RW/Kadus/Kades | `/admin/dashboard-surat-{rt,rw,kadus,kades}`, `/admin/list-{rt,rw,kadus,kades}` |
-| Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/approval-{settings,flows}`, `/admin/log-aktivitas`, `/admin/organisasi/{bpd,lembaga}`, `/admin/pengumuman`, `/admin/halaman-informasi` |
-| Pejabat (umum) | `/admin/profile`, `/admin/surat-saya` |
+| Auth | `/login`, `/register`, `/forgot-password`, `/reset-password/:token`, `/change-password` |
+| Warga | `/surat-saya` (Beranda: ringkasan Surat Saya), `/jenis-surat` (Ajukan Surat: form pengajuan), `/pengajuan-surat/:kode?`, `/surat-saya/daftar`, `/profil` |
+| RT/RW/Kadus/Kades | `/admin/{rt,rw,kadus,kades}`, `/admin/{rt,rw,kadus,kades}/surat` |
+| Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/pengaturan-persetujuan`, `/admin/alur-persetujuan`, `/admin/log-aktivitas`, `/admin/organisasi/{bpd,lembaga}`, `/admin/pengumuman`, `/admin/halaman-informasi` |
+| Pejabat (umum) | `/admin/profil`, `/admin/surat-saya` |
 
 ---
 
@@ -160,7 +160,7 @@ Bar pagination memakai `PageNumbers` (jendela tiga nomor bergeser dengan elipsis
 - `DownloadSuratMenu`: **TTD & stempel digital** atau **Untuk tanda tangan basah** (area tanda tangan kosong, nama file berakhiran `-ttd-basah`).
 
 ### 6.7 Surat Saya
-`MyLettersList` dipakai halaman Surat Saya pejabat (`/admin/surat-saya`) dan warga (`/daftar-surat-saya`): filter status dengan jumlah dari `GET /letters/summary?scope=mine`, dan jalur tahapan per surat (Diajukan → RT → Desa → Terbit) yang dihitung `letterProgress.js` dari `status`, `current_step`, dan `rejected_at_step`. Halaman ajukan surat pejabat memakai `LetterTypePicker` (kartu jenis surat) sebelum `DynamicSuratForm`.
+`MyLettersList` dipakai halaman Surat Saya pejabat (`/admin/surat-saya`) dan warga (`/surat-saya/daftar`): filter status dengan jumlah dari `GET /letters/summary?scope=mine`, dan jalur tahapan per surat (Diajukan → RT → Desa → Terbit) yang dihitung `letterProgress.js` dari `status`, `current_step`, dan `rejected_at_step`. Halaman ajukan surat pejabat memakai `LetterTypePicker` (kartu jenis surat) sebelum `DynamicSuratForm`.
 
 ---
 

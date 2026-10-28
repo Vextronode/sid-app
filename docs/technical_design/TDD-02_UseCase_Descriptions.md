@@ -623,7 +623,7 @@ Catatan: 5 Dusun Desa Cibenda (Patrol, Sinargalih, Cibenda, Budiasih, Sucen) di-
 | Catatan Penting | Template HTML dan form field adalah developer-only via seeder. Tambah/hapus/ubah template → Next Dev Paket 1 (lihat Appendix). |
 
 Main Flow:
-- Petugas membuka pengaturan jenis surat lewat menu **Alur & Jenis Surat** (`/admin/approval-flows`); daftar berasal dari `GET /letter-types?include_inactive=1` (khusus Staf SIDUTama) yang berisi semua jenis surat desa dengan badge Draft / Aktif / Nonaktif
+- Petugas membuka pengaturan jenis surat lewat menu **Alur & Jenis Surat** (`/admin/alur-persetujuan`); daftar berasal dari `GET /letter-types?include_inactive=1` (khusus Staf SIDUTama) yang berisi semua jenis surat desa dengan badge Draft / Aktif / Nonaktif
 - Petugas mengubah: `validity_days` (minimal 1 atau kosong), `assigned_role` (Kasi Pemerintahan / Kaur TU & Umum / keduanya), toggle `is_active` (Aktifkan / Nonaktifkan). Jenis Draft (belum ber-template) tidak bisa diaktifkan (422)
 - Sistem menyimpan perubahan ke `letter_types` dan menggugurkan cache halaman publik
 - Petugas dapat melihat flow approval (read-only) di halaman Approval Flows
