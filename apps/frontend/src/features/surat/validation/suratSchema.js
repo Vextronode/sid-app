@@ -35,12 +35,46 @@ const requiredTime = (label) =>
 const requiredDate = (label) =>
   z.string().trim().min(1, `${label} wajib diisi`).date(`${label} tidak valid`)
 
-const numberText = (label, required) =>
-  z
+/** Tanggal hari ini (zona waktu perangkat), format YYYY-MM-DD. */
+export function todayDate() {
+  const now = new Date()
+  const pad = (number) => String(number).padStart(2, '0')
+
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
+// Isian `past`: tanggal tidak sesudah hari ini.
+const dateSchema = (field) => {
+  const base = field.required ? requiredDate(field.label) : optionalText
+
+  return field.past
+    ? base.refine(
+        (value) => !value || value <= todayDate(),
+        `${field.label} tidak boleh sesudah hari ini`,
+      )
+    : base
+}
+
+const numberText = (field, required) => {
+  const { label } = field
+  // Aturan bulat & batas bawah hanya untuk isian yang memang angka.
+  const isNumber = (value) => value !== '' && !Number.isNaN(Number(value))
+  const hasMin = field.minValue !== null && field.minValue !== undefined
+
+  return z
     .string()
     .trim()
     .refine((value) => (required ? value !== '' : true), `${label} wajib diisi`)
-    .refine((value) => value === '' || !Number.isNaN(Number(value)), `${label} harus berupa angka`)
+    .refine((value) => value === '' || isNumber(value), `${label} harus berupa angka`)
+    .refine(
+      (value) => !field.integer || !isNumber(value) || Number.isInteger(Number(value)),
+      `${label} harus berupa bilangan bulat`,
+    )
+    .refine(
+      (value) => !hasMin || !isNumber(value) || Number(value) >= field.minValue,
+      `${label} minimal ${field.minValue}`,
+    )
+}
 
 const optionalFiles = z.array(z.instanceof(File)).optional().default([])
 
@@ -61,13 +95,13 @@ function fieldSchema(field) {
         ? z.array(z.instanceof(File)).min(1, `${label} wajib diupload`)
         : optionalFiles
     case 'date':
-      return required ? requiredDate(label) : optionalText
+      return dateSchema(field)
     case 'time':
       return required ? requiredTime(label) : optionalText
     case 'nik':
       return required ? requiredNik(label) : optionalNik(label)
     case 'number':
-      return required ? numberText(label, true) : numberText(label, false).optional()
+      return required ? numberText(field, true) : numberText(field, false).optional()
     case 'occupation':
     case 'village_area':
     case 'family_member':
