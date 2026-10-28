@@ -13,11 +13,11 @@ import { AppHeader } from './AppHeader'
 
 // Menu bawaan per peran: beranda, surat yang diproses, dan surat pribadi.
 const ROLE_MENUS = {
-  rt: ['/admin/dashboard-surat-rt', '/admin/list-rt'],
-  rw: ['/admin/dashboard-surat-rw', '/admin/list-rw'],
-  kadus: ['/admin/dashboard-surat-kadus', '/admin/list-kadus'],
-  kepala_desa: ['/admin/dashboard-surat-kades', '/admin/list-kades'],
-  sekretaris_desa: ['/admin/dashboard-surat-kades', '/admin/list-kades'],
+  rt: ['/admin/rt', '/admin/rt/surat'],
+  rw: ['/admin/rw', '/admin/rw/surat'],
+  kadus: ['/admin/kadus', '/admin/kadus/surat'],
+  kepala_desa: ['/admin/kades', '/admin/kades/surat'],
+  sekretaris_desa: ['/admin/kades', '/admin/kades/surat'],
 }
 
 function defaultMenuItems(role) {
@@ -44,7 +44,7 @@ export function AdminLayout({ children, menuItems: customMenuItems }) {
     <div className="min-h-screen bg-[var(--sid-surface-page)] relative">
       <AppHeader
         menuItems={menuItems}
-        profilePath="/admin/profile"
+        profilePath="/admin/profil"
         unreadCount={unreadCount}
         onNotificationClick={() => {
           const opening = !notifOpen

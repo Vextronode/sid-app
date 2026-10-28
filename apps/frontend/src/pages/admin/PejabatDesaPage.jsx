@@ -114,7 +114,7 @@ const candidateTarget = (accountPositions, position, candidate) =>
 const PHOTO_TYPES = 'image/png,image/jpeg,image/webp'
 
 // Dashboard warga, tujuan Staf SIDUTama setelah menyerahkan jabatannya.
-const WARGA_HOME = '/daftar-surat'
+const WARGA_HOME = '/surat-saya'
 
 const today = () => new Date().toISOString().slice(0, 10)
 

@@ -11,20 +11,20 @@ export const HAL_UNDUH_SURAT = `${HAL_STATUS_SURAT}?status=approved`
 export function roleHomePath(role) {
   switch (role) {
     case 'rt':
-      return '/admin/dashboard-surat-rt'
+      return '/admin/rt'
     case 'rw':
-      return '/admin/dashboard-surat-rw'
+      return '/admin/rw'
     case 'kadus':
-      return '/admin/dashboard-surat-kadus'
+      return '/admin/kadus'
     case 'kepala_desa':
     case 'sekretaris_desa':
-      return '/admin/dashboard-surat-kades'
+      return '/admin/kades'
     case 'kasi_pemerintahan':
     case 'kaur_tu_umum':
     case 'staf_sid':
       return '/admin/operator-desa'
     case 'warga':
-      return '/daftar-surat'
+      return '/surat-saya'
     default:
       return '/'
   }
@@ -35,8 +35,8 @@ export function roleHomePath(role) {
 const WARGA_LETTER_PATHS = [
   /^\/jenis-surat$/,
   /^\/pengajuan-surat(\/[^/]+)?$/,
-  /^\/daftar-surat-saya$/,
-  /^\/daftar-surat$/,
+  /^\/surat-saya\/daftar$/,
+  /^\/surat-saya$/,
 ]
 
 export function isWargaLetterPath(path) {

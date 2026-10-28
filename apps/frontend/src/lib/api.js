@@ -18,7 +18,7 @@ const api = axios.create({
 // Akun dengan kata sandi sementara ditolak backend (403
 // password_change_required) di semua endpoint selain ganti kata sandi.
 // Arahkan ke halaman ganti kata sandi bila sesi di FE belum mengetahuinya.
-const PASSWORD_CHANGE_PATH = '/ganti-password'
+const PASSWORD_CHANGE_PATH = '/change-password'
 
 api.interceptors.response.use(
   (response) => response,

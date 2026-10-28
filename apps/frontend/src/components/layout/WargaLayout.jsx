@@ -13,7 +13,7 @@ import { AppHeader } from './AppHeader'
 import { SiteFooter } from './SiteFooter'
 
 const WARGA_MENU = [
-  { label: 'Beranda', path: '/daftar-surat' },
+  { label: 'Beranda', path: '/surat-saya' },
   { label: 'Ajukan Surat', path: '/jenis-surat' },
 ]
 
@@ -34,7 +34,7 @@ export function WargaLayout({ children }) {
     >
       <AppHeader
         menuItems={WARGA_MENU}
-        profilePath="/profile"
+        profilePath="/profil"
         unreadCount={unreadCount}
         onNotificationClick={() => {
           const opening = !notifOpen

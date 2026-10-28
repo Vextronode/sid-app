@@ -22,7 +22,7 @@ export function DaftarSurat() {
 
   const handleSubmit = () => {
     // TODO: sambungkan ke endpoint submit surat asli
-    navigate('/daftar-surat')
+    navigate('/surat-saya')
   }
 
   return (

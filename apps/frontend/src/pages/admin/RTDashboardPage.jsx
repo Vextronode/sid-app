@@ -70,7 +70,7 @@ export default function RTDashboardPage() {
       icon: Mail,
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
-      onClick: () => navigate(`/admin/list-rt?status=${SURAT_STATUS.PENDING}`),
+      onClick: () => navigate(`/admin/rt/surat?status=${SURAT_STATUS.PENDING}`),
     },
 
     {
@@ -80,7 +80,7 @@ export default function RTDashboardPage() {
       icon: ShieldCheck,
       iconBg: 'var(--sid-status-progress-bg)',
       iconColor: 'var(--sid-status-progress-text)',
-      onClick: () => navigate(`/admin/list-rt?status=${SURAT_STATUS.IN_PROGRESS}`),
+      onClick: () => navigate(`/admin/rt/surat?status=${SURAT_STATUS.IN_PROGRESS}`),
     },
 
     {
@@ -90,7 +90,7 @@ export default function RTDashboardPage() {
       icon: CheckCircle2,
       iconBg: 'var(--sid-status-done-bg)',
       iconColor: 'var(--sid-status-done-text)',
-      onClick: () => navigate(`/admin/list-rt?status=${SURAT_STATUS.APPROVED}`),
+      onClick: () => navigate(`/admin/rt/surat?status=${SURAT_STATUS.APPROVED}`),
     },
 
     {
@@ -100,7 +100,7 @@ export default function RTDashboardPage() {
       icon: XCircle,
       iconBg: 'var(--sid-status-rejected-bg)',
       iconColor: 'var(--sid-status-rejected-text)',
-      onClick: () => navigate(`/admin/list-rt?status=${SURAT_STATUS.REJECTED}`),
+      onClick: () => navigate(`/admin/rt/surat?status=${SURAT_STATUS.REJECTED}`),
     },
   ]
 

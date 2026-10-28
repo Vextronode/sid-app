@@ -50,7 +50,7 @@ export default function RWDashboardPage() {
       icon: Mail,
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
-      onClick: () => navigate('/admin/list-rw'),
+      onClick: () => navigate('/admin/rw/surat'),
     },
 
     {
@@ -60,7 +60,7 @@ export default function RWDashboardPage() {
       icon: ShieldCheck,
       iconBg: 'var(--sid-status-progress-bg)',
       iconColor: 'var(--sid-status-progress-text)',
-      onClick: () => navigate('/admin/list-rw?status=in_progress'),
+      onClick: () => navigate('/admin/rw/surat?status=in_progress'),
     },
 
     {
@@ -70,7 +70,7 @@ export default function RWDashboardPage() {
       icon: CheckCircle2,
       iconBg: 'var(--sid-status-done-bg)',
       iconColor: 'var(--sid-status-done-text)',
-      onClick: () => navigate('/admin/list-rw?status=approved'),
+      onClick: () => navigate('/admin/rw/surat?status=approved'),
     },
 
     {
@@ -80,7 +80,7 @@ export default function RWDashboardPage() {
       icon: XCircle,
       iconBg: 'var(--sid-status-rejected-bg)',
       iconColor: 'var(--sid-status-rejected-text)',
-      onClick: () => navigate('/admin/list-rw?status=rejected'),
+      onClick: () => navigate('/admin/rw/surat?status=rejected'),
     },
   ]
 

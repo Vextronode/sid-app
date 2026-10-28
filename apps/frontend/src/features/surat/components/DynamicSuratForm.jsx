@@ -591,7 +591,7 @@ export function DynamicSuratForm({
 
                 {hasSignature === false ? (
                   <p className="sid-admin-alert sid-admin-alert-error" role="alert">
-                    Anda belum memiliki tanda tangan. <Link to="/profile">Buat tanda tangan</Link>{' '}
+                    Anda belum memiliki tanda tangan. <Link to="/profil">Buat tanda tangan</Link>{' '}
                     terlebih dahulu sebelum mengajukan surat ini.
                   </p>
                 ) : (

@@ -38,12 +38,12 @@ export default function GantiPasswordPage() {
   }
 
   if (!user) {
-    return <Navigate to="/loginpage" replace />
+    return <Navigate to="/login" replace />
   }
 
   // Halaman login meneruskan user yang sudah masuk ke beranda perannya.
   if (!user.must_change_password && !saving) {
-    return <Navigate to="/loginpage" replace />
+    return <Navigate to="/login" replace />
   }
 
   const handleChange = (field) => (e) =>
@@ -64,7 +64,7 @@ export default function GantiPasswordPage() {
       await api.put('/api/profile/password', form)
       await refreshUser()
       notifySuccess('Kata sandi berhasil diperbarui.')
-      navigate('/loginpage', { replace: true })
+      navigate('/login', { replace: true })
     } catch (err) {
       setError(firstMessage(err, 'Kata sandi gagal diperbarui.'))
       setSaving(false)

@@ -105,7 +105,7 @@ describe('AuthContext role_forbidden handling', () => {
     api.get.mockResolvedValueOnce({ data: { user: { id: 10, role: 'warga' } } })
     await forbid()
 
-    await waitFor(() => expect(assign).toHaveBeenCalledWith('/loginpage'))
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('/login'))
     // Pemeriksaan tidak memunculkan loader layar penuh.
     expect(result.current.isLoading).toBe(false)
   })

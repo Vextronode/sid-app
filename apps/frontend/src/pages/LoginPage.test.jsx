@@ -36,13 +36,13 @@ function CurrentPath() {
   return <p data-testid="current-path">{location.pathname + location.search}</p>
 }
 
-async function loginAs(role, entry = '/loginpage') {
+async function loginAs(role, entry = '/login') {
   form.user = { id: 1, role }
 
   const { container } = render(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
-        <Route path="/loginpage" element={<LoginPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<CurrentPath />} />
       </Routes>
     </MemoryRouter>,
@@ -59,27 +59,27 @@ describe('LoginPage redirect after login', () => {
   })
 
   it.each([
-    ['rt', '/admin/dashboard-surat-rt'],
-    ['rw', '/admin/dashboard-surat-rw'],
-    ['kadus', '/admin/dashboard-surat-kadus'],
-    ['kepala_desa', '/admin/dashboard-surat-kades'],
+    ['rt', '/admin/rt'],
+    ['rw', '/admin/rw'],
+    ['kadus', '/admin/kadus'],
+    ['kepala_desa', '/admin/kades'],
     ['kasi_pemerintahan', '/admin/operator-desa'],
     ['kaur_tu_umum', '/admin/operator-desa'],
     ['staf_sid', '/admin/operator-desa'],
-    ['warga', '/daftar-surat'],
-    ['sekretaris_desa', '/daftar-surat'],
+    ['warga', '/surat-saya'],
+    ['sekretaris_desa', '/surat-saya'],
   ])('without ?redirect=, role %s goes to %s as before', async (role, expected) => {
     expect(await loginAs(role)).toHaveTextContent(expected)
     expect(auth.login).toHaveBeenCalledWith({ id: 1, role })
   })
 
   it('sends warga back to an allowed redirect target', async () => {
-    const path = await loginAs('warga', '/loginpage?redirect=%2Fjenis-surat')
+    const path = await loginAs('warga', '/login?redirect=%2Fjenis-surat')
     expect(path.textContent).toBe('/jenis-surat')
   })
 
   it('keeps the query string of an allowed redirect target', async () => {
-    const path = await loginAs('warga', '/loginpage?redirect=%2Fpengajuan-surat%2FSKD%3Fdraft%3D1')
+    const path = await loginAs('warga', '/login?redirect=%2Fpengajuan-surat%2FSKD%3Fdraft%3D1')
     expect(path.textContent).toBe('/pengajuan-surat/SKD?draft=1')
   })
 
@@ -88,29 +88,29 @@ describe('LoginPage redirect after login', () => {
     ['https%3A%2F%2Fevil.com'],
     ['javascript%3Aalert(1)'],
     ['%2F%5Cevil.com'],
-    ['%2Fadmin%2Fdashboard-surat-rt'],
+    ['%2Fadmin%2Frt'],
   ])('ignores unsafe or non-warga redirect %s for warga', async (redirect) => {
-    const path = await loginAs('warga', `/loginpage?redirect=${redirect}`)
-    expect(path.textContent).toBe('/daftar-surat')
+    const path = await loginAs('warga', `/login?redirect=${redirect}`)
+    expect(path.textContent).toBe('/surat-saya')
   })
 
   it('maps a warga letter redirect to the official letter page for other roles', async () => {
-    const path = await loginAs('rt', '/loginpage?redirect=%2Fjenis-surat')
+    const path = await loginAs('rt', '/login?redirect=%2Fjenis-surat')
     expect(path.textContent).toBe('/admin/surat-saya')
   })
 
   it('ignores a non-letter warga redirect for other roles', async () => {
-    const path = await loginAs('rt', '/loginpage?redirect=%2Fprofile')
-    expect(path.textContent).toBe('/admin/dashboard-surat-rt')
+    const path = await loginAs('rt', '/login?redirect=%2Fprofil')
+    expect(path.textContent).toBe('/admin/rt')
   })
 })
 
 describe('LoginPage links (D4)', () => {
   function renderLogin() {
     render(
-      <MemoryRouter initialEntries={['/loginpage']}>
+      <MemoryRouter initialEntries={['/login']}>
         <Routes>
-          <Route path="/loginpage" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<CurrentPath />} />
         </Routes>
       </MemoryRouter>,
