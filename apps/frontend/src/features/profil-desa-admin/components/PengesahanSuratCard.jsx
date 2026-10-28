@@ -9,6 +9,7 @@ import {
   uploadOfficialSignature,
   uploadVillageStamp,
 } from '../api'
+import ImageFilePicker, { ImagePreviewStage } from '@/components/ui/ImageFilePicker'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 
@@ -130,18 +131,14 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
   const previewUrl = draftUrl || imageUrl
 
   return (
-    <div className="sid-profil-desa-info-item">
+    <div className="sid-profil-desa-info-item sid-image-field">
       <span className="sid-profil-desa-info-label">{label}</span>
 
-      {previewUrl ? (
-        <img
-          src={previewUrl}
-          alt={draft ? `Pratinjau ${label.toLowerCase()}` : label}
-          style={{ maxHeight: 140, maxWidth: '100%', background: '#fff' }}
-        />
-      ) : (
-        <p className="sid-profil-desa-info-value">{hasImage ? 'Memuat...' : 'Belum diunggah.'}</p>
-      )}
+      <ImagePreviewStage
+        src={previewUrl}
+        alt={draft ? `Pratinjau ${label.toLowerCase()}` : label}
+        emptyText={hasImage ? 'Memuat...' : 'Belum diunggah'}
+      />
 
       {error && (
         <p className="sid-admin-alert sid-admin-alert-error" role="alert">
@@ -150,7 +147,7 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
       )}
 
       {draft ? (
-        <div className="sid-actions">
+        <div className="sid-actions sid-image-field-actions">
           <button
             type="button"
             className="sid-btn sid-btn-secondary"
@@ -169,12 +166,12 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
           </button>
         </div>
       ) : (
-        <>
-          <label className="sid-label" htmlFor={id}>
-            {hasImage || imageUrl ? 'Ganti gambar' : 'Unggah gambar'} (PNG/JPG/WebP, maks. 5 MB)
-          </label>
-          <input id={id} type="file" accept=".png,.jpg,.jpeg,.webp" onChange={handleSelect} />
-        </>
+        <ImageFilePicker
+          id={id}
+          title={hasImage || imageUrl ? 'Ganti gambar' : 'Pilih gambar'}
+          hint="PNG, JPG, atau WebP. Maks. 5 MB."
+          onChange={handleSelect}
+        />
       )}
     </div>
   )
