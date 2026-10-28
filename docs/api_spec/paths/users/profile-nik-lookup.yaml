@@ -19,6 +19,15 @@ get:
       schema:
         type: string
         pattern: '^\d{16}$'
+    - name: include_inactive
+      in: query
+      required: false
+      description: |
+        `1` = juga mencari warga nonaktif (isian ber-`include_inactive`, mis.
+        NIK almarhum di Surat Keterangan Penguburan/Ahli Waris). Bawaan: hanya
+        warga aktif.
+      schema:
+        type: boolean
   responses:
     '200':
       description: Hasil pencarian
