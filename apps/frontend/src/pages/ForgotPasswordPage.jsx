@@ -117,7 +117,7 @@ export default function ForgotPasswordPage() {
 
         <div className="border-t mt-6 pt-4 text-center">
           <Link
-            to="/loginpage"
+            to="/login"
             className="text-sm text-[#163e6b] font-medium hover:underline flex items-center justify-center gap-1"
           >
             <ArrowLeft size={14} /> Kembali ke Login

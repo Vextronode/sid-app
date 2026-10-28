@@ -101,7 +101,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Rt::class, RegionPolicy::class);
 
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
-            return config('app.frontend_url')."/password-reset/$token?email={$notifiable->getEmailForPasswordReset()}";
+            return config('app.frontend_url')."/reset-password/$token?email={$notifiable->getEmailForPasswordReset()}";
         });
     }
 }

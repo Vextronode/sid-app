@@ -8,9 +8,9 @@ const WARGA_REDIRECT_PATTERNS = [
   /^\/jenis-surat$/,
   /^\/pengajuan-surat$/,
   /^\/pengajuan-surat\/[^/]+$/,
-  /^\/daftar-surat-saya$/,
-  /^\/daftar-surat$/,
-  /^\/profile$/,
+  /^\/surat-saya\/daftar$/,
+  /^\/surat-saya$/,
+  /^\/profil$/,
 ]
 
 // eslint-disable-next-line no-control-regex
@@ -45,7 +45,7 @@ export function resolveLoginRedirect(redirect, role) {
 }
 
 // URL halaman login yang membawa tujuan kembali, mis.
-// buildLoginPath('/jenis-surat') -> '/loginpage?redirect=%2Fjenis-surat'
+// buildLoginPath('/jenis-surat') -> '/login?redirect=%2Fjenis-surat'
 export function buildLoginPath(target) {
   if (!isSafeInternalPath(target)) return HAL_LOGIN
 

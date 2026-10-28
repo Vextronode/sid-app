@@ -46,7 +46,7 @@ export default function JenisSuratPage() {
 
           <button
             type="button"
-            onClick={() => navigate('/daftar-surat-saya')}
+            onClick={() => navigate('/surat-saya/daftar')}
             className="sid-surat-stat-card"
           >
             <div className="sid-surat-stat-content">
@@ -64,7 +64,7 @@ export default function JenisSuratPage() {
 
           <button
             type="button"
-            onClick={() => navigate('/daftar-surat-saya?status=approved')}
+            onClick={() => navigate('/surat-saya/daftar?status=approved')}
             className="sid-surat-stat-card"
           >
             <div className="sid-surat-stat-content">
@@ -84,7 +84,7 @@ export default function JenisSuratPage() {
 
           <button
             type="button"
-            onClick={() => navigate('/daftar-surat-saya?status=ditolak')}
+            onClick={() => navigate('/surat-saya/daftar?status=ditolak')}
             className="sid-surat-stat-card"
           >
             <div className="sid-surat-stat-content">

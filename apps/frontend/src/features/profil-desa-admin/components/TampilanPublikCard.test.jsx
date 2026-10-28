@@ -62,7 +62,7 @@ describe('TampilanPublikCard', () => {
     const { onUpload } = renderCard()
     const file = new File(['x'], 'hero.jpg', { type: 'image/jpeg' })
 
-    pick('Unggah gambar', file)
+    pick('Pilih gambar', file)
     expect(screen.getByRole('img', { name: 'Pratinjau foto beranda' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Simpan' }))
 

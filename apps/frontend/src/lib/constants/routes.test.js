@@ -6,9 +6,16 @@ describe('beranda routes', () => {
     expect(routes.HAL_BERANDA).toBe('/')
     expect(routes.HAL_BERITA).toBe('/berita')
     expect(routes.HAL_PROFIL).toBe('/profil-desa')
-    expect(routes.HAL_LOGIN).toBe('/loginpage')
+    expect(routes.HAL_LOGIN).toBe('/login')
     expect(routes.HAL_AJUKAN_SURAT).toBe('/jenis-surat')
-    expect(routes.HAL_STATUS_SURAT).toBe('/daftar-surat-saya')
+    expect(routes.HAL_STATUS_SURAT).toBe('/surat-saya/daftar')
+  })
+
+  it('keeps auth pages in English and matches the backend reset link', () => {
+    expect(routes.HAL_DAFTAR).toBe('/register')
+    expect(routes.HAL_LUPA_PASSWORD).toBe('/forgot-password')
+    expect(routes.HAL_RESET_PASSWORD).toBe('/reset-password/:token')
+    expect(routes.HAL_GANTI_PASSWORD).toBe('/change-password')
   })
 
   it('maps the draft information pages (D6)', () => {

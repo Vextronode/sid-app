@@ -109,7 +109,7 @@ export default function DaftarSuratSayaPage() {
         {/* Kembali ke Beranda warga, bukan ke halaman Ajukan Surat. */}
         <button
           type="button"
-          onClick={() => navigate('/daftar-surat')}
+          onClick={() => navigate('/surat-saya')}
           className="sid-surat-saya-back"
         >
           <ArrowLeft size={16} />

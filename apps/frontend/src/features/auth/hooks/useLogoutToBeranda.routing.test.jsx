@@ -48,7 +48,7 @@ describe('logout routing', () => {
           <PathRecorder />
           <Routes>
             <Route path="/" element={<p>Beranda publik</p>} />
-            <Route path="/loginpage" element={<p>Halaman login</p>} />
+            <Route path="/login" element={<p>Halaman login</p>} />
             <Route
               path="/admin"
               element={

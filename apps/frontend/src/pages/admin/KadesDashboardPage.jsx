@@ -65,7 +65,7 @@ export default function KadesDashboardPage() {
       icon: ClipboardList,
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
-      onClick: () => navigate(`/admin/list-kades?status=${SURAT_STATUS.PENDING}`),
+      onClick: () => navigate(`/admin/kades/surat?status=${SURAT_STATUS.PENDING}`),
     },
 
     {
@@ -75,7 +75,7 @@ export default function KadesDashboardPage() {
       icon: Eye,
       iconBg: 'var(--sid-status-progress-bg)',
       iconColor: 'var(--sid-status-progress-text)',
-      onClick: () => navigate(`/admin/list-kades?status=${SURAT_STATUS.IN_PROGRESS}`),
+      onClick: () => navigate(`/admin/kades/surat?status=${SURAT_STATUS.IN_PROGRESS}`),
     },
 
     {
@@ -85,7 +85,7 @@ export default function KadesDashboardPage() {
       icon: CheckCircle2,
       iconBg: 'var(--sid-status-done-bg)',
       iconColor: 'var(--sid-status-done-text)',
-      onClick: () => navigate(`/admin/list-kades?status=${SURAT_STATUS.APPROVED}`),
+      onClick: () => navigate(`/admin/kades/surat?status=${SURAT_STATUS.APPROVED}`),
     },
 
     {
@@ -95,7 +95,7 @@ export default function KadesDashboardPage() {
       icon: XCircle,
       iconBg: 'var(--sid-status-rejected-bg)',
       iconColor: 'var(--sid-status-rejected-text)',
-      onClick: () => navigate(`/admin/list-kades?status=${SURAT_STATUS.REJECTED}`),
+      onClick: () => navigate(`/admin/kades/surat?status=${SURAT_STATUS.REJECTED}`),
     },
   ]
 

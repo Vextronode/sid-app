@@ -62,7 +62,7 @@ export default function KadusDashboardPage() {
       icon: Mail,
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
-      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.PENDING}`),
+      onClick: () => navigate(`/admin/kadus/surat?status=${SURAT_STATUS.PENDING}`),
     },
 
     {
@@ -72,7 +72,7 @@ export default function KadusDashboardPage() {
       icon: Eye,
       iconBg: 'var(--sid-status-progress-bg)',
       iconColor: 'var(--sid-status-progress-text)',
-      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.IN_PROGRESS}`),
+      onClick: () => navigate(`/admin/kadus/surat?status=${SURAT_STATUS.IN_PROGRESS}`),
     },
 
     {
@@ -82,7 +82,7 @@ export default function KadusDashboardPage() {
       icon: CheckCircle2,
       iconBg: 'var(--sid-status-done-bg)',
       iconColor: 'var(--sid-status-done-text)',
-      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.APPROVED}`),
+      onClick: () => navigate(`/admin/kadus/surat?status=${SURAT_STATUS.APPROVED}`),
     },
 
     {
@@ -92,7 +92,7 @@ export default function KadusDashboardPage() {
       icon: XCircle,
       iconBg: 'var(--sid-status-rejected-bg)',
       iconColor: 'var(--sid-status-rejected-text)',
-      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.REJECTED}`),
+      onClick: () => navigate(`/admin/kadus/surat?status=${SURAT_STATUS.REJECTED}`),
     },
   ]
 

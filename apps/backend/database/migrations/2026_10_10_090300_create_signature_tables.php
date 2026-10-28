@@ -29,6 +29,27 @@ return new class extends Migration
             $table->index(['user_id', 'revoked_at'], 'idx_user_signatures_active');
         });
 
+        // Pengajuan reset TTD oleh pemilik akun, diputuskan Staf SIDUTama.
+        // Maksimal satu pengajuan pending per akun (ditegakkan di service).
+        Schema::create('signature_reset_requests', function (Blueprint $table) {
+            $table->id();
+            $table->foreignUuid('user_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
+            $table->text('reason');
+            $table->string('status', 20)->default('pending');
+            $table->foreignUuid('handled_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+            $table->timestamp('handled_at')->nullable();
+            $table->text('response_notes')->nullable();
+            $table->timestamps();
+
+            $table->index(['status', 'created_at'], 'idx_signature_reset_requests_status');
+            $table->index(['user_id', 'status'], 'idx_signature_reset_requests_user');
+        });
+
         // Satu baris per percobaan mengisi sebuah slot tanda tangan pada
         // surat. Baris terbaru per slot adalah keadaan slot saat ini;
         // baris lama (ditolak/kedaluwarsa) dipertahankan sebagai riwayat
@@ -88,6 +109,7 @@ return new class extends Migration
     {
         Schema::dropIfExists('signature_blocks');
         Schema::dropIfExists('letter_signatures');
+        Schema::dropIfExists('signature_reset_requests');
         Schema::dropIfExists('user_signatures');
     }
 };

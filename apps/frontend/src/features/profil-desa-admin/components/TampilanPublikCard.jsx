@@ -4,6 +4,7 @@ import { ExternalLink, Image as ImageIcon, Pencil } from 'lucide-react'
 import { formatCoords, googleMapsUrl, villageCoords } from '@/shared/lib/villageMap'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import ImageFilePicker, { ImagePreviewStage } from '@/components/ui/ImageFilePicker'
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 
@@ -107,20 +108,14 @@ function PublicImageField({ field, currentUrl, onUpload }) {
   const previewUrl = draftUrl || currentUrl
 
   return (
-    <div className="sid-profil-desa-info-item">
+    <div className="sid-profil-desa-info-item sid-image-field">
       <span className="sid-profil-desa-info-label">{field.label}</span>
 
-      {previewUrl ? (
-        <img
-          src={previewUrl}
-          alt={draft ? `Pratinjau ${field.label.toLowerCase()}` : field.label}
-          className={`sid-public-media-preview sid-public-media-preview--${field.kind}`}
-        />
-      ) : (
-        <p className="sid-profil-desa-info-value">
-          <ImageIcon size={14} /> Belum diunggah.
-        </p>
-      )}
+      <ImagePreviewStage
+        src={previewUrl}
+        alt={draft ? `Pratinjau ${field.label.toLowerCase()}` : field.label}
+        cover={field.kind === 'hero'}
+      />
 
       {error && (
         <p className="sid-admin-alert sid-admin-alert-error" role="alert">
@@ -129,7 +124,7 @@ function PublicImageField({ field, currentUrl, onUpload }) {
       )}
 
       {draft ? (
-        <div className="sid-actions">
+        <div className="sid-actions sid-image-field-actions">
           <button
             type="button"
             className="sid-btn sid-btn-secondary"
@@ -148,13 +143,12 @@ function PublicImageField({ field, currentUrl, onUpload }) {
           </button>
         </div>
       ) : (
-        <>
-          <label className="sid-label" htmlFor={inputId}>
-            {previewUrl ? 'Ganti gambar' : 'Unggah gambar'}
-          </label>
-          <input id={inputId} type="file" accept=".png,.jpg,.jpeg,.webp" onChange={handleSelect} />
-          <p className="sid-upload-description">{field.hint}</p>
-        </>
+        <ImageFilePicker
+          id={inputId}
+          title={previewUrl ? 'Ganti gambar' : 'Pilih gambar'}
+          hint={field.hint}
+          onChange={handleSelect}
+        />
       )}
     </div>
   )

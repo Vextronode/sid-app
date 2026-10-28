@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import ImageFilePicker, { ImagePreviewStage } from '@/components/ui/ImageFilePicker'
+import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { SIGNATURE_CARD_ANCHOR } from '@/features/notifikasi/utils/notificationTarget'
 import { STAF_APP_LABEL } from '@/lib/constants/app'
-import { getMySignature, getMySignatureImage, saveMySignature } from '../api/signatureApi'
+import {
+  getMySignature,
+  getMySignatureImage,
+  requestSignatureReset,
+  saveMySignature,
+} from '../api/signatureApi'
+import { promptDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 
 const PAD_WIDTH = 480
@@ -20,12 +30,17 @@ function serverMessage(error, fallback) {
 
 /**
  * Tanda tangan pribadi akun. Diisi sekali (digambar atau diunggah) dengan
- * pratinjau dan konfirmasi; setelah tersimpan tidak dapat diubah sendiri
- * dan hanya bisa direset oleh Staf SIDUTama (STAF_APP_LABEL).
+ * pratinjau dan konfirmasi; setelah tersimpan tidak dapat diubah sendiri.
+ * Pemilik akun dapat mengajukan reset ke Staf SIDUTama (STAF_APP_LABEL);
+ * Staf SIDUTama sendiri mereset lewat Manajemen Pengguna.
  */
 export function SignatureCard() {
+  const { user } = useAuth()
+  const { hash } = useLocation()
+  const sectionRef = useRef(null)
   const canvasRef = useRef(null)
   const drawingRef = useRef(false)
+  const [requesting, setRequesting] = useState(false)
   const [status, setStatus] = useState(null)
   const [imageUrl, setImageUrl] = useState('')
   const [draft, setDraft] = useState(null)
@@ -67,6 +82,39 @@ export function SignatureCard() {
     },
     [draftUrl],
   )
+
+  // Dibuka dari notifikasi keputusan reset: gulir ke kartu ini.
+  useEffect(() => {
+    if (status !== null && hash === `#${SIGNATURE_CARD_ANCHOR}`) {
+      sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [status, hash])
+
+  const handleRequestReset = async () => {
+    const reason = await promptDialog({
+      title: 'Ajukan reset tanda tangan?',
+      message: `Pengajuan dikirim ke ${STAF_APP_LABEL}. Bila disetujui, tanda tangan Anda dikosongkan dan dapat diisi kembali.`,
+      label: 'Alasan pengajuan (minimal 5 karakter)',
+      minLength: 5,
+      confirmLabel: 'Kirim Pengajuan',
+    })
+
+    if (reason === null) return
+
+    setRequesting(true)
+    setError('')
+
+    try {
+      const response = await requestSignatureReset(reason.trim())
+
+      setStatus((current) => ({ ...current, reset_request: response.data }))
+      notifySuccess(response.message ?? 'Pengajuan reset tanda tangan terkirim.')
+    } catch (requestError) {
+      setError(serverMessage(requestError, 'Gagal mengirim pengajuan reset tanda tangan.'))
+    } finally {
+      setRequesting(false)
+    }
+  }
 
   const pointerPosition = (event) => {
     const canvas = canvasRef.current
@@ -144,7 +192,12 @@ export function SignatureCard() {
   }
 
   return (
-    <section className="sid-card" aria-labelledby="signature-card-heading">
+    <section
+      ref={sectionRef}
+      id={SIGNATURE_CARD_ANCHOR}
+      className="sid-card"
+      aria-labelledby="signature-card-heading"
+    >
       <h2 id="signature-card-heading" className="sid-section-title">
         Tanda Tangan
       </h2>
@@ -158,23 +211,42 @@ export function SignatureCard() {
       {status === null && !error && <p>Memuat tanda tangan...</p>}
 
       {status?.has_signature && (
-        <>
-          {imageUrl && (
-            <img
-              src={imageUrl}
-              alt="Tanda tangan Anda"
-              style={{ maxHeight: 120, maxWidth: '100%', background: '#fff' }}
-            />
+        <div className="sid-signature-body">
+          <ImagePreviewStage src={imageUrl} alt="Tanda tangan Anda" emptyText="Memuat..." />
+
+          {user?.role === 'staf_sid' ? (
+            <p className="sid-upload-description">
+              Tanda tangan sudah tersimpan dan tidak dapat diubah. Atur ulang lewat Manajemen
+              Pengguna bila perlu diganti.
+            </p>
+          ) : status.reset_request ? (
+            <p className="sid-upload-description" role="status">
+              Pengajuan reset tanda tangan Anda sedang diproses {STAF_APP_LABEL}. Anda akan mendapat
+              notifikasi setelah diputuskan.
+            </p>
+          ) : (
+            <>
+              <p className="sid-upload-description">
+                Tanda tangan sudah tersimpan dan tidak dapat diubah sendiri. Bila perlu diganti,
+                ajukan reset ke {STAF_APP_LABEL}.
+              </p>
+              <div className="sid-actions">
+                <button
+                  type="button"
+                  className="sid-btn sid-btn-secondary"
+                  onClick={handleRequestReset}
+                  disabled={requesting}
+                >
+                  {requesting ? 'Mengirim...' : 'Ajukan Reset TTD'}
+                </button>
+              </div>
+            </>
           )}
-          <p className="sid-upload-description">
-            Tanda tangan sudah tersimpan dan tidak dapat diubah. Bila perlu diganti, hubungi{' '}
-            {STAF_APP_LABEL} untuk mengatur ulang.
-          </p>
-        </>
+        </div>
       )}
 
       {status && !status.has_signature && !draft && (
-        <>
+        <div className="sid-signature-body">
           <p className="sid-upload-description">
             Tanda tangan dipakai pada surat yang Anda ajukan atau yang Anda setujui untuk orang
             lain. Tanda tangan hanya dapat diisi satu kali.
@@ -185,18 +257,11 @@ export function SignatureCard() {
             width={PAD_WIDTH}
             height={PAD_HEIGHT}
             aria-label="Area menggambar tanda tangan"
+            className="sid-signature-pad"
             onPointerDown={startStroke}
             onPointerMove={continueStroke}
             onPointerUp={endStroke}
             onPointerLeave={endStroke}
-            style={{
-              width: '100%',
-              maxWidth: PAD_WIDTH,
-              border: '1px dashed var(--sid-border)',
-              borderRadius: 8,
-              background: '#fff',
-              touchAction: 'none',
-            }}
           />
 
           <div className="sid-actions">
@@ -213,26 +278,22 @@ export function SignatureCard() {
             </button>
           </div>
 
-          <label className="sid-label" htmlFor="signature-upload">
-            Atau unggah gambar tanda tangan (PNG/JPG, maks. 512 KB)
-          </label>
-          <input
+          <p className="sid-signature-divider">atau</p>
+
+          <ImageFilePicker
             id="signature-upload"
-            type="file"
+            title="Unggah gambar tanda tangan"
+            hint="PNG atau JPG. Maks. 512 KB."
             accept=".png,.jpg,.jpeg"
             onChange={(event) => setDraftFile(event.target.files?.[0] ?? null)}
           />
-        </>
+        </div>
       )}
 
       {draft && (
-        <>
-          <p className="sid-label">Pratinjau</p>
-          <img
-            src={draftUrl}
-            alt="Pratinjau tanda tangan"
-            style={{ maxHeight: 120, maxWidth: '100%', background: '#fff' }}
-          />
+        <div className="sid-signature-body">
+          <span className="sid-label">Pratinjau</span>
+          <ImagePreviewStage src={draftUrl} alt="Pratinjau tanda tangan" />
           <p className="sid-form-field-error" role="status">
             Periksa kembali. Setelah disimpan, tanda tangan tidak dapat Anda ubah sendiri.
           </p>
@@ -254,7 +315,7 @@ export function SignatureCard() {
               {saving ? 'Menyimpan...' : 'Simpan Tanda Tangan'}
             </button>
           </div>
-        </>
+        </div>
       )}
     </section>
   )
