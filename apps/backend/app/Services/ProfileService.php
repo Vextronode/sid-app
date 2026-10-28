@@ -30,9 +30,13 @@ class ProfileService
      *
      * @return array{found: bool, has_account: bool, name: string|null, family_number: string|null}
      */
-    public function lookupCitizenName(User $user, string $nik): array
+    public function lookupCitizenName(User $user, string $nik, bool $includeInactive = false): array
     {
-        $citizen = $user->village_id ? $this->citizenRepository->findActiveInVillageByNik($user->village_id, $nik) : null;
+        $citizen = match (true) {
+            ! $user->village_id => null,
+            $includeInactive => $this->citizenRepository->findInVillageByNik($user->village_id, $nik),
+            default => $this->citizenRepository->findActiveInVillageByNik($user->village_id, $nik),
+        };
 
         $account = $citizen ? $this->userRepository->findByCitizenId($citizen->id) : null;
         $hasAccount = $account !== null && $account->is_active;

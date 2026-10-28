@@ -61,11 +61,12 @@ class ProfileController extends Controller
      */
     public function lookupNik(Request $request): JsonResponse
     {
-        $nik = (string) $request->validate(['nik' => ['required', 'digits:16']])['nik'];
+        $input = $request->validate(['nik' => ['required', 'digits:16'], 'include_inactive' => ['sometimes', 'boolean']]);
 
         return response()->json([
             'message' => 'Pencarian NIK selesai.',
-            'data' => $this->profileService->lookupCitizenName($request->user(), $nik),
+            // include_inactive: juga mencari warga nonaktif (mis. NIK almarhum).
+            'data' => $this->profileService->lookupCitizenName($request->user(), (string) $input['nik'], (bool) ($input['include_inactive'] ?? false)),
         ]);
     }
 
