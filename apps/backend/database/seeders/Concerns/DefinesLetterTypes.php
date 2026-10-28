@@ -54,6 +54,15 @@ trait DefinesLetterTypes
     }
 
     /**
+     * Nilai awal isian dari kolom data penduduk pemohon (mis. occupation_id,
+     * rt_id, name, address); pemohon tetap dapat mengubahnya.
+     */
+    private function prefilled(array $field, string $column): array
+    {
+        return [...$field, 'prefill_from_applicant' => $column];
+    }
+
+    /**
      * Dusun -> RW -> RT desa ini (dipilih dari data wilayah); dicetak lewat
      * {{ <nama>_dusun }}, {{ <nama>_rw }}, {{ <nama>_rt }}.
      */

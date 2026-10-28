@@ -28,6 +28,13 @@ class LetterTypeSeeder extends Seeder
 
     private const CLOSING = 'Demikian surat keterangan ini kami buat dengan sebenarnya, mohon kepada yang bersangkutan agar menjadi maklum dan untuk menjadi bahan selanjutnya.';
 
+    // Urutan tanggal (`date_order`): anak tidak lahir sebelum pemohon.
+    private const AFTER_APPLICANT_BORN = ['after' => 'birth:applicant', 'label' => 'tanggal lahir pemohon'];
+
+    // Meninggal tidak sebelum lahir: dari data penduduk bila NIK terdaftar
+    // (termasuk nonaktif), selain itu tanggal lahir yang diketik.
+    private const AFTER_DECEASED_BORN = ['after' => 'birth:nik_almarhum|tanggal_lahir_almarhum', 'label' => 'tanggal lahir almarhum/almarhumah'];
+
     private const GENDER_OPTIONS = [
         ['value' => 'L', 'label' => 'Laki-laki'],
         ['value' => 'P', 'label' => 'Perempuan'],
@@ -114,8 +121,10 @@ class LetterTypeSeeder extends Seeder
                 'validity_days' => 90,
                 'classification_code' => '510',
                 'form_fields' => [
-                    $this->text('jenis_usaha', 'Bidang Usaha / Mata Pencaharian', true, 'Contoh: Perdagangan'),
-                    $this->number('penghasilan_perbulan', 'Penghasilan per Bulan (Rp)', true, 'Contoh: 2500000'),
+                    // Katalog pekerjaan desa (+ Lainnya, hanya dicetak); awalnya
+                    // pekerjaan pemohon di data penduduk.
+                    $this->prefilled($this->occupation('jenis_usaha', 'Bidang Usaha / Mata Pencaharian'), 'occupation_id'),
+                    $this->rupiah('penghasilan_perbulan', 'Penghasilan per Bulan (Rp)', 'Contoh: 2500000'),
                 ],
                 'sections' => [
                     $applicant,
@@ -129,13 +138,14 @@ class LetterTypeSeeder extends Seeder
                 'description' => 'Keterangan domisili/tempat tinggal di wilayah desa.',
                 'validity_days' => 90,
                 'form_fields' => [
-                    $this->text('alamat_domisili', 'Alamat Domisili Saat Ini', true, 'Contoh: Dusun ..., RT 001/RW 013'),
+                    // Dusun -> RW -> RT dari data wilayah; awalnya RT pemohon.
+                    $this->prefilled($this->area('alamat_domisili', 'Alamat Domisili Saat Ini'), 'rt_id'),
                 ],
                 'sections' => [
                     $applicant,
                     // Pendatang: "bukan warga masyarakat Desa kami, namun";
                     // warga desa: "benar-benar warga masyarakat Desa kami, dan".
-                    $this->paragraph('Orang tersebut diatas {{ applicant_resident_phrase }} menurut keterangan RT/RW dan Kepala Dusun setempat yang bersangkutan saat ini tinggal dan berdomisili di alamat {{ alamat_domisili }} {{ village_region }}.'),
+                    $this->paragraph('Orang tersebut diatas {{ applicant_resident_phrase }} menurut keterangan RT/RW dan Kepala Dusun setempat yang bersangkutan saat ini tinggal dan berdomisili di alamat Dusun {{ alamat_domisili_dusun }} RT {{ alamat_domisili_rt }}/RW {{ alamat_domisili_rw }} {{ village_region }}.'),
                     $this->paragraph(self::CLOSING),
                 ],
             ],
@@ -145,7 +155,11 @@ class LetterTypeSeeder extends Seeder
                 'description' => 'Keterangan status ekonomi tidak mampu untuk keperluan bantuan sosial/pendidikan.',
                 'validity_days' => 180,
                 'form_fields' => [
-                    ...$this->personFields('anak', 'Anak', nikRequired: true),
+                    // Anak warga desa diambil dari data penduduk lewat NIK; anak
+                    // tidak lahir sebelum pemohon (orang tuanya).
+                    ...$this->withField($this->lookupPersonFields('anak', 'Anak', nikRequired: true), 'tanggal_lahir_anak', [
+                        'date_order' => [self::AFTER_APPLICANT_BORN],
+                    ]),
                     // "untuk Melengkapi Persyaratan dan syarat ____" di template fisik.
                     $this->text('keperluan_persyaratan', 'Untuk Melengkapi Persyaratan', true, 'Contoh: pengajuan beasiswa'),
                 ],
@@ -165,7 +179,8 @@ class LetterTypeSeeder extends Seeder
                     $this->textarea('nama_berbeda', 'Nama yang Berbeda', true, 'Tulis satu nama per baris, beserta dokumennya. Contoh: SITI AMINAH (KK an. Budi)'),
                     $this->text('sumber_dokumen', 'Dokumen yang Memuat Nama yang Benar', true, 'Contoh: Akta Kelahiran'),
                     $this->text('nomor_dokumen', 'Nomor Dokumen', true, 'Nomor dokumen tersebut'),
-                    $this->text('nama_benar', 'Nama yang Benar', true, 'Tuliskan nama yang benar'),
+                    // Biasanya nama pemohon di data penduduk.
+                    $this->prefilled($this->text('nama_benar', 'Nama yang Benar', true, 'Tuliskan nama yang benar'), 'name'),
                 ],
                 'sections' => [
                     $applicant,
@@ -182,11 +197,11 @@ class LetterTypeSeeder extends Seeder
                 'validity_days' => 90,
                 'form_fields' => [
                     // Identitas di surat ini milik almarhum, bukan pemohon.
-                    ...$this->personFields('almarhum', 'Almarhum/Almarhumah', nikRequired: false),
-                    $this->date('tanggal_meninggal', 'Tanggal Meninggal'),
+                    ...$this->deceasedFields('Almarhum/Almarhumah'),
+                    $this->pastDate('tanggal_meninggal', 'Tanggal Meninggal', [self::AFTER_DECEASED_BORN]),
                     $this->text('tempat_meninggal', 'Tempat Meninggal', true, 'Tuliskan tempat meninggal'),
                     $this->text('sebab', 'Sebab Meninggal', false, 'Contoh: sakit / kecelakaan'),
-                    $this->date('tanggal_pemakaman', 'Tanggal Pemakaman'),
+                    $this->pastDate('tanggal_pemakaman', 'Tanggal Pemakaman', [['after' => 'tanggal_meninggal', 'label' => 'tanggal meninggal']]),
                     $this->text('tempat_pemakaman', 'Tempat Pemakaman', true, 'Tuliskan tempat pemakaman'),
                 ],
                 // Setelah final approve, Kasi/Kaur menonaktifkan data warga
@@ -223,10 +238,28 @@ class LetterTypeSeeder extends Seeder
                 'validity_days' => 90,
                 'form_fields' => [
                     // Pemohon adalah salah satu orang tua; datanya diambil
-                    // dari akun. Pasangan dan anak diisi di form.
-                    ...$this->personFields('pasangan', 'Pasangan (Suami/Istri)', nikRequired: true, nikRules: ['not_same_as' => ['nik_anak']]),
-                    // Anak yang baru lahir belum terdata sebagai warga desa.
-                    ...$this->personFields('anak', 'Anak', nikRequired: false, nikRules: ['not_same_as' => ['nik_pasangan'], 'not_village_citizen' => true]),
+                    // dari akun. Pasangan warga desa diambil lewat NIK.
+                    ...$this->withField(
+                        $this->lookupPersonFields('pasangan', 'Pasangan (Suami/Istri)', nikRequired: true, nikRules: ['not_same_as' => ['nik_anak'], 'nik_gender' => 'opposite_applicant']),
+                        'jenis_kelamin_pasangan',
+                        ['opposite_applicant_gender' => true],
+                    ),
+                    // Anak yang baru lahir belum terdata sebagai warga desa dan
+                    // tidak lahir sebelum kedua orang tuanya; alamatnya awalnya
+                    // alamat pemohon.
+                    ...$this->withField(
+                        $this->withField(
+                            $this->personFields('anak', 'Anak', nikRequired: false, nikRules: ['not_same_as' => ['nik_pasangan'], 'not_village_citizen' => true]),
+                            'tanggal_lahir_anak',
+                            ['date_order' => [
+                                self::AFTER_APPLICANT_BORN,
+                                // Pasangan warga desa: dari data penduduk; selain itu yang diketik.
+                                ['after' => 'birth:nik_pasangan|tanggal_lahir_pasangan', 'label' => 'tanggal lahir pasangan'],
+                            ]],
+                        ),
+                        'alamat_anak',
+                        ['prefill_from_applicant' => 'address'],
+                    ),
                 ],
                 // Setelah final approve, Kasi/Kaur menambahkan anak ke data
                 // warga lewat Terapkan (NIK anak boleh dilengkapi saat itu).
@@ -265,7 +298,7 @@ class LetterTypeSeeder extends Seeder
                 'description' => 'Keterangan baru pertama kali memiliki rumah, untuk persyaratan pengajuan KPR.',
                 'validity_days' => 90,
                 'form_fields' => [
-                    $this->number('penghasilan_perbulan', 'Rata-rata Penghasilan per Bulan (Rp)', true, 'Contoh: 4000000'),
+                    $this->rupiah('penghasilan_perbulan', 'Rata-rata Penghasilan per Bulan (Rp)', 'Contoh: 4000000'),
                 ],
                 'sections' => [
                     $applicant,
@@ -281,9 +314,9 @@ class LetterTypeSeeder extends Seeder
                 'validity_days' => null,
                 'form_fields' => [
                     // Pemohon adalah ahli waris; datanya diambil dari akun.
-                    ...$this->personFields('almarhum', 'Almarhum/Almarhumah', nikRequired: false),
-                    $this->occupation('pekerjaan_almarhum', 'Pekerjaan Almarhum/Almarhumah'),
-                    $this->date('tanggal_meninggal', 'Tanggal Meninggal'),
+                    ...$this->deceasedFields('Almarhum/Almarhumah'),
+                    [...$this->occupation('pekerjaan_almarhum', 'Pekerjaan Almarhum/Almarhumah'), 'from_nik' => 'nik_almarhum', 'from_nik_value' => 'occupation'],
+                    $this->pastDate('tanggal_meninggal', 'Tanggal Meninggal', [self::AFTER_DECEASED_BORN]),
                     $this->text('tempat_pemakaman', 'Nama TPU', true, 'Contoh: Cibenda'),
                 ],
                 // Template fisik tidak memakai blok Nama/Jabatan penanda tangan.
@@ -328,7 +361,7 @@ class LetterTypeSeeder extends Seeder
         return [
             $this->text("nama_{$suffix}", "Nama {$who}", true, 'Nama lengkap'),
             $this->text("tempat_lahir_{$suffix}", "Tempat Lahir {$who}", true, 'Kota/kabupaten'),
-            $this->date("tanggal_lahir_{$suffix}", "Tanggal Lahir {$who}"),
+            $this->pastDate("tanggal_lahir_{$suffix}", "Tanggal Lahir {$who}"),
             // NIK warga desa harus sesuai jenis kelamin yang diisi, dan bukan NIK pemohon.
             [
                 ...$this->field("nik_{$suffix}", "NIK {$who}", 'nik', $nikRequired, '16 digit NIK'),
@@ -339,6 +372,95 @@ class LetterTypeSeeder extends Seeder
             $this->field("jenis_kelamin_{$suffix}", "Jenis Kelamin {$who}", 'select', true, null, ['options' => self::GENDER_OPTIONS]),
             $this->text("alamat_{$suffix}", "Alamat {$who}", true, 'Alamat lengkap'),
         ];
+    }
+
+    /**
+     * Identitas seseorang lewat NIK: bila terdaftar di desa, nama, tempat &
+     * tanggal lahir, jenis kelamin, dan alamat diambil dari data penduduk;
+     * bila tidak, diketik.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function lookupPersonFields(string $suffix, string $who, bool $nikRequired, array $nikRules = []): array
+    {
+        $nik = "nik_{$suffix}";
+        $fromNik = fn (array $field, string $value): array => [...$field, 'from_nik' => $nik, 'from_nik_value' => $value];
+
+        return [
+            [
+                ...$this->field($nik, "NIK {$who}", 'nik', $nikRequired, '16 digit NIK'),
+                'not_applicant' => true,
+                'help' => "Bila terdaftar di desa ini, data {$this->lowerWho($who)} diambil dari data penduduk.",
+                ...$nikRules,
+            ],
+            $fromNik($this->text("nama_{$suffix}", "Nama {$who}", true, 'Nama lengkap'), 'name'),
+            $fromNik($this->text("tempat_lahir_{$suffix}", "Tempat Lahir {$who}", true, 'Kota/kabupaten'), 'place_of_birth'),
+            $fromNik($this->pastDate("tanggal_lahir_{$suffix}", "Tanggal Lahir {$who}"), 'date_of_birth'),
+            $fromNik($this->field("jenis_kelamin_{$suffix}", "Jenis Kelamin {$who}", 'select', true, null, ['options' => self::GENDER_OPTIONS]), 'gender'),
+            $fromNik($this->text("alamat_{$suffix}", "Alamat {$who}", true, 'Alamat lengkap'), 'address'),
+        ];
+    }
+
+    /**
+     * Identitas almarhum/almarhumah lewat NIK, termasuk warga yang datanya
+     * sudah dinonaktifkan; NIK boleh dikosongkan (data lalu diketik).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function deceasedFields(string $who): array
+    {
+        return $this->lookupPersonFields('almarhum', $who, nikRequired: false, nikRules: [
+            'include_inactive' => true,
+            'typed_when_empty' => true,
+            'help' => 'Bila terdaftar di desa ini, data almarhum/almarhumah diambil dari data penduduk. Kosongkan bila tidak diketahui.',
+        ]);
+    }
+
+    /**
+     * Tanggal peristiwa yang sudah terjadi (tidak sesudah hari ini), dengan
+     * urutan terhadap tanggal lain (`date_order`) bila ada.
+     *
+     * @param  array<int, array<string, string>>  $order
+     * @return array<string, mixed>
+     */
+    private function pastDate(string $name, string $label, array $order = []): array
+    {
+        return [...$this->date($name, $label), 'past' => true, ...($order === [] ? [] : ['date_order' => $order])];
+    }
+
+    /**
+     * Nominal rupiah: bilangan bulat lebih dari 0.
+     *
+     * @return array<string, mixed>
+     */
+    private function rupiah(string $name, string $label, string $placeholder): array
+    {
+        return [
+            ...$this->number($name, $label, true, $placeholder),
+            'integer' => true,
+            'min_value' => 1,
+            'help' => 'Tulis angka saja tanpa titik, mis. 2500000.',
+        ];
+    }
+
+    /**
+     * Tambahkan opsi ke satu isian di daftar isian.
+     *
+     * @param  array<int, array<string, mixed>>  $fields
+     * @param  array<string, mixed>  $extra
+     * @return array<int, array<string, mixed>>
+     */
+    private function withField(array $fields, string $name, array $extra): array
+    {
+        return array_map(fn (array $field): array => $field['name'] === $name ? [...$field, ...$extra] : $field, $fields);
+    }
+
+    /**
+     * "Pasangan (Suami/Istri)" -> "pasangan" untuk kalimat keterangan.
+     */
+    private function lowerWho(string $who): string
+    {
+        return mb_strtolower(trim((string) preg_replace('/\s*\(.*\)$/', '', $who)));
     }
 
     // ------------------------------------------------------------------
