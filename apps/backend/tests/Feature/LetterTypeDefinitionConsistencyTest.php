@@ -172,6 +172,17 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                 ->all(),
         );
 
+        // Batas waktu pelaporan peristiwa (UU 23/2006 jo. UU 24/2013), peringatan di form.
+        $this->assertSame(
+            ['F05.tanggal_lahir_anak' => 60, 'F06.tanggal_kematian' => 30, 'F07.tanggal_perkawinan' => 60, 'F07.tanggal_putusan' => 60, 'F10.tanggal_penetapan' => 30],
+            $letterTypes
+                ->flatMap(fn (LetterType $type) => collect($type->form_fields)
+                    ->filter(fn (array $field): bool => isset($field['report_deadline']))
+                    ->mapWithKeys(fn (array $field) => ["{$type->code}.{$field['name']}" => $field['report_deadline']['days']]))
+                ->sortKeys()
+                ->all(),
+        );
+
         // Penghasilan memakai kode klasifikasi 510, lainnya 470.
         $this->assertSame(
             ['A03' => '510'],

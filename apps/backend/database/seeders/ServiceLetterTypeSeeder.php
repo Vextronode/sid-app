@@ -804,6 +804,7 @@ class ServiceLetterTypeSeeder extends Seeder
                     $this->text('tempat_kelahiran', 'Tempat Kelahiran (Kota/Kabupaten)', true, 'Contoh: Pangandaran'),
                     [
                         ...$this->pastDate('tanggal_lahir_anak', 'Tanggal Lahir Anak'),
+                        'report_deadline' => ['days' => 60, 'event' => 'kelahiran'],
                         'date_order' => [
                             ['after' => 'birth:ibu', 'label' => 'tanggal lahir ibu'],
                             ['after' => 'birth:ayah|tanggal_lahir_ayah', 'label' => 'tanggal lahir ayah'],
@@ -964,7 +965,7 @@ class ServiceLetterTypeSeeder extends Seeder
                 ],
                 'form_fields' => [
                     $this->field('almarhum', 'Anggota Keluarga yang Meninggal', 'family_member', true, null, ['not_self' => true]),
-                    [...$this->pastDate('tanggal_kematian', 'Tanggal Kematian'), 'date_order' => [['after' => 'birth:almarhum', 'label' => 'tanggal lahir almarhum']]],
+                    [...$this->pastDate('tanggal_kematian', 'Tanggal Kematian'), 'report_deadline' => ['days' => 30, 'event' => 'kematian'], 'date_order' => [['after' => 'birth:almarhum', 'label' => 'tanggal lahir almarhum']]],
                     $this->time('pukul_kematian', 'Pukul Kematian'),
                     $this->select('sebab_kematian', 'Sebab Kematian', self::DEATH_CAUSE_OPTIONS),
                     $this->text('tempat_kematian', 'Tempat Kematian', true, 'Contoh: RSUD Pandega Pangandaran'),
@@ -1067,6 +1068,8 @@ class ServiceLetterTypeSeeder extends Seeder
                     ],
                     [
                         ...$this->pastDate('tanggal_perkawinan', 'Tanggal Perkawinan/Pemberkatan'),
+                        // Dicatatkan ke Disdukcapil (selain Islam); Islam dicatat KUA.
+                        'report_deadline' => ['days' => 60, 'event' => 'perkawinan', 'when' => self::CIVIL_REPORT],
                         'date_order' => self::AFTER_SPOUSES_BORN,
                         'visible_when' => self::MARRIAGE,
                     ],
@@ -1102,6 +1105,7 @@ class ServiceLetterTypeSeeder extends Seeder
                         $this->text('nama_pengadilan', 'Nama Pengadilan', true, 'Contoh: Pengadilan Agama Ciamis'),
                         [
                             ...$this->pastDate('tanggal_putusan', 'Tanggal Putusan Pengadilan'),
+                            'report_deadline' => ['days' => 60, 'event' => 'perceraian', 'when' => self::CIVIL_REPORT],
                             'date_order' => [...self::AFTER_SPOUSES_BORN, ['after' => 'tanggal_akta_perkawinan', 'label' => 'tanggal akta perkawinan']],
                         ],
                     ]),
@@ -1461,7 +1465,7 @@ class ServiceLetterTypeSeeder extends Seeder
                     ...$this->adoptiveParent('ibu', 'Ibu'),
                     // Penetapan pengadilan (dasar pengangkatan anak).
                     $this->text('nomor_penetapan', 'Nomor Penetapan Pengadilan', true, 'Sesuai salinan penetapan'),
-                    [...$this->pastDate('tanggal_penetapan', 'Tanggal Penetapan Pengadilan'), 'date_order' => [['after' => 'birth:nik_anak|tanggal_lahir_anak', 'label' => 'tanggal lahir anak']]],
+                    [...$this->pastDate('tanggal_penetapan', 'Tanggal Penetapan Pengadilan'), 'report_deadline' => ['days' => 30, 'event' => 'pengangkatan anak'], 'date_order' => [['after' => 'birth:nik_anak|tanggal_lahir_anak', 'label' => 'tanggal lahir anak']]],
                     $this->text('nama_pengadilan_penetapan', 'Nama Pengadilan', true, 'Contoh: Pengadilan Agama Ciamis'),
                     $this->text('tempat_pengadilan_penetapan', 'Tempat Pengadilan', false, 'Contoh: Ciamis'),
                     ...$this->witness(1, 'I', withFamilyNumber: true, parties: ['nik_anak', ...self::ADOPTION_PARTIES]),
