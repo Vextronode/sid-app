@@ -109,11 +109,11 @@ class BirthReportServiceTest extends TestCase
         $this->mother->update(['religion' => 'islam']);
         $letterId = $this->approve([...$this->payload(), 'ayah' => $this->applicant['citizen']->id]);
 
-        // F-1.02: perubahan KK karena peristiwa penting; lampiran KK lama dan
-        // bukti peristiwa penting (surat keterangan lahir).
+        // F-1.02: perubahan KK karena peristiwa penting; lampiran KK lama,
+        // bukti peristiwa penting (surat keterangan lahir), dan buku nikah.
         $registration = $this->render($letterId, 'f1_02');
         $this->assertStringContainsString('Peristiwa Penting <b>V</b>', $registration);
-        $this->assertSame(2, preg_match_all('/xf-circle>V</', $registration));
+        $this->assertSame(3, preg_match_all('/xf-circle>V</', $registration));
 
         // F-1.01: susunan KK pemohon, anak di baris terakhir.
         $biodata = $this->render($letterId, 'f1_01', landscape: true);
@@ -141,7 +141,7 @@ class BirthReportServiceTest extends TestCase
         $this->assertStringContainsString('>3207010202850009<', $biodata);
     }
 
-    public function test_birth_without_certificate_and_with_acknowledgement_issues_f2_03_and_f2_10(): void
+    public function test_birth_without_certificate_to_unrecorded_parents_issues_f2_03_and_f2_04(): void
     {
         $letterId = $this->approve([
             ...$this->payload(),
@@ -152,7 +152,7 @@ class BirthReportServiceTest extends TestCase
             'nama_penolong' => 'Bidan Rina',
             'pekerjaan_penolong' => 'Bidan',
             'alamat_penolong' => 'Dusun Budiasih',
-            'pengakuan_ayah' => 'ya',
+            'perkawinan_ortu' => 'belum_tercatat',
             'pekerjaan_ayah' => 'lainnya',
             'pekerjaan_ayah_lainnya' => 'buruh tani',
             'alamat_ayah' => 'Dusun Sinargalih',
@@ -160,7 +160,7 @@ class BirthReportServiceTest extends TestCase
 
         $this->actingAs($this->applicant['user'])
             ->getJson("/api/letters/{$letterId}")
-            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02', 'f1_01', 'f2_03', 'f2_10']);
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02', 'f1_01', 'f2_03', 'f2_04']);
 
         // Ayah di luar KK memakai isian ketik.
         $this->assertMatchesRegularExpression($this->boxes('ASEP'), $this->render($letterId, null));
@@ -172,12 +172,18 @@ class BirthReportServiceTest extends TestCase
         $this->assertStringContainsString('Bidan Rina', $statement);
         $this->assertStringContainsString('( Saksi Satu )', $statement);
 
-        $acknowledgement = $this->render($letterId, 'f2_10');
-        $this->assertStringContainsString('PENGAKUAN ANAK', $acknowledgement);
-        $this->assertStringContainsString('Asep Hidayat', $acknowledgement);
-        $this->assertStringContainsString('Ciamis, 3 Februari 1985', $acknowledgement);
-        $this->assertStringContainsString('Buruh Tani', $acknowledgement);
-        $this->assertStringContainsString('Dusun Sinargalih', $acknowledgement);
+        // F-2.04: ibu bayi menyatakan ayah (diketik) adalah suaminya.
+        $spouse = $this->render($letterId, 'f2_04');
+        $this->assertStringContainsString('KEBENARAN SEBAGAI PASANGAN SUAMI ISTERI', $spouse);
+        $this->assertStringContainsString('adalah suami dari :', $spouse);
+        $this->assertStringContainsString('>Ika Asmaulatipah<', $spouse);
+        $this->assertStringContainsString('>Asep Hidayat<', $spouse);
+        $this->assertStringContainsString('Ciamis, 3 Februari 1985', $spouse);
+        $this->assertStringContainsString('Buruh Tani', $spouse);
+        $this->assertStringContainsString('Dusun Sinargalih', $spouse);
+
+        // F-1.02: lampiran SPTJM (bukan buku nikah).
+        $this->assertSame(3, preg_match_all('/xf-circle>V</', $this->render($letterId, 'f1_02')));
     }
 
     public function test_mother_must_be_a_female_and_father_a_male_family_member(): void
@@ -322,7 +328,7 @@ class BirthReportServiceTest extends TestCase
             'nama_saksi_2' => 'Saksi Dua',
             'nik_saksi_2' => '3207010101800002',
             'surat_lahir' => 'ada',
-            'pengakuan_ayah' => 'tidak',
+            'perkawinan_ortu' => 'tercatat',
         ];
     }
 

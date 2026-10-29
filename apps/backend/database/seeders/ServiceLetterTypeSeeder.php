@@ -212,6 +212,9 @@ class ServiceLetterTypeSeeder extends Seeder
 
     private const RECORDED = ['field' => 'status_kawin_belum_tercatat', 'equals' => 'tidak'];
 
+    /** F05: perkawinan ayah dan ibu bayi belum tercatat. */
+    private const PARENTS_UNRECORDED = ['field' => 'perkawinan_ortu', 'equals' => 'belum_tercatat'];
+
     /**
      * F07: perkawinan/perceraian selain Islam yang sah tetapi aktanya belum
      * terbit dicatatkan ke Disdukcapil lewat F-2.01. Islam dicatat KUA /
@@ -766,13 +769,13 @@ class ServiceLetterTypeSeeder extends Seeder
                         'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02)',
                         'Formulir Biodata Keluarga (F-1.01), susunan KK dengan anak',
                         'SPTJM Kebenaran Data Kelahiran (F-2.03), bila tidak ada surat keterangan lahir; ditandatangani di atas materai bersama dua saksi',
-                        'Surat Pernyataan Pengakuan Anak (F-2.10), bila ayah mengakui anak',
+                        'SPTJM Kebenaran sebagai Pasangan Suami Istri (F-2.04), bila perkawinan orang tua belum tercatat; ditandatangani di atas materai bersama dua saksi',
                     ],
                     'attachments' => [
                         'Surat keterangan lahir dari RS/puskesmas/bidan, bila ada',
                         'KK asli orang tua',
                         'KTP-el ayah dan ibu',
-                        'Buku nikah/kutipan akta perkawinan orang tua, bila ada',
+                        'Buku nikah/kutipan akta perkawinan orang tua, bila perkawinannya tercatat',
                         'KTP-el dua orang saksi',
                     ],
                 ],
@@ -820,9 +823,14 @@ class ServiceLetterTypeSeeder extends Seeder
                         $this->text('pekerjaan_penolong', 'Pekerjaan Penolong Kelahiran', true, 'Contoh: Bidan'),
                         $this->text('alamat_penolong', 'Alamat Penolong Kelahiran', true, 'Alamat lengkap'),
                     ]),
-                    // Pengakuan anak F-2.10 bila perkawinan orang tua belum tercatat.
-                    $this->select('pengakuan_ayah', 'Ayah mengakui anak (perkawinan orang tua belum tercatat)?', ['tidak' => 'Tidak', 'ya' => 'Ya']),
-                    ...$this->withCondition(['all' => [['field' => 'pengakuan_ayah', 'equals' => 'ya'], ['field' => 'ayah', 'filled' => false]]], [
+                    // Perkawinan orang tua belum tercatat: akta kelahiran "anak dari
+                    // ayah dan ibu yang perkawinannya belum tercatat" dengan F-2.04
+                    // (Permendagri 108/2019). Pengakuan anak lewat F08.
+                    $this->select('perkawinan_ortu', 'Perkawinan ayah dan ibu', [
+                        'tercatat' => 'Tercatat (ada buku nikah/akta perkawinan)',
+                        'belum_tercatat' => 'Belum tercatat (nikah siri/adat)',
+                    ]),
+                    ...$this->withCondition(['all' => [self::PARENTS_UNRECORDED, ['field' => 'ayah', 'filled' => false]]], [
                         $this->occupation('pekerjaan_ayah', 'Pekerjaan Ayah'),
                         $this->textarea('alamat_ayah', 'Alamat Ayah', true, 'Alamat lengkap ayah'),
                     ]),
@@ -865,6 +873,8 @@ class ServiceLetterTypeSeeder extends Seeder
                             'lampiran.kk_lama' => true,
                             // Surat keterangan lahir / SPTJM sebagai bukti peristiwa penting.
                             'lampiran.bukti' => true,
+                            'lampiran.buku_nikah' => 'perkawinan_ortu=tercatat',
+                            'lampiran.sptjm' => 'perkawinan_ortu=belum_tercatat',
                         ]),
                     ],
                     [
@@ -880,10 +890,24 @@ class ServiceLetterTypeSeeder extends Seeder
                         'template' => $this->birthStatementForm(),
                     ],
                     [
-                        'key' => 'f2_10',
-                        'title' => 'Surat Pernyataan Pengakuan Anak (F-2.10)',
-                        'when' => ['field' => 'pengakuan_ayah', 'equals' => 'ya'],
-                        'template' => $this->acknowledgementForm(),
+                        'key' => 'f2_04',
+                        'title' => 'SPTJM Kebenaran sebagai Pasangan Suami Istri (F-2.04)',
+                        'when' => self::PARENTS_UNRECORDED,
+                        'template' => $this->spouseStatementForm([
+                            // Penyata ibu bayi; pasangannya ayah (anggota KK atau diketik).
+                            'penyata_nama' => '{{ ibu_nama }}',
+                            'penyata_nik' => '{{ ibu_nik }}',
+                            'penyata_ttl' => '{{ ibu_tempat_lahir }}, {{ ibu_tanggal_lahir }}',
+                            'penyata_pekerjaan' => '{{ ibu_pekerjaan }}',
+                            'penyata_alamat' => '{{ ibu_alamat }}',
+                            'pasangan_nama' => '{{ ayah_nama|nama_ayah }}',
+                            'pasangan_nik' => '{{ ayah_nik|nik_ayah }}',
+                            'pasangan_ttl' => '{{ ayah_tempat_lahir|tempat_lahir_ayah }}, {{ ayah_tanggal_lahir|tanggal_lahir_ayah }}',
+                            'pasangan_pekerjaan' => '{{ ayah_pekerjaan|pekerjaan_ayah }}',
+                            'pasangan_alamat' => '{{ ayah_alamat|alamat_ayah }}',
+                            'pasangan_peran' => 'suami',
+                            'penyata_sign' => '{{ tanda_tangan_pemohon_bila_ibu_nik }}{{ ibu_nama }}',
+                        ]),
                     ],
                 ],
                 'result_upload_hint' => 'Kutipan akta kelahiran dan KK baru yang memuat anak, dari Disdukcapil.',
@@ -1219,7 +1243,7 @@ class ServiceLetterTypeSeeder extends Seeder
                     ...$this->witness(2, 'II', withFamilyNumber: true, parties: ['nik_ayah', 'anak', 'ibu']),
                 ],
                 'documents' => [
-                    ['key' => 'f2_10', 'title' => 'Surat Pernyataan Pengakuan Anak (F-2.10)', 'template' => $this->acknowledgementForm(self::ACKNOWLEDGED_CHILD, fatherFromFamily: false)],
+                    ['key' => 'f2_10', 'title' => 'Surat Pernyataan Pengakuan Anak (F-2.10)', 'template' => $this->acknowledgementForm()],
                 ],
                 'result_upload_hint' => 'Kutipan akta kelahiran yang memuat nama ayah dan KK terbaru dari Disdukcapil.',
                 // Nama ayah anak diisi; ditautkan ke data ayah bila warga desa.
@@ -2308,9 +2332,12 @@ class ServiceLetterTypeSeeder extends Seeder
      * F-2.04: pemohon menyatakan pasangannya adalah suami/isterinya
      * sebagaimana tercantum dalam KK pemohon.
      */
-    private function spouseStatementForm(): string
+    /**
+     * @param  array<string, string>  $override  isian lain (mis. F05: penyata ibu bayi, pasangan ayah)
+     */
+    private function spouseStatementForm(array $override = []): string
     {
-        return $this->sheetForm('f2_04_sptjm_pasutri', [
+        return $this->sheetForm('f2_04_sptjm_pasutri', [...[
             'penyata_nama' => '{{ applicant_name }}',
             'penyata_nik' => '{{ applicant_nik }}',
             'penyata_ttl' => '{{ applicant_birth_place_date }}',
@@ -2329,7 +2356,7 @@ class ServiceLetterTypeSeeder extends Seeder
             'saksi1_nik' => '{{ nik_saksi_1 }}',
             'saksi2_nama' => '{{ nama_saksi_2 }}',
             'saksi2_nik' => '{{ nik_saksi_2 }}',
-        ]);
+        ], ...$override]);
     }
 
     // ------------------------------------------------------------------
@@ -2817,46 +2844,21 @@ class ServiceLetterTypeSeeder extends Seeder
     }
 
     /**
-     * F-2.10. $child: isian data anak; bawaannya anak yang baru lahir (F05),
-     * yang NIK dan aktanya belum ada sehingga dicetak bertitik.
-     * $fatherFromFamily: ayah boleh dipilih dari KK pemohon (F05); bila tidak,
-     * data ayah diketik/dari NIK (F08).
-     *
-     * @param  array<string, string>  $child
+     * F-2.10 untuk F08: anak dan ibu dari isian/NIK, ayah diketik atau dari
+     * akun pemohon bila ayah sendiri yang mengajukan.
      */
-    private function acknowledgementForm(array $child = [], bool $fatherFromFamily = true): string
+    private function acknowledgementForm(): string
     {
-        $dots = str_repeat('…', 22);
-        $child = [
-            'anak_nama' => '{{ nama_anak }}',
-            'anak_nik' => $dots,
-            'anak_jk' => '{{ jenis_kelamin_anak }}',
-            'anak_ttl' => '{{ tempat_kelahiran }}, {{ tanggal_lahir_anak }}',
-            'anak_akta' => $dots,
-            'anak_akta_tgl' => $dots,
-            'anak_akta_dinas' => $dots,
-            'anak_akta_alamat' => $dots,
-            ...$child,
-        ];
-
-        // Ayah: dari KK pemohon (isian family_member `ayah`, F05) atau diketik.
-        $father = $fatherFromFamily
-            ? ['nama' => 'ayah_nama|nama_ayah', 'nik' => 'ayah_nik|nik_ayah', 'tempat_lahir' => 'ayah_tempat_lahir|tempat_lahir_ayah',
-                'tanggal_lahir' => 'ayah_tanggal_lahir|tanggal_lahir_ayah', 'pekerjaan' => 'ayah_pekerjaan|pekerjaan_ayah', 'alamat' => 'ayah_alamat|alamat_ayah']
-            : ['nama' => 'nama_ayah', 'nik' => 'nik_ayah', 'tempat_lahir' => 'tempat_lahir_ayah',
-                'tanggal_lahir' => 'tanggal_lahir_ayah', 'pekerjaan' => 'pekerjaan_ayah', 'alamat' => 'alamat_ayah'];
-        // F08: ayah yang mengajukan sendiri memakai data akunnya.
-        $own = fn (string $applicant, string $typed): string => $fatherFromFamily
-            ? $typed
-            : "{{#if pemohon_ayah=ya}}{{ {$applicant} }}{{/if}}{{#if pemohon_ayah=tidak}}{$typed}{{/if}}";
+        // Ayah yang mengajukan sendiri memakai data akunnya.
+        $own = fn (string $applicant, string $typed): string => "{{#if pemohon_ayah=ya}}{{ {$applicant} }}{{/if}}{{#if pemohon_ayah=tidak}}{$typed}{{/if}}";
 
         return $this->sheetForm('f2_10_pengakuan_anak', [
-            ...$child,
-            'ayah_nama' => "{{ {$father['nama']} }}",
-            'ayah_nik' => "{{ {$father['nik']} }}",
-            'ayah_ttl' => $own('applicant_birth_place_date', "{{ {$father['tempat_lahir']} }}, {{ {$father['tanggal_lahir']} }}"),
-            'ayah_pekerjaan' => $own('applicant_occupation', "{{ {$father['pekerjaan']} }}"),
-            'ayah_alamat' => $own('applicant_address', "{{ {$father['alamat']} }}"),
+            ...self::ACKNOWLEDGED_CHILD,
+            'ayah_nama' => '{{ nama_ayah }}',
+            'ayah_nik' => '{{ nik_ayah }}',
+            'ayah_ttl' => $own('applicant_birth_place_date', '{{ tempat_lahir_ayah }}, {{ tanggal_lahir_ayah }}'),
+            'ayah_pekerjaan' => $own('applicant_occupation', '{{ pekerjaan_ayah }}'),
+            'ayah_alamat' => $own('applicant_address', '{{ alamat_ayah }}'),
             'ibu_nama' => '{{ ibu_nama }}',
             'ibu_nik' => '{{ ibu_nik }}',
             'ibu_ttl' => '{{ ibu_tempat_lahir }}, {{ ibu_tanggal_lahir }}',
@@ -2864,7 +2866,7 @@ class ServiceLetterTypeSeeder extends Seeder
             'ibu_alamat' => '{{ ibu_alamat }}',
             'place_date' => '{{ village_regency }}, {{ issued_at }}',
             'ibu_sign' => '{{ tanda_tangan_pemohon_bila_ibu_nik }}{{ ibu_nama }}',
-            'ayah_sign' => ($fatherFromFamily ? '{{ tanda_tangan_pemohon_bila_ayah_nik }}' : '')."{{ tanda_tangan_pemohon_bila_nik_ayah }}{{ {$father['nama']} }}",
+            'ayah_sign' => '{{ tanda_tangan_pemohon_bila_nik_ayah }}{{ nama_ayah }}',
         ]);
     }
 
