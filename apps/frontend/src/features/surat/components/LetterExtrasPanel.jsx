@@ -12,7 +12,9 @@ import { LetterResultPanel } from './LetterResultPanel'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 
-const FULFILLMENT_ROLES = ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid']
+// Terapkan hanya oleh Kasi/Kaur yang ditugaskan; Staf SIDUTama mengubah
+// data lewat Data Penduduk.
+const FULFILLMENT_ROLES = ['kasi_pemerintahan', 'kaur_tu_umum']
 
 // Cara saksi tercatat (signer_type witness).
 const WITNESS_METHOD_LABELS = {
@@ -314,7 +316,11 @@ export function LetterExtrasPanel({ letterId }) {
     .filter((item) => item.value !== undefined && item.value !== null && item.value !== '')
   const isOwner = letter.submitted_by === user?.id
   const canRefill = isOwner && letter.awaiting_signatures
-  const canFulfill = FULFILLMENT_ROLES.includes(user?.role) && letter.needs_fulfillment
+  // can_fulfill dari backend: hanya Kasi/Kaur sesuai assigned_role.
+  const canFulfill =
+    FULFILLMENT_ROLES.includes(user?.role) &&
+    letter.needs_fulfillment &&
+    letter.can_fulfill !== false
   const documentUrl = supportingDocumentUrl(letter.id)
 
   return (
