@@ -70,7 +70,7 @@ class PowerOfAttorneyTest extends TestCase
         $this->actingAs($this->applicant['user'])
             ->getJson("/api/letters/{$letterId}")
             ->assertJsonPath('data.payload.pengurusan', 'sendiri')
-            ->assertJsonPath('data.documents.*.key', ['main']);
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02', 'f1_01']);
     }
 
     public function test_village_proxy_consents_and_the_power_of_attorney_is_issued(): void
@@ -93,7 +93,7 @@ class PowerOfAttorneyTest extends TestCase
 
         $this->actingAs($this->applicant['user'])
             ->getJson("/api/letters/{$letterId}")
-            ->assertJsonPath('data.documents.*.key', ['main', 'f1_07'])
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02', 'f1_01', 'f1_07'])
             ->assertJsonPath('data.payload.pekerjaan_penerima_kuasa', 'Sopir');
 
         $html = $this->render($letterId, 'f1_07');

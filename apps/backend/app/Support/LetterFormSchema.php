@@ -423,13 +423,17 @@ class LetterFormSchema
      */
     private function typedMember(array $map, array $payload, string $role): array
     {
-        // Sumber `a|b`: isian pertama yang terisi (mis. ayah anggota KK, atau yang diketik).
-        $value = function (string $key) use ($map, $payload): string {
+        // Sumber `a|b`: isian pertama yang terisi (mis. ayah anggota KK, atau
+        // yang diketik). Isian pilihan dicetak dengan labelnya (mis. pendidikan).
+        $options = array_column(array_filter($this->fields ?? [], fn (array $field): bool => ($field['type'] ?? null) === 'select'), 'options', 'name');
+        $value = function (string $key) use ($map, $payload, $options): string {
             foreach (explode('|', (string) ($map[$key] ?? '')) as $source) {
                 $text = trim((string) ($payload[$source] ?? ''));
 
                 if ($text !== '') {
-                    return $text;
+                    return $key === 'jenis_kelamin' || ! isset($options[$source])
+                        ? $text
+                        : (string) (array_column($options[$source], 'label', 'value')[$text] ?? $text);
                 }
             }
 

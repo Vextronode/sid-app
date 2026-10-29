@@ -279,11 +279,13 @@ class ServiceLetterTypeSeeder extends Seeder
             [
                 'code' => 'F01',
                 'name' => 'Surat Pernyataan Tidak Memiliki Dokumen Kependudukan',
-                'description' => 'Pernyataan bagi orang yang belum memiliki dokumen kependudukan (KK/KTP-el), sebagai syarat pendaftaran ke Disdukcapil.',
+                'description' => 'Pernyataan bagi orang yang belum memiliki dokumen kependudukan (KK/KTP-el), sebagai syarat pendaftaran ke Disdukcapil dan masuknya orang tersebut ke KK Anda.',
                 // Dibawa ke Disdukcapil: formulir yang terbit dari pengajuan ini dan dokumen lain.
                 'carry_documents' => [
                     'forms' => [
                         'Surat Pernyataan Tidak Memiliki Dokumen Kependudukan (F-1.04), ditandatangani yang bersangkutan di atas materai',
+                        'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02)',
+                        'Formulir Biodata Keluarga (F-1.01), susunan KK dengan orang tersebut',
                     ],
                     'attachments' => [
                         'KK asli pemohon (KK yang akan memuat orang tersebut)',
@@ -303,6 +305,41 @@ class ServiceLetterTypeSeeder extends Seeder
                     $this->area('alamat', 'Alamat di Desa Ini'),
                     // Didaftarkan ke KK pemohon setelah dokumennya terbit.
                     [...$this->select('shdk', 'Hubungan dengan Kepala Keluarga Anda', FamilyRole::memberOptions()), 'role_of' => 'jenis_kelamin'],
+                    // F-1.01: kontak keluarga (hanya tercetak).
+                    $this->text('telepon_keluarga', 'Telepon/HP Keluarga', false, 'Contoh: 081234567890'),
+                    // Susunan KK pemohon ditambah orang tersebut untuk F-1.01 (disusun sistem).
+                    $this->field('kk_pendaftaran', 'Susunan KK dengan Orang Tersebut', 'family_roster', false, null, [
+                        'append' => [
+                            'role' => 'shdk',
+                            'typed' => [
+                                'nama' => 'nama_lengkap',
+                                'jenis_kelamin' => 'jenis_kelamin',
+                                'tempat_lahir' => 'tempat_lahir',
+                                'tanggal_lahir' => 'tanggal_lahir',
+                                'nama_ibu' => 'nama_ibu',
+                                'golongan_darah' => 'golongan_darah',
+                                'pendidikan' => 'pendidikan_terakhir',
+                            ],
+                        ],
+                    ]),
+                ],
+                'documents' => [
+                    // Orang tersebut masuk KK pemohon: KK diterbitkan ulang.
+                    [
+                        'key' => 'f1_02',
+                        'title' => 'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02)',
+                        'template' => $this->registrationForm([
+                            'ubah.kk' => true,
+                            'kk.ubah.menumpang' => true,
+                            'lampiran.kk_lama' => true,
+                        ]),
+                    ],
+                    [
+                        'key' => 'f1_01',
+                        'title' => 'Formulir Biodata Keluarga (F-1.01)',
+                        'orientation' => 'landscape',
+                        'template' => $this->rosterBiodataForm('kk_pendaftaran'),
+                    ],
                 ],
                 'result_upload_hint' => 'Dokumen kependudukan yang terbit dari Disdukcapil (KK dan/atau KTP-el/KIA).',
                 // Setelah dokumen terbit, orang ini ditambahkan ke KK pemohon;
