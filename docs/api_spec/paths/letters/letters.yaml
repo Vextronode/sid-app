@@ -143,8 +143,12 @@ post:
     4. Bila masih ada slot kosong → `current_step_order = 0`, log
        "Menunggu tanda tangan pihak terkait", tidak ada approver yang dinotifikasi.
     5. Bila lengkap → masuk step actionable pertama: tahap non-final milik
-       pemohon dilewati; bila step RT belum memiliki pejabat aktif, surat
-       ditahan di step itu dan Staf SIDUTama dinotifikasi (`approver_vacant`).
+       pemohon dilewati (surat langsung `in_progress` di tahap desa; surat
+       Kades/Sekdes selalu melewati tahap RT); bila
+       step RT belum memiliki pejabat aktif, atau tahap final tidak punya
+       pejabat berwenang selain pemohon (mis. Kades saat Sekdes kosong),
+       surat ditahan di step itu dan Staf SIDUTama dinotifikasi
+       (`approver_vacant`).
     Bila transaksi gagal, berkas yang sudah tertulis dihapus.
   operationId: createLetter
   security:
@@ -179,8 +183,7 @@ post:
       description: |
         Validasi gagal: isian tak dikenal/tidak valid, berkas tidak sesuai,
         TTD pemohon belum dibuat, NIK penanda tangan kosong/milik pemohon
-        sendiri/sedang diblokir atau dibatasi, flow tanpa step, atau tidak ada
-        pejabat berwenang pada tahap final.
+        sendiri/sedang diblokir atau dibatasi, atau flow tanpa step.
       content:
         application/json:
           schema:

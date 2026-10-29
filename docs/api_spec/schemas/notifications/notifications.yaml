@@ -82,7 +82,7 @@ LetterStatusContext:
         Kode peristiwa: pending, approver_vacant, rt_approved, rt_rejected,
         rt_approved_rw_fyi, rt_approved_kadus_fyi, kepala_desa_approved,
         kepala_desa_rejected, letter_approved_final, letter_ready_for_print,
-        letter_needs_fulfillment, letter_fulfilled, signature_requested,
+        letter_needs_fulfillment, handler_vacant, letter_fulfilled, signature_requested,
         signature_accepted, signature_rejected.
       example: "rt_approved"
     applicant:

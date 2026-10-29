@@ -128,9 +128,11 @@ Seeder membuat 11 jenis surat Persuratan Desa (A01–A11, `LetterTypeSeeder`) da
 - RW dan Kadus **bukan approver**; menerima FYI setelah RT approve. Kasi/Kaur bukan approver; menerima notifikasi setelah final approve.
 - Resolve approver: RT berbasis wilayah (`letters.rt_id`), Kades/Sekdes berbasis posisi dalam desa. `letters.rt_id`/`rw_id`/`hamlet_id` diisi otomatis dari wilayah pemohon saat surat dibuat (`Letter::booted`), sehingga daftar dan akses RT/RW/Kadus tetap di wilayah lama walau pemohon pindah.
 - **Tahap dilewati / ditahan** (`LetterFlowService::resolveFromOrder`):
-  - non-final dengan pejabat aktif tetapi semuanya pemohon → dilewati (log `RtStageSkippedForOfficialApplicant`);
+  - non-final dengan pejabat aktif tetapi semuanya pemohon → dilewati (log `RtStageSkippedForOfficialApplicant`); surat langsung berstatus `in_progress` di tahap Kades/Sekdes, sama seperti sesudah disetujui RT;
   - non-final tanpa pejabat aktif (RT kosong) → surat **ditahan** di step itu, log `HeldForVacantApprover`, Staf SIDUTama dinotifikasi (`approver_vacant`); saat RT ditetapkan (promote), RT baru dinotifikasi tentang surat yang menunggu;
-  - final tanpa approver eligible selain pemohon → submit ditolak 422.
+  - final tanpa approver eligible selain pemohon (mis. Kades mengajukan saat Sekdes kosong) → tidak pernah dilewati: surat **ditahan** di tahap final (`LetterFlowService::holdForVacantStep`, log `HeldForVacantFinalApprover`, Staf dinotifikasi `approver_vacant`), baik saat diajukan maupun saat RT menyetujui; Kades/Sekdes yang kemudian ditetapkan langsung dapat memutusnya.
+- **Per role pemohon:** warga, RW, Kadus, Kasi, Kaur, Staf → RT setempat lalu Kades/Sekdes; RT → tahap RT dilewati bila ia satu-satunya RT aktif (RT aktif lain di RT yang sama memutuskan bila ada); Kades/Sekdes → semua tahap non-final (RT) dilewati (`LetterFlowService::isVillageHeadApplicant`, log `RtStageSkippedForVillageHeadApplicant`), lalu saling menyetujui di tahap final: surat Kades hanya oleh Sekdes, surat Sekdes hanya oleh Kades; pasangan kosong → ditahan (`HeldForVacantFinalApprover`).
+- **Setelah terbit (Terapkan & verifikasi hasil):** hanya Kasi/Kaur sesuai `assigned_role` (NULL = keduanya); Staf SIDUTama bukan cadangan (mengubah data lewat Data Penduduk). Surat milik sendiri boleh diterapkan/diverifikasi sendiri, termasuk koreksi nilai (hak jabatan); status log diberi akhiran "oleh pemohon sendiri" (`Letter::isApplicant`). Notifikasi `letter_needs_fulfillment`/`letter_ready_for_print`/`letter_result_submitted` dikirim lewat `OfficialService::notifyLetterHandlers`; bila jabatan yang ditugaskan kosong, Staf menerima `handler_vacant` untuk mengisinya. `LetterResource` mengirim `can_fulfill` dan `can_review_result`.
 
 ### 3.3 First-Action-Wins Kades/Sekdes
 
@@ -221,7 +223,7 @@ Scope ringkas: Staf SIDUTama = operator penuh di desanya (CMS, kependudukan, jab
 
 - `LetterStatusNotification` → kanal `database` (koneksi `sync`, in-app) dan `WebPushChannel` (diantrekan). Payload memuat `context.letter_id`, `letter_no`, `status`, `applicant`, `is_applicant`; Web Push membawa URL `/buka-notifikasi?...`.
 - Langganan Web Push disimpan per perangkat lewat `POST/DELETE /push-subscriptions` (VAPID dari `.env`).
-- Kode status: `pending`, `approver_vacant`, `approval_reminder`, `rt_approved`, `rt_rejected`, `rt_approved_rw_fyi`, `rt_approved_kadus_fyi`, `kepala_desa_approved`, `kepala_desa_rejected`, `letter_approved_final`, `letter_ready_for_print`, `letter_needs_fulfillment`, `letter_fulfilled`, `signature_requested`, `signature_accepted`, `signature_rejected`.
+- Kode status: `pending`, `approver_vacant`, `approval_reminder`, `rt_approved`, `rt_rejected`, `rt_approved_rw_fyi`, `rt_approved_kadus_fyi`, `kepala_desa_approved`, `kepala_desa_rejected`, `letter_approved_final`, `letter_ready_for_print`, `letter_needs_fulfillment`, `handler_vacant`, `letter_fulfilled`, `signature_requested`, `signature_accepted`, `signature_rejected`.
 - Pengingat approval: `ApprovalReminderService` lewat command `approvals:send-reminders` yang dijadwalkan tiap 5 menit di `routes/console.php` (butuh `php artisan schedule:work`; di Docker service `sid_scheduler`). Dikirim sekali per tahap per surat ke approver berwenang (in-app + Web Push) saat `now() >= deadline_at - reminder_hours` (0 = tepat saat deadline); `reminded_at` diisi.
 - Pengumuman beranda: command `announcements:prune` dijadwalkan tiap menit di `routes/console.php` dan menghapus pengumuman yang lewat `expires_at` per model (event `deleted` ikut menggugurkan cache publik). Pembacaan memakai scope `active()`, jadi pengumuman basi tidak tampil walau scheduler terlambat.
 - Tidak ada notifikasi email status surat.
@@ -259,7 +261,7 @@ Scope ringkas: Staf SIDUTama = operator penuh di desanya (CMS, kependudukan, jab
 | Queue worker | Web Push diantrekan; notifikasi database sinkron | Stack Docker memakai `QUEUE_CONNECTION=database` dengan service `sid_worker` (`queue:work`); panduan VPS memakai Supervisor worker (`docs/deploy`) |
 | Deadline approval | `is_overdue` dihitung saat daftar dimuat; pengingat terjadwal `reminder_hours` sebelum deadline | Satu pengingat per tahap; tidak ada notifikasi overdue terpisah |
 | Konkurensi keputusan | Row lock + cek ulang | 409 untuk request kedua |
-| Surat tertahan | RT kosong → ditahan + notifikasi Petugas | Dilepas saat RT ditetapkan |
+| Surat tertahan | RT kosong, atau Kades/Sekdes pasangan pemohon kosong → ditahan + notifikasi Petugas | Dilepas saat pejabatnya ditetapkan |
 | Deployment | Docker image `sid-api` (PHP-FPM) + `sid-web` (Nginx + SPA), entrypoint tidak menjalankan migrate/seed | `deploy/docker-compose.yml` |
 
 ---
