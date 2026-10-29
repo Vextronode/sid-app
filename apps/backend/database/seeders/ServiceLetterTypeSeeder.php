@@ -956,7 +956,7 @@ class ServiceLetterTypeSeeder extends Seeder
                         'Formulir Biodata Keluarga (F-1.01), bila yang meninggal kepala keluarga',
                     ],
                     'attachments' => [
-                        'Surat keterangan kematian dari dokter/RS/desa',
+                        'Surat keterangan kematian dari dokter/RS/desa; bila tidak ada, SPTJM kebenaran data kematian yang ditandatangani pelapor bersama dua saksi (formulirnya disediakan Disdukcapil)',
                         'KK asli',
                         'KTP-el almarhum',
                         'KTP-el pelapor dan dua orang saksi',

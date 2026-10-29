@@ -146,6 +146,13 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                 // Dokumen yang dibawa ke Disdukcapil: formulir terbit + lampiran, termasuk Surat Kuasa.
                 $this->assertNotEmpty($letterType->carry_documents['forms'] ?? [], "{$letterType->code} tanpa daftar formulir yang dibawa.");
                 $this->assertNotEmpty($letterType->carry_documents['attachments'] ?? [], "{$letterType->code} tanpa daftar dokumen lampiran.");
+                // KK lama diganti Disdukcapil, jadi KK asli dibawa (pendatang F04 belum ber-KK desa).
+                if ($letterType->code !== 'F04') {
+                    $this->assertTrue(
+                        collect($letterType->carry_documents['attachments'])->contains(fn (string $item): bool => str_contains($item, 'KK') && str_contains($item, 'asli')),
+                        "{$letterType->code} harus melampirkan KK asli.",
+                    );
+                }
                 $this->assertStringContainsString('F-1.07', (string) collect($letterType->carry_documents['forms'])->last());
                 $this->assertStringNotContainsString('{{ signature_img }}', (string) $letterType->template);
                 $this->assertStringNotContainsString('{{ letter_number }}', (string) $letterType->template);
