@@ -1,4 +1,4 @@
-import { Pencil, Plus, Power, RefreshCw, Search, Trash2, X } from 'lucide-react'
+import { Pencil, Plus, Power, Search, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
@@ -9,6 +9,7 @@ import {
   updateOccupation,
 } from '@/features/pekerjaan/api'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
@@ -272,15 +273,7 @@ export default function KelolaPekerjaanPage() {
           </div>
 
           <div className="sid-kelola-wilayah-header-actions">
-            <button
-              type="button"
-              onClick={() => void load()}
-              className="sid-wilayah-btn sid-wilayah-btn-secondary"
-              disabled={processing}
-            >
-              <RefreshCw size={15} />
-              Refresh
-            </button>
+            <RefreshButton onRefresh={() => load()} disabled={processing} />
 
             <button
               type="button"

@@ -13,6 +13,9 @@ vi.mock('@/features/surat/hooks/useSuratListQuery', () => ({
   useSuratListQuery: () => ({ letters: [], meta: list.meta, loading: false }),
   useSuratSummaryQuery: () => ({ summary: { by_type: [] } }),
 }))
+vi.mock('@/shared/hooks/useQueryRefresh', () => ({
+  useQueryRefresh: () => ({ refresh: vi.fn(), refreshing: false }),
+}))
 vi.mock('@/features/notifikasi/hooks/useLetterDeepLink', () => ({ useLetterDeepLink: () => {} }))
 vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: () => null }))
 vi.mock('@/lib/downloadFile', () => ({

@@ -1,4 +1,4 @@
-import { Pencil, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react'
+import { Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
@@ -9,6 +9,7 @@ import {
   updateRegulation,
 } from '@/features/peraturan/api'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
@@ -277,15 +278,7 @@ export default function KelolaPeraturanPage() {
           </div>
 
           <div className="sid-kelola-wilayah-header-actions">
-            <button
-              type="button"
-              onClick={() => void load()}
-              className="sid-wilayah-btn sid-wilayah-btn-secondary"
-              disabled={processing}
-            >
-              <RefreshCw size={15} />
-              Refresh
-            </button>
+            <RefreshButton onRefresh={() => load()} disabled={processing} />
 
             <button
               type="button"

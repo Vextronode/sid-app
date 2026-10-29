@@ -25,6 +25,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { confirmDialog, promptDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
@@ -35,6 +36,7 @@ export default function ManajemenUserPage() {
     data,
     loading,
     error,
+    reload,
     setSearch,
     filterStatus,
     setFilterStatus,
@@ -247,6 +249,7 @@ export default function ManajemenUserPage() {
         {/* Header */}
         <div className="sid-operator-header">
           <h1>Manajemen Pengguna</h1>
+          <RefreshButton onRefresh={reload} />
         </div>
 
         <input

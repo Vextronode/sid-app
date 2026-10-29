@@ -34,7 +34,9 @@ function getRequestErrorMessage(requestError, fallback) {
   return validationMessage || requestError?.response?.data?.message || fallback
 }
 
-export default function LetterTypeSettingsPanel() {
+// reloadKey: dinaikkan halaman induk (tombol Refresh) untuk memuat ulang
+// daftar; isian yang belum disimpan ikut kembali ke data server.
+export default function LetterTypeSettingsPanel({ reloadKey = 0 }) {
   const [letterTypes, setLetterTypes] = useState([])
   const [drafts, setDrafts] = useState({})
   const [loading, setLoading] = useState(true)
@@ -69,7 +71,7 @@ export default function LetterTypeSettingsPanel() {
 
   useEffect(() => {
     void loadLetterTypes()
-  }, [loadLetterTypes])
+  }, [loadLetterTypes, reloadKey])
 
   const updateDraft = (id, field, value) => {
     setDrafts((current) => ({

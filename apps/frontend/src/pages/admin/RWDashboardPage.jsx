@@ -15,12 +15,15 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getGreeting } from '@/lib/utils/greeting'
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 // ==========================================
 // COMPONENT
 // ==========================================
 
 export default function RWDashboardPage() {
+  const pageRefresh = useQueryRefresh(['surat'], ['dashboard'])
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -122,7 +125,10 @@ export default function RWDashboardPage() {
               </p>
             </div>
 
-            <span className="sid-dashboard-date">{hariIni}</span>
+            <div className="flex items-center gap-3">
+              <span className="sid-dashboard-date">{hariIni}</span>
+              <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+            </div>
           </div>
 
           {/* ======================================
@@ -190,6 +196,9 @@ export default function RWDashboardPage() {
           <p className="sid-page-description">
             Kelola administrasi warga {user?.wilayah_label ?? 'RW'} dengan lebih cepat.
           </p>
+          <div className="mt-3">
+            <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+          </div>
 
           {/* ======================================
               STAT CARD

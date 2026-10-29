@@ -20,10 +20,13 @@ import DashboardFlowCard from '@/features/operator-desa/components/DashboardFlow
 import { getGreeting } from '@/lib/utils/greeting'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 const EMPTY_GENDER_STATS = { total: 0, laki: 0, perempuan: 0 }
 
 export default function OperatorDesaDashboardPage() {
+  const pageRefresh = useQueryRefresh(['surat'], ['dashboard'])
   const { user } = useAuth()
   const greeting = getGreeting()
 
@@ -75,7 +78,10 @@ export default function OperatorDesaDashboardPage() {
             </h1>
           </div>
 
-          <span className="sid-operator-date">{hariIni}</span>
+          <div className="flex items-center gap-3">
+            <span className="sid-operator-date">{hariIni}</span>
+            <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+          </div>
         </header>
 
         {/* ======================================

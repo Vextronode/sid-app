@@ -15,6 +15,7 @@ import {
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useOrganisasi } from '../hooks/useOrganisasi'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
@@ -568,6 +569,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
     slots,
     loading,
     error,
+    refresh,
     fillSlot,
     editMember,
     endMember,
@@ -705,6 +707,8 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
             <h1>{title}</h1>
             {subtitle && <p className="sid-org-subtitle">{subtitle}</p>}
           </div>
+          {/* Memuat ulang lembaga pada tab yang sedang dibuka. */}
+          <RefreshButton onRefresh={refresh} disabled={processing} />
         </div>
 
         {orgTypes.length > 1 && (
