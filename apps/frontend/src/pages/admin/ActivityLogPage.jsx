@@ -13,7 +13,9 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { usePageSize } from '@/components/ui/usePageSize'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 import { SURAT_STATUS_OPTIONS, STATUS_LABELS } from '@/constants/suratStatus'
 import { getLetterActivityLogs, getPopulationLogs } from '@/features/activity-log/api'
 import {
@@ -401,6 +403,9 @@ export default function ActivityLogPage() {
     setParam('page', '')
   }
 
+  // Refresh mengambil ulang log tab yang sedang tampil.
+  const pageRefresh = useQueryRefresh(['activity-logs'])
+
   return (
     <div className="sid-operator-page">
       <div className="sid-operator-content">
@@ -409,6 +414,7 @@ export default function ActivityLogPage() {
         </p>
         <div className="sid-operator-header mb-0">
           <h1>Log Aktivitas</h1>
+          <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
         </div>
         <p className="sid-page-description">
           Riwayat perubahan data warga & Kartu Keluarga oleh petugas, dan riwayat status setiap

@@ -27,10 +27,11 @@ export function canDecideOnLetter({
       approvalLevels.includes(approval?.approval_level) &&
       ['approved', 'rejected'].includes(approval?.action),
   )
+  // Tahap desa juga bisa berstatus pending bila tahap RT dilewati
+  // (pemohon RT sendiri), sama seperti yang diterima backend.
   const isDecidable =
-    position === 'rt'
-      ? letterStatus === 'pending' || letterStatus === 'in_progress'
-      : position === 'kepala_desa' && letterStatus === 'in_progress'
+    (position === 'rt' || position === 'kepala_desa') &&
+    (letterStatus === 'pending' || letterStatus === 'in_progress')
 
   return (
     isDecidable &&

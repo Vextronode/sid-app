@@ -79,6 +79,18 @@ trait DefinesLetterTypes
         return $this->field($name, $label, 'time', $required);
     }
 
+    /**
+     * Tanggal peristiwa yang sudah terjadi (tidak sesudah hari ini), dengan
+     * urutan terhadap tanggal lain (`date_order`) bila ada.
+     *
+     * @param  array<int, array<string, string>>  $order
+     * @return array<string, mixed>
+     */
+    private function pastDate(string $name, string $label, bool $required = true, array $order = []): array
+    {
+        return [...$this->date($name, $label, $required), 'past' => true, ...($order === [] ? [] : ['date_order' => $order])];
+    }
+
     private function date(string $name, string $label, bool $required = true): array
     {
         return $this->field($name, $label, 'date', $required);

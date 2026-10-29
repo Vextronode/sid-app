@@ -209,15 +209,30 @@ class LetterService
             abort(422, 'Jenis surat ini belum memiliki alur persetujuan. Hubungi '.UserRole::stafSidLabel().'.');
         }
 
+        $this->letterFlowService->logSkipped($letter, $start['skipped'], $actor);
+
+        // Tahap RT dilewati (pemohon RT sendiri): surat langsung di tahap
+        // desa dengan status yang sama seperti sesudah disetujui RT.
+        $skipped = $start['skipped']->isNotEmpty();
         $letter = $this->letterRepository->update($letter, [
             'current_step_order' => $step->step_order,
+            ...($skipped ? ['status' => LetterStatus::InProgress->value] : []),
         ]);
 
-        $this->letterFlowService->logSkipped($letter, $start['skipped'], $actor);
+        if ($skipped) {
+            $this->letterStatusLogRepository->create([
+                'letter_id' => $letter->id,
+                'actor_id' => $actor->id,
+                'old_status' => LetterStatus::Pending->value,
+                'new_status' => LetterStatus::InProgress->value,
+                'reason' => null,
+            ]);
+        }
+
         $this->createFirstApproval($letter, $step);
 
         if ($start['vacant']) {
-            $this->holdForVacantStep($letter, $actor);
+            $this->letterFlowService->holdForVacantStep($letter, $step, $actor);
         } else {
             $this->notifyFirstApprovers($letter, $step);
         }
@@ -240,32 +255,6 @@ class LetterService
                 $letter->village_id,
             ),
         ]);
-    }
-
-    /**
-     * Step pertama belum punya pejabat aktif (mis. RT kosong atau warga
-     * belum terdaftar di RT mana pun). Surat ditahan di step itu dan
-     * Staf SIDUTama diberi tahu untuk mengisi jabatannya; step tidak
-     * dilewati agar verifikasi tingkat RT tetap terjadi.
-     */
-    private function holdForVacantStep(Letter $letter, User $actor): void
-    {
-        $this->letterStatusLogRepository->create([
-            'letter_id' => $letter->id,
-            'actor_id' => $actor->id,
-            'old_status' => 'pending',
-            'new_status' => 'pending',
-            'reason' => LetterFlowLogReason::HeldForVacantApprover->value,
-        ]);
-
-        foreach ($this->officialService->resolveStafSidUsers($letter->village_id) as $petugas) {
-            $petugas->notify(new LetterStatusNotification(
-                $letter,
-                'Surat Tertahan: Pejabat RT Kosong',
-                'Ada permohonan surat yang tertahan karena RT di wilayah pemohon belum memiliki pejabat aktif. Tetapkan pejabat RT agar surat dapat diproses.',
-                'approver_vacant',
-            ));
-        }
     }
 
     /**

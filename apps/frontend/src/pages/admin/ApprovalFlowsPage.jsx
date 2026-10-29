@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ListOrdered } from 'lucide-react'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getApprovalFlows } from '@/features/approval/api'
 import LetterTypeSettingsPanel from '@/features/surat/components/LetterTypeSettingsPanel'
@@ -21,29 +22,34 @@ export default function ApprovalFlowsPage() {
   const [flows, setFlows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  // Dinaikkan tombol Refresh agar panel jenis surat ikut memuat ulang.
+  const [letterTypesKey, setLetterTypesKey] = useState(0)
 
-  useEffect(() => {
-    let active = true
+  const loadFlows = useCallback(async () => {
+    try {
+      const response = await getApprovalFlows()
+      const data = response?.data?.data
 
-    getApprovalFlows()
-      .then((response) => {
-        const data = response?.data?.data
-
-        if (active) setFlows(Array.isArray(data) ? data : [])
-      })
-      .catch((requestError) => {
-        if (active) {
-          setError(requestError?.response?.data?.message || 'Gagal memuat alur persetujuan.')
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-
-    return () => {
-      active = false
+      setFlows(Array.isArray(data) ? data : [])
+      setError('')
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || 'Gagal memuat alur persetujuan.')
+    } finally {
+      setLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    // Muat awal menyinkronkan state dengan data backend.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadFlows()
+  }, [loadFlows])
+
+  const refresh = () => {
+    setLetterTypesKey((key) => key + 1)
+
+    return loadFlows()
+  }
 
   if (user?.role !== 'staf_sid') {
     return null
@@ -57,6 +63,7 @@ export default function ApprovalFlowsPage() {
         </p>
         <div className="sid-operator-header mb-0">
           <h1>Alur Persetujuan &amp; Jenis Surat</h1>
+          <RefreshButton onRefresh={refresh} />
         </div>
         <div className="mb-6">
           <p className="sid-page-description">
@@ -122,7 +129,7 @@ export default function ApprovalFlowsPage() {
           )}
         </section>
 
-        <LetterTypeSettingsPanel />
+        <LetterTypeSettingsPanel reloadKey={letterTypesKey} />
       </div>
 
       <SiteFooter />

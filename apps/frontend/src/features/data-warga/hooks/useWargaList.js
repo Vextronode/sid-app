@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   getCitizens,
   createCitizen,
@@ -8,10 +8,8 @@ import {
   importCitizensExcel,
 } from '../api'
 import { usePageSize } from '@/components/ui/usePageSize'
-import { getHamlets, getRts, getRws } from '@/features/kelola-wilayah/api'
 import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
-
-const EMPTY_FILTERS = { hamletId: '', rwId: '', rtId: '' }
+import { useWilayahFilter } from './useWilayahFilter'
 
 export function useWargaList() {
   const [citizens, setCitizens] = useState([])
@@ -19,12 +17,12 @@ export function useWargaList() {
   const [error, setError] = useState(null)
 
   const [search, setSearchState] = useState('')
-  // Filter bertingkat Dusun -> RW -> RT.
-  const [filters, setFiltersState] = useState(EMPTY_FILTERS)
-  const [wilayah, setWilayah] = useState({ hamlets: [], rws: [], rts: [] })
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSizeState] = usePageSize('data-penduduk')
   const [totalItems, setTotalItems] = useState(0)
+  // Filter bertingkat Dusun -> RW -> RT; mengubahnya kembali ke halaman 1.
+  const { filters, setFilter, params, hamletOptions, rwOptions, rtOptions, wilayahOptions } =
+    useWilayahFilter(() => setCurrentPage(1))
 
   const debouncedSearch = useDebouncedValue(search.trim())
 
@@ -38,9 +36,7 @@ export function useWargaList() {
         page: currentPage,
         per_page: pageSize,
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
-        ...(filters.hamletId ? { hamlet_id: filters.hamletId } : {}),
-        ...(filters.rwId ? { rw_id: filters.rwId } : {}),
-        ...(filters.rtId ? { rt_id: filters.rtId } : {}),
+        ...params,
       })
 
       setCitizens(response.data?.data ?? [])
@@ -51,46 +47,14 @@ export function useWargaList() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, pageSize, debouncedSearch, filters])
+  }, [currentPage, pageSize, debouncedSearch, params])
 
   useEffect(() => {
     loadData()
   }, [loadData])
 
-  // Pilihan wilayah tidak bergantung pada halaman warga yang sedang dibuka.
-  useEffect(() => {
-    let active = true
-
-    Promise.all([getHamlets(), getRws(), getRts()])
-      .then(([hamletRes, rwRes, rtRes]) => {
-        if (!active) return
-
-        setWilayah({
-          hamlets: hamletRes.data?.data ?? [],
-          rws: rwRes.data?.data ?? [],
-          rts: rtRes.data?.data ?? [],
-        })
-      })
-      .catch((err) => console.error('GET WILAYAH OPTIONS ERROR', err))
-
-    return () => {
-      active = false
-    }
-  }, [])
-
   const setSearch = (value) => {
     setSearchState(value)
-    setCurrentPage(1)
-  }
-
-  // Memilih tingkat atas mengosongkan tingkat di bawahnya.
-  const setFilter = (level, value) => {
-    setFiltersState((current) => {
-      if (level === 'hamletId') return { hamletId: value, rwId: '', rtId: '' }
-      if (level === 'rwId') return { ...current, rwId: value, rtId: '' }
-
-      return { ...current, rtId: value }
-    })
     setCurrentPage(1)
   }
 
@@ -98,37 +62,6 @@ export function useWargaList() {
     setPageSizeState(value)
     setCurrentPage(1)
   }
-
-  const { hamletOptions, rwOptions, rtOptions, wilayahOptions } = useMemo(() => {
-    const rwById = new Map(wilayah.rws.map((rw) => [String(rw.id), rw]))
-    const rwsInHamlet = filters.hamletId
-      ? wilayah.rws.filter((rw) => String(rw.hamlet_id) === filters.hamletId)
-      : wilayah.rws
-    const allowedRwIds = new Set(
-      filters.rwId ? [filters.rwId] : rwsInHamlet.map((rw) => String(rw.id)),
-    )
-
-    return {
-      hamletOptions: wilayah.hamlets.map((hamlet) => ({
-        value: String(hamlet.id),
-        label: hamlet.name,
-      })),
-      rwOptions: rwsInHamlet.map((rw) => ({ value: String(rw.id), label: `RW ${rw.number}` })),
-      rtOptions: wilayah.rts
-        .filter((rt) => allowedRwIds.has(String(rt.rw_id)))
-        .map((rt) => ({
-          value: String(rt.id),
-          label: filters.rwId
-            ? `RT ${rt.number}`
-            : `RT ${rt.number} / RW ${rwById.get(String(rt.rw_id))?.number ?? '-'}`,
-        })),
-      // Semua RT untuk pilihan RT di form tambah/edit warga.
-      wilayahOptions: wilayah.rts.map((rt) => ({
-        ...rt,
-        label: `RT ${rt.number} / RW ${rwById.get(String(rt.rw_id))?.number ?? '-'}`,
-      })),
-    }
-  }, [wilayah, filters.hamletId, filters.rwId])
 
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
 
@@ -170,6 +103,7 @@ export function useWargaList() {
     loading,
     error,
     totalItems,
+    reload: loadData,
 
     setSearch,
 

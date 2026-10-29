@@ -108,6 +108,7 @@ class FamilyRestructureServiceTest extends TestCase
             'nik_pasangan' => '3207246202970002',
             'shdk_pasangan' => 'istri',
             'alamat_kk_baru' => $this->newArea->id,
+            'status_kawin_belum_tercatat' => 'tidak',
             'no_buku_nikah_kk' => '0789/12/X/2026',
             'tanggal_perkawinan_kk' => '2026-10-03',
             'telepon_keluarga' => '081234567890',
@@ -206,6 +207,75 @@ class FamilyRestructureServiceTest extends TestCase
         // KK lama tetap berkepala Ujang.
         $this->assertSame('kepala_keluarga', $this->father->fresh()->family_role->value);
         $this->assertSame($this->family->id, $this->father->fresh()->family_id);
+    }
+
+    public function test_new_family_without_a_marriage_book_issues_the_sptjm_and_is_kawin_belum_tercatat(): void
+    {
+        $payload = [
+            'jenis_perubahan' => 'kk_baru',
+            'alasan_kk_baru' => 'keluarga_baru',
+            'susunan_baru' => [['anggota' => $this->applicant['citizen']->id, 'shdk' => 'kepala_keluarga']],
+            'nik_pasangan' => '3207246202970002',
+            'shdk_pasangan' => 'istri',
+            'alamat_kk_baru' => $this->newArea->id,
+            // Nikah siri: tanpa buku nikah, tanggal perkawinan tetap ditanyakan.
+            'status_kawin_belum_tercatat' => 'ya',
+            'no_buku_nikah_kk' => 'Tidak tersimpan',
+            'tanggal_perkawinan_kk' => '2026-10-03',
+            'nama_suami' => 'Dadan Ramdani',
+            'nik_suami' => '3207240101950001',
+            'nama_istri' => 'Euis Komariah',
+            'nik_istri' => '3207246202970002',
+            'nama_saksi_1' => 'Saksi Satu',
+            'nik_saksi_1' => '3207010101800001',
+            'nama_saksi_2' => 'Saksi Dua',
+            'nik_saksi_2' => '3207010101800002',
+        ];
+
+        // SPTJM butuh suami, istri, dan dua saksi.
+        $this->submit([...$payload, 'nik_saksi_1' => ''])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('payload.nik_saksi_1')
+            ->assertJsonMissingValidationErrors('payload.no_buku_nikah_kk');
+
+        $this->applicant['citizen']->update(['marital_status' => 'belum_kawin']);
+        $this->spouse['citizen']->update(['marital_status' => 'belum_kawin']);
+        $letterId = $this->submit($payload)->assertCreated()->json('data.id');
+        $this->assertArrayNotHasKey('no_buku_nikah_kk', Letter::query()->findOrFail($letterId)->payload);
+        $request = LetterSignature::query()->where('letter_id', $letterId)->where('slot_key', 'nik_pasangan')->firstOrFail();
+        $this->actingAs($this->spouse['user'])
+            ->postJson("/api/signature-requests/{$request->id}/accept", ['password' => 'Password123'])
+            ->assertOk();
+        $this->approve($letterId);
+
+        $this->actingAs($this->applicant['user'])
+            ->getJson("/api/letters/{$letterId}")
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_01', 'f1_05']);
+        // F-1.02: lampiran SPTJM, bukan buku nikah.
+        $registration = $this->render($letterId, null);
+        $this->assertStringContainsString('Membentuk Keluarga Baru <b>V</b>', $registration);
+        $this->assertSame(4, preg_match_all('/<b>V<\/b>|xf-circle>V</', $registration));
+        // F-1.01: kepala keluarga dan istri Kawin Belum Tercatat, tanpa buku nikah.
+        $biodata = $this->render($letterId, 'f1_01', landscape: true);
+        $this->assertSame(2, substr_count($biodata, '>Kawin Belum Tercatat</td>'));
+        $this->assertSame(2, substr_count($biodata, '>3 Oktober 2026</td>'));
+        // F-1.05: suami, istri, dan dua saksi.
+        $sptjm = $this->render($letterId, 'f1_05');
+        $this->assertStringContainsString('perkawinan sebagai suami istri, yang dilaksanakan pada 3 Oktober 2026', $sptjm);
+        $this->assertStringContainsString('( Dadan Ramdani )', $sptjm);
+        $this->assertStringContainsString('( Saksi Dua )', $sptjm);
+
+        $this->acceptResult($letterId);
+        $this->actingAs($this->kasi['user'])
+            ->getJson("/api/letters/{$letterId}/fulfillment")
+            ->assertJsonPath('data.restructure.lines.3', 'Status perkawinan kepala keluarga dan suami/istri menjadi Kawin Belum Tercatat (bila belum).');
+        $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => ['no_kk' => '3218011304159999']])
+            ->assertOk();
+
+        $this->assertSame('kawin_belum_tercatat', $this->applicant['citizen']->fresh()->marital_status);
+        $this->assertSame('kawin_belum_tercatat', $this->spouse['citizen']->fresh()->marital_status);
+        $this->assertNull($this->spouse['citizen']->fresh()->marriage_certificate_number);
     }
 
     public function test_split_family_with_the_head_leaving_sets_a_new_head_for_the_old_family(): void

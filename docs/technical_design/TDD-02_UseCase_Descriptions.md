@@ -99,7 +99,7 @@ Main Flow:
    - menyimpan berkas isian ke disk privat (`letter_attachments`, kind `field`);
    - mengisi slot TTD: slot pemohon langsung `signed` dari TTD akun; slot pihak lain → permintaan TTD digital ke pemilik NIK (`pending`, kedaluwarsa 3 hari, notifikasi `signature_requested`); saksi warga desa ber-akun (isian NIK ber-`witness`) → permintaan persetujuan saksi dengan alur yang sama (tanpa TTD) atau TTD basah (`signed`).
 7. Bila masih ada slot belum `signed` → `current_step_order = 0` + log "Menunggu tanda tangan pihak terkait"; surat belum terlihat approver. Setelah semua slot terisi (UC-25), langkah 8 dijalankan otomatis.
-8. Sistem memilih tahap awal: tahap non-final yang semua pejabat eligible-nya adalah pemohon dilewati (log); bila RT wilayah pemohon **kosong**, surat ditahan di step RT (log "Surat ditahan…") dan Staf SIDUTama menerima notifikasi `approver_vacant`; bila tahap final tidak punya approver selain pemohon → 422.
+8. Sistem memilih tahap awal: tahap non-final yang semua pejabat eligible-nya adalah pemohon dilewati (log), dan pemohon Kades/Sekdes selalu melewati tahap RT; surat yang langsung di tahap desa berstatus `in_progress`. Bila RT wilayah pemohon **kosong**, surat ditahan di step RT (log "Surat ditahan…") dan Staf SIDUTama menerima notifikasi `approver_vacant`; bila tahap final tidak punya approver selain pemohon (Kades saat Sekdes kosong, atau sebaliknya), surat ditahan di tahap final dengan notifikasi yang sama.
 9. Sistem membuat placeholder `letter_approvals` untuk step aktif (deadline dari `approval_settings`) dan mengirim notifikasi `pending` ke approver.
 10. Respons 201 berisi detail surat.
 
@@ -624,7 +624,7 @@ Catatan: 5 Dusun Desa Cibenda (Patrol, Sinargalih, Cibenda, Budiasih, Sucen) di-
 
 Main Flow:
 - Petugas membuka pengaturan jenis surat lewat menu **Alur & Jenis Surat** (`/admin/alur-persetujuan`); daftar berasal dari `GET /letter-types?include_inactive=1` (khusus Staf SIDUTama) yang berisi semua jenis surat desa dengan badge Draft / Aktif / Nonaktif
-- Petugas mengubah: `validity_days` (minimal 1 atau kosong), `assigned_role` (Kasi Pemerintahan / Kaur TU & Umum / keduanya), toggle `is_active` (Aktifkan / Nonaktifkan). Jenis Draft (belum ber-template) tidak bisa diaktifkan (422)
+- Petugas mengubah: `validity_days` (minimal 1 atau kosong), `category` (Persuratan Desa / Layanan Kependudukan; menentukan kelompok di pilihan pengajuan dan petugas: Kaur TU & Umum / Kasi Pemerintahan), toggle `is_active` (Aktifkan / Nonaktifkan). Jenis Draft (belum ber-template) tidak bisa diaktifkan (422)
 - Sistem menyimpan perubahan ke `letter_types` dan menggugurkan cache halaman publik
 - Petugas dapat melihat flow approval (read-only) di halaman Approval Flows
 
@@ -743,7 +743,7 @@ Alternative Flow:
 |---|---|
 | Use Case ID | UC-26 |
 | Nama | Terapkan Perubahan Data Kependudukan |
-| Aktor | Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role` (NULL = keduanya); Staf SIDUTama sebagai cadangan |
+| Aktor | Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role` (NULL = keduanya), termasuk untuk surat miliknya sendiri (status log "… oleh pemohon sendiri"); Staf SIDUTama tidak menjalankan Terapkan (bila jabatan yang ditugaskan kosong, Staf menerima notifikasi `handler_vacant` untuk mengisinya) |
 | Pre-condition | Surat `approved` di desa aktor; jenis surat memiliki `data_action` = `update_citizen`, `create_citizen`, `deactivate_members`, atau `manual`; belum pernah diterapkan; bila jenisnya `requires_result_upload`, hasil dari instansi sudah diterima (UC-29) |
 | Post-condition | Data `citizens` diubah/ditambah; `letters.fulfilled_at/by` dan `fulfillment` terisi; jejak audit tercatat |
 
@@ -829,7 +829,7 @@ Notes:
 |---|---|
 | Use Case ID | UC-29 |
 | Nama | Unggah dan Verifikasi Hasil dari Instansi |
-| Aktor | Pemohon (unggah); Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role`, Staf SIDUTama sebagai cadangan (verifikasi) |
+| Aktor | Pemohon (unggah); Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role`, termasuk hasil suratnya sendiri (verifikasi) |
 | Pre-condition | Surat `approved`; jenis surat `requires_result_upload = true` (formulir Layanan Kependudukan yang dibawa ke instansi luar, mis. Disdukcapil) |
 | Post-condition | Unggahan tercatat di `letter_results` dengan berkas `letter_attachments` (`kind = result`); bila diterima, Terapkan (UC-26) dapat dijalankan |
 

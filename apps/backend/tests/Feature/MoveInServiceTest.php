@@ -114,8 +114,10 @@ class MoveInServiceTest extends TestCase
         $this->assertStringContainsString('3207246904990002', $registration);
         $this->assertStringContainsString('3218011304150001', $registration);
         $this->assertStringNotContainsString('>Engkos Sutisna<', $registration);
-        // Menumpang dalam KK, KTP-el pindah datang, SKP, dan pernyataan bersedia menerima.
-        $this->assertSame(4, preg_match_all('/<b>V<\/b>|xf-circle>V</', $registration));
+        // Menumpang dalam KK dan induknya IV.A KK, KTP-el pindah datang, SKP,
+        // dan pernyataan bersedia menerima.
+        $this->assertSame(5, preg_match_all('/<b>V<\/b>|xf-circle>V</', $registration));
+        $this->assertStringContainsString('Menumpang dalam KK <b>V</b>', $registration);
 
         $statement = $this->render($letterId, 'pendatang_numpang_kk');
         $this->assertStringContainsString('TIDAK KEBERATAN NUMPANG KK', $statement);
@@ -211,8 +213,10 @@ class MoveInServiceTest extends TestCase
             ->getJson("/api/letters/{$letterId}")
             ->assertJsonPath('data.documents.*.key', ['main', 'pendatang_alamat_sendiri', 'f1_01']);
 
-        // Pindah datang membuat KK baru, KTP-el pindah datang, SKP.
-        $this->assertSame(3, preg_match_all('/<b>V<\/b>|xf-circle>V</', $this->render($letterId, null)));
+        // KK baru (I.A BARU) karena pindah datang, KTP-el pindah datang, SKP.
+        $registration = $this->render($letterId, null);
+        $this->assertSame(4, preg_match_all('/<b>V<\/b>|xf-circle>V</', $registration));
+        $this->assertMatchesRegularExpression('/BARU <b>V<\/b>/', $registration);
         $this->assertStringContainsString('MENGGUNAKAN ALAMAT RUMAH MILIK SENDIRI', $this->render($letterId, 'pendatang_alamat_sendiri'));
 
         // F-1.01 mendatar, tata letak sesuai Excel; RT/RW/kode pos per kotak.

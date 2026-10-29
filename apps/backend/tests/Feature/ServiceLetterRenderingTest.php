@@ -105,6 +105,40 @@ class ServiceLetterRenderingTest extends TestCase
         $this->assertStringNotContainsString('Pelapor Keluarga', $html);
     }
 
+    public function test_the_person_joins_the_applicant_family_card_through_f1_02_and_f1_01(): void
+    {
+        $family = Family::factory()->create(['village_id' => $this->village->id, 'no_kk' => '3218011304150007']);
+        $this->applicant['citizen']->update(['family_id' => $family->id, 'family_role' => 'kepala_keluarga']);
+
+        $letterId = $this->issue('F01', [
+            'nama_lengkap' => 'Rosita',
+            'tempat_lahir' => 'Garut',
+            'tanggal_lahir' => '2021-04-05',
+            'jenis_kelamin' => 'P',
+            'nama_ibu' => 'Siti Aminah',
+            'golongan_darah' => 'O',
+            'pendidikan_terakhir' => 'sd',
+            'alamat' => $this->budiasih->id,
+            'shdk' => 'anak',
+        ]);
+
+        $this->actingAs($this->applicant['user'])
+            ->getJson("/api/letters/{$letterId}")
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02', 'f1_01']);
+
+        // F-1.02: perubahan KK, masuk (menumpang) ke KK pemohon; lampiran KK lama.
+        $registration = $this->render($letterId, 'f1_02');
+        $this->assertStringContainsString('Menumpang dalam KK <b>V</b>', $registration);
+        $this->assertSame(1, preg_match_all('/xf-circle>V</', $registration));
+
+        // F-1.01: susunan KK pemohon, orang tersebut di baris terakhir (label pilihan, bukan kode).
+        $biodata = $this->render($letterId, 'f1_01', landscape: true);
+        foreach (['>Pelapor Keluarga<', '>Rosita<', '5 April 2021', '>Anak<', '>Siti Aminah<', '>SD/Sederajat<', '>O<', '>2<'] as $value) {
+            $this->assertStringContainsString($value, $biodata);
+        }
+        $this->assertStringNotContainsString('>sd<', $biodata);
+    }
+
     public function test_kasi_previews_then_registers_the_person_into_the_applicant_family(): void
     {
         $family = Family::factory()->create(['village_id' => $this->village->id, 'no_kk' => '3218011304150007']);
@@ -202,10 +236,15 @@ class ServiceLetterRenderingTest extends TestCase
         return $letterId;
     }
 
-    private function render(string $letterId): string
+    private function render(string $letterId, ?string $document = null, bool $landscape = false): string
     {
         $rendered = null;
         $pdf = Mockery::mock(DomPdf::class);
+
+        if ($landscape) {
+            $pdf->shouldReceive('setPaper')->once()->with('a4', 'landscape')->andReturnSelf();
+        }
+
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()
@@ -217,7 +256,7 @@ class ServiceLetterRenderingTest extends TestCase
             ->andReturn($pdf);
 
         $this->actingAs($this->applicant['user'])
-            ->get("/api/letters/{$letterId}/download?template=digital")
+            ->get("/api/letters/{$letterId}/download?template=digital".($document === null ? '' : "&document={$document}"))
             ->assertOk();
 
         return (string) $rendered;

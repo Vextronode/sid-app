@@ -103,7 +103,12 @@ class KadesApprovalService
                     ]);
                     $this->letterFlowService->logSkipped($locked, $next['skipped'], $user);
                     $this->createPendingApproval($locked, $next['step']);
-                    $this->notifyNextApprovers($locked, $next['step']);
+
+                    if ($next['vacant']) {
+                        $this->letterFlowService->holdForVacantStep($locked, $next['step'], $user);
+                    } else {
+                        $this->notifyNextApprovers($locked, $next['step']);
+                    }
                 }
             } else {
                 $newStatus = 'rejected';
@@ -232,21 +237,19 @@ class KadesApprovalService
 
         $needsDataAction = ($letter->letterType?->data_action ?? LetterDataAction::None) !== LetterDataAction::None;
 
-        foreach ($this->officialService->resolveKasiKaurForLetter($letter) as $official) {
-            $official->user?->notify($needsDataAction
-                ? new LetterStatusNotification(
-                    $letter,
-                    'Perubahan data menunggu diterapkan',
-                    'Surat telah disetujui. Tinjau dan terapkan perubahan data kependudukan yang diajukan.',
-                    'letter_needs_fulfillment',
-                )
-                : new LetterStatusNotification(
-                    $letter,
-                    'Surat siap diunduh/dicetak untuk warga',
-                    'Surat telah disetujui dan siap diunduh atau dicetak untuk warga.',
-                    'letter_ready_for_print',
-                ));
-        }
+        $this->officialService->notifyLetterHandlers($letter, $needsDataAction
+            ? new LetterStatusNotification(
+                $letter,
+                'Perubahan data menunggu diterapkan',
+                'Surat telah disetujui. Tinjau dan terapkan perubahan data kependudukan yang diajukan.',
+                'letter_needs_fulfillment',
+            )
+            : new LetterStatusNotification(
+                $letter,
+                'Surat siap diunduh/dicetak untuk warga',
+                'Surat telah disetujui dan siap diunduh atau dicetak untuk warga.',
+                'letter_ready_for_print',
+            ));
     }
 
     private function notifyNextApprovers(Letter $letter, FlowStep $step): void

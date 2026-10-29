@@ -9,6 +9,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { usePageSize } from '@/components/ui/usePageSize'
 import { FAMILY_ROLE_LABELS, labelOf } from '@/shared/lib/labels'
 import { RevealableValue } from '@/components/ui/RevealableValue'
@@ -40,6 +41,8 @@ export default function DataWargaReadOnlyPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSizeState] = usePageSize('data-penduduk')
   const [totalItems, setTotalItems] = useState(0)
+  // Dinaikkan tombol Refresh untuk memuat ulang halaman warga yang sama.
+  const [reloadKey, setReloadKey] = useState(0)
 
   const search = useDebouncedValue(keyword.trim())
 
@@ -65,7 +68,12 @@ export default function DataWargaReadOnlyPage() {
     return () => {
       active = false
     }
-  }, [page, pageSize, search])
+  }, [page, pageSize, search, reloadKey])
+
+  const refreshCitizens = () => {
+    setLoading(true)
+    setReloadKey((key) => key + 1)
+  }
 
   const setPageSize = (value) => {
     setPageSizeState(value)
@@ -85,6 +93,12 @@ export default function DataWargaReadOnlyPage() {
 
         <div className="sid-operator-header">
           <h1>Data Penduduk &amp; Kartu Keluarga</h1>
+          {/* Memuat ulang tab yang sedang dibuka. */}
+          {activeSection === 'kk' ? (
+            <RefreshButton onRefresh={familyList.reload} />
+          ) : (
+            <RefreshButton onRefresh={refreshCitizens} refreshing={loading} />
+          )}
         </div>
 
         <p className="sid-admin-alert" role="note">
@@ -128,8 +142,8 @@ export default function DataWargaReadOnlyPage() {
                       setKeyword(event.target.value)
                       setPage(1)
                     }}
-                    placeholder="Cari nama warga..."
-                    aria-label="Cari nama warga"
+                    placeholder="Cari NIK (16 digit) atau nama warga..."
+                    aria-label="Cari NIK (16 digit) atau nama warga"
                   />
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
 import { getSuratSchema, signerFieldNames, todayDate } from '../validation/suratSchema'
+import { reportDeadlineWarning } from '../utils/reportDeadline'
 import { buildLetterFormData } from '../utils/letterFormData'
 import { repeaterMinRows, visibleFields } from '../utils/fieldCondition'
 import { getMySignature } from '../api/signatureApi'
@@ -344,6 +345,12 @@ export function DynamicSuratForm({
               return null
             }
 
+            // Tanggal peristiwa melewati batas pelaporan: peringatan, tidak memblokir.
+            const deadlineWarning =
+              field.type === 'date'
+                ? reportDeadlineWarning(field, watchedFormData?.[field.name], watchedFormData ?? {})
+                : null
+
             return (
               <div key={field.name} className="sid-form-group">
                 <label htmlFor={field.name} className="sid-label">
@@ -453,6 +460,12 @@ export function DynamicSuratForm({
                     {...register(field.name)}
                     className={inputClass}
                   />
+                )}
+
+                {deadlineWarning && (
+                  <p className="sid-warning-box" role="status">
+                    {deadlineWarning}
+                  </p>
                 )}
 
                 {field.type === 'time' && (

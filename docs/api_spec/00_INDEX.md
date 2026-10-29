@@ -79,11 +79,18 @@ api_spec/
    Pemilik NIK menyetujui/menolak lewat `/signature-requests`; pemohon dapat
    mengisi ulang slot lewat `POST /letters/{letter}/signatures/{slot}`.
 3. Slot lengkap → step 1 (RT). RT kosong → surat ditahan dan Staf SIDUTama
-   dinotifikasi. Tahap non-final milik pemohon dilewati.
+   dinotifikasi. Tahap non-final milik pemohon dilewati (surat langsung
+   `in_progress` di tahap desa). Tahap final tanpa pejabat berwenang selain
+   pemohon (Kades saat Sekdes kosong, atau sebaliknya) → surat ditahan di
+   tahap final dan Staf dinotifikasi.
 4. RT approve → FYI RW & Kadus, notifikasi Kades/Sekdes → Kades/Sekdes
    approve (first-action-wins) → nomor surat, `expires_at`, snapshot render.
 5. Kasi/Kaur (sesuai `assigned_role`) diberi tahu: siap cetak, atau
    perlu Terapkan (`data_action`). Terapkan mengubah/menambah data warga.
+   Terapkan dan verifikasi hasil hanya oleh Kasi/Kaur yang ditugaskan
+   (boleh untuk suratnya sendiri, tercatat di log); jabatan kosong → Staf
+   diberi tahu (`handler_vacant`). Surat Kades/Sekdes melewati tahap RT dan
+   saling disetujui di tahap final.
 
 ## Keputusan yang Tercermin di Kontrak
 

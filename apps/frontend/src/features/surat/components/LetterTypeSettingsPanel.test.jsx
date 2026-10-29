@@ -32,7 +32,8 @@ describe('LetterTypeSettingsPanel', () => {
         produces_letter: true,
         data_action: 'update_citizen',
         validity_days: 14,
-        assigned_role: 'kasi_pemerintahan',
+        category: 'persuratan',
+        assigned_role: 'kaur_tu_umum',
         is_active: true,
         status_label: 'aktif',
       },
@@ -93,7 +94,8 @@ describe('LetterTypeSettingsPanel', () => {
         data: {
           id: 12,
           validity_days: 30,
-          assigned_role: 'kaur_tu_umum',
+          category: 'pelayanan',
+          assigned_role: 'kasi_pemerintahan',
         },
       },
     })
@@ -105,15 +107,19 @@ describe('LetterTypeSettingsPanel', () => {
     fireEvent.change(screen.getByLabelText('Masa berlaku Surat Keterangan Domisili'), {
       target: { value: '30' },
     })
-    fireEvent.change(screen.getByLabelText('Petugas Surat Keterangan Domisili'), {
-      target: { value: 'kaur_tu_umum' },
+    // Kategori menggantikan pilihan petugas; petugasnya mengikuti kategori.
+    expect(within(row).getByText('Petugas: Kaur TU & Umum')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Kategori Surat Keterangan Domisili'), {
+      target: { value: 'pelayanan' },
     })
+    expect(within(row).getByText('Petugas: Kasi Pemerintahan')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Petugas Surat Keterangan Domisili')).not.toBeInTheDocument()
     fireEvent.click(within(row).getByRole('button', { name: 'Simpan' }))
 
     await waitFor(() => {
       expect(updateLetterType).toHaveBeenCalledWith(12, {
         validity_days: 30,
-        assigned_role: 'kaur_tu_umum',
+        category: 'pelayanan',
       })
     })
     await waitFor(() =>

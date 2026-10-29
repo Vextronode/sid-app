@@ -320,7 +320,7 @@ describe('BerandaPage service cards', () => {
     ['warga', { role: 'warga' }, '/jenis-surat', '/surat-saya/daftar'],
     // Pejabat tidak lagi terlempar ke beranda publik: ke Surat Saya pejabat.
     ['rt', { role: 'rt' }, '/admin/surat-saya', '/admin/surat-saya'],
-    ['staf_sid', { role: 'staf_sid' }, '/admin/operator-desa', '/admin/operator-desa'],
+    ['staf_sid', { role: 'staf_sid' }, '/admin/surat-saya', '/admin/surat-saya'],
   ])('makes the whole Ajukan and Status cards links (%s)', (_, user, ajukan, status) => {
     useAuth.mockReturnValue({ user, isLoading: false })
 

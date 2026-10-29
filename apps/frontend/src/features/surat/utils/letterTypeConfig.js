@@ -16,6 +16,8 @@ function normalizeField(field) {
     multiple: false,
     // Tanggal peristiwa yang sudah terjadi: tidak sesudah hari ini.
     past: Boolean(field.past),
+    // Batas waktu pelaporan peristiwa ({ days, event, when }): peringatan saja.
+    reportDeadline: field.report_deadline ?? null,
     // Angka: bilangan bulat dan batas bawah (mis. penghasilan rupiah).
     integer: Boolean(field.integer),
     minValue: field.min_value ?? null,

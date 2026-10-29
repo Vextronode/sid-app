@@ -91,8 +91,9 @@ class IdentityNikRulesTest extends TestCase
         $this->assertErrors('F05', ['ibu' => $this->wife->id, 'nik_saksi_1' => '3207244101820002'], ['nik_saksi_1' => 'Saksi tidak boleh orang yang sama dengan Ibu.']);
         $this->assertErrors('F05', ['ibu' => $this->wife->id, 'surat_lahir' => 'tidak', 'nik_penolong' => '3207244101820002'], ['nik_penolong']);
 
-        // F07: pasangan sesuai perannya; satu NIK untuk satu orang tua.
-        $marriage = ['peristiwa' => 'perkawinan', 'peran_pemohon' => 'suami'];
+        // F07: pasangan sesuai perannya; satu NIK untuk satu orang tua (orang
+        // tua ditanyakan di F-2.01: perkawinan selain Islam yang dicatatkan).
+        $marriage = ['peristiwa' => 'perkawinan', 'peran_pemohon' => 'suami', 'agama_perkawinan' => 'kristen', 'status_kawin_belum_tercatat' => 'tidak', 'akta_capil_terbit' => 'tidak'];
         $this->assertErrors('F07', [...$marriage, 'nik_istri' => '3207240101700003'], ['nik_istri' => 'NIK ini terdaftar atas warga laki-laki; isi NIK perempuan.']);
         $this->assertErrors('F07', [...$marriage, 'nik_istri' => '3207244101720004', 'nik_ayah_suami' => '1231231231231231', 'nik_ayah_istri' => '1231231231231231'], ['nik_ayah_suami', 'nik_ayah_istri']);
         $this->assertErrors('F07', [...$marriage, 'nik_istri' => '3207244101720004', 'nik_ibu_istri' => '3207244101720004'], ['nik_ibu_istri']);

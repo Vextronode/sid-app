@@ -1,9 +1,10 @@
-import { Check, KeyRound, RefreshCw, X } from 'lucide-react'
+import { Check, KeyRound, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
@@ -161,15 +162,7 @@ export default function PengajuanResetPage() {
           </div>
 
           <div className="sid-kelola-wilayah-header-actions">
-            <button
-              type="button"
-              onClick={() => void load()}
-              className="sid-wilayah-btn sid-wilayah-btn-secondary"
-              disabled={busyId !== null}
-            >
-              <RefreshCw size={15} />
-              Refresh
-            </button>
+            <RefreshButton onRefresh={() => load()} disabled={busyId !== null} />
           </div>
         </div>
 

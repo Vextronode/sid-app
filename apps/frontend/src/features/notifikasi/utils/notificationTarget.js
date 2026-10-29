@@ -12,8 +12,8 @@ const LETTER_LIST_ROUTES = {
   staf_sid: '/admin/operator-desa/surat',
 }
 
-// Pengajuan surat pribadi oleh pejabat: semua peran ber-akun kecuali
-// Staf SIDUTama (admin).
+// Pengajuan surat pribadi oleh pejabat: semua peran ber-akun, termasuk
+// Staf SIDUTama.
 export const SELF_LETTER_ROUTE = '/admin/surat-saya'
 
 export const SELF_LETTER_ROLES = [
@@ -24,6 +24,7 @@ export const SELF_LETTER_ROLES = [
   'sekretaris_desa',
   'kasi_pemerintahan',
   'kaur_tu_umum',
+  'staf_sid',
 ]
 
 // Permintaan tanda tangan diputuskan di halaman profil, bukan di surat:

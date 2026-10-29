@@ -13,6 +13,8 @@ import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig
 import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 // Nomor langkah ditambahkan CSS (.sid-apply), jadi judul cukup isinya.
 const APPLY_HEADINGS = { fields: 'Isi data surat', signatures: 'Tanda tangan' }
@@ -33,6 +35,7 @@ function toDetail(item) {
  * approval milik pemohon sendiri dan melarang memutuskan surat sendiri.
  */
 export default function SuratSayaPejabatPage() {
+  const pageRefresh = useQueryRefresh(['surat'])
   const { letterTypes, loading: typesLoading, error: typesError } = useLetterTypes()
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState('')
@@ -161,14 +164,20 @@ export default function SuratSayaPejabatPage() {
                   proses.
                 </p>
               </div>
-              <button
-                type="button"
-                className="sid-btn sid-btn-primary inline-flex items-center gap-2"
-                onClick={() => setApplying(true)}
-              >
-                <FilePlus size={16} aria-hidden="true" />
-                Ajukan surat
-              </button>
+              <div className="sid-admin-page-actions">
+                <RefreshButton
+                  onRefresh={pageRefresh.refresh}
+                  refreshing={pageRefresh.refreshing}
+                />
+                <button
+                  type="button"
+                  className="sid-btn sid-btn-primary inline-flex items-center gap-2"
+                  onClick={() => setApplying(true)}
+                >
+                  <FilePlus size={16} aria-hidden="true" />
+                  Ajukan surat
+                </button>
+              </div>
             </header>
 
             {error && (

@@ -9,6 +9,7 @@ use App\Enums\LastEducation;
 use App\Enums\Religion;
 use App\Enums\ResidencyType;
 use App\Support\CitizenDocumentRules;
+use App\Support\CitizenLabels;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -44,7 +45,7 @@ class UpdateCitizenRequest extends FormRequest
             'mother_id' => ['nullable', 'exists:citizens,id', Rule::notIn([$citizenId])],
             'father_name_text' => ['nullable', 'string', 'max:255'],
             'mother_name_text' => ['nullable', 'string', 'max:255'],
-            'marital_status' => ['nullable', Rule::in(['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati'])],
+            'marital_status' => ['nullable', Rule::in(array_keys(CitizenLabels::MARITAL_STATUS))],
             'occupation_id' => ['nullable', 'integer', 'exists:occupations,id'],
             'religion' => ['nullable', Rule::enum(Religion::class)],
             'last_education' => ['nullable', Rule::enum(LastEducation::class)],

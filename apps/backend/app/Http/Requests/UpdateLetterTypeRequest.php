@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\LetterTypeCategory;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -18,9 +19,10 @@ class UpdateLetterTypeRequest extends FormRequest
     }
 
     /**
-     * Hanya field ini yang boleh diedit Staf SIDUTama. Flow, template,
-     * isian form, slot tanda tangan, dan aksi data diset developer
-     * lewat seeder dan tidak bisa diubah dari sini.
+     * Hanya field ini yang boleh diedit Staf SIDUTama. Petugas
+     * (`assigned_role`) mengikuti kategori. Flow, template, isian form,
+     * slot tanda tangan, dan aksi data diset developer lewat seeder dan
+     * tidak bisa diubah dari sini.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -28,7 +30,7 @@ class UpdateLetterTypeRequest extends FormRequest
     {
         return [
             'validity_days' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'assigned_role' => ['sometimes', 'nullable', Rule::in(['kasi_pemerintahan', 'kaur_tu_umum'])],
+            'category' => ['sometimes', Rule::enum(LetterTypeCategory::class)],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

@@ -133,7 +133,7 @@ class LetterFulfillmentTest extends TestCase
             ->assertJsonValidationErrors(['values.name']);
     }
 
-    public function test_only_assigned_kasi_kaur_or_staf_sid_may_apply(): void
+    public function test_only_the_assigned_kasi_or_kaur_may_apply(): void
     {
         $letter = $this->approvedUpdateLetter(['nama_benar' => 'Nama Benar']);
         $otherKaur = $this->makeOfficialUser('kaur_tu_umum', $this->village);
@@ -141,17 +141,40 @@ class LetterFulfillmentTest extends TestCase
         $petugas = $this->makeOfficialUser('staf_sid', $this->village);
         $foreignKasi = $this->makeOfficialUser('kasi_pemerintahan', Village::factory()->create());
 
-        foreach ([$otherKaur, $kades, $this->applicant, $foreignKasi] as $account) {
+        // Staf SIDUTama bukan cadangan Terapkan: ia mengubah data lewat Data Penduduk.
+        foreach ([$otherKaur, $kades, $petugas, $this->applicant, $foreignKasi] as $account) {
             $this->actingAs($account['user'])
                 ->postJson("/api/letters/{$letter->id}/fulfillment")
                 ->assertForbidden();
         }
 
-        // Staf SIDUTama adalah cadangan bila Kasi/Kaur berhalangan.
-        $this->actingAs($petugas['user'])
+        $this->actingAs($this->kasi['user'])
             ->postJson("/api/letters/{$letter->id}/fulfillment")
             ->assertOk()
-            ->assertJsonPath('data.fulfilled_by', $petugas['user']->id);
+            ->assertJsonPath('data.fulfilled_by', $this->kasi['user']->id);
+    }
+
+    public function test_assigned_kasi_applies_their_own_letter_with_corrections_and_it_is_logged(): void
+    {
+        $letter = $this->approvedUpdateLetter(['nama_benar' => 'Nama Benar'], [
+            'citizen_id' => $this->kasi['citizen']->id,
+            'submitted_by' => $this->kasi['user']->id,
+        ]);
+
+        $this->actingAs($this->kasi['user'])
+            ->getJson("/api/letters/{$letter->id}")
+            ->assertOk()
+            ->assertJsonPath('data.can_fulfill', true);
+        $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letter->id}/fulfillment", ['values' => ['place_of_birth' => 'Tempat Koreksi']])
+            ->assertOk();
+
+        $this->assertSame('Tempat Koreksi', $this->kasi['citizen']->fresh()->place_of_birth);
+        $this->assertDatabaseHas('letter_status_logs', [
+            'letter_id' => $letter->id,
+            'actor_id' => $this->kasi['user']->id,
+            'reason' => 'Perubahan data kependudukan diterapkan oleh pemohon sendiri',
+        ]);
     }
 
     public function test_fulfillment_is_unavailable_before_final_approval_and_for_types_without_data_action(): void

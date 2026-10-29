@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useImperativeHandle, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { History, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
+import { History, Pencil, RefreshCw, Search, Trash2 } from 'lucide-react'
 
 import { getFamily, getFamilySocioeconomic, saveFamilySocioeconomic } from '../api'
+import { WilayahFilterSelects } from './WilayahFilterSelects'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
@@ -59,11 +60,13 @@ function responseData(response) {
 /**
  * Daftar Kartu Keluarga. `canEdit` = false untuk tampilan khusus-baca
  * (Kaur TU & Umum); `canViewHistory` hanya untuk Staf SIDUTama (Log Aktivitas).
+ * `ref` mengekspos openCreate() untuk tombol Tambah KK di header halaman.
  */
 export default function FamilyManagementPanel({
   familyList,
   canEdit = true,
   canViewHistory = true,
+  ref,
 }) {
   const navigate = useNavigate()
   const {
@@ -72,6 +75,7 @@ export default function FamilyManagementPanel({
     error,
     totalItems,
     searchFamilies,
+    wilayahFilter,
     currentPage,
     setCurrentPage,
     totalPages,
@@ -113,6 +117,9 @@ export default function FamilyManagementPanel({
     setMessage('')
     setModal('family')
   }
+
+  // Tombol Tambah KK ada di header halaman (sejajar Refresh), di luar panel.
+  useImperativeHandle(ref, () => ({ openCreate }))
 
   const openEdit = async (family) => {
     setSelectedFamily(family)
@@ -256,34 +263,35 @@ export default function FamilyManagementPanel({
               : 'Daftar Kartu Keluarga desa (hanya lihat).'}
           </p>
         </div>
-        {canEdit && (
-          <button type="button" className="sid-operator-primary" onClick={openCreate}>
-            <Plus size={16} /> Tambah KK
-          </button>
-        )}
       </div>
 
-      <form
-        className="sid-operator-filter-card sid-admin-family-search"
-        onSubmit={(event) => {
-          event.preventDefault()
-          searchFamilies(keyword)
-        }}
-      >
-        <label htmlFor="family-search">Cari No. KK (16 digit) atau nama kepala keluarga</label>
+      {/* Struktur sama dengan filter Data Penduduk: pencarian + Dusun/RW/RT. */}
+      <div className="sid-operator-filter-card sid-admin-family-search">
+        <form
+          className="sid-operator-filter-grid warga-filter"
+          onSubmit={(event) => {
+            event.preventDefault()
+            searchFamilies(keyword)
+          }}
+        >
+          <div className="sid-operator-filter-field">
+            <p>Pencarian Cepat</p>
+            <div className="sid-operator-search">
+              <Search size={16} aria-hidden="true" />
+              <input
+                id="family-search"
+                type="search"
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder="Cari No. KK (16 digit) atau nama kepala keluarga..."
+                aria-label="Cari Kartu Keluarga"
+              />
+            </div>
+          </div>
 
-        <div className="sid-operator-search">
-          <Search size={16} aria-hidden="true" />
-          <input
-            id="family-search"
-            type="search"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Contoh: 3201011234560001 atau Budi"
-            aria-label="Cari Kartu Keluarga"
-          />
-        </div>
-      </form>
+          <WilayahFilterSelects {...wilayahFilter} />
+        </form>
+      </div>
 
       {message && (
         <p className="sid-admin-panel-message sid-admin-alert-error" role="alert">

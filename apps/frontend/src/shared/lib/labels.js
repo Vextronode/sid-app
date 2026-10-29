@@ -44,7 +44,9 @@ export const BLOOD_TYPE_LABELS = { A: 'A', B: 'B', AB: 'AB', O: 'O', tidak_tahu:
 export const MARITAL_STATUS_LABELS = {
   belum_kawin: 'Belum Kawin',
   kawin: 'Kawin',
+  kawin_belum_tercatat: 'Kawin Belum Tercatat',
   cerai_hidup: 'Cerai Hidup',
+  cerai_hidup_belum_tercatat: 'Cerai Hidup Belum Tercatat',
   cerai_mati: 'Cerai Mati',
 }
 

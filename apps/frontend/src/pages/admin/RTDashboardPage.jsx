@@ -33,12 +33,15 @@ import { SURAT_STATUS } from '@/constants/suratStatus'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 // ==========================================
 // COMPONENT
 // ==========================================
 
 export default function RTDashboardPage() {
+  const pageRefresh = useQueryRefresh(['surat'], ['dashboard'])
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -145,6 +148,7 @@ export default function RTDashboardPage() {
             <div className="flex items-center gap-3">
               {stats.overdue > 0 && <OverdueBadge isOverdue count={stats.overdue} />}
               <span className="sid-dashboard-date">{hariIni}</span>
+              <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
             </div>
           </div>
 
@@ -213,6 +217,9 @@ export default function RTDashboardPage() {
           <p className="sid-page-description">
             Kelola administrasi warga {user?.wilayah_label ?? 'RT'} dengan lebih cepat.
           </p>
+          <div className="mt-3">
+            <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+          </div>
           {stats.overdue > 0 && (
             <div className="mt-3">
               <OverdueBadge isOverdue count={stats.overdue} />

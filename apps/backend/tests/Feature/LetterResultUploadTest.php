@@ -172,6 +172,26 @@ class LetterResultUploadTest extends TestCase
             ->assertJsonPath('data.1.result_stage', 'under_review');
     }
 
+    public function test_kasi_verifies_their_own_result_and_staf_cannot_verify(): void
+    {
+        $petugas = $this->makeOfficialUser('staf_sid', $this->village);
+        $letterId = $this->approve($this->serviceType());
+        // Surat milik Kasi yang ditugaskan sendiri.
+        Letter::query()->whereKey($letterId)->update(['submitted_by' => $this->kasi['user']->id, 'citizen_id' => $this->kasi['citizen']->id]);
+        $result = $this->upload($this->kasi['user'], $letterId)->assertCreated()->json('data');
+
+        // Staf SIDUTama bukan cadangan verifikasi.
+        $this->detail($petugas['user'], $letterId)->assertJsonPath('data.can_review_result', false);
+        $this->review($petugas['user'], $letterId, $result['id'], ['decision' => 'accepted'])->assertForbidden();
+
+        $this->detail($this->kasi['user'], $letterId)->assertJsonPath('data.can_review_result', true);
+        $this->review($this->kasi['user'], $letterId, $result['id'], ['decision' => 'accepted'])->assertOk();
+        $this->assertDatabaseHas('letter_status_logs', [
+            'letter_id' => $letterId,
+            'reason' => 'Hasil dari instansi diterima oleh pemohon sendiri',
+        ]);
+    }
+
     private function serviceType(array $attributes = []): LetterType
     {
         return LetterType::factory()->create([

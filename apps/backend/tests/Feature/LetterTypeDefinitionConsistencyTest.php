@@ -118,9 +118,9 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
     {
         $letterTypes = LetterType::query()->with('flow.steps')->orderBy('code')->get();
 
-        // 11 Persuratan Desa (Axx) + Layanan Kependudukan (Fxx).
+        // Persuratan Desa (Axx) + Layanan Kependudukan (Fxx dan A11 Ahli Waris).
         $this->assertSame(
-            ['persuratan' => 11, 'pelayanan' => 10],
+            ['persuratan' => 10, 'pelayanan' => 11],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -131,8 +131,13 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             $this->assertTrue($letterType->produces_letter);
 
             if (str_starts_with($letterType->code, 'A')) {
-                $this->assertSame('kaur_tu_umum', $letterType->assigned_role, "{$letterType->code} harus ditangani Kaur TU & Umum.");
-                $this->assertSame(LetterTypeCategory::Persuratan, $letterType->category, "{$letterType->code} termasuk Persuratan Desa.");
+                // Surat keterangan desa. Ahli Waris tampil di Layanan Kependudukan
+                // dan ditangani Kasi Pemerintahan, formatnya tetap surat desa.
+                [$role, $category] = $letterType->code === 'A11'
+                    ? ['kasi_pemerintahan', LetterTypeCategory::Pelayanan]
+                    : ['kaur_tu_umum', LetterTypeCategory::Persuratan];
+                $this->assertSame($role, $letterType->assigned_role, "{$letterType->code} ditangani {$role}.");
+                $this->assertSame($category, $letterType->category, "{$letterType->code} termasuk {$category->value}.");
                 $this->assertTrue($letterType->issues_letter_number && $letterType->signed_by_village_head);
                 $this->assertFalse($letterType->requires_result_upload);
             } else {
@@ -146,6 +151,13 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                 // Dokumen yang dibawa ke Disdukcapil: formulir terbit + lampiran, termasuk Surat Kuasa.
                 $this->assertNotEmpty($letterType->carry_documents['forms'] ?? [], "{$letterType->code} tanpa daftar formulir yang dibawa.");
                 $this->assertNotEmpty($letterType->carry_documents['attachments'] ?? [], "{$letterType->code} tanpa daftar dokumen lampiran.");
+                // KK lama diganti Disdukcapil, jadi KK asli dibawa (pendatang F04 belum ber-KK desa).
+                if ($letterType->code !== 'F04') {
+                    $this->assertTrue(
+                        collect($letterType->carry_documents['attachments'])->contains(fn (string $item): bool => str_contains($item, 'KK') && str_contains($item, 'asli')),
+                        "{$letterType->code} harus melampirkan KK asli.",
+                    );
+                }
                 $this->assertStringContainsString('F-1.07', (string) collect($letterType->carry_documents['forms'])->last());
                 $this->assertStringNotContainsString('{{ signature_img }}', (string) $letterType->template);
                 $this->assertStringNotContainsString('{{ letter_number }}', (string) $letterType->template);
@@ -162,6 +174,17 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             $letterTypes
                 ->filter(fn (LetterType $type) => $type->data_action->value !== 'none')
                 ->mapWithKeys(fn (LetterType $type) => [$type->code => $type->data_action->value])
+                ->all(),
+        );
+
+        // Batas waktu pelaporan peristiwa (UU 23/2006 jo. UU 24/2013), peringatan di form.
+        $this->assertSame(
+            ['F05.tanggal_lahir_anak' => 60, 'F06.tanggal_kematian' => 30, 'F07.tanggal_perkawinan' => 60, 'F07.tanggal_putusan' => 60, 'F10.tanggal_penetapan' => 30],
+            $letterTypes
+                ->flatMap(fn (LetterType $type) => collect($type->form_fields)
+                    ->filter(fn (array $field): bool => isset($field['report_deadline']))
+                    ->mapWithKeys(fn (array $field) => ["{$type->code}.{$field['name']}" => $field['report_deadline']['days']]))
+                ->sortKeys()
                 ->all(),
         );
 

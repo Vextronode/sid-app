@@ -35,18 +35,13 @@ Family:
       type: integer
       nullable: true
       example: 1
-    head_of_family_id:
-      type: string
-      format: uuid
-      nullable: true
-      example: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
-      description: |
-        Denormalisasi OPSIONAL untuk performa query. Pada prinsipnya bisa
-        diturunkan dari citizens.family_role='kepala_keluarga'. Aplikasi
-        wajib menjaga konsistensi manual antara kedua sumber data ini.
     head_of_family:
       type: object
       nullable: true
+      description: |
+        Anggota aktif KK ber-SHDK `kepala_keluarga` (citizens.family_role).
+        Tidak disimpan sebagai kolom KK, jadi selalu mengikuti perubahan
+        susunan KK (Data Penduduk maupun Terapkan pisah KK/ganti kepala).
       properties:
         id:
           type: string

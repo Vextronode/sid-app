@@ -107,7 +107,7 @@ Citizen:
       description: "BARU v5.0 - fallback teks bebas jika mother_id NULL"
     marital_status:
       type: string
-      enum: [belum_kawin, kawin, cerai_hidup, cerai_mati]
+      enum: [belum_kawin, kawin, kawin_belum_tercatat, cerai_hidup, cerai_hidup_belum_tercatat, cerai_mati]
       nullable: true
       example: "kawin"
     occupation_id:
@@ -309,7 +309,7 @@ CitizenCreateRequest:
       example: null
     marital_status:
       type: string
-      enum: [belum_kawin, kawin, cerai_hidup, cerai_mati]
+      enum: [belum_kawin, kawin, kawin_belum_tercatat, cerai_hidup, cerai_hidup_belum_tercatat, cerai_mati]
       example: "kawin"
     occupation_id:
       type: integer

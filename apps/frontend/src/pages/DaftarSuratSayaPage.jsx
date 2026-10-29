@@ -17,6 +17,8 @@ import { MyLettersList } from '@/features/surat/components/MyLettersList'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import { confirmDialog } from '@/shared/lib/dialog'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 // Nilai ?status= di URL -> status surat di backend.
 const STATUS_PARAM = {
@@ -25,6 +27,7 @@ const STATUS_PARAM = {
 }
 
 export default function DaftarSuratSayaPage() {
+  const pageRefresh = useQueryRefresh(['surat'])
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -123,6 +126,7 @@ export default function DaftarSuratSayaPage() {
               Pantau surat yang pernah Anda ajukan dan sampai mana prosesnya.
             </p>
           </div>
+          <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
         </header>
 
         {deleteError && (

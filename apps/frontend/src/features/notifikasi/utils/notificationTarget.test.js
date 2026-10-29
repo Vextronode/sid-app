@@ -37,13 +37,13 @@ describe('getNotificationTarget', () => {
     )
   })
 
-  it("opens an official's own letter in Surat Saya, but never for warga or petugas desa", () => {
+  it("opens an official's own letter in Surat Saya, but never for warga", () => {
     const own = { ...context, is_applicant: true }
 
     expect(getNotificationTarget('rt', own)).toBe('/admin/surat-saya?surat=abc-123')
     expect(getNotificationTarget('kasi_pemerintahan', own)).toBe('/admin/surat-saya?surat=abc-123')
     expect(getNotificationTarget('warga', own)).toBe('/surat-saya/daftar?surat=abc-123')
-    expect(getNotificationTarget('staf_sid', own)).toBe('/admin/operator-desa/surat?surat=abc-123')
+    expect(getNotificationTarget('staf_sid', own)).toBe('/admin/surat-saya?surat=abc-123')
   })
 
   it('returns null when there is nothing to open', () => {

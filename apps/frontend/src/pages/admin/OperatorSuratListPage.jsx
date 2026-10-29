@@ -28,6 +28,8 @@ import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
 import { usePageSize } from '@/components/ui/usePageSize'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 const EMPTY_EXPORT_MESSAGE = 'Tidak ada data surat untuk diunduh. Unduhan laporan gagal.'
 
@@ -38,6 +40,7 @@ const STATUS_FILTER_PARAM = {
 }
 
 export default function OperatorSuratListPage() {
+  const pageRefresh = useQueryRefresh(['surat'])
   const [search, setSearch] = useState('')
   const [filterJenis, setFilterJenis] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -135,15 +138,18 @@ export default function OperatorSuratListPage() {
         <div className="sid-operator-header">
           <h1>Daftar Permohonan Surat</h1>
 
-          <button
-            type="button"
-            className="sid-operator-export"
-            disabled={exporting}
-            onClick={handleExport}
-          >
-            <Download size={16} />
-            {exporting ? 'Mengunduh...' : 'Ekspor Laporan'}
-          </button>
+          <div className="sid-admin-page-actions">
+            <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+            <button
+              type="button"
+              className="sid-operator-export"
+              disabled={exporting}
+              onClick={handleExport}
+            >
+              <Download size={16} />
+              {exporting ? 'Mengunduh...' : 'Ekspor Laporan'}
+            </button>
+          </div>
         </div>
 
         {/* ==========================================

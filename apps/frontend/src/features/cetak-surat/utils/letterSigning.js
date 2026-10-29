@@ -1,6 +1,7 @@
 /**
  * Formulir pelayanan (format instansi luar) tidak ditandatangani dan
- * distempel Kepala Desa, jadi hanya punya satu format unduhan.
+ * distempel Kepala Desa; format unduhannya TTD digital (TTD pemohon dan
+ * pihak terkait dari akun) atau TTD basah.
  */
 export function isSignedByVillageHead(surat) {
   return surat?.letter_type?.signed_by_village_head !== false

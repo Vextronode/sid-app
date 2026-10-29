@@ -1,8 +1,8 @@
 export const OPERATOR_ROUTE_CAPABILITIES = {
   '/admin/operator-desa': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
   '/admin/operator-desa/surat': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
-  // Pengajuan surat pribadi; Staf SIDUTama (admin) tidak memerlukannya.
-  '/admin/surat-saya': ['kasi_pemerintahan', 'kaur_tu_umum'],
+  // Pengajuan surat pribadi; Staf SIDUTama juga warga desa.
+  '/admin/surat-saya': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
   // Staf SIDUTama dan Kasi Pemerintahan mengelola; Kaur TU & Umum hanya melihat.
   '/admin/data-warga': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
   '/admin/kelola-wilayah': ['staf_sid'],
