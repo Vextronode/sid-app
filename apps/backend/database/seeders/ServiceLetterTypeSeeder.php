@@ -2955,6 +2955,20 @@ class ServiceLetterTypeSeeder extends Seeder
      */
     private function registrationForm(array $marks, array $applicant = []): string
     {
+        // Induk ikut tercentang bila salah satu sub-nya tercentang: I.A BARU
+        // dari sub KK baru, IV.A KK (data KK lama berubah) dari sub perubahan
+        // data dan penggantian kepala keluarga. Induk yang ditulis tetap dipakai.
+        $parents = [
+            'kk.baru' => fn (string $key): bool => str_starts_with($key, 'kk.baru.'),
+            'ubah.kk' => fn (string $key): bool => str_starts_with($key, 'kk.ubah.') || $key === 'kk.baru.ganti_kepala',
+        ];
+
+        foreach ($parents as $parent => $matches) {
+            if (! array_key_exists($parent, $marks) && ($mark = $this->anyMark($marks, $matches)) !== null) {
+                $marks[$parent] = $mark;
+            }
+        }
+
         ['name' => $name, 'nik' => $nik, 'family_number' => $familyNumber] = [
             'name' => '{{ applicant_name }}',
             'nik' => '{{ applicant_nik }}',
@@ -2983,6 +2997,25 @@ class ServiceLetterTypeSeeder extends Seeder
                 default => '',
             };
         }, $html);
+    }
+
+    /**
+     * Gabungan centang yang kuncinya cocok: true bila salah satunya selalu
+     * tercentang, syaratnya bila hanya satu syarat, null bila tidak ada.
+     * Beberapa syarat berbeda harus ditulis sendiri di induknya.
+     *
+     * @param  array<string, bool|string>  $marks
+     */
+    private function anyMark(array $marks, callable $matches): bool|string|null
+    {
+        $conditions = array_unique(array_filter($marks, fn (bool|string $mark, string $key): bool => $matches($key) && $mark !== false, ARRAY_FILTER_USE_BOTH));
+
+        return match (true) {
+            $conditions === [] => null,
+            in_array(true, $conditions, true) => true,
+            count($conditions) === 1 => reset($conditions),
+            default => throw new \LogicException('Centang induk F-1.02 dengan beberapa syarat harus ditulis sendiri: '.implode(', ', array_keys($conditions))),
+        };
     }
 
     /**

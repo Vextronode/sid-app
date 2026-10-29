@@ -178,6 +178,10 @@ class DeathReportServiceTest extends TestCase
         // F-1.02: petugas Kasi Pemerintahan dan pemohon.
         $registration = $this->render($letterId, 'f1_02');
         $this->assertSame(2, substr_count($registration, '<img'));
+        // KK baru karena ganti kepala: induk I.A BARU dan IV.A KK ikut tercentang.
+        foreach (['BARU <b>V</b>', 'Penggantian Kepala Keluarga <b>V</b>', 'KK <b>V</b>'] as $mark) {
+            $this->assertStringContainsString($mark, $registration);
+        }
         $this->assertStringContainsString("official-signatures/{$this->village->id}/{$this->kasi['official']->id}/", $registration);
 
         // F-1.01: kepala keluarga baru (ibu, tanpa akun) tidak ditempeli TTD.
