@@ -27,6 +27,7 @@ import {
   uploadOfficialPhoto,
 } from '@/features/profil-desa-admin/api'
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
@@ -114,7 +115,7 @@ const candidateTarget = (accountPositions, position, candidate) =>
 const PHOTO_TYPES = 'image/png,image/jpeg,image/webp'
 
 // Dashboard warga, tujuan Staf SIDUTama setelah menyerahkan jabatannya.
-const WARGA_HOME = '/daftar-surat'
+const WARGA_HOME = '/surat-saya'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -582,6 +583,7 @@ export default function PejabatDesaPage() {
         <div className="sid-operator-header">
           <h1>Pejabat Desa</h1>
           <div className="sid-admin-page-actions">
+            <RefreshButton onRefresh={loadData} disabled={processing} />
             <button
               type="button"
               className="sid-button sid-button-outline"

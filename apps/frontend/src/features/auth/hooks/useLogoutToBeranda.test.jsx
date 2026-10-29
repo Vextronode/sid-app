@@ -13,7 +13,7 @@ vi.mock('@/shared/lib/dialog', () => ({ alertDialog }))
 
 import { useLogoutToBeranda } from './useLogoutToBeranda'
 
-const DASHBOARD = '/admin/dashboard-surat-rt'
+const DASHBOARD = '/admin/rt'
 
 const renderLogout = () =>
   renderHook(() => ({ ...useLogoutToBeranda(), location: useLocation() }), {

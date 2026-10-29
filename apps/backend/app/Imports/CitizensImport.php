@@ -11,6 +11,7 @@ use App\Enums\ResidencyType;
 use App\Models\User;
 use App\Services\CitizenService;
 use App\Support\CitizenDocumentRules;
+use App\Support\CitizenLabels;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -105,7 +106,7 @@ class CitizensImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow
             'mother_id' => ['nullable', 'exists:citizens,id'],
             'father_name_text' => ['nullable', 'string', 'max:255'],
             'mother_name_text' => ['nullable', 'string', 'max:255'],
-            'marital_status' => ['nullable', Rule::in(['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati'])],
+            'marital_status' => ['nullable', Rule::in(array_keys(CitizenLabels::MARITAL_STATUS))],
             // TODO: Resolve imported occupation labels to village-scoped occupation IDs.
             'religion' => ['nullable', Rule::enum(Religion::class)],
             'last_education' => ['nullable', Rule::enum(LastEducation::class)],

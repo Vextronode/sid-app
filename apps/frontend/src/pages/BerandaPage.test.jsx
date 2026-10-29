@@ -258,11 +258,11 @@ describe('BerandaPage hero', () => {
 
     expect(screen.getByRole('link', { name: 'Ajukan Surat' })).toHaveAttribute(
       'href',
-      '/loginpage?redirect=%2Fjenis-surat',
+      '/login?redirect=%2Fjenis-surat',
     )
     expect(screen.getByRole('link', { name: 'Cek Status Surat' })).toHaveAttribute(
       'href',
-      '/loginpage?redirect=%2Fdaftar-surat-saya',
+      '/login?redirect=%2Fsurat-saya%2Fdaftar',
     )
   })
 
@@ -277,7 +277,7 @@ describe('BerandaPage hero', () => {
     )
     expect(screen.getByRole('link', { name: 'Cek Status Surat' })).toHaveAttribute(
       'href',
-      '/daftar-surat-saya',
+      '/surat-saya/daftar',
     )
   })
 
@@ -316,16 +316,11 @@ describe('BerandaPage service cards', () => {
   const cards = () => within(screen.getByRole('region', { name: 'Layanan populer' }))
 
   it.each([
-    [
-      'guest',
-      null,
-      '/loginpage?redirect=%2Fjenis-surat',
-      '/loginpage?redirect=%2Fdaftar-surat-saya',
-    ],
-    ['warga', { role: 'warga' }, '/jenis-surat', '/daftar-surat-saya'],
+    ['guest', null, '/login?redirect=%2Fjenis-surat', '/login?redirect=%2Fsurat-saya%2Fdaftar'],
+    ['warga', { role: 'warga' }, '/jenis-surat', '/surat-saya/daftar'],
     // Pejabat tidak lagi terlempar ke beranda publik: ke Surat Saya pejabat.
     ['rt', { role: 'rt' }, '/admin/surat-saya', '/admin/surat-saya'],
-    ['staf_sid', { role: 'staf_sid' }, '/admin/operator-desa', '/admin/operator-desa'],
+    ['staf_sid', { role: 'staf_sid' }, '/admin/surat-saya', '/admin/surat-saya'],
   ])('makes the whole Ajukan and Status cards links (%s)', (_, user, ajukan, status) => {
     useAuth.mockReturnValue({ user, isLoading: false })
 
@@ -339,8 +334,8 @@ describe('BerandaPage service cards', () => {
   })
 
   it.each([
-    ['guest', null, '/loginpage?redirect=%2Fdaftar-surat-saya%3Fstatus%3Dapproved'],
-    ['warga', { role: 'warga' }, '/daftar-surat-saya?status=approved'],
+    ['guest', null, '/login?redirect=%2Fsurat-saya%2Fdaftar%3Fstatus%3Dapproved'],
+    ['warga', { role: 'warga' }, '/surat-saya/daftar?status=approved'],
   ])('links Unduh surat selesai to the approved letters (%s)', (_, user, href) => {
     useAuth.mockReturnValue({ user, isLoading: false })
 
@@ -415,7 +410,7 @@ describe('BerandaPage how-to steps', () => {
   })
 
   it.each([
-    ['guest', null, '/loginpage?redirect=%2Fjenis-surat'],
+    ['guest', null, '/login?redirect=%2Fjenis-surat'],
     ['warga', { role: 'warga' }, '/jenis-surat'],
   ])('links "Mulai ajukan surat" through the login flow (%s, A25)', (_, user, href) => {
     useAuth.mockReturnValue({ user, isLoading: false })

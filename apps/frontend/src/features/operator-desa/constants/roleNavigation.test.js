@@ -19,6 +19,10 @@ describe('operator role navigation', () => {
     expect(ROLE_NAVIGATION.kaur_tu_umum).toEqual(expectedRoutes)
   })
 
+  it('gives Staf SIDUTama a personal Surat Saya page as well', () => {
+    expect(ROLE_NAVIGATION.staf_sid).toContain('/admin/surat-saya')
+  })
+
   it('reserves village administration and configuration routes for Staf SIDUTama', () => {
     const petugasRoutes = ROLE_NAVIGATION.staf_sid
 
@@ -26,13 +30,14 @@ describe('operator role navigation', () => {
       '/admin/kelola-wilayah',
       '/admin/kelola-pekerjaan',
       '/admin/manajemen-user',
+      '/admin/pengajuan-reset',
       '/admin/pejabat-desa',
       '/admin/kelola-profil-desa',
       '/admin/kelola-berita',
       '/admin/kelola-peraturan',
       '/admin/pengumuman',
       '/admin/halaman-informasi',
-      '/admin/approval-settings',
+      '/admin/pengaturan-persetujuan',
       '/admin/organisasi/bpd',
       '/admin/organisasi/lembaga',
     ]) {

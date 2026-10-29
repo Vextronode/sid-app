@@ -249,7 +249,7 @@ export default function RegisterPage() {
         <div className="sid-login-footer">
           <p className="sid-login-register-text">
             Sudah punya akun?
-            <Link to="/loginpage" className="sid-login-register-button">
+            <Link to="/login" className="sid-login-register-button">
               Masuk di sini
             </Link>
           </p>

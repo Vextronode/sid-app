@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ResetUserSignatureRequest;
 use App\Http\Requests\StoreUserSignatureRequest;
 use App\Models\User;
+use App\Services\SignatureResetRequestService;
 use App\Services\UserSignatureService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,14 +17,19 @@ class UserSignatureController extends Controller
         protected UserSignatureService $userSignatureService
     ) {}
 
-    public function show(Request $request): JsonResponse
+    public function show(Request $request, SignatureResetRequestService $resetRequestService): JsonResponse
     {
         $signature = $this->userSignatureService->active($request->user());
+        $resetRequest = $resetRequestService->pendingFor($request->user());
 
         return response()->json([
             'data' => [
                 'has_signature' => $signature !== null,
                 'created_at' => $signature?->created_at,
+                'reset_request' => $resetRequest === null ? null : [
+                    'id' => $resetRequest->id,
+                    'created_at' => $resetRequest->created_at,
+                ],
             ],
         ]);
     }

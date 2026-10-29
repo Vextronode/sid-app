@@ -16,9 +16,11 @@ class CitizenRepository
     }
 
     /**
-     * Daftar warga satu desa, berpaginasi; pencarian nama dan filter
+     * Daftar warga satu desa, berpaginasi; pencarian dan filter
      * Dusun/RW/RT dijalankan di database. RW dan Dusun dibaca lewat RT
-     * warga agar mengikuti hierarki wilayah.
+     * warga agar mengikuti hierarki wilayah. NIK terenkripsi sehingga tidak
+     * bisa dicari sebagian: 16 digit dicocokkan lewat nik_hash, teks lain
+     * dicari di nama.
      *
      * @param  array{search?: ?string, hamlet_id?: int|string|null, rw_id?: int|string|null, rt_id?: int|string|null, per_page?: int|string|null}  $filters
      */
@@ -28,10 +30,16 @@ class CitizenRepository
 
         return Citizen::query()
             ->where('village_id', $villageId)
-            ->when($search !== '', fn ($query) => $query->whereRaw(
-                'LOWER(name) LIKE ?',
-                ['%'.addcslashes(mb_strtolower($search), '\\%_').'%'],
-            ))
+            ->when($search !== '', function ($query) use ($search) {
+                if (preg_match('/^\d{16}$/', $search)) {
+                    return $query->where('nik_hash', hash('sha256', $search));
+                }
+
+                return $query->whereRaw(
+                    'LOWER(name) LIKE ?',
+                    ['%'.addcslashes(mb_strtolower($search), '\\%_').'%'],
+                );
+            })
             ->when(! empty($filters['hamlet_id']), fn ($query) => $query->whereHas(
                 'rt.rw',
                 fn ($rwQuery) => $rwQuery->where('hamlet_id', $filters['hamlet_id']),
@@ -56,6 +64,18 @@ class CitizenRepository
             ->where('village_id', $villageId)
             ->where('nik_hash', hash('sha256', $nik))
             ->where('is_active', true)
+            ->with('family:id,no_kk')
+            ->first();
+    }
+
+    /**
+     * Warga desa ber-NIK ini, aktif maupun nonaktif (mis. almarhum).
+     */
+    public function findInVillageByNik(string $villageId, string $nik): ?Citizen
+    {
+        return Citizen::query()
+            ->where('village_id', $villageId)
+            ->where('nik_hash', hash('sha256', $nik))
             ->with('family:id,no_kk')
             ->first();
     }

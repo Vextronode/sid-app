@@ -13599,6 +13599,13 @@ button.sid-operator-profile {
    CARD
    ========================================================= */
 
+/* Jarak antarkartu di profil (warga & pejabat): kartu Permintaan Tanda
+   Tangan dan Tanda Tangan menyusul kartu profil. */
+.sid-profile-page > .sid-card,
+.sid-admin-profile-content > .sid-card {
+  margin-top: 1.5rem;
+}
+
 .sid-profile-card {
   width: 100%;
 
@@ -14326,26 +14333,6 @@ button.sid-operator-profile {
    ========================================================= */
 
 .sid-login-form {
-  width: 100%;
-}
-
-.sid-login-form-error {
-  width: 100%;
-
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-
-  border: 1px solid var(--sid-status-error-border);
-  border-radius: var(--radius-sm);
-
-  background: var(--sid-status-error-bg);
-  color: var(--sid-status-error);
-
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
-.sid-login-form-content {
   width: 100%;
 }
 
@@ -21736,6 +21723,17 @@ button.sid-operator-profile {
   background: var(--sid-surface-page);
 }
 
+/* Ikon RefreshButton selama data dimuat ulang. */
+.sid-refresh-icon-spinning {
+  animation: sid-spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-refresh-icon-spinning {
+    animation: none;
+  }
+}
+
 @media (max-width: 900px) {
   .sid-kelola-wilayah-header,
   .sid-wilayah-table-toolbar {
@@ -22239,7 +22237,6 @@ button.sid-operator-profile {
    tetap dipakai. Error per kolom input (.sid-form-field-error,
    .sid-login-field-error) sengaja tetap teks kecil di bawah kolomnya. */
 .sid-login-error,
-.sid-login-form-error,
 .sid-modal-error,
 .sid-profil-desa-error,
 .sid-berita-form-error,
@@ -22674,10 +22671,35 @@ button.sid-operator-profile {
    TAMPILAN HALAMAN PUBLIK (Kelola Profil Desa)
    ========================================================= */
 
-.sid-public-media-preview {
-  display: block;
+/* Kartu unggah gambar: label di atas, pratinjau bertinggi tetap di tengah,
+   tombol selalu di bawah supaya kartu terisi dan kosong sejajar. */
 
-  max-width: 100%;
+.sid-image-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.sid-image-field > .sid-image-stage,
+.sid-image-field > .sid-admin-alert {
+  margin: 0 0 0.75rem;
+}
+
+.sid-image-field > .sid-image-picker,
+.sid-image-field > .sid-image-field-actions {
+  margin-top: auto;
+}
+
+.sid-image-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 10rem;
+  box-sizing: border-box;
+
+  overflow: hidden;
+
+  padding: 0.75rem;
 
   border: 1px solid var(--sid-border);
   border-radius: var(--radius-sm);
@@ -22685,22 +22707,194 @@ button.sid-operator-profile {
   background: var(--sid-surface-card);
 }
 
-.sid-public-media-preview--logo {
-  width: auto;
-  max-height: 6rem;
+.sid-image-stage-img {
+  display: block;
 
-  padding: 0.5rem;
+  max-width: 100%;
+  max-height: 100%;
 
   object-fit: contain;
 }
 
-.sid-public-media-preview--hero {
-  width: 100%;
-  max-height: 12rem;
+.sid-image-stage-img--cover {
+  width: calc(100% + 1.5rem);
+  max-width: none;
+  height: calc(100% + 1.5rem);
+  max-height: none;
 
-  aspect-ratio: 16 / 9;
+  margin: -0.75rem;
 
   object-fit: cover;
+}
+
+.sid-image-stage-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 0.375rem;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* Pemilih gambar (pengganti tombol "Choose file" bawaan peramban) */
+
+.sid-image-picker {
+  display: flex;
+  align-items: center;
+
+  gap: 0.75rem;
+
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+
+  margin-top: 0.75rem;
+  padding: 0.75rem 0.875rem;
+
+  border: 1px dashed var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-surface-card);
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.sid-image-picker:hover {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-status-progress-bg);
+}
+
+.sid-image-picker:focus-within {
+  outline: 2px solid var(--sid-primary);
+
+  outline-offset: 2px;
+}
+
+.sid-image-picker[aria-disabled='true'] {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+/* Tersembunyi secara visual, tetap bisa difokus dan dibaca pembaca layar. */
+.sid-image-picker-input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  overflow: hidden;
+
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+
+  white-space: nowrap;
+}
+
+.sid-image-picker-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.25rem;
+  height: 2.25rem;
+
+  border-radius: var(--radius-sm);
+
+  background: var(--sid-status-progress-bg);
+
+  color: var(--sid-primary);
+}
+
+.sid-image-picker-text {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.125rem;
+
+  min-width: 0;
+}
+
+.sid-image-picker-title {
+  color: var(--sid-primary);
+
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.sid-image-picker-hint {
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* =========================================================
+   TANDA TANGAN AKUN (Profil)
+   ========================================================= */
+
+.sid-signature-body {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.75rem;
+}
+
+.sid-signature-body > p {
+  margin: 0;
+}
+
+.sid-signature-body > .sid-image-picker {
+  margin-top: 0;
+}
+
+.sid-signature-pad {
+  display: block;
+
+  width: 100%;
+  height: auto;
+  box-sizing: border-box;
+
+  border: 1px dashed var(--sid-border);
+  border-radius: var(--radius-sm);
+
+  background: #fff;
+
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.sid-signature-divider {
+  display: flex;
+  align-items: center;
+
+  gap: 0.75rem;
+
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.sid-signature-divider::before,
+.sid-signature-divider::after {
+  content: '';
+
+  flex: 1;
+
+  height: 1px;
+
+  background: var(--sid-border);
 }
 
 /* ==========================================
@@ -23385,10 +23579,21 @@ button.sid-operator-profile {
   gap: 0.5rem;
 }
 
+.sid-sign-requests-header .sid-section-title {
+  margin: 0;
+}
+
+/* Tombol ringkas di sisi kanan judul; tidak ikut melebar seperti .sid-btn biasa. */
 .sid-sign-requests-header .sid-btn {
-  display: inline-flex;
-  align-items: center;
+  flex: 0 0 auto;
   gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+}
+
+.sid-sign-requests > p {
+  margin: 0;
 }
 
 .sid-sign-empty {
@@ -23396,6 +23601,7 @@ button.sid-operator-profile {
   align-items: center;
   gap: 0.5rem;
   padding: 0.85rem 1rem;
+  font-size: 0.875rem;
   border: 1px dashed var(--sid-border);
   border-radius: var(--sid-radius-md);
   color: var(--sid-text-muted);

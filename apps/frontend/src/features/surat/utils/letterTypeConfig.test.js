@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { applicantValue, applicantValues, getLetterTypeFormConfig } from './letterTypeConfig'
-import { getSuratSchema, signerFieldNames } from '../validation/suratSchema'
+import {
+  applicantPrefill,
+  applicantValue,
+  applicantValues,
+  getLetterTypeFormConfig,
+} from './letterTypeConfig'
+import { getSuratSchema, signerFieldNames, todayDate } from '../validation/suratSchema'
 import { buildLetterFormData } from './letterFormData'
 
 const letterType = {
@@ -492,6 +497,63 @@ describe('applicantValue', () => {
   it('asks the question when the applicant data is missing', () => {
     expect(applicantValue(field, { citizen: {} })).toBeNull()
     expect(applicantValue({ name: 'lain' }, { citizen: { gender: 'L' } })).toBeNull()
+  })
+})
+
+describe('past dates and whole numbers', () => {
+  const config = getLetterTypeFormConfig({
+    code: 'A03',
+    form_fields: [
+      { name: 'tanggal_lahir', label: 'Tanggal Lahir', type: 'date', required: true, past: true },
+      {
+        name: 'penghasilan',
+        label: 'Penghasilan',
+        type: 'number',
+        required: true,
+        integer: true,
+        min_value: 1,
+      },
+    ],
+  })
+  const errorsOf = (values) =>
+    (getSuratSchema(config).safeParse(values).error?.issues ?? []).map((issue) => issue.message)
+
+  it('rejects a date after today and amounts that are not whole and positive', () => {
+    expect(errorsOf({ tanggal_lahir: '2999-01-01', penghasilan: '2500000' })).toEqual([
+      'Tanggal Lahir tidak boleh sesudah hari ini',
+    ])
+    expect(errorsOf({ tanggal_lahir: todayDate(), penghasilan: '0' })).toEqual([
+      'Penghasilan minimal 1',
+    ])
+    expect(errorsOf({ tanggal_lahir: '2000-01-01', penghasilan: '2500,5' })).toEqual([
+      'Penghasilan harus berupa angka',
+    ])
+    expect(errorsOf({ tanggal_lahir: '2000-01-01', penghasilan: '2500.5' })).toEqual([
+      'Penghasilan harus berupa bilangan bulat',
+    ])
+    expect(errorsOf({ tanggal_lahir: '2000-01-01', penghasilan: '2500000' })).toEqual([])
+  })
+})
+
+describe('applicantPrefill', () => {
+  it('starts editable fields from the applicant population data', () => {
+    const config = getLetterTypeFormConfig({
+      code: 'A03',
+      form_fields: [
+        { name: 'jenis_usaha', type: 'occupation', prefill_from_applicant: 'occupation_id' },
+        { name: 'alamat_domisili', type: 'village_area', prefill_from_applicant: 'rt_id' },
+        { name: 'nama_benar', prefill_from_applicant: 'name' },
+        { name: 'penghasilan_perbulan', type: 'number' },
+      ],
+    })
+
+    expect(
+      applicantPrefill(config.fields, { citizen: { occupation_id: 4, rt_id: 9, name: '' } }),
+    ).toEqual({
+      jenis_usaha: '4',
+      alamat_domisili: '9',
+    })
+    expect(applicantPrefill(config.fields, null)).toEqual({})
   })
 })
 

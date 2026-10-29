@@ -7,9 +7,12 @@ get:
 
     Scope per role:
     - warga: surat yang diajukan sendiri
-    - rt: seluruh surat dari warga di RT-nya (via citizens.rt_id), semua status
-    - rw: surat dari warga di RW-nya yang memiliki keputusan approve RT, read-only
-    - kadus: surat dari warga di dusunnya yang memiliki keputusan approve RT, read-only
+    - rt: seluruh surat yang diajukan dari RT-nya (letters.rt_id), semua status
+    - rw: surat yang diajukan dari RW-nya (letters.rw_id) yang memiliki keputusan approve RT, read-only
+    - kadus: surat yang diajukan dari dusunnya (letters.hamlet_id) yang memiliki keputusan approve RT, read-only
+
+    Wilayah surat adalah wilayah pemohon saat mengajukan; bila pemohon
+    kemudian pindah (mis. pisah KK ke RT lain), surat tetap di wilayah lama.
     - kepala_desa/sekretaris_desa: surat di desanya yang sudah di-approve RT atau tercatat melewati tahap RT
     - kasi_pemerintahan/kaur_tu_umum: surat `approved` di desanya sesuai `letter_types.assigned_role` (NULL = keduanya)
     - staf_sid: semua surat di desanya
@@ -140,8 +143,12 @@ post:
     4. Bila masih ada slot kosong → `current_step_order = 0`, log
        "Menunggu tanda tangan pihak terkait", tidak ada approver yang dinotifikasi.
     5. Bila lengkap → masuk step actionable pertama: tahap non-final milik
-       pemohon dilewati; bila step RT belum memiliki pejabat aktif, surat
-       ditahan di step itu dan Staf SIDUTama dinotifikasi (`approver_vacant`).
+       pemohon dilewati (surat langsung `in_progress` di tahap desa; surat
+       Kades/Sekdes selalu melewati tahap RT); bila
+       step RT belum memiliki pejabat aktif, atau tahap final tidak punya
+       pejabat berwenang selain pemohon (mis. Kades saat Sekdes kosong),
+       surat ditahan di step itu dan Staf SIDUTama dinotifikasi
+       (`approver_vacant`).
     Bila transaksi gagal, berkas yang sudah tertulis dihapus.
   operationId: createLetter
   security:
@@ -176,8 +183,7 @@ post:
       description: |
         Validasi gagal: isian tak dikenal/tidak valid, berkas tidak sesuai,
         TTD pemohon belum dibuat, NIK penanda tangan kosong/milik pemohon
-        sendiri/sedang diblokir atau dibatasi, flow tanpa step, atau tidak ada
-        pejabat berwenang pada tahap final.
+        sendiri/sedang diblokir atau dibatasi, atau flow tanpa step.
       content:
         application/json:
           schema:

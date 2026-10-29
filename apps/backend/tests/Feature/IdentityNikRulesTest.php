@@ -55,10 +55,20 @@ class IdentityNikRulesTest extends TestCase
 
     public function test_village_letters_check_the_person_against_the_applicant_and_the_typed_gender(): void
     {
-        // A07: almarhum bukan pemohon; NIK warga desa sesuai jenis kelamin yang diisi.
-        $this->assertErrors('A07', ['nik_almarhum' => '3207240101800001', 'jenis_kelamin_almarhum' => 'L'], ['nik_almarhum' => 'NIK ini milik Anda sendiri; isi NIK orang yang dimaksud.']);
-        $this->assertErrors('A07', ['nik_almarhum' => '3207244101720004', 'jenis_kelamin_almarhum' => 'L'], ['nik_almarhum' => 'NIK ini terdaftar atas warga perempuan; isi NIK laki-laki.']);
-        $this->assertNoError('A07', ['nik_almarhum' => '3207244101720004', 'jenis_kelamin_almarhum' => 'P'], 'nik_almarhum');
+        // A07/A11: almarhum bukan pemohon. NIK warga desa (termasuk yang sudah
+        // dinonaktifkan): identitas diambil dari data penduduk, tidak perlu diketik.
+        $this->assertErrors('A07', ['nik_almarhum' => '3207240101800001'], ['nik_almarhum' => 'NIK ini milik Anda sendiri; isi NIK orang yang dimaksud.']);
+        $this->woman->update(['is_active' => false]);
+        foreach (['A07', 'A11'] as $code) {
+            $errors = $this->validate($code, ['nik_almarhum' => '3207244101720004']);
+            foreach (['nama_almarhum', 'tempat_lahir_almarhum', 'tanggal_lahir_almarhum', 'jenis_kelamin_almarhum', 'alamat_almarhum'] as $field) {
+                $this->assertArrayNotHasKey("payload.{$field}", $errors, "{$code}: {$field} diambil dari NIK.");
+            }
+        }
+        $this->assertArrayNotHasKey('payload.pekerjaan_almarhum', $this->validate('A11', ['nik_almarhum' => '3207244101720004']));
+        // NIK di luar data desa atau kosong: identitas diketik.
+        $this->assertErrors('A11', ['nik_almarhum' => '3201010101010101'], ['nama_almarhum', 'tanggal_lahir_almarhum', 'jenis_kelamin_almarhum', 'pekerjaan_almarhum']);
+        $this->assertErrors('A07', [], ['nama_almarhum', 'alamat_almarhum']);
 
         // A08: anak yang baru lahir belum terdata, dan bukan pasangan.
         $this->assertErrors('A08', ['nik_anak' => '3207240101700003', 'jenis_kelamin_anak' => 'L'], ['nik_anak' => 'NIK ini sudah terdaftar sebagai warga desa.']);
@@ -81,8 +91,9 @@ class IdentityNikRulesTest extends TestCase
         $this->assertErrors('F05', ['ibu' => $this->wife->id, 'nik_saksi_1' => '3207244101820002'], ['nik_saksi_1' => 'Saksi tidak boleh orang yang sama dengan Ibu.']);
         $this->assertErrors('F05', ['ibu' => $this->wife->id, 'surat_lahir' => 'tidak', 'nik_penolong' => '3207244101820002'], ['nik_penolong']);
 
-        // F07: pasangan sesuai perannya; satu NIK untuk satu orang tua.
-        $marriage = ['peristiwa' => 'perkawinan', 'peran_pemohon' => 'suami'];
+        // F07: pasangan sesuai perannya; satu NIK untuk satu orang tua (orang
+        // tua ditanyakan di F-2.01: perkawinan selain Islam yang dicatatkan).
+        $marriage = ['peristiwa' => 'perkawinan', 'peran_pemohon' => 'suami', 'agama_perkawinan' => 'kristen', 'status_kawin_belum_tercatat' => 'tidak', 'akta_capil_terbit' => 'tidak'];
         $this->assertErrors('F07', [...$marriage, 'nik_istri' => '3207240101700003'], ['nik_istri' => 'NIK ini terdaftar atas warga laki-laki; isi NIK perempuan.']);
         $this->assertErrors('F07', [...$marriage, 'nik_istri' => '3207244101720004', 'nik_ayah_suami' => '1231231231231231', 'nik_ayah_istri' => '1231231231231231'], ['nik_ayah_suami', 'nik_ayah_istri']);
         $this->assertErrors('F07', [...$marriage, 'nik_istri' => '3207244101720004', 'nik_ibu_istri' => '3207244101720004'], ['nik_ibu_istri']);
@@ -112,14 +123,6 @@ class IdentityNikRulesTest extends TestCase
                 $this->assertContains($message, $errors["payload.{$field}"], "{$code}: pesan {$field}.");
             }
         }
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function assertNoError(string $code, array $payload, string $field): void
-    {
-        $this->assertArrayNotHasKey("payload.{$field}", $this->validate($code, $payload));
     }
 
     /**

@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
+  Plus,
   Search,
   UserPlus,
   FileSpreadsheet,
@@ -20,11 +21,13 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { useWargaList } from '../../features/data-warga/hooks/useWargaList'
 import { useFamilyList } from '../../features/data-warga/hooks/useFamilyList'
 import FamilyManagementPanel from '../../features/data-warga/components/FamilyManagementPanel'
+import { WilayahFilterSelects } from '../../features/data-warga/components/WilayahFilterSelects'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getOccupations } from '../../features/pekerjaan/api'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { downloadErrorMessage, downloadFile } from '@/lib/downloadFile'
 import {
   BLOOD_TYPE_LABELS,
@@ -123,11 +126,14 @@ export default function DataWargaPage() {
   const switchSection = (value) =>
     setSearchParams(value === 'penduduk' ? {} : { tab: value }, { replace: true })
   const familyList = useFamilyList()
+  // Tombol Tambah KK di header membuka form milik panel KK.
+  const familyPanelRef = useRef(null)
   const {
     data,
     loading,
     error,
     totalItems,
+    reload,
     setSearch,
     filters,
     setFilter,
@@ -414,23 +420,41 @@ export default function DataWargaPage() {
 
         <div className="sid-operator-header">
           <h1>Data Penduduk &amp; Kartu Keluarga</h1>
-          {activeSection === 'penduduk' && (
-            <div className="sid-admin-page-actions">
+          <div className="sid-admin-page-actions">
+            {/* Memuat ulang tab yang sedang dibuka. */}
+            <RefreshButton
+              onRefresh={() => (activeSection === 'kk' ? familyList.reload() : reload())}
+            />
+
+            {activeSection === 'penduduk' && (
+              <>
+                <button
+                  type="button"
+                  className="sid-operator-secondary"
+                  onClick={() => setIsImportModalOpen(true)}
+                >
+                  <FileSpreadsheet size={16} />
+                  Impor Excel
+                </button>
+
+                <button type="button" className="sid-operator-primary" onClick={handleOpenAddModal}>
+                  <UserPlus size={16} />
+                  Tambah Warga
+                </button>
+              </>
+            )}
+
+            {activeSection === 'kk' && (
               <button
                 type="button"
-                className="sid-operator-secondary"
-                onClick={() => setIsImportModalOpen(true)}
+                className="sid-operator-primary"
+                onClick={() => familyPanelRef.current?.openCreate()}
               >
-                <FileSpreadsheet size={16} />
-                Impor Excel
+                <Plus size={16} />
+                Tambah KK
               </button>
-
-              <button type="button" className="sid-operator-primary" onClick={handleOpenAddModal}>
-                <UserPlus size={16} />
-                Tambah Warga
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div className="sid-wilayah-tabs" role="tablist" aria-label="Pilih bagian data">
@@ -452,7 +476,11 @@ export default function DataWargaPage() {
 
         {activeSection === 'kk' && (
           <div id="data-panel-kk" role="tabpanel" aria-labelledby="data-tab-kk">
-            <FamilyManagementPanel familyList={familyList} canViewHistory={canViewHistory} />
+            <FamilyManagementPanel
+              ref={familyPanelRef}
+              familyList={familyList}
+              canViewHistory={canViewHistory}
+            />
           </div>
         )}
 
@@ -480,32 +508,18 @@ export default function DataWargaPage() {
                     <input
                       value={keyword}
                       onChange={(e) => setKeyword(e.target.value)}
-                      placeholder="Cari nama warga..."
+                      placeholder="Cari NIK (16 digit) atau nama warga..."
                     />
                   </div>
                 </div>
 
-                {[
-                  { level: 'hamletId', label: 'Dusun', all: 'Semua Dusun', options: hamletOptions },
-                  { level: 'rwId', label: 'RW', all: 'Semua RW', options: rwOptions },
-                  { level: 'rtId', label: 'RT', all: 'Semua RT', options: rtOptions },
-                ].map((filter) => (
-                  <div key={filter.level} className="sid-operator-filter-field">
-                    <p>{filter.label}</p>
-                    <select
-                      aria-label={`Filter ${filter.label}`}
-                      value={filters[filter.level]}
-                      onChange={(e) => setFilter(filter.level, e.target.value)}
-                    >
-                      <option value="">{filter.all}</option>
-                      {filter.options.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
+                <WilayahFilterSelects
+                  filters={filters}
+                  setFilter={setFilter}
+                  hamletOptions={hamletOptions}
+                  rwOptions={rwOptions}
+                  rtOptions={rtOptions}
+                />
               </form>
             </div>
 

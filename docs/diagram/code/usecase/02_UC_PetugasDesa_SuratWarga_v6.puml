@@ -34,8 +34,8 @@ rectangle "SIDUTama" {
     usecase "UC-06: Detail Surat\n(lampiran, TTD, dokumen pendukung)" as UC_DETAIL
     usecase "UC-08: Unduh PDF" as UC_DL
     usecase "Hapus Surat" as UC_DEL
-    usecase "UC-26: Terapkan Perubahan Data\n(cadangan Kasi/Kaur)" as UC_FULFILL
-    usecase "Terima notifikasi\nsurat tertahan (RT kosong)" as UC_VACANT
+    usecase "Terima notifikasi surat tertahan\n(RT / Kades-Sekdes / Kasi-Kaur kosong)" as UC_VACANT
+    usecase "Surat Saya\n(ajukan untuk diri sendiri)" as UC_SELF
   }
   rectangle "UC-09: Kependudukan" #E8F5E9 {
     usecase "Kelola Data Warga\n(CRUD, paginasi, cari nama, filter RT)" as UC_CIT
@@ -54,7 +54,7 @@ PD -- UC_SUM
 PD -- UC_DETAIL
 PD -- UC_DL
 PD -- UC_DEL
-PD -- UC_FULFILL
+PD -- UC_SELF
 PD -- UC_VACANT
 PD -- UC_CIT
 PD -- UC_IMPORT
@@ -64,12 +64,12 @@ PD -- UC_OCC
 PD -- UC_DASH
 UC_LIST ..> UC_DETAIL : <<include>>
 UC_DETAIL ..> UC_DL : <<extend>>
-UC_DETAIL ..> UC_FULFILL : <<extend>>
 UC_FAM ..> UC_FSE : <<extend>>
 
 note right of UC_VACANT
-  Ditindaklanjuti dengan menetapkan RT
-  (diagram 2/3); RT baru langsung
-  diberi tahu surat yang menunggu.
+  Ditindaklanjuti dengan menetapkan pejabat
+  (RT, Kades/Sekdes, Kasi/Kaur; diagram 2/3).
+  Staf tidak memutus atau Terapkan surat;
+  pejabat baru yang memprosesnya.
 end note
 @enduml

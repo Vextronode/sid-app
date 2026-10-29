@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RtController;
 use App\Http\Controllers\Api\RwController;
 use App\Http\Controllers\Api\SignatureRequestController;
+use App\Http\Controllers\Api\SignatureResetRequestController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UserPhotoController;
 use App\Http\Controllers\Api\UserSignatureController;
@@ -112,6 +113,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::get('/profile/signature', [UserSignatureController::class, 'show']);
     Route::post('/profile/signature', [UserSignatureController::class, 'store']);
     Route::get('/profile/signature/image', [UserSignatureController::class, 'image']);
+    // Pengajuan reset TTD ke Staf SIDUTama (satu pending per akun).
+    Route::post('/profile/signature/reset-request', [SignatureResetRequestController::class, 'store']);
 
     // Permintaan tanda tangan yang ditujukan ke akun ini (pemilik NIK).
     Route::get('/signature-requests', [SignatureRequestController::class, 'index']);
@@ -510,6 +513,21 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::delete('/{user}/photo', [UserPhotoController::class, 'destroy']);
             Route::patch('/{user}', [UserController::class, 'update']);
             Route::patch('/{user}/toggle-status', [UserController::class, 'updateStatus']);
+        });
+
+    /*
+    |----------------------------------------------------------------------
+    | Pengajuan Reset (TTD)
+    |----------------------------------------------------------------------
+    | Eksklusif Staf SIDUTama; jalur alternatif selain reset langsung di
+    | Manajemen Pengguna. Kesamaan desa diperiksa di service.
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
+        ->prefix('signature-reset-requests')
+        ->group(function () {
+            Route::get('/', [SignatureResetRequestController::class, 'index']);
+            Route::post('/{resetRequest}/approve', [SignatureResetRequestController::class, 'approve']);
+            Route::post('/{resetRequest}/reject', [SignatureResetRequestController::class, 'reject']);
         });
 
     /*

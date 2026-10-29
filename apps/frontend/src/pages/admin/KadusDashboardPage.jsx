@@ -27,12 +27,15 @@ import { getGreeting } from '@/lib/utils/greeting'
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 // ==========================================
 // COMPONENT
 // ==========================================
 
 export default function KadusDashboardPage() {
+  const pageRefresh = useQueryRefresh(['surat'], ['dashboard'])
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -62,7 +65,7 @@ export default function KadusDashboardPage() {
       icon: Mail,
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
-      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.PENDING}`),
+      onClick: () => navigate(`/admin/kadus/surat?status=${SURAT_STATUS.PENDING}`),
     },
 
     {
@@ -72,7 +75,7 @@ export default function KadusDashboardPage() {
       icon: Eye,
       iconBg: 'var(--sid-status-progress-bg)',
       iconColor: 'var(--sid-status-progress-text)',
-      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.IN_PROGRESS}`),
+      onClick: () => navigate(`/admin/kadus/surat?status=${SURAT_STATUS.IN_PROGRESS}`),
     },
 
     {
@@ -82,7 +85,7 @@ export default function KadusDashboardPage() {
       icon: CheckCircle2,
       iconBg: 'var(--sid-status-done-bg)',
       iconColor: 'var(--sid-status-done-text)',
-      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.APPROVED}`),
+      onClick: () => navigate(`/admin/kadus/surat?status=${SURAT_STATUS.APPROVED}`),
     },
 
     {
@@ -92,7 +95,7 @@ export default function KadusDashboardPage() {
       icon: XCircle,
       iconBg: 'var(--sid-status-rejected-bg)',
       iconColor: 'var(--sid-status-rejected-text)',
-      onClick: () => navigate(`/admin/list-kadus?status=${SURAT_STATUS.REJECTED}`),
+      onClick: () => navigate(`/admin/kadus/surat?status=${SURAT_STATUS.REJECTED}`),
     },
   ]
 
@@ -134,7 +137,10 @@ export default function KadusDashboardPage() {
               </p>
             </div>
 
-            <span className="sid-dashboard-date">{hariIni}</span>
+            <div className="flex items-center gap-3">
+              <span className="sid-dashboard-date">{hariIni}</span>
+              <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+            </div>
           </div>
 
           {/* ======================================
@@ -202,6 +208,9 @@ export default function KadusDashboardPage() {
           <p className="sid-page-description">
             Pantau administrasi warga {user?.wilayah_label ?? 'dusun'} secara digital.
           </p>
+          <div className="mt-3">
+            <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+          </div>
 
           {/* ======================================
               STAT CARD

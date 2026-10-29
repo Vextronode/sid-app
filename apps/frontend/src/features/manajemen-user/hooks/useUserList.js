@@ -95,6 +95,7 @@ export function useUserList() {
 
     loading,
     error,
+    reload: loadUsers,
 
     setSearch,
 

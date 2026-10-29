@@ -12,11 +12,12 @@ export function getLetterTrackingState(letter) {
 
   if (status === SURAT_STATUS.REJECTED) {
     const rejectedAtStep = Number(letter?.rejected_at_step)
-    const currentStep = Number.isFinite(rejectedAtStep) && rejectedAtStep > 0
-      ? rejectedAtStep + 1
-      : currentStepOrder > 0
-        ? currentStepOrder + 1
-        : 2
+    const currentStep =
+      Number.isFinite(rejectedAtStep) && rejectedAtStep > 0
+        ? rejectedAtStep + 1
+        : currentStepOrder > 0
+          ? currentStepOrder + 1
+          : 2
 
     return {
       currentStep: Math.min(currentStep, 3),

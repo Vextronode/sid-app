@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Enums\LetterFlowLogReason;
 use App\Models\ApprovalFlow;
 use App\Models\Citizen;
 use App\Models\FlowStep;
@@ -299,7 +300,7 @@ class LetterServiceTest extends TestCase
         Notification::assertSentTo($sekdesUser, LetterStatusNotification::class);
     }
 
-    public function test_create_letter_rolls_back_when_final_step_has_no_eligible_approver(): void
+    public function test_create_letter_is_held_at_final_step_without_an_eligible_approver(): void
     {
         $rt = Rt::factory()->create();
         $citizen = Citizen::factory()->create(['rt_id' => $rt->id]);
@@ -324,18 +325,18 @@ class LetterServiceTest extends TestCase
         Official::factory()->forUser($user)->position('rt')->create(['rt_id' => $rt->id]);
         $this->actingAs($user);
 
-        try {
-            $this->service->createLetter([
-                'letter_type_id' => $letterType->id,
-                'purpose' => 'Keperluan administrasi',
-            ]);
-            $this->fail('The final-step guard must roll back letter creation.');
-        } catch (HttpException $exception) {
-            $this->assertSame(422, $exception->getStatusCode());
-        }
+        // RT pemohon dilewati, tahap final belum punya pejabat: surat ditahan.
+        $letter = $this->service->createLetter([
+            'letter_type_id' => $letterType->id,
+            'purpose' => 'Keperluan administrasi',
+        ]);
 
-        $this->assertDatabaseCount('letters', 0);
-        $this->assertDatabaseCount('letter_status_logs', 0);
+        $this->assertSame(2, $letter->current_step_order);
+        $this->assertSame('in_progress', $letter->status->value);
+        $this->assertDatabaseHas('letter_status_logs', [
+            'letter_id' => $letter->id,
+            'reason' => LetterFlowLogReason::HeldForVacantFinalApprover->value,
+        ]);
     }
 
     public function test_create_letter_rejects_user_without_citizen(): void

@@ -15,12 +15,15 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getGreeting } from '@/lib/utils/greeting'
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 // ==========================================
 // COMPONENT
 // ==========================================
 
 export default function RWDashboardPage() {
+  const pageRefresh = useQueryRefresh(['surat'], ['dashboard'])
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -50,7 +53,7 @@ export default function RWDashboardPage() {
       icon: Mail,
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
-      onClick: () => navigate('/admin/list-rw'),
+      onClick: () => navigate('/admin/rw/surat'),
     },
 
     {
@@ -60,7 +63,7 @@ export default function RWDashboardPage() {
       icon: ShieldCheck,
       iconBg: 'var(--sid-status-progress-bg)',
       iconColor: 'var(--sid-status-progress-text)',
-      onClick: () => navigate('/admin/list-rw?status=in_progress'),
+      onClick: () => navigate('/admin/rw/surat?status=in_progress'),
     },
 
     {
@@ -70,7 +73,7 @@ export default function RWDashboardPage() {
       icon: CheckCircle2,
       iconBg: 'var(--sid-status-done-bg)',
       iconColor: 'var(--sid-status-done-text)',
-      onClick: () => navigate('/admin/list-rw?status=approved'),
+      onClick: () => navigate('/admin/rw/surat?status=approved'),
     },
 
     {
@@ -80,7 +83,7 @@ export default function RWDashboardPage() {
       icon: XCircle,
       iconBg: 'var(--sid-status-rejected-bg)',
       iconColor: 'var(--sid-status-rejected-text)',
-      onClick: () => navigate('/admin/list-rw?status=rejected'),
+      onClick: () => navigate('/admin/rw/surat?status=rejected'),
     },
   ]
 
@@ -122,7 +125,10 @@ export default function RWDashboardPage() {
               </p>
             </div>
 
-            <span className="sid-dashboard-date">{hariIni}</span>
+            <div className="flex items-center gap-3">
+              <span className="sid-dashboard-date">{hariIni}</span>
+              <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+            </div>
           </div>
 
           {/* ======================================
@@ -190,6 +196,9 @@ export default function RWDashboardPage() {
           <p className="sid-page-description">
             Kelola administrasi warga {user?.wilayah_label ?? 'RW'} dengan lebih cepat.
           </p>
+          <div className="mt-3">
+            <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+          </div>
 
           {/* ======================================
               STAT CARD

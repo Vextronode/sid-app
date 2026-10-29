@@ -91,9 +91,17 @@ class DeathReportServiceTest extends TestCase
         $letterId = $this->approve([...$this->payload(), 'almarhum' => $this->mother->id]);
 
         $this->assertNull(Letter::query()->findOrFail($letterId)->letter_number);
+        // Almarhum dihapus dari KK: F-1.02 selalu terbit, F-1.01 hanya bila kepala keluarga.
         $this->actingAs($this->applicant['user'])
             ->getJson("/api/letters/{$letterId}")
-            ->assertJsonPath('data.documents.*.key', ['main']);
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02']);
+
+        // Perubahan KK karena peristiwa penting (bukan KK baru); KK lama dan surat keterangan kematian.
+        $registration = $this->render($letterId, 'f1_02');
+        $this->assertStringContainsString('Peristiwa Penting <b>V</b>', $registration);
+        $this->assertStringContainsString('KK <b>V</b>', $registration);
+        $this->assertStringNotContainsString('Penggantian Kepala Keluarga <b>V</b>', $registration);
+        $this->assertSame(4, preg_match_all('/<b>V<\/b>|xf-circle>V</', $registration));
 
         $form = $this->render($letterId, null);
         $this->assertMatchesRegularExpression($this->boxes('IIS'), $form);
@@ -178,10 +186,21 @@ class DeathReportServiceTest extends TestCase
         // F-1.02: petugas Kasi Pemerintahan dan pemohon.
         $registration = $this->render($letterId, 'f1_02');
         $this->assertSame(2, substr_count($registration, '<img'));
+        // KK baru karena ganti kepala: induk I.A BARU dan IV.A KK ikut tercentang.
+        foreach (['BARU <b>V</b>', 'Penggantian Kepala Keluarga <b>V</b>', 'KK <b>V</b>'] as $mark) {
+            $this->assertStringContainsString($mark, $registration);
+        }
+        $this->assertStringNotContainsString('Peristiwa Penting <b>V</b>', $registration);
         $this->assertStringContainsString("official-signatures/{$this->village->id}/{$this->kasi['official']->id}/", $registration);
 
         // F-1.01: kepala keluarga baru (ibu, tanpa akun) tidak ditempeli TTD.
         $this->assertStringNotContainsString('<img', $this->render($letterId, 'f1_01', landscape: true));
+
+        // Versi TTD basah: dicetak lalu ditandatangani, tanpa gambar TTD.
+        $wetReport = $this->render($letterId, null, template: 'wet');
+        $this->assertStringNotContainsString('<img', $wetReport);
+        $this->assertStringContainsString('( '.$this->kades['citizen']->name.' )', $wetReport);
+        $this->assertStringNotContainsString('<img', $this->render($letterId, 'f1_02', template: 'wet'));
     }
 
     public function test_death_of_the_family_head_requires_a_new_head_and_issues_the_new_family_forms(): void
@@ -219,7 +238,7 @@ class DeathReportServiceTest extends TestCase
         $this->assertArrayNotHasKey('kepala_baru', Letter::query()->findOrFail($letterId)->payload);
         $this->actingAs($this->applicant['user'])
             ->getJson("/api/letters/{$letterId}")
-            ->assertJsonPath('data.documents.*.key', ['main']);
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02']);
     }
 
     public function test_witness_name_comes_from_the_population_data_when_the_nik_is_registered(): void
@@ -235,6 +254,17 @@ class DeathReportServiceTest extends TestCase
             ->getJson('/api/profile/nik-lookup?nik=3207010101800099')
             ->assertJsonPath('data', ['found' => false, 'has_account' => false, 'name' => null, 'family_number' => null, 'is_self' => false]);
         $this->actingAs($this->applicant['user'])->getJson('/api/profile/nik-lookup?nik=123')->assertUnprocessable();
+
+        // Warga nonaktif (mis. almarhum) hanya ditemukan bila diminta.
+        $witness->update(['is_active' => false]);
+        $this->actingAs($this->applicant['user'])
+            ->getJson('/api/profile/nik-lookup?nik=3207010101800009')
+            ->assertJsonPath('data.found', false);
+        $this->actingAs($this->applicant['user'])
+            ->getJson('/api/profile/nik-lookup?nik=3207010101800009&include_inactive=1')
+            ->assertJsonPath('data.found', true)
+            ->assertJsonPath('data.name', 'Ujang Saksi');
+        $witness->update(['is_active' => true]);
 
         // NIK terdaftar: nama dan No. KK diambil dari data penduduk.
         $payload = [...$this->payload(), 'almarhum' => $this->mother->id, 'nik_saksi_1' => $witness->nik, 'nama_saksi_1' => 'Nama Lain'];
@@ -366,7 +396,7 @@ class DeathReportServiceTest extends TestCase
         return $letterId;
     }
 
-    private function render(string $letterId, ?string $document, bool $landscape = false): string
+    private function render(string $letterId, ?string $document, bool $landscape = false, string $template = 'digital'): string
     {
         $rendered = null;
         $pdf = Mockery::mock(DomPdf::class);
@@ -378,7 +408,7 @@ class DeathReportServiceTest extends TestCase
 
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with('pdf.templates.digital', Mockery::on(function (array $data) use (&$rendered): bool {
+            ->with("pdf.templates.{$template}", Mockery::on(function (array $data) use (&$rendered): bool {
                 $rendered = $data['template'];
 
                 return true;
@@ -387,7 +417,7 @@ class DeathReportServiceTest extends TestCase
 
         $query = $document === null ? '' : "&document={$document}";
         $this->actingAs($this->applicant['user'])
-            ->get("/api/letters/{$letterId}/download?template=digital{$query}")
+            ->get("/api/letters/{$letterId}/download?template={$template}{$query}")
             ->assertOk();
 
         return (string) $rendered;

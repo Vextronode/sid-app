@@ -68,7 +68,7 @@ export function PengajuanSuratPage() {
 
     // Toast tetap tampil setelah pindah ke daftar surat.
     notifySuccess('Permohonan surat berhasil dikirim.')
-    navigate('/daftar-surat')
+    navigate('/surat-saya')
   }
 
   return (

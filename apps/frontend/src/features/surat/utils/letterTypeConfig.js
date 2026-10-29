@@ -14,6 +14,13 @@ function normalizeField(field) {
     accept: field.type === 'file' ? fileAccept(field) : undefined,
     imageOnly: field.type === 'file' && field.accept === 'image',
     multiple: false,
+    // Tanggal peristiwa yang sudah terjadi: tidak sesudah hari ini.
+    past: Boolean(field.past),
+    // Batas waktu pelaporan peristiwa ({ days, event, when }): peringatan saja.
+    reportDeadline: field.report_deadline ?? null,
+    // Angka: bilangan bulat dan batas bawah (mis. penghasilan rupiah).
+    integer: Boolean(field.integer),
+    minValue: field.min_value ?? null,
     visibleWhen: field.visible_when ?? null,
     // Keterangan singkat di bawah label isian.
     help: field.help ?? null,
@@ -34,12 +41,17 @@ function normalizeField(field) {
     // Nilai diturunkan dari data pemohon ({ column, map }), mis. peran
     // suami/istri dari jenis kelamin; ditanyakan bila datanya kosong.
     fromApplicant: field.from_applicant ?? null,
+    // Nilai awal dari kolom data penduduk pemohon (mis. occupation_id,
+    // rt_id); tetap dapat diubah.
+    prefillFromApplicant: field.prefill_from_applicant ?? null,
     // Isian NIK saksi (label slotnya) dan isian NIK yang tidak boleh sama
     // dengannya (saksi lainnya, pihak dalam surat).
     witness: field.witness ?? null,
     notSameAs: Array.isArray(field.not_same_as) ? field.not_same_as : [],
     // Isian NIK opsional: pasangan from_nik-nya diketik bila NIK kosong.
     typedWhenEmpty: Boolean(field.typed_when_empty),
+    // Isian NIK yang juga mencari warga nonaktif (mis. almarhum).
+    includeInactive: Boolean(field.include_inactive),
     // Isian nama yang diisi otomatis dari NIK di isian ini.
     fromNik: field.from_nik ?? null,
     // Data yang diambil dari NIK: nama (bawaan) atau No. KK.
@@ -84,6 +96,17 @@ export function applicantValues(fields, user) {
     fields
       .map((field) => [field.name, applicantValue(field, user)])
       .filter(([, value]) => value !== null),
+  )
+}
+
+/** Nilai awal form untuk isian `prefillFromApplicant` yang datanya ada. */
+export function applicantPrefill(fields, user) {
+  return Object.fromEntries(
+    fields
+      .filter((field) => field.prefillFromApplicant)
+      .map((field) => [field.name, user?.citizen?.[field.prefillFromApplicant]])
+      .filter(([, value]) => value !== null && value !== undefined && value !== '')
+      .map(([name, value]) => [name, String(value)]),
   )
 }
 

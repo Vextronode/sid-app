@@ -29,12 +29,15 @@ import { SURAT_STATUS } from '@/constants/suratStatus'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 // ==========================================
 // COMPONENT
 // ==========================================
 
 export default function KadesDashboardPage() {
+  const pageRefresh = useQueryRefresh(['surat'], ['dashboard'])
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -65,7 +68,7 @@ export default function KadesDashboardPage() {
       icon: ClipboardList,
       iconBg: 'var(--sid-status-pending-bg)',
       iconColor: 'var(--sid-status-pending-text)',
-      onClick: () => navigate(`/admin/list-kades?status=${SURAT_STATUS.PENDING}`),
+      onClick: () => navigate(`/admin/kades/surat?status=${SURAT_STATUS.PENDING}`),
     },
 
     {
@@ -75,7 +78,7 @@ export default function KadesDashboardPage() {
       icon: Eye,
       iconBg: 'var(--sid-status-progress-bg)',
       iconColor: 'var(--sid-status-progress-text)',
-      onClick: () => navigate(`/admin/list-kades?status=${SURAT_STATUS.IN_PROGRESS}`),
+      onClick: () => navigate(`/admin/kades/surat?status=${SURAT_STATUS.IN_PROGRESS}`),
     },
 
     {
@@ -85,7 +88,7 @@ export default function KadesDashboardPage() {
       icon: CheckCircle2,
       iconBg: 'var(--sid-status-done-bg)',
       iconColor: 'var(--sid-status-done-text)',
-      onClick: () => navigate(`/admin/list-kades?status=${SURAT_STATUS.APPROVED}`),
+      onClick: () => navigate(`/admin/kades/surat?status=${SURAT_STATUS.APPROVED}`),
     },
 
     {
@@ -95,7 +98,7 @@ export default function KadesDashboardPage() {
       icon: XCircle,
       iconBg: 'var(--sid-status-rejected-bg)',
       iconColor: 'var(--sid-status-rejected-text)',
-      onClick: () => navigate(`/admin/list-kades?status=${SURAT_STATUS.REJECTED}`),
+      onClick: () => navigate(`/admin/kades/surat?status=${SURAT_STATUS.REJECTED}`),
     },
   ]
 
@@ -138,6 +141,7 @@ export default function KadesDashboardPage() {
             <div className="flex items-center gap-3">
               {stats.overdue > 0 && <OverdueBadge isOverdue count={stats.overdue} />}
               <span className="sid-dashboard-date">{hariIni}</span>
+              <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
             </div>
           </div>
 
@@ -205,6 +209,9 @@ export default function KadesDashboardPage() {
           </h1>
 
           <p className="sid-page-description">Kelola administrasi desa secara digital.</p>
+          <div className="mt-3">
+            <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+          </div>
           {stats.overdue > 0 && (
             <div className="mt-3">
               <OverdueBadge isOverdue count={stats.overdue} />

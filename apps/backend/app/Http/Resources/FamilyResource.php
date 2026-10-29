@@ -23,13 +23,11 @@ class FamilyResource extends JsonResource
             'rt_id' => $this->rt_id,
             'rw_id' => $this->rw_id,
             'hamlet_id' => $this->hamlet_id,
-            'head_of_family_id' => $this->head_of_family_id,
             'head_of_family' => $this->when(
-                ($this->relationLoaded('headOfFamily') && $this->headOfFamily)
-                    || ($this->relationLoaded('headMember') && $this->headMember),
+                $this->relationLoaded('headMember') && $this->headMember,
                 fn () => [
-                    'id' => ($this->headOfFamily ?? $this->headMember)->id,
-                    'name' => ($this->headOfFamily ?? $this->headMember)->name,
+                    'id' => $this->headMember->id,
+                    'name' => $this->headMember->name,
                 ]
             ),
             'members_count' => $this->members_count

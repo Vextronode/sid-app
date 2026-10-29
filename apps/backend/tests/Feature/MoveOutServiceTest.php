@@ -22,7 +22,8 @@ use Tests\TestCase;
 
 /**
  * F03 Pindah Keluar: F-1.03 (utama, semua bagian formulir asli selalu
- * tercetak), dan F-1.02 bila ada anggota KK yang tetap tinggal; setelah
+ * tercetak), F-1.02 bila ada anggota KK yang tetap tinggal, dan F-1.01
+ * susunan KK yang tinggal bila kepala keluarga ikut pindah; setelah
  * surat pindah diunggah dan diterima, Terapkan menonaktifkan anggota yang
  * pindah. Orang asing (SKTT) diajukan warga sebagai perantara.
  */
@@ -248,6 +249,20 @@ class MoveOutServiceTest extends TestCase
         $this->assertArrayNotHasKey('kepala_baru', Letter::query()->findOrFail($memberOnly)->payload);
 
         $letterId = $this->approve([...$headMoves, 'kepala_baru' => $this->wife->id]);
+
+        // KK yang tinggal berganti kepala: F-1.02 penggantian kepala keluarga
+        // dan F-1.01 susunan KK yang tinggal, kepala baru di baris pertama.
+        $this->actingAs($this->applicant['user'])
+            ->getJson("/api/letters/{$letterId}")
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02', 'f1_01']);
+        $this->assertStringContainsString('Penggantian Kepala Keluarga <b>V</b>', $this->render($letterId, 'f1_02'));
+        $biodata = $this->render($letterId, 'f1_01', landscape: true);
+        $this->assertMatchesRegularExpression('/>Iis Nurhayati<.*>Kepala Keluarga</s', $biodata);
+        $this->assertStringContainsString('>1<', $biodata);
+        foreach (['Asep Hidayat', 'Asti Nurfadilah'] as $mover) {
+            $this->assertStringNotContainsString(">{$mover}<", $biodata);
+        }
+
         $this->acceptResult($letterId);
 
         $this->actingAs($this->kasi['user'])
@@ -324,10 +339,15 @@ class MoveOutServiceTest extends TestCase
         return $letterId;
     }
 
-    private function render(string $letterId, ?string $document): string
+    private function render(string $letterId, ?string $document, bool $landscape = false): string
     {
         $rendered = null;
         $pdf = Mockery::mock(DomPdf::class);
+
+        if ($landscape) {
+            $pdf->shouldReceive('setPaper')->once()->with('a4', 'landscape')->andReturnSelf();
+        }
+
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()

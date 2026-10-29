@@ -21,14 +21,14 @@ vi.mock('@/features/auth/hooks/useLogoutToBeranda', () => ({
 }))
 
 const MENU = [
-  { label: 'Beranda', path: '/admin/dashboard-surat-rt' },
-  { label: 'Surat Warga', path: '/admin/list-rt' },
+  { label: 'Beranda', path: '/admin/rt' },
+  { label: 'Surat Warga', path: '/admin/rt/surat' },
 ]
 
 const renderHeader = (props = {}) => {
   const utils = render(
-    <MemoryRouter initialEntries={['/admin/list-rt']}>
-      <AppHeader menuItems={MENU} profilePath="/admin/profile" {...props} />
+    <MemoryRouter initialEntries={['/admin/rt/surat']}>
+      <AppHeader menuItems={MENU} profilePath="/admin/profil" {...props} />
     </MemoryRouter>,
   )
   return {
@@ -65,10 +65,7 @@ describe('AppHeader', () => {
   it('lists the role menu and marks the current page', () => {
     const { desktopNav } = renderHeader()
 
-    expect(desktopNav.getByRole('link', { name: 'Beranda' })).toHaveAttribute(
-      'href',
-      '/admin/dashboard-surat-rt',
-    )
+    expect(desktopNav.getByRole('link', { name: 'Beranda' })).toHaveAttribute('href', '/admin/rt')
     expect(desktopNav.getByRole('link', { name: 'Surat Warga' })).toHaveAttribute(
       'aria-current',
       'page',
@@ -98,7 +95,7 @@ describe('AppHeader', () => {
 
     expect(within(panel).getByRole('link', { name: 'Profil Saya' })).toHaveAttribute(
       'href',
-      '/admin/profile',
+      '/admin/profil',
     )
     expect(logout.handleLogout).toHaveBeenCalledOnce()
   })

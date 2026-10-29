@@ -12,8 +12,11 @@ import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 import SuratDateTracker from '@/features/warga-surat/components/SuratDateTracker'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 export default function JenisSuratPage() {
+  const pageRefresh = useQueryRefresh(['surat'])
   const navigate = useNavigate()
   const { summary, loading } = useSuratSummaryQuery({ scope: 'mine' })
 
@@ -29,12 +32,15 @@ export default function JenisSuratPage() {
             HEADER
         ========================================== */}
 
-        <div className="sid-surat-header">
-          <h1 className="sid-page-title">Surat Saya</h1>
+        <div className="sid-surat-header sid-dashboard-header">
+          <div>
+            <h1 className="sid-page-title">Surat Saya</h1>
 
-          <p className="sid-page-description">
-            Pantau semua permohonan surat yang pernah Anda ajukan.
-          </p>
+            <p className="sid-page-description">
+              Pantau semua permohonan surat yang pernah Anda ajukan.
+            </p>
+          </div>
+          <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
         </div>
 
         {/* ==========================================
@@ -46,7 +52,7 @@ export default function JenisSuratPage() {
 
           <button
             type="button"
-            onClick={() => navigate('/daftar-surat-saya')}
+            onClick={() => navigate('/surat-saya/daftar')}
             className="sid-surat-stat-card"
           >
             <div className="sid-surat-stat-content">
@@ -64,7 +70,7 @@ export default function JenisSuratPage() {
 
           <button
             type="button"
-            onClick={() => navigate('/daftar-surat-saya?status=approved')}
+            onClick={() => navigate('/surat-saya/daftar?status=approved')}
             className="sid-surat-stat-card"
           >
             <div className="sid-surat-stat-content">
@@ -84,7 +90,7 @@ export default function JenisSuratPage() {
 
           <button
             type="button"
-            onClick={() => navigate('/daftar-surat-saya?status=ditolak')}
+            onClick={() => navigate('/surat-saya/daftar?status=ditolak')}
             className="sid-surat-stat-card"
           >
             <div className="sid-surat-stat-content">

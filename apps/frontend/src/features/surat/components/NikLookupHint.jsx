@@ -9,7 +9,13 @@ import { lookupNik } from '../api/letterExtrasApi'
  * `witness`: label pihak yang diminta persetujuannya (mis. Saksi I);
  * `conflict`: pesan bila NIK ini tidak boleh dipakai (mis. saksi = pemohon).
  */
-export function NikLookupHint({ nik, onResult, witness = null, conflict = null }) {
+export function NikLookupHint({
+  nik,
+  onResult,
+  witness = null,
+  conflict = null,
+  includeInactive = false,
+}) {
   const [result, setResult] = useState({ nik: '', status: 'idle', name: '' })
   const complete = /^\d{16}$/.test(nik ?? '')
   const current =
@@ -24,7 +30,7 @@ export function NikLookupHint({ nik, onResult, witness = null, conflict = null }
 
     let active = true
 
-    lookupNik(nik)
+    lookupNik(nik, { includeInactive })
       .then((data) => {
         if (!active) return
         const next = {

@@ -99,10 +99,10 @@ describe('BerandaHeader', () => {
       expect(desktopNav.getByRole('link', { name: 'Beranda' })).toHaveAttribute('href', '/')
       expect(desktopNav.getByRole('link', { name: 'Berita' })).toHaveAttribute('href', '/berita')
       expect(desktopNav.getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '/#kontak')
-      expect(desktopNav.getByRole('link', { name: 'Masuk' })).toHaveAttribute('href', '/loginpage')
+      expect(desktopNav.getByRole('link', { name: 'Masuk' })).toHaveAttribute('href', '/login')
     })
 
-    // Sudah login: tombol akun menuju dashboard (lewat GuestRoute di /loginpage).
+    // Sudah login: tombol akun menuju dashboard (lewat GuestRoute di /login).
     it('shows "Dashboard Saya" instead of "Masuk" for a logged-in user', async () => {
       useAuth.mockReturnValue({ user: { role: 'staf_sid' }, isLoading: false })
       const user = userEvent.setup()
@@ -110,14 +110,14 @@ describe('BerandaHeader', () => {
 
       expect(desktopNav.getByRole('link', { name: 'Dashboard Saya' })).toHaveAttribute(
         'href',
-        '/loginpage',
+        '/login',
       )
       expect(desktopNav.queryByRole('link', { name: 'Masuk' })).toBeNull()
 
       await user.click(mobileMenu.getByRole('button', { name: 'Menu' }))
       expect(mobileMenu.getByRole('link', { name: 'Dashboard Saya' })).toHaveAttribute(
         'href',
-        '/loginpage',
+        '/login',
       )
     })
 
@@ -412,7 +412,7 @@ describe('BerandaHeader', () => {
       )
       expect(list.getByText('Transparansi APBDes')).toBeVisible()
       expect(list.getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '/#kontak')
-      expect(list.getByRole('link', { name: 'Masuk' })).toHaveAttribute('href', '/loginpage')
+      expect(list.getByRole('link', { name: 'Masuk' })).toHaveAttribute('href', '/login')
     })
 
     it('closes on Escape and returns focus to the Menu button', async () => {

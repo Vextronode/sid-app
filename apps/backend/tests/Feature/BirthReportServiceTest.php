@@ -88,7 +88,7 @@ class BirthReportServiceTest extends TestCase
         $this->assertNull(Letter::query()->findOrFail($letterId)->letter_number);
         $this->actingAs($this->applicant['user'])
             ->getJson("/api/letters/{$letterId}")
-            ->assertJsonPath('data.documents.*.key', ['main']);
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02', 'f1_01']);
 
         $form = $this->render($letterId, null);
         $this->assertStringContainsString('FORMULIR PELAPORAN PENCATATAN SIPIL', $form);
@@ -104,7 +104,44 @@ class BirthReportServiceTest extends TestCase
         $this->assertStringContainsString('( Engkos Sutisna )', $form);
     }
 
-    public function test_birth_without_certificate_and_with_acknowledgement_issues_f2_03_and_f2_10(): void
+    public function test_the_child_joins_the_family_card_through_f1_02_and_f1_01(): void
+    {
+        $this->mother->update(['religion' => 'islam']);
+        $letterId = $this->approve([...$this->payload(), 'ayah' => $this->applicant['citizen']->id]);
+
+        // F-1.02: perubahan KK karena peristiwa penting; lampiran KK lama,
+        // bukti peristiwa penting (surat keterangan lahir), dan buku nikah.
+        $registration = $this->render($letterId, 'f1_02');
+        $this->assertStringContainsString('Peristiwa Penting <b>V</b>', $registration);
+        $this->assertSame(3, preg_match_all('/xf-circle>V</', $registration));
+
+        // F-1.01: susunan KK pemohon, anak di baris terakhir.
+        $biodata = $this->render($letterId, 'f1_01', landscape: true);
+        foreach (['>Engkos Sutisna<', '>Ika Asmaulatipah<', '>Syfa Wijayanti<', '1 Oktober 2026', '>Belum Kawin<', '>Tidak/Belum Sekolah<', '>Belum/Tidak Bekerja<', '>3<'] as $value) {
+            $this->assertStringContainsString($value, $biodata);
+        }
+        // Orang tua anak: ibu dan ayah dari KK, agama mengikuti ibu.
+        $this->assertSame(1, substr_count($biodata, '>3207285106880002<'));
+        $this->assertStringContainsString('>3207241105800001<', $biodata);
+        $this->assertStringContainsString('>Islam<', $biodata);
+    }
+
+    public function test_father_outside_the_family_is_printed_from_the_typed_fields_in_f1_01(): void
+    {
+        $letterId = $this->approve([
+            ...$this->payload(),
+            'nama_ayah' => 'Asep Hidayat',
+            'nik_ayah' => '3207010202850009',
+            'tempat_lahir_ayah' => 'Ciamis',
+            'tanggal_lahir_ayah' => '1985-02-03',
+        ]);
+
+        $biodata = $this->render($letterId, 'f1_01', landscape: true);
+        $this->assertStringContainsString('>Asep Hidayat<', $biodata);
+        $this->assertStringContainsString('>3207010202850009<', $biodata);
+    }
+
+    public function test_birth_without_certificate_to_unrecorded_parents_issues_f2_03_and_f2_04(): void
     {
         $letterId = $this->approve([
             ...$this->payload(),
@@ -115,7 +152,7 @@ class BirthReportServiceTest extends TestCase
             'nama_penolong' => 'Bidan Rina',
             'pekerjaan_penolong' => 'Bidan',
             'alamat_penolong' => 'Dusun Budiasih',
-            'pengakuan_ayah' => 'ya',
+            'perkawinan_ortu' => 'belum_tercatat',
             'pekerjaan_ayah' => 'lainnya',
             'pekerjaan_ayah_lainnya' => 'buruh tani',
             'alamat_ayah' => 'Dusun Sinargalih',
@@ -123,7 +160,7 @@ class BirthReportServiceTest extends TestCase
 
         $this->actingAs($this->applicant['user'])
             ->getJson("/api/letters/{$letterId}")
-            ->assertJsonPath('data.documents.*.key', ['main', 'f2_03', 'f2_10']);
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02', 'f1_01', 'f2_03', 'f2_04']);
 
         // Ayah di luar KK memakai isian ketik.
         $this->assertMatchesRegularExpression($this->boxes('ASEP'), $this->render($letterId, null));
@@ -135,12 +172,18 @@ class BirthReportServiceTest extends TestCase
         $this->assertStringContainsString('Bidan Rina', $statement);
         $this->assertStringContainsString('( Saksi Satu )', $statement);
 
-        $acknowledgement = $this->render($letterId, 'f2_10');
-        $this->assertStringContainsString('PENGAKUAN ANAK', $acknowledgement);
-        $this->assertStringContainsString('Asep Hidayat', $acknowledgement);
-        $this->assertStringContainsString('Ciamis, 3 Februari 1985', $acknowledgement);
-        $this->assertStringContainsString('Buruh Tani', $acknowledgement);
-        $this->assertStringContainsString('Dusun Sinargalih', $acknowledgement);
+        // F-2.04: ibu bayi menyatakan ayah (diketik) adalah suaminya.
+        $spouse = $this->render($letterId, 'f2_04');
+        $this->assertStringContainsString('KEBENARAN SEBAGAI PASANGAN SUAMI ISTERI', $spouse);
+        $this->assertStringContainsString('adalah suami dari :', $spouse);
+        $this->assertStringContainsString('>Ika Asmaulatipah<', $spouse);
+        $this->assertStringContainsString('>Asep Hidayat<', $spouse);
+        $this->assertStringContainsString('Ciamis, 3 Februari 1985', $spouse);
+        $this->assertStringContainsString('Buruh Tani', $spouse);
+        $this->assertStringContainsString('Dusun Sinargalih', $spouse);
+
+        // F-1.02: lampiran SPTJM (bukan buku nikah).
+        $this->assertSame(3, preg_match_all('/xf-circle>V</', $this->render($letterId, 'f1_02')));
     }
 
     public function test_mother_must_be_a_female_and_father_a_male_family_member(): void
@@ -189,6 +232,26 @@ class BirthReportServiceTest extends TestCase
         // Ibu (anggota KK, lahir 1988) sesudah bayi lahir.
         $submit(['ayah' => $this->applicant['citizen']->id, 'tanggal_lahir_anak' => '1980-01-01'])
             ->assertJsonValidationErrors(['payload.tanggal_lahir_anak' => 'Tanggal Lahir Anak tidak boleh sebelum tanggal lahir ibu.']);
+        // Bayi belum lahir (hari ini 12 Oktober 2026), begitu pula tanggal akta.
+        $submit(['ayah' => $this->applicant['citizen']->id, 'tanggal_lahir_anak' => '2026-10-13'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.tanggal_lahir_anak' => 'Tanggal Lahir Anak tidak boleh sesudah hari ini.']);
+        $submit(['ayah' => $this->applicant['citizen']->id, 'tanggal_lahir_anak' => '2026-10-12'])->assertCreated();
+    }
+
+    public function test_only_planned_dates_may_be_in_the_future(): void
+    {
+        $future = collect(LetterType::query()->where('code', 'like', 'F%')->get())
+            ->flatMap(fn (LetterType $type) => collect($type->form_fields)
+                ->flatMap(fn (array $field) => [$field, ...($field['fields'] ?? [])])
+                ->filter(fn (array $field) => ($field['type'] ?? null) === 'date' && ! ($field['past'] ?? false))
+                ->pluck('name'))
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        $this->assertSame(['rencana_tanggal_pindah', 'tanggal_itas'], $future);
     }
 
     public function test_birth_time_must_come_from_the_time_input(): void
@@ -265,7 +328,7 @@ class BirthReportServiceTest extends TestCase
             'nama_saksi_2' => 'Saksi Dua',
             'nik_saksi_2' => '3207010101800002',
             'surat_lahir' => 'ada',
-            'pengakuan_ayah' => 'tidak',
+            'perkawinan_ortu' => 'tercatat',
         ];
     }
 
@@ -289,10 +352,15 @@ class BirthReportServiceTest extends TestCase
         return $letterId;
     }
 
-    private function render(string $letterId, ?string $document): string
+    private function render(string $letterId, ?string $document, bool $landscape = false): string
     {
         $rendered = null;
         $pdf = Mockery::mock(DomPdf::class);
+
+        if ($landscape) {
+            $pdf->shouldReceive('setPaper')->once()->with('a4', 'landscape')->andReturnSelf();
+        }
+
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()

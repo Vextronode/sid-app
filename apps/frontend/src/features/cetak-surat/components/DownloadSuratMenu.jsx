@@ -4,10 +4,13 @@
 // - digital: TTD Kepala Desa + stempel desa tercetak di surat
 // - wet: area tanda tangan kosong, untuk dicetak lalu ditandatangani
 //   dan distempel basah
-// Formulir tanpa TTD Kepala Desa hanya punya satu format. Dokumen yang
-// terbit bersama (surat.documents) ikut menjadi pilihan menu; bila hanya
-// ada satu pilihan, tombolnya langsung mengunduh. Baris tabel tidak membawa
-// daftar dokumen, jadi `loadDetail` memuat rincian surat saat tombol ditekan.
+// Formulir pelayanan (tanpa TTD Kepala Desa) juga punya dua format: TTD
+// digital (TTD pemohon dan pihak terkait dari akun tercetak) atau TTD basah
+// (dikosongkan). Satu dokumen: kedua format langsung menjadi pilihan;
+// beberapa dokumen (surat.documents): format dipilih di atas daftar
+// dokumen. Dokumen yang terbit bersama surat desa ikut menjadi pilihan menu.
+// Baris tabel tidak membawa daftar dokumen, jadi `loadDetail` memuat
+// rincian surat saat tombol ditekan.
 // ==========================================
 
 import '@/styles/surat-dokumen.css'
@@ -39,10 +42,26 @@ const FORMAT_OPTIONS = [
   },
 ]
 
-function documentOption(document, hint) {
+// Format formulir pelayanan.
+const FORM_FORMATS = [
+  {
+    key: 'digital',
+    icon: Stamp,
+    label: 'TTD digital',
+    hint: 'TTD pemohon dan pihak terkait dari akun tercetak',
+  },
+  {
+    key: 'wet',
+    icon: PenLine,
+    label: 'TTD basah',
+    hint: 'Tanpa TTD, dicetak lalu ditandatangani',
+  },
+]
+
+function documentOption(document, hint, template = 'digital') {
   return {
     key: `document-${document.key}`,
-    template: 'digital',
+    template,
     documentKey: document.key,
     icon: FileText,
     label: document.title,
@@ -50,17 +69,37 @@ function documentOption(document, hint) {
   }
 }
 
-function downloadOptions(surat) {
+function formDocuments(surat) {
+  const documents = surat?.documents ?? []
+  const main = documents.find((document) => document.key === MAIN_DOCUMENT) ?? {
+    key: MAIN_DOCUMENT,
+    title: 'Formulir',
+  }
+
+  return [main, ...documents.filter((document) => document.key !== MAIN_DOCUMENT)]
+}
+
+// Formulir pelayanan berisi beberapa dokumen: format dipilih terpisah.
+function hasFormatChoice(surat) {
+  return !isSignedByVillageHead(surat) && formDocuments(surat).length > 1
+}
+
+function downloadOptions(surat, format = 'digital') {
   const documents = surat?.documents ?? []
   const extras = documents.filter((document) => document.key !== MAIN_DOCUMENT)
 
   if (!isSignedByVillageHead(surat)) {
-    const main = documents.find((document) => document.key === MAIN_DOCUMENT) ?? {
-      key: MAIN_DOCUMENT,
-      title: 'Formulir',
+    const forms = formDocuments(surat)
+
+    if (forms.length === 1) {
+      return FORM_FORMATS.map((option) => ({
+        ...option,
+        template: option.key,
+        documentKey: forms[0].key,
+      }))
     }
 
-    return [main, ...extras].map((document) => documentOption(document, 'Formulir untuk instansi'))
+    return forms.map((document) => documentOption(document, 'Formulir untuk instansi', format))
   }
 
   return [
@@ -85,6 +124,7 @@ export function DownloadSuratMenu({
   const [detail, setDetail] = useState(null)
   const current = detail ?? surat
   const [position, setPosition] = useState(null)
+  const [format, setFormat] = useState('digital')
 
   const buttonRef = useRef(null)
   const menuRef = useRef(null)
@@ -111,7 +151,7 @@ export function DownloadSuratMenu({
       return
     }
 
-    menuRef.current?.querySelector('[role="menuitem"]')?.focus()
+    menuRef.current?.querySelector('[role^="menuitem"]')?.focus()
 
     const close = () => setOpen(false)
     const onPointerDown = (event) => {
@@ -130,7 +170,7 @@ export function DownloadSuratMenu({
 
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault()
-        const items = [...(menuRef.current?.querySelectorAll('[role="menuitem"]') ?? [])]
+        const items = [...(menuRef.current?.querySelectorAll('[role^="menuitem"]') ?? [])]
         const index = items.indexOf(document.activeElement)
         const next = event.key === 'ArrowDown' ? index + 1 : index - 1
         items[(next + items.length) % items.length]?.focus()
@@ -150,8 +190,8 @@ export function DownloadSuratMenu({
     }
   }, [open])
 
-  const options = downloadOptions(current)
-  const triggerLabel = isSignedByVillageHead(current) ? label : 'Unduh formulir'
+  const options = downloadOptions(current, format)
+  const triggerLabel = label
 
   const handleSelect = async (option, target = current) => {
     setOpen(false)
@@ -263,6 +303,25 @@ export function DownloadSuratMenu({
             visibility: position ? 'visible' : 'hidden',
           }}
         >
+          {hasFormatChoice(current) && (
+            <div className="sid-download-format" role="group" aria-label="Format tanda tangan">
+              {FORM_FORMATS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={format === option.key}
+                  title={option.hint}
+                  className="sid-download-format-option"
+                  onClick={() => setFormat(option.key)}
+                >
+                  <option.icon size={14} aria-hidden="true" />
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {options.map((option) => {
             const { icon: Icon, label: optionLabel, hint } = option
 

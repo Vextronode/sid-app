@@ -25,7 +25,6 @@ class Family extends Model
         'rt_id',
         'rw_id',
         'hamlet_id',
-        'head_of_family_id',
     ];
 
     protected $casts = [
@@ -68,11 +67,8 @@ class Family extends Model
         return $this->belongsTo(Hamlet::class);
     }
 
-    public function headOfFamily(): BelongsTo
-    {
-        return $this->belongsTo(Citizen::class, 'head_of_family_id');
-    }
-
+    // Kepala KK = anggota aktif ber-SHDK Kepala Keluarga (satu sumber, ikut
+    // berubah saat susunan KK diubah lewat Data Penduduk maupun Terapkan).
     public function headMember(): HasOne
     {
         return $this->hasOne(Citizen::class, 'family_id')

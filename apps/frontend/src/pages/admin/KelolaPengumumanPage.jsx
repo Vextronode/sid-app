@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { getBerandaContent } from '@/features/beranda/berandaContent'
 import { AnnouncementBar } from '@/features/beranda/components/AnnouncementBar'
 import { formatAnnouncementUntil } from '@/features/beranda/utils/announcement'
@@ -528,6 +529,10 @@ export default function KelolaPengumumanPage() {
               Satu pengumuman singkat di bagian paling atas beranda, tampil selama waktu yang Anda
               tentukan.
             </p>
+          </div>
+
+          <div className="sid-kelola-wilayah-header-actions">
+            <RefreshButton onRefresh={load} disabled={processing} />
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 // ==========================================
 // ResetPasswordPage.jsx
-// Tujuan tautan reset dari email: /password-reset/:token?email=...
+// Tujuan tautan reset dari email: /reset-password/:token?email=...
 // ==========================================
 
 import { useState } from 'react'
@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
         password_confirmation: confirmation,
       })
       setSuccess(true)
-      setTimeout(() => navigate('/loginpage', { replace: true }), 1500)
+      setTimeout(() => navigate('/login', { replace: true }), 1500)
     } catch (err) {
       setError(firstMessage(err, 'Kata sandi gagal diatur ulang.'))
     } finally {
@@ -157,7 +157,7 @@ export default function ResetPasswordPage() {
 
         <div className="border-t mt-6 pt-4 text-center">
           <Link
-            to="/lupa-password"
+            to="/forgot-password"
             className="text-sm text-[#163e6b] font-medium hover:underline flex items-center justify-center gap-1"
           >
             <ArrowLeft size={14} /> Minta tautan baru

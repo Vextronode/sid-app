@@ -5,10 +5,13 @@ namespace App\Services;
 use App\Enums\OfficialPosition;
 use App\Enums\UserRole;
 use App\Models\Official;
+use App\Models\SignatureResetRequest;
 use App\Models\User;
 use App\Models\UserSignature;
+use App\Notifications\SignatureResetNotification;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
@@ -132,14 +135,19 @@ class UserSignatureService
             abort(404, 'Akun ini belum memiliki tanda tangan.');
         }
 
-        $signature->update([
-            'revoked_at' => now(),
-            'revoked_by' => $actor->id,
-            'revoke_reason' => $reason,
-        ]);
+        DB::transaction(function () use ($actor, $target, $signature, $reason): void {
+            $signature->update([
+                'revoked_at' => now(),
+                'revoked_by' => $actor->id,
+                'revoke_reason' => $reason,
+            ]);
 
-        // TTD yang dicabut tidak boleh terus dipakai jabatannya.
-        $this->syncActiveOfficials($target);
+            // TTD yang dicabut tidak boleh terus dipakai jabatannya.
+            $this->syncActiveOfficials($target);
+
+            // Reset lewat Manajemen Pengguna juga menjawab pengajuan reset.
+            $this->closeResetRequests($actor, $target);
+        });
 
         activity('user_signature')
             ->performedOn($target)
@@ -150,6 +158,31 @@ class UserSignatureService
                 'reason' => $reason,
             ])
             ->log('Tanda tangan akun direset');
+    }
+
+    /**
+     * Tandai pengajuan reset pending milik akun sebagai disetujui dan
+     * beri tahu pemiliknya bahwa TTD dapat diisi kembali.
+     */
+    public function closeResetRequests(User $actor, User $target): void
+    {
+        $closed = SignatureResetRequest::query()
+            ->where('user_id', $target->id)
+            ->where('status', SignatureResetRequest::STATUS_PENDING)
+            ->update([
+                'status' => SignatureResetRequest::STATUS_APPROVED,
+                'handled_by' => $actor->id,
+                'handled_at' => now(),
+            ]);
+
+        if ($closed > 0) {
+            $target->notify(new SignatureResetNotification(
+                'Pengajuan Reset Tanda Tangan Disetujui',
+                'Tanda tangan Anda telah diatur ulang. Silakan isi tanda tangan baru di halaman profil.',
+                'signature_reset_approved',
+                'green',
+            ));
+        }
     }
 
     public function imageResponse(UserSignature $signature): Response

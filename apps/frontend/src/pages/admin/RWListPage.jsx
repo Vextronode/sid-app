@@ -27,8 +27,11 @@ import { SURAT_STATUS_OPTIONS } from '@/constants/suratStatus'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 export default function RWListPage() {
+  const pageRefresh = useQueryRefresh(['surat'])
   const [searchParams] = useSearchParams()
 
   const initialStatus = searchParams.get('status') ?? ''
@@ -97,11 +100,16 @@ export default function RWListPage() {
             Admin / <span>Daftar Permohonan Surat</span>
           </p>
 
-          <h1 className="sid-page-title">Daftar Permohonan Surat</h1>
+          <div className="sid-dashboard-header">
+            <div>
+              <h1 className="sid-page-title">Daftar Permohonan Surat</h1>
 
-          <p className="sid-page-description">
-            Pantau permohonan surat warga yang masuk ke wilayah RW.
-          </p>
+              <p className="sid-page-description">
+                Pantau permohonan surat warga yang masuk ke wilayah RW.
+              </p>
+            </div>
+            <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+          </div>
 
           {/* ======================================
               FILTER
@@ -220,6 +228,9 @@ export default function RWListPage() {
           <h1 className="sid-page-title">Semua Surat</h1>
 
           <p className="sid-page-description">Pantau permohonan surat warga secara digital.</p>
+          <div className="mt-3">
+            <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+          </div>
 
           {/* SEARCH */}
 

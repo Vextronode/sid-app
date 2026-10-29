@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePageSize } from '@/components/ui/usePageSize'
 import { createFamily, deleteFamily, getFamilies, getFamilyOptions, updateFamily } from '../api'
+import { useWilayahFilter } from './useWilayahFilter'
 
 export function useFamilyList() {
   const [families, setFamilies] = useState([])
@@ -14,6 +15,9 @@ export function useFamilyList() {
   const [totalItems, setTotalItems] = useState(0)
   // Pilihan KK di form warga: semua KK, terpisah dari daftar berhalaman.
   const [options, setOptions] = useState([])
+  // Filter bertingkat Dusun -> RW -> RT; mengubahnya kembali ke halaman 1.
+  const wilayahFilter = useWilayahFilter(() => setCurrentPage(1))
+  const { params: wilayahParams } = wilayahFilter
 
   const loadFamilies = useCallback(async () => {
     setLoading(true)
@@ -23,6 +27,7 @@ export function useFamilyList() {
         page: currentPage,
         per_page: pageSize,
         ...(search ? { search } : {}),
+        ...wilayahParams,
       })
       const result = response.data?.data
       setFamilies(Array.isArray(result) ? result : [])
@@ -33,7 +38,7 @@ export function useFamilyList() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, pageSize, search])
+  }, [currentPage, pageSize, search, wilayahParams])
 
   const loadOptions = useCallback(async () => {
     try {
@@ -87,6 +92,7 @@ export function useFamilyList() {
     error,
     totalItems,
     searchFamilies,
+    wilayahFilter,
     currentPage,
     setCurrentPage,
     totalPages,

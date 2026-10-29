@@ -4,7 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
-import { getSuratSchema, signerFieldNames } from '../validation/suratSchema'
+import { getSuratSchema, signerFieldNames, todayDate } from '../validation/suratSchema'
+import { reportDeadlineWarning } from '../utils/reportDeadline'
 import { buildLetterFormData } from '../utils/letterFormData'
 import { repeaterMinRows, visibleFields } from '../utils/fieldCondition'
 import { getMySignature } from '../api/signatureApi'
@@ -24,7 +25,7 @@ import { VillageAreaField } from './VillageAreaField'
 import { NikLookupHint } from './NikLookupHint'
 import { headTakenBy, memberChoices, newHeadChoice, roleOptions } from '../utils/familyHead'
 import { witnessConflict } from '../utils/witness'
-import { applicantValue, applicantValues } from '../utils/letterTypeConfig'
+import { applicantPrefill, applicantValue, applicantValues } from '../utils/letterTypeConfig'
 
 const WET_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png'
 
@@ -118,6 +119,8 @@ export function DynamicSuratForm({
           .filter((field) => field.defaultValue !== null && field.defaultValue !== undefined)
           .map((field) => [field.name, field.defaultValue]),
       ),
+      // Nilai awal dari data penduduk pemohon (mis. pekerjaan, RT).
+      ...applicantPrefill(config.fields, user),
       ...initialData,
       // Isian yang diturunkan dari data pemohon (mis. peran suami/istri).
       ...applicantValues(config.fields, user),
@@ -342,6 +345,12 @@ export function DynamicSuratForm({
               return null
             }
 
+            // Tanggal peristiwa melewati batas pelaporan: peringatan, tidak memblokir.
+            const deadlineWarning =
+              field.type === 'date'
+                ? reportDeadlineWarning(field, watchedFormData?.[field.name], watchedFormData ?? {})
+                : null
+
             return (
               <div key={field.name} className="sid-form-group">
                 <label htmlFor={field.name} className="sid-label">
@@ -389,6 +398,7 @@ export function DynamicSuratForm({
                   <NikLookupHint
                     nik={watchedFormData?.[field.name]}
                     witness={field.witness}
+                    includeInactive={field.includeInactive}
                     conflict={
                       field.witness
                         ? (lookup) => witnessConflict(field, config.fields, watchedFormData, lookup)
@@ -423,11 +433,13 @@ export function DynamicSuratForm({
                   />
                 )}
 
+                {/* Galat isian yang diisi dari NIK (tersembunyi) tampil di bawah NIK;
+                    hanya yang memang galat, agar jarak antarisian tetap sama. */}
                 {field.type === 'nik' &&
-                  nikLookups[field.name]?.status !== 'not_found' &&
-                  lookupFieldsOf(field.name).map((target) => (
-                    <span key={target.name}>{renderError(target.name)}</span>
-                  ))}
+                  !lookupTyped(field.name) &&
+                  lookupFieldsOf(field.name)
+                    .filter((target) => errors[target.name]?.message)
+                    .map((target) => <span key={target.name}>{renderError(target.name)}</span>)}
 
                 {field.type === 'number' && (
                   <input
@@ -444,9 +456,16 @@ export function DynamicSuratForm({
                   <input
                     id={field.name}
                     type="date"
+                    max={field.past ? todayDate() : undefined}
                     {...register(field.name)}
                     className={inputClass}
                   />
+                )}
+
+                {deadlineWarning && (
+                  <p className="sid-warning-box" role="status">
+                    {deadlineWarning}
+                  </p>
                 )}
 
                 {field.type === 'time' && (
@@ -585,7 +604,7 @@ export function DynamicSuratForm({
 
                 {hasSignature === false ? (
                   <p className="sid-admin-alert sid-admin-alert-error" role="alert">
-                    Anda belum memiliki tanda tangan. <Link to="/profile">Buat tanda tangan</Link>{' '}
+                    Anda belum memiliki tanda tangan. <Link to="/profil">Buat tanda tangan</Link>{' '}
                     terlebih dahulu sebelum mengajukan surat ini.
                   </p>
                 ) : (

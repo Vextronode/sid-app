@@ -31,9 +31,9 @@ describe('resolveLoginRedirect', () => {
     ['/jenis-surat'],
     ['/pengajuan-surat'],
     ['/pengajuan-surat/SKD'],
-    ['/daftar-surat-saya'],
-    ['/daftar-surat'],
-    ['/profile'],
+    ['/surat-saya/daftar'],
+    ['/surat-saya'],
+    ['/profil'],
   ])('accepts warga page %s for role warga', (path) => {
     expect(resolveLoginRedirect(path, 'warga')).toBe(path)
   })
@@ -49,7 +49,7 @@ describe('resolveLoginRedirect', () => {
     ['https://evil.com/jenis-surat'],
     ['javascript:alert(1)'],
     ['/\\evil.com'],
-    ['/admin/dashboard-surat-rt'],
+    ['/admin/rt'],
     ['/admin/operator-desa'],
     ['/'],
     ['/jenis-surat/extra'],
@@ -64,27 +64,27 @@ describe('resolveLoginRedirect', () => {
     ['rw', '/admin/surat-saya'],
     ['kadus', '/admin/surat-saya'],
     ['kepala_desa', '/admin/surat-saya'],
-    ['staf_sid', '/admin/operator-desa'],
+    ['staf_sid', '/admin/surat-saya'],
   ])('maps the warga letter page to its counterpart for role %s', (role, expected) => {
     expect(resolveLoginRedirect('/jenis-surat', role)).toBe(expected)
   })
 
   it('rejects non-letter warga pages for other roles and unknown roles', () => {
-    expect(resolveLoginRedirect('/profile', 'rt')).toBeNull()
+    expect(resolveLoginRedirect('/profil', 'rt')).toBeNull()
     expect(resolveLoginRedirect('/jenis-surat', undefined)).toBeNull()
   })
 })
 
 describe('buildLoginPath', () => {
   it('encodes the target as ?redirect=', () => {
-    expect(buildLoginPath('/jenis-surat')).toBe('/loginpage?redirect=%2Fjenis-surat')
+    expect(buildLoginPath('/jenis-surat')).toBe('/login?redirect=%2Fjenis-surat')
     expect(buildLoginPath('/pengajuan-surat/SKD?draft=1')).toBe(
-      '/loginpage?redirect=%2Fpengajuan-surat%2FSKD%3Fdraft%3D1',
+      '/login?redirect=%2Fpengajuan-surat%2FSKD%3Fdraft%3D1',
     )
   })
 
   it('falls back to the plain login page for unsafe targets', () => {
-    expect(buildLoginPath('//evil.com')).toBe('/loginpage')
-    expect(buildLoginPath(undefined)).toBe('/loginpage')
+    expect(buildLoginPath('//evil.com')).toBe('/login')
+    expect(buildLoginPath(undefined)).toBe('/login')
   })
 })

@@ -36,6 +36,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { alertDialog, confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
@@ -273,6 +274,11 @@ export default function KelolaBeritaPage() {
           </div>
 
           <div className="sid-kelola-berita-header-actions">
+            <RefreshButton
+              onRefresh={() => Promise.all([refreshBerita(), refreshCategories()])}
+              disabled={processing}
+            />
+
             <button
               type="button"
               onClick={() => setKategoriModalOpen(true)}

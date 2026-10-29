@@ -28,6 +28,28 @@ export const saveMySignature = async (file) => {
 export const resetUserSignature = (userId, reason) =>
   api.post(`/api/users/${userId}/signature/reset`, { reason })
 
+// Pemilik akun mengajukan reset; diputuskan Staf SIDUTama.
+export const requestSignatureReset = async (reason) => {
+  const response = await api.post('/api/profile/signature/reset-request', { reason })
+
+  return response.data
+}
+
+// Pending di atas, lalu riwayat yang sudah diputuskan; { data, meta }.
+export const getSignatureResetRequests = async ({ page = 1, perPage } = {}) => {
+  const response = await api.get('/api/signature-reset-requests', {
+    params: { page, per_page: perPage },
+  })
+
+  return response.data
+}
+
+export const approveSignatureResetRequest = (id) =>
+  api.post(`/api/signature-reset-requests/${id}/approve`)
+
+export const rejectSignatureResetRequest = (id, notes) =>
+  api.post(`/api/signature-reset-requests/${id}/reject`, { notes: notes || null })
+
 // Permintaan tanda tangan yang ditujukan ke akun ini.
 export const getSignatureRequests = async () => {
   const response = await api.get('/api/signature-requests')

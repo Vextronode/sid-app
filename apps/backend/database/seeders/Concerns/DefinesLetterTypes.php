@@ -54,6 +54,15 @@ trait DefinesLetterTypes
     }
 
     /**
+     * Nilai awal isian dari kolom data penduduk pemohon (mis. occupation_id,
+     * rt_id, name, address); pemohon tetap dapat mengubahnya.
+     */
+    private function prefilled(array $field, string $column): array
+    {
+        return [...$field, 'prefill_from_applicant' => $column];
+    }
+
+    /**
      * Dusun -> RW -> RT desa ini (dipilih dari data wilayah); dicetak lewat
      * {{ <nama>_dusun }}, {{ <nama>_rw }}, {{ <nama>_rt }}.
      */
@@ -68,6 +77,18 @@ trait DefinesLetterTypes
     private function time(string $name, string $label, bool $required = true): array
     {
         return $this->field($name, $label, 'time', $required);
+    }
+
+    /**
+     * Tanggal peristiwa yang sudah terjadi (tidak sesudah hari ini), dengan
+     * urutan terhadap tanggal lain (`date_order`) bila ada.
+     *
+     * @param  array<int, array<string, string>>  $order
+     * @return array<string, mixed>
+     */
+    private function pastDate(string $name, string $label, bool $required = true, array $order = []): array
+    {
+        return [...$this->date($name, $label, $required), 'past' => true, ...($order === [] ? [] : ['date_order' => $order])];
     }
 
     private function date(string $name, string $label, bool $required = true): array

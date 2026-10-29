@@ -4,7 +4,8 @@ LetterType:
     Bentuk `LetterTypeResource`. Struktur jenis surat (template, isian form,
     slot tanda tangan, aksi data, dokumen pendukung, flow) diset developer
     lewat seeder; Staf SIDUTama hanya mengubah `validity_days`,
-    `assigned_role`, dan `is_active` (lihat LetterTypeUpdateRequest).
+    `category` (petugas `assigned_role` mengikuti kategori), dan
+    `is_active` (lihat LetterTypeUpdateRequest).
     Kolom `letter_categories`/`category_id` dan `verification_type` sudah
     dihapus dari skema.
   properties:
@@ -303,10 +304,10 @@ LetterTypeUpdateRequest:
       nullable: true
       minimum: 1
       example: 90
-    assigned_role:
+    category:
       type: string
-      enum: [kasi_pemerintahan, kaur_tu_umum]
-      nullable: true
+      enum: [persuratan, pelayanan]
+      description: Kelompok di pilihan pengajuan; assigned_role ikut diganti sesuai kategori.
     is_active:
       type: boolean
       example: true

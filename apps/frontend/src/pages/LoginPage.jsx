@@ -61,25 +61,25 @@ export default function LoginPage() {
 
       switch (loggedUser?.role) {
         case 'rt':
-          navigate('/admin/dashboard-surat-rt', {
+          navigate('/admin/rt', {
             replace: true,
           })
           break
 
         case 'rw':
-          navigate('/admin/dashboard-surat-rw', {
+          navigate('/admin/rw', {
             replace: true,
           })
           break
 
         case 'kadus':
-          navigate('/admin/dashboard-surat-kadus', {
+          navigate('/admin/kadus', {
             replace: true,
           })
           break
 
         case 'kepala_desa':
-          navigate('/admin/dashboard-surat-kades', {
+          navigate('/admin/kades', {
             replace: true,
           })
           break
@@ -93,7 +93,7 @@ export default function LoginPage() {
           break
 
         default:
-          navigate('/daftar-surat', {
+          navigate('/surat-saya', {
             replace: true,
           })
           break

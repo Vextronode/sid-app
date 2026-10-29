@@ -1,4 +1,4 @@
-import { Plus, RefreshCw } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
@@ -10,6 +10,7 @@ import RwTable from '@/features/kelola-wilayah/components/RwTable'
 import WilayahFormModal from '@/features/kelola-wilayah/components/WilayahFormModal'
 import WilayahTabs from '@/features/kelola-wilayah/components/WilayahTabs'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 
@@ -224,15 +225,7 @@ export default function KelolaWilayahPage() {
           </div>
 
           <div className="sid-kelola-wilayah-header-actions">
-            <button
-              type="button"
-              onClick={() => void refresh()}
-              className="sid-wilayah-btn sid-wilayah-btn-secondary"
-              disabled={Boolean(processing)}
-            >
-              <RefreshCw size={15} />
-              Refresh
-            </button>
+            <RefreshButton onRefresh={() => refresh()} disabled={Boolean(processing)} />
 
             <button
               type="button"
