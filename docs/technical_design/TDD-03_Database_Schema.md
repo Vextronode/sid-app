@@ -141,7 +141,7 @@ Kolom `nik` dienkripsi dengan cast Laravel `encrypted`; `address` disimpan sebag
 | address | TEXT | NOT NULL | Alamat domisili (tidak memakai cast enkripsi pada model) |
 | rt_id | BIGINT | FK → rts.id, NULL | |
 | hamlet_id | BIGINT | FK → hamlets.id, NULL | |
-| marital_status | ENUM | NULL | `belum_kawin` \| `kawin` \| `cerai_hidup` \| `cerai_mati` |
+| marital_status | ENUM | NULL | `belum_kawin` \| `kawin` \| `kawin_belum_tercatat` \| `cerai_hidup` \| `cerai_hidup_belum_tercatat` \| `cerai_mati` (belum tercatat: nikah siri/adat atau cerai tanpa putusan, dengan SPTJM F-1.05; pilihan SIAK Disdukcapil) |
 | occupation_id | BIGINT | FK → occupations.id, NULL, ON DELETE RESTRICT | Pekerjaan baku desa; NULL = belum diisi. Kesamaan desa divalidasi di aplikasi, bukan FK |
 | religion | ENUM | NULL | `islam` \| `kristen` \| `katolik` \| `hindu` \| `buddha` \| `konghucu` |
 | last_education | ENUM | NULL | `tidak_sekolah` \| `sd` \| `smp` \| `sma` \| `diploma` \| `s1` \| `s2` \| `s3` |
