@@ -200,7 +200,7 @@ class LetterPolicy
             return false;
         }
 
-        return $letter->citizen?->rt_id === $official->rt_id;
+        return $letter->rt_id === $official->rt_id;
     }
 
     private function isSameRw(User $user, Letter $letter): bool
@@ -211,7 +211,7 @@ class LetterPolicy
             return false;
         }
 
-        return $letter->citizen?->rt?->rw_id === $official->rw_id;
+        return $letter->rw_id === $official->rw_id;
     }
 
     private function isSameVillage(User $user, Letter $letter): bool
@@ -230,7 +230,7 @@ class LetterPolicy
         $official = $this->currentOfficial($user, 'kadus');
 
         return $official?->hamlet_id !== null
-            && $letter->citizen?->hamlet_id === $official->hamlet_id;
+            && $letter->hamlet_id === $official->hamlet_id;
     }
 
     private function wasApprovedByRt(Letter $letter): bool

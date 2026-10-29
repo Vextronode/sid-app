@@ -18,6 +18,11 @@ return new class extends Migration
             $table->foreignUuid('submitted_by')->constrained('users')->restrictOnDelete();
             $table->foreignUuid('on_behalf_of')->nullable()->constrained('citizens')->nullOnDelete();
             $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->nullOnDelete();
+            // Wilayah pemohon saat mengajukan: riwayat RT/RW/Kadus tetap di
+            // wilayah lama walau pemohon kemudian pindah (mis. pisah KK).
+            $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
+            $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
+            $table->foreignId('hamlet_id')->nullable()->constrained('hamlets')->nullOnDelete();
             $table->string('letter_number', 50)->unique()->nullable();
             $table->string('applicant_name', 100);
             $table->text('applicant_nik');
@@ -45,6 +50,9 @@ return new class extends Migration
             $table->index(['village_id', 'status'], 'idx_letters_village_status');
             $table->index('status', 'idx_letters_status');
             $table->index('is_overdue', 'idx_letters_overdue');
+            $table->index('rt_id', 'idx_letters_rt');
+            $table->index('rw_id', 'idx_letters_rw');
+            $table->index('hamlet_id', 'idx_letters_hamlet');
         });
     }
 

@@ -21,6 +21,9 @@ class Letter extends Model
         'submitted_by',
         'on_behalf_of',
         'citizen_id',
+        'rt_id',
+        'rw_id',
+        'hamlet_id',
         'letter_number',
         'applicant_name',
         'applicant_nik',
@@ -68,6 +71,17 @@ class Letter extends Model
 
     protected static function booted(): void
     {
+        // Wilayah pemohon dibekukan saat pemohon ditautkan ke surat, bukan
+        // dibaca dari alamat warga yang sekarang.
+        static::saving(function (Letter $letter) {
+            if ($letter->citizen_id !== null && $letter->isDirty('citizen_id') && ! $letter->isDirty('rt_id')) {
+                $citizen = Citizen::query()->with('rt:id,rw_id')->find($letter->citizen_id);
+                $letter->rt_id = $citizen?->rt_id;
+                $letter->rw_id = $citizen?->rt?->rw_id;
+                $letter->hamlet_id = $citizen?->hamlet_id;
+            }
+        });
+
         static::saving(function (Letter $letter) {
             if ($letter->isDirty('applicant_nik')) {
                 $letter->applicant_nik_hash = hash('sha256', $letter->applicant_nik);
@@ -175,6 +189,16 @@ class Letter extends Model
     public function citizen(): BelongsTo
     {
         return $this->belongsTo(Citizen::class);
+    }
+
+    public function rt(): BelongsTo
+    {
+        return $this->belongsTo(Rt::class);
+    }
+
+    public function rw(): BelongsTo
+    {
+        return $this->belongsTo(Rw::class);
     }
 
     public function isSubmittedBy(User $user): bool

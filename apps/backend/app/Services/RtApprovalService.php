@@ -37,7 +37,7 @@ class RtApprovalService
 
         $letter = $this->letterRepository->loadDetailForApproval($letter);
 
-        if ($letter->citizen?->rt_id !== $official->rt_id) {
+        if ($letter->rt_id !== $official->rt_id) {
             abort(403, 'Anda tidak berwenang memproses surat ini.');
         }
 

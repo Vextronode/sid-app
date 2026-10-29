@@ -176,6 +176,39 @@ class LetterControllerTest extends TestCase
             ->assertJsonFragment(['id' => $letter->id]);
     }
 
+    public function test_letters_stay_in_the_old_region_after_the_applicant_moves(): void
+    {
+        $oldRw = Rw::factory()->create();
+        $oldRt = Rt::factory()->create(['rw_id' => $oldRw->id]);
+        $oldHamlet = Hamlet::factory()->create();
+        $citizen = Citizen::factory()->create(['rt_id' => $oldRt->id, 'hamlet_id' => $oldHamlet->id]);
+        $letter = Letter::factory()->create(['citizen_id' => $citizen->id]);
+        $letter->approvals()->create([
+            'approved_by' => User::factory()->create(['village_id' => $letter->village_id])->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
+
+        // Pisah KK ke dusun/RW/RT lain setelah surat diajukan.
+        $newRw = Rw::factory()->create();
+        $newRt = Rt::factory()->create(['rw_id' => $newRw->id]);
+        $citizen->update(['rt_id' => $newRt->id, 'hamlet_id' => Hamlet::factory()->create()->id]);
+
+        $official = fn (string $role, array $region): User => tap(User::factory()->create(['role' => $role]), fn (User $user) => $user->official()
+            ->save(Official::factory()->create(['position' => $role, 'is_active' => true, ...$region])))->fresh();
+        $kadus = $this->makeUserWithOfficialAssignment('kadus', 'kadus', null, ['hamlet_id' => $oldHamlet->id]);
+
+        foreach ([$official('rt', ['rt_id' => $oldRt->id]), $official('rw', ['rw_id' => $oldRw->id]), $kadus] as $user) {
+            $this->actingAs($user)->getJson('/api/letters')->assertOk()->assertJsonFragment(['id' => $letter->id]);
+            $this->actingAs($user)->getJson("/api/letters/{$letter->id}")->assertOk();
+        }
+
+        $this->actingAs($official('rt', ['rt_id' => $newRt->id]))
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $letter->id]);
+    }
+
     public function test_index_for_kadus_is_available_with_own_hamlet_scope(): void
     {
         Letter::factory()->count(2)->create();
