@@ -7,9 +7,12 @@ get:
 
     Scope per role:
     - warga: surat yang diajukan sendiri
-    - rt: seluruh surat dari warga di RT-nya (via citizens.rt_id), semua status
-    - rw: surat dari warga di RW-nya yang memiliki keputusan approve RT, read-only
-    - kadus: surat dari warga di dusunnya yang memiliki keputusan approve RT, read-only
+    - rt: seluruh surat yang diajukan dari RT-nya (letters.rt_id), semua status
+    - rw: surat yang diajukan dari RW-nya (letters.rw_id) yang memiliki keputusan approve RT, read-only
+    - kadus: surat yang diajukan dari dusunnya (letters.hamlet_id) yang memiliki keputusan approve RT, read-only
+
+    Wilayah surat adalah wilayah pemohon saat mengajukan; bila pemohon
+    kemudian pindah (mis. pisah KK ke RT lain), surat tetap di wilayah lama.
     - kepala_desa/sekretaris_desa: surat di desanya yang sudah di-approve RT atau tercatat melewati tahap RT
     - kasi_pemerintahan/kaur_tu_umum: surat `approved` di desanya sesuai `letter_types.assigned_role` (NULL = keduanya)
     - staf_sid: semua surat di desanya

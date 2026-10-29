@@ -164,7 +164,6 @@ entity "families" as FAM {
   * family_address : TEXT (encrypted)
   family_status : ENUM = aktif
   rt_id / rw_id / hamlet_id : BIGINT <<FK>>
-  head_of_family_id : UUID
 }
 
 entity "family_socioeconomics" as FSE {
@@ -254,6 +253,7 @@ entity "letters" as LET {
   * letter_type_id : BIGINT <<FK RESTRICT>>
   * submitted_by : UUID <<FK users>>
   on_behalf_of / citizen_id : UUID <<FK citizens>>
+  rt_id / rw_id / hamlet_id : BIGINT <<FK>> (wilayah saat mengajukan)
   letter_number : VARCHAR(50) <<UNIQUE>>
   * applicant_name : VARCHAR(100)
   * applicant_nik : TEXT (encrypted)

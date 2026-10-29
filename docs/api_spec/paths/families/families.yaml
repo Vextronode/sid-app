@@ -64,7 +64,6 @@ get:
                 rt_id: 1
                 rw_id: 1
                 hamlet_id: 1
-                head_of_family_id: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731"
                 head_of_family: { id: "5f2d8a91-6c3b-4e7d-9a14-b8e0c2d5f731", name: "Siti Aminah" }
                 members_count: 4
             links: { first: "/api/families?page=1", last: "/api/families?page=3", prev: null, next: "/api/families?page=2" }
