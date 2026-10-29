@@ -64,7 +64,7 @@ describe('resolveLoginRedirect', () => {
     ['rw', '/admin/surat-saya'],
     ['kadus', '/admin/surat-saya'],
     ['kepala_desa', '/admin/surat-saya'],
-    ['staf_sid', '/admin/operator-desa'],
+    ['staf_sid', '/admin/surat-saya'],
   ])('maps the warga letter page to its counterpart for role %s', (role, expected) => {
     expect(resolveLoginRedirect('/jenis-surat', role)).toBe(expected)
   })

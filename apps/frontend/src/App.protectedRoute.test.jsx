@@ -133,10 +133,10 @@ describe('ProtectedRoute', () => {
     expect(currentPath()).toBe('/admin/surat-saya')
   })
 
-  it('sends staf_sid opening a warga page to their own home page', () => {
+  it('sends staf_sid opening a warga letter page to their own Surat Saya', () => {
     auth.initialUser = { role: 'staf_sid' }
     renderAt('/jenis-surat')
-    expect(currentPath()).toBe('/admin/operator-desa')
+    expect(currentPath()).toBe('/admin/surat-saya')
   })
 
   it('still sends users with a temporary password to /change-password', () => {
