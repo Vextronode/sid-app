@@ -18,7 +18,6 @@ use App\Services\LetterFlowService;
 use App\Services\OfficialService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class LetterFlowServiceTest extends TestCase
@@ -87,23 +86,18 @@ class LetterFlowServiceTest extends TestCase
         $this->assertEqualsCanonicalizing([$sekdes->id], $eligible->modelKeys());
     }
 
-    public function test_kades_applicant_without_sekdes_cannot_reach_final_step(): void
+    public function test_kades_applicant_without_sekdes_is_held_at_final_step(): void
     {
         [$letter, $flow, $applicant] = $this->makeLetterWithApplicant('kepala_desa');
         $this->addStep($flow, 1, 'rt');
-        $this->addStep($flow, 2, 'kepala_desa', true);
+        $final = $this->addStep($flow, 2, 'kepala_desa', true);
         $this->addVillageOfficial($letter, 'kepala_desa', $applicant);
 
-        try {
-            $this->service->nextActionable($letter, 1);
-            $this->fail('Final step without an eligible approver must be rejected.');
-        } catch (HttpException $exception) {
-            $this->assertSame(422, $exception->getStatusCode());
-            $this->assertSame(
-                'Surat tidak dapat diproses: tidak ada pejabat berwenang pada tahap final.',
-                $exception->getMessage(),
-            );
-        }
+        $result = $this->service->nextActionable($letter, 1);
+
+        $this->assertSame($final->id, $result['step']->id);
+        $this->assertTrue($result['vacant']);
+        $this->assertCount(0, $this->service->eligibleApprovers($final, $letter));
     }
 
     public function test_sekdes_applicant_can_reach_final_step_through_kades(): void

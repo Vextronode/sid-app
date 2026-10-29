@@ -108,7 +108,11 @@ class RtApprovalService
             if ($data['status'] === 'approved') {
                 $this->notifyRwFyi($locked);
                 $this->notifyKadusFyi($locked);
-                $this->notifyNextApprovers($locked, $next['step']);
+                if ($next['vacant']) {
+                    $this->letterFlowService->holdForVacantStep($locked, $next['step'], $user);
+                } else {
+                    $this->notifyNextApprovers($locked, $next['step']);
+                }
                 $this->notifyApplicant($locked, 'approved');
             } else {
                 $this->notifyApplicant($locked, 'rejected');

@@ -133,6 +133,8 @@ class EndToEndApprovalFlowTest extends TestCase
 
         $letter = Letter::query()->findOrFail($submission->json('data.id'));
         $this->assertSame(2, $letter->current_step_order);
+        // Langsung di tahap desa: statusnya seperti sesudah disetujui RT.
+        $this->assertSame('in_progress', $letter->status->value);
         $this->assertDatabaseHas('letter_status_logs', [
             'letter_id' => $letter->id,
             'actor_id' => $applicant['user']->id,
@@ -155,6 +157,119 @@ class EndToEndApprovalFlowTest extends TestCase
 
         Notification::assertNotSentTo($rwUser['user'], LetterStatusNotification::class);
         $this->assertTrue($rtOfficial->fresh()->is_active);
+    }
+
+    public function test_kades_applicant_letter_is_held_at_final_step_while_sekdes_is_vacant(): void
+    {
+        $village = Village::factory()->create();
+        ['rt' => $rt] = $this->makeArea($village);
+        $applicant = $this->makeCitizenAccount($village, $rt, 'kepala_desa');
+        $this->makeOfficial($applicant['user'], 'kepala_desa', $village, ['citizen_id' => $applicant['citizen']->id]);
+        $rtUser = $this->makeOfficialUser('rt', $village, ['rt_id' => $rt->id]);
+        $petugas = $this->makeOfficialUser('staf_sid', $village);
+        $flow = $this->makeFlow([
+            ['position' => 'rt', 'final' => false],
+            ['position' => 'kepala_desa', 'final' => true],
+        ]);
+        $letterType = LetterType::factory()->create(['flow_id' => $flow->id, 'template' => 'Surat {{ applicant_name }}']);
+
+        $letterId = $this->actingAs($applicant['user'])
+            ->postJson('/api/letters', ['letter_type_id' => $letterType->id])
+            ->assertCreated()
+            ->json('data.id');
+
+        // Surat Kades tidak menunggu RT; tahap final ditahan dan Staf diberi tahu.
+        $letter = Letter::query()->findOrFail($letterId);
+        $this->assertSame(2, $letter->current_step_order);
+        $this->assertSame('in_progress', $letter->status->value);
+        foreach ([LetterFlowLogReason::RtStageSkippedForVillageHeadApplicant, LetterFlowLogReason::HeldForVacantFinalApprover] as $reason) {
+            $this->assertDatabaseHas('letter_status_logs', ['letter_id' => $letterId, 'reason' => $reason->value]);
+        }
+        Notification::assertNotSentTo($rtUser['user'], LetterStatusNotification::class);
+        $this->actingAs($rtUser['user'])
+            ->patchJson("/api/rt/letters/{$letterId}/decision", ['status' => 'approved'])
+            ->assertStatus(409);
+        Notification::assertSentTo(
+            $petugas['user'],
+            LetterStatusNotification::class,
+            fn (LetterStatusNotification $n): bool => $n->toArray($petugas['user'])['context']['status'] === 'approver_vacant',
+        );
+
+        $this->actingAs($applicant['user'])
+            ->patchJson("/api/kades/letters/{$letterId}/decision", ['status' => 'approved'])
+            ->assertForbidden();
+
+        // Sekdes yang baru ditetapkan langsung dapat menyetujuinya.
+        $sekdes = $this->makeOfficialUser('sekretaris_desa', $village);
+
+        $this->actingAs($sekdes['user'])
+            ->patchJson("/api/kades/letters/{$letterId}/decision", ['status' => 'approved'])
+            ->assertOk();
+        $this->assertSame('approved', $letter->fresh()->status->value);
+    }
+
+    public function test_sekdes_applicant_skips_rt_and_only_kades_decides(): void
+    {
+        $village = Village::factory()->create();
+        ['rt' => $rt] = $this->makeArea($village);
+        $applicant = $this->makeCitizenAccount($village, $rt, 'sekretaris_desa');
+        $this->makeOfficial($applicant['user'], 'sekretaris_desa', $village, ['citizen_id' => $applicant['citizen']->id]);
+        $rtUser = $this->makeOfficialUser('rt', $village, ['rt_id' => $rt->id]);
+        $kades = $this->makeOfficialUser('kepala_desa', $village);
+        $flow = $this->makeFlow([
+            ['position' => 'rt', 'final' => false],
+            ['position' => 'kepala_desa', 'final' => true],
+        ]);
+        $letterType = LetterType::factory()->create(['flow_id' => $flow->id, 'template' => 'Surat {{ applicant_name }}']);
+
+        $letterId = $this->actingAs($applicant['user'])
+            ->postJson('/api/letters', ['letter_type_id' => $letterType->id])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'in_progress')
+            ->json('data.id');
+
+        Notification::assertNotSentTo($rtUser['user'], LetterStatusNotification::class);
+        Notification::assertSentTo($kades['user'], LetterStatusNotification::class);
+        $this->actingAs($applicant['user'])
+            ->patchJson("/api/kades/letters/{$letterId}/decision", ['status' => 'approved'])
+            ->assertForbidden();
+        $this->actingAs($kades['user'])
+            ->patchJson("/api/kades/letters/{$letterId}/decision", ['status' => 'approved'])
+            ->assertOk();
+        $this->assertSame('approved', Letter::query()->findOrFail($letterId)->status->value);
+    }
+
+    public function test_staf_is_told_to_fill_the_vacant_assigned_handler(): void
+    {
+        $village = Village::factory()->create();
+        ['rt' => $rt] = $this->makeArea($village);
+        $applicant = $this->makeCitizenAccount($village, $rt, 'warga');
+        $rtUser = $this->makeOfficialUser('rt', $village, ['rt_id' => $rt->id]);
+        $kades = $this->makeOfficialUser('kepala_desa', $village);
+        $petugas = $this->makeOfficialUser('staf_sid', $village);
+        $flow = $this->makeFlow([
+            ['position' => 'rt', 'final' => false],
+            ['position' => 'kepala_desa', 'final' => true],
+        ]);
+        // Kasi Pemerintahan belum ditetapkan.
+        $letterType = LetterType::factory()->create([
+            'flow_id' => $flow->id,
+            'template' => 'Surat {{ applicant_name }}',
+            'assigned_role' => 'kasi_pemerintahan',
+        ]);
+
+        $letterId = $this->actingAs($applicant['user'])
+            ->postJson('/api/letters', ['letter_type_id' => $letterType->id])
+            ->assertCreated()
+            ->json('data.id');
+        $this->actingAs($rtUser['user'])->patchJson("/api/rt/letters/{$letterId}/decision", ['status' => 'approved'])->assertOk();
+        $this->actingAs($kades['user'])->patchJson("/api/kades/letters/{$letterId}/decision", ['status' => 'approved'])->assertOk();
+
+        Notification::assertSentTo(
+            $petugas['user'],
+            LetterStatusNotification::class,
+            fn (LetterStatusNotification $n): bool => $n->toArray($petugas['user'])['context']['status'] === 'handler_vacant',
+        );
     }
 
     public function test_kades_applicant_cannot_approve_own_letter_and_sekdes_can(): void
