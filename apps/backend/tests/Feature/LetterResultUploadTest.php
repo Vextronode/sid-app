@@ -166,10 +166,14 @@ class LetterResultUploadTest extends TestCase
             ->assertJsonPath('data.result_stage', null)
             ->assertJsonPath('data.can_upload_result', false);
         $this->upload($this->applicant['user'], $plain)->assertForbidden();
-        $this->actingAs($this->applicant['user'])
+
+        // Dicari per id, bukan posisi: kedua surat bisa punya created_at sama.
+        $letters = collect($this->actingAs($this->applicant['user'])
             ->getJson('/api/letters')
             ->assertOk()
-            ->assertJsonPath('data.1.result_stage', 'under_review');
+            ->json('data'))->keyBy('id');
+        $this->assertSame('under_review', $letters[$letterId]['result_stage']);
+        $this->assertNull($letters[$plain]['result_stage']);
     }
 
     public function test_kasi_verifies_their_own_result_and_staf_cannot_verify(): void

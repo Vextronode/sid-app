@@ -302,9 +302,12 @@ class LetterService
 
         $this->applyFilters($query, $filters);
 
+        // created_at berpresisi detik sehingga sering sama; id (UUIDv7, urut
+        // waktu) memastikan urutan tetap di PostgreSQL dan antarhalaman.
         $letters = $this->letterRepository
             ->forListing($query)
             ->latest()
+            ->latest('id')
             ->paginate((int) ($filters['per_page'] ?? self::DEFAULT_PER_PAGE));
 
         $this->flagOverdueLetters($letters->getCollection());
@@ -327,6 +330,7 @@ class LetterService
         return $this->letterRepository
             ->forListing($query)
             ->latest('submitted_at')
+            ->latest('id')
             ->get();
     }
 
