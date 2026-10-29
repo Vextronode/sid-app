@@ -201,6 +201,13 @@ class Letter extends Model
         return $this->belongsTo(Rw::class);
     }
 
+    /** Akun pengaju atau warga pemohon surat (akun lain milik orang yang sama). */
+    public function isApplicant(User $user): bool
+    {
+        return $this->isSubmittedBy($user)
+            || ($this->citizen_id !== null && (string) $this->citizen_id === (string) $user->citizen_id);
+    }
+
     public function isSubmittedBy(User $user): bool
     {
         return (string) $this->submitted_by === (string) $user->getKey();

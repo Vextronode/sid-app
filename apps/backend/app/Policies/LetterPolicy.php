@@ -103,9 +103,10 @@ class LetterPolicy
     }
 
     /**
-     * Terapkan perubahan data: Kasi/Kaur yang ditugaskan pada tipe surat,
-     * atau Staf SIDUTama sebagai cadangan. Hanya untuk surat final approved
-     * yang tipe suratnya memang punya aksi data.
+     * Terapkan perubahan data: hanya Kasi/Kaur yang ditugaskan pada tipe
+     * surat (Staf SIDUTama mengubah data lewat Data Penduduk). Surat milik
+     * sendiri boleh diterapkan sendiri sebagai hak jabatan; tercatat di log.
+     * Hanya untuk surat final approved yang tipe suratnya punya aksi data.
      */
     public function fulfill(User $user, Letter $letter): bool
     {
@@ -117,13 +118,7 @@ class LetterPolicy
             return false;
         }
 
-        if ($user->role === 'staf_sid') {
-            return true;
-        }
-
-        return in_array($user->role, ['kasi_pemerintahan', 'kaur_tu_umum'], true)
-            && ($letter->letterType->assigned_role === null
-                || $letter->letterType->assigned_role === $user->role);
+        return $this->isAssignedHandler($user, $letter);
     }
 
     /**
@@ -137,8 +132,8 @@ class LetterPolicy
     }
 
     /**
-     * Verifikasi hasil unggahan: Kasi/Kaur yang ditugaskan pada jenis
-     * surat, atau Staf SIDUTama sebagai cadangan (seperti Terapkan).
+     * Verifikasi hasil unggahan: hanya Kasi/Kaur yang ditugaskan pada jenis
+     * surat (seperti Terapkan), termasuk hasil suratnya sendiri.
      */
     public function reviewResult(User $user, Letter $letter): bool
     {
@@ -149,12 +144,13 @@ class LetterPolicy
             return false;
         }
 
-        if ($user->role === 'staf_sid') {
-            return true;
-        }
+        return $this->isAssignedHandler($user, $letter);
+    }
 
+    private function isAssignedHandler(User $user, Letter $letter): bool
+    {
         return in_array($user->role, ['kasi_pemerintahan', 'kaur_tu_umum'], true)
-            && ($letter->letterType->assigned_role === null
+            && ($letter->letterType?->assigned_role === null
                 || $letter->letterType->assigned_role === $user->role);
     }
 

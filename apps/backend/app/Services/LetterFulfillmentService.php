@@ -283,9 +283,10 @@ class LetterFulfillmentService
                 'actor_id' => $actor->id,
                 'old_status' => LetterStatus::Approved->value,
                 'new_status' => LetterStatus::Approved->value,
-                'reason' => $touched === []
+                'reason' => ($touched === []
                     ? 'Perubahan data kependudukan ditandai selesai (dikerjakan manual)'
-                    : 'Perubahan data kependudukan diterapkan',
+                    : 'Perubahan data kependudukan diterapkan')
+                    .($locked->isApplicant($actor) ? ' oleh pemohon sendiri' : ''),
             ]);
 
             // Perubahan manual tercatat sendiri saat Kasi/Kaur mengedit data warga.

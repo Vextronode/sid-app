@@ -63,14 +63,12 @@ class LetterResultService
 
                 $this->log($locked, $uploader, 'Hasil dari instansi diunggah pemohon');
 
-                foreach ($this->officialService->resolveKasiKaurForLetter($locked) as $official) {
-                    $official->user?->notify(new LetterStatusNotification(
-                        $locked,
-                        'Hasil dari instansi menunggu verifikasi',
-                        'Pemohon mengunggah hasil dari instansi. Periksa berkasnya lalu terima atau tolak.',
-                        'letter_result_submitted',
-                    ));
-                }
+                $this->officialService->notifyLetterHandlers($locked, new LetterStatusNotification(
+                    $locked,
+                    'Hasil dari instansi menunggu verifikasi',
+                    'Pemohon mengunggah hasil dari instansi. Periksa berkasnya lalu terima atau tolak.',
+                    'letter_result_submitted',
+                ));
 
                 return $result->load('attachments');
             });
@@ -110,7 +108,9 @@ class LetterResultService
             $this->log(
                 $locked,
                 $reviewer,
-                $accepted ? 'Hasil dari instansi diterima' : 'Hasil dari instansi ditolak: '.$notes,
+                ($accepted ? 'Hasil dari instansi diterima' : 'Hasil dari instansi ditolak')
+                    .($locked->isApplicant($reviewer) ? ' oleh pemohon sendiri' : '')
+                    .($accepted ? '' : ': '.$notes),
             );
 
             $this->officialService->resolveCitizenUser($locked)?->notify($accepted
