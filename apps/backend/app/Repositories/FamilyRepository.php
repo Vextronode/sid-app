@@ -35,9 +35,7 @@ class FamilyRepository
                 $pattern = '%'.addcslashes(mb_strtolower($search), '\\%_').'%';
                 $byName = fn ($citizen) => $citizen->whereRaw('LOWER(name) LIKE ?', [$pattern]);
 
-                return $query->where(fn ($inner) => $inner
-                    ->whereHas('headOfFamily', $byName)
-                    ->orWhereHas('headMember', $byName));
+                return $query->whereHas('headMember', $byName);
             })
             ->withCount('members')
             ->with([
@@ -45,7 +43,6 @@ class FamilyRepository
                 'rw',
                 'hamlet',
                 'village',
-                'headOfFamily',
                 'headMember',
             ])
             ->orderBy('created_at', 'desc')
@@ -60,7 +57,7 @@ class FamilyRepository
     {
         return Family::query()
             ->where('village_id', $villageId)
-            ->with(['headOfFamily', 'headMember'])
+            ->with('headMember')
             ->orderBy('created_at', 'desc')
             ->orderBy('id')
             ->get();
@@ -74,7 +71,6 @@ class FamilyRepository
                 'rw',
                 'hamlet',
                 'village',
-                'headOfFamily',
                 'headMember',
                 Schema::hasColumn('citizens', 'family_id') ? 'members' : null,
             ]))

@@ -107,6 +107,39 @@ class FamilyControllerTest extends TestCase
             ->assertJsonPath('data.0.members_count', 2);
     }
 
+    public function test_family_head_follows_the_current_family_roles(): void
+    {
+        $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
+        $user = $this->stafSid($village);
+        $family = Family::factory()->create(['village_id' => $village->id]);
+        $husband = Citizen::factory()->create([
+            'village_id' => $village->id,
+            'family_id' => $family->id,
+            'family_role' => 'kepala_keluarga',
+            'name' => 'Engkos',
+        ]);
+        $wife = Citizen::factory()->create([
+            'village_id' => $village->id,
+            'family_id' => $family->id,
+            'family_role' => 'istri',
+            'name' => 'Tini',
+        ]);
+
+        // Pisah KK: suami keluar ke KK baru, istri menjadi kepala KK lama.
+        $husband->update(['family_id' => Family::factory()->create(['village_id' => $village->id])->id]);
+        $wife->update(['family_role' => 'kepala_keluarga']);
+
+        $this->actingAs($user)
+            ->getJson("/api/families/{$family->id}")
+            ->assertOk()
+            ->assertJsonPath('data.head_of_family.name', 'Tini');
+
+        $this->actingAs($user)
+            ->getJson('/api/families/options')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $family->id, 'head_of_family' => ['id' => $wife->id, 'name' => 'Tini']]);
+    }
+
     public function test_no_kk_hash_is_generated_automatically(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
