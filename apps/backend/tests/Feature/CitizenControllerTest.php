@@ -70,6 +70,25 @@ class CitizenControllerTest extends TestCase
             ->assertJsonPath('data.0.id', $target->id);
     }
 
+    public function test_index_searches_full_nik_but_not_partial_nik(): void
+    {
+        $user = User::factory()->create(['role' => 'staf_sid']);
+        $target = Citizen::factory()->create(['nik' => '3207010101900001', 'name' => 'Siti Aminah']);
+        Citizen::factory()->create(['nik' => '3207010101900002', 'name' => 'Budi Santoso']);
+
+        $this->actingAs($user)
+            ->getJson('/api/citizens?search=3207010101900001')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $target->id);
+
+        // NIK terenkripsi: potongan NIK tidak cocok dengan apa pun.
+        $this->actingAs($user)
+            ->getJson('/api/citizens?search=320701')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
     public function test_index_filters_by_hamlet_and_rw_through_the_rt(): void
     {
         $user = User::factory()->create(['role' => 'staf_sid']);
