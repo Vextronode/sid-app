@@ -930,12 +930,13 @@ class ServiceLetterTypeSeeder extends Seeder
             [
                 'code' => 'F06',
                 'name' => 'Pelaporan Kematian',
-                'description' => 'Pelaporan kematian anggota keluarga untuk penerbitan akta kematian di Disdukcapil, serta KK baru bila yang meninggal kepala keluarga.',
+                'description' => 'Pelaporan kematian anggota keluarga untuk penerbitan akta kematian dan KK baru tanpa almarhum di Disdukcapil, termasuk penggantian kepala keluarga bila yang meninggal kepala keluarga.',
                 // Dibawa ke Disdukcapil: formulir yang terbit dari pengajuan ini dan dokumen lain.
                 'carry_documents' => [
                     'forms' => [
                         'Formulir Pelaporan Pencatatan Sipil (F-2.01), bagian kematian',
-                        'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02) dan Formulir Biodata Keluarga (F-1.01), bila yang meninggal kepala keluarga',
+                        'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02), almarhum dihapus dari KK',
+                        'Formulir Biodata Keluarga (F-1.01), bila yang meninggal kepala keluarga',
                     ],
                     'attachments' => [
                         'Surat keterangan kematian dari dokter/RS/desa',
@@ -967,13 +968,19 @@ class ServiceLetterTypeSeeder extends Seeder
                     $this->field('kk_baru', 'Susunan KK Baru', 'family_roster', false, null, ['exclude' => 'almarhum', 'head' => 'kepala_baru']),
                 ],
                 'documents' => [
+                    // Almarhum dihapus dari KK: KK diterbitkan ulang. Kepala keluarga
+                    // meninggal = KK baru karena penggantian kepala keluarga, selain
+                    // itu perubahan KK karena peristiwa penting.
                     [
                         'key' => 'f1_02',
                         'title' => 'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02)',
-                        'when' => self::DECEASED_HEAD,
                         'template' => $this->registrationForm([
-                            'kk.baru.ganti_kepala' => true,
+                            'kk.baru.ganti_kepala' => 'almarhum_shdk=Kepala Keluarga',
+                            'kk.ubah.peristiwa' => 'almarhum_shdk!=Kepala Keluarga',
+                            'ubah.kk' => true,
                             'lampiran.kk_lama' => true,
+                            // Surat keterangan kematian.
+                            'lampiran.bukti' => true,
                         ]),
                     ],
                     [

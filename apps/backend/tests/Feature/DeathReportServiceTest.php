@@ -91,9 +91,17 @@ class DeathReportServiceTest extends TestCase
         $letterId = $this->approve([...$this->payload(), 'almarhum' => $this->mother->id]);
 
         $this->assertNull(Letter::query()->findOrFail($letterId)->letter_number);
+        // Almarhum dihapus dari KK: F-1.02 selalu terbit, F-1.01 hanya bila kepala keluarga.
         $this->actingAs($this->applicant['user'])
             ->getJson("/api/letters/{$letterId}")
-            ->assertJsonPath('data.documents.*.key', ['main']);
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02']);
+
+        // Perubahan KK karena peristiwa penting (bukan KK baru); KK lama dan surat keterangan kematian.
+        $registration = $this->render($letterId, 'f1_02');
+        $this->assertStringContainsString('Peristiwa Penting <b>V</b>', $registration);
+        $this->assertStringContainsString('KK <b>V</b>', $registration);
+        $this->assertStringNotContainsString('Penggantian Kepala Keluarga <b>V</b>', $registration);
+        $this->assertSame(4, preg_match_all('/<b>V<\/b>|xf-circle>V</', $registration));
 
         $form = $this->render($letterId, null);
         $this->assertMatchesRegularExpression($this->boxes('IIS'), $form);
@@ -182,6 +190,7 @@ class DeathReportServiceTest extends TestCase
         foreach (['BARU <b>V</b>', 'Penggantian Kepala Keluarga <b>V</b>', 'KK <b>V</b>'] as $mark) {
             $this->assertStringContainsString($mark, $registration);
         }
+        $this->assertStringNotContainsString('Peristiwa Penting <b>V</b>', $registration);
         $this->assertStringContainsString("official-signatures/{$this->village->id}/{$this->kasi['official']->id}/", $registration);
 
         // F-1.01: kepala keluarga baru (ibu, tanpa akun) tidak ditempeli TTD.
@@ -229,7 +238,7 @@ class DeathReportServiceTest extends TestCase
         $this->assertArrayNotHasKey('kepala_baru', Letter::query()->findOrFail($letterId)->payload);
         $this->actingAs($this->applicant['user'])
             ->getJson("/api/letters/{$letterId}")
-            ->assertJsonPath('data.documents.*.key', ['main']);
+            ->assertJsonPath('data.documents.*.key', ['main', 'f1_02']);
     }
 
     public function test_witness_name_comes_from_the_population_data_when_the_nik_is_registered(): void
