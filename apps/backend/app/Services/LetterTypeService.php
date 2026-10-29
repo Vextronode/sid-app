@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LetterTypeCategory;
 use App\Models\LetterType;
 use App\Models\User;
 use App\Repositories\LetterTypeRepository;
@@ -36,6 +37,12 @@ class LetterTypeService
             throw ValidationException::withMessages([
                 'is_active' => 'Jenis surat draft belum memiliki template sehingga tidak dapat diaktifkan.',
             ]);
+        }
+
+        // Kategori menentukan petugas: Persuratan Desa -> Kaur TU & Umum,
+        // Layanan Kependudukan -> Kasi Pemerintahan.
+        if (isset($data['category'])) {
+            $data['assigned_role'] = LetterTypeCategory::from($data['category'])->handlerRole()->value;
         }
 
         return $this->letterTypeRepository->update($letterType, $data);
