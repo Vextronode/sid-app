@@ -8,10 +8,11 @@ import { StatusPill } from '@/components/ui/StatusPill'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 
-const ASSIGNED_ROLE_OPTIONS = [
-  ['', 'Tidak ditentukan'],
-  ['kasi_pemerintahan', 'Kasi Pemerintahan'],
-  ['kaur_tu_umum', 'Kaur TU Umum'],
+// Kategori menentukan kelompok di pilihan pengajuan dan petugasnya
+// (diatur backend: Persuratan Desa -> Kaur, Layanan Kependudukan -> Kasi).
+const CATEGORY_OPTIONS = [
+  ['persuratan', 'Persuratan Desa', 'Kaur TU & Umum'],
+  ['pelayanan', 'Layanan Kependudukan', 'Kasi Pemerintahan'],
 ]
 
 const STATUS_BADGES = {
@@ -54,7 +55,7 @@ export default function LetterTypeSettingsPanel() {
             type.id,
             {
               validity_days: type.validity_days ?? '',
-              assigned_role: type.assigned_role ?? '',
+              category: type.category ?? 'persuratan',
             },
           ]),
         ),
@@ -86,7 +87,7 @@ export default function LetterTypeSettingsPanel() {
     try {
       const response = await updateLetterType(letterType.id, {
         validity_days: draft.validity_days === '' ? null : Number(draft.validity_days),
-        assigned_role: draft.assigned_role || null,
+        category: draft.category,
       })
       const updatedType = getResponseData(response)
       setLetterTypes((current) =>
@@ -161,7 +162,7 @@ export default function LetterTypeSettingsPanel() {
               <th>Status</th>
               <th>Keluaran</th>
               <th>Masa Berlaku (hari)</th>
-              <th>Petugas</th>
+              <th>Kategori</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -213,19 +214,25 @@ export default function LetterTypeSettingsPanel() {
                     </td>
                     <td>
                       <select
-                        aria-label={`Petugas ${letterType.name}`}
+                        aria-label={`Kategori ${letterType.name}`}
                         form={`letter-type-${letterType.id}`}
-                        value={drafts[letterType.id]?.assigned_role ?? ''}
+                        value={drafts[letterType.id]?.category ?? 'persuratan'}
                         onChange={(event) =>
-                          updateDraft(letterType.id, 'assigned_role', event.target.value)
+                          updateDraft(letterType.id, 'category', event.target.value)
                         }
                       >
-                        {ASSIGNED_ROLE_OPTIONS.map(([value, label]) => (
-                          <option key={value || 'none'} value={value}>
+                        {CATEGORY_OPTIONS.map(([value, label]) => (
+                          <option key={value} value={value}>
                             {label}
                           </option>
                         ))}
                       </select>
+                      <small className="sid-admin-cell-meta">
+                        Petugas:{' '}
+                        {CATEGORY_OPTIONS.find(
+                          ([value]) => value === drafts[letterType.id]?.category,
+                        )?.[2] ?? '-'}
+                      </small>
                     </td>
                     <td>
                       <div className="sid-admin-letter-type-actions">
