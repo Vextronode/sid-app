@@ -118,9 +118,9 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
     {
         $letterTypes = LetterType::query()->with('flow.steps')->orderBy('code')->get();
 
-        // 11 Persuratan Desa (Axx) + Layanan Kependudukan (Fxx).
+        // Persuratan Desa (Axx) + Layanan Kependudukan (Fxx dan A11 Ahli Waris).
         $this->assertSame(
-            ['persuratan' => 11, 'pelayanan' => 10],
+            ['persuratan' => 10, 'pelayanan' => 11],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -131,8 +131,13 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             $this->assertTrue($letterType->produces_letter);
 
             if (str_starts_with($letterType->code, 'A')) {
-                $this->assertSame('kaur_tu_umum', $letterType->assigned_role, "{$letterType->code} harus ditangani Kaur TU & Umum.");
-                $this->assertSame(LetterTypeCategory::Persuratan, $letterType->category, "{$letterType->code} termasuk Persuratan Desa.");
+                // Surat keterangan desa. Ahli Waris tampil di Layanan Kependudukan
+                // dan ditangani Kasi Pemerintahan, formatnya tetap surat desa.
+                [$role, $category] = $letterType->code === 'A11'
+                    ? ['kasi_pemerintahan', LetterTypeCategory::Pelayanan]
+                    : ['kaur_tu_umum', LetterTypeCategory::Persuratan];
+                $this->assertSame($role, $letterType->assigned_role, "{$letterType->code} ditangani {$role}.");
+                $this->assertSame($category, $letterType->category, "{$letterType->code} termasuk {$category->value}.");
                 $this->assertTrue($letterType->issues_letter_number && $letterType->signed_by_village_head);
                 $this->assertFalse($letterType->requires_result_upload);
             } else {

@@ -57,6 +57,7 @@ class LetterTypeSeeder extends Seeder
                     ['village_id' => $village->id, 'code' => $type['code']],
                     array_merge([
                         'category' => LetterTypeCategory::Persuratan->value,
+                        'assigned_role' => AssignedRole::KaurTuUmum->value,
                         'requirement_info' => null,
                         'documents' => null,
                         'classification_code' => '470',
@@ -67,7 +68,6 @@ class LetterTypeSeeder extends Seeder
                     ], $type, [
                         'village_id' => $village->id,
                         'template' => $this->page($type['name'], $sections, $opening),
-                        'assigned_role' => AssignedRole::KaurTuUmum->value,
                         'is_active' => true,
                         'flow_id' => $flow->id,
                     ])
@@ -310,6 +310,10 @@ class LetterTypeSeeder extends Seeder
                 'code' => 'A11',
                 'name' => 'Surat Keterangan Ahli Waris',
                 'description' => 'Keterangan bahwa pemohon adalah ahli waris dari warga yang telah meninggal dunia.',
+                // Tampil di Layanan Kependudukan dan ditangani Kasi Pemerintahan,
+                // tetap surat keterangan desa (bernomor, TTD Kepala Desa, tanpa unggah hasil).
+                'category' => LetterTypeCategory::Pelayanan->value,
+                'assigned_role' => AssignedRole::KasiPemerintahan->value,
                 // Status ahli waris tidak kedaluwarsa.
                 'validity_days' => null,
                 'form_fields' => [
