@@ -2,8 +2,12 @@ put:
   tags: [Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval]
   summary: Edit konfigurasi tipe surat (versi sederhana)
   description: |
-    UC-21. Aktor: Staf SIDUTama. Hanya `validity_days`, `assigned_role`, dan
-    `is_active` yang diterima. Flow, template, isian form, slot tanda tangan,
+    UC-21. Aktor: Staf SIDUTama. Hanya `validity_days`, `category`, dan
+    `is_active` yang diterima. `category` memindahkan jenis surat antara
+    Persuratan Desa dan Layanan Kependudukan di pilihan pengajuan, dan
+    `assigned_role` ikut diganti (Persuratan Desa = kaur_tu_umum, Layanan
+    Kependudukan = kasi_pemerintahan); `assigned_role` yang dikirim diabaikan.
+    Flow, template, isian form, slot tanda tangan,
     aksi data, dan dokumen pendukung diset developer lewat seeder. Tipe surat
     dicari dalam desa Petugas yang login; milik desa lain menghasilkan 404.
   operationId: updateLetterType
@@ -40,7 +44,7 @@ put:
       $ref: '../../responses/common.yaml#/NotFound'
     '422':
       description: |
-        validity_days < 1, assigned_role tidak valid, atau `is_active=true`
+        validity_days < 1, category tidak valid, atau `is_active=true`
         untuk tipe Draft (template NULL): "Jenis surat draft belum memiliki
         template sehingga tidak dapat diaktifkan."
       content:

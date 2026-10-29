@@ -624,7 +624,7 @@ Catatan: 5 Dusun Desa Cibenda (Patrol, Sinargalih, Cibenda, Budiasih, Sucen) di-
 
 Main Flow:
 - Petugas membuka pengaturan jenis surat lewat menu **Alur & Jenis Surat** (`/admin/alur-persetujuan`); daftar berasal dari `GET /letter-types?include_inactive=1` (khusus Staf SIDUTama) yang berisi semua jenis surat desa dengan badge Draft / Aktif / Nonaktif
-- Petugas mengubah: `validity_days` (minimal 1 atau kosong), `assigned_role` (Kasi Pemerintahan / Kaur TU & Umum / keduanya), toggle `is_active` (Aktifkan / Nonaktifkan). Jenis Draft (belum ber-template) tidak bisa diaktifkan (422)
+- Petugas mengubah: `validity_days` (minimal 1 atau kosong), `category` (Persuratan Desa / Layanan Kependudukan; menentukan kelompok di pilihan pengajuan dan petugas: Kaur TU & Umum / Kasi Pemerintahan), toggle `is_active` (Aktifkan / Nonaktifkan). Jenis Draft (belum ber-template) tidak bisa diaktifkan (422)
 - Sistem menyimpan perubahan ke `letter_types` dan menggugurkan cache halaman publik
 - Petugas dapat melihat flow approval (read-only) di halaman Approval Flows
 
@@ -829,7 +829,7 @@ Notes:
 |---|---|
 | Use Case ID | UC-29 |
 | Nama | Unggah dan Verifikasi Hasil dari Instansi |
-| Aktor | Pemohon (unggah); Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role`, Staf SIDUTama sebagai cadangan (verifikasi) |
+| Aktor | Pemohon (unggah); Kasi Pemerintahan / Kaur TU & Umum sesuai `assigned_role`, termasuk hasil suratnya sendiri (verifikasi) |
 | Pre-condition | Surat `approved`; jenis surat `requires_result_upload = true` (formulir Layanan Kependudukan yang dibawa ke instansi luar, mis. Disdukcapil) |
 | Post-condition | Unggahan tercatat di `letter_results` dengan berkas `letter_attachments` (`kind = result`); bila diterima, Terapkan (UC-26) dapat dijalankan |
 
