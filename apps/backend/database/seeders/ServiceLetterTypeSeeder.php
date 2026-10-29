@@ -212,6 +212,9 @@ class ServiceLetterTypeSeeder extends Seeder
 
     private const RECORDED = ['field' => 'status_kawin_belum_tercatat', 'equals' => 'tidak'];
 
+    /** F03: kepala keluarga ikut pindah, ada kepala keluarga baru bagi yang tinggal. */
+    private const NEW_HEAD_STAYS = ['field' => 'kepala_baru', 'filled' => true];
+
     /** F05: perkawinan ayah dan ibu bayi belum tercatat. */
     private const PARENTS_UNRECORDED = ['field' => 'perkawinan_ortu', 'equals' => 'belum_tercatat'];
 
@@ -489,6 +492,7 @@ class ServiceLetterTypeSeeder extends Seeder
                     'forms' => [
                         'Formulir Permohonan Pindah (F-1.03)',
                         'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02), bila ada anggota KK yang tetap tinggal',
+                        'Formulir Biodata Keluarga (F-1.01), susunan KK anggota yang tetap tinggal, bila kepala keluarga ikut pindah',
                     ],
                     'attachments' => [
                         'KK asli',
@@ -560,6 +564,10 @@ class ServiceLetterTypeSeeder extends Seeder
                         ]),
                         'visible_when' => self::MOVE_CITIZEN,
                     ],
+                    // F-1.01 (kepala keluarga ikut pindah): kontak keluarga yang tinggal (hanya tercetak).
+                    [...$this->text('telepon_keluarga', 'Telepon/HP Keluarga yang Tinggal', false, 'Contoh: 081234567890'), 'visible_when' => self::NEW_HEAD_STAYS],
+                    // Susunan KK yang tinggal untuk F-1.01 (disusun sistem).
+                    $this->field('kk_tinggal', 'Susunan KK yang Tetap Tinggal', 'family_roster', false, null, ['exclude' => 'anggota_pindah', 'head' => 'kepala_baru']),
                     [
                         ...$this->field('anggota_wna', 'Orang Asing yang Pindah', 'repeater', true, null, [
                             'max' => 10,
@@ -580,10 +588,19 @@ class ServiceLetterTypeSeeder extends Seeder
                         'title' => 'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02)',
                         'when' => ['all' => [self::MOVE_CITIZEN, ['field' => 'jenis_kepindahan', 'not_in' => ['kk_seluruh']]]],
                         'template' => $this->registrationForm([
-                            'kk.baru.ganti_kepala' => 'jenis_kepindahan=kk|kk_sebagian',
+                            // Kepala keluarga ikut pindah: KK yang tinggal berganti kepala.
+                            'kk.baru.ganti_kepala' => 'kepala_baru',
                             'ubah.kk' => true,
                             'lampiran.kk_lama' => true,
                         ]),
+                    ],
+                    // Kepala keluarga ikut pindah: susunan KK yang tinggal, kepala baru di baris pertama.
+                    [
+                        'key' => 'f1_01',
+                        'title' => 'Formulir Biodata Keluarga (F-1.01)',
+                        'when' => self::NEW_HEAD_STAYS,
+                        'orientation' => 'landscape',
+                        'template' => $this->rosterBiodataForm('kk_tinggal'),
                     ],
                 ],
                 'result_upload_hint' => 'Surat Keterangan Pindah (SKPWNI), SKPLN, atau SKTT dari Disdukcapil, dan KK baru bagi anggota yang tetap tinggal (bila ada).',

@@ -564,10 +564,12 @@ class LetterFormSchema
                 continue;
             }
 
-            $excluded = (string) ($payload[$field['exclude'] ?? ''] ?? '');
+            // `exclude`: satu anggota (family_member, mis. almarhum) atau banyak
+            // (family_members, mis. anggota yang pindah).
+            $excluded = self::memberIdsOf($payload[$field['exclude'] ?? ''] ?? null);
             $head = (string) ($payload[$field['head'] ?? ''] ?? '');
             $members = $this->familyMembers()->loadMissing(self::MEMBER_RELATIONS)
-                ->reject(fn (Citizen $member): bool => (string) $member->id === $excluded)
+                ->reject(fn (Citizen $member): bool => in_array((string) $member->id, $excluded, true))
                 ->sortBy(fn (Citizen $member): int => (string) $member->id === $head ? 0 : 1)
                 ->take(self::ROSTER_ROWS)
                 ->values();
