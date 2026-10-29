@@ -522,9 +522,10 @@ class LetterFormSchema
 
         $number = trim((string) ($payload[$married['certificate'] ?? ''] ?? ''));
         $date = $payload[$married['date'] ?? ''] ?? null;
+        $unrecorded = isset($married['unrecorded']) && FieldCondition::matches($married['unrecorded'], $payload);
 
         return [
-            'status_kawin' => CitizenLabels::of(CitizenLabels::MARITAL_STATUS, 'kawin'),
+            'status_kawin' => CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $unrecorded ? 'kawin_belum_tercatat' : 'kawin'),
             'akta_kawin' => $number !== '' ? 'Ada' : '',
             'no_akta_kawin' => $number,
             'tanggal_kawin' => is_string($date) && $date !== '' ? Carbon::parse($date)->locale('id')->translatedFormat('j F Y') : '',

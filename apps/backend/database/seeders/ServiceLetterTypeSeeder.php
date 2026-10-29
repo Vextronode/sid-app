@@ -212,6 +212,12 @@ class ServiceLetterTypeSeeder extends Seeder
 
     private const RECORDED = ['field' => 'status_kawin_belum_tercatat', 'equals' => 'tidak'];
 
+    /** Kotak status perkawinan di F-2.01 (tanpa varian belum tercatat). */
+    private const BASE_MARITAL_STATUSES = ['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati'];
+
+    /** F09: KK baru karena membentuk keluarga baru (menikah). */
+    private const NEW_MARRIED_FAMILY = ['all' => [['field' => 'jenis_perubahan', 'equals' => 'kk_baru'], ['field' => 'alasan_kk_baru', 'equals' => 'keluarga_baru']]];
+
     /** F03: kepala keluarga ikut pindah, ada kepala keluarga baru bagi yang tinggal. */
     private const NEW_HEAD_STAYS = ['field' => 'kepala_baru', 'filled' => true];
 
@@ -1191,7 +1197,8 @@ class ServiceLetterTypeSeeder extends Seeder
                 'data_action' => LetterDataAction::UpdateCitizens->value,
                 'data_options' => ['subjects' => ['nik_suami' => 'Suami', 'nik_istri' => 'Istri']],
                 'data_fields' => [
-                    ['column' => 'marital_status', 'label' => 'Status Perkawinan', 'source' => 'peristiwa', 'map' => ['perkawinan' => 'kawin', 'perceraian' => 'cerai_hidup']],
+                    ['column' => 'marital_status', 'label' => 'Status Perkawinan', 'source' => 'peristiwa', 'map' => ['perkawinan' => 'kawin', 'perceraian' => 'cerai_hidup'], 'when' => self::RECORDED],
+                    ['column' => 'marital_status', 'label' => 'Status Perkawinan', 'source' => 'peristiwa', 'map' => ['perkawinan' => 'kawin_belum_tercatat', 'perceraian' => 'cerai_hidup_belum_tercatat'], 'when' => self::UNRECORDED],
                     // Buku nikah (perkawinan tercatat) atau akta perkawinan (perceraian).
                     ['column' => 'marriage_certificate_number', 'label' => 'No. Akta/Buku Nikah', 'source' => 'no_buku_nikah|no_akta_perkawinan'],
                     ['column' => 'marriage_date', 'label' => 'Tanggal Perkawinan', 'source' => 'tanggal_perkawinan'],
@@ -1293,12 +1300,14 @@ class ServiceLetterTypeSeeder extends Seeder
                         'Formulir Pendaftaran Peristiwa Kependudukan (F-1.02)',
                         'Formulir Biodata Keluarga (F-1.01)',
                         'Surat Pernyataan Tidak Keberatan Numpang KK, bila masuk ke KK lain',
+                        'SPTJM Perkawinan/Perceraian Belum Tercatat (F-1.05), bila membentuk keluarga baru tanpa buku nikah; ditandatangani di atas materai bersama dua saksi',
                     ],
                     'attachments' => [
                         'KK lama asli',
                         'KK tujuan asli, bila numpang KK',
                         'KTP-el anggota yang berubah',
-                        'Buku nikah/kutipan akta perkawinan, bila membentuk keluarga baru',
+                        'Buku nikah/kutipan akta perkawinan, bila membentuk keluarga baru dan perkawinannya tercatat',
+                        'KTP-el dua orang saksi, bila perkawinannya belum tercatat (SPTJM F-1.05)',
                     ],
                 ],
                 'form_fields' => [
@@ -1328,13 +1337,34 @@ class ServiceLetterTypeSeeder extends Seeder
                         'role_of' => 'nik_pasangan',
                         'visible_when' => ['all' => [self::RESTRUCTURE_NEW, ['field' => 'nik_pasangan', 'filled' => true]]],
                     ],
-                    // Membentuk keluarga baru: buku nikah tercetak di F-1.01 dan disimpan saat Terapkan.
-                    ...array_map(fn (array $field): array => [...$field, 'visible_when' => ['all' => [self::RESTRUCTURE_NEW, ['field' => 'alasan_kk_baru', 'equals' => 'keluarga_baru']]]], [
-                        [
-                            ...$this->text('no_buku_nikah_kk', 'No. Buku Nikah/Kutipan Akta Perkawinan', true, 'Sesuai buku nikah'),
-                            'help' => 'Belum punya buku nikah/akta perkawinan? Ajukan Pelaporan Perkawinan (F07) dulu.',
-                        ],
+                    // Membentuk keluarga baru: tercatat = buku nikah tercetak di F-1.01 dan
+                    // disimpan saat Terapkan; belum tercatat = SPTJM F-1.05 dan status
+                    // Kawin Belum Tercatat (Permendagri 108/2019 Pasal 10 ayat (2)).
+                    ...$this->withCondition(self::NEW_MARRIED_FAMILY, [
+                        $this->select('status_kawin_belum_tercatat', 'Perkawinan sudah tercatat (ada buku nikah/kutipan akta perkawinan)?', ['tidak' => 'Sudah tercatat', 'ya' => 'Belum tercatat (nikah siri/adat)']),
                         [...$this->pastDate('tanggal_perkawinan_kk', 'Tanggal Perkawinan'), 'date_order' => [['after' => 'birth:nik_pasangan', 'label' => 'tanggal lahir pasangan']]],
+                    ]),
+                    [
+                        ...$this->text('no_buku_nikah_kk', 'No. Buku Nikah/Kutipan Akta Perkawinan', true, 'Sesuai buku nikah'),
+                        'visible_when' => ['all' => [self::NEW_MARRIED_FAMILY, self::RECORDED]],
+                    ],
+                    // SPTJM F-1.05: suami, istri, dua saksi, dan anak dari perkawinan tersebut.
+                    ...$this->whenUnrecorded([
+                        $this->text('nama_suami', 'Nama Suami', true, 'Nama lengkap'),
+                        [...$this->field('nik_suami', 'NIK Suami', 'nik', true, '16 digit NIK'), 'nik_gender' => 'L', 'not_same_as' => ['nik_istri']],
+                        $this->text('nama_istri', 'Nama Istri', true, 'Nama lengkap'),
+                        [...$this->field('nik_istri', 'NIK Istri', 'nik', true, '16 digit NIK'), 'nik_gender' => 'P', 'not_same_as' => ['nik_suami']],
+                        ...$this->witness(1, 'I', parties: self::SPOUSE_NIK_FIELDS),
+                        ...$this->witness(2, 'II', parties: self::SPOUSE_NIK_FIELDS),
+                        $this->field('sptjm_anak', 'Anak dari Perkawinan Tersebut', 'repeater', false, null, [
+                            'max' => 10,
+                            'item_label' => 'anak',
+                            'fields' => [
+                                $this->text('nama', 'Nama Anak', true, 'Nama lengkap'),
+                                $this->text('no_akta', 'No. Akta Kelahiran', false, 'Bila ada'),
+                                $this->text('shdk', 'SHDK', true, 'Contoh: Anak'),
+                            ],
+                        ]),
                     ]),
                     ...$this->withCondition(self::RESTRUCTURE_NEW, [
                         $this->area('alamat_kk_baru', 'Alamat KK Baru di Desa Ini'),
@@ -1388,6 +1418,12 @@ class ServiceLetterTypeSeeder extends Seeder
                         'when' => self::RESTRUCTURE_JOIN,
                         'template' => $this->joinFamilyStatement(),
                     ],
+                    [
+                        'key' => 'f1_05',
+                        'title' => 'SPTJM Perkawinan/Perceraian Belum Tercatat (F-1.05)',
+                        'when' => self::UNRECORDED,
+                        'template' => $this->unrecordedMarriageStatement(null, '{{ tanggal_perkawinan_kk }}'),
+                    ],
                 ],
                 'result_upload_hint' => 'KK baru/terbaru hasil perubahan susunan dari Disdukcapil.',
                 // Terapkan: KK baru dibuat (No. KK diisi Kasi), kepala diganti,
@@ -1397,7 +1433,7 @@ class ServiceLetterTypeSeeder extends Seeder
                 'data_options' => [
                     'restructure' => [
                         'kind' => 'jenis_perubahan',
-                        'new_family' => ['when' => 'kk_baru', 'rows' => 'susunan_baru', 'partner_nik' => 'nik_pasangan', 'partner_role' => 'shdk_pasangan', 'area' => 'alamat_kk_baru', 'married' => ['field' => 'alasan_kk_baru', 'equals' => 'keluarga_baru', 'certificate' => 'no_buku_nikah_kk', 'date' => 'tanggal_perkawinan_kk']],
+                        'new_family' => ['when' => 'kk_baru', 'rows' => 'susunan_baru', 'partner_nik' => 'nik_pasangan', 'partner_role' => 'shdk_pasangan', 'area' => 'alamat_kk_baru', 'married' => ['field' => 'alasan_kk_baru', 'equals' => 'keluarga_baru', 'certificate' => 'no_buku_nikah_kk', 'date' => 'tanggal_perkawinan_kk', 'unrecorded' => self::UNRECORDED]],
                         'change_head' => ['when' => 'ganti_kepala', 'head' => 'kepala_pengganti', 'old_head_role' => 'shdk_kepala_lama'],
                         'join' => ['when' => 'numpang', 'rows' => 'anggota_numpang', 'no_kk' => 'no_kk_tujuan'],
                     ],
@@ -1412,7 +1448,8 @@ class ServiceLetterTypeSeeder extends Seeder
                     'kk.ubah.menumpang' => 'jenis_perubahan=numpang',
                     'ubah.kk' => 'jenis_perubahan=ganti_kepala|numpang',
                     'lampiran.kk_lama' => true,
-                    'lampiran.buku_nikah' => 'alasan_kk_baru=keluarga_baru',
+                    'lampiran.buku_nikah' => 'status_kawin_belum_tercatat=tidak',
+                    'lampiran.sptjm' => 'status_kawin_belum_tercatat=ya',
                     'lampiran.bersedia_menerima' => 'jenis_perubahan=numpang',
                 ]),
             ],
@@ -1844,8 +1881,15 @@ class ServiceLetterTypeSeeder extends Seeder
      * F-1.05. $event = isian jenis peristiwa (perkawinan/perceraian), $date =
      * placeholder tanggalnya.
      */
-    private function unrecordedMarriageStatement(string $event = 'sptjm_peristiwa', string $date = '{{ sptjm_tanggal }}'): string
+    /**
+     * @param  string|null  $event  isian peristiwa (perkawinan/perceraian); null = perkawinan (F09)
+     */
+    private function unrecordedMarriageStatement(?string $event = 'sptjm_peristiwa', string $date = '{{ sptjm_tanggal }}'): string
     {
+        $happened = $event === null
+            ? 'perkawinan sebagai suami istri'
+            : "{{#if {$event}=perkawinan}}perkawinan sebagai suami istri{{/if}}{{#if {$event}=perceraian}}perceraian{{/if}}";
+
         return $this->form('F-1.05', 'SURAT PERNYATAAN TANGGUNG JAWAB MUTLAK<br>PERKAWINAN/ PERCERAIAN BELUM TERCATAT', [
             $this->rowsBlock('Kami yang bertanda tangan di bawah ini&nbsp;:', [
                 $this->numbered('I.', 'Nama') => '{{ nama_suami }}',
@@ -1857,7 +1901,7 @@ class ServiceLetterTypeSeeder extends Seeder
                 $this->numbered('', 'NIK') => '{{ nik_istri }}',
             ], 0),
             '<p style="margin: 0 0 8px;">sebagai istri, selanjutnya disebut PIHAK KEDUA,</p>',
-            $this->paragraph("menyatakan bahwa kami telah melakukan {{#if {$event}=perkawinan}}perkawinan sebagai suami istri{{/if}}{{#if {$event}=perceraian}}perceraian{{/if}}, yang dilaksanakan pada {$date}, dengan saksi-saksi&nbsp;:", false),
+            $this->paragraph("menyatakan bahwa kami telah melakukan {$happened}, yang dilaksanakan pada {$date}, dengan saksi-saksi&nbsp;:", false),
             $this->rowsBlock(null, [
                 $this->numbered('I.', 'Nama') => '{{ nama_saksi_1 }}',
                 $this->numbered('', 'NIK') => '{{ nik_saksi_1 }}',
@@ -2284,11 +2328,12 @@ class ServiceLetterTypeSeeder extends Seeder
             'kawin_istri_ke' => $this->blank('istri_ke'),
             'kawin_jumlah_anak' => $this->blank('jumlah_anak'),
             // Status suami dan istri sebelum kawin: satu tanda per status.
+            // Status belum tercatat dicentang di kotak status dasarnya.
             ...array_combine(
-                array_map(fn (string $status): string => "kawin_status_{$status}", array_keys(CitizenLabels::MARITAL_STATUS)),
+                array_map(fn (string $status): string => "kawin_status_{$status}", self::BASE_MARITAL_STATUSES),
                 array_map(
-                    fn (string $status): string => "{{#if peristiwa=perkawinan}}{{#if status_kawin_suami={$status}}}X{{/if}}{{#if status_kawin_suami!={$status}}}{{#if status_kawin_istri={$status}}}X{{/if}}{{/if}}{{/if}}",
-                    array_keys(CitizenLabels::MARITAL_STATUS),
+                    fn (string $status): string => "{{#if peristiwa=perkawinan}}{{#if status_kawin_suami={$status}|{$status}_belum_tercatat}}X{{/if}}{{#if status_kawin_suami!={$status}|{$status}_belum_tercatat}}{{#if status_kawin_istri={$status}|{$status}_belum_tercatat}}X{{/if}}{{/if}}{{/if}}",
+                    self::BASE_MARITAL_STATUSES,
                 ),
             ),
         ], [
@@ -2340,7 +2385,8 @@ class ServiceLetterTypeSeeder extends Seeder
         $people = fn (callable $cells): string => '<tr>'.$this->cell('1', 'text-align: center;').$this->cell('{{ applicant_name }}').$cells().'</tr>'
             .'{{#if pasangan_satu_kk=ya}}<tr>'.$this->cell('2', 'text-align: center;').$this->cell($this->partner('nama')).$cells().'</tr>{{/if}}';
         $empty = fn (int $count): string => str_repeat($this->cell(''), $count);
-        $becomes = '{{#if peristiwa=perkawinan}}Kawin{{/if}}{{#if peristiwa=perceraian}}Cerai Hidup{{/if}}';
+        $becomes = '{{#if peristiwa=perkawinan}}Kawin{{/if}}{{#if peristiwa=perceraian}}Cerai Hidup{{/if}}'
+            .'{{#if status_kawin_belum_tercatat=ya}} Belum Tercatat{{/if}}';
         $basis = '{{#if status_kawin_belum_tercatat=ya}}SPTJM Perkawinan/Perceraian Belum Tercatat (F-1.05){{/if}}'
             .'{{#if no_buku_nikah}}Buku Nikah/Akta Perkawinan No. {{ no_buku_nikah }}{{/if}}'
             .'{{#if no_akta_cerai}}Akta Cerai No. {{ no_akta_cerai }}{{/if}}'

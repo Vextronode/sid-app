@@ -322,7 +322,18 @@ class MarriageReportServiceTest extends TestCase
         $this->assertStringContainsString('3218011304150002', $spouse);
         $this->assertStringContainsString('>Euis Komariah<', $spouse);
 
-        $this->assertStringContainsString('SPTJM Perkawinan/Perceraian Belum Tercatat (F-1.05)', $this->render($letterId, null));
+        $statement = $this->render($letterId, null);
+        $this->assertStringContainsString('SPTJM Perkawinan/Perceraian Belum Tercatat (F-1.05)', $statement);
+        $this->assertStringContainsString('>Kawin Belum Tercatat</td>', $statement);
+
+        // Terapkan: kedua pasangan warga desa menjadi Kawin Belum Tercatat.
+        $this->husband['citizen']->update(['marital_status' => 'belum_kawin']);
+        $this->acceptResult($letterId, $this->wife);
+        $this->actingAs($this->kasi['user'])
+            ->postJson("/api/letters/{$letterId}/fulfillment", ['values' => []])
+            ->assertOk();
+        $this->assertSame('kawin_belum_tercatat', $this->husband['citizen']->fresh()->marital_status);
+        $this->assertSame('kawin_belum_tercatat', $this->wife['citizen']->fresh()->marital_status);
     }
 
     public function test_status_before_marriage_is_asked_for_a_spouse_from_outside_the_village(): void
