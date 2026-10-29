@@ -267,6 +267,43 @@ class FamilyControllerTest extends TestCase
             ->assertJsonPath('data.0.id', $other->id);
     }
 
+    public function test_family_list_filters_by_hamlet_rw_and_rt_through_the_rt(): void
+    {
+        $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
+        $user = $this->stafSid($village);
+        $rt = Rt::factory()->create();
+        $otherRt = Rt::factory()->create();
+        // rw_id/hamlet_id KK sengaja tidak sinkron: filter mengikuti RT.
+        $target = Family::factory()->create([
+            'village_id' => $village->id,
+            'rt_id' => $rt->id,
+            'rw_id' => $otherRt->rw_id,
+            'hamlet_id' => $otherRt->rw->hamlet_id,
+        ]);
+        Family::factory()->create([
+            'village_id' => $village->id,
+            'rt_id' => $otherRt->id,
+            'rw_id' => $otherRt->rw_id,
+        ]);
+
+        foreach ([
+            'hamlet_id='.$rt->rw->hamlet_id,
+            'rw_id='.$rt->rw_id,
+            'rt_id='.$rt->id,
+        ] as $filter) {
+            $this->actingAs($user)
+                ->getJson("/api/families?{$filter}")
+                ->assertOk()
+                ->assertJsonCount(1, 'data')
+                ->assertJsonPath('data.0.id', $target->id);
+        }
+
+        $this->actingAs($user)
+            ->getJson('/api/families?rt_id=abc')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('rt_id');
+    }
+
     public function test_family_options_returns_every_family_without_plain_no_kk(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);

@@ -19,7 +19,10 @@ class FamilyRepository
     /**
      * Daftar KK berhalaman. No. KK terenkripsi sehingga tidak bisa dicari
      * sebagian: 16 digit dicocokkan lewat no_kk_hash, teks lain dicari di
-     * nama kepala keluarga.
+     * nama kepala keluarga. Filter Dusun/RW dibaca lewat RT KK (seperti
+     * daftar warga), bukan kolom rw_id/hamlet_id yang bisa tidak sinkron.
+     *
+     * @param  array{search?: ?string, hamlet_id?: int|string|null, rw_id?: int|string|null, rt_id?: int|string|null, per_page?: int|string|null}  $filters
      */
     public function paginateWithWilayah(string $villageId, array $filters = []): LengthAwarePaginator
     {
@@ -37,6 +40,15 @@ class FamilyRepository
 
                 return $query->whereHas('headMember', $byName);
             })
+            ->when(! empty($filters['hamlet_id']), fn ($query) => $query->whereHas(
+                'rt.rw',
+                fn ($rwQuery) => $rwQuery->where('hamlet_id', $filters['hamlet_id']),
+            ))
+            ->when(! empty($filters['rw_id']), fn ($query) => $query->whereHas(
+                'rt',
+                fn ($rtQuery) => $rtQuery->where('rw_id', $filters['rw_id']),
+            ))
+            ->when(! empty($filters['rt_id']), fn ($query) => $query->where('rt_id', $filters['rt_id']))
             ->withCount('members')
             ->with([
                 'rt',
