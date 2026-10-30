@@ -6,10 +6,11 @@ import { useDisclosure } from '../hooks/useDisclosure'
 import { useSectionLink } from '../utils/sectionLink'
 import { AccountNavLink } from './AccountNavLink'
 import { ProfilDesaItems } from './ProfilDesaDropdown'
+import type { BerandaContent } from '../berandaContent'
 
 // Navigasi ponsel (K5): tombol berlabel teks "Menu" yang membuka daftar nav.
 // Aturan tutupnya sama dengan dropdown Profil Desa (useDisclosure).
-export function MobileMenu({ header }) {
+export function MobileMenu({ header }: { header: BerandaContent['header'] }) {
   const { isOpen, toggle, close, containerRef, triggerRef, panelId, onBlur } = useDisclosure()
   const { nav } = header
   const sectionLinkProps = useSectionLink()

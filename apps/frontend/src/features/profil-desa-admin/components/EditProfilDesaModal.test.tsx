@@ -7,15 +7,17 @@ const api = vi.hoisted(() => ({ resolveMapLink: vi.fn() }))
 vi.mock('../api', () => api)
 
 import EditProfilDesaModal from './EditProfilDesaModal'
+import { partialFixture } from '@/test/fixtures'
+import type { VillageProfileForm } from '../types'
 
 const SHORT_LINK = 'https://maps.app.goo.gl/sVU5Xqmasq4UTJ4N6'
 
-const initialData = {
+const initialData = partialFixture<VillageProfileForm>({
   name: 'Desa Cibenda',
   head_name: 'Dede Rusliana',
   latitude: null,
   longitude: null,
-}
+})
 
 const renderModal = (data = initialData) => {
   const onSubmit = vi.fn().mockResolvedValue(undefined)

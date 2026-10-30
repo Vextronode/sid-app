@@ -5,13 +5,15 @@ import { Link } from 'react-router-dom'
 import { HAL_AJUKAN_SURAT, HAL_STATUS_SURAT } from '@/lib/constants/routes'
 import { useLoginAwareHref } from '../hooks/useLoginAwareHref'
 import { buttonPrimary, textLink } from '../publicClasses'
+import type { BerandaContent } from '../berandaContent'
+import type { Village } from '@/types'
 
 // Foto hero sebagai <img> (bukan background CSS) agar bisa diprioritaskan
 // (fetchpriority="high") dan diketahui kapan selesai dimuat. Foto tersembunyi
 // sampai termuat, lalu terbuka dari kaki ke atap gapura (pb-unveil); tanpa
 // gerak bila prefers-reduced-motion. Gagal dimuat: tetap tersembunyi, yang
 // tampil bingkai kontur (K2).
-function HeroPhoto({ src }) {
+function HeroPhoto({ src }: { src: string }) {
   const [status, setStatus] = useState('loading') // loading | loaded | failed
 
   return (
@@ -32,7 +34,9 @@ function HeroPhoto({ src }) {
 // Desa); URL-nya juga dipasang sebagai variabel --bd-hero-image di <section>.
 // Bila foto kosong atau gagal dimuat, bingkai tampil biru malam bermotif
 // kontur (K2). Foto dekoratif, jadi alt="".
-export function BerandaHero({ content, village }) {
+type BerandaHeroProps = { content: BerandaContent; village: Village | null }
+
+export function BerandaHero({ content, village }: BerandaHeroProps) {
   const { hero } = content
   const imageUrl = village?.hero_image_url
   const photoCredit = village?.hero_photo_credit

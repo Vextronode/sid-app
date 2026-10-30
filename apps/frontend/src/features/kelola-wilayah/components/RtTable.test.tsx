@@ -2,17 +2,19 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import RtTable from './RtTable'
+import { partialFixture } from '@/test/fixtures'
+import type { WilayahHamlet, WilayahRw } from '../types'
 
-const HAMLETS = [
+const HAMLETS = partialFixture<WilayahHamlet[]>([
   { id: 1, name: 'Krajan' },
   { id: 2, name: 'Sukamaju' },
-]
+])
 
-const RWS = [
+const RWS = partialFixture<WilayahRw[]>([
   { id: 10, number: '01', hamletId: 1 },
   { id: 11, number: '02', hamletId: 1 },
   { id: 20, number: '03', hamletId: 2 },
-]
+])
 
 const RTS = [
   { id: 100, number: '01', rwId: 10, fullLabel: 'RT 001', isActive: true },

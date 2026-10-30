@@ -1,3 +1,5 @@
 import { createContext } from 'react'
 
-export const WilayahMasterContext = createContext(null)
+import type { WilayahMasterValue } from '../types'
+
+export const WilayahMasterContext = createContext<WilayahMasterValue | null>(null)

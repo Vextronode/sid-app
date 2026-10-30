@@ -3,12 +3,14 @@ import { ChevronDown, Clock, ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { formatAnnouncementUntil, isAnnouncementExpired } from '../utils/announcement'
+import type { BerandaContent } from '../berandaContent'
+import type { PublicAnnouncement } from '@/features/info-desa/usePublicVillageInfo'
 
 // setTimeout tidak bisa menunggu lebih dari ~24,8 hari.
 const MAX_TIMEOUT_MS = 2_147_483_647
 
 // Pengumuman tersembunyi tepat saat waktunya habis, walau halaman tetap terbuka.
-function useStillShowing(announcement) {
+function useStillShowing(announcement: PublicAnnouncement | null | undefined) {
   const [, setTick] = useState(0)
 
   useEffect(() => {
@@ -25,7 +27,9 @@ function useStillShowing(announcement) {
   return Boolean(announcement) && !isAnnouncementExpired(announcement)
 }
 
-function AnnouncementLink({ href, labels }) {
+type AnnouncementLinkProps = { href: string; labels: BerandaContent['announcementBar'] }
+
+function AnnouncementLink({ href, labels }: AnnouncementLinkProps) {
   const className =
     'inline-flex min-h-11 items-center gap-2 rounded-lg bg-pb-laut px-4.5 text-base font-bold text-white no-underline hover:bg-pb-laut-hover focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pb-laut'
 
@@ -51,7 +55,17 @@ function AnnouncementLink({ href, labels }) {
 // tampil sampai waktunya habis. Isi dan link (opsional) terbuka lewat
 // "Baca selengkapnya" di panel terang di bawah pita.
 // containerClassName: pembungkus lebar konten (bd-container di beranda).
-export function AnnouncementBar({ content, announcement, containerClassName = 'bd-container' }) {
+type AnnouncementBarProps = {
+  content: BerandaContent
+  announcement: PublicAnnouncement | null | undefined
+  containerClassName?: string
+}
+
+export function AnnouncementBar({
+  content,
+  announcement,
+  containerClassName = 'bd-container',
+}: AnnouncementBarProps) {
   const labels = content.announcementBar
   const [open, setOpen] = useState(false)
   const panelId = useId()

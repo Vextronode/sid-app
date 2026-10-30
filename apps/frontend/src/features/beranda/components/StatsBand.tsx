@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { HAL_PROFIL } from '@/lib/constants/routes'
 import { sectionGap } from '../publicClasses'
+import type { BerandaContent } from '../berandaContent'
 
 // Nol atau kosong dianggap belum ada datanya.
-const formatNumber = (value) =>
+const formatNumber = (value: number | string | null | undefined) =>
   value ? Number(value).toLocaleString('id-ID', { maximumFractionDigits: 3 }) : null
 
 // Pita angka (A19). Penduduk dan dusun dihitung backend dari data warga dan
@@ -19,7 +20,7 @@ const formatNumber = (value) =>
 const stat =
   'flex items-baseline gap-3 border-white/15 px-6 py-5 not-first:border-t sm:min-w-0 sm:flex-1 sm:flex-col sm:items-start sm:gap-1.5 sm:px-8 sm:py-9 sm:not-first:border-t-0 sm:not-first:border-l'
 
-export function StatsBand({ content }) {
+export function StatsBand({ content }: { content: BerandaContent }) {
   const { statsBand: labels } = content
   const { village, stats } = usePublicVillageInfo()
   const area = formatNumber(village?.area_ha)

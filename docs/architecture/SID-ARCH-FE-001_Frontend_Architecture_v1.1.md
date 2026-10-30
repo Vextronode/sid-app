@@ -97,7 +97,7 @@ src/
   styles/                 sid-global.css, public.css, beranda.css
   test/                   setup Vitest, fixtures (partialFixture untuk data uji sebagian)
   types/                  tipe domain & API lintas fitur (api, user, citizen, wilayah, letter,
-                          notification); diimpor lewat `@/types`. react-css.d.ts mengizinkan
+                          news, notification); diimpor lewat `@/types`. react-css.d.ts mengizinkan
                           CSS custom property (`--sid-*`) di prop `style`
 public/
   push-handler.js         handler `push` & `notificationclick` untuk service worker
@@ -225,3 +225,4 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 | 1.6 | 2026-10-30 | Komponen yang tidak dipakai dihapus (antara lain `NewsCard`, `PageWatermark`, `QuickNavButtons`, komponen statis `profil-desa`), juga `authService` dan fungsi alur lama di `statusFlow` |
 | 1.7 | 2026-10-31 | Hook `useSuratDetail` bersama (pengganti 4 hook per peran), satu `NotificationPopover`, `lib/downloadFile` untuk semua berkas terlindung; alasan penolakan, anggota KK, dan label wilayah jabatan dari API v5.4; id UUID di `src/types` |
 | 1.8 | 2026-10-31 | `features/surat` bebas `any` implisit: tipe usulan Terapkan, tanda tangan, dan ringkasan surat (`LetterSummary`); salinan lokal `serverMessage` diganti `getApiErrorMessage`; `SURAT_STATUS` bertipe literal |
+| 1.9 | 2026-10-31 | Organisasi, profil-desa-admin, kelola-wilayah, beranda, dan kelola-berita bebas `any` implisit: `src/types/news.ts`, `types.ts` per fitur (organisasi, profil-desa-admin, kelola-wilayah), context wilayah bertipe; `EditInformasiUmumModal` dan `dummyBerita` yang tidak dipakai dihapus |

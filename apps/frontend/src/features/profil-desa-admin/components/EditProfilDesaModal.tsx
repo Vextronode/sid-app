@@ -5,18 +5,22 @@
 // ==========================================
 
 import { useEffect, useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { X, Save } from 'lucide-react'
 
 import { formatCoords, parseCoords, villageCoords } from '@/shared/lib/villageMap'
 import { resolveMapLink } from '../api'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
+import type { VillageProfileForm } from '../types'
 
 // Isian lokasi berupa link (Google Maps), bukan koordinat.
-const isLink = (text) => /^https?:\/\//i.test(text.trim())
+const isLink = (text: string) => /^https?:\/\//i.test(text.trim())
 
 const COORDS_FORMAT_ERROR =
   'Tempel link Google Maps, atau koordinat dengan format: latitude, longitude. Contoh: -7.6803137, 108.5513816'
+
+type ProfileModalForm = typeof EMPTY_FORM
 
 const EMPTY_FORM = {
   name: '',
@@ -28,13 +32,22 @@ const EMPTY_FORM = {
   province: '',
   postal_code: '',
   email: '',
-  area_ha: '',
+  area_ha: '' as number | string,
   history: '',
   office_hours: '',
   // Titik kantor desa sebagai teks "lat, lng".
   coords: '',
   hero_photo_credit: '',
   welcome_message: '',
+}
+
+type EditProfilDesaModalProps = {
+  open: boolean
+  onClose: () => void
+  onSubmit: (payload: Partial<VillageProfileForm>) => Promise<unknown>
+  initialData: VillageProfileForm | null
+  processing?: boolean
+  error?: string
 }
 
 export default function EditProfilDesaModal({
@@ -44,9 +57,9 @@ export default function EditProfilDesaModal({
   initialData,
   processing = false,
   error = '',
-}) {
-  const [form, setForm] = useState(EMPTY_FORM)
-  const [baseline, setBaseline] = useState(null)
+}: EditProfilDesaModalProps) {
+  const [form, setForm] = useState<ProfileModalForm>(EMPTY_FORM)
+  const [baseline, setBaseline] = useState<ProfileModalForm | null>(null)
   const requestClose = useConfirmDiscard(open && isFormDirty(form, baseline), {
     disabled: processing,
     escapeClose: open ? onClose : null,
@@ -85,7 +98,7 @@ export default function EditProfilDesaModal({
 
   const busy = processing || resolving
 
-  const handleChange = (event) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target
 
     setForm((current) => ({
@@ -134,7 +147,7 @@ export default function EditProfilDesaModal({
     }
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     if (!form.name.trim() || !form.head_name.trim()) {

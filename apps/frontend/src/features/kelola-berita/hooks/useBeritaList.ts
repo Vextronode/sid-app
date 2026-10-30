@@ -7,18 +7,20 @@ import {
   updateBerita,
 } from '@/features/kelola-berita/api'
 import { usePageSize } from '@/components/ui/usePageSize'
+import type { BeritaForm } from '@/features/kelola-berita/components/BeritaFormModal'
+import type { News } from '@/types'
 
 // Grid berita tiga kolom: kelipatan 3 agar baris kartu selalu penuh.
 export const BERITA_PAGE_SIZE_OPTIONS = [6, 12, 24]
 
 export function useBeritaList() {
-  const [berita, setBerita] = useState([])
+  const [berita, setBerita] = useState<News[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSizeState] = usePageSize('kelola-berita', {
     options: BERITA_PAGE_SIZE_OPTIONS,
   })
 
-  const setPageSize = (value) => {
+  const setPageSize = (value: number) => {
     setPageSizeState(value)
     setCurrentPage(1)
   }
@@ -100,7 +102,7 @@ export function useBeritaList() {
   // REMOVE BERITA
   // ==========================================
 
-  const removeBerita = async (id) => {
+  const removeBerita = async (id: number) => {
     setProcessing(true)
 
     try {
@@ -143,7 +145,7 @@ export function useBeritaList() {
   // TAMBAH BERITA
   // ==========================================
 
-  const addBerita = async (payload) => {
+  const addBerita = async (payload: BeritaForm) => {
     setProcessing(true)
 
     try {
@@ -161,7 +163,7 @@ export function useBeritaList() {
   // UPDATE BERITA
   // ==========================================
 
-  const updateBeritaData = async (id, payload) => {
+  const updateBeritaData = async (id: number, payload: BeritaForm) => {
     setProcessing(true)
 
     try {
@@ -177,7 +179,7 @@ export function useBeritaList() {
   // PUBLISH BERITA
   // ==========================================
 
-  const publishBerita = async (id) => {
+  const publishBerita = async (id: number) => {
     setProcessing(true)
 
     try {

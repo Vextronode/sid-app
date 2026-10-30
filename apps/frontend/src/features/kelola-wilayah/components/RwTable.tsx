@@ -1,8 +1,25 @@
 import { Pencil, Power, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { StatusPill } from '@/components/ui/StatusPill'
+import type { WilayahHamlet, WilayahProcessing, WilayahRw } from '../types'
 
-export default function RwTable({ rws, hamlets, processing, onEdit, onToggle, onDelete }) {
+type RwTableProps = {
+  rws: WilayahRw[]
+  hamlets: WilayahHamlet[]
+  processing: WilayahProcessing
+  onEdit: (item: WilayahRw) => void
+  onToggle: (item: WilayahRw) => void
+  onDelete: (item: WilayahRw) => void
+}
+
+export default function RwTable({
+  rws,
+  hamlets,
+  processing,
+  onEdit,
+  onToggle,
+  onDelete,
+}: RwTableProps) {
   const [search, setSearch] = useState('')
   const [filterHamlet, setFilterHamlet] = useState('')
 
@@ -21,7 +38,8 @@ export default function RwTable({ rws, hamlets, processing, onEdit, onToggle, on
     })
   }, [rws, search, filterHamlet])
 
-  const getHamletName = (hamletId) => hamlets.find((hamlet) => hamlet.id === hamletId)?.name ?? '-'
+  const getHamletName = (hamletId: number | null) =>
+    hamlets.find((hamlet) => hamlet.id === hamletId)?.name ?? '-'
 
   return (
     <div className="sid-wilayah-table-card">

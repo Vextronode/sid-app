@@ -10,7 +10,7 @@ const HERO_LAYERS = [
 const FOOTER_PATH = 'M0 30 C 240 0, 480 56, 720 28 S 1200 0, 1440 30 V60 H0 Z'
 
 /** variant "hero": tiga lapis di tepi bawah hero; "footer": satu lapis di tepi atas footer. */
-export function Wave({ variant }) {
+export function Wave({ variant }: { variant: 'hero' | 'footer' }) {
   if (variant === 'hero') {
     return (
       <svg

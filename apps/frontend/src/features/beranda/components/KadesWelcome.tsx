@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { UserRound } from 'lucide-react'
 
 import { formatVillageName } from '@/shared/lib/villageName'
+import type { PublicVillageHead } from '@/features/info-desa/usePublicVillageInfo'
+import type { BerandaContent } from '../berandaContent'
+import type { Village } from '@/types'
 
 // Sambutan Kepala Desa. Teksnya diisi Staf SIDUTama (village.welcome_message,
 // Kelola Profil Desa); bila kosong, seluruh blok tidak dirender.
@@ -14,7 +17,13 @@ import { formatVillageName } from '@/shared/lib/villageName'
 // (seperti foto hero) menembus tepi atas panel. Jarak atas sengaja lebih
 // rapat dari sectionGap karena sambutan langsung menyambung hero; nilainya
 // = bagian foto yang menonjol + ±24px.
-export function KadesWelcome({ content, village, head }) {
+type KadesWelcomeProps = {
+  content: BerandaContent
+  village: Village | null
+  head: PublicVillageHead | null
+}
+
+export function KadesWelcome({ content, village, head }: KadesWelcomeProps) {
   const labels = content.welcomeBlock
   const message = village?.welcome_message?.trim()
   const photoUrl = head?.photo_url

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { Pencil, Power, Trash2 } from 'lucide-react'
 
 import {
@@ -12,19 +13,23 @@ import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
-const EMPTY_FORM = { id: null, label: '', sort_order: '', is_single_occupant: true }
+import type { OfficialPositionType } from '../types'
 
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
+// sort_order berupa teks isian; kosong = urutan bawaan backend.
+type PositionTypeForm = {
+  id: number | null
+  label: string
+  sort_order: string
+  is_single_occupant: boolean
+}
 
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
+const EMPTY_FORM: PositionTypeForm = {
+  id: null,
+  label: '',
+  sort_order: '',
+  is_single_occupant: true,
 }
 
 /**
@@ -32,7 +37,17 @@ function serverMessage(error, fallback) {
  * akun dan peran di aplikasi tidak dikelola dari sini. Jabatan baru langsung
  * bisa dipilih saat menetapkan pejabat dan tampil di Profil Desa.
  */
-export default function OfficialPositionTypeManager({ types, onChanged, onClose }) {
+type OfficialPositionTypeManagerProps = {
+  types: OfficialPositionType[]
+  onChanged: () => Promise<unknown> | void
+  onClose: () => void
+}
+
+export default function OfficialPositionTypeManager({
+  types,
+  onChanged,
+  onClose,
+}: OfficialPositionTypeManagerProps) {
   const [form, setForm] = useState(EMPTY_FORM)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
@@ -53,7 +68,7 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
     escapeClose: onClose,
   })
 
-  const run = async (request, successMessage) => {
+  const run = async (request: () => Promise<unknown>, successMessage: string) => {
     setProcessing(true)
     setError('')
 
@@ -63,13 +78,13 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
       setForm(EMPTY_FORM)
       await onChanged()
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Jenis jabatan gagal disimpan.'))
+      setError(getApiErrorMessage(requestError, 'Jenis jabatan gagal disimpan.'))
     } finally {
       setProcessing(false)
     }
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const payload = {
@@ -87,7 +102,7 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
     )
   }
 
-  const handleToggle = async (type) => {
+  const handleToggle = async (type: OfficialPositionType) => {
     const confirmed = await confirmDialog(
       type.is_active
         ? {
@@ -111,7 +126,7 @@ export default function OfficialPositionTypeManager({ types, onChanged, onClose 
     )
   }
 
-  const handleDelete = async (type) => {
+  const handleDelete = async (type: OfficialPositionType) => {
     if (
       !(await confirmDialog({
         title: `Hapus jenis jabatan ${type.label}?`,

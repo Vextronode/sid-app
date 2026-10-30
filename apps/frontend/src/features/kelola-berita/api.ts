@@ -1,13 +1,15 @@
 import api from '@/lib/api'
+import type { BeritaForm } from './components/BeritaFormModal'
+import type { Id, LaravelPaginatedResponse, News, NewsCategory, ResourceResponse } from '@/types'
 
-function buildNewsFormData(payload, isUpdate = false) {
+function buildNewsFormData(payload: BeritaForm, isUpdate = false) {
   const formData = new FormData()
 
   formData.append('title', payload.title ?? '')
   formData.append('content', payload.content ?? '')
 
   for (const id of payload.category_ids ?? []) {
-    formData.append('category_ids[]', id)
+    formData.append('category_ids[]', String(id))
   }
 
   if (payload.thumbnail instanceof File) {
@@ -21,27 +23,27 @@ function buildNewsFormData(payload, isUpdate = false) {
   return formData
 }
 
-export function getBeritaList(params = {}) {
-  return api.get('/api/news', {
+export function getBeritaList(params: { page?: number; status?: 'draft' | 'published' } = {}) {
+  return api.get<LaravelPaginatedResponse<News>>('/api/news', {
     params,
   })
 }
 
-export function createBerita(payload) {
-  return api.post('/api/news', buildNewsFormData(payload))
+export function createBerita(payload: BeritaForm) {
+  return api.post<ResourceResponse<News>>('/api/news', buildNewsFormData(payload))
 }
 
-export function updateBerita(id, payload) {
+export function updateBerita(id: Id, payload: BeritaForm) {
   const formData = buildNewsFormData(payload, true)
 
   return api.post(`/api/news/${id}`, formData)
 }
 
-export function deleteBerita(id) {
+export function deleteBerita(id: Id) {
   return api.delete(`/api/news/${id}`)
 }
 
-export function publishBerita(id) {
+export function publishBerita(id: Id) {
   return api.patch(`/api/news/${id}`, {
     is_published: true,
   })
@@ -52,17 +54,17 @@ export function publishBerita(id) {
 // ==========================================
 
 export function getNewsCategories() {
-  return api.get('/api/news-categories')
+  return api.get<ResourceResponse<NewsCategory[]>>('/api/news-categories')
 }
 
-export function createNewsCategory(name) {
+export function createNewsCategory(name: string) {
   return api.post('/api/news-categories', { name })
 }
 
-export function updateNewsCategory(id, name) {
+export function updateNewsCategory(id: Id, name: string) {
   return api.patch(`/api/news-categories/${id}`, { name })
 }
 
-export function deleteNewsCategory(id) {
+export function deleteNewsCategory(id: Id) {
   return api.delete(`/api/news-categories/${id}`)
 }

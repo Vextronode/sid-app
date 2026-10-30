@@ -1,6 +1,8 @@
 import { Map, MapPinned, Network } from 'lucide-react'
 
-const TABS = [
+import type { WilayahType } from '../types'
+
+const TABS: { key: WilayahType; label: string; icon: typeof Map }[] = [
   {
     key: 'dusun',
     label: 'Dusun',
@@ -18,7 +20,9 @@ const TABS = [
   },
 ]
 
-export default function WilayahTabs({ activeTab, onChange }) {
+type WilayahTabsProps = { activeTab: WilayahType; onChange: (tab: WilayahType) => void }
+
+export default function WilayahTabs({ activeTab, onChange }: WilayahTabsProps) {
   return (
     <div className="sid-wilayah-tabs">
       {TABS.map(({ key, label, icon: Icon }) => (

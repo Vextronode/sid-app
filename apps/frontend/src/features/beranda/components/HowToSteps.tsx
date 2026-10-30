@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { HAL_AJUKAN_SURAT } from '@/lib/constants/routes'
 import { useLoginAwareHref } from '../hooks/useLoginAwareHref'
 import { buttonPrimary, sectionGap, sectionSubtitle, sectionTitle } from '../publicClasses'
+import type { BerandaContent } from '../berandaContent'
 
 // Desktop: tiap langkah satu anak tangga lebih tinggi dari sebelumnya, seperti
 // petak sawah berundak. Undakannya tetap 32px (grid rata atas, bukan ikut
@@ -14,7 +15,7 @@ const RISE = ['min-[901px]:mt-24', 'min-[901px]:mt-16', 'min-[901px]:mt-8', 'min
 // Langkah terakhir memakai warna aksen; tombol memakai alur login yang sama
 // dengan "Ajukan Surat" di hero (K4). Nomor besar hanya visual (aria-hidden);
 // pembaca layar membaca label "Langkah N" yang disembunyikan secara visual.
-export function HowToSteps({ content }) {
+export function HowToSteps({ content }: { content: BerandaContent }) {
   const { howTo } = content
   const ajukanHref = useLoginAwareHref(HAL_AJUKAN_SURAT)
   const lastIndex = howTo.steps.length - 1

@@ -4,7 +4,7 @@ import { getTermStatus } from '@/features/profil-desa-admin/utils/termStatus'
 
 // Pengingat di tabel Pejabat Desa: masa jabatan sudah lewat atau segera
 // berakhir. Tidak tampil untuk masa jabatan yang masih jauh.
-export function TermEndBadge({ termEndsAt }) {
+export function TermEndBadge({ termEndsAt }: { termEndsAt: string | null | undefined }) {
   const status = getTermStatus(termEndsAt)
   if (!status) return null
 

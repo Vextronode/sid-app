@@ -3,7 +3,7 @@
 
 export const SUMMARY_MAX_LENGTH = 140
 
-const ENTITIES = {
+const ENTITIES: Record<string, string> = {
   amp: '&',
   lt: '<',
   gt: '>',
@@ -12,8 +12,8 @@ const ENTITIES = {
   nbsp: ' ',
 }
 
-const decodeEntities = (text) =>
-  text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, code) => {
+const decodeEntities = (text: string) =>
+  text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match: string, code: string) => {
     if (code[0] === '#') {
       const num =
         code[1].toLowerCase() === 'x' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10)
@@ -22,7 +22,7 @@ const decodeEntities = (text) =>
     return ENTITIES[code.toLowerCase()] ?? match
   })
 
-export function toPlainText(value) {
+export function toPlainText(value: unknown) {
   const text = Array.isArray(value) ? value.join(' ') : typeof value === 'string' ? value : ''
   return decodeEntities(
     text.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]*>/g, ' '),
@@ -31,13 +31,13 @@ export function toPlainText(value) {
     .trim()
 }
 
-const firstSentence = (text) => {
+const firstSentence = (text: string) => {
   // Titik di dalam angka ("4.281") tidak dihitung karena tidak diikuti spasi.
   const match = text.match(/^.*?[.!?](?=\s|$)/)
   return match ? match[0] : text
 }
 
-const truncate = (text, maxLength) => {
+const truncate = (text: string, maxLength: number) => {
   if (text.length <= maxLength) return text
   const cut = text.slice(0, maxLength - 1)
   const lastSpace = cut.lastIndexOf(' ')
@@ -50,7 +50,10 @@ const truncate = (text, maxLength) => {
  * Memakai `excerpt` bila ada, selain itu dipotong dari `content`.
  * Mengembalikan '' bila tidak ada teks.
  */
-export function summarizeNews(news, maxLength = SUMMARY_MAX_LENGTH) {
+export function summarizeNews(
+  news: { excerpt?: unknown; content?: unknown } | null | undefined,
+  maxLength = SUMMARY_MAX_LENGTH,
+) {
   const source = toPlainText(news?.excerpt) || toPlainText(news?.content)
   if (!source) return ''
   return truncate(firstSentence(source), maxLength)

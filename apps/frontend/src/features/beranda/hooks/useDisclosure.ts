@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import type { FocusEvent } from 'react'
 
 // Buka/tutup dropdown dan menu ponsel beranda.
 // Tertutup saat: klik/tap di luar, Escape (fokus kembali ke pemicu),
@@ -9,8 +10,8 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 // triggerRef di tombol pemicu, dan panelId di aria-controls / id panel.
 export function useDisclosure() {
   const [isOpen, setIsOpen] = useState(false)
-  const containerRef = useRef(null)
-  const triggerRef = useRef(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const panelId = useId()
 
   const close = useCallback(() => setIsOpen(false), [])
@@ -19,10 +20,10 @@ export function useDisclosure() {
   useEffect(() => {
     if (!isOpen) return undefined
 
-    const handlePointerDown = (event) => {
-      if (!containerRef.current?.contains(event.target)) setIsOpen(false)
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false)
     }
-    const handleKeyDown = (event) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       setIsOpen(false)
       triggerRef.current?.focus()
@@ -39,8 +40,8 @@ export function useDisclosure() {
   // React onBlur = focusout (menggelembung). relatedTarget = elemen yang
   // menerima fokus berikutnya; null berarti fokus pindah ke luar dokumen
   // atau ke elemen yang tidak fokusabel (klik luar sudah ditangani di atas).
-  const onBlur = useCallback((event) => {
-    const next = event.relatedTarget
+  const onBlur = useCallback((event: FocusEvent<HTMLElement>) => {
+    const next = event.relatedTarget as Node | null
     if (next && !containerRef.current?.contains(next)) setIsOpen(false)
   }, [])
 

@@ -7,10 +7,10 @@
 // ==========================================
 
 import { useState, useEffect } from 'react'
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { Send, Image as ImageIcon } from 'lucide-react'
 
-import { categoryErrorMessage } from '@/features/kelola-berita/hooks/useNewsCategories'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 
@@ -101,17 +101,18 @@ export default function BeritaFormModal({
   // ==========================================
   // HANDLE INPUT
   // ==========================================
-  const handleChange = (field) => (e) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: e.target.value,
-    }))
-  }
+  const handleChange =
+    (field: 'title' | 'content') => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setForm((prev) => ({
+        ...prev,
+        [field]: e.target.value,
+      }))
+    }
 
   // ==========================================
   // HANDLE KATEGORI (1-2)
   // ==========================================
-  const toggleCategory = (id) => {
+  const toggleCategory = (id: number) => {
     setError('')
     setForm((prev) => {
       const selected = prev.category_ids.includes(id)
@@ -153,7 +154,7 @@ export default function BeritaFormModal({
   // ==========================================
   // HANDLE SUBMIT
   // ==========================================
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (processing) return
@@ -166,7 +167,7 @@ export default function BeritaFormModal({
     try {
       await onSubmit(form)
     } catch (submitError) {
-      setError(categoryErrorMessage(submitError, 'Berita gagal disimpan.'))
+      setError(getApiErrorMessage(submitError, 'Berita gagal disimpan.'))
     }
   }
 

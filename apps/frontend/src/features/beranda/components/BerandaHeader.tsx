@@ -5,10 +5,11 @@ import { useSectionLink } from '../utils/sectionLink'
 import { AccountNavLink } from './AccountNavLink'
 import { BerandaBrand } from './BerandaBrand'
 import { MobileMenu } from './MobileMenu'
+import type { BerandaContent } from '../berandaContent'
 import { ProfilDesaDropdown } from './ProfilDesaDropdown'
 
 // Header beranda (A1–A9), juga dipakai halaman publik lain lewat MainLayout.
-export function BerandaHeader({ content }) {
+export function BerandaHeader({ content }: { content: BerandaContent }) {
   const { header } = content
   const sectionLinkProps = useSectionLink()
 

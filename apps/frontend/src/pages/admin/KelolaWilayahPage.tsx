@@ -8,11 +8,15 @@ import DusunTable from '@/features/kelola-wilayah/components/DusunTable'
 import RtTable from '@/features/kelola-wilayah/components/RtTable'
 import RwTable from '@/features/kelola-wilayah/components/RwTable'
 import WilayahFormModal from '@/features/kelola-wilayah/components/WilayahFormModal'
+import type { WilayahType } from '@/features/kelola-wilayah/types'
 import WilayahTabs from '@/features/kelola-wilayah/components/WilayahTabs'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+
+// Label tombol Tambah per tab.
+const TAB_LABELS: Record<WilayahType, string> = { dusun: 'Dusun', rw: 'RW', rt: 'RT' }
 
 export default function KelolaWilayahPage() {
   const {
@@ -34,7 +38,7 @@ export default function KelolaWilayahPage() {
     deleteRt,
   } = useWilayahMaster()
 
-  const [activeTab, setActiveTab] = useState('dusun')
+  const [activeTab, setActiveTab] = useState<WilayahType>('dusun')
   const [modal, setModal] = useState({
     open: false,
     type: null,
@@ -233,7 +237,7 @@ export default function KelolaWilayahPage() {
               className="sid-wilayah-btn sid-wilayah-btn-primary"
             >
               <Plus size={16} />
-              Tambah {activeTab.toUpperCase() === 'RW' ? 'RW' : activeTab === 'RT' ? 'RT' : 'Dusun'}
+              Tambah {TAB_LABELS[activeTab]}
             </button>
           </div>
         </div>

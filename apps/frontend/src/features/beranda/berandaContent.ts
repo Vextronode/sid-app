@@ -212,6 +212,8 @@ const STATIC = {
   ],
 }
 
-export function getBerandaContent() {
+export type BerandaContent = typeof STATIC
+
+export function getBerandaContent(): BerandaContent {
   return STATIC
 }

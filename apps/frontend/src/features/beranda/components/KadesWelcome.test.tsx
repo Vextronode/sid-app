@@ -3,13 +3,16 @@ import { describe, expect, it } from 'vitest'
 
 import { getBerandaContent } from '../berandaContent'
 import { KadesWelcome } from './KadesWelcome'
+import { partialFixture } from '@/test/fixtures'
+import type { PublicVillageHead } from '@/features/info-desa/usePublicVillageInfo'
+import type { Village } from '@/types'
 
 const content = getBerandaContent()
-const village = {
+const village = partialFixture<Village>({
   name: 'Desa Cibenda',
   head_name: 'Nama Lama (teks)',
   welcome_message: 'Selamat datang di layanan desa.',
-}
+})
 
 describe('KadesWelcome', () => {
   it('shows the active village head name and photo from the officials data', () => {
@@ -17,7 +20,10 @@ describe('KadesWelcome', () => {
       <KadesWelcome
         content={content}
         village={village}
-        head={{ name: 'Asep Saepudin', photo_url: '/storage/officials/kades.jpg' }}
+        head={partialFixture<PublicVillageHead>({
+          name: 'Asep Saepudin',
+          photo_url: '/storage/officials/kades.jpg',
+        })}
       />,
     )
 
@@ -43,7 +49,7 @@ describe('KadesWelcome', () => {
       <KadesWelcome
         content={content}
         village={village}
-        head={{ name: 'Asep Saepudin', photo_url: '/rusak.jpg' }}
+        head={partialFixture<PublicVillageHead>({ name: 'Asep Saepudin', photo_url: '/rusak.jpg' })}
       />,
     )
 

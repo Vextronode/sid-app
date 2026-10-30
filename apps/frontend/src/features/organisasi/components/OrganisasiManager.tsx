@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import {
   ArrowUpCircle,
   Camera,
@@ -21,17 +22,56 @@ import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type {
+  AddOrgMemberPayload,
+  EndOrgMemberPayload,
+  OrgMember,
+  OrgPosition,
+  OrgSlot,
+  OrgSlots,
+  UpdateOrgMemberPayload,
+} from '../types'
 
-const LEADER_SLOTS = [
+// Isian form Isi/Ganti Ketua atau Wakil Ketua.
+type FillForm = {
+  slot: OrgSlot
+  lockSlot: boolean
+  source: 'existing' | 'new'
+  from_member_id: string
+  member_name: string
+  phone_wa: string
+  notes: string
+  started_at: string
+  previous_holder: 'end' | 'to_member'
+}
+
+// Data anggota dari MemberForm; started_at hanya untuk anggota baru.
+type MemberPayload = UpdateOrgMemberPayload & { started_at?: string }
+
+type MemberFormState = { member_name: string; phone_wa: string; started_at: string; notes: string }
+
+type ModalState =
+  | { kind: 'fill'; initial: FillForm }
+  | { kind: 'member'; position: OrgPosition; member?: OrgMember }
+  | { kind: 'end'; position: OrgPosition; member: OrgMember; toMember: boolean }
+
+type MemberHandler = (member: OrgMember) => void
+
+const LEADER_SLOTS: { key: OrgSlot; label: string }[] = [
   { key: 'ketua', label: 'Ketua' },
   { key: 'wakil_ketua', label: 'Wakil Ketua' },
 ]
 
-const SLOT_LABEL = { ketua: 'Ketua', wakil_ketua: 'Wakil Ketua', anggota: 'Anggota' }
+const SLOT_LABEL: Record<OrgSlot, string> = {
+  ketua: 'Ketua',
+  wakil_ketua: 'Wakil Ketua',
+  anggota: 'Anggota',
+}
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-const formatDate = (value) =>
+const formatDate = (value: string | null | undefined) =>
   value
     ? new Date(`${value}T00:00:00`).toLocaleDateString('id-ID', {
         day: 'numeric',
@@ -40,17 +80,20 @@ const formatDate = (value) =>
       })
     : '-'
 
-const getErrorMessage = (err, fallback) => {
-  const errs = err?.response?.data?.errors
-  return (errs && Object.values(errs)[0]?.[0]) || err?.response?.data?.message || fallback
-}
-
-const activeOf = (position) => (position?.members ?? []).filter((m) => m.is_active)
-const historyOf = (position) => (position?.members ?? []).filter((m) => !m.is_active)
+const activeOf = (position: OrgPosition | null | undefined) =>
+  (position?.members ?? []).filter((m) => m.is_active)
+const historyOf = (position: OrgPosition | null | undefined) =>
+  (position?.members ?? []).filter((m) => !m.is_active)
 
 const PHOTO_TYPES = 'image/png,image/jpeg,image/webp'
 
-function MemberPhoto({ src, name, size = 'tiny' }) {
+type MemberPhotoProps = {
+  src?: string | null
+  name?: string | null
+  size?: 'tiny' | 'small' | 'medium'
+}
+
+function MemberPhoto({ src, name, size = 'tiny' }: MemberPhotoProps) {
   return (
     <div className={`sid-profil-desa-avatar sid-profil-desa-avatar-${size}`}>
       {src ? (
@@ -95,7 +138,14 @@ function PhotoField({ file, currentSrc, onChange }: PhotoFieldProps) {
 }
 
 // Tombol ganti/hapus foto, dipakai di kartu pimpinan dan tabel anggota.
-function PhotoActions({ member, processing, onPick, onRemove }) {
+type PhotoActionsProps = {
+  member: OrgMember
+  processing: boolean
+  onPick: MemberHandler
+  onRemove: MemberHandler
+}
+
+function PhotoActions({ member, processing, onPick, onRemove }: PhotoActionsProps) {
   return (
     <>
       <button
@@ -124,7 +174,7 @@ function PhotoActions({ member, processing, onPick, onRemove }) {
   )
 }
 
-function ModalError({ error }) {
+function ModalError({ error }: { error: string | null }) {
   if (!error) return null
 
   return (
@@ -134,7 +184,9 @@ function ModalError({ error }) {
   )
 }
 
-function ModalActions({ submitting, submitLabel, onCancel }) {
+type ModalActionsProps = { submitting: boolean; submitLabel: string; onCancel: () => void }
+
+function ModalActions({ submitting, submitLabel, onCancel }: ModalActionsProps) {
   return (
     <div className="sid-modal-actions">
       <button type="button" className="sid-button sid-button-outline" onClick={onCancel}>
@@ -147,7 +199,9 @@ function ModalActions({ submitting, submitLabel, onCancel }) {
   )
 }
 
-function HistoryList({ members, processing, onDelete }) {
+type HistoryListProps = { members: OrgMember[]; processing: boolean; onDelete: MemberHandler }
+
+function HistoryList({ members, processing, onDelete }: HistoryListProps) {
   if (members.length === 0) return null
 
   return (
@@ -179,6 +233,18 @@ function HistoryList({ members, processing, onDelete }) {
   )
 }
 
+type LeaderCardProps = {
+  label: string
+  position: OrgPosition | null
+  processing: boolean
+  onFill: () => void
+  onEdit: MemberHandler
+  onEnd: (member: OrgMember, toMember: boolean) => void
+  onDeleteHistory: MemberHandler
+  onPickPhoto: MemberHandler
+  onRemovePhoto: MemberHandler
+}
+
 function LeaderCard({
   label,
   position,
@@ -189,7 +255,7 @@ function LeaderCard({
   onDeleteHistory,
   onPickPhoto,
   onRemovePhoto,
-}) {
+}: LeaderCardProps) {
   const holder = activeOf(position)[0]
 
   return (
@@ -280,9 +346,25 @@ function LeaderCard({
 
 // Mengisi/mengganti Ketua atau Wakil Ketua, dari anggota yang sudah ada
 // (promosi) atau orang baru.
-function FillLeaderForm({ initial, slots, submitting, error, onCancel, onSubmit }) {
+type FillLeaderFormProps = {
+  initial: FillForm
+  slots: OrgSlots
+  submitting: boolean
+  error: string | null
+  onCancel: () => void
+  onSubmit: (positionId: number, payload: AddOrgMemberPayload, photo: File | null) => void
+}
+
+function FillLeaderForm({
+  initial,
+  slots,
+  submitting,
+  error,
+  onCancel,
+  onSubmit,
+}: FillLeaderFormProps) {
   const [form, setForm] = useState(initial)
-  const [photo, setPhoto] = useState(null)
+  const [photo, setPhoto] = useState<File | null>(null)
   const requestCancel = useConfirmDiscard(
     isFormDirty({ ...form, photo }, { ...initial, photo: null }),
     {
@@ -293,13 +375,13 @@ function FillLeaderForm({ initial, slots, submitting, error, onCancel, onSubmit 
 
   const target = slots[form.slot]
   const holder = activeOf(target)[0]
-  const candidates = ['ketua', 'wakil_ketua', 'anggota']
+  const candidates = (['ketua', 'wakil_ketua', 'anggota'] as OrgSlot[])
     .filter((key) => key !== form.slot)
     .flatMap((key) => activeOf(slots[key]).map((m) => ({ ...m, slotLabel: SLOT_LABEL[key] })))
 
-  const set = (patch) => setForm((current) => ({ ...current, ...patch }))
+  const set = (patch: Partial<FillForm>) => setForm((current) => ({ ...current, ...patch }))
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const isExisting = form.source === 'existing'
     // Anggota yang dipromosikan membawa fotonya sendiri.
@@ -324,7 +406,7 @@ function FillLeaderForm({ initial, slots, submitting, error, onCancel, onSubmit 
       {initial.lockSlot ? null : (
         <label className="sid-form-group">
           <span className="sid-form-label">Jabatan *</span>
-          <select value={form.slot} onChange={(e) => set({ slot: e.target.value })}>
+          <select value={form.slot} onChange={(e) => set({ slot: e.target.value as OrgSlot })}>
             {LEADER_SLOTS.map((s) => (
               <option key={s.key} value={s.key}>
                 {s.label}
@@ -452,21 +534,29 @@ function FillLeaderForm({ initial, slots, submitting, error, onCancel, onSubmit 
 }
 
 // Tambah anggota baru, atau edit data siapa pun (termasuk Ketua/Wakil).
-function MemberForm({ member, submitting, error, onCancel, onSubmit }) {
-  const [initialForm] = useState(() => ({
+type MemberFormProps = {
+  member?: OrgMember
+  submitting: boolean
+  error: string | null
+  onCancel: () => void
+  onSubmit: (payload: MemberPayload, photo: File | null) => void
+}
+
+function MemberForm({ member, submitting, error, onCancel, onSubmit }: MemberFormProps) {
+  const [initialForm] = useState<MemberFormState>(() => ({
     member_name: member?.member_name ?? '',
     phone_wa: member?.phone_wa ?? '',
     started_at: member?.started_at ?? today(),
     notes: member?.notes ?? '',
   }))
   const [form, setForm] = useState(initialForm)
-  const [photo, setPhoto] = useState(null)
+  const [photo, setPhoto] = useState<File | null>(null)
   const requestCancel = useConfirmDiscard(
     isFormDirty({ ...form, photo }, { ...initialForm, photo: null }),
     { disabled: submitting, escapeClose: onCancel },
   )
 
-  const set = (patch) => setForm((current) => ({ ...current, ...patch }))
+  const set = (patch: Partial<MemberFormState>) => setForm((current) => ({ ...current, ...patch }))
 
   return (
     <form
@@ -530,7 +620,17 @@ function MemberForm({ member, submitting, error, onCancel, onSubmit }) {
   )
 }
 
-function EndForm({ label, member, toMember, submitting, error, onCancel, onSubmit }) {
+type EndFormProps = {
+  label: string
+  member: OrgMember
+  toMember: boolean
+  submitting: boolean
+  error: string | null
+  onCancel: () => void
+  onSubmit: (payload: EndOrgMemberPayload) => void
+}
+
+function EndForm({ label, member, toMember, submitting, error, onCancel, onSubmit }: EndFormProps) {
   const [endedAt, setEndedAt] = useState(today())
 
   return (
@@ -570,7 +670,13 @@ function EndForm({ label, member, toMember, submitting, error, onCancel, onSubmi
  *  - title, subtitle
  *  - orgTypes: [{ value: 'bpd', label: 'BPD' }, ...]  (lebih dari satu → tab)
  */
-export default function OrganisasiManager({ title, subtitle, orgTypes }) {
+type OrganisasiManagerProps = {
+  title: string
+  subtitle?: string
+  orgTypes: { value: string; label: string }[]
+}
+
+export default function OrganisasiManager({ title, subtitle, orgTypes }: OrganisasiManagerProps) {
   const [activeType, setActiveType] = useState(orgTypes[0].value)
   const {
     slots,
@@ -587,19 +693,17 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
 
   // Satu input berkas tersembunyi dipakai bersama oleh tombol kamera di
   // kartu pimpinan dan tabel anggota; tujuannya disimpan di ref.
-  const photoInput = useRef(null)
-  const photoTarget = useRef(null)
+  const photoInput = useRef<HTMLInputElement>(null)
+  const photoTarget = useRef<{ position: OrgPosition; member: OrgMember } | null>(null)
 
-  // modal: null
-  //  | { kind: 'fill', initial }                 Isi/Ganti Ketua atau Wakil
-  //  | { kind: 'member', position, member? }     Tambah anggota / edit data
-  //  | { kind: 'end', position, member, toMember }
-  const [modal, setModal] = useState(null)
+  // fill: Isi/Ganti Ketua atau Wakil; member: tambah anggota / edit data;
+  // end: akhiri jabatan.
+  const [modal, setModal] = useState<ModalState | null>(null)
   const [processing, setProcessing] = useState(false)
-  const [formError, setFormError] = useState(null)
-  const [actionError, setActionError] = useState(null)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
-  const openModal = (next) => {
+  const openModal = (next: ModalState) => {
     setFormError(null)
     setModal(next)
   }
@@ -609,7 +713,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
     setFormError(null)
   }
 
-  const run = async (action, successMessage, fallback) => {
+  const run = async (action: () => Promise<unknown>, successMessage: string, fallback: string) => {
     setProcessing(true)
     setFormError(null)
     setActionError(null)
@@ -618,7 +722,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
       closeModal()
       notifySuccess(successMessage)
     } catch (err) {
-      const message = getErrorMessage(err, fallback)
+      const message = getApiErrorMessage(err, fallback)
       if (modal) setFormError(message)
       else setActionError(message)
     } finally {
@@ -627,7 +731,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
   }
 
   const openFill = (
-    slot,
+    slot: OrgSlot,
     { fromMemberId, lockSlot = true }: { fromMemberId?: number; lockSlot?: boolean } = {},
   ) =>
     openModal({
@@ -645,7 +749,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
       },
     })
 
-  const handleDelete = async (position, member, label) => {
+  const handleDelete = async (position: OrgPosition, member: OrgMember, label: string) => {
     if (
       !(await confirmDialog({
         title: `Hapus ${label} "${member.member_name}"?`,
@@ -661,12 +765,12 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
     )
   }
 
-  const pickPhotoFor = (position) => (member) => {
+  const pickPhotoFor = (position: OrgPosition) => (member: OrgMember) => {
     photoTarget.current = { position, member }
     photoInput.current?.click()
   }
 
-  const handlePhotoChange = (event) => {
+  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     const target = photoTarget.current
 
@@ -680,7 +784,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
     )
   }
 
-  const removePhotoOf = (position) => async (member) => {
+  const removePhotoOf = (position: OrgPosition) => async (member: OrgMember) => {
     if (
       !(await confirmDialog({
         title: `Hapus foto "${member.member_name}"?`,
@@ -696,7 +800,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
     )
   }
 
-  const switchType = (value) => {
+  const switchType = (value: string) => {
     setActiveType(value)
     setActionError(null)
   }
@@ -918,7 +1022,11 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
                   () =>
                     modal.member
                       ? editMember(modal.position.id, modal.member.id, payload, photo)
-                      : fillSlot(modal.position.id, payload, photo),
+                      : fillSlot(
+                          modal.position.id,
+                          { ...payload, started_at: payload.started_at ?? today() },
+                          photo,
+                        ),
                   modal.member ? 'Data berhasil diperbarui.' : 'Anggota berhasil ditambahkan.',
                   'Gagal menyimpan data.',
                 )

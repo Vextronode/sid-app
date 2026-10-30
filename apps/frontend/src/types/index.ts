@@ -2,6 +2,7 @@
 export type * from './api'
 export type * from './citizen'
 export type * from './letter'
+export type * from './news'
 export type * from './notification'
 export type * from './user'
 export type * from './wilayah'
