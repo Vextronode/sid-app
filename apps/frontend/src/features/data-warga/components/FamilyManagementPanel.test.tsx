@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 
-import { partialFixture } from '@/test/fixtures'
+import { partialFixture, present } from '@/test/fixtures'
 
 import { getFamily } from '../api'
 import FamilyManagementPanel from './FamilyManagementPanel'
@@ -85,7 +85,7 @@ describe('FamilyManagementPanel', () => {
 
     expect(screen.queryByRole('button', { name: /Tambah KK/ })).toBeNull()
 
-    act(() => ref.current.openCreate())
+    act(() => present(ref.current).openCreate())
 
     expect(screen.getByText('Tambah Kartu Keluarga')).toBeTruthy()
   })

@@ -55,7 +55,7 @@ describe('OrganisasiDesaPage', () => {
     window.scrollTo = vi.fn()
     mockedGet.mockImplementation((url) => {
       const type = url.split('/').pop()
-      return Promise.resolve({ data: { data: STRUCTURES[type] } })
+      return Promise.resolve({ data: { data: STRUCTURES[type ?? ''] } })
     })
   })
 

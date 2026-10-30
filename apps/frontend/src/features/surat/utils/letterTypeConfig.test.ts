@@ -7,10 +7,14 @@ import {
 } from './letterTypeConfig'
 import { getSuratSchema, signerFieldNames, todayDate } from '../validation/suratSchema'
 import { buildLetterFormData } from './letterFormData'
-import { partialFixture } from '@/test/fixtures'
+import { partialFixture, present } from '@/test/fixtures'
 import type { LetterType, User } from '@/types'
 import type { SuratField } from '../types'
 import type { SuratFormValues } from '../types'
+
+// Konfigurasi jenis surat yang diuji selalu ada.
+const formConfig = (source: Parameters<typeof getLetterTypeFormConfig>[0]) =>
+  present(getLetterTypeFormConfig(source), 'konfigurasi jenis surat')
 
 const letterType = {
   id: 12,
@@ -33,7 +37,7 @@ const letterType = {
 
 describe('getLetterTypeFormConfig', () => {
   it('builds the form from the backend definition followed by the common fields', () => {
-    const config = getLetterTypeFormConfig(letterType)
+    const config = formConfig(letterType)
 
     expect(config).toMatchObject({
       id: 12,
@@ -56,7 +60,7 @@ describe('getLetterTypeFormConfig', () => {
   })
 
   it('has no fields at all for a type whose physical template has no blanks', () => {
-    const config = getLetterTypeFormConfig({
+    const config = formConfig({
       id: 20,
       code: 'A04',
       name: 'Domisili',
@@ -68,7 +72,7 @@ describe('getLetterTypeFormConfig', () => {
   })
 
   it('limits a file field to images when the definition says so', () => {
-    const config = getLetterTypeFormConfig({
+    const config = formConfig({
       id: 1,
       code: 'A01',
       name: 'Usaha',
@@ -93,7 +97,7 @@ describe('getLetterTypeFormConfig', () => {
   })
 
   it('keeps the default answer and help text of a field', () => {
-    const config = getLetterTypeFormConfig({
+    const config = formConfig({
       ...letterType,
       form_fields: [
         {
@@ -115,7 +119,7 @@ describe('getLetterTypeFormConfig', () => {
     expect(config.fields[0].help).toBe('Pilih Diwakilkan bila diurus orang lain.')
     expect(config.fields[0].typedWhenEmpty).toBe(false)
 
-    const adoption = getLetterTypeFormConfig({
+    const adoption = formConfig({
       ...letterType,
       form_fields: [{ name: 'nik_anak', label: 'NIK Anak', type: 'nik', typed_when_empty: true }],
     })
@@ -123,7 +127,7 @@ describe('getLetterTypeFormConfig', () => {
   })
 
   it('leaves out the family roster that the system builds on submission', () => {
-    const config = getLetterTypeFormConfig({
+    const config = formConfig({
       ...letterType,
       form_fields: [
         {
@@ -148,7 +152,7 @@ describe('getLetterTypeFormConfig', () => {
 })
 
 describe('getSuratSchema', () => {
-  const config = getLetterTypeFormConfig(letterType)
+  const config = formConfig(letterType)
   const names = signerFieldNames('saksi')
   const valid = {
     nama_almarhum: 'Fulan',
@@ -172,13 +176,13 @@ describe('getSuratSchema', () => {
     })
 
     expect(result.success).toBe(false)
-    expect(result.error.issues.map((issue) => issue.path[0])).toEqual(
+    expect(present(result.error).issues.map((issue) => issue.path[0])).toEqual(
       expect.arrayContaining(['nama_almarhum', 'tanggal_meninggal', 'nik_pelapor', names.nik]),
     )
   })
 
   it('requires a chosen family member, and asks for the typed father only when none is chosen', () => {
-    const birth = getLetterTypeFormConfig({
+    const birth = formConfig({
       ...letterType,
       signature_slots: [],
       form_fields: [
@@ -201,7 +205,7 @@ describe('getSuratSchema', () => {
   })
 
   it('accepts only an HH:MM value from the time input', () => {
-    const timed = getLetterTypeFormConfig({
+    const timed = formConfig({
       ...letterType,
       signature_slots: [],
       form_fields: [{ name: 'pukul_lahir', label: 'Pukul Lahir', type: 'time', required: true }],
@@ -221,14 +225,14 @@ describe('getSuratSchema', () => {
     })
 
     expect(result.success).toBe(false)
-    expect(result.error.issues.map((issue) => issue.path[0])).toEqual(
+    expect(present(result.error).issues.map((issue) => issue.path[0])).toEqual(
       expect.arrayContaining([names.name, names.file]),
     )
   })
 })
 
 describe('buildLetterFormData', () => {
-  const config = getLetterTypeFormConfig(letterType)
+  const config = formConfig(letterType)
   const names = signerFieldNames('saksi')
 
   it('maps common fields, definition fields, files, and digital signers', () => {
@@ -278,7 +282,7 @@ describe('buildLetterFormData', () => {
 })
 
 describe('occupation field', () => {
-  const occupationConfig = getLetterTypeFormConfig({
+  const occupationConfig = formConfig({
     id: 21,
     code: 'A11',
     name: 'Surat Keterangan Ahli Waris',
@@ -302,7 +306,7 @@ describe('occupation field', () => {
       pekerjaan_almarhum_lainnya: ' ',
     })
     expect(missingOther.success).toBe(false)
-    expect(missingOther.error.issues[0].path).toEqual(['pekerjaan_almarhum_lainnya'])
+    expect(present(missingOther.error).issues[0].path).toEqual(['pekerjaan_almarhum_lainnya'])
 
     expect(
       schema.safeParse({ pekerjaan_almarhum: 'lainnya', pekerjaan_almarhum_lainnya: 'Nelayan' })
@@ -328,7 +332,7 @@ describe('occupation field', () => {
 })
 
 describe('conditional fields', () => {
-  const conditionalConfig = getLetterTypeFormConfig({
+  const conditionalConfig = formConfig({
     id: 31,
     code: 'F01',
     name: 'Formulir',
@@ -359,7 +363,7 @@ describe('conditional fields', () => {
 
     const missing = schema.safeParse({ warga: 'wna', paspor: '' })
     expect(missing.success).toBe(false)
-    expect(missing.error.issues[0].path).toEqual(['paspor'])
+    expect(present(missing.error).issues[0].path).toEqual(['paspor'])
 
     expect(schema.safeParse({ warga: 'wna', paspor: 'A123' }).success).toBe(true)
   })
@@ -374,7 +378,7 @@ describe('conditional fields', () => {
 })
 
 describe('repeating fields', () => {
-  const repeatingConfig = getLetterTypeFormConfig({
+  const repeatingConfig = formConfig({
     id: 41,
     code: 'F03',
     name: 'Formulir Pindah',
@@ -406,10 +410,13 @@ describe('repeating fields', () => {
   it('validates the number of rows, each row and the chosen members', () => {
     const empty = schema.safeParse({ anak: [], anggota: [] })
     expect(empty.success).toBe(false)
-    expect(empty.error.issues.map((issue) => issue.path.join('.'))).toEqual(['anak', 'anggota'])
+    expect(present(empty.error).issues.map((issue) => issue.path.join('.'))).toEqual([
+      'anak',
+      'anggota',
+    ])
 
     const missingName = schema.safeParse({ anak: [{ nama: '' }], anggota: ['c-1'] })
-    expect(missingName.error.issues[0].path).toEqual(['anak', 0, 'nama'])
+    expect(present(missingName.error).issues[0].path).toEqual(['anak', 0, 'nama'])
 
     expect(
       schema.safeParse({
@@ -434,7 +441,7 @@ describe('repeating fields', () => {
 })
 
 describe('row member and occupation sub-fields', () => {
-  const config = getLetterTypeFormConfig({
+  const config = formConfig({
     id: 51,
     code: 'F02',
     name: 'Perubahan Elemen Data',
@@ -459,16 +466,18 @@ describe('row member and occupation sub-fields', () => {
   const schema = getSuratSchema(config)
 
   it('requires the member and the other occupation text per row', () => {
-    expect(schema.safeParse({ perubahan: [{ anggota: '' }] }).error.issues[0].path).toEqual([
-      'perubahan',
-      0,
-      'anggota',
-    ])
+    expect(
+      present(schema.safeParse({ perubahan: [{ anggota: '' }] }).error).issues[0].path,
+    ).toEqual(['perubahan', 0, 'anggota'])
 
     const missingOther = schema.safeParse({
       perubahan: [{ anggota: 'c-1', pekerjaan_menjadi: 'lainnya', pekerjaan_menjadi_lainnya: '' }],
     })
-    expect(missingOther.error.issues[0].path).toEqual(['perubahan', 0, 'pekerjaan_menjadi_lainnya'])
+    expect(present(missingOther.error).issues[0].path).toEqual([
+      'perubahan',
+      0,
+      'pekerjaan_menjadi_lainnya',
+    ])
   })
 
   it('sends the other occupation text only for "Lainnya" rows', () => {
@@ -515,7 +524,7 @@ describe('applicantValue', () => {
 })
 
 describe('past dates and whole numbers', () => {
-  const config = getLetterTypeFormConfig(
+  const config = formConfig(
     partialFixture<LetterType>({
       code: 'A03',
       form_fields: [
@@ -553,7 +562,7 @@ describe('past dates and whole numbers', () => {
 
 describe('applicantPrefill', () => {
   it('starts editable fields from the applicant population data', () => {
-    const config = getLetterTypeFormConfig(
+    const config = formConfig(
       partialFixture<LetterType>({
         code: 'A03',
         form_fields: [
@@ -580,7 +589,7 @@ describe('applicantPrefill', () => {
 
 describe('family_member roles', () => {
   it('keeps the allowed family roles of a member field', () => {
-    const config = getLetterTypeFormConfig({
+    const config = formConfig({
       id: 8,
       code: 'F08',
       name: 'Pengakuan Anak',

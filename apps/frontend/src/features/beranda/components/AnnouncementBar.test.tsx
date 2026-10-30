@@ -12,12 +12,12 @@ import type { DeepPartial } from '@/test/fixtures'
 
 const inOneHour = () => new Date(Date.now() + 3_600_000).toISOString()
 
-const renderBar = (announcement: DeepPartial<PublicAnnouncement>) =>
+const renderBar = (announcement: DeepPartial<PublicAnnouncement> | null) =>
   render(
     <MemoryRouter>
       <AnnouncementBar
         content={getBerandaContent()}
-        announcement={partialFixture<PublicAnnouncement>(announcement)}
+        announcement={announcement && partialFixture<PublicAnnouncement>(announcement)}
       />
     </MemoryRouter>,
   )

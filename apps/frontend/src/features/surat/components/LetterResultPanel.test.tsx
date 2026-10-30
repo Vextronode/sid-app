@@ -12,7 +12,7 @@ vi.mock('@/shared/lib/dialog', () => ({ confirmDialog }))
 vi.mock('@/shared/lib/toast', () => ({ notifySuccess: vi.fn() }))
 
 import { LetterResultPanel } from './LetterResultPanel'
-import { partialFixture } from '@/test/fixtures'
+import { partialFixture, present } from '@/test/fixtures'
 import type { Letter, LetterResult } from '@/types'
 
 const rejected = partialFixture<LetterResult>({
@@ -55,8 +55,8 @@ describe('LetterResultPanel', () => {
     const history = screen
       .getByRole('button', { name: 'kk.jpg' })
       .closest('.sid-result-history-item')
-    expect(history.textContent).toMatch(/Ditolak/)
-    expect(history.textContent).toMatch(/Alasan: Foto KK buram/)
+    expect(present(history).textContent).toMatch(/Ditolak/)
+    expect(present(history).textContent).toMatch(/Alasan: Foto KK buram/)
     fireEvent.click(screen.getByRole('button', { name: 'kk.jpg' }))
     expect(onOpenFile).toHaveBeenCalledWith('/api/letters/l-1/attachments/3')
 

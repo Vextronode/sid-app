@@ -19,6 +19,7 @@ vi.mock('../api/letterTypeApi', () => ({
 }))
 
 import LetterTypeSettingsPanel from './LetterTypeSettingsPanel'
+import { present } from '@/test/fixtures'
 
 describe('LetterTypeSettingsPanel', () => {
   beforeEach(() => {
@@ -72,11 +73,11 @@ describe('LetterTypeSettingsPanel', () => {
     const inactiveRow = (await screen.findByText('Surat Keterangan Usaha')).closest('tr')
     const draftRow = screen.getByText('Surat Draft').closest('tr')
     expect(getLetterTypes).toHaveBeenCalledWith({ includeInactive: true })
-    expect(within(inactiveRow).getByText('Nonaktif')).toBeInTheDocument()
-    expect(within(draftRow).getByText('Draft')).toBeInTheDocument()
-    expect(within(draftRow).getByRole('button', { name: 'Aktifkan' })).toBeDisabled()
+    expect(within(present(inactiveRow)).getByText('Nonaktif')).toBeInTheDocument()
+    expect(within(present(draftRow)).getByText('Draft')).toBeInTheDocument()
+    expect(within(present(draftRow)).getByRole('button', { name: 'Aktifkan' })).toBeDisabled()
 
-    fireEvent.click(within(inactiveRow).getByRole('button', { name: 'Aktifkan' }))
+    fireEvent.click(within(present(inactiveRow)).getByRole('button', { name: 'Aktifkan' }))
 
     await waitFor(() => {
       expect(updateLetterType).toHaveBeenCalledWith(13, { is_active: true })
@@ -84,8 +85,10 @@ describe('LetterTypeSettingsPanel', () => {
     await waitFor(() =>
       expect(notifySuccess).toHaveBeenCalledWith(expect.stringContaining('berhasil diaktifkan')),
     )
-    expect(within(inactiveRow).getByText('Aktif')).toBeInTheDocument()
-    expect(within(inactiveRow).getByRole('button', { name: 'Nonaktifkan' })).toBeInTheDocument()
+    expect(within(present(inactiveRow)).getByText('Aktif')).toBeInTheDocument()
+    expect(
+      within(present(inactiveRow)).getByRole('button', { name: 'Nonaktifkan' }),
+    ).toBeInTheDocument()
   })
 
   it('loads backend type metadata and saves editable settings through PUT', async () => {
@@ -103,18 +106,18 @@ describe('LetterTypeSettingsPanel', () => {
     render(<LetterTypeSettingsPanel />)
 
     const row = (await screen.findByText('Surat Keterangan Domisili')).closest('tr')
-    expect(within(row).getByText('Surat + ubah data warga')).toBeInTheDocument()
+    expect(within(present(row)).getByText('Surat + ubah data warga')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Masa berlaku Surat Keterangan Domisili'), {
       target: { value: '30' },
     })
     // Kategori menggantikan pilihan petugas; petugasnya mengikuti kategori.
-    expect(within(row).getByText('Petugas: Kaur TU & Umum')).toBeInTheDocument()
+    expect(within(present(row)).getByText('Petugas: Kaur TU & Umum')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Kategori Surat Keterangan Domisili'), {
       target: { value: 'pelayanan' },
     })
-    expect(within(row).getByText('Petugas: Kasi Pemerintahan')).toBeInTheDocument()
+    expect(within(present(row)).getByText('Petugas: Kasi Pemerintahan')).toBeInTheDocument()
     expect(screen.queryByLabelText('Petugas Surat Keterangan Domisili')).not.toBeInTheDocument()
-    fireEvent.click(within(row).getByRole('button', { name: 'Simpan' }))
+    fireEvent.click(within(present(row)).getByRole('button', { name: 'Simpan' }))
 
     await waitFor(() => {
       expect(updateLetterType).toHaveBeenCalledWith(12, {

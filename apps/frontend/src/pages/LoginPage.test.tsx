@@ -23,7 +23,7 @@ vi.mock('@/features/auth/hooks/useLoginForm', () => ({
     isLoading: false,
     handleChange: vi.fn(),
     handleSubmit: async (
-      event: { preventDefault?: () => void } | undefined,
+      event: { preventDefault: () => void } | undefined,
       onSuccess: (user: unknown) => Promise<void>,
     ) => {
       event?.preventDefault()
@@ -33,6 +33,7 @@ vi.mock('@/features/auth/hooks/useLoginForm', () => ({
 }))
 
 import LoginPage from './LoginPage'
+import { present } from '@/test/fixtures'
 
 function CurrentPath() {
   const location = useLocation()
@@ -51,7 +52,7 @@ async function loginAs(role: string, entry = '/login') {
     </MemoryRouter>,
   )
 
-  fireEvent.submit(container.querySelector('form'))
+  fireEvent.submit(present(container.querySelector('form')))
 
   return screen.findByTestId('current-path')
 }
@@ -165,7 +166,9 @@ describe('LoginPage background', () => {
 
     const root = container.querySelector<HTMLElement>('.sid-login')
     expect(root).toHaveClass('sid-login--photo')
-    expect(root.style.getPropertyValue('--sid-login-bg')).toBe('url("/storage/hero/sawah.jpg")')
+    expect(present(root).style.getPropertyValue('--sid-login-bg')).toBe(
+      'url("/storage/hero/sawah.jpg")',
+    )
   })
 
   it('falls back to the plain background without a hero photo', () => {

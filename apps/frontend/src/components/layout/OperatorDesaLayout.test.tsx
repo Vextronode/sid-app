@@ -21,6 +21,7 @@ vi.mock('@/features/notifikasi/components/NotificationPopover', () => ({
 
 import { OperatorDesaLayout } from './OperatorDesaLayout'
 import type { ReactNode } from 'react'
+import { present } from '@/test/fixtures'
 
 describe('OperatorDesaLayout role regression', () => {
   beforeEach(() => {
@@ -156,7 +157,7 @@ describe('OperatorDesaLayout sidebar', () => {
     const { container } = renderLayout()
 
     fireEvent.click(screen.getByRole('button', { name: 'Perluas menu' }))
-    fireEvent.click(container.querySelector('.sid-operator-sidebar-backdrop'))
+    fireEvent.click(present(container.querySelector('.sid-operator-sidebar-backdrop')))
 
     expect(container.querySelector('.sid-operator-layout')).toHaveClass('is-rail')
   })

@@ -45,7 +45,7 @@ describe('ProfilDesaPage scroll target', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
-    delete Element.prototype.scrollIntoView
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
   })
 
   // Dari "Lihat profil desa →" atau menu "Profil desa": mulai dari atas,

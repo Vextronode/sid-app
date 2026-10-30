@@ -7,6 +7,7 @@ vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
 }))
 
 import HelpCenterModal from './HelpCenterModal'
+import { present } from '@/test/fixtures'
 
 describe('HelpCenterModal', () => {
   it('shows the village contacts from the API, phone and email as links', () => {
@@ -47,7 +48,7 @@ describe('HelpCenterModal', () => {
     fireEvent.click(screen.getByRole('dialog'))
     expect(onClose).not.toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole('dialog').parentElement)
+    fireEvent.click(present(screen.getByRole('dialog').parentElement))
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(2)
   })

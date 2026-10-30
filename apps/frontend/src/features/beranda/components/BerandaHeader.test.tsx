@@ -7,6 +7,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { getBerandaContent } from '../berandaContent'
 import { BerandaHeader } from './BerandaHeader'
+import { present } from '@/test/fixtures'
 
 const mockedUseAuth = vi.mocked(useAuth, { partial: true, deep: true })
 const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
@@ -27,8 +28,8 @@ const renderHeader = () => {
       <section id="kontak">Kontak</section>
     </MemoryRouter>,
   )
-  const desktopNav = within(utils.container.querySelector('.bd-nav'))
-  const mobileMenu = within(utils.container.querySelector('.bd-mobile-menu'))
+  const desktopNav = within(present(utils.container.querySelector('.bd-nav')))
+  const mobileMenu = within(present(utils.container.querySelector('.bd-mobile-menu')))
   return { ...utils, desktopNav, mobileMenu }
 }
 
@@ -50,7 +51,7 @@ describe('BerandaHeader', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
-    delete Element.prototype.scrollIntoView
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
   })
 
   describe('identitas dan tautan (A1, A2, A8, A9)', () => {
@@ -90,7 +91,7 @@ describe('BerandaHeader', () => {
       const { container } = renderHeader()
 
       const mark = container.querySelector('.bd-brand-mark')
-      expect(mark.tagName).toBe('IMG')
+      expect(present(mark).tagName).toBe('IMG')
       expect(mark).toHaveAttribute('src', '/assets/image/lambang-kabupaten-pangandaran.webp')
       expect(mark).toHaveAttribute('alt', '')
       expect(screen.queryByText('CB')).toBeNull()
@@ -136,7 +137,7 @@ describe('BerandaHeader', () => {
           <BerandaHeader content={getBerandaContent()} />
         </MemoryRouter>,
       )
-      const otherNav = within(container.querySelector('.bd-nav'))
+      const otherNav = within(present(container.querySelector('.bd-nav')))
       expect(otherNav.getByRole('link', { name: 'Beranda' })).not.toHaveAttribute('aria-current')
     })
 
@@ -146,7 +147,7 @@ describe('BerandaHeader', () => {
           <BerandaHeader content={getBerandaContent()} />
         </MemoryRouter>,
       )
-      return within(container.querySelector('.bd-nav'))
+      return within(present(container.querySelector('.bd-nav')))
     }
 
     it('marks Berita as the current page on the news list and a news detail', () => {
@@ -215,7 +216,7 @@ describe('BerandaHeader', () => {
       )
 
       await user.click(
-        within(container.querySelector('.bd-nav')).getByRole('link', { name: 'Kontak' }),
+        within(present(container.querySelector('.bd-nav'))).getByRole('link', { name: 'Kontak' }),
       )
 
       expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
@@ -237,7 +238,7 @@ describe('BerandaHeader', () => {
       const user = userEvent.setup()
       const { desktopNav } = renderHeader()
       const trigger = desktopNav.getByRole('button', { name: 'Tentang Desa' })
-      const panel = document.getElementById(trigger.getAttribute('aria-controls'))
+      const panel = document.getElementById(present(trigger.getAttribute('aria-controls')))
 
       expect(trigger).toHaveAttribute('aria-expanded', 'false')
       expect(panel).not.toBeVisible()
@@ -258,7 +259,7 @@ describe('BerandaHeader', () => {
 
       const item = desktopNav.getByText('Transparansi APBDes').closest('li')
       expect(item).toHaveTextContent('Segera hadir')
-      expect(item.querySelector('a, button, [tabindex]')).toBeNull()
+      expect(present(item).querySelector('a, button, [tabindex]')).toBeNull()
       expect(desktopNav.queryByText('Peta wilayah')).toBeNull()
 
       await user.click(mobileMenu.getByRole('button', { name: 'Menu' }))
@@ -396,14 +397,14 @@ describe('BerandaHeader', () => {
       const user = userEvent.setup()
       const { mobileMenu } = renderHeader()
       const button = mobileMenu.getByRole('button', { name: 'Menu' })
-      const panel = document.getElementById(button.getAttribute('aria-controls'))
+      const panel = document.getElementById(present(button.getAttribute('aria-controls')))
 
       expect(button).toHaveAttribute('aria-expanded', 'false')
       expect(panel).not.toBeVisible()
 
       await user.click(button)
       expect(button).toHaveAttribute('aria-expanded', 'true')
-      const list = within(panel)
+      const list = within(present(panel))
       expect(list.getByRole('link', { name: 'Berita' })).toHaveAttribute('href', '/berita')
       expect(list.getByRole('link', { name: 'Beranda' })).toHaveAttribute('href', '/')
       expect(list.getByText('Tentang Desa')).toBeVisible()

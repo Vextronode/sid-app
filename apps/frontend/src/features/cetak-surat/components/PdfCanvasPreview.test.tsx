@@ -12,6 +12,7 @@ vi.mock('@/features/cetak-surat/utils/generateSuratPDF', () => ({ previewSuratPD
 vi.mock('@/lib/pdfjs', () => ({ loadPdfjs }))
 
 import { PdfCanvasPreview } from './PdfCanvasPreview'
+import { present } from '@/test/fixtures'
 
 // Bentuk API pdf.js 6: destroy() hanya ada di loading task, dokumen
 // (PDFDocumentProxy) tidak punya destroy().
@@ -51,7 +52,7 @@ describe('PdfCanvasPreview', () => {
     expect(previewSuratPDF).toHaveBeenCalledWith({ id: 'letter-1' }, 'digital', 'main')
 
     const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
-    container.querySelector('canvas').dispatchEvent(event)
+    present(container.querySelector('canvas')).dispatchEvent(event)
     expect(event.defaultPrevented).toBe(true)
   })
 

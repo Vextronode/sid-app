@@ -10,6 +10,7 @@ vi.mock('@/features/cetak-surat/utils/generateSuratPDF', () => ({ downloadSuratP
 vi.mock('@/shared/lib/dialog', () => ({ alertDialog }))
 
 import { DownloadSuratMenu } from './DownloadSuratMenu'
+import { present } from '@/test/fixtures'
 
 const surat = { id: 'letter-1', letter_number: '470/001' }
 
@@ -123,10 +124,10 @@ describe('DownloadSuratMenu', () => {
     const [digital, wet] = screen.getAllByRole('menuitem')
     expect(digital).toHaveFocus()
 
-    fireEvent.keyDown(document.activeElement, { key: 'ArrowDown' })
+    fireEvent.keyDown(present(document.activeElement), { key: 'ArrowDown' })
     expect(wet).toHaveFocus()
 
-    fireEvent.keyDown(document.activeElement, { key: 'Escape' })
+    fireEvent.keyDown(present(document.activeElement), { key: 'Escape' })
     expect(screen.queryByRole('menu')).toBeNull()
     expect(screen.getByRole('button', { name: /Unduh surat/ })).toHaveFocus()
     // Escape milik menu tidak ikut menutup modal di bawahnya.

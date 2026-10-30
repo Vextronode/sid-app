@@ -47,7 +47,7 @@ export function resolveLoginRedirect(redirect: unknown, role: UserRole | null | 
 
 // URL halaman login yang membawa tujuan kembali, mis.
 // buildLoginPath('/jenis-surat') -> '/login?redirect=%2Fjenis-surat'
-export function buildLoginPath(target: string) {
+export function buildLoginPath(target: string | null | undefined) {
   if (!isSafeInternalPath(target)) return HAL_LOGIN
 
   return `${HAL_LOGIN}?${new URLSearchParams({ redirect: target })}`

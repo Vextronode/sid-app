@@ -119,7 +119,7 @@ export type Official = {
   updated_at: IsoDateString | null
   citizen?: Citizen
   village?: Village
-  hamlet?: Hamlet
-  rt?: Rt
-  rw?: Rw
+  hamlet?: Hamlet | null
+  rt?: Rt | null
+  rw?: Rw | null
 }

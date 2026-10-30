@@ -7,6 +7,7 @@ import { usePublicNews } from '@/features/berita/usePublicNews'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import type { User } from '@/types'
 import { BerandaPage } from './BerandaPage'
+import { present } from '@/test/fixtures'
 
 const mockedUseAuth = vi.mocked(useAuth, { partial: true, deep: true })
 const mockedUsePublicNews = vi.mocked(usePublicNews, { partial: true, deep: true })
@@ -212,7 +213,7 @@ describe('BerandaPage stats band', () => {
     })
     renderPage()
 
-    const region = within(band())
+    const region = within(present(band()))
     expect(region.getByText('6.080')).toBeInTheDocument()
     expect(region.getByText('jiwa penduduk')).toBeInTheDocument()
     expect(region.getByText('759,319 ha')).toBeInTheDocument()
@@ -235,7 +236,7 @@ describe('BerandaPage stats band', () => {
     })
     const { unmount } = renderPage()
 
-    const region = within(band())
+    const region = within(present(band()))
     expect(region.getByText('dusun')).toBeInTheDocument()
     expect(region.queryByText('jiwa penduduk')).toBeNull()
     expect(region.queryByText('luas wilayah')).toBeNull()
@@ -303,7 +304,7 @@ describe('BerandaPage hero', () => {
     const { container } = renderPage()
 
     const hero = container.querySelector<HTMLElement>('.bd-hero')
-    expect(hero.style.getPropertyValue('--bd-hero-image')).toBe(
+    expect(present(hero).style.getPropertyValue('--bd-hero-image')).toBe(
       'url("/storage/village-media/hero.jpg")',
     )
     expect(screen.getByText('Foto: Warga')).toBeInTheDocument()
@@ -313,7 +314,9 @@ describe('BerandaPage hero', () => {
     const { container } = renderPage()
 
     expect(
-      container.querySelector<HTMLElement>('.bd-hero').style.getPropertyValue('--bd-hero-image'),
+      present(container.querySelector<HTMLElement>('.bd-hero')).style.getPropertyValue(
+        '--bd-hero-image',
+      ),
     ).toBe('')
     expect(screen.queryByText(/^Foto:/)).toBeNull()
   })
@@ -362,7 +365,9 @@ describe('BerandaPage service cards', () => {
 
     const title = cards().getByText('Sampaikan pengaduan')
     expect(title.closest('a')).toBeNull()
-    const links = within(title.closest<HTMLElement>('.bd-service-card')).getAllByRole('link')
+    const links = within(present(title.closest<HTMLElement>('.bd-service-card'))).getAllByRole(
+      'link',
+    )
     expect(links).toHaveLength(2)
 
     // D2: menu bagikan AddToAny di tab baru (permintaan pemilik, 12 Okt 2026).
@@ -388,8 +393,8 @@ describe('BerandaPage service cards', () => {
     renderPage()
 
     const card = cards().getByText('Sampaikan pengaduan').closest<HTMLElement>('.bd-service-card')
-    expect(within(card).getAllByRole('link')).toHaveLength(1)
-    expect(within(card).queryByText(/@/)).toBeNull()
+    expect(within(present(card)).getAllByRole('link')).toHaveLength(1)
+    expect(within(present(card)).queryByText(/@/)).toBeNull()
   })
 
   it('shows all four cards in production as well', () => {
@@ -461,7 +466,7 @@ describe('BerandaPage Kepala Desa welcome', () => {
 
     renderPage()
 
-    const region = within(block())
+    const region = within(present(block()))
     expect(region.getByRole('heading', { level: 2 })).toHaveTextContent('Sambutan Kepala Desa')
     expect(region.getByText('Nama Kades Asli')).toBeInTheDocument()
     expect(region.getByText('Kepala Desa Cibenda')).toBeInTheDocument()
@@ -519,9 +524,9 @@ describe('BerandaPage contact section', () => {
     renderPage()
 
     const card = within(section()).getByText('Telepon').closest<HTMLElement>('.bd-contact-card')
-    expect(card.tagName).toBe('DIV')
-    expect(within(card).queryByRole('link')).toBeNull()
-    const button = within(card).getByRole('button', {
+    expect(present(card).tagName).toBe('DIV')
+    expect(within(present(card)).queryByRole('link')).toBeNull()
+    const button = within(present(card)).getByRole('button', {
       name: 'Salin nomor telepon (0265) 2640613',
     })
     expect(button).toHaveTextContent('(0265) 2640613')
@@ -529,7 +534,10 @@ describe('BerandaPage contact section', () => {
     fireEvent.click(button)
 
     expect(writeText).toHaveBeenCalledWith('(0265) 2640613')
-    expect(await within(card).findByText('Nomor disalin')).toHaveAttribute('aria-live', 'polite')
+    expect(await within(present(card)).findByText('Nomor disalin')).toHaveAttribute(
+      'aria-live',
+      'polite',
+    )
 
     expect(within(section()).queryByText(/WhatsApp/)).toBeNull()
     Reflect.deleteProperty(navigator, 'clipboard')
@@ -541,16 +549,16 @@ describe('BerandaPage contact section', () => {
     renderPage()
 
     const card = within(section()).getByText('Email').closest<HTMLElement>('.bd-contact-card')
-    const button = within(card).getByRole('button', {
+    const button = within(present(card)).getByRole('button', {
       name: 'Salin email kantordesacibenda@gmail.com',
     })
     expect(button).toHaveTextContent('kantordesacibenda@gmail.com')
-    expect(within(card).queryByRole('link')).toBeNull()
+    expect(within(present(card)).queryByRole('link')).toBeNull()
 
     fireEvent.click(button)
 
     expect(writeText).toHaveBeenCalledWith('kantordesacibenda@gmail.com')
-    expect(await within(card).findByText('Email disalin')).toBeInTheDocument()
+    expect(await within(present(card)).findByText('Email disalin')).toBeInTheDocument()
     Reflect.deleteProperty(navigator, 'clipboard')
   })
 
@@ -565,11 +573,11 @@ describe('BerandaPage contact section', () => {
     const phoneCard = within(section())
       .getByText('Telepon')
       .closest<HTMLElement>('.bd-contact-card')
-    expect(within(phoneCard).getAllByRole('button')).toHaveLength(1)
-    expect(within(phoneCard).queryByText('Belum tersedia')).toBeNull()
+    expect(within(present(phoneCard)).getAllByRole('button')).toHaveLength(1)
+    expect(within(present(phoneCard)).queryByText('Belum tersedia')).toBeNull()
     const emailCard = within(section()).getByText('Email').closest<HTMLElement>('.bd-contact-card')
-    expect(within(emailCard).queryByRole('button')).toBeNull()
-    expect(within(emailCard).getByText('Belum tersedia')).toBeInTheDocument()
+    expect(within(present(emailCard)).queryByRole('button')).toBeNull()
+    expect(within(present(emailCard)).getByText('Belum tersedia')).toBeInTheDocument()
   })
 
   it('tells the user when the phone number could not be copied', async () => {
@@ -581,9 +589,9 @@ describe('BerandaPage contact section', () => {
     renderPage()
 
     const card = within(section()).getByText('Telepon').closest<HTMLElement>('.bd-contact-card')
-    fireEvent.click(within(card).getByRole('button', { name: /Salin nomor telepon/ }))
+    fireEvent.click(within(present(card)).getByRole('button', { name: /Salin nomor telepon/ }))
 
-    expect(await within(card).findByText(/Gagal menyalin/)).toBeInTheDocument()
+    expect(await within(present(card)).findByText(/Gagal menyalin/)).toBeInTheDocument()
     Reflect.deleteProperty(navigator, 'clipboard')
     Reflect.deleteProperty(document, 'execCommand')
   })
@@ -605,7 +613,7 @@ describe('BerandaPage contact section', () => {
     const card = within(section())
       .getByText('Kantor Desa Cibenda')
       .closest<HTMLElement>('.bd-contact-card')
-    expect(card.tagName).toBe('DIV')
+    expect(present(card).tagName).toBe('DIV')
     expect(card).toHaveTextContent('Jl. Raya Cibenda No. 1')
     expect(card).toContainElement(link)
     expect(link).toHaveAttribute(
@@ -629,14 +637,14 @@ describe('BerandaPage contact section', () => {
     const phoneCard = within(section())
       .getByText('Telepon')
       .closest<HTMLElement>('.bd-contact-card')
-    expect(within(phoneCard).queryByRole('button')).toBeNull()
-    expect(within(phoneCard).getByText('Belum tersedia')).toBeInTheDocument()
+    expect(within(present(phoneCard)).queryByRole('button')).toBeNull()
+    expect(within(present(phoneCard)).getByText('Belum tersedia')).toBeInTheDocument()
     const emailCard = within(section()).getByText('Email').closest<HTMLElement>('.bd-contact-card')
-    expect(within(emailCard).getByText('Belum tersedia')).toBeInTheDocument()
+    expect(within(present(emailCard)).getByText('Belum tersedia')).toBeInTheDocument()
     const hoursCard = within(section())
       .getByText('Jam layanan kantor')
       .closest<HTMLElement>('.bd-contact-card')
-    expect(within(hoursCard).getByText('Belum tersedia')).toBeInTheDocument()
+    expect(within(present(hoursCard)).getByText('Belum tersedia')).toBeInTheDocument()
     expect(within(section()).getByText('Kantor Desa')).toBeInTheDocument()
     expect(within(section()).queryAllByRole('link')).toHaveLength(0)
   })

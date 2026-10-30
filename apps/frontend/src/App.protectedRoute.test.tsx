@@ -31,7 +31,7 @@ vi.mock('@/features/auth/hooks/useLoginForm', () => ({
     isLoading: false,
     handleChange: vi.fn(),
     handleSubmit: async (
-      event: { preventDefault?: () => void } | undefined,
+      event: { preventDefault: () => void } | undefined,
       onSuccess: (user: TestUser | null) => Promise<void>,
     ) => {
       event?.preventDefault()
@@ -46,6 +46,7 @@ import type { UserRole } from '@/types'
 
 import { GuestRoute, ProtectedRoute } from './App'
 import type { ReactNode } from 'react'
+import { present } from '@/test/fixtures'
 
 type TestUser = { id?: number; role: string; must_change_password?: boolean }
 
@@ -195,7 +196,7 @@ describe('login flow inside GuestRoute', () => {
     auth.loginUser = { id: 1, role: 'warga' }
     const { container } = renderAt('/login?redirect=%2Fjenis-surat')
 
-    fireEvent.submit(container.querySelector('form'))
+    fireEvent.submit(present(container.querySelector('form')))
 
     expect(await screen.findByText('Halaman terlindungi')).toBeInTheDocument()
   })
@@ -204,7 +205,7 @@ describe('login flow inside GuestRoute', () => {
     auth.loginUser = { id: 2, role: 'rt' }
     const { container } = renderAt('/login?redirect=%2Fjenis-surat')
 
-    fireEvent.submit(container.querySelector('form'))
+    fireEvent.submit(present(container.querySelector('form')))
 
     expect(await screen.findByTestId('current-path')).toHaveTextContent('/admin/surat-saya')
   })

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { BerandaLayout } from './BerandaLayout'
 import type { PublicAnnouncement } from '@/features/info-desa/usePublicVillageInfo'
+import { present } from '@/test/fixtures'
 
 const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
 
@@ -103,7 +104,7 @@ describe('BerandaLayout', () => {
 
   it('opens the Widyatama website in a new tab from its logo only', () => {
     renderLayout()
-    const partners = within(screen.getByText('Didukung oleh').parentElement)
+    const partners = within(present(screen.getByText('Didukung oleh').parentElement))
 
     const links = partners.getAllByRole('link')
     expect(links).toHaveLength(1)
@@ -136,10 +137,10 @@ describe('BerandaLayout', () => {
 
       const region = bar()
       expect(region).toHaveTextContent('Kantor desa tutup Jumat siang')
-      expect(region.closest('.bd-chrome--sticky')).toBe(
+      expect(present(region).closest('.bd-chrome--sticky')).toBe(
         container.querySelector('.bd-chrome--sticky'),
       )
-      expect(region.closest('main')).toBeNull()
+      expect(present(region).closest('main')).toBeNull()
     })
 
     it('is not rendered without an announcement or after it expires', () => {

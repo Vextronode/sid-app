@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { AppHeader } from './AppHeader'
+import { present } from '@/test/fixtures'
 
 const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
 
@@ -35,8 +36,8 @@ const renderHeader = (props = {}) => {
   )
   return {
     ...utils,
-    desktopNav: within(utils.container.querySelector('.bd-nav')),
-    mobileMenu: within(utils.container.querySelector('.bd-mobile-menu')),
+    desktopNav: within(present(utils.container.querySelector('.bd-nav'))),
+    mobileMenu: within(present(utils.container.querySelector('.bd-mobile-menu'))),
   }
 }
 
@@ -91,11 +92,11 @@ describe('AppHeader', () => {
 
     await user.click(screen.getByRole('button', { name: 'Budi Santoso' }))
     const panel = document.getElementById(
-      screen.getByRole('button', { name: 'Budi Santoso' }).getAttribute('aria-controls'),
+      present(screen.getByRole('button', { name: 'Budi Santoso' }).getAttribute('aria-controls')),
     )
-    await user.click(within(panel).getByRole('button', { name: 'Keluar' }))
+    await user.click(within(present(panel)).getByRole('button', { name: 'Keluar' }))
 
-    expect(within(panel).getByRole('link', { name: 'Profil Saya' })).toHaveAttribute(
+    expect(within(present(panel)).getByRole('link', { name: 'Profil Saya' })).toHaveAttribute(
       'href',
       '/admin/profil',
     )
@@ -111,7 +112,9 @@ describe('AppHeader', () => {
     const button = mobileMenu.getByRole('button', { name: 'Menu' })
 
     await user.click(button)
-    const panel = within(document.getElementById(button.getAttribute('aria-controls')))
+    const panel = within(
+      present(document.getElementById(present(button.getAttribute('aria-controls')))),
+    )
 
     expect(panel.getByText('Budi Santoso')).toBeVisible()
     expect(panel.getByRole('link', { name: 'Surat Warga' })).toHaveAttribute('aria-current', 'page')

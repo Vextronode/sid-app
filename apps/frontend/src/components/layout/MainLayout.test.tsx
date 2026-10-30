@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { MainLayout } from './MainLayout'
 import type { PublicAnnouncement } from '@/features/info-desa/usePublicVillageInfo'
+import { present } from '@/test/fixtures'
 
 const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
 
@@ -41,7 +42,7 @@ describe('MainLayout', () => {
     expect(container.querySelector('.bd-root.bd-chrome--sticky > footer.bd-footer')).toBeNull()
     expect(container.querySelector('.bd-root.bd-chrome > footer.bd-footer')).not.toBeNull()
 
-    const desktopNav = within(container.querySelector('.bd-nav'))
+    const desktopNav = within(present(container.querySelector('.bd-nav')))
     expect(desktopNav.getByRole('link', { name: 'Berita' })).toHaveAttribute('href', '/berita')
     expect(desktopNav.getByRole('button', { name: 'Tentang Desa' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument()
@@ -80,10 +81,10 @@ describe('MainLayout', () => {
 
       const region = bar()
       expect(region).toHaveTextContent('Kantor desa tutup Jumat siang')
-      expect(region.closest('.bd-chrome--sticky')).toBe(
+      expect(present(region).closest('.bd-chrome--sticky')).toBe(
         container.querySelector('.bd-chrome--sticky'),
       )
-      expect(region.closest('main')).toBeNull()
+      expect(present(region).closest('main')).toBeNull()
     })
 
     it('is not rendered without an announcement or after it expires', () => {
