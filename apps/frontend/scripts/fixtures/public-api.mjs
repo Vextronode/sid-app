@@ -40,7 +40,12 @@ const newsItem = (id, title, publishedAt, thumbnail) => ({
 const HERO = '/assets/image/beranda/hero-pemandangan.jpg'
 
 export const news = [
-  newsItem(1, 'Musyawarah desa membahas rencana kerja pemerintah desa 2027', '2026-10-08T08:00:00Z', HERO),
+  newsItem(
+    1,
+    'Musyawarah desa membahas rencana kerja pemerintah desa 2027',
+    '2026-10-08T08:00:00Z',
+    HERO,
+  ),
   newsItem(2, 'Posyandu balita Dusun Sukamaju dibuka setiap Selasa', '2026-10-05T08:00:00Z', null),
   newsItem(3, 'Kerja bakti membersihkan saluran irigasi sawah', '2026-10-01T08:00:00Z', HERO),
   newsItem(4, 'Pendaftaran pelatihan UMKM untuk warga dibuka', '2026-09-27T08:00:00Z', null),
@@ -77,14 +82,23 @@ export function resolveFixture(pathname, auth) {
     case '/api/public/home':
       return {
         status: 200,
-        body: { data: { village, latest_news: news.slice(0, 3), public_stats: { total_letter_types: 10 } } },
+        body: {
+          data: {
+            village,
+            latest_news: news.slice(0, 3),
+            public_stats: { total_letter_types: 10 },
+          },
+        },
       }
     case '/api/public/village-profile':
       return { status: 200, body: { data: village } }
     case '/api/public/news':
       return {
         status: 200,
-        body: { data: news, meta: { current_page: 1, last_page: 1, per_page: 10, total: news.length } },
+        body: {
+          data: news,
+          meta: { current_page: 1, last_page: 1, per_page: 10, total: news.length },
+        },
       }
     case '/api/public/contact-us':
       return { status: 200, body: { data: contacts } }

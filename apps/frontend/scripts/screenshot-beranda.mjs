@@ -129,7 +129,9 @@ function inspectPage() {
       .trim()
       .slice(0, 50)
 
-  const smallTargets = [...document.querySelectorAll('a[href], button, [role="button"], input, select, textarea')]
+  const smallTargets = [
+    ...document.querySelectorAll('a[href], button, [role="button"], input, select, textarea'),
+  ]
     .filter(visible)
     .filter((el) => {
       const r = el.getBoundingClientRect()
@@ -201,7 +203,10 @@ async function capture(browser, opts, { name, url, width, auth, useFixture }) {
     )
   }
   if (opts.noHero) {
-    await page.route((u) => u.pathname.includes('/assets/image/beranda/'), (route) => route.abort())
+    await page.route(
+      (u) => u.pathname.includes('/assets/image/beranda/'),
+      (route) => route.abort(),
+    )
   }
 
   await page.goto(url, { waitUntil: 'networkidle' })
@@ -219,13 +224,25 @@ async function capture(browser, opts, { name, url, width, auth, useFixture }) {
 function printReport(r) {
   console.log(`\n■ ${r.name} @ ${r.width}px (${r.auth})`)
   console.log(`  file           : ${r.file}`)
-  console.log(`  scroll horizontal: ${r.horizontalScroll ? `YA (${r.scrollWidth} > ${r.clientWidth})` : 'tidak'}`)
+  console.log(
+    `  scroll horizontal: ${r.horizontalScroll ? `YA (${r.scrollWidth} > ${r.clientWidth})` : 'tidak'}`,
+  )
   console.log(`  jumlah <h1>    : ${r.h1Count}`)
-  console.log(`  target < 44px  : ${r.smallTargets.length}${r.smallTargets.length ? ` — ${r.smallTargets.slice(0, 5).join('; ')}` : ''}`)
-  console.log(`  teks p/li < 18px: ${r.smallText.length}${r.smallText.length ? ` — ${r.smallText.slice(0, 3).join('; ')}` : ''}`)
-  console.log(`  meta (bd-meta) : ${r.metaText.length}${r.metaText.length ? ` — ${r.metaText.slice(0, 3).join('; ')}` : ''}`)
-  console.log(`  svg tanpa aria : ${r.exposedSvgs.length}${r.exposedSvgs.length ? ` — ${r.exposedSvgs.slice(0, 3).join('; ')}` : ''}`)
-  console.log(`  error konsol   : ${r.consoleErrors.length}${r.consoleErrors.length ? ` — ${r.consoleErrors.slice(0, 2).join(' | ')}` : ''}`)
+  console.log(
+    `  target < 44px  : ${r.smallTargets.length}${r.smallTargets.length ? ` — ${r.smallTargets.slice(0, 5).join('; ')}` : ''}`,
+  )
+  console.log(
+    `  teks p/li < 18px: ${r.smallText.length}${r.smallText.length ? ` — ${r.smallText.slice(0, 3).join('; ')}` : ''}`,
+  )
+  console.log(
+    `  meta (bd-meta) : ${r.metaText.length}${r.metaText.length ? ` — ${r.metaText.slice(0, 3).join('; ')}` : ''}`,
+  )
+  console.log(
+    `  svg tanpa aria : ${r.exposedSvgs.length}${r.exposedSvgs.length ? ` — ${r.exposedSvgs.slice(0, 3).join('; ')}` : ''}`,
+  )
+  console.log(
+    `  error konsol   : ${r.consoleErrors.length}${r.consoleErrors.length ? ` — ${r.consoleErrors.slice(0, 2).join(' | ')}` : ''}`,
+  )
 }
 
 async function main() {

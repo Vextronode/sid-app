@@ -28,7 +28,7 @@
 | Ikon | `lucide-react` | |
 | PWA | `vite-plugin-pwa` (Workbox, `registerType: autoUpdate`) | Service worker mengimpor `public/push-handler.js` untuk Web Push |
 | Test | Vitest + Testing Library + jsdom; Playwright (skrip screenshot) | |
-| Kualitas | ESLint 10 + typescript-eslint, Prettier, Husky + lint-staged, `tsc --noEmit` | CI frontend: lint, typecheck, test, build |
+| Kualitas | ESLint 10 + typescript-eslint, Prettier, Husky + lint-staged, `tsc --noEmit` | CI frontend: lint, format check (Prettier), typecheck, test, build |
 
 ---
 

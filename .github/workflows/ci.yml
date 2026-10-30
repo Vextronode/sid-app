@@ -148,6 +148,10 @@ jobs:
       - name: Lint (ESLint)
         run: npm run lint
 
+      # lint-staged hanya merapikan file yang di-stage; ini menangkap sisanya.
+      - name: Format check (Prettier)
+        run: npm run format:check
+
       # Vite hanya membuang tipe saat build; error tipe hanya tertangkap di sini.
       - name: Typecheck (TypeScript)
         run: npm run typecheck
