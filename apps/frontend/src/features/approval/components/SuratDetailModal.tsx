@@ -81,7 +81,7 @@ function getHint({
     return 'Surat ini ditolak. Pemohon dapat mengajukan ulang setelah memperbaikinya.'
   }
 
-  if (MONITOR_ROLES.includes(viewerRole)) {
+  if (viewerRole !== null && MONITOR_ROLES.includes(viewerRole)) {
     return 'Anda memantau surat di wilayah Anda. Keputusan ada di RT dan Kepala Desa.'
   }
 
@@ -148,7 +148,7 @@ export default function SuratDetailModal({
       preview={showPreview && surat ? <LetterDocumentsPreview surat={surat} /> : null}
       hint={surat ? getHint({ surat, canDecide, canDownload, viewerRole }) : null}
       actions={
-        canDecide ? (
+        canDecide && surat ? (
           <ApprovalStepRenderer
             currentStep={surat.current_step}
             approvals={surat.approvals}

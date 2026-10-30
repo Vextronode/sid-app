@@ -98,7 +98,7 @@ export function SignatureCard() {
     try {
       const response = await requestSignatureReset(reason.trim())
 
-      setStatus((current) => ({ ...current, reset_request: response.data }))
+      setStatus((current) => current && { ...current, reset_request: response.data })
       notifySuccess(response.message ?? 'Pengajuan reset tanda tangan terkirim.')
     } catch (requestError) {
       setError(getApiErrorMessage(requestError, 'Gagal mengirim pengajuan reset tanda tangan.'))
@@ -108,7 +108,7 @@ export function SignatureCard() {
   }
 
   const pointerPosition = (event: PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current
+    const canvas = event.currentTarget
     const rect = canvas.getBoundingClientRect()
 
     return {
@@ -118,7 +118,8 @@ export function SignatureCard() {
   }
 
   const startStroke = (event: PointerEvent<HTMLCanvasElement>) => {
-    const context = canvasRef.current.getContext('2d')
+    const context = event.currentTarget.getContext('2d')
+    if (!context) return
     const { x, y } = pointerPosition(event)
 
     drawingRef.current = true
@@ -132,7 +133,9 @@ export function SignatureCard() {
   const continueStroke = (event: PointerEvent<HTMLCanvasElement>) => {
     if (!drawingRef.current) return
 
-    const context = canvasRef.current.getContext('2d')
+    const context = event.currentTarget.getContext('2d')
+    if (!context) return
+
     const { x, y } = pointerPosition(event)
 
     context.lineTo(x, y)
@@ -147,7 +150,7 @@ export function SignatureCard() {
   const clearPad = () => {
     const canvas = canvasRef.current
 
-    canvas?.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+    canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
     setHasStrokes(false)
   }
 
@@ -158,12 +161,14 @@ export function SignatureCard() {
   }
 
   const useDrawing = () => {
-    canvasRef.current.toBlob((blob) => {
+    canvasRef.current?.toBlob((blob) => {
       if (blob) setDraftFile(new File([blob], 'tanda-tangan.png', { type: 'image/png' }))
     }, 'image/png')
   }
 
   const handleSave = async () => {
+    if (!draft) return
+
     setSaving(true)
     setError('')
 

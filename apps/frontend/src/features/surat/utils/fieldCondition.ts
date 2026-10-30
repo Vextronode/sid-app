@@ -20,12 +20,12 @@ export function matchesCondition(
   if (Array.isArray(when.all))
     return when.all.every((condition) => matchesCondition(condition, values))
 
-  const raw = values[when.field]
+  const raw = when.field ? values[when.field] : undefined
   const text = raw === undefined || raw === null || typeof raw === 'object' ? null : String(raw)
 
   if ('equals' in when) return text === String(when.equals)
-  if ('in' in when) return (when.in ?? []).map(String).includes(text)
-  if ('not_in' in when) return !(when.not_in ?? []).map(String).includes(text)
+  if ('in' in when) return text !== null && (when.in ?? []).map(String).includes(text)
+  if ('not_in' in when) return !(text !== null && (when.not_in ?? []).map(String).includes(text))
   if ('filled' in when) return (text !== null && text.trim() !== '') === Boolean(when.filled)
 
   return true

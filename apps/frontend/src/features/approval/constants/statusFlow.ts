@@ -24,7 +24,12 @@ export function getLatestApprovalForLevel<T extends ApprovalEntry>(
 
   return (
     approvals
-      .filter((approval) => targetLevels.includes(approval?.approval_level) && approval?.action)
+      .filter(
+        (approval) =>
+          approval?.approval_level !== undefined &&
+          targetLevels.includes(approval.approval_level) &&
+          approval.action,
+      )
       .sort(byCreatedAt)
       .at(-1) ?? null
   )

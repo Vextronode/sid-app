@@ -239,7 +239,9 @@ export function LetterResultPanel({ letter, onChanged, onOpenFile }: LetterResul
         </div>
       )}
 
-      <p className="sid-modal-note-text">{STAGE_TEXT[letter.result_stage]}</p>
+      {letter.result_stage && (
+        <p className="sid-modal-note-text">{STAGE_TEXT[letter.result_stage]}</p>
+      )}
 
       {letter.result_stage === 'awaiting_upload' && letter.result_upload_hint && (
         <div className="sid-result-hint">
@@ -255,7 +257,11 @@ export function LetterResultPanel({ letter, onChanged, onOpenFile }: LetterResul
             {results.map((result) => (
               <li key={result.id} className="sid-result-history-item">
                 <div className="sid-result-history-head">
-                  <span>{new Date(result.submitted_at).toLocaleString('id-ID')}</span>
+                  <span>
+                    {result.submitted_at
+                      ? new Date(result.submitted_at).toLocaleString('id-ID')
+                      : '-'}
+                  </span>
                   <span className={`sid-result-status ${result.status}`}>
                     {RESULT_STATUS[result.status] ?? result.status}
                   </span>

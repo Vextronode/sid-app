@@ -68,7 +68,7 @@ export function FamilyMembersField({
 
       {errors[field.name]?.message && (
         <span className="sid-form-field-error" role="alert">
-          {errors[field.name].message}
+          {errors[field.name]?.message}
         </span>
       )}
     </div>

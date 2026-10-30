@@ -203,12 +203,12 @@ export function RepeaterField({
                   />
                   {rowErrors[subField.name]?.message && (
                     <span className="sid-form-field-error" role="alert">
-                      {rowErrors[subField.name].message}
+                      {rowErrors[subField.name]?.message}
                     </span>
                   )}
                   {rowErrors[otherOccupationFieldName(subField.name)]?.message && (
                     <span className="sid-form-field-error" role="alert">
-                      {rowErrors[otherOccupationFieldName(subField.name)].message}
+                      {rowErrors[otherOccupationFieldName(subField.name)]?.message}
                     </span>
                   )}
                 </div>

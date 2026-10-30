@@ -83,8 +83,8 @@ function normalizeSlot(slot: LetterSignatureSlot): SuratSignatureSlot {
 }
 
 // Kolom data warga pemohon, disebut lewat nama dari definisi jenis surat.
-function citizenColumn(user: User | null | undefined, column: string): unknown {
-  return (user?.citizen as Record<string, unknown> | undefined)?.[column]
+function citizenColumn(user: User | null | undefined, column: string | null): unknown {
+  return column ? (user?.citizen as Record<string, unknown> | undefined)?.[column] : undefined
 }
 
 /**
@@ -96,7 +96,10 @@ export function applicantValue(
   user: User | null | undefined,
 ): string | null {
   const source = field.fromApplicant
-  const raw = source ? citizenColumn(user, source.column) : null
+
+  if (!source) return null
+
+  const raw = citizenColumn(user, source.column)
 
   return raw === null || raw === undefined ? null : (source.map?.[String(raw)] ?? null)
 }
@@ -156,7 +159,7 @@ export function getLetterTypeFormConfig(
     id: letterType.id,
     code: letterType.code,
     title: letterType.name,
-    requirementsInfo: letterType.requirements_info,
+    requirementsInfo: letterType.requirements_info ?? null,
     producesLetter: letterType.produces_letter ?? true,
     dataAction: letterType.data_action ?? 'none',
     hasSupportingDocument: Boolean(letterType.has_supporting_document),
@@ -182,8 +185,8 @@ export function describeLetterTypeOutput(
   const parts = []
 
   if (letterType.produces_letter ?? true) parts.push('Surat')
-  if (DATA_ACTION_LABELS[letterType.data_action])
-    parts.push(DATA_ACTION_LABELS[letterType.data_action])
+  const actionLabel = letterType.data_action ? DATA_ACTION_LABELS[letterType.data_action] : null
+  if (actionLabel) parts.push(actionLabel)
 
   return parts.length ? parts.join(' + ') : '-'
 }

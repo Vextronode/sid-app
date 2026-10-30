@@ -30,12 +30,13 @@ export function canDecideOnLetter({
   apiRole,
 }: CanDecideInput) {
   const position = currentStep?.approver_position
-  const approverRoles = APPROVER_ROLES_BY_POSITION[position] ?? []
-  const approvalLevels = APPROVAL_LEVELS_BY_POSITION[position] ?? []
+  const approverRoles = (position ? APPROVER_ROLES_BY_POSITION[position] : undefined) ?? []
+  const approvalLevels = (position ? APPROVAL_LEVELS_BY_POSITION[position] : undefined) ?? []
   const hasExistingDecision = approvals.some(
     (approval) =>
-      approvalLevels.includes(approval?.approval_level) &&
-      ['approved', 'rejected'].includes(approval?.action),
+      approval?.approval_level !== undefined &&
+      approvalLevels.includes(approval.approval_level) &&
+      Boolean(approval?.action && ['approved', 'rejected'].includes(approval.action)),
   )
   // Tahap desa juga bisa berstatus pending bila tahap RT dilewati
   // (pemohon RT sendiri), sama seperti yang diterima backend.
@@ -45,7 +46,7 @@ export function canDecideOnLetter({
 
   return (
     isDecidable &&
-    approverRoles.includes(currentUserRole) &&
+    Boolean(currentUserRole && approverRoles.includes(currentUserRole)) &&
     !hasExistingDecision &&
     Boolean(apiRole)
   )

@@ -109,7 +109,7 @@ export function FulfillmentPanel({
       const response = await applyFulfillment(letterId, filled, nik)
 
       setMessage(response?.message ?? 'Perubahan data berhasil diterapkan.')
-      setProposal((current) => ({ ...current, fulfilled_at: new Date().toISOString() }))
+      setProposal((current) => current && { ...current, fulfilled_at: new Date().toISOString() })
       onApplied?.(response?.data)
     } catch (requestError) {
       setError(getApiErrorMessage(requestError, 'Gagal menerapkan perubahan data.'))
@@ -163,7 +163,7 @@ export function FulfillmentPanel({
 
   const handleSemiManualDone = (response: MessageResponse<Letter>) => {
     setMessage(response?.message ?? 'Perubahan data berhasil disimpan.')
-    setProposal((current) => ({ ...current, fulfilled_at: new Date().toISOString() }))
+    setProposal((current) => current && { ...current, fulfilled_at: new Date().toISOString() })
     onApplied?.(response?.data)
   }
 
@@ -192,7 +192,7 @@ export function FulfillmentPanel({
       {done ? (
         <p className="sid-modal-note-text">
           Sudah {proposal.action === 'manual' ? 'ditandai selesai' : 'diterapkan'} pada{' '}
-          {new Date(proposal.fulfilled_at).toLocaleString('id-ID')}.
+          {proposal.fulfilled_at ? new Date(proposal.fulfilled_at).toLocaleString('id-ID') : '-'}.
         </p>
       ) : proposal.action === 'update_members' ? (
         <MemberChangesForm letterId={letterId} proposal={proposal} onDone={handleSemiManualDone} />

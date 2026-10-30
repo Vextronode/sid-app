@@ -46,7 +46,9 @@ export function todayDate() {
 
 // Isian `past`: tanggal tidak sesudah hari ini.
 const dateSchema = (field: SuratField) => {
-  const base = field.required ? requiredDate(field.label) : optionalText
+  const base: z.ZodType<string | undefined> = field.required
+    ? requiredDate(field.label)
+    : optionalText
 
   return field.past
     ? base.refine(
@@ -60,7 +62,7 @@ const numberText = (field: SuratField, required: boolean) => {
   const { label } = field
   // Aturan bulat & batas bawah hanya untuk isian yang memang angka.
   const isNumber = (value: string) => value !== '' && !Number.isNaN(Number(value))
-  const hasMin = field.minValue !== null && field.minValue !== undefined
+  const { minValue } = field
 
   return z
     .string()
@@ -72,7 +74,11 @@ const numberText = (field: SuratField, required: boolean) => {
       `${label} harus berupa bilangan bulat`,
     )
     .refine(
-      (value) => !hasMin || !isNumber(value) || Number(value) >= field.minValue,
+      (value) =>
+        minValue === null ||
+        minValue === undefined ||
+        !isNumber(value) ||
+        Number(value) >= minValue,
       `${label} minimal ${field.minValue}`,
     )
 }

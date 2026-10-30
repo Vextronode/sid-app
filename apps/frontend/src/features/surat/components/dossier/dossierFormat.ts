@@ -22,7 +22,7 @@ const LEVEL_LABELS: Record<string, string> = {
 }
 
 export function formatApprovalLevel(level: string | null | undefined) {
-  return LEVEL_LABELS[level] ?? String(level ?? '').replace(/_/g, ' ')
+  return (level ? LEVEL_LABELS[level] : undefined) ?? String(level ?? '').replace(/_/g, ' ')
 }
 
 export function getApprovalActor(

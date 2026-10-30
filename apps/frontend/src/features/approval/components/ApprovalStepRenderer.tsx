@@ -55,7 +55,7 @@ export default function ApprovalStepRenderer({
   }
 
   const handleApprove = async () => {
-    if (isProcessing) return
+    if (isProcessing || !apiRole) return
 
     // Tahap final menerbitkan surat resmi, jadi minta konfirmasi dulu.
     const confirmed = await confirmDialog(
@@ -108,7 +108,7 @@ export default function ApprovalStepRenderer({
 
   const handleSubmitReject = async () => {
     const notes = alasan.trim()
-    if (!notes || isProcessing) return
+    if (!notes || isProcessing || !apiRole) return
 
     try {
       setIsProcessing(true)

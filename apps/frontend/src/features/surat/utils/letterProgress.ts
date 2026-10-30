@@ -93,8 +93,10 @@ export function getLetterProgress(letter: ProgressLetter | null | undefined): Le
     }
   }
 
-  if (status === SURAT_STATUS.APPROVED && RESULT_PROGRESS[letter?.result_stage]) {
-    return { ...RESULT_PROGRESS[letter.result_stage], stages, rejected: false }
+  const resultStage = letter?.result_stage
+
+  if (status === SURAT_STATUS.APPROVED && resultStage && RESULT_PROGRESS[resultStage]) {
+    return { ...RESULT_PROGRESS[resultStage], stages, rejected: false }
   }
 
   if (status === SURAT_STATUS.APPROVED) {
@@ -132,14 +134,15 @@ export function getLetterProgress(letter: ProgressLetter | null | undefined): Le
   }
 
   const position = letter?.current_step?.approver_position
-  const current = POSITION_STAGE[position] ?? stageFromOrder(letter?.current_step_order)
+  const current =
+    (position ? POSITION_STAGE[position] : undefined) ?? stageFromOrder(letter?.current_step_order)
 
   return {
     stages,
     tone: status === SURAT_STATUS.PENDING ? 'pending' : 'progress',
     current,
     rejected: false,
-    message: `Menunggu persetujuan ${POSITION_NAME[position] ?? STAGE_NAME[current]}.`,
+    message: `Menunggu persetujuan ${(position ? POSITION_NAME[position] : undefined) ?? STAGE_NAME[current]}.`,
   }
 }
 

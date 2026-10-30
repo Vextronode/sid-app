@@ -286,7 +286,10 @@ export function DynamicSuratForm({
         const name = key.startsWith('payload.') ? key.slice('payload.'.length) : null
 
         if (name && !name.includes('.') && config.fields.some((field) => field.name === name)) {
-          setError(name, { type: 'server', message: [].concat(messages)[0] })
+          setError(name, {
+            type: 'server',
+            message: ([] as string[]).concat(messages as string | string[])[0],
+          })
         }
       })
     } finally {

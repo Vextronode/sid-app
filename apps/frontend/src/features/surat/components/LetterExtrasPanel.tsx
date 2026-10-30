@@ -313,7 +313,7 @@ export function LetterExtrasPanel({ letterId }: { letterId: Id }) {
   const canRefill = isOwner && letter.awaiting_signatures
   // can_fulfill dari backend: hanya Kasi/Kaur sesuai assigned_role.
   const canFulfill =
-    FULFILLMENT_ROLES.includes(user?.role) &&
+    Boolean(user && FULFILLMENT_ROLES.includes(user.role)) &&
     letter.needs_fulfillment &&
     letter.can_fulfill !== false
   const documentUrl = supportingDocumentUrl(letter.id)
@@ -413,7 +413,8 @@ export function LetterExtrasPanel({ letterId }: { letterId: Id }) {
                   className="underline"
                   onClick={() => openFile(() => openProtectedFile(attachment.url))}
                 >
-                  {fieldLabels[attachment.field] ?? attachment.original_name}
+                  {(attachment.field ? fieldLabels[attachment.field] : undefined) ??
+                    attachment.original_name}
                 </button>
                 {attachment.kind === 'wet_signature' && ' (dokumen ber-tanda tangan basah)'}
               </li>

@@ -40,7 +40,7 @@ export function NikLookupHint({
     complete && result.nik === nik ? result : { status: complete ? 'loading' : 'idle' }
 
   useEffect(() => {
-    if (!complete) {
+    if (!complete || !nik) {
       onResult({ status: 'idle', name: '' })
 
       return undefined

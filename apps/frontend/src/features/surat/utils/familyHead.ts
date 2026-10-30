@@ -15,7 +15,7 @@ export function newHeadChoice(
 ): HeadChoice {
   // Satu id, daftar id, atau baris repeater dengan kolom `anggota`.
   const leaving = ([] as unknown[])
-    .concat(formData?.[field.requiredWhenHead] ?? [])
+    .concat((field.requiredWhenHead ? formData?.[field.requiredWhenHead] : undefined) ?? [])
     .map((item) => (item && typeof item === 'object' ? (item as SuratFormValues).anggota : item))
     .filter(Boolean)
     .map(String)
@@ -40,7 +40,9 @@ export function isOldEnough(
   familyMembers: ApplicantFamilyMember[],
   formData: SuratFormValues | undefined,
 ) {
-  const value = olderThan ? (formData?.[olderThan.field] as string | undefined) : null
+  if (!olderThan) return true
+
+  const value = formData?.[olderThan.field] as string | undefined
 
   if (!value || !member.date_of_birth) return true
 
@@ -68,7 +70,10 @@ export function memberChoices(
 ) {
   return (headChoice?.candidates ?? familyMembers)
     .filter((member) => !field.gender || member.gender === field.gender)
-    .filter((member) => !field.roles || field.roles.includes(member.family_role))
+    .filter(
+      (member) =>
+        !field.roles || (member.family_role !== null && field.roles.includes(member.family_role)),
+    )
     .filter((member) => isOldEnough(member, field.olderThan, familyMembers, formData))
     .filter((member) => !field.notSelf || !member.is_self)
 }
@@ -83,13 +88,16 @@ export function headTakenBy(
   fields: Pick<SuratField, 'name' | 'oneHead'>[],
   formData: SuratFormValues | undefined,
 ) {
-  return fields.some(
-    (field) =>
-      field.oneHead?.with === fieldName &&
+  return fields.some((field) => {
+    const oneHead = field.oneHead
+
+    return (
+      oneHead?.with === fieldName &&
       ((formData?.[field.name] as SuratFormValues[] | undefined) ?? []).some(
-        (row) => row?.[field.oneHead.column] === 'kepala_keluarga',
-      ),
-  )
+        (row) => row?.[oneHead.column] === 'kepala_keluarga',
+      )
+    )
+  })
 }
 
 /**
@@ -110,7 +118,7 @@ export function roleOptions(
   const gender =
     field.roleOf === 'family_head'
       ? familyMembers.find((member) => member.family_role === 'kepala_keluarga')?.gender
-      : ['L', 'P'].includes(value)
+      : value !== undefined && ['L', 'P'].includes(value)
         ? value
         : familyMembers.find((member) => String(member.id) === String(value))?.gender
 
