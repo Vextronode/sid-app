@@ -29,7 +29,7 @@ vi.mock('@/features/auth/hooks/useLoginForm', () => ({
   }),
 }))
 
-import LoginPage from '.'
+import LoginPage from './LoginPage'
 
 function CurrentPath() {
   const location = useLocation()
