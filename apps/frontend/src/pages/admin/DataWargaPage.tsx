@@ -46,8 +46,14 @@ import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealCitizenNik, revealFamilyNumber } from '@/shared/lib/identityApi'
+import type { ChangeEvent, FormEvent } from 'react'
+import { EMPTY_CITIZEN_FORM, citizenToForm } from '@/features/data-warga/utils/citizenForm'
+import type { CitizenForm } from '@/features/data-warga/utils/citizenForm'
+import type { CitizenImportResult } from '@/features/data-warga/hooks/useWargaList'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { Citizen, Occupation } from '@/types'
 
-const formatResidencyType = (type) => {
+const formatResidencyType = (type: string | null | undefined) => {
   if (!type) return '-'
   const lower = String(type).toLowerCase()
   if (lower === 'lokal' || lower === 'permanent' || lower === 'tetap') return 'Lokal'
@@ -72,40 +78,14 @@ const inputStyle = {
   fontFamily: 'inherit',
 }
 
-const emptyForm = {
-  nik: '',
-  name: '',
-  date_of_birth: '',
-  place_of_birth: '',
-  gender: 'L',
-  address: '',
-  rt_id: '',
-  family_id: '',
-  family_role: '',
-  residency_type: 'lokal',
-  origin_region: '',
-  blood_type: '',
-  father_name_text: '',
-  mother_name_text: '',
-  marital_status: '',
-  occupation_id: '',
-  religion: '',
-  last_education: '',
-  domicile_status: 'menetap',
-  current_domicile: '',
-  // Dokumen & keterangan tambahan (Formulir Biodata Keluarga F-1.01).
-  title_front: '',
-  title_back: '',
-  birth_certificate_number: '',
-  marriage_certificate_number: '',
-  marriage_date: '',
-  divorce_certificate_number: '',
-  divorce_date: '',
-  has_disorder: false,
-  disability: '',
+type ImportStatus = {
+  loading: boolean
+  success: string | null
+  error: string | null
+  result: CitizenImportResult | null
 }
 
-const emptyImportStatus = { loading: false, success: null, error: null, result: null }
+const emptyImportStatus: ImportStatus = { loading: false, success: null, error: null, result: null }
 
 // Dua bagian halaman, ditampilkan sebagai tab seperti halaman Lembaga
 // Kemasyarakatan. Tab aktif disimpan di ?tab= agar tetap saat kembali
@@ -122,7 +102,7 @@ export default function DataWargaPage() {
   const canViewHistory = user?.role === 'staf_sid'
   const [searchParams, setSearchParams] = useSearchParams()
   const activeSection = searchParams.get('tab') === 'kk' ? 'kk' : 'penduduk'
-  const switchSection = (value) =>
+  const switchSection = (value: string) =>
     setSearchParams(value === 'penduduk' ? {} : { tab: value }, { replace: true })
   const familyList = useFamilyList()
   // Tombol Tambah KK di header membuka form milik panel KK.
@@ -155,19 +135,19 @@ export default function DataWargaPage() {
 
   // Modal Impor Excel
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
-  const [selectedFile, setSelectedFile] = useState(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [importStatus, setImportStatus] = useState(emptyImportStatus)
 
   // Modal Form CRUD (Tambah / Edit)
   const [isFormModalOpen, setIsFormModalOpen] = useState(false)
-  const [editingCitizen, setEditingCitizen] = useState(null)
-  const [formData, setFormData] = useState(emptyForm)
+  const [editingCitizen, setEditingCitizen] = useState<Citizen | null>(null)
+  const [formData, setFormData] = useState<CitizenForm>(EMPTY_CITIZEN_FORM)
   const [formSubmitting, setFormSubmitting] = useState(false)
-  const [formError, setFormError] = useState(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
   // Katalog pekerjaan untuk pilihan di form warga. Yang nonaktif ikut
   // dimuat agar pekerjaan lama warga tetap tampil saat diedit.
-  const [occupations, setOccupations] = useState([])
+  const [occupations, setOccupations] = useState<Occupation[]>([])
 
   useEffect(() => {
     let active = true
@@ -185,15 +165,15 @@ export default function DataWargaPage() {
     }
   }, [])
 
-  const handleSearchSubmit = (e) => {
+  const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setSearch(keyword)
   }
 
   // Isian saat modal dibuka, pembanding untuk peringatan "Buang perubahan?".
-  const [formBaseline, setFormBaseline] = useState(null)
+  const [formBaseline, setFormBaseline] = useState<CitizenForm | null>(null)
 
-  const openForm = (initial) => {
+  const openForm = (initial: CitizenForm) => {
     setFormData(initial)
     setFormBaseline(initial)
   }
@@ -208,51 +188,21 @@ export default function DataWargaPage() {
   const handleOpenAddModal = () => {
     setEditingCitizen(null)
     openForm({
-      ...emptyForm,
+      ...EMPTY_CITIZEN_FORM,
       rt_id: wilayahOptions[0]?.id ? String(wilayahOptions[0].id) : '',
     })
     setFormError(null)
     setIsFormModalOpen(true)
   }
 
-  const handleOpenEditModal = (warga) => {
+  const handleOpenEditModal = (warga: Citizen) => {
     setEditingCitizen(warga)
-    openForm({
-      nik: '',
-      name: warga.name || '',
-      date_of_birth: warga.date_of_birth ? String(warga.date_of_birth).slice(0, 10) : '',
-      place_of_birth: warga.place_of_birth || '',
-      gender: warga.gender || 'L',
-      address: warga.address || '',
-      rt_id: warga.rt_id ? String(warga.rt_id) : '',
-      residency_type: warga.residency_type || 'lokal',
-      family_id: warga.family_id ? String(warga.family_id) : '',
-      family_role: warga.family_role || '',
-      origin_region: warga.origin_region || '',
-      blood_type: warga.blood_type || '',
-      father_name_text: warga.father_name_text || '',
-      mother_name_text: warga.mother_name_text || '',
-      marital_status: warga.marital_status || '',
-      occupation_id: warga.occupation_id ? String(warga.occupation_id) : '',
-      religion: warga.religion || '',
-      last_education: warga.last_education || '',
-      domicile_status: warga.domicile_status || 'menetap',
-      current_domicile: warga.current_domicile || '',
-      title_front: warga.title_front || '',
-      title_back: warga.title_back || '',
-      birth_certificate_number: warga.birth_certificate_number || '',
-      marriage_certificate_number: warga.marriage_certificate_number || '',
-      marriage_date: warga.marriage_date ? String(warga.marriage_date).slice(0, 10) : '',
-      divorce_certificate_number: warga.divorce_certificate_number || '',
-      divorce_date: warga.divorce_date ? String(warga.divorce_date).slice(0, 10) : '',
-      has_disorder: Boolean(warga.has_disorder),
-      disability: warga.disability || '',
-    })
+    openForm(citizenToForm(warga))
     setFormError(null)
     setIsFormModalOpen(true)
   }
 
-  const handleFormSubmit = async (e) => {
+  const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setFormSubmitting(true)
     setFormError(null)
@@ -299,18 +249,13 @@ export default function DataWargaPage() {
       )
       setIsFormModalOpen(false)
     } catch (err) {
-      const errs = err?.response?.data?.errors
-      setFormError(
-        (errs && Object.values(errs)[0]?.[0]) ||
-          err?.response?.data?.message ||
-          'Gagal menyimpan data warga.',
-      )
+      setFormError(getApiErrorMessage(err, 'Gagal menyimpan data warga.'))
     } finally {
       setFormSubmitting(false)
     }
   }
 
-  const handleDeleteWarga = async (id, name) => {
+  const handleDeleteWarga = async (id: string, name: string) => {
     if (
       await confirmDialog({
         title: `Hapus data warga ${name}?`,
@@ -338,8 +283,8 @@ export default function DataWargaPage() {
     }
   }
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0]
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
     if (file) {
       if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
         setSelectedFile(file)
@@ -368,7 +313,7 @@ export default function DataWargaPage() {
     },
   )
 
-  const handleImportSubmit = async (e) => {
+  const handleImportSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selectedFile) return
 
