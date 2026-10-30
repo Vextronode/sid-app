@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryKeys } from '@/shared/lib/queryKeys'
+import type { ApiError, AppNotification } from '@/types'
 import {
   getNotifications,
   getUnreadNotificationCount,
@@ -9,11 +10,14 @@ import {
   markNotificationAsRead,
 } from '../api'
 
-const EMPTY_NOTIFICATIONS = []
+const EMPTY_NOTIFICATIONS: AppNotification[] = []
 const UNREAD_REFRESH_INTERVAL = 30 * 1000
 
-function requestMessage(requestError, fallback) {
-  return requestError?.response?.data?.message ?? fallback
+// Hasil hook, dipakai juga sebagai props popover notifikasi.
+export type NotificationState = ReturnType<typeof useNotifications>
+
+function requestMessage(requestError: unknown, fallback: string): string {
+  return (requestError as ApiError)?.response?.data?.message ?? fallback
 }
 
 // Data notifikasi disimpan di cache React Query sehingga dipakai bersama
@@ -22,7 +26,7 @@ function requestMessage(requestError, fallback) {
 export default function useNotifications() {
   const queryClient = useQueryClient()
   const [actionError, setActionError] = useState('')
-  const [markingIds, setMarkingIds] = useState([])
+  const [markingIds, setMarkingIds] = useState<string[]>([])
   const [markingAll, setMarkingAll] = useState(false)
 
   const listQuery = useQuery({
@@ -66,8 +70,8 @@ export default function useNotifications() {
   )
 
   const setNotifications = useCallback(
-    (update) =>
-      queryClient.setQueryData(queryKeys.notifications.list, (current) =>
+    (update: (current: AppNotification[]) => AppNotification[]) =>
+      queryClient.setQueryData<AppNotification[]>(queryKeys.notifications.list, (current) =>
         update(current ?? EMPTY_NOTIFICATIONS),
       ),
     [queryClient],
@@ -84,7 +88,7 @@ export default function useNotifications() {
   }, [refetchList, refetchCount])
 
   const markAsRead = useCallback(
-    async (id) => {
+    async (id: string) => {
       const notification = notifications.find((item) => item.id === id)
       if (!notification || notification.read || markingIds.includes(id)) return false
 

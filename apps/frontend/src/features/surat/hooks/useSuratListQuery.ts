@@ -3,10 +3,13 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 
 import api from '@/lib/api'
 import { queryKeys } from '@/shared/lib/queryKeys'
-import type { LetterListItem, PaginatedResponse } from '@/types'
+import type { LetterListItem, PageMeta, PaginatedResponse } from '@/types'
 
-const EMPTY_LETTERS = []
-const EMPTY_META = { current_page: 1, per_page: 20, total: 0, last_page: 1 }
+// Parameter query daftar/ringkasan surat; nilai kosong tidak dikirim.
+export type SuratQueryParams = Record<string, string | number | null | undefined>
+
+const EMPTY_LETTERS: LetterListItem[] = []
+const EMPTY_META: PageMeta = { current_page: 1, per_page: 20, total: 0, last_page: 1 }
 
 export const SURAT_REFRESH_INTERVAL = 30 * 1000
 
@@ -19,7 +22,7 @@ const LIVE_QUERY_OPTIONS = {
   refetchOnWindowFocus: true,
 }
 
-function cleanParams(params) {
+function cleanParams(params?: SuratQueryParams) {
   return Object.fromEntries(
     Object.entries(params ?? {}).filter(
       ([, value]) => value !== undefined && value !== null && value !== '',
@@ -30,7 +33,7 @@ function cleanParams(params) {
 // Daftar surat berpaginasi di server. Scope data ditentukan backend dari
 // sesi pengguna; filter, pencarian, dan halaman dikirim sebagai parameter
 // (page, per_page, status, search, letter_type_id, scope, from, to).
-export function useSuratListQuery(params) {
+export function useSuratListQuery(params?: SuratQueryParams) {
   const query = cleanParams(params)
   const queryClient = useQueryClient()
 
@@ -78,7 +81,7 @@ const EMPTY_SUMMARY = {
 
 // Angka ringkasan dashboard, dihitung backend atas scope yang sama dengan
 // daftar surat sehingga tidak perlu mengunduh seluruh baris.
-export function useSuratSummaryQuery(params) {
+export function useSuratSummaryQuery(params?: SuratQueryParams) {
   const query = cleanParams(params)
 
   const { data, isPending } = useQuery({

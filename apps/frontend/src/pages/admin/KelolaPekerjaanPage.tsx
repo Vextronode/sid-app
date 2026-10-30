@@ -326,7 +326,7 @@ export default function KelolaPekerjaanPage() {
               <tbody>
                 {data.length === 0 ? (
                   <tr>
-                    <td colSpan="6">
+                    <td colSpan={6}>
                       <div className="sid-wilayah-empty">Belum ada data pekerjaan.</div>
                     </td>
                   </tr>

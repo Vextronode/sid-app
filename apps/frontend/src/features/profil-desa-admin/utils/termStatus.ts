@@ -5,7 +5,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 // term_ends_at dibaca sebagai tanggal kalender (YYYY-MM-DD) di zona waktu
 // pengguna, supaya "hari ini" dan tanggal akhir dibandingkan per hari.
-function toLocalDay(value) {
+function toLocalDay(value: unknown) {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value))
 
   return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null
@@ -16,12 +16,12 @@ function toLocalDay(value) {
  * lewat, 'ending' bila berakhir dalam TERM_ENDING_SOON_DAYS hari (termasuk
  * hari ini), selain itu null.
  */
-export function getTermStatus(termEndsAt, today = new Date()) {
+export function getTermStatus(termEndsAt: string | null | undefined, today = new Date()) {
   const end = termEndsAt ? toLocalDay(termEndsAt) : null
   if (!end) return null
 
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-  const daysLeft = Math.round((end - startOfToday) / DAY_MS)
+  const daysLeft = Math.round((end.getTime() - startOfToday.getTime()) / DAY_MS)
 
   if (daysLeft < 0) return { type: 'expired', daysLeft }
   if (daysLeft <= TERM_ENDING_SOON_DAYS) return { type: 'ending', daysLeft }

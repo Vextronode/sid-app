@@ -13,6 +13,16 @@ export type AppNotification = {
   created_at: IsoDateString | null
   // Waktu relatif yang sudah diformat backend (mis. "5 menit lalu").
   time: string | null
-  // Data tujuan klik (mis. letter_id); isinya bergantung pada jenis notifikasi.
-  context: Record<string, unknown>
+  // Data tujuan klik; field yang terisi bergantung pada jenis notifikasi.
+  context: NotificationContext
+}
+
+export type NotificationContext = {
+  letter_id?: number
+  letter_no?: string | null
+  applicant?: string | null
+  // Status surat/tanda tangan yang memicu notifikasi (mis. 'approved').
+  status?: string
+  // Penerima adalah pemohon surat itu sendiri.
+  is_applicant?: boolean
 }

@@ -10,10 +10,28 @@
 import '@/styles/surat-dokumen.css'
 import { FileSearch, SquarePen } from 'lucide-react'
 
+import type { ReactNode } from 'react'
+
 import { DownloadSuratMenu } from '@/features/cetak-surat/components/DownloadSuratMenu'
+import type { PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
 import { getLetterDetail } from '../api/letterExtrasApi'
 
-export function LetterRowActions({
+// Baris daftar (LetterListItem) maupun detail surat.
+type RowLetter = PrintableLetter & { applicant_name?: string | null }
+
+type LetterRowActionsProps<T extends RowLetter> = {
+  surat: T
+  onOpen: (surat: T) => void
+  // 'Proses' menampilkan tombol primer; selain itu tombol outline.
+  openLabel?: string
+  openAriaLabel?: string
+  canDownload?: boolean
+  downloadDisabled?: boolean
+  downloadTitle?: string
+  extra?: ReactNode
+}
+
+export function LetterRowActions<T extends RowLetter>({
   surat,
   onOpen,
   openLabel = 'Detail',
@@ -22,7 +40,7 @@ export function LetterRowActions({
   downloadDisabled = false,
   downloadTitle,
   extra = null,
-}) {
+}: LetterRowActionsProps<T>) {
   const isProcess = openLabel === 'Proses'
   const Icon = isProcess ? SquarePen : FileSearch
   const subject = [surat?.letter_number, surat?.applicant_name ?? surat?.letter_type?.name]

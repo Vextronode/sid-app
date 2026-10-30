@@ -8,7 +8,7 @@ const prefersReducedMotion = () =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Mengembalikan false bila section tidak ditemukan. */
-export function scrollToSection(id) {
+export function scrollToSection(id: string) {
   const target = typeof document !== 'undefined' ? document.getElementById(id) : null
   if (!target) return false
   target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' })

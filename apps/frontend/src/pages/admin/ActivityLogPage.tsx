@@ -74,7 +74,15 @@ function Actor({ actor }) {
   )
 }
 
-function ChangeList({ log }) {
+type ActivityLogEntry = {
+  event: string
+  // Hasil impor Excel (event 'imported').
+  summary?: { success_count: number; error_count: number; total_rows: number } | null
+  // Perubahan per field: nilai lama -> baru.
+  changes?: Record<string, { old?: unknown; new?: unknown }> | null
+}
+
+function ChangeList({ log }: { log: ActivityLogEntry }) {
   if (log.event === 'imported' && log.summary) {
     return (
       <span>

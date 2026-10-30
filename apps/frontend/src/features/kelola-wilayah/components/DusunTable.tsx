@@ -61,7 +61,7 @@ export default function DusunTable({ hamlets, rws, rts, processing, onEdit, onTo
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan="7">
+                <td colSpan={7}>
                   <div className="sid-wilayah-empty">Belum ada data dusun.</div>
                 </td>
               </tr>

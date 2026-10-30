@@ -95,7 +95,8 @@ src/
   styles/                 sid-global.css, public.css, beranda.css
   test/                   setup Vitest
   types/                  tipe domain & API lintas fitur (api, user, citizen, wilayah, letter,
-                          notification); diimpor lewat `@/types`
+                          notification); diimpor lewat `@/types`. react-css.d.ts mengizinkan
+                          CSS custom property (`--sid-*`) di prop `style`
 public/
   push-handler.js         handler `push` & `notificationclick` untuk service worker
   assets/                 ikon PWA dan aset seeder (logo/foto default)

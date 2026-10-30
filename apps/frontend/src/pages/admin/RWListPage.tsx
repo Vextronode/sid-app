@@ -56,7 +56,6 @@ export default function RWListPage() {
     pageSize,
     setPageSize,
   } = useApprovalLetterList({
-    role: 'rw',
     initialStatus,
   })
 

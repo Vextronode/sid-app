@@ -7,7 +7,13 @@ import { HAL_LOGIN } from '@/lib/constants/routes'
 // Tombol akun di header publik. Belum login: "Masuk". Sudah login:
 // "Dashboard Saya". Keduanya menuju HAL_LOGIN, karena GuestRoute sudah
 // meneruskan pengguna yang login ke dashboard sesuai perannya.
-export function AccountNavLink({ nav, className, onClick }) {
+type AccountNavLinkProps = {
+  nav: { masuk: string; dashboard: string }
+  className?: string
+  onClick?: () => void
+}
+
+export function AccountNavLink({ nav, className, onClick }: AccountNavLinkProps) {
   const { user } = useAuth()
 
   return (

@@ -6,8 +6,11 @@
 
 import { useState } from 'react'
 import { Bell, FileText, PenLine } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
+import type { AppNotification } from '@/types'
+import type { NotificationState } from '../hooks/useNotifications'
 import { getNotificationTarget } from '../utils/notificationTarget'
 import WebPushControls from './WebPushControls'
 
@@ -17,20 +20,20 @@ const TABS = [
   { value: 'informasi', label: 'Informasi' },
 ]
 
-const ICON_MAP = {
+const ICON_MAP: Record<string, LucideIcon> = {
   document: FileText,
   signature: PenLine,
   bell: Bell,
 }
 
-const WARNA_MAP = {
+const WARNA_MAP: Record<string, string> = {
   green: 'sid-notification-icon sid-notification-icon-green',
   blue: 'sid-notification-icon sid-notification-icon-blue',
   red: 'sid-notification-icon sid-notification-icon-red',
   gray: 'sid-notification-icon sid-notification-icon-gray',
 }
 
-function getDayLabel(dateString) {
+function getDayLabel(dateString: string | null) {
   const notifDate = new Date(dateString)
 
   const today = new Date()
@@ -39,7 +42,7 @@ function getDayLabel(dateString) {
   const target = new Date(notifDate)
   target.setHours(0, 0, 0, 0)
 
-  const diff = Math.floor((today - target) / (1000 * 60 * 60 * 24))
+  const diff = Math.floor((today.getTime() - target.getTime()) / (1000 * 60 * 60 * 24))
 
   if (diff === 0) return 'Hari Ini'
   if (diff === 1) return 'Kemarin'
@@ -65,14 +68,14 @@ export default function NotificationPopover({
   markingAll,
   markAsRead,
   markAllAsRead,
-}) {
+}: NotificationState & { open: boolean; onClose?: () => void }) {
   const [activeTab, setActiveTab] = useState('semua')
 
   const navigate = useNavigate()
   const { user } = useAuth()
 
   // Klik notifikasi menandainya terbaca dan membuka surat yang dimaksud.
-  const handleOpen = (notification) => {
+  const handleOpen = (notification: AppNotification) => {
     if (!notification.read && !markingIds.includes(notification.id)) {
       void markAsRead(notification.id)
     }
@@ -90,17 +93,20 @@ export default function NotificationPopover({
   const filtered =
     activeTab === 'semua' ? notifications : notifications.filter((n) => n.category === activeTab)
 
-  const groupedNotifications = filtered.reduce((groups, notif) => {
-    const label = getDayLabel(notif.created_at)
+  const groupedNotifications = filtered.reduce<Record<string, AppNotification[]>>(
+    (groups, notif) => {
+      const label = getDayLabel(notif.created_at)
 
-    if (!groups[label]) {
-      groups[label] = []
-    }
+      if (!groups[label]) {
+        groups[label] = []
+      }
 
-    groups[label].push(notif)
+      groups[label].push(notif)
 
-    return groups
-  }, {})
+      return groups
+    },
+    {},
+  )
 
   const handleTandaiSemua = async () => {
     await markAllAsRead()
@@ -160,13 +166,7 @@ export default function NotificationPopover({
 
               <div className="sid-notification-list">
                 {items.map((n) => (
-                  <NotifItem
-                    key={n.id}
-                    data={n}
-                    onRead={() => markAsRead(n.id)}
-                    disabled={n.read || markingIds.includes(n.id)}
-                    onActivate={() => handleOpen(n)}
-                  />
+                  <NotifItem key={n.id} data={n} onActivate={() => handleOpen(n)} />
                 ))}
               </div>
             </div>
@@ -181,7 +181,7 @@ export default function NotificationPopover({
   )
 }
 
-function NotifItem({ data, onActivate }) {
+function NotifItem({ data, onActivate }: { data: AppNotification; onActivate: () => void }) {
   const Icon = ICON_MAP[data.icon] ?? FileText
 
   return (

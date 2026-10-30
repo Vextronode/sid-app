@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // ==========================================
 // PengajuanSuratPage.tsx
 // Dua mode:
@@ -10,7 +9,6 @@
 
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { DynamicSuratForm } from '@/features/surat/components/DynamicSuratForm'
 import { useLetterTypes } from '@/features/surat/hooks/useLetterTypes'
 import { getLetterTypeFormConfig } from '@/features/surat/utils/letterTypeConfig'
@@ -21,7 +19,6 @@ import { LetterTypePicker } from '@/features/surat/components/LetterTypePicker'
 export function PengajuanSuratPage() {
   const { kode } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const { letterTypes, loading, error } = useLetterTypes()
 
   // Kalau nggak ada kode di URL, mulai kosong (user harus pilih dulu)
@@ -33,39 +30,8 @@ export function PengajuanSuratPage() {
 
   const handleCancel = () => navigate('/jenis-surat')
 
-  const handleSubmit = (data) => {
-    const bulan = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Ags',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ]
-
-    const tgl = new Date()
-
-    const formatTanggal = `${tgl.getDate()} ${bulan[tgl.getMonth()]} ${tgl.getFullYear()}`
-
-    const suratBaru = {
-      id: Date.now(),
-      noSurat: '-',
-      pemohon: user?.name || 'Warga Desa',
-      jenis: currentConfig.code || 'SKD',
-      tanggal: formatTanggal,
-      status: 'pending',
-      nik: data.nik || null,
-      alamat: data.alamat || null,
-      keperluan: data.keperluan || null,
-      processed_at: data.processed_at || null,
-    }
-
+  // Dipanggil DynamicSuratForm setelah surat berhasil dikirim ke backend.
+  const handleSubmit = () => {
     // Toast tetap tampil setelah pindah ke daftar surat.
     notifySuccess('Permohonan surat berhasil dikirim.')
     navigate('/surat-saya')

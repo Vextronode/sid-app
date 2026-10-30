@@ -33,11 +33,13 @@ export function deletePerangkatDesa(id) {
 const multipart = { headers: { 'Content-Type': 'multipart/form-data' } }
 
 // Penetapan dan rotasi membawa foto pejabat, jadi dikirim multipart.
-function toFormData(payload) {
+function toFormData(payload: Record<string, string | number | boolean | Blob | null | undefined>) {
   const formData = new FormData()
 
   Object.entries(payload).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') formData.append(key, value)
+    if (value === undefined || value === null || value === '') return
+
+    formData.append(key, value instanceof Blob ? value : String(value))
   })
 
   return formData

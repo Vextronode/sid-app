@@ -112,7 +112,7 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggl
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan="6">
+                <td colSpan={6}>
                   <div className="sid-wilayah-empty">
                     {rts.length === 0
                       ? 'Belum ada data RT.'

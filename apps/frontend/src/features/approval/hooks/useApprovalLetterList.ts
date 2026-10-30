@@ -7,7 +7,8 @@ import { useDebouncedValue, useSuratListQuery } from '@/features/surat/hooks/use
 // menyimpan pilihan pengguna dan mengembalikan baris halaman yang aktif.
 // Jumlah baris per halaman dipilih pengguna dan sama untuk semua daftar
 // surat warga milik pejabat.
-export function useApprovalLetterList({ initialStatus = '' } = {}) {
+// Cakupan surat (RT/RW/dusun/desa) ditentukan backend dari sesi pengguna.
+export function useApprovalLetterList({ initialStatus = '' }: { initialStatus?: string } = {}) {
   const [search, setSearchState] = useState('')
   const [filterStatus, setFilterStatusState] = useState(initialStatus)
   const [page, setPage] = useState(1)

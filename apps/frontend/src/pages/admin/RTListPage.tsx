@@ -75,7 +75,6 @@ export default function RTListPage() {
     setPageSize,
     refresh,
   } = useApprovalLetterList({
-    role: 'rt',
     initialStatus,
   })
 

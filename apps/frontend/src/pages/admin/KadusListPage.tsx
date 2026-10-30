@@ -58,7 +58,6 @@ export default function KadusListPage() {
     pageSize,
     setPageSize,
   } = useApprovalLetterList({
-    role: 'kadus',
     initialStatus,
   })
   // ==========================================

@@ -410,7 +410,11 @@ export default function PejabatDesaPage() {
   }, [officials, statusFilter, rwNumbers])
 
   // afterSuccess: langkah setelah berhasil; bawaannya memuat ulang daftar.
-  const run = async (request, successMessage, afterSuccess = loadData) => {
+  const run = async (
+    request: () => Promise<{ data?: { message?: string; warnings?: string[] } }>,
+    successMessage: string,
+    afterSuccess: () => unknown = loadData,
+  ) => {
     setProcessing(true)
     setError('')
     setWarnings([])

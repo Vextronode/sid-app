@@ -2,8 +2,12 @@ import api from '@/lib/api'
 
 // Unduh berkas yang dilindungi sesi login (ekspor laporan, template Excel):
 // diambil sebagai blob lewat klien API lalu disimpan dengan nama `filename`.
-export async function downloadFile(url, filename, params) {
-  const response = await api.get(url, { params, responseType: 'blob' })
+export async function downloadFile(
+  url: string,
+  filename: string,
+  params?: Record<string, string | number | undefined>,
+) {
+  const response = await api.get<Blob>(url, { params, responseType: 'blob' })
   const blobUrl = URL.createObjectURL(response.data)
   const link = document.createElement('a')
 

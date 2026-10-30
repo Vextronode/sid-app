@@ -1,8 +1,10 @@
 import { useImperativeHandle, useState } from 'react'
+import type { Ref } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { History, Pencil, RefreshCw, Search, Trash2 } from 'lucide-react'
 
 import { getFamily, getFamilySocioeconomic, saveFamilySocioeconomic } from '../api'
+import type { useFamilyList } from '../hooks/useFamilyList'
 import { WilayahFilterSelects } from './WilayahFilterSelects'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
@@ -62,12 +64,21 @@ function responseData(response) {
  * (Kaur TU & Umum); `canViewHistory` hanya untuk Staf SIDUTama (Log Aktivitas).
  * `ref` mengekspos openCreate() untuk tombol Tambah KK di header halaman.
  */
+export type FamilyManagementPanelHandle = { openCreate: () => void }
+
+type FamilyManagementPanelProps = {
+  familyList: ReturnType<typeof useFamilyList>
+  canEdit?: boolean
+  canViewHistory?: boolean
+  ref?: Ref<FamilyManagementPanelHandle>
+}
+
 export default function FamilyManagementPanel({
   familyList,
   canEdit = true,
   canViewHistory = true,
   ref,
-}) {
+}: FamilyManagementPanelProps) {
   const navigate = useNavigate()
   const {
     families,

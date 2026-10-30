@@ -63,7 +63,14 @@ function MemberPhoto({ src, name, size = 'tiny' }) {
 }
 
 // Foto opsional di form; pratinjau tampil begitu berkas dipilih.
-function PhotoField({ file, currentSrc, onChange }) {
+type PhotoFieldProps = {
+  file: File | null
+  // Foto tersimpan; kosong untuk anggota baru.
+  currentSrc?: string | null
+  onChange: (file: File | null) => void
+}
+
+function PhotoField({ file, currentSrc, onChange }: PhotoFieldProps) {
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
 
   useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview])
@@ -619,7 +626,10 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }) {
     }
   }
 
-  const openFill = (slot, { fromMemberId, lockSlot = true } = {}) =>
+  const openFill = (
+    slot,
+    { fromMemberId, lockSlot = true }: { fromMemberId?: number; lockSlot?: boolean } = {},
+  ) =>
     openModal({
       kind: 'fill',
       initial: {

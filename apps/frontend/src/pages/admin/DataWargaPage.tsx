@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useRef, useState } from 'react'
 import {
   Plus,
@@ -287,6 +286,7 @@ export default function DataWargaPage() {
 
       if (editingCitizen) {
         // NIK tidak boleh diubah saat edit, jadi tidak dikirim.
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- dibuang dari payload
         const { nik, ...updatePayload } = citizenFields
         await editCitizen(editingCitizen.id, updatePayload)
       } else {

@@ -72,7 +72,7 @@ export default function RwTable({ rws, hamlets, processing, onEdit, onToggle, on
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan="5">
+                <td colSpan={5}>
                   <div className="sid-wilayah-empty">Belum ada data RW.</div>
                 </td>
               </tr>

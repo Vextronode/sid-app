@@ -54,7 +54,6 @@ export default function KadesListPage() {
     pageSize,
     setPageSize,
   } = useApprovalLetterList({
-    role: 'kepala_desa',
     initialStatus,
   })
 

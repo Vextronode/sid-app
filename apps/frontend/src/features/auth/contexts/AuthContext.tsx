@@ -130,7 +130,7 @@ export function AuthProvider({ children }) {
   // bila user dikosongkan di luar transition, React me-render user kosong di
   // halaman lama lebih dulu dan ProtectedRoute membuka halaman login.
   const logout = useCallback(
-    async ({ onLoggedOut } = {}) => {
+    async ({ onLoggedOut }: { onLoggedOut?: () => void } = {}) => {
       setIsLoggingOut(true)
       setAuthError('')
 

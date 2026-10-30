@@ -21,7 +21,10 @@ export function PublicStickyChrome({ content }) {
 
     const root = document.documentElement
     const observer = new ResizeObserver(([entry]) => {
-      root.style.setProperty(OFFSET_VAR, `${Math.ceil(entry.target.offsetHeight)}px`)
+      root.style.setProperty(
+        OFFSET_VAR,
+        `${Math.ceil((entry.target as HTMLElement).offsetHeight)}px`,
+      )
     })
     observer.observe(element)
 

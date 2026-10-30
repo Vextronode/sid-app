@@ -32,7 +32,24 @@ function serverMessage(error, fallback) {
  * Satu berkas pengesahan (stempel atau tanda tangan). Gambar tersimpan
  * privat di server, jadi pratinjau diambil sebagai blob.
  */
-function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded }) {
+type PrivateImageFieldProps = {
+  id: string
+  label: string
+  hasImage: boolean
+  // Gambar tersimpan diambil sebagai blob (dilindungi sesi login).
+  loadImage: () => Promise<Blob>
+  upload: (file: File) => Promise<unknown>
+  onUploaded?: () => void
+}
+
+function PrivateImageField({
+  id,
+  label,
+  hasImage,
+  loadImage,
+  upload,
+  onUploaded,
+}: PrivateImageFieldProps) {
   const [imageUrl, setImageUrl] = useState('')
   const [draft, setDraft] = useState(null)
   const [draftUrl, setDraftUrl] = useState('')

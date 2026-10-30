@@ -330,7 +330,7 @@ export default function KelolaPeraturanPage() {
               <tbody>
                 {data.length === 0 ? (
                   <tr>
-                    <td colSpan="5">
+                    <td colSpan={5}>
                       <div className="sid-wilayah-empty">Belum ada peraturan desa.</div>
                     </td>
                   </tr>
