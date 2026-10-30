@@ -133,7 +133,7 @@ export default function KadusDashboardPage() {
               </h1>
 
               <p className="sid-page-description">
-                Pantau administrasi warga {user?.wilayah_label ?? 'dusun'} secara digital.
+                Pantau administrasi warga dusun secara digital.
               </p>
             </div>
 
@@ -205,9 +205,7 @@ export default function KadusDashboardPage() {
             {getGreeting()}, {user?.name ?? 'Bapak/Ibu'}
           </h1>
 
-          <p className="sid-page-description">
-            Pantau administrasi warga {user?.wilayah_label ?? 'dusun'} secara digital.
-          </p>
+          <p className="sid-page-description">Pantau administrasi warga dusun secara digital.</p>
           <div className="mt-3">
             <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
           </div>

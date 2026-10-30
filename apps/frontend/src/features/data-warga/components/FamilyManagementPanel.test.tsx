@@ -12,7 +12,7 @@ import type { FamilyManagementPanelHandle } from './FamilyManagementPanel'
 const familyList = partialFixture<ComponentProps<typeof FamilyManagementPanel>['familyList']>({
   families: [
     {
-      id: 'f-1',
+      id: 1,
       no_kk_masked: '************0001',
       head_of_family: { name: 'Kepala Rumah' },
       members_count: 3,

@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { Check, Copy } from 'lucide-react'
 
 import { copyText } from '@/shared/lib/copyText'
+import type { CopyKind } from '../infoTemplate'
 
 const FEEDBACK_MS = 2000
 
-const LABELS = {
+const LABELS: Record<CopyKind, { action: string; copied: string }> = {
   phone: { action: 'Salin nomor telepon', copied: 'Nomor disalin' },
   email: { action: 'Salin alamat email', copied: 'Email disalin' },
 }
@@ -13,8 +14,8 @@ const LABELS = {
 // Telepon/email di halaman informasi: biru dan bisa diklik untuk disalin,
 // sama seperti nomor di kartu kontak beranda (bukan tel:/mailto:).
 // Hasilnya diumumkan lewat aria-live agar terdengar oleh pembaca layar.
-export function CopyValue({ value, kind }) {
-  const [status, setStatus] = useState(null) // null | 'copied' | 'failed'
+export function CopyValue({ value, kind }: { value: string; kind: CopyKind }) {
+  const [status, setStatus] = useState<'copied' | 'failed' | null>(null)
   const labels = LABELS[kind] ?? LABELS.email
 
   useEffect(() => {

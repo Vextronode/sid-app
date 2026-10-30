@@ -21,8 +21,8 @@ export async function downloadFile(
 
 // Dengan responseType 'blob', body error JSON ikut datang sebagai Blob;
 // baca dulu teksnya agar pesan dari backend bisa ditampilkan.
-export async function downloadErrorMessage(error, fallback) {
-  const data = error?.response?.data
+export async function downloadErrorMessage(error: unknown, fallback: string): Promise<string> {
+  const data = (error as { response?: { data?: unknown } })?.response?.data
 
   if (data instanceof Blob) {
     try {
@@ -32,5 +32,5 @@ export async function downloadErrorMessage(error, fallback) {
     }
   }
 
-  return data?.message || fallback
+  return (data as { message?: string } | undefined)?.message || fallback
 }

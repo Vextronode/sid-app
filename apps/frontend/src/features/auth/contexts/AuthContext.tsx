@@ -14,27 +14,46 @@ import {
   useState,
 } from 'react'
 
+import type { ReactNode } from 'react'
+
 import api from '@/lib/api'
 import { ROLE_FORBIDDEN_EVENT } from '@/lib/authEvents'
 import { HAL_LOGIN as LOGIN_PATH } from '@/lib/constants/routes'
 import { queryClient } from '@/shared/lib/queryClient'
+import type { ApiError, User } from '@/types'
 
-const AuthContext = createContext(null)
+export type AuthContextValue = {
+  user: User | null
+  isLoading: boolean
+  isLoggingOut: boolean
+  authError: string
+  login: (user: User | null | undefined) => void
+  logout: (options?: { onLoggedOut?: () => void }) => Promise<void>
+  refreshUser: () => Promise<User | null>
+  // Memperbarui sebagian field akun di layar tanpa memeriksa ulang sesi.
+  patchUser: (fields: Partial<User>) => void
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null)
 
 const SESSION_ENDPOINT = '/api/user'
 const LOGOUT_ENDPOINT = '/logout'
 const CSRF_ENDPOINT = '/sanctum/csrf-cookie'
 
-function resolveUser(response) {
-  return response.data?.user ?? response.data?.data ?? response.data ?? null
+// GET /api/user mengembalikan akun langsung; bentuk { user } dan { data }
+// diterima untuk kompatibilitas.
+function resolveUser(response: { data?: { user?: User; data?: User } | User }): User | null {
+  const data = response.data as { user?: User; data?: User } | undefined
+
+  return data?.user ?? data?.data ?? (response.data as User | undefined) ?? null
 }
 
-function isAuthFailure(status) {
+function isAuthFailure(status: number | undefined) {
   return status === 401 || status === 403
 }
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [authError, setAuthError] = useState('')
@@ -51,7 +70,8 @@ export function AuthProvider({ children }) {
       setUser(currentUser)
 
       return currentUser
-    } catch (error) {
+    } catch (requestError) {
+      const error = requestError as ApiError
       const status = error.response?.status
 
       if (isAuthFailure(status)) {
@@ -99,7 +119,7 @@ export function AuthProvider({ children }) {
 
   // Memperbarui sebagian field akun di layar (mis. photo_url setelah ganti
   // foto) tanpa memeriksa ulang sesi, yang akan memunculkan loader.
-  const patchUser = useCallback((fields) => {
+  const patchUser = useCallback((fields: Partial<User>) => {
     setUser((current) => (current ? { ...current, ...fields } : current))
   }, [])
 
@@ -112,13 +132,13 @@ export function AuthProvider({ children }) {
 
   // Data ter-cache milik sesi sebelumnya tidak boleh terlihat oleh akun
   // berikutnya di browser yang sama.
-  const applySession = useCallback((nextUser) => {
+  const applySession = useCallback((nextUser: User | null) => {
     queryClient.clear()
     setUser(nextUser)
   }, [])
 
   const login = useCallback(
-    (loggedUser) => {
+    (loggedUser: User | null | undefined) => {
       setAuthError('')
       applySession(loggedUser ?? null)
     },
@@ -147,7 +167,8 @@ export function AuthProvider({ children }) {
         await api.post(LOGOUT_ENDPOINT)
 
         endSession()
-      } catch (error) {
+      } catch (requestError) {
+        const error = requestError as ApiError
         const status = error.response?.status
 
         if (isAuthFailure(status)) {
@@ -173,7 +194,7 @@ export function AuthProvider({ children }) {
     [applySession],
   )
 
-  const value = useMemo(
+  const value = useMemo<AuthContextValue>(
     () => ({
       user,
       isLoading,

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { usePublicNews } from '@/features/berita/usePublicNews'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
+import type { User } from '@/types'
 import { BerandaPage } from './BerandaPage'
 
 const mockedUseAuth = vi.mocked(useAuth, { partial: true, deep: true })
@@ -321,7 +322,7 @@ describe('BerandaPage hero', () => {
 describe('BerandaPage service cards', () => {
   const cards = () => within(screen.getByRole('region', { name: 'Layanan populer' }))
 
-  it.each([
+  it.each<[string, Pick<User, 'role'> | null, string, string]>([
     ['guest', null, '/login?redirect=%2Fjenis-surat', '/login?redirect=%2Fsurat-saya%2Fdaftar'],
     ['warga', { role: 'warga' }, '/jenis-surat', '/surat-saya/daftar'],
     // Pejabat tidak lagi terlempar ke beranda publik: ke Surat Saya pejabat.
@@ -339,7 +340,7 @@ describe('BerandaPage service cards', () => {
     )
   })
 
-  it.each([
+  it.each<[string, Pick<User, 'role'> | null, string]>([
     ['guest', null, '/login?redirect=%2Fsurat-saya%2Fdaftar%3Fstatus%3Dapproved'],
     ['warga', { role: 'warga' }, '/surat-saya/daftar?status=approved'],
   ])('links Unduh surat selesai to the approved letters (%s)', (_, user, href) => {
@@ -415,7 +416,7 @@ describe('BerandaPage how-to steps', () => {
     expect(howTo().getAllByRole('heading', { level: 3 })).toHaveLength(4)
   })
 
-  it.each([
+  it.each<[string, Pick<User, 'role'> | null, string]>([
     ['guest', null, '/login?redirect=%2Fjenis-surat'],
     ['warga', { role: 'warga' }, '/jenis-surat'],
   ])('links "Mulai ajukan surat" through the login flow (%s, A25)', (_, user, href) => {

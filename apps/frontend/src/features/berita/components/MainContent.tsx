@@ -1,7 +1,9 @@
 import { chip, metaRow } from '@/features/beranda/publicClasses'
 
+import type { NewsItem } from '../mapNews'
+
 // Isi detail berita (halaman publik, utility Tailwind).
-export function MainContent({ berita }) {
+export function MainContent({ berita }: { berita: NewsItem }) {
   return (
     <article>
       <header className="pb-7">

@@ -14,9 +14,10 @@
 
 import { useEffect, useState } from 'react'
 import { getSuratDetail } from '@/lib/api'
+import type { Id, Letter } from '@/types'
 
-export function useSuratDetailKadus(id) {
-  const [surat, setSurat] = useState(null)
+export function useSuratDetailKadus(id: Id | null) {
+  const [surat, setSurat] = useState<Letter | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 

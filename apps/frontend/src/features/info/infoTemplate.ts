@@ -11,6 +11,21 @@
 
 const TOKEN = /\{([^}]+)\}/g
 
+export type CopyKind = 'phone' | 'email'
+
+// Satu bagian hasil render: teks, slot "[LABEL]", atau nilai yang bisa disalin.
+export type TemplatePart = string | { slot: string } | { copy: string; kind: CopyKind }
+
+// Blok sumber di infoPagesContent.
+export type TemplateBlock =
+  | { type: 'p' | 'h2' | 'h3'; text: string }
+  | { type: 'ul' | 'ol'; items: (string | { list: string })[] }
+
+// Blok siap render.
+export type RenderedBlock =
+  | { type: 'p' | 'h2' | 'h3'; parts: TemplatePart[] }
+  | { type: 'ul' | 'ol'; items: TemplatePart[][] }
+
 // Nilai token: data desa (`village.*`) dan isian halaman informasi.
 export type TemplateContext = Record<string, unknown>
 
@@ -21,7 +36,7 @@ function lookup(context: TemplateContext, path: string) {
   return path.split('.').reduce((value, key) => value?.[key], context)
 }
 
-function formatDate(value) {
+function formatDate(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return null
 
@@ -33,7 +48,7 @@ function slotFor(key: string, placeholders?: TemplatePlaceholders) {
 }
 
 // Telepon dan email tampil sebagai nilai yang bisa disalin.
-function copyKind(path) {
+function copyKind(path: string): CopyKind | null {
   if (path === 'village.phone') return 'phone'
   if (/email/.test(path)) return 'email'
 
@@ -42,7 +57,7 @@ function copyKind(path) {
 
 // Nilai pertama yang terisi: teks biasa, atau { copy, kind } untuk
 // telepon/email. null bila semua kosong.
-function resolveToken(expression, context) {
+function resolveToken(expression: string, context: TemplateContext): TemplatePart | null {
   const [paths, format] = expression.split(':')
 
   for (const raw of paths.split('|')) {
@@ -66,7 +81,7 @@ export function renderTemplate(
   context: TemplateContext,
   placeholders?: TemplatePlaceholders,
 ) {
-  const parts = []
+  const parts: TemplatePart[] = []
   let last = 0
 
   for (const match of text.matchAll(TOKEN)) {
@@ -82,7 +97,7 @@ export function renderTemplate(
   if (last < text.length) parts.push(text.slice(last))
 
   // Teks berurutan digabung agar mudah dibaca dan dites.
-  return parts.reduce((merged, part) => {
+  return parts.reduce<TemplatePart[]>((merged, part) => {
     const previous = merged.at(-1)
     if (typeof part === 'string' && typeof previous === 'string') {
       merged[merged.length - 1] = previous + part
@@ -94,21 +109,28 @@ export function renderTemplate(
 }
 
 /** Apakah bagian hasil render memuat slot (isian yang belum diisi). */
-export const hasSlot = (parts) => parts.some((part) => typeof part === 'object' && 'slot' in part)
+export const hasSlot = (parts: TemplatePart[]) =>
+  parts.some((part) => typeof part === 'object' && 'slot' in part)
 
 /**
  * Blok siap render: { type, parts } atau { type, items: [parts] }.
  * Butir daftar { list: 'kunci' } diisi butir isian; bila kosong, satu slot.
  */
-export function renderBlocks(blocks, context, placeholders) {
+export function renderBlocks(
+  blocks: TemplateBlock[],
+  context: TemplateContext,
+  placeholders?: TemplatePlaceholders,
+): RenderedBlock[] {
   return blocks.map((block) => {
-    if (block.type === 'ul' || block.type === 'ol') {
+    // Hanya blok daftar (ul/ol) yang punya items.
+    if ('items' in block) {
       const items = block.items.flatMap((item) => {
         if (typeof item === 'string') return [renderTemplate(item, context, placeholders)]
 
         const values = context[item.list]
         return Array.isArray(values) && values.length > 0
-          ? values.map((value) => [value])
+          ? // Isian daftar berupa teks.
+            values.map((value) => [value as string])
           : [[slotFor(item.list, placeholders)]]
       })
 

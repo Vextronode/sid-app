@@ -4,45 +4,43 @@
 import { useEffect, useState } from 'react'
 
 import { getSuratDetail } from '@/lib/api'
+import type { Id, Letter } from '@/types'
 
-export function useSuratDetail(id) {
-const [surat, setSurat] = useState(null)
-const [isLoading, setIsLoading] = useState(true)
-const [notFound, setNotFound] = useState(false)
+export function useSuratDetail(id: Id | null) {
+  const [surat, setSurat] = useState<Letter | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
 
-const fetchDetail = async () => {
-if (!id) {
-return
-}
+  const fetchDetail = async () => {
+    if (!id) {
+      return
+    }
 
+    try {
+      setIsLoading(true)
 
-try {
-  setIsLoading(true)
+      const response = await getSuratDetail(id)
 
-  const response = await getSuratDetail(id)
+      setSurat(response.data?.data ?? null)
+      setNotFound(false)
+    } catch (error) {
+      console.error('GET KADES DETAIL ERROR:', error.response?.data ?? error)
 
-  setSurat(response.data?.data ?? null)
-  setNotFound(false)
-} catch (error) {
-  console.error('GET KADES DETAIL ERROR:', error.response?.data ?? error)
+      setSurat(null)
+      setNotFound(error.response?.status === 404)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-  setSurat(null)
-  setNotFound(error.response?.status === 404)
-} finally {
-  setIsLoading(false)
-}
+  useEffect(() => {
+    fetchDetail()
+  }, [id])
 
-
-}
-
-useEffect(() => {
-fetchDetail()
-}, [id])
-
-return {
-surat,
-isLoading,
-notFound,
-refresh: fetchDetail,
-}
+  return {
+    surat,
+    isLoading,
+    notFound,
+    refresh: fetchDetail,
+  }
 }

@@ -3,12 +3,13 @@ import {
   SELF_LETTER_ROUTE,
 } from '@/features/notifikasi/utils/notificationTarget'
 import { HAL_AJUKAN_SURAT, HAL_STATUS_SURAT } from '@/lib/constants/routes'
+import type { UserRole } from '@/types'
 
 // Daftar surat warga yang sudah disetujui (siap diunduh).
 export const HAL_UNDUH_SURAT = `${HAL_STATUS_SURAT}?status=approved`
 
 // Halaman awal tiap peran setelah login.
-export function roleHomePath(role) {
+export function roleHomePath(role: UserRole | null | undefined) {
   switch (role) {
     case 'rt':
       return '/admin/rt'
@@ -39,7 +40,7 @@ const WARGA_LETTER_PATHS = [
   /^\/surat-saya$/,
 ]
 
-export function isWargaLetterPath(path) {
+export function isWargaLetterPath(path: string | null | undefined) {
   const pathname = String(path ?? '').split(/[?#]/)[0]
 
   return WARGA_LETTER_PATHS.some((pattern) => pattern.test(pathname))
@@ -50,7 +51,7 @@ export function isWargaLetterPath(path) {
 // yang boleh mengajukan surat sendiri diarahkan ke halaman Surat Saya
 // pejabat, peran lain (Staf SIDUTama) ke halaman awalnya. Tanpa pemetaan ini
 // ProtectedRoute menolak pejabat dan mereka terlempar ke beranda publik.
-export function letterTargetForRole(target, role) {
+export function letterTargetForRole(target: string, role: UserRole | null | undefined) {
   if (role === 'warga') return target
   if (!isWargaLetterPath(target)) return target
   if (SELF_LETTER_ROLES.includes(role)) return SELF_LETTER_ROUTE

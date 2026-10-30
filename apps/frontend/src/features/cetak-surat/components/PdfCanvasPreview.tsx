@@ -12,6 +12,7 @@ import { FileText } from 'lucide-react'
 
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import type { PdfTemplate, PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
+import type { PDFDocumentLoadingTask, RenderTask } from 'pdfjs-dist/types/src/display/api'
 import { loadPdfjs } from '@/lib/pdfjs'
 
 type PdfCanvasPreviewProps = {
@@ -39,8 +40,8 @@ export function PdfCanvasPreview({
     }
 
     let cancelled = false
-    let loadingTask = null
-    let renderTask = null
+    let loadingTask: PDFDocumentLoadingTask | null = null
+    let renderTask: RenderTask | null = null
 
     const loadPDF = async () => {
       setLoading(true)
@@ -110,7 +111,8 @@ export function PdfCanvasPreview({
           pageWrapper.appendChild(canvas)
           container.appendChild(pageWrapper)
 
-          renderTask = page.render({ canvasContext: context, viewport })
+          // pdf.js 6 mewajibkan `canvas`; sama dengan kanvas milik context.
+          renderTask = page.render({ canvas, canvasContext: context, viewport })
           await renderTask.promise
           renderTask = null
         }

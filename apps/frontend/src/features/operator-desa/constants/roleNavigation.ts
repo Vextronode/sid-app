@@ -1,4 +1,6 @@
-export const OPERATOR_ROUTE_CAPABILITIES = {
+import type { UserRole } from '@/types'
+
+export const OPERATOR_ROUTE_CAPABILITIES: Record<string, UserRole[]> = {
   '/admin/operator-desa': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
   '/admin/operator-desa/surat': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
   // Pengajuan surat pribadi; Staf SIDUTama juga warga desa.
@@ -22,7 +24,7 @@ export const OPERATOR_ROUTE_CAPABILITIES = {
   '/admin/organisasi/lembaga': ['staf_sid'],
 }
 
-export const OPERATOR_ROLES = ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid']
+export const OPERATOR_ROLES: UserRole[] = ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid']
 
 export const ROLE_NAVIGATION = Object.fromEntries(
   OPERATOR_ROLES.map((role) => [
@@ -33,7 +35,7 @@ export const ROLE_NAVIGATION = Object.fromEntries(
   ]),
 )
 
-export function getOperatorAllowedRoles(route) {
+export function getOperatorAllowedRoles(route: string) {
   const allowedRoles = OPERATOR_ROUTE_CAPABILITIES[route]
 
   if (!allowedRoles) {

@@ -23,18 +23,18 @@ export function useApprovalLetterList({ initialStatus = '' }: { initialStatus?: 
     search: debouncedSearch,
   })
 
-  const setSearch = useCallback((value) => {
+  const setSearch = useCallback((value: string) => {
     setSearchState(value)
     setPage(1)
   }, [])
 
-  const setFilterStatus = useCallback((value) => {
+  const setFilterStatus = useCallback((value: string) => {
     setFilterStatusState(value)
     setPage(1)
   }, [])
 
   const setPageSize = useCallback(
-    (value) => {
+    (value: number) => {
       setPageSizeState(value)
       setPage(1)
     },

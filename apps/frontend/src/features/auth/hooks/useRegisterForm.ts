@@ -35,7 +35,8 @@ export function useRegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false)
 
-  const handleChange = (event) => {
+  // Cukup name/value dari input (event onChange).
+  const handleChange = (event: { target: { name: string; value: string } }) => {
     const { name, value } = event.target
 
     const nextValue = name === 'nik' ? value.replace(/\D/g, '').slice(0, 16) : value
@@ -95,7 +96,7 @@ export function useRegisterForm() {
     return messages.length === 0
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: { preventDefault: () => void }) => {
     event.preventDefault()
 
     if (isLoading) {

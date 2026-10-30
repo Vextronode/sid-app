@@ -1,5 +1,5 @@
 import { useImperativeHandle, useState } from 'react'
-import type { Ref } from 'react'
+import type { FormEvent, Ref } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { History, Pencil, RefreshCw, Search, Trash2 } from 'lucide-react'
 
@@ -26,6 +26,24 @@ import { notifySuccess } from '@/shared/lib/toast'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealFamilyNumber } from '@/shared/lib/identityApi'
+import type { StatusTone } from '@/components/ui/StatusPill'
+import type { Family } from '@/types'
+
+type FamilyMember = { id: number; name: string; family_role?: string | null }
+
+// GET /api/families/{id}. FamilyResource belum mengirim `members`, jadi
+// daftar anggota di modal edit belum pernah terisi.
+type FamilyDetail = Family & { members?: FamilyMember[] }
+
+// GET /api/families/{id}/socioeconomic.
+type FamilySocioeconomic = {
+  household_income_range?: string | null
+  house_ownership_status?: string | null
+  water_source?: string | null
+  electricity_source?: string | null
+  dependents_count?: number | string | null
+  productive_assets?: unknown
+}
 
 const EMPTY_FAMILY = {
   no_kk: '',
@@ -34,9 +52,23 @@ const EMPTY_FAMILY = {
 }
 
 // Warna badge status KK, mengikuti badge Aktif/Nonaktif Manajemen Pengguna.
-const FAMILY_STATUS_TONE = { aktif: 'active', pindah: 'inactive', bubar: 'danger' }
+const FAMILY_STATUS_TONE: Record<string, StatusTone> = {
+  aktif: 'active',
+  pindah: 'inactive',
+  bubar: 'danger',
+}
 
-const EMPTY_SOCIOECONOMIC = {
+// dependents_count: angka dari API atau teks dari input.
+type SocioeconomicForm = {
+  household_income_range: string
+  house_ownership_status: string
+  water_source: string
+  electricity_source: string
+  dependents_count: number | string
+  productive_assets: string
+}
+
+const EMPTY_SOCIOECONOMIC: SocioeconomicForm = {
   household_income_range: '',
   house_ownership_status: '',
   water_source: '',
@@ -55,8 +87,11 @@ const fieldStyle = {
   fontFamily: 'inherit',
 }
 
-function responseData(response) {
-  return response?.data?.data ?? response?.data ?? {}
+// Body { data } atau langsung objeknya; kosong bila tidak ada.
+function responseData<T>(response: { data?: unknown }): Partial<T> {
+  const body = response?.data as { data?: T } | T | undefined
+
+  return ((body as { data?: T })?.data ?? body ?? {}) as Partial<T>
 }
 
 /**
@@ -101,8 +136,8 @@ export default function FamilyManagementPanel({
   const [modal, setModal] = useState(null)
   const [familyForm, setFamilyForm] = useState(EMPTY_FAMILY)
   const [socioeconomic, setSocioeconomic] = useState(EMPTY_SOCIOECONOMIC)
-  const [selectedFamily, setSelectedFamily] = useState(null)
-  const [members, setMembers] = useState([])
+  const [selectedFamily, setSelectedFamily] = useState<Family | null>(null)
+  const [members, setMembers] = useState<FamilyMember[]>([])
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [keyword, setKeyword] = useState('')
@@ -117,7 +152,7 @@ export default function FamilyManagementPanel({
     escapeClose: modal ? closeModal : null,
   })
 
-  const showError = (err) => {
+  const showError = (err: unknown) => {
     setMessage(getApiErrorMessage(err, 'Permintaan gagal. Silakan coba lagi.'))
   }
 
@@ -132,7 +167,7 @@ export default function FamilyManagementPanel({
   // Tombol Tambah KK ada di header halaman (sejajar Refresh), di luar panel.
   useImperativeHandle(ref, () => ({ openCreate }))
 
-  const openEdit = async (family) => {
+  const openEdit = async (family: Family) => {
     setSelectedFamily(family)
     setMembers([])
     const initialFamily = {
@@ -145,21 +180,21 @@ export default function FamilyManagementPanel({
     setMessage('')
     setModal('family')
     try {
-      const detail = responseData(await getFamily(family.id))
+      const detail = responseData<FamilyDetail>(await getFamily(family.id))
       setMembers(detail.members ?? [])
     } catch (err) {
       showError(err)
     }
   }
 
-  const openSocioeconomic = async (family) => {
+  const openSocioeconomic = async (family: Family) => {
     setSelectedFamily(family)
     setMessage('')
     setModal('socioeconomic')
     setSocioeconomic(EMPTY_SOCIOECONOMIC)
     setBaseline(EMPTY_SOCIOECONOMIC)
     try {
-      const result = responseData(await getFamilySocioeconomic(family.id))
+      const result = responseData<FamilySocioeconomic>(await getFamilySocioeconomic(family.id))
       const loaded = {
         household_income_range: result.household_income_range ?? '',
         house_ownership_status: result.house_ownership_status ?? '',
@@ -177,7 +212,7 @@ export default function FamilyManagementPanel({
     }
   }
 
-  const handleFamilySubmit = async (event) => {
+  const handleFamilySubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setBusy(true)
     setMessage('')
@@ -202,7 +237,7 @@ export default function FamilyManagementPanel({
     }
   }
 
-  const handleSocioeconomicSubmit = async (event) => {
+  const handleSocioeconomicSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setBusy(true)
     setMessage('')
@@ -242,7 +277,7 @@ export default function FamilyManagementPanel({
     }
   }
 
-  const handleDelete = async (family) => {
+  const handleDelete = async (family: Family) => {
     if (
       !(await confirmDialog({
         title: `Hapus data KK ${family.no_kk_masked ?? ''}?`,

@@ -6,8 +6,15 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 
 import { Calendar } from 'lucide-react'
 
-export default function SuratStatChart({ letterTypes = [] }) {
-  const dateInputRef = useRef(null)
+// GET /api/dashboard/letter-stats: label kategori dan jumlah per label.
+type LetterStatsChart = { labels?: string[]; values?: (number | string)[]; maxY?: number }
+
+export default function SuratStatChart({
+  letterTypes = [],
+}: {
+  letterTypes?: { id: number; name: string }[]
+}) {
+  const dateInputRef = useRef<HTMLInputElement>(null)
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
 
@@ -20,12 +27,15 @@ export default function SuratStatChart({ letterTypes = [] }) {
   const { data: chart, isFetching: loading } = useQuery({
     queryKey: ['dashboard', 'letter-stats', selectedDate, letterType],
     queryFn: async () => {
-      const response = await api.get('/api/dashboard/letter-stats', {
-        params: {
-          date: selectedDate,
-          letter_type: letterType,
+      const response = await api.get<{ data?: { chart?: LetterStatsChart } }>(
+        '/api/dashboard/letter-stats',
+        {
+          params: {
+            date: selectedDate,
+            letter_type: letterType,
+          },
         },
-      })
+      )
 
       return response?.data?.data?.chart ?? null
     },

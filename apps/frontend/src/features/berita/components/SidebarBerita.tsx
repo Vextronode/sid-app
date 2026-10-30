@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 
 import { cardTitleHover } from '@/features/beranda/publicClasses'
+import type { NewsItem } from '../mapNews'
 
 // Daftar berita lain di samping detail berita (halaman publik, utility Tailwind).
-export function SidebarBerita({ beritaLain }) {
+export function SidebarBerita({ beritaLain }: { beritaLain: NewsItem[] }) {
   return (
     <aside className="rounded-3xl border border-pb-line bg-white px-6 pt-6 pb-2 lg:sticky lg:top-24">
       <h3 className="mt-0 mb-1 font-display text-[22px] font-bold tracking-[-0.01em] first-letter:uppercase">

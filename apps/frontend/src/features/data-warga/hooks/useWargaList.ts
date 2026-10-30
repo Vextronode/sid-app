@@ -9,12 +9,23 @@ import {
 } from '../api'
 import { usePageSize } from '@/components/ui/usePageSize'
 import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
+import type { Citizen, Id } from '@/types'
 import { useWilayahFilter } from './useWilayahFilter'
 
+type CitizenPayload = Record<string, unknown>
+
+// Hasil impor Excel (POST /api/citizens/import).
+export type CitizenImportResult = {
+  total_rows: number
+  success_count: number
+  error_count: number
+  errors: { row: number; message: string }[]
+}
+
 export function useWargaList() {
-  const [citizens, setCitizens] = useState([])
+  const [citizens, setCitizens] = useState<Citizen[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   const [search, setSearchState] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -53,12 +64,12 @@ export function useWargaList() {
     loadData()
   }, [loadData])
 
-  const setSearch = (value) => {
+  const setSearch = (value: string) => {
     setSearchState(value)
     setCurrentPage(1)
   }
 
-  const setPageSize = (value) => {
+  const setPageSize = (value: number) => {
     setPageSizeState(value)
     setCurrentPage(1)
   }
@@ -73,23 +84,23 @@ export function useWargaList() {
   // Baris yang diterima sudah merupakan satu halaman dari server.
   const data = citizens
 
-  async function addCitizen(payload) {
+  async function addCitizen(payload: CitizenPayload) {
     await createCitizen(payload)
     await loadData()
   }
 
-  async function editCitizen(id, payload) {
+  async function editCitizen(id: Id, payload: CitizenPayload) {
     await updateCitizen(id, payload)
     await loadData()
   }
 
-  async function removeCitizen(id) {
+  async function removeCitizen(id: Id) {
     await deleteCitizen(id)
     await loadData()
   }
 
   // Mengembalikan { total_rows, success_count, error_count, errors }
-  async function importWargaExcel(file) {
+  async function importWargaExcel(file: File): Promise<CitizenImportResult | undefined> {
     const formData = new FormData()
     formData.append('file', file)
 

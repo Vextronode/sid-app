@@ -12,7 +12,7 @@ export function NotAvailable({ text = NA }) {
 }
 
 // Foto berbingkai gapura (atap setengah lingkaran), sama dengan foto hero.
-function Avatar({ src, name, head }) {
+function Avatar({ src, name, head }: { src?: string | null; name?: string | null; head: boolean }) {
   return (
     <div
       className={`mb-3.5 flex items-center justify-center overflow-hidden rounded-t-full rounded-b-xl bg-pb-laut-tint bg-(image:--pb-contour-dark) bg-size-[200px_auto] text-pb-laut ${head ? 'h-35 w-32' : 'h-26 w-24 max-sm:h-20 max-sm:w-18'}`}
@@ -28,7 +28,17 @@ function Avatar({ src, name, head }) {
 
 // official: { nama, jabatan, foto }. head: kartu pimpinan, lebih besar dengan
 // garis padi di atas. fluid: lebar mengikuti grid.
-export function OfficialCard({ official, head = false, fluid = false }) {
+export type OfficialCardData = { nama?: string | null; jabatan: string; foto?: string | null }
+
+export function OfficialCard({
+  official,
+  head = false,
+  fluid = false,
+}: {
+  official: OfficialCardData
+  head?: boolean
+  fluid?: boolean
+}) {
   const width = head ? 'w-70' : fluid ? 'w-auto' : 'w-55'
 
   return (

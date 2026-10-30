@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { usePageSize } from '@/components/ui/usePageSize'
+import type { Id, User } from '@/types'
 import { getUsers, toggleUserStatus, updateUser as updateUserRequest } from '../api'
 
 export function useUserList() {
-  const [users, setUsers] = useState([])
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -13,7 +14,7 @@ export function useUserList() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSizeState] = usePageSize('manajemen-user')
 
-  const setPageSize = (value) => {
+  const setPageSize = (value: number) => {
     setPageSizeState(value)
     setCurrentPage(1)
   }
@@ -67,7 +68,7 @@ export function useUserList() {
     return filtered.slice(start, start + pageSize)
   }, [filtered, currentPage, pageSize])
 
-  async function toggleStatus(id) {
+  async function toggleStatus(id: Id) {
     try {
       setError('')
       await toggleUserStatus(id)
@@ -80,7 +81,7 @@ export function useUserList() {
     }
   }
 
-  async function updateUserName(id, name) {
+  async function updateUserName(id: Id, name: string) {
     try {
       await updateUserRequest(id, { name })
       await loadUsers()
@@ -116,7 +117,7 @@ export function useUserList() {
 
     // Memperbarui satu baris di tabel tanpa memuat ulang daftar
     // (mis. setelah foto profil diganti).
-    patchUser: (id, fields) =>
+    patchUser: (id: Id, fields: Partial<User>) =>
       setUsers((list) => list.map((item) => (item.id === id ? { ...item, ...fields } : item))),
   }
 }

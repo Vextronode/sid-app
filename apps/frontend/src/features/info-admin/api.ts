@@ -6,6 +6,6 @@ export function getInfoPages() {
   return api.get('/api/info-pages')
 }
 
-export function saveInfoPage(page, fields) {
+export function saveInfoPage(page: string, fields: Record<string, unknown>) {
   return api.put(`/api/info-pages/${page}`, fields)
 }

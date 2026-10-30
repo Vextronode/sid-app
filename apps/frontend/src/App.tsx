@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import {
   BrowserRouter,
   Routes,
@@ -9,6 +10,7 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/features/auth/contexts/AuthContext'
+import type { UserRole } from '@/types'
 import { buildLoginPath, resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
 import {
   HAL_AJUKAN_SURAT,
@@ -44,8 +46,11 @@ import {
 import { getOperatorAllowedRoles } from '@/features/operator-desa/constants/roleNavigation'
 import { letterTargetForRole, roleHomePath } from '@/features/auth/utils/letterLinks'
 
-const lazyNamed = (loader, name) =>
-  lazy(() => loader().then((module) => ({ default: module[name] })))
+// Halaman yang diekspor dengan nama (bukan default) dimuat lazy.
+const lazyNamed = <K extends string, C extends ComponentType<never>>(
+  loader: () => Promise<Record<K, C>>,
+  name: K,
+) => lazy(() => loader().then((module) => ({ default: module[name] })))
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const DetailBeritaPage = lazyNamed(() => import('@/pages/DetailBeritaPage'), 'DetailBeritaPage')
@@ -111,9 +116,9 @@ const PejabatDesaPage = lazy(() => import('@/pages/admin/PejabatDesaPage'))
 const SuratSayaPejabatPage = lazy(() => import('@/pages/admin/SuratSayaPejabatPage'))
 const NotificationRedirectPage = lazy(() => import('@/pages/NotificationRedirectPage'))
 
-const KADES_APPROVER_ROLES = ['kepala_desa', 'sekretaris_desa']
+const KADES_APPROVER_ROLES: UserRole[] = ['kepala_desa', 'sekretaris_desa']
 // Semua peran pejabat; halaman profil terbuka untuk semuanya.
-const OFFICIAL_ROLES = [
+const OFFICIAL_ROLES: UserRole[] = [
   'rt',
   'rw',
   'kadus',
@@ -126,7 +131,7 @@ const OFFICIAL_ROLES = [
 // Route khusus untuk user yang belum login.
 // Jika user sudah login, arahkan ke halaman sesuai role.
 // ?redirect= yang diizinkan untuk role didahulukan (K4).
-export const GuestRoute = ({ children }) => {
+export const GuestRoute = ({ children }: { children: ReactNode }) => {
   const { user, isLoading } = useAuth()
   const [searchParams] = useSearchParams()
 
@@ -152,7 +157,13 @@ export const GuestRoute = ({ children }) => {
 
 // Route yang hanya bisa diakses oleh user yang sudah login.
 // Belum login -> ke halaman login sambil membawa tujuan (?redirect=, K4).
-export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+export const ProtectedRoute = ({
+  children,
+  allowedRoles = [],
+}: {
+  children: ReactNode
+  allowedRoles?: UserRole[]
+}) => {
   const { user, isLoading } = useAuth()
   const location = useLocation()
 

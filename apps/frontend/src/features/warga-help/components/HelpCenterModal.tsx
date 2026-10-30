@@ -9,13 +9,13 @@ import { useEffect } from 'react'
 import { X, Phone, Mail, MapPin, Clock, HelpCircle } from 'lucide-react'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 
-export default function HelpCenterModal({ open, onClose }) {
+export default function HelpCenterModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { village } = usePublicVillageInfo()
 
   // Esc menutup popup.
   useEffect(() => {
     if (!open) return undefined
-    const onKeyDown = (event) => {
+    const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', onKeyDown)

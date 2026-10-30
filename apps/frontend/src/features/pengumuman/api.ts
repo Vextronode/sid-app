@@ -8,7 +8,7 @@ export function getAnnouncement() {
 // Menyimpan menggantikan pengumuman yang ada. Durasi (duration_value +
 // duration_unit: hour|day|week) wajib saat membuat; saat mengubah boleh
 // dikosongkan untuk mempertahankan waktu berakhir.
-export function saveAnnouncement(payload) {
+export function saveAnnouncement(payload: Record<string, unknown>) {
   return api.put('/api/announcement', payload)
 }
 

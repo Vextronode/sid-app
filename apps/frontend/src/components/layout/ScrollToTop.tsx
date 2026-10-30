@@ -6,7 +6,7 @@ import { useLocation, useNavigationType } from 'react-router-dom'
 // gulir halaman sebelumnya. Mulai dari atas, kecuali:
 // - ada #hash: halaman tujuan sendiri yang menggulir ke section-nya;
 // - tombol Kembali/Maju (POP): biarkan browser memulihkan posisinya.
-export function ScrollToTop() {
+export function ScrollToTop(): null {
   const { pathname, hash } = useLocation()
   const navigationType = useNavigationType()
 

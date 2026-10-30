@@ -12,7 +12,7 @@ import { getPublicRegulations } from '@/features/peraturan/api'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { errorBox, stateBox } from '@/features/beranda/publicClasses'
 
-function formatDate(value) {
+function formatDate(value: string | null | undefined) {
   if (!value) return null
 
   return new Date(value).toLocaleDateString('id-ID', {

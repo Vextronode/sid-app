@@ -35,6 +35,8 @@ vi.mock('@/features/auth/hooks/useLoginForm', () => ({
 
 import { AuthProvider } from '@/features/auth/contexts/AuthContext'
 import LoginPage from '@/pages/LoginPage'
+import type { UserRole } from '@/types'
+
 import { GuestRoute, ProtectedRoute } from './App'
 
 function CurrentPath() {
@@ -44,7 +46,7 @@ function CurrentPath() {
 
 const currentPath = () => screen.getByTestId('current-path').textContent
 
-function renderAt(entry, allowedRoles = ['warga']) {
+function renderAt(entry: string, allowedRoles: UserRole[] = ['warga']) {
   const guarded = (
     <ProtectedRoute allowedRoles={allowedRoles}>
       <p>Halaman terlindungi</p>

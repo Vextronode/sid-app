@@ -1,7 +1,7 @@
 import api from '@/lib/api'
 
 // Hanya parameter yang terisi yang dikirim ke server.
-function compact(params) {
+function compact(params: Record<string, unknown>) {
   return Object.fromEntries(
     Object.entries(params).filter(
       ([, value]) => value !== undefined && value !== null && value !== '',

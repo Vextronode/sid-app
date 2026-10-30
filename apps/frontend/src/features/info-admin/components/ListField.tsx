@@ -1,14 +1,24 @@
 import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react'
 import { useRef } from 'react'
 
+type ListFieldProps = {
+  id: string
+  label: string
+  hint?: string
+  items: string[]
+  onChange: (items: string[]) => void
+  disabled?: boolean
+}
+
 // Isian daftar yang bisa ditambah terus: satu input per butir, dengan tombol
 // naik/turun dan hapus. Butir kosong dibuang saat disimpan (backend).
-export function ListField({ id, label, hint, items, onChange, disabled }) {
-  const listRef = useRef(null)
+export function ListField({ id, label, hint, items, onChange, disabled }: ListFieldProps) {
+  const listRef = useRef<HTMLOListElement>(null)
 
-  const update = (index, value) => onChange(items.map((item, i) => (i === index ? value : item)))
-  const remove = (index) => onChange(items.filter((_, i) => i !== index))
-  const move = (index, offset) => {
+  const update = (index: number, value: string) =>
+    onChange(items.map((item, i) => (i === index ? value : item)))
+  const remove = (index: number) => onChange(items.filter((_, i) => i !== index))
+  const move = (index: number, offset: number) => {
     const next = [...items]
     ;[next[index], next[index + offset]] = [next[index + offset], next[index]]
     onChange(next)
@@ -17,7 +27,9 @@ export function ListField({ id, label, hint, items, onChange, disabled }) {
   const add = () => {
     onChange([...items, ''])
     // Fokus ke butir baru setelah dirender.
-    requestAnimationFrame(() => listRef.current?.querySelector('li:last-child input')?.focus())
+    requestAnimationFrame(() =>
+      listRef.current?.querySelector<HTMLInputElement>('li:last-child input')?.focus(),
+    )
   }
 
   const iconButton =

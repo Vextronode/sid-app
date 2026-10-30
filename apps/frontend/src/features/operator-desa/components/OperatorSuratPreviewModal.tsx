@@ -31,9 +31,16 @@ import {
 } from '@/features/cetak-surat/utils/letterSigning'
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealLetterApplicantNik } from '@/shared/lib/identityApi'
+import type { Letter, LetterListItem } from '@/types'
 
-export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose }) {
-  const [surat, setSurat] = useState(null)
+export default function OperatorSuratPreviewModal({
+  surat: listedSurat,
+  onClose,
+}: {
+  surat: LetterListItem
+  onClose: () => void
+}) {
+  const [surat, setSurat] = useState<Letter | null>(null)
   const [detailLoading, setDetailLoading] = useState(true)
   const [detailError, setDetailError] = useState('')
 

@@ -1,8 +1,12 @@
 import { useState } from 'react'
+import type { AxiosError } from 'axios'
 
 import api from '@/lib/api'
 import { alertDialog } from '@/shared/lib/dialog'
-import type { User } from '@/types'
+import type { ApiErrorBody, User } from '@/types'
+
+// 429 membawa retry_after (detik) di body selain header Retry-After.
+type LoginError = AxiosError<ApiErrorBody & { retry_after?: number | string }>
 
 const INITIAL_FORM = {
   username: '',
@@ -15,15 +19,15 @@ const INITIAL_ERRORS = {
   general: '',
 }
 
-const getBackendMessage = (error) => {
+const getBackendMessage = (error: LoginError) => {
   return error.response?.data?.message ?? null
 }
 
-const getValidationErrors = (error) => {
+const getValidationErrors = (error: LoginError) => {
   return error.response?.data?.errors ?? {}
 }
 
-const isNetworkError = (error) => {
+const isNetworkError = (error: LoginError) => {
   return (
     error.code === 'ERR_NETWORK' ||
     error.code === 'ECONNABORTED' ||
@@ -31,11 +35,11 @@ const isNetworkError = (error) => {
   )
 }
 
-const isServerError = (status) => {
+const isServerError = (status: number | undefined) => {
   return typeof status === 'number' && status >= 500
 }
 
-function getRateLimitMessage(error) {
+function getRateLimitMessage(error: LoginError) {
   const response = error.response
   const rawRetryAfter = response?.headers?.['retry-after'] ?? response?.data?.retry_after
   const retrySeconds = Number(rawRetryAfter)
@@ -66,7 +70,8 @@ export function useLoginForm() {
   // CHANGE FIELD
   // ==========================================
 
-  const handleChange = (event) => {
+  // Cukup name/value dari input (event onChange).
+  const handleChange = (event: { target: { name: string; value: string } }) => {
     const { name, value } = event.target
 
     setFormData((previous) => ({

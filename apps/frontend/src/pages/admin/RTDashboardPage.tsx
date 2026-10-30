@@ -14,8 +14,6 @@
 // Grafik
 //   ↓
 // Footer
-//
-// Tidak ada QuickNavButtons setelah grafik.
 // ==========================================
 
 import { useNavigate } from 'react-router-dom'
@@ -141,7 +139,7 @@ export default function RTDashboardPage() {
               </h1>
 
               <p className="sid-page-description">
-                Kelola administrasi warga {user?.wilayah_label ?? 'RT'} dengan lebih cepat.
+                Kelola administrasi warga RT dengan lebih cepat.
               </p>
             </div>
 
@@ -214,9 +212,7 @@ export default function RTDashboardPage() {
             {getGreeting()}, {user?.name ?? 'Bapak/Ibu'}
           </h1>
 
-          <p className="sid-page-description">
-            Kelola administrasi warga {user?.wilayah_label ?? 'RT'} dengan lebih cepat.
-          </p>
+          <p className="sid-page-description">Kelola administrasi warga RT dengan lebih cepat.</p>
           <div className="mt-3">
             <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
           </div>

@@ -39,7 +39,7 @@ import { revealLetterApplicantNik } from '@/shared/lib/identityApi'
 // Peran yang hanya memantau surat di wilayahnya, tanpa memberi keputusan.
 const MONITOR_ROLES = ['rw', 'kadus']
 
-function getRejectionReason(surat) {
+function getRejectionReason(surat: Letter) {
   const rejection = getLatestApprovalForLevel(
     (surat?.approvals ?? []).filter((approval) => approval?.action === 'rejected'),
     ['rt', 'kepala_desa', 'sekretaris_desa'],
@@ -48,7 +48,17 @@ function getRejectionReason(surat) {
   return rejection?.notes ?? surat?.notes ?? null
 }
 
-function getHint({ surat, canDecide, canDownload, viewerRole }) {
+function getHint({
+  surat,
+  canDecide,
+  canDownload,
+  viewerRole,
+}: {
+  surat: Letter
+  canDecide: boolean
+  canDownload: boolean
+  viewerRole: string | null
+}) {
   if (canDecide) {
     if (!surat.current_step?.is_final) {
       return 'Periksa surat, lalu setujui untuk meneruskan ke Kepala Desa atau tolak dengan alasan.'

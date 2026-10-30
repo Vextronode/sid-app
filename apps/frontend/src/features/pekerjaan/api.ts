@@ -1,4 +1,7 @@
 import api from '@/lib/api'
+import type { Id } from '@/types'
+
+type Payload = Record<string, unknown>
 
 export function getOccupations({ includeInactive = false } = {}) {
   return api.get('/api/occupations', {
@@ -6,14 +9,14 @@ export function getOccupations({ includeInactive = false } = {}) {
   })
 }
 
-export function createOccupation(payload) {
+export function createOccupation(payload: Payload) {
   return api.post('/api/occupations', payload)
 }
 
-export function updateOccupation(id, payload) {
+export function updateOccupation(id: Id, payload: Payload) {
   return api.patch(`/api/occupations/${id}`, payload)
 }
 
-export function deleteOccupation(id) {
+export function deleteOccupation(id: Id) {
   return api.delete(`/api/occupations/${id}`)
 }

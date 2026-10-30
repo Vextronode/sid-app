@@ -128,12 +128,12 @@ function loadPublicVillageInfo() {
         publish({ ...identity, announcement: response?.data?.data?.announcement ?? null })
       })
       // Gagal: identitas dari cache (bila ada) tetap dipakai.
-      .catch(() => null)
+      .catch((): null => null)
 
     const contacts = api
       .get('/api/public/contact-us', { params })
       .then((response) => publish({ contacts: response?.data?.data ?? [] }))
-      .catch(() => null)
+      .catch((): null => null)
 
     sharedRequest = Promise.all([home, contacts]).then(() => currentInfo())
   }

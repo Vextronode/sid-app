@@ -53,7 +53,7 @@ src/
     layout/               MainLayout, OfficialLayout, OperatorDesaLayout, WargaLayout,
                           AdminLayout, AppHeader, SiteFooter, PublicPageHead, ScrollToTop
     ui/                   Button, Input, StatusBadge, OverdueBadge, SimplePagination, PageNumbers,
-                          PageSizeSelect, usePageSize, pageRange, PageLoader, NewsCard
+                          PageSizeSelect, usePageSize, pageRange, PageLoader
   constants/              suratStatus
   features/
     auth/                 AuthContext (patchUser, pemeriksaan role_forbidden), form login/register,
@@ -218,3 +218,4 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 | 1.3 | 2026-10-20 | Komponen daftar berhalaman (pilihan baris per halaman, teks rentang) dan Surat Saya (`MyLettersList`, `LetterTypePicker`) |
 | 1.4 | 2026-10-30 | Source frontend kini TypeScript (`.ts`/`.tsx`): baris Bahasa di tech stack, nama file di struktur folder dan rujukan diselaraskan |
 | 1.5 | 2026-10-30 | Folder `src/types/` (tipe domain & API dari API Resource backend) dan tabel tipe respons di S4 |
+| 1.6 | 2026-10-30 | Komponen yang tidak dipakai dihapus (antara lain `NewsCard`, `PageWatermark`, `QuickNavButtons`, komponen statis `profil-desa`), juga `authService` dan fungsi alur lama di `statusFlow` |

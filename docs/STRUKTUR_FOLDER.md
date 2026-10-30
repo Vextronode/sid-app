@@ -49,7 +49,7 @@ apps/frontend/
 │   ├── assets/
 │   ├── components/
 │   │   ├── layout/          # MainLayout, OfficialLayout, OperatorDesaLayout, WargaLayout, AppHeader, SiteFooter, ...
-│   │   └── ui/              # Button, Input, StatusBadge, OverdueBadge, SimplePagination, PageLoader, NewsCard
+│   │   └── ui/              # Button, Input, StatusBadge, OverdueBadge, SimplePagination, PageLoader
 │   ├── constants/           # suratStatus
 │   ├── features/            # kode per domain, mis.:
 │   │   ├── auth/            # contexts/AuthContext, hooks, schemas, services, utils

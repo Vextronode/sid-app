@@ -9,11 +9,11 @@ import { useSearchParams } from 'react-router-dom'
  * @param {(letterId: string) => void} onOpen
  * @param {boolean} ready  false selama data yang dibutuhkan onOpen belum siap
  */
-export function useLetterDeepLink(onOpen, ready = true) {
+export function useLetterDeepLink(onOpen: (letterId: string) => void, ready = true) {
   const [searchParams, setSearchParams] = useSearchParams()
   const letterId = searchParams.get('surat')
 
-  const openLetter = useEffectEvent((id) => {
+  const openLetter = useEffectEvent((id: string) => {
     onOpen(id)
 
     const next = new URLSearchParams(searchParams)
