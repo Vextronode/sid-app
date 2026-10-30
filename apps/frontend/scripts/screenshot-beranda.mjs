@@ -11,7 +11,7 @@
 //   --out <dir>         Folder hasil (default docs/refactor-beranda/screenshots)
 //   --label <nama>      Awalan nama file (default "shot")
 //   --pages <daftar>    Path dipisah koma (default "beranda"). Alias: "beranda" = "/",
-//                       "regresi" = /berita, /profil-desa, /loginpage, /daftar-surat@warga.
+//                       "regresi" = /berita, /profil-desa, /login, /daftar-surat@warga.
 //                       Akhiran "@warga" / "@guest" mengatur status login per halaman.
 //   --auth warga|guest  Status login default (default guest)
 //   --live              Pakai backend asli, bukan fixture
@@ -38,7 +38,7 @@ const HEIGHT = 900
 const PAGE_ALIASES = {
   // Alias "beranda" berguna di Git Bash, yang mengubah argumen "/" menjadi path Windows.
   beranda: ['/'],
-  regresi: ['/berita', '/profil-desa', '/loginpage', '/daftar-surat@warga'],
+  regresi: ['/berita', '/profil-desa', '/login', '/daftar-surat@warga'],
 }
 
 function parseArgs(argv) {
