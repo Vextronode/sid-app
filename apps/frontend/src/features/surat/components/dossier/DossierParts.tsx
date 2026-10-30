@@ -4,6 +4,7 @@
 // ==========================================
 
 import { useId } from 'react'
+import type { ReactNode } from 'react'
 
 import { formatApprovalLevel, formatDossierDateTime, getApprovalActor } from './dossierFormat'
 
@@ -36,7 +37,7 @@ export function DossierFacts({ items }) {
   )
 }
 
-export function DossierQuote({ children, tone }) {
+export function DossierQuote({ children, tone }: { children: ReactNode; tone?: string }) {
   return <p className={`sid-dossier-quote${tone ? ` ${tone}` : ''}`}>{children}</p>
 }
 

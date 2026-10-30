@@ -1,7 +1,9 @@
 import { previewFulfillment } from '../api/letterExtrasApi'
+import type { FulfillmentChange, FulfillmentValues } from '../api/letterExtrasApi'
 import { confirmDialog } from '@/shared/lib/dialog'
+import type { Id } from '@/types'
 
-const KIND_LABELS = {
+const KIND_LABELS: Record<FulfillmentChange['kind'], string> = {
   create: 'warga baru',
   update: 'diubah',
   deactivate: 'dinonaktifkan',
@@ -13,7 +15,12 @@ const KIND_LABELS = {
  * Resolve true bila dikonfirmasi; galat pratinjau (mis. NIK belum diisi)
  * diteruskan ke pemanggil.
  */
-export async function confirmFulfillment(letterId, values = {}, subjectNik = null, notes = null) {
+export async function confirmFulfillment(
+  letterId: Id,
+  values: FulfillmentValues = {},
+  subjectNik: string | null = null,
+  notes: string | null = null,
+) {
   const changes = await previewFulfillment(letterId, values, subjectNik, notes)
 
   return confirmDialog({

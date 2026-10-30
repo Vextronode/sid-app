@@ -11,9 +11,20 @@ import { useEffect, useRef, useState } from 'react'
 import { FileText } from 'lucide-react'
 
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import type { PdfTemplate, PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
 import { loadPdfjs } from '@/lib/pdfjs'
 
-export function PdfCanvasPreview({ surat, template = 'digital', documentKey = 'main' }) {
+type PdfCanvasPreviewProps = {
+  surat: Pick<PrintableLetter, 'id'> | null | undefined
+  template?: PdfTemplate
+  documentKey?: string
+}
+
+export function PdfCanvasPreview({
+  surat,
+  template = 'digital',
+  documentKey = 'main',
+}: PdfCanvasPreviewProps) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [attempt, setAttempt] = useState(0)

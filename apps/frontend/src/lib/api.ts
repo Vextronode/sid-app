@@ -1,9 +1,7 @@
 import axios from 'axios'
 
 import { ROLE_FORBIDDEN_EVENT } from '@/lib/authEvents'
-import { queryClient } from '@/shared/lib/queryClient'
-import { queryKeys } from '@/shared/lib/queryKeys'
-import type { ApiError, Id, Letter, LetterDecision, MessageResponse } from '@/types'
+import type { ApiError, Id, Letter, MessageResponse } from '@/types'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || window.location.origin,
@@ -53,27 +51,6 @@ api.interceptors.response.use(
 // ======================================================
 export function getSuratDetail(id: Id) {
   return api.get<MessageResponse<Letter>>(`/api/letters/${id}`)
-}
-
-// ======================================================
-// RT / kades / sekdes
-// Endpoint : /decision
-// ======================================================
-export async function submitDecision(
-  role: string,
-  id: Id,
-  status: LetterDecision,
-  notes: string | null = null,
-) {
-  const response = await api.patch<MessageResponse<Letter>>(`/api/${role}/letters/${id}/decision`, {
-    status,
-    notes,
-  })
-
-  // Keputusan mengubah daftar dan angka dashboard di semua halaman surat.
-  queryClient.invalidateQueries({ queryKey: queryKeys.surat.all })
-
-  return response
 }
 
 export default api

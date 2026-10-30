@@ -180,7 +180,8 @@ export function signerFieldNames(slotKey) {
  * ulang dengan definisi yang sama.
  */
 export function getSuratSchema(config) {
-  const shape = {}
+  // Satu skema per nama isian; nama isian datang dari konfigurasi jenis surat.
+  const shape: Record<string, z.ZodType> = {}
 
   const occupationFields = (config?.fields ?? []).filter((field) => field.type === 'occupation')
 
@@ -225,7 +226,7 @@ export function getSuratSchema(config) {
         }
 
         if (field.type === 'family_members') {
-          if (field.required && !(values[field.name] ?? []).length) {
+          if (field.required && !((values[field.name] as unknown[] | undefined) ?? []).length) {
             context.addIssue({
               code: 'custom',
               path: [field.name],
@@ -275,7 +276,7 @@ export function getSuratSchema(config) {
           })
         }
 
-        if (!values[names.file]?.length) {
+        if (!(values[names.file] as File[] | undefined)?.length) {
           context.addIssue({
             code: 'custom',
             path: [names.file],
@@ -286,7 +287,7 @@ export function getSuratSchema(config) {
         return
       }
 
-      if (!nikPattern.test(values[names.nik] ?? '')) {
+      if (!nikPattern.test(String(values[names.nik] ?? ''))) {
         context.addIssue({
           code: 'custom',
           path: [names.nik],

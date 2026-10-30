@@ -86,7 +86,8 @@ src/
     cetak-surat/
   pages/                  halaman publik & warga; pages/admin untuk pejabat/operator
   components/ui/          PageLoader, UserAvatar (foto akun di header, avatar default)
-  lib/                    api.ts (instance Axios + submitDecision; memancarkan event role_forbidden),
+  lib/                    api.ts (instance Axios + getSuratDetail; memancarkan event role_forbidden;
+                          keputusan surat lewat features/approval/api),
                           authEvents.ts, pdfjs.ts, constants/routes, constants/app (APP_NAME dari
                           VITE_APP_NAME, STAF_APP_LABEL)
   shared/lib/             queryClient, queryKeys, publicVillageParams, villageName, copyText,

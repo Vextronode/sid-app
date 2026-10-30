@@ -4,13 +4,22 @@ export const OWN_LETTERS_PER_PAGE = 10
 
 // Surat yang diajukan pengguna sendiri, apa pun perannya. Berpaginasi di
 // server supaya seluruh riwayat tetap bisa dibuka, berapa pun jumlahnya.
+type UseLettersOptions = {
+  page?: number
+  perPage?: number
+  status?: string
+  // Tanggal pengajuan (YYYY-MM-DD), batas bawah dan atas.
+  submittedFrom?: string
+  submittedTo?: string
+}
+
 export function useLetters({
   page = 1,
   perPage = OWN_LETTERS_PER_PAGE,
   status,
   submittedFrom,
   submittedTo,
-} = {}) {
+}: UseLettersOptions = {}) {
   return useSuratListQuery({
     scope: 'mine',
     page,

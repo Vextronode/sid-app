@@ -19,10 +19,12 @@
 // ==========================================
 
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 
 import { Calendar, Check, ChevronLeft, ChevronRight, Clock, FileText, X } from 'lucide-react'
 
 import { PdfCanvasPreview } from '@/features/cetak-surat/components/PdfCanvasPreview'
+import type { PdfTemplate } from '@/features/cetak-surat/utils/letterDocuments'
 import { LetterValidityNote } from '@/features/surat/components/LetterValidityNote'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
@@ -128,7 +130,7 @@ function TrackingStepper({ surat }) {
 
           let labelClass = 'sid-tracker-label'
 
-          let circleContent = stepNumber
+          let circleContent: ReactNode = stepNumber
 
           // =================================
           // REJECTED
@@ -232,7 +234,7 @@ const canPreviewSurat = (status) => canPreviewStatuses.includes(status)
 // TEMPLATE PDF
 // ==========================================
 
-function getPreviewTemplate(status) {
+function getPreviewTemplate(status: string): PdfTemplate | null {
   if (status === SURAT_STATUS.APPROVED) {
     return 'digital'
   }

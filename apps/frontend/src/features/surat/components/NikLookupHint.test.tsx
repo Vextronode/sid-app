@@ -66,7 +66,14 @@ describe('NikLookupHint', () => {
       is_self: true,
     })
     const conflict = vi.fn((lookup) => (lookup.isSelf ? 'Ini NIK Anda sendiri.' : null))
-    render(<NikLookupHint nik="3218035507890002" onResult={vi.fn()} witness conflict={conflict} />)
+    render(
+      <NikLookupHint
+        nik="3218035507890002"
+        onResult={vi.fn()}
+        witness="Saksi I"
+        conflict={conflict}
+      />,
+    )
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Ini NIK Anda sendiri.')
     expect(screen.queryByText('T**i N*****h')).toBeNull()

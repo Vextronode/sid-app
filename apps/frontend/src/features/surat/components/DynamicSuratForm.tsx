@@ -99,7 +99,8 @@ export function DynamicSuratForm({
     setError,
     control,
     formState: { errors },
-  } = useForm({
+    // Nama isian datang dari konfigurasi jenis surat, jadi bentuknya peta nama -> nilai.
+  } = useForm<Record<string, unknown>>({
     resolver: zodResolver(getSuratSchema(config)),
     defaultValues: {
       ...Object.fromEntries(otherSlots.map((slot) => [signerFieldNames(slot.key).mode, 'digital'])),
@@ -131,6 +132,9 @@ export function DynamicSuratForm({
   const watchedFormData = useWatch({
     control,
   })
+
+  // Berkas terpilih di isian unggah (kosong bila belum ada).
+  const filesOf = (name: string) => (watchedFormData?.[name] as File[] | undefined) || []
 
   const { handleSubmit: submitSurat } = useSubmitSurat()
 
@@ -213,7 +217,7 @@ export function DynamicSuratForm({
       return
     }
 
-    const currentFiles = watchedFormData?.[name] || []
+    const currentFiles = filesOf(name)
 
     setValue(name, multiple ? [...currentFiles, ...files] : [files[0]], {
       shouldValidate: true,
@@ -226,7 +230,7 @@ export function DynamicSuratForm({
   const handleRemoveFile = (e, name, index) => {
     e.stopPropagation()
 
-    const currentFiles = watchedFormData?.[name] || []
+    const currentFiles = filesOf(name)
     const updatedFiles = [...currentFiles]
 
     updatedFiles.splice(index, 1)
@@ -396,7 +400,7 @@ export function DynamicSuratForm({
 
                 {field.type === 'nik' && lookupFieldsOf(field.name).length > 0 && (
                   <NikLookupHint
-                    nik={watchedFormData?.[field.name]}
+                    nik={watchedFormData?.[field.name] as string | undefined}
                     witness={field.witness}
                     includeInactive={field.includeInactive}
                     conflict={
@@ -579,7 +583,7 @@ export function DynamicSuratForm({
                 {field.type === 'file' && (
                   <FileUploader
                     field={field}
-                    files={watchedFormData?.[field.name] || []}
+                    files={filesOf(field.name)}
                     onFileChange={(e, name) => handleFileChange(e, name, field.multiple)}
                     onRemoveFile={handleRemoveFile}
                   />
@@ -666,7 +670,7 @@ export function DynamicSuratForm({
                       {renderError(names.name)}
                       <FileUploader
                         field={{ name: names.file, accept: WET_FILE_ACCEPT, multiple: false }}
-                        files={watchedFormData?.[names.file] || []}
+                        files={filesOf(names.file)}
                         onFileChange={(e, name) => handleFileChange(e, name, false)}
                         onRemoveFile={handleRemoveFile}
                       />

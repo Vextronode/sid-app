@@ -1,14 +1,38 @@
 import api from '@/lib/api'
+import type { Id, Letter, MessageResponse, ResourceResponse } from '@/types'
+
+type QueryParams = Record<string, string | number | undefined>
+
+// Nilai isian Terapkan, per nama field data warga.
+export type FulfillmentValues = Record<string, unknown>
+
+// Satu warga di pratinjau Terapkan beserta perubahannya (lama -> baru).
+export type FulfillmentChange = {
+  citizen_id: number
+  name: string
+  kind: 'create' | 'update' | 'deactivate'
+  // Nilai lama/baru sudah berupa teks tampilan ('-' bila kosong).
+  changes: { column: string; label: string; old: string; new: string }[]
+}
+
+// GET /api/profile/nik-lookup.
+export type NikLookupData = {
+  found: boolean
+  has_account?: boolean
+  is_self?: boolean
+  name?: string | null
+  family_number?: string | null
+}
 
 // Berkas surat (lampiran, dokumen pendukung) dilindungi sesi login, jadi
 // diambil sebagai blob lewat klien API lalu dibuka dari object URL.
-async function fetchBlobUrl(url, params) {
-  const response = await api.get(url, { params, responseType: 'blob' })
+async function fetchBlobUrl(url: string, params?: QueryParams) {
+  const response = await api.get<Blob>(url, { params, responseType: 'blob' })
 
   return URL.createObjectURL(response.data)
 }
 
-export async function openProtectedFile(url, params) {
+export async function openProtectedFile(url: string, params?: QueryParams) {
   const blobUrl = await fetchBlobUrl(url, params)
 
   window.open(blobUrl, '_blank', 'noopener')
@@ -16,7 +40,7 @@ export async function openProtectedFile(url, params) {
   window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
 }
 
-export async function downloadProtectedFile(url, filename, params) {
+export async function downloadProtectedFile(url: string, filename: string, params?: QueryParams) {
   const blobUrl = await fetchBlobUrl(url, params)
   const link = document.createElement('a')
 
@@ -28,16 +52,17 @@ export async function downloadProtectedFile(url, filename, params) {
   URL.revokeObjectURL(blobUrl)
 }
 
-export const supportingDocumentUrl = (letterId) => `/api/letters/${letterId}/supporting-document`
+export const supportingDocumentUrl = (letterId: Id) =>
+  `/api/letters/${letterId}/supporting-document`
 
-export const getLetterDetail = async (letterId) => {
-  const response = await api.get(`/api/letters/${letterId}`)
+export const getLetterDetail = async (letterId: Id) => {
+  const response = await api.get<MessageResponse<Letter>>(`/api/letters/${letterId}`)
 
   return response.data.data
 }
 
 // Terapkan perubahan data setelah final approve (Kasi/Kaur/Staf SIDUTama).
-export const getFulfillmentProposal = async (letterId) => {
+export const getFulfillmentProposal = async (letterId: Id) => {
   const response = await api.get(`/api/letters/${letterId}/fulfillment`)
 
   return response.data.data
@@ -45,18 +70,31 @@ export const getFulfillmentProposal = async (letterId) => {
 
 // Daftar perubahan per warga (lama -> baru) yang akan disimpan Terapkan
 // dengan nilai yang sama; tidak menyimpan apa pun.
-export const previewFulfillment = async (letterId, values, subjectNik, notes) => {
-  const response = await api.post(`/api/letters/${letterId}/fulfillment/preview`, {
-    values,
-    subject_nik: subjectNik || null,
-    notes: notes || null,
-  })
+export const previewFulfillment = async (
+  letterId: Id,
+  values: FulfillmentValues,
+  subjectNik?: string | null,
+  notes?: string | null,
+) => {
+  const response = await api.post<ResourceResponse<FulfillmentChange[]>>(
+    `/api/letters/${letterId}/fulfillment/preview`,
+    {
+      values,
+      subject_nik: subjectNik || null,
+      notes: notes || null,
+    },
+  )
 
   return response.data.data
 }
 
-export const applyFulfillment = async (letterId, values, subjectNik, notes) => {
-  const response = await api.post(`/api/letters/${letterId}/fulfillment`, {
+export const applyFulfillment = async (
+  letterId: Id,
+  values: FulfillmentValues,
+  subjectNik?: string | null,
+  notes?: string | null,
+) => {
+  const response = await api.post<MessageResponse<Letter>>(`/api/letters/${letterId}/fulfillment`, {
     values,
     subject_nik: subjectNik || null,
     notes: notes || null,
@@ -74,8 +112,8 @@ export const getFamilyMembers = async () => {
 
 // Nama warga desa dari NIK (isian nama ber-from_nik, mis. saksi).
 // includeInactive: juga mencari warga nonaktif (mis. NIK almarhum).
-export const lookupNik = async (nik, { includeInactive = false } = {}) => {
-  const response = await api.get('/api/profile/nik-lookup', {
+export const lookupNik = async (nik: string, { includeInactive = false } = {}) => {
+  const response = await api.get<MessageResponse<NikLookupData>>('/api/profile/nik-lookup', {
     params: includeInactive ? { nik, include_inactive: 1 } : { nik },
   })
 
@@ -90,7 +128,7 @@ export const getVillageAreas = async () => {
 }
 
 // Hasil dari instansi luar setelah formulir pelayanan terbit.
-export const submitLetterResult = async (letterId, files) => {
+export const submitLetterResult = async (letterId: Id, files: File[]) => {
   const formData = new FormData()
 
   files.forEach((file) => formData.append('files[]', file))
@@ -100,7 +138,12 @@ export const submitLetterResult = async (letterId, files) => {
   return response.data
 }
 
-export const reviewLetterResult = async (letterId, resultId, decision, notes) => {
+export const reviewLetterResult = async (
+  letterId: Id,
+  resultId: Id,
+  decision: 'accepted' | 'rejected',
+  notes?: string | null,
+) => {
   const response = await api.patch(`/api/letters/${letterId}/results/${resultId}`, {
     decision,
     notes: notes || null,

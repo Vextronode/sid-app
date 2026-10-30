@@ -3,6 +3,23 @@
 // GLOBAL - MODEL GENERIK APPROVAL FLOW
 // ==========================================
 
+import type { IsoDateString } from '@/types'
+
+export type TrackerState = 'done' | 'current' | 'waiting' | 'rejected'
+
+// Satu titik di tracker; field approver hanya ada pada langkah persetujuan.
+export type TrackerStep = {
+  label: string
+  state: TrackerState
+  timestamp: IsoDateString | null
+  approverPosition?: string | null
+  stepOrder?: number
+  isFinal?: boolean
+}
+
+const byCreatedAt = (a: { created_at?: string | null }, b: { created_at?: string | null }) =>
+  new Date(a?.created_at ?? 0).getTime() - new Date(b?.created_at ?? 0).getTime()
+
 export const STATUS_BADGE = {
   pending: {
     label: 'Menunggu',
@@ -64,7 +81,7 @@ export function getCurrentFlowStep(surat) {
 export function getLatestApprovalForStep(approvals = [], stepId) {
   const histories = approvals
     .filter((approval) => Number(approval?.flow_step_id) === Number(stepId) && approval?.action)
-    .sort((a, b) => new Date(a?.created_at ?? 0) - new Date(b?.created_at ?? 0))
+    .sort(byCreatedAt)
 
   return histories.at(-1) ?? null
 }
@@ -83,14 +100,14 @@ function formatJabatan(position) {
 // GENERATE TRACKER STATUS
 // ==========================================
 
-export function getStepStatuses(surat) {
+export function getStepStatuses(surat): TrackerStep[] {
   const { status, current_step_order, rejected_at_step, approvals = [] } = surat ?? {}
 
   const flowSteps = getFlowSteps(surat)
 
   const submittedAt = surat?.submitted_at ?? surat?.diajukan_at ?? null
 
-  const steps = [
+  const steps: TrackerStep[] = [
     {
       label: 'Diajukan',
       state: 'done',
@@ -103,7 +120,7 @@ export function getStepStatuses(surat) {
 
     const history = getLatestApprovalForStep(approvals, step?.id)
 
-    let state = 'waiting'
+    let state: TrackerState = 'waiting'
 
     if (Number(rejected_at_step) === stepOrder) {
       state = 'rejected'
@@ -130,7 +147,7 @@ export function getStepStatuses(surat) {
       status === 'approved'
         ? (approvals
             .filter((approval) => approval?.action === 'approved')
-            .sort((a, b) => new Date(a?.created_at ?? 0) - new Date(b?.created_at ?? 0))
+            .sort(byCreatedAt)
             .at(-1)?.created_at ?? null)
         : null,
   })
@@ -144,9 +161,7 @@ export function getLatestApprovalForLevel(approvals = [], levels = []) {
   return (
     approvals
       .filter((approval) => targetLevels.includes(approval?.approval_level) && approval?.action)
-      .sort(
-        (a, b) => new Date(a?.created_at ?? 0).getTime() - new Date(b?.created_at ?? 0).getTime(),
-      )
+      .sort(byCreatedAt)
       .at(-1) ?? null
   )
 }

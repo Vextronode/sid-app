@@ -24,7 +24,9 @@ import { FlowTimeline } from '@/features/surat/components/dossier/FlowTimeline'
 import { getApplicantAddress, getApplicantNik } from '@/features/surat/utils/letterDetails'
 import { getLatestApprovalForLevel } from '@/features/approval/constants/statusFlow'
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import type { Id, Letter, UserRole } from '@/types'
 
+import type { submitDecision } from '../api'
 import ApprovalStepRenderer from './ApprovalStepRenderer'
 import { canDecideOnLetter } from '../utils/canDecide'
 import {
@@ -76,6 +78,29 @@ function getHint({ surat, canDecide, canDownload, viewerRole }) {
   return 'Surat sedang menunggu keputusan di tahap lain.'
 }
 
+// Respons PATCH keputusan, diteruskan ApprovalStepRenderer ke onApprove/onReject.
+type DecisionResponse = Awaited<ReturnType<typeof submitDecision>>
+
+type SuratDetailModalProps = {
+  // null: modal tertutup.
+  suratId: Id | null
+  onClose: () => void
+  surat: Letter | null | undefined
+  notFound: boolean
+  // Peran yang melihat (menentukan isi), terlepas dari wewenang memutuskan.
+  viewerRole?: string | null
+  // Diisi hanya bila pengguna boleh memutuskan surat ini.
+  currentUserRole?: UserRole | null
+  apiRole?: UserRole | null
+  onApprove?: (response: DecisionResponse) => unknown
+  onReject?: (notes: string, response: DecisionResponse) => unknown
+  // Dipanggil saat keputusan ditolak 409 (surat sudah berubah), mis. muat ulang.
+  onConflict?: () => unknown
+  closeOnDecision?: boolean
+  showPreview?: boolean
+  canDownload?: boolean
+}
+
 export default function SuratDetailModal({
   suratId,
   onClose,
@@ -90,7 +115,7 @@ export default function SuratDetailModal({
   closeOnDecision = true,
   showPreview = true,
   canDownload = false,
-}) {
+}: SuratDetailModalProps) {
   if (suratId === null) {
     return null
   }

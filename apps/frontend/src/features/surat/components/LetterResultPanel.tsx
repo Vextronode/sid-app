@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ChangeEvent } from 'react'
 
 import { reviewLetterResult, submitLetterResult } from '../api/letterExtrasApi'
 import { confirmDialog } from '@/shared/lib/dialog'
@@ -31,13 +32,13 @@ function serverMessage(error, fallback) {
 }
 
 function UploadForm({ letterId, resubmit, onDone }) {
-  const [files, setFiles] = useState([])
+  const [files, setFiles] = useState<File[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   // Berkas dipilih bertahap: tiap pilihan menambah daftar (bukan menimpa)
   // sampai batas MAX_FILES; berkas yang sama tidak terdaftar dua kali.
-  const addFiles = (event) => {
+  const addFiles = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(event.target.files ?? [])
     event.target.value = ''
 

@@ -8,11 +8,17 @@
 
 import { responseError } from '@/shared/lib/apiError'
 import { MAIN_DOCUMENT } from '@/features/cetak-surat/utils/letterDocuments'
+import type { PdfTemplate, PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
 
 // VITE_API_URL kosong/tidak di-build -> same-origin (sama seperti src/lib/api.ts)
 const apiUrl = () => (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/+$/, '')
 
-function letterPdfUrl(surat, action, template, documentKey) {
+function letterPdfUrl(
+  surat: Pick<PrintableLetter, 'id'>,
+  action: 'download' | 'preview',
+  template: PdfTemplate,
+  documentKey: string,
+) {
   const params = new URLSearchParams({ template })
 
   if (documentKey && documentKey !== MAIN_DOCUMENT) params.set('document', documentKey)
@@ -20,7 +26,11 @@ function letterPdfUrl(surat, action, template, documentKey) {
   return `${apiUrl()}/api/letters/${surat.id}/${action}?${params}`
 }
 
-export async function downloadSuratPDF(surat, template = 'wet', documentKey = MAIN_DOCUMENT) {
+export async function downloadSuratPDF(
+  surat: PrintableLetter,
+  template: PdfTemplate = 'wet',
+  documentKey = MAIN_DOCUMENT,
+) {
   const url = letterPdfUrl(surat, 'download', template, documentKey)
   const response = await fetch(url, {
     method: 'GET',
@@ -51,7 +61,11 @@ export async function downloadSuratPDF(surat, template = 'wet', documentKey = MA
 }
 
 // Blob PDF pratinjau; dirender sebagai canvas oleh PdfCanvasPreview.
-export async function previewSuratPDF(surat, template = 'digital', documentKey = MAIN_DOCUMENT) {
+export async function previewSuratPDF(
+  surat: Pick<PrintableLetter, 'id'>,
+  template: PdfTemplate = 'digital',
+  documentKey = MAIN_DOCUMENT,
+) {
   const url = letterPdfUrl(surat, 'preview', template, documentKey)
 
   const response = await fetch(url, {
