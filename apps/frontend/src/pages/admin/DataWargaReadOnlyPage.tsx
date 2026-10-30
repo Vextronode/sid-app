@@ -13,7 +13,9 @@ import { RefreshButton } from '@/components/ui/RefreshButton'
 import { usePageSize } from '@/components/ui/usePageSize'
 import { FAMILY_ROLE_LABELS, labelOf } from '@/shared/lib/labels'
 import { RevealableValue } from '@/components/ui/RevealableValue'
-import { revealCitizenNik, revealFamilyNumber } from '@/shared/lib/identityApi'
+import { revealCitizenNik } from '@/shared/lib/identityApi'
+import { FamilyNumberValue } from '@/features/data-warga/components/FamilyNumberValue'
+import type { Citizen } from '@/types'
 
 // Bagian halaman sama dengan halaman kelola (DataWargaPage): tab Data
 // Penduduk dan Kartu Keluarga, aktif di ?tab=.
@@ -34,7 +36,7 @@ export default function DataWargaReadOnlyPage() {
   const switchSection = (value: string) =>
     setSearchParams(value === 'penduduk' ? {} : { tab: value }, { replace: true })
   const familyList = useFamilyList()
-  const [citizens, setCitizens] = useState([])
+  const [citizens, setCitizens] = useState<Citizen[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [keyword, setKeyword] = useState('')
@@ -215,11 +217,7 @@ export default function DataWargaReadOnlyPage() {
                               .join(', ') || '-'}
                           </td>
                           <td className="center">
-                            <RevealableValue
-                              masked={warga.family?.no_kk_masked}
-                              reveal={() => revealFamilyNumber(warga.family.id)}
-                              label="No. KK"
-                            />
+                            <FamilyNumberValue family={warga.family} />
                           </td>
                           <td className="center">
                             {labelOf(FAMILY_ROLE_LABELS, warga.family_role)}

@@ -139,6 +139,8 @@ export default function ManajemenUserPage() {
   }
 
   const handleCopyPassword = async () => {
+    if (!passwordReset) return
+
     try {
       await navigator.clipboard.writeText(passwordReset.password)
       setCopied(true)

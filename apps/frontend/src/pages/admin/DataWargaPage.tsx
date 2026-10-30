@@ -45,13 +45,15 @@ import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
 import { RevealableValue } from '@/components/ui/RevealableValue'
-import { revealCitizenNik, revealFamilyNumber } from '@/shared/lib/identityApi'
+import { revealCitizenNik } from '@/shared/lib/identityApi'
 import type { ChangeEvent, FormEvent } from 'react'
 import { EMPTY_CITIZEN_FORM, citizenToForm } from '@/features/data-warga/utils/citizenForm'
 import type { CitizenForm } from '@/features/data-warga/utils/citizenForm'
 import type { CitizenImportResult } from '@/features/data-warga/hooks/useWargaList'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 import type { Citizen, Occupation } from '@/types'
+import { FamilyNumberValue } from '@/features/data-warga/components/FamilyNumberValue'
+import type { FamilyManagementPanelHandle } from '@/features/data-warga/components/FamilyManagementPanel'
 
 const formatResidencyType = (type: string | null | undefined) => {
   if (!type) return '-'
@@ -106,7 +108,7 @@ export default function DataWargaPage() {
     setSearchParams(value === 'penduduk' ? {} : { tab: value }, { replace: true })
   const familyList = useFamilyList()
   // Tombol Tambah KK di header membuka form milik panel KK.
-  const familyPanelRef = useRef(null)
+  const familyPanelRef = useRef<FamilyManagementPanelHandle>(null)
   const {
     data,
     loading,
@@ -339,7 +341,7 @@ export default function DataWargaPage() {
           failed ? `, ${failed} baris gagal` : ''
         }.`,
         error: null,
-        result,
+        result: result ?? null,
       })
 
       // Tutup otomatis hanya kalau semua baris berhasil.
@@ -526,11 +528,7 @@ export default function DataWargaPage() {
                           </td>
                           <td className="center">{formatResidencyType(warga.residency_type)}</td>
                           <td className="center">
-                            <RevealableValue
-                              masked={warga.family?.no_kk_masked}
-                              reveal={() => revealFamilyNumber(warga.family.id)}
-                              label="No. KK"
-                            />
+                            <FamilyNumberValue family={warga.family} />
                           </td>
                           <td className="center">
                             {labelOf(FAMILY_ROLE_LABELS, warga.family_role)}
@@ -1173,7 +1171,7 @@ export default function DataWargaPage() {
                 </div>
               )}
 
-              {importStatus.result?.errors?.length > 0 && (
+              {importStatus.result && importStatus.result.errors.length > 0 && (
                 <ul className="sid-admin-import-errors">
                   {importStatus.result.errors.map((item, i) => (
                     <li key={i}>

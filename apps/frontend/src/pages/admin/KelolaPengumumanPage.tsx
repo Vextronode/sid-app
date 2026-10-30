@@ -146,7 +146,7 @@ function DurationPicker({
             aria-pressed={choice === KEEP}
             onClick={() => onChoice(KEEP)}
           >
-            Tetap sampai {formatAnnouncementUntil(current.expires_at)}
+            Tetap sampai {current.expires_at ? formatAnnouncementUntil(current.expires_at) : '-'}
           </button>
         )}
 
@@ -311,7 +311,8 @@ type AnnouncementFormProps = {
   processing: boolean
   error: string
   onSubmit: (payload: AnnouncementPayload) => Promise<void>
-  onCancel: () => void
+  // Tanpa onCancel (belum ada pengumuman) tombol Batal tidak tampil.
+  onCancel: (() => void) | null
 }
 
 function AnnouncementForm({
@@ -383,7 +384,7 @@ function AnnouncementForm({
       duration = { duration_value: value, duration_unit: custom.unit }
     } else if (choice && choice !== KEEP) {
       const preset = PRESETS.find((item) => item.id === choice)
-      duration = { duration_value: preset.value, duration_unit: preset.unit }
+      if (preset) duration = { duration_value: preset.value, duration_unit: preset.unit }
     } else if (!choice) {
       setDurationError('Pilih berapa lama pengumuman tampil.')
       return
@@ -535,6 +536,8 @@ export default function KelolaPengumumanPage() {
   }
 
   const handleDelete = async () => {
+    if (!announcement) return
+
     if (
       !(await confirmDialog({
         title: `Hapus pengumuman "${announcement.title}"?`,
@@ -605,10 +608,12 @@ export default function KelolaPengumumanPage() {
               <div className="sid-wilayah-table-toolbar">
                 <div>
                   <h3>Sedang tayang</h3>
-                  <p>
-                    Berakhir {formatAnnouncementUntil(announcement.expires_at)} (
-                    {remainingLabel(announcement.expires_at)}).
-                  </p>
+                  {announcement.expires_at && (
+                    <p>
+                      Berakhir {formatAnnouncementUntil(announcement.expires_at)} (
+                      {remainingLabel(announcement.expires_at)}).
+                    </p>
+                  )}
                 </div>
 
                 {!editing && (

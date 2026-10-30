@@ -37,7 +37,7 @@ export default function RWListPage() {
 
   const initialStatus = searchParams.get('status') ?? ''
 
-  const [selectedId, setSelectedId] = useState(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // ==========================================
   // DATA

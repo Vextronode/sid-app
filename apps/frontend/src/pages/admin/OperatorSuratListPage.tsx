@@ -30,6 +30,7 @@ import { formatPageRange } from '@/components/ui/pageRange'
 import { usePageSize } from '@/components/ui/usePageSize'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
+import type { LetterListItem } from '@/types'
 
 const EMPTY_EXPORT_MESSAGE = 'Tidak ada data surat untuk diunduh. Unduhan laporan gagal.'
 
@@ -52,11 +53,12 @@ export default function OperatorSuratListPage() {
     setCurrentPage(1)
   }
 
-  const [previewSurat, setPreviewSurat] = useState(null)
+  const [previewSurat, setPreviewSurat] = useState<LetterListItem | null>(null)
   const [exporting, setExporting] = useState(false)
 
   // Dibuka dari notifikasi: ?surat=<id>. Modal memuat detailnya sendiri.
-  useLetterDeepLink((letterId) => setPreviewSurat({ id: letterId }))
+  // Surat di halaman lain: modal melengkapi barisnya dari detail surat.
+  useLetterDeepLink((letterId) => setPreviewSurat({ id: letterId } as LetterListItem))
 
   // ==========================================
   // LOAD DATA
@@ -234,7 +236,7 @@ export default function OperatorSuratListPage() {
             renderActions={(surat) => (
               <LetterRowActions
                 surat={surat}
-                onOpen={setPreviewSurat}
+                onOpen={() => setPreviewSurat(surat)}
                 canDownload={surat.status === SURAT_STATUS.APPROVED}
               />
             )}

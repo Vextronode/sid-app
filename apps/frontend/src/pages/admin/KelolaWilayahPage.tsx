@@ -83,7 +83,7 @@ export default function KelolaWilayahPage() {
 
   const handleSubmit = async (payload: WilayahPayload) => {
     if (modal.type === 'dusun') {
-      if (modal.item) {
+      if (modal.item?.id) {
         return Boolean(await updateHamlet(modal.item.id, payload))
       }
 
@@ -91,7 +91,7 @@ export default function KelolaWilayahPage() {
     }
 
     if (modal.type === 'rw') {
-      if (modal.item) {
+      if (modal.item?.id) {
         return Boolean(await updateRw(modal.item.id, payload))
       }
 
@@ -99,7 +99,7 @@ export default function KelolaWilayahPage() {
     }
 
     if (modal.type === 'rt') {
-      if (modal.item) {
+      if (modal.item?.id) {
         return Boolean(await updateRt(modal.item.id, payload))
       }
 
@@ -132,6 +132,8 @@ export default function KelolaWilayahPage() {
       labelOf: (item: T) => string,
     ) =>
     async (item: T) => {
+      if (item.id === null) return
+
       const label = labelOf(item)
       if (!(await confirmToggle(item, label))) return
 
@@ -153,7 +155,8 @@ export default function KelolaWilayahPage() {
 
     if (!confirmed) return
 
-    if (await deleteHamlet(item.id)) notifySuccess(`Dusun ${item.name} berhasil dihapus.`)
+    if (item.id !== null && (await deleteHamlet(item.id)))
+      notifySuccess(`Dusun ${item.name} berhasil dihapus.`)
   }
 
   const handleDeleteRw = async (item: WilayahRw) => {
@@ -165,7 +168,8 @@ export default function KelolaWilayahPage() {
 
     if (!confirmed) return
 
-    if (await deleteRw(item.id)) notifySuccess(`RW ${item.number} berhasil dihapus.`)
+    if (item.id !== null && (await deleteRw(item.id)))
+      notifySuccess(`RW ${item.number} berhasil dihapus.`)
   }
 
   const handleDeleteRt = async (item: WilayahRt) => {
@@ -177,7 +181,8 @@ export default function KelolaWilayahPage() {
 
     if (!confirmed) return
 
-    if (await deleteRt(item.id)) notifySuccess(`RT ${item.number} berhasil dihapus.`)
+    if (item.id !== null && (await deleteRt(item.id)))
+      notifySuccess(`RT ${item.number} berhasil dihapus.`)
   }
 
   const renderTable = () => {
@@ -285,7 +290,7 @@ export default function KelolaWilayahPage() {
 
       <SiteFooter />
 
-      {modal.open && (
+      {modal.open && modal.type && (
         <WilayahFormModal
           key={`${modal.type}-${modal.item?.id ?? 'new'}`}
           open={modal.open}

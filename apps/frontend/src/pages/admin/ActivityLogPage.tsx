@@ -381,7 +381,8 @@ function LetterTab({ params, setParam, pageSize, onPageSizeChange }: TabProps) {
                       {log.old_status && log.old_status !== log.new_status
                         ? `${STATUS_LABELS[log.old_status] ?? log.old_status} → `
                         : ''}
-                      {STATUS_LABELS[log.new_status] ?? log.new_status}
+                      {(log.new_status ? STATUS_LABELS[log.new_status] : undefined) ??
+                        log.new_status}
                     </td>
                     <td>{log.reason || <span className="sid-activity-log-muted">-</span>}</td>
                   </tr>

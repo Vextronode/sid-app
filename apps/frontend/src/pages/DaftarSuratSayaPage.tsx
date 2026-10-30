@@ -58,7 +58,7 @@ export default function DaftarSuratSayaPage() {
   })
 
   const [selectedSurat, setSelectedSurat] = useState<LetterListItem | null>(null)
-  const [deletingId, setDeletingId] = useState(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState('')
 
   // Surat yang sudah disetujui adalah dokumen terbit, jadi tidak ditawarkan untuk dihapus.

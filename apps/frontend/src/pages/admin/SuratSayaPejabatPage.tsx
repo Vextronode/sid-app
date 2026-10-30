@@ -59,7 +59,7 @@ export default function SuratSayaPejabatPage() {
     setSelectedCode('')
   }
 
-  const [deletingId, setDeletingId] = useState(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Surat yang sudah disetujui adalah dokumen terbit, jadi tidak ditawarkan untuk dihapus.
   const handleDelete = async (item: LetterListItem) => {

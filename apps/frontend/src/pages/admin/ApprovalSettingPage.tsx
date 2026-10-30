@@ -120,7 +120,7 @@ export default function ApprovalSettingPage() {
 
   const orderedSettings = APPROVAL_SETTING_ORDER.map((level) =>
     settings.find((setting) => setting.approval_level === level),
-  ).filter(Boolean)
+  ).filter((setting): setting is SettingRow => Boolean(setting))
 
   if (user?.role !== 'staf_sid') {
     return null

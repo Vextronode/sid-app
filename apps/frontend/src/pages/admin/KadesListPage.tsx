@@ -35,7 +35,7 @@ export default function KadesListPage() {
 
   const initialStatus = searchParams.get('status') ?? ''
 
-  const [selectedId, setSelectedId] = useState(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // Dibuka dari notifikasi: ?surat=<id>.
   useLetterDeepLink((letterId) => setSelectedId(letterId))

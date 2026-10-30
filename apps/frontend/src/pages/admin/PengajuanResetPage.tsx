@@ -102,7 +102,7 @@ export default function PengajuanResetPage() {
     try {
       const response = await action()
 
-      notifySuccess(response.data?.message)
+      notifySuccess(response.data?.message ?? 'Pengajuan berhasil diproses.')
       await load()
     } catch (requestError) {
       setError(getApiErrorMessage(requestError, fallback))

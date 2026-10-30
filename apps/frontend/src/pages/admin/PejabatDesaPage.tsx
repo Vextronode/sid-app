@@ -236,7 +236,12 @@ type PhotoFieldProps = {
 function PhotoField({ file, onChange, disabled }: PhotoFieldProps) {
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
 
-  useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview])
+  useEffect(
+    () => () => {
+      if (preview) URL.revokeObjectURL(preview)
+    },
+    [preview],
+  )
 
   return (
     <div className="sid-form-group">
@@ -500,20 +505,23 @@ export default function PejabatDesaPage() {
 
   const handlePromote = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    // Calon dan foto wajib; tombol Tetapkan tidak aktif tanpa keduanya.
+    if (!promotion?.candidate || !promotion.photo) return undefined
+    const { candidate, photo } = promotion
 
     const scope = findAccountPosition(accountPositions, promotion.position)?.scope
 
     return run(
       () =>
         promotePerangkatDesa({
-          ...candidateTarget(accountPositions, promotion.position, promotion.candidate),
+          ...candidateTarget(accountPositions, promotion.position, candidate),
           position: promotion.position,
           ...(scope ? { [scope]: Number(promotion[scope]) } : {}),
           started_at: promotion.started_at,
           term_ends_at: promotion.term_ends_at,
           phone_wa: promotion.phone_wa,
           notes: promotion.notes,
-          photo: promotion.photo,
+          photo,
         }),
       'Pejabat berhasil ditetapkan.',
     )
@@ -521,6 +529,8 @@ export default function PejabatDesaPage() {
 
   const handleRotate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!rotation?.candidate || !rotation.photo) return undefined
+    const { candidate, photo } = rotation
 
     // Staf SIDUTama yang menyerahkan jabatannya sendiri langsung menjadi
     // warga: buka dashboard warga dengan memuat ulang halaman, supaya data
@@ -533,11 +543,11 @@ export default function PejabatDesaPage() {
     return run(
       () =>
         rotatePerangkatDesa(rotation.official.id, {
-          ...candidateTarget(accountPositions, rotation.official.position, rotation.candidate),
+          ...candidateTarget(accountPositions, rotation.official.position, candidate),
           started_at: rotation.started_at,
           term_ends_at: rotation.term_ends_at,
           notes: rotation.notes,
-          photo: rotation.photo,
+          photo,
         }),
       'Rotasi pejabat berhasil diproses.',
       afterSuccess,
@@ -574,6 +584,7 @@ export default function PejabatDesaPage() {
 
   const handleDemote = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!demotion) return undefined
 
     return run(
       () =>
@@ -920,13 +931,15 @@ export default function PejabatDesaPage() {
               candidate={promotion.candidate}
               position={promotion.position}
               disabled={processing}
-              onChange={(candidate) => setPromotion((current) => ({ ...current, candidate }))}
+              onChange={(candidate) =>
+                setPromotion((current) => current && { ...current, candidate })
+              }
             />
 
             <PhotoField
               file={promotion.photo}
               disabled={processing}
-              onChange={(photo) => setPromotion((current) => ({ ...current, photo }))}
+              onChange={(photo) => setPromotion((current) => current && { ...current, photo })}
             />
 
             {promotionScope === 'rt_id' && (
@@ -1060,13 +1073,15 @@ export default function PejabatDesaPage() {
               candidate={rotation.candidate}
               position={rotation.official.position}
               disabled={processing}
-              onChange={(candidate) => setRotation((current) => ({ ...current, candidate }))}
+              onChange={(candidate) =>
+                setRotation((current) => current && { ...current, candidate })
+              }
             />
 
             <PhotoField
               file={rotation.photo}
               disabled={processing}
-              onChange={(photo) => setRotation((current) => ({ ...current, photo }))}
+              onChange={(photo) => setRotation((current) => current && { ...current, photo })}
             />
 
             <label className="sid-form-group">

@@ -12,8 +12,8 @@ export default function NotificationRedirectPage() {
   const [searchParams] = useSearchParams()
 
   const target = getNotificationTarget(user?.role, {
-    letter_id: searchParams.get('surat'),
-    status: searchParams.get('status'),
+    letter_id: searchParams.get('surat') ?? undefined,
+    status: searchParams.get('status') ?? undefined,
     is_applicant: searchParams.get('mine') === '1',
   })
 

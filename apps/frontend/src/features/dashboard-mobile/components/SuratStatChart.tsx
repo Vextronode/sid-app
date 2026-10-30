@@ -12,7 +12,7 @@ type LetterStatsChart = { labels?: string[]; values?: (number | string)[]; maxY?
 export default function SuratStatChart({
   letterTypes = [],
 }: {
-  letterTypes?: { id: number; name: string }[]
+  letterTypes?: { id: number; name: string | null }[]
 }) {
   const dateInputRef = useRef<HTMLInputElement>(null)
 

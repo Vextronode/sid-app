@@ -170,7 +170,7 @@ export function OrganisasiDesaPage({ variant }: { variant: OrganisasiVariant }) 
 
   const requested = searchParams.get('lembaga')
   const org = config.orgs.find((o) => o.value === requested) ?? config.orgs[0]
-  const desa = village?.name ? formatVillageName(village.name) : 'desa'
+  const desa = formatVillageName(village?.name) ?? 'desa'
 
   useEffect(() => {
     window.scrollTo(0, 0)
