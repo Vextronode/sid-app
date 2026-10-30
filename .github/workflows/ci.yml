@@ -87,6 +87,10 @@ jobs:
           # belum ada di composer.json saat ini — lihat catatan di README CI).
           extensions: mbstring, pdo, pdo_pgsql, pgsql, bcmath, xml, curl, zip, gd
           coverage: none
+        env:
+          # Paksa patch 8.3 terbaru (>= 8.3.36, patch PHP2Shell); composer.json
+          # mewajibkan ^8.3.36 sehingga composer install gagal bila runner tertinggal.
+          update: true
         # Catatan: laravel/pao dikonfirmasi package public/open-source,
         # jadi tidak perlu auth token untuk private registry.
 
