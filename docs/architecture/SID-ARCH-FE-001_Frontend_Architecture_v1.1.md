@@ -15,7 +15,8 @@
 
 | Layer | Teknologi | Catatan |
 |---|---|---|
-| UI | React 19 (function component) | JSDoc, bukan TypeScript |
+| UI | React 19 (function component) | |
+| Bahasa | TypeScript (`.ts`/`.tsx`, `tsconfig.json`) | Migrasi bertahap dari JS: `strict` belum aktif; cek tipe lewat `npm run typecheck` (Vite hanya membuang tipe, tidak memeriksanya). Aturan penulisan di `DEV-CODE-001` A.8 |
 | Build | Vite 8 (Rolldown) | Alias `@` → `src`; `build` membuang `console.*`/`debugger`; vendor dipisah ke chunk `react`, `charts`, `pdfjs` |
 | Styling | Tailwind CSS 4 via `@tailwindcss/vite` | Token di `index.css` (`@theme static`, palet `pb-*`) dan CSS custom property `--sid-*` di `styles/sid-global.css`; font Bricolage Grotesque & Plus Jakarta Sans (`@fontsource`) |
 | Server state | TanStack Query 5 | `staleTime` 60 detik, `retry` 1, tanpa refetch saat fokus |
@@ -35,8 +36,8 @@
 
 SPA yang berkomunikasi dengan Laravel API lewat REST, terautentikasi Sanctum cookie.
 
-- **Server state** (surat, warga, notifikasi, konten) lewat TanStack Query dengan kunci terpusat di `shared/lib/queryKeys.js` (`surat`, `kependudukan`, `notifications`, `cms`, `adminConfig`). Aksi yang mengubah surat (mis. keputusan) meng-invalidate `queryKeys.surat.all`.
-- **Sesi** di `features/auth/contexts/AuthContext.jsx` (React Context): mengambil `GET /api/user`, CSRF `GET /sanctum/csrf-cookie`, logout `POST /logout`, dan membersihkan cache query saat logout.
+- **Server state** (surat, warga, notifikasi, konten) lewat TanStack Query dengan kunci terpusat di `shared/lib/queryKeys.ts` (`surat`, `kependudukan`, `notifications`, `cms`, `adminConfig`). Aksi yang mengubah surat (mis. keputusan) meng-invalidate `queryKeys.surat.all`.
+- **Sesi** di `features/auth/contexts/AuthContext.tsx` (React Context): mengambil `GET /api/user`, CSRF `GET /sanctum/csrf-cookie`, logout `POST /logout`, dan membersihkan cache query saat logout.
 - **UI state** tetap lokal (`useState`). Tidak ada state manager global (Redux/Zustand).
 - **Identitas desa dari API.** Nama, logo, kontak, dan foto desa diambil dari `/api/villages/profile` atau `/api/public/*`; tidak di-hardcode di komponen.
 
@@ -46,8 +47,8 @@ SPA yang berkomunikasi dengan Laravel API lewat REST, terautentikasi Sanctum coo
 
 ```
 src/
-  App.jsx                 definisi route + GuestRoute/ProtectedRoute
-  main.jsx                QueryClientProvider + CSS global
+  App.tsx                 definisi route + GuestRoute/ProtectedRoute
+  main.tsx                QueryClientProvider + CSS global
   components/
     layout/               MainLayout, OfficialLayout, OperatorDesaLayout, WargaLayout,
                           AdminLayout, AppHeader, SiteFooter, PublicPageHead, ScrollToTop
@@ -85,8 +86,8 @@ src/
     cetak-surat/
   pages/                  halaman publik & warga; pages/admin untuk pejabat/operator
   components/ui/          PageLoader, UserAvatar (foto akun di header, avatar default)
-  lib/                    api.js (instance Axios + submitDecision; memancarkan event role_forbidden),
-                          authEvents.js, pdfjs.js, constants/routes, constants/app (APP_NAME dari
+  lib/                    api.ts (instance Axios + submitDecision; memancarkan event role_forbidden),
+                          authEvents.ts, pdfjs.ts, constants/routes, constants/app (APP_NAME dari
                           VITE_APP_NAME, STAF_APP_LABEL)
   shared/lib/             queryClient, queryKeys, publicVillageParams, villageName, copyText,
                           villageMap (koordinat kantor → link Google Maps)
@@ -103,26 +104,26 @@ Struktur berbasis fitur menjaga batas domain; halaman (`pages/`) merakit kompone
 
 ## 4. Lapisan API Client
 
-`src/lib/api.js` adalah satu instance Axios untuk seluruh panggilan:
+`src/lib/api.ts` adalah satu instance Axios untuk seluruh panggilan:
 - `baseURL` = `VITE_API_URL` atau origin halaman; `withCredentials` dan `withXSRFToken` aktif; header `Accept: application/json`, `X-Requested-With`.
 - Interceptor respons: 403 dengan `code: password_change_required` → redirect ke `/change-password`.
 - Error lain diteruskan ke pemanggil; bentuk error backend adalah format Laravel `{ message, errors? }` (bukan `{ error: { code, message, details } }`).
-- Modul API per fitur (`features/*/api*.js`) membungkus endpoint domainnya.
+- Modul API per fitur (`features/*/api*.ts`) membungkus endpoint domainnya.
 
 ---
 
 ## 5. Routing & Access Guard
 
-Semua route didefinisikan di `App.jsx`; path publik, auth, profil, dan surat warga diambil dari konstanta `src/lib/constants/routes.js`. Konvensi penamaan: kebab-case berbahasa Indonesia dan dikelompokkan per peran (`/admin/rt`, `/admin/rt/surat`), kecuali halaman auth yang memakai istilah baku bahasa Inggris (`/login`, `/register`, `/forgot-password`, `/reset-password/:token`, `/change-password`). Link reset password di email dibuat backend (`AppServiceProvider`) dan harus sama dengan `HAL_RESET_PASSWORD`.
+Semua route didefinisikan di `App.tsx`; path publik, auth, profil, dan surat warga diambil dari konstanta `src/lib/constants/routes.ts`. Konvensi penamaan: kebab-case berbahasa Indonesia dan dikelompokkan per peran (`/admin/rt`, `/admin/rt/surat`), kecuali halaman auth yang memakai istilah baku bahasa Inggris (`/login`, `/register`, `/forgot-password`, `/reset-password/:token`, `/change-password`). Link reset password di email dibuat backend (`AppServiceProvider`) dan harus sama dengan `HAL_RESET_PASSWORD`.
 - `GuestRoute` — untuk halaman login/register/lupa & reset password; user yang sudah login diarahkan ke halaman default role (atau `?redirect=` yang diizinkan) dan ke `/change-password` bila wajib ganti kata sandi.
 - `ProtectedRoute allowedRoles` — belum login → `/login?redirect=...`; wajib ganti password → `/change-password`; role tidak diizinkan → `/`.
 - **Layout route** menjaga header/sidebar tetap terpasang: `PublicShell` (MainLayout) untuk halaman publik, `OfficialShell` (OfficialLayout, untuk 8 role pejabat) untuk seluruh `/admin/*`. OfficialLayout memakai sidebar operator untuk Kasi/Kaur/Staf SIDUTama dan bilah atas untuk RT/RW/Kadus/Kades/Sekdes.
-- Halaman operator dibatasi lewat `features/operator-desa/constants/roleNavigation.js` (`OPERATOR_ROUTE_CAPABILITIES`), mis. `/admin/data-warga` untuk Petugas, Kasi, Kaur; halaman kelola lain hanya Staf SIDUTama; `/admin/surat-saya` untuk pejabat non-Petugas.
+- Halaman operator dibatasi lewat `features/operator-desa/constants/roleNavigation.ts` (`OPERATOR_ROUTE_CAPABILITIES`), mis. `/admin/data-warga` untuk Petugas, Kasi, Kaur; halaman kelola lain hanya Staf SIDUTama; `/admin/surat-saya` untuk pejabat non-Petugas.
 - Halaman selain beranda dimuat lazy (`React.lazy` + `Suspense`).
 - `/buka-notifikasi` adalah tujuan klik Web Push; meneruskan ke daftar surat yang sesuai peran (atau "Surat Saya" bila penerima adalah pemohon).
 - Halaman informasi (Kebijakan Privasi, Aksesibilitas, PPID) aktif di produksi; isian khas desa dari menu Halaman Informasi. Tidak ada konten atau route khusus mode dev.
 - Respons 403 `code: role_forbidden` memancarkan event `sid:role-forbidden`; AuthContext memeriksa `/api/user` tanpa loader dan, bila perannya berubah (mis. dirotasi), memuat ulang ke `/login` sehingga `GuestRoute` meneruskan ke dashboard peran baru. Staf SIDUTama yang merotasi dirinya sendiri langsung dibawa ke `/surat-saya`.
-- Nama aplikasi (`VITE_APP_NAME`, default SIDUTama) dipakai di judul login, `<title>` (plugin kecil di `vite.config.js`), manifest PWA, dan label peran `staf_sid` ("Staf {nama aplikasi}").
+- Nama aplikasi (`VITE_APP_NAME`, default SIDUTama) dipakai di judul login, `<title>` (plugin kecil di `vite.config.ts`), manifest PWA, dan label peran `staf_sid` ("Staf {nama aplikasi}").
 
 | Kelompok | Route utama |
 |---|---|
@@ -141,7 +142,7 @@ Semua route didefinisikan di `App.jsx`; path publik, auth, profil, dan surat war
 Merender tombol Setuju/Tolak (tahap final: "Setujui & terbitkan") di footer popup detail hanya bila `canDecideOnLetter` terpenuhi: step aktif (`current_step.approver_position`) cocok dengan role user (`rt` → rt; `kepala_desa` → kepala_desa/sekretaris_desa), status surat masih dapat diputuskan (`pending` atau `in_progress`, termasuk surat RT yang tahap RT-nya dilewati), dan belum ada keputusan untuk level itu. RW, Kadus, Kasi/Kaur tidak pernah mendapat tombol. Tolak membuka kotak alasan wajib; Escape/Batal meminta konfirmasi bila alasan sudah diketik.
 
 ### 6.2 `DynamicSuratForm`
-Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members; isian bersyarat `visible_when` disembunyikan; isian tanggal ber-`report_deadline` menampilkan peringatan tidak memblokir bila tanggal peristiwa melewati batas pelaporan, `utils/reportDeadline.js`) dan slot tanda tangan (`signature_slots`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`, `signers[...]`, `signature_files[...]`). Validasi akhir tetap di backend.
+Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members; isian bersyarat `visible_when` disembunyikan; isian tanggal ber-`report_deadline` menampilkan peringatan tidak memblokir bila tanggal peristiwa melewati batas pelaporan, `utils/reportDeadline.ts`) dan slot tanda tangan (`signature_slots`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`, `signers[...]`, `signature_files[...]`). Validasi akhir tetap di backend.
 
 ### 6.3 Tanda tangan & Terapkan
 `SignatureCard` (buat/lihat TTD pribadi), `SignatureRequestsCard` (setujui dengan kata sandi/tolak/blokir permintaan TTD), `FulfillmentPanel` (tinjau & Terapkan perubahan data untuk Kasi/Kaur/Petugas), `LetterTypeSettingsPanel` (masa berlaku, kategori Persuratan Desa / Layanan Kependudukan dengan petugas yang mengikutinya, status aktif).
@@ -150,7 +151,7 @@ Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, n
 `useWebPushSubscription` + `WebPushControls`: meminta izin, `PushManager.subscribe()` dengan `VITE_VAPID_PUBLIC_KEY`, lalu `POST /api/push-subscriptions`; menonaktifkan memanggil `DELETE`. `push-handler.js` menampilkan notifikasi dan membuka URL same-origin saat diklik.
 
 ### 6.5 Daftar berhalaman
-Bar pagination memakai `PageNumbers` (jendela tiga nomor bergeser dengan elipsis, `pageWindow.js`), teks rentang `formatPageRange` ("1–50 dari 266 data"), dan `PageSizeSelect`. Pilihan baris per halaman (10/25/50; Kelola Berita 6/12/24) disimpan per daftar oleh `usePageSize` di `localStorage` (`sid-page-size:<daftar>`) dan dikirim sebagai `per_page` untuk daftar yang berpaginasi di server; mengganti pilihan kembali ke halaman 1.
+Bar pagination memakai `PageNumbers` (jendela tiga nomor bergeser dengan elipsis, `pageWindow.ts`), teks rentang `formatPageRange` ("1–50 dari 266 data"), dan `PageSizeSelect`. Pilihan baris per halaman (10/25/50; Kelola Berita 6/12/24) disimpan per daftar oleh `usePageSize` di `localStorage` (`sid-page-size:<daftar>`) dan dikirim sebagai `per_page` untuk daftar yang berpaginasi di server; mengganti pilihan kembali ke halaman 1.
 
 ### 6.6 Daftar & popup detail surat
 - `LetterTable` dipakai semua daftar surat pejabat (RT, RW, Kadus, Kades/Sekdes, Kasi/Kaur/Petugas). Header dan sel memakai perataan yang sama; di ≤767px baris menjadi kartu. Halaman tabel selebar kontainer navbar (1200px), Kasi/Kaur selebar area konten di samping sidebar.
@@ -160,7 +161,7 @@ Bar pagination memakai `PageNumbers` (jendela tiga nomor bergeser dengan elipsis
 - `DownloadSuratMenu`: **TTD & stempel digital** atau **Untuk tanda tangan basah** (area tanda tangan kosong, nama file berakhiran `-ttd-basah`).
 
 ### 6.7 Surat Saya
-`MyLettersList` dipakai halaman Surat Saya pejabat (`/admin/surat-saya`) dan warga (`/surat-saya/daftar`): filter status dengan jumlah dari `GET /letters/summary?scope=mine`, dan jalur tahapan per surat (Diajukan → RT → Desa → Terbit) yang dihitung `letterProgress.js` dari `status`, `current_step`, dan `rejected_at_step`. Halaman ajukan surat pejabat memakai `LetterTypePicker` (kartu jenis surat) sebelum `DynamicSuratForm`.
+`MyLettersList` dipakai halaman Surat Saya pejabat (`/admin/surat-saya`) dan warga (`/surat-saya/daftar`): filter status dengan jumlah dari `GET /letters/summary?scope=mine`, dan jalur tahapan per surat (Diajukan → RT → Desa → Terbit) yang dihitung `letterProgress.ts` dari `status`, `current_step`, dan `rejected_at_step`. Halaman ajukan surat pejabat memakai `LetterTypePicker` (kartu jenis surat) sebelum `DynamicSuratForm`.
 
 ---
 
@@ -198,3 +199,4 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 | 1.1 | - | Terminologi `flow_steps`, RW tanpa tombol keputusan, catatan scope Tier 2 |
 | 1.2 | 2026-10-16 | Diselaraskan ke source: stack aktual (React 19, Vite 8, Tailwind 4, PWA), struktur folder aktual, API client & format error Laravel, routing berbasis layout route + `roleNavigation`, komponen form dinamis/TTD/Terapkan/Web Push, token desain `pb-*` |
 | 1.3 | 2026-10-20 | Komponen daftar berhalaman (pilihan baris per halaman, teks rentang) dan Surat Saya (`MyLettersList`, `LetterTypePicker`) |
+| 1.4 | 2026-10-30 | Source frontend kini TypeScript (`.ts`/`.tsx`): baris Bahasa di tech stack, nama file di struktur folder dan rujukan diselaraskan |

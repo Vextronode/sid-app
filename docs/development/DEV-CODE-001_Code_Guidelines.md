@@ -16,8 +16,10 @@
 
 | Konteks | Konvensi | Contoh |
 |---|---|---|
-| Nama file & komponen | `PascalCase`, nama file = nama komponen | `ApprovalStepRenderer.jsx` |
-| Nama hook kustom | `camelCase`, diawali `use` | `usePipelineSteps.js` |
+| Nama file & komponen | `PascalCase`, nama file = nama komponen | `ApprovalStepRenderer.tsx` |
+| Nama hook kustom | `camelCase`, diawali `use` | `usePipelineSteps.ts` |
+| Ekstensi file | `.tsx` bila berisi JSX, selain itu `.ts`; file `.js`/`.jsx` baru tidak diterima di `src/` | `LetterTable.tsx`, `statusFlow.ts` |
+| Tipe & interface | `PascalCase`; tipe props komponen bernama `{Komponen}Props` | `LetterTableProps`, `LetterRequest` |
 | Nama variabel & fungsi | `camelCase` | `resolveApproverLabel()` |
 | Nama constant | `UPPER_SNAKE_CASE` | `REJECT_CAPABLE` |
 | Endpoint API (konsumsi di FE) | Mengikuti kontrak Backend, `kebab-case` plural | `/api/letter-requests` |
@@ -27,7 +29,7 @@
 1. Function component murni - tidak menggunakan class component pada kode baru.
 2. **Batas ukuran:** komponen yang melebihi kurang lebih 150-200 baris menjadi sinyal wajib untuk dipecah - ekstrak logic ke custom hook, atau pecah menjadi sub-komponen dengan tanggung jawab lebih sempit.
 3. **Larangan komponen per-role:** dilarang membuat komponen approval terpisah per role (`RTApprovalCard`, `RWApprovalCard`, dst.). Wajib menggunakan `ApprovalStepRenderer` generik (lihat `SID-ARCH-FE-001` S6).
-4. Props didokumentasikan menggunakan **JSDoc typedef** di atas definisi komponen - bukan dibiarkan tanpa dokumentasi tipe.
+4. Props diberi tipe TypeScript (`type {Komponen}Props`) di atas definisi komponen - bukan dibiarkan tanpa tipe (lihat A.8).
 5. Satu komponen = satu tanggung jawab. Komponen presentational (menampilkan) dipisah dari komponen yang mengambil data (biasanya lewat custom hook `use{Feature}Data`).
 
 ### A.3 Konvensi Styling
@@ -38,7 +40,7 @@
 
 ### A.4 Form Handling
 
-1. Form pengajuan surat bersifat **schema-driven**, dibangun dari `letter_type.form_fields` dan `signature_slots` yang dikirim Backend (`DynamicSuratForm`, `features/surat/utils/letterFormData.js`) - bukan satu komponen form React per jenis surat. Validasi akhir tetap di Backend (`LetterFormSchema`).
+1. Form pengajuan surat bersifat **schema-driven**, dibangun dari `letter_type.form_fields` dan `signature_slots` yang dikirim Backend (`DynamicSuratForm`, `features/surat/utils/letterFormData.ts`) - bukan satu komponen form React per jenis surat. Validasi akhir tetap di Backend (`LetterFormSchema`).
 2. Validasi menggunakan **React Hook Form + Zod**.
 3. Pesan kesalahan validasi ditampilkan dengan pola konsisten (posisi, warna) mengikuti design token status.
 
@@ -56,6 +58,18 @@ Urutan import: (1) pustaka eksternal, (2) modul internal lewat alias `@/` (`@/li
 
 1. ESLint + Prettier wajib aktif, konfigurasi seragam (bukan preferensi individual kontributor).
 2. Pre-commit hook (Husky + lint-staged) mencegah kode yang gagal lint/format masuk ke repository.
+3. `npm run typecheck` (`tsc --noEmit`) memeriksa tipe; `npm run build` (Vite) tidak memeriksa tipe sama sekali.
+
+### A.8 TypeScript
+
+Source frontend sedang dimigrasi bertahap dari JavaScript; `strict` di `tsconfig.json` belum aktif. Aturan berikut berlaku untuk kode baru dan kode yang sedang diubah:
+
+1. Props komponen, parameter fungsi yang diekspor, dan nilai balik hook diberi tipe eksplisit.
+2. Tipe data domain/API yang dipakai lintas fitur (user, surat, penduduk, wilayah, profil desa) disimpan di `src/types/`; tipe yang hanya dipakai satu fitur di `features/<fitur>/types.ts`. Bentuk tipe mengikuti kontrak di `docs/api_spec`.
+3. Dilarang menambah `any`, `as any`, `@ts-ignore`, atau `@ts-nocheck` baru. Bila tipe memang belum diketahui, pakai `unknown` lalu persempit; bila terpaksa mengecualikan pemeriksaan, pakai `@ts-expect-error` disertai alasan.
+4. State awal kosong diberi tipe (`useState<LetterRequest[]>([])`), bukan `useState([])` yang terbaca sebagai `never[]`.
+5. Parameter opsional ditandai `?` atau diberi nilai default, agar pemanggil tidak dipaksa mengisi semua argumen.
+6. Perubahan tidak boleh menambah jumlah error `npm run typecheck`.
 
 ---
 
@@ -112,3 +126,4 @@ Alur Backend wajib mengikuti: **Controller -> Service -> Repository -> Model**.
 |---|---|---|
 | 1.0 | - | Rancangan Awal |
 | 1.1 | 2026-09-12 | Menambahkan pedoman struktur Backend, Form Request, API Resource, dan Resource Collection. |
+| 1.2 | 2026-10-30 | Frontend TypeScript: konvensi ekstensi dan nama tipe, props bertipe (menggantikan JSDoc typedef), bagian A.8 TypeScript, `npm run typecheck`. |
