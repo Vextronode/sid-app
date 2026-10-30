@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { CheckCircle2, Info, X } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 import { currentToasts, dismissToast, subscribeToasts } from '@/shared/lib/toast'
+import type { Toast, ToastTone } from '@/shared/lib/toast'
 
-const ICONS = { success: CheckCircle2, info: Info }
+const ICONS: Record<ToastTone, LucideIcon> = { success: CheckCircle2, info: Info }
 
 // Wadah toast di pojok kanan bawah (bawah tengah di ponsel). Wilayah
 // live-region selalu dirender walau kosong, karena pembaca layar hanya
@@ -22,7 +24,7 @@ export function ToastHost() {
   )
 }
 
-function ToastItem({ toast }) {
+function ToastItem({ toast }: { toast: Toast }) {
   const [paused, setPaused] = useState(false)
   const remaining = useRef(toast.duration)
 

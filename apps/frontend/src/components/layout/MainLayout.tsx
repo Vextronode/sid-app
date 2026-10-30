@@ -1,6 +1,8 @@
 import '@/styles/beranda.css'
 import '@/styles/public.css'
 
+import type { ReactNode } from 'react'
+
 import { getBerandaContent } from '@/features/beranda/berandaContent'
 import { PublicStickyChrome } from '@/features/beranda/components/PublicStickyChrome'
 import { SiteFooter } from './SiteFooter'
@@ -11,7 +13,7 @@ import { SiteFooter } from './SiteFooter'
 // tombol "Menu" di header. Bar pengumuman menempel di bawah header
 // (PublicStickyChrome), sama dengan beranda. Kelas .pub memasang tampilan
 // publik (public.css) untuk header, isi, dan footer.
-export function MainLayout({ children }) {
+export function MainLayout({ children }: { children: ReactNode }) {
   return (
     <div className="pub flex min-h-dvh flex-col">
       <PublicStickyChrome content={getBerandaContent()} />

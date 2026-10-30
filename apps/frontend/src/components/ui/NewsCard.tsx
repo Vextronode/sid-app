@@ -1,6 +1,15 @@
 import { Link } from 'react-router-dom'
 
-export function NewsCard({ data }) {
+type NewsCardData = {
+  id: number | string
+  imageUrl: string
+  title: string
+  category: string
+  description: string
+  date: string
+}
+
+export function NewsCard({ data }: { data: NewsCardData }) {
   return (
     <Link
       to={`/berita/${data.id}`}

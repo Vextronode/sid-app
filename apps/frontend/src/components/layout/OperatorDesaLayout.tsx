@@ -8,6 +8,7 @@
 import '@/styles/beranda.css'
 
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Bell,
@@ -67,10 +68,10 @@ function matchesMobile() {
 // Desktop: sidebar diciutkan/diperluas manual dan diingat di browser.
 // Ponsel: sidebar selalu ciut, dibuka sementara dan otomatis ciut lagi
 // setelah pindah halaman.
-function useSidebarState(pathname) {
+function useSidebarState(pathname: string) {
   const [collapsed, setCollapsed] = useState(readCollapsed)
   // Path saat sidebar ponsel dibuka; begitu path berubah sidebar dianggap tertutup.
-  const [mobileOpenPath, setMobileOpenPath] = useState(null)
+  const [mobileOpenPath, setMobileOpenPath] = useState<string | null>(null)
   const mobileOpen = mobileOpenPath === pathname
   const [isMobile, setIsMobile] = useState(matchesMobile)
 
@@ -78,7 +79,7 @@ function useSidebarState(pathname) {
     if (typeof window.matchMedia !== 'function') return undefined
 
     const query = window.matchMedia(MOBILE_QUERY)
-    const handleChange = (event) => {
+    const handleChange = (event: MediaQueryListEvent) => {
       setIsMobile(event.matches)
       setMobileOpenPath(null)
     }
@@ -98,7 +99,7 @@ function useSidebarState(pathname) {
   useEffect(() => {
     if (!mobileOpen) return undefined
 
-    const handleKeyDown = (event) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setMobileOpenPath(null)
     }
 
@@ -234,7 +235,7 @@ const MENU_ITEMS = [
   },
 ]
 
-export function OperatorDesaLayout({ children }) {
+export function OperatorDesaLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
   const { user } = useAuth()
   const visibleRoutes = ROLE_NAVIGATION[user?.role] ?? []

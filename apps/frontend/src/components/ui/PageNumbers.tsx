@@ -1,5 +1,14 @@
 import { getPageWindow } from './pageWindow'
 
+type PageNumbersProps = {
+  currentPage: number
+  totalPages: number
+  onChange: (page: number) => void
+  buttonClassName?: string
+  activeClassName?: string
+  disabled?: boolean
+}
+
 // Tombol nomor halaman ringkas; lihat getPageWindow untuk aturan jendela.
 export function PageNumbers({
   currentPage,
@@ -8,7 +17,7 @@ export function PageNumbers({
   buttonClassName = '',
   activeClassName = 'active',
   disabled = false,
-}) {
+}: PageNumbersProps) {
   return getPageWindow(currentPage, totalPages).map((item) => {
     if (typeof item === 'string') {
       return (

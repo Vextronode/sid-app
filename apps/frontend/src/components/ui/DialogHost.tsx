@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertTriangle, CheckCircle2, Info, PenLine, Trash2, XCircle } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import type { FormEvent } from 'react'
 
 import { currentDialog, resolveDialog, subscribeDialogs } from '@/shared/lib/dialog'
+import type { DialogChangeGroup, DialogEntry, DialogTone } from '@/shared/lib/dialog'
 
-const ICONS = {
+const ICONS: Record<DialogTone, LucideIcon> = {
   error: XCircle,
   warning: AlertTriangle,
   success: CheckCircle2,
@@ -23,12 +26,12 @@ export function DialogHost() {
   return createPortal(<DialogCard key={dialog.id} dialog={dialog} />, document.body)
 }
 
-function DialogCard({ dialog }) {
+function DialogCard({ dialog }: { dialog: DialogEntry }) {
   const { kind, title, message, tone } = dialog
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
-  const primaryButton = useRef(null)
-  const input = useRef(null)
+  const primaryButton = useRef<HTMLButtonElement>(null)
+  const input = useRef<HTMLTextAreaElement>(null)
 
   const cancelValue = kind === 'confirm' ? false : kind === 'prompt' ? null : undefined
   const Icon = ICONS[tone] ?? Info
@@ -36,7 +39,7 @@ function DialogCard({ dialog }) {
   useEffect(() => {
     ;(kind === 'prompt' ? input : primaryButton).current?.focus()
 
-    const handleKey = (event) => {
+    const handleKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       // Escape ini milik dialog; jangan sampai ikut menutup form di bawahnya.
       event.stopImmediatePropagation()
@@ -47,11 +50,11 @@ function DialogCard({ dialog }) {
     return () => document.removeEventListener('keydown', handleKey)
   }, [kind, cancelValue])
 
-  const submit = (event) => {
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (kind === 'confirm') return resolveDialog(true)
-    if (kind === 'alert') return resolveDialog(undefined)
+    if (dialog.kind === 'confirm') return resolveDialog(true)
+    if (dialog.kind === 'alert') return resolveDialog(undefined)
 
     const trimmed = value.trim()
     if (trimmed.length < Math.max(dialog.minLength, 1)) {
@@ -83,9 +86,11 @@ function DialogCard({ dialog }) {
         </span>
         <h2 id="sid-dialog-title">{title}</h2>
         {message && <p id="sid-dialog-message">{message}</p>}
-        {dialog.details?.length > 0 && <ChangeDetails groups={dialog.details} />}
+        {dialog.kind === 'confirm' && dialog.details?.length > 0 && (
+          <ChangeDetails groups={dialog.details} />
+        )}
 
-        {kind === 'prompt' && (
+        {dialog.kind === 'prompt' && (
           <div className="sid-notice-field">
             <label htmlFor="sid-dialog-input">{dialog.label}</label>
             <textarea
@@ -110,7 +115,7 @@ function DialogCard({ dialog }) {
         )}
 
         <div className="sid-notice-actions">
-          {kind !== 'alert' && (
+          {dialog.kind !== 'alert' && (
             <button
               type="button"
               className="sid-notice-cancel"
@@ -124,7 +129,7 @@ function DialogCard({ dialog }) {
             type="submit"
             className={`sid-operator-primary ${tone === 'danger' ? 'sid-notice-danger' : ''}`}
           >
-            {kind === 'alert' ? dialog.closeLabel : dialog.confirmLabel}
+            {dialog.kind === 'alert' ? dialog.closeLabel : dialog.confirmLabel}
           </button>
         </div>
       </form>
@@ -133,7 +138,7 @@ function DialogCard({ dialog }) {
 }
 
 // Daftar perubahan per kelompok (mis. per warga): Data, Lama, Baru.
-function ChangeDetails({ groups }) {
+function ChangeDetails({ groups }: { groups: DialogChangeGroup[] }) {
   return (
     <div className="sid-dialog-changes">
       {groups.map((group) => (

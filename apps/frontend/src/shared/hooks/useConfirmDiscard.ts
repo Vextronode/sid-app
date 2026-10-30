@@ -16,7 +16,13 @@ const DISCARD_DIALOG = {
 // escapeClose (opsional): fungsi penutup yang dipanggil saat Escape ditekan
 // selagi form terbuka. Escape diabaikan bila dialog global sedang tampil,
 // karena DialogHost juga mendengarkan Escape untuk menutup dirinya.
-export function useConfirmDiscard(isDirty, { disabled = false, escapeClose = null } = {}) {
+export function useConfirmDiscard(
+  isDirty: boolean,
+  {
+    disabled = false,
+    escapeClose = null,
+  }: { disabled?: boolean; escapeClose?: (() => void) | null } = {},
+) {
   const dirty = useRef(isDirty)
   const escapeRef = useRef(escapeClose)
 
@@ -27,7 +33,7 @@ export function useConfirmDiscard(isDirty, { disabled = false, escapeClose = nul
   })
 
   const requestClose = useCallback(
-    async (close) => {
+    async (close: () => void) => {
       if (disabled) return false
       if (dirty.current && !(await confirmDialog(DISCARD_DIALOG))) return false
 
@@ -42,7 +48,7 @@ export function useConfirmDiscard(isDirty, { disabled = false, escapeClose = nul
   useEffect(() => {
     if (!hasEscape) return undefined
 
-    const handleKey = (event) => {
+    const handleKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || currentDialog() || !escapeRef.current) return
       requestClose(escapeRef.current)
     }

@@ -1,6 +1,10 @@
 import { getStatusClass, getStatusLabel } from '@/constants/suratStatus'
 
-export function StatusBadge({ status }) {
+type StatusBadgeProps = {
+  status: string | null | undefined
+}
+
+export function StatusBadge({ status }: StatusBadgeProps) {
   const normalizedStatus = String(status ?? '').toLowerCase()
 
   const bgClass = getStatusClass(normalizedStatus)

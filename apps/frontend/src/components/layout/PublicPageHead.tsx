@@ -1,7 +1,14 @@
+import type { ReactNode } from 'react'
+
+type PublicPageHeadProps = {
+  title: ReactNode
+  children?: ReactNode
+}
+
 // Kepala halaman publik (Berita, Profil Desa, Peraturan): judul besar dan
 // paragraf pengantar di atas latar kontur terasering. Paragraf pertama
 // berukuran pengantar, paragraf berikutnya (mis. alamat) sedikit lebih kecil.
-export function PublicPageHead({ title, children }) {
+export function PublicPageHead({ title, children }: PublicPageHeadProps) {
   return (
     <header className="border-b border-pb-line bg-pb-paper bg-(image:--pb-contour-dark) bg-position-[right_-60px_top_20px]">
       <div className="bd-container pt-[clamp(40px,24px+4vw,88px)] pb-[clamp(32px,20px+3vw,64px)]">

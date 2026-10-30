@@ -31,11 +31,11 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
-    // Sementara pakai rule bawaan agar komentar `eslint-disable no-unused-vars`
-    // yang sudah ada tetap berlaku.
+    // Rule bawaan no-unused-vars salah menandai nama parameter di tipe fungsi
+    // (mis. `onChange: (page: number) => void`); versi TypeScript-nya tidak.
     rules: {
-      '@typescript-eslint/no-unused-vars': 'off',
-      'no-unused-vars': 'error',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'error',
     },
   },
 ])

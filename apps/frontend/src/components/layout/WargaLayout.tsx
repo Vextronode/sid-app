@@ -4,6 +4,7 @@
 // ==========================================
 
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { HelpCircle } from 'lucide-react'
 
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover'
@@ -17,7 +18,7 @@ const WARGA_MENU = [
   { label: 'Ajukan Surat', path: '/jenis-surat' },
 ]
 
-export function WargaLayout({ children }) {
+export function WargaLayout({ children }: { children: ReactNode }) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
 

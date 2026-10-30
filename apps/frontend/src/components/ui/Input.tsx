@@ -1,6 +1,12 @@
 import { forwardRef } from 'react'
+import type { InputHTMLAttributes } from 'react'
 
-export const Input = forwardRef(({ label, error, ...props }, ref) => {
+type InputProps = InputHTMLAttributes<HTMLInputElement> & {
+  label?: string
+  error?: string
+}
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(({ label, error, ...props }, ref) => {
   return (
     <div className="mb-5 w-full text-left">
       {label && <label className="block mb-2 text-sm font-medium text-gray-800">{label}</label>}

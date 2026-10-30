@@ -3,8 +3,10 @@
 // pengguna; semua label diawali huruf kapital. Singkatan (PLN, PDAM, SD,
 // TKI) ditulis eksplisit di peta karena humanize() tidak mengenalnya.
 
+export type LabelMap = Record<string, string>
+
 // "kepala_keluarga" -> "Kepala Keluarga". Cadangan untuk nilai di luar peta.
-export function humanize(value) {
+export function humanize(value: unknown): string {
   if (value === null || value === undefined || value === '') return '-'
 
   return String(value)
@@ -13,14 +15,15 @@ export function humanize(value) {
     .replace(/(^|\s)\S/g, (char) => char.toUpperCase())
 }
 
-export function labelOf(map, value) {
+export function labelOf(map: LabelMap, value: unknown): string {
   if (value === null || value === undefined || value === '') return '-'
 
-  return map[value] ?? humanize(value)
+  return map[String(value)] ?? humanize(value)
 }
 
 // Pilihan <option> dari peta label, urut sesuai urutan peta.
-export const optionsOf = (map) => Object.entries(map).map(([value, label]) => ({ value, label }))
+export const optionsOf = (map: LabelMap) =>
+  Object.entries(map).map(([value, label]) => ({ value, label }))
 
 export const FAMILY_STATUS_LABELS = { aktif: 'Aktif', pindah: 'Pindah', bubar: 'Bubar' }
 
@@ -111,7 +114,7 @@ export const GENDER_LABELS = { L: 'Laki-Laki', P: 'Perempuan' }
 
 // Peta per nama field, dipakai riwayat perubahan (activity log) untuk
 // menampilkan nilai lama/baru dengan label yang sama.
-export const FIELD_VALUE_LABELS = {
+export const FIELD_VALUE_LABELS: Record<string, LabelMap> = {
   family_status: FAMILY_STATUS_LABELS,
   family_role: FAMILY_ROLE_LABELS,
   blood_type: BLOOD_TYPE_LABELS,

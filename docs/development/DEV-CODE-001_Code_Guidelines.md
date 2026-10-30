@@ -70,6 +70,8 @@ Source frontend sedang dimigrasi bertahap dari JavaScript; `strict` di `tsconfig
 4. State awal kosong diberi tipe (`useState<LetterRequest[]>([])`), bukan `useState([])` yang terbaca sebagai `never[]`.
 5. Parameter opsional ditandai `?` atau diberi nilai default, agar pemanggil tidak dipaksa mengisi semua argumen.
 6. Perubahan tidak boleh menambah jumlah error `npm run typecheck`.
+7. Variabel tak terpakai diperiksa rule `@typescript-eslint/no-unused-vars` (bukan `no-unused-vars` bawaan, yang salah menandai nama parameter di tipe fungsi); komentar pengecualian memakai nama rule tersebut.
+8. Store tingkat modul (mis. `shared/lib/toast.ts`, `shared/lib/dialog.ts`) mengekspor tipe datanya (`Toast`, `DialogEntry`) agar komponen host dan pemanggil memakai bentuk yang sama.
 
 ---
 
