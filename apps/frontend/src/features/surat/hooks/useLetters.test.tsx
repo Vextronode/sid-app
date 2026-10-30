@@ -7,8 +7,9 @@ const api = vi.hoisted(() => ({ get: vi.fn() }))
 vi.mock('@/lib/api', () => ({ default: api }))
 
 import { useLetters } from './useLetters'
+import type { ReactNode } from 'react'
 
-function wrapper({ children }) {
+function wrapper({ children }: { children: ReactNode }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>

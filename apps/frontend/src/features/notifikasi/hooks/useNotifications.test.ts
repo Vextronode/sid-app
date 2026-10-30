@@ -10,6 +10,7 @@ import {
   markNotificationAsRead,
 } from '../api'
 import useNotifications from './useNotifications'
+import type { ReactNode } from 'react'
 
 const mockedGetNotifications = vi.mocked(getNotifications, { partial: true, deep: true })
 const mockedGetUnreadNotificationCount = vi.mocked(getUnreadNotificationCount, {
@@ -39,7 +40,8 @@ const notifications = [
 
 function renderNotifications() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const wrapper = ({ children }) => createElement(QueryClientProvider, { client }, children)
+  const wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client }, children)
 
   return renderHook(() => useNotifications(), { wrapper })
 }
@@ -81,7 +83,8 @@ describe('useNotifications', () => {
 
   it('reuses cached data when another layout mounts the hook', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const wrapper = ({ children }) => createElement(QueryClientProvider, { client }, children)
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children)
 
     const first = renderHook(() => useNotifications(), { wrapper })
     await waitFor(() => expect(first.result.current.loading).toBe(false))

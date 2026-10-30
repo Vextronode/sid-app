@@ -3,8 +3,8 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const auth = vi.hoisted(() => ({ login: vi.fn() }))
-const form = vi.hoisted(() => ({ user: null }))
-const villageInfo = vi.hoisted(() => ({ village: null }))
+const form = vi.hoisted(() => ({ user: null as { id: number; role: string } | null }))
+const villageInfo = vi.hoisted(() => ({ village: null as Record<string, unknown> | null }))
 
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: () => villageInfo,
@@ -22,7 +22,10 @@ vi.mock('@/features/auth/hooks/useLoginForm', () => ({
     errors: { username: '', password: '', general: '' },
     isLoading: false,
     handleChange: vi.fn(),
-    handleSubmit: async (event, onSuccess) => {
+    handleSubmit: async (
+      event: { preventDefault?: () => void } | undefined,
+      onSuccess: (user: unknown) => Promise<void>,
+    ) => {
       event?.preventDefault()
       await onSuccess(form.user)
     },
@@ -36,7 +39,7 @@ function CurrentPath() {
   return <p data-testid="current-path">{location.pathname + location.search}</p>
 }
 
-async function loginAs(role, entry = '/login') {
+async function loginAs(role: string, entry = '/login') {
   form.user = { id: 1, role }
 
   const { container } = render(

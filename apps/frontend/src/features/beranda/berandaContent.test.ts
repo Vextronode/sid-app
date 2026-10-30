@@ -9,7 +9,7 @@ describe('getBerandaContent', () => {
     const content = getBerandaContent()
 
     for (const key of ['announcement', 'apbdes', 'welcome', 'transparency']) {
-      expect(content[key], key).toBeUndefined()
+      expect((content as Record<string, unknown>)[key], key).toBeUndefined()
     }
     expect(JSON.stringify(content)).not.toMatch(/\[[A-Z ]+\]|example\.com|Dede Rusliana/)
   })

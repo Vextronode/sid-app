@@ -21,9 +21,9 @@ vi.mock('@/shared/lib/dialog', () => ({ confirmDialog }))
 
 import { FulfillmentPanel } from './FulfillmentPanel'
 
-const newCitizen = (nik) => ({
+const newCitizen = (nik: string | null) => ({
   action: 'create_citizen',
-  fulfilled_at: null,
+  fulfilled_at: null as string | null,
   family: { mode: 'join', description: 'Masuk ke No. KK ************0001.' },
   fields: [
     { column: 'nik', label: 'NIK', proposed: nik, proposed_label: nik ?? '-', fixed: false },

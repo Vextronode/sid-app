@@ -9,6 +9,7 @@ vi.mock('@/lib/api', () => ({ default: api }))
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => villageInfo)
 
 import { InfoPage } from './InfoPage'
+import type { MockInstance } from 'vitest'
 
 const VILLAGE = {
   name: 'Desa Cibenda',
@@ -20,14 +21,14 @@ const VILLAGE = {
   email: 'kantor@desa.test',
 }
 
-const respond = (fields = {}, updatedAt = null) =>
+const respond = (fields: Record<string, unknown> = {}, updatedAt: string | null = null) =>
   api.get.mockResolvedValue({ data: { data: { fields, updated_at: updatedAt } } })
 
-const slots = (container) =>
+const slots = (container: HTMLElement) =>
   [...container.querySelectorAll('mark.bd-info-slot')].map((mark) => mark.textContent)
 
 describe('InfoPage', () => {
-  let scrollTo
+  let scrollTo: MockInstance
 
   beforeEach(() => {
     scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})

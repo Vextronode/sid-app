@@ -17,7 +17,7 @@ import { PdfCanvasPreview } from './PdfCanvasPreview'
 // (PDFDocumentProxy) tidak punya destroy().
 function fakePdfjs({ renderPromise = Promise.resolve() } = {}) {
   const page = {
-    getViewport: ({ scale }) => ({ width: 600 * scale, height: 848 * scale }),
+    getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 848 * scale }),
     render: () => ({ promise: renderPromise, cancel: renderCancel }),
   }
   const pdfDocument = { numPages: 1, getPage: vi.fn().mockResolvedValue(page) }

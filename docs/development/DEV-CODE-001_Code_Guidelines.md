@@ -63,7 +63,7 @@ Urutan import: (1) pustaka eksternal, (2) modul internal lewat alias `@/` (`@/li
 
 ### A.8 TypeScript
 
-Source frontend sedang dimigrasi bertahap dari JavaScript; `strict` di `tsconfig.json` belum aktif. Aturan berikut berlaku untuk kode baru dan kode yang sedang diubah:
+Source frontend sedang dimigrasi bertahap dari JavaScript. `noImplicitAny` di `tsconfig.json` sudah aktif, jadi parameter, props, dan state tanpa tipe ditolak typecheck; `strict` penuh (termasuk `strictNullChecks`) belum aktif. Aturan berikut berlaku untuk kode baru dan kode yang sedang diubah:
 
 1. Props komponen, parameter fungsi yang diekspor, dan nilai balik hook diberi tipe eksplisit.
 2. Tipe data domain/API yang dipakai lintas fitur (user, surat, penduduk, wilayah, profil desa) disimpan di `src/types/`; tipe yang hanya dipakai satu fitur di `features/<fitur>/types.ts`. Bentuk tipe mengikuti kontrak di `docs/api_spec`.
@@ -76,6 +76,8 @@ Source frontend sedang dimigrasi bertahap dari JavaScript; `strict` di `tsconfig
 9. Test:
    - Fungsi hasil impor yang di-mock lewat `vi.mock` diakses dengan `vi.mocked(fn, { partial: true, deep: true })`, bukan `fn.mockReturnValue(...)` langsung.
    - Data uji yang hanya berisi sebagian field dibungkus `partialFixture<T>(...)` dari `src/test/fixtures.ts`; jangan menambah cast `as` di tiap test.
+   - Helper test yang menerima data sebagian diberi tipe `DeepPartial<T>` (dari `src/test/fixtures.ts`) lalu meneruskannya lewat `partialFixture<T>(...)`.
+   - Mock komponen yang tidak merender apa pun ditulis `(): null => null`.
    - Elemen form diambil dengan tipe elemennya, mis. `getByRole<HTMLSelectElement>('combobox')`, `querySelector<HTMLElement>(...)`.
    - Properti yang memang tidak boleh ada diperiksa dengan `expect(obj).not.toHaveProperty('x')`.
 10. Pesan galat API untuk pengguna diambil dengan `getApiErrorMessage(error, fallback)` dari `shared/lib/apiError.ts`; jangan menyalin helper serupa di tiap komponen.

@@ -8,13 +8,15 @@ const { getSuratDetail, downloadSuratPDF } = vi.hoisted(() => ({
 
 vi.mock('@/lib/api', () => ({ getSuratDetail }))
 vi.mock('@/features/surat/components/LetterExtrasPanel', () => ({
-  LetterExtrasPanel: () => null,
+  LetterExtrasPanel: (): null => null,
 }))
 vi.mock('@/features/cetak-surat/utils/generateSuratPDF', () => ({
   downloadSuratPDF,
 }))
 vi.mock('@/features/cetak-surat/components/PdfCanvasPreview', () => ({
-  PdfCanvasPreview: ({ surat }) => <div data-testid="pdf-canvas-preview">{surat.id}</div>,
+  PdfCanvasPreview: ({ surat }: { surat: { id: string } }) => (
+    <div data-testid="pdf-canvas-preview">{surat.id}</div>
+  ),
 }))
 
 import { partialFixture } from '@/test/fixtures'

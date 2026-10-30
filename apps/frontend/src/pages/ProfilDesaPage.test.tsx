@@ -7,8 +7,9 @@ const api = vi.hoisted(() => ({ get: vi.fn() }))
 vi.mock('../lib/api', () => ({ default: api }))
 
 import { ProfilDesaPage } from './ProfilDesaPage'
+import type { Mock, MockInstance } from 'vitest'
 
-const renderAt = (entry) =>
+const renderAt = (entry: string) =>
   render(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
@@ -26,8 +27,8 @@ const REGULATION = {
 }
 
 describe('ProfilDesaPage scroll target', () => {
-  let scrollTo
-  let scrollIntoView
+  let scrollTo: MockInstance
+  let scrollIntoView: Mock
 
   beforeEach(() => {
     api.get.mockImplementation((url) =>
@@ -113,7 +114,7 @@ describe('ProfilDesaPage peraturan desa', () => {
     vi.restoreAllMocks()
   })
 
-  const mockApi = (regulations) =>
+  const mockApi = (regulations: () => Promise<unknown>) =>
     api.get.mockImplementation((url) =>
       url === '/api/public/regulations'
         ? regulations()

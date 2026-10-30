@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-const info = vi.hoisted(() => ({ village: null }))
+const info = vi.hoisted(() => ({ village: null as Record<string, unknown> | null }))
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: () => info,
 }))

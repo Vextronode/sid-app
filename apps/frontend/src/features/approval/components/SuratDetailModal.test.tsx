@@ -2,10 +2,12 @@ import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/features/surat/components/LetterExtrasPanel', () => ({
-  LetterExtrasPanel: () => null,
+  LetterExtrasPanel: (): null => null,
 }))
 vi.mock('@/features/cetak-surat/components/PdfCanvasPreview', () => ({
-  PdfCanvasPreview: ({ surat }) => <div data-testid="pdf-canvas-preview">{surat.id}</div>,
+  PdfCanvasPreview: ({ surat }: { surat: { id: string } }) => (
+    <div data-testid="pdf-canvas-preview">{surat.id}</div>
+  ),
 }))
 
 import type { ComponentProps } from 'react'
@@ -58,7 +60,7 @@ function renderModal(props: Partial<ComponentProps<typeof SuratDetailModal>>) {
 
 describe('SuratDetailModal (approver)', () => {
   beforeEach(() => {
-    vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.spyOn(window, 'open').mockImplementation((): null => null)
   })
 
   it('shows the draft in the modal and the RT decision in the footer', () => {

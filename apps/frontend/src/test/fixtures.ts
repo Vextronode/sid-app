@@ -1,7 +1,7 @@
 // Fixture test cukup berisi field yang dibaca komponen yang diuji; field lain
 // tidak ikut diperiksa. partialFixture menandai hal itu secara eksplisit dan
 // menjadi satu-satunya tempat cast untuk data uji sebagian.
-type DeepPartial<T> = T extends (...args: never[]) => unknown
+export type DeepPartial<T> = T extends (...args: never[]) => unknown
   ? T
   : T extends (infer U)[]
     ? DeepPartial<U>[]

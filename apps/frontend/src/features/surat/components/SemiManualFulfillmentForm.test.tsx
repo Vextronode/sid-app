@@ -12,11 +12,18 @@ vi.mock('../api/letterExtrasApi', () => ({ applyFulfillment, previewFulfillment 
 vi.mock('@/shared/lib/dialog', () => ({ confirmDialog }))
 
 import { SemiManualFulfillmentForm } from './SemiManualFulfillmentForm'
+import type { FulfillmentProposal } from '../api/letterExtrasApi'
+import { partialFixture } from '@/test/fixtures'
+import type { DeepPartial } from '@/test/fixtures'
 
-function renderForm(proposal, onDone = vi.fn()) {
+function renderForm(proposal: DeepPartial<FulfillmentProposal>, onDone = vi.fn()) {
   render(
     <MemoryRouter>
-      <SemiManualFulfillmentForm letterId="l-1" proposal={proposal} onDone={onDone} />
+      <SemiManualFulfillmentForm
+        letterId="l-1"
+        proposal={partialFixture<FulfillmentProposal>(proposal)}
+        onDone={onDone}
+      />
     </MemoryRouter>,
   )
 

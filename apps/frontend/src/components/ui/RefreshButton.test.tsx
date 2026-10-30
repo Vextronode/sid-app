@@ -6,7 +6,7 @@ import { RefreshButton } from './RefreshButton'
 
 describe('RefreshButton', () => {
   it('disables itself while the refresh is running and re-enables afterwards', async () => {
-    let finish
+    let finish: (value?: unknown) => void
     const onRefresh = vi.fn(
       () =>
         new Promise((resolve) => {

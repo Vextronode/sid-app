@@ -8,20 +8,23 @@ import { partialFixture } from '@/test/fixtures'
 import type { User } from '@/types'
 import ProfilePage from './ProfilePage'
 import AdminProfilePage from './admin/AdminProfilePage'
+import type { ReactNode } from 'react'
 
 vi.mock('@/lib/api', () => ({ default: { patch: vi.fn() } }))
 vi.mock('@/features/auth/contexts/AuthContext', () => ({ useAuth: vi.fn() }))
 vi.mock('@/components/layout/WargaLayout', () => ({
-  WargaLayout: ({ children }) => <div>{children}</div>,
+  WargaLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }))
 vi.mock('@/components/layout/OfficialLayout', () => ({
-  OfficialLayout: ({ children }) => <div>{children}</div>,
+  OfficialLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }))
-vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: () => null }))
-vi.mock('@/features/profil-warga/components/ProfilePhoto', () => ({ ProfilePhoto: () => null }))
-vi.mock('@/features/surat/components/SignatureCard', () => ({ SignatureCard: () => null }))
+vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null }))
+vi.mock('@/features/profil-warga/components/ProfilePhoto', () => ({
+  ProfilePhoto: (): null => null,
+}))
+vi.mock('@/features/surat/components/SignatureCard', () => ({ SignatureCard: (): null => null }))
 vi.mock('@/features/surat/components/SignatureRequestsCard', () => ({
-  SignatureRequestsCard: () => null,
+  SignatureRequestsCard: (): null => null,
 }))
 
 const mockedUseAuth = vi.mocked(useAuth, { partial: true, deep: true })

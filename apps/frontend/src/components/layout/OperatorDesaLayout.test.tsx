@@ -10,16 +10,17 @@ const { useAuth, useNotifications, reload } = vi.hoisted(() => ({
 
 vi.mock('@/features/auth/contexts/AuthContext', () => ({ useAuth }))
 vi.mock('@/features/kelola-wilayah/hooks/WilayahMasterProvider', () => ({
-  WilayahMasterProvider: ({ children }) => children,
+  WilayahMasterProvider: ({ children }: { children: ReactNode }) => children,
 }))
 vi.mock('@/features/notifikasi/hooks/useNotifications', () => ({
   default: useNotifications,
 }))
 vi.mock('@/features/notifikasi/components/NotificationPopover', () => ({
-  default: ({ open }) => (open ? <div>Notification list</div> : null),
+  default: ({ open }: { open: boolean }) => (open ? <div>Notification list</div> : null),
 }))
 
 import { OperatorDesaLayout } from './OperatorDesaLayout'
+import type { ReactNode } from 'react'
 
 describe('OperatorDesaLayout role regression', () => {
   beforeEach(() => {
@@ -84,7 +85,7 @@ describe('OperatorDesaLayout role regression', () => {
 describe('OperatorDesaLayout sidebar', () => {
   const originalMatchMedia = window.matchMedia
 
-  function mockViewport(mobile) {
+  function mockViewport(mobile: boolean) {
     window.matchMedia = vi.fn().mockReturnValue({
       matches: mobile,
       addEventListener: vi.fn(),

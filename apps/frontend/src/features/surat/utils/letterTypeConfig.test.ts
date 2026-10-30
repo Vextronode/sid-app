@@ -10,6 +10,7 @@ import { buildLetterFormData } from './letterFormData'
 import { partialFixture } from '@/test/fixtures'
 import type { LetterType, User } from '@/types'
 import type { SuratField } from '../types'
+import type { SuratFormValues } from '../types'
 
 const letterType = {
   id: 12,
@@ -192,7 +193,7 @@ describe('getSuratSchema', () => {
         },
       ],
     })
-    const issues = (values) =>
+    const issues = (values: SuratFormValues) =>
       (getSuratSchema(birth).safeParse(values).error?.issues ?? []).map((issue) => issue.path[0])
 
     expect(issues({ ibu: '', ayah: '' })).toEqual(expect.arrayContaining(['ibu', 'nama_ayah']))
@@ -530,7 +531,7 @@ describe('past dates and whole numbers', () => {
       ],
     }),
   )
-  const errorsOf = (values) =>
+  const errorsOf = (values: SuratFormValues) =>
     (getSuratSchema(config).safeParse(values).error?.issues ?? []).map((issue) => issue.message)
 
   it('rejects a date after today and amounts that are not whole and positive', () => {

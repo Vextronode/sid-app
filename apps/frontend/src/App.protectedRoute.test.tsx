@@ -3,16 +3,20 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const auth = vi.hoisted(() => ({ initialUser: null, isLoading: false, loginUser: null }))
+const auth = vi.hoisted(() => ({
+  initialUser: null as TestUser | null,
+  isLoading: false,
+  loginUser: null as TestUser | null,
+}))
 
 // AuthContext tiruan yang tetap menyimpan state, supaya login() memicu render
 // ulang GuestRoute seperti di aplikasi sungguhan.
 vi.mock('@/features/auth/contexts/AuthContext', async () => {
-  const TestAuthContext = createContext(null)
+  const TestAuthContext = createContext<unknown>(null)
 
-  function AuthProvider({ children }) {
+  function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState(auth.initialUser)
-    const login = useCallback((loggedUser) => setUser(loggedUser ?? null), [])
+    const login = useCallback((loggedUser: TestUser | null) => setUser(loggedUser ?? null), [])
     const value = useMemo(() => ({ user, isLoading: auth.isLoading, login }), [user, login])
     return <TestAuthContext.Provider value={value}>{children}</TestAuthContext.Provider>
   }
@@ -26,7 +30,10 @@ vi.mock('@/features/auth/hooks/useLoginForm', () => ({
     errors: { username: '', password: '', general: '' },
     isLoading: false,
     handleChange: vi.fn(),
-    handleSubmit: async (event, onSuccess) => {
+    handleSubmit: async (
+      event: { preventDefault?: () => void } | undefined,
+      onSuccess: (user: TestUser | null) => Promise<void>,
+    ) => {
       event?.preventDefault()
       await onSuccess(auth.loginUser)
     },
@@ -38,6 +45,9 @@ import LoginPage from '@/pages/LoginPage'
 import type { UserRole } from '@/types'
 
 import { GuestRoute, ProtectedRoute } from './App'
+import type { ReactNode } from 'react'
+
+type TestUser = { id?: number; role: string; must_change_password?: boolean }
 
 function CurrentPath() {
   const location = useLocation()

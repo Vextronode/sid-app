@@ -36,7 +36,8 @@ function renderTable() {
   )
 }
 
-const optionLabels = (select) => [...select.options].map((option) => option.textContent)
+const optionLabels = (select: HTMLSelectElement) =>
+  [...select.options].map((option) => option.textContent)
 const rowCount = () => screen.getAllByRole('row').length - 1
 
 describe('RtTable', () => {

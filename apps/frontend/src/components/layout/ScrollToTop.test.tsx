@@ -3,6 +3,7 @@ import { Link, MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ScrollToTop } from './ScrollToTop'
+import type { MockInstance } from 'vitest'
 
 function Beranda() {
   const navigate = useNavigate()
@@ -30,7 +31,7 @@ const renderAt = (entries: string[], index?: number) =>
   )
 
 describe('ScrollToTop', () => {
-  let scrollTo
+  let scrollTo: MockInstance
 
   beforeEach(() => {
     scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})

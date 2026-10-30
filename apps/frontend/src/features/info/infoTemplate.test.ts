@@ -5,10 +5,10 @@ import { hasSlot, renderBlocks, renderTemplate } from './infoTemplate'
 const context = {
   copy_fee: 'Rp500 per lembar',
   empty: '  ',
-  contact_email: null,
-  village: { name: 'Desa Cibenda', email: 'kantor@desa.test', phone: null },
+  contact_email: null as string | null,
+  village: { name: 'Desa Cibenda', email: 'kantor@desa.test', phone: null as string | null },
   list: ['Satu', 'Dua'],
-  emptyList: [],
+  emptyList: [] as string[],
 }
 
 const placeholders = { 'village.phone': 'TELEPON DESA', emptyList: 'DAFTAR' }

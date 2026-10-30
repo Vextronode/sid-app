@@ -9,15 +9,17 @@ vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, alertDialog: vi.fn() }))
 vi.mock('@/shared/lib/toast', () => ({ notifySuccess }))
 
 import TampilanPublikCard from './TampilanPublikCard'
+import { partialFixture } from '@/test/fixtures'
+import type { VillageProfileForm } from '../types'
 
-const profile = {
+const profile = partialFixture<VillageProfileForm>({
   logo_url: '/assets/image/lambang.webp',
   hero_image_url: null,
   office_hours: 'Senin – Jumat, 08.00 – 16.00 WIB',
   latitude: -7.6803137,
   longitude: 108.5513816,
   hero_photo_credit: '',
-}
+})
 
 const renderCard = (props = {}) => {
   const onUpload = vi.fn().mockResolvedValue(undefined)
@@ -28,7 +30,7 @@ const renderCard = (props = {}) => {
   return { onUpload, onEditText }
 }
 
-const pick = (label, file) =>
+const pick = (label: string | RegExp, file: File) =>
   fireEvent.change(screen.getByLabelText(label), { target: { files: [file] } })
 
 beforeEach(() => {

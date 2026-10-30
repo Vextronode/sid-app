@@ -9,7 +9,7 @@ const { getPopulationLogs, getLetterActivityLogs } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/features/activity-log/api', () => ({ getPopulationLogs, getLetterActivityLogs }))
-vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: () => null }))
+vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null }))
 
 import ActivityLogPage from './ActivityLogPage'
 

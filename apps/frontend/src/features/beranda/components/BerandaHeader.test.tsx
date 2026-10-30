@@ -140,7 +140,7 @@ describe('BerandaHeader', () => {
       expect(otherNav.getByRole('link', { name: 'Beranda' })).not.toHaveAttribute('aria-current')
     })
 
-    const navAt = (path) => {
+    const navAt = (path: string) => {
       const { container } = render(
         <MemoryRouter initialEntries={[path]}>
           <BerandaHeader content={getBerandaContent()} />
@@ -224,7 +224,10 @@ describe('BerandaHeader', () => {
   })
 
   describe('dropdown Tentang Desa (A3–A7)', () => {
-    const openDropdown = async (user, desktopNav) => {
+    const openDropdown = async (
+      user: ReturnType<typeof userEvent.setup>,
+      desktopNav: ReturnType<typeof within>,
+    ) => {
       const trigger = desktopNav.getByRole('button', { name: 'Tentang Desa' })
       await user.click(trigger)
       return trigger

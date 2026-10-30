@@ -123,7 +123,7 @@ describe('BerandaPage news section', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Belum ada berita yang dipublikasikan.')
   })
 
-  const newsItems = (count) =>
+  const newsItems = (count: number) =>
     Array.from({ length: count }, (_, i) => ({
       id: i + 1,
       title: `Berita ${i + 1}`,

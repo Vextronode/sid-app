@@ -10,7 +10,7 @@ import SuratDateTracker from './SuratDateTracker'
 
 vi.mock('@/features/surat/hooks/useLetters', () => ({ useLetters: vi.fn() }))
 vi.mock('@/features/cetak-surat/components/PdfCanvasPreview', () => ({
-  PdfCanvasPreview: () => null,
+  PdfCanvasPreview: (): null => null,
 }))
 
 const mockedUseLetters = vi.mocked(useLetters, { partial: true, deep: true })

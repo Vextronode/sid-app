@@ -113,7 +113,7 @@ describe('DownloadSuratMenu', () => {
   it('focuses the first option, moves with arrow keys and closes on Escape without bubbling', () => {
     // Meniru modal di bawah menu: menutup diri pada Escape yang belum ditangani.
     const outerEscape = vi.fn()
-    const onKeyDown = (event) => {
+    const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !event.defaultPrevented) outerEscape(event)
     }
     document.addEventListener('keydown', onKeyDown)

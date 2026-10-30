@@ -6,13 +6,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getBerandaContent } from '../berandaContent'
 import { formatAnnouncementUntil } from '../utils/announcement'
 import { AnnouncementBar } from './AnnouncementBar'
+import type { PublicAnnouncement } from '@/features/info-desa/usePublicVillageInfo'
+import { partialFixture } from '@/test/fixtures'
+import type { DeepPartial } from '@/test/fixtures'
 
 const inOneHour = () => new Date(Date.now() + 3_600_000).toISOString()
 
-const renderBar = (announcement) =>
+const renderBar = (announcement: DeepPartial<PublicAnnouncement>) =>
   render(
     <MemoryRouter>
-      <AnnouncementBar content={getBerandaContent()} announcement={announcement} />
+      <AnnouncementBar
+        content={getBerandaContent()}
+        announcement={partialFixture<PublicAnnouncement>(announcement)}
+      />
     </MemoryRouter>,
   )
 

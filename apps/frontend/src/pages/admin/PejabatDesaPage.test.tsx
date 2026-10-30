@@ -25,16 +25,16 @@ vi.mock('@/features/kelola-wilayah/api', () => wilayahApi)
 vi.mock('@/features/auth/contexts/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'staf-1', role: 'staf_sid' } }),
 }))
-vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: () => null }))
+vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null }))
 
 import PejabatDesaPage from './PejabatDesaPage'
 
-const official = (overrides) => ({
+const official = (overrides: Record<string, unknown>) => ({
   id: Math.random(),
   is_active: true,
-  rt_id: null,
-  rw_id: null,
-  hamlet_id: null,
+  rt_id: null as number | null,
+  rw_id: null as number | null,
+  hamlet_id: null as number | null,
   citizen: { name: 'Pejabat' },
   ...overrides,
 })
@@ -68,7 +68,7 @@ const openPromotion = async () => {
   return { user, dialog: screen.getByRole('heading', { name: 'Tetapkan Pejabat' }).closest('form') }
 }
 
-const option = (scope, name) => within(scope).getByRole('option', { name })
+const option = (scope: HTMLElement, name: string) => within(scope).getByRole('option', { name })
 
 describe('PejabatDesaPage - Tetapkan Pejabat', () => {
   beforeEach(() => {

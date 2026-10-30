@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useQueryRefresh } from './useQueryRefresh'
+import type { ReactNode } from 'react'
 
 function setup() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -10,7 +11,7 @@ function setup() {
   const fetchDashboard = vi.fn(async () => 'dashboard')
   const fetchOther = vi.fn(async () => 'other')
 
-  const wrapper = ({ children }) => (
+  const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   )
 

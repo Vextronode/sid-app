@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { MainLayout } from './MainLayout'
+import type { PublicAnnouncement } from '@/features/info-desa/usePublicVillageInfo'
 
 const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
 
@@ -12,7 +13,7 @@ vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
 }))
 
 vi.mock('@/features/auth/contexts/AuthContext', () => ({
-  useAuth: () => ({ user: null, isLoading: false }),
+  useAuth: () => ({ user: null as unknown, isLoading: false }),
 }))
 
 const renderLayout = () =>
@@ -59,7 +60,7 @@ describe('MainLayout', () => {
   // Bar pengumuman menempel di bawah header di semua halaman publik.
   describe('announcement bar', () => {
     const bar = () => screen.queryByRole('region', { name: 'Pengumuman desa' })
-    const withAnnouncement = (announcement) =>
+    const withAnnouncement = (announcement: Partial<PublicAnnouncement> | null) =>
       mockedUsePublicVillageInfo.mockReturnValue({
         village: null,
         stats: null,

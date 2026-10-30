@@ -106,7 +106,7 @@ describe('AppHeader', () => {
     const user = userEvent.setup()
     const onHelp = vi.fn()
     const { mobileMenu } = renderHeader({
-      extraActions: [{ label: 'Pusat Bantuan', icon: () => null, onClick: onHelp }],
+      extraActions: [{ label: 'Pusat Bantuan', icon: (): null => null, onClick: onHelp }],
     })
     const button = mobileMenu.getByRole('button', { name: 'Menu' })
 

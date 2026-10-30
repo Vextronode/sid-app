@@ -8,27 +8,33 @@ const { getLetterDetail, downloadSuratPDF } = vi.hoisted(() => ({
 }))
 
 vi.mock('../api/letterExtrasApi', () => ({ getLetterDetail }))
-vi.mock('./LetterExtrasPanel', () => ({ LetterExtrasPanel: () => null }))
+vi.mock('./LetterExtrasPanel', () => ({ LetterExtrasPanel: (): null => null }))
 vi.mock('@/features/cetak-surat/utils/generateSuratPDF', () => ({ downloadSuratPDF }))
 vi.mock('@/features/cetak-surat/components/PdfCanvasPreview', () => ({
-  PdfCanvasPreview: ({ surat }) => <div data-testid="pdf-canvas-preview">{surat.id}</div>,
+  PdfCanvasPreview: ({ surat }: { surat: { id: string } }) => (
+    <div data-testid="pdf-canvas-preview">{surat.id}</div>
+  ),
 }))
 
 import { DetailSuratModal } from './DetailSuratModal'
+import type { Letter, LetterListItem } from '@/types'
+import { partialFixture } from '@/test/fixtures'
+import type { DeepPartial } from '@/test/fixtures'
 
-function renderModal(data) {
+// Baris daftar; approvals ikut bila detail surat sudah digabung.
+function renderModal(data: DeepPartial<LetterListItem & Pick<Letter, 'approvals'>>) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   return render(
     <QueryClientProvider client={client}>
-      <DetailSuratModal data={data} onClose={vi.fn()} />
+      <DetailSuratModal data={partialFixture<LetterListItem>(data)} onClose={vi.fn()} />
     </QueryClientProvider>,
   )
 }
 
 const approvedLetter = {
   id: 'letter-1',
-  status: 'approved',
+  status: 'approved' as const,
   letter_number: '470/001',
   current_step_order: 3,
   letter_type: { name: 'Surat Keterangan Domisili' },

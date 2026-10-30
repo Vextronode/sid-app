@@ -14,8 +14,8 @@ const { confirmDialog, notifySuccess } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/features/pekerjaan/api', () => api)
-vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: () => null }))
-vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, currentDialog: () => null }))
+vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null }))
+vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, currentDialog: (): null => null }))
 vi.mock('@/shared/lib/toast', () => ({ notifySuccess }))
 
 import KelolaPekerjaanPage from './KelolaPekerjaanPage'

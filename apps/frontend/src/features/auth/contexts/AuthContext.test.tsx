@@ -10,8 +10,9 @@ vi.mock('@/lib/api', () => ({ default: api }))
 
 import { ROLE_FORBIDDEN_EVENT } from '@/lib/authEvents'
 import { AuthProvider, useAuth } from './AuthContext'
+import type { ReactNode } from 'react'
 
-function wrapper({ children }) {
+function wrapper({ children }: { children: ReactNode }) {
   return <AuthProvider>{children}</AuthProvider>
 }
 
@@ -55,7 +56,7 @@ describe('AuthContext session regression', () => {
   it('runs onLoggedOut while the user is still set, right before clearing it', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper })
     await waitFor(() => expect(result.current.isLoading).toBe(false))
-    const userAtCallback = []
+    const userAtCallback: unknown[] = []
 
     await act(async () => {
       await result.current.logout({
