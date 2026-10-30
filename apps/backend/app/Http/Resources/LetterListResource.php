@@ -40,6 +40,8 @@ class LetterListResource extends JsonResource
                 'is_final' => $step->is_final,
             ] : null,
             'rejected_at_step' => $this->rejected_at_step,
+            // Alasan dari keputusan tolak terakhir (letter_approvals.notes).
+            'rejection_reason' => $status === 'rejected' ? $this->latestRejection?->notes : null,
             'is_overdue' => (bool) $this->is_overdue,
             'awaiting_signatures' => $status === 'pending' && $this->current_step_order === 0,
             'needs_fulfillment' => $status === 'approved'

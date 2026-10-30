@@ -308,6 +308,13 @@ LetterListItem:
     rejected_at_step:
       type: integer
       nullable: true
+    rejection_reason:
+      type: string
+      nullable: true
+      example: "Fotokopi KK tidak terbaca."
+      description: |
+        Catatan keputusan tolak terakhir (`letter_approvals.notes`, relasi
+        `latestRejection`). `null` bila status bukan `rejected`.
     is_overdue:
       type: boolean
     awaiting_signatures:

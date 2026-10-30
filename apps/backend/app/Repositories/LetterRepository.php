@@ -450,6 +450,7 @@ class LetterRepository
                 'letterType:id,name,code,data_action,signed_by_village_head,requires_result_upload',
                 'citizen:id,name',
                 'latestResult',
+                'latestRejection',
                 'flow:id',
                 'flow.steps:id,flow_id,step_order,approver_position,is_final',
                 'approvals:id,letter_id,flow_step_id,approved_by,deadline_at',

@@ -140,6 +140,40 @@ class FamilyControllerTest extends TestCase
             ->assertJsonFragment(['id' => $family->id, 'head_of_family' => ['id' => $wife->id, 'name' => 'Tini']]);
     }
 
+    public function test_family_detail_lists_its_members_but_the_list_does_not(): void
+    {
+        $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
+        $user = $this->stafSid($village);
+        $family = Family::factory()->create(['village_id' => $village->id]);
+        $head = Citizen::factory()->create([
+            'village_id' => $village->id,
+            'family_id' => $family->id,
+            'family_role' => 'kepala_keluarga',
+            'name' => 'Engkos',
+        ]);
+        $child = Citizen::factory()->create([
+            'village_id' => $village->id,
+            'family_id' => $family->id,
+            'family_role' => 'anak',
+            'name' => 'Asep',
+        ]);
+
+        // Daftar anggota di modal edit KK.
+        $this->actingAs($user)
+            ->getJson("/api/families/{$family->id}")
+            ->assertOk()
+            ->assertJsonCount(2, 'data.members')
+            ->assertJsonFragment(['id' => $head->id, 'name' => 'Engkos', 'family_role' => 'kepala_keluarga'])
+            ->assertJsonFragment(['id' => $child->id, 'name' => 'Asep', 'family_role' => 'anak']);
+
+        // Daftar KK cukup jumlah anggota.
+        $this->actingAs($user)
+            ->getJson('/api/families')
+            ->assertOk()
+            ->assertJsonMissingPath('data.0.members')
+            ->assertJsonPath('data.0.members_count', 2);
+    }
+
     public function test_no_kk_hash_is_generated_automatically(): void
     {
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
