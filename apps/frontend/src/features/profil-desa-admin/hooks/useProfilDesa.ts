@@ -15,6 +15,7 @@ import type {
   VillageProfileForm,
   VillageProfilePayload,
 } from '../types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // ==========================================
 // POSISI YANG TIDAK TAMPIL DI PROFIL DESA
@@ -170,16 +171,11 @@ export function useProfilDesa() {
     try {
       await Promise.all([fetchProfile(), fetchOfficials()])
     } catch (err) {
-      const message = err?.response?.data?.message ?? 'Data profil desa gagal dimuat.'
+      const message = getApiErrorMessage(err, 'Data profil desa gagal dimuat.')
 
       setError(message)
 
-      console.error('GET PROFIL DESA ERROR:', {
-        status: err?.response?.status,
-        data: err?.response?.data,
-        url: err?.config?.url,
-        method: err?.config?.method,
-      })
+      console.error('GET PROFIL DESA ERROR:', err)
     } finally {
       setLoading(false)
     }
@@ -287,16 +283,11 @@ export function useProfilDesa() {
 
       return updated
     } catch (err) {
-      const message = err?.response?.data?.message ?? 'Profil desa gagal diperbarui.'
+      const message = getApiErrorMessage(err, 'Profil desa gagal diperbarui.')
 
       setError(message)
 
-      console.error('UPDATE PROFIL DESA ERROR:', {
-        status: err?.response?.status,
-        data: err?.response?.data,
-        url: err?.config?.url,
-        method: err?.config?.method,
-      })
+      console.error('UPDATE PROFIL DESA ERROR:', err)
 
       throw err
     } finally {
@@ -347,16 +338,11 @@ export function useProfilDesa() {
        */
       await fetchOfficials()
     } catch (err) {
-      const message = err?.response?.data?.message ?? 'Data perangkat desa gagal diperbarui.'
+      const message = getApiErrorMessage(err, 'Data perangkat desa gagal diperbarui.')
 
       setError(message)
 
-      console.error('UPDATE OFFICIAL ERROR:', {
-        status: err?.response?.status,
-        data: err?.response?.data,
-        url: err?.config?.url,
-        method: err?.config?.method,
-      })
+      console.error('UPDATE OFFICIAL ERROR:', err)
 
       throw err
     } finally {

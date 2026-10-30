@@ -11,6 +11,7 @@ import { usePageSize } from '@/components/ui/usePageSize'
 import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
 import type { Citizen, Id } from '@/types'
 import { useWilayahFilter } from './useWilayahFilter'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 type CitizenPayload = Record<string, unknown>
 
@@ -54,7 +55,7 @@ export function useWargaList() {
       setTotalItems(response.data?.meta?.total ?? response.data?.total ?? 0)
     } catch (err) {
       console.error('GET CITIZENS ERROR', err)
-      setError(err?.response?.data?.message || 'Gagal memuat data warga.')
+      setError(getApiErrorMessage(err, 'Gagal memuat data warga.'))
     } finally {
       setLoading(false)
     }

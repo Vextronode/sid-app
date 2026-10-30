@@ -6,6 +6,7 @@ import { alertDialog, confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import type { Id, LetterApproval, LetterCurrentStep, UserRole } from '@/types'
 import { canDecideOnLetter } from '../utils/canDecide'
+import { getApiErrorMessage, apiErrorStatus } from '@/shared/lib/apiError'
 
 type ApprovalStepRendererProps = {
   currentStep: Pick<LetterCurrentStep, 'approver_position' | 'is_final'> | null | undefined
@@ -93,13 +94,13 @@ export default function ApprovalStepRenderer({
       )
       if (closeOnDecision && onClose) onClose()
     } catch (error) {
-      console.error('APPROVE ERROR:', error.response?.data ?? error)
-      if (error.response?.status === 409 && onConflict) {
+      console.error('APPROVE ERROR:', error)
+      if (apiErrorStatus(error) === 409 && onConflict) {
         await onConflict()
       }
       alertDialog({
         title: 'Gagal menyetujui',
-        message: error.response?.data?.message ?? 'Gagal menyetujui surat.',
+        message: getApiErrorMessage(error, 'Gagal menyetujui surat.'),
       })
     } finally {
       setIsProcessing(false)
@@ -124,13 +125,13 @@ export default function ApprovalStepRenderer({
       notifySuccess('Penolakan surat berhasil dikirim ke pemohon.')
       if (closeOnDecision && onClose) onClose()
     } catch (error) {
-      console.error('REJECT ERROR:', error.response?.data ?? error)
-      if (error.response?.status === 409 && onConflict) {
+      console.error('REJECT ERROR:', error)
+      if (apiErrorStatus(error) === 409 && onConflict) {
         await onConflict()
       }
       alertDialog({
         title: 'Gagal menolak',
-        message: error.response?.data?.message ?? 'Gagal menolak surat.',
+        message: getApiErrorMessage(error, 'Gagal menolak surat.'),
       })
     } finally {
       setIsProcessing(false)

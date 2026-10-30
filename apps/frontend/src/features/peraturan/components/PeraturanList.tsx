@@ -12,6 +12,7 @@ import { getPublicRegulations } from '@/features/peraturan/api'
 import type { Regulation } from '@/features/peraturan/api'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { errorBox, stateBox } from '@/features/beranda/publicClasses'
+import { getApiErrorMessage, apiErrorStatus } from '@/shared/lib/apiError'
 
 function formatDate(value: string | null | undefined) {
   if (!value) return null
@@ -40,8 +41,8 @@ export function PeraturanList() {
       } catch (err) {
         // Backend menjawab 404 bila belum ada peraturan; itu keadaan kosong, bukan error.
         if (!active) return
-        if (err?.response?.status === 404) setRegulations([])
-        else setError(err?.response?.data?.message || 'Gagal memuat peraturan desa.')
+        if (apiErrorStatus(err) === 404) setRegulations([])
+        else setError(getApiErrorMessage(err, 'Gagal memuat peraturan desa.'))
       } finally {
         if (active) setLoading(false)
       }

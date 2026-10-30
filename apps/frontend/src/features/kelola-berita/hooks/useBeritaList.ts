@@ -65,12 +65,7 @@ export function useBeritaList() {
 
       setBerita([...firstData, ...remainingData])
     } catch (error) {
-      console.error('GET BERITA ERROR:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        url: error.config?.url,
-        method: error.config?.method,
-      })
+      console.error('GET BERITA ERROR:', error)
 
       setBerita([])
     }

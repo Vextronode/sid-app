@@ -15,9 +15,7 @@
     "noEmit": true,
     "skipLibCheck": true,
 
-    "strict": false,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
+    "strict": true,
     "allowJs": false
   },
   "include": ["src", "vite.config.ts", "eslint.config.ts"]

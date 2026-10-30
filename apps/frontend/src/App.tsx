@@ -47,8 +47,8 @@ import { getOperatorAllowedRoles } from '@/features/operator-desa/constants/role
 import { letterTargetForRole, roleHomePath } from '@/features/auth/utils/letterLinks'
 
 // Halaman yang diekspor dengan nama (bukan default) dimuat lazy.
-const lazyNamed = <K extends string, C extends ComponentType<never>>(
-  loader: () => Promise<Record<K, C>>,
+const lazyNamed = <K extends string, P extends object>(
+  loader: () => Promise<Record<K, ComponentType<P>>>,
   name: K,
 ) => lazy(() => loader().then((module) => ({ default: module[name] })))
 

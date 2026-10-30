@@ -20,6 +20,7 @@ import { confirmDialog } from '@/shared/lib/dialog'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 import type { LetterListItem } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // Nilai ?status= di URL -> status surat di backend.
 const STATUS_PARAM: Record<string, string> = {
@@ -82,7 +83,7 @@ export default function DaftarSuratSayaPage() {
 
       await refresh()
     } catch (requestError) {
-      setDeleteError(requestError?.response?.data?.message || 'Gagal menghapus surat.')
+      setDeleteError(getApiErrorMessage(requestError, 'Gagal menghapus surat.'))
     } finally {
       setDeletingId(null)
     }

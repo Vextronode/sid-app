@@ -16,7 +16,7 @@
 | Layer | Teknologi | Catatan |
 |---|---|---|
 | UI | React 19 (function component) | |
-| Bahasa | TypeScript (`.ts`/`.tsx`, `tsconfig.json`) | `noImplicitAny` dan `strictNullChecks` aktif; `strict` penuh belum (diaktifkan bertahap); `npm run typecheck` wajib 0 error dan dijalankan CI (Vite hanya membuang tipe, tidak memeriksanya). Aturan penulisan di `DEV-CODE-001` A.8 |
+| Bahasa | TypeScript (`.ts`/`.tsx`, `tsconfig.json`) | `strict: true` (termasuk `noImplicitAny`, `strictNullChecks`, `useUnknownInCatchVariables`); `npm run typecheck` wajib 0 error dan dijalankan CI (Vite hanya membuang tipe, tidak memeriksanya). Aturan penulisan di `DEV-CODE-001` A.8 |
 | Build | Vite 8 (Rolldown) | Alias `@` → `src`; `build` membuang `console.*`/`debugger`; vendor dipisah ke chunk `react`, `charts`, `pdfjs` |
 | Styling | Tailwind CSS 4 via `@tailwindcss/vite` | Token di `index.css` (`@theme static`, palet `pb-*`) dan CSS custom property `--sid-*` di `styles/sid-global.css`; font Bricolage Grotesque & Plus Jakarta Sans (`@fontsource`) |
 | Server state | TanStack Query 5 | `staleTime` 60 detik, `retry` 1, tanpa refetch saat fokus |
@@ -229,3 +229,4 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 | 1.10 | 2026-10-31 | `pages` bebas `any` implisit: tipe respons log aktivitas, pengumuman, halaman info, peraturan, pengaturan & alur persetujuan, calon pejabat; form Edit Warga diisi lengkap lewat `citizenToForm` (sebelumnya data di luar 10 isian terhapus saat disimpan); `toDetail` yang tidak dipakai dihapus |
 | 1.11 | 2026-10-31 | `noImplicitAny: true` di `tsconfig.json` (kode aplikasi dan test bebas `any` implisit); `DeepPartial` diekspor dari `src/test/fixtures.ts` |
 | 1.12 | 2026-10-31 | `strictNullChecks: true` di `tsconfig.json`; helper test `present()` di `src/test/fixtures.ts`; `FamilyNumberValue` untuk No. KK di Data Warga; relasi wilayah pejabat (`rt`/`rw`/`hamlet`) boleh `null` |
+| 1.13 | 2026-10-31 | `strict: true` di `tsconfig.json`, migrasi TypeScript selesai; galat `catch` dibaca lewat `getApiErrorMessage`, `apiErrorStatus`, dan `apiErrorBody` (`shared/lib/apiError.ts`) |

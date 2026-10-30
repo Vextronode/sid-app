@@ -13,6 +13,7 @@ import { Send, Image as ImageIcon } from 'lucide-react'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
+import type { News } from '@/types'
 
 // Satu berita wajib punya 1 kategori, maksimal 2.
 const MAX_KATEGORI = 2
@@ -26,12 +27,7 @@ export type BeritaForm = {
 }
 
 // Berita yang diedit (NewsResource).
-type BeritaInitialData = {
-  title?: string
-  content?: string
-  thumbnail?: string | null
-  categories?: { id: number }[]
-}
+type BeritaInitialData = News
 
 type BeritaFormModalProps = {
   open: boolean

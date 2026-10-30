@@ -16,6 +16,7 @@ import { notifySuccess } from '@/shared/lib/toast'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 import type { LetterListItem } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // Nomor langkah ditambahkan CSS (.sid-apply), jadi judul cukup isinya.
 const APPLY_HEADINGS = { fields: 'Isi data surat', signatures: 'Tanda tangan' }
@@ -82,7 +83,7 @@ export default function SuratSayaPejabatPage() {
 
       await loadLetters()
     } catch (requestError) {
-      setError(requestError?.response?.data?.message || 'Gagal menghapus surat.')
+      setError(getApiErrorMessage(requestError, 'Gagal menghapus surat.'))
     } finally {
       setDeletingId(null)
     }

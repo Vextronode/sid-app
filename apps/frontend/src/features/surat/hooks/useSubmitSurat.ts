@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { submitSurat } from '../api/suratApi'
+import { apiErrorStatus, apiErrorBody } from '@/shared/lib/apiError'
 
 export function useSubmitSurat() {
   const [loading, setLoading] = useState(false)
@@ -19,8 +20,8 @@ export function useSubmitSurat() {
 
       return data
     } catch (err) {
-      if (err.response?.status === 422) {
-        setErrors(err.response.data.errors ?? {})
+      if (apiErrorStatus(err) === 422) {
+        setErrors(apiErrorBody(err)?.errors ?? {})
       }
 
       throw err

@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { AxiosResponse } from 'axios'
-import type { ApiError, LetterType, ResourceResponse } from '@/types'
+import type { LetterType, ResourceResponse } from '@/types'
+import { apiErrorBody, getApiErrorMessage } from '@/shared/lib/apiError'
 import { Power, Save } from 'lucide-react'
 
 import { getLetterTypes, updateLetterType } from '../api/letterTypeApi'
@@ -32,13 +33,14 @@ function getResponseData(response: AxiosResponse<ResourceResponse<LetterType>>) 
   return response?.data?.data
 }
 
-function getRequestErrorMessage(requestError: ApiError, fallback: string) {
-  const validationErrors = requestError?.response?.data?.errors
+// Semua pesan validasi digabung; selain itu pesan dari backend.
+function getRequestErrorMessage(requestError: unknown, fallback: string) {
+  const validationErrors = apiErrorBody(requestError)?.errors
   const validationMessage = validationErrors
     ? Object.values(validationErrors).flat().filter(Boolean).join(' ')
     : ''
 
-  return validationMessage || requestError?.response?.data?.message || fallback
+  return validationMessage || apiErrorBody(requestError)?.message || fallback
 }
 
 // reloadKey: dinaikkan halaman induk (tombol Refresh) untuk memuat ulang
@@ -70,7 +72,7 @@ export default function LetterTypeSettingsPanel({ reloadKey = 0 }: { reloadKey?:
         ),
       )
     } catch (requestError) {
-      setError(requestError?.response?.data?.message || 'Gagal memuat konfigurasi jenis surat.')
+      setError(getApiErrorMessage(requestError, 'Gagal memuat konfigurasi jenis surat.'))
     } finally {
       setLoading(false)
     }

@@ -13,6 +13,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { notifySuccess } from '@/shared/lib/toast'
 import type { ApprovalSetting } from '@/features/approval/api'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // Jam batas & pengingat diketik sebagai teks sebelum disimpan.
 type SettingRow = Omit<ApprovalSetting, 'deadline_hours' | 'reminder_hours'> & {
@@ -38,9 +39,9 @@ export default function ApprovalSettingPage() {
 
         setSettings(response.data?.data ?? [])
       } catch (err) {
-        console.error('GET APPROVAL SETTINGS ERROR:', err.response?.data ?? err)
+        console.error('GET APPROVAL SETTINGS ERROR:', err)
 
-        setError(err.response?.data?.message ?? 'Gagal memuat konfigurasi deadline approval.')
+        setError(getApiErrorMessage(err, 'Gagal memuat konfigurasi deadline approval.'))
       } finally {
         setLoading(false)
       }
@@ -110,9 +111,9 @@ export default function ApprovalSettingPage() {
         `Konfigurasi ${APPROVAL_SETTING_LABELS[setting.approval_level]} berhasil disimpan.`,
       )
     } catch (err) {
-      console.error('UPDATE APPROVAL SETTING ERROR:', err.response?.data ?? err)
+      console.error('UPDATE APPROVAL SETTING ERROR:', err)
 
-      setError(err.response?.data?.message ?? 'Gagal menyimpan konfigurasi deadline approval.')
+      setError(getApiErrorMessage(err, 'Gagal menyimpan konfigurasi deadline approval.'))
     } finally {
       setSavingId(null)
     }

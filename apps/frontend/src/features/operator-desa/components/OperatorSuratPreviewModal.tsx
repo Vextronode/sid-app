@@ -32,6 +32,7 @@ import {
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealLetterApplicantNik } from '@/shared/lib/identityApi'
 import type { Letter, LetterListItem } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 export default function OperatorSuratPreviewModal({
   surat: listedSurat,
@@ -62,8 +63,8 @@ export default function OperatorSuratPreviewModal({
         if (isMounted) setSurat(detail)
       } catch (error) {
         if (isMounted) {
-          console.error('Gagal mengambil detail surat operator:', error.response?.data ?? error)
-          setDetailError(error.response?.data?.message ?? 'Gagal mengambil detail surat.')
+          console.error('Gagal mengambil detail surat operator:', error)
+          setDetailError(getApiErrorMessage(error, 'Gagal mengambil detail surat.'))
         }
       } finally {
         if (isMounted) setDetailLoading(false)

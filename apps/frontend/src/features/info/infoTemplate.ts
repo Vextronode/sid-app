@@ -33,7 +33,13 @@ export type TemplateContext = Record<string, unknown>
 export type TemplatePlaceholders = Record<string, string>
 
 function lookup(context: TemplateContext, path: string) {
-  return path.split('.').reduce((value, key) => value?.[key], context)
+  return path
+    .split('.')
+    .reduce<unknown>(
+      (value, key) =>
+        value && typeof value === 'object' ? (value as Record<string, unknown>)[key] : undefined,
+      context,
+    )
 }
 
 function formatDate(value: string) {

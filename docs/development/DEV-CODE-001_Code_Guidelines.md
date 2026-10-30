@@ -63,7 +63,7 @@ Urutan import: (1) pustaka eksternal, (2) modul internal lewat alias `@/` (`@/li
 
 ### A.8 TypeScript
 
-Source frontend sedang dimigrasi bertahap dari JavaScript. `noImplicitAny` dan `strictNullChecks` di `tsconfig.json` sudah aktif: parameter, props, dan state tanpa tipe ditolak typecheck, dan nilai yang mungkin `null`/`undefined` harus diperiksa sebelum dipakai. Flag `strict` lainnya belum aktif. Aturan berikut berlaku untuk kode baru dan kode yang sedang diubah:
+Source frontend ditulis dalam TypeScript dengan `strict: true` di `tsconfig.json`: parameter, props, dan state tanpa tipe ditolak typecheck, dan nilai yang mungkin `null`/`undefined` harus diperiksa sebelum dipakai. Aturan berikut berlaku untuk kode baru dan kode yang sedang diubah:
 
 1. Props komponen, parameter fungsi yang diekspor, dan nilai balik hook diberi tipe eksplisit.
 2. Tipe data domain/API yang dipakai lintas fitur (user, surat, penduduk, wilayah, profil desa) disimpan di `src/types/`; tipe yang hanya dipakai satu fitur di `features/<fitur>/types.ts`. Bentuk tipe mengikuti kontrak di `docs/api_spec`.
@@ -85,6 +85,7 @@ Source frontend sedang dimigrasi bertahap dari JavaScript. `noImplicitAny` dan `
 11. Objek konstanta berisi nilai tetap ditulis `as const satisfies Record<string, T>` (mis. `SURAT_STATUS` terhadap `LetterStatus`) agar nilainya bertipe literal dan tetap diperiksa terhadap tipe domainnya.
 12. Helper dan komponen yang menerima surat dari baris daftar maupun dari detail memakai tipe sempit berisi field yang dibaca saja, mis. `Partial<Pick<Letter, 'status' | 'expires_at'>>`, bukan `Letter` utuh.
 13. Nilai yang mungkin `null` diperiksa dengan guard atau `?.`/`??`, tidak dengan non-null assertion `!`. Kunci peta yang mungkin kosong diperiksa dulu: `(key ? LABELS[key] : undefined) ?? fallback`.
+14. Variabel `catch` bertipe `unknown`. Pesan untuk pengguna diambil dengan `getApiErrorMessage(error, fallback)`, status HTTP dengan `apiErrorStatus(error)`, dan isi respons (`errors`, `message`) dengan `apiErrorBody(error)` dari `shared/lib/apiError.ts`. Log debug cukup `console.error(label, error)`.
 
 ---
 

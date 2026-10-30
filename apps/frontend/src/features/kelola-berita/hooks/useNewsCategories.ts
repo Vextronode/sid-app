@@ -19,7 +19,7 @@ export function useNewsCategories() {
       const response = await getNewsCategories()
       setCategories(response?.data?.data ?? [])
     } catch (error) {
-      console.error('GET KATEGORI BERITA ERROR:', error.response?.status, error.response?.data)
+      console.error('GET KATEGORI BERITA ERROR:', error)
       setCategories([])
     }
   }, [])

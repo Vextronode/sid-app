@@ -31,6 +31,7 @@ import { usePageSize } from '@/components/ui/usePageSize'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 import type { LetterListItem } from '@/types'
+import { apiErrorStatus } from '@/shared/lib/apiError'
 
 const EMPTY_EXPORT_MESSAGE = 'Tidak ada data surat untuk diunduh. Unduhan laporan gagal.'
 
@@ -101,7 +102,7 @@ export default function OperatorSuratListPage() {
         search: debouncedSearch || undefined,
       })
     } catch (error) {
-      const isEmpty = error?.response?.status === 422
+      const isEmpty = apiErrorStatus(error) === 422
       alertDialog({
         title: isEmpty ? 'Data kosong' : 'Unduhan gagal',
         tone: isEmpty ? 'warning' : 'error',

@@ -42,6 +42,7 @@ import { alertDialog, confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import type { BeritaForm } from '@/features/kelola-berita/components/BeritaFormModal'
 import type { News } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 export default function KelolaBeritaPage() {
   const {
@@ -117,16 +118,11 @@ export default function KelolaBeritaPage() {
       setModalOpen(false)
       setEditingBerita(null)
     } catch (error) {
-      console.error('DELETE BERITA ERROR:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        url: error.config?.url,
-        method: error.config?.method,
-      })
+      console.error('DELETE BERITA ERROR:', error)
 
       alertDialog({
         title: 'Terjadi kesalahan',
-        message: error.response?.data?.message ?? 'Berita gagal dihapus.',
+        message: getApiErrorMessage(error, 'Berita gagal dihapus.'),
       })
     }
   }
@@ -161,12 +157,7 @@ export default function KelolaBeritaPage() {
       setModalOpen(false)
       setEditingBerita(null)
     } catch (error) {
-      console.error('SUBMIT BERITA ERROR:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        url: error.config?.url,
-        method: error.config?.method,
-      })
+      console.error('SUBMIT BERITA ERROR:', error)
 
       throw error
     }
@@ -198,7 +189,7 @@ export default function KelolaBeritaPage() {
     } catch (error) {
       alertDialog({
         title: 'Terjadi kesalahan',
-        message: error.response?.data?.message ?? 'Berita gagal dipublikasikan.',
+        message: getApiErrorMessage(error, 'Berita gagal dipublikasikan.'),
       })
     }
   }

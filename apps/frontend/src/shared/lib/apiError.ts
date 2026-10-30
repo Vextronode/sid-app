@@ -28,6 +28,23 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
   return fallback
 }
 
+// Galat dibaca secara struktural: galat axios maupun objek tiruan di test.
+type ErrorLike = { response?: { status?: number; data?: ApiErrorBody } }
+
+function asErrorLike(error: unknown): ErrorLike | undefined {
+  return typeof error === 'object' && error !== null ? (error as ErrorLike) : undefined
+}
+
+// Status HTTP galat API; undefined bila tidak ada respons (mis. jaringan putus).
+export function apiErrorStatus(error: unknown): number | undefined {
+  return asErrorLike(error)?.response?.status
+}
+
+// Isi respons galat API ({ message, errors }); undefined bila tidak ada respons.
+export function apiErrorBody(error: unknown): ApiErrorBody | undefined {
+  return asErrorLike(error)?.response?.data
+}
+
 // Error yang pesannya aman ditampilkan apa adanya.
 export function userFacingError(message: string): UserFacingError {
   const error = new Error(message) as UserFacingError

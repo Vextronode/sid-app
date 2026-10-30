@@ -352,8 +352,7 @@ export default function DataWargaPage() {
     } catch (err) {
       setImportStatus({
         ...emptyImportStatus,
-        error:
-          err?.response?.data?.message || 'Gagal mengimpor data. Periksa kembali format file Anda.',
+        error: getApiErrorMessage(err, 'Gagal mengimpor data. Periksa kembali format file Anda.'),
       })
     }
   }

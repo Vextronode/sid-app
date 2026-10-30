@@ -4,6 +4,7 @@ import { usePageSize } from '@/components/ui/usePageSize'
 import { createFamily, deleteFamily, getFamilies, getFamilyOptions, updateFamily } from '../api'
 import type { Family, FamilyOption, Id } from '@/types'
 import { useWilayahFilter } from './useWilayahFilter'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 type FamilyPayload = Record<string, unknown>
 
@@ -37,7 +38,7 @@ export function useFamilyList() {
       setTotalPages(response.data?.meta?.last_page ?? 1)
       setTotalItems(response.data?.meta?.total ?? (Array.isArray(result) ? result.length : 0))
     } catch (err) {
-      setError(err?.response?.data?.message || 'Gagal memuat data kartu keluarga.')
+      setError(getApiErrorMessage(err, 'Gagal memuat data kartu keluarga.'))
     } finally {
       setLoading(false)
     }

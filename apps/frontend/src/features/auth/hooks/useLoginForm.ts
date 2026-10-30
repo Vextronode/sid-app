@@ -174,7 +174,9 @@ export function useLoginForm() {
       }
 
       return loggedUser
-    } catch (error) {
+    } catch (caught) {
+      // Galat dari permintaan login (axios).
+      const error = caught as LoginError
       const status = error.response?.status
       const backendErrors = getValidationErrors(error)
       const backendMessage = getBackendMessage(error)

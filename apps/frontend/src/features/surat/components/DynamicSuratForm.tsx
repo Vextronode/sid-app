@@ -4,7 +4,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { getApiErrorMessage } from '@/shared/lib/apiError'
+import { getApiErrorMessage, apiErrorBody } from '@/shared/lib/apiError'
 import type { LetterType, Occupation } from '@/types'
 import type { ApplicantFamilyMember, SuratFormConfig, SuratFormValues, VillageArea } from '../types'
 import type { NikLookupResult } from './NikLookupHint'
@@ -282,7 +282,7 @@ export function DynamicSuratForm({
 
       setSubmitError(getApiErrorMessage(error, 'Gagal mengirim surat.'))
       // Galat isian dari server (mis. urutan tanggal) juga tampil di isiannya.
-      Object.entries(error?.response?.data?.errors ?? {}).forEach(([key, messages]) => {
+      Object.entries(apiErrorBody(error)?.errors ?? {}).forEach(([key, messages]) => {
         const name = key.startsWith('payload.') ? key.slice('payload.'.length) : null
 
         if (name && !name.includes('.') && config.fields.some((field) => field.name === name)) {

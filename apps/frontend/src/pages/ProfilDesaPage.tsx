@@ -33,6 +33,7 @@ import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import type { PublicStats, PublicVillageHead } from '@/features/info-desa/usePublicVillageInfo'
 import type { Village } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // GET /api/public/village-profile: pejabat (PublicOfficialResource), jabatan
 // Kasi/Kaur/Staf berurutan, dan dusun aktif.
@@ -206,7 +207,7 @@ export function ProfilDesaPage() {
         }
       } catch (err) {
         console.error('Gagal memuat profil desa dari API:', err)
-        if (active) setError(err?.response?.data?.message || 'Gagal memuat profil desa.')
+        if (active) setError(getApiErrorMessage(err, 'Gagal memuat profil desa.'))
       } finally {
         if (active) setLoading(false)
       }

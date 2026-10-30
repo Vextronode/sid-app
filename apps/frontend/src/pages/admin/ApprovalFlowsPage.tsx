@@ -6,6 +6,7 @@ import { getApprovalFlows } from '@/features/approval/api'
 import LetterTypeSettingsPanel from '@/features/surat/components/LetterTypeSettingsPanel'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import type { ApprovalFlow } from '@/features/approval/api'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 const POSITION_LABELS: Record<string, string> = {
   rt: 'Ketua RT',
@@ -34,7 +35,7 @@ export default function ApprovalFlowsPage() {
       setFlows(Array.isArray(data) ? data : [])
       setError('')
     } catch (requestError) {
-      setError(requestError?.response?.data?.message || 'Gagal memuat alur persetujuan.')
+      setError(getApiErrorMessage(requestError, 'Gagal memuat alur persetujuan.'))
     } finally {
       setLoading(false)
     }

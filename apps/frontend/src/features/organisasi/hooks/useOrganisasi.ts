@@ -11,6 +11,7 @@ import {
 } from '../api'
 import type { Id } from '@/types'
 import type { AddOrgMemberPayload, OrgSlots, UpdateOrgMemberPayload } from '../types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 const EMPTY_SLOTS: OrgSlots = { ketua: null, wakil_ketua: null, anggota: null }
 
@@ -35,7 +36,7 @@ export function useOrganisasi(orgType: string) {
       })
     } catch (err) {
       if (current !== requestId.current) return
-      setError(err?.response?.data?.message || 'Gagal memuat data organisasi.')
+      setError(getApiErrorMessage(err, 'Gagal memuat data organisasi.'))
     } finally {
       if (current === requestId.current) setLoading(false)
     }

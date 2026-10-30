@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getPublicNews } from './publicNewsApi'
 import { mapNews } from './mapNews'
 import type { NewsItem } from './mapNews'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 export function usePublicNews() {
   const [news, setNews] = useState<NewsItem[]>([])
@@ -17,7 +18,7 @@ export function usePublicNews() {
         const list = Array.isArray(body) ? body : (body?.data ?? [])
         if (active) setNews(list.map(mapNews))
       } catch (err) {
-        if (active) setError(err?.response?.data?.message || 'Gagal memuat berita.')
+        if (active) setError(getApiErrorMessage(err, 'Gagal memuat berita.'))
       } finally {
         if (active) setLoading(false)
       }

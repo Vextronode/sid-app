@@ -23,7 +23,7 @@ import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
-import { getApiErrorMessage } from '@/shared/lib/apiError'
+import { getApiErrorMessage, apiErrorStatus } from '@/shared/lib/apiError'
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealFamilyNumber } from '@/shared/lib/identityApi'
 import type { StatusTone } from '@/components/ui/StatusPill'
@@ -202,7 +202,7 @@ export default function FamilyManagementPanel({
       setSocioeconomic(loaded)
       setBaseline(loaded)
     } catch (err) {
-      if (err?.response?.status !== 404) showError(err)
+      if (apiErrorStatus(err) !== 404) showError(err)
     }
   }
 

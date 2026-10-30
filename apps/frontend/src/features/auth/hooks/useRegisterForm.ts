@@ -7,6 +7,7 @@ import { useState } from 'react'
 
 import api from '@/lib/api'
 import { alertDialog } from '@/shared/lib/dialog'
+import { apiErrorStatus, apiErrorBody } from '@/shared/lib/apiError'
 
 const INITIAL_FORM = {
   nik: '',
@@ -133,11 +134,11 @@ export function useRegisterForm() {
       setRegisteredUsername(username)
       setIsSuccess(true)
     } catch (error) {
-      const status = error.response?.status
+      const status = apiErrorStatus(error)
 
-      const backendErrors = error.response?.data?.errors ?? {}
+      const backendErrors = apiErrorBody(error)?.errors ?? {}
 
-      const backendMessage = error.response?.data?.message
+      const backendMessage = apiErrorBody(error)?.message
 
       if (status === 422) {
         setErrors({

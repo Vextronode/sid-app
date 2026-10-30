@@ -13,6 +13,7 @@ import { resolveMapLink } from '../api'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import type { VillageProfileForm } from '../types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // Isian lokasi berupa link (Google Maps), bukan koordinat.
 const isLink = (text: string) => /^https?:\/\//i.test(text.trim())
@@ -138,7 +139,7 @@ export default function EditProfilDesaModal({
       return coords
     } catch (err) {
       setCoordsError(
-        err?.response?.data?.message || 'Gagal mengambil titik dari link. Coba lagi sebentar.',
+        getApiErrorMessage(err, 'Gagal mengambil titik dari link. Coba lagi sebentar.'),
       )
 
       return undefined

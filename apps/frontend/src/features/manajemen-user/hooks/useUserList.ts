@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePageSize } from '@/components/ui/usePageSize'
 import type { Id, User } from '@/types'
 import { getUsers, toggleUserStatus, updateUser as updateUserRequest } from '../api'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 export function useUserList() {
   const [users, setUsers] = useState<User[]>([])
@@ -33,7 +34,7 @@ export function useUserList() {
 
       setUsers(Array.isArray(userData) ? userData : [])
     } catch (error) {
-      setError(error.response?.data?.message || 'Gagal memuat data pengguna.')
+      setError(getApiErrorMessage(error, 'Gagal memuat data pengguna.'))
     } finally {
       setLoading(false)
     }
@@ -75,7 +76,7 @@ export function useUserList() {
       await loadUsers()
       return true
     } catch (error) {
-      const message = error?.response?.data?.message || 'Gagal mengubah status pengguna.'
+      const message = getApiErrorMessage(error, 'Gagal mengubah status pengguna.')
       setError(message)
       return false
     }
@@ -86,7 +87,7 @@ export function useUserList() {
       await updateUserRequest(id, { name })
       await loadUsers()
     } catch (error) {
-      setError(error?.response?.data?.message || 'Gagal memperbarui nama pengguna.')
+      setError(getApiErrorMessage(error, 'Gagal memperbarui nama pengguna.'))
       throw error
     }
   }

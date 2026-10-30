@@ -133,7 +133,7 @@ export default function ManajemenUserPage() {
     } catch (requestError) {
       setSignatureNotice({
         type: 'error',
-        text: requestError?.response?.data?.message || 'Gagal mengatur ulang kata sandi.',
+        text: getApiErrorMessage(requestError, 'Gagal mengatur ulang kata sandi.'),
       })
     }
   }
@@ -238,7 +238,7 @@ export default function ManajemenUserPage() {
       notifySuccess('Nama pengguna berhasil diperbarui.')
       setEditingUser(null)
     } catch (err) {
-      setEditError(err?.response?.data?.message || 'Gagal memperbarui nama pengguna.')
+      setEditError(getApiErrorMessage(err, 'Gagal memperbarui nama pengguna.'))
     }
   }
 
