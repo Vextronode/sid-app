@@ -7,6 +7,8 @@ import api from '@/lib/api'
 import { OrganisasiDesaPage } from './OrganisasiDesaPage'
 
 vi.mock('@/lib/api', () => ({ default: { get: vi.fn() } }))
+
+const mockedGet = vi.mocked(api.get, { partial: true, deep: true })
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: () => ({ village: { name: 'Cibenda' }, stats: null, contacts: [] }),
 }))
@@ -46,7 +48,7 @@ const renderPage = (variant, path) =>
 describe('OrganisasiDesaPage', () => {
   beforeEach(() => {
     window.scrollTo = vi.fn()
-    api.get.mockImplementation((url) => {
+    mockedGet.mockImplementation((url) => {
       const type = url.split('/').pop()
       return Promise.resolve({ data: { data: STRUCTURES[type] } })
     })
@@ -128,7 +130,7 @@ describe('OrganisasiDesaPage', () => {
   })
 
   it('shows the server message when loading fails', async () => {
-    api.get.mockRejectedValueOnce({
+    mockedGet.mockRejectedValueOnce({
       response: { data: { message: 'Profil desa belum tersedia.' } },
     })
     renderPage('bpd', '/bpd')

@@ -160,7 +160,7 @@ describe('LoginPage background', () => {
     villageInfo.village = { hero_image_url: '/storage/hero/sawah.jpg' }
     const { container } = renderLogin()
 
-    const root = container.querySelector('.sid-login')
+    const root = container.querySelector<HTMLElement>('.sid-login')
     expect(root).toHaveClass('sid-login--photo')
     expect(root.style.getPropertyValue('--sid-login-bg')).toBe('url("/storage/hero/sawah.jpg")')
   })

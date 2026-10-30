@@ -253,7 +253,7 @@ describe('buildLetterFormData', () => {
     expect(formData.has('payload[keperluan]')).toBe(false)
     // Tidak ada lagi lampiran bebas; hanya berkas isian jenis surat.
     expect(formData.has('attachments[]')).toBe(false)
-    expect(formData.get('files[surat_dokter]').name).toBe('dokter.jpg')
+    expect((formData.get('files[surat_dokter]') as File).name).toBe('dokter.jpg')
     expect(formData.get('signers[saksi][nik]')).toBe('3207010101900001')
     expect(formData.has('signers[pemohon][nik]')).toBe(false)
   })
@@ -268,7 +268,7 @@ describe('buildLetterFormData', () => {
     })
 
     expect(formData.get('signers[saksi][name]')).toBe('Pak Saksi')
-    expect(formData.get('signature_files[saksi]').name).toBe('pernyataan.jpg')
+    expect((formData.get('signature_files[saksi]') as File).name).toBe('pernyataan.jpg')
     expect(formData.has('signers[saksi][nik]')).toBe(false)
   })
 })

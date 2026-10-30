@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { BerandaLayout } from './BerandaLayout'
 
+const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
+
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: vi.fn(),
 }))
@@ -24,13 +26,13 @@ const renderLayout = () =>
 
 describe('BerandaLayout', () => {
   beforeEach(() => {
-    usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
+    mockedUsePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
   })
 
   it('wraps the page in .bd-root with the new header, main and footer', () => {
     const { container } = renderLayout()
 
-    const root = container.firstChild
+    const root = container.firstChild as HTMLElement
     expect(root).toHaveClass('bd-root')
     expect(within(screen.getByRole('main')).getByText('Isi beranda')).toBeInTheDocument()
     expect(root.querySelector('header.bd-header')).not.toBeNull()
@@ -114,7 +116,7 @@ describe('BerandaLayout', () => {
   describe('announcement bar', () => {
     const bar = () => screen.queryByRole('region', { name: 'Pengumuman desa' })
     const withAnnouncement = (announcement) =>
-      usePublicVillageInfo.mockReturnValue({
+      mockedUsePublicVillageInfo.mockReturnValue({
         village: null,
         stats: null,
         contacts: [],

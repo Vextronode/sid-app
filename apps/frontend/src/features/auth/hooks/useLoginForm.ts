@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import api from '@/lib/api'
 import { alertDialog } from '@/shared/lib/dialog'
+import type { User } from '@/types'
 
 const INITIAL_FORM = {
   username: '',
@@ -112,7 +113,10 @@ export function useLoginForm() {
   // LOGIN
   // ==========================================
 
-  const handleSubmit = async (event, onSuccess) => {
+  const handleSubmit = async (
+    event?: { preventDefault: () => void } | null,
+    onSuccess?: (user: User) => unknown,
+  ) => {
     event?.preventDefault()
 
     if (isLoading) {

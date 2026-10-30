@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -40,7 +41,7 @@ const newCitizen = (nik) => ({
   ],
 })
 
-const renderPanel = (props) =>
+const renderPanel = (props: Partial<ComponentProps<typeof FulfillmentPanel>> = {}) =>
   render(
     <MemoryRouter>
       <FulfillmentPanel letterId="l-1" onApplied={vi.fn()} {...props} />

@@ -26,7 +26,7 @@ import { getLatestApprovalForLevel } from '@/features/approval/constants/statusF
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import type { Id, Letter, UserRole } from '@/types'
 
-import type { submitDecision } from '../api'
+import type { DecisionResponse } from '../api'
 import ApprovalStepRenderer from './ApprovalStepRenderer'
 import { canDecideOnLetter } from '../utils/canDecide'
 import {
@@ -77,9 +77,6 @@ function getHint({ surat, canDecide, canDownload, viewerRole }) {
 
   return 'Surat sedang menunggu keputusan di tahap lain.'
 }
-
-// Respons PATCH keputusan, diteruskan ApprovalStepRenderer ke onApprove/onReject.
-type DecisionResponse = Awaited<ReturnType<typeof submitDecision>>
 
 type SuratDetailModalProps = {
   // null: modal tertutup.

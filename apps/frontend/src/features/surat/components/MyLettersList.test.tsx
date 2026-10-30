@@ -6,9 +6,12 @@ const api = vi.hoisted(() => ({ get: vi.fn() }))
 
 vi.mock('@/lib/api', () => ({ default: api }))
 
+import { partialFixture } from '@/test/fixtures'
+import type { LetterListItem } from '@/types'
+
 import { MyLettersList } from './MyLettersList'
 
-const LETTERS = [
+const LETTERS = partialFixture<LetterListItem[]>([
   {
     id: 1,
     status: 'in_progress',
@@ -25,7 +28,7 @@ const LETTERS = [
     created_at: '2026-10-01T08:00:00Z',
     letter_type: { name: 'Surat Keterangan Usaha' },
   },
-]
+])
 
 function renderList(props = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })

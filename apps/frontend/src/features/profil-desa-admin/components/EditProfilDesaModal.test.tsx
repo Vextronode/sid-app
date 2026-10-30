@@ -18,7 +18,7 @@ const initialData = {
 }
 
 const renderModal = (data = initialData) => {
-  const onSubmit = vi.fn().mockResolvedValue()
+  const onSubmit = vi.fn().mockResolvedValue(undefined)
   render(<EditProfilDesaModal open onClose={vi.fn()} onSubmit={onSubmit} initialData={data} />)
 
   return { onSubmit, field: screen.getByLabelText('Lokasi Kantor Desa') }

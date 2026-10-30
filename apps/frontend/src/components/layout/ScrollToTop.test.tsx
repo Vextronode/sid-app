@@ -17,7 +17,7 @@ function Beranda() {
   )
 }
 
-const renderAt = (entries, index) =>
+const renderAt = (entries: string[], index?: number) =>
   render(
     <MemoryRouter initialEntries={entries} initialIndex={index}>
       <ScrollToTop />

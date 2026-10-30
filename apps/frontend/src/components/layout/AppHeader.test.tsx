@@ -6,6 +6,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { AppHeader } from './AppHeader'
 
+const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
+
 const logout = vi.hoisted(() => ({ handleLogout: vi.fn(), isLoggingOut: false }))
 
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
@@ -42,7 +44,7 @@ describe('AppHeader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     logout.isLoggingOut = false
-    usePublicVillageInfo.mockReturnValue({
+    mockedUsePublicVillageInfo.mockReturnValue({
       village: {
         name: 'Desa Cibenda',
         district: 'Parigi',

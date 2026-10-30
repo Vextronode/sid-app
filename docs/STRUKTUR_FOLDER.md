@@ -64,7 +64,7 @@ apps/frontend/
 │   ├── pages/               # halaman publik & warga; pages/admin/ untuk pejabat & operator
 │   ├── shared/lib/          # queryClient, queryKeys, publicVillageParams, villageName
 │   ├── styles/              # sid-global.css, public.css, beranda.css
-│   ├── test/                # setup Vitest
+│   ├── test/                # setup Vitest, fixtures.ts (partialFixture)
 │   └── types/               # tipe domain & API lintas fitur (import dari @/types)
 ├── .env.example             # VITE_API_URL, VITE_API_BASE_URL, VITE_VAPID_PUBLIC_KEY
 ├── Dockerfile

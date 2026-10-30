@@ -72,6 +72,11 @@ Source frontend sedang dimigrasi bertahap dari JavaScript; `strict` di `tsconfig
 6. Perubahan tidak boleh menambah jumlah error `npm run typecheck`.
 7. Variabel tak terpakai diperiksa rule `@typescript-eslint/no-unused-vars` (bukan `no-unused-vars` bawaan, yang salah menandai nama parameter di tipe fungsi); komentar pengecualian memakai nama rule tersebut.
 8. Store tingkat modul (mis. `shared/lib/toast.ts`, `shared/lib/dialog.ts`) mengekspor tipe datanya (`Toast`, `DialogEntry`) agar komponen host dan pemanggil memakai bentuk yang sama.
+9. Test:
+   - Fungsi hasil impor yang di-mock lewat `vi.mock` diakses dengan `vi.mocked(fn, { partial: true, deep: true })`, bukan `fn.mockReturnValue(...)` langsung.
+   - Data uji yang hanya berisi sebagian field dibungkus `partialFixture<T>(...)` dari `src/test/fixtures.ts`; jangan menambah cast `as` di tiap test.
+   - Elemen form diambil dengan tipe elemennya, mis. `getByRole<HTMLSelectElement>('combobox')`, `querySelector<HTMLElement>(...)`.
+   - Properti yang memang tidak boleh ada diperiksa dengan `expect(obj).not.toHaveProperty('x')`.
 
 ---
 

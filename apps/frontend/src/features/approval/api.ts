@@ -44,6 +44,9 @@ export const submitDecision = (
   })
 }
 
+// Respons PATCH keputusan; diteruskan ke onApprove/onReject pemanggil.
+export type DecisionResponse = Awaited<ReturnType<typeof submitDecision>>
+
 export function getApprovalSettings() {
   return api.get('/api/approval-settings')
 }

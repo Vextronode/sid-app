@@ -8,21 +8,26 @@ vi.mock('@/features/cetak-surat/components/PdfCanvasPreview', () => ({
   PdfCanvasPreview: ({ surat }) => <div data-testid="pdf-canvas-preview">{surat.id}</div>,
 }))
 
+import type { ComponentProps } from 'react'
+
+import { partialFixture } from '@/test/fixtures'
+import type { Letter } from '@/types'
+
 import SuratDetailModal from './SuratDetailModal'
 
 const rtStep = { approver_position: 'rt', is_final: false }
 const finalStep = { approver_position: 'kepala_desa', is_final: true }
 
-const pendingAtRt = {
-  id: 'letter-1',
+const pendingAtRt = partialFixture<Letter>({
+  id: 41,
   status: 'pending',
   current_step_order: 1,
   current_step: rtStep,
   letter_type: { name: 'Surat Keterangan Usaha' },
   approvals: [],
-}
+})
 
-const atFinal = {
+const atFinal = partialFixture<Letter>({
   ...pendingAtRt,
   status: 'in_progress',
   current_step_order: 2,
@@ -37,10 +42,12 @@ const atFinal = {
       created_at: '2026-10-20T01:12:00Z',
     },
   ],
-}
+})
 
-function renderModal(props) {
-  return render(<SuratDetailModal suratId="letter-1" onClose={vi.fn()} {...props} />)
+function renderModal(props: Partial<ComponentProps<typeof SuratDetailModal>>) {
+  return render(
+    <SuratDetailModal suratId={41} onClose={vi.fn()} surat={null} notFound={false} {...props} />,
+  )
 }
 
 describe('SuratDetailModal (approver)', () => {
@@ -51,7 +58,7 @@ describe('SuratDetailModal (approver)', () => {
   it('shows the draft in the modal and the RT decision in the footer', () => {
     renderModal({ surat: pendingAtRt, viewerRole: 'rt', currentUserRole: 'rt', apiRole: 'rt' })
 
-    expect(screen.getByTestId('pdf-canvas-preview')).toHaveTextContent('letter-1')
+    expect(screen.getByTestId('pdf-canvas-preview')).toHaveTextContent('41')
     expect(screen.getByRole('button', { name: 'Setuju' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Tolak' })).toBeInTheDocument()
     expect(screen.getByText(/meneruskan ke Kepala Desa/)).toBeInTheDocument()
@@ -82,9 +89,10 @@ describe('SuratDetailModal (approver)', () => {
 
     rerender(
       <SuratDetailModal
-        suratId="letter-1"
+        suratId={41}
         onClose={vi.fn()}
         surat={{ ...atFinal, status: 'approved' }}
+        notFound={false}
         viewerRole="kepala_desa"
         currentUserRole="kepala_desa"
         apiRole="kepala_desa"
@@ -98,14 +106,14 @@ describe('SuratDetailModal (approver)', () => {
 
   it('shows the rejection reason for a rejected letter', () => {
     renderModal({
-      surat: {
+      surat: partialFixture<Letter>({
         ...pendingAtRt,
         status: 'rejected',
         rejected_at_step: 1,
         approvals: [
           { id: 2, approval_level: 'rt', action: 'rejected', notes: 'Alamat tidak sesuai.' },
         ],
-      },
+      }),
       viewerRole: 'rt',
     })
 

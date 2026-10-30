@@ -59,7 +59,7 @@ export function rotatePerangkatDesa(id, payload) {
 
 // Cari calon pejabat lewat NIK. Jabatan menentukan apakah calon harus
 // sudah punya akun warga.
-export function findOfficialCandidate(nik, position) {
+export function findOfficialCandidate(nik: string, position?: string) {
   return api.post('/api/officials/candidates/lookup', position ? { nik, position } : { nik })
 }
 

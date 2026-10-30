@@ -122,7 +122,8 @@ describe('RepeaterField', () => {
 
     render(<FamilyHarness />)
 
-    const second = (id) => document.getElementById(`susunan_baru.1.${id}`)
+    const second = (id: string) =>
+      document.getElementById(`susunan_baru.1.${id}`) as HTMLSelectElement
     expect([...second('anggota').options].map((option) => option.textContent)).toEqual([
       'Pilih anggota keluarga...',
       'Asti (Anak)',
@@ -130,7 +131,9 @@ describe('RepeaterField', () => {
     expect([...second('shdk').options].map((option) => option.value)).toEqual(['', 'anak'])
     // Baris pertama tetap bisa memilih Kepala Keluarga.
     expect(
-      [...document.getElementById('susunan_baru.0.shdk').options].map((option) => option.value),
+      [...(document.getElementById('susunan_baru.0.shdk') as HTMLSelectElement).options].map(
+        (option) => option.value,
+      ),
     ).toContain('kepala_keluarga')
   })
 })

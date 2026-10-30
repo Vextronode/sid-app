@@ -35,7 +35,10 @@ describe('PdfCanvasPreview', () => {
     vi.clearAllMocks()
     previewSuratPDF.mockResolvedValue('blob:preview')
     globalThis.URL.revokeObjectURL = vi.fn()
-    HTMLCanvasElement.prototype.getContext = vi.fn(() => ({ setTransform: vi.fn() }))
+    // Cukup setTransform yang dipakai PdfCanvasPreview.
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+      setTransform: vi.fn(),
+    })) as unknown as HTMLCanvasElement['getContext']
   })
 
   it('renders pages into canvases and blocks the context menu', async () => {

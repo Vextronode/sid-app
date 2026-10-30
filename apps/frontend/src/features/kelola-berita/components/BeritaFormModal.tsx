@@ -7,6 +7,7 @@
 // ==========================================
 
 import { useState, useEffect } from 'react'
+import type { ChangeEvent } from 'react'
 import { Send, Image as ImageIcon } from 'lucide-react'
 
 import { categoryErrorMessage } from '@/features/kelola-berita/hooks/useNewsCategories'
@@ -16,7 +17,34 @@ import { isFormDirty } from '@/shared/lib/isFormDirty'
 // Satu berita wajib punya 1 kategori, maksimal 2.
 const MAX_KATEGORI = 2
 
-const INITIAL_FORM = {
+export type BeritaForm = {
+  title: string
+  category_ids: number[]
+  content: string
+  // Hanya berkas baru; gambar tersimpan tetap dipakai bila kosong.
+  thumbnail: File | null
+}
+
+// Berita yang diedit (NewsResource).
+type BeritaInitialData = {
+  title?: string
+  content?: string
+  thumbnail?: string | null
+  categories?: { id: number }[]
+}
+
+type BeritaFormModalProps = {
+  open: boolean
+  onClose: () => void
+  onSubmit: (form: BeritaForm) => unknown
+  onDelete?: (berita: BeritaInitialData) => unknown
+  // Kosong: tambah berita baru.
+  initialData?: BeritaInitialData | null
+  categories?: { id: number; name: string }[]
+  processing?: boolean
+}
+
+const INITIAL_FORM: BeritaForm = {
   title: '',
   category_ids: [],
   content: '',
@@ -31,9 +59,9 @@ export default function BeritaFormModal({
   initialData,
   categories = [],
   processing = false,
-}) {
+}: BeritaFormModalProps) {
   const [form, setForm] = useState(INITIAL_FORM)
-  const [imagePreview, setImagePreview] = useState(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [baseline, setBaseline] = useState(INITIAL_FORM)
   const requestClose = useConfirmDiscard(open && isFormDirty(form, baseline), {
@@ -46,11 +74,12 @@ export default function BeritaFormModal({
   // ==========================================
   useEffect(() => {
     if (initialData) {
-      const initialForm = {
+      const initialForm: BeritaForm = {
         title: initialData.title ?? '',
         category_ids: (initialData.categories ?? []).map((category) => category.id),
         content: initialData.content ?? '',
-        thumbnail: initialData.image ?? null,
+        // Gambar tersimpan hanya dipratinjau (initialData.thumbnail), tidak dikirim ulang.
+        thumbnail: null,
       }
       setForm(initialForm)
       setBaseline(initialForm)
@@ -101,7 +130,7 @@ export default function BeritaFormModal({
   // ==========================================
   // HANDLE IMAGE
   // ==========================================
-  const handleImageChange = (e) => {
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
 
     if (!file) return
@@ -114,7 +143,8 @@ export default function BeritaFormModal({
     const reader = new FileReader()
 
     reader.onload = () => {
-      setImagePreview(reader.result)
+      // readAsDataURL selalu menghasilkan string data URL.
+      setImagePreview(reader.result as string)
     }
 
     reader.readAsDataURL(file)

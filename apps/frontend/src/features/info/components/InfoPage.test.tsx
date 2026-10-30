@@ -96,7 +96,7 @@ describe('InfoPage', () => {
 
   it('copies the phone number when it is clicked', async () => {
     const user = userEvent.setup()
-    const writeText = vi.fn().mockResolvedValue()
+    const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     respond()
     render(<InfoPage page="ppid" />)

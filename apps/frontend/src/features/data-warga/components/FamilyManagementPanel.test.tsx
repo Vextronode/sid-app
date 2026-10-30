@@ -1,11 +1,15 @@
 import { createRef } from 'react'
+import type { ComponentProps } from 'react'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 
-import FamilyManagementPanel from './FamilyManagementPanel'
+import { partialFixture } from '@/test/fixtures'
 
-const familyList = {
+import FamilyManagementPanel from './FamilyManagementPanel'
+import type { FamilyManagementPanelHandle } from './FamilyManagementPanel'
+
+const familyList = partialFixture<ComponentProps<typeof FamilyManagementPanel>['familyList']>({
   families: [
     {
       id: 'f-1',
@@ -35,9 +39,9 @@ const familyList = {
   addFamily: vi.fn(),
   editFamily: vi.fn(),
   removeFamily: vi.fn(),
-}
+})
 
-function renderPanel(props) {
+function renderPanel(props: Partial<ComponentProps<typeof FamilyManagementPanel>> = {}) {
   render(
     <MemoryRouter>
       <FamilyManagementPanel familyList={familyList} {...props} />
@@ -67,7 +71,7 @@ describe('FamilyManagementPanel', () => {
   })
 
   it('leaves Tambah KK to the page header and opens the form through its ref', () => {
-    const ref = createRef()
+    const ref = createRef<FamilyManagementPanelHandle>()
     renderPanel({ ref })
 
     expect(screen.queryByRole('button', { name: /Tambah KK/ })).toBeNull()

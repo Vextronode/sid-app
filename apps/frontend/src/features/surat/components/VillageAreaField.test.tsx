@@ -38,7 +38,7 @@ describe('VillageAreaField', () => {
     })
     fireEvent.change(screen.getByLabelText('Alamat di Desa Ini - RW'), { target: { value: '10' } })
 
-    const rt = screen.getByLabelText('Alamat di Desa Ini - RT')
+    const rt = screen.getByLabelText<HTMLSelectElement>('Alamat di Desa Ini - RT')
     expect(Array.from(rt.options).map((option) => option.textContent)).toEqual([
       'Pilih RT...',
       'RT 1',
@@ -56,6 +56,6 @@ describe('VillageAreaField', () => {
 
     expect(screen.getByLabelText('Alamat di Desa Ini - Dusun')).toHaveValue('2')
     expect(screen.getByLabelText('Alamat di Desa Ini - RW')).toHaveValue('20')
-    expect(screen.getByLabelText('Alamat di Desa Ini - RT')).toHaveValue('200')
+    expect(screen.getByLabelText<HTMLSelectElement>('Alamat di Desa Ini - RT')).toHaveValue('200')
   })
 })

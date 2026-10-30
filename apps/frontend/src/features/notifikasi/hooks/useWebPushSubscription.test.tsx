@@ -48,7 +48,7 @@ describe('useWebPushSubscription', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.unstubAllEnvs()
-    delete navigator.serviceWorker
+    Reflect.deleteProperty(navigator, 'serviceWorker')
   })
 
   it('requests browser permission, subscribes with VAPID, and persists the browser payload', async () => {

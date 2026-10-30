@@ -23,7 +23,7 @@ describe('downloadSuratPDF', () => {
 
   it('downloads the backend PDF using the authenticated request', async () => {
     const pdf = new Blob(['pdf content'], { type: 'application/pdf' })
-    globalThis.fetch.mockResolvedValue({
+    vi.mocked(globalThis.fetch, { partial: true }).mockResolvedValue({
       ok: true,
       blob: vi.fn().mockResolvedValue(pdf),
     })
@@ -43,7 +43,7 @@ describe('downloadSuratPDF', () => {
   })
 
   it('reports a backend error instead of downloading an error response', async () => {
-    globalThis.fetch.mockResolvedValue({
+    vi.mocked(globalThis.fetch, { partial: true }).mockResolvedValue({
       ok: false,
       status: 403,
       statusText: 'Forbidden',

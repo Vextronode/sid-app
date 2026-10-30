@@ -1,9 +1,26 @@
 import { useState } from 'react'
 import { Check, X } from 'lucide-react'
 import { submitDecision } from '../api'
+import type { DecisionResponse } from '../api'
 import { alertDialog, confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import type { Id, LetterApproval, LetterCurrentStep, UserRole } from '@/types'
 import { canDecideOnLetter } from '../utils/canDecide'
+
+type ApprovalStepRendererProps = {
+  currentStep: Pick<LetterCurrentStep, 'approver_position' | 'is_final'> | null | undefined
+  approvals?: Pick<LetterApproval, 'approval_level' | 'action'>[]
+  letterStatus: string
+  currentUserRole: UserRole | null | undefined
+  apiRole: UserRole | null | undefined
+  letterId: Id
+  onApprove?: (response: DecisionResponse) => unknown
+  onReject?: (notes: string, response: DecisionResponse) => unknown
+  // Keputusan ditolak 409 (surat sudah berubah), mis. muat ulang detail.
+  onConflict?: () => unknown
+  onClose?: () => void
+  closeOnDecision?: boolean
+}
 
 /**
  * Render aksi untuk pengguna yang berhak pada step aktif dan belum memiliki keputusan.
@@ -20,7 +37,7 @@ export default function ApprovalStepRenderer({
   onConflict,
   onClose,
   closeOnDecision = true,
-}) {
+}: ApprovalStepRendererProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [showRejectBox, setShowRejectBox] = useState(false)
   const [alasan, setAlasan] = useState('')

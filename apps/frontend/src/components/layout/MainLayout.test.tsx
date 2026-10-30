@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { MainLayout } from './MainLayout'
 
+const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
+
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: vi.fn(),
 }))
@@ -24,7 +26,7 @@ const renderLayout = () =>
 
 describe('MainLayout', () => {
   beforeEach(() => {
-    usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
+    mockedUsePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
   })
 
   it('uses the home page header and footer, each in its own .bd-root', () => {
@@ -58,7 +60,7 @@ describe('MainLayout', () => {
   describe('announcement bar', () => {
     const bar = () => screen.queryByRole('region', { name: 'Pengumuman desa' })
     const withAnnouncement = (announcement) =>
-      usePublicVillageInfo.mockReturnValue({
+      mockedUsePublicVillageInfo.mockReturnValue({
         village: null,
         stats: null,
         contacts: [],

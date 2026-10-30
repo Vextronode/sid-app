@@ -20,7 +20,7 @@ const profile = {
 }
 
 const renderCard = (props = {}) => {
-  const onUpload = vi.fn().mockResolvedValue()
+  const onUpload = vi.fn().mockResolvedValue(undefined)
   const onEditText = vi.fn()
   render(
     <TampilanPublikCard profile={profile} onUpload={onUpload} onEditText={onEditText} {...props} />,

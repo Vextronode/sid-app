@@ -5,6 +5,7 @@ import { formatCoords, googleMapsUrl, villageCoords } from '@/shared/lib/village
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import ImageFilePicker, { ImagePreviewStage } from '@/components/ui/ImageFilePicker'
+import type { Village } from '@/types'
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 
@@ -158,7 +159,32 @@ function PublicImageField({ field, currentUrl, onUpload }) {
  * Logo, foto beranda, jam layanan, link peta, dan kredit foto yang tampil di
  * halaman publik. Teksnya diubah lewat modal Edit Profil Desa.
  */
-export default function TampilanPublikCard({ profile, onUpload, onEditText, disabled }) {
+type TampilanPublikCardProps = {
+  // Cukup field tampilan publik yang dibaca kartu ini.
+  profile: Partial<
+    Pick<
+      Village,
+      | 'name'
+      | 'logo_url'
+      | 'hero_image_url'
+      | 'office_hours'
+      | 'hero_photo_credit'
+      | 'welcome_message'
+      | 'latitude'
+      | 'longitude'
+    >
+  >
+  onUpload: (kind: string, file: File) => Promise<unknown>
+  onEditText: () => void
+  disabled?: boolean
+}
+
+export default function TampilanPublikCard({
+  profile,
+  onUpload,
+  onEditText,
+  disabled,
+}: TampilanPublikCardProps) {
   const mapUrl = googleMapsUrl(profile)
 
   return (

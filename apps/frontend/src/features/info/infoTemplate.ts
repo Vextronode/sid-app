@@ -11,7 +11,13 @@
 
 const TOKEN = /\{([^}]+)\}/g
 
-function lookup(context, path) {
+// Nilai token: data desa (`village.*`) dan isian halaman informasi.
+export type TemplateContext = Record<string, unknown>
+
+// Teks slot per kunci token (teks draf asli), dipakai bila token kosong.
+export type TemplatePlaceholders = Record<string, string>
+
+function lookup(context: TemplateContext, path: string) {
   return path.split('.').reduce((value, key) => value?.[key], context)
 }
 
@@ -22,7 +28,7 @@ function formatDate(value) {
   return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-function slotFor(key, placeholders) {
+function slotFor(key: string, placeholders?: TemplatePlaceholders) {
   return { slot: `[${placeholders?.[key] ?? key.replace(/^village\./, '').toUpperCase()}]` }
 }
 
@@ -55,7 +61,11 @@ function resolveToken(expression, context) {
 }
 
 /** Teks -> array bagian; token kosong menjadi slot. */
-export function renderTemplate(text, context, placeholders) {
+export function renderTemplate(
+  text: string,
+  context: TemplateContext,
+  placeholders?: TemplatePlaceholders,
+) {
   const parts = []
   let last = 0
 

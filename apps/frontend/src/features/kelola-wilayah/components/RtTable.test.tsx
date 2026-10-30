@@ -42,7 +42,7 @@ describe('RtTable', () => {
     renderTable()
 
     const hamletSelect = screen.getByRole('combobox', { name: 'Filter dusun' })
-    const rwSelect = screen.getByRole('combobox', { name: 'Filter RW' })
+    const rwSelect = screen.getByRole<HTMLSelectElement>('combobox', { name: 'Filter RW' })
 
     expect(rowCount()).toBe(3)
 
@@ -61,7 +61,7 @@ describe('RtTable', () => {
     renderTable()
 
     const hamletSelect = screen.getByRole('combobox', { name: 'Filter dusun' })
-    const rwSelect = screen.getByRole('combobox', { name: 'Filter RW' })
+    const rwSelect = screen.getByRole<HTMLSelectElement>('combobox', { name: 'Filter RW' })
 
     fireEvent.change(hamletSelect, { target: { value: '1' } })
     fireEvent.change(rwSelect, { target: { value: '10' } })

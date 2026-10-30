@@ -35,7 +35,7 @@ describe('useLogoutToBeranda', () => {
     // Seperti AuthContext: onLoggedOut dipanggil saat server sudah menghapus sesi.
     auth.logout.mockImplementation(
       ({ onLoggedOut }) =>
-        new Promise((resolve) => {
+        new Promise<void>((resolve) => {
           finishLogout = () => {
             onLoggedOut()
             resolve()

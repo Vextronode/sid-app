@@ -93,7 +93,7 @@ src/
   shared/lib/             queryClient, queryKeys, publicVillageParams, villageName, copyText,
                           villageMap (koordinat kantor → link Google Maps)
   styles/                 sid-global.css, public.css, beranda.css
-  test/                   setup Vitest
+  test/                   setup Vitest, fixtures (partialFixture untuk data uji sebagian)
   types/                  tipe domain & API lintas fitur (api, user, citizen, wilayah, letter,
                           notification); diimpor lewat `@/types`. react-css.d.ts mengizinkan
                           CSS custom property (`--sid-*`) di prop `style`

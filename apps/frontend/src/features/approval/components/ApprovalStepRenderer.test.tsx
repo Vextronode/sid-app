@@ -10,8 +10,12 @@ vi.mock('@/shared/lib/toast', () => ({ notifySuccess }))
 
 vi.mock('../api', () => ({ submitDecision: vi.fn() }))
 
+import type { UserRole } from '@/types'
+
 import { submitDecision } from '../api'
 import ApprovalStepRenderer from './ApprovalStepRenderer'
+
+const mockedSubmitDecision = vi.mocked(submitDecision, { partial: true, deep: true })
 
 const rtStep = { approver_position: 'rt', is_final: false }
 const finalStep = { approver_position: 'kepala_desa', is_final: true }
@@ -20,7 +24,7 @@ describe('ApprovalStepRenderer regression', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     confirmDialog.mockResolvedValue(true)
-    submitDecision.mockResolvedValue({ data: { status: 'in_progress' } })
+    mockedSubmitDecision.mockResolvedValue({ data: { data: { status: 'in_progress' } } })
   })
 
   it('allows RT to approve and advances to the final stage', async () => {
@@ -46,7 +50,7 @@ describe('ApprovalStepRenderer regression', () => {
         approvals={[{ approval_level: 'rt', action: 'approved' }]}
         letterStatus="in_progress"
         currentUserRole="kepala_desa"
-        apiRole="kades"
+        apiRole="kepala_desa"
         letterId="letter-1"
       />,
     )
@@ -54,29 +58,28 @@ describe('ApprovalStepRenderer regression', () => {
     expect(screen.getByRole('button', { name: 'Setujui & terbitkan' })).toBeTruthy()
   })
 
-  it.each([
-    ['kepala_desa', 'kades'],
-    ['sekretaris_desa', 'kades'],
-  ])('%s can complete the final approval after RT approval', async (role, apiRole) => {
-    render(
-      <ApprovalStepRenderer
-        currentStep={finalStep}
-        approvals={[{ approval_level: 'rt', action: 'approved' }]}
-        letterStatus="in_progress"
-        currentUserRole={role}
-        apiRole={apiRole}
-        letterId="letter-1"
-      />,
-    )
+  it.each<UserRole>(['kepala_desa', 'sekretaris_desa'])(
+    '%s can complete the final approval after RT approval',
+    async (role) => {
+      render(
+        <ApprovalStepRenderer
+          currentStep={finalStep}
+          approvals={[{ approval_level: 'rt', action: 'approved' }]}
+          letterStatus="in_progress"
+          currentUserRole={role}
+          apiRole={role}
+          letterId="letter-1"
+        />,
+      )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Setujui & terbitkan' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Setujui & terbitkan' }))
 
-    await waitFor(() =>
-      expect(submitDecision).toHaveBeenCalledWith('kades', 'letter-1', 'approved'),
-    )
-  })
+      // Peran diteruskan apa adanya; pemetaan ke endpoint /kades diuji di api.test.ts.
+      await waitFor(() => expect(submitDecision).toHaveBeenCalledWith(role, 'letter-1', 'approved'))
+    },
+  )
 
-  it.each([
+  it.each<[UserRole, string]>([
     ['kepala_desa', 'sekretaris_desa'],
     ['sekretaris_desa', 'kepala_desa'],
   ])(
@@ -88,7 +91,7 @@ describe('ApprovalStepRenderer regression', () => {
           approvals={[{ approval_level: level, action: 'approved' }]}
           letterStatus="in_progress"
           currentUserRole={role}
-          apiRole="kades"
+          apiRole={role}
           letterId="letter-1"
         />,
       )
@@ -98,7 +101,7 @@ describe('ApprovalStepRenderer regression', () => {
     },
   )
 
-  it.each(['rw', 'kadus', 'kasi_pemerintahan', 'kaur_tu_umum'])(
+  it.each<UserRole>(['rw', 'kadus', 'kasi_pemerintahan', 'kaur_tu_umum'])(
     'renders the approval as read-only for %s',
     (role) => {
       render(
@@ -124,7 +127,7 @@ describe('ApprovalStepRenderer regression', () => {
         approvals={[{ approval_level: 'rt', action: 'approved' }]}
         letterStatus="in_progress"
         currentUserRole="kepala_desa"
-        apiRole="kades"
+        apiRole="kepala_desa"
         letterId="letter-1"
       />,
     )

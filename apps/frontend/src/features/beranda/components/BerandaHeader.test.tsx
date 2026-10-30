@@ -8,6 +8,9 @@ import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { getBerandaContent } from '../berandaContent'
 import { BerandaHeader } from './BerandaHeader'
 
+const mockedUseAuth = vi.mocked(useAuth, { partial: true, deep: true })
+const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
+
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: vi.fn(),
 }))
@@ -31,7 +34,7 @@ const renderHeader = () => {
 
 describe('BerandaHeader', () => {
   beforeEach(() => {
-    usePublicVillageInfo.mockReturnValue({
+    mockedUsePublicVillageInfo.mockReturnValue({
       village: {
         name: 'Cibenda',
         district: 'Parigi',
@@ -41,7 +44,7 @@ describe('BerandaHeader', () => {
       stats: null,
       contacts: [],
     })
-    useAuth.mockReturnValue({ user: null, isLoading: false })
+    mockedUseAuth.mockReturnValue({ user: null, isLoading: false })
     Element.prototype.scrollIntoView = vi.fn()
   })
 
@@ -62,7 +65,7 @@ describe('BerandaHeader', () => {
     // Tidak ada nama desa yang ditulis di kode: selagi data belum termuat
     // tampil nama netral, dan tempat lambang tetap dipesan.
     it('falls back to a neutral name without emblem or region while data is missing', () => {
-      usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
+      mockedUsePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
       const { container } = renderHeader()
 
       const brand = screen.getByRole('link', { name: 'Desa' })
@@ -72,7 +75,7 @@ describe('BerandaHeader', () => {
     })
 
     it('does not double the "Desa" prefix stored by the backend', () => {
-      usePublicVillageInfo.mockReturnValue({
+      mockedUsePublicVillageInfo.mockReturnValue({
         village: { name: 'Desa Cibenda' },
         stats: null,
         contacts: [],
@@ -104,7 +107,7 @@ describe('BerandaHeader', () => {
 
     // Sudah login: tombol akun menuju dashboard (lewat GuestRoute di /login).
     it('shows "Dashboard Saya" instead of "Masuk" for a logged-in user', async () => {
-      useAuth.mockReturnValue({ user: { role: 'staf_sid' }, isLoading: false })
+      mockedUseAuth.mockReturnValue({ user: { role: 'staf_sid' }, isLoading: false })
       const user = userEvent.setup()
       const { desktopNav, mobileMenu } = renderHeader()
 
@@ -130,7 +133,7 @@ describe('BerandaHeader', () => {
 
       const { container } = render(
         <MemoryRouter initialEntries={['/berita']}>
-          <BerandaHeader content={getBerandaContent(true)} />
+          <BerandaHeader content={getBerandaContent()} />
         </MemoryRouter>,
       )
       const otherNav = within(container.querySelector('.bd-nav'))
@@ -140,7 +143,7 @@ describe('BerandaHeader', () => {
     const navAt = (path) => {
       const { container } = render(
         <MemoryRouter initialEntries={[path]}>
-          <BerandaHeader content={getBerandaContent(true)} />
+          <BerandaHeader content={getBerandaContent()} />
         </MemoryRouter>,
       )
       return within(container.querySelector('.bd-nav'))
@@ -193,7 +196,7 @@ describe('BerandaHeader', () => {
       await user.click(desktopNav.getByRole('link', { name: 'Kontak' }))
 
       expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1)
-      expect(Element.prototype.scrollIntoView.mock.contexts[0]).toBe(
+      expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(
         document.getElementById('kontak'),
       )
     })
@@ -206,7 +209,7 @@ describe('BerandaHeader', () => {
       }
       const { container } = render(
         <MemoryRouter initialEntries={['/berita']}>
-          <BerandaHeader content={getBerandaContent(true)} />
+          <BerandaHeader content={getBerandaContent()} />
           <LocationProbe />
         </MemoryRouter>,
       )
@@ -449,7 +452,7 @@ describe('BerandaHeader', () => {
 
       await user.click(mobileMenu.getByRole('link', { name: 'Kontak' }))
 
-      expect(Element.prototype.scrollIntoView.mock.contexts[0]).toBe(
+      expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(
         document.getElementById('kontak'),
       )
       expect(button).toHaveAttribute('aria-expanded', 'false')
