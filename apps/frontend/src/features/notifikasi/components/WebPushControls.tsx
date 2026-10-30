@@ -10,7 +10,9 @@ export default function WebPushControls() {
       <div>
         <p className="sid-webpush-title">Notifikasi browser</p>
         <p className="sid-webpush-description">
-          {subscribed ? 'Push aktif di browser ini.' : 'Aktifkan agar kabar surat masuk ke browser.'}
+          {subscribed
+            ? 'Push aktif di browser ini.'
+            : 'Aktifkan agar kabar surat masuk ke browser.'}
         </p>
       </div>
 
@@ -23,7 +25,11 @@ export default function WebPushControls() {
         {loading ? 'Menyimpan...' : subscribed ? 'Nonaktifkan' : 'Aktifkan push'}
       </button>
 
-      {error && <p className="sid-webpush-error" role="alert">{error}</p>}
+      {error && (
+        <p className="sid-webpush-error" role="alert">
+          {error}
+        </p>
+      )}
     </section>
   )
 }
