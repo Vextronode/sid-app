@@ -1,16 +1,76 @@
 import api from '@/lib/api'
 import type { Id, Letter, MessageResponse, ResourceResponse } from '@/types'
+import type { ApplicantFamilyMember, VillageArea } from '../types'
 
 // Nilai isian Terapkan, per nama field data warga.
 export type FulfillmentValues = Record<string, unknown>
 
 // Satu warga di pratinjau Terapkan beserta perubahannya (lama -> baru).
 export type FulfillmentChange = {
-  citizen_id: number
+  citizen_id: string
   name: string
   kind: 'create' | 'update' | 'deactivate'
   // Nilai lama/baru sudah berupa teks tampilan ('-' bila kosong).
   changes: { column: string; label: string; old: string; new: string }[]
+}
+
+export type FulfillmentOption = { value: string | number; label: string }
+
+// Satu kolom data warga di usulan Terapkan (update/create_citizen).
+export type FulfillmentField = {
+  column: string
+  label: string
+  source: string | null
+  current: string | number | boolean | null
+  proposed: string | number | boolean | null
+  proposed_label: string | null
+  options: FulfillmentOption[] | null
+  fixed: boolean
+  display: string | null
+}
+
+// GET /api/letters/{id}/fulfillment (LetterFulfillmentService::proposal).
+// Bagian yang tidak dipakai aksi surat berisi null atau daftar kosong.
+export type FulfillmentProposal = {
+  action: string
+  fulfilled_at: string | null
+  fulfilled_by: string | null
+  instructions: string | null
+  members: {
+    citizen_id: string | null
+    name: string
+    family_role: string
+    found: boolean
+    is_active: boolean
+  }[]
+  new_head: { name: string; family_role: string } | null
+  member_changes: {
+    index: number
+    citizen_id: string | null
+    name: string
+    found: boolean
+    fields: {
+      column: string
+      label: string
+      current: string | number | boolean | null
+      current_label: string
+      proposed: string | number | null
+      proposed_label: string
+      needs_choice: boolean
+    }[]
+  }[]
+  options: Record<string, FulfillmentOption[]>
+  subject: { nik: string | null; found: boolean; name: string | null } | null
+  family: { mode: string; description: string } | null
+  restructure: { kind: string; lines: string[] } | null
+  subjects: {
+    label: string
+    name: string | null
+    nik_masked: string | null
+    found: boolean
+    fields: { label: string; current_label: string; proposed_label: string }[]
+  }[]
+  fields: FulfillmentField[]
 }
 
 // GET /api/profile/nik-lookup.
@@ -35,7 +95,9 @@ export const getLetterDetail = async (letterId: Id) => {
 
 // Terapkan perubahan data setelah final approve (Kasi/Kaur/Staf SIDUTama).
 export const getFulfillmentProposal = async (letterId: Id) => {
-  const response = await api.get(`/api/letters/${letterId}/fulfillment`)
+  const response = await api.get<ResourceResponse<FulfillmentProposal>>(
+    `/api/letters/${letterId}/fulfillment`,
+  )
 
   return response.data.data
 }
@@ -77,7 +139,9 @@ export const applyFulfillment = async (
 
 // Anggota KK pemohon untuk isian family_members.
 export const getFamilyMembers = async () => {
-  const response = await api.get('/api/profile/family-members')
+  const response = await api.get<ResourceResponse<ApplicantFamilyMember[]>>(
+    '/api/profile/family-members',
+  )
 
   return response.data.data
 }
@@ -94,7 +158,7 @@ export const lookupNik = async (nik: string, { includeInactive = false } = {}) =
 
 // Dusun -> RW -> RT desa untuk isian village_area.
 export const getVillageAreas = async () => {
-  const response = await api.get('/api/village-areas')
+  const response = await api.get<ResourceResponse<VillageArea[]>>('/api/village-areas')
 
   return response.data.data
 }

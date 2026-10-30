@@ -47,7 +47,7 @@ describe('getLetterProgress', () => {
       getLetterProgress({
         status: 'in_progress',
         current_step_order: 2,
-        current_step: { approver_position: 'sekretaris_desa' },
+        current_step: { step_order: 2, approver_position: 'sekretaris_desa', is_final: true },
       }),
     ).toMatchObject({
       tone: 'progress',

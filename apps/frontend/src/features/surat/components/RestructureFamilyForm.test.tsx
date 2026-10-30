@@ -11,8 +11,10 @@ vi.mock('../api/letterExtrasApi', () => ({ applyFulfillment, previewFulfillment 
 vi.mock('@/shared/lib/dialog', () => ({ confirmDialog }))
 
 import { RestructureFamilyForm } from './RestructureFamilyForm'
+import { partialFixture } from '@/test/fixtures'
+import type { FulfillmentProposal } from '../api/letterExtrasApi'
 
-const proposal = {
+const proposal = partialFixture<FulfillmentProposal>({
   action: 'restructure_family',
   restructure: {
     kind: 'new_family',
@@ -22,7 +24,7 @@ const proposal = {
     ],
   },
   fields: [{ column: 'no_kk', label: 'No. KK Baru' }],
-}
+})
 
 describe('RestructureFamilyForm', () => {
   beforeEach(() => {

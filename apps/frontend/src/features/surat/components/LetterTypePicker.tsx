@@ -1,12 +1,14 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import type { MouseEvent } from 'react'
 import { Check, Search } from 'lucide-react'
 
 import { groupLetterTypes } from '../utils/letterTypeGroups'
+import type { LetterType } from '@/types'
 
 // Kolom pencarian baru berguna bila jenis surat cukup banyak.
 const SEARCH_THRESHOLD = 6
 
-function LetterTypeMeta({ type }) {
+function LetterTypeMeta({ type }: { type: LetterType }) {
   const needsSignature = (type.signature_slots ?? []).length > 0
 
   if (!type.validity_days && !needsSignature) return null
@@ -34,7 +36,7 @@ function scrollToTop() {
  * Dokumen yang dibawa ke instansi luar (Layanan Kependudukan): formulir yang
  * terbit dari pengajuan ini, lalu dokumen lain yang perlu dilampirkan.
  */
-function CarryDocuments({ documents }) {
+function CarryDocuments({ documents }: { documents: LetterType['carry_documents'] }) {
   const forms = documents?.forms ?? []
   const attachments = documents?.attachments ?? []
 
@@ -74,8 +76,8 @@ function CarryDocuments({ documents }) {
  * "Baca selengkapnya" untuk membukanya. Tombol berada di dalam kartu
  * (label pilihan), jadi kliknya tidak boleh ikut memilih jenis surat.
  */
-function LetterTypeDescription({ text }) {
-  const ref = useRef(null)
+function LetterTypeDescription({ text }: { text: string }) {
+  const ref = useRef<HTMLSpanElement>(null)
   const [expanded, setExpanded] = useState(false)
   const [overflowing, setOverflowing] = useState(false)
 
@@ -95,7 +97,7 @@ function LetterTypeDescription({ text }) {
     return () => observer.disconnect()
   }, [text, expanded])
 
-  const toggle = (event) => {
+  const toggle = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
     event.stopPropagation()
     setExpanded((value) => !value)
@@ -126,6 +128,16 @@ function LetterTypeDescription({ text }) {
  * persyaratannya, dengan tombol untuk mengganti pilihan (kecuali `locked`,
  * mis. jenis surat sudah ditentukan dari tautan).
  */
+type LetterTypePickerProps = {
+  letterTypes: LetterType[]
+  loading: boolean
+  error: string
+  selectedCode: string
+  // '' untuk mengganti pilihan.
+  onSelect: (code: string) => void
+  locked?: boolean
+}
+
 export function LetterTypePicker({
   letterTypes,
   loading,
@@ -133,7 +145,7 @@ export function LetterTypePicker({
   selectedCode,
   onSelect,
   locked = false,
-}) {
+}: LetterTypePickerProps) {
   const [query, setQuery] = useState('')
   const selected = letterTypes.find((type) => type.code === selectedCode)
 

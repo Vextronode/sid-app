@@ -1,8 +1,23 @@
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import type { Citizen, Letter } from '@/types'
 
-export const LETTER_TRACKING_STEPS = ['Pengajuan', 'RT', 'Kades', 'Selesai']
+// Langkah UI 1 = Pengajuan, 2 = RT, 3 = Kades, 4 = Selesai.
+export type LetterTrackingState = {
+  currentStep: number
+  rejectedStep: number | null
+  completed: boolean
+}
 
-export function getLetterTrackingState(letter) {
+type TrackedLetter = Partial<Pick<Letter, 'status' | 'current_step_order' | 'rejected_at_step'>>
+
+// Pemohon: NIK tersamar dan alamat dari data warganya bila dimuat.
+type ApplicantLetter = Partial<Pick<Letter, 'applicant_nik_masked'>> & {
+  citizen?: (Pick<Citizen, 'id'> & Partial<Pick<Citizen, 'nik_masked' | 'address'>>) | null
+}
+
+export function getLetterTrackingState(
+  letter: TrackedLetter | null | undefined,
+): LetterTrackingState {
   const status = letter?.status
   const currentStepOrder = Number(letter?.current_step_order)
 
@@ -39,10 +54,10 @@ export function getLetterTrackingState(letter) {
   }
 }
 
-export function getApplicantNik(letter) {
+export function getApplicantNik(letter: ApplicantLetter | null | undefined) {
   return letter?.applicant_nik_masked ?? letter?.citizen?.nik_masked ?? '-'
 }
 
-export function getApplicantAddress(letter) {
-  return letter?.applicant_address ?? letter?.citizen?.address ?? '-'
+export function getApplicantAddress(letter: ApplicantLetter | null | undefined) {
+  return letter?.citizen?.address ?? '-'
 }

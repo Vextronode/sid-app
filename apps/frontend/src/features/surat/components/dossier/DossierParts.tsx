@@ -7,8 +7,9 @@ import { useId } from 'react'
 import type { ReactNode } from 'react'
 
 import { formatApprovalLevel, formatDossierDateTime, getApprovalActor } from './dossierFormat'
+import type { LetterApproval } from '@/types'
 
-export function DossierSection({ title, children }) {
+export function DossierSection({ title, children }: { title: string; children?: ReactNode }) {
   const headingId = useId()
 
   return (
@@ -20,7 +21,7 @@ export function DossierSection({ title, children }) {
 }
 
 /** Daftar label-nilai; baris tanpa nilai dilewati. */
-export function DossierFacts({ items }) {
+export function DossierFacts({ items }: { items: { label: string; value: ReactNode }[] }) {
   const rows = items.filter(
     (item) => item.value !== null && item.value !== undefined && item.value !== '',
   )
@@ -42,7 +43,7 @@ export function DossierQuote({ children, tone }: { children: ReactNode; tone?: s
 }
 
 /** Riwayat keputusan yang sudah terjadi, urut waktu. */
-export function ApprovalTimeline({ approvals = [] }) {
+export function ApprovalTimeline({ approvals = [] }: { approvals?: LetterApproval[] }) {
   const sorted = [...approvals].sort(
     (first, second) =>
       new Date(first?.created_at ?? 0).getTime() - new Date(second?.created_at ?? 0).getTime(),

@@ -3,8 +3,10 @@ import { useForm, useWatch } from 'react-hook-form'
 import { describe, expect, it } from 'vitest'
 
 import { RepeaterField } from './RepeaterField'
+import { partialFixture } from '@/test/fixtures'
+import type { ApplicantFamilyMember, SuratField, SuratFormValues } from '../types'
 
-const field = {
+const field = partialFixture<SuratField>({
   name: 'anak',
   label: 'Anak',
   type: 'repeater',
@@ -32,11 +34,11 @@ const field = {
       visibleWhen: { field: 'warga', equals: 'wna' },
     },
   ],
-}
+})
 
 function Harness() {
-  const { control, register } = useForm({ defaultValues: { anak: [{}] } })
-  const rows = useWatch({ control, name: 'anak' })
+  const { control, register } = useForm<SuratFormValues>({ defaultValues: { anak: [{}] } })
+  const rows = useWatch({ control, name: 'anak' }) as SuratFormValues[]
 
   return (
     <RepeaterField field={field} control={control} register={register} rows={rows} errors={{}} />
@@ -69,7 +71,7 @@ describe('RepeaterField', () => {
   })
 
   it('hides members and the Kepala Keluarga already chosen in another row', () => {
-    const familyField = {
+    const familyField = partialFixture<SuratField>({
       name: 'susunan_baru',
       label: 'Anggota',
       type: 'repeater',
@@ -96,17 +98,17 @@ describe('RepeaterField', () => {
           ],
         },
       ],
-    }
-    const familyMembers = [
+    })
+    const familyMembers = partialFixture<ApplicantFamilyMember[]>([
       { id: 'c-1', name: 'Engkos', family_role_label: 'Kepala Keluarga' },
       { id: 'c-2', name: 'Asti', family_role_label: 'Anak' },
-    ]
+    ])
 
     function FamilyHarness() {
-      const { control, register } = useForm({
+      const { control, register } = useForm<SuratFormValues>({
         defaultValues: { susunan_baru: [{ anggota: 'c-1', shdk: 'kepala_keluarga' }, {}] },
       })
-      const rows = useWatch({ control, name: 'susunan_baru' })
+      const rows = useWatch({ control, name: 'susunan_baru' }) as SuratFormValues[]
 
       return (
         <RepeaterField

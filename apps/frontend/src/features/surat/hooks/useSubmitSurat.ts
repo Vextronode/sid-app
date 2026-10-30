@@ -3,10 +3,11 @@ import { submitSurat } from '../api/suratApi'
 
 export function useSubmitSurat() {
   const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState({})
+  // Galat validasi 422 per nama isian.
+  const [errors, setErrors] = useState<Record<string, string[]>>({})
   const [success, setSuccess] = useState('')
 
-  const handleSubmit = async (formData) => {
+  const handleSubmit = async (formData: FormData) => {
     try {
       setLoading(true)
       setErrors({})

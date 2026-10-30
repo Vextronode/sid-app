@@ -12,14 +12,16 @@ vi.mock('@/shared/lib/dialog', () => ({ confirmDialog }))
 vi.mock('@/shared/lib/toast', () => ({ notifySuccess: vi.fn() }))
 
 import { LetterResultPanel } from './LetterResultPanel'
+import { partialFixture } from '@/test/fixtures'
+import type { Letter, LetterResult } from '@/types'
 
-const rejected = {
+const rejected = partialFixture<LetterResult>({
   id: 7,
   status: 'rejected',
   submitted_at: '2026-10-20T09:00:00Z',
   review_notes: 'Foto KK buram.',
   attachments: [{ id: 3, original_name: 'kk.jpg', url: '/api/letters/l-1/attachments/3' }],
-}
+})
 
 describe('LetterResultPanel', () => {
   beforeEach(() => {
@@ -35,14 +37,14 @@ describe('LetterResultPanel', () => {
 
     render(
       <LetterResultPanel
-        letter={{
+        letter={partialFixture<Letter>({
           id: 'l-1',
           result_stage: 'awaiting_upload',
           result_upload_hint: 'KK terbaru',
           results: [rejected],
           can_upload_result: true,
           can_review_result: false,
-        }}
+        })}
         onChanged={onChanged}
         onOpenFile={onOpenFile}
       />,
@@ -91,13 +93,13 @@ describe('LetterResultPanel', () => {
 
     render(
       <LetterResultPanel
-        letter={{
+        letter={partialFixture<Letter>({
           id: 'l-1',
           result_stage: 'under_review',
           results: [rejected, { ...rejected, id: 8, status: 'submitted', review_notes: null }],
           can_upload_result: false,
           can_review_result: true,
-        }}
+        })}
         onChanged={onChanged}
         onOpenFile={vi.fn()}
       />,

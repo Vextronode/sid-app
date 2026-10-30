@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import { memberChoices, newHeadChoice, roleOptions } from './familyHead'
+import { partialFixture } from '@/test/fixtures'
+import type { FieldOption } from '@/types'
+import type { ApplicantFamilyMember, SuratField } from '../types'
 
-const members = [
+const members = partialFixture<ApplicantFamilyMember[]>([
   { id: 'c-1', name: 'Asep', family_role: 'kepala_keluarga' },
   { id: 'c-2', name: 'Iis', family_role: 'istri' },
   { id: 'c-3', name: 'Asti', family_role: 'anak' },
-]
+])
 const field = { requiredWhenHead: 'anggota_pindah' }
 
 describe('newHeadChoice', () => {
@@ -45,7 +48,7 @@ describe('newHeadChoice', () => {
 })
 
 describe('memberChoices', () => {
-  const family = [
+  const family = partialFixture<ApplicantFamilyMember[]>([
     {
       id: 'c-1',
       family_role: 'kepala_keluarga',
@@ -57,10 +60,13 @@ describe('memberChoices', () => {
     { id: 'c-3', family_role: 'anak', gender: 'P', date_of_birth: '1990-01-01' },
     { id: 'c-4', family_role: 'cucu', gender: 'L', date_of_birth: '2015-01-01' },
     { id: 'c-5', family_role: 'anak', gender: 'P', date_of_birth: '2012-01-01' },
-  ]
+  ])
 
   it('limits the child to its allowed roles and skips the applicant', () => {
-    const field = { roles: ['anak', 'cucu', 'famili_lain'], notSelf: true }
+    const field = partialFixture<SuratField>({
+      roles: ['anak', 'cucu', 'famili_lain'],
+      notSelf: true,
+    })
 
     expect(memberChoices(field, family, {}).map((member) => member.id)).toEqual([
       'c-3',
@@ -70,7 +76,10 @@ describe('memberChoices', () => {
   })
 
   it('only offers women at least ten years older than the chosen child as mother', () => {
-    const field = { gender: 'P', olderThan: { field: 'anak', years: 10 } }
+    const field = partialFixture<SuratField>({
+      gender: 'P',
+      olderThan: { field: 'anak', years: 10 },
+    })
 
     // Untuk cucu (2015): nenek dan ibunya, bukan bibinya yang lahir 2012.
     expect(memberChoices(field, family, { anak: 'c-4' }).map((member) => member.id)).toEqual([
@@ -80,21 +89,23 @@ describe('memberChoices', () => {
   })
 
   it('is empty when nobody qualifies', () => {
-    expect(memberChoices({ roles: ['menantu'] }, family, {})).toEqual([])
+    expect(memberChoices(partialFixture<SuratField>({ roles: ['menantu'] }), family, {})).toEqual(
+      [],
+    )
   })
 })
 
 describe('roleOptions', () => {
-  const members = [
-    { id: 1, gender: 'L', family_role: 'kepala_keluarga' },
-    { id: 2, gender: 'L', family_role: 'anak' },
-    { id: 3, gender: 'P', family_role: 'anak' },
-  ]
-  const field = {
+  const members = partialFixture<ApplicantFamilyMember[]>([
+    { id: '1', gender: 'L', family_role: 'kepala_keluarga' },
+    { id: '2', gender: 'L', family_role: 'anak' },
+    { id: '3', gender: 'P', family_role: 'anak' },
+  ])
+  const field = partialFixture<SuratField>({
     roleOf: 'anggota',
     options: ['kepala_keluarga', 'suami', 'istri', 'anak'].map((value) => ({ value })),
-  }
-  const values = (options) => options.map((option) => option.value)
+  })
+  const values = (options: FieldOption[]) => options.map((option) => option.value)
 
   it('hides Istri for a male member and Suami for a female member', () => {
     expect(values(roleOptions(field, members, { anggota: 2 }))).toEqual([
@@ -120,6 +131,8 @@ describe('roleOptions', () => {
 
   it('keeps every option while the person is unknown', () => {
     expect(roleOptions(field, members, {})).toHaveLength(4)
-    expect(roleOptions({ options: field.options }, members, { anggota: 2 })).toHaveLength(4)
+    expect(
+      roleOptions(partialFixture<SuratField>({ options: field.options }), members, { anggota: 2 }),
+    ).toHaveLength(4)
   })
 })

@@ -1,6 +1,7 @@
 // Format bersama untuk panel berkas LetterDossierModal.
+import type { LetterApproval } from '@/types'
 
-export function formatDossierDateTime(value) {
+export function formatDossierDateTime(value: string | null | undefined) {
   return value
     ? new Date(value).toLocaleString('id-ID', {
         day: 'numeric',
@@ -12,7 +13,7 @@ export function formatDossierDateTime(value) {
     : null
 }
 
-const LEVEL_LABELS = {
+const LEVEL_LABELS: Record<string, string> = {
   rt: 'RT',
   rw: 'RW',
   kadus: 'Kepala Dusun',
@@ -20,16 +21,12 @@ const LEVEL_LABELS = {
   sekretaris_desa: 'Sekretaris Desa',
 }
 
-export function formatApprovalLevel(level) {
+export function formatApprovalLevel(level: string | null | undefined) {
   return LEVEL_LABELS[level] ?? String(level ?? '').replace(/_/g, ' ')
 }
 
-export function getApprovalActor(approval) {
-  return (
-    approval?.approver_name ??
-    approval?.approved_by_user?.name ??
-    approval?.approvedBy?.name ??
-    approval?.actor_name ??
-    '-'
-  )
+export function getApprovalActor(
+  approval: Partial<Pick<LetterApproval, 'approver_name' | 'approved_by_user'>> | null | undefined,
+) {
+  return approval?.approver_name ?? approval?.approved_by_user?.name ?? '-'
 }

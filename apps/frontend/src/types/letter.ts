@@ -119,8 +119,71 @@ export type LetterDocument = {
   title: string
 }
 
-// Definisi isian form dinamis; bentuk lengkapnya diketik di langkah fitur surat.
-export type LetterFormField = Record<string, unknown>
+// Syarat tampil isian (visible_when), sama dengan AppSupportFieldCondition:
+// { field, equals } | { field, in } | { field, not_in } | { field, filled }
+// | { any: [syarat] } | { all: [syarat] }.
+export type FieldCondition = {
+  field?: string
+  equals?: string | number | boolean
+  in?: (string | number)[]
+  not_in?: (string | number)[]
+  filled?: boolean
+  any?: FieldCondition[]
+  all?: FieldCondition[]
+}
+
+export type FieldOption = { value: string; label?: string }
+
+// Satu isian form dinamis dari letter_types.form_fields (snake_case backend).
+export type LetterFormField = {
+  name: string
+  label?: string
+  type?: string
+  required?: boolean
+  placeholder?: string
+  options?: FieldOption[]
+  // 'image': hanya gambar; selain itu PDF atau gambar.
+  accept?: string
+  past?: boolean
+  report_deadline?: { days: number; event: string; when?: FieldCondition | null } | null
+  integer?: boolean
+  min_value?: number | null
+  visible_when?: FieldCondition | null
+  help?: string | null
+  default?: string | number | boolean | null
+  gender?: 'L' | 'P' | null
+  roles?: string[]
+  older_than?: { field: string; years: number } | null
+  role_of?: string | null
+  not_self?: boolean
+  empty_label?: string | null
+  from_applicant?: { column: string; map?: Record<string, string> } | null
+  prefill_from_applicant?: string | null
+  witness?: string | null
+  not_same_as?: string[]
+  typed_when_empty?: boolean
+  include_inactive?: boolean
+  from_nik?: string | null
+  // Kolom data warga yang diambil dari NIK (bawaan: name).
+  from_nik_value?: string
+  required_when_head?: string | null
+  fields?: LetterFormField[]
+  min?: number | null
+  max?: number | null
+  one_head?: { column: string; with?: string | null } | null
+  item_label?: string
+  // Diisi sistem saat pengajuan, tidak ditanyakan.
+  same_value?: string | null
+  family_head_of?: string | null
+}
+
+// Slot tanda tangan dari letter_types.signature_slots.
+export type LetterSignatureSlot = {
+  key: string
+  label?: string
+  // 'applicant' = pemohon; selain itu pihak lain.
+  signer?: string
+}
 
 export type LetterType = {
   id: number
@@ -130,8 +193,9 @@ export type LetterType = {
   category: string | null
   category_label: string | null
   template: string | null
-  requirements_info: unknown
-  carry_documents: unknown
+  requirements_info: string | null
+  // Dokumen yang dibawa ke instansi luar (Layanan Kependudukan).
+  carry_documents: { forms?: string[]; attachments?: string[] } | null
   flow_id: number | null
   flow?: { id: number; name: string }
   assigned_role: string | null
@@ -143,7 +207,7 @@ export type LetterType = {
   data_action: string | null
   form_fields: LetterFormField[]
   data_fields: unknown[]
-  signature_slots: Record<string, unknown>[]
+  signature_slots: LetterSignatureSlot[]
   has_supporting_document: boolean
   status_label: string
 }
@@ -198,3 +262,14 @@ export type Letter = {
 }
 
 export type LetterDecision = 'approved' | 'rejected'
+
+export type LetterStatusCounts = Record<LetterStatus, number>
+
+// GET /api/letters/summary: angka ringkasan atas scope daftar surat.
+export type LetterSummary = {
+  total: number
+  by_status: LetterStatusCounts
+  overdue: number
+  by_type: { id: number; name: string | null; total: number }[]
+  by_period: Record<'day' | 'week' | 'month', LetterStatusCounts & { total: number }>
+}

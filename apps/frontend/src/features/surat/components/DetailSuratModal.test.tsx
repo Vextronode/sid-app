@@ -64,7 +64,7 @@ describe('DetailSuratModal (pemohon)', () => {
       ...approvedLetter,
       status: 'rejected',
       rejected_at_step: 1,
-      notes: 'Foto KTP buram.',
+      rejection_reason: 'Foto KTP buram.',
     })
 
     expect(screen.getByRole('heading', { name: 'Alasan penolakan' })).toBeInTheDocument()

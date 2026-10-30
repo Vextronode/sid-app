@@ -78,6 +78,9 @@ Source frontend sedang dimigrasi bertahap dari JavaScript; `strict` di `tsconfig
    - Data uji yang hanya berisi sebagian field dibungkus `partialFixture<T>(...)` dari `src/test/fixtures.ts`; jangan menambah cast `as` di tiap test.
    - Elemen form diambil dengan tipe elemennya, mis. `getByRole<HTMLSelectElement>('combobox')`, `querySelector<HTMLElement>(...)`.
    - Properti yang memang tidak boleh ada diperiksa dengan `expect(obj).not.toHaveProperty('x')`.
+10. Pesan galat API untuk pengguna diambil dengan `getApiErrorMessage(error, fallback)` dari `shared/lib/apiError.ts`; jangan menyalin helper serupa di tiap komponen.
+11. Objek konstanta berisi nilai tetap ditulis `as const satisfies Record<string, T>` (mis. `SURAT_STATUS` terhadap `LetterStatus`) agar nilainya bertipe literal dan tetap diperiksa terhadap tipe domainnya.
+12. Helper dan komponen yang menerima surat dari baris daftar maupun dari detail memakai tipe sempit berisi field yang dibaca saja, mis. `Partial<Pick<Letter, 'status' | 'expires_at'>>`, bukan `Letter` utuh.
 
 ---
 

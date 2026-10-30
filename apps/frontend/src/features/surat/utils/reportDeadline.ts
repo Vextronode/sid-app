@@ -1,3 +1,4 @@
+import type { SuratField, SuratFormValues } from '../types'
 import { matchesCondition } from './fieldCondition'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -8,7 +9,12 @@ const DAY_MS = 24 * 60 * 60 * 1000
  * pengajuan; null bila belum lewat, tanggal kosong, atau syaratnya
  * (`when`) tidak terpenuhi.
  */
-export function reportDeadlineWarning(field, value, answers = {}, today = new Date()) {
+export function reportDeadlineWarning(
+  field: Pick<SuratField, 'reportDeadline'> | null | undefined,
+  value: unknown,
+  answers: SuratFormValues = {},
+  today = new Date(),
+) {
   const deadline = field?.reportDeadline
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value ?? ''))
 

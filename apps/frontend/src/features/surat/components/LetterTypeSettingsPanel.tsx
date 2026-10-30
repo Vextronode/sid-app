@@ -1,10 +1,14 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import type { AxiosResponse } from 'axios'
+import type { ApiError, LetterType, ResourceResponse } from '@/types'
 import { Power, Save } from 'lucide-react'
 
 import { getLetterTypes, updateLetterType } from '../api/letterTypeApi'
 import { describeLetterTypeOutput } from '../utils/letterTypeConfig'
 import { StatusPill } from '@/components/ui/StatusPill'
+import type { StatusTone } from '@/components/ui/StatusPill'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 
@@ -15,17 +19,20 @@ const CATEGORY_OPTIONS = [
   ['pelayanan', 'Layanan Kependudukan', 'Kasi Pemerintahan'],
 ]
 
-const STATUS_BADGES = {
+const STATUS_BADGES: Record<string, [string, StatusTone]> = {
   aktif: ['Aktif', 'active'],
   dinonaktifkan: ['Nonaktif', 'inactive'],
   draft: ['Draft', 'warning'],
 }
 
-function getResponseData(response) {
+// Isian per jenis surat sebelum disimpan; masa berlaku kosong = ''.
+type LetterTypeDraft = { validity_days: number | string; category: string }
+
+function getResponseData(response: AxiosResponse<ResourceResponse<LetterType>>) {
   return response?.data?.data
 }
 
-function getRequestErrorMessage(requestError, fallback) {
+function getRequestErrorMessage(requestError: ApiError, fallback: string) {
   const validationErrors = requestError?.response?.data?.errors
   const validationMessage = validationErrors
     ? Object.values(validationErrors).flat().filter(Boolean).join(' ')
@@ -36,12 +43,12 @@ function getRequestErrorMessage(requestError, fallback) {
 
 // reloadKey: dinaikkan halaman induk (tombol Refresh) untuk memuat ulang
 // daftar; isian yang belum disimpan ikut kembali ke data server.
-export default function LetterTypeSettingsPanel({ reloadKey = 0 }) {
-  const [letterTypes, setLetterTypes] = useState([])
-  const [drafts, setDrafts] = useState({})
+export default function LetterTypeSettingsPanel({ reloadKey = 0 }: { reloadKey?: number }) {
+  const [letterTypes, setLetterTypes] = useState<LetterType[]>([])
+  const [drafts, setDrafts] = useState<Record<number, LetterTypeDraft>>({})
   const [loading, setLoading] = useState(true)
-  const [savingId, setSavingId] = useState(null)
-  const [togglingId, setTogglingId] = useState(null)
+  const [savingId, setSavingId] = useState<number | null>(null)
+  const [togglingId, setTogglingId] = useState<number | null>(null)
   const [error, setError] = useState('')
 
   const loadLetterTypes = useCallback(async () => {
@@ -73,14 +80,14 @@ export default function LetterTypeSettingsPanel({ reloadKey = 0 }) {
     void loadLetterTypes()
   }, [loadLetterTypes, reloadKey])
 
-  const updateDraft = (id, field, value) => {
+  const updateDraft = (id: number, field: keyof LetterTypeDraft, value: string) => {
     setDrafts((current) => ({
       ...current,
       [id]: { ...current[id], [field]: value },
     }))
   }
 
-  const saveLetterType = async (event, letterType) => {
+  const saveLetterType = async (event: FormEvent<HTMLFormElement>, letterType: LetterType) => {
     event.preventDefault()
     const draft = drafts[letterType.id]
     setSavingId(letterType.id)
@@ -103,7 +110,7 @@ export default function LetterTypeSettingsPanel({ reloadKey = 0 }) {
     }
   }
 
-  const toggleLetterType = async (letterType) => {
+  const toggleLetterType = async (letterType: LetterType) => {
     const nextActive = !letterType.is_active
     const confirmed = await confirmDialog(
       nextActive

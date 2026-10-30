@@ -127,6 +127,8 @@ Struktur berbasis fitur menjaga batas domain; halaman (`pages/`) merakit kompone
 | `LaravelPaginatedResponse<T>` | `{ data, links, meta }` (paginator Laravel) | `GET /api/families`, `GET /api/citizens` (+ `total`) |
 | `ApiError` | `AxiosError<{ message?, errors?, code? }>` | semua error |
 
+Bentuk yang hanya dipakai satu fitur diberi tipe di modul API fitur itu, mis. `FulfillmentProposal` (usulan Terapkan) di `features/surat/api/letterExtrasApi.ts` serta `SignatureRequest`/`SignatureBlock` di `signatureApi.ts`. Pesan galat untuk pengguna diambil dengan `getApiErrorMessage` (`shared/lib/apiError.ts`).
+
 Bila resource backend berubah, tipe di `src/types/` ikut diperbarui pada perubahan yang sama.
 
 ---
@@ -222,3 +224,4 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 | 1.5 | 2026-10-30 | Folder `src/types/` (tipe domain & API dari API Resource backend) dan tabel tipe respons di S4 |
 | 1.6 | 2026-10-30 | Komponen yang tidak dipakai dihapus (antara lain `NewsCard`, `PageWatermark`, `QuickNavButtons`, komponen statis `profil-desa`), juga `authService` dan fungsi alur lama di `statusFlow` |
 | 1.7 | 2026-10-31 | Hook `useSuratDetail` bersama (pengganti 4 hook per peran), satu `NotificationPopover`, `lib/downloadFile` untuk semua berkas terlindung; alasan penolakan, anggota KK, dan label wilayah jabatan dari API v5.4; id UUID di `src/types` |
+| 1.8 | 2026-10-31 | `features/surat` bebas `any` implisit: tipe usulan Terapkan, tanda tangan, dan ringkasan surat (`LetterSummary`); salinan lokal `serverMessage` diganti `getApiErrorMessage`; `SURAT_STATUS` bertipe literal |

@@ -7,6 +7,9 @@ import {
 } from './letterTypeConfig'
 import { getSuratSchema, signerFieldNames, todayDate } from '../validation/suratSchema'
 import { buildLetterFormData } from './letterFormData'
+import { partialFixture } from '@/test/fixtures'
+import type { LetterType, User } from '@/types'
+import type { SuratField } from '../types'
 
 const letterType = {
   id: 12,
@@ -482,39 +485,51 @@ describe('row member and occupation sub-fields', () => {
 })
 
 describe('applicantValue', () => {
-  const field = {
+  const field = partialFixture<SuratField>({
     name: 'peran_pemohon',
     fromApplicant: { column: 'gender', map: { L: 'suami', P: 'istri' } },
-  }
+  })
 
   it('derives the role from the applicant gender', () => {
-    expect(applicantValue(field, { citizen: { gender: 'P' } })).toBe('istri')
-    expect(applicantValues([field, { name: 'lain' }], { citizen: { gender: 'L' } })).toEqual({
+    expect(applicantValue(field, partialFixture<User>({ citizen: { gender: 'P' } }))).toBe('istri')
+    expect(
+      applicantValues(
+        [field, partialFixture<SuratField>({ name: 'lain' })],
+        partialFixture<User>({ citizen: { gender: 'L' } }),
+      ),
+    ).toEqual({
       peran_pemohon: 'suami',
     })
   })
 
   it('asks the question when the applicant data is missing', () => {
-    expect(applicantValue(field, { citizen: {} })).toBeNull()
-    expect(applicantValue({ name: 'lain' }, { citizen: { gender: 'L' } })).toBeNull()
+    expect(applicantValue(field, partialFixture<User>({ citizen: {} }))).toBeNull()
+    expect(
+      applicantValue(
+        partialFixture<SuratField>({ name: 'lain' }),
+        partialFixture<User>({ citizen: { gender: 'L' } }),
+      ),
+    ).toBeNull()
   })
 })
 
 describe('past dates and whole numbers', () => {
-  const config = getLetterTypeFormConfig({
-    code: 'A03',
-    form_fields: [
-      { name: 'tanggal_lahir', label: 'Tanggal Lahir', type: 'date', required: true, past: true },
-      {
-        name: 'penghasilan',
-        label: 'Penghasilan',
-        type: 'number',
-        required: true,
-        integer: true,
-        min_value: 1,
-      },
-    ],
-  })
+  const config = getLetterTypeFormConfig(
+    partialFixture<LetterType>({
+      code: 'A03',
+      form_fields: [
+        { name: 'tanggal_lahir', label: 'Tanggal Lahir', type: 'date', required: true, past: true },
+        {
+          name: 'penghasilan',
+          label: 'Penghasilan',
+          type: 'number',
+          required: true,
+          integer: true,
+          min_value: 1,
+        },
+      ],
+    }),
+  )
   const errorsOf = (values) =>
     (getSuratSchema(config).safeParse(values).error?.issues ?? []).map((issue) => issue.message)
 
@@ -537,18 +552,23 @@ describe('past dates and whole numbers', () => {
 
 describe('applicantPrefill', () => {
   it('starts editable fields from the applicant population data', () => {
-    const config = getLetterTypeFormConfig({
-      code: 'A03',
-      form_fields: [
-        { name: 'jenis_usaha', type: 'occupation', prefill_from_applicant: 'occupation_id' },
-        { name: 'alamat_domisili', type: 'village_area', prefill_from_applicant: 'rt_id' },
-        { name: 'nama_benar', prefill_from_applicant: 'name' },
-        { name: 'penghasilan_perbulan', type: 'number' },
-      ],
-    })
+    const config = getLetterTypeFormConfig(
+      partialFixture<LetterType>({
+        code: 'A03',
+        form_fields: [
+          { name: 'jenis_usaha', type: 'occupation', prefill_from_applicant: 'occupation_id' },
+          { name: 'alamat_domisili', type: 'village_area', prefill_from_applicant: 'rt_id' },
+          { name: 'nama_benar', prefill_from_applicant: 'name' },
+          { name: 'penghasilan_perbulan', type: 'number' },
+        ],
+      }),
+    )
 
     expect(
-      applicantPrefill(config.fields, { citizen: { occupation_id: 4, rt_id: 9, name: '' } }),
+      applicantPrefill(
+        config.fields,
+        partialFixture<User>({ citizen: { occupation_id: 4, rt_id: 9, name: '' } }),
+      ),
     ).toEqual({
       jenis_usaha: '4',
       alamat_domisili: '9',

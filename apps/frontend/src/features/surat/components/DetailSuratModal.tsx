@@ -30,12 +30,16 @@ import {
 } from '@/features/cetak-surat/utils/letterSigning'
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealLetterApplicantNik } from '@/shared/lib/identityApi'
+import type { PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
+import type { Letter, LetterListItem } from '@/types'
 
-function getRejectionReason(surat) {
-  return surat?.notes ?? surat?.reason ?? surat?.rejection_reason ?? 'Tidak ada catatan penolakan.'
+type LetterState = 'approved' | 'expired' | 'rejected' | 'processing'
+
+function getRejectionReason(surat: Pick<LetterListItem, 'rejection_reason'>) {
+  return surat.rejection_reason ?? 'Tidak ada catatan penolakan.'
 }
 
-function getLetterState(surat) {
+function getLetterState(surat: Partial<Pick<Letter, 'status' | 'is_expired'>>): LetterState {
   if (surat?.status === SURAT_STATUS.APPROVED) {
     return surat.is_expired === true ? 'expired' : 'approved'
   }
@@ -43,14 +47,14 @@ function getLetterState(surat) {
   return surat?.status === SURAT_STATUS.REJECTED ? 'rejected' : 'processing'
 }
 
-const HINTS = {
+const HINTS: Record<LetterState, string> = {
   approved: 'Pilih format saat mengunduh: digital (siap dipakai) atau untuk tanda tangan basah.',
   expired: 'Masa berlaku surat sudah habis, jadi surat tidak dapat diunduh lagi.',
   rejected: 'Perbaiki permohonan sesuai alasan penolakan, lalu ajukan ulang.',
   processing: 'Anda akan mendapat notifikasi setiap kali status surat berubah.',
 }
 
-function DocumentArea({ surat, state }) {
+function DocumentArea({ surat, state }: { surat: PrintableLetter; state: LetterState }) {
   if (state === 'approved') {
     return <LetterDocumentsPreview surat={surat} />
   }
@@ -78,7 +82,12 @@ function DocumentArea({ surat, state }) {
   )
 }
 
-export function DetailSuratModal({ data, onClose }) {
+type DetailSuratModalProps = {
+  data: LetterListItem | null
+  onClose: () => void
+}
+
+export function DetailSuratModal({ data, onClose }: DetailSuratModalProps) {
   if (!data) {
     return null
   }
@@ -86,7 +95,7 @@ export function DetailSuratModal({ data, onClose }) {
   return <DetailSuratModalContent row={data} onClose={onClose} />
 }
 
-function DetailSuratModalContent({ row, onClose }) {
+function DetailSuratModalContent({ row, onClose }: { row: LetterListItem; onClose: () => void }) {
   // Baris daftar hanya memuat kolom ringkas; NIK, alamat, dan keperluan
   // dilengkapi dari detail surat begitu tersedia.
   const { data: detail } = useQuery({
@@ -151,7 +160,7 @@ function DetailSuratModalContent({ row, onClose }) {
               ),
             },
             { label: 'Alamat', value: getApplicantAddress(surat) },
-            { label: 'Keperluan', value: surat.purpose },
+            { label: 'Keperluan', value: detail?.purpose },
             { label: 'Diajukan', value: formatDossierDateTime(surat.submitted_at) },
             { label: 'Diperbarui', value: formatDossierDateTime(surat.updated_at) },
           ]}

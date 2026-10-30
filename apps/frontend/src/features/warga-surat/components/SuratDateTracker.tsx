@@ -226,9 +226,7 @@ function RejectionReason({ surat }: { surat: LetterListItem }) {
 // STATUS PREVIEW PDF
 // ==========================================
 
-const canPreviewStatuses = [SURAT_STATUS.APPROVED]
-
-const canPreviewSurat = (status: string) => canPreviewStatuses.includes(status)
+const canPreviewSurat = (status: string) => status === SURAT_STATUS.APPROVED
 
 // ==========================================
 // TEMPLATE PDF

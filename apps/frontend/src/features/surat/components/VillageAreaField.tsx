@@ -1,3 +1,4 @@
+import type { VillageArea } from '../types'
 import { useState } from 'react'
 
 // Dusun dan RW pemilik RT terpilih, untuk mengisi ulang pilihan bertingkat.
@@ -18,12 +19,6 @@ function locate(areas: VillageArea[], rtId: unknown) {
  * pemohon tidak mengetik dusun/RT/RW yang tidak ada. Nilai isian = id RT;
  * Dusun dan RW hanya penyaring pilihan.
  */
-// GET /api/village-areas: Dusun -> RW -> RT.
-export type VillageArea = {
-  id: number
-  name: string
-  rws?: { id: number; number: string; rts?: { id: number; number: string }[] }[]
-}
 
 type VillageAreaFieldProps = {
   field: { name: string; label: string }
@@ -54,7 +49,7 @@ export function VillageAreaField({
   const hasError = Boolean(errors[field.name])
   const selectClass = `sid-select ${hasError ? 'sid-input-error' : ''}`
 
-  const chooseRt = (rtId) =>
+  const chooseRt = (rtId: string) =>
     setValue(field.name, rtId, { shouldDirty: true, shouldValidate: hasError })
 
   return (

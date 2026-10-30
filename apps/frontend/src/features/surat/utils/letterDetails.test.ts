@@ -4,17 +4,19 @@ import { getApplicantAddress, getApplicantNik, getLetterTrackingState } from './
 
 describe('letter details helpers', () => {
   it('reads the masked NIK and address fields provided by the API', () => {
-    expect(
-      getApplicantNik({
-        applicant_nik_masked: '************1234',
-        applicant_nik: 'must not be exposed',
-      }),
-    ).toBe('************1234')
-    expect(getApplicantAddress({ citizen: { address: 'Jl. Merdeka' } })).toBe('Jl. Merdeka')
+    const letter = {
+      applicant_nik_masked: '************1234',
+      applicant_nik: 'must not be exposed',
+    }
+
+    expect(getApplicantNik(letter)).toBe('************1234')
+    expect(getApplicantAddress({ citizen: { id: 'c-1', address: 'Jl. Merdeka' } })).toBe(
+      'Jl. Merdeka',
+    )
   })
 
   it('falls back to masked citizen NIK and shows an empty state for absent address', () => {
-    expect(getApplicantNik({ citizen: { nik_masked: '************4321' } })).toBe(
+    expect(getApplicantNik({ citizen: { id: 'c-1', nik_masked: '************4321' } })).toBe(
       '************4321',
     )
     expect(getApplicantAddress({})).toBe('-')

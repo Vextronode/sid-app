@@ -11,8 +11,10 @@ import '@/styles/surat-dokumen.css'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
+import type { ReactNode } from 'react'
+import type { LetterListItem } from '@/types'
 
-function formatDate(value) {
+function formatDate(value: string | null | undefined) {
   return value
     ? new Date(value).toLocaleDateString('id-ID', {
         day: 'numeric',
@@ -22,13 +24,21 @@ function formatDate(value) {
     : '-'
 }
 
+type LetterTableProps = {
+  letters: LetterListItem[]
+  loading?: boolean
+  emptyMessage?: string
+  renderActions: (surat: LetterListItem) => ReactNode
+  label?: string
+}
+
 export function LetterTable({
   letters,
   loading = false,
   emptyMessage = 'Belum ada surat.',
   renderActions,
   label = 'Daftar permohonan surat',
-}) {
+}: LetterTableProps) {
   return (
     <div className="sid-letter-table-wrap">
       <table className="sid-letter-table" aria-label={label}>
@@ -63,7 +73,6 @@ export function LetterTable({
               <tr key={surat.id}>
                 <td data-label="No. Surat" className="sid-letter-table-number">
                   <span>{surat.letter_number ? `#${surat.letter_number}` : '-'}</span>
-                  {surat.revision_count > 0 && <small>Hasil revisi</small>}
                 </td>
 
                 <td data-label="Pemohon" className="sid-letter-table-applicant">

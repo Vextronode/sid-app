@@ -1,9 +1,11 @@
+import type { LetterStatus } from '@/types'
+
 export const SURAT_STATUS = {
   PENDING: 'pending',
   IN_PROGRESS: 'in_progress',
   APPROVED: 'approved',
   REJECTED: 'rejected',
-}
+} as const satisfies Record<string, LetterStatus>
 
 export const SURAT_STATUS_OPTIONS = [
   {

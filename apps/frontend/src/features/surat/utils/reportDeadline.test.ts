@@ -14,7 +14,7 @@ describe('reportDeadlineWarning', () => {
 
   it('ignores empty dates, fields without a deadline, and unmet conditions', () => {
     expect(reportDeadlineWarning(birth, '', {}, today)).toBeNull()
-    expect(reportDeadlineWarning({}, '2020-01-01', {}, today)).toBeNull()
+    expect(reportDeadlineWarning({ reportDeadline: null }, '2020-01-01', {}, today)).toBeNull()
 
     const marriage = {
       reportDeadline: {

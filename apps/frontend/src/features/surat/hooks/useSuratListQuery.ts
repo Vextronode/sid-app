@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 
 import api from '@/lib/api'
 import { queryKeys } from '@/shared/lib/queryKeys'
-import type { LetterListItem, PageMeta, PaginatedResponse } from '@/types'
+import type { LetterListItem, LetterSummary, PageMeta, PaginatedResponse } from '@/types'
 
 // Parameter query daftar/ringkasan surat; nilai kosong tidak dikirim.
 export type SuratQueryParams = Record<string, string | number | null | undefined>
@@ -71,7 +71,7 @@ export function useSuratListQuery(params?: SuratQueryParams) {
 
 const EMPTY_PERIOD = { total: 0, pending: 0, in_progress: 0, approved: 0, rejected: 0 }
 
-const EMPTY_SUMMARY = {
+const EMPTY_SUMMARY: LetterSummary = {
   total: 0,
   by_status: { pending: 0, in_progress: 0, approved: 0, rejected: 0 },
   overdue: 0,
@@ -87,7 +87,9 @@ export function useSuratSummaryQuery(params?: SuratQueryParams) {
   const { data, isPending } = useQuery({
     queryKey: queryKeys.surat.summary(query),
     queryFn: async () => {
-      const response = await api.get('/api/letters/summary', { params: query })
+      const response = await api.get<{ data?: LetterSummary }>('/api/letters/summary', {
+        params: query,
+      })
 
       return response.data?.data ?? EMPTY_SUMMARY
     },
@@ -101,7 +103,7 @@ export function useSuratSummaryQuery(params?: SuratQueryParams) {
 }
 
 // Menunda nilai pencarian supaya tidak ada request untuk tiap ketikan.
-export function useDebouncedValue(value, delay = 300) {
+export function useDebouncedValue<T>(value: T, delay = 300) {
   const [debounced, setDebounced] = useState(value)
 
   useEffect(() => {

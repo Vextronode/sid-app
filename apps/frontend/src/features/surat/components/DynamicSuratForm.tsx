@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ChangeEvent, MouseEvent } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { LetterType, Occupation } from '@/types'
+import type { ApplicantFamilyMember, SuratFormConfig, SuratFormValues, VillageArea } from '../types'
+import type { NikLookupResult } from './NikLookupHint'
 
 import { getSuratSchema, signerFieldNames, todayDate } from '../validation/suratSchema'
 import { reportDeadlineWarning } from '../utils/reportDeadline'
@@ -34,16 +39,17 @@ const DEFAULT_HEADINGS = {
   signatures: 'Langkah 3 - Tanda Tangan',
 }
 
-function firstServerError(error) {
-  const errors = error?.response?.data?.errors
-
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? 'Gagal mengirim surat.'
+type DynamicSuratFormProps = {
+  config: SuratFormConfig
+  onCancel?: () => void
+  // Dipanggil dengan respons server setelah surat berhasil dikirim.
+  onSubmit?: (response: unknown) => void
+  initialData?: SuratFormValues
+  // Pengganti pengiriman bawaan (POST /api/letters), mis. untuk pengajuan pejabat.
+  onSubmitAPI?: ((payload: FormData) => Promise<unknown>) | null
+  letterTypes?: LetterType[]
+  headings?: { fields: string; signatures: string }
+  className?: string
 }
 
 export function DynamicSuratForm({
@@ -55,10 +61,10 @@ export function DynamicSuratForm({
   letterTypes = [],
   headings = DEFAULT_HEADINGS,
   className = '',
-}) {
+}: DynamicSuratFormProps) {
   const { user } = useAuth()
   const [submitError, setSubmitError] = useState('')
-  const [hasSignature, setHasSignature] = useState(null)
+  const [hasSignature, setHasSignature] = useState<boolean | null>(null)
   // Ref = guard sinkron (double tap / Enter + klik); state hanya untuk tampilan tombol.
   const submittingRef = useRef(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -68,26 +74,27 @@ export function DynamicSuratForm({
   const otherSlots = signatureSlots.filter((slot) => slot.signer === 'other')
   const needsOwnSignature = applicantSlots.length > 0
   // Sub-isian baris repeater juga dapat memakai katalog pekerjaan / anggota KK.
-  const usesType = (type) =>
+  const usesType = (type: string) =>
     config.fields.some(
       (field) => field.type === type || (field.fields ?? []).some((sub) => sub.type === type),
     )
   const needsOccupations = usesType('occupation')
-  const [occupations, setOccupations] = useState([])
+  const [occupations, setOccupations] = useState<Occupation[]>([])
   const [occupationsFailed, setOccupationsFailed] = useState(false)
   const needsFamily = usesType('family_members') || usesType('family_member')
-  const [familyMembers, setFamilyMembers] = useState([])
+  const [familyMembers, setFamilyMembers] = useState<ApplicantFamilyMember[]>([])
   const [familyFailed, setFamilyFailed] = useState(false)
   const needsAreas = usesType('village_area')
-  const [areas, setAreas] = useState([])
+  const [areas, setAreas] = useState<VillageArea[]>([])
   const [areasFailed, setAreasFailed] = useState(false)
   // Hasil pencarian NIK per isian NIK yang berpasangan dengan isian nama.
-  const [nikLookups, setNikLookups] = useState({})
+  const [nikLookups, setNikLookups] = useState<Record<string, NikLookupResult>>({})
   // Isian (nama, No. KK) yang diisi otomatis dari isian NIK ini.
-  const lookupFieldsOf = (nikName) => config.fields.filter((field) => field.fromNik === nikName)
+  const lookupFieldsOf = (nikName: string) =>
+    config.fields.filter((field) => field.fromNik === nikName)
   // Isian dari NIK diketik bila NIK tidak ditemukan, atau dikosongkan pada
   // isian NIK ber-typedWhenEmpty (mis. anak angkat yang belum punya NIK).
-  const lookupTyped = (nikName) =>
+  const lookupTyped = (nikName: string) =>
     nikLookups[nikName]?.status === 'not_found' ||
     (Boolean(config.fields.find((field) => field.name === nikName)?.typedWhenEmpty) &&
       !String(watchedFormData?.[nikName] ?? '').trim())
@@ -113,7 +120,7 @@ export function DynamicSuratForm({
       ...Object.fromEntries(
         config.fields
           .filter((field) => field.type === 'family_members')
-          .map((field) => [field.name, []]),
+          .map((field) => [field.name, [] as string[]]),
       ),
       ...Object.fromEntries(
         config.fields
@@ -210,7 +217,7 @@ export function DynamicSuratForm({
     }
   }, [needsAreas])
 
-  const handleFileChange = (e, name, multiple = true) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, name: string, multiple = true) => {
     const files = Array.from(e.target.files || [])
 
     if (!files.length) {
@@ -227,7 +234,7 @@ export function DynamicSuratForm({
     e.target.value = ''
   }
 
-  const handleRemoveFile = (e, name, index) => {
+  const handleRemoveFile = (e: MouseEvent<HTMLButtonElement>, name: string, index: number) => {
     e.stopPropagation()
 
     const currentFiles = filesOf(name)
@@ -241,7 +248,7 @@ export function DynamicSuratForm({
     })
   }
 
-  const handleFormSubmit = async (formData) => {
+  const handleFormSubmit = async (formData: SuratFormValues) => {
     if (submittingRef.current) return
 
     const selectedLetterType =
@@ -273,7 +280,7 @@ export function DynamicSuratForm({
     } catch (error) {
       console.error(error)
 
-      setSubmitError(firstServerError(error))
+      setSubmitError(getApiErrorMessage(error, 'Gagal mengirim surat.'))
       // Galat isian dari server (mis. urutan tanggal) juga tampil di isiannya.
       Object.entries(error?.response?.data?.errors ?? {}).forEach(([key, messages]) => {
         const name = key.startsWith('payload.') ? key.slice('payload.'.length) : null
@@ -288,7 +295,7 @@ export function DynamicSuratForm({
     }
   }
 
-  const renderError = (name) =>
+  const renderError = (name: string) =>
     errors[name]?.message ? (
       <span className="sid-form-field-error" role="alert">
         {errors[name].message}
@@ -522,7 +529,7 @@ export function DynamicSuratForm({
                     field={field}
                     control={control}
                     register={register}
-                    rows={watchedFormData?.[field.name]}
+                    rows={watchedFormData?.[field.name] as SuratFormValues[] | undefined}
                     errors={errors}
                     catalogs={{ familyMembers, occupations }}
                     answers={watchedFormData}

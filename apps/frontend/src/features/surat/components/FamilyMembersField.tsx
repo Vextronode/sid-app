@@ -1,14 +1,33 @@
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealCitizenNik } from '@/shared/lib/identityApi'
+import type { FieldErrors, UseFormSetValue } from 'react-hook-form'
+import type { ApplicantFamilyMember, SuratField, SuratFormValues } from '../types'
+
+type FamilyMembersFieldProps = {
+  field: SuratField
+  members: ApplicantFamilyMember[]
+  loadFailed: boolean
+  value: unknown
+  setValue: UseFormSetValue<SuratFormValues>
+  errors: FieldErrors<SuratFormValues>
+}
 
 /**
  * Pilih anggota KK pemohon (centang). Daftar anggota diambil dari
  * GET /profile/family-members; backend memvalidasi ulang pilihannya.
  */
-export function FamilyMembersField({ field, members, loadFailed, value, setValue, errors }) {
-  const selected = Array.isArray(value) ? value : []
+export function FamilyMembersField({
+  field,
+  members,
+  loadFailed,
+  value,
+  setValue,
+  errors,
+}: FamilyMembersFieldProps) {
+  // Id warga anggota KK yang dicentang.
+  const selected: string[] = Array.isArray(value) ? value : []
 
-  const toggle = (id) => {
+  const toggle = (id: string) => {
     const next = selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id]
 
     setValue(field.name, next, { shouldValidate: Boolean(errors[field.name]), shouldDirty: true })

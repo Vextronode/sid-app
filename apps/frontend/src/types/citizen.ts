@@ -60,6 +60,15 @@ export type CitizenListResponse = LaravelPaginatedResponse<Citizen> & {
 // GET /api/families/options: semua KK desa untuk pilihan di form warga.
 export type FamilyOption = Pick<Family, 'id' | 'no_kk_masked' | 'family_address' | 'head_of_family'>
 
+// Pekerjaan (OccupationResource).
+export type Occupation = {
+  id: number
+  name: string
+  is_active: boolean
+  sort_order: number
+  citizens_count?: number
+}
+
 export type FamilyMember = {
   id: Uuid
   name: string
